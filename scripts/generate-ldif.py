@@ -39,7 +39,7 @@ LDIF_OUT = REPO_ROOT / "docker" / "ldap" / "bootstrap" / "01-users.ldif"
 
 LDAP_BASE_DN = "dc=unifesspa,dc=edu,dc=br"
 USERS_OU = f"ou=Users,{LDAP_BASE_DN}"
-DEFAULT_PASSWORD = "Changeme!123"  # senha sintética em plaintext — dev local; facilita debug
+DEFAULT_PASSWORD = "Uni+Teste26"  # senha sintética em plaintext — dev local; facilita debug; igual à do realm unifesspa (api#1861)
 
 # Domínio reservado para emails sintéticos (RFC 2606 / TLD .local).
 # A 4devs gera emails com domínios reais misturados (eptv.com.br, live.dk, etc.);

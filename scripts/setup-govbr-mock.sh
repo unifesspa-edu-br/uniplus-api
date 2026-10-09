@@ -77,7 +77,7 @@ readonly MOCK_USERS=(
 readonly TARGET_TEST_USERNAME="autoheal-test"
 readonly TARGET_TEST_CPF_TRUNCATED="9876543210"
 readonly TARGET_TEST_EMAIL="autoheal-test@uniplus.local"
-readonly TARGET_TEST_PASSWORD="Test!1234"
+readonly TARGET_TEST_PASSWORD="${TEST_PASSWORD:-Uni+Teste26}"
 
 # ---- Logging ---------------------------------------------------------------
 

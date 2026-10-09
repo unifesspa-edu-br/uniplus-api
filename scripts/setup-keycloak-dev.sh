@@ -12,6 +12,8 @@
 #   4. ensure_configuracao_web_client       — client OIDC do app Configuração
 #                                             para ambientes já provisionados
 #   5. reset_test_user_passwords            — 4 users de teste, senha não-temporária
+#   5b. ensure_personas                     — 30 personas fictícias do portal de
+#                                             documentação (api#1861), mesma senha
 #   6. configure_ldap_federation_if_available — User Federation contra openldap
 #                                             sintético
 #   7. setup-cpf-matcher-flow.sh            — clona flow built-in,
@@ -44,7 +46,8 @@
 #   KC_REALM                (default: unifesspa)
 #   KC_ADMIN_USER           (default: admin)
 #   KC_ADMIN_PASS           (default: admin)
-#   TEST_PASSWORD           (default: Changeme!123)
+#   TEST_PASSWORD           (default: Uni+Teste26) — vale para os 4 usuários de
+#                           teste e para as personas fictícias (etapa 5b)
 #
 #   LDAP_HOST               (default: openldap)        — usado pelo Keycloak (rede docker)
 #   LDAP_PORT               (default: 389)             — porta interna do container
@@ -63,7 +66,7 @@ KC_URL="${KC_URL:-http://localhost:8080}"
 KC_REALM="${KC_REALM:-unifesspa}"
 KC_ADMIN_USER="${KC_ADMIN_USER:-admin}"
 KC_ADMIN_PASS="${KC_ADMIN_PASS:-admin}"
-TEST_PASSWORD="${TEST_PASSWORD:-Changeme!123}"
+TEST_PASSWORD="${TEST_PASSWORD:-Uni+Teste26}"
 
 readonly TEST_USERS=("admin" "gestor" "avaliador" "candidato")
 readonly CONFIGURACAO_WEB_CLIENT_ID="configuracao-web"
@@ -298,10 +301,132 @@ reset_test_user_passwords() {
             continue
         fi
         auth_json -X PUT "$API/users/$user_id/reset-password" \
-            -d "{\"type\":\"password\",\"value\":\"$TEST_PASSWORD\",\"temporary\":false}" >/dev/null
+            -d "$(jq -nc --arg p "$TEST_PASSWORD" '{type:"password", value:$p, temporary:false}')" >/dev/null
         auth_json -X PUT "$API/users/$user_id" -d '{"requiredActions":[]}' >/dev/null
         ok "$user — senha=$TEST_PASSWORD (não-temporária), required_actions limpos"
     done
+}
+
+# ---- Etapa 5b — Personas fictícias do portal (dev local) -------------------
+#
+# As personas (api#1861) são usuários locais — não federados do LDAP sintético
+# — do realm `unifesspa`, para uso em todo teste e exemplo desta execução.
+# Fonte: cópia de `uniplus-developers/src/data/fake-people.json`, porque a
+# stack local não deve depender de outro checkout em runtime.
+
+readonly PERSONAS_FILE="$SCRIPT_DIR/../docker/keycloak/personas.json"
+
+# A persona "privilegiada" recebe os mesmos realm roles do usuário `admin` do
+# `realm-export.json` — o papel de acesso exato de HML não está disponível
+# localmente.
+readonly PERSONA_PRIVILEGIADA_ROLES=("admin" "plataforma-admin")
+
+# Só os roles que este script usa para persona (candidato ou privilegiada) —
+# nunca toca em role de área ou outro concedido por fora deste fluxo.
+readonly PERSONA_ROLES_CONHECIDOS=("candidato" "${PERSONA_PRIVILEGIADA_ROLES[@]}")
+
+# Substitui, não só acrescenta: remove os roles conhecidos que o user tem e
+# não estão no conjunto alvo (ex.: persona que deixou de ser "privilegiado"),
+# e garante os do conjunto alvo.
+assign_realm_roles() {
+    local user_id="$1" roles_json="$2"
+    local conhecidos_json atuais a_remover
+
+    conhecidos_json=$(printf '%s\n' "${PERSONA_ROLES_CONHECIDOS[@]}" | jq -R . | jq -sc .)
+    atuais=$(auth "$API/users/$user_id/role-mappings/realm")
+    a_remover=$(jq -nc \
+        --argjson atuais "$atuais" --argjson alvo "$roles_json" --argjson conhecidos "$conhecidos_json" \
+        '$atuais
+            | map(select(.name as $n | $conhecidos | index($n) != null))
+            | map(select(.name as $n | ($alvo | map(.name) | index($n)) | not))')
+
+    if [ "$(jq 'length' <<< "$a_remover")" -gt 0 ]; then
+        auth_json -X DELETE "$API/users/$user_id/role-mappings/realm" -d "$a_remover" >/dev/null
+    fi
+    auth_json -X POST "$API/users/$user_id/role-mappings/realm" -d "$roles_json" >/dev/null
+}
+
+# Separa "Nome Completo" em firstName (1ª palavra) / lastName (resto) — convenção
+# suficiente para dado de teste; quem identifica a persona é o username.
+upsert_persona() {
+    local username="$1" nome="$2" nome_social="$3" cpf="$4" email="$5" roles_json="$6"
+    local first_name last_name cpf_digits existing_id body
+
+    # `set -e` encerra o script em qualquer `curl -f` que falhe aqui dentro —
+    # esta linha garante que a última mensagem antes do abortar identifica QUAL
+    # persona travou, em vez de o script morrer em silêncio no meio da etapa.
+    log "Persona '$username'"
+
+    # O token de admin do master realm costuma durar só 60s — 30 personas,
+    # cada uma com várias chamadas à Admin API, podem passar disso.
+    # Renovado a cada persona para nunca expirar no meio do laço.
+    obtain_admin_token
+
+    first_name="${nome%% *}"
+    # Nome de uma palavra só (sem espaço): ${nome#* } devolveria o nome
+    # inteiro de novo, duplicando-o como sobrenome.
+    if [[ "$nome" == *" "* ]]; then
+        last_name="${nome#* }"
+    else
+        last_name=""
+    fi
+    cpf_digits=$(tr -cd '0-9' <<< "$cpf")
+
+    existing_id=$(auth "$API/users?username=$username&exact=true" | jq -r '.[0].id // empty')
+
+    body=$(jq -nc \
+        --arg u "$username" --arg f "$first_name" --arg l "$last_name" \
+        --arg e "$email" --arg c "$cpf_digits" --arg ns "$nome_social" \
+        '{
+            username: $u, enabled: true, emailVerified: true,
+            email: $e, firstName: $f, lastName: $l,
+            attributes: (if $ns == "" then { cpf: [$c] } else { cpf: [$c], nomeSocial: [$ns] } end)
+        }')
+
+    if [ -n "$existing_id" ]; then
+        auth_json -X PUT "$API/users/$existing_id" -d "$body" >/dev/null
+    else
+        auth_json -X POST "$API/users" -d "$body" >/dev/null
+        existing_id=$(auth "$API/users?username=$username&exact=true" | jq -r '.[0].id')
+    fi
+
+    auth_json -X PUT "$API/users/$existing_id/reset-password" \
+        -d "$(jq -nc --arg p "$TEST_PASSWORD" '{type:"password", value:$p, temporary:false}')" >/dev/null
+    auth_json -X PUT "$API/users/$existing_id" -d '{"requiredActions":[]}' >/dev/null
+    assign_realm_roles "$existing_id" "$roles_json"
+
+    ok "persona '$username' configurada"
+}
+
+ensure_personas() {
+    log "Provisionando as personas fictícias do portal no realm '$KC_REALM'"
+    # Versionado no próprio repositório — a ausência é erro, não um caso
+    # opcional (sem ele, o ambiente local fica sem as 30 personas, em silêncio).
+    [ -f "$PERSONAS_FILE" ] || fail "'$PERSONAS_FILE' não encontrado"
+
+    local candidato_roles_json privilegiada_roles_json
+    candidato_roles_json=$(jq -nc --argjson r "$(auth "$API/roles/candidato")" '[$r]')
+    privilegiada_roles_json=$(jq -nc \
+        --argjson a "$(auth "$API/roles/${PERSONA_PRIVILEGIADA_ROLES[0]}")" \
+        --argjson b "$(auth "$API/roles/${PERSONA_PRIVILEGIADA_ROLES[1]}")" \
+        '[$a, $b]')
+
+    local total i row perfil roles_json
+    total=$(jq 'length' "$PERSONAS_FILE")
+    for ((i = 0; i < total; i++)); do
+        row=$(jq -c ".[$i]" "$PERSONAS_FILE")
+        perfil=$(jq -r '.perfil' <<< "$row")
+        roles_json="$candidato_roles_json"
+        [ "$perfil" = "privilegiado" ] && roles_json="$privilegiada_roles_json"
+        upsert_persona \
+            "$(jq -r '.username' <<< "$row")" \
+            "$(jq -r '.nome' <<< "$row")" \
+            "$(jq -r '.nome_social // ""' <<< "$row")" \
+            "$(jq -r '.cpf' <<< "$row")" \
+            "$(jq -r '.email' <<< "$row")" \
+            "$roles_json"
+    done
+    ok "$total personas provisionadas (senha=$TEST_PASSWORD, não-temporária)"
 }
 
 # ---- Etapa 5 — User Federation LDAP (dev local somente) --------------------
@@ -524,6 +649,7 @@ configure_govbr_mock_idp() {
     # realm — desincronia silenciosa em runs com KC_REALM customizado.
     KC_URL="$KC_URL" TARGET_REALM="$KC_REALM" \
     KC_ADMIN_USER="$KC_ADMIN_USER" KC_ADMIN_PASS="$KC_ADMIN_PASS" \
+    TEST_PASSWORD="$TEST_PASSWORD" \
         "$SCRIPT_DIR/setup-govbr-mock.sh"
 }
 
@@ -536,9 +662,10 @@ print_smoke_test_hint() {
 
   ── Login direto via ROPC (sem broker) ──
   TOKEN=\$(curl -s -X POST '$KC_URL/realms/$KC_REALM/protocol/openid-connect/token' \\
-    -H 'Content-Type: application/x-www-form-urlencoded' \\
-    -d 'grant_type=password' -d 'client_id=admin-cli' \\
-    -d 'username=candidato' -d 'password=$TEST_PASSWORD' | jq -r .access_token)
+    --data-urlencode 'grant_type=password' --data-urlencode 'client_id=admin-cli' \\
+    --data-urlencode 'username=candidato' --data-urlencode 'password=$TEST_PASSWORD' \\
+    | jq -r .access_token)
+  # --data-urlencode, não -d: a senha tem '+', que -d não escapa (vira espaço).
 
   curl -s -H "Authorization: Bearer \$TOKEN" http://localhost:5202/api/profile/me | jq
 
@@ -582,6 +709,7 @@ main() {
     configure_admin_cli_for_ropc
     ensure_configuracao_web_client
     reset_test_user_passwords
+    ensure_personas
     configure_ldap_federation_if_available
     configure_first_broker_login_with_cpf
     configure_govbr_mock_idp
