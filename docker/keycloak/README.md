@@ -141,7 +141,7 @@ Os quatro usuários abaixo são criados pela importação do realm.
 Além dos 4 usuários de teste, `scripts/setup-keycloak-dev.sh` importa no realm `unifesspa` as **30 personas fictícias** do portal de documentação (catálogo em [`uniplus-developers/docs/personas`](https://unifesspa-edu-br.github.io/uniplus-developers/personas/), dado copiado para `docker/keycloak/personas.json` — a stack local não deve depender de outro checkout em runtime). São usuários **locais, não federados do LDAP sintético** (o `openldap` deste repositório não é usado com as personas).
 
 - **27** com perfil `candidato` (role realm `candidato`).
-- **3** com perfil `privilegiado` (`diogo.souza`, `betina.neves`, `isabella.figueiredo`), com os mesmos realm roles do usuário `admin` (`admin`, `plataforma-admin`) — o papel de acesso exato que elas têm no Keycloak de HML não está disponível localmente.
+- **3** com perfil `privilegiado` (`diogo.souza`, `betina.neves`, `isabella.figueiredo`), com os mesmos realm roles (`admin`, `plataforma-admin`) **e** os mesmos client roles do client `uniplus-api` que o usuário `admin` tem — o papel de acesso exato que elas têm no Keycloak de HML não está disponível localmente.
 - O e-mail de cada persona troca o domínio do catálogo (que mistura domínios reais) por `uniplus-test.local`, preservando o local-part — o mesmo domínio reservado (RFC 2606) que `scripts/generate-ldif.py` usa para os usuários sintéticos do LDAP, para que nenhuma mensagem real de SMTP (se algum dia configurado no realm local) chegue a uma caixa de terceiro.
 - `cpf` e `nomeSocial` vêm do catálogo; o atributo `cpf` só é editável por administrador (regra do User Profile do realm, igual à dos 4 usuários de teste).
 
