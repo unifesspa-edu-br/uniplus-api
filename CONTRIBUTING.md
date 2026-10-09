@@ -194,10 +194,12 @@ soft/404/histórico), use a skill **`/smoke-crud`** — ela assume este stack (c
 > ```
 > **Usuário de teste** com role `plataforma-admin`: `admin`. A senha **semeada**
 > no realm-export (`docker/keycloak/realm-export.json`) é `Changeme!123` e está
-> marcada como **temporária** — no primeiro login o Keycloak exige a troca. Para
-> uma senha fixa e conhecida (`E2eTest!123`, a usada pelos testes E2E), rode a
-> suíte E2E uma vez (o `auth-setup` reseta a senha) **ou** redefina via Keycloak
-> Admin API:
+> marcada como **temporária** — no primeiro login o Keycloak exige a troca.
+> `scripts/setup-keycloak-dev.sh` já reseta essa senha para `Uni+Teste26`,
+> não temporária (ver `docker/keycloak/README.md`) — rodar o script antes
+> de tentar ROPC com `admin`. Para uma senha fixa e conhecida diferente
+> (`E2eTest!123`, a usada pelos testes E2E), rode a suíte E2E uma vez (o
+> `auth-setup` reseta a senha) **ou** redefina via Keycloak Admin API:
 > ```bash
 > ADMIN_ID=$(curl -s "http://localhost:8080/admin/realms/unifesspa/users?username=admin&exact=true" \
 >   -H "Authorization: Bearer $TOKEN" | jq -r '.[0].id')

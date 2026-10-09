@@ -33,6 +33,9 @@ set -euo pipefail
 KC_URL="${KC_URL:-http://localhost:8080}"
 TARGET_REALM="${TARGET_REALM:-unifesspa}"
 MOCK_REALM="${MOCK_REALM:-govbr-mock}"
+# Mesmo default de setup-govbr-mock.sh — se o setup rodou com TEST_PASSWORD
+# diferente, autoheal-test está com esse valor, não com o default.
+AUTOHEAL_TEST_PASSWORD="${TEST_PASSWORD:-Uni+Teste26}"
 IDP_ALIAS="${IDP_ALIAS:-govbr-mock}"
 KC_ADMIN_USER="${KC_ADMIN_USER:-admin}"
 KC_ADMIN_PASS="${KC_ADMIN_PASS:-admin}"
@@ -173,9 +176,9 @@ show_userinfo_via_ropc() {
     local username="$1" password="$2"
     local token resp
     token=$(curl -s -X POST "$KC_URL/realms/$TARGET_REALM/protocol/openid-connect/token" \
-        -d "grant_type=password" -d "client_id=admin-cli" \
-        -d "scope=openid" \
-        -d "username=$username" -d "password=$password" \
+        --data-urlencode "grant_type=password" --data-urlencode "client_id=admin-cli" \
+        --data-urlencode "scope=openid" \
+        --data-urlencode "username=$username" --data-urlencode "password=$password" \
         | jq -r '.access_token // empty')
     if [ -z "$token" ]; then
         warn "ROPC falhou para '$username' (senha errada ou não autorizado)"
@@ -202,12 +205,12 @@ scenario_autoheal() {
     reset_user_federated_identity "autoheal-test"
     show_user_cpf "autoheal-test"
 
-    run_broker_flow "09876543210" "autoheal-test" "Test!1234"
+    run_broker_flow "09876543210" "autoheal-test" "$AUTOHEAL_TEST_PASSWORD"
     sleep 1
 
     show_recent_matcher_logs
     show_user_cpf "autoheal-test"
-    show_userinfo_via_ropc "autoheal-test" "Test!1234"
+    show_userinfo_via_ropc "autoheal-test" "$AUTOHEAL_TEST_PASSWORD"
 }
 
 scenario_ldap_readonly() {
@@ -225,12 +228,12 @@ scenario_ldap_readonly() {
     reset_user_federated_identity "kevin.peixoto"
     show_user_cpf "kevin.peixoto"
 
-    run_broker_flow "07094871422" "kevin.peixoto" "Changeme!123"
+    run_broker_flow "07094871422" "kevin.peixoto" "Uni+Teste26"
     sleep 1
 
     show_recent_matcher_logs
     show_user_cpf "kevin.peixoto"
-    show_userinfo_via_ropc "kevin.peixoto" "Changeme!123"
+    show_userinfo_via_ropc "kevin.peixoto" "Uni+Teste26"
 }
 
 # ---- Entry point ---------------------------------------------------------

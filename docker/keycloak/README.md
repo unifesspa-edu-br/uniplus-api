@@ -132,9 +132,30 @@ Os quatro usuários abaixo são criados pela importação do realm.
 | `avaliador@teste`    | `avaliador@teste.unifesspa.edu.br`      | `avaliador`  |
 | `candidato@teste`    | `candidato@teste.unifesspa.edu.br`      | `candidato`  |
 
-- **Senha inicial (temporária):** `Changeme!123`
-- No primeiro login o Keycloak exige trocar a senha (`temporary: true`).
+- **Senha inicial (temporária), só na importação crua do `realm-export.json`:** `Changeme!123`; no primeiro login o Keycloak exige trocar a senha (`temporary: true`).
+- `scripts/setup-keycloak-dev.sh` reseta essa senha para `Uni+Teste26`, não temporária — ver "Personas fictícias" a seguir. Rodar o script **antes** de usar ROPC com qualquer um destes 4 usuários.
 - Cada usuário possui atributos `cpf` (CPF sintético com DV válido) e `nomeSocial`, expostos pelo scope `uniplus-profile`.
+
+## Personas fictícias (api#1861)
+
+Além dos 4 usuários de teste, `scripts/setup-keycloak-dev.sh` importa no realm `unifesspa` as **30 personas fictícias** do portal de documentação (catálogo em [`uniplus-developers/docs/personas`](https://unifesspa-edu-br.github.io/uniplus-developers/personas/), dado copiado para `docker/keycloak/personas.json` — a stack local não deve depender de outro checkout em runtime). São usuários **locais, não federados do LDAP sintético** (o `openldap` deste repositório não é usado com as personas).
+
+- **27** com perfil `candidato` (role realm `candidato`).
+- **3** com perfil `privilegiado` (`diogo.souza`, `betina.neves`, `isabella.figueiredo`), com os mesmos realm roles do usuário `admin` (`admin`, `plataforma-admin`) — o papel de acesso exato que elas têm no Keycloak de HML não está disponível localmente.
+- `cpf` e `nomeSocial` vêm do catálogo; o atributo `cpf` só é editável por administrador (regra do User Profile do realm, igual à dos 4 usuários de teste).
+
+**Senha de todos os usuários do realm `unifesspa`: `Uni+Teste26`**, não temporária — os 4 de teste, as 30 personas e também os usuários sintéticos federados do `openldap` (`docker/ldap/bootstrap/01-users.ldif`, gerado por `scripts/generate-ldif.py`). A senha de HML é outra.
+
+> ⚠️ O `userPassword` do LDIF só é aplicado na **primeira** inicialização do volume do `openldap` — numa stack já de pé desde antes desta mudança, os usuários sintéticos continuam com a senha antiga até `docker compose down -v` (volume do `openldap`) e um novo `up`.
+
+> ⚠️ A senha contém `+`. Em `application/x-www-form-urlencoded` (password grant), `+` decodifica como espaço — use `curl --data-urlencode` (não `-d`) ao montar a chamada manualmente, ou a autenticação falha silenciosamente com `invalid_grant`.
+
+```bash
+TOKEN=$(curl -s -X POST 'http://localhost:8080/realms/unifesspa/protocol/openid-connect/token' \
+  --data-urlencode 'grant_type=password' --data-urlencode 'client_id=admin-cli' \
+  --data-urlencode 'username=fernanda.drumond' --data-urlencode 'password=Uni+Teste26' \
+  | jq -r .access_token)
+```
 
 ### Login por username ou email
 
@@ -172,11 +193,11 @@ Os ajustes vivem só na memória do Keycloak — `docker compose down -v` revert
 docker compose -f docker/docker-compose.yml up -d
 scripts/setup-keycloak-dev.sh
 
-# 2. Token de candidato
+# 2. Token de candidato (--data-urlencode, não -d: a senha tem '+', que -d não escapa)
 TOKEN=$(curl -s -X POST 'http://localhost:8080/realms/unifesspa/protocol/openid-connect/token' \
-  -H 'Content-Type: application/x-www-form-urlencoded' \
-  -d 'grant_type=password' -d 'client_id=admin-cli' \
-  -d 'username=candidato' -d 'password=Changeme!123' | jq -r .access_token)
+  --data-urlencode 'grant_type=password' --data-urlencode 'client_id=admin-cli' \
+  --data-urlencode 'username=candidato' --data-urlencode 'password=Uni+Teste26' \
+  | jq -r .access_token)
 
 # 3. Endpoints autenticados
 curl -s -H "Authorization: Bearer $TOKEN" http://localhost:5202/api/auth/me | jq

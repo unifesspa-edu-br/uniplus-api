@@ -1,0 +1,214 @@
+[
+  {
+    "nome": "Fernanda Laura Nicole Drumond",
+    "nome_social": "Ariel Drumond",
+    "username": "fernanda.drumond",
+    "perfil": "candidato",
+    "cpf": "699.598.363-71",
+    "email": "fernanda_laura_drumond@lhp.com.br"
+  },
+  {
+    "nome": "Kevin Anderson Carvalho",
+    "nome_social": "Valentina Carvalho",
+    "username": "kevin.carvalho",
+    "perfil": "candidato",
+    "cpf": "332.573.503-76",
+    "email": "kevinandersoncarvalho@radicigroup.com"
+  },
+  {
+    "nome": "Helena Bianca Sueli Rezende",
+    "username": "helena.rezende",
+    "perfil": "candidato",
+    "cpf": "163.287.930-14",
+    "email": "helena_bianca_rezende@paginacom.com.br"
+  },
+  {
+    "nome": "Erick Isaac Ramos",
+    "username": "erick.ramos",
+    "perfil": "candidato",
+    "cpf": "334.342.259-27",
+    "email": "erickisaacramos@skapcom.com.br"
+  },
+  {
+    "nome": "Diogo Bruno Filipe Souza",
+    "username": "diogo.souza",
+    "perfil": "privilegiado",
+    "cpf": "518.939.766-10",
+    "email": "diogo.bruno.souza@plaman.com.br"
+  },
+  {
+    "nome": "Leandro Caleb Viana",
+    "username": "leandro.viana",
+    "perfil": "candidato",
+    "cpf": "037.849.913-00",
+    "email": "leandro-viana84@agenciadbd.com"
+  },
+  {
+    "nome": "Breno Lucca Samuel Novaes",
+    "username": "breno.novaes",
+    "perfil": "candidato",
+    "cpf": "044.284.887-00",
+    "email": "brenoluccanovaes@arcante.com.br"
+  },
+  {
+    "nome": "Marlene Márcia Emily Martins",
+    "username": "marlene.martins",
+    "perfil": "candidato",
+    "cpf": "971.509.724-38",
+    "email": "marlenemarciamartins@creativeinteriores.com.br"
+  },
+  {
+    "nome": "Evelyn Gabriela Moraes",
+    "username": "evelyn.moraes",
+    "perfil": "candidato",
+    "cpf": "926.200.579-22",
+    "email": "evelyn_moraes@unipsicotaubate.com.br"
+  },
+  {
+    "nome": "Cecília Ester Aurora Moura",
+    "username": "cecilia.moura",
+    "perfil": "candidato",
+    "cpf": "197.014.014-33",
+    "email": "cecilia_ester_moura@ogn.com.br"
+  },
+  {
+    "nome": "Lúcia Bruna Maya Almeida",
+    "username": "lucia.almeida",
+    "perfil": "candidato",
+    "cpf": "578.966.872-08",
+    "email": "luciabrunaalmeida@flir.com.br"
+  },
+  {
+    "nome": "Felipe Manuel da Cruz",
+    "username": "felipe.cruz",
+    "perfil": "candidato",
+    "cpf": "840.838.551-85",
+    "email": "felipemanueldacruz@grupoannaprado.com.br"
+  },
+  {
+    "nome": "Bruna Isis Peixoto",
+    "username": "bruna.peixoto",
+    "perfil": "candidato",
+    "cpf": "291.327.614-81",
+    "email": "brunaisispeixoto@digitalsj.com.br"
+  },
+  {
+    "nome": "Caroline Stefany Jesus",
+    "username": "caroline.jesus",
+    "perfil": "candidato",
+    "cpf": "551.596.662-73",
+    "email": "caroline-jesus87@rjnet.com.br"
+  },
+  {
+    "nome": "Lavínia Andreia Duarte",
+    "username": "lavinia.duarte",
+    "perfil": "candidato",
+    "cpf": "017.851.406-39",
+    "email": "lavinia-duarte88@yhaoo.com.br"
+  },
+  {
+    "nome": "Betina Marina Valentina das Neves",
+    "username": "betina.neves",
+    "perfil": "privilegiado",
+    "cpf": "365.756.064-58",
+    "email": "betina-dasneves81@bravo.com.br"
+  },
+  {
+    "nome": "Yasmin Lara Eduarda Assunção",
+    "username": "yasmin.assuncao",
+    "perfil": "candidato",
+    "cpf": "344.115.614-50",
+    "email": "yasmin_lara_assuncao@icloud.com"
+  },
+  {
+    "nome": "Aline Débora Lima",
+    "username": "aline.lima",
+    "perfil": "candidato",
+    "cpf": "248.131.418-20",
+    "email": "aline.debora.lima@publiconsult.com.br"
+  },
+  {
+    "nome": "Leonardo Fernando Francisco Lopes",
+    "username": "leonardo.lopes",
+    "perfil": "candidato",
+    "cpf": "091.363.117-58",
+    "email": "leonardo-lopes98@dicid.com.br"
+  },
+  {
+    "nome": "Catarina Alícia Rocha",
+    "username": "catarina.rocha",
+    "perfil": "candidato",
+    "cpf": "337.415.614-28",
+    "email": "catarina-rocha81@eton.com.br"
+  },
+  {
+    "nome": "Cecília Emilly Assis",
+    "username": "cecilia.assis",
+    "perfil": "candidato",
+    "cpf": "798.567.152-88",
+    "email": "ceciliaemillyassis@aerobravo.com.br"
+  },
+  {
+    "nome": "José Luan Moreira",
+    "username": "jose.moreira",
+    "perfil": "candidato",
+    "cpf": "240.425.610-63",
+    "email": "jose_luan_moreira@mailnull.com"
+  },
+  {
+    "nome": "Sophie Eliane Farias",
+    "username": "sophie.farias",
+    "perfil": "candidato",
+    "cpf": "335.596.026-88",
+    "email": "sophie_eliane_farias@origembr.com"
+  },
+  {
+    "nome": "Camila Isabelly Betina Nunes",
+    "username": "camila.nunes",
+    "perfil": "candidato",
+    "cpf": "008.006.489-27",
+    "email": "camila_nunes@vcp.com.br"
+  },
+  {
+    "nome": "Aline Alícia Maitê Nogueira",
+    "username": "aline.nogueira",
+    "perfil": "candidato",
+    "cpf": "941.163.155-08",
+    "email": "alinealicianogueira@lvnonline.com.be"
+  },
+  {
+    "nome": "Paulo Iago Leonardo da Conceição",
+    "username": "paulo.conceicao",
+    "perfil": "candidato",
+    "cpf": "913.999.512-70",
+    "email": "paulo-daconceicao93@atualecomex.com.br"
+  },
+  {
+    "nome": "Isabella Priscila Figueiredo",
+    "username": "isabella.figueiredo",
+    "perfil": "privilegiado",
+    "cpf": "547.080.762-23",
+    "email": "isabellapriscilafigueiredo@almaquinas.com.br"
+  },
+  {
+    "nome": "Manoel Guilherme Raul Aparício",
+    "username": "manoel.aparicio",
+    "perfil": "candidato",
+    "cpf": "892.446.923-17",
+    "email": "manoel.guilherme.aparicio@signa.net.br"
+  },
+  {
+    "nome": "Stefany Bruna da Cunha",
+    "username": "stefany.cunha",
+    "perfil": "candidato",
+    "cpf": "954.119.877-50",
+    "email": "stefany_dacunha@email.com"
+  },
+  {
+    "nome": "Jéssica Jaqueline Costa",
+    "username": "jessica.costa",
+    "perfil": "candidato",
+    "cpf": "596.269.048-60",
+    "email": "jessica_jaqueline_costa@redacaofinal.com.br"
+  }
+]

@@ -122,7 +122,7 @@ O script é determinístico: rodar 2x produz output idêntico (CPFs canonicais s
 | Usuário | Senha |
 |---|---|
 | `cn=admin,dc=unifesspa,dc=edu,dc=br` | `admin` |
-| Senha de qualquer user sintético (uid=...) | `Changeme!123` |
+| Senha de qualquer user sintético (uid=...) | `Uni+Teste26` (igual à dos demais usuários do realm `unifesspa` — api#1861) |
 
 Senhas armazenadas em texto plano no LDIF (ambiente dev). Não usar nada similar em PROD.
 
