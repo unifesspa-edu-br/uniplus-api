@@ -65,6 +65,11 @@ fail() { printf '\033[1;31m✗ %s\033[0m\n' "$*" >&2; exit 1; }
 
 idem() { cat /proc/sys/kernel/random/uuid; }
 
+# Falha alto quando um id de catálogo (criado ou reaproveitado via fallback
+# de busca) sai vazio, em vez de deixar "" descer em silêncio para o próximo
+# PUT/POST e estourar um 400/422 longe da causa real.
+exigir_id() { [ -n "$2" ] || fail "$1 ficou vazio (409 sem entrada equivalente encontrada no fallback de busca?)"; }
+
 # curl autenticado, falha (com o corpo do erro) em qualquer resposta fora de
 # 2xx. $1=método $2=caminho (a partir de API_URL) $3=corpo (ou "")
 api() {
@@ -185,6 +190,7 @@ setup_organizacao() {
         \"origem\": \"criadoNoUniPlus\"
     }")
     [ -z "$UNIDADE_ID" ] && UNIDADE_ID=$(api_get "/api/organizacao/unidades?limit=100" | jq -r --arg c "$unidade_codigo" '.[] | select(.codigo==$c) | .id' | head -1)
+    exigir_id "UNIDADE_ID" "$UNIDADE_ID"
     ok "unidade=$UNIDADE_ID"
 }
 
@@ -197,6 +203,7 @@ setup_configuracao() {
         \"endereco\": null, \"codigoEmec\": null
     }")
     [ -z "$CAMPUS_ID" ] && CAMPUS_ID=$(api_get "/api/configuracao/campi?limit=100" | jq -r --arg s "$campus_sigla" '.[] | select(.sigla==$s) | .id' | head -1)
+    exigir_id "CAMPUS_ID" "$CAMPUS_ID"
     LOCAL_OFERTA_ID=$(post_tolerante "/api/configuracao/admin/locais-oferta" "{
         \"tipo\": \"campusSede\", \"campusResponsavelId\": \"$CAMPUS_ID\",
         \"cidadeCodigoIbge\": \"1504208\", \"cidadeNome\": \"Marabá\", \"cidadeUf\": \"PA\",
@@ -211,6 +218,7 @@ setup_configuracao() {
         \"grau\": \"Bacharelado\", \"nivelEnsino\": \"Graduação\", \"grupoAreaEnem\": null
     }")
     [ -z "$CURSO_ID" ] && CURSO_ID=$(api_get "/api/configuracao/cursos?limit=100" | jq -r --arg c "$curso_codigo" '.[] | select(.codigo==$c) | .id' | head -1)
+    exigir_id "CURSO_ID" "$CURSO_ID"
     OFERTA_CURSO_ID=$(post_tolerante "/api/configuracao/admin/ofertas-curso" "{
         \"cursoId\": \"$CURSO_ID\", \"localOfertaId\": \"$LOCAL_OFERTA_ID\",
         \"unidadeOfertanteOrigemId\": \"$UNIDADE_ID\", \"programaDeOferta\": \"REGULAR\",
@@ -259,6 +267,7 @@ setup_configuracao() {
         "baseLegal": "IBGE Censo 2022"
     }')
     [ -z "$RESERVA_DEMOGRAFICA_ID" ] && RESERVA_DEMOGRAFICA_ID=$(api_get "/api/configuracao/referencias-reserva-demografica?limit=100" | jq -r '.[] | select(.censoReferencia=="IBGE 2022") | .id' | head -1)
+    exigir_id "RESERVA_DEMOGRAFICA_ID" "$RESERVA_DEMOGRAFICA_ID"
 
     # PSR (Processo Seletivo Regular) é o tipo de processo do modelo de
     # inscrição semeado da Medicina (SementePsrMedicina2027) — aplicar o
@@ -279,12 +288,14 @@ setup_configuracao() {
         \"codigo\": \"$CONDICAO_ATENDIMENTO_CODIGO\", \"nome\": \"Pessoa com deficiência\", \"descricao\": null
     }")
     [ -z "$CONDICAO_ATENDIMENTO_ID" ] && CONDICAO_ATENDIMENTO_ID=$(api_get "/api/configuracao/condicoes-atendimento?limit=100" | jq -r ".[] | select(.codigo==\"$CONDICAO_ATENDIMENTO_CODIGO\") | .id")
+    exigir_id "CONDICAO_ATENDIMENTO_ID" "$CONDICAO_ATENDIMENTO_ID"
 
     TIPO_DEFICIENCIA_ID=$(post_tolerante "/api/configuracao/admin/tipos-deficiencia" '{
         "codigo": "BAIXA_VISAO", "nome": "Baixa visão",
         "descricao": "Acuidade visual reduzida, conforme laudo.", "permanente": true
     }')
     [ -z "$TIPO_DEFICIENCIA_ID" ] && TIPO_DEFICIENCIA_ID=$(api_get "/api/configuracao/tipos-deficiencia?limit=100" | jq -r '.[] | select(.codigo=="BAIXA_VISAO") | .id')
+    exigir_id "TIPO_DEFICIENCIA_ID" "$TIPO_DEFICIENCIA_ID"
 
     BASE_LEGAL_BONUS_ID=$(post_tolerante "/api/configuracao/admin/base-legal-bonus-regional" '{
         "tipoInstrumento": "PORTARIA", "identificacao": "Edital Medicina 2027 (roteiro de teste)",
@@ -292,6 +303,7 @@ setup_configuracao() {
         "municipios": [{"codigoIbge": "1504208", "nome": "Marabá", "uf": "PA"}]
     }')
     [ -z "$BASE_LEGAL_BONUS_ID" ] && BASE_LEGAL_BONUS_ID=$(api_get "/api/configuracao/base-legal-bonus-regional?limit=100" | jq -r '.[] | select(.identificacao=="Edital Medicina 2027 (roteiro de teste)") | .id' | head -1)
+    exigir_id "BASE_LEGAL_BONUS_ID" "$BASE_LEGAL_BONUS_ID"
 
     # Pré-requisito explícito do roteiro: calendário de dias úteis vigente.
     # Sem fase com regraRecurso o agregado não o exige para publicar, mas o
@@ -519,8 +531,12 @@ vincular_fase_do_formulario() {
 
     # Lê a estrutura (título + etapas) que a aplicação do modelo já criou, em
     # vez de copiá-la à mão do seed — sobrevive a qualquer mudança no modelo
-    # da Medicina. DADOS_BASICOS é excluída: o handler do PUT a reinsere
-    # sempre, e mandá-la de volta duplicaria a seção. A projeção renderizável
+    # da Medicina. DADOS_BASICOS é excluída: o handler do PUT já a repõe por
+    # conta própria (ConjuntoBasicoDaInscricao.MesclarEtapas) a partir da
+    # referência do processo — reenviá-la é redundante, e arriscaria recusa
+    # por SecaoReservadaAlterada se a renderização um dia divergir, por
+    # pouco que seja, da referência que o handler usa para comparar.
+    # A projeção renderizável
     # não traz a exibição condicional de cada etapa (SecaoRenderizavel não
     # tem esse campo) — hoje o modelo da Medicina não usa exibição condicional
     # em nenhuma seção/bloco, então "exibicao: null" aqui reflete o estado
