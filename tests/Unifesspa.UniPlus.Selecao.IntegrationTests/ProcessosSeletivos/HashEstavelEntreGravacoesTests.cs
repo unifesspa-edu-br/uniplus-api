@@ -169,7 +169,7 @@ public sealed class HashEstavelEntreGravacoesTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS Hash 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeOrigem,
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
         processo.DefinirEtapas([
             EtapaProcesso.Criar(

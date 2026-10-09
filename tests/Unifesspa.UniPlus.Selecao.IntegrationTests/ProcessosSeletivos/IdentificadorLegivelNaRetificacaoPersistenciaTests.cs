@@ -108,14 +108,14 @@ public sealed class IdentificadorLegivelNaRetificacaoPersistenciaTests(ProcessoS
     {
         ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico(variante);
         IdentificadorLegivel? original = processo.IdentificadorLegivel;
-        processo.DefinirIdentificadorLegivel(null, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        IdentificadoresDeTeste.Retirar(processo);
         SnapshotCanonico semIdentificador = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
 
         // A publicação de hoje exige o identificador: publica com ele e o retira em seguida, como
         // estaria a raiz de um processo publicado antes de o campo existir.
-        processo.DefinirIdentificadorLegivel(original, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirIdentificadorLegivel(original!.Value, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         CorpusEnvelope.Publicar(processo);
-        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.IdentificadorLegivel))!.SetValue(processo, null);
+        IdentificadoresDeTeste.Retirar(processo);
 
         VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(
             processo, semIdentificador.Bytes, new Guid($"01900000-0000-7000-8000-0000000014{variante:x2}"));

@@ -25,6 +25,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.ExternalServices;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Remoção dos envios de arquivo pendentes vencidos contra Postgres e MinIO reais: a consulta e a
@@ -243,7 +244,7 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS 2027 — envios pendentes", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         context.ProcessosSeletivos.Add(processo);
         await context.SaveChangesAsync();
         return processo.Id;

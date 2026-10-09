@@ -80,7 +80,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     [Fact(DisplayName = "Handle com DESEMPATE-MAIOR-NOTA-ETAPA resolve args e persiste")]
     public async Task Handle_MaiorNotaEtapa_Persiste()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         EtapaProcesso etapa = EtapaProcesso.Criar("Entrevista", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!;
         processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
 
@@ -103,7 +103,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     [Fact(DisplayName = "Handle com DESEMPATE-MAIOR-NOTA-ETAPA sem EtapaRef recusa")]
     public async Task Handle_MaiorNotaEtapaSemEtapaRef_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         Mocks mocks = NovosMocks(processo, processo.Id);
         mocks.RegraCatalogoReader.ObterAsync(CriterioDesempateCodigo.MaiorNotaEtapa, "v1", Arg.Any<CancellationToken>())
             .Returns(Regra(CriterioDesempateCodigo.MaiorNotaEtapa, TipoRegra.CriterioDesempate));
@@ -121,7 +121,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     [Fact(DisplayName = "Handle com DESEMPATE-IDOSO resolve args e persiste")]
     public async Task Handle_Idoso_Persiste()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSE 2026", TipoProcesso.PSECampo, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSE 2026", TipoProcesso.PSECampo, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         Mocks mocks = NovosMocks(processo, processo.Id);
         mocks.RegraCatalogoReader.ObterAsync(CriterioDesempateCodigo.Idoso, "v1", Arg.Any<CancellationToken>())
             .Returns(Regra(CriterioDesempateCodigo.Idoso, TipoRegra.CriterioDesempate));
@@ -139,7 +139,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     [Fact(DisplayName = "Handle com DESEMPATE-MAIOR-NOTA-AREA-ENEM guarda os códigos aparados, na ordem declarada")]
     public async Task Handle_MaiorNotaAreaEnem_Persiste()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS ENEM 2027", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS ENEM 2027", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         Mocks mocks = NovosMocks(processo, processo.Id);
         mocks.RegraCatalogoReader.ObterAsync(CriterioDesempateCodigo.MaiorNotaAreaEnem, "v1", Arg.Any<CancellationToken>())
             .Returns(Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, TipoRegra.CriterioDesempate));
@@ -160,7 +160,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     [Fact(DisplayName = "Handle com DESEMPATE-MAIOR-NOTA-AREA-ENEM sem áreas recusa no campo do critério")]
     public async Task Handle_MaiorNotaAreaEnemSemAreas_RecusaNoCampo()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS ENEM 2027", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS ENEM 2027", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         Mocks mocks = NovosMocks(processo, processo.Id);
         mocks.RegraCatalogoReader.ObterAsync(CriterioDesempateCodigo.MaiorNotaAreaEnem, "v1", Arg.Any<CancellationToken>())
             .Returns(Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, TipoRegra.CriterioDesempate));
@@ -183,7 +183,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     [Fact(DisplayName = "Handle com área nula na ordem recusa no campo do item, sem estourar")]
     public async Task Handle_MaiorNotaAreaEnemComItemNulo_RecusaNoCampoDoItem()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS ENEM 2027", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS ENEM 2027", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         Mocks mocks = NovosMocks(processo, processo.Id);
         mocks.RegraCatalogoReader.ObterAsync(CriterioDesempateCodigo.MaiorNotaAreaEnem, "v1", Arg.Any<CancellationToken>())
             .Returns(Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, TipoRegra.CriterioDesempate));
@@ -205,7 +205,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     [Fact(DisplayName = "Handle devolve todas as áreas fora do quadro, cada uma no campo do item, e não persiste")]
     public async Task Handle_AreasForaDoQuadroEmDoisCriterios_DevolveTodasNosCampos()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS ENEM 2027", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS ENEM 2027", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)).Value!,
             ReferenciaRegra.Criar(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64)).Value!,
@@ -240,7 +240,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
 
     private static ProcessoSeletivo ProcessoComClassificacaoEnem()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS ENEM 2027", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS ENEM 2027", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)).Value!,
             ReferenciaRegra.Criar(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64)).Value!,
@@ -340,7 +340,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     [Fact(DisplayName = "Sem quadro de pesos por área, a recusa pela forma sai sem lista de áreas aceitas")]
     public async Task Handle_AreaForaDaFormaSemQuadro_SemLista()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS ENEM 2027", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS ENEM 2027", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('a', 64)).Value!,
             null,
@@ -545,7 +545,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     [Fact(DisplayName = "Handle com DESEMPATE-PREDICADO-FATO sobre fato do vocabulário fechado resolve e persiste")]
     public async Task Handle_PredicadoFato_FatoConhecido_Persiste()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSE 2026", TipoProcesso.PSECampo, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSE 2026", TipoProcesso.PSECampo, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         Mocks mocks = NovosMocks(processo, processo.Id);
         mocks.RegraCatalogoReader.ObterAsync(CriterioDesempateCodigo.PredicadoFato, "v1", Arg.Any<CancellationToken>())
             .Returns(Regra(CriterioDesempateCodigo.PredicadoFato, TipoRegra.CriterioDesempate));
@@ -565,7 +565,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     [Fact(DisplayName = "Handle com DESEMPATE-PREDICADO-FATO sobre fato fora do vocabulário fechado recusa")]
     public async Task Handle_PredicadoFato_FatoDesconhecido_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSE 2026", TipoProcesso.PSECampo, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSE 2026", TipoProcesso.PSECampo, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         Mocks mocks = NovosMocks(processo, processo.Id);
         mocks.RegraCatalogoReader.ObterAsync(CriterioDesempateCodigo.PredicadoFato, "v1", Arg.Any<CancellationToken>())
             .Returns(Regra(CriterioDesempateCodigo.PredicadoFato, TipoRegra.CriterioDesempate));
@@ -583,7 +583,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     [Fact(DisplayName = "Handle com DESEMPATE-PREDICADO-FATO incompleto recusa")]
     public async Task Handle_PredicadoFatoIncompleto_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSE 2026", TipoProcesso.PSECampo, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSE 2026", TipoProcesso.PSECampo, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         Mocks mocks = NovosMocks(processo, processo.Id);
         mocks.RegraCatalogoReader.ObterAsync(CriterioDesempateCodigo.PredicadoFato, "v1", Arg.Any<CancellationToken>())
             .Returns(Regra(CriterioDesempateCodigo.PredicadoFato, TipoRegra.CriterioDesempate));
@@ -601,7 +601,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     [Fact(DisplayName = "Handle com regra inexistente recusa")]
     public async Task Handle_RegraNaoEncontrada_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         Mocks mocks = NovosMocks(processo, processo.Id);
         mocks.RegraCatalogoReader.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns((RegraCatalogo?)null);
@@ -619,7 +619,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     [Fact(DisplayName = "Código fora do catálogo de critérios cai na consulta de reserva: regra de outro tipo recusa")]
     public async Task Handle_RegraTipoInvalido_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         Mocks mocks = NovosMocks(processo, processo.Id);
         mocks.RegraCatalogoReader.ObterAsync(RegraCalculoCodigo.FormulaMediaPonderada, "v1", Arg.Any<CancellationToken>())
             .Returns(Regra(RegraCalculoCodigo.FormulaMediaPonderada, TipoRegra.RegraCalculo));
@@ -637,7 +637,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     [Fact(DisplayName = "ADR-0125: ordem inválida acumula junto com a regra inexistente, no mesmo item e em outro")]
     public async Task Handle_OrdemInvalidaERegraInexistente_Acumula()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         Mocks mocks = NovosMocks(processo, processo.Id);
 
         DefinirCriteriosDesempateCommand command = new(processo.Id,
@@ -662,7 +662,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     [Fact(DisplayName = "ADR-0125: ordem inválida acumula entre critérios, com o índice prefixado ao field")]
     public async Task Handle_DoisCriteriosComOrdemInvalida_AcumulaComIndicePrefixado()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         Mocks mocks = NovosMocks(processo, processo.Id);
 
         DefinirCriteriosDesempateCommand command = new(processo.Id,
@@ -682,7 +682,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     [Fact(DisplayName = "ADR-0125: a recusa de CriterioDesempate.Criar carrega o índice do item no campo")]
     public async Task Handle_SegundoCriterioComIdadeMinimaInvalida_PrefixaIndiceNoField()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSE 2026", TipoProcesso.PSECampo, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSE 2026", TipoProcesso.PSECampo, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         Mocks mocks = NovosMocks(processo, processo.Id);
         mocks.RegraCatalogoReader.ObterAsync(CriterioDesempateCodigo.MaiorIdade, "v1", Arg.Any<CancellationToken>())
             .Returns(Regra(CriterioDesempateCodigo.MaiorIdade, TipoRegra.CriterioDesempate));
@@ -705,7 +705,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     [Fact(DisplayName = "Handle com lista vazia remove todos os critérios e persiste")]
     public async Task Handle_ListaVazia_Persiste()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         Mocks mocks = NovosMocks(processo, processo.Id);
 
         DefinirCriteriosDesempateCommand command = new(processo.Id, [], PrecondicaoIfMatch.Ausente);

@@ -43,17 +43,14 @@ public static class DefinirIdentificadorLegivelCommandHandler
             return Result<MutacaoAceita>.Failure(bloqueio);
         }
 
-        IdentificadorLegivel? identificador = null;
-        if (!string.IsNullOrWhiteSpace(command.IdentificadorLegivel))
+        Result<IdentificadorLegivel> identificadorResult =
+            CriarProcessoSeletivoCommandHandler.IdentificadorLegivelDeclarado(command.IdentificadorLegivel);
+        if (identificadorResult.IsFailure)
         {
-            Result<IdentificadorLegivel> identificadorResult = IdentificadorLegivel.Criar(command.IdentificadorLegivel);
-            if (identificadorResult.IsFailure)
-            {
-                return Result<MutacaoAceita>.Failure(identificadorResult.Error!);
-            }
-
-            identificador = identificadorResult.Value;
+            return Result<MutacaoAceita>.Failure(identificadorResult.Error!);
         }
+
+        IdentificadorLegivel identificador = identificadorResult.Value!;
 
         // A recusa da raiz vem primeiro: quem não pode alterar recebe essa causa, e não um
         // conflito com outro processo que nada muda para ele.
@@ -66,25 +63,23 @@ public static class DefinirIdentificadorLegivelCommandHandler
         // Daqui em diante a raiz já está alterada. Toda recusa descarta o rastreamento: sem isso,
         // o SaveChangesAsync que o Wolverine dispara depois do handler gravaria a alteração
         // recusada e cairia no índice único como erro interno.
-        if (identificador is { } valor
-            && await processoSeletivoRepository
-                .IdentificadorLegivelEmUsoAsync(valor, processo.Id, cancellationToken)
+        if (await processoSeletivoRepository
+                .IdentificadorLegivelEmUsoAsync(identificador, processo.Id, cancellationToken)
                 .ConfigureAwait(false))
         {
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<MutacaoAceita>.Failure(CriarProcessoSeletivoCommandHandler.IdentificadorLegivelEmUso(valor));
+            return Result<MutacaoAceita>.Failure(CriarProcessoSeletivoCommandHandler.IdentificadorLegivelEmUso(identificador));
         }
 
         try
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception ex) when (identificador is { } emDisputa
-            && CriarProcessoSeletivoCommandHandler.EhConflitoDeIdentificadorLegivel(ex))
+        catch (Exception ex) when (CriarProcessoSeletivoCommandHandler.EhConflitoDeIdentificadorLegivel(ex))
         {
             // Outro processo gravou o mesmo identificador entre a consulta acima e esta gravação.
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<MutacaoAceita>.Failure(CriarProcessoSeletivoCommandHandler.IdentificadorLegivelEmUso(emDisputa));
+            return Result<MutacaoAceita>.Failure(CriarProcessoSeletivoCommandHandler.IdentificadorLegivelEmUso(identificador));
         }
 
         return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));

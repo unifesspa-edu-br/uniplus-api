@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Leitura pública do certame, detalhe e vitrine, sobre a tabela de divulgações.

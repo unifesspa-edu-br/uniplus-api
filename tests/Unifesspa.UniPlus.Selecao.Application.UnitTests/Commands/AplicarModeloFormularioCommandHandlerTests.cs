@@ -36,7 +36,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     private readonly ProcessoSeletivo _processo = ProcessoSeletivo.Criar(
         "PS Modelo", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
         UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-        LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     private readonly List<FatoCandidatoView> _catalogo =
     [

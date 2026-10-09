@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class DefinirIdentificadorLegivelCommandHandlerTests
 {
@@ -27,7 +28,7 @@ public sealed class DefinirIdentificadorLegivelCommandHandlerTests
     private static ProcessoSeletivo NovoProcesso() => ProcessoSeletivo.Criar(
         "PS 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
         UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-        LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     [Fact(DisplayName = "Handle declara o identificador e persiste")]
     public async Task Handle_Declara_Persiste()
@@ -48,6 +49,7 @@ public sealed class DefinirIdentificadorLegivelCommandHandlerTests
     public async Task Handle_FormatoInvalido_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
+        IdentificadorLegivel? original = processo.IdentificadorLegivel;
         Mocks mocks = NovosMocks(processo, processo.Id);
 
         Result<MutacaoAceita> result = await DefinirIdentificadorLegivelCommandHandler.Handle(
@@ -55,7 +57,7 @@ public sealed class DefinirIdentificadorLegivelCommandHandlerTests
             mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelFormatoInvalido);
-        processo.IdentificadorLegivel.Should().BeNull();
+        processo.IdentificadorLegivel.Should().Be(original);
         await mocks.Repository.DidNotReceiveWithAnyArgs().IdentificadorLegivelEmUsoAsync(default, default, default);
     }
 
@@ -107,20 +109,23 @@ public sealed class DefinirIdentificadorLegivelCommandHandlerTests
         await mocks.Repository.DidNotReceiveWithAnyArgs().IdentificadorLegivelEmUsoAsync(default, default, default);
     }
 
-    [Fact(DisplayName = "Identificador ausente remove a declaração sem consultar a unicidade")]
-    public async Task Handle_Ausente_Remove()
+    [Theory(DisplayName = "Identificador ausente é recusado com erro nomeado, e o gravado permanece")]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task Handle_Ausente_Recusa(string? identificador)
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirIdentificadorLegivel(IdentificadorLegivel.Criar("psiq-2026").Value, PrecondicaoIfMatch.Ausente)
-            .IsSuccess.Should().BeTrue();
+        IdentificadorLegivel? original = processo.IdentificadorLegivel;
         Mocks mocks = NovosMocks(processo, processo.Id);
 
         Result<MutacaoAceita> result = await DefinirIdentificadorLegivelCommandHandler.Handle(
-            new DefinirIdentificadorLegivelCommand(processo.Id, null, PrecondicaoIfMatch.Ausente),
+            new DefinirIdentificadorLegivelCommand(processo.Id, identificador, PrecondicaoIfMatch.Ausente),
             mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        processo.IdentificadorLegivel.Should().BeNull();
+        result.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelAusente);
+        processo.IdentificadorLegivel.Should().Be(original);
         await mocks.Repository.DidNotReceiveWithAnyArgs().IdentificadorLegivelEmUsoAsync(default, default, default);
+        await mocks.UnitOfWork.DidNotReceiveWithAnyArgs().SalvarAlteracoesAsync(default);
     }
 }

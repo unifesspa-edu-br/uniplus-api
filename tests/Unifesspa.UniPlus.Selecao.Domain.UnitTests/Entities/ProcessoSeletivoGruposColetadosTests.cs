@@ -266,7 +266,7 @@ public sealed class ProcessoSeletivoGruposColetadosTests
     private static ProcessoSeletivo NovoProcesso() => ProcessoSeletivo.Criar(
         "PS Grupos", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
         UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-        LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     private static FatoColetado Item(string fato, int ordem, string? citado = null) => FatoColetado.Criar(
         fato, ordem, fato, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, Precondicao(citado)).Value!;

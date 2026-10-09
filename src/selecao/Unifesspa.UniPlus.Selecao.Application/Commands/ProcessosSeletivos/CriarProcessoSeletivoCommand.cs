@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// <param name="TipoProcessoOrigemId">Id de um tipo de processo ativo em Configuração, resolvido e congelado na criação.</param>
 /// <param name="OrigemCandidatos">De onde vêm os candidatos (Story #851 §3.4) — NOT NULL, exigido na criação.</param>
 /// <param name="UnidadeAdministradoraOrigemId">Quem responde pelo certame (CA-04 da Feature #40; issue #849) — NOT NULL, exigido na criação, resolvido via <c>IUnidadeReader</c>.</param>
+/// <param name="IdentificadorLegivel">Identificador legível do certame (issue #1479), em kebab-case — exigido na criação; de onde derivam o endereço público e a chave no acervo.</param>
 /// <param name="LocalidadeCodigoIbge">Código IBGE do município cujo calendário rege a contagem dos prazos (UNI-REQ-0111) — exigido na criação, nunca deduzido da Unidade administradora.</param>
 /// <param name="LocalidadeNome">Nome do município da localidade regente — cache de exibição.</param>
 /// <param name="LocalidadeUf">UF da localidade regente — cache de exibição.</param>
@@ -28,7 +29,8 @@ public sealed record CriarProcessoSeletivoCommand(
     Guid UnidadeAdministradoraOrigemId,
     string? LocalidadeCodigoIbge,
     string? LocalidadeNome,
-    string? LocalidadeUf) : ICommand<Result<Guid>>
+    string? LocalidadeUf,
+    string? IdentificadorLegivel) : ICommand<Result<Guid>>
 {
     /// <summary>Construtor de fixtures; o contrato HTTP canônico recebe somente o Id de origem.</summary>
     public CriarProcessoSeletivoCommand(
@@ -38,7 +40,8 @@ public sealed record CriarProcessoSeletivoCommand(
         Guid unidadeAdministradoraOrigemId,
         string? localidadeCodigoIbge,
         string? localidadeNome,
-        string? localidadeUf)
+        string? localidadeUf,
+        string? identificadorLegivel)
         : this(
             nome,
             tipoProcesso?.OrigemId ?? Guid.Empty,
@@ -46,16 +49,10 @@ public sealed record CriarProcessoSeletivoCommand(
             unidadeAdministradoraOrigemId,
             localidadeCodigoIbge,
             localidadeNome,
-            localidadeUf)
+            localidadeUf,
+            identificadorLegivel)
     {
     }
-
-    /// <summary>
-    /// Identificador legível do certame (issue #1479), opcional no cadastro e exigido na
-    /// publicação. Propriedade de inicialização, e não parâmetro posicional, porque é opcional:
-    /// quem cria sem ele não precisa informá-lo.
-    /// </summary>
-    public string? IdentificadorLegivel { get; init; }
 
     /// <summary>
     /// Nenhum dos três campos da localidade foi informado — distinto de trio informado e

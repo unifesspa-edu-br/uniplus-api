@@ -627,7 +627,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
-    /// Declara, troca ou remove o identificador legível do certame, de onde derivam o endereço
+    /// Declara ou troca o identificador legível do certame, de onde derivam o endereço
     /// público e a chave no acervo. Aceito enquanto ele não consta em versão publicada: em
     /// rascunho, ou na sessão de retificação aberta sobre versão congelada sem ele.
     /// </summary>

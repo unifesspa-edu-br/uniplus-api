@@ -16,6 +16,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Identificador legível pelo HTTP (issue #1479): as recusas precisam aflorar com o código
@@ -75,16 +76,17 @@ public sealed class IdentificadorLegivelEndpointTests
         (await LerCodigoAsync(resposta)).Should().Be(codigo);
     }
 
-    [Fact(DisplayName = "Publicar sem identificador legível é recusado com 422 e código nomeado")]
-    public async Task Publicar_SemIdentificador_Recusa()
+    [Fact(DisplayName = "Remover o identificador em rascunho é recusado com 422 e código nomeado, e o gravado permanece")]
+    public async Task Rascunho_Remover_Recusa()
     {
-        (HttpClient client, Guid processoId, Guid documentoId) = await SemearAsync(nameof(Publicar_SemIdentificador_Recusa));
-        (await PutIdentificadorAsync(client, processoId, null, ifMatch: null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (HttpClient client, Guid processoId, _) = await SemearAsync(nameof(Rascunho_Remover_Recusa));
+        string original = await LerIdentificadorAsync(processoId);
 
-        HttpResponseMessage resposta = await PublicarAsync(client, processoId, documentoId);
+        HttpResponseMessage resposta = await PutIdentificadorAsync(client, processoId, null, ifMatch: null);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await LerCodigoAsync(resposta)).Should().Be("uniplus.selecao.processo_seletivo.identificador_legivel_ausente");
+        (await LerIdentificadorAsync(processoId)).Should().Be(original);
     }
 
     [Fact(DisplayName = "Identificador de certame publicado não muda, nem na sessão de retificação")]

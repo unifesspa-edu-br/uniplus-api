@@ -113,7 +113,7 @@ public sealed class ClassificacaoEnemSemResolucaoMigrationTests : IAsyncLifetime
         ProcessoSeletivo.Criar(
             nome, TipoProcesso.PSVR, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     private static ConfiguracaoClassificacao Classificacao(
         string regraCalculo, bool baseadoEmEnem, IReadOnlyList<RegraEliminacao> regrasEliminacao)

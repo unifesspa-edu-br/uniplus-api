@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A leitura do processo devolve, para cada atributo de domínio fechado, o mesmo token que
@@ -137,7 +138,7 @@ public sealed class VocabularioDaLeituraDoProcessoTests
         OrigemCandidatos.InscricaoPropria,
         Guid.CreateVersion7(),
         UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-        LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     private static async Task<JsonElement> ProjetarERSerializarAsync(ProcessoSeletivo processo)
     {
