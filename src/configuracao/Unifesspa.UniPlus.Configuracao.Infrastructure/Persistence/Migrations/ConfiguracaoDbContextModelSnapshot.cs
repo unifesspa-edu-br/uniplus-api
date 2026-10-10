@@ -2200,6 +2200,26 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
                             Sistema = true
+                        },
+                        new
+                        {
+                            Id = new Guid("fa700000-0000-7000-8000-000000000050"),
+                            Ativo = true,
+                            Binding = "CAMPO_FORMULARIO:INDIGENA",
+                            Cardinalidade = "ESCALAR",
+                            ClassificacaoProtecao = "SENSIVEL",
+                            Codigo = "INDIGENA",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Dependencias = new string[0],
+                            Dominio = "BOOLEANO",
+                            Escopo = "CANDIDATO",
+                            FinalidadeTratamento = "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            Nome = "Indígena",
+                            Origem = "DECLARADO",
+                            PontoResolucao = "INSCRICAO",
+                            RegrasPadrao = "[]",
+                            Sistema = true
                         });
                 });
 

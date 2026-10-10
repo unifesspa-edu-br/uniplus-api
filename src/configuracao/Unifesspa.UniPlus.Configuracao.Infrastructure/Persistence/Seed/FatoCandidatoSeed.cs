@@ -25,7 +25,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// do candidato, exceto maior de idade, sem renda e sob guarda, que são campos de membro de um
 /// grupo repetível do formulário, como a composição familiar (ADR-0138). A fonte dos valores do categórico está em <see cref="FatoCandidatoSeedItem.FonteValores"/>;
 /// os valores do categórico global são os <see cref="Domain.Entities.FatoValorDominio"/> de
-/// <see cref="FatoValorDominioSeed"/>. Cor ou raça, autodeclaração quilombola, deficiência,
+/// <see cref="FatoValorDominioSeed"/>. Cor ou raça, autodeclaração quilombola e indígena, deficiência,
 /// atendimento especializado, os opt-ins que os revelam e a modalidade que deles deriva são
 /// <see cref="ClassificacaoProtecaoDado.Sensivel"/>; os demais, <see cref="ClassificacaoProtecaoDado.Pessoal"/>.
 /// </para>
@@ -308,6 +308,13 @@ public static class FatoCandidatoSeed
             DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Processo,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:EDICAO_ENEM",
             ClassificacaoProtecaoDado.Pessoal, FinalidadeImportacaoDeNotasDoEnem),
+
+        // A condição de indígena é dado próprio, e não só um valor da cor ou raça: exige declaração de
+        // pertencimento e passa só por análise de documentos, sem heteroidentificação (UNI-REQ-0147).
+        new(SeedId(50), "INDIGENA", "Indígena", null,
+            DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
+            PontoResolucaoInscricao, "CAMPO_FORMULARIO:INDIGENA",
+            ClassificacaoProtecaoDado.Sensivel, FinalidadeReservaDeVagas),
     ];
 
     /// <summary>Um dado declarado do candidato, escalar e coletado na inscrição.</summary>

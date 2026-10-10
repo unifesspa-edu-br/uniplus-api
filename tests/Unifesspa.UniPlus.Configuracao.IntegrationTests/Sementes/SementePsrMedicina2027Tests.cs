@@ -118,6 +118,17 @@ public sealed class SementePsrMedicina2027Tests
         municipioAtenuacao.FatosCitados.Should().BeEquivalentTo(["FORMA_CONCLUSAO_EM", "SOLICITA_FATOR_ATENUACAO"]);
     }
 
+    [Fact(DisplayName = "A inscrição pergunta a todo candidato se ele se autodeclara indígena, sem depender da cor ou raça")]
+    public async Task Inscricao_ColetaIndigenaSemDependerDaCorOuRaca()
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        ModeloFormulario inscricao = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricao);
+
+        ItemDoModelo indigena = inscricao.Conteudo.Itens.Should().ContainSingle(static i => i.FatoCodigo == "INDIGENA").Subject;
+        indigena.FatosCitados.Should().BeEmpty();
+    }
+
     [Fact(DisplayName = "Fato que o domínio recusa derruba a geração da semente, em vez de virar linha que a API não aceita")]
     public void FatoRecusadoPeloDominio_DerrubaAGeracao()
     {
