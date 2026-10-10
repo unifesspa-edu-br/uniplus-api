@@ -7,7 +7,7 @@
 
 Guia operacional da carga de reference data do módulo `Geo` (localidades, endereçamento e georreferência nacional) a partir do dataset **DNE Correios + IBGE**. Decisões em [ADR-0090](adrs/0090-modulo-geo-localidades.md), [ADR-0091](adrs/0091-postgis-georreferencia-nts.md) e [ADR-0092](adrs/0092-etl-carga-dne-reference-data.md).
 
-## Estratégia: schema de staging + SELECT streamado
+## Estratégia: banco de staging + SELECT streamado
 
 O dataset DNE é distribuído como **15 dumps SQL** (um por tabela, `tbl_cep_{versao}_n_*`; a maior — `logradouro` — tem ~1,4M linhas / ~382 MB). Esses dumps **não são versionados** neste repositório: a base DNE é proprietária (Correios) e exige licença institucional.
 
@@ -15,11 +15,11 @@ As colunas **descritivas** são `varchar` (nomes, siglas, métricas, lat/long co
 
 A ingestão segue dois passos desacoplados:
 
-1. **Provisionamento (fora do ciclo da API):** os dumps são restaurados num **schema de staging** (`dne_staging`) do banco `uniplus_geo`, via `psql`. Os dumps são auto-suficientes (`DROP TABLE IF EXISTS` + `CREATE TABLE` + `INSERT`), então re-restaurar é limpo e idempotente.
+1. **Provisionamento (fora do ciclo da API):** os dumps são restaurados no **banco de staging** `uniplus_geo_staging`, via `psql`. Os dumps são auto-suficientes (`DROP TABLE IF EXISTS` + `CREATE TABLE` + `INSERT`), então re-restaurar é limpo e idempotente.
 2. **Carga (serviço de `Geo.Infrastructure`):** o ETL lê o staging por `SELECT` **streamado** (`DbDataReader` — leitura linha-a-linha, uso de memória estável mesmo nas tabelas grandes), aplica **parse tolerante** (`'-'`/vazio → `null`, `'S'`/`'N'` → `bool`, lat/long → `geography(Point,4326)`), resolve as FKs e faz **upsert por chave natural** no schema do domínio (`public`).
 
 ```
-dumps .sql  ──psql -f──▶  dne_staging (15 tabelas varchar)
+dumps .sql  ──psql -f──▶  uniplus_geo_staging (15 tabelas varchar)
                               │  SELECT streamado (DneStagingFonte)
                               ▼
         parse tolerante ─▶ upsert por chave natural ─▶ public.* (domínio Uni+)
@@ -31,19 +31,36 @@ dumps .sql  ──psql -f──▶  dne_staging (15 tabelas varchar)
 - **Resolução de FK:** as FKs internas da DNE (`id_cidade`, `distrito_id`, `bairro_id`, inteiros **instáveis entre releases**) ficam disponíveis para JOIN no staging. O domínio nunca usa esses inteiros como identidade — usa Guid v7 ([ADR-0032](adrs/0032-guid-v7-como-identidade.md)) + chave natural.
 - **Recarga idempotente:** ver abaixo.
 
-## Restauração do staging (dev)
+## Carga local (stack de desenvolvimento)
 
-```bash
-# 1. Descompactar os dumps (ex.: tbl_cep_202601_postgresql.zip) num diretório.
-# 2. Criar o schema de staging e restaurar cada dump:
-psql "$GEO_CONN" -c 'DROP SCHEMA IF EXISTS dne_staging CASCADE; CREATE SCHEMA dne_staging;'
-for f in tbl_cep_202601_n_*.sql; do
-  # os dumps criam tabelas em "public"; restaure-os sob o schema dne_staging
-  psql "$GEO_CONN" -c "SET search_path TO dne_staging;" -f "$f"
-done
-```
+Na stack local, o staging é o banco próprio `uniplus_geo_staging` (schema `public`, role `uniplus_geo_staging_app`), que o `docker/init-db.sql` cria vazio e o `geo-api` lê por `ConnectionStrings__GeoStagingDb`. Sem a carga, o Geo sobe sem cidades nem logradouros, e a busca de CEP e de município não acha nada.
 
-> Ajuste o `search_path`/schema conforme o gerador do dump. O importador espera as tabelas `tbl_cep_{versao}_n_*` no schema configurado (`dne_staging` por padrão).
+1. **Restaurar os dumps.** Descompacte os 15 dumps da release (ex.: `tbl_cep_202601_postgresql.zip`) num diretório e restaure cada um. Na release 202601 isso levou cerca de 30 minutos, quase todo no `logradouro`:
+
+   ```bash
+   cd <diretório dos dumps>
+   for f in tbl_cep_202601_n_*.sql; do
+     docker compose -p <projeto> -f <api>/docker/docker-compose.yml exec -T postgres \
+       psql -q -U uniplus_geo_staging_app -d uniplus_geo_staging -v ON_ERROR_STOP=1 < "$f"
+   done
+   ```
+
+   Os dumps trazem `DROP TABLE IF EXISTS`: restaurar de novo é limpo, e os avisos do `DROP` são esperados.
+
+2. **Disparar a importação** no `geo-api` (porta 5400 no override de exemplo), com o token do `admin` do realm `unifesspa`, que tem o papel `plataforma-admin`. O `scripts/setup-keycloak-dev.sh` tem de ter rodado antes: é ele que dá ao `admin-cli` a audiência `uniplus`. Pelo `admin-cli`, a senha vai com `--data-urlencode`, por causa do `+`:
+
+   ```bash
+   TOKEN=$(curl -s http://localhost:8080/realms/unifesspa/protocol/openid-connect/token \
+     -d grant_type=password -d client_id=admin-cli -d username=admin \
+     --data-urlencode 'password=Uni+Teste26' | jq -r .access_token)
+   curl -i -X POST http://localhost:5400/api/admin/geo/importacoes \
+     -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+     -H "Idempotency-Key: $(uuidgen)" -d '{"Versao":"202601"}'
+   ```
+
+   A resposta é `202`, com `Location`. Consulte o `Location` com o mesmo token até `status` = `Concluida`; na 202601 a importação levou menos de um minuto.
+
+3. **Conferir:** `GET http://localhost:5400/api/cep/{cep}` com o token responde `200` com o endereço.
 
 ## Carga em lote das folhas — Distrito, Bairro e Logradouro (Story #673)
 
@@ -83,7 +100,7 @@ No modo **`Recarga`** os índices permanecem (a tabela já está populada); só 
 
 A DNE é atualizada mensalmente. Para aplicar uma nova release (ex.: `202602`):
 
-1. Restaurar o novo dump no `dne_staging` (substitui o anterior).
+1. Restaurar o novo dump no `uniplus_geo_staging` (substitui o anterior).
 2. Disparar a importação informando a versão `202602`.
 3. O ETL faz **upsert por chave natural** — `sigla_iso`/`uf`/`codigo_ibge` são estáveis entre releases: insere o novo, atualiza o que mudou, grava `versao_dataset=202602` em cada linha tocada. Reaplicar a **mesma** versão é no-op (idempotente).
 

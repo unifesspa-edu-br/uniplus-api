@@ -78,12 +78,13 @@ services:
       # não existe e o documento volta a anunciar apenas Produção e Homologação.
       UniPlus__OpenApi__LocalServerUrl: "http://localhost:5299"
       # Conferência do endereço do candidato no Geo (issue #1865, ADR-0136) — BaseUrl é
-      # obrigatório, sem ele a API não sobe. OAuth reaproveita o client M2M já provisionado
-      # para o Schema Registry (uniplus-api-selecao, uniplus-infra#163); o secret não vai
-      # aqui, nem em appsettings — vem de Vault/ESO em todo ambiente real.
+      # obrigatório, sem ele a API não sobe. O OAuth usa o client M2M uniplus-api-selecao:
+      # em HML/PROD a infra o provisiona (uniplus-infra#163) e o secret vem de Vault/ESO;
+      # aqui o scripts/setup-keycloak-dev.sh o cria com o secret de dev do docker/.env.
       Geo__BaseUrl: "http://geo-api:8080"
       Geo__OAuth__TokenEndpoint: "http://keycloak:8080/realms/unifesspa/protocol/openid-connect/token"
       Geo__OAuth__ClientId: "uniplus-api-selecao"
+      Geo__OAuth__ClientSecret: "${UNIPLUS_API_SELECAO_CLIENT_SECRET:?defina UNIPLUS_API_SELECAO_CLIENT_SECRET no docker/.env}"
     ports:
       - "5200:8080"
     depends_on:
@@ -145,6 +146,14 @@ services:
       Storage__SecretKey: "${MINIO_ROOT_PASSWORD}"
       Auth__Authority: "http://keycloak:8080/realms/unifesspa"
       Auth__Audience: "uniplus"
+      # O appsettings.Development do Geo não lista todos os frontends locais; a lista
+      # inteira vai aqui, para a busca de CEP e de município funcionar em qualquer um.
+      Cors__AllowedOrigins__0: "http://localhost:4100"
+      Cors__AllowedOrigins__1: "http://localhost:4200"
+      Cors__AllowedOrigins__2: "http://localhost:4201"
+      Cors__AllowedOrigins__3: "http://localhost:4202"
+      Cors__AllowedOrigins__4: "http://localhost:4203"
+      Cors__AllowedOrigins__5: "http://localhost:4300"
     ports:
       - "5400:8080"
     depends_on:
