@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -1061,6 +1062,30 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
 
         resultado.IsFailure.Should().BeTrue("PCD é referenciada por uma condição de gatilho viva e deixaria de ser ofertada");
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.CondicaoAtendimentoReferenciadaPorExigenciaViva");
+    }
+
+    [Fact(DisplayName = "Redefinir oferta de atendimento removendo código de recurso referenciado por condição viva é recusado")]
+    public void DefinirOfertaAtendimento_RemoveRecursoReferenciado_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = Fase(1, "INSCRICAO");
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        OfertaRecurso salaAmamentacao = OfertaRecurso.Criar(Guid.CreateVersion7(), "SALA_AMAMENTACAO", "Sala para amamentação");
+        processo.DefinirOfertaAtendimento(
+            OfertaAtendimentoEspecializado.Criar([], [salaAmamentacao], []).Value!, PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        DocumentoExigido exigencia = DocumentoExigido.Criar(
+            fase.Id, Guid.CreateVersion7(), "CERTIDAO_NASCIMENTO", "Certidão de nascimento da criança", "PESSOAL",
+            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
+            condicoes: [CondicaoDe("RECURSO_ACESSIBILIDADE", "SALA_AMAMENTACAO")], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirOfertaAtendimento(
+            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
+
+        resultado.IsFailure.Should().BeTrue("a sala para amamentação é citada por uma condição viva e deixaria de ser ofertada");
+        resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.RecursoAcessibilidadeReferenciadoPorCondicaoViva);
     }
 
     [Fact(DisplayName = "Redefinir oferta de atendimento preservando o código de condição referenciado é aceito (contraprova)")]

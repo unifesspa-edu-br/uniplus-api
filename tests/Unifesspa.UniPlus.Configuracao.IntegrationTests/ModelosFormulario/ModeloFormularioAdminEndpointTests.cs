@@ -289,6 +289,26 @@ public sealed class ModeloFormularioAdminEndpointTests
         Opcoes("TIPO_DEFICIENCIA").Should().Contain(deficiencia);
     }
 
+    [Fact(DisplayName = "Sem processo, o recurso de acessibilidade oferece o cadastro institucional vivo, pelo código")]
+    public async Task ObterRenderizavel_RecursoDeAcessibilidade_OfereceOCadastro()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        string recurso = $"REC_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
+        (await EnviarAsync(client, HttpMethod.Post, "/api/configuracao/admin/recursos-acessibilidade",
+            new { codigo = recurso, nome = $"Sala para amamentação {recurso}" }))
+            .StatusCode.Should().Be(HttpStatusCode.Created);
+        HttpResponseMessage criar = await EnviarAsync(client, HttpMethod.Post, Base, ModeloComRecursoDeAcessibilidade(CodigoUnico()));
+        criar.StatusCode.Should().Be(HttpStatusCode.Created, await criar.Content.ReadAsStringAsync());
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+
+        JsonObject formulario = JsonNode.Parse(await (await EnviarAsync(client, HttpMethod.Get, $"{Base}/{id}/renderizavel", null)).Content.ReadAsStringAsync())!.AsObject();
+
+        JsonNode opcao = formulario["fatosColetados"]!.AsArray()
+            .Single(static f => f!["fatoCodigo"]!.GetValue<string>() == "RECURSO_ACESSIBILIDADE")!["valoresSelecionaveis"]!.AsArray()
+            .Single(v => v!["codigo"]!.GetValue<string>() == recurso)!;
+        opcao["descricao"]!.GetValue<string>().Should().Be($"Sala para amamentação {recurso}");
+    }
+
     [Fact(DisplayName = "Sem processo, o município da área do bônus oferece os municípios das bases legais cadastradas, sem repetir")]
     public async Task ObterRenderizavel_MunicipioDoBonus_OfereceAsBasesLegais()
     {
@@ -552,6 +572,36 @@ public sealed class ModeloFormularioAdminEndpointTests
                             },
                         },
                     },
+                },
+            },
+        },
+    };
+
+    /// <summary>Um modelo de inscrição que pergunta de qual recurso de acessibilidade o candidato vai precisar.</summary>
+    private static object ModeloComRecursoDeAcessibilidade(string codigo) => new
+    {
+        codigo,
+        nome = "Inscrição com recurso de acessibilidade",
+        finalidade = "INSCRICAO",
+        conteudo = new
+        {
+            titulo = "Inscrição",
+            etapas = new object[]
+            {
+                new { codigo = "DADOS", ordem = 0, tipo = "SECAO", bloco = (string?)null, titulo = "Dados", descricao = (string?)null, aviso = (string?)null },
+                new { codigo = "REVISAO", ordem = 1, tipo = "BLOCO", bloco = "REVISAO_E_ACEITE", titulo = "Revisão", descricao = (string?)null, aviso = (string?)null },
+            },
+            itens = new object[]
+            {
+                new
+                {
+                    fatoCodigo = "RECURSO_ACESSIBILIDADE",
+                    ordem = 0,
+                    rotulo = "De qual recurso de acessibilidade você vai precisar?",
+                    tipoRenderizacao = "SELECAO_MULTIPLA",
+                    obrigatoriedade = "NUNCA",
+                    precondicao = (object?)null,
+                    etapaCodigo = "DADOS",
                 },
             },
         },

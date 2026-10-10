@@ -26,15 +26,18 @@ public sealed class OfertaAtendimentoEspecializado : EntityBase
     /// <summary>Fato do candidato cujas opções são as condições de atendimento ofertadas.</summary>
     public const string FatoCondicaoAtendimento = "CONDICAO_ATENDIMENTO";
 
+    /// <summary>Fato do candidato cujas opções são os recursos de acessibilidade ofertados.</summary>
+    public const string FatoRecursoAcessibilidade = "RECURSO_ACESSIBILIDADE";
+
     /// <summary>Fato do candidato cujas opções são os tipos de deficiência ofertados.</summary>
     public const string FatoTipoDeficiencia = "TIPO_DEFICIENCIA";
 
     /// <summary>
     /// Indica que as opções do fato são geridas pela oferta de atendimento, e não declaradas
-    /// diretamente pelo processo. A oferta é, por natureza, a dona desses dois fatos.
+    /// diretamente pelo processo. A oferta é, por natureza, a dona desses três fatos.
     /// </summary>
     public static bool GereOpcoesDoFato(string fatoCodigo) =>
-        fatoCodigo is FatoCondicaoAtendimento or FatoTipoDeficiencia;
+        fatoCodigo is FatoCondicaoAtendimento or FatoRecursoAcessibilidade or FatoTipoDeficiencia;
 
     public Guid ProcessoSeletivoId { get; private set; }
 
@@ -60,6 +63,9 @@ public sealed class OfertaAtendimentoEspecializado : EntityBase
             FatoCondicaoAtendimento => [.. _condicoes
                 .OrderBy(static c => c.CondicaoCodigo, StringComparer.Ordinal)
                 .Select(static (c, indice) => new OpcaoDoProcesso(c.CondicaoCodigo, c.CondicaoNome, indice))],
+            FatoRecursoAcessibilidade => [.. _recursos
+                .OrderBy(static r => r.RecursoCodigo, StringComparer.Ordinal)
+                .Select(static (r, indice) => new OpcaoDoProcesso(r.RecursoCodigo, r.RecursoNome, indice))],
             FatoTipoDeficiencia => [.. _tiposDeficiencia
                 .OrderBy(static t => t.TipoDeficienciaCodigo, StringComparer.Ordinal)
                 .Select(static (t, indice) => new OpcaoDoProcesso(t.TipoDeficienciaCodigo, t.TipoDeficienciaNome, indice))],

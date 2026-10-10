@@ -185,7 +185,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>
     /// De onde vêm as opções de um campo coletado: a origem copiada do catálogo quando a coleta foi
-    /// definida, com os dois fatos da oferta de atendimento sempre de opções do processo, porque a
+    /// definida, com os fatos da oferta de atendimento sempre de opções do processo, porque a
     /// oferta é a dona deles.
     /// </summary>
     public static OrigemValoresColeta OrigemDasOpcoes(FatoColetado fato)
@@ -603,11 +603,21 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // ofertas realmente deixaria de conter um código hoje referenciado por condição
         // viva — redefinir preservando (ou ampliando) os códigos ofertados é aceito.
         HashSet<string> novosCodigos = [.. oferta.Condicoes.Select(c => c.CondicaoCodigo)];
-        if (ReferenciaDinamicaSeriaInvalidada("CONDICAO_ATENDIMENTO", novosCodigos))
+        if (ReferenciaDinamicaSeriaInvalidada(OfertaAtendimentoEspecializado.FatoCondicaoAtendimento, novosCodigos))
         {
             return Result.Failure(new DomainError(
                 "ProcessoSeletivo.CondicaoAtendimentoReferenciadaPorExigenciaViva",
                 "Existe condição de gatilho documental referenciando um código de condição de atendimento que deixaria de ser ofertado — ajuste ou remova a condição antes de redefinir a oferta de atendimento."));
+        }
+
+        // O recurso também é citado por código: uma condição sobre o recurso pedido que o
+        // candidato não pudesse mais escolher nunca se satisfaria.
+        HashSet<string> novosRecursos = [.. oferta.Recursos.Select(static r => r.RecursoCodigo)];
+        if (ReferenciaDinamicaSeriaInvalidada(OfertaAtendimentoEspecializado.FatoRecursoAcessibilidade, novosRecursos))
+        {
+            return Result.Failure(new DomainError(
+                ProcessoSeletivoErrorCodes.RecursoAcessibilidadeReferenciadoPorCondicaoViva,
+                "Existe condição referenciando um código de recurso de acessibilidade que deixaria de ser ofertado — ajuste ou remova a condição antes de redefinir a oferta de atendimento."));
         }
 
         oferta.VincularProcesso(Id);
@@ -4717,7 +4727,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>
     /// Um fato categórico coletável cujo domínio é derivado da oferta do próprio processo
-    /// (<c>CONDICAO_ATENDIMENTO</c>, <c>TIPO_DEFICIENCIA</c>) não pode ser publicado sem pelo
+    /// (<c>CONDICAO_ATENDIMENTO</c>, <c>RECURSO_ACESSIBILIDADE</c>, <c>TIPO_DEFICIENCIA</c>) não pode ser publicado sem pelo
     /// menos um valor ofertado — obrigatório ou opcional, a pessoa candidata precisa de alguma
     /// opção para responder. Sem este gate, <c>DefinirFatosColetadosCommandHandler</c> aceita o
     /// vínculo (rascunho aceita configuração incompleta, de propósito) e

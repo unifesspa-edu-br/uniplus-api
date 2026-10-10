@@ -22,4 +22,5 @@ public static class ProcessoSeletivoErrorCodes
     public const string FatoElegibilidadeConhecidoDepoisDaInscricao = "ProcessoSeletivo.FatoElegibilidadeConhecidoDepoisDaInscricao";
     public const string FatoElegibilidadeDaIsencao = "ProcessoSeletivo.FatoElegibilidadeDaIsencao";
     public const string IdentificadorLegivelEmUso = "ProcessoSeletivo.IdentificadorLegivelEmUso";
+    public const string RecursoAcessibilidadeReferenciadoPorCondicaoViva = "ProcessoSeletivo.RecursoAcessibilidadeReferenciadoPorCondicaoViva";
 }

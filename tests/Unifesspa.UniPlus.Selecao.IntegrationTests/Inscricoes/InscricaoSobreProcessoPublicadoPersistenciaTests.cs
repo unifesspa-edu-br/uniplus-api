@@ -55,7 +55,8 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
     public InscricaoSobreProcessoPublicadoPersistenciaTests(InscricaoDbFixture fixture) => _fixture = fixture;
 
-    private static ProcessoSeletivo NovoProcessoDeInscricao(string nome)
+    private static ProcessoSeletivo NovoProcessoDeInscricao(
+        string nome, OfertaAtendimentoEspecializado? oferta = null, FatoColetado? campoAdicional = null)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             nome, TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
@@ -69,7 +70,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
                 peso: 1m, ordem: 1).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
+        processo.DefinirOfertaAtendimento(oferta ?? OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
@@ -118,10 +119,11 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             ],
             FinalidadeFormulario.Inscricao).Value!;
 
+        FatoColetado rg = FatoColetado.Criar(
+            "RG_NUMERO", 0, "RG", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
+            classificacaoProtecao: "IDENTIFICADOR", formato: "LIVRE").Value!;
         processo.DefinirItens(
-            [FatoColetado.Criar(
-                "RG_NUMERO", 0, "RG", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
-                classificacaoProtecao: "IDENTIFICADOR", formato: "LIVRE").Value!],
+            campoAdicional is null ? [rg] : [rg, campoAdicional],
             PrecondicaoIfMatch.Ausente,
             grupos: [composicaoFamiliar]).IsSuccess.Should().BeTrue();
 
@@ -158,6 +160,14 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             ["RG_UF"] = [new ValorDominioDeclaradoCongelado("PA", "Pará.", 0)],
             ["NATURALIDADE_UF"] = [new ValorDominioDeclaradoCongelado("PA", "Pará.", 0)],
         };
+
+        // O campo cujas opções o processo oferta congela essas opções, pela mesma leitura que o
+        // resolvedor da publicação usa.
+        foreach (FatoColetado campo in processo.Campos.Where(static c => ProcessoSeletivo.OrigemDasOpcoes(c) == OrigemValoresColeta.OpcoesDoProcesso))
+        {
+            valoresDoConjuntoBasico[campo.FatoCodigo] = [.. processo.OpcoesDoProcesso(campo.FatoCodigo)
+                .Select(static o => new ValorDominioDeclaradoCongelado(o.Codigo, o.Rotulo, o.Ordem))];
+        }
 
         SnapshotCanonico congelado = Canonicalizer.Canonicalizar(
             new EntradaCanonicalizacao(processo, dados, hash64, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: valoresDoConjuntoBasico));
@@ -310,5 +320,44 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         Inscricao lida = (await readRepository.ObterPorIdAsync(inscricao.Id))!;
         lida.Respostas["RG_NUMERO"].GetString().Should().Be("30.111.222-9");
         lida.Grupos["COMPOSICAO_FAMILIAR"].Single(o => o.Id == "membro-1").Respostas["RG_NUMERO_MEMBRO"].GetString().Should().Be("40.333.444-5");
+    }
+
+    [Fact(DisplayName = "A versão fixada oferece ao campo de recurso de acessibilidade só os recursos da oferta do processo, e a submissão recusa o que ela não oferta")]
+    public async Task RecursoDeAcessibilidade_ForaDaOfertaDoProcesso_ERecusado()
+    {
+        FatoColetado campoRecurso = FatoColetado.Criar(
+            OfertaAtendimentoEspecializado.FatoRecursoAcessibilidade, 1, "De qual recurso de acessibilidade você vai precisar?",
+            TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null, classificacaoProtecao: "SENSIVEL").Value!;
+        OfertaAtendimentoEspecializado oferta = OfertaAtendimentoEspecializado.Criar(
+            [], [OfertaRecurso.Criar(Guid.CreateVersion7(), "SALA_AMAMENTACAO", "Sala para amamentação")], []).Value!;
+        ProcessoSeletivo processo = NovoProcessoDeInscricao(
+            nameof(RecursoDeAcessibilidade_ForaDaOfertaDoProcesso_ERecusado), oferta, campoRecurso);
+
+        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+        (Guid processoId, _) = await PublicarEDivulgarAsync(writeContext, processo);
+
+        Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
+            new IniciarInscricaoCommand(processoId),
+            new InscricaoRepository(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
+            new CertameDivulgadoRepository(writeContext), new ProcessoSeletivoRepository(writeContext, TimeProvider.System),
+            RegistroCodecs, Fuso(), DentroDoPeriodo, writeContext, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None);
+        iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        Result<ContextoDaVersaoFixada> contexto = await ContextoDaVersaoFixadaResolver.ResolverAsync(
+            iniciar.Value!.VersaoFormularioId, processoId, new ProcessoSeletivoRepository(readContext, TimeProvider.System), RegistroCodecs, CancellationToken.None);
+        contexto.IsSuccess.Should().BeTrue(contexto.Error?.Message);
+        contexto.Value!.Ofertas[OfertaAtendimentoEspecializado.FatoRecursoAcessibilidade].Should().BeEquivalentTo(["SALA_AMAMENTACAO"]);
+
+        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.RecusasDeOpcaoForaDaOferta(
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+            {
+                [OfertaAtendimentoEspecializado.FatoRecursoAcessibilidade] = JsonSerializer.SerializeToElement(new[] { "SALA_AMAMENTACAO", "INTERPRETE_LIBRAS" }),
+            },
+            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal),
+            contexto.Value.Ofertas);
+
+        recusas.Should().ContainSingle(e => e.Field == OfertaAtendimentoEspecializado.FatoRecursoAcessibilidade
+            && e.Error.Code == "Inscricao.RespostaInvalida", "o intérprete de Libras não está na oferta deste processo");
     }
 }

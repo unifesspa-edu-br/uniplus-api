@@ -21,8 +21,8 @@ public sealed record ObterFormularioRenderizavelDoModeloQuery(Guid Id) : IQuery<
 /// vivo: as regras pela mesma definição da pré-visualização do modelo, recortadas como um formulário só; as opções que o catálogo oferece a
 /// cada campo; e o conteúdo da versão escolhida de cada termo. As opções que só existem no processo
 /// — as que ele declara, as modalidades, os municípios do bônus — saem nulas: no modelo, ainda não há
-/// processo que as oferte. A condição de atendimento, o tipo de deficiência e os municípios do bônus são a
-/// exceção: oferecem o cadastro institucional, que o processo recorta.
+/// processo que as oferte. A condição de atendimento, o recurso de acessibilidade, o tipo de deficiência e os
+/// municípios do bônus são a exceção: oferecem o cadastro institucional, que o processo recorta.
 /// </summary>
 public static class ObterFormularioRenderizavelDoModeloQueryHandler
 {
@@ -31,6 +31,7 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
         IModeloFormularioRepository repository,
         IFatoCandidatoRepository fatoRepository,
         ICondicaoAtendimentoRepository condicaoRepository,
+        IRecursoAcessibilidadeRepository recursoRepository,
         ITipoDeficienciaRepository tipoDeficienciaRepository,
         IBaseLegalBonusRegionalRepository baseLegalBonusRepository,
         ITermoConsentimentoRepository termoRepository,
@@ -40,6 +41,7 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(fatoRepository);
         ArgumentNullException.ThrowIfNull(condicaoRepository);
+        ArgumentNullException.ThrowIfNull(recursoRepository);
         ArgumentNullException.ThrowIfNull(tipoDeficienciaRepository);
         ArgumentNullException.ThrowIfNull(baseLegalBonusRepository);
         ArgumentNullException.ThrowIfNull(termoRepository);
@@ -55,7 +57,7 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
         ConteudoDoModelo conteudo = EscritaDoModelo.ComoAplicado(modelo, fatos);
         IReadOnlyList<DefinicaoAgregado> agregados = VocabularioDoCatalogo.AgregadosDosGrupos(fatos, conteudo.Grupos);
         Dictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes = VocabularioDoCatalogo.OpcoesDoModelo(fatos, conteudo);
-        await OpcoesDoCadastroInstitucional.CompletarAsync(opcoes, fatos, condicaoRepository, tipoDeficienciaRepository, baseLegalBonusRepository, cancellationToken).ConfigureAwait(false);
+        await OpcoesDoCadastroInstitucional.CompletarAsync(opcoes, fatos, condicaoRepository, recursoRepository, tipoDeficienciaRepository, baseLegalBonusRepository, cancellationToken).ConfigureAwait(false);
 
         List<TermoRenderizavel> termos = [];
         foreach (TermoDoModelo termo in conteudo.Termos.OrderBy(static t => t.Ordem))
