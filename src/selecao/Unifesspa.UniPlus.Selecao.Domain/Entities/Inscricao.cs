@@ -225,6 +225,14 @@ public sealed class Inscricao : EntityBase
         return null;
     }
 
+    /// <summary>Depois do envio, a inscrição só muda por novo envio, que emite novo comprovante.</summary>
+    public DomainError? ConferirAindaEmRascunho() =>
+        Situacao == SituacaoInscricao.Submetida
+            ? new DomainError(
+                InscricaoErrorCodes.RascunhoSoAntesDoEnvio,
+                "Sua inscrição já foi enviada. Para corrigi-la, envie de novo: cada envio gera um novo comprovante.")
+            : null;
+
     /// <summary>
     /// O token tem de pertencer a quem abriu a inscrição — <c>sub</c> diferente do gravado para o
     /// mesmo CPF nunca é "outra inscrição", é identidade trocada.
@@ -254,7 +262,8 @@ public sealed class Inscricao : EntityBase
     /// <summary>
     /// Salva o rascunho: validação estrutural, sem exigir obrigatórios — a validação completa é da
     /// submissão (issue #1859). Preserva um número de documento ausente do corpo: ausência nunca
-    /// apaga, só um valor enviado substitui.
+    /// apaga, só um valor enviado substitui. Depois do envio, a inscrição que vale é a enviada
+    /// (UNI-REQ-0132): só um novo envio, com novo comprovante, a muda.
     /// </summary>
     public Result Salvar(
         Guid? ofertaCursoId,
@@ -274,6 +283,11 @@ public sealed class Inscricao : EntityBase
             return Result.Failure(erroPrecondicao);
         }
 
+        if (ConferirAindaEmRascunho() is { } erroRascunho)
+        {
+            return Result.Failure(erroRascunho);
+        }
+
         List<FieldError> recusas =
         [
             .. ConferirValores(respostas, grupos, admitidas.Definicoes),
@@ -289,7 +303,7 @@ public sealed class Inscricao : EntityBase
         Respostas = MesclarPreservandoAusentes(Respostas, respostas);
         Grupos = SemValoresNulos(grupos);
         Aceites = aceites;
-        DefinicoesDasRespostas = ComAsDefinicoesDosDerivados(admitidas.Definicoes);
+        DefinicoesDasRespostas = admitidas.Definicoes;
         Revisao++;
 
         return Result.Success();
@@ -393,18 +407,6 @@ public sealed class Inscricao : EntityBase
         }
 
         return mesclado;
-    }
-
-    /// <summary>O rascunho não recalcula os derivados da última submissão; as definições deles continuam valendo.</summary>
-    private Dictionary<string, DefinicaoDaResposta> ComAsDefinicoesDosDerivados(IReadOnlyDictionary<string, DefinicaoDaResposta> definicoes)
-    {
-        Dictionary<string, DefinicaoDaResposta> todas = new(definicoes, StringComparer.Ordinal);
-        foreach (string codigo in Derivados.Keys)
-        {
-            todas.TryAdd(codigo, DefinicoesDasRespostas[codigo]);
-        }
-
-        return todas;
     }
 
     private static Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> SemValoresNulos(

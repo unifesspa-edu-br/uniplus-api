@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
@@ -268,8 +269,8 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         relida.Grupos["COMPOSICAO_FAMILIAR"][1].Respostas["RG_NUMERO"].GetString().Should().Be("rg-membro-3");
     }
 
-    [Fact(DisplayName = "Salvar o rascunho de uma inscrição já submetida regrava os derivados sem perder a definição deles")]
-    public async Task Salvar_DepoisDeSubmeter_RegravaOsDerivados()
+    [Fact(DisplayName = "A inscrição enviada e gravada recusa salvar rascunho e continua como foi enviada")]
+    public async Task Salvar_DepoisDeSubmeter_RecusaEPreservaOEnviado()
     {
         Inscricao original = NovaInscricao(PersonasDeTeste.KevinCarvalho, Guid.CreateVersion7());
         original.Submeter(
@@ -287,9 +288,8 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         {
             InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
             Inscricao lida = (await repositorio.ObterPorIdAsync(original.Id))!;
-            lida.Salvar(null, Respostas(("NOME_SOCIAL", "Kevin C.")), SemGrupos(), [], Admitidas, PrecondicaoIfMatch.DeTags([lida.ETag]))
-                .IsSuccess.Should().BeTrue();
-            await repositorio.AtualizarAsync(lida);
+            Result salvo = lida.Salvar(null, Respostas(("NOME_SOCIAL", "Kevin C.")), SemGrupos(), [], Admitidas, PrecondicaoIfMatch.DeTags([lida.ETag]));
+            salvo.Error!.Code.Should().Be(InscricaoErrorCodes.RascunhoSoAntesDoEnvio);
             await context.SaveChangesAsync();
         }
 
@@ -297,7 +297,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         Inscricao relida = (await new InscricaoRepository(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System)
             .ObterPorIdAsync(original.Id))!;
         relida.Derivados["UF_RESIDENCIA"].GetString().Should().Be("PA");
-        relida.Respostas["NOME_SOCIAL"].GetString().Should().Be("Kevin C.");
+        relida.Respostas["NOME_SOCIAL"].GetString().Should().Be("Kevin");
     }
 
     [Fact(DisplayName = "O comprovante é lido do banco, na ordem de emissão: o 1 é a primeira submissão e o 2 a correção")]

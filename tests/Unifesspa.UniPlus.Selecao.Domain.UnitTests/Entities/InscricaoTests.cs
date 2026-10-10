@@ -185,6 +185,23 @@ public sealed class InscricaoTests
         inscricao.DomainEvents.Should().ContainSingle().Which.Should().BeOfType<InscricaoCorrigidaEvent>();
     }
 
+    [Fact(DisplayName = "Depois do envio, salvar rascunho é recusado sem mutar: só um novo envio muda a inscrição")]
+    public void Salvar_DepoisDoEnvio_RecusaSemMutar()
+    {
+        Inscricao inscricao = NovaInscricao();
+        inscricao.Submeter(
+            "000123", OfertaDoProcesso, Respostas(), SemGrupos(), SemAceites(), Admitidas, SemDerivados(), DefinicoesDosDerivados, "sha256-abc",
+            PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
+        int revisao = inscricao.Revisao;
+
+        Result resultado = inscricao.Salvar(
+            OfertaDoProcesso, Respostas(), SemGrupos(), SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(InscricaoErrorCodes.RascunhoSoAntesDoEnvio);
+        inscricao.Revisao.Should().Be(revisao);
+    }
+
     [Fact(DisplayName = "O comprovante nunca carrega número de documento, mesmo que a inscrição carregue")]
     public void Submeter_Comprovante_NaoCarregaDocumento()
     {
@@ -356,25 +373,6 @@ public sealed class InscricaoTests
         inscricao.Respostas.Should().NotContainKey("UF_RESIDENCIA");
         resultado.Value!.Derivados.Should().ContainKey("UF_RESIDENCIA");
         resultado.Value!.Respostas.Should().ContainKey("NOME_SOCIAL").And.NotContainKey("UF_RESIDENCIA");
-    }
-
-    [Fact(DisplayName = "Salvar depois de submeter mantém a definição das respostas derivadas")]
-    public void Salvar_DepoisDeSubmeter_MantemADefinicaoDosDerivados()
-    {
-        Inscricao inscricao = NovaInscricao();
-        Dictionary<string, JsonElement> derivados = new(StringComparer.Ordinal)
-        {
-            ["UF_RESIDENCIA"] = JsonSerializer.SerializeToElement("PA"),
-        };
-        inscricao.Submeter(
-            "000123", OfertaDoProcesso, Respostas(), SemGrupos(), SemAceites(), Admitidas, derivados, DefinicoesDosDerivados, "sha256-abc",
-            PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
-
-        inscricao.Salvar(null, Respostas(), SemGrupos(), SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]))
-            .IsSuccess.Should().BeTrue();
-
-        inscricao.Derivados.Should().ContainKey("UF_RESIDENCIA");
-        inscricao.DefinicoesDasRespostas.Should().ContainKey("UF_RESIDENCIA", "o derivado continua gravado e precisa da definição para virar linha");
     }
 
     [Theory(DisplayName = "A resposta do CPF é aceita só quando é o CPF do dono, com ou sem pontuação")]
