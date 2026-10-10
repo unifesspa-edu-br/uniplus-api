@@ -192,6 +192,36 @@ public sealed class InscricaoTests
         resultado.Value!.Respostas.Should().ContainKey("NOME_SOCIAL");
     }
 
+    [Fact(DisplayName = "O comprovante carrega os grupos declarados, sem o documento de uma ocorrência")]
+    public void Submeter_Comprovante_CarregaGruposSemDocumentoDaOcorrencia()
+    {
+        HashSet<string> identificador = new(StringComparer.Ordinal) { "RG_NUMERO" };
+        Inscricao inscricao = Inscricao.Iniciar(
+            Processo, PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", VersaoFormulario, identificador).Value!;
+
+        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = new(StringComparer.Ordinal)
+        {
+            ["COMPOSICAO_FAMILIAR"] =
+            [
+                new OcorrenciaDeGrupoInscricao("membro-1", new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+                {
+                    ["RG_NUMERO"] = JsonSerializer.SerializeToElement("25.062.156-3"),
+                    ["PARENTESCO"] = JsonSerializer.SerializeToElement("FILHO"),
+                }),
+            ],
+        };
+
+        Result<ComprovanteInscricao> resultado = inscricao.Submeter(
+            "000123", null, Respostas(), grupos, SemAceites(), "sha256-abc",
+            PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
+
+        IReadOnlyList<OcorrenciaDeGrupoInscricao> ocorrencias = resultado.Value!.Grupos.Should()
+            .ContainKey("COMPOSICAO_FAMILIAR").WhoseValue;
+        ocorrencias.Should().ContainSingle().Which.Id.Should().Be("membro-1");
+        ocorrencias.Single().Respostas.Should().NotContainKey("RG_NUMERO");
+        ocorrencias.Single().Respostas.Should().ContainKey("PARENTESCO");
+    }
+
     private static Inscricao NovaInscricao() =>
         Inscricao.Iniciar(Processo, PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", VersaoFormulario, SemIdentificador).Value!;
 

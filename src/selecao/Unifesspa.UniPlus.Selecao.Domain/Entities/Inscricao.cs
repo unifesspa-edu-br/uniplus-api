@@ -232,7 +232,8 @@ public sealed class Inscricao : EntityBase
         Revisao++;
 
         ComprovanteInscricao comprovante = ComprovanteInscricao.Emitir(
-            Id, NumeroInscricao, instante, hashIntegridade, OfertaCursoId, SemNumerosDeDocumento(Respostas), Aceites);
+            Id, NumeroInscricao, instante, hashIntegridade, OfertaCursoId,
+            SemNumerosDeDocumento(Respostas), SemNumerosDeDocumentoNosGrupos(Grupos), Aceites);
         _comprovantes.Add(comprovante);
 
         AddDomainEvent(primeiraSubmissao
@@ -268,6 +269,19 @@ public sealed class Inscricao : EntityBase
         respostas
             .Where(r => !FatosIdentificadorDeclarados.Contains(r.Key))
             .ToDictionary(static r => r.Key, static r => r.Value, StringComparer.Ordinal);
+
+    /// <summary>
+    /// A mesma exclusão de <see cref="SemNumerosDeDocumento"/>, aplicada às respostas de cada
+    /// ocorrência dentro de cada grupo — um grupo repetível também pode coletar um fato
+    /// <c>Identificador</c> por membro (ex.: documento de um dependente).
+    /// </summary>
+    private Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> SemNumerosDeDocumentoNosGrupos(
+        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos) =>
+        grupos.ToDictionary(
+            static g => g.Key,
+            g => (IReadOnlyList<OcorrenciaDeGrupoInscricao>)
+                [.. g.Value.Select(o => new OcorrenciaDeGrupoInscricao(o.Id, SemNumerosDeDocumento(o.Respostas)))],
+            StringComparer.Ordinal);
 }
 
 /// <summary>Uma ocorrência de grupo repetível da inscrição, pelo id estável do membro.</summary>

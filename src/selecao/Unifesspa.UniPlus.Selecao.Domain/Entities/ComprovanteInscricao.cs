@@ -33,6 +33,10 @@ public sealed class ComprovanteInscricao : IForensicEntity
     public IReadOnlyDictionary<string, JsonElement> Respostas { get; private init; } =
         new Dictionary<string, JsonElement>(StringComparer.Ordinal);
 
+    /// <summary>As ocorrências de grupo repetível no momento da submissão — mesma exclusão de documento que <see cref="Respostas"/>.</summary>
+    public IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> Grupos { get; private init; } =
+        new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal);
+
     public IReadOnlyList<AceiteDeTermo> Aceites { get; private init; } = [];
 
     // Construtor de materialização do EF Core.
@@ -45,11 +49,13 @@ public sealed class ComprovanteInscricao : IForensicEntity
         string hashIntegridade,
         Guid? ofertaCursoId,
         IReadOnlyDictionary<string, JsonElement> respostas,
+        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
         IReadOnlyList<AceiteDeTermo> aceites)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(numeroInscricao);
         ArgumentException.ThrowIfNullOrWhiteSpace(hashIntegridade);
         ArgumentNullException.ThrowIfNull(respostas);
+        ArgumentNullException.ThrowIfNull(grupos);
         ArgumentNullException.ThrowIfNull(aceites);
 
         return new ComprovanteInscricao
@@ -58,6 +64,7 @@ public sealed class ComprovanteInscricao : IForensicEntity
             NumeroInscricao = numeroInscricao,
             Instante = instante,
             HashIntegridade = hashIntegridade,
+            Grupos = grupos,
             OfertaCursoId = ofertaCursoId,
             Respostas = respostas,
             Aceites = aceites,
