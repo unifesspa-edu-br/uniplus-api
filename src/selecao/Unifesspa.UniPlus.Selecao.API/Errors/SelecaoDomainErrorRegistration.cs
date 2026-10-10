@@ -759,6 +759,8 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new(InscricaoErrorCodes.DonoDivergente, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.selecao.inscricao.dono_divergente", "Esta inscrição pertence a outro candidato")),
         new("Inscricao.CpfAusenteNoToken", new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.selecao.inscricao.cpf_ausente_no_token", "O token precisa trazer o claim cpf")),
         new("Inscricao.CorridaInconsistente", new DomainErrorMapping(StatusCodes.Status500InternalServerError, "uniplus.selecao.inscricao.corrida_inconsistente", "A inscrição colidiu no índice único, mas não foi possível relê-la")),
+        new(InscricaoErrorCodes.NaoEncontrada, new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.inscricao.nao_encontrada", "Nenhuma inscrição deste candidato neste processo seletivo")),
+        new(InscricaoErrorCodes.RespostaInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.resposta_invalida", "A resposta não atende a uma restrição do formulário")),
         // Base legal 1:N (Story #554, PR #898, issue #549, ADR-0074) — DocumentoExigidoBaseLegal
         // e o gate de publicação (ValidadorBaseLegalExigencias) aflora pelo
         // ProcessoSeletivo.ConformidadeInsuficiente já registrado acima, sem código novo.
