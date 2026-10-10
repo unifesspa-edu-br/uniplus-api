@@ -28,9 +28,10 @@ public static class TipoInstrumentoNormativoCodigo
     public const string Resolucao = "RESOLUCAO";
     public const string InstrucaoNormativa = "INSTRUCAO_NORMATIVA";
     public const string Parecer = "PARECER";
+    public const string Edital = "EDITAL";
 
     /// <summary>
-    /// Os seis tipos referenciáveis, na ordem de declaração do enum. A lista é derivada de
+    /// Os tipos referenciáveis, na ordem de declaração do enum. A lista é derivada de
     /// <see cref="TipoInstrumentoNormativo"/>, não escrita à mão: um tipo novo entra aqui ao
     /// ser declarado no enum, e a ausência do rótulo correspondente aparece como exceção na
     /// primeira leitura, em vez de virar um tipo que a API deixa de anunciar.
@@ -43,7 +44,7 @@ public static class TipoInstrumentoNormativoCodigo
     ];
 
     /// <summary>
-    /// Os seis códigos canônicos, derivados de <see cref="Descritos"/> — uma segunda lista
+    /// Os códigos canônicos, derivados de <see cref="Descritos"/> — uma segunda lista
     /// escrita à mão envelheceria sem avisar quando um código novo entrasse só num dos dois
     /// lugares.
     /// </summary>
@@ -60,6 +61,7 @@ public static class TipoInstrumentoNormativoCodigo
         TipoInstrumentoNormativo.Resolucao => "Resolução",
         TipoInstrumentoNormativo.InstrucaoNormativa => "Instrução Normativa",
         TipoInstrumentoNormativo.Parecer => "Parecer",
+        TipoInstrumentoNormativo.Edital => "Edital",
         _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, "TipoInstrumentoNormativo sem rótulo declarado."),
     };
 
@@ -77,6 +79,8 @@ public static class TipoInstrumentoNormativoCodigo
             "Ato administrativo de caráter técnico-operacional que detalha a execução de normas superiores.",
         TipoInstrumentoNormativo.Parecer =>
             "Manifestação técnica ou jurídica de órgão competente que orienta a aplicação de normas — vinculante quando aprovado pela autoridade competente.",
+        TipoInstrumentoNormativo.Edital =>
+            "Ato de convocação do processo seletivo que fixa as regras do certame, inclusive o bônus que ele institui.",
         _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, "TipoInstrumentoNormativo sem descrição declarada."),
     };
 
@@ -95,6 +99,7 @@ public static class TipoInstrumentoNormativoCodigo
         TipoInstrumentoNormativo.Resolucao => Resolucao,
         TipoInstrumentoNormativo.InstrucaoNormativa => InstrucaoNormativa,
         TipoInstrumentoNormativo.Parecer => Parecer,
+        TipoInstrumentoNormativo.Edital => Edital,
         TipoInstrumentoNormativo.Nenhum => throw new ArgumentOutOfRangeException(
             nameof(tipo), tipo, "TipoInstrumentoNormativo.Nenhum é sentinela e não tem código canônico."),
         _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, "TipoInstrumentoNormativo desconhecido."),
@@ -112,6 +117,7 @@ public static class TipoInstrumentoNormativoCodigo
         Resolucao => TipoInstrumentoNormativo.Resolucao,
         InstrucaoNormativa => TipoInstrumentoNormativo.InstrucaoNormativa,
         Parecer => TipoInstrumentoNormativo.Parecer,
+        Edital => TipoInstrumentoNormativo.Edital,
         _ => TipoInstrumentoNormativo.Nenhum,
     };
 }

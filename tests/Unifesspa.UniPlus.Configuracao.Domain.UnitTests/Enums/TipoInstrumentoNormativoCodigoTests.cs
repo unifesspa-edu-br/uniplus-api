@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 /// <summary>
 /// Garante o contrato do vocabulário <see cref="TipoInstrumentoNormativoCodigo"/>:
-/// seis tipos canônicos, sentinela excluída, round-trip ToCodigo/FromCodigo estável,
+/// os tipos canônicos, sentinela excluída, round-trip ToCodigo/FromCodigo estável,
 /// Descritos derivado do enum (não lista escrita à mão) e Descricao não-vazia em todos.
 /// </summary>
 public sealed class TipoInstrumentoNormativoCodigoTests
@@ -18,6 +18,7 @@ public sealed class TipoInstrumentoNormativoCodigoTests
     [InlineData(TipoInstrumentoNormativo.Resolucao, "RESOLUCAO")]
     [InlineData(TipoInstrumentoNormativo.InstrucaoNormativa, "INSTRUCAO_NORMATIVA")]
     [InlineData(TipoInstrumentoNormativo.Parecer, "PARECER")]
+    [InlineData(TipoInstrumentoNormativo.Edital, "EDITAL")]
     public void ToCodigo_MembroCanonico_DevolveCodigoCorreto(TipoInstrumentoNormativo tipo, string codigoEsperado)
     {
         tipo.ToCodigo().Should().Be(codigoEsperado);
@@ -37,6 +38,7 @@ public sealed class TipoInstrumentoNormativoCodigoTests
     [InlineData(TipoInstrumentoNormativo.Resolucao)]
     [InlineData(TipoInstrumentoNormativo.InstrucaoNormativa)]
     [InlineData(TipoInstrumentoNormativo.Parecer)]
+    [InlineData(TipoInstrumentoNormativo.Edital)]
     public void FromCodigo_RoundTrip_Estavel(TipoInstrumentoNormativo tipo)
     {
         TipoInstrumentoNormativoCodigo.FromCodigo(tipo.ToCodigo()).Should().Be(tipo);
@@ -52,8 +54,8 @@ public sealed class TipoInstrumentoNormativoCodigoTests
         TipoInstrumentoNormativoCodigo.FromCodigo(codigo).Should().Be(TipoInstrumentoNormativo.Nenhum);
     }
 
-    [Fact(DisplayName = "Descritos expõe exatamente os seis tipos canônicos, na ordem de declaração do enum, sem o sentinela Nenhum")]
-    public void Descritos_ExpoeSeisTipos_SemNenhum()
+    [Fact(DisplayName = "Descritos expõe exatamente os tipos canônicos, na ordem de declaração do enum, sem o sentinela Nenhum")]
+    public void Descritos_ExpoeOsTiposCanonicos_SemNenhum()
     {
         TipoInstrumentoNormativoCodigo.Descritos.Select(d => d.Codigo).Should().Equal(
             "LEI",
@@ -61,7 +63,8 @@ public sealed class TipoInstrumentoNormativoCodigoTests
             "PORTARIA",
             "RESOLUCAO",
             "INSTRUCAO_NORMATIVA",
-            "PARECER");
+            "PARECER",
+            "EDITAL");
     }
 
     [Fact(DisplayName = "Descritos: todos os itens têm Nome e Descricao não-vazios")]
@@ -81,10 +84,10 @@ public sealed class TipoInstrumentoNormativoCodigoTests
             .Equal(TipoInstrumentoNormativoCodigo.Descritos.Select(static d => d.Codigo));
     }
 
-    [Fact(DisplayName = "CodigosEmTexto contém todos os seis códigos separados por vírgula")]
+    [Fact(DisplayName = "CodigosEmTexto contém todos os códigos separados por vírgula")]
     public void CodigosEmTexto_ContemTodosOsCodigos()
     {
-        string[] codigos = ["LEI", "DECRETO", "PORTARIA", "RESOLUCAO", "INSTRUCAO_NORMATIVA", "PARECER"];
+        string[] codigos = ["LEI", "DECRETO", "PORTARIA", "RESOLUCAO", "INSTRUCAO_NORMATIVA", "PARECER", "EDITAL"];
 
         foreach (string codigo in codigos)
         {

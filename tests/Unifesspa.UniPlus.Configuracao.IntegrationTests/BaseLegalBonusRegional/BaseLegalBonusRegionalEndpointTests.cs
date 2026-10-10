@@ -127,6 +127,22 @@ public sealed class BaseLegalBonusRegionalEndpointTests
         root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
     }
 
+    [Fact(DisplayName = "POST com o edital como instrumento cria (201) e grava o tipo")]
+    public async Task Criar_ComEdital_Retorna201EPersiste()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        object body = MunicipioCorpo(identificacao: "Edital nº 1/2026", tipoInstrumento: "EDITAL");
+
+        HttpResponseMessage criar = await EnviarPostAdmin(client, body);
+
+        criar.StatusCode.Should().Be(HttpStatusCode.Created);
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+        HttpResponseMessage obter = await client.GetAsync(
+            new Uri($"/api/configuracao/base-legal-bonus-regional/{id}", UriKind.Relative));
+        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("tipoInstrumento").GetString().Should().Be("EDITAL");
+    }
+
     [Fact(DisplayName = "POST sem nenhum município retorna 422 sem gravar")]
     public async Task Criar_SemMunicipio_Retorna422()
     {
@@ -323,9 +339,10 @@ public sealed class BaseLegalBonusRegionalEndpointTests
 
     private static object MunicipioCorpo(
         string identificacao = "Portaria Unifesspa nº 2514/2023",
-        object[]? municipios = null) => new
+        object[]? municipios = null,
+        string tipoInstrumento = "PORTARIA") => new
         {
-            tipoInstrumento = "PORTARIA",
+            tipoInstrumento,
             identificacao,
             descricao = "Institui inclusão regional",
             municipios = municipios ?? [new { codigoIbge = "1504208", nome = "Marabá", uf = "PA" }],

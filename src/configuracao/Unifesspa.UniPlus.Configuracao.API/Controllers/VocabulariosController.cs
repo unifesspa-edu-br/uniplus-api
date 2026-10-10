@@ -92,7 +92,7 @@ public sealed class VocabulariosController : ControllerBase
         return Ok(codigos);
     }
 
-    /// <summary>Lista os seis tipos de instrumento normativo da Base Legal de Bônus Regional, com código, nome e descrição.</summary>
+    /// <summary>Lista os tipos de instrumento normativo da Base Legal de Bônus Regional, com código, nome e descrição.</summary>
     [HttpGet("vocabularios/tipos-instrumento-normativo")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "codigo-tipo-instrumento-normativo", Versions = [1])]
