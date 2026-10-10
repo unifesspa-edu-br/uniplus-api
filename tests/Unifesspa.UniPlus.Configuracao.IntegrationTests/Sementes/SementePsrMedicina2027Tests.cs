@@ -29,7 +29,7 @@ public sealed class SementePsrMedicina2027Tests
 {
     private static readonly string[] CodigosDosFatos =
     [
-        "SOLICITA_BONUS_REGIONAL", "MUNICIPIO_EM_AREA_BONUS",
+        "SOLICITA_BONUS_REGIONAL", "MUNICIPIO_EM_AREA_BONUS", "SOLICITA_FATOR_ATENUACAO", "MUNICIPIO_FATOR_ATENUACAO",
         "CERTIFICADO_EM_EMITIDO", "HABILITACAO_POR_PROCURADOR", "VINCULO_OUTRA_IES_PUBLICA_OU_PROUNI", "CATEGORIA_RENDA",
         "CATEGORIAS_RENDA_FAMILIA",
     ];
@@ -96,6 +96,26 @@ public sealed class SementePsrMedicina2027Tests
         }
 
         (await RetratoAsync(ctx)).Should().Be(antes);
+    }
+
+    [Fact(DisplayName = "O termo do Banco Central está só na habilitação, condicionado a CONCORRER_RENDA, e o fator de atenuação pergunta o município só a quem concluiu por certificação e o pediu")]
+    public async Task Modelos_TermoDoBancoCentralNaHabilitacaoEFatorDeAtenuacaoNaInscricao()
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        ModeloFormulario inscricao = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricao);
+        ModeloFormulario habilitacao = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeHabilitacao);
+
+        inscricao.Conteudo.Termos.Should().NotContain(static t => t.Codigo == "CONSULTA_AO_BANCO_CENTRAL");
+
+        TermoDoModelo termoDoBancoCentral = habilitacao.Conteudo.Termos.Should()
+            .ContainSingle(static t => t.Codigo == "CONSULTA_AO_BANCO_CENTRAL").Subject;
+        termoDoBancoCentral.FatosCitados.Should().BeEquivalentTo(["CONCORRER_RENDA"]);
+        habilitacao.Conteudo.Pressupostos.Should().Contain("CONCORRER_RENDA");
+
+        ItemDoModelo municipioAtenuacao = inscricao.Conteudo.Itens.Should()
+            .ContainSingle(static i => i.FatoCodigo == "MUNICIPIO_FATOR_ATENUACAO").Subject;
+        municipioAtenuacao.FatosCitados.Should().BeEquivalentTo(["FORMA_CONCLUSAO_EM", "SOLICITA_FATOR_ATENUACAO"]);
     }
 
     [Fact(DisplayName = "Fato que o domínio recusa derruba a geração da semente, em vez de virar linha que a API não aceita")]

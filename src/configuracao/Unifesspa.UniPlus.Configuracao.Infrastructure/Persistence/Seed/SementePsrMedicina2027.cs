@@ -129,6 +129,19 @@ public static class SementePsrMedicina2027
                 ClassificacaoProtecaoDado.Pessoal, FinalidadeDoEndereco, HipoteseLegal),
             Sem()),
 
+        // Fator de atenuação por certificação (edital, item 9.42): quem concluiu por proficiência,
+        // ENCCEJA ou ENEM pede o fator pelo município em que residiu, não pelo de ensino médio.
+        new(11, _ => FatoCandidato.CriarDoAdministrador(
+                "SOLICITA_FATOR_ATENUACAO", "Solicita o fator de atenuação", "Se o candidato que concluiu o ensino médio por certificação pede o fator de atenuação do edital.", DominioFato.Booleano,
+                CardinalidadeFato.Escalar, null, null, PontoInscricao, EscopoFato.Candidato,
+                ClassificacaoProtecaoDado.Pessoal, FinalidadeDaEscolaridade, HipoteseLegal),
+            Sem()),
+        new(12, _ => FatoCandidato.CriarDoAdministrador(
+                "MUNICIPIO_FATOR_ATENUACAO", "Município de residência para o fator de atenuação", "O município em que o candidato residiu no período de referência do edital, entre os que o edital lista para o fator de atenuação.", DominioFato.Categorico,
+                CardinalidadeFato.Escalar, FonteValoresFato.MunicipiosBonus, null, PontoInscricao, EscopoFato.Candidato,
+                ClassificacaoProtecaoDado.Pessoal, FinalidadeDaEscolaridade, HipoteseLegal),
+            Sem()),
+
         // Habilitação: o que o edital pede de quem é convocado (itens 9.16, 9.21 e 9.24).
         new(6, _ => FatoCandidato.CriarDoAdministrador(
                 "CERTIFICADO_EM_EMITIDO", "Certificado de conclusão do ensino médio já emitido", "Se o certificado de conclusão do ensino médio já foi emitido. Sem ele, a habilitação pede a declaração de conclusão e o termo de responsabilidade.", DominioFato.Booleano,
@@ -266,35 +279,42 @@ public static class SementePsrMedicina2027
                 Campo(OrigemEscolar.FatoOndeCursou, 104, escolaridade, "Onde você cursou o ensino médio?", TipoRenderizacao.SelecaoUnica,
                     "A resposta define se você pode concorrer às vagas para quem cursou o ensino médio em escola pública.",
                     restricoes: [OpcoesDeOndeCursou()]),
-                Campo("PCD", 105, cotas, "Você é pessoa com deficiência?", TipoRenderizacao.Booleano,
+                Campo("SOLICITA_FATOR_ATENUACAO", 105, escolaridade, "Deseja solicitar o fator de atenuação do edital?", TipoRenderizacao.Booleano,
+                    "O fator de atenuação considera o município em que você residiu no período do edital, em vez do município em que cursou o ensino médio.",
+                    exibicao: Se(OrigemEscolar.FatoFormaDeConclusao, Operador.Em, OrigemEscolar.Certificacoes)),
+                Campo("MUNICIPIO_FATOR_ATENUACAO", 106, escolaridade, "Em qual município você residiu no período do edital?", TipoRenderizacao.SelecaoUnica,
+                    "Só aparecem os municípios que o edital lista para o fator de atenuação. A residência é comprovada na habilitação.",
+                    exibicao: SeTudo(
+                        (OrigemEscolar.FatoFormaDeConclusao, Operador.Em, OrigemEscolar.Certificacoes),
+                        ("SOLICITA_FATOR_ATENUACAO", Operador.Igual, true))),
+                Campo("PCD", 107, cotas, "Você é pessoa com deficiência?", TipoRenderizacao.Booleano,
                     "A deficiência é comprovada por laudo, conforme o edital."),
-                Campo("TIPO_DEFICIENCIA", 106, cotas, "Tipo de deficiência", TipoRenderizacao.SelecaoUnica, null,
+                Campo("TIPO_DEFICIENCIA", 108, cotas, "Tipo de deficiência", TipoRenderizacao.SelecaoUnica, null,
                     exibicao: Se("PCD", Operador.Igual, true)),
-                Campo("CONCORRER_PCD", 107, cotas, "Deseja concorrer às vagas para pessoas com deficiência?", TipoRenderizacao.Booleano, null,
+                Campo("CONCORRER_PCD", 109, cotas, "Deseja concorrer às vagas para pessoas com deficiência?", TipoRenderizacao.Booleano, null,
                     exibicao: Se("PCD", Operador.Igual, true)),
-                Campo("CONCORRER_EP", 108, cotas, "Deseja concorrer às vagas para quem cursou o ensino médio em escola pública?", TipoRenderizacao.Booleano, null,
+                Campo("CONCORRER_EP", 110, cotas, "Deseja concorrer às vagas para quem cursou o ensino médio em escola pública?", TipoRenderizacao.Booleano, null,
                     exibicao: Se(OrigemEscolar.FatoEgresso, Operador.Igual, true)),
-                Campo("CONCORRER_PPI", 109, cotas, "Deseja concorrer às vagas para pretos, pardos e indígenas?", TipoRenderizacao.Booleano,
+                Campo("CONCORRER_PPI", 111, cotas, "Deseja concorrer às vagas para pretos, pardos e indígenas?", TipoRenderizacao.Booleano,
                     "Para quem se autodeclara preto, pardo ou indígena."),
-                Campo("QUILOMBOLA", 110, cotas, "Você se autodeclara quilombola?", TipoRenderizacao.Booleano, null),
-                Campo("CONCORRER_Q", 111, cotas, "Deseja concorrer às vagas para quilombolas?", TipoRenderizacao.Booleano, null,
+                Campo("QUILOMBOLA", 112, cotas, "Você se autodeclara quilombola?", TipoRenderizacao.Booleano, null),
+                Campo("CONCORRER_Q", 113, cotas, "Deseja concorrer às vagas para quilombolas?", TipoRenderizacao.Booleano, null,
                     exibicao: Se("QUILOMBOLA", Operador.Igual, true)),
-                Campo("BAIXA_RENDA", 112, cotas, "A renda da sua família é de até um salário mínimo por pessoa?", TipoRenderizacao.Booleano,
+                Campo("BAIXA_RENDA", 114, cotas, "A renda da sua família é de até um salário mínimo por pessoa?", TipoRenderizacao.Booleano,
                     "Some a renda bruta mensal de todos da família e divida pelo número de pessoas. A renda é comprovada na habilitação."),
-                Campo("CONCORRER_RENDA", 113, cotas, "Deseja concorrer às vagas com critério de renda?", TipoRenderizacao.Booleano, null,
+                Campo("CONCORRER_RENDA", 115, cotas, "Deseja concorrer às vagas com critério de renda?", TipoRenderizacao.Booleano, null,
                     exibicao: Se("BAIXA_RENDA", Operador.Igual, true)),
-                Campo("CONDICAO_ATENDIMENTO", 114, cotas, "Precisa de atendimento especializado nas etapas do processo?", TipoRenderizacao.SelecaoMultipla,
+                Campo("CONDICAO_ATENDIMENTO", 116, cotas, "Precisa de atendimento especializado nas etapas do processo?", TipoRenderizacao.SelecaoMultipla,
                     "Marque o que se aplica a você. Deixe em branco se não precisar.",
                     obrigatoriedade: Obrigatoriedade.Nunca),
-                Campo("SOLICITA_BONUS_REGIONAL", 115, bonus, "Deseja solicitar o bônus regional?", TipoRenderizacao.Booleano, null),
-                Campo("MUNICIPIO_EM_AREA_BONUS", 116, bonus, "Em qual município da área do bônus você mora?", TipoRenderizacao.SelecaoUnica,
+                Campo("SOLICITA_BONUS_REGIONAL", 117, bonus, "Deseja solicitar o bônus regional?", TipoRenderizacao.Booleano, null),
+                Campo("MUNICIPIO_EM_AREA_BONUS", 118, bonus, "Em qual município da área do bônus você mora?", TipoRenderizacao.SelecaoUnica,
                     "Só aparecem os municípios que o edital lista.",
                     exibicao: Se("SOLICITA_BONUS_REGIONAL", Operador.Igual, true)),
             ],
             [
                 Termo(Termos[0], 1),
                 Termo(Termos[1], 2),
-                Termo(Termos[2], 3, exibicao: Se("CONCORRER_RENDA", Operador.Igual, true)),
             ],
             [],
             []);
@@ -321,8 +341,13 @@ public static class SementePsrMedicina2027
                     "O procurador apresenta a procuração e o próprio documento de identificação."),
                 Campo("VINCULO_OUTRA_IES_PUBLICA_OU_PROUNI", 3, conclusao, "Você tem matrícula ativa em outra instituição pública de ensino superior ou bolsa do ProUni?", TipoRenderizacao.Booleano, null),
             ],
-            [],
-            [OrigemEscolar.FatoFormaDeConclusao],
+            [
+                // Pressuposto aceita só fato Declarado; MODALIDADE_CONVOCACAO (UNI-REQ-0147) é
+                // Derivado. CONCORRER_RENDA é o superconjunto declarado: todo convocado em cota de
+                // renda o respondeu antes.
+                Termo(Termos[2], 1, exibicao: Se("CONCORRER_RENDA", Operador.Igual, true)),
+            ],
+            [OrigemEscolar.FatoFormaDeConclusao, "CONCORRER_RENDA"],
             [
                 new GrupoDoModelo(
                     familia, 4, familia, "Membros da composição familiar", Minimo: 1, Maximo: null, Exibicao: null,
@@ -370,6 +395,17 @@ public static class SementePsrMedicina2027
     {
         CondicaoDnf condicao = Exigir(CondicaoDnf.Criar(fato, operador, JsonSerializer.SerializeToElement(valor)), $"condição sobre {fato}");
         return Exigir(PredicadoDnf.CriarDeCondicoesAgrupadas([(1, condicao)]), $"predicado sobre {fato}");
+    }
+
+    /// <summary>Todas as condições precisam valer juntas — uma única cláusula DNF com todas elas (AND).</summary>
+    private static PredicadoDnf SeTudo(params (string Fato, Operador Operador, object Valor)[] condicoes)
+    {
+        List<(int Grupo, CondicaoDnf Condicao)> grupo =
+        [
+            .. condicoes.Select(c => (1, Exigir(
+                CondicaoDnf.Criar(c.Fato, c.Operador, JsonSerializer.SerializeToElement(c.Valor)), $"condição sobre {c.Fato}"))),
+        ];
+        return Exigir(PredicadoDnf.CriarDeCondicoesAgrupadas(grupo), "predicado composto");
     }
 
     private static string ComandoDoModelo(
