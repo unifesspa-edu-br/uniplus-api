@@ -222,6 +222,33 @@ public sealed class InscricaoTests
         ocorrencias.Single().Respostas.Should().ContainKey("PARENTESCO");
     }
 
+    [Fact(DisplayName = "Reidratar reconstrói o estado persistido, inclusive CreatedAt/UpdatedAt e a revisão")]
+    public void Reidratar_ReconstroiEstadoPersistido()
+    {
+        Guid id = Guid.CreateVersion7();
+        Guid oferta = Guid.NewGuid();
+        DateTimeOffset criadoEm = new(2026, 9, 1, 10, 0, 0, TimeSpan.Zero);
+        DateTimeOffset atualizadoEm = new(2026, 9, 2, 11, 0, 0, TimeSpan.Zero);
+        Dictionary<string, JsonElement> respostas = Respostas();
+
+        Inscricao inscricao = Inscricao.Reidratar(
+            id, Processo, PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer",
+            SituacaoInscricao.Submetida, VersaoFormulario, oferta, "000123",
+            respostas, SemGrupos(), SemAceites(), SemIdentificador,
+            revisao: 3, criadoEm, atualizadoEm);
+
+        inscricao.Id.Should().Be(id);
+        inscricao.Situacao.Should().Be(SituacaoInscricao.Submetida);
+        inscricao.OfertaCursoId.Should().Be(oferta);
+        inscricao.NumeroInscricao.Should().Be("000123");
+        inscricao.Revisao.Should().Be(3);
+        inscricao.ETag.Should().Be($"\"{id}:3\"");
+        inscricao.CreatedAt.Should().Be(criadoEm);
+        inscricao.UpdatedAt.Should().Be(atualizadoEm);
+        inscricao.Respostas.Should().ContainKey("NOME_SOCIAL");
+        inscricao.Comprovantes.Should().BeEmpty("Reidratar não recarrega o histórico de comprovantes no agregado");
+    }
+
     private static Inscricao NovaInscricao() =>
         Inscricao.Iniciar(Processo, PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", VersaoFormulario, SemIdentificador).Value!;
 

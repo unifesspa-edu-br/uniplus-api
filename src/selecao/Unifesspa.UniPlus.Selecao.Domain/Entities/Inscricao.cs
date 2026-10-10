@@ -125,6 +125,77 @@ public sealed class Inscricao : EntityBase
         });
     }
 
+    /// <summary>
+    /// Reconstrói a inscrição a partir do estado persistido — nunca "cria": quem chama (o
+    /// repositório de Infrastructure, por isso <see langword="public"/> — Domain não dá
+    /// <c>InternalsVisibleTo</c> a Infrastructure neste módulo) já tem os valores que a gravação
+    /// produziu, <see cref="Kernel.Domain.Entities.EntityBase.CreatedAt"/>/
+    /// <see cref="Kernel.Domain.Entities.EntityBase.UpdatedAt"/> inclusos. Nunca chamar para
+    /// construir uma inscrição nova — isso é <see cref="Iniciar"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Existe porque <see cref="Inscricao"/> precisa do mesmo desenho de tradução record↔domínio de
+    /// <c>VinculoDiscenteRepository</c> (ADR-0121, cifra na fronteira) — e, diferente de
+    /// <c>VinculoDiscente</c>, herda <see cref="Kernel.Domain.Entities.EntityBase"/>: os setters de
+    /// <c>CreatedAt</c>/<c>Id</c> são <c>protected</c>/<c>protected init</c>, inacessíveis a uma
+    /// classe de Infrastructure. Esta factory, por viver dentro do corpo de <see cref="Inscricao"/>,
+    /// pode atribuí-los — mesmo padrão de <c>VinculoDiscente.Reidratar</c>.
+    /// </para>
+    /// <para>
+    /// Não recebe os <see cref="Comprovantes"/> já emitidos: nenhuma mutação do agregado precisa
+    /// deles em memória (<see cref="Submeter"/> decide a primeira submissão por
+    /// <see cref="NumeroInscricao"/>, não pela contagem de comprovantes), e a leitura de um
+    /// comprovante específico é por consulta direta (<c>GET .../comprovantes/{n}</c>), não pelo
+    /// agregado inteiro — mesmo raciocínio de <c>ObrigatoriedadeLegalHistorico</c>, nunca
+    /// recarregado no agregado que o gerou.
+    /// </para>
+    /// </remarks>
+    public static Inscricao Reidratar(
+        Guid id,
+        Guid processoSeletivoId,
+        Cpf cpf,
+        string sub,
+        string emissorToken,
+        SituacaoInscricao situacao,
+        Guid versaoFormularioId,
+        Guid? ofertaCursoId,
+        string? numeroInscricao,
+        IReadOnlyDictionary<string, JsonElement> respostas,
+        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
+        IReadOnlyList<AceiteDeTermo> aceites,
+        IReadOnlySet<string> fatosIdentificadorDeclarados,
+        int revisao,
+        DateTimeOffset createdAt,
+        DateTimeOffset? updatedAt)
+    {
+        ArgumentNullException.ThrowIfNull(cpf);
+        ArgumentNullException.ThrowIfNull(respostas);
+        ArgumentNullException.ThrowIfNull(grupos);
+        ArgumentNullException.ThrowIfNull(aceites);
+        ArgumentNullException.ThrowIfNull(fatosIdentificadorDeclarados);
+
+        return new Inscricao
+        {
+            Id = id,
+            ProcessoSeletivoId = processoSeletivoId,
+            Cpf = cpf,
+            Sub = sub,
+            EmissorToken = emissorToken,
+            Situacao = situacao,
+            VersaoFormularioId = versaoFormularioId,
+            OfertaCursoId = ofertaCursoId,
+            NumeroInscricao = numeroInscricao,
+            Respostas = respostas,
+            Grupos = grupos,
+            Aceites = aceites,
+            FatosIdentificadorDeclarados = fatosIdentificadorDeclarados,
+            Revisao = revisao,
+            CreatedAt = createdAt,
+            UpdatedAt = updatedAt,
+        };
+    }
+
     /// <summary>O ETag forte da revisão corrente — identidade da inscrição dentro dele (mesmo motivo do ETag de <see cref="RascunhoRetificacao"/>: ABA sem ela).</summary>
     public string ETag => $"\"{Id}:{Revisao}\"";
 
