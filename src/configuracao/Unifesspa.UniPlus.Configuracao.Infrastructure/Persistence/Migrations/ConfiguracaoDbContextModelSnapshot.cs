@@ -1865,33 +1865,12 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         },
                         new
                         {
-                            Id = new Guid("fa700000-0000-7000-8000-000000000034"),
+                            Id = new Guid("fa700000-0000-7000-8000-000000000051"),
                             Ativo = true,
-                            Binding = "CAMPO_FORMULARIO:DOCUMENTO_ESTRANGEIRO_TIPO",
-                            Cardinalidade = "ESCALAR",
-                            ClassificacaoProtecao = "PESSOAL",
-                            Codigo = "DOCUMENTO_ESTRANGEIRO_TIPO",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            Dependencias = new string[0],
-                            Dominio = "CATEGORICO",
-                            Escopo = "CANDIDATO",
-                            FinalidadeTratamento = "Identificação do candidato no processo seletivo.",
-                            FonteValores = "GLOBAL",
-                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
-                            Nome = "Documento de identificação do estrangeiro",
-                            Origem = "DECLARADO",
-                            PontoResolucao = "INSCRICAO",
-                            RegrasPadrao = "[]",
-                            Sistema = true
-                        },
-                        new
-                        {
-                            Id = new Guid("fa700000-0000-7000-8000-000000000035"),
-                            Ativo = true,
-                            Binding = "CAMPO_FORMULARIO:DOCUMENTO_ESTRANGEIRO_NUMERO",
+                            Binding = "CAMPO_FORMULARIO:PASSAPORTE_NUMERO",
                             Cardinalidade = "ESCALAR",
                             ClassificacaoProtecao = "IDENTIFICADOR",
-                            Codigo = "DOCUMENTO_ESTRANGEIRO_NUMERO",
+                            Codigo = "PASSAPORTE_NUMERO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
                             Dominio = "TEXTO",
@@ -1899,7 +1878,28 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             FinalidadeTratamento = "Identificação do candidato no processo seletivo.",
                             Formato = "LIVRE",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
-                            Nome = "Número do documento do estrangeiro",
+                            Nome = "Número do passaporte",
+                            Origem = "DECLARADO",
+                            PontoResolucao = "INSCRICAO",
+                            RegrasPadrao = "[]",
+                            Sistema = true
+                        },
+                        new
+                        {
+                            Id = new Guid("fa700000-0000-7000-8000-000000000052"),
+                            Ativo = true,
+                            Binding = "CAMPO_FORMULARIO:RNM_NUMERO",
+                            Cardinalidade = "ESCALAR",
+                            ClassificacaoProtecao = "IDENTIFICADOR",
+                            Codigo = "RNM_NUMERO",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Dependencias = new string[0],
+                            Dominio = "TEXTO",
+                            Escopo = "CANDIDATO",
+                            FinalidadeTratamento = "Identificação do candidato no processo seletivo.",
+                            Formato = "LIVRE",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            Nome = "Número do Registro Nacional Migratório (RNM)",
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
@@ -2523,26 +2523,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000026"),
                             Ordem = 11,
                             Orientacao = "Pessoa sem parentesco com o candidato que integra o grupo familiar."
-                        },
-                        new
-                        {
-                            Id = new Guid("fa70d000-0000-7000-8000-000000000025"),
-                            Ativo = true,
-                            Codigo = "PASSAPORTE",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            Descricao = "Passaporte",
-                            FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000034"),
-                            Ordem = 0
-                        },
-                        new
-                        {
-                            Id = new Guid("fa70d000-0000-7000-8000-000000000026"),
-                            Ativo = true,
-                            Codigo = "RNM",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            Descricao = "Registro Nacional Migratório (RNM)",
-                            FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000034"),
-                            Ordem = 1
                         },
                         new
                         {

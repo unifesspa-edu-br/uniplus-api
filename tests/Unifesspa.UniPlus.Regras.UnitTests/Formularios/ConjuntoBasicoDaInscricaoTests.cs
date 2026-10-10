@@ -148,17 +148,20 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
         erros.Select(static e => e.Error.Code).Should().Equal(alterada ? [EstruturaFormularioErrorCodes.SecaoReservadaAlterada] : []);
     }
 
-    [Theory(DisplayName = "O estrangeiro não vê RG nem naturalidade e tem CPF opcional; quem não é estrangeiro, o contrário")]
+    [Theory(DisplayName = "O estrangeiro não vê RG nem naturalidade, informa passaporte e RNM e tem CPF opcional; quem não é estrangeiro, o contrário")]
     [InlineData("ESTRANGEIRO", Ternario.Falso, Ternario.Verdadeiro, Ternario.Falso)]
     [InlineData("NATO", Ternario.Verdadeiro, Ternario.Falso, Ternario.Verdadeiro)]
     [InlineData("NATURALIZADO", Ternario.Verdadeiro, Ternario.Falso, Ternario.Verdadeiro)]
-    public void Avaliar_PelaNacionalidade(string nacionalidade, Ternario rgVisivel, Ternario passaporteVisivel, Ternario cpfObrigatorio)
+    public void Avaliar_PelaNacionalidade(string nacionalidade, Ternario rgVisivel, Ternario documentosDoEstrangeiro, Ternario cpfObrigatorio)
     {
         AvaliacaoFormulario avaliacao = Avaliar(("NACIONALIDADE", nacionalidade));
 
         Item(avaliacao, "RG_NUMERO").Visivel.Should().Be(rgVisivel);
         Item(avaliacao, "NATURALIDADE_MUNICIPIO").Visivel.Should().Be(rgVisivel);
-        Item(avaliacao, "DOCUMENTO_ESTRANGEIRO_NUMERO").Visivel.Should().Be(passaporteVisivel);
+        Item(avaliacao, "PASSAPORTE_NUMERO").Visivel.Should().Be(documentosDoEstrangeiro);
+        Item(avaliacao, "PASSAPORTE_NUMERO").Obrigatorio.Should().Be(documentosDoEstrangeiro);
+        Item(avaliacao, "RNM_NUMERO").Visivel.Should().Be(documentosDoEstrangeiro);
+        Item(avaliacao, "RNM_NUMERO").Obrigatorio.Should().Be(documentosDoEstrangeiro);
         Item(avaliacao, "CPF").Visivel.Should().Be(Ternario.Verdadeiro);
         Item(avaliacao, "CPF").Obrigatorio.Should().Be(cpfObrigatorio);
     }

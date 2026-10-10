@@ -341,6 +341,49 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Theory(DisplayName = "Estrangeiro que informa só um dos documentos, passaporte ou RNM, é recusado pela falta do outro")]
+    [InlineData("PASSAPORTE_NUMERO", "RNM_NUMERO")]
+    [InlineData("RNM_NUMERO", "PASSAPORTE_NUMERO")]
+    public async Task Handle_EstrangeiroComUmSoDosDocumentos_Recusa(string informado, string faltante)
+    {
+        Cpf cpf = PersonasDeTeste.KevinCarvalho;
+        (VersaoConfiguracao versao, GrafoConfiguracao grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
+        Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+
+        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
+        inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
+
+        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
+
+        IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
+        ConfigurarCodecs(registroCodecs, versao, grafo);
+
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+
+        // O estrangeiro não responde o RG nem a naturalidade, que ficam ocultos para ele.
+        Dictionary<string, JsonElement> respostas = RespostasDoConjuntoBasico(cpf);
+        foreach (string doBrasileiro in new[] { "RG_NUMERO", "RG_ORGAO_EMISSOR", "RG_UF", "RG_DATA_EMISSAO", "NATURALIDADE_UF", "NATURALIDADE_MUNICIPIO" })
+        {
+            respostas.Remove(doBrasileiro);
+        }
+
+        respostas["NACIONALIDADE"] = JsonSerializer.SerializeToElement("ESTRANGEIRO");
+        respostas[informado] = JsonSerializer.SerializeToElement("FX1234567");
+        respostas["APELIDO"] = JsonSerializer.SerializeToElement("Kevin");
+        InscricaoRequest request = new(
+            null, respostas, null, [new AceiteDeTermoInput("TERMO_VERACIDADE", termo.VersaoId, termo.Hash)]);
+
+        Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
+            new SubmeterInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
+            inscricaoRepository, processoRepository, registroCodecs, unitOfWork, UsuarioComCpf(cpf));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(
+            e => e.Field == faltante && e.Error.Code == "Inscricao.ItemObrigatorioAusente");
+        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "Item respondido numa chamada anterior de Salvar e não reenviado na submissão continua preenchido, porque o veredito avalia o estado mesclado")]
     public async Task Handle_ItemRespondidoAntesNaoReenviado_PermaneceGravado()
     {

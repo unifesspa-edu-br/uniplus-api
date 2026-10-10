@@ -234,7 +234,8 @@ internal static class FormularioDeTeste
         ["TELEFONE"] = "TELEFONE",
         ["RG_NUMERO"] = "LIVRE",
         ["RG_ORGAO_EMISSOR"] = "LIVRE",
-        ["DOCUMENTO_ESTRANGEIRO_NUMERO"] = "LIVRE",
+        ["PASSAPORTE_NUMERO"] = "LIVRE",
+        ["RNM_NUMERO"] = "LIVRE",
         ["NOME_COMUNIDADE"] = "LIVRE",
     };
 
@@ -244,7 +245,8 @@ internal static class FormularioDeTeste
         ["NOME_SOCIAL"] = "PUBLICO",
         ["CPF"] = "IDENTIFICADOR",
         ["RG_NUMERO"] = "IDENTIFICADOR",
-        ["DOCUMENTO_ESTRANGEIRO_NUMERO"] = "IDENTIFICADOR",
+        ["PASSAPORTE_NUMERO"] = "IDENTIFICADOR",
+        ["RNM_NUMERO"] = "IDENTIFICADOR",
     };
 
     /// <summary>O item básico na forma do domínio, a partir da entrada do conjunto básico.</summary>

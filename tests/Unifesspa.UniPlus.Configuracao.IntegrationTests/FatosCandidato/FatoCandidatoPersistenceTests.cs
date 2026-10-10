@@ -70,10 +70,11 @@ public sealed class FatoCandidatoPersistenceTests
         }
     }
 
-    [Theory(DisplayName = "CA-01 — os três fatos de sistema de número de documento são semeados como Identificador")]
+    [Theory(DisplayName = "CA-01 — os fatos de sistema de número de documento são semeados como Identificador")]
     [InlineData("CPF")]
     [InlineData("RG_NUMERO")]
-    [InlineData("DOCUMENTO_ESTRANGEIRO_NUMERO")]
+    [InlineData("PASSAPORTE_NUMERO")]
+    [InlineData("RNM_NUMERO")]
     public void Seed_FatoDeNumeroDeDocumento_EhIdentificador(string codigo) =>
         FatoCandidatoSeed.Itens.Single(i => i.Codigo == codigo).ClassificacaoProtecao
             .Should().Be(ClassificacaoProtecaoDado.Identificador);
@@ -209,7 +210,7 @@ public sealed class FatoCandidatoPersistenceTests
             .Select(f => f.Codigo).Should().Equal("NOME_SOCIAL");
         fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoProtecaoDado.Identificador)
             .Select(f => f.Codigo).Order(StringComparer.Ordinal).Should().Equal(
-                "CPF", "DOCUMENTO_ESTRANGEIRO_NUMERO", "RG_NUMERO");
+                "CPF", "PASSAPORTE_NUMERO", "RG_NUMERO", "RNM_NUMERO");
         fatos.Where(f => f.ClassificacaoProtecao is not (
                 ClassificacaoProtecaoDado.Sensivel or ClassificacaoProtecaoDado.Publico or ClassificacaoProtecaoDado.Identificador))
             .Should().OnlyContain(f => f.ClassificacaoProtecao == ClassificacaoProtecaoDado.Pessoal);
@@ -405,7 +406,7 @@ public sealed class FatoCandidatoPersistenceTests
         List<FatoValorDominio> valores = await ctx.FatosValorDominio.AsNoTracking()
             .Where(v => ctx.FatosCandidato.Any(f => f.Id == v.FatoCandidatoId && f.Sistema))
             .ToListAsync();
-        valores.Should().HaveCount(FatoValorDominioSeed.Itens.Count).And.HaveCount(56);
+        valores.Should().HaveCount(FatoValorDominioSeed.Itens.Count).And.HaveCount(54);
 
         FatoCandidato corRaca = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "COR_RACA");
         string[] codigosCorRaca = [.. valores
@@ -437,10 +438,6 @@ public sealed class FatoCandidatoPersistenceTests
         codigosParentesco.Should().Equal(
             "PROPRIO_CANDIDATO", "CONJUGE_OU_COMPANHEIRO", "FILHO_OU_ENTEADO", "PAI_OU_MAE", "PADRASTO_OU_MADRASTA", "IRMAO",
             "AVO", "NETO", "SOGRO", "GENRO_OU_NORA", "OUTRO_PARENTE", "NAO_PARENTE");
-
-        FatoCandidato documentoEstrangeiro = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "DOCUMENTO_ESTRANGEIRO_TIPO");
-        valores.Where(v => v.FatoCandidatoId == documentoEstrangeiro.Id).OrderBy(v => v.Ordem).Select(v => v.Codigo)
-            .Should().Equal("PASSAPORTE", "RNM");
 
         FatoCandidato estadoCivil = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "ESTADO_CIVIL");
         valores.Where(v => v.FatoCandidatoId == estadoCivil.Id).OrderBy(v => v.Ordem).Select(v => v.Codigo)
@@ -624,8 +621,6 @@ public sealed class FatoCandidatoPersistenceTests
             ("RG_NUMERO", "031", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:RG_NUMERO", "INSCRICAO"),
             ("RG_ORGAO_EMISSOR", "032", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:RG_ORGAO_EMISSOR", "INSCRICAO"),
             ("RG_DATA_EMISSAO", "033", DominioFato.Data, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:RG_DATA_EMISSAO", "INSCRICAO"),
-            ("DOCUMENTO_ESTRANGEIRO_TIPO", "034", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:DOCUMENTO_ESTRANGEIRO_TIPO", "INSCRICAO"),
-            ("DOCUMENTO_ESTRANGEIRO_NUMERO", "035", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:DOCUMENTO_ESTRANGEIRO_NUMERO", "INSCRICAO"),
             ("NOME_MAE", "036", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:NOME_MAE", "INSCRICAO"),
             ("NOME_PAI", "037", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:NOME_PAI", "INSCRICAO"),
             ("ESTADO_CIVIL", "038", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:ESTADO_CIVIL", "INSCRICAO"),
@@ -641,6 +636,8 @@ public sealed class FatoCandidatoPersistenceTests
             ("RENDA_ATE_UM_SALARIO_MINIMO_E_MEIO", "048", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:RENDA_ATE_UM_SALARIO_MINIMO_E_MEIO", "SOLICITACAO_ISENCAO"),
             ("EDICAO_ENEM", "049", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:EDICAO_ENEM", "INSCRICAO"),
             ("INDIGENA", "050", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:INDIGENA", "INSCRICAO"),
+            ("PASSAPORTE_NUMERO", "051", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:PASSAPORTE_NUMERO", "INSCRICAO"),
+            ("RNM_NUMERO", "052", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:RNM_NUMERO", "INSCRICAO"),
         ];
 
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
