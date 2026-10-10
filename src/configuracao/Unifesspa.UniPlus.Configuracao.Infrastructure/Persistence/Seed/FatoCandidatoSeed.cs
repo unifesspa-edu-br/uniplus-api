@@ -66,7 +66,7 @@ public static class FatoCandidatoSeed
     internal const string FinalidadeReservaDeVagas =
         "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.";
 
-    private const string FinalidadeAtendimento =
+    internal const string FinalidadeAtendimento =
         "Oferta de atendimento especializado ao candidato na realização das etapas do processo seletivo.";
 
     internal const string FinalidadeResidencia =

@@ -56,6 +56,7 @@ public static class SementePsrMedicina2027
 
     private const string FinalidadeDoFator =
         "Concessão do Fator de Atenuação das Desigualdades de Acesso previsto no edital do processo seletivo.";
+    private const string FinalidadeDoAtendimento = FatoCandidatoSeed.FinalidadeAtendimento;
     private const string FinalidadeDaEscolaridade = FatoCandidatoSeed.FinalidadeReservaDeVagas;
     private const string FinalidadeDaHabilitacao = FatoCandidatoSeed.FinalidadeRequisitos;
     private const string FinalidadeDaFamilia = FatoCandidatoSeed.FinalidadeComposicaoFamiliar;
@@ -79,6 +80,12 @@ public static class SementePsrMedicina2027
 
     /// <summary>O modelo do formulário de habilitação de Medicina.</summary>
     public const string ModeloDeHabilitacao = "PSR_MEDICINA_2027_HABILITACAO";
+
+    /// <summary>
+    /// O código da condição de atendimento "outra condição específica" do vocabulário do INEP, que o
+    /// processo que aplica o modelo de inscrição oferta e cuja escolha pede a descrição da condição.
+    /// </summary>
+    public const string CondicaoForaDaLista = "OUTRA_CONDICAO";
 
     /// <summary>Um termo da inscrição: o código pelo qual o modelo o cita, o nome, o texto e a base legal.</summary>
     public sealed record TermoDaSemente(int N, string Codigo, string Nome, string Texto, string BaseLegal)
@@ -130,6 +137,20 @@ public static class SementePsrMedicina2027
                 "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO", "Município de residência para o Fator de Atenuação", "O município da área de abrangência do edital em que o candidato reside, entre os que o edital lista.", DominioFato.Categorico,
                 CardinalidadeFato.Escalar, FonteValoresFato.MunicipiosBonus, null, PontoInscricao, EscopoFato.Candidato,
                 ClassificacaoProtecaoDado.Pessoal, FinalidadeDoFator, HipoteseLegal),
+            Sem()),
+
+        // Inscrição: o pedido de atendimento especializado nas etapas presenciais, que abre as
+        // perguntas da condição e do recurso, e a descrição da condição que não consta da lista.
+        // A saúde que a resposta pode revelar faz dos dois um dado sensível.
+        new(14, _ => FatoCandidato.CriarDoAdministrador(
+                "SOLICITA_ATENDIMENTO_ESPECIALIZADO", "Solicita atendimento especializado", "Se o candidato pede atendimento especializado em alguma etapa presencial do processo seletivo.", DominioFato.Booleano,
+                CardinalidadeFato.Escalar, null, null, PontoInscricao, EscopoFato.Candidato,
+                ClassificacaoProtecaoDado.Sensivel, FinalidadeDoAtendimento, HipoteseLegal),
+            Sem()),
+        new(15, _ => FatoCandidato.CriarDoAdministrador(
+                "DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO", "Descrição da outra condição de atendimento", "A condição específica, que não consta da lista, pela qual o candidato pede atendimento especializado.", DominioFato.Texto,
+                CardinalidadeFato.Escalar, null, FormatoTexto.Livre, PontoInscricao, EscopoFato.Candidato,
+                ClassificacaoProtecaoDado.Sensivel, FinalidadeDoAtendimento, HipoteseLegal),
             Sem()),
 
         // Habilitação: o que o edital pede de quem é convocado (itens 9.16, 9.21 e 9.24).
@@ -269,6 +290,9 @@ public static class SementePsrMedicina2027
         const string escolaridade = "ESCOLARIDADE";
         const string cotas = "RESERVA_DE_VAGAS";
         const string fator = "FATOR_ATENUACAO";
+        const string atendimento = "ATENDIMENTO_ESPECIALIZADO";
+        const string solicitaAtendimento = "SOLICITA_ATENDIMENTO_ESPECIALIZADO";
+        const string condicaoAtendimento = "CONDICAO_ATENDIMENTO";
 
         return new(
             "Inscrição no Processo Seletivo Regular Unificado de Medicina 2027",
@@ -277,9 +301,10 @@ public static class SementePsrMedicina2027
                 Secao(escolaridade, 2, "Ensino médio", "Como você concluiu o ensino médio e onde o cursou."),
                 Secao(fator, 3, "Fator de Atenuação das Desigualdades de Acesso", "Pedido do Fator de Atenuação das Desigualdades de Acesso previsto no edital."),
                 Secao(cotas, 4, "Reserva de vagas", "Condições que permitem concorrer às vagas reservadas da Lei nº 12.711/2012 e às ações afirmativas do edital."),
-                Bloco("MODALIDADES", 5, BlocoSistema.ModalidadesCalculadas, "Modalidades de concorrência"),
-                Bloco("DOCUMENTOS", 6, BlocoSistema.ComprovacaoDocumental, "Documentos"),
-                Bloco("REVISAO", 7, BlocoSistema.RevisaoEAceite, "Revisão e aceite"),
+                Secao(atendimento, 5, "Atendimento especializado", "Pedido de atendimento especializado nas etapas presenciais do processo seletivo."),
+                Bloco("MODALIDADES", 6, BlocoSistema.ModalidadesCalculadas, "Modalidades de concorrência"),
+                Bloco("DOCUMENTOS", 7, BlocoSistema.ComprovacaoDocumental, "Documentos"),
+                Bloco("REVISAO", 8, BlocoSistema.RevisaoEAceite, "Revisão e aceite"),
             ],
             [
                 Campo(EdicaoDoEnem.Fato, 102, enem, "Qual edição do ENEM você vai usar?", TipoRenderizacao.SelecaoUnica,
@@ -311,9 +336,21 @@ public static class SementePsrMedicina2027
                     "Some a renda bruta mensal de todos da família e divida pelo número de pessoas. A renda é comprovada na habilitação."),
                 Campo("CONCORRER_RENDA", 116, cotas, "Deseja concorrer às vagas com critério de renda?", TipoRenderizacao.Booleano, null,
                     exibicao: Se("BAIXA_RENDA", Operador.Igual, true)),
-                Campo("CONDICAO_ATENDIMENTO", 117, cotas, "Precisa de atendimento especializado nas etapas do processo?", TipoRenderizacao.SelecaoMultipla,
-                    "Marque o que se aplica a você. Deixe em branco se não precisar.",
-                    obrigatoriedade: Obrigatoriedade.Nunca),
+                // Atendimento especializado não é só de quem tem deficiência (UNI-REQ-0026): quem pede
+                // escolhe a condição e o recurso entre os que o processo oferta; a condição fora da
+                // lista é descrita.
+                Campo(solicitaAtendimento, 117, atendimento, "Você precisa de atendimento especializado em alguma etapa presencial do processo?", TipoRenderizacao.Booleano,
+                    "Por exemplo, por deficiência, gestação, amamentação, idade ou transtorno de aprendizagem."),
+                Campo(condicaoAtendimento, 118, atendimento, "Em quais condições você se enquadra?", TipoRenderizacao.SelecaoMultipla,
+                    "Marque todas as que se aplicam a você.",
+                    exibicao: Se(solicitaAtendimento, Operador.Igual, true)),
+                Campo("DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO", 119, atendimento, "Descreva a sua condição específica", TipoRenderizacao.Texto,
+                    "Diga qual é a condição e de que atendimento você precisa por causa dela.",
+                    exibicao: Se(condicaoAtendimento, Operador.Igual, CondicaoForaDaLista), formato: "LIVRE",
+                    restricoes: [new TamanhoTexto(null, 500)]),
+                Campo("RECURSO_ACESSIBILIDADE", 120, atendimento, "De quais recursos você vai precisar nas etapas presenciais?", TipoRenderizacao.SelecaoMultipla,
+                    "Só aparecem os recursos que o processo oferece. Marque todos de que você precisa.",
+                    exibicao: Se(solicitaAtendimento, Operador.Igual, true)),
             ],
             [
                 Termo(Termos[0], 1),

@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.Sementes;
 
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 
 using AwesomeAssertions;
 
@@ -15,6 +16,8 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.Serializacao;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// A configuração do edital de Medicina 2027 existe ao subir o sistema, gravada pela migration
@@ -30,6 +33,7 @@ public sealed class SementePsrMedicina2027Tests
     private static readonly string[] CodigosDosFatos =
     [
         "SOLICITA_FATOR_ATENUACAO", "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO",
+        "SOLICITA_ATENDIMENTO_ESPECIALIZADO", "DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO",
         "CERTIFICADO_EM_EMITIDO", "HABILITACAO_POR_PROCURADOR", "VINCULO_OUTRA_IES_PUBLICA_OU_PROUNI", "CATEGORIA_RENDA",
         "CATEGORIAS_RENDA_FAMILIA",
     ];
@@ -130,6 +134,36 @@ public sealed class SementePsrMedicina2027Tests
         ItemDoModelo indigena = inscricao.Conteudo.Itens.Should().ContainSingle(static i => i.FatoCodigo == "INDIGENA").Subject;
         indigena.FatosCitados.Should().BeEmpty();
     }
+
+    [Fact(DisplayName = "A inscrição pede o atendimento especializado em seção própria: quem pede escolhe a condição e o recurso, e descreve a condição fora da lista")]
+    public async Task Inscricao_PedeOAtendimentoEspecializadoEmSecaoPropria()
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        ModeloFormulario inscricao = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricao);
+        Dictionary<string, ItemDoModelo> itens = inscricao.Conteudo.Itens.ToDictionary(static i => i.FatoCodigo, StringComparer.Ordinal);
+
+        inscricao.Conteudo.Etapas.Should().ContainSingle(static e => e.Codigo == "ATENDIMENTO_ESPECIALIZADO")
+            .Which.Titulo.Should().Be("Atendimento especializado");
+        string[] daSecao = ["SOLICITA_ATENDIMENTO_ESPECIALIZADO", "CONDICAO_ATENDIMENTO", "DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO", "RECURSO_ACESSIBILIDADE"];
+        daSecao.Should().OnlyContain(c => itens[c].EtapaCodigo == "ATENDIMENTO_ESPECIALIZADO");
+        daSecao.Should().OnlyContain(c => itens[c].Obrigatoriedade.Tipo == TipoObrigatoriedade.Sempre, "o que aparece é exigido");
+
+        itens["SOLICITA_ATENDIMENTO_ESPECIALIZADO"].FatosCitados.Should().BeEmpty("o pedido é feito a todo candidato");
+        Exibicao(itens["CONDICAO_ATENDIMENTO"]).Should().Be(Se("SOLICITA_ATENDIMENTO_ESPECIALIZADO", true));
+        Exibicao(itens["RECURSO_ACESSIBILIDADE"]).Should().Be(Se("SOLICITA_ATENDIMENTO_ESPECIALIZADO", true));
+        Exibicao(itens["DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO"]).Should().Be(Se("CONDICAO_ATENDIMENTO", SementePsrMedicina2027.CondicaoForaDaLista));
+        itens["TIPO_DEFICIENCIA"].EtapaCodigo.Should().Be("RESERVA_DE_VAGAS", "a âncora do tipo de deficiência não muda nesta configuração");
+    }
+
+    /// <summary>A exibição do item, na forma canônica em que o modelo a grava.</summary>
+    private static string? Exibicao(ItemDoModelo item) =>
+        item.Exibicao is null ? null : PredicadoDnfJson.ParaJson(item.Exibicao).ToJsonString();
+
+    /// <summary>A condição única "fato igual a valor", na mesma forma canônica.</summary>
+    private static string Se<T>(string fato, T valor) =>
+        PredicadoDnfJson.ParaJson(PredicadoDnf.CriarDeCondicoesAgrupadas(
+            [(1, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(valor)).Value!)]).Value!).ToJsonString();
 
     [Fact(DisplayName = "Fato que o domínio recusa derruba a geração da semente, em vez de virar linha que a API não aceita")]
     public void FatoRecusadoPeloDominio_DerrubaAGeracao()
