@@ -104,8 +104,11 @@ public static class OidcAuthenticationConfiguration
                 failureStatus: HealthStatus.Unhealthy,
                 tags: ["ready", "auth"]);
 
-        // TODO(#26-followup): registrar policies por role/permissão (Admin, Gestor, Avaliador, Candidato).
-        services.AddAuthorization();
+        // TODO(#26-followup): registrar policies por role/permissão (Admin, Gestor, Avaliador).
+        // "Candidato" (issue #1859) é a primeira: claim, não role — o candidato não tem papel
+        // operacional nenhum, só o claim cpf que o Keycloak Gov.br emite para pessoa física.
+        services.AddAuthorizationBuilder()
+            .AddPolicy("Candidato", policy => policy.RequireClaim("cpf"));
 
         return services;
     }

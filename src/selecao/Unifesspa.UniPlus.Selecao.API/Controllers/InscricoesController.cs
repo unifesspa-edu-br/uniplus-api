@@ -1,0 +1,95 @@
+namespace Unifesspa.UniPlus.Selecao.API.Controllers;
+
+using System.Diagnostics.CodeAnalysis;
+
+using Application.Commands.Inscricoes;
+using Application.DTOs;
+
+using Http;
+
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
+using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+
+/// <summary>
+/// A inscrição do candidato (issue #1859) num processo seletivo. A policy <c>Candidato</c>
+/// (claim <c>cpf</c>) é declarada em cada action — o host não tem fallback policy, então omitir a
+/// anotação nasceria o endpoint anônimo por omissão (mesma convenção de
+/// <see cref="FormulariosController"/> com <c>plataforma-admin</c>). Nenhuma rota recebe id de
+/// inscrição: o dono do token, pelo CPF do claim, é sempre quem resolve qual inscrição.
+/// </summary>
+[ApiController]
+[SuppressMessage(
+    "Performance",
+    "CA1515:Consider making public types internal",
+    Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public; sem isso o MVC ignora a classe e nenhum endpoint é registrado.")]
+public sealed class InscricoesController : ControllerBase
+{
+    private readonly ICommandBus _commandBus;
+    private readonly IDomainErrorMapper _mapper;
+
+    public InscricoesController(ICommandBus commandBus, IDomainErrorMapper mapper)
+    {
+        _commandBus = commandBus;
+        _mapper = mapper;
+    }
+
+    /// <summary>
+    /// Inicia a inscrição fixando a versão do formulário divulgada neste instante, ou devolve a
+    /// que já existe para o mesmo CPF e processo — idempotente por construção (UNI-REQ-0023), não
+    /// por <c>Idempotency-Key</c>.
+    /// </summary>
+    [HttpPost("processos-seletivos/{id:guid}/inscricao")]
+    [Authorize(Policy = "Candidato")]
+    [VendorMediaType(Resource = "inscricao", Versions = [1])]
+    [ProducesResponseType(typeof(InscricaoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> Iniciar(Guid id, CancellationToken cancellationToken)
+    {
+        Result<InscricaoDto> resultado = await _commandBus
+            .Send(new IniciarInscricaoCommand(id), cancellationToken)
+            .ConfigureAwait(false);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
+    /// Salva o rascunho: validação estrutural, sem exigir obrigatórios — a validação completa é
+    /// da submissão. Exige <c>If-Match</c> com o <see cref="InscricaoDto.ETag"/> corrente.
+    /// </summary>
+    [HttpPut("processos-seletivos/{id:guid}/inscricao")]
+    [Authorize(Policy = "Candidato")]
+    [VendorMediaType(Resource = "inscricao", Versions = [1])]
+    [ProducesResponseType(typeof(InscricaoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
+    public async Task<IActionResult> SalvarRascunho(
+        Guid id,
+        [FromBody] InscricaoRequest request,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        Result<PrecondicaoIfMatch> analise = IfMatchHeader.Analisar(ifMatch);
+        if (analise.IsFailure)
+        {
+            return analise.ToActionResult(_mapper);
+        }
+
+        Result<InscricaoDto> resultado = await _commandBus
+            .Send(new SalvarInscricaoCommand(id, request, analise.Value!), cancellationToken)
+            .ConfigureAwait(false);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
+    }
+}
