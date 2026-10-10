@@ -76,7 +76,7 @@ public static class IniciarInscricaoCommandHandler
             return Result<InscricaoDto>.Success(InscricaoDto.De(existente));
         }
 
-        Result<(Guid VersaoFormularioId, HashSet<string> FatosIdentificadorDeclarados)> versaoDivulgada =
+        Result<Guid> versaoDivulgada =
             await ResolverVersaoDivulgadaAsync(
                 command.ProcessoSeletivoId, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, cancellationToken)
                 .ConfigureAwait(false);
@@ -87,7 +87,7 @@ public static class IniciarInscricaoCommandHandler
 
         Result<Inscricao> iniciar = Inscricao.Iniciar(
             command.ProcessoSeletivoId, cpf, userContext.UserId ?? string.Empty, userContext.Issuer ?? string.Empty,
-            versaoDivulgada.Value!.VersaoFormularioId, versaoDivulgada.Value!.FatosIdentificadorDeclarados);
+            versaoDivulgada.Value);
         if (iniciar.IsFailure)
         {
             return Result<InscricaoDto>.Failure(iniciar.Error!);
@@ -123,11 +123,10 @@ public static class IniciarInscricaoCommandHandler
     }
 
     /// <summary>
-    /// A versão que o certame divulgado serve, e os códigos de fato (de nível superior e dos
-    /// campos de grupo) cuja classificação de proteção CONGELADA é <c>IDENTIFICADOR</c> — mesma
-    /// resolução de <c>ObterFormularioRenderizavelQueryHandler</c> (divulgação, nunca relógio).
+    /// A versão que o certame divulgado serve — mesma resolução de
+    /// <c>ObterFormularioRenderizavelQueryHandler</c> (divulgação, nunca relógio).
     /// </summary>
-    private static async Task<Result<(Guid VersaoFormularioId, HashSet<string> FatosIdentificadorDeclarados)>> ResolverVersaoDivulgadaAsync(
+    private static async Task<Result<Guid>> ResolverVersaoDivulgadaAsync(
         Guid processoSeletivoId,
         ICertameDivulgadoRepository certameDivulgadoRepository,
         IProcessoSeletivoRepository processoSeletivoRepository,
@@ -139,7 +138,7 @@ public static class IniciarInscricaoCommandHandler
             .ConfigureAwait(false);
         if (divulgado is null)
         {
-            return Result<(Guid, HashSet<string>)>.Failure(new DomainError(
+            return Result<Guid>.Failure(new DomainError(
                 "ProcessoSeletivo.NaoEncontrado",
                 $"Processo Seletivo {processoSeletivoId} não encontrado."));
         }
@@ -149,7 +148,7 @@ public static class IniciarInscricaoCommandHandler
             .ConfigureAwait(false);
         if (versoes.Count == 0)
         {
-            return Result<(Guid, HashSet<string>)>.Failure(new DomainError(
+            return Result<Guid>.Failure(new DomainError(
                 "Snapshot.VigenteAusente",
                 $"A divulgação do processo {processoSeletivoId} aponta uma versão de configuração que não existe."));
         }
@@ -158,28 +157,11 @@ public static class IniciarInscricaoCommandHandler
 
         if (!registroCodecs.SabeLer(versao.SchemaVersion))
         {
-            return Result<(Guid, HashSet<string>)>.Failure(new DomainError(
+            return Result<Guid>.Failure(new DomainError(
                 ErrosCodecEnvelope.VersaoDesconhecida,
                 $"A versão '{versao.SchemaVersion}' do envelope congelado não está entre as capacidades de leitura reconhecidas pelo codec vivo."));
         }
 
-        Result<EnvelopeReidratado> reidratado = registroCodecs.Reidratar(versao);
-        if (reidratado.IsFailure)
-        {
-            return Result<(Guid, HashSet<string>)>.Failure(reidratado.Error!);
-        }
-
-        GrafoConfiguracao grafo = reidratado.Value!.Grafo;
-        HashSet<string> fatosIdentificador = new(
-            grafo.FatosColetados
-                .Where(static f => string.Equals(f.ClassificacaoProtecao, "IDENTIFICADOR", StringComparison.Ordinal))
-                .Select(static f => f.FatoCodigo)
-                .Concat(grafo.GruposColetados
-                    .SelectMany(static g => g.Subitens)
-                    .Where(static f => string.Equals(f.ClassificacaoProtecao, "IDENTIFICADOR", StringComparison.Ordinal))
-                    .Select(static f => f.FatoCodigo)),
-            StringComparer.Ordinal);
-
-        return Result<(Guid, HashSet<string>)>.Success((versao.Id, fatosIdentificador));
+        return Result<Guid>.Success(versao.Id);
     }
 }

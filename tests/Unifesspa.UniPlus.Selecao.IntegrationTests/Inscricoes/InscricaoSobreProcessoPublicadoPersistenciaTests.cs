@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -190,11 +191,11 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         return contexto;
     }
 
-    [Fact(DisplayName = "Iniciar fixa a versão divulgada e os fatos Identificador do grafo reidratado, inclusive o de grupo, e persiste contra Postgres real")]
-    public async Task Handle_ComProcessoPublicadoEDivulgadoReal_FixaVersaoEFatosIdentificadorDeclarados()
+    [Fact(DisplayName = "As definições das respostas da versão fixada marcam como número de documento os fatos Identificador do grafo reidratado, inclusive o de grupo")]
+    public async Task Handle_ComProcessoPublicadoEDivulgadoReal_DefinicoesDasRespostasMarcamOsFatosIdentificador()
     {
         ProcessoSeletivo processo = NovoProcessoDeInscricao(
-            nameof(Handle_ComProcessoPublicadoEDivulgadoReal_FixaVersaoEFatosIdentificadorDeclarados));
+            nameof(Handle_ComProcessoPublicadoEDivulgadoReal_DefinicoesDasRespostasMarcamOsFatosIdentificador));
 
         await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
         (Guid processoId, _) = await PublicarEDivulgarAsync(writeContext, processo);
@@ -216,7 +217,10 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         Inscricao? gravada = await readRepository.ObterPorIdAsync(iniciar.Value!.Id);
 
         gravada.Should().NotBeNull();
-        gravada!.FatosIdentificadorDeclarados.Should().BeEquivalentTo(
+        Result<ContextoDaVersaoFixada> contexto = await ContextoDaVersaoFixadaResolver.ResolverAsync(
+            gravada!.VersaoFormularioId, processoId, new ProcessoSeletivoRepository(readContext, TimeProvider.System), RegistroCodecs, CancellationToken.None);
+        contexto.IsSuccess.Should().BeTrue(contexto.Error?.Message);
+        contexto.Value!.DefinicoesDasRespostas.Where(static f => f.Value.Identificador).Select(static f => f.Key).Should().BeEquivalentTo(
             ["CPF", "RG_NUMERO", "PASSAPORTE_NUMERO", "RNM_NUMERO", "RG_NUMERO_MEMBRO"],
             "o conjunto junta os fatos Identificador do conjunto básico do candidato (CPF, RG, passaporte e RNM) " +
             "com o do campo de grupo declarado por este teste — da classificação CONGELADA na publicação, não do catálogo vivo");
@@ -240,6 +244,9 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
         Inscricao? inscricao = await inscricaoRepository.ObterPorIdAsync(iniciar.Value!.Id);
         inscricao.Should().NotBeNull();
+        IReadOnlyDictionary<string, DefinicaoDaResposta> definicoes = (await ContextoDaVersaoFixadaResolver.ResolverAsync(
+            inscricao!.VersaoFormularioId, processoId, new ProcessoSeletivoRepository(writeContext, TimeProvider.System), RegistroCodecs, CancellationToken.None))
+            .Value!.DefinicoesDasRespostas;
 
         inscricao!.Salvar(
             null,
@@ -259,6 +266,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
                 ],
             },
             [],
+            definicoes,
             PrecondicaoIfMatch.DeTags([inscricao.ETag]));
 
         await inscricaoRepository.AtualizarAsync(inscricao, CancellationToken.None);
@@ -267,20 +275,25 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         await using NpgsqlConnection connection = new(_fixture.ConnectionString);
         await connection.OpenAsync();
         await using NpgsqlCommand command = connection.CreateCommand();
-        command.CommandText = "SELECT cpf_ciphertext, documentos_cifrados, respostas, grupos FROM selecao.inscricoes WHERE id = @id";
+        command.CommandText = """
+            SELECT i.cpf_ciphertext, r.fato_codigo, r.valor_texto, r.valor_cifrado
+            FROM selecao.inscricoes i JOIN selecao.respostas_da_inscricao r ON r.inscricao_id = i.id
+            WHERE i.id = @id AND r.fato_codigo IN ('RG_NUMERO', 'RG_NUMERO_MEMBRO')
+            """;
         command.Parameters.AddWithValue("id", inscricao.Id);
-        await using NpgsqlDataReader reader = await command.ExecuteReaderAsync();
-        (await reader.ReadAsync()).Should().BeTrue();
+        int linhas = 0;
+        await using (NpgsqlDataReader reader = await command.ExecuteReaderAsync())
+        {
+            while (await reader.ReadAsync())
+            {
+                linhas++;
+                Encoding.UTF8.GetString((byte[])reader["cpf_ciphertext"]).Should().NotContain(PersonasDeTeste.KevinCarvalho.Valor);
+                reader["valor_texto"].Should().Be(DBNull.Value, "o número de documento nunca fica na coluna de texto em claro");
+                Encoding.UTF8.GetString((byte[])reader["valor_cifrado"]).Should().NotContain("30.111.222-9").And.NotContain("40.333.444-5");
+            }
+        }
 
-        byte[] cpfCiphertext = (byte[])reader["cpf_ciphertext"];
-        byte[] documentosCifrados = (byte[])reader["documentos_cifrados"];
-        string respostas = (string)reader["respostas"];
-        string grupos = (string)reader["grupos"];
-
-        Encoding.UTF8.GetString(cpfCiphertext).Should().NotContain(PersonasDeTeste.KevinCarvalho.Valor);
-        Encoding.UTF8.GetString(documentosCifrados).Should().NotContain("30.111.222-9").And.NotContain("40.333.444-5");
-        respostas.Should().NotContain("30.111.222-9", "o número de documento nunca entra no jsonb em claro, mesmo quando a versão vem de uma publicação real");
-        grupos.Should().NotContain("40.333.444-5", "o número de documento do membro do grupo é removido antes de serializar a coluna grupos — é só o que documentos_cifrados guarda");
+        linhas.Should().Be(2, "o RG de nível superior e o do membro do grupo têm cada um a sua linha cifrada");
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
         InscricaoRepository readRepository = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);

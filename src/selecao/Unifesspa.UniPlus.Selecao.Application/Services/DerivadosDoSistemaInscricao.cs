@@ -2,9 +2,11 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services;
 
 using System.Globalization;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 using Abstractions;
+
+using Domain.Enums;
+using Domain.ValueObjects;
 
 using Kernel.Results;
 
@@ -17,9 +19,11 @@ using Kernel.Results;
 /// </summary>
 public static class DerivadosDoSistemaInscricao
 {
-    private static readonly JsonSerializerOptions EnderecoJsonOptions = new()
+    public static readonly IReadOnlyDictionary<string, DefinicaoDaResposta> DefinicoesDasRespostas = new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal)
     {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        ["FAIXA_ETARIA"] = new(TipoDoValorDeResposta.Numero, Multivalorado: false, Identificador: false),
+        ["UF_RESIDENCIA"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false),
+        ["MUNICIPIO_RESIDENCIA"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false),
     };
 
     public static async Task<Result<IReadOnlyDictionary<string, JsonElement>>> CalcularAsync(
@@ -54,11 +58,8 @@ public static class DerivadosDoSistemaInscricao
 
         if (respostas.TryGetValue("ENDERECO_RESIDENCIAL", out JsonElement enderecoElemento))
         {
-            EnderecoEstruturadoInput? endereco = enderecoElemento.ValueKind == JsonValueKind.Object
-                ? enderecoElemento.Deserialize<EnderecoEstruturadoInput>(EnderecoJsonOptions)
-                : null;
-
-            if (endereco is not { Cidade: { CodigoIbge: { Length: > 0 }, Uf: { Length: > 0 } } })
+            if (!EnderecoDeclarado.TentarLer(enderecoElemento, out EnderecoDeclarado endereco)
+                || endereco is not { CidadeCodigoIbge: { Length: > 0 } codigoIbge, CidadeUf: { Length: > 0 } uf })
             {
                 return Result<IReadOnlyDictionary<string, JsonElement>>.Failure(new DomainError(
                     "Inscricao.EnderecoResidencialInvalido", "O endereço residencial não tem a cidade que a conferência no Geo exige."));
@@ -68,8 +69,8 @@ public static class DerivadosDoSistemaInscricao
             // manualmente, ex.: município sem cobertura no DNE) — nesse caso confere pela cidade,
             // nunca recusa por falta de CEP.
             Result conferido = endereco.Cep is { Length: > 0 }
-                ? await conferencia.ConferirCepAsync(endereco.Cep, endereco.Cidade.CodigoIbge, endereco.Cidade.Uf, cancellationToken).ConfigureAwait(false)
-                : await conferencia.ConferirMunicipioAsync(endereco.Cidade.CodigoIbge, endereco.Cidade.Uf, cancellationToken).ConfigureAwait(false);
+                ? await conferencia.ConferirCepAsync(endereco.Cep, codigoIbge, uf, cancellationToken).ConfigureAwait(false)
+                : await conferencia.ConferirMunicipioAsync(codigoIbge, uf, cancellationToken).ConfigureAwait(false);
             if (conferido.IsFailure)
             {
                 return Result<IReadOnlyDictionary<string, JsonElement>>.Failure(conferido.Error!);
@@ -77,8 +78,8 @@ public static class DerivadosDoSistemaInscricao
 
             // O pressuposto de elegibilidade é o que o Geo confirmou, nunca o que o candidato
             // mandou — o endereço já foi conferido linha acima contra o mesmo cep/cidade/UF.
-            derivados["UF_RESIDENCIA"] = JsonSerializer.SerializeToElement(endereco.Cidade.Uf);
-            derivados["MUNICIPIO_RESIDENCIA"] = JsonSerializer.SerializeToElement(endereco.Cidade.CodigoIbge);
+            derivados["UF_RESIDENCIA"] = JsonSerializer.SerializeToElement(uf);
+            derivados["MUNICIPIO_RESIDENCIA"] = JsonSerializer.SerializeToElement(codigoIbge);
         }
 
         return Result<IReadOnlyDictionary<string, JsonElement>>.Success(derivados);
@@ -95,21 +96,4 @@ public static class DerivadosDoSistemaInscricao
 
         return idade;
     }
-
-    /// <summary>Espelha `EnderecoEstruturado` do componente de endereço do uniplus-web (libs/shared-ui).</summary>
-    private sealed record EnderecoEstruturadoInput(
-        string? Cep,
-        string? Logradouro,
-        string? Numero,
-        string? Complemento,
-        string? Bairro,
-        string? Distrito,
-        CidadeRefInput? Cidade,
-        string? Latitude,
-        string? Longitude,
-        string? NivelResolucao,
-        string? Origem);
-
-    /// <summary>Espelha `CidadeRef` do componente de endereço do uniplus-web.</summary>
-    private sealed record CidadeRefInput(string? CodigoIbge, string? Nome, string? Uf);
 }

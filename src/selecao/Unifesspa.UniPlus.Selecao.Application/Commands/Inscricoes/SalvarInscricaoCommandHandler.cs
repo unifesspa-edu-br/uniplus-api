@@ -99,10 +99,11 @@ public static class SalvarInscricaoCommandHandler
 
         List<AceiteDeTermo> aceites = Services.InscricaoRequestMapper.ParaAceites(command.Request.Aceites);
 
-        Result salvar = inscricao.Salvar(command.Request.OfertaCursoId, respostas, grupos, aceites, command.Precondicao);
+        Result salvar = inscricao.Salvar(
+            command.Request.OfertaCursoId, respostas, grupos, aceites, contexto.Value!.DefinicoesDasRespostas, command.Precondicao);
         if (salvar.IsFailure)
         {
-            return Result<InscricaoDto>.Failure(salvar.Error!);
+            return Result<InscricaoDto>.ValidationFailure(salvar.Errors);
         }
 
         await inscricaoRepository.AtualizarAsync(inscricao, cancellationToken).ConfigureAwait(false);

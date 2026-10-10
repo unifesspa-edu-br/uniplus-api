@@ -53,6 +53,12 @@ internal sealed class ComprovanteInscricaoConfiguration : IEntityTypeConfigurati
             .HasColumnType("jsonb")
             .IsRequired();
 
+        builder.Property(c => c.Derivados)
+            .HasConversion(RespostasConverter, RespostasComparer)
+            .HasColumnType("jsonb")
+            .IsRequired()
+            .HasComment("O que o sistema derivou das respostas nesta submissão, como a UF a partir do endereço.");
+
         builder.Property(c => c.Grupos)
             .HasConversion(GruposConverter, GruposComparer)
             .HasColumnType("jsonb")

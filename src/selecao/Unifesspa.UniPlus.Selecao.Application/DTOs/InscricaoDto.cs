@@ -43,7 +43,8 @@ public sealed record AceiteDeTermoInput(string Codigo, Guid VersaoId, string Has
 /// formulário fixada ao iniciar (UNI-REQ-0084). Os números de documento <c>Identificador</c>
 /// declarados (RG, documento do estrangeiro) voltam dentro de <see cref="Respostas"/>, decifrados
 /// pelo repositório — só para o próprio dono; o CPF nunca aparece aqui porque já está no token, e o
-/// comprovante o devolve mascarado.
+/// comprovante o devolve mascarado. <see cref="Derivados"/> é o que o sistema calculou das
+/// respostas na última submissão.
 /// </summary>
 public sealed record InscricaoDto(
     Guid Id,
@@ -53,6 +54,7 @@ public sealed record InscricaoDto(
     Guid VersaoFormularioId,
     Guid? OfertaCursoId,
     IReadOnlyDictionary<string, JsonElement> Respostas,
+    IReadOnlyDictionary<string, JsonElement> Derivados,
     IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>> Grupos,
     IReadOnlyList<AceiteDeTermoInput> Aceites,
     string ETag)
@@ -70,6 +72,7 @@ public sealed record InscricaoDto(
             inscricao.VersaoFormularioId,
             inscricao.OfertaCursoId,
             inscricao.Respostas,
+            inscricao.Derivados,
             inscricao.Grupos.ToDictionary(
                 static g => g.Key,
                 g => (IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>)
@@ -83,6 +86,8 @@ public sealed record InscricaoDto(
 /// <summary>
 /// O comprovante de uma submissão: cópia do que foi enviado, sem nenhum número de documento (§4.1
 /// do plano da #1855), com o hash de integridade (SHA-256 do conteúdo) para provar que não mudou.
+/// <see cref="Respostas"/> é o que o candidato informou; <see cref="Derivados"/>, o que o sistema
+/// calculou delas.
 /// O CPF do titular vem mascarado (issue #1860) — o comprovante nunca o devolve em claro, mesmo
 /// para o próprio dono.
 /// </summary>
@@ -93,6 +98,7 @@ public sealed record ComprovanteInscricaoDto(
     string HashIntegridade,
     Guid? OfertaCursoId,
     IReadOnlyDictionary<string, JsonElement> Respostas,
+    IReadOnlyDictionary<string, JsonElement> Derivados,
     IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>> Grupos,
     IReadOnlyList<AceiteDeTermoInput> Aceites)
 {
@@ -108,6 +114,7 @@ public sealed record ComprovanteInscricaoDto(
             comprovante.HashIntegridade,
             comprovante.OfertaCursoId,
             comprovante.Respostas,
+            comprovante.Derivados,
             comprovante.Grupos.ToDictionary(
                 static g => g.Key,
                 g => (IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>)

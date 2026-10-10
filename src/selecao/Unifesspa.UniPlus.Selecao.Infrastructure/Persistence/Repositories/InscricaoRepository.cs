@@ -8,23 +8,23 @@ using Microsoft.EntityFrameworkCore;
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Cryptography;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 
 /// <summary>
 /// Protege o CPF e os demais números de documento na fronteira do repositório (ADR-0121, Opção
-/// C): o EF Core só materializa <see cref="InscricaoRecord"/>; a tradução para/de
-/// <see cref="Inscricao"/> — incluindo cifrar/decifrar via <see cref="IUniPlusEncryptionService"/> e
-/// computar o índice cego via <see cref="IUniPlusBlindIndexService"/>, ambos assíncronos —
-/// acontece inteiramente aqui, nunca num <c>ValueConverter</c> síncrono.
+/// C): o EF Core só materializa records; a tradução para/de <see cref="Inscricao"/> — incluindo
+/// cifrar/decifrar via <see cref="IUniPlusEncryptionService"/> e computar o índice cego via
+/// <see cref="IUniPlusBlindIndexService"/>, ambos assíncronos — acontece inteiramente aqui, nunca
+/// num <c>ValueConverter</c> síncrono.
 /// </summary>
 /// <remarks>
-/// <see cref="DocumentosDeclarados"/> é o envelope que separa os números de documento do jsonb em
-/// claro: <see cref="DocumentosDeclarados.Respostas"/> para os de nível superior, e
-/// <see cref="DocumentosDeclarados.Grupos"/> para os de uma ocorrência de grupo repetível —
-/// chaveado por <c>(código do grupo, id do membro)</c>, nunca pela posição, e separado dos de
-/// nível superior porque o mesmo código de fato pode existir nos dois níveis sem colidir.
+/// As respostas ficam uma linha por valor (ADR-0141), guiadas pela definição de cada fato. A gravação
+/// sincroniza as linhas pela chave natural — ocorrência, fato e posição —, então uma linha que não
+/// mudou continua a mesma e nenhuma colide com o índice único dentro da mesma gravação.
 /// </remarks>
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",
@@ -32,8 +32,6 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
     Justification = "Instanciada via DI em SelecaoInfrastructureRegistration.")]
 public sealed class InscricaoRepository : IInscricaoRepository
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = null };
-
     private readonly SelecaoDbContext _dbContext;
     private readonly IUniPlusEncryptionService _encryption;
     private readonly IUniPlusBlindIndexService _blindIndex;
@@ -62,7 +60,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
             .FirstOrDefaultAsync(r => r.Id == id, cancellationToken)
             .ConfigureAwait(false);
 
-        return record is null ? null : await ParaDominioAsync(record, cancellationToken).ConfigureAwait(false);
+        return record is null ? null : (await ParaDominioAsync([record], cancellationToken).ConfigureAwait(false))[0];
     }
 
     public async Task<Inscricao?> ObterPorProcessoECpfAsync(
@@ -78,7 +76,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
                 cancellationToken)
             .ConfigureAwait(false);
 
-        return record is null ? null : await ParaDominioAsync(record, cancellationToken).ConfigureAwait(false);
+        return record is null ? null : (await ParaDominioAsync([record], cancellationToken).ConfigureAwait(false))[0];
     }
 
     public async Task<IReadOnlyList<Inscricao>> ObterTodasPorCpfAsync(Cpf cpf, CancellationToken cancellationToken = default)
@@ -92,13 +90,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        List<Inscricao> inscricoes = new(records.Count);
-        foreach (InscricaoRecord record in records)
-        {
-            inscricoes.Add(await ParaDominioAsync(record, cancellationToken).ConfigureAwait(false));
-        }
-
-        return inscricoes;
+        return await ParaDominioAsync(records, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task AdicionarAsync(Inscricao entity, CancellationToken cancellationToken = default)
@@ -106,8 +98,11 @@ public sealed class InscricaoRepository : IInscricaoRepository
         ArgumentNullException.ThrowIfNull(entity);
 
         InscricaoRecord record = new() { Id = entity.Id, CreatedAt = _timeProvider.GetUtcNow() };
+        LinhasDaInscricao desejadas = await LinhasDeAsync(entity, cancellationToken).ConfigureAwait(false);
         await AtualizarCamposAsync(record, entity, cancellationToken).ConfigureAwait(false);
+
         _dbContext.Inscricoes.Add(record);
+        Sincronizar(LinhasDaInscricao.Vazias, desejadas);
     }
 
     public async Task AtualizarAsync(Inscricao entity, CancellationToken cancellationToken = default)
@@ -118,8 +113,12 @@ public sealed class InscricaoRepository : IInscricaoRepository
             .FirstAsync(r => r.Id == entity.Id, cancellationToken)
             .ConfigureAwait(false);
 
+        LinhasDaInscricao desejadas = await LinhasDeAsync(entity, cancellationToken).ConfigureAwait(false);
         await AtualizarCamposAsync(record, entity, cancellationToken).ConfigureAwait(false);
         record.UpdatedAt = _timeProvider.GetUtcNow();
+
+        LinhasDaInscricao atuais = await CarregarLinhasAsync([entity.Id], cancellationToken).ConfigureAwait(false);
+        Sincronizar(atuais, desejadas);
     }
 
     public Task AdicionarComprovanteAsync(ComprovanteInscricao comprovante, CancellationToken cancellationToken = default)
@@ -130,118 +129,375 @@ public sealed class InscricaoRepository : IInscricaoRepository
         return Task.CompletedTask;
     }
 
-    private async Task<Inscricao> ParaDominioAsync(InscricaoRecord record, CancellationToken cancellationToken)
+    private async Task<List<Inscricao>> ParaDominioAsync(List<InscricaoRecord> records, CancellationToken cancellationToken)
+    {
+        LinhasDaInscricao linhas = await CarregarLinhasAsync([.. records.Select(static r => r.Id)], cancellationToken).ConfigureAwait(false);
+
+        List<Inscricao> inscricoes = new(records.Count);
+        foreach (InscricaoRecord record in records)
+        {
+            inscricoes.Add(await ParaDominioAsync(record, linhas.Da(record.Id), cancellationToken).ConfigureAwait(false));
+        }
+
+        return inscricoes;
+    }
+
+    private async Task<Inscricao> ParaDominioAsync(InscricaoRecord record, LinhasDaInscricao linhas, CancellationToken cancellationToken)
     {
         byte[] cpfPlano = await _encryption
             .DecryptAsync(SelecaoEncryptionKeys.IdentificadoresAesGcm, record.CpfCiphertext, cancellationToken)
             .ConfigureAwait(false);
         Cpf cpf = ReidratarCpf(cpfPlano);
 
-        byte[] documentosPlano = await _encryption
-            .DecryptAsync(SelecaoEncryptionKeys.IdentificadoresAesGcm, record.DocumentosCifrados, cancellationToken)
-            .ConfigureAwait(false);
-        DocumentosDeclarados documentos = JsonSerializer.Deserialize<DocumentosDeclarados>(documentosPlano, JsonOptions)!;
+        Dictionary<Guid, OcorrenciaDeGrupoDaInscricaoRecord> ocorrencias = linhas.Ocorrencias.ToDictionary(static o => o.Id);
+        Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal);
+        Dictionary<string, JsonElement> derivados = new(StringComparer.Ordinal);
+        Dictionary<Guid, Dictionary<string, JsonElement>> respostasPorOcorrencia = ocorrencias.Keys
+            .ToDictionary(static id => id, static _ => new Dictionary<string, JsonElement>(StringComparer.Ordinal));
+        Dictionary<string, DefinicaoDaResposta> definicoes = new(StringComparer.Ordinal);
 
-        Dictionary<string, JsonElement> respostas = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(record.RespostasJson, JsonOptions)!;
-        foreach ((string codigo, JsonElement valor) in documentos.Respostas)
+        Dictionary<string, JsonElement> Destino(Guid? ocorrenciaId, OrigemDaResposta origem) =>
+            ocorrenciaId is { } id ? respostasPorOcorrencia[id] : origem == OrigemDaResposta.Derivada ? derivados : respostas;
+
+        foreach (IGrouping<(Guid? OcorrenciaId, string FatoCodigo), RespostaDaInscricaoRecord> fato in linhas.Respostas
+            .GroupBy(static r => (r.OcorrenciaId, r.FatoCodigo)))
         {
-            respostas[codigo] = valor;
+            RespostaDaInscricaoRecord primeira = fato.First();
+            bool multivalorado = primeira.Posicao is not null;
+            List<JsonElement> valores = [];
+            foreach (RespostaDaInscricaoRecord linha in fato.OrderBy(static r => r.Posicao))
+            {
+                valores.Add(await ValorDaLinhaAsync(linha, cancellationToken).ConfigureAwait(false));
+            }
+
+            Destino(fato.Key.OcorrenciaId, primeira.Origem)[fato.Key.FatoCodigo] =
+                multivalorado ? JsonSerializer.SerializeToElement(valores) : valores[0];
+            definicoes.TryAdd(fato.Key.FatoCodigo, new DefinicaoDaResposta(primeira.Tipo, multivalorado, primeira.ValorCifrado is not null));
         }
 
-        Dictionary<string, List<OcorrenciaDeGrupoInscricao>> gruposClaros =
-            JsonSerializer.Deserialize<Dictionary<string, List<OcorrenciaDeGrupoInscricao>>>(record.GruposJson, JsonOptions)!;
-        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = new(StringComparer.Ordinal);
-        foreach ((string grupoCodigo, List<OcorrenciaDeGrupoInscricao> ocorrencias) in gruposClaros)
+        foreach (EnderecoDaInscricaoRecord endereco in linhas.Enderecos)
         {
-            Dictionary<string, Dictionary<string, JsonElement>> documentosDoGrupo =
-                documentos.Grupos.TryGetValue(grupoCodigo, out Dictionary<string, Dictionary<string, JsonElement>>? porMembro)
-                    ? porMembro
-                    : new(StringComparer.Ordinal);
-
-            grupos[grupoCodigo] = [.. ocorrencias.Select(o => ComDocumentosDoMembro(o, documentosDoGrupo))];
+            Destino(endereco.OcorrenciaId, endereco.Origem)[endereco.FatoCodigo] = ParaEndereco(endereco).ParaJson();
+            definicoes.TryAdd(endereco.FatoCodigo, new DefinicaoDaResposta(TipoDoValorDeResposta.Endereco, Multivalorado: false, Identificador: false));
         }
 
-        List<AceiteDeTermo> aceites = JsonSerializer.Deserialize<List<AceiteDeTermo>>(record.AceitesJson, JsonOptions)!;
-        HashSet<string> fatosIdentificador = new(
-            JsonSerializer.Deserialize<List<string>>(record.FatosIdentificadorDeclaradosJson, JsonOptions)!,
-            StringComparer.Ordinal);
+        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = linhas.Ocorrencias
+            .OrderBy(static o => o.Ordem)
+            .GroupBy(static o => o.GrupoCodigo, StringComparer.Ordinal)
+            .ToDictionary(
+                static g => g.Key,
+                g => (IReadOnlyList<OcorrenciaDeGrupoInscricao>)
+                    [.. g.Select(o => new OcorrenciaDeGrupoInscricao(o.MembroId, respostasPorOcorrencia[o.Id]))],
+                StringComparer.Ordinal);
+
+        List<AceiteDeTermo> aceites =
+        [
+            .. linhas.Aceites.OrderBy(static a => a.Ordem).Select(static a => new AceiteDeTermo(a.TermoCodigo, a.VersaoId, a.HashVersao)),
+        ];
 
         return Inscricao.Reidratar(
             record.Id, record.ProcessoSeletivoId, cpf, record.Sub, record.EmissorToken, record.Situacao,
             record.VersaoFormularioId, record.OfertaCursoId, record.NumeroInscricao,
-            respostas, grupos, aceites, fatosIdentificador,
+            respostas, derivados, grupos, aceites, definicoes,
             record.Revisao, record.CreatedAt, record.UpdatedAt);
     }
 
-    private static OcorrenciaDeGrupoInscricao ComDocumentosDoMembro(
-        OcorrenciaDeGrupoInscricao ocorrencia, Dictionary<string, Dictionary<string, JsonElement>> documentosDoGrupo)
+    private async Task<JsonElement> ValorDaLinhaAsync(RespostaDaInscricaoRecord linha, CancellationToken cancellationToken)
     {
-        if (!documentosDoGrupo.TryGetValue(ocorrencia.Id, out Dictionary<string, JsonElement>? documentosDoMembro))
+        if (linha.ValorCifrado is { } cifrado)
         {
-            return ocorrencia;
+            byte[] plano = await _encryption
+                .DecryptAsync(SelecaoEncryptionKeys.IdentificadoresAesGcm, cifrado, cancellationToken)
+                .ConfigureAwait(false);
+            return JsonSerializer.Deserialize<JsonElement>(plano);
         }
 
-        Dictionary<string, JsonElement> mescladas = new(ocorrencia.Respostas, StringComparer.Ordinal);
-        foreach ((string codigo, JsonElement valor) in documentosDoMembro)
+        return linha.Tipo switch
         {
-            mescladas[codigo] = valor;
+            TipoDoValorDeResposta.Booleano => JsonSerializer.SerializeToElement(linha.ValorBooleano!.Value),
+            TipoDoValorDeResposta.Numero => JsonSerializer.SerializeToElement(linha.ValorNumero!.Value),
+            TipoDoValorDeResposta.Codigo => JsonSerializer.SerializeToElement(linha.ValorCodigo!),
+            TipoDoValorDeResposta.Texto => JsonSerializer.SerializeToElement(linha.ValorTexto!),
+            TipoDoValorDeResposta.Data => JsonSerializer.SerializeToElement(linha.ValorData!.Value),
+            _ => throw new InvalidOperationException($"A resposta {linha.Id} tem um tipo sem coluna de valor ({linha.Tipo})."),
+        };
+    }
+
+    private static EnderecoDeclarado ParaEndereco(EnderecoDaInscricaoRecord e) => new(
+        e.Cep, e.Logradouro, e.Numero, e.Complemento, e.Bairro, e.Distrito,
+        e.MunicipioCodigoIbge, e.MunicipioNome, e.Uf, e.Latitude, e.Longitude, e.NivelResolucao, e.Procedencia);
+
+    /// <summary>
+    /// As linhas que a inscrição deve ter. Cifra antes de qualquer mutação do que o ChangeTracker
+    /// rastreia: se a cifragem falhar, nada fica pela metade para um <c>SaveChangesAsync</c> gravar.
+    /// </summary>
+    private async Task<LinhasDaInscricao> LinhasDeAsync(Inscricao entity, CancellationToken cancellationToken)
+    {
+        LinhasDaInscricao linhas = new([], [], [], []);
+
+        await AcrescentarAsync(linhas, entity, entity.Respostas, null, OrigemDaResposta.Informada, cancellationToken).ConfigureAwait(false);
+        await AcrescentarAsync(linhas, entity, entity.Derivados, null, OrigemDaResposta.Derivada, cancellationToken).ConfigureAwait(false);
+
+        int ordem = 0;
+        foreach ((string grupoCodigo, IReadOnlyList<OcorrenciaDeGrupoInscricao> ocorrencias) in entity.Grupos)
+        {
+            foreach (OcorrenciaDeGrupoInscricao ocorrencia in ocorrencias)
+            {
+                OcorrenciaDeGrupoDaInscricaoRecord registro = new()
+                {
+                    Id = Guid.CreateVersion7(),
+                    InscricaoId = entity.Id,
+                    GrupoCodigo = grupoCodigo,
+                    MembroId = ocorrencia.Id,
+                    Ordem = ordem++,
+                };
+                linhas.Ocorrencias.Add(registro);
+                await AcrescentarAsync(linhas, entity, ocorrencia.Respostas, registro.Id, OrigemDaResposta.Informada, cancellationToken)
+                    .ConfigureAwait(false);
+            }
         }
 
-        return ocorrencia with { Respostas = mescladas };
+        linhas.Aceites.AddRange(entity.Aceites.Select((a, i) => new AceiteDaInscricaoRecord
+        {
+            Id = Guid.CreateVersion7(),
+            InscricaoId = entity.Id,
+            Ordem = i,
+            TermoCodigo = a.Codigo,
+            VersaoId = a.VersaoId,
+            HashVersao = a.HashVersao,
+        }));
+
+        return linhas;
+    }
+
+    private async Task AcrescentarAsync(
+        LinhasDaInscricao linhas,
+        Inscricao entity,
+        IReadOnlyDictionary<string, JsonElement> respostas,
+        Guid? ocorrenciaId,
+        OrigemDaResposta origem,
+        CancellationToken cancellationToken)
+    {
+        foreach ((string codigo, JsonElement valor) in respostas)
+        {
+            if (!entity.DefinicoesDasRespostas.TryGetValue(codigo, out DefinicaoDaResposta? definicao))
+            {
+                throw new InvalidOperationException($"A inscrição {entity.Id} tem resposta de '{codigo}' sem definição da resposta.");
+            }
+
+            if (definicao.Tipo == TipoDoValorDeResposta.Endereco)
+            {
+                if (definicao.Identificador || !EnderecoDeclarado.TentarLer(valor, out EnderecoDeclarado endereco))
+                {
+                    throw new InvalidOperationException($"A resposta de '{codigo}' da inscrição {entity.Id} não é um endereço gravável.");
+                }
+
+                linhas.Enderecos.Add(new EnderecoDaInscricaoRecord
+                {
+                    Id = Guid.CreateVersion7(),
+                    InscricaoId = entity.Id,
+                    OcorrenciaId = ocorrenciaId,
+                    FatoCodigo = codigo,
+                    Origem = origem,
+                    Cep = endereco.Cep,
+                    Logradouro = endereco.Logradouro,
+                    Numero = endereco.Numero,
+                    Complemento = endereco.Complemento,
+                    Bairro = endereco.Bairro,
+                    Distrito = endereco.Distrito,
+                    MunicipioCodigoIbge = endereco.CidadeCodigoIbge,
+                    MunicipioNome = endereco.CidadeNome,
+                    Uf = endereco.CidadeUf,
+                    Latitude = endereco.Latitude,
+                    Longitude = endereco.Longitude,
+                    NivelResolucao = endereco.NivelResolucao,
+                    Procedencia = endereco.Procedencia,
+                });
+                continue;
+            }
+
+            JsonElement[] valores = definicao.Multivalorado ? [.. valor.EnumerateArray()] : [valor];
+            for (int posicao = 0; posicao < valores.Length; posicao++)
+            {
+                RespostaDaInscricaoRecord linha = new()
+                {
+                    Id = Guid.CreateVersion7(),
+                    InscricaoId = entity.Id,
+                    OcorrenciaId = ocorrenciaId,
+                    FatoCodigo = codigo,
+                    Posicao = definicao.Multivalorado ? posicao : null,
+                    Origem = origem,
+                    Tipo = definicao.Tipo,
+                };
+                await PreencherValorAsync(linha, valores[posicao], definicao, cancellationToken).ConfigureAwait(false);
+                linhas.Respostas.Add(linha);
+            }
+        }
+    }
+
+    private async Task PreencherValorAsync(RespostaDaInscricaoRecord linha, JsonElement valor, DefinicaoDaResposta definicao, CancellationToken cancellationToken)
+    {
+        if (definicao.Identificador)
+        {
+            linha.ValorCifrado = await _encryption
+                .EncryptAsync(SelecaoEncryptionKeys.IdentificadoresAesGcm, Encoding.UTF8.GetBytes(valor.GetRawText()), cancellationToken)
+                .ConfigureAwait(false);
+            return;
+        }
+
+        switch (definicao.Tipo)
+        {
+            case TipoDoValorDeResposta.Booleano:
+                linha.ValorBooleano = valor.GetBoolean();
+                break;
+            case TipoDoValorDeResposta.Numero:
+                linha.ValorNumero = valor.GetDecimal();
+                break;
+            case TipoDoValorDeResposta.Codigo:
+                linha.ValorCodigo = valor.GetString();
+                break;
+            case TipoDoValorDeResposta.Texto:
+                linha.ValorTexto = valor.GetString();
+                break;
+            case TipoDoValorDeResposta.Data:
+                linha.ValorData = DateOnly.ParseExact(valor.GetString()!, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+                break;
+            default:
+                throw new InvalidOperationException($"O tipo {definicao.Tipo} não tem coluna de valor.");
+        }
+    }
+
+    private async Task<LinhasDaInscricao> CarregarLinhasAsync(IReadOnlyCollection<Guid> inscricoes, CancellationToken cancellationToken)
+    {
+        List<RespostaDaInscricaoRecord> respostas = await _dbContext.RespostasDaInscricao
+            .Where(r => inscricoes.Contains(r.InscricaoId)).ToListAsync(cancellationToken).ConfigureAwait(false);
+        List<EnderecoDaInscricaoRecord> enderecos = await _dbContext.EnderecosDaInscricao
+            .Where(e => inscricoes.Contains(e.InscricaoId)).ToListAsync(cancellationToken).ConfigureAwait(false);
+        List<OcorrenciaDeGrupoDaInscricaoRecord> ocorrencias = await _dbContext.OcorrenciasDeGrupoDaInscricao
+            .Where(o => inscricoes.Contains(o.InscricaoId)).ToListAsync(cancellationToken).ConfigureAwait(false);
+        List<AceiteDaInscricaoRecord> aceites = await _dbContext.AceitesDaInscricao
+            .Where(a => inscricoes.Contains(a.InscricaoId)).ToListAsync(cancellationToken).ConfigureAwait(false);
+
+        return new LinhasDaInscricao(respostas, enderecos, ocorrencias, aceites);
     }
 
     /// <summary>
-    /// Cifra ANTES de mutar qualquer campo do record rastreado pelo ChangeTracker. Se a cifragem
-    /// falhar, este record permanece intocado — nunca fica com colunas novas e o envelope antigo,
-    /// uma mutação parcial que um <c>SaveChangesAsync</c> persistiria por engano.
+    /// Leva as linhas atuais às desejadas: a ocorrência casa pelo grupo e pelo membro, a resposta
+    /// pela ocorrência, pelo fato e pela posição, o aceite pela ordem.
     /// </summary>
-    /// <remarks>
-    /// Não toca <c>CreatedAt</c>/<c>UpdatedAt</c>: o <c>AuditableInterceptor</c> carimba toda
-    /// <see cref="Kernel.Domain.Entities.EntityBase"/> rastreada, mas quem o EF rastreia aqui é
-    /// <see cref="InscricaoRecord"/>, que não herda <c>EntityBase</c> — o carimbo é
-    /// responsabilidade explícita de quem chama (<see cref="AdicionarAsync"/>/
-    /// <see cref="AtualizarAsync"/>), via <see cref="_timeProvider"/>.
-    /// </remarks>
+    private void Sincronizar(LinhasDaInscricao atuais, LinhasDaInscricao desejadas)
+    {
+        Dictionary<Guid, Guid> idDaOcorrencia = [];
+        Dictionary<(string, string), OcorrenciaDeGrupoDaInscricaoRecord> ocorrenciasAtuais =
+            atuais.Ocorrencias.ToDictionary(static o => (o.GrupoCodigo, o.MembroId));
+        foreach (OcorrenciaDeGrupoDaInscricaoRecord desejada in desejadas.Ocorrencias)
+        {
+            if (ocorrenciasAtuais.Remove((desejada.GrupoCodigo, desejada.MembroId), out OcorrenciaDeGrupoDaInscricaoRecord? atual))
+            {
+                atual.Ordem = desejada.Ordem;
+                idDaOcorrencia[desejada.Id] = atual.Id;
+            }
+            else
+            {
+                _dbContext.OcorrenciasDeGrupoDaInscricao.Add(desejada);
+                idDaOcorrencia[desejada.Id] = desejada.Id;
+            }
+        }
+
+        foreach (RespostaDaInscricaoRecord resposta in desejadas.Respostas.Where(static r => r.OcorrenciaId is not null))
+        {
+            resposta.OcorrenciaId = idDaOcorrencia[resposta.OcorrenciaId!.Value];
+        }
+
+        foreach (EnderecoDaInscricaoRecord endereco in desejadas.Enderecos.Where(static e => e.OcorrenciaId is not null))
+        {
+            endereco.OcorrenciaId = idDaOcorrencia[endereco.OcorrenciaId!.Value];
+        }
+
+        SincronizarPorChave(
+            _dbContext.RespostasDaInscricao, atuais.Respostas, desejadas.Respostas,
+            static r => (r.OcorrenciaId, r.FatoCodigo, r.Posicao),
+            static (de, para) =>
+            {
+                para.Origem = de.Origem;
+                para.Tipo = de.Tipo;
+                para.ValorBooleano = de.ValorBooleano;
+                para.ValorNumero = de.ValorNumero;
+                para.ValorCodigo = de.ValorCodigo;
+                para.ValorTexto = de.ValorTexto;
+                para.ValorData = de.ValorData;
+                para.ValorCifrado = de.ValorCifrado;
+            });
+
+        SincronizarPorChave(
+            _dbContext.EnderecosDaInscricao, atuais.Enderecos, desejadas.Enderecos,
+            static e => (e.OcorrenciaId, e.FatoCodigo),
+            static (de, para) =>
+            {
+                para.Origem = de.Origem;
+                para.Cep = de.Cep;
+                para.Logradouro = de.Logradouro;
+                para.Numero = de.Numero;
+                para.Complemento = de.Complemento;
+                para.Bairro = de.Bairro;
+                para.Distrito = de.Distrito;
+                para.MunicipioCodigoIbge = de.MunicipioCodigoIbge;
+                para.MunicipioNome = de.MunicipioNome;
+                para.Uf = de.Uf;
+                para.Latitude = de.Latitude;
+                para.Longitude = de.Longitude;
+                para.NivelResolucao = de.NivelResolucao;
+                para.Procedencia = de.Procedencia;
+            });
+
+        SincronizarPorChave(
+            _dbContext.AceitesDaInscricao, atuais.Aceites, desejadas.Aceites,
+            static a => a.Ordem,
+            static (de, para) =>
+            {
+                para.TermoCodigo = de.TermoCodigo;
+                para.VersaoId = de.VersaoId;
+                para.HashVersao = de.HashVersao;
+            });
+
+        _dbContext.OcorrenciasDeGrupoDaInscricao.RemoveRange(ocorrenciasAtuais.Values);
+    }
+
+    private static void SincronizarPorChave<TRecord, TChave>(
+        DbSet<TRecord> conjunto,
+        IReadOnlyList<TRecord> atuais,
+        IReadOnlyList<TRecord> desejadas,
+        Func<TRecord, TChave> chave,
+        Action<TRecord, TRecord> copiar)
+        where TRecord : class
+        where TChave : notnull
+    {
+        Dictionary<TChave, TRecord> porChave = atuais.ToDictionary(chave);
+        foreach (TRecord desejada in desejadas)
+        {
+            if (porChave.Remove(chave(desejada), out TRecord? atual))
+            {
+                copiar(desejada, atual);
+            }
+            else
+            {
+                conjunto.Add(desejada);
+            }
+        }
+
+        conjunto.RemoveRange(porChave.Values);
+    }
+
+    /// <summary>
+    /// Não toca <c>CreatedAt</c>/<c>UpdatedAt</c>: quem o EF rastreia é <see cref="InscricaoRecord"/>,
+    /// que não herda <c>EntityBase</c> — o carimbo é de quem chama.
+    /// </summary>
     private async Task AtualizarCamposAsync(InscricaoRecord record, Inscricao entity, CancellationToken cancellationToken)
     {
         byte[] cpfCiphertext = await _encryption
             .EncryptAsync(SelecaoEncryptionKeys.IdentificadoresAesGcm, Encoding.UTF8.GetBytes(entity.Cpf.Valor), cancellationToken)
             .ConfigureAwait(false);
         byte[] cpfIndice = await ComputarIndiceAsync(entity.Cpf, cancellationToken).ConfigureAwait(false);
-
-        (Dictionary<string, JsonElement> respostasClaras, Dictionary<string, JsonElement> documentosDeRespostas) =
-            Separar(entity.Respostas, entity.FatosIdentificadorDeclarados);
-
-        Dictionary<string, List<OcorrenciaDeGrupoInscricao>> gruposClaros = new(StringComparer.Ordinal);
-        Dictionary<string, Dictionary<string, Dictionary<string, JsonElement>>> documentosDeGrupos = new(StringComparer.Ordinal);
-        foreach ((string grupoCodigo, IReadOnlyList<OcorrenciaDeGrupoInscricao> ocorrencias) in entity.Grupos)
-        {
-            List<OcorrenciaDeGrupoInscricao> ocorrenciasClaras = [];
-            Dictionary<string, Dictionary<string, JsonElement>> documentosPorMembro = new(StringComparer.Ordinal);
-            foreach (OcorrenciaDeGrupoInscricao ocorrencia in ocorrencias)
-            {
-                (Dictionary<string, JsonElement> claras, Dictionary<string, JsonElement> documentosDoMembro) =
-                    Separar(ocorrencia.Respostas, entity.FatosIdentificadorDeclarados);
-                ocorrenciasClaras.Add(ocorrencia with { Respostas = claras });
-                if (documentosDoMembro.Count > 0)
-                {
-                    documentosPorMembro[ocorrencia.Id] = documentosDoMembro;
-                }
-            }
-
-            gruposClaros[grupoCodigo] = ocorrenciasClaras;
-            if (documentosPorMembro.Count > 0)
-            {
-                documentosDeGrupos[grupoCodigo] = documentosPorMembro;
-            }
-        }
-
-        byte[] documentosCifrados = await _encryption
-            .EncryptAsync(
-                SelecaoEncryptionKeys.IdentificadoresAesGcm,
-                JsonSerializer.SerializeToUtf8Bytes(new DocumentosDeclarados(documentosDeRespostas, documentosDeGrupos), JsonOptions),
-                cancellationToken)
-            .ConfigureAwait(false);
 
         record.ProcessoSeletivoId = entity.ProcessoSeletivoId;
         record.CpfCiphertext = cpfCiphertext;
@@ -252,32 +508,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
         record.VersaoFormularioId = entity.VersaoFormularioId;
         record.OfertaCursoId = entity.OfertaCursoId;
         record.NumeroInscricao = entity.NumeroInscricao;
-        record.RespostasJson = JsonSerializer.Serialize(respostasClaras, JsonOptions);
-        record.GruposJson = JsonSerializer.Serialize(gruposClaros, JsonOptions);
-        record.AceitesJson = JsonSerializer.Serialize(entity.Aceites, JsonOptions);
-        record.FatosIdentificadorDeclaradosJson = JsonSerializer.Serialize(entity.FatosIdentificadorDeclarados, JsonOptions);
-        record.DocumentosCifrados = documentosCifrados;
         record.Revisao = entity.Revisao;
-    }
-
-    private static (Dictionary<string, JsonElement> Claras, Dictionary<string, JsonElement> Documentos) Separar(
-        IReadOnlyDictionary<string, JsonElement> respostas, IReadOnlySet<string> fatosIdentificador)
-    {
-        Dictionary<string, JsonElement> claras = new(StringComparer.Ordinal);
-        Dictionary<string, JsonElement> documentos = new(StringComparer.Ordinal);
-        foreach ((string codigo, JsonElement valor) in respostas)
-        {
-            if (fatosIdentificador.Contains(codigo))
-            {
-                documentos[codigo] = valor;
-            }
-            else
-            {
-                claras[codigo] = valor;
-            }
-        }
-
-        return (claras, documentos);
     }
 
     private Task<byte[]> ComputarIndiceAsync(Cpf cpf, CancellationToken cancellationToken) =>
@@ -297,8 +528,18 @@ public sealed class InscricaoRepository : IInscricaoRepository
             erro => throw new InvalidOperationException($"CPF decifrado da tabela inscricoes falhou a revalidação de domínio ({erro.Code})."));
     }
 
-    /// <summary><see cref="Grupos"/> é chaveado por (código do grupo, id do membro) → mapa de documentos do membro.</summary>
-    private sealed record DocumentosDeclarados(
-        Dictionary<string, JsonElement> Respostas,
-        Dictionary<string, Dictionary<string, Dictionary<string, JsonElement>>> Grupos);
+    private sealed record LinhasDaInscricao(
+        List<RespostaDaInscricaoRecord> Respostas,
+        List<EnderecoDaInscricaoRecord> Enderecos,
+        List<OcorrenciaDeGrupoDaInscricaoRecord> Ocorrencias,
+        List<AceiteDaInscricaoRecord> Aceites)
+    {
+        public static LinhasDaInscricao Vazias => new([], [], [], []);
+
+        public LinhasDaInscricao Da(Guid inscricaoId) => new(
+            [.. Respostas.Where(r => r.InscricaoId == inscricaoId)],
+            [.. Enderecos.Where(e => e.InscricaoId == inscricaoId)],
+            [.. Ocorrencias.Where(o => o.InscricaoId == inscricaoId)],
+            [.. Aceites.Where(a => a.InscricaoId == inscricaoId)]);
+    }
 }

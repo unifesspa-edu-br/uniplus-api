@@ -32,9 +32,10 @@ public sealed class MinhasInscricoesQueryHandlerTests
     private static Inscricao ComRespostas(Cpf cpf, string sub, Guid processoId, Dictionary<string, JsonElement> respostas)
     {
         Inscricao inscricao = Inscricao.Iniciar(
-            processoId, cpf, sub, "https://issuer", Guid.CreateVersion7(), new HashSet<string>(StringComparer.Ordinal)).Value!;
+            processoId, cpf, sub, "https://issuer", Guid.CreateVersion7()).Value!;
         inscricao.Salvar(
             null, respostas, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [],
+            TestSupport.DefinicoesDeTeste.Das(respostas),
             Unifesspa.UniPlus.Selecao.Domain.ValueObjects.PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
         return inscricao;
     }
@@ -73,7 +74,7 @@ public sealed class MinhasInscricoesQueryHandlerTests
     {
         Cpf cpf = PersonasDeTeste.KevinCarvalho;
         Inscricao deOutroSub = Inscricao.Iniciar(
-            Guid.CreateVersion7(), cpf, "sub-outro", "https://issuer", Guid.CreateVersion7(), new HashSet<string>(StringComparer.Ordinal)).Value!;
+            Guid.CreateVersion7(), cpf, "sub-outro", "https://issuer", Guid.CreateVersion7()).Value!;
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterTodasPorCpfAsync(cpf, Arg.Any<CancellationToken>()).Returns((IReadOnlyList<Inscricao>)[deOutroSub]);

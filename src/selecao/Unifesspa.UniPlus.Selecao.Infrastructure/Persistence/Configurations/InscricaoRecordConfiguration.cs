@@ -17,8 +17,7 @@ internal sealed class InscricaoRecordConfiguration : IEntityTypeConfiguration<In
 
         builder.ToTable("inscricoes", t => t.HasComment(
             "A inscrição de um candidato num processo seletivo (issue #1858) — uma por CPF e " +
-            "processo. Números de documento vivem cifrados aqui ou em documentos_cifrados, " +
-            "nunca em respostas_json."));
+            "processo. As respostas ficam em respostas_da_inscricao e nas tabelas vizinhas."));
 
         builder.HasKey(i => i.Id);
 
@@ -64,35 +63,6 @@ internal sealed class InscricaoRecordConfiguration : IEntityTypeConfiguration<In
         builder.Property(i => i.NumeroInscricao)
             .HasMaxLength(20)
             .HasComment("Gerado na primeira submissão (sequência do banco, formatada); nulo em rascunho.");
-
-        builder.Property(i => i.RespostasJson)
-            .HasColumnName("respostas")
-            .HasColumnType("jsonb")
-            .IsRequired()
-            .HasComment("Respostas por fato (código → valor), sem números de documento.");
-
-        builder.Property(i => i.GruposJson)
-            .HasColumnName("grupos")
-            .HasColumnType("jsonb")
-            .IsRequired()
-            .HasComment("Ocorrências de grupo repetível, mesma exclusão de documento das respostas.");
-
-        builder.Property(i => i.AceitesJson)
-            .HasColumnName("aceites")
-            .HasColumnType("jsonb")
-            .IsRequired()
-            .HasComment("Aceites de termo — código, versão e hash da versão fixada.");
-
-        builder.Property(i => i.FatosIdentificadorDeclaradosJson)
-            .HasColumnName("fatos_identificador_declarados")
-            .HasColumnType("jsonb")
-            .IsRequired()
-            .HasComment("Códigos de fato cuja classificação congelada é IDENTIFICADOR, fixados ao iniciar.");
-
-        builder.Property(i => i.DocumentosCifrados)
-            .HasColumnType("bytea")
-            .IsRequired()
-            .HasComment("Envelope AEAD com o mapa {código do fato: valor} dos números de documento — nunca em claro.");
 
         // Token de concorrência (ADR-0119): a checagem em memória de Inscricao.ConferirPrecondicao
         // devolve 412 limpo quando já basta; isto cobre a corrida que ela sozinha não pega — duas

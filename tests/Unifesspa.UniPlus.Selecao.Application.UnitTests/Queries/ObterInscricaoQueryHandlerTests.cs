@@ -63,7 +63,7 @@ public sealed class ObterInscricaoQueryHandlerTests
     {
         Cpf cpf = PersonasDeTeste.KevinCarvalho;
         Inscricao existente = Inscricao.Iniciar(
-            ProcessoId, cpf, "sub-original", "https://issuer", Guid.CreateVersion7(), new HashSet<string>(StringComparer.Ordinal)).Value!;
+            ProcessoId, cpf, "sub-original", "https://issuer", Guid.CreateVersion7()).Value!;
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
@@ -80,7 +80,7 @@ public sealed class ObterInscricaoQueryHandlerTests
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         Inscricao existente = Inscricao.Iniciar(
-            ProcessoId, cpf, "sub-1", "https://issuer", Guid.CreateVersion7(), new HashSet<string>(StringComparer.Ordinal)).Value!;
+            ProcessoId, cpf, "sub-1", "https://issuer", Guid.CreateVersion7()).Value!;
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);

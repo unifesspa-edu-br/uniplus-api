@@ -73,6 +73,7 @@ public sealed class InscricaoContratoProvisorioTests
                 ["NOME_SOCIAL"] = JsonSerializer.SerializeToElement("Ana"),
                 ["RG_NUMERO"] = JsonSerializer.SerializeToElement("1234567"),
             },
+            Derivados: new Dictionary<string, JsonElement>(StringComparer.Ordinal),
             Grupos: new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>(StringComparer.Ordinal),
             Aceites: [new AceiteDeTermoInput("TERMO_VERACIDADE", Guid.Parse("0199e000-0000-7000-8000-000000000002"), "sha256-abc")],
             ETag: "\"42\"");
@@ -99,6 +100,7 @@ public sealed class InscricaoContratoProvisorioTests
             {
                 ["NOME_SOCIAL"] = JsonSerializer.SerializeToElement("Ana"),
             },
+            Derivados: new Dictionary<string, JsonElement>(StringComparer.Ordinal),
             Grupos: new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>(StringComparer.Ordinal),
             Aceites: [new AceiteDeTermoInput("TERMO_VERACIDADE", Guid.Parse("0199e000-0000-7000-8000-000000000002"), "sha256-abc")]);
 

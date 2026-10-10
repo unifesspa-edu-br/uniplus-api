@@ -169,6 +169,14 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     /// <summary>Modelo de persistência de <see cref="Domain.Entities.Inscricao"/> (issue #1858) — ver <c>InscricaoRecord</c>.</summary>
     public DbSet<InscricaoRecord> Inscricoes => Set<InscricaoRecord>();
 
+    public DbSet<RespostaDaInscricaoRecord> RespostasDaInscricao => Set<RespostaDaInscricaoRecord>();
+
+    public DbSet<EnderecoDaInscricaoRecord> EnderecosDaInscricao => Set<EnderecoDaInscricaoRecord>();
+
+    public DbSet<OcorrenciaDeGrupoDaInscricaoRecord> OcorrenciasDeGrupoDaInscricao => Set<OcorrenciaDeGrupoDaInscricaoRecord>();
+
+    public DbSet<AceiteDaInscricaoRecord> AceitesDaInscricao => Set<AceiteDaInscricaoRecord>();
+
     /// <summary>Comprovantes de submissão (issue #1858) — mapeado direto, sem record de tradução (sem campo cifrado).</summary>
     public DbSet<ComprovanteInscricao> ComprovantesInscricao => Set<ComprovanteInscricao>();
 

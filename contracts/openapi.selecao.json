@@ -10244,6 +10244,7 @@
           "hashIntegridade",
           "ofertaCursoId",
           "respostas",
+          "derivados",
           "grupos",
           "aceites"
         ],
@@ -10270,6 +10271,9 @@
             "format": "uuid"
           },
           "respostas": {
+            "type": "object"
+          },
+          "derivados": {
             "type": "object"
           },
           "grupos": {
@@ -13869,6 +13873,7 @@
           "versaoFormularioId",
           "ofertaCursoId",
           "respostas",
+          "derivados",
           "grupos",
           "aceites",
           "eTag"
@@ -13904,6 +13909,9 @@
             "format": "uuid"
           },
           "respostas": {
+            "type": "object"
+          },
+          "derivados": {
             "type": "object"
           },
           "grupos": {

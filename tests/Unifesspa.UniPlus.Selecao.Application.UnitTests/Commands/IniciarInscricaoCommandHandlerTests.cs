@@ -21,8 +21,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Início da inscrição (issue #1858): a resolução da versão divulgada (UNI-REQ-0084, mesmo
-/// caminho de <c>ObterFormularioRenderizavelQueryHandler</c>) e o congelamento de
-/// <c>FatosIdentificadorDeclarados</c> a partir da classificação de proteção do grafo reidratado.
+/// caminho de <c>ObterFormularioRenderizavelQueryHandler</c>).
 /// A tradução da colisão do índice único (duas requisições simultâneas) exige uma
 /// <c>DbUpdateException</c> real, compatível por reflection — provada contra Postgres real em
 /// <c>InscricaoPersistenceTests.IndiceUnico_RecusaDuasInscricoesDoMesmoCpfNoMesmoProcesso</c>, não
@@ -62,8 +61,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         Inscricao existente = Inscricao.Iniciar(
-            ProcessoId, cpf, "sub-1", "https://issuer", Guid.CreateVersion7(),
-            new HashSet<string>(StringComparer.Ordinal)).Value!;
+            ProcessoId, cpf, "sub-1", "https://issuer", Guid.CreateVersion7()).Value!;
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
@@ -111,8 +109,8 @@ public sealed class IniciarInscricaoCommandHandlerTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
     }
 
-    [Fact(DisplayName = "Cria a inscrição fixando a versão divulgada e os fatos Identificador do grafo (de nível superior e de grupo)")]
-    public async Task Handle_CriaNova_FixaVersaoEFatosIdentificadorDeclarados()
+    [Fact(DisplayName = "Cria a inscrição fixando a versão divulgada")]
+    public async Task Handle_CriaNova_FixaVersaoDivulgada()
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
 
@@ -180,9 +178,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.VersaoFormularioId.Should().Be(versao.Id);
-        gravada.Should().NotBeNull();
-        gravada!.FatosIdentificadorDeclarados.Should().BeEquivalentTo(["RG_NUMERO", "RG_NUMERO_MEMBRO"],
-            "o conjunto junta os fatos Identificador de nível superior e os de campo de grupo");
+        gravada!.VersaoFormularioId.Should().Be(versao.Id);
     }
 
     private static IUserContext UsuarioComCpf(Cpf cpf)

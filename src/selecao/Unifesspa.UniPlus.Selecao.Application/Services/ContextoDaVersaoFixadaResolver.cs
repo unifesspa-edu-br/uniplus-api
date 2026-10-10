@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services;
 using Abstractions;
 
 using Domain.Entities;
+using Domain.ValueObjects;
 
 using Kernel.Results;
 
@@ -11,14 +12,16 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// <summary>
 /// O contexto de avaliação da finalidade Inscrição na versão FIXADA por uma inscrição ao iniciar —
 /// nunca a vigente por relógio (UNI-REQ-0084): as regras recortadas, os termos exigidos dessa
-/// finalidade e a data de referência dos fatos congelada na publicação. Reusado por Salvar e por
-/// Submeter (issue #1859), que avaliam a mesma versão do mesmo jeito.
+/// finalidade, a data de referência dos fatos congelada na publicação e a definição de cada fato que o
+/// formulário coleta. Reusado por Salvar e por Submeter (issue #1859), que avaliam a mesma versão do
+/// mesmo jeito.
 /// </summary>
 public sealed record ContextoDaVersaoFixada(
     FormularioPortavel Regras,
     IReadOnlyCollection<TermoExigidoFormulario> TermosExigidos,
     DateOnly? DataReferenciaFatos,
-    IReadOnlyDictionary<string, IReadOnlySet<string>> Ofertas);
+    IReadOnlyDictionary<string, IReadOnlySet<string>> Ofertas,
+    IReadOnlyDictionary<string, DefinicaoDaResposta> DefinicoesDasRespostas);
 
 public static class ContextoDaVersaoFixadaResolver
 {
@@ -72,7 +75,25 @@ public static class ContextoDaVersaoFixadaResolver
         IReadOnlyCollection<TermoExigidoFormulario> termos =
             [.. reidratado.Value!.Grafo.TermosExigidos.Where(static t => t.Finalidade == FinalidadeFormulario.Inscricao)];
 
-        return Result<ContextoDaVersaoFixada>.Success(
-            new ContextoDaVersaoFixada(recorte.Regras, termos, dataReferencia.Value, avaliavel.Value!.Ofertas));
+        return Result<ContextoDaVersaoFixada>.Success(new ContextoDaVersaoFixada(
+            recorte.Regras, termos, dataReferencia.Value, avaliavel.Value!.Ofertas, DefinicoesDasRespostasDaInscricao(reidratado.Value!.Grafo)));
+    }
+
+    public static Dictionary<string, DefinicaoDaResposta> DefinicoesDasRespostasDaInscricao(GrafoConfiguracao grafo)
+    {
+        ArgumentNullException.ThrowIfNull(grafo);
+
+        Dictionary<string, DefinicaoDaResposta> definicoes = new(StringComparer.Ordinal);
+        IEnumerable<FatoColetado> coletados = grafo.FatosColetados
+            .Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao)
+            .Concat(grafo.GruposColetados
+                .Where(static g => g.Finalidade == FinalidadeFormulario.Inscricao)
+                .SelectMany(static g => g.Subitens));
+        foreach (FatoColetado fato in coletados)
+        {
+            definicoes.TryAdd(fato.FatoCodigo, DefinicaoDaResposta.De(fato.TipoRenderizacao, fato.ClassificacaoProtecao));
+        }
+
+        return definicoes;
     }
 }

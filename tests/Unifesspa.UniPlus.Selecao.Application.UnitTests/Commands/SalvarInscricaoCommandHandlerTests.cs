@@ -32,7 +32,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
     private static readonly Guid ProcessoId = Guid.CreateVersion7();
 
     private static Inscricao NovaInscricao(Cpf cpf, string sub, Guid versaoFormularioId) =>
-        Inscricao.Iniciar(ProcessoId, cpf, sub, "https://issuer", versaoFormularioId, new HashSet<string>(StringComparer.Ordinal)).Value!;
+        Inscricao.Iniciar(ProcessoId, cpf, sub, "https://issuer", versaoFormularioId).Value!;
 
     private static IUserContext UsuarioComCpf(Cpf cpf, string sub = "sub-1")
     {
