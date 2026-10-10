@@ -249,6 +249,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "As opções deste fato vêm da oferta de atendimento especializado; defina-as na oferta."));
         }
 
+        // EDICAO_ENEM só tem sentido quando a classificação lê notas do ENEM do candidato —
+        // mesmo raciocínio das regras de eliminação que exigem ENEM (ConfiguracaoClassificacao,
+        // "ProcessoSeletivo.EliminacaoEnemForaDeProcessoEnem").
+        if (string.Equals(fato, "EDICAO_ENEM", StringComparison.Ordinal) && Classificacao is not { BaseadoEmEnem: true })
+        {
+            return Result.Failure(new DomainError(
+                OpcaoDeclaradaFatoErrorCodes.EdicaoEnemForaDeProcessoEnem,
+                "As edições do ENEM só podem ser declaradas quando a classificação do processo é baseada em ENEM."));
+        }
+
         if (opcoes.Count == 0)
         {
             return Result.Failure(new DomainError(
@@ -3272,6 +3282,18 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         if (Classificacao is { CalculaPelosPesosPorAreaDoEnem: true } classificacaoEnem)
         {
             itens.AddRange(ItensDaMediaPelosPesosPorAreaDoEnem(classificacaoEnem));
+        }
+
+        if (Classificacao is { BaseadoEmEnem: true })
+        {
+            // Importar a nota de qualquer forma (cálculo local ou classificação importada)
+            // exige saber de qual edição do ENEM — sem nenhuma edição admitida, a inscrição
+            // não tem o que coletar e a importação não tem o que ler (issue #1620).
+            itens.Add(new ItemConformidade(
+                "classificacao_edicao_enem_nao_declarada",
+                DimensaoConformidade.Classificacao,
+                "Edições do ENEM admitidas (classificação baseada em ENEM)",
+                _opcoesDeclaradas.Any(static o => string.Equals(o.FatoCodigo, "EDICAO_ENEM", StringComparison.Ordinal))));
         }
 
         return itens;

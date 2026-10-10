@@ -10,4 +10,5 @@ public static class OpcaoDeclaradaFatoErrorCodes
     public const string GeridasPelaOfertaDeAtendimento = "OpcaoDeclaradaFato.GeridasPelaOfertaDeAtendimento";
     public const string ReferenciadaPorExigenciaViva = "OpcaoDeclaradaFato.ReferenciadaPorExigenciaViva";
     public const string FonteNaoEhDoProcesso = "OpcaoDeclaradaFato.FonteNaoEhDoProcesso";
+    public const string EdicaoEnemForaDeProcessoEnem = "OpcaoDeclaradaFato.EdicaoEnemForaDeProcessoEnem";
 }

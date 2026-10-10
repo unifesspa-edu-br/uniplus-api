@@ -749,6 +749,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new(OpcaoDeclaradaFatoErrorCodes.GeridasPelaOfertaDeAtendimento, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.opcao_declarada_fato.geridas_pela_oferta_de_atendimento", "As opções deste fato vêm da oferta de atendimento especializado")),
         new(OpcaoDeclaradaFatoErrorCodes.ReferenciadaPorExigenciaViva, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.opcao_declarada_fato.referenciada_por_exigencia_viva", "Uma exigência documental cita uma opção que deixaria de existir")),
         new(OpcaoDeclaradaFatoErrorCodes.FonteNaoEhDoProcesso, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.opcao_declarada_fato.fonte_nao_eh_do_processo", "Só se declaram opções para um fato cuja fonte dos valores é o processo")),
+        new(OpcaoDeclaradaFatoErrorCodes.EdicaoEnemForaDeProcessoEnem, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.opcao_declarada_fato.edicao_enem_fora_de_processo_enem", "As edições do ENEM só podem ser declaradas quando a classificação do processo é baseada em ENEM")),
         // Base legal 1:N (Story #554, PR #898, issue #549, ADR-0074) — DocumentoExigidoBaseLegal
         // e o gate de publicação (ValidadorBaseLegalExigencias) aflora pelo
         // ProcessoSeletivo.ConformidadeInsuficiente já registrado acima, sem código novo.
