@@ -77,6 +77,13 @@ services:
       # Authorize) para o ambiente errado. Só de desenvolvimento; em HML/PROD a variável
       # não existe e o documento volta a anunciar apenas Produção e Homologação.
       UniPlus__OpenApi__LocalServerUrl: "http://localhost:5299"
+      # Conferência do endereço do candidato no Geo (issue #1865, ADR-0136) — BaseUrl é
+      # obrigatório, sem ele a API não sobe. OAuth reaproveita o client M2M já provisionado
+      # para o Schema Registry (uniplus-api-selecao, uniplus-infra#163); o secret não vai
+      # aqui, nem em appsettings — vem de Vault/ESO em todo ambiente real.
+      Geo__BaseUrl: "http://geo-api:8080"
+      Geo__OAuth__TokenEndpoint: "http://keycloak:8080/realms/unifesspa/protocol/openid-connect/token"
+      Geo__OAuth__ClientId: "uniplus-api-selecao"
     ports:
       - "5200:8080"
     depends_on:
@@ -87,6 +94,8 @@ services:
       kafka:
         condition: service_healthy
       apicurio:
+        condition: service_healthy
+      geo-api:
         condition: service_healthy
       # MinIO entra no /health agregado (readiness) — declarar a dependência evita
       # que a API fique unhealthy quando subida isolada (storage é lazy no uso, mas
