@@ -640,7 +640,7 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.fato_candidato.classificacao_abaixo_do_minimo_do_dominio",
-                "Fato de texto, data ou endereço é classificado como pessoal ou sensível")),
+                "Classificação de proteção de dados incompatível com o domínio do fato")),
 
         new(FatoCandidatoErrorCodes.EscopoObrigatorio,
             new DomainErrorMapping(
