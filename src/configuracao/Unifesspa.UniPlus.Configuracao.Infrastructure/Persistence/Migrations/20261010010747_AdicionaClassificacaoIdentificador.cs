@@ -8,7 +8,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
     /// <remarks>
     /// Reclassifica os três fatos de sistema que identificam o candidato por número de documento
     /// (CPF, RG_NUMERO, DOCUMENTO_ESTRANGEIRO_NUMERO) de <c>PESSOAL</c> para <c>IDENTIFICADOR</c>
-    /// (ADR-0136, emenda 1). Nenhum dos três é citado como dependência de derivado nem de regra
+    /// (ADR-0136, emenda de #1856). Nenhum dos três é citado como dependência de derivado nem de regra
     /// padrão no catálogo — a reclassificação não invalida nada existente.
     /// </remarks>
     public partial class AdicionaClassificacaoIdentificador : Migration

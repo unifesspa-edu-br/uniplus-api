@@ -106,6 +106,16 @@ public sealed class FatoCandidatoTests
             classificacao: ClassificacaoProtecaoDado.Identificador, hipotese: HipoteseLegalTratamento.ExecucaoPoliticasPublicas)
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio);
 
+    [Theory(DisplayName = "Identificador nunca é aceito fora do domínio texto — categórico, booleano e numérico também recusam")]
+    [InlineData(DominioFato.Categorico)]
+    [InlineData(DominioFato.Booleano)]
+    [InlineData(DominioFato.Numerico)]
+    public void Criar_DominioQueNaoEhTextoComIdentificador_Recusa(DominioFato dominio) =>
+        Criar(
+            codigo: "DADO", dominio: dominio, binding: "CAMPO_FORMULARIO:DADO",
+            classificacao: ClassificacaoProtecaoDado.Identificador, hipotese: HipoteseLegalTratamento.ExecucaoPoliticasPublicas)
+            .Error!.Code.Should().Be(FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio);
+
     [Theory(DisplayName = "Só o nome social de sistema é texto público; outro texto de sistema, o nome social do administrador ou outra classificação abaixo de pessoal, não")]
     [InlineData(FatoCandidato.CodigoDoNomeSocial, true, ClassificacaoProtecaoDado.Publico, true)]
     [InlineData(FatoCandidato.CodigoDoNomeSocial, false, ClassificacaoProtecaoDado.Publico, false)]

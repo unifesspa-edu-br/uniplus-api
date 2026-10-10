@@ -269,7 +269,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// <c>fatosColetados[]</c> e de <c>gruposColetados[].subitens[]</c> — a classificação de proteção
     /// de dados do fato (token canônico: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR, SENSIVEL),
     /// copiada do catálogo quando a coleta é definida e congelada aqui: reclassificar o fato no
-    /// catálogo depois da publicação não muda o que já foi congelado (ADR-0136, emenda 1). Sem novo
+    /// catálogo depois da publicação não muda o que já foi congelado (ADR-0136, emenda de #1857). Sem novo
     /// bloco de topo. Sem produção em ambiente nenhum: fixture nova, <c>0.0.21</c> deixa de ser
     /// reconhecida.
     /// </remarks>

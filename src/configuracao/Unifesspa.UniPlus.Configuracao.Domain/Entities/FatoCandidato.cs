@@ -741,10 +741,11 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         {
             // Texto (em todo formato, inclusive o livre, que pode conter qualquer coisa), data e
             // endereço identificam ou localizam a pessoa: nunca são menos que dado pessoal. Texto
-            // também aceita `Identificador` — número de documento é sempre texto (ADR-0136,
-            // emenda de #1857). A exceção é o nome social de sistema, texto público (ADR-0082, ADR-0136).
+            // também aceita `Identificador` — número de documento é sempre texto, nunca outro
+            // domínio (ADR-0136, emenda de #1857). A exceção é o nome social de sistema, texto
+            // público (ADR-0082, ADR-0136).
             Recusar("classificacaoProtecao", FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio,
-                "Fato de texto, data ou endereço é classificado como pessoal, identificador (só texto) ou sensível.");
+                "Classificação de proteção de dados incompatível com o domínio do fato.");
         }
 
         string finalidadeNormalizada = finalidade?.Trim() ?? string.Empty;
@@ -781,7 +782,10 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
                 or ClassificacaoProtecaoDado.Identificador or ClassificacaoProtecaoDado.Sensivel,
             DominioFato.Data or DominioFato.Endereco => classificacao is ClassificacaoProtecaoDado.Pessoal
                 or ClassificacaoProtecaoDado.Sensivel,
-            _ => true,
+            // Identificador é só para texto — número de documento nunca é categórico, booleano
+            // nem numérico. Sem essa recusa, um categórico Identificador citado como membro de
+            // agregado elevaria a classificação mínima do derivado (ADR-0136, emenda de #1857).
+            _ => classificacao != ClassificacaoProtecaoDado.Identificador,
         };
 
     private static Result<string> ValidarPontoResolucao(string pontoResolucao)

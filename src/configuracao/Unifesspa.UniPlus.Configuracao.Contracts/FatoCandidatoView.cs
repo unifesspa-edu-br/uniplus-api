@@ -45,7 +45,7 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// <param name="ClassificacaoProtecao">
 /// Classificação de proteção de dados do fato — token canônico (PUBLICO, INTERNO, PESSOAL,
 /// IDENTIFICADOR, SENSIVEL), na escala da ADR-0081 (ADR-0136). A Seleção congela este valor no
-/// fato coletado ao aplicar o modelo ou editar o formulário (ADR-0136, emenda 1).
+/// fato coletado ao aplicar o modelo ou editar o formulário (ADR-0136, emenda de #1857).
 /// </param>
 public sealed record FatoCandidatoView(
     Guid Id,

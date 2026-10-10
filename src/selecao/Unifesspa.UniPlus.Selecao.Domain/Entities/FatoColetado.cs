@@ -97,7 +97,7 @@ public sealed class FatoColetado : EntityBase
     /// Classificação de proteção de dados do fato (token canônico: PUBLICO, INTERNO, PESSOAL,
     /// IDENTIFICADOR, SENSIVEL), copiada do catálogo quando a coleta é definida e congelada na
     /// publicação — reclassificar o fato no catálogo depois não muda o que já foi congelado
-    /// (ADR-0136, emenda 1).
+    /// (ADR-0136, emenda de #1857).
     /// </summary>
     public string ClassificacaoProtecao { get; private set; } = string.Empty;
 
