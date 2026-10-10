@@ -35,7 +35,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     private static readonly Guid ProcessoId = Guid.CreateVersion7();
 
     private static Inscricao NovaInscricao(Cpf cpf, string sub, Guid versaoFormularioId) =>
-        Inscricao.Iniciar(ProcessoId, cpf, sub, "https://issuer", versaoFormularioId, new HashSet<string>(StringComparer.Ordinal)).Value!;
+        Inscricao.Iniciar(ProcessoId, cpf, sub, "https://issuer", versaoFormularioId).Value!;
 
     private static IUserContext UsuarioComCpf(Cpf cpf, string sub = "sub-1")
     {
@@ -394,7 +394,8 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         respostasDoRascunho["APELIDO"] = JsonSerializer.SerializeToElement("Nanda");
         Result salvo = existente.Salvar(
             null, respostasDoRascunho,
-            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [], PrecondicaoIfMatch.DeTags([existente.ETag]));
+            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [],
+            Unifesspa.UniPlus.Selecao.Application.Services.ContextoDaVersaoFixadaResolver.DefinicoesDasRespostasDaInscricao(grafo), PrecondicaoIfMatch.DeTags([existente.ETag]));
         salvo.IsSuccess.Should().BeTrue(salvo.Error?.Message);
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();

@@ -11,15 +11,16 @@ using Npgsql;
 
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Prova, contra Postgres real (Testcontainers), os critérios de aceite arquiteturais da
-/// ADR-0121 para a inscrição do candidato (issue #1858): a linha crua não contém o CPF nem o
-/// número de documento em texto claro, o índice único por (processo, CPF) funciona, e o
+/// Prova, contra Postgres real (Testcontainers), a gravação da inscrição do candidato: a linha
+/// crua não contém o CPF nem o número de documento em texto claro (ADR-0121), cada valor fica na
+/// coluna do tipo com a origem (ADR-0141), o índice único por (processo, CPF) funciona, e o
 /// round-trip via repositório devolve a inscrição inteira — inclusive os documentos dentro de
 /// grupos repetíveis.
 /// </summary>
@@ -29,14 +30,43 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
     private static readonly Guid Processo = Guid.CreateVersion7();
     private static readonly Guid VersaoFormulario = Guid.CreateVersion7();
 
+    private static readonly Dictionary<string, DefinicaoDaResposta> DefinicoesDasRespostas = new(StringComparer.Ordinal)
+    {
+        ["NOME_SOCIAL"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: false),
+        ["DESEJA_NOME_SOCIAL"] = new(TipoDoValorDeResposta.Booleano, Multivalorado: false, Identificador: false),
+        ["DATA_NASCIMENTO"] = new(TipoDoValorDeResposta.Data, Multivalorado: false, Identificador: false),
+        ["MODALIDADES"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: true, Identificador: false),
+        ["ENDERECO_RESIDENCIAL"] = new(TipoDoValorDeResposta.Endereco, Multivalorado: false, Identificador: false),
+        ["RG_NUMERO"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: true),
+        ["PARENTESCO"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false),
+    };
+
+    private static readonly Dictionary<string, DefinicaoDaResposta> DefinicoesDosDerivados = new(StringComparer.Ordinal)
+    {
+        ["FAIXA_ETARIA"] = new(TipoDoValorDeResposta.Numero, Multivalorado: false, Identificador: false),
+        ["UF_RESIDENCIA"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false),
+    };
+
     private readonly InscricaoDbFixture _fixture;
 
     public InscricaoPersistenceTests(InscricaoDbFixture fixture) => _fixture = fixture;
 
     private static Inscricao NovaInscricao(Cpf cpf, Guid processo) =>
-        Inscricao.Iniciar(
-            processo, cpf, "sub-1", "https://issuer", VersaoFormulario,
-            new HashSet<string>(StringComparer.Ordinal) { "RG_NUMERO" }).Value!;
+        Inscricao.Iniciar(processo, cpf, "sub-1", "https://issuer", VersaoFormulario).Value!;
+
+    private static Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> SemGrupos() => new(StringComparer.Ordinal);
+
+    private static Dictionary<string, JsonElement> Respostas(params (string Codigo, object Valor)[] respostas) =>
+        respostas.ToDictionary(static r => r.Codigo, static r => JsonSerializer.SerializeToElement(r.Valor), StringComparer.Ordinal);
+
+    private static Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> Familia(params string[] membros) =>
+        new(StringComparer.Ordinal)
+        {
+            ["COMPOSICAO_FAMILIAR"] =
+            [
+                .. membros.Select(m => new OcorrenciaDeGrupoInscricao(m, Respostas(("RG_NUMERO", $"rg-{m}"), ("PARENTESCO", "FILHO")))),
+            ],
+        };
 
     [Fact(DisplayName = "Persistir e ler faz round-trip do CPF, das respostas e dos documentos dentro de um grupo")]
     public async Task Persistir_E_Ler_FazRoundTripCompleto()
@@ -62,6 +92,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
                 ],
             },
             [new AceiteDeTermo("TERMO_VERACIDADE", Guid.NewGuid(), "sha256-abc")],
+            DefinicoesDasRespostas,
             PrecondicaoIfMatch.DeTags([original.ETag]));
 
         await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
@@ -111,15 +142,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
     {
         Guid processo = Guid.CreateVersion7();
         Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, processo);
-        original.Salvar(
-            null,
-            new Dictionary<string, JsonElement>(StringComparer.Ordinal)
-            {
-                ["RG_NUMERO"] = JsonSerializer.SerializeToElement("12.868.927-4"),
-            },
-            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal),
-            [],
-            PrecondicaoIfMatch.DeTags([original.ETag]));
+        original.Salvar(null, Respostas(("RG_NUMERO", "12.868.927-4")), SemGrupos(), [], DefinicoesDasRespostas, PrecondicaoIfMatch.DeTags([original.ETag]));
 
         await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
         InscricaoRepository writeRepository = new(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
@@ -129,18 +152,163 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         await using NpgsqlConnection connection = new(_fixture.ConnectionString);
         await connection.OpenAsync();
         await using NpgsqlCommand command = connection.CreateCommand();
-        command.CommandText = "SELECT cpf_ciphertext, documentos_cifrados, respostas FROM selecao.inscricoes WHERE id = @id";
+        command.CommandText = """
+            SELECT i.cpf_ciphertext, r.valor_texto, r.valor_cifrado
+            FROM selecao.inscricoes i JOIN selecao.respostas_da_inscricao r ON r.inscricao_id = i.id
+            WHERE i.id = @id AND r.fato_codigo = 'RG_NUMERO'
+            """;
         command.Parameters.AddWithValue("id", original.Id);
         await using NpgsqlDataReader reader = await command.ExecuteReaderAsync();
         (await reader.ReadAsync()).Should().BeTrue();
 
-        byte[] cpfCiphertext = (byte[])reader["cpf_ciphertext"];
-        byte[] documentosCifrados = (byte[])reader["documentos_cifrados"];
-        string respostas = (string)reader["respostas"];
+        Encoding.UTF8.GetString((byte[])reader["cpf_ciphertext"]).Should().NotContain(PersonasDeTeste.FernandaDrumond.Valor);
+        reader["valor_texto"].Should().Be(DBNull.Value, "o número de documento nunca fica na coluna de texto em claro");
+        Encoding.UTF8.GetString((byte[])reader["valor_cifrado"]).Should().NotContain("12.868.927-4");
+    }
 
-        Encoding.UTF8.GetString(cpfCiphertext).Should().NotContain(PersonasDeTeste.FernandaDrumond.Valor);
-        Encoding.UTF8.GetString(documentosCifrados).Should().NotContain("12.868.927-4");
-        respostas.Should().NotContain("12.868.927-4", "o número de documento nunca entra no jsonb em claro");
+    [Fact(DisplayName = "Cada valor fica na coluna do tipo, com a origem: informado pelo candidato ou derivado")]
+    public async Task Submeter_GravaCadaValorNaColunaDoTipoComAOrigem()
+    {
+        Inscricao original = NovaInscricao(PersonasDeTeste.KevinCarvalho, Guid.CreateVersion7());
+        Dictionary<string, JsonElement> respostas = Respostas(
+            ("DESEJA_NOME_SOCIAL", false),
+            ("DATA_NASCIMENTO", "2001-03-09"),
+            ("MODALIDADES", new[] { "LB_PPI", "AC" }));
+        respostas["ENDERECO_RESIDENCIAL"] = JsonSerializer.Deserialize<JsonElement>(
+            """{"cep":"68500000","logradouro":"Folha 31","cidade":{"codigoIbge":"1504208","nome":"Marabá","uf":"PA"},"origem":"geo-api"}""");
+        original.Submeter(
+            "000321", null, respostas, SemGrupos(), [], DefinicoesDasRespostas,
+            Respostas(("FAIXA_ETARIA", 25), ("UF_RESIDENCIA", "PA")), DefinicoesDosDerivados,
+            new string('a', 64), PrecondicaoIfMatch.DeTags([original.ETag]), DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
+
+        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+        InscricaoRepository writeRepository = new(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+        await writeRepository.AdicionarAsync(original);
+        await writeContext.SaveChangesAsync();
+
+        await using NpgsqlConnection connection = new(_fixture.ConnectionString);
+        await connection.OpenAsync();
+        await using NpgsqlCommand command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT fato_codigo, posicao, origem, valor_booleano, valor_numero, valor_codigo, valor_data
+            FROM selecao.respostas_da_inscricao WHERE inscricao_id = @id
+            """;
+        command.Parameters.AddWithValue("id", original.Id);
+        Dictionary<string, List<object?[]>> linhas = new(StringComparer.Ordinal);
+        await using (NpgsqlDataReader reader = await command.ExecuteReaderAsync())
+        {
+            while (await reader.ReadAsync())
+            {
+                object?[] colunas = new object?[7];
+                reader.GetValues(colunas!);
+                string fato = (string)colunas[0]!;
+                linhas.TryAdd(fato, []);
+                linhas[fato].Add(colunas);
+            }
+        }
+
+        linhas["DESEJA_NOME_SOCIAL"].Single()[3].Should().Be(false);
+        linhas["DATA_NASCIMENTO"].Single()[6].Should().Be(new DateOnly(2001, 3, 9));
+        linhas["MODALIDADES"].Select(static l => ((int)l[1]!, (string)l[5]!)).Should().BeEquivalentTo([(0, "LB_PPI"), (1, "AC")]);
+        linhas["FAIXA_ETARIA"].Single()[4].Should().Be(25m);
+        linhas["UF_RESIDENCIA"].Single()[2].Should().Be((int)OrigemDaResposta.Derivada);
+        linhas["DATA_NASCIMENTO"].Single()[2].Should().Be((int)OrigemDaResposta.Informada);
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        Inscricao lida = (await new InscricaoRepository(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System)
+            .ObterPorIdAsync(original.Id))!;
+        lida.Derivados.Should().ContainKey("UF_RESIDENCIA");
+        lida.Respostas.Should().NotContainKey("UF_RESIDENCIA");
+        lida.Respostas["MODALIDADES"].EnumerateArray().Select(static v => v.GetString()).Should().Equal("LB_PPI", "AC");
+        lida.Respostas["ENDERECO_RESIDENCIAL"].GetProperty("cidade").GetProperty("codigoIbge").GetString().Should().Be("1504208");
+    }
+
+    [Fact(DisplayName = "Regravar troca, acrescenta e remove linhas, inclusive ocorrências de grupo, sem colidir no índice único")]
+    public async Task Atualizar_SincronizaAsLinhas()
+    {
+        Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, Guid.CreateVersion7());
+        original.Salvar(
+            null, Respostas(("NOME_SOCIAL", "Ariel"), ("MODALIDADES", new[] { "AC", "LB_PPI" })), Familia("membro-1", "membro-2"), [],
+            DefinicoesDasRespostas, PrecondicaoIfMatch.DeTags([original.ETag]));
+
+        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        {
+            await new InscricaoRepository(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System).AdicionarAsync(original);
+            await context.SaveChangesAsync();
+        }
+
+        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        {
+            InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+            Inscricao lida = (await repositorio.ObterPorIdAsync(original.Id))!;
+            Dictionary<string, JsonElement> mudanca = Respostas(("MODALIDADES", new[] { "LB_PPI" }));
+            mudanca["NOME_SOCIAL"] = JsonSerializer.SerializeToElement<string?>(null);
+            lida.Salvar(null, mudanca, Familia("membro-2", "membro-3"), [], DefinicoesDasRespostas, PrecondicaoIfMatch.DeTags([lida.ETag]))
+                .IsSuccess.Should().BeTrue();
+            await repositorio.AtualizarAsync(lida);
+            await context.SaveChangesAsync();
+        }
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        Inscricao relida = (await new InscricaoRepository(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System)
+            .ObterPorIdAsync(original.Id))!;
+        relida.Respostas.Should().NotContainKey("NOME_SOCIAL");
+        relida.Respostas["MODALIDADES"].EnumerateArray().Select(static v => v.GetString()).Should().Equal("LB_PPI");
+        relida.Grupos["COMPOSICAO_FAMILIAR"].Select(static o => o.Id).Should().Equal("membro-2", "membro-3");
+        relida.Grupos["COMPOSICAO_FAMILIAR"][1].Respostas["RG_NUMERO"].GetString().Should().Be("rg-membro-3");
+    }
+
+    [Fact(DisplayName = "Salvar o rascunho de uma inscrição já submetida regrava os derivados sem perder a definição deles")]
+    public async Task Salvar_DepoisDeSubmeter_RegravaOsDerivados()
+    {
+        Inscricao original = NovaInscricao(PersonasDeTeste.KevinCarvalho, Guid.CreateVersion7());
+        original.Submeter(
+            "000654", null, Respostas(("NOME_SOCIAL", "Kevin")), SemGrupos(), [], DefinicoesDasRespostas,
+            Respostas(("UF_RESIDENCIA", "PA")), DefinicoesDosDerivados,
+            new string('b', 64), PrecondicaoIfMatch.DeTags([original.ETag]), DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
+
+        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        {
+            await new InscricaoRepository(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System).AdicionarAsync(original);
+            await context.SaveChangesAsync();
+        }
+
+        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        {
+            InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+            Inscricao lida = (await repositorio.ObterPorIdAsync(original.Id))!;
+            lida.Salvar(null, Respostas(("NOME_SOCIAL", "Kevin C.")), SemGrupos(), [], DefinicoesDasRespostas, PrecondicaoIfMatch.DeTags([lida.ETag]))
+                .IsSuccess.Should().BeTrue();
+            await repositorio.AtualizarAsync(lida);
+            await context.SaveChangesAsync();
+        }
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        Inscricao relida = (await new InscricaoRepository(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System)
+            .ObterPorIdAsync(original.Id))!;
+        relida.Derivados["UF_RESIDENCIA"].GetString().Should().Be("PA");
+        relida.Respostas["NOME_SOCIAL"].GetString().Should().Be("Kevin C.");
+    }
+
+    [Fact(DisplayName = "A consulta de candidatos por fato e valor usa índice, sem operador JSON")]
+    public async Task ConsultaPorFatoEValor_UsaIndice()
+    {
+        await using NpgsqlConnection connection = new(_fixture.ConnectionString);
+        await connection.OpenAsync();
+        await using NpgsqlCommand command = connection.CreateCommand();
+        command.CommandText = """
+            SET enable_seqscan = off;
+            EXPLAIN SELECT inscricao_id FROM selecao.respostas_da_inscricao
+            WHERE fato_codigo = 'CONCORRER_RENDA' AND valor_booleano = true
+            """;
+        List<string> plano = [];
+        await using NpgsqlDataReader reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            plano.Add(reader.GetString(0));
+        }
+
+        string.Join('\n', plano).Should().Contain("ix_respostas_da_inscricao_fato_booleano");
     }
 
     [Fact(DisplayName = "ObterTodasPorCpf devolve as inscrições do CPF em todos os processos, nunca as de outro CPF (issue #1860)")]

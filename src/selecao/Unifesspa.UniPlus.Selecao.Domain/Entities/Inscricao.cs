@@ -25,11 +25,10 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// inscrição usam sempre <see cref="VersaoFormularioId"/>, nunca a versão vigente por relógio.
 /// </para>
 /// <para>
-/// <b><see cref="Respostas"/> não separa números de documento.</b> O domínio guarda todas as
-/// respostas juntas, pelo código do fato; é o repositório, na fronteira (ADR-0121), que decide —
-/// a partir de <see cref="FatosIdentificadorDeclarados"/>, congelado aqui no momento de
-/// <see cref="Iniciar"/> — quais chaves vão para o envelope cifrado e quais para o jsonb em claro.
-/// O domínio não precisa saber de cifra para ficar correto.
+/// <b>Cada valor gravado tem definição.</b> <see cref="DefinicoesDasRespostas"/> diz o tipo de cada fato respondido e se
+/// ele é número de documento; um fato sem definição na versão fixada, ou um valor fora do tipo dela, é
+/// recusado antes de mudar o agregado. O repositório cifra os números de documento na fronteira
+/// (ADR-0121), guiado pela definição.
 /// </para>
 /// <para>
 /// <b>Concorrência (ADR-0119).</b> <see cref="Revisao"/> é o token de concorrência: a Infrastructure
@@ -60,7 +59,12 @@ public sealed class Inscricao : EntityBase
     /// <summary>Gerado na primeira submissão (sequência do banco, formatada); nulo em rascunho.</summary>
     public string? NumeroInscricao { get; private set; }
 
+    /// <summary>O que o candidato digitou ou selecionou.</summary>
     public IReadOnlyDictionary<string, JsonElement> Respostas { get; private set; } =
+        new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+
+    /// <summary>O que o sistema calculou das respostas na submissão, como a UF a partir do endereço.</summary>
+    public IReadOnlyDictionary<string, JsonElement> Derivados { get; private set; } =
         new Dictionary<string, JsonElement>(StringComparer.Ordinal);
 
     public IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> Grupos { get; private set; } =
@@ -68,11 +72,8 @@ public sealed class Inscricao : EntityBase
 
     public IReadOnlyList<AceiteDeTermo> Aceites { get; private set; } = [];
 
-    /// <summary>
-    /// Os códigos de fato cuja classificação de proteção, na versão fixada, é <c>IDENTIFICADOR</c>
-    /// (congelada na publicação — issue #1857). Decide o que o repositório separa do jsonb.
-    /// </summary>
-    public IReadOnlySet<string> FatosIdentificadorDeclarados { get; private set; } = new HashSet<string>(StringComparer.Ordinal);
+    public IReadOnlyDictionary<string, DefinicaoDaResposta> DefinicoesDasRespostas { get; private set; } =
+        new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal);
 
     private readonly List<ComprovanteInscricao> _comprovantes = [];
 
@@ -92,11 +93,9 @@ public sealed class Inscricao : EntityBase
         Cpf cpf,
         string sub,
         string emissorToken,
-        Guid versaoFormularioId,
-        IReadOnlySet<string> fatosIdentificadorDeclarados)
+        Guid versaoFormularioId)
     {
         ArgumentNullException.ThrowIfNull(cpf);
-        ArgumentNullException.ThrowIfNull(fatosIdentificadorDeclarados);
 
         if (string.IsNullOrWhiteSpace(sub))
         {
@@ -120,7 +119,6 @@ public sealed class Inscricao : EntityBase
             EmissorToken = emissorToken,
             Situacao = SituacaoInscricao.Rascunho,
             VersaoFormularioId = versaoFormularioId,
-            FatosIdentificadorDeclarados = fatosIdentificadorDeclarados,
             Revisao = 1,
         });
     }
@@ -162,18 +160,20 @@ public sealed class Inscricao : EntityBase
         Guid? ofertaCursoId,
         string? numeroInscricao,
         IReadOnlyDictionary<string, JsonElement> respostas,
+        IReadOnlyDictionary<string, JsonElement> derivados,
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
         IReadOnlyList<AceiteDeTermo> aceites,
-        IReadOnlySet<string> fatosIdentificadorDeclarados,
+        IReadOnlyDictionary<string, DefinicaoDaResposta> definicoes,
         int revisao,
         DateTimeOffset createdAt,
         DateTimeOffset? updatedAt)
     {
         ArgumentNullException.ThrowIfNull(cpf);
         ArgumentNullException.ThrowIfNull(respostas);
+        ArgumentNullException.ThrowIfNull(derivados);
         ArgumentNullException.ThrowIfNull(grupos);
         ArgumentNullException.ThrowIfNull(aceites);
-        ArgumentNullException.ThrowIfNull(fatosIdentificadorDeclarados);
+        ArgumentNullException.ThrowIfNull(definicoes);
 
         return new Inscricao
         {
@@ -187,9 +187,10 @@ public sealed class Inscricao : EntityBase
             OfertaCursoId = ofertaCursoId,
             NumeroInscricao = numeroInscricao,
             Respostas = respostas,
+            Derivados = derivados,
             Grupos = grupos,
             Aceites = aceites,
-            FatosIdentificadorDeclarados = fatosIdentificadorDeclarados,
+            DefinicoesDasRespostas = definicoes,
             Revisao = revisao,
             CreatedAt = createdAt,
             UpdatedAt = updatedAt,
@@ -252,26 +253,36 @@ public sealed class Inscricao : EntityBase
     /// submissão (issue #1859). Preserva um número de documento ausente do corpo: ausência nunca
     /// apaga, só um valor enviado substitui.
     /// </summary>
+    /// <param name="definições">As definições dos fatos da versão fixada.</param>
     public Result Salvar(
         Guid? ofertaCursoId,
         IReadOnlyDictionary<string, JsonElement> respostas,
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
         IReadOnlyList<AceiteDeTermo> aceites,
+        IReadOnlyDictionary<string, DefinicaoDaResposta> definicoes,
         PrecondicaoIfMatch precondicao)
     {
         ArgumentNullException.ThrowIfNull(respostas);
         ArgumentNullException.ThrowIfNull(grupos);
         ArgumentNullException.ThrowIfNull(aceites);
+        ArgumentNullException.ThrowIfNull(definicoes);
 
         if (ConferirPrecondicao(precondicao) is { } erroPrecondicao)
         {
             return Result.Failure(erroPrecondicao);
         }
 
+        List<FieldError> recusas = ConferirValores(respostas, grupos, definicoes);
+        if (recusas.Count > 0)
+        {
+            return Result.ValidationFailure(recusas);
+        }
+
         OfertaCursoId = ofertaCursoId;
         Respostas = MesclarPreservandoAusentes(Respostas, respostas);
-        Grupos = grupos;
+        Grupos = SemValoresNulos(grupos);
         Aceites = aceites;
+        DefinicoesDasRespostas = ComAsDefinicoesDosDerivados(definicoes);
         Revisao++;
 
         return Result.Success();
@@ -284,20 +295,28 @@ public sealed class Inscricao : EntityBase
     /// completa (obrigatórios, restrições, impedimentos, termos, Geo) é da issue #1859 — aqui só o
     /// ciclo de vida do agregado.
     /// </summary>
+    /// <param name="definições">As definições dos fatos da versão fixada.</param>
+    /// <param name="derivados">Substituem os da submissão anterior; o candidato nunca os informa.</param>
     public Result<ComprovanteInscricao> Submeter(
         string numeroGeradoSeNecessario,
         Guid? ofertaCursoId,
         IReadOnlyDictionary<string, JsonElement> respostas,
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
         IReadOnlyList<AceiteDeTermo> aceites,
+        IReadOnlyDictionary<string, DefinicaoDaResposta> definicoes,
+        IReadOnlyDictionary<string, JsonElement> derivados,
+        IReadOnlyDictionary<string, DefinicaoDaResposta> definicoesDosDerivados,
         string hashIntegridade,
         PrecondicaoIfMatch precondicao,
         DateTimeOffset instante)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(numeroGeradoSeNecessario);
         ArgumentNullException.ThrowIfNull(respostas);
+        ArgumentNullException.ThrowIfNull(derivados);
         ArgumentNullException.ThrowIfNull(grupos);
         ArgumentNullException.ThrowIfNull(aceites);
+        ArgumentNullException.ThrowIfNull(definicoes);
+        ArgumentNullException.ThrowIfNull(definicoesDosDerivados);
         ArgumentException.ThrowIfNullOrWhiteSpace(hashIntegridade);
 
         if (ConferirPrecondicao(precondicao) is { } erroPrecondicao)
@@ -305,19 +324,35 @@ public sealed class Inscricao : EntityBase
             return Result<ComprovanteInscricao>.Failure(erroPrecondicao);
         }
 
+        IReadOnlyList<FieldError> recusas =
+        [
+            .. ConferirValores(respostas, grupos, definicoes),
+            .. ConferirValores(derivados, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), definicoesDosDerivados),
+        ];
+        if (recusas.Count > 0)
+        {
+            return Result<ComprovanteInscricao>.ValidationFailure(recusas);
+        }
+
         bool primeiraSubmissao = NumeroInscricao is null;
         NumeroInscricao ??= numeroGeradoSeNecessario;
 
         OfertaCursoId = ofertaCursoId;
-        Respostas = MesclarPreservandoAusentes(Respostas, respostas);
-        Grupos = grupos;
+        Derivados = MesclarPreservandoAusentes(new Dictionary<string, JsonElement>(StringComparer.Ordinal), derivados);
+        Respostas = MesclarPreservandoAusentes(Respostas, respostas)
+            .Where(r => !Derivados.ContainsKey(r.Key))
+            .ToDictionary(static r => r.Key, static r => r.Value, StringComparer.Ordinal);
+        Grupos = SemValoresNulos(grupos);
         Aceites = aceites;
+        DefinicoesDasRespostas = definicoes.Concat(definicoesDosDerivados)
+            .GroupBy(static f => f.Key, StringComparer.Ordinal)
+            .ToDictionary(static g => g.Key, static g => g.Last().Value, StringComparer.Ordinal);
         Situacao = SituacaoInscricao.Submetida;
         Revisao++;
 
         ComprovanteInscricao comprovante = ComprovanteInscricao.Emitir(
             Id, NumeroInscricao, instante, hashIntegridade, OfertaCursoId,
-            SemNumerosDeDocumento(Respostas), SemNumerosDeDocumentoNosGrupos(Grupos), Aceites);
+            SemNumerosDeDocumento(Respostas), SemNumerosDeDocumento(Derivados), SemNumerosDeDocumentoNosGrupos(Grupos), Aceites);
         _comprovantes.Add(comprovante);
 
         AddDomainEvent(primeiraSubmissao
@@ -329,8 +364,8 @@ public sealed class Inscricao : EntityBase
 
     /// <summary>
     /// Um número de documento ausente do corpo preserva o valor gravado — ausência nunca apaga, só
-    /// um valor enviado substitui. As demais chaves da entrada sempre valem, inclusive para
-    /// apagar uma resposta que o candidato limpou.
+    /// um valor enviado substitui. As demais chaves da entrada sempre valem; <c>null</c> apaga a
+    /// resposta que o candidato limpou.
     /// </summary>
     private static Dictionary<string, JsonElement> MesclarPreservandoAusentes(
         IReadOnlyDictionary<string, JsonElement> atual,
@@ -339,10 +374,86 @@ public sealed class Inscricao : EntityBase
         Dictionary<string, JsonElement> mesclado = new(atual, StringComparer.Ordinal);
         foreach ((string codigo, JsonElement valor) in recebida)
         {
-            mesclado[codigo] = valor;
+            if (valor.ValueKind == JsonValueKind.Null)
+            {
+                mesclado.Remove(codigo);
+            }
+            else
+            {
+                mesclado[codigo] = valor;
+            }
         }
 
         return mesclado;
+    }
+
+    /// <summary>O rascunho não recalcula os derivados da última submissão; as definições deles continuam valendo.</summary>
+    private Dictionary<string, DefinicaoDaResposta> ComAsDefinicoesDosDerivados(IReadOnlyDictionary<string, DefinicaoDaResposta> definicoes)
+    {
+        Dictionary<string, DefinicaoDaResposta> todas = new(definicoes, StringComparer.Ordinal);
+        foreach (string codigo in Derivados.Keys)
+        {
+            todas.TryAdd(codigo, DefinicoesDasRespostas[codigo]);
+        }
+
+        return todas;
+    }
+
+    private static Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> SemValoresNulos(
+        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos) =>
+        grupos.ToDictionary(
+            static g => g.Key,
+            static g => (IReadOnlyList<OcorrenciaDeGrupoInscricao>)
+                [.. g.Value.Select(static o => o with { Respostas = MesclarPreservandoAusentes(new Dictionary<string, JsonElement>(StringComparer.Ordinal), o.Respostas) })],
+            StringComparer.Ordinal);
+
+    /// <summary>
+    /// Todo valor tem de ter definição e caber no tipo dela; a ocorrência de grupo, um id único dentro
+    /// do grupo, porque é por ele que a ocorrência é gravada.
+    /// </summary>
+    private static List<FieldError> ConferirValores(
+        IReadOnlyDictionary<string, JsonElement> respostas,
+        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
+        IReadOnlyDictionary<string, DefinicaoDaResposta> definicoes)
+    {
+        List<FieldError> recusas = [.. RecusasDeValor(respostas, definicoes, prefixo: string.Empty)];
+
+        foreach ((string grupoCodigo, IReadOnlyList<OcorrenciaDeGrupoInscricao> ocorrencias) in grupos)
+        {
+            HashSet<string> ids = new(StringComparer.Ordinal);
+            foreach (OcorrenciaDeGrupoInscricao ocorrencia in ocorrencias)
+            {
+                if (string.IsNullOrWhiteSpace(ocorrencia.Id) || !ids.Add(ocorrencia.Id))
+                {
+                    recusas.Add(new FieldError($"{grupoCodigo}.{ocorrencia.Id}", new DomainError(
+                        InscricaoErrorCodes.GrupoIdDuplicado,
+                        $"Cada ocorrência do grupo '{grupoCodigo}' precisa de um id próprio, não vazio e não repetido.")));
+                    continue;
+                }
+
+                recusas.AddRange(RecusasDeValor(ocorrencia.Respostas, definicoes, prefixo: $"{grupoCodigo}.{ocorrencia.Id}."));
+            }
+        }
+
+        return recusas;
+    }
+
+    private static IEnumerable<FieldError> RecusasDeValor(
+        IReadOnlyDictionary<string, JsonElement> respostas, IReadOnlyDictionary<string, DefinicaoDaResposta> definicoes, string prefixo)
+    {
+        foreach ((string codigo, JsonElement valor) in respostas)
+        {
+            if (!definicoes.TryGetValue(codigo, out DefinicaoDaResposta? definicao))
+            {
+                yield return new FieldError(prefixo + codigo, new DomainError(
+                    InscricaoErrorCodes.FatoForaDoFormulario, $"'{codigo}' não é um campo do formulário desta inscrição."));
+            }
+            else if (valor.ValueKind != JsonValueKind.Null && !definicao.Aceita(valor))
+            {
+                yield return new FieldError(prefixo + codigo, new DomainError(
+                    InscricaoErrorCodes.ValorForaDoTipo, $"A resposta de '{codigo}' não tem o tipo que o campo pede."));
+            }
+        }
     }
 
     /// <summary>
@@ -351,7 +462,7 @@ public sealed class Inscricao : EntityBase
     /// </summary>
     private Dictionary<string, JsonElement> SemNumerosDeDocumento(IReadOnlyDictionary<string, JsonElement> respostas) =>
         respostas
-            .Where(r => !FatosIdentificadorDeclarados.Contains(r.Key))
+            .Where(r => DefinicoesDasRespostas.TryGetValue(r.Key, out DefinicaoDaResposta? definicao) && !definicao.Identificador)
             .ToDictionary(static r => r.Key, static r => r.Value, StringComparer.Ordinal);
 
     /// <summary>

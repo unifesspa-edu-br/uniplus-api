@@ -138,11 +138,12 @@ public static class SubmeterInscricaoCommandHandler
         DateTimeOffset instante = timeProvider.GetUtcNow();
 
         Result<ComprovanteInscricao> submetido = inscricao.Submeter(
-            numeroGerado, command.Request.OfertaCursoId, respostasFinais, grupos, aceites,
+            numeroGerado, command.Request.OfertaCursoId, respostasDoCorpo, grupos, aceites, contexto.Value!.DefinicoesDasRespostas,
+            derivados.Value!, Services.DerivadosDoSistemaInscricao.DefinicoesDasRespostas,
             hashIntegridade, command.Precondicao, instante);
         if (submetido.IsFailure)
         {
-            return Result<ComprovanteInscricaoDto>.Failure(submetido.Error!);
+            return Result<ComprovanteInscricaoDto>.ValidationFailure(submetido.Errors);
         }
 
         await inscricaoRepository.AtualizarAsync(inscricao, cancellationToken).ConfigureAwait(false);

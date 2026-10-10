@@ -23,13 +23,24 @@ public sealed class InscricaoTests
 {
     private static readonly Guid Processo = Guid.CreateVersion7();
     private static readonly Guid VersaoFormulario = Guid.CreateVersion7();
-    private static readonly HashSet<string> SemIdentificador = new(StringComparer.Ordinal);
+    private static readonly Dictionary<string, DefinicaoDaResposta> DefinicoesDasRespostas = new(StringComparer.Ordinal)
+    {
+        ["NOME_SOCIAL"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: false),
+        ["DESEJA_NOME_SOCIAL"] = new(TipoDoValorDeResposta.Booleano, Multivalorado: false, Identificador: false),
+        ["RG_NUMERO"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: true),
+        ["PARENTESCO"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false),
+    };
+
+    private static readonly Dictionary<string, DefinicaoDaResposta> DefinicoesDosDerivados = new(StringComparer.Ordinal)
+    {
+        ["UF_RESIDENCIA"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false),
+    };
 
     [Fact(DisplayName = "Iniciar fixa a versão do formulário e nasce em Rascunho, revisão 1")]
     public void Iniciar_FixaVersaoENasceRascunho()
     {
         Result<Inscricao> resultado = Inscricao.Iniciar(
-            Processo, PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", VersaoFormulario, SemIdentificador);
+            Processo, PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", VersaoFormulario);
 
         resultado.IsSuccess.Should().BeTrue();
         Inscricao inscricao = resultado.Value!;
@@ -43,7 +54,7 @@ public sealed class InscricaoTests
     public void Iniciar_SemSub_RetornaFalha()
     {
         Result<Inscricao> resultado = Inscricao.Iniciar(
-            Processo, PersonasDeTeste.FernandaDrumond, "", "https://issuer", VersaoFormulario, SemIdentificador);
+            Processo, PersonasDeTeste.FernandaDrumond, "", "https://issuer", VersaoFormulario);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.SubObrigatorio);
@@ -53,7 +64,7 @@ public sealed class InscricaoTests
     public void Iniciar_SemEmissor_RetornaFalha()
     {
         Result<Inscricao> resultado = Inscricao.Iniciar(
-            Processo, PersonasDeTeste.FernandaDrumond, "sub-1", "", VersaoFormulario, SemIdentificador);
+            Processo, PersonasDeTeste.FernandaDrumond, "sub-1", "", VersaoFormulario);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.EmissorObrigatorio);
@@ -74,7 +85,7 @@ public sealed class InscricaoTests
         Inscricao inscricao = NovaInscricao();
 
         Result resultado = inscricao.Salvar(
-            null, Respostas(), SemGrupos(), SemAceites(), PrecondicaoIfMatch.Ausente);
+            null, Respostas(), SemGrupos(), SemAceites(), DefinicoesDasRespostas, PrecondicaoIfMatch.Ausente);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.PrecondicaoRequerida);
@@ -87,7 +98,7 @@ public sealed class InscricaoTests
         string etagOriginal = inscricao.ETag;
 
         Result resultado = inscricao.Salvar(
-            Guid.NewGuid(), Respostas(), SemGrupos(), SemAceites(), PrecondicaoIfMatch.DeTags(["\"etag-velho\""]));
+            Guid.NewGuid(), Respostas(), SemGrupos(), SemAceites(), DefinicoesDasRespostas, PrecondicaoIfMatch.DeTags(["\"etag-velho\""]));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.PrecondicaoFalhou);
@@ -102,7 +113,7 @@ public sealed class InscricaoTests
         Guid oferta = Guid.NewGuid();
 
         Result resultado = inscricao.Salvar(
-            oferta, Respostas(), SemGrupos(), SemAceites(), PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+            oferta, Respostas(), SemGrupos(), SemAceites(), DefinicoesDasRespostas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
 
         resultado.IsSuccess.Should().BeTrue();
         inscricao.OfertaCursoId.Should().Be(oferta);
@@ -113,22 +124,20 @@ public sealed class InscricaoTests
     [Fact(DisplayName = "Salvar sem o número de documento no corpo preserva o valor gravado")]
     public void Salvar_SemDocumentoNoCorpo_PreservaValorGravado()
     {
-        HashSet<string> identificador = new(StringComparer.Ordinal) { "RG_NUMERO" };
-        Inscricao inscricao = Inscricao.Iniciar(
-            Processo, PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", VersaoFormulario, identificador).Value!;
+        Inscricao inscricao = NovaInscricao();
 
         Dictionary<string, JsonElement> comRg = new(StringComparer.Ordinal)
         {
             ["RG_NUMERO"] = JsonSerializer.SerializeToElement("12.868.927-4"),
         };
-        inscricao.Salvar(null, comRg, SemGrupos(), SemAceites(), PrecondicaoIfMatch.DeTags([inscricao.ETag]))
+        inscricao.Salvar(null, comRg, SemGrupos(), SemAceites(), DefinicoesDasRespostas, PrecondicaoIfMatch.DeTags([inscricao.ETag]))
             .IsSuccess.Should().BeTrue();
 
         Dictionary<string, JsonElement> semRg = new(StringComparer.Ordinal)
         {
             ["NOME_SOCIAL"] = JsonSerializer.SerializeToElement("Ariel Drumond"),
         };
-        inscricao.Salvar(null, semRg, SemGrupos(), SemAceites(), PrecondicaoIfMatch.DeTags([inscricao.ETag]))
+        inscricao.Salvar(null, semRg, SemGrupos(), SemAceites(), DefinicoesDasRespostas, PrecondicaoIfMatch.DeTags([inscricao.ETag]))
             .IsSuccess.Should().BeTrue();
 
         inscricao.Respostas.Should().ContainKey("RG_NUMERO")
@@ -142,7 +151,7 @@ public sealed class InscricaoTests
         Inscricao inscricao = NovaInscricao();
 
         Result<ComprovanteInscricao> resultado = inscricao.Submeter(
-            "000123", null, Respostas(), SemGrupos(), SemAceites(), "sha256-abc",
+            "000123", null, Respostas(), SemGrupos(), SemAceites(), DefinicoesDasRespostas, SemDerivados(), DefinicoesDosDerivados, "sha256-abc",
             PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
 
         resultado.IsSuccess.Should().BeTrue();
@@ -157,12 +166,12 @@ public sealed class InscricaoTests
     {
         Inscricao inscricao = NovaInscricao();
         inscricao.Submeter(
-            "000123", null, Respostas(), SemGrupos(), SemAceites(), "sha256-abc",
+            "000123", null, Respostas(), SemGrupos(), SemAceites(), DefinicoesDasRespostas, SemDerivados(), DefinicoesDosDerivados, "sha256-abc",
             PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
         inscricao.ClearDomainEvents();
 
         Result<ComprovanteInscricao> resultado = inscricao.Submeter(
-            "999999", null, Respostas(), SemGrupos(), SemAceites(), "sha256-def",
+            "999999", null, Respostas(), SemGrupos(), SemAceites(), DefinicoesDasRespostas, SemDerivados(), DefinicoesDosDerivados, "sha256-def",
             PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
 
         resultado.IsSuccess.Should().BeTrue();
@@ -174,9 +183,7 @@ public sealed class InscricaoTests
     [Fact(DisplayName = "O comprovante nunca carrega número de documento, mesmo que a inscrição carregue")]
     public void Submeter_Comprovante_NaoCarregaDocumento()
     {
-        HashSet<string> identificador = new(StringComparer.Ordinal) { "RG_NUMERO" };
-        Inscricao inscricao = Inscricao.Iniciar(
-            Processo, PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", VersaoFormulario, identificador).Value!;
+        Inscricao inscricao = NovaInscricao();
 
         Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal)
         {
@@ -185,7 +192,7 @@ public sealed class InscricaoTests
         };
 
         Result<ComprovanteInscricao> resultado = inscricao.Submeter(
-            "000123", null, respostas, SemGrupos(), SemAceites(), "sha256-abc",
+            "000123", null, respostas, SemGrupos(), SemAceites(), DefinicoesDasRespostas, SemDerivados(), DefinicoesDosDerivados, "sha256-abc",
             PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
 
         resultado.Value!.Respostas.Should().NotContainKey("RG_NUMERO");
@@ -195,9 +202,7 @@ public sealed class InscricaoTests
     [Fact(DisplayName = "O comprovante carrega os grupos declarados, sem o documento de uma ocorrência")]
     public void Submeter_Comprovante_CarregaGruposSemDocumentoDaOcorrencia()
     {
-        HashSet<string> identificador = new(StringComparer.Ordinal) { "RG_NUMERO" };
-        Inscricao inscricao = Inscricao.Iniciar(
-            Processo, PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", VersaoFormulario, identificador).Value!;
+        Inscricao inscricao = NovaInscricao();
 
         Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = new(StringComparer.Ordinal)
         {
@@ -212,7 +217,7 @@ public sealed class InscricaoTests
         };
 
         Result<ComprovanteInscricao> resultado = inscricao.Submeter(
-            "000123", null, Respostas(), grupos, SemAceites(), "sha256-abc",
+            "000123", null, Respostas(), grupos, SemAceites(), DefinicoesDasRespostas, SemDerivados(), DefinicoesDosDerivados, "sha256-abc",
             PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
 
         IReadOnlyList<OcorrenciaDeGrupoInscricao> ocorrencias = resultado.Value!.Grupos.Should()
@@ -234,8 +239,8 @@ public sealed class InscricaoTests
         Inscricao inscricao = Inscricao.Reidratar(
             id, Processo, PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer",
             SituacaoInscricao.Submetida, VersaoFormulario, oferta, "000123",
-            respostas, SemGrupos(), SemAceites(), SemIdentificador,
-            revisao: 3, criadoEm, atualizadoEm);
+            respostas, SemDerivados(), SemGrupos(), SemAceites(), DefinicoesDasRespostas,
+            3, criadoEm, atualizadoEm);
 
         inscricao.Id.Should().Be(id);
         inscricao.Situacao.Should().Be(SituacaoInscricao.Submetida);
@@ -249,8 +254,126 @@ public sealed class InscricaoTests
         inscricao.Comprovantes.Should().BeEmpty("Reidratar não recarrega o histórico de comprovantes no agregado");
     }
 
+    [Fact(DisplayName = "Salvar recusa resposta de fato que o formulário não coleta, sem mutar nada")]
+    public void Salvar_FatoForaDoFormulario_RecusaSemMutar()
+    {
+        Inscricao inscricao = NovaInscricao();
+        Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal)
+        {
+            ["CAMPO_INVENTADO"] = JsonSerializer.SerializeToElement("valor"),
+        };
+
+        Result resultado = inscricao.Salvar(null, respostas, SemGrupos(), SemAceites(), DefinicoesDasRespostas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("CAMPO_INVENTADO");
+        resultado.Error!.Code.Should().Be(InscricaoErrorCodes.FatoForaDoFormulario);
+        inscricao.Revisao.Should().Be(1);
+    }
+
+    [Fact(DisplayName = "Salvar recusa valor que não cabe no tipo do fato")]
+    public void Salvar_ValorForaDoTipo_Recusa()
+    {
+        Inscricao inscricao = NovaInscricao();
+        Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal)
+        {
+            ["DESEJA_NOME_SOCIAL"] = JsonSerializer.SerializeToElement("sim"),
+        };
+
+        Result resultado = inscricao.Salvar(null, respostas, SemGrupos(), SemAceites(), DefinicoesDasRespostas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+
+        resultado.Error!.Code.Should().Be(InscricaoErrorCodes.ValorForaDoTipo);
+    }
+
+    [Fact(DisplayName = "Salvar recusa duas ocorrências do mesmo grupo com o mesmo id")]
+    public void Salvar_IdDeOcorrenciaRepetido_Recusa()
+    {
+        Inscricao inscricao = NovaInscricao();
+        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = new(StringComparer.Ordinal)
+        {
+            ["COMPOSICAO_FAMILIAR"] =
+            [
+                new OcorrenciaDeGrupoInscricao("membro-1", new Dictionary<string, JsonElement>(StringComparer.Ordinal)),
+                new OcorrenciaDeGrupoInscricao("membro-1", new Dictionary<string, JsonElement>(StringComparer.Ordinal)),
+            ],
+        };
+
+        Result resultado = inscricao.Salvar(null, Respostas(), grupos, SemAceites(), DefinicoesDasRespostas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+
+        resultado.Error!.Code.Should().Be(InscricaoErrorCodes.GrupoIdDuplicado);
+    }
+
+    [Fact(DisplayName = "Salvar com nulo apaga a resposta que o candidato limpou")]
+    public void Salvar_Nulo_ApagaResposta()
+    {
+        Inscricao inscricao = NovaInscricao();
+        inscricao.Salvar(null, Respostas(), SemGrupos(), SemAceites(), DefinicoesDasRespostas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+        Dictionary<string, JsonElement> limpa = new(StringComparer.Ordinal)
+        {
+            ["NOME_SOCIAL"] = JsonSerializer.SerializeToElement<string?>(null),
+        };
+
+        inscricao.Salvar(null, limpa, SemGrupos(), SemAceites(), DefinicoesDasRespostas, PrecondicaoIfMatch.DeTags([inscricao.ETag]))
+            .IsSuccess.Should().BeTrue();
+
+        inscricao.Respostas.Should().NotContainKey("NOME_SOCIAL");
+    }
+
+    [Fact(DisplayName = "Submeter recusa o fato derivado informado pelo candidato")]
+    public void Submeter_FatoDerivadoInformadoPeloCandidato_Recusa()
+    {
+        Inscricao inscricao = NovaInscricao();
+        Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal)
+        {
+            ["UF_RESIDENCIA"] = JsonSerializer.SerializeToElement("PA"),
+        };
+
+        Result<ComprovanteInscricao> resultado = inscricao.Submeter(
+            "000123", null, respostas, SemGrupos(), SemAceites(), DefinicoesDasRespostas, SemDerivados(), DefinicoesDosDerivados, "sha256-abc",
+            PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
+
+        resultado.Error!.Code.Should().Be(InscricaoErrorCodes.FatoForaDoFormulario);
+    }
+
+    [Fact(DisplayName = "Submeter separa os derivados das respostas, na inscrição e no comprovante")]
+    public void Submeter_SeparaDerivadosDasRespostas()
+    {
+        Inscricao inscricao = NovaInscricao();
+        Dictionary<string, JsonElement> derivados = new(StringComparer.Ordinal)
+        {
+            ["UF_RESIDENCIA"] = JsonSerializer.SerializeToElement("PA"),
+        };
+
+        Result<ComprovanteInscricao> resultado = inscricao.Submeter(
+            "000123", null, Respostas(), SemGrupos(), SemAceites(), DefinicoesDasRespostas, derivados, DefinicoesDosDerivados, "sha256-abc",
+            PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
+
+        inscricao.Derivados.Should().ContainKey("UF_RESIDENCIA");
+        inscricao.Respostas.Should().NotContainKey("UF_RESIDENCIA");
+        resultado.Value!.Derivados.Should().ContainKey("UF_RESIDENCIA");
+        resultado.Value!.Respostas.Should().ContainKey("NOME_SOCIAL").And.NotContainKey("UF_RESIDENCIA");
+    }
+
+    [Fact(DisplayName = "Salvar depois de submeter mantém a definição das respostas derivadas")]
+    public void Salvar_DepoisDeSubmeter_MantemADefinicaoDosDerivados()
+    {
+        Inscricao inscricao = NovaInscricao();
+        Dictionary<string, JsonElement> derivados = new(StringComparer.Ordinal)
+        {
+            ["UF_RESIDENCIA"] = JsonSerializer.SerializeToElement("PA"),
+        };
+        inscricao.Submeter(
+            "000123", null, Respostas(), SemGrupos(), SemAceites(), DefinicoesDasRespostas, derivados, DefinicoesDosDerivados, "sha256-abc",
+            PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
+
+        inscricao.Salvar(null, Respostas(), SemGrupos(), SemAceites(), DefinicoesDasRespostas, PrecondicaoIfMatch.DeTags([inscricao.ETag]))
+            .IsSuccess.Should().BeTrue();
+
+        inscricao.Derivados.Should().ContainKey("UF_RESIDENCIA");
+        inscricao.DefinicoesDasRespostas.Should().ContainKey("UF_RESIDENCIA", "o derivado continua gravado e precisa da definição para virar linha");
+    }
+
     private static Inscricao NovaInscricao() =>
-        Inscricao.Iniciar(Processo, PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", VersaoFormulario, SemIdentificador).Value!;
+        Inscricao.Iniciar(Processo, PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", VersaoFormulario).Value!;
 
     private static DateTimeOffset Instante() => new(2026, 10, 10, 12, 0, 0, TimeSpan.Zero);
 
@@ -263,4 +386,6 @@ public sealed class InscricaoTests
         new(StringComparer.Ordinal);
 
     private static List<AceiteDeTermo> SemAceites() => [];
+
+    private static Dictionary<string, JsonElement> SemDerivados() => new(StringComparer.Ordinal);
 }

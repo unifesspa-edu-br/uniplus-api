@@ -29,8 +29,12 @@ public sealed class ComprovanteInscricao : IForensicEntity
 
     public Guid? OfertaCursoId { get; private init; }
 
-    /// <summary>As respostas no momento da submissão — sem números de documento (separados pelo repositório).</summary>
+    /// <summary>O que o candidato informou, no momento da submissão — sem números de documento.</summary>
     public IReadOnlyDictionary<string, JsonElement> Respostas { get; private init; } =
+        new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+
+    /// <summary>O que o sistema derivou das respostas nesta submissão.</summary>
+    public IReadOnlyDictionary<string, JsonElement> Derivados { get; private init; } =
         new Dictionary<string, JsonElement>(StringComparer.Ordinal);
 
     /// <summary>As ocorrências de grupo repetível no momento da submissão — mesma exclusão de documento que <see cref="Respostas"/>.</summary>
@@ -49,12 +53,14 @@ public sealed class ComprovanteInscricao : IForensicEntity
         string hashIntegridade,
         Guid? ofertaCursoId,
         IReadOnlyDictionary<string, JsonElement> respostas,
+        IReadOnlyDictionary<string, JsonElement> derivados,
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
         IReadOnlyList<AceiteDeTermo> aceites)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(numeroInscricao);
         ArgumentException.ThrowIfNullOrWhiteSpace(hashIntegridade);
         ArgumentNullException.ThrowIfNull(respostas);
+        ArgumentNullException.ThrowIfNull(derivados);
         ArgumentNullException.ThrowIfNull(grupos);
         ArgumentNullException.ThrowIfNull(aceites);
 
@@ -67,6 +73,7 @@ public sealed class ComprovanteInscricao : IForensicEntity
             Grupos = grupos,
             OfertaCursoId = ofertaCursoId,
             Respostas = respostas,
+            Derivados = derivados,
             Aceites = aceites,
         };
     }

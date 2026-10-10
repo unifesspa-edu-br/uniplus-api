@@ -36,16 +36,20 @@ public sealed class ObterComprovanteQueryHandlerTests
     private static Inscricao InscricaoComComprovantes(Cpf cpf, string sub, int quantidade)
     {
         Inscricao inscricao = Inscricao.Iniciar(
-            ProcessoId, cpf, sub, "https://issuer", Guid.CreateVersion7(), new HashSet<string>(StringComparer.Ordinal)).Value!;
+            ProcessoId, cpf, sub, "https://issuer", Guid.CreateVersion7()).Value!;
 
         for (int i = 1; i <= quantidade; i++)
         {
+            Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal) { ["APELIDO"] = JsonSerializer.SerializeToElement($"versao-{i}") };
             Result<ComprovanteInscricao> submetido = inscricao.Submeter(
                 $"0000000{i}",
                 null,
-                new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["APELIDO"] = JsonSerializer.SerializeToElement($"versao-{i}") },
+                respostas,
                 new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal),
                 [],
+                TestSupport.DefinicoesDeTeste.Das(respostas),
+                new Dictionary<string, JsonElement>(StringComparer.Ordinal),
+                TestSupport.DefinicoesDeTeste.Nenhuma(),
                 new string((char)('a' + i), 64),
                 PrecondicaoIfMatch.DeTags([inscricao.ETag]),
                 new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero).AddMinutes(i));

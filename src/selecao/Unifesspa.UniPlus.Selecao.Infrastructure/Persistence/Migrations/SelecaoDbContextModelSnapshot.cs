@@ -392,6 +392,12 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("aceites");
 
+                    b.Property<string>("Derivados")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("derivados")
+                        .HasComment("O que o sistema derivou das respostas nesta submissão, como a UF a partir do endereço.");
+
                     b.Property<string>("Grupos")
                         .IsRequired()
                         .HasColumnType("jsonb")
@@ -3517,17 +3523,149 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records.InscricaoRecord", b =>
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records.AceiteDaInscricaoRecord", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<string>("AceitesJson")
+                    b.Property<string>("HashVersao")
                         .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("aceites")
-                        .HasComment("Aceites de termo — código, versão e hash da versão fixada.");
+                        .HasColumnType("text")
+                        .HasColumnName("hash_versao");
+
+                    b.Property<Guid>("InscricaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inscricao_id");
+
+                    b.Property<int>("Ordem")
+                        .HasColumnType("integer")
+                        .HasColumnName("ordem");
+
+                    b.Property<string>("TermoCodigo")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("termo_codigo");
+
+                    b.Property<Guid>("VersaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("versao_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_aceites_da_inscricao");
+
+                    b.HasIndex("InscricaoId", "Ordem")
+                        .IsUnique()
+                        .HasDatabaseName("ux_aceites_da_inscricao_ordem");
+
+                    b.ToTable("aceites_da_inscricao", "selecao", t =>
+                        {
+                            t.HasComment("O aceite de um termo na inscrição, com a versão e o hash da versão fixada.");
+                        });
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records.EnderecoDaInscricaoRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Bairro")
+                        .HasColumnType("text")
+                        .HasColumnName("bairro");
+
+                    b.Property<string>("Cep")
+                        .HasColumnType("text")
+                        .HasColumnName("cep");
+
+                    b.Property<string>("Complemento")
+                        .HasColumnType("text")
+                        .HasColumnName("complemento");
+
+                    b.Property<string>("Distrito")
+                        .HasColumnType("text")
+                        .HasColumnName("distrito");
+
+                    b.Property<string>("FatoCodigo")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("fato_codigo");
+
+                    b.Property<Guid>("InscricaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inscricao_id");
+
+                    b.Property<string>("Latitude")
+                        .HasColumnType("text")
+                        .HasColumnName("latitude");
+
+                    b.Property<string>("Logradouro")
+                        .HasColumnType("text")
+                        .HasColumnName("logradouro");
+
+                    b.Property<string>("Longitude")
+                        .HasColumnType("text")
+                        .HasColumnName("longitude");
+
+                    b.Property<string>("MunicipioCodigoIbge")
+                        .HasColumnType("text")
+                        .HasColumnName("municipio_codigo_ibge");
+
+                    b.Property<string>("MunicipioNome")
+                        .HasColumnType("text")
+                        .HasColumnName("municipio_nome");
+
+                    b.Property<string>("NivelResolucao")
+                        .HasColumnType("text")
+                        .HasColumnName("nivel_resolucao");
+
+                    b.Property<string>("Numero")
+                        .HasColumnType("text")
+                        .HasColumnName("numero");
+
+                    b.Property<Guid?>("OcorrenciaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ocorrencia_id");
+
+                    b.Property<int>("Origem")
+                        .HasColumnType("integer")
+                        .HasColumnName("origem");
+
+                    b.Property<string>("Procedencia")
+                        .HasColumnType("text")
+                        .HasColumnName("procedencia")
+                        .HasComment("Como o endereço foi preenchido no formulário: pela busca do CEP no Geo ou à mão.");
+
+                    b.Property<string>("Uf")
+                        .HasColumnType("text")
+                        .HasColumnName("uf");
+
+                    b.HasKey("Id")
+                        .HasName("pk_enderecos_da_inscricao");
+
+                    b.HasIndex("OcorrenciaId")
+                        .HasDatabaseName("ix_enderecos_da_inscricao_ocorrencia_id");
+
+                    b.HasIndex("InscricaoId", "OcorrenciaId", "FatoCodigo")
+                        .IsUnique()
+                        .HasDatabaseName("ux_enderecos_da_inscricao_fato");
+
+                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("InscricaoId", "OcorrenciaId", "FatoCodigo"), false);
+
+                    b.ToTable("enderecos_da_inscricao", "selecao", t =>
+                        {
+                            t.HasComment("A resposta de um campo de endereço da inscrição, um componente por coluna.");
+
+                            t.HasCheckConstraint("ck_enderecos_da_inscricao_origem", "origem IN (1, 2)");
+                        });
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records.InscricaoRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<byte[]>("CpfCiphertext")
                         .IsRequired()
@@ -3545,30 +3683,12 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<byte[]>("DocumentosCifrados")
-                        .IsRequired()
-                        .HasColumnType("bytea")
-                        .HasColumnName("documentos_cifrados")
-                        .HasComment("Envelope AEAD com o mapa {código do fato: valor} dos números de documento — nunca em claro.");
-
                     b.Property<string>("EmissorToken")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
                         .HasColumnName("emissor_token")
                         .HasComment("O emissor (issuer) do token de quem iniciou a inscrição.");
-
-                    b.Property<string>("FatosIdentificadorDeclaradosJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("fatos_identificador_declarados")
-                        .HasComment("Códigos de fato cuja classificação congelada é IDENTIFICADOR, fixados ao iniciar.");
-
-                    b.Property<string>("GruposJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("grupos")
-                        .HasComment("Ocorrências de grupo repetível, mesma exclusão de documento das respostas.");
 
                     b.Property<string>("NumeroInscricao")
                         .HasMaxLength(20)
@@ -3584,12 +3704,6 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("processo_seletivo_id")
                         .HasComment("O processo seletivo desta inscrição.");
-
-                    b.Property<string>("RespostasJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("respostas")
-                        .HasComment("Respostas por fato (código → valor), sem números de documento.");
 
                     b.Property<int>("Revisao")
                         .IsConcurrencyToken()
@@ -3628,7 +3742,142 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
                     b.ToTable("inscricoes", "selecao", t =>
                         {
-                            t.HasComment("A inscrição de um candidato num processo seletivo (issue #1858) — uma por CPF e processo. Números de documento vivem cifrados aqui ou em documentos_cifrados, nunca em respostas_json.");
+                            t.HasComment("A inscrição de um candidato num processo seletivo (issue #1858) — uma por CPF e processo. As respostas ficam em respostas_da_inscricao e nas tabelas vizinhas.");
+                        });
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records.OcorrenciaDeGrupoDaInscricaoRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("GrupoCodigo")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("grupo_codigo");
+
+                    b.Property<Guid>("InscricaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inscricao_id");
+
+                    b.Property<string>("MembroId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("membro_id")
+                        .HasComment("O id estável que o formulário dá ao membro — reordenar a lista não troca a identidade dele.");
+
+                    b.Property<int>("Ordem")
+                        .HasColumnType("integer")
+                        .HasColumnName("ordem");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ocorrencias_de_grupo_da_inscricao");
+
+                    b.HasIndex("InscricaoId", "GrupoCodigo", "MembroId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_ocorrencias_de_grupo_da_inscricao_membro");
+
+                    b.ToTable("ocorrencias_de_grupo_da_inscricao", "selecao", t =>
+                        {
+                            t.HasComment("Uma ocorrência de grupo repetível da inscrição, como cada dependente de um grupo de dependentes.");
+                        });
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records.RespostaDaInscricaoRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("FatoCodigo")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("fato_codigo");
+
+                    b.Property<Guid>("InscricaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inscricao_id");
+
+                    b.Property<Guid?>("OcorrenciaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ocorrencia_id");
+
+                    b.Property<int>("Origem")
+                        .HasColumnType("integer")
+                        .HasColumnName("origem");
+
+                    b.Property<int?>("Posicao")
+                        .HasColumnType("integer")
+                        .HasColumnName("posicao");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("integer")
+                        .HasColumnName("tipo");
+
+                    b.Property<bool?>("ValorBooleano")
+                        .HasColumnType("boolean")
+                        .HasColumnName("valor_booleano");
+
+                    b.Property<byte[]>("ValorCifrado")
+                        .HasColumnType("bytea")
+                        .HasColumnName("valor_cifrado")
+                        .HasComment("Número de documento cifrado (AES-GCM, ADR-0121) — nunca texto claro.");
+
+                    b.Property<string>("ValorCodigo")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("valor_codigo");
+
+                    b.Property<DateOnly?>("ValorData")
+                        .HasColumnType("date")
+                        .HasColumnName("valor_data");
+
+                    b.Property<decimal?>("ValorNumero")
+                        .HasColumnType("numeric")
+                        .HasColumnName("valor_numero");
+
+                    b.Property<string>("ValorTexto")
+                        .HasColumnType("text")
+                        .HasColumnName("valor_texto");
+
+                    b.HasKey("Id")
+                        .HasName("pk_respostas_da_inscricao");
+
+                    b.HasIndex("OcorrenciaId")
+                        .HasDatabaseName("ix_respostas_da_inscricao_ocorrencia_id");
+
+                    b.HasIndex("FatoCodigo", "ValorBooleano")
+                        .HasDatabaseName("ix_respostas_da_inscricao_fato_booleano")
+                        .HasFilter("valor_booleano IS NOT NULL");
+
+                    b.HasIndex("FatoCodigo", "ValorCodigo")
+                        .HasDatabaseName("ix_respostas_da_inscricao_fato_codigo")
+                        .HasFilter("valor_codigo IS NOT NULL");
+
+                    b.HasIndex("FatoCodigo", "ValorData")
+                        .HasDatabaseName("ix_respostas_da_inscricao_fato_data")
+                        .HasFilter("valor_data IS NOT NULL");
+
+                    b.HasIndex("FatoCodigo", "ValorNumero")
+                        .HasDatabaseName("ix_respostas_da_inscricao_fato_numero")
+                        .HasFilter("valor_numero IS NOT NULL");
+
+                    b.HasIndex("InscricaoId", "OcorrenciaId", "FatoCodigo", "Posicao")
+                        .IsUnique()
+                        .HasDatabaseName("ux_respostas_da_inscricao_valor");
+
+                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("InscricaoId", "OcorrenciaId", "FatoCodigo", "Posicao"), false);
+
+                    b.ToTable("respostas_da_inscricao", "selecao", t =>
+                        {
+                            t.HasComment("Um valor respondido na inscrição, na coluna do tipo do fato, com a origem: informado pelo candidato ou derivado de outra resposta.");
+
+                            t.HasCheckConstraint("ck_respostas_da_inscricao_origem", "origem IN (1, 2)");
+
+                            t.HasCheckConstraint("ck_respostas_da_inscricao_valor_do_tipo", "num_nonnulls(valor_booleano, valor_numero, valor_codigo, valor_texto, valor_data, valor_cifrado) = 1 AND tipo BETWEEN 1 AND 5 AND (valor_cifrado IS NOT NULL OR (tipo = 1 AND valor_booleano IS NOT NULL) OR (tipo = 2 AND valor_numero IS NOT NULL) OR (tipo = 3 AND valor_codigo IS NOT NULL) OR (tipo = 4 AND valor_texto IS NOT NULL) OR (tipo = 5 AND valor_data IS NOT NULL))");
                         });
                 });
 
@@ -5126,6 +5375,58 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_versoes_configuracao_processo");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records.AceiteDaInscricaoRecord", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records.InscricaoRecord", null)
+                        .WithMany()
+                        .HasForeignKey("InscricaoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_aceites_da_inscricao_inscricoes_inscricao_id");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records.EnderecoDaInscricaoRecord", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records.InscricaoRecord", null)
+                        .WithMany()
+                        .HasForeignKey("InscricaoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_enderecos_da_inscricao_inscricoes_inscricao_id");
+
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records.OcorrenciaDeGrupoDaInscricaoRecord", null)
+                        .WithMany()
+                        .HasForeignKey("OcorrenciaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_enderecos_da_inscricao_ocorrencias_de_grupo_da_inscricao_oc");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records.OcorrenciaDeGrupoDaInscricaoRecord", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records.InscricaoRecord", null)
+                        .WithMany()
+                        .HasForeignKey("InscricaoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_ocorrencias_de_grupo_da_inscricao_inscricoes_inscricao_id");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records.RespostaDaInscricaoRecord", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records.InscricaoRecord", null)
+                        .WithMany()
+                        .HasForeignKey("InscricaoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_respostas_da_inscricao_inscricoes_inscricao_id");
+
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records.OcorrenciaDeGrupoDaInscricaoRecord", null)
+                        .WithMany()
+                        .HasForeignKey("OcorrenciaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_respostas_da_inscricao_ocorrencias_de_grupo_da_inscricao_oc");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.BancaRequerida", b =>

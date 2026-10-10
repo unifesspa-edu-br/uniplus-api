@@ -114,7 +114,7 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
         Cpf cpf = PersonasDeTeste.KevinCarvalho;
         (VersaoConfiguracao versao, EnvelopeReidratado envelope) = MontarVersaoComFormularioDeInscricao();
         Inscricao existente = Inscricao.Iniciar(
-            ProcessoId, cpf, "sub-1", "https://issuer", versao.Id, new HashSet<string>(StringComparer.Ordinal)).Value!;
+            ProcessoId, cpf, "sub-1", "https://issuer", versao.Id).Value!;
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
