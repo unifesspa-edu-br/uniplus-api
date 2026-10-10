@@ -1,0 +1,46 @@
+{
+  "descricao": "Resposta com código fora da oferta vigente é descartada em silêncio pelo avaliador — o item obrigatório com a etapa concluída fica indeterminado, como se não houvesse resposta nenhuma, nunca resolvido com o código inválido.",
+  "regras": {
+    "etapas": [
+      {
+        "codigo": "DADOS",
+        "exibicao": null,
+        "itens": [
+          {
+            "fatoCodigo": "TIPO_ENDERECO",
+            "exibicao": null,
+            "obrigatoriedade": "SEMPRE",
+            "predicadoObrigatoriedade": null,
+            "restricoes": [],
+            "impedimento": null,
+            "oferta": [
+              "ALDEIA",
+              "URBANO"
+            ],
+            "formato": null
+          }
+        ],
+        "grupos": []
+      }
+    ],
+    "termos": [],
+    "derivacoes": [],
+    "agregados": []
+  },
+  "respostas": {
+    "TIPO_ENDERECO": "RURAL"
+  },
+  "grupos": {},
+  "etapasConcluidas": [
+    "DADOS"
+  ],
+  "pressupostos": {},
+  "esperado": {
+    "campos": [
+      {
+        "fatoCodigo": "TIPO_ENDERECO",
+        "estado": "INDETERMINADO"
+      }
+    ]
+  }
+}
