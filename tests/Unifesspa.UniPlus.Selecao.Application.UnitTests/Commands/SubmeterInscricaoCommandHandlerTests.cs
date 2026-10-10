@@ -338,9 +338,9 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             new SubmeterInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, registroCodecs, unitOfWork, UsuarioComCpf(cpf));
 
-        string campoDoTermo = DefinicaoDoProcesso.CodigoDoTermo(FinalidadeFormulario.Inscricao, "TERMO_VERACIDADE");
         resultado.IsFailure.Should().BeTrue();
-        resultado.Errors.Should().ContainSingle(e => e.Field == campoDoTermo && e.Error.Code == "Inscricao.TermoNaoAceito");
+        resultado.Errors.Should().ContainSingle(e => e.Field == "TERMO_VERACIDADE" && e.Error.Code == "Inscricao.TermoNaoAceito",
+            "a recusa sai no código do aceite que o candidato envia");
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
