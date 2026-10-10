@@ -24,8 +24,8 @@ using Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
 /// <summary>
 /// Os modelos de inscrição e de habilitação do edital de Medicina 2027, semeados pela migration da
-/// Configuração, são aplicados a um processo PSR em rascunho, com bônus regional, pelo passo
-/// Formulários, sem recusa.
+/// Configuração, são aplicados a um processo PSR em rascunho, com bônus regional e a oferta de
+/// atendimento especializado, pelo passo Formulários, sem recusa.
 /// </summary>
 [Collection(CascadingCollection.Name)]
 [Trait("Category", "OutboxCapability")]
@@ -36,7 +36,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
 
     public AplicarModelosPsrMedicina2027Tests(CascadingFixture fixture) => _fixture = fixture;
 
-    [Fact(DisplayName = "A inscrição e a habilitação de Medicina são aplicadas ao processo PSR com bônus regional, com o município do bônus e a composição familiar")]
+    [Fact(DisplayName = "A inscrição e a habilitação de Medicina são aplicadas ao processo PSR com bônus regional e oferta de atendimento, com o município do bônus, o atendimento especializado e a composição familiar")]
     public async Task ModelosDeMedicina_SaoAplicadosAoProcessoPsr()
     {
         Guid processoId = await SemearProcessoPsrAsync();
@@ -58,6 +58,8 @@ public sealed class AplicarModelosPsrMedicina2027Tests
             .Should().BeEquivalentTo([FinalidadeFormulario.Inscricao, FinalidadeFormulario.Habilitacao]);
         processo.GruposColetados.Should().ContainSingle(static g => g.Codigo == "COMPOSICAO_FAMILIAR");
         processo.Campos.Should().ContainSingle(static c => c.FatoCodigo == "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO");
+        processo.Campos.Select(static c => c.FatoCodigo).Should().Contain(
+            ["SOLICITA_ATENDIMENTO_ESPECIALIZADO", "CONDICAO_ATENDIMENTO", "DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO", "RECURSO_ACESSIBILIDADE"]);
     }
 
     private async Task<Guid> SemearProcessoPsrAsync()
@@ -67,12 +69,16 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
         (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
-            db, $"Medicina 2027 {Guid.CreateVersion7()}", complementar: ComBonusRegional, tipo: psr);
+            db, $"Medicina 2027 {Guid.CreateVersion7()}", complementar: ComBonusRegionalEAtendimento, tipo: psr);
         return processo.Id;
     }
 
-    /// <summary>O bônus regional com um município, de onde o campo do município do bônus tira as opções.</summary>
-    private static void ComBonusRegional(ProcessoSeletivo processo)
+    /// <summary>
+    /// O bônus regional com um município, de onde o campo do município do bônus tira as opções, e a
+    /// oferta de atendimento com a condição fora da lista, cuja escolha a inscrição cita para pedir a
+    /// descrição, e um recurso.
+    /// </summary>
+    private static void ComBonusRegionalEAtendimento(ProcessoSeletivo processo)
     {
         ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(
             ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", new string('e', 64)).Value!, 1.20m, null, null,
@@ -80,6 +86,13 @@ public sealed class AplicarModelosPsrMedicina2027Tests
             [("1504208", "Marabá", "PA")]).Value!;
         Result definido = processo.DefinirBonusRegional(aplica: true, bonus: bonus, PrecondicaoIfMatch.Ausente);
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
+
+        OfertaAtendimentoEspecializado oferta = OfertaAtendimentoEspecializado.Criar(
+            [OfertaCondicao.Criar(Guid.CreateVersion7(), SementePsrMedicina2027.CondicaoForaDaLista, "Outra condição específica")],
+            [OfertaRecurso.Criar(Guid.CreateVersion7(), "SALA_DE_FACIL_ACESSO", "Sala de fácil acesso")],
+            []).Value!;
+        Result ofertada = processo.DefinirOfertaAtendimento(oferta, PrecondicaoIfMatch.Ausente);
+        ofertada.IsSuccess.Should().BeTrue(ofertada.Error?.Message);
     }
 
     private async Task<Guid> ModeloAsync(string codigo)

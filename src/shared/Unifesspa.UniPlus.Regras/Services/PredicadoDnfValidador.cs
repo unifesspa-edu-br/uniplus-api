@@ -115,7 +115,7 @@ public static class PredicadoDnfValidador
             TipoDominioFato.Booleano => ValidarValorBooleano(condicao),
             TipoDominioFato.Numerico => ValidarValorNumerico(condicao),
             TipoDominioFato.CategoricoEstatico => ValidarValorCategorico(
-                condicao, valor => descritor.ValoresDominio!.Contains(valor, StringComparer.Ordinal)),
+                condicao, valor => descritor.ValoresDominio!.Contains(valor, StringComparer.Ordinal), ForaDoDominioDeclarado),
             TipoDominioFato.CategoricoDinamico => ValidarValorCategoricoDinamico(condicao, dominiosDinamicos),
             _ => Result.Failure(new DomainError(PredicadoDnfErrorCodes.ValorIncompativelComTipo, "Domínio do fato desconhecido.")),
         };
@@ -137,8 +137,11 @@ public static class PredicadoDnfValidador
                 $"O domínio dinâmico do fato '{condicao.Fato}' não foi fornecido — o chamador precisa derivá-lo da oferta do processo."));
         }
 
-        return ValidarValorCategorico(condicao, dominio.Contem);
+        return ValidarValorCategorico(condicao, dominio.Contem, dominio.ForaDoDominio);
     }
+
+    /// <summary>O valor fora dos valores que o catálogo declara para o fato.</summary>
+    private const string ForaDoDominioDeclarado = "não pertence ao domínio declarado.";
 
     private static Result ValidarValorBooleano(CondicaoDnf condicao) =>
         condicao.Valor.ValueKind is JsonValueKind.True or JsonValueKind.False
@@ -163,13 +166,13 @@ public static class PredicadoDnfValidador
                 $"O valor da condição sobre '{condicao.Fato}' deve ser um número inteiro (decimal é rejeitado)."));
     }
 
-    private static Result ValidarValorCategorico(CondicaoDnf condicao, Func<string, bool> pertence)
+    private static Result ValidarValorCategorico(CondicaoDnf condicao, Func<string, bool> pertence, string foraDoDominio)
     {
         // NAO_EM (Story #916) segue a mesma forma de lista de EM — negação, não muda a
         // validação de valor × domínio.
         if (condicao.Operador is Operador.Em or Operador.NaoEm)
         {
-            return ValidarValorCategoricoEm(condicao, pertence);
+            return ValidarValorCategoricoEm(condicao, pertence, foraDoDominio);
         }
 
         if (condicao.Valor.ValueKind != JsonValueKind.String)
@@ -179,14 +182,15 @@ public static class PredicadoDnfValidador
                 $"O valor da condição sobre '{condicao.Fato}' deve ser uma string JSON."));
         }
 
-        return pertence(condicao.Valor.GetString()!)
+        string valor = condicao.Valor.GetString()!;
+        return pertence(valor)
             ? Result.Success()
             : Result.Failure(new DomainError(
                 PredicadoDnfErrorCodes.ValorForaDoDominio,
-                $"O valor da condição sobre '{condicao.Fato}' não pertence ao domínio declarado."));
+                $"O valor '{valor}' da condição sobre '{condicao.Fato}' {foraDoDominio}"));
     }
 
-    private static Result ValidarValorCategoricoEm(CondicaoDnf condicao, Func<string, bool> pertence)
+    private static Result ValidarValorCategoricoEm(CondicaoDnf condicao, Func<string, bool> pertence, string foraDoDominio)
     {
         bool possuiItemNaoString = condicao.Valor.EnumerateArray()
             .Any(static item => item.ValueKind != JsonValueKind.String);
@@ -198,14 +202,14 @@ public static class PredicadoDnfValidador
                 $"Os valores da condição EM sobre '{condicao.Fato}' devem ser strings JSON."));
         }
 
-        string? foraDoDominio = condicao.Valor.EnumerateArray()
+        string? valorFora = condicao.Valor.EnumerateArray()
             .Select(static item => item.GetString()!)
             .FirstOrDefault(valor => !pertence(valor));
 
-        return foraDoDominio is null
+        return valorFora is null
             ? Result.Success()
             : Result.Failure(new DomainError(
                 PredicadoDnfErrorCodes.ValorForaDoDominio,
-                $"O valor '{foraDoDominio}' da condição EM sobre '{condicao.Fato}' não pertence ao domínio declarado."));
+                $"O valor '{valorFora}' da condição EM sobre '{condicao.Fato}' {foraDoDominio}"));
     }
 }

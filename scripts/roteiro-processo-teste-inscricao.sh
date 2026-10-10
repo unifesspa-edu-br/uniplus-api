@@ -280,6 +280,8 @@ setup_configuracao() {
     # 52/2025): atendimento especializado não é só de quem tem deficiência.
     # "PCD" é o código reconhecido por OfertaAtendimentoEspecializado.CodigoCondicaoPcd
     # (ADR-0067) — tipo de deficiência só é aceito sob essa condição, por esse código.
+    # "OUTRA_CONDICAO" é a condição cuja escolha o modelo de inscrição da Medicina cita
+    # para pedir a descrição: aplicar o modelo exige que o processo a oferte.
     local condicoes codigo nome descricao id
     CONDICAO_ATENDIMENTO_IDS="[]"
     condicoes=$(jq -nr '[
@@ -299,6 +301,29 @@ setup_configuracao() {
         exigir_id "condição de atendimento $codigo" "$id"
         CONDICAO_ATENDIMENTO_IDS=$(jq -c --arg id "$id" '. + [$id]' <<< "$CONDICAO_ATENDIMENTO_IDS")
     done <<< "$condicoes"
+
+    # Os recursos de acessibilidade das etapas presenciais (heteroidentificação,
+    # avaliação biopsicossocial e habilitação). O formulário pede o recurso a quem
+    # pede atendimento, e a publicação recusa o fato coletado sem recurso ofertado.
+    local recursos
+    RECURSO_ACESSIBILIDADE_IDS="[]"
+    recursos=$(jq -nr '[
+        ["SALA_DE_FACIL_ACESSO", "Sala de fácil acesso", "Sala no térreo ou com acesso por rampa ou elevador."],
+        ["ACOMPANHANTE", "Acompanhante", "Acompanhante durante a etapa presencial."],
+        ["SALA_PARA_AMAMENTACAO", "Sala para amamentação", "Sala reservada para amamentar durante a etapa presencial."],
+        ["TEMPO_ADICIONAL", "Tempo adicional", "Tempo adicional para cumprir a etapa presencial."],
+        ["INTERPRETE_DE_LIBRAS", "Intérprete de Libras", "Tradutor-intérprete da Língua Brasileira de Sinais."],
+        ["MATERIAL_AMPLIADO", "Material ampliado", "Material da etapa com fonte ampliada."],
+        ["LEDOR", "Ledor", "Pessoa que lê o material da etapa para o candidato."],
+        ["TRANSCRITOR", "Transcritor", "Pessoa que transcreve as respostas do candidato."]
+    ][] | @tsv')
+    while IFS=$'\t' read -r codigo nome descricao; do
+        id=$(post_tolerante "/api/configuracao/admin/recursos-acessibilidade" "$(jq -nc \
+            --arg c "$codigo" --arg n "$nome" --arg d "$descricao" '{codigo: $c, nome: $n, descricao: $d}')")
+        [ -z "$id" ] && id=$(api_get "/api/configuracao/recursos-acessibilidade?limit=100" | jq -r --arg c "$codigo" '.[] | select(.codigo==$c) | .id')
+        exigir_id "recurso de acessibilidade $codigo" "$id"
+        RECURSO_ACESSIBILIDADE_IDS=$(jq -c --arg id "$id" '. + [$id]' <<< "$RECURSO_ACESSIBILIDADE_IDS")
+    done <<< "$recursos"
 
     # Os tipos de deficiência do item 11.2.2 da minuta.
     local tipos
@@ -365,7 +390,7 @@ setup_configuracao() {
         api POST "/api/configuracao/admin/calendarios-dias-uteis/$calendario_id/vigente" "" >/dev/null
     fi
 
-    ok "fase_inscricao=$FASE_INSCRICAO_ID fase_resultado=$FASE_RESULTADO_ID reserva_demografica=$RESERVA_DEMOGRAFICA_ID tipo_processo=$TIPO_PROCESSO_ID condicoes_atendimento=$CONDICAO_ATENDIMENTO_IDS tipos_deficiencia=$TIPO_DEFICIENCIA_IDS base_legal_bonus=$BASE_LEGAL_BONUS_ID calendario_dias_uteis=$calendario_id"
+    ok "fase_inscricao=$FASE_INSCRICAO_ID fase_resultado=$FASE_RESULTADO_ID reserva_demografica=$RESERVA_DEMOGRAFICA_ID tipo_processo=$TIPO_PROCESSO_ID condicoes_atendimento=$CONDICAO_ATENDIMENTO_IDS recursos_acessibilidade=$RECURSO_ACESSIBILIDADE_IDS tipos_deficiencia=$TIPO_DEFICIENCIA_IDS base_legal_bonus=$BASE_LEGAL_BONUS_ID calendario_dias_uteis=$calendario_id"
 }
 
 criar_processo() {
@@ -395,7 +420,7 @@ definir_algoritmo_contagem_prazo() {
 definir_oferta_atendimento() {
     log "Definir Oferta de Atendimento"
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/oferta-atendimento" "{
-        \"condicaoIds\": $CONDICAO_ATENDIMENTO_IDS, \"recursoIds\": [],
+        \"condicaoIds\": $CONDICAO_ATENDIMENTO_IDS, \"recursoIds\": $RECURSO_ACESSIBILIDADE_IDS,
         \"tipoDeficienciaIds\": $TIPO_DEFICIENCIA_IDS
     }" >/dev/null
     ok "oferta de atendimento definida"
