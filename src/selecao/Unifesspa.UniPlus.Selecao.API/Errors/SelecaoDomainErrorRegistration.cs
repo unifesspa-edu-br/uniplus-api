@@ -756,6 +756,8 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new(InscricaoErrorCodes.PrecondicaoRequerida, new DomainErrorMapping(StatusCodes.Status428PreconditionRequired, "uniplus.selecao.inscricao.precondicao_requerida", "A mutação da inscrição exige o If-Match com o ETag corrente")),
         new(InscricaoErrorCodes.PrecondicaoFalhou, new DomainErrorMapping(StatusCodes.Status412PreconditionFailed, "uniplus.selecao.inscricao.precondicao_falhou", "O If-Match não corresponde ao estado atual da inscrição")),
         new(InscricaoErrorCodes.DonoDivergente, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.selecao.inscricao.dono_divergente", "Esta inscrição pertence a outro candidato")),
+        new("Inscricao.CpfAusenteNoToken", new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.selecao.inscricao.cpf_ausente_no_token", "O token precisa trazer o claim cpf")),
+        new("Inscricao.CorridaInconsistente", new DomainErrorMapping(StatusCodes.Status500InternalServerError, "uniplus.selecao.inscricao.corrida_inconsistente", "A inscrição colidiu no índice único, mas não foi possível relê-la")),
         // Base legal 1:N (Story #554, PR #898, issue #549, ADR-0074) — DocumentoExigidoBaseLegal
         // e o gate de publicação (ValidadorBaseLegalExigencias) aflora pelo
         // ProcessoSeletivo.ConformidadeInsuficiente já registrado acima, sem código novo.

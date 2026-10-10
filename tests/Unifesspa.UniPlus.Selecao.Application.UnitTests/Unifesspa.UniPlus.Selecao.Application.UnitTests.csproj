@@ -35,6 +35,7 @@
     <Compile Include="../Shared/FormularioDeTeste.cs" Link="FormularioDeTeste.cs" />
     <Compile Include="../Shared/VersoesPublicadasDeTeste.cs" Link="VersoesPublicadasDeTeste.cs" />
     <Compile Include="../Shared/CatalogoDoConjuntoBasico.cs" Link="CatalogoDoConjuntoBasico.cs" />
+    <Compile Include="../Shared/PersonasDeTeste.cs" Link="PersonasDeTeste.cs" />
   </ItemGroup>
 
 </Project>

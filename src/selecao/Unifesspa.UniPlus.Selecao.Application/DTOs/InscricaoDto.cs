@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 using System.Text.Json;
 
+using Domain.Entities;
 using Domain.Enums;
 
 /// <summary>
@@ -52,7 +53,30 @@ public sealed record InscricaoDto(
     IReadOnlyDictionary<string, JsonElement> Respostas,
     IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>> Grupos,
     IReadOnlyList<AceiteDeTermoInput> Aceites,
-    string ETag);
+    string ETag)
+{
+    /// <summary>Projeta o agregado no contrato — <c>Grupos</c>/<c>Aceites</c> do domínio têm a mesma forma, em tipos próprios do contrato (não acopla um ao outro).</summary>
+    public static InscricaoDto De(Inscricao inscricao)
+    {
+        ArgumentNullException.ThrowIfNull(inscricao);
+
+        return new InscricaoDto(
+            inscricao.Id,
+            inscricao.ProcessoSeletivoId,
+            inscricao.Situacao,
+            inscricao.NumeroInscricao,
+            inscricao.VersaoFormularioId,
+            inscricao.OfertaCursoId,
+            inscricao.Respostas,
+            inscricao.Grupos.ToDictionary(
+                static g => g.Key,
+                g => (IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>)
+                    [.. g.Value.Select(static o => new OcorrenciaDeGrupoInscricaoInput(o.Id, o.Respostas))],
+                StringComparer.Ordinal),
+            [.. inscricao.Aceites.Select(static a => new AceiteDeTermoInput(a.Codigo, a.VersaoId, a.HashVersao))],
+            inscricao.ETag);
+    }
+}
 
 /// <summary>
 /// O comprovante de uma submissão: cópia do que foi enviado, sem nenhum número de documento (§4.1
