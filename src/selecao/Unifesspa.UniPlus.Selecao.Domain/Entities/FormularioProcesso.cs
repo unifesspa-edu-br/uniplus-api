@@ -226,6 +226,9 @@ public static class FormularioProcessoErrorCodes
     /// <summary>Classificação baseada em ENEM com inscrição própria, e o formulário de inscrição não pede a edição do ENEM a todo candidato.</summary>
     public const string InscricaoSemEdicaoDoEnem = "ProcessoSeletivo.InscricaoSemEdicaoDoEnem";
 
+    /// <summary>Formulário que pede a edição do ENEM num processo cuja classificação não é baseada em ENEM.</summary>
+    public const string EdicaoDoEnemSemClassificacaoEnem = "ProcessoSeletivo.EdicaoDoEnemSemClassificacaoEnem";
+
     /// <summary>A fase do cronograma é usada por um formulário e não pode sair.</summary>
     public const string FaseReferenciadaPorFormulario = "ProcessoSeletivo.FaseReferenciadaPorFormulario";
 }

@@ -1016,6 +1016,18 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 DesempatePorAreaEnemErrorCodes.ForaDoQuadro,
                 $"O critério de desempate na ordem {criterio.Key} cita área que o quadro de pesos por área desta classificação não tem em todos os grupos: {string.Join(", ", criterio.Select(static v => v.Codigo))}."))));
 
+        // As edições do ENEM só existem com classificação baseada em ENEM: deixar de sê-lo as retira.
+        // Uma condição viva que cite uma delas ficaria sem como se satisfazer — recusa, como na
+        // redefinição das opções, em vez de deixar o edital com uma condição morta.
+        bool retiraEdicoesDoEnem = !classificacao.BaseadoEmEnem
+            && _opcoesDeclaradas.Any(static o => string.Equals(o.FatoCodigo, EdicaoDoEnem.Fato, StringComparison.Ordinal));
+        if (retiraEdicoesDoEnem && ReferenciaDinamicaSeriaInvalidada(EdicaoDoEnem.Fato, []))
+        {
+            erros.Add(new("baseadoEmEnem", new DomainError(
+                OpcaoDeclaradaFatoErrorCodes.ReferenciadaPorExigenciaViva,
+                "Uma condição viva (exigência documental, pré-condição de campo ou regra de derivação) cita uma edição do ENEM, que deixaria de existir com a classificação sem ENEM — ajuste ou remova a condição antes.")));
+        }
+
         if (erros.Count > 0)
         {
             return Result.ValidationFailure(AnexarAreasAceitas(erros, classificacao));
@@ -1024,6 +1036,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         if (erroDasEtapas is not null)
         {
             return Result.Failure(erroDasEtapas);
+        }
+
+        if (retiraEdicoesDoEnem)
+        {
+            _opcoesDeclaradas.RemoveAll(static o => string.Equals(o.FatoCodigo, EdicaoDoEnem.Fato, StringComparison.Ordinal));
         }
 
         classificacao.VincularProcesso(Id);
@@ -3551,6 +3568,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("formulario_fato_ausente_de_versao_publicada", DimensaoConformidade.ColetaDeFatos, "Formulários: na retificação, fato de outra finalidade só quando coletado em todas as versões publicadas", PendenciaDeFatoAusenteDeVersaoPublicada() is null),
         new ItemConformidade("formulario_campo_opcional_alimenta_regra", DimensaoConformidade.ColetaDeFatos, "Formulários: campo que alimenta derivação, negação ou impedimento é obrigatório sempre que exibido", PendenciaDeCampoOpcionalQueAlimentaRegra() is null),
         new ItemConformidade("exigencia_repete_por_grupo_do_formulario", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: repete por grupo dos formulários, conhecido até a fase da exigência", PendenciaDaRepeticaoPorGrupo() is null),
+        new ItemConformidade("formulario_edicao_enem_sem_classificacao_enem", DimensaoConformidade.ColetaDeFatos, "Formulários: só pedem a edição do ENEM quando a classificação é baseada em ENEM", EdicaoDoEnemSemClassificacaoEnem(_campos, Classificacao) is null),
         new ItemConformidade("fato_coletavel_sem_valores_ofertados", DimensaoConformidade.ColetaDeFatos, "Fato coletável de escopo do processo: oferta declara ao menos um valor", PendenciaDeFatoColetadoSemValoresOfertados() is null),
         new ItemConformidade("fato_coletavel_municipio_citado_fora_da_area_do_bonus", DimensaoConformidade.ColetaDeFatos, "Fato com os municípios do bônus regional: condição cita só município da área", PendenciaDeMunicipioDoBonusForaDaArea() is null),
         new ItemConformidade("termo_exigido_sem_forma_de_aceite", DimensaoConformidade.ColetaDeFatos, "Termos do formulário: toda versão escolhida tem forma de aceite definida", PendenciaDeTermoSemFormaDeAceite() is null),
@@ -4410,6 +4428,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return repeticaoPorGrupo;
         }
 
+        // Antes da falta de opções: fora do ENEM, a edição não tem opções a declarar, e o que se
+        // corrige é o campo ou a classificação.
+        if (EdicaoDoEnemSemClassificacaoEnem(_campos, Classificacao) is { } edicaoSemEnem)
+        {
+            return edicaoSemEnem;
+        }
+
         if (PendenciaDeFatoColetadoSemValoresOfertados() is { } fatoSemOferta)
         {
             return fatoSemOferta;
@@ -4785,6 +4810,23 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             : new DomainError(
                 FormularioProcessoErrorCodes.InscricaoSemEdicaoDoEnem,
                 "A classificação usa as notas do ENEM, e o formulário de inscrição não pede a edição do ENEM a todo candidato: o campo da edição é obrigatório sempre, sem exibição condicional e numa seção que não se esconde.");
+    }
+
+    /// <summary>
+    /// A edição do ENEM só existe com classificação baseada em ENEM: nenhum formulário a coleta fora
+    /// disso, nem em grupo. Estática para que o codec confira o envelope pela mesma regra.
+    /// </summary>
+    public static DomainError? EdicaoDoEnemSemClassificacaoEnem(
+        IEnumerable<FatoColetado> campos, ConfiguracaoClassificacao? classificacao)
+    {
+        ArgumentNullException.ThrowIfNull(campos);
+
+        return classificacao is not { BaseadoEmEnem: true }
+            && campos.Any(static f => string.Equals(f.FatoCodigo, EdicaoDoEnem.Fato, StringComparison.Ordinal))
+            ? new DomainError(
+                FormularioProcessoErrorCodes.EdicaoDoEnemSemClassificacaoEnem,
+                "Um formulário pede a edição do ENEM, mas a classificação do processo não usa as notas do ENEM: retire o campo da edição ou declare a classificação baseada em ENEM.")
+            : null;
     }
 
     /// <summary>

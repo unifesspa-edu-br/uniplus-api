@@ -671,6 +671,28 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error!.Message.Should().Contain("forma canônica");
     }
 
+    [Fact(DisplayName = "Envelope que coleta a edição do ENEM com classificação sem ENEM é recusado pela regra da publicação")]
+    public void EdicaoDoEnemSemClassificacaoEnem_Recusa()
+    {
+        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        processo.DefinirCriteriosDesempate(
+            [CriterioDesempate.Criar(1, CorpusEnvelope.Regra(CriterioDesempateCodigo.MaiorIdade, 'f'), new ArgsDesempateMaiorIdade()).Value!],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ConfiguracaoClassificacao semEnem = ConfiguracaoClassificacao.Criar(
+            CorpusEnvelope.Regra(RegraCalculoCodigo.ClassificacaoImportada, 'a'), null, null,
+            CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '3'), 1, [],
+            baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!;
+        Result definir = processo.DefinirClassificacao(semEnem, PrecondicaoIfMatch.Ausente);
+        definir.IsSuccess.Should().BeTrue(string.Join("; ", definir.Errors.Select(static e => e.Error.Message)) + definir.Error?.Message);
+
+        byte[] bytes = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes;
+        Result<EnvelopeReidratado> resultado = CorpusEnvelope.Registro.Reidratar(CorpusEnvelope.VersaoDeAbertura(ProcessoPublicado(), bytes));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error!.Message.Should().Contain("edição do ENEM");
+    }
+
     // ── Vocabulário fechado: as factories do domínio NÃO o fecham ──
 
     /// <summary>

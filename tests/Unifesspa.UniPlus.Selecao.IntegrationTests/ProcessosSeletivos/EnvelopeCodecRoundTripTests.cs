@@ -1352,26 +1352,19 @@ public sealed class EnvelopeCodecRoundTripTests
     /// vez de exercitá-la. Aqui o corpus não tem eliminação ENEM nenhuma e a classificação é
     /// importada — com cálculo local, <c>baseadoEmEnem</c> exigiria a resolução de Pesos por
     /// Área num sentido e a recusaria no outro —, então os dois valores continuam válidos nos
-    /// dois sentidos, e cada caso do <see cref="Theory"/> muta para o valor OPOSTO ao do
-    /// corpus-base, garantindo bytes diferentes nos dois <see cref="InlineData"/>.
+    /// dois sentidos. A mutação vai de falso para verdadeiro: a contrária produziria um envelope
+    /// que pede a edição do ENEM sem classificação ENEM, que o codec recusa. O outro sentido é a
+    /// leitura do corpus sem ENEM sem mutação, no teste seguinte.
     /// </summary>
-    [Theory(DisplayName = "O decoder não perde baseadoEmEnem — corpus sem eliminação ENEM, mutação booleano-consciente")]
-    [InlineData(false, true)]
-    [InlineData(true, false)]
-    public void Decoder_NaoPerdeCampo_BaseadoEmEnem(bool valorBase, bool valorMutado)
+    [Fact(DisplayName = "O decoder não perde baseadoEmEnem — corpus sem eliminação ENEM, mutado para verdadeiro")]
+    public void Decoder_NaoPerdeCampo_BaseadoEmEnem()
     {
-        ProcessoSeletivo processo = ProcessoSemEliminacaoEnem(valorBase);
-        if (valorBase)
-        {
-            processo.DefinirOpcoesDeclaradas(
-                "EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Ausente)
-                .IsSuccess.Should().BeTrue();
-        }
+        ProcessoSeletivo processo = ProcessoSemEliminacaoEnem(baseadoEmEnem: false);
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
         CorpusEnvelope.Publicar(processo);
 
         JsonObject mutado = Envelope(congelado);
-        Mutar(mutado, "classificacao.baseadoEmEnem", valorMutado.ToString(CultureInfo.InvariantCulture));
+        Mutar(mutado, "classificacao.baseadoEmEnem", "True");
 
         byte[] bytesMutados = PerfilCanonicoV1.Instancia.Serializar(mutado);
         bytesMutados.Should().NotEqual(congelado.Bytes, "pré-condição: mutar baseadoEmEnem tem de mudar os bytes");
@@ -1400,6 +1393,19 @@ public sealed class EnvelopeCodecRoundTripTests
             "original de volta");
         recodificados.Should().Equal(bytesMutados,
             "baseadoEmEnem não é chave de ordenação — o resto do envelope reidratado reproduz o mutado inteiro");
+    }
+
+    [Fact(DisplayName = "O decoder lê baseadoEmEnem falso do envelope sem ENEM, sem assumir verdadeiro")]
+    public void Decoder_LeBaseadoEmEnemFalso()
+    {
+        ProcessoSeletivo processo = ProcessoSemEliminacaoEnem(baseadoEmEnem: false);
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
+        CorpusEnvelope.Publicar(processo);
+
+        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes));
+
+        reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
+        reidratado.Value!.Grafo.Classificacao.BaseadoEmEnem.Should().BeFalse();
     }
 
     [Fact(DisplayName = "A resolução de Pesos por Área congelada em NFC volta igual depois de publicar e restaurar")]
