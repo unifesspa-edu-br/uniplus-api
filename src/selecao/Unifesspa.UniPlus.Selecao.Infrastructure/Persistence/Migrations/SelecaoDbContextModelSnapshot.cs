@@ -379,6 +379,64 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.ToTable("certames_divulgados", "selecao");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ComprovanteInscricao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Aceites")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("aceites");
+
+                    b.Property<string>("Grupos")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("grupos");
+
+                    b.Property<string>("HashIntegridade")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character(64)")
+                        .HasColumnName("hash_integridade")
+                        .IsFixedLength();
+
+                    b.Property<Guid>("InscricaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inscricao_id");
+
+                    b.Property<DateTimeOffset>("Instante")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("instante");
+
+                    b.Property<string>("NumeroInscricao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("numero_inscricao");
+
+                    b.Property<Guid?>("OfertaCursoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("oferta_curso_id");
+
+                    b.Property<string>("Respostas")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("respostas");
+
+                    b.HasKey("Id")
+                        .HasName("pk_comprovantes_inscricao");
+
+                    b.HasIndex("InscricaoId", "NumeroInscricao")
+                        .HasDatabaseName("ix_comprovantes_inscricao_inscricao_numero");
+
+                    b.ToTable("comprovantes_inscricao", "selecao", t =>
+                        {
+                            t.HasComment("Comprovante de uma submissão da inscrição (issue #1858) — append-only, sem nenhum número de documento; uma correção soma uma linha nova, nunca muda a anterior.");
+                        });
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.CondicaoGatilho", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3457,6 +3515,118 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records.InscricaoRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AceitesJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("aceites")
+                        .HasComment("Aceites de termo — código, versão e hash da versão fixada.");
+
+                    b.Property<byte[]>("CpfCiphertext")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("cpf_ciphertext")
+                        .HasComment("CPF cifrado em repouso (AES-GCM, ADR-0121) — envelope autenticado; nunca texto claro.");
+
+                    b.Property<byte[]>("CpfIndice")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("cpf_indice")
+                        .HasComment("Índice cego (HMAC-SHA256) do CPF — sustenta a busca pelo dono e o índice único por processo, sem decifrar a tabela.");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<byte[]>("DocumentosCifrados")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("documentos_cifrados")
+                        .HasComment("Envelope AEAD com o mapa {código do fato: valor} dos números de documento — nunca em claro.");
+
+                    b.Property<string>("EmissorToken")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("emissor_token")
+                        .HasComment("O emissor (issuer) do token de quem iniciou a inscrição.");
+
+                    b.Property<string>("FatosIdentificadorDeclaradosJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("fatos_identificador_declarados")
+                        .HasComment("Códigos de fato cuja classificação congelada é IDENTIFICADOR, fixados ao iniciar.");
+
+                    b.Property<string>("GruposJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("grupos")
+                        .HasComment("Ocorrências de grupo repetível, mesma exclusão de documento das respostas.");
+
+                    b.Property<string>("NumeroInscricao")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("numero_inscricao")
+                        .HasComment("Gerado na primeira submissão (sequência do banco, formatada); nulo em rascunho.");
+
+                    b.Property<Guid?>("OfertaCursoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("oferta_curso_id");
+
+                    b.Property<Guid>("ProcessoSeletivoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("processo_seletivo_id")
+                        .HasComment("O processo seletivo desta inscrição.");
+
+                    b.Property<string>("RespostasJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("respostas")
+                        .HasComment("Respostas por fato (código → valor), sem números de documento.");
+
+                    b.Property<int>("Revisao")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("revisao");
+
+                    b.Property<int>("Situacao")
+                        .HasColumnType("integer")
+                        .HasColumnName("situacao");
+
+                    b.Property<string>("Sub")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("sub")
+                        .HasComment("O sub do token de quem iniciou a inscrição — nunca troca de dono.");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("VersaoFormularioId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("versao_formulario_id")
+                        .HasComment("A versão do formulário divulgada no instante do início (UNI-REQ-0084) — fixa, nunca recalculada.");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inscricoes");
+
+                    b.HasIndex("ProcessoSeletivoId", "CpfIndice")
+                        .IsUnique()
+                        .HasDatabaseName("ux_inscricoes_processo_cpf_indice");
+
+                    b.ToTable("inscricoes", "selecao", t =>
+                        {
+                            t.HasComment("A inscrição de um candidato num processo seletivo (issue #1858) — uma por CPF e processo. Números de documento vivem cifrados aqui ou em documentos_cifrados, nunca em respostas_json.");
+                        });
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.AreaPesoAreaEnemCongelada", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.GrupoPesoAreaEnemCongelado", null)
@@ -3495,6 +3665,16 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_categorias_julgadas_bancas_requeridas_banca_requerida_id");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ComprovanteInscricao", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records.InscricaoRecord", null)
+                        .WithMany()
+                        .HasForeignKey("InscricaoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_comprovantes_inscricao_inscricoes");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.CondicaoGatilho", b =>

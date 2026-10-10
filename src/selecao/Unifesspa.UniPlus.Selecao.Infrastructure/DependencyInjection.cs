@@ -74,6 +74,7 @@ public static class SelecaoInfrastructureRegistration
         services.AddScoped<IDocumentoEditalRepository, DocumentoEditalRepository>();
         services.AddScoped<IModeloDeDocumentoRepository, ModeloDeDocumentoRepository>();
         services.AddScoped<IRascunhoDePublicacaoRepository, RascunhoDePublicacaoRepository>();
+        services.AddScoped<IInscricaoRepository, InscricaoRepository>();
         services.AddScoped<IRegraCatalogoReader, RegraCatalogoReader>();
         services.AddScoped<IRetificacaoEmCursoReader, RetificacaoEmCursoReader>();
         services.AddScoped<IGovBrAuthService, GovBrAuthService>();

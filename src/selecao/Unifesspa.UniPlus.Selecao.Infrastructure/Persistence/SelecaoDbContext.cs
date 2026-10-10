@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 
 public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
 {
@@ -155,6 +156,12 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     /// via <c>IUniPlusEncryptionService</c>.
     /// </summary>
     public DbSet<IdempotencyEntry> IdempotencyEntries => Set<IdempotencyEntry>();
+
+    /// <summary>Modelo de persistência de <see cref="Domain.Entities.Inscricao"/> (issue #1858) — ver <c>InscricaoRecord</c>.</summary>
+    public DbSet<InscricaoRecord> Inscricoes => Set<InscricaoRecord>();
+
+    /// <summary>Comprovantes de submissão (issue #1858) — mapeado direto, sem record de tradução (sem campo cifrado).</summary>
+    public DbSet<ComprovanteInscricao> ComprovantesInscricao => Set<ComprovanteInscricao>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
