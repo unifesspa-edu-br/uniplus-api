@@ -23,7 +23,7 @@ public sealed class LocalHmacBlindIndexServiceTests
     public async Task ComputarAsync_MesmoValorEMesmaChave_DeveDevolverOMesmoIndice()
     {
         LocalHmacBlindIndexService sut = CriarServico();
-        byte[] valor = "24843803480"u8.ToArray();
+        byte[] valor = "valor-opaco-um"u8.ToArray();
 
         byte[] indice1 = await sut.ComputarAsync("uniplus-selecao-identificadores-hmac", valor);
         byte[] indice2 = await sut.ComputarAsync("uniplus-selecao-identificadores-hmac", valor);
@@ -35,7 +35,7 @@ public sealed class LocalHmacBlindIndexServiceTests
     public async Task ComputarAsync_MesmoValorComKeyNameDiferente_DeveDevolverIndiceDiferente()
     {
         LocalHmacBlindIndexService sut = CriarServico();
-        byte[] valor = "24843803480"u8.ToArray();
+        byte[] valor = "valor-opaco-um"u8.ToArray();
 
         byte[] indiceA = await sut.ComputarAsync("uniplus-selecao-identificadores-hmac", valor);
         byte[] indiceB = await sut.ComputarAsync("uniplus-discentes-identificadores-hmac", valor);
@@ -48,8 +48,8 @@ public sealed class LocalHmacBlindIndexServiceTests
     {
         LocalHmacBlindIndexService sut = CriarServico();
 
-        byte[] indiceA = await sut.ComputarAsync("uniplus-selecao-identificadores-hmac", "24843803480"u8.ToArray());
-        byte[] indiceB = await sut.ComputarAsync("uniplus-selecao-identificadores-hmac", "11144477735"u8.ToArray());
+        byte[] indiceA = await sut.ComputarAsync("uniplus-selecao-identificadores-hmac", "valor-opaco-um"u8.ToArray());
+        byte[] indiceB = await sut.ComputarAsync("uniplus-selecao-identificadores-hmac", "valor-opaco-dois"u8.ToArray());
 
         indiceA.Should().NotEqual(indiceB);
     }
@@ -57,7 +57,7 @@ public sealed class LocalHmacBlindIndexServiceTests
     [Fact]
     public async Task ComputarAsync_LocalKeyDiferente_DeveDevolverIndiceDiferente()
     {
-        byte[] valor = "24843803480"u8.ToArray();
+        byte[] valor = "valor-opaco-um"u8.ToArray();
         byte[] indiceA = await CriarServico().ComputarAsync("uniplus-selecao-identificadores-hmac", valor);
 
         string outraChave = Convert.ToBase64String(new byte[32].Select(static (_, i) => (byte)(i + 1)).ToArray());
