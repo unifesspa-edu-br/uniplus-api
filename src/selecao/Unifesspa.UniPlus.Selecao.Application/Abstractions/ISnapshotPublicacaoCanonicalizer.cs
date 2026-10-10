@@ -151,15 +151,21 @@ public sealed record EntradaCanonicalizacao(
     /// operação de cada um —, congelados junto do grupo. Na recodificação, são os congelados na
     /// versão que voltam aqui, porque o catálogo pode ter mudado.
     /// </summary>
-    IReadOnlyList<DefinicaoAgregado>? AgregadosDosGrupos = null);
+    IReadOnlyList<DefinicaoAgregado>? AgregadosDosGrupos = null,
+    /// <summary>
+    /// A apresentação — rótulo e tipo de campo do catálogo — de cada fato que as regras dos
+    /// formulários citam e nenhum formulário do processo pergunta. Na recodificação, é a congelada
+    /// na versão que volta aqui.
+    /// </summary>
+    IReadOnlyDictionary<string, ApresentacaoDoFato>? ApresentacaoDosPressupostos = null);
 
 /// <summary>
 /// Porta da projeção canônica do envelope de congelamento (ADR-0100, ADR-0109).
 /// Projeta a configuração viva do <see cref="ProcessoSeletivo"/> num payload de
-/// <b>30 blocos reais</b> — o último a entrar foi <c>gruposColetados</c>, os grupos repetíveis
-/// dos formulários (UNI-REQ-0146) — e devolve os bytes que
+/// <b>31 blocos reais</b> — o último a entrar foi <c>apresentacaoDosPressupostos</c>, o rótulo e o
+/// tipo do catálogo dos fatos que as regras citam e nenhum formulário pergunta — e devolve os bytes que
 /// <c>VersaoConfiguracao.Abrir</c> persiste como base do hash. Quando a entrada
-/// carrega <see cref="EntradaCanonicalizacao.Retificacao"/>, acrescenta o 31º
+/// carrega <see cref="EntradaCanonicalizacao.Retificacao"/>, acrescenta o 32º
 /// bloco <c>retificacao</c> preservando os 30 anteriores intactos (ADR-0103).
 /// </summary>
 /// <remarks>

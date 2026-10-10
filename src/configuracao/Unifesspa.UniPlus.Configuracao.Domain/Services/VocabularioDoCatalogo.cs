@@ -92,6 +92,29 @@ public static class VocabularioDoCatalogo
         return dominios;
     }
 
+    /// <summary>
+    /// Como cada fato citado e não perguntado se apresenta: o nome e o tipo de campo que o domínio
+    /// admite. O código que o catálogo não tem fica de fora.
+    /// </summary>
+    public static Dictionary<string, ApresentacaoDoFato> ApresentacaoDos(IEnumerable<FatoCandidato> fatos, IEnumerable<string> codigos)
+    {
+        ArgumentNullException.ThrowIfNull(fatos);
+        ArgumentNullException.ThrowIfNull(codigos);
+        Dictionary<string, FatoCandidato> porCodigo = PorCodigo(fatos);
+        return codigos
+            .Where(porCodigo.ContainsKey)
+            .Distinct(StringComparer.Ordinal)
+            .ToDictionary(static c => c, c => Apresentacao(porCodigo[c]), StringComparer.Ordinal);
+    }
+
+    private static ApresentacaoDoFato Apresentacao(FatoCandidato fato) =>
+        ApresentacaoDoFato.DoCatalogo(
+            fato.Codigo,
+            fato.Nome,
+            DominiosFato.ParaTokenCanonico(fato.Dominio),
+            CardinalidadesFato.ParaTokenCanonico(fato.Cardinalidade),
+            fato.FonteValores is { } fonte ? FontesValoresFato.ParaTokenCanonico(fonte) : null);
+
     /// <summary>O catálogo como as regras do formulário o conferem, por código (<see cref="FatoDoCatalogo"/>).</summary>
     public static Dictionary<string, FatoDoCatalogo> ParaRegras(IEnumerable<FatoCandidato> fatos)
     {

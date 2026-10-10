@@ -48,6 +48,7 @@ public static class ProjecaoDoFormularioRenderizavel
             [.. grupos.Where(g => g.Finalidade == finalidade).OrderBy(static g => g.Ordem).Select(g => Grupo(g, valores))],
             RecorteDaFinalidade.De(avaliavel.Definicao, DefinicaoDoProcesso.CodigoDaEtapa(finalidade, null), avaliavel.Ofertas),
             fatos.Where(f => f.Finalidade != finalidade).Select(f => Campo(f, valores)),
+            avaliavel.ApresentacaoDosPressupostos,
             avaliavel.Definicao.Agregados,
             dataReferenciaFatos);
     }

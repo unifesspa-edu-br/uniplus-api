@@ -485,6 +485,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // append-only (ADR-0111), então este código não deveria ocorrer em produção, mas
         // precisa de mapeamento nomeado (não um 500 genérico) se ocorrer.
         new("ProcessoSeletivo.FatoCongeladoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fato_congelado_nao_encontrado", "Fato citado em condição de gatilho não encontrado no catálogo de fatos do candidato")),
+        new("ProcessoSeletivo.PressupostoSemCadastro", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.pressuposto_sem_cadastro", "Fato citado pelas regras de um formulário não encontrado no catálogo de fatos do candidato")),
         // Reconferência de coletabilidade no congelamento: o catálogo pode reclassificar a
         // Origem de um fato depois que ele já virou FatoColetado (ex.: a migration que
         // reclassificou MODALIDADE de DECLARADO para DERIVADO).

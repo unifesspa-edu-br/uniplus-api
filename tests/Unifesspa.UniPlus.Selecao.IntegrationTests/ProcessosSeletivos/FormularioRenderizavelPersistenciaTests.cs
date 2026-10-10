@@ -4,6 +4,9 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using NSubstitute;
+
+using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -235,7 +238,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
                 fatosColetados: [.. processo.FatosColetados], regrasDerivacao: [.. processo.RegrasDerivacao], formularios: [.. processo.Formularios],
                 termosExigidos: [.. processo.TermosExigidos], gruposColetados: [.. processo.GruposColetados]),
             entrada.Dados, entrada.HashDocumento, entrada.FusoHorario, retificacao: null, conformidade: null,
-            valoresSelecionaveisCongelados: entrada.ValoresSelecionaveisCongelados, agregadosDosGrupos: entrada.AgregadosDosGrupos);
+            valoresSelecionaveisCongelados: entrada.ValoresSelecionaveisCongelados, agregadosDosGrupos: entrada.AgregadosDosGrupos, apresentacaoDosPressupostos: entrada.ApresentacaoDosPressupostos);
         DefinicaoAvaliavel daConfiguracao = DefinicaoAvaliavelDoProcesso.DoCongelado(vivo).Value!;
         RecorteDaFinalidade esperado = RecorteDaFinalidade.De(
             daConfiguracao.Definicao, DefinicaoDoProcesso.CodigoDaEtapa(FinalidadeFormulario.Inscricao, null), daConfiguracao.Ofertas);
@@ -261,7 +264,74 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         lido.Value.Regras.Derivacoes.Should().BeEmpty("nenhuma regra da inscrição cita derivado, e o contrato não publica o que o formulário não usa");
     }
 
-    [Fact(DisplayName = "O pressuposto respondido na inscrição vem com a apresentação congelada dela; o calculado pelo sistema, só com o código")]
+    [Fact(DisplayName = "O município de residência sai com o rótulo e o tipo do catálogo congelados na publicação; renomear o fato depois muda o rascunho, não o publicado")]
+    public async Task Handle_PressupostoDerivado_ApresentacaoCongeladaNaPublicacao()
+    {
+        ProcessoSeletivo processo = NovoProcessoComFatoDeSelecao(nameof(Handle_PressupostoDerivado_ApresentacaoCongeladaNaPublicacao));
+        processo.DefinirItens(
+        [
+            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
+            FatoColetado.Criar("ATENDIMENTO_NO_MUNICIPIO", 1, "Deseja atendimento no município?", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, [
+                CondicaoPrecondicaoFato.Criar(0, "MUNICIPIO_RESIDENCIA", Operador.Igual, JsonSerializer.SerializeToElement("1504208")).Value!,
+            ], classificacaoProtecao: "PESSOAL").Value!,
+        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        DefinicaoAvaliavel naPublicacao = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(processo, CatalogoComOMunicipio("Município de residência")).Value!;
+        const string hashDocumento = "3333333333333333333333333333333333333333333333333333333333333333";
+        DadosEdital dados = DadosEdital.Criar(
+            "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
+        SnapshotCanonico congelado = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
+            processo, dados, hashDocumento, FusoInstitucional.ZoneId,
+            ValoresSelecionaveisCongelados: naPublicacao.ValoresSelecionaveis,
+            ApresentacaoDosPressupostos: naPublicacao.ApresentacaoDosPressupostos));
+        Result<VersaoConfiguracao> publicar = processo.Publicar(
+            dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
+            hashDocumento, "integration-test-user", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
+        publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
+        await PersistirDivulgadoAsync(processo, publicar.Value!, dados);
+
+        PressupostoRenderizavel publicado = Municipio(await LerPublicadoAsync(processo.Id));
+        (publicado.Rotulo, publicado.TipoRenderizacao).Should().Be(("Município de residência", "MUNICIPIO"));
+        publicado.CalculadoDe.Should().Equal(["ENDERECO_RESIDENCIAL"]);
+
+        IFatoCandidatoReader renomeado = Substitute.For<IFatoCandidatoReader>();
+        renomeado.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoComOMunicipio("Cidade onde mora"));
+        IResolvedorFusoInstitucional fuso = Substitute.For<IResolvedorFusoInstitucional>();
+        fuso.Resolver().Returns(Result<TimeZoneInfo>.Success(TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId)));
+        await using SelecaoDbContext rascunhoContext = _fixture.CreateDbContext();
+        Result<FormularioRenderizavelDto> rascunho = await ObterFormularioRenderizavelDoRascunhoQueryHandler.Handle(
+            new ObterFormularioRenderizavelDoRascunhoQuery(processo.Id, FinalidadeFormulario.Inscricao),
+            new ProcessoSeletivoRepository(rascunhoContext, TimeProvider.System), renomeado, fuso, CancellationToken.None);
+
+        rascunho.IsSuccess.Should().BeTrue(rascunho.Error?.Message);
+        Municipio(rascunho.Value!).Rotulo.Should().Be("Cidade onde mora", "o rascunho lê o catálogo vivo");
+        Municipio(await LerPublicadoAsync(processo.Id)).Rotulo.Should().Be("Município de residência", "o publicado lê o rótulo congelado na versão");
+    }
+
+    private static PressupostoRenderizavel Municipio(FormularioRenderizavelDto formulario) =>
+        formulario.Pressupostos.Single(static p => p.FatoCodigo == "MUNICIPIO_RESIDENCIA");
+
+    private async Task<FormularioRenderizavelDto> LerPublicadoAsync(Guid processoId)
+    {
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        Result<FormularioRenderizavelDto> lido = await ObterFormularioRenderizavelQueryHandler.Handle(
+            new ObterFormularioRenderizavelQuery(processoId, FinalidadeFormulario.Inscricao), new ProcessoSeletivoRepository(readContext, TimeProvider.System),
+            new CertameDivulgadoRepository(readContext), RegistroCodecs, AcervoDeTeste.Endereco, CancellationToken.None);
+        lido.IsSuccess.Should().BeTrue(lido.Error?.Message);
+        return lido.Value!;
+    }
+
+    private static IReadOnlyList<FatoCandidatoView> CatalogoComOMunicipio(string nomeDoMunicipio) => CatalogoDoConjuntoBasico.Com(
+    [
+        new FatoCandidatoView(
+            Guid.CreateVersion7(), "ATENDIMENTO_NO_MUNICIPIO", "Atendimento no município", null, "BOOLEANO", "DECLARADO", "ESCALAR", null,
+            "INSCRICAO", "CAMPO_FORMULARIO:ATENDIMENTO_NO_MUNICIPIO", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL"),
+        new FatoCandidatoView(
+            Guid.CreateVersion7(), "MUNICIPIO_RESIDENCIA", nomeDoMunicipio, null, "CATEGORICO", "DERIVADO", "ESCALAR", null,
+            "INSCRICAO", "SISTEMA:MUNICIPIO_RESIDENCIA", null, "GEO_MUNICIPIO", Ativo: true, ClassificacaoProtecao: "PESSOAL"),
+    ]);
+
+    [Fact(DisplayName = "O pressuposto respondido na inscrição vem com a apresentação congelada dela; o calculado pelo sistema, com o rótulo e o tipo congelados do catálogo")]
     public async Task Handle_Habilitacao_PressupostosComAApresentacaoDaInscricao()
     {
         // A habilitação pede o certificado de quem se declarou preto na inscrição e a declaração de
@@ -311,7 +381,8 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         corRaca.TipoRenderizacao.Should().Be("SELECAO_UNICA");
         corRaca.ValoresSelecionaveis!.Select(static v => v.Codigo).Should().Equal(["BRANCA", "PRETA", "PARDA"], "a simulação pergunta o dado anterior com os valores congelados");
         PressupostoRenderizavel faixaEtaria = lido.Value.Pressupostos[1];
-        faixaEtaria.Rotulo.Should().BeNull("o sistema calcula a faixa etária; nenhum formulário a pergunta");
+        faixaEtaria.Rotulo.Should().Be("Faixa etária", "nenhum formulário a pergunta, e o rótulo é o do catálogo congelado na versão");
+        faixaEtaria.TipoRenderizacao.Should().Be("NUMERO");
         faixaEtaria.CalculadoDe.Should().Equal(["DATA_NASCIMENTO"]);
         lido.Value.DataReferenciaFatos.Should().Be(new DateOnly(2026, 1, 31), "a âncora da faixa etária é a congelada na publicação");
     }

@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -62,6 +63,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
         "algoritmoContagemPrazo",
         "calendarioDiasUteis",
         "identificadorLegivel",
+        "apresentacaoDosPressupostos",
     ];
 
     /// <summary>
@@ -77,7 +79,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
 
     private readonly SnapshotPublicacaoCanonicalizer _encoder = new();
 
-    public string SchemaVersion => "0.0.23";
+    public string SchemaVersion => "0.0.24";
 
     public IPerfilCanonico Perfil => PerfilCanonicoV1.Instancia;
 
@@ -245,6 +247,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
         IReadOnlyList<ConfiguracaoDerivacaoFato> regrasDerivacao = LerRegrasDerivacao(leitor, payload);
         string versaoInterpretador = leitor.TextoNaoVazio(payload, "versaoInterpretador", "$");
         IReadOnlyList<string> modalidadesOfertadas = leitor.Textos(payload, "modalidadesOfertadas", "$");
+        Dictionary<string, ApresentacaoDoFato> apresentacaoDosPressupostos = LerApresentacaoDosPressupostos(leitor, payload);
         if (leitor.Falhou)
         {
             return leitor.Falha<EnvelopeReidratado>();
@@ -322,7 +325,52 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
         return Result<EnvelopeReidratado>.Success(
             new EnvelopeReidratado(
                 grafo, dados!, hashDocumento, fusoHorario!, retificacao, conformidade,
-                metadadosFatosCongelados, fatosColetadosLidos.ValoresSelecionaveis, calendarioDiasUteis, agregadosDosGrupos));
+                metadadosFatosCongelados, fatosColetadosLidos.ValoresSelecionaveis, calendarioDiasUteis, agregadosDosGrupos,
+                apresentacaoDosPressupostos));
+    }
+
+    /// <summary>
+    /// O rótulo e o tipo de campo de cada fato que as regras citam e nenhum formulário pergunta. O tipo é
+    /// um dos que o formulário renderiza, ou nulo; o código, um só por item.
+    /// </summary>
+    private static Dictionary<string, ApresentacaoDoFato> LerApresentacaoDosPressupostos(LeitorEnvelope leitor, JsonObject payload)
+    {
+        Dictionary<string, ApresentacaoDoFato> apresentacao = new(StringComparer.Ordinal);
+        if (leitor.Falhou)
+        {
+            return apresentacao;
+        }
+
+        JsonArray array = leitor.Array(payload, "apresentacaoDosPressupostos", "$");
+        for (int i = 0; !leitor.Falhou && i < array.Count; i++)
+        {
+            string path = $"apresentacaoDosPressupostos[{i}]";
+            JsonObject item = leitor.ItemObjeto(array, i, "apresentacaoDosPressupostos");
+            leitor.ExigirChaves(item, path, "fatoCodigo", "rotulo", "tipoRenderizacao");
+            string fatoCodigo = leitor.TextoNaoVazio(item, "fatoCodigo", path, FormaDoItem.FatoCodigoMaxLength);
+            string rotulo = leitor.TextoNaoVazio(item, "rotulo", path, LimitesDoEnvelope.NomeDeCadastro);
+            string? tipo = leitor.TextoOpcional(item, "tipoRenderizacao", path, LimitesDoEnvelope.Token);
+            if (leitor.Falhou)
+            {
+                break;
+            }
+
+            if (tipo is not null && TipoRenderizacaoCodigo.FromCodigo(tipo) == TipoRenderizacao.Nenhuma)
+            {
+                return leitor.Propagar<Dictionary<string, ApresentacaoDoFato>>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado,
+                    $"Envelope malformado em '{path}.tipoRenderizacao': '{tipo}' não é um tipo de campo.")) ?? apresentacao;
+            }
+
+            if (!apresentacao.TryAdd(fatoCodigo, new ApresentacaoDoFato(fatoCodigo, rotulo, tipo)))
+            {
+                return leitor.Propagar<Dictionary<string, ApresentacaoDoFato>>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado,
+                    $"Envelope malformado em 'apresentacaoDosPressupostos': o fato '{fatoCodigo}' aparece mais de uma vez.")) ?? apresentacao;
+            }
+        }
+
+        return apresentacao;
     }
 
     /// <summary>

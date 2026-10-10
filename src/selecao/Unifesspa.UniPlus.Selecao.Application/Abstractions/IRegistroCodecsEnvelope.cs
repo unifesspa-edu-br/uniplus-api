@@ -30,7 +30,8 @@ public sealed class EnvelopeReidratado
         IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadadosFatosCongelados = null,
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados = null,
         CalendarioDiasUteisCongelado? calendarioDiasUteis = null,
-        IReadOnlyList<DefinicaoAgregado>? agregadosDosGrupos = null)
+        IReadOnlyList<DefinicaoAgregado>? agregadosDosGrupos = null,
+        IReadOnlyDictionary<string, ApresentacaoDoFato>? apresentacaoDosPressupostos = null)
     {
         ArgumentNullException.ThrowIfNull(grafo);
         ArgumentNullException.ThrowIfNull(dados);
@@ -47,7 +48,15 @@ public sealed class EnvelopeReidratado
         ValoresSelecionaveisCongelados = valoresSelecionaveisCongelados;
         CalendarioDiasUteis = calendarioDiasUteis;
         AgregadosDosGrupos = agregadosDosGrupos ?? [];
+        ApresentacaoDosPressupostos = apresentacaoDosPressupostos ?? new Dictionary<string, ApresentacaoDoFato>(StringComparer.Ordinal);
     }
+
+    /// <summary>
+    /// A apresentação — rótulo e tipo de campo do catálogo — de cada fato que as regras citam e nenhum
+    /// formulário do processo pergunta, por código; fora de <see cref="GrafoConfiguracao"/> pela mesma
+    /// razão que <see cref="AgregadosDosGrupos"/>: é dado de catálogo.
+    /// </summary>
+    public IReadOnlyDictionary<string, ApresentacaoDoFato> ApresentacaoDosPressupostos { get; }
 
     /// <summary>
     /// Os agregados congelados junto dos grupos repetíveis — fora de <see cref="GrafoConfiguracao"/>

@@ -74,6 +74,9 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
                 FormasAceite.ParaTokenCanonico(versao.FormaAceite), versao.Hash));
         }
 
+        RecorteDaFinalidade recorte = RecorteDaFinalidade.DoFormulario(
+            conteudo.ParaAvaliacao(VocabularioDoCatalogo.RegrasDeDerivacao(fatos), agregados), VocabularioDoCatalogo.Ofertas(opcoes));
+
         return FormularioRenderizavel.Montar(
             EstruturaFormulario.ParaToken(modelo.Finalidade),
             conteudo.Titulo,
@@ -91,8 +94,9 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
             [.. conteudo.Grupos.OrderBy(static g => g.Ordem).Select(g => new GrupoRenderizavel(
                 g.Codigo, g.Ordem, g.EtapaCodigo, g.Rotulo, g.Minimo, g.Maximo, g.IncluiCandidato,
                 [.. g.Subitens.OrderBy(static s => s.Ordem).Select(s => Campo(s, opcoes))]))],
-            RecorteDaFinalidade.DoFormulario(conteudo.ParaAvaliacao(VocabularioDoCatalogo.RegrasDeDerivacao(fatos), agregados), VocabularioDoCatalogo.Ofertas(opcoes)),
+            recorte,
             camposDosOutrosFormularios: [],
+            VocabularioDoCatalogo.ApresentacaoDos(fatos, recorte.Pressupostos),
             agregados,
             dataReferenciaFatos: null);
     }

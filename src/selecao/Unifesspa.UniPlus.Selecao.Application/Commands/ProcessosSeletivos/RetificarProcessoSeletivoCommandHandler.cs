@@ -273,6 +273,14 @@ public static class RetificarProcessoSeletivoCommandHandler
             return (Result.Failure(valoresSelecionaveisResult.Error!), []);
         }
 
+        // Os fatos que as regras citam e nenhum formulário pergunta saem com o rótulo e o tipo do
+        // catálogo, congelados na versão; o fato citado sem cadastro recusa aqui, antes de canonicalizar.
+        Result<DefinicaoAvaliavel> avaliavel = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(processo, catalogoDeFatos);
+        if (avaliavel.IsFailure)
+        {
+            return (Result.Failure(avaliavel.Error!), []);
+        }
+
         // UNI-REQ-0116: UMA leitura do calendário vigente por operação. A mesma resposta
         // alimenta o gate da raiz e o bloco congelado do envelope — ler duas vezes abriria a
         // janela em que o dataset muda entre validar e congelar, e a versão publicada
@@ -304,7 +312,8 @@ public static class RetificarProcessoSeletivoCommandHandler
                 metadadosFatosResult.Value,
                 valoresSelecionaveisResult.Value,
                 contexto.CalendarioVigente,
-                DefinicaoAvaliavelDoProcesso.AgregadosDosGrupos(processo.GruposColetados, catalogoPorCodigo)));
+                DefinicaoAvaliavelDoProcesso.AgregadosDosGrupos(processo.GruposColetados, catalogoPorCodigo),
+                ApresentacaoDosPressupostos: avaliavel.Value!.ApresentacaoDosPressupostos));
 
         string atorUsuarioSub = userContext.UserId ?? "system";
 
