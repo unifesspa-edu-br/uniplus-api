@@ -220,4 +220,81 @@ public sealed class VeredictoDeSubmissaoTests
 
         recusas.Should().BeEmpty();
     }
+
+    private static readonly IReadOnlyDictionary<string, IReadOnlySet<string>> OfertaDeEstadoCivil =
+        new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal)
+        {
+            ["ESTADO_CIVIL"] = new HashSet<string>(["SOLTEIRO", "CASADO"], StringComparer.Ordinal),
+        };
+
+    private static readonly IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> SemGrupos =
+        new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal);
+
+    [Fact(DisplayName = "Resposta com código fora da oferta vigente recusa, mesmo que o avaliador a tenha descartado em silêncio")]
+    public void RecusasDeOpcaoForaDaOferta_CodigoForaDaOferta_Recusa()
+    {
+        Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal)
+        {
+            ["ESTADO_CIVIL"] = JsonSerializer.SerializeToElement("DIVORCIADO"),
+        };
+
+        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.RecusasDeOpcaoForaDaOferta(respostas, SemGrupos, OfertaDeEstadoCivil);
+
+        recusas.Should().ContainSingle(r => r.Field == "ESTADO_CIVIL" && r.Error.Code == "Inscricao.RespostaInvalida");
+    }
+
+    [Fact(DisplayName = "Resposta dentro da oferta vigente não recusa")]
+    public void RecusasDeOpcaoForaDaOferta_CodigoDentroDaOferta_NaoRecusa()
+    {
+        Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal)
+        {
+            ["ESTADO_CIVIL"] = JsonSerializer.SerializeToElement("CASADO"),
+        };
+
+        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.RecusasDeOpcaoForaDaOferta(respostas, SemGrupos, OfertaDeEstadoCivil);
+
+        recusas.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Resposta em branco não recusa, mesmo para fato ofertado")]
+    public void RecusasDeOpcaoForaDaOferta_RespostaEmBranco_NaoRecusa()
+    {
+        Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal)
+        {
+            ["ESTADO_CIVIL"] = JsonSerializer.SerializeToElement((string?)null),
+        };
+
+        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.RecusasDeOpcaoForaDaOferta(respostas, SemGrupos, OfertaDeEstadoCivil);
+
+        recusas.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Fato sem oferta declarada não recusa, qualquer que seja a resposta")]
+    public void RecusasDeOpcaoForaDaOferta_FatoSemOferta_NaoRecusa()
+    {
+        Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal)
+        {
+            ["APELIDO"] = JsonSerializer.SerializeToElement("qualquer coisa"),
+        };
+
+        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.RecusasDeOpcaoForaDaOferta(respostas, SemGrupos, OfertaDeEstadoCivil);
+
+        recusas.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Código fora da oferta dentro de uma ocorrência de grupo também recusa")]
+    public void RecusasDeOpcaoForaDaOferta_CodigoForaDaOfertaDentroDoGrupo_Recusa()
+    {
+        OcorrenciaDeGrupoInscricao ocorrencia = new(
+            "membro-1", new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["ESTADO_CIVIL"] = JsonSerializer.SerializeToElement("VIUVO") });
+        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = new(StringComparer.Ordinal)
+        {
+            ["COMPOSICAO_FAMILIAR"] = [ocorrencia],
+        };
+
+        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.RecusasDeOpcaoForaDaOferta(
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal), grupos, OfertaDeEstadoCivil);
+
+        recusas.Should().ContainSingle(r => r.Field == "COMPOSICAO_FAMILIAR.membro-1.ESTADO_CIVIL" && r.Error.Code == "Inscricao.RespostaInvalida");
+    }
 }

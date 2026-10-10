@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Services;
 
+using System.Text.Json;
+
 using Domain.Entities;
 using Domain.Errors;
 using Domain.Services;
@@ -99,6 +101,55 @@ public static class VeredictoDeSubmissao
         }
 
         return recusas;
+    }
+
+    /// <summary>
+    /// <see cref="FormularioPortavel.Avaliar"/> descarta em silêncio, via <c>RespostaDeCampo.DentroDaOferta</c>,
+    /// a resposta de um fato ofertado cujo código não pertence à oferta vigente — o item some da
+    /// avaliação como se não houvesse resposta, e a submissão recusaria no máximo por obrigatoriedade
+    /// (nunca por fato de o código ser inválido, e nem recusaria nada se o item for opcional). A
+    /// submissão precisa da recusa explícita: por isso esta checagem roda sobre as respostas BRUTAS,
+    /// antes de qualquer filtro, e sempre junto de <see cref="Avaliar"/> — nunca no lugar dele.
+    /// </summary>
+    public static IReadOnlyList<FieldError> RecusasDeOpcaoForaDaOferta(
+        IReadOnlyDictionary<string, JsonElement> respostas,
+        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
+        IReadOnlyDictionary<string, IReadOnlySet<string>> ofertas)
+    {
+        ArgumentNullException.ThrowIfNull(respostas);
+        ArgumentNullException.ThrowIfNull(grupos);
+        ArgumentNullException.ThrowIfNull(ofertas);
+
+        List<FieldError> recusas = [.. ForaDaOferta(respostas, ofertas, caminho: null)];
+        foreach ((string codigoGrupo, IReadOnlyList<OcorrenciaDeGrupoInscricao> ocorrencias) in grupos)
+        {
+            foreach (OcorrenciaDeGrupoInscricao ocorrencia in ocorrencias)
+            {
+                recusas.AddRange(ForaDaOferta(ocorrencia.Respostas, ofertas, caminho: $"{codigoGrupo}.{ocorrencia.Id}"));
+            }
+        }
+
+        return recusas;
+    }
+
+    private static IEnumerable<FieldError> ForaDaOferta(
+        IReadOnlyDictionary<string, JsonElement> respostas, IReadOnlyDictionary<string, IReadOnlySet<string>> ofertas, string? caminho)
+    {
+        foreach ((string fatoCodigo, JsonElement valor) in respostas)
+        {
+            if (!ofertas.TryGetValue(fatoCodigo, out IReadOnlySet<string>? oferta)
+                || RespostaDeCampo.EstaVazia(valor)
+                || RespostaDeCampo.Codigos(valor) is not { } codigos
+                || codigos.All(oferta.Contains))
+            {
+                continue;
+            }
+
+            yield return Recusa(
+                caminho is null ? fatoCodigo : $"{caminho}.{fatoCodigo}",
+                InscricaoErrorCodes.RespostaInvalida,
+                $"A resposta de '{fatoCodigo}' tem uma opção fora da oferta vigente.");
+        }
     }
 
     private static IEnumerable<FieldError> ProblemasDosItens(

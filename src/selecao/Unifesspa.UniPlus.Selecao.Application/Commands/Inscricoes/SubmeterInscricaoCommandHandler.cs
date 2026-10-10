@@ -120,8 +120,14 @@ public static class SubmeterInscricaoCommandHandler
             return Result<ComprovanteInscricaoDto>.Failure(avaliacao.Error!);
         }
 
-        IReadOnlyList<FieldError> recusas = Services.VeredictoDeSubmissao.Avaliar(
-            avaliacao.Value!, [.. contexto.Value!.TermosExigidos], aceites);
+        // O avaliador descarta em silêncio a resposta cujo código não pertence à oferta vigente
+        // (FormularioPortavel.Avaliar via RespostaDeCampo.DentroDaOferta) — sem esta checagem sobre
+        // as respostas BRUTAS, uma opção fora da oferta num campo opcional passaria sem recusa.
+        IReadOnlyList<FieldError> recusas =
+        [
+            .. Services.VeredictoDeSubmissao.RecusasDeOpcaoForaDaOferta(respostasFinais, grupos, contexto.Value!.Ofertas),
+            .. Services.VeredictoDeSubmissao.Avaliar(avaliacao.Value!, [.. contexto.Value!.TermosExigidos], aceites),
+        ];
         if (recusas.Count > 0)
         {
             return Result<ComprovanteInscricaoDto>.ValidationFailure(recusas);

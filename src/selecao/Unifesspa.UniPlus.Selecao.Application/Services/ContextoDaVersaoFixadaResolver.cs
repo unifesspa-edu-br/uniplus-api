@@ -17,7 +17,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 public sealed record ContextoDaVersaoFixada(
     FormularioPortavel Regras,
     IReadOnlyCollection<TermoExigidoFormulario> TermosExigidos,
-    DateOnly? DataReferenciaFatos);
+    DateOnly? DataReferenciaFatos,
+    IReadOnlyDictionary<string, IReadOnlySet<string>> Ofertas);
 
 public static class ContextoDaVersaoFixadaResolver
 {
@@ -71,6 +72,7 @@ public static class ContextoDaVersaoFixadaResolver
         IReadOnlyCollection<TermoExigidoFormulario> termos =
             [.. reidratado.Value!.Grafo.TermosExigidos.Where(static t => t.Finalidade == FinalidadeFormulario.Inscricao)];
 
-        return Result<ContextoDaVersaoFixada>.Success(new ContextoDaVersaoFixada(recorte.Regras, termos, dataReferencia.Value));
+        return Result<ContextoDaVersaoFixada>.Success(
+            new ContextoDaVersaoFixada(recorte.Regras, termos, dataReferencia.Value, avaliavel.Value!.Ofertas));
     }
 }
