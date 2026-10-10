@@ -19,6 +19,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -54,12 +55,14 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         ISelecaoUnitOfWork unitOfWork,
         IUserContext userContext,
         IConferenciaEnderecoGeo? conferenciaEnderecoGeo = null,
-        IGeradorDeNumeroInscricao? geradorDeNumeroInscricao = null) =>
+        IGeradorDeNumeroInscricao? geradorDeNumeroInscricao = null,
+        TimeProvider? relogio = null) =>
         SubmeterInscricaoCommandHandler.Handle(
-            command, inscricaoRepository, processoSeletivoRepository, registroCodecs,
+            command, inscricaoRepository, processoSeletivoRepository, DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs,
+            DivulgacaoDeTeste.Fuso(),
             conferenciaEnderecoGeo ?? ConferenciaQueAceitaTudo(),
             geradorDeNumeroInscricao ?? GeradorQueDevolve("00000001"),
-            unitOfWork, userContext, TimeProvider.System, CancellationToken.None);
+            unitOfWork, userContext, relogio ?? DivulgacaoDeTeste.Relogio, CancellationToken.None);
 
     private static IGeradorDeNumeroInscricao GeradorQueDevolve(string numero)
     {
@@ -173,19 +176,74 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
 
+        // A versão divulgada existe e o período está aberto; só a versão fixada pela inscrição sumiu.
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
+        (VersaoConfiguracao divulgada, GrafoConfiguracao grafo, _) = MontarVersaoComItemObrigatorioETermo();
+        DivulgacaoDeTeste.ConfigurarDivulgada(processoRepository, registroCodecs, divulgada, grafo);
         processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([]);
 
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
 
         Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags([existente.ETag])),
-            inscricaoRepository, processoRepository, Substitute.For<IRegistroCodecsEnvelope>(), unitOfWork, UsuarioComCpf(cpf));
+            inscricaoRepository, processoRepository, registroCodecs, unitOfWork, UsuarioComCpf(cpf));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Snapshot.VigenteAusente");
         await inscricaoRepository.DidNotReceive().AtualizarAsync(Arg.Any<Inscricao>(), Arg.Any<CancellationToken>());
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Fora do período da inscrição, enviar é recusado sem gerar número nem comprovante")]
+    public async Task Handle_ForaDoPeriodo_RecusaSemComprovante()
+    {
+        Cpf cpf = PersonasDeTeste.FernandaDrumond;
+        (VersaoConfiguracao versao, GrafoConfiguracao grafo, _) = MontarVersaoComItemObrigatorioETermo();
+        Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+
+        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
+        inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
+        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
+        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
+        IGeradorDeNumeroInscricao gerador = GeradorQueDevolve("00000001");
+
+        Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
+            new SubmeterInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags([existente.ETag])),
+            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf),
+            geradorDeNumeroInscricao: gerador, relogio: new RelogioFixo(DivulgacaoDeTeste.DentroDoPeriodo.AddMonths(1)));
+
+        resultado.Error!.Code.Should().Be(InscricaoErrorCodes.ForaDoPeriodo);
+        await gerador.DidNotReceive().ProximoAsync(Arg.Any<CancellationToken>());
+        await inscricaoRepository.DidNotReceive().AdicionarComprovanteAsync(Arg.Any<ComprovanteInscricao>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "A retificação que prorroga o período vale para quem já iniciou: envia depois do fim da versão fixada")]
+    public async Task Handle_PeriodoProrrogadoPelaRetificacao_Submete()
+    {
+        Cpf cpf = PersonasDeTeste.FernandaDrumond;
+        (VersaoConfiguracao fixada, GrafoConfiguracao grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
+        VersaoConfiguracao divulgada = VersaoConfiguracao.Abrir(
+            ProcessoId, Encoding.UTF8.GetBytes("""{"documentosExigidos":{"dataReferenciaFatos":"2026-12-10"}}"""), "0.0.22", "canonical-json/sha256@v1",
+            Guid.CreateVersion7(), new string('c', 64), "user-sub-1", new DateTimeOffset(2026, 10, 11, 12, 0, 0, TimeSpan.Zero));
+        Inscricao existente = NovaInscricao(cpf, "sub-1", fixada.Id);
+
+        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
+        inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
+        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
+        DivulgacaoDeTeste.ConfigurarFixadaEDivulgada(
+            processoRepository, registroCodecs, grafo,
+            fixada: (fixada, DivulgacaoDeTeste.FimDoPeriodo),
+            divulgada: (divulgada, DivulgacaoDeTeste.FimDoPeriodo.AddDays(30)));
+
+        Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
+            new SubmeterInscricaoCommand(ProcessoId, RequestComApelidoETermoAceito(cpf, termo, grafo), PrecondicaoIfMatch.DeTags([existente.ETag])),
+            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf),
+            geradorDeNumeroInscricao: GeradorQueDevolve("00000007"), relogio: new RelogioFixo(DivulgacaoDeTeste.FimDoPeriodo.AddDays(10)));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
     /// <summary>Um item obrigatório na seção do formulário, mais um termo obrigatório exigido na mesma finalidade.</summary>
@@ -223,16 +281,6 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         return (versao, grafo, versaoDoTermo);
     }
 
-    private static void ConfigurarCodecs(IRegistroCodecsEnvelope registroCodecs, VersaoConfiguracao versao, GrafoConfiguracao grafo)
-    {
-        EnvelopeReidratado envelopeReidratado = new(
-            grafo, DadosEdital.Criar("001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), Guid.CreateVersion7()).Value!,
-            new string('a', 64), "America/Belem", retificacao: null, conformidade: null);
-
-        registroCodecs.Capacidades.Returns([new CapacidadeCodec("0.0.22", TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null)]);
-        registroCodecs.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(envelopeReidratado));
-    }
-
     private static InscricaoRequest RequestComApelidoETermoAceito(
         Cpf cpf, VersaoTermoEscolhida termo, GrafoConfiguracao grafo, string apelido = "Nanda")
     {
@@ -254,10 +302,9 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
 
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
 
         IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
-        ConfigurarCodecs(registroCodecs, versao, grafo);
+        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
 
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         IGeradorDeNumeroInscricao gerador = GeradorQueDevolve("00000042");
@@ -287,10 +334,9 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
 
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
 
         IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
-        ConfigurarCodecs(registroCodecs, versao, grafo);
+        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
 
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         IGeradorDeNumeroInscricao gerador = Substitute.For<IGeradorDeNumeroInscricao>();
@@ -323,10 +369,9 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
 
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
 
         IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
-        ConfigurarCodecs(registroCodecs, versao, grafo);
+        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
 
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
 
@@ -357,10 +402,9 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
 
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
 
         IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
-        ConfigurarCodecs(registroCodecs, versao, grafo);
+        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
 
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
 
@@ -405,10 +449,9 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
 
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
 
         IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
-        ConfigurarCodecs(registroCodecs, versao, grafo);
+        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
 
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
 
@@ -436,10 +479,9 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
 
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
 
         IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
-        ConfigurarCodecs(registroCodecs, versao, grafo);
+        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
 
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())

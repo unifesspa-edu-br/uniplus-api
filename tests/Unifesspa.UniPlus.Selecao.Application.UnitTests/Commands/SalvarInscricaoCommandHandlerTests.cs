@@ -54,8 +54,8 @@ public sealed class SalvarInscricaoCommandHandlerTests
 
         Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
             new SalvarInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags(["\"x\""])),
-            inscricaoRepository, Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(),
-            Substitute.For<ISelecaoUnitOfWork>(), userContext, CancellationToken.None);
+            inscricaoRepository, Substitute.For<IProcessoSeletivoRepository>(), DivulgacaoDeTeste.Certame(ProcessoId), Substitute.For<IRegistroCodecsEnvelope>(), DivulgacaoDeTeste.Fuso(),
+            Substitute.For<ISelecaoUnitOfWork>(), userContext, DivulgacaoDeTeste.Relogio, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.CpfAusenteNoToken");
@@ -71,8 +71,8 @@ public sealed class SalvarInscricaoCommandHandlerTests
 
         Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
             new SalvarInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags(["\"x\""])),
-            inscricaoRepository, Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(),
-            Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf), CancellationToken.None);
+            inscricaoRepository, Substitute.For<IProcessoSeletivoRepository>(), DivulgacaoDeTeste.Certame(ProcessoId), Substitute.For<IRegistroCodecsEnvelope>(), DivulgacaoDeTeste.Fuso(),
+            Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf), DivulgacaoDeTeste.Relogio, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.NaoEncontrada");
@@ -90,8 +90,8 @@ public sealed class SalvarInscricaoCommandHandlerTests
 
         Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
             new SalvarInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags([existente.ETag])),
-            inscricaoRepository, Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(),
-            unitOfWork, UsuarioComCpf(cpf, sub: "sub-outro"), CancellationToken.None);
+            inscricaoRepository, Substitute.For<IProcessoSeletivoRepository>(), DivulgacaoDeTeste.Certame(ProcessoId), Substitute.For<IRegistroCodecsEnvelope>(), DivulgacaoDeTeste.Fuso(),
+            unitOfWork, UsuarioComCpf(cpf, sub: "sub-outro"), DivulgacaoDeTeste.Relogio, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.DonoDivergente");
@@ -107,14 +107,20 @@ public sealed class SalvarInscricaoCommandHandlerTests
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
 
+        // A versão divulgada existe e o período está aberto; só a versão fixada pela inscrição sumiu.
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
+        (VersaoConfiguracao divulgada, GrafoConfiguracao grafo) = MontarVersaoComItem(FatoColetado.Criar(
+            "APELIDO", 0, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null,
+            classificacaoProtecao: "PESSOAL", formato: "LIVRE").Value!);
+        DivulgacaoDeTeste.ConfigurarDivulgada(processoRepository, registroCodecs, divulgada, grafo);
         processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([]);
 
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
 
         Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
             new SalvarInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags([existente.ETag])),
-            inscricaoRepository, processoRepository, Substitute.For<IRegistroCodecsEnvelope>(), unitOfWork, UsuarioComCpf(cpf), CancellationToken.None);
+            inscricaoRepository, processoRepository, DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(), unitOfWork, UsuarioComCpf(cpf), DivulgacaoDeTeste.Relogio, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Snapshot.VigenteAusente");
@@ -150,14 +156,60 @@ public sealed class SalvarInscricaoCommandHandlerTests
         return (versao, grafo);
     }
 
-    private static void ConfigurarCodecs(IRegistroCodecsEnvelope registroCodecs, VersaoConfiguracao versao, GrafoConfiguracao grafo)
+    [Fact(DisplayName = "Fora do período da inscrição, salvar é recusado sem gravar nada")]
+    public async Task Handle_ForaDoPeriodo_RecusaSemGravar()
     {
-        EnvelopeReidratado envelopeReidratado = new(
-            grafo, DadosEdital.Criar("001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), Guid.CreateVersion7()).Value!,
-            new string('a', 64), "America/Belem", retificacao: null, conformidade: null);
+        Cpf cpf = PersonasDeTeste.FernandaDrumond;
+        FatoColetado item = FatoColetado.Criar(
+            "APELIDO", 0, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null,
+            classificacaoProtecao: "PESSOAL", formato: "LIVRE").Value!;
+        (VersaoConfiguracao versao, GrafoConfiguracao grafo) = MontarVersaoComItem(item);
+        Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
 
-        registroCodecs.Capacidades.Returns([new CapacidadeCodec("0.0.22", TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null)]);
-        registroCodecs.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(envelopeReidratado));
+        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
+        inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
+        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
+        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+
+        Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
+            new SalvarInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags([existente.ETag])),
+            inscricaoRepository, processoRepository, DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(),
+            unitOfWork, UsuarioComCpf(cpf), new RelogioFixo(DivulgacaoDeTeste.DentroDoPeriodo.AddMonths(1)), CancellationToken.None);
+
+        resultado.Error!.Code.Should().Be(InscricaoErrorCodes.ForaDoPeriodo);
+        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "A retificação que prorroga o período vale para quem já iniciou: salva depois do fim da versão fixada")]
+    public async Task Handle_PeriodoProrrogadoPelaRetificacao_Salva()
+    {
+        Cpf cpf = PersonasDeTeste.FernandaDrumond;
+        FatoColetado item = FatoColetado.Criar(
+            "APELIDO", 0, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null,
+            classificacaoProtecao: "PESSOAL", formato: "LIVRE").Value!;
+        (VersaoConfiguracao fixada, GrafoConfiguracao grafo) = MontarVersaoComItem(item);
+        (VersaoConfiguracao divulgada, _) = MontarVersaoComItem(item);
+        Inscricao existente = NovaInscricao(cpf, "sub-1", fixada.Id);
+
+        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
+        inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
+        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
+        DivulgacaoDeTeste.ConfigurarFixadaEDivulgada(
+            processoRepository, registroCodecs, grafo,
+            fixada: (fixada, DivulgacaoDeTeste.FimDoPeriodo),
+            divulgada: (divulgada, DivulgacaoDeTeste.FimDoPeriodo.AddDays(30)));
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+
+        Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
+            new SalvarInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags([existente.ETag])),
+            inscricaoRepository, processoRepository, DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(),
+            unitOfWork, UsuarioComCpf(cpf), new RelogioFixo(DivulgacaoDeTeste.FimDoPeriodo.AddDays(10)), CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        await unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Resposta dentro do tamanho permitido é salva, sobre a versão fixada ao iniciar")]
@@ -175,10 +227,9 @@ public sealed class SalvarInscricaoCommandHandlerTests
         inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
 
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
 
         IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
-        ConfigurarCodecs(registroCodecs, versao, grafo);
+        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
 
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         InscricaoRequest request = new(
@@ -186,7 +237,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
 
         Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
             new SalvarInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
-            inscricaoRepository, processoRepository, registroCodecs, unitOfWork, UsuarioComCpf(cpf), CancellationToken.None);
+            inscricaoRepository, processoRepository, DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(), unitOfWork, UsuarioComCpf(cpf), DivulgacaoDeTeste.Relogio, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Respostas.Should().ContainKey("APELIDO").WhoseValue.GetString().Should().Be("Nanda");
@@ -209,10 +260,9 @@ public sealed class SalvarInscricaoCommandHandlerTests
         inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
 
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
 
         IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
-        ConfigurarCodecs(registroCodecs, versao, grafo);
+        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
 
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
 
@@ -222,7 +272,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
 
         Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
             new SalvarInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
-            inscricaoRepository, processoRepository, registroCodecs, unitOfWork, UsuarioComCpf(cpf), CancellationToken.None);
+            inscricaoRepository, processoRepository, DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(), unitOfWork, UsuarioComCpf(cpf), DivulgacaoDeTeste.Relogio, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle(e => e.Field == "APELIDO" && e.Error.Code == "Inscricao.RespostaInvalida");
@@ -251,10 +301,9 @@ public sealed class SalvarInscricaoCommandHandlerTests
         inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
 
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
 
         IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
-        ConfigurarCodecs(registroCodecs, versao, grafo);
+        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
 
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
 
@@ -263,10 +312,49 @@ public sealed class SalvarInscricaoCommandHandlerTests
 
         Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
             new SalvarInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
-            inscricaoRepository, processoRepository, registroCodecs, unitOfWork, UsuarioComCpf(cpf), CancellationToken.None);
+            inscricaoRepository, processoRepository, DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(), unitOfWork, UsuarioComCpf(cpf), DivulgacaoDeTeste.Relogio, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.RascunhoSoAntesDoEnvio);
+        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Inscrição já enviada, fora do período, recusa pelo período: o novo envio que a outra recusa orienta também seria recusado")]
+    public async Task Handle_InscricaoEnviadaForaDoPeriodo_RecusaPeloPeriodo()
+    {
+        Cpf cpf = PersonasDeTeste.KevinCarvalho;
+
+        FatoColetado item = FatoColetado.Criar(
+            "APELIDO", 0, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
+            classificacaoProtecao: "PESSOAL", formato: "LIVRE", restricoes: [new TamanhoTexto(1, 5)]).Value!;
+        (VersaoConfiguracao versao, GrafoConfiguracao grafo) = MontarVersaoComItem(item);
+        Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+        Dictionary<string, JsonElement> semRespostas = new(StringComparer.Ordinal);
+        existente.Submeter(
+            "000001", null, semRespostas, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [],
+            new RespostasAdmitidas(new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal), new HashSet<Guid>()),
+            semRespostas, new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal),
+            PrecondicaoIfMatch.DeTags([existente.ETag]), DateTimeOffset.UnixEpoch).IsSuccess.Should().BeTrue();
+
+        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
+        inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
+
+        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+
+        IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
+        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
+
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+
+        InscricaoRequest request = new(
+            null, new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["APELIDO"] = JsonSerializer.SerializeToElement("Apelido Enorme") }, null, null);
+
+        Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
+            new SalvarInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
+            inscricaoRepository, processoRepository, DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(), unitOfWork, UsuarioComCpf(cpf), new RelogioFixo(DivulgacaoDeTeste.DentroDoPeriodo.AddMonths(1)), CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(InscricaoErrorCodes.ForaDoPeriodo);
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -292,10 +380,9 @@ public sealed class SalvarInscricaoCommandHandlerTests
         inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
 
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
 
         IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
-        ConfigurarCodecs(registroCodecs, versao, grafo);
+        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
 
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
 
@@ -318,7 +405,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
 
         Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
             new SalvarInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
-            inscricaoRepository, processoRepository, registroCodecs, unitOfWork, UsuarioComCpf(cpf), CancellationToken.None);
+            inscricaoRepository, processoRepository, DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(), unitOfWork, UsuarioComCpf(cpf), DivulgacaoDeTeste.Relogio, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle(e =>

@@ -39,6 +39,8 @@ public static class IniciarInscricaoCommandHandler
         ICertameDivulgadoRepository certameDivulgadoRepository,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegistroCodecsEnvelope registroCodecs,
+        IResolvedorFusoInstitucional resolvedorFuso,
+        TimeProvider timeProvider,
         ISelecaoUnitOfWork unitOfWork,
         IUserContext userContext,
         CancellationToken cancellationToken)
@@ -48,6 +50,8 @@ public static class IniciarInscricaoCommandHandler
         ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(registroCodecs);
+        ArgumentNullException.ThrowIfNull(resolvedorFuso);
+        ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(userContext);
 
@@ -76,18 +80,23 @@ public static class IniciarInscricaoCommandHandler
             return Result<InscricaoDto>.Success(InscricaoDto.De(existente));
         }
 
-        Result<Guid> versaoDivulgada =
-            await ResolverVersaoDivulgadaAsync(
-                command.ProcessoSeletivoId, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, cancellationToken)
-                .ConfigureAwait(false);
+        Result<Services.VersaoDivulgada> versaoDivulgada = await Services.VersaoDivulgadaResolver
+            .ResolverAsync(command.ProcessoSeletivoId, certameDivulgadoRepository, processoSeletivoRepository, cancellationToken)
+            .ConfigureAwait(false);
         if (versaoDivulgada.IsFailure)
         {
             return Result<InscricaoDto>.Failure(versaoDivulgada.Error!);
         }
 
+        // A inscrição já existente é devolvida acima mesmo fora do período: devolvê-la é leitura.
+        if (Services.PeriodoDaInscricaoResolver.Conferir(versaoDivulgada.Value!.Versao, registroCodecs, resolvedorFuso, timeProvider) is { } foraDoPeriodo)
+        {
+            return Result<InscricaoDto>.Failure(foraDoPeriodo);
+        }
+
         Result<Inscricao> iniciar = Inscricao.Iniciar(
             command.ProcessoSeletivoId, cpf, userContext.UserId ?? string.Empty, userContext.Issuer ?? string.Empty,
-            versaoDivulgada.Value);
+            versaoDivulgada.Value!.Versao.Id);
         if (iniciar.IsFailure)
         {
             return Result<InscricaoDto>.Failure(iniciar.Error!);
@@ -120,48 +129,5 @@ public static class IniciarInscricaoCommandHandler
         }
 
         return Result<InscricaoDto>.Success(InscricaoDto.De(inscricao));
-    }
-
-    /// <summary>
-    /// A versão que o certame divulgado serve — mesma resolução de
-    /// <c>ObterFormularioRenderizavelQueryHandler</c> (divulgação, nunca relógio).
-    /// </summary>
-    private static async Task<Result<Guid>> ResolverVersaoDivulgadaAsync(
-        Guid processoSeletivoId,
-        ICertameDivulgadoRepository certameDivulgadoRepository,
-        IProcessoSeletivoRepository processoSeletivoRepository,
-        IRegistroCodecsEnvelope registroCodecs,
-        CancellationToken cancellationToken)
-    {
-        CertameDivulgado? divulgado = await certameDivulgadoRepository
-            .ObterParaLeituraAsync(processoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-        if (divulgado is null)
-        {
-            return Result<Guid>.Failure(new DomainError(
-                "ProcessoSeletivo.NaoEncontrado",
-                $"Processo Seletivo {processoSeletivoId} não encontrado."));
-        }
-
-        IReadOnlyList<VersaoConfiguracao> versoes = await processoSeletivoRepository
-            .ObterVersoesPorAtoCriadorAsync([divulgado.AtoCriadorId], cancellationToken)
-            .ConfigureAwait(false);
-        if (versoes.Count == 0)
-        {
-            return Result<Guid>.Failure(new DomainError(
-                "Snapshot.VigenteAusente",
-                $"A divulgação do processo {processoSeletivoId} aponta uma versão de configuração que não existe."));
-        }
-
-        VersaoConfiguracao versao = versoes[0];
-
-        if (!registroCodecs.SabeLer(versao.SchemaVersion))
-        {
-            return Result<Guid>.Failure(new DomainError(
-                ErrosCodecEnvelope.VersaoDesconhecida,
-                $"A versão '{versao.SchemaVersion}' do envelope congelado não está entre as capacidades de leitura reconhecidas pelo codec vivo."));
-        }
-
-        return Result<Guid>.Success(versao.Id);
     }
 }

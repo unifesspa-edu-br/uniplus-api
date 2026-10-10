@@ -24,4 +24,7 @@ public static class FusoInstitucional
 {
     /// <summary>Identificador IANA da zona do estado em que a instituição opera.</summary>
     public const string ZoneId = "America/Belem";
+
+    /// <summary>O nome da zona como o candidato o lê, em "no horário de …".</summary>
+    public const string Nome = "Belém (PA)";
 }

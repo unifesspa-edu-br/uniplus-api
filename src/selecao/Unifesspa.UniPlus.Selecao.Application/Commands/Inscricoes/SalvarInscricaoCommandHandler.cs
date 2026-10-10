@@ -29,17 +29,23 @@ public static class SalvarInscricaoCommandHandler
         SalvarInscricaoCommand command,
         IInscricaoRepository inscricaoRepository,
         IProcessoSeletivoRepository processoSeletivoRepository,
+        ICertameDivulgadoRepository certameDivulgadoRepository,
         IRegistroCodecsEnvelope registroCodecs,
+        IResolvedorFusoInstitucional resolvedorFuso,
         ISelecaoUnitOfWork unitOfWork,
         IUserContext userContext,
+        TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(inscricaoRepository);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
+        ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
         ArgumentNullException.ThrowIfNull(registroCodecs);
+        ArgumentNullException.ThrowIfNull(resolvedorFuso);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(userContext);
+        ArgumentNullException.ThrowIfNull(timeProvider);
 
         if (userContext.Cpf is not { } cpfDoToken)
         {
@@ -70,8 +76,17 @@ public static class SalvarInscricaoCommandHandler
             return Result<InscricaoDto>.Failure(erroDono);
         }
 
+        DomainError? foraDoPeriodo = await Services.PeriodoDaInscricaoResolver.ConferirAsync(
+            command.ProcessoSeletivoId, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, resolvedorFuso,
+            timeProvider, cancellationToken).ConfigureAwait(false);
+        if (foraDoPeriodo is not null)
+        {
+            return Result<InscricaoDto>.Failure(foraDoPeriodo);
+        }
+
         // A inscrição enviada não aceita rascunho: recusar antes das respostas evita pedir correção
-        // de um campo numa gravação que não seria aceita de jeito nenhum.
+        // de um campo numa gravação que não seria aceita de jeito nenhum. Vem depois do período,
+        // porque fora dele nem o novo envio que a recusa orienta seria aceito.
         if (inscricao.ConferirAindaEmRascunho() is { } erroRascunho)
         {
             return Result<InscricaoDto>.Failure(erroRascunho);

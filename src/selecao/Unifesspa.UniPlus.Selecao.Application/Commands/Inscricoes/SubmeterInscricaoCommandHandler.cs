@@ -31,7 +31,9 @@ public static class SubmeterInscricaoCommandHandler
         SubmeterInscricaoCommand command,
         IInscricaoRepository inscricaoRepository,
         IProcessoSeletivoRepository processoSeletivoRepository,
+        ICertameDivulgadoRepository certameDivulgadoRepository,
         IRegistroCodecsEnvelope registroCodecs,
+        IResolvedorFusoInstitucional resolvedorFuso,
         IConferenciaEnderecoGeo conferenciaEnderecoGeo,
         IGeradorDeNumeroInscricao geradorDeNumeroInscricao,
         ISelecaoUnitOfWork unitOfWork,
@@ -42,7 +44,9 @@ public static class SubmeterInscricaoCommandHandler
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(inscricaoRepository);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
+        ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
         ArgumentNullException.ThrowIfNull(registroCodecs);
+        ArgumentNullException.ThrowIfNull(resolvedorFuso);
         ArgumentNullException.ThrowIfNull(conferenciaEnderecoGeo);
         ArgumentNullException.ThrowIfNull(geradorDeNumeroInscricao);
         ArgumentNullException.ThrowIfNull(unitOfWork);
@@ -76,6 +80,14 @@ public static class SubmeterInscricaoCommandHandler
         if (inscricao.ConferirDono(userContext.UserId ?? string.Empty) is { } erroDono)
         {
             return Result<ComprovanteInscricaoDto>.Failure(erroDono);
+        }
+
+        DomainError? foraDoPeriodo = await Services.PeriodoDaInscricaoResolver.ConferirAsync(
+            command.ProcessoSeletivoId, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, resolvedorFuso,
+            timeProvider, cancellationToken).ConfigureAwait(false);
+        if (foraDoPeriodo is not null)
+        {
+            return Result<ComprovanteInscricaoDto>.Failure(foraDoPeriodo);
         }
 
         Result<Services.ContextoDaVersaoFixada> contexto = await Services.ContextoDaVersaoFixadaResolver.ResolverAsync(

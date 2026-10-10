@@ -182,6 +182,16 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         return (processo.Id, dados);
     }
 
+    /// <summary>Dentro da janela da fase que coleta a inscrição no processo publicado por este teste.</summary>
+    private static readonly TimeProvider DentroDoPeriodo = new RelogioFixo(new DateTimeOffset(2026, 1, 15, 12, 0, 0, TimeSpan.Zero));
+
+    private static IResolvedorFusoInstitucional Fuso()
+    {
+        IResolvedorFusoInstitucional fuso = Substitute.For<IResolvedorFusoInstitucional>();
+        fuso.Resolver().Returns(Result<TimeZoneInfo>.Success(TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId)));
+        return fuso;
+    }
+
     private static IUserContext UsuarioComCpf(Cpf cpf)
     {
         IUserContext contexto = Substitute.For<IUserContext>();
@@ -206,7 +216,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
         Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
             new IniciarInscricaoCommand(processoId),
-            inscricaoRepository, divulgadoRepository, processoRepository, RegistroCodecs, writeContext,
+            inscricaoRepository, divulgadoRepository, processoRepository, RegistroCodecs, Fuso(), DentroDoPeriodo, writeContext,
             UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None);
 
         iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
@@ -239,7 +249,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
             new IniciarInscricaoCommand(processoId),
             inscricaoRepository, new CertameDivulgadoRepository(writeContext), new ProcessoSeletivoRepository(writeContext, TimeProvider.System),
-            RegistroCodecs, writeContext, UsuarioComCpf(PersonasDeTeste.KevinCarvalho), CancellationToken.None);
+            RegistroCodecs, Fuso(), DentroDoPeriodo, writeContext, UsuarioComCpf(PersonasDeTeste.KevinCarvalho), CancellationToken.None);
         iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
 
         Inscricao? inscricao = await inscricaoRepository.ObterPorIdAsync(iniciar.Value!.Id);

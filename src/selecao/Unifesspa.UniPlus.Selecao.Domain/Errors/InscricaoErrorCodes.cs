@@ -16,6 +16,8 @@ public static class InscricaoErrorCodes
     public const string OfertaForaDoProcesso = "Inscricao.OfertaForaDoProcesso";
     public const string OfertaObrigatoria = "Inscricao.OfertaObrigatoria";
     public const string RascunhoSoAntesDoEnvio = "Inscricao.RascunhoSoAntesDoEnvio";
+    public const string ForaDoPeriodo = "Inscricao.ForaDoPeriodo";
+    public const string ProcessoSemInscricao = "Inscricao.ProcessoSemInscricao";
 
     // Veredito de submissão (issue #1859) — só avaliados no POST .../submissao, nunca no PUT do
     // rascunho, que não exige obrigatórios.

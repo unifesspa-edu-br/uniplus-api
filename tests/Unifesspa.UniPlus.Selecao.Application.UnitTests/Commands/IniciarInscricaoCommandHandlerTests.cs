@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -47,6 +48,8 @@ public sealed class IniciarInscricaoCommandHandlerTests
             Substitute.For<ICertameDivulgadoRepository>(),
             Substitute.For<IProcessoSeletivoRepository>(),
             Substitute.For<IRegistroCodecsEnvelope>(),
+            Fuso(),
+            TimeProvider.System,
             Substitute.For<ISelecaoUnitOfWork>(),
             userContext,
             CancellationToken.None);
@@ -56,7 +59,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
         await inscricaoRepository.DidNotReceive().ObterPorProcessoECpfAsync(Arg.Any<Guid>(), Arg.Any<Cpf>(), Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Inscrição já existente para o CPF e o processo: devolve a existente, sem gravar nada")]
+    [Fact(DisplayName = "Inscrição já existente para o CPF e o processo: devolve a existente, mesmo fora do período, sem gravar nada")]
     public async Task Handle_InscricaoJaExiste_DevolveAExistenteSemGravar()
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
@@ -74,6 +77,8 @@ public sealed class IniciarInscricaoCommandHandlerTests
             Substitute.For<ICertameDivulgadoRepository>(),
             Substitute.For<IProcessoSeletivoRepository>(),
             Substitute.For<IRegistroCodecsEnvelope>(),
+            Fuso(),
+            new RelogioFixo(DentroDoPeriodo.AddYears(4)),
             unitOfWork,
             UsuarioComCpf(cpf),
             CancellationToken.None);
@@ -101,6 +106,8 @@ public sealed class IniciarInscricaoCommandHandlerTests
             divulgadoRepository,
             Substitute.For<IProcessoSeletivoRepository>(),
             Substitute.For<IRegistroCodecsEnvelope>(),
+            Fuso(),
+            TimeProvider.System,
             Substitute.For<ISelecaoUnitOfWork>(),
             UsuarioComCpf(cpf),
             CancellationToken.None);
@@ -113,7 +120,41 @@ public sealed class IniciarInscricaoCommandHandlerTests
     public async Task Handle_CriaNova_FixaVersaoDivulgada()
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
+        Cenario cenario = MontarCriacao(cpf);
+        Inscricao? gravada = null;
+        cenario.Inscricoes.WhenForAnyArgs(r => r.AdicionarAsync(default!, default))
+            .Do(call => gravada = call.Arg<Inscricao>());
 
+        Result<InscricaoDto> resultado = await Iniciar(cenario, cpf, new RelogioFixo(DentroDoPeriodo));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.VersaoFormularioId.Should().Be(cenario.Versao.Id);
+        gravada!.VersaoFormularioId.Should().Be(cenario.Versao.Id);
+    }
+
+    [Fact(DisplayName = "Depois do fim do período, criar a inscrição é recusado sem gravar nada")]
+    public async Task Handle_CriaNovaForaDoPeriodo_Recusa()
+    {
+        Cpf cpf = PersonasDeTeste.FernandaDrumond;
+        Cenario cenario = MontarCriacao(cpf);
+
+        Result<InscricaoDto> resultado = await Iniciar(cenario, cpf, new RelogioFixo(DentroDoPeriodo.AddMonths(1)));
+
+        resultado.Error!.Code.Should().Be(InscricaoErrorCodes.ForaDoPeriodo);
+        await cenario.Inscricoes.DidNotReceiveWithAnyArgs().AdicionarAsync(default!, default);
+    }
+
+    private static readonly DateTimeOffset DentroDoPeriodo = DivulgacaoDeTeste.DentroDoPeriodo;
+
+    private sealed record Cenario(
+        IInscricaoRepository Inscricoes,
+        ICertameDivulgadoRepository Divulgados,
+        IProcessoSeletivoRepository Processos,
+        IRegistroCodecsEnvelope Codecs,
+        VersaoConfiguracao Versao);
+
+    private static Cenario MontarCriacao(Cpf cpf)
+    {
         ProcessoSeletivo processoBase = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Inscrição");
         GrupoColetado grupoComDocumento = GrupoColetado.Criar(
             "COMPOSICAO_FAMILIAR", 0, etapaCodigo: null, "Composição familiar",
@@ -132,6 +173,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
                 FatoColetado.Criar("RG_NUMERO", 0, "RG", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null, classificacaoProtecao: "IDENTIFICADOR", formato: "LIVRE").Value!,
                 FatoColetado.Criar("NOME_SOCIAL", 1, "Nome social", TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", formato: "LIVRE").Value!,
             ],
+            formularios: [.. processoBase.Formularios],
             gruposColetados: [grupoComDocumento]);
 
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
@@ -145,7 +187,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
 
         EnvelopeReidratado envelopeReidratado = new(
             grafo,
-            DadosEdital.Criar("001/2026", DataHoraFixa, DataHoraFixa.AddDays(30), Guid.CreateVersion7()).Value!,
+            DadosEdital.Criar("001/2026", DivulgacaoDeTeste.InicioDoPeriodo, DivulgacaoDeTeste.FimDoPeriodo, Guid.CreateVersion7()).Value!,
             new string('a', 64), "America/Belem", retificacao: null, conformidade: null);
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
@@ -162,23 +204,27 @@ public sealed class IniciarInscricaoCommandHandlerTests
         registroCodecs.Capacidades.Returns([new CapacidadeCodec("0.0.22", TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null)]);
         registroCodecs.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(envelopeReidratado));
 
-        Inscricao? gravada = null;
-        inscricaoRepository.WhenForAnyArgs(r => r.AdicionarAsync(default!, default))
-            .Do(call => gravada = call.Arg<Inscricao>());
+        return new Cenario(inscricaoRepository, divulgadoRepository, processoRepository, registroCodecs, versao);
+    }
 
-        Result<InscricaoDto> resultado = await IniciarInscricaoCommandHandler.Handle(
+    private static Task<Result<InscricaoDto>> Iniciar(Cenario cenario, Cpf cpf, TimeProvider relogio) =>
+        IniciarInscricaoCommandHandler.Handle(
             new IniciarInscricaoCommand(ProcessoId),
-            inscricaoRepository,
-            divulgadoRepository,
-            processoRepository,
-            registroCodecs,
+            cenario.Inscricoes,
+            cenario.Divulgados,
+            cenario.Processos,
+            cenario.Codecs,
+            Fuso(),
+            relogio,
             Substitute.For<ISelecaoUnitOfWork>(),
             UsuarioComCpf(cpf),
             CancellationToken.None);
 
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.VersaoFormularioId.Should().Be(versao.Id);
-        gravada!.VersaoFormularioId.Should().Be(versao.Id);
+    private static IResolvedorFusoInstitucional Fuso()
+    {
+        IResolvedorFusoInstitucional fuso = Substitute.For<IResolvedorFusoInstitucional>();
+        fuso.Resolver().Returns(Result<TimeZoneInfo>.Success(TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId)));
+        return fuso;
     }
 
     private static IUserContext UsuarioComCpf(Cpf cpf)
