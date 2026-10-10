@@ -74,7 +74,7 @@ public sealed class ProcessoSeletivoPublicarTests
             regraDistribuicao: regraDistribuicao,
             regraAjuste: null,
             referenciaDemografica: null,
-            modalidades: [modalidade]).Value!;
+            modalidades: [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
         processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ReferenciaRegra regraCalculo = ReferenciaRegra.Criar(
@@ -736,7 +736,7 @@ public sealed class ProcessoSeletivoPublicarTests
                 regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Lei12711, "v1", HashFixo).Value!,
                 regraAjuste: ReferenciaRegra.Criar("RECONCILIACAO-VAGAS-ART11-PU", "v1", HashFixo).Value!,
                 referenciaDemografica: ReferenciaReservaDemograficaSnapshot.Criar(Guid.CreateVersion7(), "2022", 79m, 1.5m, 8.5m, "Censo 2022").Value!,
-                modalidades: modalidadesFederais).Value!;
+                modalidades: modalidadesFederais, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
             processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
             processo.DefinirCascataRemanejamento(CascataLegalCompleta(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         }
@@ -749,7 +749,7 @@ public sealed class ProcessoSeletivoPublicarTests
                 regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!,
                 regraAjuste: null,
                 referenciaDemografica: null,
-                modalidades: [modalidade]).Value!;
+                modalidades: [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
             processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         }
 

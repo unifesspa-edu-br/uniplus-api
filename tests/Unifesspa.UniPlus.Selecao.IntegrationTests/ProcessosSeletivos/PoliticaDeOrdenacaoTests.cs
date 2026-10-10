@@ -119,7 +119,7 @@ public sealed class PoliticaDeOrdenacaoTests
             ModalidadeSelecionada.Criar(
                 Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
                 RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
-        ]).Value!;
+        ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
 
     private static FaseCronograma FaseMinima() => FaseCronograma.Criar(
         ordem: 1,

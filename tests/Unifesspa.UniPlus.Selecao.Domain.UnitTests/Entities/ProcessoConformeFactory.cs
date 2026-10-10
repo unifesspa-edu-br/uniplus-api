@@ -69,7 +69,7 @@ internal static class ProcessoConformeFactory
                         acaoQuandoIndeferido: null,
                         baseLegal: "Res. Unifesspa 532/2021",
                         quantidadeDeclarada: 40).Value!,
-                ]).Value!,
+                ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!,
         ], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(

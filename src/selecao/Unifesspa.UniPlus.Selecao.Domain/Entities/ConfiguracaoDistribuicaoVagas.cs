@@ -74,6 +74,16 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
     /// </remarks>
     public GrupoAreaEnemSnapshot? GrupoAreaEnem { get; private set; }
 
+    /// <summary>
+    /// O que nomeia a oferta para o candidato — curso, grau, unidade ofertante e turnos —, copiado
+    /// por valor do cadastro de ofertas no momento da definição (snapshot-copy, ADR-0061).
+    /// </summary>
+    /// <remarks>
+    /// <see langword="null"/> só em distribuição definida antes de a oferta ser nomeada aqui; a
+    /// publicação a recusa, e redefinir a distribuição a nomeia.
+    /// </remarks>
+    public OfertaCursoSnapshot? OfertaCurso { get; private set; }
+
     public int VrNominal { get; private set; }
     public int VrFinal { get; private set; }
     public int Estouro { get; private set; }
@@ -162,6 +172,7 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
     /// um grupo válido (em branco, longo demais) é recusado no campo
     /// <c>grupoAreaEnem</c>, acumulado com as demais checagens de forma.
     /// </param>
+    /// <param name="ofertaCurso">O que nomeia a oferta para o candidato, como o cadastro o entrega.</param>
     public static Result<ConfiguracaoDistribuicaoVagas> Criar(
         Guid ofertaCursoOrigemId,
         int voBase,
@@ -173,7 +184,8 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
         int? vagasAnuaisAutorizadas = null,
         IReadOnlyCollection<string>? modalidadesAdmitidas = null,
         ArgsRegraAjusteDistribuicao? argsAjuste = null,
-        (string? Codigo, string? Rotulo)? grupoAreaEnem = null)
+        (string? Codigo, string? Rotulo)? grupoAreaEnem = null,
+        OfertaCursoSnapshot? ofertaCurso = null)
     {
         ArgumentNullException.ThrowIfNull(regraDistribuicao);
         ArgumentNullException.ThrowIfNull(modalidades);
@@ -377,6 +389,7 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
             RegraAjuste = regraAjuste,
             ReferenciaDemografica = referenciaDemografica,
             GrupoAreaEnem = grupo,
+            OfertaCurso = ofertaCurso,
             VrNominal = montado.VrNominal,
             VrFinal = montado.VrFinal,
             Estouro = montado.Estouro,

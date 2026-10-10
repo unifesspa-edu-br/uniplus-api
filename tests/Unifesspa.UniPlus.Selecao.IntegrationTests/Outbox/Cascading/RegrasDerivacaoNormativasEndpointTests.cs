@@ -230,7 +230,7 @@ public sealed class RegrasDerivacaoNormativasEndpointTests
                     RegraDistribuicaoVagasCodigo.Institucional, "v1", HashDeTeste).Value!,
                 regraAjuste: null,
                 referenciaDemografica: null,
-                modalidades: modalidades);
+                modalidades: modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina);
             quadro.IsSuccess.Should().BeTrue(quadro.Error?.Message);
 
             processo.DefinirDistribuicaoVagas([quadro.Value!], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente)

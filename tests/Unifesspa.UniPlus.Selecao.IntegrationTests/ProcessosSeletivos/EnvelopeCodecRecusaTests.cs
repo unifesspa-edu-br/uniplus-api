@@ -878,7 +878,12 @@ public sealed class EnvelopeCodecRecusaTests
     public void OfertaExtraNoBloco_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            envelope["ofertas"]!.AsArray().Add("44440000-0000-4000-8000-000000000009"));
+        {
+            JsonArray ofertas = envelope["ofertas"]!.AsArray();
+            JsonObject extra = ofertas[0]!.DeepClone().AsObject();
+            extra["ofertaCursoOrigemId"] = "44440000-0000-4000-8000-000000000009";
+            ofertas.Add(extra);
+        });
 
         AssertIncoerencia(resultado);
     }
@@ -889,7 +894,7 @@ public sealed class EnvelopeCodecRecusaTests
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
         {
             JsonArray ofertas = envelope["ofertas"]!.AsArray();
-            ofertas.Add(ofertas[0]!.GetValue<string>());
+            ofertas.Add(ofertas[0]!.DeepClone());
         });
 
         AssertIncoerencia(resultado);
@@ -982,7 +987,7 @@ public sealed class EnvelopeCodecRecusaTests
                     Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
                     null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null, "Res. Unifesspa 532/2021",
                     quantidadeDeclarada: 40).Value!,
-            ]).Value!;
+            ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
         processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(

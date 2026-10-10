@@ -80,7 +80,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             [ConfiguracaoDistribuicaoVagas.Criar(
                 Guid.CreateVersion7(), 40, 1m,
                 ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!,
-                null, null, [modalidade]).Value!],
+                null, null, [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!],
             FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(

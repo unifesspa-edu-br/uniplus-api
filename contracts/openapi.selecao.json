@@ -10174,8 +10174,7 @@
           "ofertas": {
             "type": "array",
             "items": {
-              "type": "string",
-              "format": "uuid"
+              "$ref": "#/components/schemas/OfertaDeCursoCertameDto"
             }
           },
           "modalidadesOfertadas": {
@@ -14950,6 +14949,37 @@
           },
           "condicaoNome": {
             "type": "string"
+          }
+        }
+      },
+      "OfertaDeCursoCertameDto": {
+        "required": [
+          "ofertaCursoOrigemId",
+          "cursoNome",
+          "cursoGrau",
+          "unidadeOfertanteNome",
+          "turnos"
+        ],
+        "type": "object",
+        "properties": {
+          "ofertaCursoOrigemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cursoNome": {
+            "type": "string"
+          },
+          "cursoGrau": {
+            "type": "string"
+          },
+          "unidadeOfertanteNome": {
+            "type": "string"
+          },
+          "turnos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },

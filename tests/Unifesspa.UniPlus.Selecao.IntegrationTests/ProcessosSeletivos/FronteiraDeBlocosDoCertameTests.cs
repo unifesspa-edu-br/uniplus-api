@@ -153,6 +153,21 @@ public sealed class FronteiraDeBlocosDoCertameTests
         resultado.Value!.IdentificadorLegivel.Should().Be("psiq-2026");
     }
 
+    [Fact(DisplayName = "A projeção expõe cada oferta com o nome congelado no envelope")]
+    public void Projetar_DeveExporONomeDeCadaOferta()
+    {
+        JsonObject envelope = (JsonObject)JsonNode.Parse(
+            EnvelopeCanonicoGoldenTests.CanonicalizarReferencia().Bytes)!;
+
+        Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
+
+        OfertaDeCursoCertameDto oferta = resultado.Value!.Ofertas.Should().ContainSingle().Subject;
+        (oferta.CursoNome, oferta.CursoGrau, oferta.UnidadeOfertanteNome).Should()
+            .Be(("Medicina", "Bacharelado", "Campus Universitário de Marabá"));
+        oferta.Turnos.Should().Equal("MATUTINO", "VESPERTINO");
+    }
+
     [Theory(DisplayName = "Documento com bloco presente mas incompleto é recusado, não servido com nulo")]
     [InlineData("tipoProcesso", "{}")]
     [InlineData("documentoEdital", """{"documentoEditalId":"01a0b13f-b9ed-70f4-9ff3-cfdc7503fc9b"}""")]
@@ -308,8 +323,8 @@ public sealed class FronteiraDeBlocosDoCertameTests
     }
 
     [Theory(DisplayName = "Documento de outra versão de projeção é recusado, mesmo íntegro")]
-    [InlineData("5")]
-    [InlineData("3")]
+    [InlineData("6")]
+    [InlineData("4")]
     public void TentarLerProjecao_QuandoAVersaoNaoEADesteBinario_DeveRecusar(string outraVersao)
     {
         // Num deploy em fases, um processo novo materializa a versão seguinte e um processo antigo

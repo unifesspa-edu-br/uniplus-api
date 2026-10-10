@@ -73,7 +73,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
             regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!,
             regraAjuste: null,
             referenciaDemografica: null,
-            modalidades: modalidades).Value!;
+            modalidades: modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
 
         processo.DefinirDistribuicaoVagas([config], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
     }

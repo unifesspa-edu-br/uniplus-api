@@ -77,7 +77,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
             regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
             regraAjuste: null,
             referenciaDemografica: null,
-            modalidades: [modalidade]).Value!;
+            modalidades: [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
         processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
@@ -229,7 +229,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
             regraAjuste: Regra(RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico, 'e'),
             referenciaDemografica: ReferenciaReservaDemograficaSnapshot.Criar(
                 Guid.CreateVersion7(), "Censo IBGE 2022", 78.55m, 1.20m, 8.40m, "Lei 12.711/2012 art. 3º").Value!,
-            modalidades: modalidades).Value!;
+            modalidades: modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
     }
 
     /// <summary>A matriz legal completa (8×7), fallback AC — mesma forma semeada em REMANEJ-CASCATA-LEI-12711 v1.</summary>

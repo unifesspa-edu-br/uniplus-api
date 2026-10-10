@@ -54,7 +54,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
     private static OfertaCursoView NovaOferta(Guid id, GrupoAreaEnemView? grupoAreaEnem = null) => new(
         id, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(),
         "CTIC", "Centro de Tecnologia", "CAMPUS", "REGULAR", "PRESENCIAL", "EXTENSIVO",
-        "REGULAR", ["MATUTINO"], null, null, 100, null, null, grupoAreaEnem);
+        "REGULAR", ["MATUTINO"], null, null, 100, null, null, grupoAreaEnem, "Medicina", "Bacharelado");
 
     private static ModalidadeView NovaModalidadeAmpla(Guid id) => new(
         id, "AC", "Ampla concorrência", "AMPLA", "RESIDUAL_DO_VO",
@@ -134,6 +134,35 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
         dto.VoBase.Should().Be(60);
         dto.Quadro.Should().ContainSingle(v => v.Quantidade == 60);
         dto.TotalPublicado.Should().Be(60);
+    }
+
+    [Fact(DisplayName = "Handle congela o nome da oferta que o cadastro entrega: curso, grau, unidade ofertante e turnos")]
+    public async Task Handle_CongelaONomeDaOferta()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        Guid ofertaCursoId = Guid.CreateVersion7();
+        Guid modalidadeId = Guid.CreateVersion7();
+
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        mocks.OfertaCursoReader.ObterPorIdAsync(ofertaCursoId, Arg.Any<CancellationToken>()).Returns(NovaOferta(ofertaCursoId));
+        mocks.RegraCatalogoReader.ObterAsync(RegraDistribuicaoVagasCodigo.Institucional, "v1", Arg.Any<CancellationToken>())
+            .Returns(RegraDistribuicao(RegraDistribuicaoVagasCodigo.Institucional));
+        mocks.ModalidadeReader.ObterPorIdAsync(modalidadeId, Arg.Any<CancellationToken>()).Returns(NovaModalidadeAmpla(modalidadeId));
+
+        Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
+            new DefinirDistribuicaoVagasCommand(
+                processo.Id,
+                [new ConfiguracaoDistribuicaoVagasInput(
+                    ofertaCursoId, 60, 1m, RegraDistribuicaoVagasCodigo.Institucional, "v1", null, null, null,
+                    [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 60)])], PrecondicaoIfMatch.Ausente),
+            mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
+            mocks.ReferenciaReservaDemograficaReader, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error?.Message);
+        OfertaCursoSnapshot congelado = processo.DistribuicaoVagas.Single().OfertaCurso!;
+        (congelado.CursoNome, congelado.CursoGrau, congelado.UnidadeOfertanteNome).Should()
+            .Be(("Medicina", "Bacharelado", "Centro de Tecnologia"));
+        congelado.Turnos.Should().Equal("MATUTINO");
     }
 
     [Theory(DisplayName = "Handle congela código e rótulo do grupo de área do curso da oferta, inclusive a ausência dele")]

@@ -27,6 +27,8 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// <param name="BaseLegal">Base legal (obrigatória quando o programa não é Regular), ou null.</param>
 /// <param name="AtoAutorizacaoMec">Ato de autorização específico da oferta, ou null.</param>
 /// <param name="GrupoAreaEnem">Grupo de área do ENEM do curso da oferta, com código e rótulo, ou null quando o curso não o declara.</param>
+/// <param name="CursoNome">Nome do curso da oferta.</param>
+/// <param name="CursoGrau">Grau do curso da oferta (ex.: "Bacharelado").</param>
 public sealed record OfertaCursoView(
     Guid Id,
     Guid CursoId,
@@ -45,4 +47,6 @@ public sealed record OfertaCursoView(
     int? VagasAnuaisAutorizadas,
     string? BaseLegal,
     string? AtoAutorizacaoMec,
-    GrupoAreaEnemView? GrupoAreaEnem);
+    GrupoAreaEnemView? GrupoAreaEnem,
+    string CursoNome,
+    string CursoGrau);

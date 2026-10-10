@@ -3240,6 +3240,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         [
             new ItemConformidade("atendimento_especializado_ausente", DimensaoConformidade.AtendimentoEspecializado, "Atendimento especializado", OfertaAtendimento is not null),
             new ItemConformidade("distribuicao_vagas_ausente", DimensaoConformidade.DistribuicaoVagas, "Distribuição de vagas", _distribuicaoVagas.Count > 0),
+            // O candidato escolhe a oferta pelo nome congelado; a distribuição definida antes de a
+            // oferta ser nomeada precisa ser redefinida.
+            ItemDasOfertas(
+                "distribuicao_vagas_oferta_sem_nome",
+                DimensaoConformidade.DistribuicaoVagas,
+                "Nome de cada oferta congelado na distribuição de vagas",
+                [.. _distribuicaoVagas.Where(static oferta => oferta.OfertaCurso is null)],
+                static oferta => $"{oferta.OfertaCursoOrigemId}"),
             new ItemConformidade("classificacao_ausente", DimensaoConformidade.Classificacao, "Classificação", Classificacao is not null),
             new ItemConformidade("cronograma_fases_ausente", DimensaoConformidade.Cronograma, "Cronograma de fases", _cronogramaFases.Count > 0),
             // Issue #1112: publicar sem declarar cobrança de taxa é recusado — a ausência nunca

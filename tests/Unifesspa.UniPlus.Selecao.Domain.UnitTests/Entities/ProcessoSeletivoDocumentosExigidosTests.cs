@@ -978,7 +978,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             regraDistribuicao: regra,
             regraAjuste: null,
             referenciaDemografica: null,
-            modalidades: [.. codigosModalidade.Select(Modalidade)]).Value!;
+            modalidades: [.. codigosModalidade.Select(Modalidade)], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
     }
 
     [Fact(DisplayName = "Redefinir distribuição de vagas removendo código de modalidade referenciado por gatilho vivo é recusado")]

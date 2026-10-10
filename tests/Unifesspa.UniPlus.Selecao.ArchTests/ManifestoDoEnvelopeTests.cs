@@ -83,7 +83,7 @@ public sealed class ManifestoDoEnvelopeTests
 
         [typeof(ConfiguracaoDistribuicaoVagas)] = (
             [
-                "OfertaCursoOrigemId", "VoBase", "Pr", "RegraDistribuicao", "RegraAjuste", "ReferenciaDemografica", "GrupoAreaEnem",
+                "OfertaCursoOrigemId", "VoBase", "Pr", "RegraDistribuicao", "RegraAjuste", "ReferenciaDemografica", "GrupoAreaEnem", "OfertaCurso",
                 "Modalidades", "VrNominal", "VrFinal", "Estouro", "CapadoEmVo", "TotalPublicado", "VagasOfertadas",
             ],
             [("ProcessoSeletivoId", "FK interna.")]),
@@ -199,6 +199,11 @@ public sealed class ManifestoDoEnvelopeTests
         // Grupo de área do ENEM da oferta: código e rótulo congelados por valor.
         [typeof(GrupoAreaEnemSnapshot)] = (
             ["Codigo", "Rotulo"],
+            []),
+
+        // O que nomeia a oferta para o candidato, congelado por valor; vai no bloco público de ofertas.
+        [typeof(OfertaCursoSnapshot)] = (
+            ["CursoNome", "CursoGrau", "UnidadeOfertanteNome", "Turnos"],
             []),
 
         // As variantes polimórficas. Elas são persistidas INTEIRAS como JSON, e o codec as

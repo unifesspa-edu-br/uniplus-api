@@ -68,6 +68,17 @@ public sealed record EtapaCertameDto(
 public sealed record VagaPorModalidadeCertameDto(string ModalidadeCodigo, int Quantidade);
 
 /// <summary>
+/// Uma oferta de curso do certame, com o que a nomeia para o candidato — curso, grau, unidade
+/// ofertante e turnos —, como estava na definição da distribuição de vagas publicada.
+/// </summary>
+public sealed record OfertaDeCursoCertameDto(
+    Guid OfertaCursoOrigemId,
+    string CursoNome,
+    string CursoGrau,
+    string UnidadeOfertanteNome,
+    IReadOnlyList<string> Turnos);
+
+/// <summary>
 /// O quadro de vagas de uma oferta de curso.
 /// </summary>
 /// <remarks>
@@ -183,7 +194,7 @@ public sealed record CertamePublicadoDto(
     LocalidadeCertameDto Localidade,
     UnidadeAdministradoraCertameDto UnidadeAdministradora,
     DocumentoEditalCertameDto DocumentoEdital,
-    IReadOnlyList<Guid> Ofertas,
+    IReadOnlyList<OfertaDeCursoCertameDto> Ofertas,
     IReadOnlyList<string> ModalidadesOfertadas,
     IReadOnlyList<QuadroDeVagasCertameDto> Vagas,
     IReadOnlyList<EtapaCertameDto> Etapas,
