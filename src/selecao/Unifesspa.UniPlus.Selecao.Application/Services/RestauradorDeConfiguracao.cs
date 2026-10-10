@@ -73,7 +73,7 @@ public sealed class RestauradorDeConfiguracao(IRegistroCodecsEnvelope registro) 
                 sombra, envelope.Dados, envelope.HashDocumento, envelope.FusoHorario,
                 envelope.Retificacao, envelope.Conformidade,
                 envelope.MetadadosFatosCongelados, envelope.ValoresSelecionaveisCongelados,
-                envelope.CalendarioDiasUteis, envelope.AgregadosDosGrupos));
+                envelope.CalendarioDiasUteis, envelope.AgregadosDosGrupos, envelope.ApresentacaoDosPressupostos));
 
         if (recodificado.IsFailure)
         {

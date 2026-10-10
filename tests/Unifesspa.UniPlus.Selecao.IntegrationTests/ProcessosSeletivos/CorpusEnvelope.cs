@@ -921,7 +921,21 @@ internal static class CorpusEnvelope
             processo, DadosRicos(), HashDocumento, FusoInstitucional.ZoneId, retificacao, conformidade,
             ValoresSelecionaveisCongelados: ValoresSelecionaveisRicos(permutarValoresSelecionaveis),
             CalendarioDiasUteis: CalendarioRico(),
-            AgregadosDosGrupos: AgregadosRicos);
+            AgregadosDosGrupos: AgregadosRicos,
+            ApresentacaoDosPressupostos: ApresentacaoRica);
+
+    /// <summary>
+    /// A apresentação de dois derivados do sistema: o município, que o domínio categórico do Geo dá como
+    /// campo de município, e a faixa etária, numérica.
+    /// </summary>
+    internal static IReadOnlyDictionary<string, ApresentacaoDoFato> ApresentacaoRica { get; } =
+        new Dictionary<string, ApresentacaoDoFato>(StringComparer.Ordinal)
+        {
+            ["MUNICIPIO_RESIDENCIA"] = ApresentacaoDoFato.DoCatalogo(
+                "MUNICIPIO_RESIDENCIA", "Município de residência", DominioDoCatalogo.Categorico, DominioDoCatalogo.Escalar, DominioDoCatalogo.FonteGeoMunicipio),
+            ["FAIXA_ETARIA"] = ApresentacaoDoFato.DoCatalogo(
+                "FAIXA_ETARIA", "Faixa etária", DominioDoCatalogo.Numerico, DominioDoCatalogo.Escalar, null),
+        };
 
     /// <summary>
     /// Os agregados sobre a composição familiar do corpus rico (ADR-0138): um de cada operação, para

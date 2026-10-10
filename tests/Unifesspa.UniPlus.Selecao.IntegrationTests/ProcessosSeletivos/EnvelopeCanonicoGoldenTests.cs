@@ -376,7 +376,8 @@ public sealed class EnvelopeCanonicoGoldenTests
         Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
             ProcessoDeReferencia(), DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId,
             MetadadosFatosCongelados: MetadadosFatosDeReferencia(),
-            ValoresSelecionaveisCongelados: ValoresSelecionaveisDeReferencia()));
+            ValoresSelecionaveisCongelados: ValoresSelecionaveisDeReferencia(),
+            ApresentacaoDosPressupostos: CorpusEnvelope.ApresentacaoRica));
 
     /// <summary>
     /// O agregado de referência COM a cascata de remanejamento configurada (Story #575) —

@@ -81,6 +81,13 @@ internal static class VocabularioDeFatos
                 : [.. (fato.ValoresDominio ?? []).Select(static v => new ValorDoCatalogo(v, Ativo: true))]);
     }
 
+    /// <summary>Como o fato se apresenta quando o formulário o cita sem perguntar: o nome e o tipo de campo que o domínio admite.</summary>
+    public static ApresentacaoDoFato Apresentacao(FatoCandidatoView fato)
+    {
+        ArgumentNullException.ThrowIfNull(fato);
+        return ApresentacaoDoFato.DoCatalogo(fato.Codigo, fato.Nome, fato.Dominio, fato.Cardinalidade, fato.FonteValores);
+    }
+
     /// <summary>O catálogo como as regras do formulário o conferem, por código.</summary>
     public static Dictionary<string, FatoDoCatalogo> ParaRegras(IEnumerable<FatoCandidatoView> catalogo)
     {

@@ -21,29 +21,32 @@ public static class CoerenciaDoCampo
     private const string Multivalorado = DominioDoCatalogo.Multivalorado;
 
     /// <summary>
-    /// Recusa o tipo de campo incoerente com o domínio e a cardinalidade do fato, dados pelos
-    /// tokens do catálogo. O campo de texto recolhe uma resposta só: não há várias respostas de texto.
+    /// O único tipo de campo que o domínio, a cardinalidade e a fonte de valores do fato admitem, dados
+    /// pelos tokens do catálogo; <see langword="null"/> quando nenhum admite — o campo de texto, de data
+    /// e de endereço recolhe uma resposta só, e o município do Geo também.
     /// </summary>
-    public static DomainError? Validar(string fatoCodigo, TipoRenderizacao tipoRenderizacao, string dominio, string cardinalidade, string? fonteValores)
+    public static TipoRenderizacao? TipoDoFato(string dominio, string cardinalidade, string? fonteValores)
     {
         bool multivalorado = string.Equals(cardinalidade, Multivalorado, StringComparison.Ordinal);
         bool municipio = string.Equals(fonteValores, DominioDoCatalogo.FonteGeoMunicipio, StringComparison.Ordinal);
-        bool coerente = dominio switch
+        return dominio switch
         {
-            Booleano => tipoRenderizacao == TipoRenderizacao.Booleano,
-            Numerico => tipoRenderizacao == TipoRenderizacao.Numero,
-            Texto => tipoRenderizacao == TipoRenderizacao.Texto && !multivalorado,
-            Data => tipoRenderizacao == TipoRenderizacao.Data && !multivalorado,
-            Endereco => tipoRenderizacao == TipoRenderizacao.Endereco && !multivalorado,
-            Categorico when municipio => tipoRenderizacao == TipoRenderizacao.Municipio && !multivalorado,
-            Categorico => tipoRenderizacao == (multivalorado ? TipoRenderizacao.SelecaoMultipla : TipoRenderizacao.SelecaoUnica),
-            _ => false,
+            Booleano => TipoRenderizacao.Booleano,
+            Numerico => TipoRenderizacao.Numero,
+            Texto when !multivalorado => TipoRenderizacao.Texto,
+            Data when !multivalorado => TipoRenderizacao.Data,
+            Endereco when !multivalorado => TipoRenderizacao.Endereco,
+            Categorico when municipio => multivalorado ? null : TipoRenderizacao.Municipio,
+            Categorico => multivalorado ? TipoRenderizacao.SelecaoMultipla : TipoRenderizacao.SelecaoUnica,
+            _ => null,
         };
+    }
 
-        return coerente
+    /// <summary>Recusa o tipo de campo diferente do que o fato admite (<see cref="TipoDoFato"/>).</summary>
+    public static DomainError? Validar(string fatoCodigo, TipoRenderizacao tipoRenderizacao, string dominio, string cardinalidade, string? fonteValores) =>
+        TipoDoFato(dominio, cardinalidade, fonteValores) == tipoRenderizacao
             ? null
             : new DomainError(
                 ItemFormularioErrorCodes.TipoRenderizacaoIncoerenteComDominio,
                 $"O tipo de campo '{tipoRenderizacao}' não é coerente com o domínio '{dominio}'/cardinalidade '{cardinalidade}' do fato '{fatoCodigo}'.");
-    }
 }

@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
+using System.Text.Json;
+
 using AwesomeAssertions;
 
 using NSubstitute;
@@ -25,7 +27,8 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// DECLARADO para DERIVADO é o caso real. Prova, nos <b>três</b> handlers que congelam
 /// (ao lado de <see cref="ConformidadeLegalGateTests"/>), que um <c>FatoColetado</c> cujo fato
 /// deixou de ser coletável recusa ANTES da canonicalização, e que um fato ainda coletável não
-/// bloqueia a publicação.
+/// bloqueia a publicação. A publicação também congela o rótulo e o tipo do catálogo do fato que as
+/// regras citam e nenhum formulário pergunta, e recusa antes de canonicalizar quando o catálogo não o tem.
 /// </summary>
 public sealed class ColetabilidadeDeFatosGateTests
 {
@@ -238,6 +241,82 @@ public sealed class ColetabilidadeDeFatosGateTests
         resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
         _ = canonicalizer.Received(1).Canonicalizar(Arg.Any<EntradaCanonicalizacao>());
     }
+
+    [Fact(DisplayName = "Publicar congela o rótulo e o tipo do catálogo do derivado que a regra cita e nenhum formulário pergunta")]
+    public async Task Publicar_CongelaAApresentacaoDoPressupostoDerivado()
+    {
+        ProcessoSeletivo processo = ProcessoQueCitaOMunicipioDeResidencia();
+        ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();
+        EntradaCanonicalizacao? entrada = null;
+        canonicalizer.Canonicalizar(Arg.Do<EntradaCanonicalizacao>(e => entrada = e));
+
+        (Result resposta, IEnumerable<object> _) = await PublicarAsync(
+            processo, ReaderCom(FatoAtendimentoNoMunicipio(), FatoMunicipioDeResidencia("Município de residência")), canonicalizer);
+
+        resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
+        entrada!.ApresentacaoDosPressupostos.Should().ContainKey("MUNICIPIO_RESIDENCIA")
+            .WhoseValue.Should().Be(new ApresentacaoDoFato("MUNICIPIO_RESIDENCIA", "Município de residência", "MUNICIPIO"));
+    }
+
+    [Fact(DisplayName = "Publicar recusa, antes de canonicalizar, o fato que a regra cita e o catálogo não tem")]
+    public async Task Publicar_PressupostoSemCadastro_RecusaSemCanonicalizar()
+    {
+        ProcessoSeletivo processo = ProcessoQueCitaOMunicipioDeResidencia();
+        ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();
+
+        (Result resposta, IEnumerable<object> eventos) = await PublicarAsync(processo, ReaderCom(FatoAtendimentoNoMunicipio()), canonicalizer);
+
+        resposta.Error!.Code.Should().Be("ProcessoSeletivo.PressupostoSemCadastro");
+        resposta.Error.Message.Should().Contain("MUNICIPIO_RESIDENCIA");
+        _ = canonicalizer.DidNotReceive().Canonicalizar(Arg.Any<EntradaCanonicalizacao>());
+        eventos.Should().BeEmpty();
+    }
+
+    /// <summary>O processo cujo formulário de inscrição só mostra um campo a quem mora num município.</summary>
+    private static ProcessoSeletivo ProcessoQueCitaOMunicipioDeResidencia()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        processo.DefinirItens(
+        [
+            FatoColetado.Criar("ATENDIMENTO_NO_MUNICIPIO", 0, "Deseja atendimento no município?", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, [
+                CondicaoPrecondicaoFato.Criar(0, "MUNICIPIO_RESIDENCIA", Operador.Igual, JsonSerializer.SerializeToElement("1504208")).Value!,
+            ], classificacaoProtecao: "PESSOAL").Value!,
+        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        return processo;
+    }
+
+    private static FatoCandidatoView FatoAtendimentoNoMunicipio() => new(
+        Guid.CreateVersion7(), "ATENDIMENTO_NO_MUNICIPIO", "Atendimento no município", null, "BOOLEANO", "DECLARADO", "ESCALAR", null,
+        "INSCRICAO", "CAMPO_FORMULARIO:ATENDIMENTO_NO_MUNICIPIO", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL");
+
+    private static FatoCandidatoView FatoMunicipioDeResidencia(string nome) => new(
+        Guid.CreateVersion7(), "MUNICIPIO_RESIDENCIA", nome, null, "CATEGORICO", "DERIVADO", "ESCALAR", null,
+        "INSCRICAO", "SISTEMA:MUNICIPIO_RESIDENCIA", null, "GEO_MUNICIPIO", Ativo: true, ClassificacaoProtecao: "PESSOAL");
+
+    private static Task<(Result, IEnumerable<object>)> PublicarAsync(
+        ProcessoSeletivo processo, IFatoCandidatoReader fatoCandidatoReader, ISnapshotPublicacaoCanonicalizer canonicalizer) =>
+        PublicarProcessoSeletivoCommandHandler.Handle(
+            new PublicarProcessoSeletivoCommand(
+                processo.Id, "001/2026", null, null,
+                DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
+            RepositorioDoProcesso(processo),
+            RepositorioDeDocumento(processo.Id),
+            Substitute.For<IRascunhoDePublicacaoRepository>(),
+            canonicalizer, new ResolvedorFusoDeTeste(),
+            Substitute.For<ISelecaoUnitOfWork>(),
+            UsuarioAutenticado(),
+            TipoDeAtoReader(),
+            Substitute.For<IVagaDeLinhagemReader>(),
+            Substitute.For<IObrigatoriedadeLegalRepository>(),
+            CadastrosVivos.Modalidades(),
+            CadastrosVivos.TiposDocumento(),
+            CadastrosVivos.TiposEtapa(),
+            CadastrosVivos.TiposDeficiencia(),
+            CadastrosVivos.RegrasDesempate(),
+            fatoCandidatoReader,
+            CalendarioVigenteReaderDeTeste.SemVigente(),
+            new RelogioFixo(Agora),
+            CancellationToken.None);
 
     // ══════════════════════════════════════════════════════════════════════════════
 

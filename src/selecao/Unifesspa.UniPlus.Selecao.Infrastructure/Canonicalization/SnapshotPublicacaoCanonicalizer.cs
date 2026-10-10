@@ -278,8 +278,14 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// por valor na definição da distribuição de vagas. É o que o candidato vê ao escolher a oferta.
     /// Sem novo bloco de topo. Sem produção em ambiente nenhum: fixture nova, <c>0.0.22</c> deixa de
     /// ser reconhecida.
+    /// O bump para <c>0.0.24</c> acrescenta <c>apresentacaoDosPressupostos</c> como 31º bloco de topo:
+    /// para cada fato que as regras dos formulários citam e nenhum formulário do processo pergunta, o
+    /// código, o nome do catálogo e o tipo de campo que o domínio dele admite — nulo quando nenhum
+    /// admite —, ordenados pelo código. É o que o formulário mostra do derivado do sistema e do que
+    /// outra fase produz. Sem produção em ambiente nenhum: fixture nova, <c>0.0.23</c> deixa de ser
+    /// reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.23";
+    internal const string SchemaVersionAtual = "0.0.24";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -340,12 +346,14 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["algoritmoContagemPrazo"] = SerializarAlgoritmoContagemPrazo(processo),
             ["calendarioDiasUteis"] = SerializarCalendarioDiasUteis(entrada.CalendarioDiasUteis),
             ["identificadorLegivel"] = processo.IdentificadorLegivel?.Valor,
+            ["apresentacaoDosPressupostos"] = SerializarApresentacaoDosPressupostos(entrada.ApresentacaoDosPressupostos),
         };
 
-        // ADR-0101: a retificação ACRESCENTA um 31º bloco preservando os 30
+        // ADR-0101: a retificação ACRESCENTA um 32º bloco preservando os 31
         // anteriores (a issue #1112 elevou de 24 para 25, a localidade de 25 para 26, a
         // convenção de contagem de 26 para 27, o calendário de 27 para 28, o identificador
-        // legível de 28 para 29 e os grupos repetíveis de 29 para 30). A
+        // legível de 28 para 29, os grupos repetíveis de 29 para 30 e a apresentação dos
+        // pressupostos de 30 para 31). A
         // abertura não escreve esta chave —
         // seu payload é byte-a-byte o mesmo do T4 (a reordenação de chaves em
         // ComputeSnapshotBytes independe da ordem de inserção aqui).
@@ -791,6 +799,16 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
 
         return array;
     }
+
+    private static JsonArray SerializarApresentacaoDosPressupostos(IReadOnlyDictionary<string, ApresentacaoDoFato>? apresentacao) =>
+        new([.. (apresentacao ?? new Dictionary<string, ApresentacaoDoFato>(StringComparer.Ordinal)).Values
+            .OrderBy(static a => a.FatoCodigo, StringComparer.Ordinal)
+            .Select(static a => (JsonNode?)new JsonObject
+            {
+                ["fatoCodigo"] = a.FatoCodigo,
+                ["rotulo"] = HashCanonicalComputer.NormalizeNfc(a.Rotulo),
+                ["tipoRenderizacao"] = a.TipoRenderizacao,
+            })]);
 
     private static JsonObject SerializarAtendimento(ProcessoSeletivo processo)
     {

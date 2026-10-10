@@ -15,9 +15,9 @@ public sealed record SnapshotCanonico(byte[] Bytes, string SchemaVersion, string
 
 /// <summary>
 /// Informação do ato de retificação (ADR-0103) acrescentada ao envelope como um
-/// bloco adicional (<c>retificacao</c>) além dos 30 blocos canônicos.
+/// bloco adicional (<c>retificacao</c>) além dos 31 blocos canônicos.
 /// <see langword="null"/> na publicação de abertura — o envelope de abertura
-/// mantém exatamente os 30 blocos, sem o bloco de retificação.
+/// mantém exatamente os 31 blocos, sem o bloco de retificação.
 /// </summary>
 public sealed record RetificacaoInfo(Guid EditalRetificadoId, string Motivo);
 
@@ -151,16 +151,21 @@ public sealed record EntradaCanonicalizacao(
     /// operação de cada um —, congelados junto do grupo. Na recodificação, são os congelados na
     /// versão que voltam aqui, porque o catálogo pode ter mudado.
     /// </summary>
-    IReadOnlyList<DefinicaoAgregado>? AgregadosDosGrupos = null);
+    IReadOnlyList<DefinicaoAgregado>? AgregadosDosGrupos = null,
+    /// <summary>
+    /// A apresentação — rótulo e tipo de campo do catálogo — de cada fato que as regras dos
+    /// formulários citam e nenhum formulário do processo pergunta. Na recodificação, é a congelada
+    /// na versão que volta aqui.
+    /// </summary>
+    IReadOnlyDictionary<string, ApresentacaoDoFato>? ApresentacaoDosPressupostos = null);
 
 /// <summary>
 /// Porta da projeção canônica do envelope de congelamento (ADR-0100, ADR-0109).
 /// Projeta a configuração viva do <see cref="ProcessoSeletivo"/> num payload de
-/// <b>30 blocos reais</b> — o último a entrar foi <c>gruposColetados</c>, os grupos repetíveis
-/// dos formulários (UNI-REQ-0146) — e devolve os bytes que
+/// <b>31 blocos reais</b> e devolve os bytes que
 /// <c>VersaoConfiguracao.Abrir</c> persiste como base do hash. Quando a entrada
-/// carrega <see cref="EntradaCanonicalizacao.Retificacao"/>, acrescenta o 31º
-/// bloco <c>retificacao</c> preservando os 30 anteriores intactos (ADR-0103).
+/// carrega <see cref="EntradaCanonicalizacao.Retificacao"/>, acrescenta o 32º
+/// bloco <c>retificacao</c> preservando os 31 anteriores intactos (ADR-0103).
 /// </summary>
 /// <remarks>
 /// A assinatura recebe <b>um único</b> parâmetro por decisão (ADR-0109 D6):

@@ -16,12 +16,14 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Os formulários do processo prontos para o avaliador: a definição, a oferta de valores de cada
-/// campo e os valores selecionáveis com a descrição de cada um.
+/// campo, os valores selecionáveis com a descrição de cada um e a apresentação dos fatos que as
+/// regras citam e nenhum formulário do processo pergunta.
 /// </summary>
 public sealed record DefinicaoAvaliavel(
     DefinicaoFormulario Definicao,
     IReadOnlyDictionary<string, IReadOnlySet<string>> Ofertas,
-    IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> ValoresSelecionaveis);
+    IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> ValoresSelecionaveis,
+    IReadOnlyDictionary<string, ApresentacaoDoFato> ApresentacaoDosPressupostos);
 
 /// <summary>
 /// Monta a definição avaliável dos formulários do processo, a mesma para a pré-visualização e para o
@@ -62,7 +64,20 @@ public static class DefinicaoAvaliavelDoProcesso
             processo.Formularios, processo.FatosColetados, processo.GruposColetados, processo.TermosExigidos,
             derivacoes.Value!, AgregadosDosGrupos(processo.GruposColetados, porCodigo));
 
-        return Result<DefinicaoAvaliavel>.Success(new DefinicaoAvaliavel(definicao, Ofertados(oferta.Value!), oferta.Value!));
+        Dictionary<string, ApresentacaoDoFato> apresentacao = new(StringComparer.Ordinal);
+        foreach (string codigo in PressupostosNaoPerguntados(definicao, processo.Formularios, processo.FatosColetados))
+        {
+            if (!porCodigo.TryGetValue(codigo, out FatoCandidatoView? fato))
+            {
+                return Result<DefinicaoAvaliavel>.Failure(new DomainError(
+                    "ProcessoSeletivo.PressupostoSemCadastro",
+                    $"O fato '{codigo}', que as regras de um formulário citam, não está no catálogo de fatos do candidato."));
+            }
+
+            apresentacao[codigo] = VocabularioDeFatos.Apresentacao(fato);
+        }
+
+        return Result<DefinicaoAvaliavel>.Success(new DefinicaoAvaliavel(definicao, Ofertados(oferta.Value!), oferta.Value!, apresentacao));
     }
 
     /// <summary>
@@ -92,7 +107,22 @@ public static class DefinicaoAvaliavelDoProcesso
         DefinicaoFormulario definicao = DefinicaoDoProcesso.Montar(
             grafo.Formularios, grafo.FatosColetados, grafo.GruposColetados, grafo.TermosExigidos, derivacoes, envelope.AgregadosDosGrupos);
 
-        return Result<DefinicaoAvaliavel>.Success(new DefinicaoAvaliavel(definicao, Ofertados(valores), valores));
+        return Result<DefinicaoAvaliavel>.Success(
+            new DefinicaoAvaliavel(definicao, Ofertados(valores), valores, envelope.ApresentacaoDosPressupostos));
+    }
+
+    /// <summary>
+    /// Os fatos que as regras de algum formulário citam e que nenhum formulário do processo pergunta —
+    /// os derivados do sistema, os agregados sobre grupo e o que outra fase produz.
+    /// </summary>
+    private static IEnumerable<string> PressupostosNaoPerguntados(
+        DefinicaoFormulario definicao, IEnumerable<FormularioProcesso> formularios, IEnumerable<FatoColetado> fatos)
+    {
+        HashSet<string> perguntados = new(fatos.Select(static f => f.FatoCodigo), StringComparer.Ordinal);
+        return formularios
+            .SelectMany(f => RecorteDaFinalidade.De(definicao, DefinicaoDoProcesso.CodigoDaEtapa(f.Finalidade, null)).Pressupostos)
+            .Where(c => !perguntados.Contains(c))
+            .Distinct(StringComparer.Ordinal);
     }
 
     /// <summary>Os códigos ofertados por fato, a partir dos valores selecionáveis.</summary>

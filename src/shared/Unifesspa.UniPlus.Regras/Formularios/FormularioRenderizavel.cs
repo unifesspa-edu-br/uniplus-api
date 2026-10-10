@@ -43,10 +43,10 @@ public sealed record GrupoRenderizavel(
 /// <summary>
 /// Um fato que as regras do formulário citam e ele não pergunta. Quando outro formulário o pergunta,
 /// vem com a apresentação dele — rótulo, tipo de renderização, formato e valores —, e a simulação o
-/// pergunta como dado anterior. Quando é calculado, <see cref="CalculadoDe"/> diz de quais fatos: o
-/// sistema calcula a faixa etária da data de nascimento, e o agregado sobre o grupo repetível de
-/// outro formulário, do fato de membro que ele agrega. O que a classificação produz, como o grupo de
-/// vagas em que o candidato foi convocado, vem só com o código.
+/// pergunta como dado anterior. Quando nenhum formulário o pergunta, vem com o rótulo e o tipo do
+/// catálogo; se é calculado, <see cref="CalculadoDe"/> diz de quais fatos: o sistema calcula a faixa
+/// etária da data de nascimento, e o agregado sobre o grupo repetível de outro formulário, do fato de
+/// membro que ele agrega.
 /// </summary>
 public sealed record PressupostoRenderizavel(
     string FatoCodigo,
@@ -121,8 +121,9 @@ public record FormularioRenderizavel(
     /// <summary>
     /// Monta o formulário a partir da apresentação, do recorte das regras da finalidade e do que
     /// descreve os pressupostos: os campos dos outros formulários, que dão a apresentação do que eles
-    /// perguntam, e os agregados sobre os grupos, que com os derivados do sistema dizem de que fatos
-    /// cada fato calculado é calculado.
+    /// perguntam; a apresentação do catálogo, para o que nenhum formulário pergunta; e os agregados
+    /// sobre os grupos, que com os derivados do sistema dizem de que fatos cada fato calculado é
+    /// calculado.
     /// </summary>
     public static FormularioRenderizavel Montar(
         string finalidade,
@@ -133,11 +134,13 @@ public record FormularioRenderizavel(
         IReadOnlyList<GrupoRenderizavel> grupos,
         RecorteDaFinalidade recorte,
         IEnumerable<CampoRenderizavel> camposDosOutrosFormularios,
+        IReadOnlyDictionary<string, ApresentacaoDoFato> apresentacaoDosNaoPerguntados,
         IEnumerable<DefinicaoAgregado> agregados,
         DateOnly? dataReferenciaFatos)
     {
         ArgumentNullException.ThrowIfNull(recorte);
         ArgumentNullException.ThrowIfNull(camposDosOutrosFormularios);
+        ArgumentNullException.ThrowIfNull(apresentacaoDosNaoPerguntados);
         ArgumentNullException.ThrowIfNull(agregados);
 
         Dictionary<string, IReadOnlyList<string>> calculadoDe = new(DerivadosDoSistema.Dependencias, StringComparer.Ordinal);
@@ -155,7 +158,13 @@ public record FormularioRenderizavel(
         IReadOnlyList<PressupostoRenderizavel> pressupostos = [.. recorte.Pressupostos.Select(codigo =>
             perguntados.TryGetValue(codigo, out CampoRenderizavel? campo)
                 ? new PressupostoRenderizavel(codigo, campo.Rotulo, campo.TipoRenderizacao, campo.Formato, campo.ValoresSelecionaveis, null)
-                : new PressupostoRenderizavel(codigo, null, null, null, null, calculadoDe.GetValueOrDefault(codigo)))];
+                : new PressupostoRenderizavel(
+                    codigo,
+                    apresentacaoDosNaoPerguntados.GetValueOrDefault(codigo)?.Rotulo,
+                    apresentacaoDosNaoPerguntados.GetValueOrDefault(codigo)?.TipoRenderizacao,
+                    null,
+                    null,
+                    calculadoDe.GetValueOrDefault(codigo)))];
 
         return new FormularioRenderizavel(
             finalidade, titulo, etapas, termos, campos, grupos, recorte.Regras, pressupostos, dataReferenciaFatos);
