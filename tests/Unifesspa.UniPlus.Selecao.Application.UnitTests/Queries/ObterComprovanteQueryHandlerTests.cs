@@ -48,6 +48,7 @@ public sealed class ObterComprovanteQueryHandlerTests
                 new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal),
                 [],
                 TestSupport.DefinicoesDeTeste.Das(respostas),
+                FormularioDeTeste.AvaliacaoSemOcultos,
                 new Dictionary<string, JsonElement>(StringComparer.Ordinal),
                 TestSupport.DefinicoesDeTeste.Nenhuma(),
                 PrecondicaoIfMatch.DeTags([inscricao.ETag]),

@@ -56,7 +56,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     public InscricaoSobreProcessoPublicadoPersistenciaTests(InscricaoDbFixture fixture) => _fixture = fixture;
 
     private static ProcessoSeletivo NovoProcessoDeInscricao(
-        string nome, OfertaAtendimentoEspecializado? oferta = null, FatoColetado? campoAdicional = null)
+        string nome, OfertaAtendimentoEspecializado? oferta = null, IReadOnlyList<FatoColetado>? camposAdicionais = null)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             nome, TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
@@ -123,7 +123,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             "RG_NUMERO", 0, "RG", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
             classificacaoProtecao: "IDENTIFICADOR", formato: "LIVRE").Value!;
         processo.DefinirItens(
-            campoAdicional is null ? [rg] : [rg, campoAdicional],
+            [rg, .. camposAdicionais ?? []],
             PrecondicaoIfMatch.Ausente,
             grupos: [composicaoFamiliar]).IsSuccess.Should().BeTrue();
 
@@ -331,7 +331,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         OfertaAtendimentoEspecializado oferta = OfertaAtendimentoEspecializado.Criar(
             [], [OfertaRecurso.Criar(Guid.CreateVersion7(), "SALA_AMAMENTACAO", "Sala para amamentação")], []).Value!;
         ProcessoSeletivo processo = NovoProcessoDeInscricao(
-            nameof(RecursoDeAcessibilidade_ForaDaOfertaDoProcesso_ERecusado), oferta, campoRecurso);
+            nameof(RecursoDeAcessibilidade_ForaDaOfertaDoProcesso_ERecusado), oferta, [campoRecurso]);
 
         await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
         (Guid processoId, _) = await PublicarEDivulgarAsync(writeContext, processo);
@@ -359,5 +359,72 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
         recusas.Should().ContainSingle(e => e.Field == OfertaAtendimentoEspecializado.FatoRecursoAcessibilidade
             && e.Error.Code == "Inscricao.RespostaInvalida", "o intérprete de Libras não está na oferta deste processo");
+    }
+
+    [Fact(DisplayName = "O rascunho guarda a resposta ao item que outra resposta esconde, e o envio a descarta da inscrição gravada e do comprovante, que continua íntegro")]
+    public async Task Envio_SobreVersaoFixadaReal_DescartaARespostaDoItemOculto()
+    {
+        FatoColetado precisa = FatoColetado.Criar(
+            "PRECISA_ATENDIMENTO", 1, "Você precisa de atendimento especializado?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null,
+            classificacaoProtecao: "SENSIVEL").Value!;
+        FatoColetado condicao = FatoColetado.Criar(
+            "CONDICAO_DESCRITA", 2, "Descreva a sua condição", TipoRenderizacao.Texto, Obrigatoriedade.Nunca,
+            [CondicaoPrecondicaoFato.Criar(0, "PRECISA_ATENDIMENTO", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!],
+            classificacaoProtecao: "SENSIVEL", formato: "LIVRE").Value!;
+        ProcessoSeletivo processo = NovoProcessoDeInscricao(
+            nameof(Envio_SobreVersaoFixadaReal_DescartaARespostaDoItemOculto), camposAdicionais: [precisa, condicao]);
+
+        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+        (Guid processoId, _) = await PublicarEDivulgarAsync(writeContext, processo);
+        InscricaoRepository inscricaoRepository = new(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+        Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
+            new IniciarInscricaoCommand(processoId),
+            inscricaoRepository, new CertameDivulgadoRepository(writeContext), new ProcessoSeletivoRepository(writeContext, TimeProvider.System),
+            RegistroCodecs, Fuso(), DentroDoPeriodo, writeContext, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None);
+        iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
+
+        Inscricao inscricao = (await inscricaoRepository.ObterPorIdAsync(iniciar.Value!.Id))!;
+        ContextoDaVersaoFixada contexto = (await ContextoDaVersaoFixadaResolver.ResolverAsync(
+            inscricao.VersaoFormularioId, processoId, new ProcessoSeletivoRepository(writeContext, TimeProvider.System), RegistroCodecs, CancellationToken.None))
+            .Value!;
+
+        // O candidato disse "sim", descreveu a condição e voltou para "não": a descrição fica no rascunho.
+        inscricao.Salvar(
+            null,
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+            {
+                ["PRECISA_ATENDIMENTO"] = JsonSerializer.SerializeToElement(false),
+                ["CONDICAO_DESCRITA"] = JsonSerializer.SerializeToElement("Lactante"),
+            },
+            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [], contexto.Admitidas,
+            PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
+        await inscricaoRepository.AtualizarAsync(inscricao, CancellationToken.None);
+        await writeContext.SaveChangesAsync(CancellationToken.None);
+
+        await using SelecaoDbContext envioContext = _fixture.CreateDbContext();
+        InscricaoRepository envioRepository = new(envioContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+        Inscricao rascunho = (await envioRepository.ObterPorIdAsync(inscricao.Id))!;
+        rascunho.Respostas.Should().ContainKey("CONDICAO_DESCRITA", "o rascunho guarda a resposta oculta, para o candidato poder voltar atrás");
+
+        AvaliacaoFormulario avaliacao = contexto.Regras.Avaliar(new EntradaAvaliacaoFormulario(
+            rascunho.Respostas,
+            new HashSet<string>(contexto.Regras.Etapas.Select(static e => e.Codigo), StringComparer.Ordinal),
+            new Dictionary<string, FatoResolvido>(StringComparer.Ordinal))).Value!;
+        ComprovanteInscricao comprovante = rascunho.Submeter(
+            "000901", contexto.Admitidas.OfertasDeCurso.Single(), new Dictionary<string, JsonElement>(StringComparer.Ordinal),
+            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [], contexto.Admitidas, avaliacao,
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal), DerivadosDoSistemaInscricao.DefinicoesDasRespostas,
+            PrecondicaoIfMatch.DeTags([rascunho.ETag]), DentroDoPeriodo.GetUtcNow()).Value!;
+        await envioRepository.AtualizarAsync(rascunho, CancellationToken.None);
+        await envioRepository.AdicionarComprovanteAsync(comprovante, CancellationToken.None);
+        await envioContext.SaveChangesAsync(CancellationToken.None);
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        InscricaoRepository leitura = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+        Inscricao enviada = (await leitura.ObterPorIdAsync(inscricao.Id))!;
+        enviada.Respostas.Should().ContainKey("PRECISA_ATENDIMENTO").And.NotContainKey("CONDICAO_DESCRITA");
+        ComprovanteInscricao gravado = (await leitura.ObterComprovantesAsync([inscricao.Id], CancellationToken.None)).Single();
+        gravado.Respostas.Should().NotContainKey("CONDICAO_DESCRITA");
+        gravado.IntegridadeConfere().Should().BeTrue("o hash cobre só o que foi gravado");
     }
 }

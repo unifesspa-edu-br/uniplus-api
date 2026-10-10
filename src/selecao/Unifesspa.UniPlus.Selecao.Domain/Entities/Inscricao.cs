@@ -6,7 +6,9 @@ using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Events;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Events;
@@ -320,6 +322,16 @@ public sealed class Inscricao : EntityBase
     /// completa (obrigatórios, restrições, impedimentos, termos, Geo) é da issue #1859 — aqui só o
     /// ciclo de vida do agregado.
     /// </summary>
+    /// <remarks>
+    /// A inscrição enviada guarda só o que se aplica a ela. A resposta a um item que a
+    /// <paramref name="avaliacao"/> dá como não aplicável — a seção ou o item não aparece diante das
+    /// demais respostas, como a condição de atendimento depois de o candidato dizer que não precisa
+    /// de atendimento — é descartada, junto com a do subitem oculto e a do grupo oculto inteiro:
+    /// ela não vale para o processo e seria dado pessoal guardado sem finalidade. O descarte não
+    /// recusa o envio. O rascunho (<see cref="Salvar"/>) continua guardando a resposta oculta, para o
+    /// candidato poder voltar atrás.
+    /// </remarks>
+    /// <param name="avaliacao">A avaliação do formulário sobre o estado final da inscrição, com todas as etapas concluídas.</param>
     /// <param name="derivados">Substituem os da submissão anterior; o candidato nunca os informa.</param>
     public Result<ComprovanteInscricao> Submeter(
         string numeroGeradoSeNecessario,
@@ -328,6 +340,7 @@ public sealed class Inscricao : EntityBase
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
         IReadOnlyList<AceiteDeTermo> aceites,
         RespostasAdmitidas admitidas,
+        AvaliacaoFormulario avaliacao,
         IReadOnlyDictionary<string, JsonElement> derivados,
         IReadOnlyDictionary<string, DefinicaoDaResposta> definicoesDosDerivados,
         PrecondicaoIfMatch precondicao,
@@ -339,6 +352,7 @@ public sealed class Inscricao : EntityBase
         ArgumentNullException.ThrowIfNull(grupos);
         ArgumentNullException.ThrowIfNull(aceites);
         ArgumentNullException.ThrowIfNull(admitidas);
+        ArgumentNullException.ThrowIfNull(avaliacao);
         ArgumentNullException.ThrowIfNull(definicoesDosDerivados);
 
         if (ConferirPrecondicao(precondicao) is { } erroPrecondicao)
@@ -363,10 +377,10 @@ public sealed class Inscricao : EntityBase
 
         OfertaCursoId = ofertaCursoId;
         Derivados = MesclarPreservandoAusentes(new Dictionary<string, JsonElement>(StringComparer.Ordinal), derivados);
-        Respostas = MesclarPreservandoAusentes(Respostas, respostas)
+        Respostas = SoAsQueSeAplicam(MesclarPreservandoAusentes(Respostas, respostas), avaliacao.Fatos)
             .Where(r => !Derivados.ContainsKey(r.Key))
             .ToDictionary(static r => r.Key, static r => r.Value, StringComparer.Ordinal);
-        Grupos = SemValoresNulos(grupos);
+        Grupos = GruposQueSeAplicam(SemValoresNulos(grupos), avaliacao.Grupos);
         Aceites = aceites;
         DefinicoesDasRespostas = admitidas.Definicoes.Concat(definicoesDosDerivados)
             .GroupBy(static f => f.Key, StringComparer.Ordinal)
@@ -409,6 +423,44 @@ public sealed class Inscricao : EntityBase
         }
 
         return mesclado;
+    }
+
+    /// <summary>As respostas cujo fato a avaliação não dá como não aplicável; a de fato que ela não conhece fica.</summary>
+    private static Dictionary<string, JsonElement> SoAsQueSeAplicam(
+        IReadOnlyDictionary<string, JsonElement> respostas, IReadOnlyDictionary<string, FatoResolvido> fatos) =>
+        respostas
+            .Where(r => !(fatos.TryGetValue(r.Key, out FatoResolvido? fato) && fato.Estado == EstadoFato.NaoAplicavel))
+            .ToDictionary(static r => r.Key, static r => r.Value, StringComparer.Ordinal);
+
+    /// <summary>
+    /// Os grupos que se aplicam, cada ocorrência só com as respostas dos subitens que aparecem nela. Os
+    /// ids das ocorrências já foram conferidos como únicos por <see cref="ConferirValores"/>.
+    /// </summary>
+    private static Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> GruposQueSeAplicam(
+        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos, IReadOnlyList<AvaliacaoGrupo> avaliados)
+    {
+        Dictionary<string, AvaliacaoGrupo> avaliadoPorCodigo = avaliados.ToDictionary(static g => g.Codigo, StringComparer.Ordinal);
+        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> aplicaveis = new(StringComparer.Ordinal);
+        foreach ((string codigo, IReadOnlyList<OcorrenciaDeGrupoInscricao> ocorrencias) in grupos)
+        {
+            if (!avaliadoPorCodigo.TryGetValue(codigo, out AvaliacaoGrupo? avaliado))
+            {
+                aplicaveis[codigo] = ocorrencias;
+                continue;
+            }
+
+            if (avaliado.Estado == EstadoFato.NaoAplicavel)
+            {
+                continue;
+            }
+
+            Dictionary<string, AvaliacaoOcorrencia> avaliadaPorId = avaliado.Ocorrencias.ToDictionary(static o => o.Id, StringComparer.Ordinal);
+            aplicaveis[codigo] = [.. ocorrencias.Select(o => avaliadaPorId.TryGetValue(o.Id, out AvaliacaoOcorrencia? avaliada)
+                ? o with { Respostas = SoAsQueSeAplicam(o.Respostas, avaliada.Fatos) }
+                : o)];
+        }
+
+        return aplicaveis;
     }
 
     private static Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> SemValoresNulos(

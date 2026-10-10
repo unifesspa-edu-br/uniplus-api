@@ -188,7 +188,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         respostas["ENDERECO_RESIDENCIAL"] = JsonSerializer.Deserialize<JsonElement>(
             """{"cep":"68500000","logradouro":"Folha 31","cidade":{"codigoIbge":"1504208","nome":"Marabá","uf":"PA"},"origem":"geo-api"}""");
         original.Submeter(
-            "000321", OfertaDoProcesso, respostas, SemGrupos(), [], Admitidas,
+            "000321", OfertaDoProcesso, respostas, SemGrupos(), [], Admitidas, FormularioDeTeste.AvaliacaoSemOcultos,
             Respostas(("FAIXA_ETARIA", 25), ("UF_RESIDENCIA", "PA")), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
 
         await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
@@ -273,7 +273,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
     {
         Inscricao original = NovaInscricao(PersonasDeTeste.KevinCarvalho, Guid.CreateVersion7());
         original.Submeter(
-            "000654", OfertaDoProcesso, Respostas(("NOME_SOCIAL", "Kevin")), SemGrupos(), [], Admitidas,
+            "000654", OfertaDoProcesso, Respostas(("NOME_SOCIAL", "Kevin")), SemGrupos(), [], Admitidas, FormularioDeTeste.AvaliacaoSemOcultos,
             Respostas(("UF_RESIDENCIA", "PA")), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
 
         await using (SelecaoDbContext context = _fixture.CreateDbContext())
@@ -310,10 +310,10 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         {
             InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
             ComprovanteInscricao envio = original.Submeter(
-                "000777", OfertaDoProcesso, Respostas(("NOME_SOCIAL", "Ariel")), SemGrupos(), [], Admitidas,
+                "000777", OfertaDoProcesso, Respostas(("NOME_SOCIAL", "Ariel")), SemGrupos(), [], Admitidas, FormularioDeTeste.AvaliacaoSemOcultos,
                 Respostas(), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), primeira).Value!;
             ComprovanteInscricao correcao = original.Submeter(
-                "000777", OfertaDoProcesso, Respostas(("NOME_SOCIAL", "Ariel D.")), SemGrupos(), [], Admitidas,
+                "000777", OfertaDoProcesso, Respostas(("NOME_SOCIAL", "Ariel D.")), SemGrupos(), [], Admitidas, FormularioDeTeste.AvaliacaoSemOcultos,
                 Respostas(), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), primeira.AddMinutes(5)).Value!;
             hashDaCorrecao = correcao.HashIntegridade;
             await repositorio.AdicionarAsync(original);
@@ -352,7 +352,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         {
             InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
             ComprovanteInscricao envio = original.Submeter(
-                "000778", OfertaDoProcesso, Respostas(("NOME_SOCIAL", "Ariel")), SemGrupos(), [], Admitidas,
+                "000778", OfertaDoProcesso, Respostas(("NOME_SOCIAL", "Ariel")), SemGrupos(), [], Admitidas, FormularioDeTeste.AvaliacaoSemOcultos,
                 derivados, DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]),
                 new DateTimeOffset(2026, 10, 10, 12, 0, 0, 123, TimeSpan.Zero)).Value!;
             await repositorio.AdicionarAsync(original);
