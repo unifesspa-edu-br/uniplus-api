@@ -4,6 +4,9 @@ using System.Net;
 
 using Microsoft.Extensions.Logging;
 
+using Polly.CircuitBreaker;
+using Polly.Timeout;
+
 using Refit;
 
 using Unifesspa.UniPlus.Kernel.Results;
@@ -45,7 +48,8 @@ internal sealed partial class ConferenciaEnderecoGeo : IConferenciaEnderecoGeo
         {
             resposta = await _geo.ResolverCepAsync(cep, cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception excecao) when (excecao is HttpRequestException or TaskCanceledException or TimeoutException or GeoAutenticacaoException)
+        catch (Exception excecao) when (excecao is HttpRequestException or TaskCanceledException or TimeoutException
+            or TimeoutRejectedException or BrokenCircuitException or GeoAutenticacaoException)
         {
             LogGeoIndisponivel(_logger, "cep", excecao);
             return Result.Failure(ErroIndisponivel());
@@ -85,7 +89,8 @@ internal sealed partial class ConferenciaEnderecoGeo : IConferenciaEnderecoGeo
         {
             resposta = await _geo.ObterCidadeAsync(cidadeCodigoIbgeDeclarado, cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception excecao) when (excecao is HttpRequestException or TaskCanceledException or TimeoutException or GeoAutenticacaoException)
+        catch (Exception excecao) when (excecao is HttpRequestException or TaskCanceledException or TimeoutException
+            or TimeoutRejectedException or BrokenCircuitException or GeoAutenticacaoException)
         {
             LogGeoIndisponivel(_logger, "cidade", excecao);
             return Result.Failure(ErroIndisponivel());

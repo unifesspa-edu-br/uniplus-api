@@ -9,6 +9,9 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 using NSubstitute;
 
+using Polly.CircuitBreaker;
+using Polly.Timeout;
+
 using Refit;
 
 using Unifesspa.UniPlus.Kernel.Results;
@@ -79,6 +82,34 @@ public sealed class ConferenciaEnderecoGeoTests
 
         ConferenciaEnderecoGeo conferencia = new(geo, NullLogger<ConferenciaEnderecoGeo>.Instance);
         Result resultado = await conferencia.ConferirCepAsync("68500000", "1504208", "PA");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
+    }
+
+    [Fact(DisplayName = "Timeout da resiliência (Polly) na chamada ao Geo é falha fechada, não exceção não tratada")]
+    public async Task ConferirCep_TimeoutDaResiliencia_FalhaFechada()
+    {
+        IGeoApi geo = Substitute.For<IGeoApi>();
+        geo.ResolverCepAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromException<ApiResponse<CepResolvidoResponse>>(new TimeoutRejectedException()));
+
+        ConferenciaEnderecoGeo conferencia = new(geo, NullLogger<ConferenciaEnderecoGeo>.Instance);
+        Result resultado = await conferencia.ConferirCepAsync("68500000", "1504208", "PA");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
+    }
+
+    [Fact(DisplayName = "Circuito aberto (Polly) na chamada ao Geo é falha fechada, não exceção não tratada")]
+    public async Task ConferirMunicipio_CircuitoAberto_FalhaFechada()
+    {
+        IGeoApi geo = Substitute.For<IGeoApi>();
+        geo.ObterCidadeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromException<ApiResponse<CidadeDetalheResponse>>(new BrokenCircuitException()));
+
+        ConferenciaEnderecoGeo conferencia = new(geo, NullLogger<ConferenciaEnderecoGeo>.Instance);
+        Result resultado = await conferencia.ConferirMunicipioAsync("1504208", "PA");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
