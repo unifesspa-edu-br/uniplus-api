@@ -499,6 +499,11 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // Renderização pública do formulário de inscrição (Story #559) contra uma versão vigente
         // congelada antes de a apresentação existir no envelope.
         new("FormularioInscricao.VersaoSemApresentacao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_inscricao.versao_sem_apresentacao", "A versão publicada vigente não tem apresentação de formulário")),
+        // Issue #1859 — a versão resolvida (pela divulgação ou pela fixada numa inscrição) não tem
+        // formulário para a finalidade pedida. Quem lê pela divulgação colapsa no não encontrado
+        // único (ver ObterFormularioRenderizavelQueryHandler); quem lê pela inscrição propaga este
+        // código, porque a versão fixada já foi provada existente ao iniciar a inscrição.
+        new("FormularioInscricao.FinalidadeSemFormulario", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_inscricao.finalidade_sem_formulario", "A versão resolvida não tem formulário para a finalidade pedida")),
         // Leitura pública do certame contra uma configuração congelada cujo bloco não tem a forma
         // que a projeção espera. É falha de leitura, não ausência: não colapsa no não encontrado,
         // pelo mesmo motivo da versão de envelope desconhecida — um certame publicado e visível

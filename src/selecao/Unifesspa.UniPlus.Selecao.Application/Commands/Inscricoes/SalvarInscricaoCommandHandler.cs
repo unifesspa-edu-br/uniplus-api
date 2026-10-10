@@ -126,16 +126,15 @@ public static class SalvarInscricaoCommandHandler
         IRegistroCodecsEnvelope registroCodecs,
         CancellationToken cancellationToken)
     {
-        IReadOnlyList<VersaoConfiguracao> versoes = await processoSeletivoRepository
-            .ObterVersoesAsync(processoSeletivoId, cancellationToken)
+        Result<VersaoConfiguracao> resolvida = await Services.VersaoFixadaDaInscricaoResolver
+            .ResolverAsync(versaoFormularioId, processoSeletivoId, processoSeletivoRepository, cancellationToken)
             .ConfigureAwait(false);
-        VersaoConfiguracao? versao = versoes.FirstOrDefault(v => v.Id == versaoFormularioId);
-        if (versao is null)
+        if (resolvida.IsFailure)
         {
-            return Result<FormularioPortavel>.Failure(new DomainError(
-                "Snapshot.VigenteAusente",
-                $"A inscrição fixou a versão {versaoFormularioId}, que não existe mais entre as versões do processo {processoSeletivoId}."));
+            return Result<FormularioPortavel>.Failure(resolvida.Error!);
         }
+
+        VersaoConfiguracao versao = resolvida.Value!;
 
         if (!registroCodecs.SabeLer(versao.SchemaVersion))
         {
