@@ -98,6 +98,9 @@ public static class ObterProcessoSeletivoQueryHandler
         ProjectReferenciaTemporalFatos(processo.ReferenciaTemporalFatos),
         [.. processo.RegrasDerivacao.OrderBy(c => c.CodigoFato, StringComparer.Ordinal).Select(ProjectConfiguracaoDerivacao)],
         [.. processo.Formularios.OrderBy(static f => f.Finalidade).Select(f => ProjectFormulario(processo, f))],
+        [.. processo.OpcoesDeclaradas.GroupBy(static o => o.FatoCodigo, StringComparer.Ordinal).OrderBy(static g => g.Key, StringComparer.Ordinal)
+            .Select(static g => new OpcoesDeclaradasDoFatoDto(
+                g.Key, [.. g.OrderBy(static o => o.Ordem).Select(static o => new OpcaoDoProcessoDto(o.Codigo, o.Rotulo, o.Ordem))]))],
         ProjectConfiguracaoDivulgacao(processo.ConfiguracaoDivulgacao),
         ProjectConfiguracaoTaxaInscricao(processo.ConfiguracaoTaxaInscricao),
         processo.AlgoritmoContagemPrazo is { } algoritmo

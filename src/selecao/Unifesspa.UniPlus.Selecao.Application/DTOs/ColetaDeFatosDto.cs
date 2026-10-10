@@ -62,6 +62,9 @@ public sealed record OpcoesCondicionadasDto(
 /// <summary>Uma opção que o processo oferece a um fato (issue #1619).</summary>
 public sealed record OpcaoDoProcessoDto(string Codigo, string Rotulo, int Ordem);
 
+/// <summary>As opções que o processo declara para um fato, na ordem declarada.</summary>
+public sealed record OpcoesDeclaradasDoFatoDto(string FatoCodigo, IReadOnlyList<OpcaoDoProcessoDto> Opcoes);
+
 /// <summary>
 /// DTO de leitura de uma condição do predicado <c>quando</c> de uma regra de derivação (Story
 /// #987). Mesma forma da escrita (<c>CondicaoDerivacaoInput</c>).

@@ -15153,6 +15153,24 @@
           }
         }
       },
+      "OpcoesDeclaradasDoFatoDto": {
+        "required": [
+          "fatoCodigo",
+          "opcoes"
+        ],
+        "type": "object",
+        "properties": {
+          "fatoCodigo": {
+            "type": "string"
+          },
+          "opcoes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OpcaoDoProcessoDto"
+            }
+          }
+        }
+      },
       "OpcoesSimuladasDto": {
         "required": [
           "codigos",
@@ -15563,6 +15581,7 @@
           "referenciaTemporalFatos",
           "regrasDerivacao",
           "formularios",
+          "opcoesDeclaradas",
           "configuracaoDivulgacao",
           "configuracaoTaxaInscricao",
           "algoritmoContagemPrazo",
@@ -15700,6 +15719,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/FormularioDto"
+            }
+          },
+          "opcoesDeclaradas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OpcoesDeclaradasDoFatoDto"
             }
           },
           "configuracaoDivulgacao": {
