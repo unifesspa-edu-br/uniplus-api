@@ -145,5 +145,10 @@ public static class SelecaoCodegenRegistration
         // ObrigatoriedadeLegal resolvem o cadastro configurável de Configuração para
         // congelar o snapshot-copy — mesmo motivo dos demais readers cross-módulo acima.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoEtapaReader>();
+
+        // Conferência de endereço no Geo (issue #1865): SubmeterInscricaoCommandHandler é o
+        // primeiro consumidor real. O concreto ConferenciaEnderecoGeo é internal a
+        // Selecao.Infrastructure — mesmo motivo dos demais registros internal acima.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IConferenciaEnderecoGeo>();
     }
 }
