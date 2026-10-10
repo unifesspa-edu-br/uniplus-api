@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Application.Commands.Inscricoes;
 using Application.DTOs;
+using Application.Queries.Inscricoes;
 
 using Http;
 
@@ -31,12 +32,36 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class InscricoesController : ControllerBase
 {
     private readonly ICommandBus _commandBus;
+    private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;
 
-    public InscricoesController(ICommandBus commandBus, IDomainErrorMapper mapper)
+    public InscricoesController(ICommandBus commandBus, IQueryBus queryBus, IDomainErrorMapper mapper)
     {
         _commandBus = commandBus;
+        _queryBus = queryBus;
         _mapper = mapper;
+    }
+
+    /// <summary>A inscrição do dono do token, com o <c>ETag</c> também no header, para o <c>If-Match</c> seguinte.</summary>
+    [HttpGet("processos-seletivos/{id:guid}/inscricao")]
+    [Authorize(Policy = "Candidato")]
+    [VendorMediaType(Resource = "inscricao", Versions = [1])]
+    [ProducesResponseType(typeof(InscricaoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> Obter(Guid id, CancellationToken cancellationToken)
+    {
+        Result<InscricaoDto> resultado = await _queryBus
+            .Send(new ObterInscricaoQuery(id), cancellationToken)
+            .ConfigureAwait(false);
+        if (resultado.IsFailure)
+        {
+            return resultado.ToActionResult(_mapper);
+        }
+
+        Response.Headers.ETag = resultado.Value!.ETag;
+        return Ok(resultado.Value);
     }
 
     /// <summary>
