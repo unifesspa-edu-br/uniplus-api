@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed class FormulariosPorFinalidadeTests
 {
     private static FatoColetado Item(string codigo, int ordem, string? etapa = FormularioDeTeste.Secao) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: etapa).Value!;
+        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: etapa, classificacaoProtecao: "PESSOAL").Value!;
 
     private static ProcessoSeletivo ComHabilitacao()
     {
@@ -89,7 +89,7 @@ public sealed class FormulariosPorFinalidadeTests
         FatoColetado.Criar(
             codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Nunca,
             [CondicaoPrecondicaoFato.Criar(0, citado, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!],
-            etapaCodigo: FormularioDeTeste.Secao).Value!;
+            etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL").Value!;
 
     [Fact(DisplayName = "Item de outra finalidade cita fato da inscrição; fato que nenhum dos dois coleta é recusado")]
     public void OutraFinalidade_CitaFatoDaInscricao()
@@ -233,7 +233,7 @@ public sealed class FormulariosPorFinalidadeTests
                 CondicaoPrecondicaoFato.Criar(0, "MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement("AC")).Value!,
                 CondicaoPrecondicaoFato.Criar(0, "TEM_RENDA", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!,
             ],
-            etapaCodigo: FormularioDeTeste.Secao).Value!;
+            etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL").Value!;
         processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [citaOsDois, Item("COMPROVANTE_RENDA", 1)], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
         processo.DefinirRegrasDerivacao([ModalidadeQueDependeDe("COMPROVANTE_RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -254,7 +254,7 @@ public sealed class FormulariosPorFinalidadeTests
     ];
 
     private static FatoColetado ItemNaSecao(string codigo, int ordem, string secao) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: secao).Value!;
+        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: secao, classificacaoProtecao: "PESSOAL").Value!;
 
     [Fact(DisplayName = "Exibição de seção cita campo de seção anterior; campo da própria seção é recusado")]
     public void Secao_ExibicaoCitaSoOQueVemAntes()
@@ -328,12 +328,12 @@ public sealed class FormulariosPorFinalidadeTests
     }
 
     private static FatoColetado Opcional(string codigo, int ordem, params CondicaoPrecondicaoFato[] precondicoes) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, precondicoes, etapaCodigo: FormularioDeTeste.Secao).Value!;
+        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, precondicoes, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL").Value!;
 
     /// <summary>A data de nascimento na seção dos dados básicos, com a obrigatoriedade do caso.</summary>
     private static FatoColetado DataDeNascimento(Obrigatoriedade obrigatoriedade) => FatoColetado.Criar(
         "DATA_NASCIMENTO", ConjuntoBasicoDaInscricao.Itens.Single(static i => i.FatoCodigo == "DATA_NASCIMENTO").Ordem, "Data de nascimento",
-        TipoRenderizacao.Data, obrigatoriedade, null, etapaCodigo: ConjuntoBasicoDaInscricao.CodigoDaSecao).Value!;
+        TipoRenderizacao.Data, obrigatoriedade, null, etapaCodigo: ConjuntoBasicoDaInscricao.CodigoDaSecao, classificacaoProtecao: "PESSOAL").Value!;
 
     private static FatoColetado CitaFaixaEtaria(int ordem) => Opcional(
         "MENOR_SOB_RESPONSAVEL", ordem, CondicaoPrecondicaoFato.Criar(0, "FAIXA_ETARIA", Operador.MenorIgual, JsonSerializer.SerializeToElement(17)).Value!);
@@ -404,7 +404,7 @@ public sealed class FormulariosPorFinalidadeTests
         FatoColetado.Criar(
             "CONCORRER_EP", ordem, "Concorrer", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca,
             [CondicaoPrecondicaoFato.Criar(0, "MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement("AC")).Value!],
-            etapaCodigo: FormularioDeTeste.Secao).Value!;
+            etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL").Value!;
 
     private static TermoExigidoFormulario TermoQueCita(string fato, int ordem = 0) =>
         TermoExigidoFormulario.Criar(

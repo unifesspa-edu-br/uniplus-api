@@ -433,8 +433,8 @@ public sealed partial class EnvelopeCodec
             }
 
             Result<FatoColetado> fatoColetado = FatoColetado.Criar(
-                fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatoriedade, precondicoes, origemValores, etapaCodigo, finalidade, formato,
-                ajuda, pedirConfirmacao, restricoes, impedimento, classificacaoProtecao);
+                fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatoriedade, precondicoes, classificacaoProtecao, origemValores, etapaCodigo,
+                finalidade, formato, ajuda, pedirConfirmacao, restricoes, impedimento);
             if (fatoColetado.IsFailure)
             {
                 return leitor.Propagar<IReadOnlyList<FatoColetado>>(fatoColetado.Error!) ?? [];

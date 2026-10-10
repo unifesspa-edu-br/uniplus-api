@@ -201,6 +201,7 @@ internal static class FormularioDeTeste
                 fato.FatoCodigo, ConjuntoBasicoDaInscricao.Itens.Single(i => i.FatoCodigo == fato.FatoCodigo).Ordem, fato.Rotulo,
                 fato.TipoRenderizacao, fato.Obrigatoriedade,
                 [.. fato.Precondicoes.Select(static c => CondicaoPrecondicaoFato.Criar(c.Clausula, c.Fato, c.Operador, c.Valor).Value!)],
+                fato.ClassificacaoProtecao,
                 fato.OrigemValores, ConjuntoBasicoDaInscricao.CodigoDaSecao, formato: fato.Formato, ajuda: fato.Ajuda,
                 pedirConfirmacao: fato.PedirConfirmacao, restricoes: fato.Restricoes, impedimento: fato.Impedimento).Value!;
 
@@ -210,6 +211,7 @@ internal static class FormularioDeTeste
             : FatoColetado.Criar(
                 fato.FatoCodigo, fato.Ordem + deslocamento, fato.Rotulo, fato.TipoRenderizacao, fato.Obrigatoriedade,
                 [.. fato.Precondicoes.Select(static c => CondicaoPrecondicaoFato.Criar(c.Clausula, c.Fato, c.Operador, c.Valor).Value!)],
+                fato.ClassificacaoProtecao,
                 fato.OrigemValores, fato.EtapaCodigo ?? Secao, formato: fato.Formato, ajuda: fato.Ajuda, pedirConfirmacao: fato.PedirConfirmacao,
                 restricoes: fato.Restricoes, impedimento: fato.Impedimento).Value!;
 
@@ -236,6 +238,15 @@ internal static class FormularioDeTeste
         ["NOME_COMUNIDADE"] = "LIVRE",
     };
 
+    /// <summary>A classificação de proteção de dados que o catálogo dá a cada fato do conjunto básico.</summary>
+    private static readonly Dictionary<string, string> ClassificacaoDosFatos = new(StringComparer.Ordinal)
+    {
+        ["NOME_SOCIAL"] = "PUBLICO",
+        ["CPF"] = "IDENTIFICADOR",
+        ["RG_NUMERO"] = "IDENTIFICADOR",
+        ["DOCUMENTO_ESTRANGEIRO_NUMERO"] = "IDENTIFICADOR",
+    };
+
     /// <summary>O item básico na forma do domínio, a partir da entrada do conjunto básico.</summary>
     private static FatoColetado Basico(FatoColetadoInput entrada)
     {
@@ -245,6 +256,7 @@ internal static class FormularioDeTeste
             CondicaoPrecondicaoFato.Criar(indice, c.Fato, OperadorCodigo.FromCodigo(c.Operador), c.Valor).Value!))];
         return FatoColetado.Criar(
             entrada.FatoCodigo, entrada.Ordem, entrada.Rotulo, TipoRenderizacaoCodigo.FromCodigo(entrada.TipoRenderizacao), obrigatoriedade, precondicoes,
+            ClassificacaoDosFatos.GetValueOrDefault(entrada.FatoCodigo, "PESSOAL"),
             entrada.FatoCodigo.EndsWith("_UF", StringComparison.Ordinal) ? Unifesspa.UniPlus.Selecao.Domain.Enums.OrigemValoresColeta.UnidadesFederativas : default,
             entrada.EtapaCodigo, formato: FormatoDosTextos.GetValueOrDefault(entrada.FatoCodigo),
             restricoes: [.. (entrada.Restricoes ?? []).Select(static r => EntradaDeRegras.Restricao(r).Value!)]).Value!;

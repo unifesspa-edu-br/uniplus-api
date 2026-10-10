@@ -71,7 +71,7 @@ public sealed class ColetabilidadeDeFatosGateTests
         ValoresDominioDeclarados: ValoresCorRaca, FonteValores: "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL");
 
     private static FatoColetado FatoColetadoModalidade() =>
-        FatoColetado.Criar("MODALIDADE", 0, "Modalidade", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!;
+        FatoColetado.Criar("MODALIDADE", 0, "Modalidade", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!;
 
     [Fact(DisplayName = "Publicar_ComFatoColetadoNaoMaisDeclarado_RecusaSemCanonicalizar — o gate precede a canonicalização")]
     public async Task Publicar_ComFatoColetadoNaoMaisDeclarado_RecusaSemCanonicalizar()

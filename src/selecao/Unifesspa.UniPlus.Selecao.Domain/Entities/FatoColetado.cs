@@ -129,6 +129,7 @@ public sealed class FatoColetado : EntityBase
         TipoRenderizacao tipoRenderizacao,
         Obrigatoriedade obrigatoriedade,
         IReadOnlyList<CondicaoPrecondicaoFato>? precondicoes,
+        string classificacaoProtecao,
         OrigemValoresColeta origemValores = OrigemValoresColeta.Catalogo,
         string? etapaCodigo = null,
         FinalidadeFormulario finalidade = FinalidadeFormulario.Nenhuma,
@@ -136,8 +137,7 @@ public sealed class FatoColetado : EntityBase
         string? ajuda = null,
         bool pedirConfirmacao = false,
         IReadOnlyList<RestricaoValor>? restricoes = null,
-        Impedimento? impedimento = null,
-        string classificacaoProtecao = "PESSOAL")
+        Impedimento? impedimento = null)
     {
         ArgumentNullException.ThrowIfNull(obrigatoriedade);
         IReadOnlyList<RestricaoValor> restricoesDoItem = restricoes ?? [];

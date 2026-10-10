@@ -290,16 +290,16 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
             faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!;
 
     private static FatoColetado Item(string codigo, int ordem) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao).Value!;
+        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL").Value!;
 
     private static FatoColetado Campo(string codigo, int ordem) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null).Value!;
+        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!;
 
     private static FatoColetado ItemQueCita(string codigo, int ordem, string citado) =>
         FatoColetado.Criar(
             codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Nunca,
             [CondicaoPrecondicaoFato.Criar(0, citado, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!],
-            etapaCodigo: FormularioDeTeste.Secao).Value!;
+            etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL").Value!;
 
     private static GrupoColetado Familia(int ordem, params string[] campos) =>
         GrupoColetado.Criar(

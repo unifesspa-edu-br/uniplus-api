@@ -36,7 +36,7 @@ public sealed class DefinicaoDoProcessoTests
         ProcessoSeletivo processo = ComHabilitacao();
         GrupoColetado familia = GrupoColetado.Criar(
             "COMPOSICAO_FAMILIAR", 0, "FAMILIA", "Composição familiar", 1, null, null, Obrigatoriedade.Sempre,
-            [FatoColetado.Criar("PARENTESCO", 0, "Parentesco", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!],
+            [FatoColetado.Criar("PARENTESCO", 0, "Parentesco", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!],
             FinalidadeFormulario.Habilitacao).Value!;
         processo.DefinirItens([], finalidade: FinalidadeFormulario.Habilitacao, grupos: [familia]).IsSuccess.Should().BeTrue();
 
@@ -53,7 +53,7 @@ public sealed class DefinicaoDoProcessoTests
         processo.DefinirItens(
             [FatoColetado.Criar(
                 "CPF_RESPONSAVEL", 0, "CPF do responsável", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
-                etapaCodigo: "DADOS", finalidade: FinalidadeFormulario.Habilitacao, formato: "CPF").Value!],
+                etapaCodigo: "DADOS", finalidade: FinalidadeFormulario.Habilitacao, formato: "CPF", classificacaoProtecao: "PESSOAL").Value!],
             finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
         DefinicaoItem item = Montar(processo).Etapas.SelectMany(static e => e.Itens).Single(static i => i.FatoCodigo == "CPF_RESPONSAVEL");

@@ -180,7 +180,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     [Fact(DisplayName = "O fato desativado que o processo já coleta não é vínculo novo e fica na cópia")]
     public async Task Handle_FatoDesativadoJaColetado_Mantem()
     {
-        _processo.DefinirItens([FatoColetado.Criar("BAIXA_RENDA", 0, "Baixa renda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null).Value!])
+        _processo.DefinirItens([FatoColetado.Criar("BAIXA_RENDA", 0, "Baixa renda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!])
             .IsSuccess.Should().BeTrue();
 
         Result<AplicacaoDeModeloDto> resultado = await AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("BAIXA_RENDA", 0)]));
@@ -214,7 +214,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     [Fact(DisplayName = "Fora da inscrição, o fato que a inscrição coleta fica nela e sai da cópia")]
     public async Task Handle_HabilitacaoComFatoDaInscricao_MantemNaInscricao()
     {
-        _processo.DefinirItens([FatoColetado.Criar("QUILOMBOLA", 0, "Quilombola", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null).Value!])
+        _processo.DefinirItens([FatoColetado.Criar("QUILOMBOLA", 0, "Quilombola", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!])
             .IsSuccess.Should().BeTrue();
         ModeloFormularioView modelo = Modelo(FinalidadeFormulario.Habilitacao, [Item("QUILOMBOLA", 0), Item("CERTIFICADO", 1)]);
 
@@ -230,7 +230,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     public async Task Handle_InscricaoComFatoDeOutraFinalidade_TrazERelata()
     {
         _processo.DefinirItens(
-            [FatoColetado.Criar("CERTIFICADO", 0, "Certificado", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null).Value!],
+            [FatoColetado.Criar("CERTIFICADO", 0, "Certificado", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!],
             finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
         Result<AplicacaoDeModeloDto> resultado = await AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("CERTIFICADO", 0)]));
@@ -293,7 +293,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     public async Task Handle_RecusaDoAgregadoDepoisDeDescarte_ApontaAPosicaoNoModelo()
     {
         _processo.DefinirItens(
-            [FatoColetado.Criar("CERTIFICADO", 0, "Certificado", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null).Value!],
+            [FatoColetado.Criar("CERTIFICADO", 0, "Certificado", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!],
             finalidade: FinalidadeFormulario.IsencaoTaxa).IsSuccess.Should().BeTrue();
         Guid termoId = Guid.NewGuid();
         Guid versaoId = Guid.NewGuid();

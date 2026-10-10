@@ -269,8 +269,8 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirItens(
         [
-            FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null).Value!,
-            FatoColetado.Criar("CONCORRER_PCD", 1, "CONCORRER_PCD", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [Precond("PCD")]).Value!,
+            FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL").Value!,
+            FatoColetado.Criar("CONCORRER_PCD", 1, "CONCORRER_PCD", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [Precond("PCD")], classificacaoProtecao: "PESSOAL").Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirRegrasDerivacao([DerivadoDe("MODALIDADE", "CONCORRER_PCD")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 

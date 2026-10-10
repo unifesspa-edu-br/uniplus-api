@@ -106,7 +106,7 @@ public sealed class FinalidadeDaExigenciaEndpointTests
                     .IsSuccess.Should().BeTrue();
                 p.DefinirFatosColetados(
                         FinalidadeFormulario.IsencaoTaxa,
-                        [FatoColetado.Criar(fatoDaIsencao, 0, "Bolsista", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao).Value!],
+                        [FatoColetado.Criar(fatoDaIsencao, 0, "Bolsista", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL").Value!],
                         PrecondicaoIfMatch.Ausente)
                     .IsSuccess.Should().BeTrue();
             });

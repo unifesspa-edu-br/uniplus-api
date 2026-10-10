@@ -125,12 +125,11 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// sem migration, mas também sem obrigação de bump a cada mudança. O
     /// versionamento forense (um bump por chave nova ou por stub virando
     /// conteúdo real, com encoder anterior aposentado) começa a valer a
-    /// partir do primeiro certame publicado em <b>produção</b> (decisão do
-    /// LT em 09/10/2026, registrada na emenda 1.2 da ADR-0081): homologação
-    /// não trava nada, porque não há dado de homologação que precise ser
-    /// preservado. Toda versão aqui declarada tem de ter a sua golden
-    /// fixture correspondente — um teste de política falha o build se não
-    /// tiver.
+    /// partir do primeiro certame publicado em <b>produção</b>, não em
+    /// qualquer ambiente (ADR-0137, emenda às ADRs 0109 e 0110): processos
+    /// de homologação são descartáveis e recriados quando a forma muda.
+    /// Toda versão aqui declarada tem de ter a sua golden fixture
+    /// correspondente — um teste de política falha o build se não tiver.
     /// </summary>
     /// <remarks>
     /// Story #575: <c>cascataRemanejamento</c> sai de stub para bloco real

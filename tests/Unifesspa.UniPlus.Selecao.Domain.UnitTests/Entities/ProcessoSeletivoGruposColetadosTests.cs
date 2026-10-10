@@ -269,10 +269,10 @@ public sealed class ProcessoSeletivoGruposColetadosTests
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     private static FatoColetado Item(string fato, int ordem, string? citado = null) => FatoColetado.Criar(
-        fato, ordem, fato, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, Precondicao(citado)).Value!;
+        fato, ordem, fato, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, Precondicao(citado), classificacaoProtecao: "PESSOAL").Value!;
 
     private static FatoColetado Campo(string fato, int ordem, string? citado = null) => FatoColetado.Criar(
-        fato, ordem, fato, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, Precondicao(citado)).Value!;
+        fato, ordem, fato, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, Precondicao(citado), classificacaoProtecao: "PESSOAL").Value!;
 
     private static CondicaoPrecondicaoFato[]? Precondicao(string? citado) =>
         citado is null ? null : [CondicaoPrecondicaoFato.Criar(0, citado, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!];

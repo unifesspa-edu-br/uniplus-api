@@ -155,7 +155,7 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
             etapaCodigo: FormularioDeTeste.Secao,
             impedimento: new Impedimento(
                 PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("VINCULO_PARFOR", Operador.Igual, Json(true)).Value!)]).Value!,
-                Mensagem)).Value!;
+                Mensagem), classificacaoProtecao: "PESSOAL").Value!;
         processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [.. FormularioDeTeste.DadosBasicos(), parfor], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
@@ -258,8 +258,8 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
             PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("COR_RACA", Operador.Em, Json(new[] { "PRETA", "PARDA", "INDIGENA" })).Value!)]).Value!,
             Obrigatoriedade.Sempre,
             [
-                FatoColetado.Criar("CATEGORIA_RENDA", 0, "Categoria de renda", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!,
-                FatoColetado.Criar("MENOR_SOB_GUARDA", 1, "Menor sob guarda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null).Value!,
+                FatoColetado.Criar("CATEGORIA_RENDA", 0, "Categoria de renda", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
+                FatoColetado.Criar("MENOR_SOB_GUARDA", 1, "Menor sob guarda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
             ],
             FinalidadeFormulario.Habilitacao).Value!;
         processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [], PrecondicaoIfMatch.Ausente, [composicao]).IsSuccess.Should().BeTrue();

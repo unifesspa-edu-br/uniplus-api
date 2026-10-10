@@ -22,7 +22,7 @@ public sealed class FatoColetadoTests
     public void Criar_RotuloVazio_RetornaFalha()
     {
         Result<FatoColetado> resultado = FatoColetado.Criar(
-            "COR_RACA", 0, "", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null);
+            "COR_RACA", 0, "", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ItemFormularioErrorCodes.RotuloObrigatorio);
@@ -32,7 +32,7 @@ public sealed class FatoColetadoTests
     public void Criar_RotuloSoEspaco_RetornaFalha()
     {
         Result<FatoColetado> resultado = FatoColetado.Criar(
-            "COR_RACA", 0, "   ", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null);
+            "COR_RACA", 0, "   ", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ItemFormularioErrorCodes.RotuloObrigatorio);
@@ -42,7 +42,7 @@ public sealed class FatoColetadoTests
     public void Criar_TipoRenderizacaoNenhuma_RetornaFalha()
     {
         Result<FatoColetado> resultado = FatoColetado.Criar(
-            "COR_RACA", 0, "Cor ou raça", TipoRenderizacao.Nenhuma, Obrigatoriedade.Nunca, null);
+            "COR_RACA", 0, "Cor ou raça", TipoRenderizacao.Nenhuma, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ItemFormularioErrorCodes.TipoRenderizacaoObrigatorio);
@@ -55,7 +55,7 @@ public sealed class FatoColetadoTests
     [InlineData(TipoRenderizacao.Booleano, null, true)]
     public void Criar_FormatoSoEmCampoDeTexto(TipoRenderizacao tipo, string? formato, bool aceito)
     {
-        Result<FatoColetado> resultado = FatoColetado.Criar("NOME_SOCIAL", 0, "Nome social", tipo, Obrigatoriedade.Nunca, null, formato: formato);
+        Result<FatoColetado> resultado = FatoColetado.Criar("NOME_SOCIAL", 0, "Nome social", tipo, Obrigatoriedade.Nunca, null, formato: formato, classificacaoProtecao: "PESSOAL");
 
         if (aceito)
         {
@@ -73,13 +73,13 @@ public sealed class FatoColetadoTests
         Obrigatoriedade quando = Obrigatoriedade.Quando(PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(0, CondicaoDnf.Criar("PCD", Operador.Igual, System.Text.Json.JsonSerializer.SerializeToElement(true)).Value!)]).Value!);
 
-        FatoColetado.Criar("PCD", 0, "Pessoa com deficiência", TipoRenderizacao.Booleano, quando, null)
+        FatoColetado.Criar("PCD", 0, "Pessoa com deficiência", TipoRenderizacao.Booleano, quando, null, classificacaoProtecao: "PESSOAL")
             .Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ItemFormularioErrorCodes.RegraAutorreferente);
     }
 
     [Fact(DisplayName = "Ajuda acima do limite é recusada no campo")]
     public void Criar_AjudaLonga_Recusa() =>
-        FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, ajuda: new string('a', FormaDoItem.AjudaMaxLength + 1))
+        FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, ajuda: new string('a', FormaDoItem.AjudaMaxLength + 1), classificacaoProtecao: "PESSOAL")
             .Errors.Should().ContainSingle().Which.Field.Should().Be("ajuda");
 
     public static TheoryData<TipoRenderizacao, RestricaoValor, bool> RestricoesPorTipoDeCampo => new()
@@ -97,7 +97,7 @@ public sealed class FatoColetadoTests
     public void Criar_RestricaoPorTipoDeCampo(TipoRenderizacao tipo, RestricaoValor restricao, bool aceita)
     {
         string? formato = tipo == TipoRenderizacao.Texto ? "LIVRE" : null;
-        Result<FatoColetado> resultado = FatoColetado.Criar("CAMPO", 0, "Campo", tipo, Obrigatoriedade.Nunca, null, formato: formato, restricoes: [restricao]);
+        Result<FatoColetado> resultado = FatoColetado.Criar("CAMPO", 0, "Campo", tipo, Obrigatoriedade.Nunca, null, formato: formato, restricoes: [restricao], classificacaoProtecao: "PESSOAL");
 
         if (aceita)
         {
@@ -116,7 +116,7 @@ public sealed class FatoColetadoTests
     [Fact(DisplayName = "Duas restrições do mesmo tipo no item são recusadas")]
     public void Criar_RestricaoRepetida_Recusa() =>
         FatoColetado.Criar("IDADE", 0, "Idade", TipoRenderizacao.Numero, Obrigatoriedade.Nunca, null,
-                restricoes: [new FaixaNumerica(0, null), new FaixaNumerica(null, 100)])
+                restricoes: [new FaixaNumerica(0, null), new FaixaNumerica(null, 100)], classificacaoProtecao: "PESSOAL")
             .Errors.Should().ContainSingle().Which.Error.Code.Should().Be(RestricaoValorErrorCodes.TipoRepetido);
 
     [Theory(DisplayName = "Limite da faixa com mais casas decimais do que o edital congela é recusado")]
@@ -124,14 +124,14 @@ public sealed class FatoColetadoTests
     [InlineData("0.00001", false)]
     public void Criar_LimiteDaFaixaAlemDasCasasDecimais(string minimo, bool aceita) =>
         FatoColetado.Criar("NOTA", 0, "Nota", TipoRenderizacao.Numero, Obrigatoriedade.Nunca, null,
-                restricoes: [new FaixaNumerica(decimal.Parse(minimo, System.Globalization.CultureInfo.InvariantCulture), null)])
+                restricoes: [new FaixaNumerica(decimal.Parse(minimo, System.Globalization.CultureInfo.InvariantCulture), null)], classificacaoProtecao: "PESSOAL")
             .IsSuccess.Should().Be(aceita);
 
     [Fact(DisplayName = "As opções permitidas entram nas condições do item como pertinência do próprio fato, para os vínculos de valor")]
     public void Condicoes_OpcoesPermitidas_CitamOsValoresDoProprioFato()
     {
         FatoColetado fato = FatoColetado.Criar("COR_RACA", 1, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null,
-            restricoes: [new OpcoesPermitidas([new OpcoesCondicionadas(null, ["PRETA", "PARDA"])])]).Value!;
+            restricoes: [new OpcoesPermitidas([new OpcoesCondicionadas(null, ["PRETA", "PARDA"])])], classificacaoProtecao: "PESSOAL").Value!;
 
         CondicaoDnf pertinencia = fato.Condicoes.Should().ContainSingle().Which;
         pertinencia.Fato.Should().Be("COR_RACA");
@@ -142,7 +142,7 @@ public sealed class FatoColetadoTests
     public void Criar_RotuloComEspacos_EAparado()
     {
         Result<FatoColetado> resultado = FatoColetado.Criar(
-            "COR_RACA", 0, "  Cor ou raça  ", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null);
+            "COR_RACA", 0, "  Cor ou raça  ", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL");
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Rotulo.Should().Be("Cor ou raça");
@@ -152,7 +152,7 @@ public sealed class FatoColetadoTests
     public void Criar_ApresentacaoCompleta_Aceita()
     {
         Result<FatoColetado> resultado = FatoColetado.Criar(
-            "BAIXA_RENDA", 0, "Baixa renda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null);
+            "BAIXA_RENDA", 0, "Baixa renda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL");
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Rotulo.Should().Be("Baixa renda");
@@ -166,7 +166,7 @@ public sealed class FatoColetadoTests
         string codigoLongo = new('A', FormaDoItem.FatoCodigoMaxLength + 1);
 
         Result<FatoColetado> resultado = FatoColetado.Criar(
-            codigoLongo, 0, "Rótulo", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null);
+            codigoLongo, 0, "Rótulo", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ItemFormularioErrorCodes.FatoCodigoTamanho);
@@ -178,7 +178,7 @@ public sealed class FatoColetadoTests
         string rotuloLongo = new('a', FormaDoItem.RotuloMaxLength + 1);
 
         Result<FatoColetado> resultado = FatoColetado.Criar(
-            "COR_RACA", 0, rotuloLongo, TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null);
+            "COR_RACA", 0, rotuloLongo, TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ItemFormularioErrorCodes.RotuloTamanho);
@@ -188,7 +188,7 @@ public sealed class FatoColetadoTests
     public void Criar_OrdemNegativaERotuloVazioETipoRenderizacaoAusente_AcumulaAsTresViolacoes()
     {
         Result<FatoColetado> resultado = FatoColetado.Criar(
-            "COR_RACA", -1, "", TipoRenderizacao.Nenhuma, Obrigatoriedade.Nunca, null);
+            "COR_RACA", -1, "", TipoRenderizacao.Nenhuma, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(

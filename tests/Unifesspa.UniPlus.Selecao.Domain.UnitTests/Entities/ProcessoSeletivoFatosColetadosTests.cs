@@ -31,7 +31,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
         CondicaoPrecondicaoFato.Criar(0, fato, Operador.Igual, Sim).Value!;
 
     private static FatoColetado Fato(string codigo, int ordem, params string[] cita) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [.. cita.Select(Cond)]).Value!;
+        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [.. cita.Select(Cond)], classificacaoProtecao: "PESSOAL").Value!;
 
     [Fact(DisplayName = "Grafo válido é aceito: cada pré-condição cita apenas fatos anteriores")]
     public void GrafoValido_Aceito()
@@ -63,7 +63,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
         FatoColetado.Criar(
             codigo, ordem, codigo, TipoRenderizacao.Booleano,
             Obrigatoriedade.Quando(PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(citado, Operador.Igual, valor ?? Sim).Value!)]).Value!),
-            null).Value!;
+            null, classificacaoProtecao: "PESSOAL").Value!;
 
     [Fact(DisplayName = "Obrigatoriedade QUANDO que cita campo posterior é recusada, como a pré-condição")]
     public void ObrigatoriedadeCitaFatoPosterior_Recusada()
@@ -140,7 +140,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
     [Fact(DisplayName = "Fato citando a si mesmo é recusado na criação, antes de chegar ao grafo")]
     public void Autorreferencia_Recusada()
     {
-        Result<FatoColetado> resultado = FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [Cond("PCD")]);
+        Result<FatoColetado> resultado = FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [Cond("PCD")], classificacaoProtecao: "PESSOAL");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ItemFormularioErrorCodes.RegraAutorreferente);

@@ -79,9 +79,9 @@ public sealed class AplicarModeloDeIsencaoDaTaxaTests
                 Result itens = p.DefinirItens(
                 [
                     FatoColetado.Criar(OrigemEscolar.FatoFormaDeConclusao, ordem, "Como você concluiu o ensino médio?",
-                        TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!,
+                        TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
                     FatoColetado.Criar(OrigemEscolar.FatoOndeCursou, ordem + 1, "Onde você cursou o ensino médio?",
-                        TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!,
+                        TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
                 ]);
                 itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
             });

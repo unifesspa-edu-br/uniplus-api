@@ -742,7 +742,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
             // Texto (em todo formato, inclusive o livre, que pode conter qualquer coisa), data e
             // endereço identificam ou localizam a pessoa: nunca são menos que dado pessoal. Texto
             // também aceita `Identificador` — número de documento é sempre texto (ADR-0136,
-            // emenda 1). A exceção é o nome social de sistema, texto público (ADR-0082, ADR-0136).
+            // emenda de #1857). A exceção é o nome social de sistema, texto público (ADR-0082, ADR-0136).
             Recusar("classificacaoProtecao", FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio,
                 "Fato de texto, data ou endereço é classificado como pessoal, identificador (só texto) ou sensível.");
         }

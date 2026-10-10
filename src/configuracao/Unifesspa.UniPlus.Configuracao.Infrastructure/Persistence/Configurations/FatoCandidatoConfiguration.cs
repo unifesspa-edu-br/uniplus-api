@@ -182,7 +182,7 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
         // Texto, data e endereço nunca são menos que dado pessoal (invariante da factory), salvo o
         // nome social de sistema, texto público (ADR-0082, ADR-0136). Só o domínio texto também
         // aceita `IDENTIFICADOR` — número de documento é sempre texto, nunca data nem endereço
-        // (ADR-0136, emenda 2).
+        // (ADR-0136, emenda de #1857).
         table.HasCheckConstraint(
             "ck_rol_de_fatos_candidato_classificacao_minima_do_dominio",
             $"(sistema AND codigo = '{FatoCandidato.CodigoDoNomeSocial}' AND dominio = 'TEXTO' AND classificacao_protecao = 'PUBLICO') "
