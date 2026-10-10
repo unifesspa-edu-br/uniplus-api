@@ -64,6 +64,23 @@ public sealed class InscricoesController : ControllerBase
         return Ok(resultado.Value);
     }
 
+    /// <summary>O formulário renderizável da versão que a inscrição do dono do token fixou ao iniciar — nunca a vigente por relógio.</summary>
+    [HttpGet("processos-seletivos/{id:guid}/inscricao/formulario")]
+    [Authorize(Policy = "Candidato")]
+    [VendorMediaType(Resource = "formulario-inscricao", Versions = [1])]
+    [ProducesResponseType(typeof(FormularioRenderizavelDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> ObterFormulario(Guid id, CancellationToken cancellationToken)
+    {
+        Result<FormularioRenderizavelDto> resultado = await _queryBus
+            .Send(new ObterFormularioDaInscricaoQuery(id), cancellationToken)
+            .ConfigureAwait(false);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
+    }
+
     /// <summary>
     /// Inicia a inscrição fixando a versão do formulário divulgada neste instante, ou devolve a
     /// que já existe para o mesmo CPF e processo — idempotente por construção (UNI-REQ-0023), não
