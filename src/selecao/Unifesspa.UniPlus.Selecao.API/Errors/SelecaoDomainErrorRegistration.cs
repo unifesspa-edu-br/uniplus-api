@@ -778,6 +778,8 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("Inscricao.DataReferenciaFatosAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.data_referencia_fatos_ausente", "O processo não declara a data de referência que FAIXA_ETARIA exige")),
         new("Inscricao.EnderecoResidencialInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.endereco_residencial_invalido", "O endereço residencial não tem a cidade que a conferência no Geo exige")),
         new(InscricaoErrorCodes.ConflitoDeConcorrencia, new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.inscricao.conflito_de_concorrencia", "Esta inscrição foi alterada por outra operação", RetryableConflict: true)),
+        // Comprovante por número (issue #1860).
+        new(InscricaoErrorCodes.ComprovanteNaoEncontrado, new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.inscricao.comprovante_nao_encontrado", "A inscrição não tem o comprovante com este número")),
         // Base legal 1:N (Story #554, PR #898, issue #549, ADR-0074) — DocumentoExigidoBaseLegal
         // e o gate de publicação (ValidadorBaseLegalExigencias) aflora pelo
         // ProcessoSeletivo.ConformidadeInsuficiente já registrado acima, sem código novo.

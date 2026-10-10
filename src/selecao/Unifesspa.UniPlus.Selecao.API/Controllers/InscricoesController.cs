@@ -173,4 +173,24 @@ public sealed class InscricoesController : ControllerBase
             .ConfigureAwait(false);
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
+
+    /// <summary>
+    /// O comprovante número <paramref name="numero"/> da inscrição do dono do token (issue #1860):
+    /// a primeira submissão é o comprovante 1, cada correção emite o próximo — append-only, o
+    /// anterior nunca muda.
+    /// </summary>
+    [HttpGet("processos-seletivos/{id:guid}/inscricao/comprovantes/{numero:int}")]
+    [Authorize(Policy = "Candidato")]
+    [VendorMediaType(Resource = "comprovante-inscricao", Versions = [1])]
+    [ProducesResponseType(typeof(ComprovanteInscricaoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ObterComprovante(Guid id, int numero, CancellationToken cancellationToken)
+    {
+        Result<ComprovanteInscricaoDto> resultado = await _queryBus
+            .Send(new ObterComprovanteQuery(id, numero), cancellationToken)
+            .ConfigureAwait(false);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
+    }
 }

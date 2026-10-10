@@ -25,4 +25,7 @@ public static class InscricaoErrorCodes
     /// localmente em vez de deixá-la propagar para o 409 central do GlobalExceptionMiddleware.
     /// </summary>
     public const string ConflitoDeConcorrencia = "Inscricao.ConflitoDeConcorrencia";
+
+    /// <summary>O número da URL não corresponde a nenhum comprovante emitido (issue #1860).</summary>
+    public const string ComprovanteNaoEncontrado = "Inscricao.ComprovanteNaoEncontrado";
 }
