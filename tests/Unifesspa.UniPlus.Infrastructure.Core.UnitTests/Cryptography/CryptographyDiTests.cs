@@ -79,6 +79,38 @@ public sealed class CryptographyDiTests
             .WithMessage("*'desconhecido'*");
     }
 
+    // ─── IUniPlusBlindIndexService resolve pelo mesmo Provider ────────────────
+
+    [Fact]
+    public void AddUniPlusEncryption_ProviderLocal_DeveResolverLocalHmacBlindIndexService()
+    {
+        string chaveValida = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+        ServiceProvider sp = new ServiceCollection()
+            .AddLogging()
+            .AddUniPlusEncryption(CriarConfig("local", chaveValida))
+            .BuildServiceProvider();
+
+        IUniPlusBlindIndexService servico = sp.GetRequiredService<IUniPlusBlindIndexService>();
+
+        servico.Should().BeOfType<LocalHmacBlindIndexService>();
+    }
+
+    [Fact]
+    public void AddUniPlusEncryption_ProviderVaultComVaultToken_DeveResolverVaultTransitBlindIndexService()
+    {
+        ServiceProvider sp = new ServiceCollection()
+            .AddLogging()
+            .AddUniPlusEncryption(CriarConfig(
+                "vault",
+                vaultAddress: "http://vault.vault.svc:8200",
+                vaultToken: "hvs.dev"))
+            .BuildServiceProvider();
+
+        IUniPlusBlindIndexService servico = sp.GetRequiredService<IUniPlusBlindIndexService>();
+
+        servico.Should().BeOfType<VaultTransitBlindIndexService>();
+    }
+
     // ─── Fail-fast no boot (IStartupValidator) ────────────────────────────────
 
     [Fact]

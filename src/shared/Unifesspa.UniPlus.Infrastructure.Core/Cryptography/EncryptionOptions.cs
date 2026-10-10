@@ -34,4 +34,12 @@ public sealed class EncryptionOptions
     /// <b>Nunca usar em produção</b> — produção sempre usa KubernetesJwtPath.
     /// </summary>
     public string? VaultToken { get; set; }
+
+    /// <summary>
+    /// Versão fixa da chave HMAC do índice cego (ADR-0121) — nunca acompanha automaticamente
+    /// a versão mais recente da chave no Vault. Trocar é um procedimento deliberado (nova
+    /// versão, recálculo de todos os índices pela decifra do valor original, só então trocar
+    /// este número), nunca um efeito colateral de rotacionar a chave.
+    /// </summary>
+    public int BlindIndexKeyVersion { get; set; } = 1;
 }

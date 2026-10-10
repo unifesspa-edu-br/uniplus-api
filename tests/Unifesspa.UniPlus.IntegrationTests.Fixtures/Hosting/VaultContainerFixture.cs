@@ -50,16 +50,44 @@ public sealed class VaultContainerFixture : IAsyncLifetime
     public async Task EnsureKeyExistsAsync(string keyName, string keyType = "aes256-gcm96")
     {
         using HttpClient client = CreateAdminClient();
+
+        // O Vault não assume key_size para type=hmac (erro "invalid key size for HMAC
+        // key, must be between 32 and 512 bytes" sem ele) — os demais tipos (aes256-gcm96
+        // etc.) já têm tamanho implícito pelo próprio nome e não usam este campo.
+        object body = keyType == "hmac"
+            ? new { type = keyType, key_size = 32 }
+            : new { type = keyType };
+
         HttpResponseMessage response = await client
-            .PostAsJsonAsync($"/v1/{TransitMount}/keys/{keyName}", new { type = keyType })
+            .PostAsJsonAsync($"/v1/{TransitMount}/keys/{keyName}", body)
             .ConfigureAwait(false);
 
         // 200 (criada) ou 400 (já existe) são ambos aceitáveis
         if (!response.IsSuccessStatusCode && response.StatusCode != HttpStatusCode.BadRequest)
         {
+            string responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            throw new InvalidOperationException(
+                $"Falha ao criar chave '{keyName}' no Vault: {response.StatusCode} — {responseBody}");
+        }
+    }
+
+    /// <summary>
+    /// Gira uma chave de transit existente para uma versão nova — usado por testes que
+    /// precisam provar que uma versão fixa (ex.: a do índice cego, ADR-0121) não acompanha
+    /// a versão mais recente da chave.
+    /// </summary>
+    public async Task RotateKeyAsync(string keyName)
+    {
+        using HttpClient client = CreateAdminClient();
+        HttpResponseMessage response = await client
+            .PostAsync($"/v1/{TransitMount}/keys/{keyName}/rotate", content: null)
+            .ConfigureAwait(false);
+
+        if (!response.IsSuccessStatusCode)
+        {
             string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             throw new InvalidOperationException(
-                $"Falha ao criar chave '{keyName}' no Vault: {response.StatusCode} — {body}");
+                $"Falha ao girar a chave '{keyName}' no Vault: {response.StatusCode} — {body}");
         }
     }
 

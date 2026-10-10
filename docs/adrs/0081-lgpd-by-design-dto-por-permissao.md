@@ -90,3 +90,49 @@ A conformidade é verificada por **testes de exposição** (Broken Object Proper
 - Relaciona-se com a [ADR-0019](0019-proibir-pii-em-path-segments-de-url.md) (sem dado pessoal em URL) e a [ADR-0063](0063-entidades-forensics-isentas-de-soft-delete.md) (trilha forense).
 - A classificação específica do **nome social e do nome civil** (quando cada um é público ou pessoal) é decidida na ADR seguinte desta frente, por tocar dignidade e legislação própria.
 - A base legal de cada tratamento e a classificação de cada dado foram **validadas pela Encarregada de Proteção de Dados (DPO)** da instituição — Parecer Técnico 002/2026 (08/06/2026), fundamentado nos arts. 7º II, 7º III e 23 da LGPD.
+
+## Emenda 1 (2026-10-10) — quinto nível de classificação e marco de imutabilidade em produção
+
+A ADR-0136 (catálogo de fatos do candidato) acrescenta à escala citada no driver "LGPD-by-design"
+("cada campo pessoal/sensível tem classificação — público, interno, pessoal, sensível") um quinto
+nível, `IDENTIFICADOR`: o fato que isola, por si só, um indivíduo entre os demais (CPF, passaporte,
+RNM), sem revelar atributo substantivo sobre ele.
+
+**Trechos substituídos.** O parágrafo do driver "LGPD-by-design" que lista a escala em quatro níveis
+é qualificado por 1.1. Nenhum outro trecho desta ADR muda — em especial, a projeção por permissão
+como controle primário e o mascaramento como defesa secundária continuam a mesma decisão.
+
+### 1.1 — `IDENTIFICADOR` projeta tão pouco quanto `SENSIVEL`
+
+Um DTO público ou de perfil sem a permissão correspondente não projeta `IDENTIFICADOR`, pela mesma
+lógica de "o que não é projetado não pode vazar" já aplicada a `PESSOAL`/`SENSIVEL`: isolar um
+indivíduo entre os demais é, por si, uma forma de identificação, ainda que o valor não revele nenhum
+atributo seu. O golden BOPLA test por DTO (seção "Confirmação") passa a cobrir também `IDENTIFICADOR`
+como campo protegido.
+
+### 1.2 — Marco de imutabilidade dos eixos do fato de sistema conta da publicação em produção
+
+A ADR-0136 fixa o marco de imutabilidade dos eixos do fato de sistema na primeira publicação de um
+processo seletivo que o cite. Essa publicação é a de um ambiente de **produção** — a publicação em
+homologação nunca trava eixo nenhum, porque não há dado de homologação que precise ser preservado,
+a mesma lógica que já leva a própria ADR-0136 a recriar, em vez de preservar, os processos de
+homologação afetados por uma reclassificação. A distinção só passa a ter efeito prático quando a
+primeira publicação em produção existir; até lá, todo eixo de todo fato de sistema continua
+reclassificável por código, em PR.
+
+### 1.3 — Controles de produção exigidos pelo fato `IDENTIFICADOR`
+
+A ADR-0136 deixa de cifrar `PESSOAL`/`SENSIVEL` em repouso, para que a classificação e o relatório
+possam ler a base (ver a emenda daquela ADR) — só `IDENTIFICADOR` continua cifrado. A projeção por
+permissão desta ADR passa a ser, na prática, o controle primário também para o que deixa de ter cifra
+em repouso, e por isso a produção exige, além dela: volume do banco e backup cifrados na
+infraestrutura; acesso direto ao banco de produção restrito; relatório e exportação só por visão
+controlada ou réplica, nunca pela tabela base; registro de todo acesso administrativo a inscrição
+identificada; máscara de CPF (`***.999.999-**`) em toda exibição fora do DTO autorizado pela
+permissão.
+
+### Mais informações da emenda
+
+- [ADR-0136](0136-catalogo-de-fatos-do-candidato-administravel.md), seção "Forma do fato" e "Proteção
+  dos valores" — escala correspondente e a regra de cifra, que é dali (e da ADR-0121), não desta ADR.
+- Issue #1856.

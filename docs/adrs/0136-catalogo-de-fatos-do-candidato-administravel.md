@@ -186,6 +186,45 @@ Pelo marco acima, sem publicação que os cite. Como não há produção, os pro
 
 - **Emenda (03/10/2026, #1726):** as fontes `GEO_UF` e `GEO_MUNICIPIO` servem também ao fato declarado, como a UF do RG e a naturalidade. A UF é enumerada pelo Kernel e congelada; o município é referência fraca ao Geo, listado no cliente entre os da UF respondida antes e conferido no servidor por forma e prefixo do código IBGE — município criado pelo IBGE depois da publicação muda só a listagem. Quando um município declarado decidir elegibilidade, vale a regra do endereço do candidato: conferência contra o Geo no servidor, na execução.
 - **Emendada pela ADR-0138:** o agregado sobre grupo repetível é declarado pelo administrador com o vínculo `AGREGACAO_GRUPO:`, o que fecha a exceção em aberto na governança.
+- **Emenda (2026-10-10, #1856):** a escala de classificação de proteção de dados citada em "Forma do
+  fato" (`PUBLICO`, `INTERNO`, `PESSOAL` ou `SENSIVEL`, na escala da ADR-0081) ganha um quinto nível,
+  `IDENTIFICADOR`, entre `PESSOAL` e `SENSIVEL` — o fato que isola, por si só, um indivíduo entre os
+  demais (CPF, passaporte, RNM), sem revelar nenhum atributo substantivo sobre ele; `PESSOAL` e
+  `SENSIVEL` continuam reservados a fatos que revelam algo sobre o candidato além de diferenciá-lo.
+
+  **A regra de cifra muda de sentido, não só de abrangência.** A regra citada em "Proteção dos
+  valores" ("todo valor de fato gravado com classificação `PESSOAL` ou `SENSIVEL` é cifrado") é
+  **substituída**: a partir desta emenda, só o fato que **declara** a classificação `IDENTIFICADOR`
+  é cifrado — `PESSOAL` e `SENSIVEL` deixam de ser cifrados automaticamente. O motivo é prático:
+  cifrar toda a base impediria classificar candidato e gerar relatório sobre cor/raça, deficiência,
+  renda e demais fatos pessoais/sensíveis, que são exatamente os que a classificação e a elegibilidade
+  precisam ler. A exposição desses fatos continua controlada pela projeção por permissão (ADR-0081) e
+  pelo mascaramento em log (`PiiMaskingEnricher`), não pela cifra em repouso. Um derivado ou agregado
+  que dependa de um fato `IDENTIFICADOR` não herda a cifra só por essa dependência: a regra de
+  "Classificação do derivado do administrador" continua herdando `PESSOAL`/`SENSIVEL` quando alguma
+  dependência tiver essa classificação, mas `IDENTIFICADOR` isolado numa dependência não eleva a
+  classificação do derivado, porque o derivado deixa de identificar sozinho quem respondeu.
+
+  **Marco de imutabilidade dos eixos do fato de sistema.** A frase acima, em "Identidade e
+  imutabilidade" ("eles se tornam imutáveis a partir da primeira publicação de um processo seletivo
+  que cite o fato"), é qualificada: essa publicação é a de um ambiente de **produção** — publicação
+  em homologação nunca trava eixo nenhum, porque não há dado de homologação que precise ser
+  preservado (a mesma lógica que já leva este documento a recriar, em vez de preservar, os processos
+  de homologação afetados por uma reclassificação, na seção "Fatos de sistema reclassificados e
+  acrescentados"). Até existir a primeira publicação em produção, todo eixo de todo fato de sistema
+  continua reclassificável por código, em PR.
+
+  **Controles de produção exigidos porque `PESSOAL` e `SENSIVEL` deixam de ser cifrados em
+  repouso** (só `IDENTIFICADOR` continua cifrado): volume do banco e backup cifrados no nível de
+  infraestrutura; acesso direto ao banco de produção restrito; relatório e exportação só por visão
+  controlada ou réplica, nunca pela tabela base; registro de todo acesso administrativo a inscrição
+  identificada; máscara de CPF (`***.999.999-**`) em toda exibição fora do DTO autorizado pela
+  permissão (ADR-0081).
+
+  O valor novo do enum `ClassificacaoProtecaoDado.Identificador` e a migração que reclassifica os
+  fatos de sistema existentes (CPF, passaporte/RNM) ficam para a issue #1857 — esta emenda registra
+  só a decisão. A mesma escala e os mesmos controles de produção são emendados na ADR-0081, que é
+  dona da projeção por permissão, não da cifra — a cifra em repouso é desta ADR e da ADR-0121.
 - UNI-REQ-0143 (catálogo de fatos administrável), UNI-REQ-0065 (vocabulário extensível por configuração), UNI-REQ-0074 (estados do fato), UNI-REQ-0075 (derivados pelo sistema), UNI-REQ-0077 (ordem de coleta), UNI-REQ-0144 (formulário por finalidade), UNI-REQ-0145 (regras do item) e UNI-REQ-0148 (origem escolar).
 - ADR-0055 (código imutável por invariante), ADR-0056 (leitor cross-módulo), ADR-0061 (cópia por valor), ADR-0081 (classificação e base legal do dado pessoal), ADR-0082 (nome social público quando preferido), ADR-0096 (endereço estruturado), ADR-0111 (vocabulário de fatos), ADR-0116 (origem, ponto de resolução e vínculo), ADR-0122 (desativação prospectiva), ADR-0129 (identidade da origem) e ADR-0135 (projeto compartilhado de regras).
 - Lei 13.709/2018 (LGPD), arts. 5º, I e II, 7º e 11.

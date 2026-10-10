@@ -301,3 +301,48 @@ concreto.
 - [ADR-0054](0054-naming-convention-e-strategy-migrations.md) — conflito diferido entre
   `ValueObjectConventions` e `OwnsOne`
 - issues `unifesspa-edu-br/uniplus-api#878`, `#874`, `#876`
+
+## Emenda 1 (2026-10-10) — índice cego implementado, versão de chave fixa (UNI-REQ story de Inscrição)
+
+A story de inscrição do candidato (issue #1856) deu o consumidor concreto que faltava: a unicidade
+de CPF por processo seletivo precisa localizar um valor cifrado sem decifrar toda a tabela. Os dois
+parágrafos que afirmavam não haver consumidor concreto deixam de valer; a capacidade foi construída.
+
+**Trechos substituídos.** O parágrafo que começa com "Consequência prática ainda não implementada:
+`IUniPlusEncryptionService` hoje só expõe `EncryptAsync`/`DecryptAsync`..." (seção "Resultado da
+decisão") e o parágrafo "Consequência ainda não implementada: o índice cego do Discentes..." (seção
+"Prós e contras") são substituídos por 1.1 a 1.3. O restante da ADR permanece vigente — em especial,
+a decisão de uma chave HMAC por módulo (nunca compartilhada) e a correlação cross-module só via
+Reader não mudam.
+
+### 1.1 — `IUniPlusBlindIndexService`, par do `IUniPlusEncryptionService`
+
+`IUniPlusBlindIndexService.ComputarAsync(keyName, valor)` cobre a lacuna: devolve um HMAC
+determinístico do valor, sem decifrar nada. Registrado em `AddUniPlusEncryption` pelo mesmo
+`Provider` do serviço de cifra — trocar o provider troca os dois serviços juntos, nunca um sem o
+outro. Provider `local`: HMAC-SHA256 com subchave derivada de `LocalKey` por HKDF-SHA256 (`info =
+"uniplus-indice-cego:" + keyName"`), nunca a `LocalKey` diretamente. Provider `vault`:
+`transit/hmac/<keyName>/sha2-256`, descartando o prefixo `vault:vN:` da resposta — só o HMAC é
+gravado no banco.
+
+### 1.2 — Versão da chave HMAC é fixa, não acompanha a mais recente
+
+Diferente da cifra (que decifra qualquer versão histórica automaticamente), o índice cego usado como
+chave de busca não pode trocar de versão em silêncio: girar a chave no Vault mudaria todos os índices
+já gravados, e buscas por valores antigos deixariam de encontrar a linha correspondente sem erro
+nenhum — só resultados que somem. `BlindIndexKeyVersion` (configuração, default `1`) fixa a versão
+usada; trocá-la exige recalcular o índice de toda linha existente antes de atualizar a configuração
+(procedimento em `docs/guia-config-cifragem.md`, seção "Índice cego").
+
+### 1.3 — Primeiro consumidor
+
+Unicidade de CPF por processo seletivo na inscrição do candidato (Seleção) — valida que não há duas
+inscrições com o mesmo CPF no mesmo certame sem decifrar a coluna cifrada inteira para comparar.
+
+### Mais informações da emenda
+
+- Implementação: `src/shared/Unifesspa.UniPlus.Infrastructure.Core/Cryptography/IUniPlusBlindIndexService.cs`,
+  `LocalHmacBlindIndexService.cs`, `VaultTransitBlindIndexService.cs` — issue #1856.
+- Guia de configuração: `docs/guia-config-cifragem.md`, seção "Índice cego (`IUniPlusBlindIndexService`)".
+- A manifestação formal da Encarregada de Proteção de Dados sobre o uso do índice cego para CPF
+  (memorando de 2026-10-09) é anexada a esta emenda quando chegar.
