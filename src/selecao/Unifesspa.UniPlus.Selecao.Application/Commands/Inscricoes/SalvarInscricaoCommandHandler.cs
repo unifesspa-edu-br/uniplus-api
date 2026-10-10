@@ -70,6 +70,13 @@ public static class SalvarInscricaoCommandHandler
             return Result<InscricaoDto>.Failure(erroDono);
         }
 
+        // A inscrição enviada não aceita rascunho: recusar antes das respostas evita pedir correção
+        // de um campo numa gravação que não seria aceita de jeito nenhum.
+        if (inscricao.ConferirAindaEmRascunho() is { } erroRascunho)
+        {
+            return Result<InscricaoDto>.Failure(erroRascunho);
+        }
+
         Result<Services.ContextoDaVersaoFixada> contexto = await Services.ContextoDaVersaoFixadaResolver.ResolverAsync(
             inscricao.VersaoFormularioId, command.ProcessoSeletivoId, processoSeletivoRepository, registroCodecs, cancellationToken)
             .ConfigureAwait(false);
