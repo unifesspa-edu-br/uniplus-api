@@ -459,7 +459,25 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.condicao_atendimento.remocao_bloqueada_codigo_protegido",
                 "A condição reservada não pode ser removida")),
 
-        // ── Recurso de acessibilidade (UNI-REQ-0012) ──────────────────────
+        // ── Recurso de acessibilidade (UNI-REQ-0012, UNI-REQ-0061) ────────
+        new(RecursoAcessibilidadeErrorCodes.CodigoObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.recurso_acessibilidade.codigo_obrigatorio",
+                "Código do recurso de acessibilidade é obrigatório")),
+
+        new(RecursoAcessibilidadeErrorCodes.CodigoFormatoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.recurso_acessibilidade.codigo_formato_invalido",
+                "Código do recurso de acessibilidade em formato inválido")),
+
+        new(RecursoAcessibilidadeErrorCodes.CodigoJaExiste,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.recurso_acessibilidade.codigo_ja_existe",
+                "Já existe um recurso de acessibilidade ativo com este código")),
+
         new(RecursoAcessibilidadeErrorCodes.NomeObrigatorio,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,

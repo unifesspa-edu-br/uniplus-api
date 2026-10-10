@@ -8,12 +8,14 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class RecursoAcessibilidadeTests
 {
+    private const string Codigo = "LEDOR";
     private const string Nome = "Ledor";
 
     private static Result<RecursoAcessibilidade> Criar(
+        string? codigo = Codigo,
         string nome = Nome,
         string? descricao = null) =>
-        RecursoAcessibilidade.Criar(nome, descricao);
+        RecursoAcessibilidade.Criar(codigo, nome, descricao);
 
     [Fact(DisplayName = "Criar com dados válidos preenche os campos e fica ativo com Guid v7")]
     public void Criar_DadosValidos_Preenche()
@@ -21,6 +23,7 @@ public sealed class RecursoAcessibilidadeTests
         RecursoAcessibilidade recurso = Criar(descricao: "Profissional que lê a prova ao candidato").Value!;
 
         recurso.Id.Should().NotBe(Guid.Empty);
+        recurso.Codigo.Valor.Should().Be(Codigo);
         recurso.Nome.Should().Be(Nome);
         recurso.Descricao.Should().Be("Profissional que lê a prova ao candidato");
         recurso.IsDeleted.Should().BeFalse();
@@ -32,6 +35,18 @@ public sealed class RecursoAcessibilidadeTests
         RecursoAcessibilidade recurso = Criar(descricao: null).Value!;
 
         recurso.Descricao.Should().BeNull();
+    }
+
+    [Theory(DisplayName = "Código ausente ou fora do formato é rejeitado no campo codigo")]
+    [InlineData(null, RecursoAcessibilidadeErrorCodes.CodigoObrigatorio)]
+    [InlineData("ledor", RecursoAcessibilidadeErrorCodes.CodigoFormatoInvalido)]
+    public void Criar_CodigoInvalido_Falha(string? codigo, string erroEsperado)
+    {
+        Result<RecursoAcessibilidade> resultado = Criar(codigo: codigo);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("codigo");
+        resultado.Error!.Code.Should().Be(erroEsperado);
     }
 
     [Theory(DisplayName = "Nome ausente ou em branco é rejeitado")]
@@ -72,36 +87,27 @@ public sealed class RecursoAcessibilidadeTests
         resultado.Error!.Code.Should().Be(RecursoAcessibilidadeErrorCodes.DescricaoTamanho);
     }
 
-    [Fact(DisplayName = "Atualizar troca os atributos editáveis, inclusive o nome, preservando o Id")]
+    [Fact(DisplayName = "Atualizar troca os atributos editáveis, inclusive código e nome, preservando o Id")]
     public void Atualizar_AlteraAtributos_PreservaId()
     {
         RecursoAcessibilidade recurso = Criar(nome: "Ledor").Value!;
         Guid idOriginal = recurso.Id;
 
-        Result resultado = recurso.Atualizar("Tempo adicional", "Acréscimo de tempo para realização da prova");
+        Result resultado = recurso.Atualizar("TEMPO_ADICIONAL", "Tempo adicional", "Acréscimo de tempo para realização da prova");
 
         resultado.IsSuccess.Should().BeTrue();
+        recurso.Codigo.Valor.Should().Be("TEMPO_ADICIONAL");
         recurso.Nome.Should().Be("Tempo adicional");
         recurso.Descricao.Should().Be("Acréscimo de tempo para realização da prova");
         recurso.Id.Should().Be(idOriginal, "o Id é imutável mesmo com o nome editável");
     }
 
-    [Fact(DisplayName = "Nome ausente e descrição longa acumulam as duas violações")]
-    public void Criar_NomeAusenteEDescricaoLonga_AcumulaAsDuasViolacoes()
+    [Fact(DisplayName = "Código, nome e descrição inválidos acumulam as três violações")]
+    public void Criar_CodigoNomeEDescricaoInvalidos_AcumulaAsTresViolacoes()
     {
-        Result<RecursoAcessibilidade> resultado = Criar(nome: "", descricao: new string('D', 1001));
+        Result<RecursoAcessibilidade> resultado = Criar(codigo: "", nome: "", descricao: new string('D', 1001));
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Errors.Should().HaveCount(2);
-        resultado.Errors[0].Field.Should().Be("nome");
-        resultado.Errors[1].Field.Should().Be("descricao");
-    }
-
-    [Fact(DisplayName = "ValidarCamposDoPayload isolado é público e reusável sem instanciar o agregado")]
-    public void ValidarCamposDoPayload_CamposValidos_Aceita()
-    {
-        Result resultado = RecursoAcessibilidade.ValidarCamposDoPayload(Nome, null);
-
-        resultado.IsSuccess.Should().BeTrue();
+        resultado.Errors.Select(static e => e.Field).Should().Equal("codigo", "nome", "descricao");
     }
 }

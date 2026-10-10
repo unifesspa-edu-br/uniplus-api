@@ -1,9 +1,13 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.RecursosAcessibilidade;
 
+using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Kernel.Results;
+
 /// <summary>
-/// Helper para mapear violações 23505 do índice único parcial do nome vivo do
-/// recurso de acessibilidade — <c>ix_recurso_acessibilidade_nome_vivo</c> — para o
-/// <c>DomainError</c> apropriado. Acessa <c>SqlState</c> e <c>ConstraintName</c>
+/// Helper para mapear violações 23505 dos índices únicos parciais do recurso de
+/// acessibilidade — <c>ix_recurso_acessibilidade_codigo_vivo</c> e
+/// <c>ix_recurso_acessibilidade_nome_vivo</c> — para o <c>DomainError</c> da
+/// constraint efetivamente violada. Acessa <c>SqlState</c> e <c>ConstraintName</c>
 /// por reflection no inner exception — o shape é estável na API pública do
 /// <c>Npgsql.PostgresException</c>. A inspeção do tipo da exceção por
 /// <see cref="System.Type.FullName"/> evita dependência direta do pacote
@@ -11,30 +15,47 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.RecursosAcessibili
 /// Application referencia apenas Domain + SharedKernel + abstrações).
 /// </summary>
 /// <remarks>
-/// Mesmo padrão do <c>UniqueConstraintViolation</c> do cadastro de Tipos de
-/// documento (#591). A tradução cross-cutting de 23505 → 409 via
-/// <c>GlobalExceptionMiddleware</c> permanece como follow-up separado (#504); este
-/// helper cobre o caso específico da unicidade do nome, inclusive a corrida na
-/// atualização (o nome é editável).
+/// Mesmo padrão do <c>UniqueConstraintViolation</c> do cadastro de tipos de
+/// deficiência: com dois índices únicos na tabela, devolver o conflito do outro
+/// mentiria sobre a causa e apontaria o campo errado ao operador.
 /// </remarks>
 internal static class UniqueConstraintViolation
 {
     private const string UniqueViolationSqlState = "23505";
+
+    private const string CodigoConstraint = "ix_recurso_acessibilidade_codigo_vivo";
 
     private const string NomeConstraint = "ix_recurso_acessibilidade_nome_vivo";
 
     private const string DbUpdateExceptionFullName = "Microsoft.EntityFrameworkCore.DbUpdateException";
 
     /// <summary>
-    /// Retorna o nome da constraint violada quando a exceção é uma
-    /// <c>DbUpdateException</c> wrapping uma <c>PostgresException</c> com
-    /// <c>SqlState = "23505"</c>. <see langword="null"/> caso contrário — o
-    /// caller deve propagar a exceção.
+    /// O conflito da constraint violada quando a exceção é uma <c>DbUpdateException</c>
+    /// sobre uma <c>PostgresException</c> 23505 de um dos dois índices;
+    /// <see langword="null"/> caso contrário — o caller deixa a exceção propagar.
     /// </summary>
-    public static string? GetViolatedConstraint(Exception ex)
+    public static DomainError? ConflitoDeUnicidade(Exception ex)
     {
         ArgumentNullException.ThrowIfNull(ex);
 
+        return ConstraintVioladaPor(ex) switch
+        {
+            CodigoConstraint => CodigoJaExisteErro(),
+            NomeConstraint => NomeJaExisteErro(),
+            _ => null,
+        };
+    }
+
+    public static DomainError CodigoJaExisteErro() =>
+        new(RecursoAcessibilidadeErrorCodes.CodigoJaExiste,
+            "Já existe um recurso de acessibilidade vivo com o código informado.");
+
+    public static DomainError NomeJaExisteErro() =>
+        new(RecursoAcessibilidadeErrorCodes.NomeJaExiste,
+            "Já existe um recurso de acessibilidade vivo com o nome informado.");
+
+    private static string? ConstraintVioladaPor(Exception ex)
+    {
         if (!string.Equals(ex.GetType().FullName, DbUpdateExceptionFullName, StringComparison.Ordinal))
         {
             return null;
@@ -55,11 +76,4 @@ internal static class UniqueConstraintViolation
 
         return innerType.GetProperty("ConstraintName")?.GetValue(inner) as string;
     }
-
-    /// <summary>
-    /// <see langword="true"/> quando a constraint violada é o índice único parcial
-    /// que garante um único recurso vivo por nome.
-    /// </summary>
-    public static bool IsNomeConflict(string? constraint) =>
-        string.Equals(constraint, NomeConstraint, StringComparison.Ordinal);
 }

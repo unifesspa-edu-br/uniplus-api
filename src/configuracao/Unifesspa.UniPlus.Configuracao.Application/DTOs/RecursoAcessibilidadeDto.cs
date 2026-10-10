@@ -8,6 +8,7 @@ using System.Text.Json.Serialization;
 /// </summary>
 public sealed record RecursoAcessibilidadeDto(
     Guid Id,
+    string Codigo,
     string Nome,
     string? Descricao,
     DateTimeOffset CriadoEm)

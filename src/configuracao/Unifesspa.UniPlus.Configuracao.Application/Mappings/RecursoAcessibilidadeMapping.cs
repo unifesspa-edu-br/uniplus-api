@@ -10,6 +10,7 @@ public static class RecursoAcessibilidadeMapping
         ArgumentNullException.ThrowIfNull(recurso);
         return new RecursoAcessibilidadeDto(
             recurso.Id,
+            recurso.Codigo.Valor,
             recurso.Nome,
             recurso.Descricao,
             recurso.CreatedAt);

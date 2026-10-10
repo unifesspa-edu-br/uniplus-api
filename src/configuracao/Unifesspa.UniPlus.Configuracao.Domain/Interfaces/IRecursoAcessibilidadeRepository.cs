@@ -16,6 +16,9 @@ public interface IRecursoAcessibilidadeRepository
     /// <summary>Carrega o recurso de acessibilidade para leitura (<c>AsNoTracking</c>) — projeção em DTO.</summary>
     Task<RecursoAcessibilidade?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken cancellationToken);
 
+    /// <summary>Lista todos os recursos de acessibilidade vivos, para leitura (<c>AsNoTracking</c>).</summary>
+    Task<IReadOnlyList<RecursoAcessibilidade>> ListarVivosParaLeituraAsync(CancellationToken cancellationToken);
+
     /// <summary>
     /// Lista recursos de acessibilidade vivos paginados por cursor keyset
     /// bidirecional (ADR-0026 + ADR-0089): ordena por <c>Id</c> (Guid v7, ADR-0032)
@@ -42,6 +45,16 @@ public interface IRecursoAcessibilidadeRepository
     /// </summary>
     Task<bool> NomeExisteEntreVivosAsync(
         string nome,
+        Guid? excluirId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Verifica se existe recurso de acessibilidade vivo com o <paramref name="codigo"/>
+    /// (case-sensitive, sobre o valor normalizado por <c>Trim</c>), excluindo
+    /// opcionalmente um <paramref name="excluirId"/> (para a checagem na atualização).
+    /// </summary>
+    Task<bool> CodigoExisteEntreVivosAsync(
+        string codigo,
         Guid? excluirId,
         CancellationToken cancellationToken);
 }

@@ -17,7 +17,7 @@ public sealed class RemoverRecursoAcessibilidadeCommandHandlerTests
     private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
     private static RecursoAcessibilidade Recurso() =>
-        RecursoAcessibilidade.Criar("Ledor", null).Value!;
+        RecursoAcessibilidade.Criar("LEDOR", "Ledor", null).Value!;
 
     [Fact(DisplayName = "Remover um recurso existente faz soft-delete (Remover + Salvar) sem bloqueio")]
     public async Task Handle_RecursoExistente_FazSoftDelete()

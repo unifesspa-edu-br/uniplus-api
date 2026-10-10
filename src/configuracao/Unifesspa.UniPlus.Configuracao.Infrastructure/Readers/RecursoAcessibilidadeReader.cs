@@ -52,5 +52,5 @@ internal sealed class RecursoAcessibilidadeReader : IRecursoAcessibilidadeReader
     }
 
     private static RecursoAcessibilidadeView ParaView(RecursoAcessibilidade r) =>
-        new(r.Id, r.Nome);
+        new(r.Id, r.Codigo.Valor, r.Nome);
 }

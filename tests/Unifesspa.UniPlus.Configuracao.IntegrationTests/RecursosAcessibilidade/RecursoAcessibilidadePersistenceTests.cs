@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 
 /// <summary>
 /// Integração ponta-a-ponta do RecursoAcessibilidade contra Postgres real
-/// (UNI-REQ-0012): persistência, UNIQUE parcial do nome vivo, liberação do slot por
+/// (UNI-REQ-0012): persistência, UNIQUE parcial do código e do nome vivos, liberação do slot por
 /// soft-delete e leitura cross-módulo ordenada por nome.
 /// </summary>
 [Collection(ConfiguracaoDbCollection.Name)]
@@ -38,7 +38,8 @@ public sealed class RecursoAcessibilidadePersistenceTests
     public async Task Insert_PersisteEFicaVisivelPeloReader()
     {
         string nome = NomeUnico();
-        RecursoAcessibilidade recurso = Novo(nome);
+        string codigo = CodigoUnico();
+        RecursoAcessibilidade recurso = Novo(nome, codigo);
 
         await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
@@ -49,6 +50,7 @@ public sealed class RecursoAcessibilidadePersistenceTests
         await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
         RecursoAcessibilidade persistido = await readCtx.RecursosAcessibilidade.SingleAsync(r => r.Id == recurso.Id);
 
+        persistido.Codigo.Valor.Should().Be(codigo);
         persistido.Nome.Should().Be(nome);
         persistido.CreatedBy.Should().Be(AdminA);
         persistido.IsDeleted.Should().BeFalse();
@@ -56,7 +58,31 @@ public sealed class RecursoAcessibilidadePersistenceTests
         var reader = new RecursoAcessibilidadeReader(readCtx);
         RecursoAcessibilidadeView? view = await reader.ObterPorIdAsync(recurso.Id);
         view.Should().NotBeNull();
-        view!.Nome.Should().Be(nome);
+        view!.Codigo.Should().Be(codigo);
+        view.Nome.Should().Be(nome);
+    }
+
+    [Fact(DisplayName = "UNIQUE parcial do código rejeita segundo recurso vivo com mesmo código")]
+    public async Task UniquePartial_Codigo_RejeitaDuplicataAtiva()
+    {
+        string codigo = CodigoUnico();
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.RecursosAcessibilidade.Add(Novo(NomeUnico(), codigo));
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext ctx2 = _fixture.CreateDbContext(AdminA);
+        ctx2.RecursosAcessibilidade.Add(Novo(NomeUnico(), codigo));
+
+        Func<Task> act = async () => await ctx2.SaveChangesAsync();
+
+        // Trava a constante que o handler usa para traduzir a corrida concorrente em
+        // CodigoJaExiste/409, e não em NomeJaExiste: há dois índices únicos na tabela.
+        DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
+        Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
+        pg.SqlState.Should().Be("23505");
+        pg.ConstraintName.Should().Be("ix_recurso_acessibilidade_codigo_vivo");
     }
 
     [Fact(DisplayName = "UNIQUE parcial do nome rejeita segundo recurso vivo com mesmo nome")]
@@ -75,7 +101,7 @@ public sealed class RecursoAcessibilidadePersistenceTests
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
 
         // Trava as constantes que o handler usa para traduzir a corrida concorrente
-        // (UniqueConstraintViolation.GetViolatedConstraint/IsNomeConflict) em
+        // (UniqueConstraintViolation.ConflitoDeUnicidade) em
         // NomeJaExiste/409: SqlState 23505 + nome do índice único parcial.
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
@@ -161,8 +187,10 @@ public sealed class RecursoAcessibilidadePersistenceTests
         meus.Should().Equal([nomeA, nomeB]);
     }
 
-    private static RecursoAcessibilidade Novo(string nome) =>
-        RecursoAcessibilidade.Criar(nome, "Recurso de acessibilidade").Value!;
+    private static RecursoAcessibilidade Novo(string nome, string? codigo = null) =>
+        RecursoAcessibilidade.Criar(codigo ?? CodigoUnico(), nome, "Recurso de acessibilidade").Value!;
+
+    private static string CodigoUnico() => $"REC_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
 
     private static string NomeUnico() => $"Recurso {Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
 }
