@@ -78,16 +78,14 @@ public static class SalvarInscricaoCommandHandler
             return Result<InscricaoDto>.Failure(regras.Error!);
         }
 
-        Dictionary<string, JsonElement> respostas = command.Request.Respostas is { } r
-            ? new(r, StringComparer.Ordinal)
-            : new(StringComparer.Ordinal);
-        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = ParaDominio(command.Request.Grupos);
+        Dictionary<string, JsonElement> respostas = Services.InscricaoRequestMapper.ParaRespostas(command.Request.Respostas);
+        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = Services.InscricaoRequestMapper.ParaGrupos(command.Request.Grupos);
 
         Result<AvaliacaoFormulario> avaliacao = regras.Value!.Avaliar(new EntradaAvaliacaoFormulario(
             respostas,
             EtapasConcluidas: new HashSet<string>(StringComparer.Ordinal),
             FatosConhecidos: new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
-            RespostasDosGrupos: ParaAvaliacao(grupos)));
+            RespostasDosGrupos: Services.InscricaoRequestMapper.ParaAvaliacao(grupos)));
         if (avaliacao.IsFailure)
         {
             return Result<InscricaoDto>.Failure(avaliacao.Error!);
@@ -99,8 +97,7 @@ public static class SalvarInscricaoCommandHandler
             return Result<InscricaoDto>.ValidationFailure(recusas);
         }
 
-        List<AceiteDeTermo> aceites = [.. (command.Request.Aceites ?? []).Select(
-            static a => new AceiteDeTermo(a.Codigo, a.VersaoId, a.HashVersao))];
+        List<AceiteDeTermo> aceites = Services.InscricaoRequestMapper.ParaAceites(command.Request.Aceites);
 
         Result salvar = inscricao.Salvar(command.Request.OfertaCursoId, respostas, grupos, aceites, command.Precondicao);
         if (salvar.IsFailure)
@@ -160,36 +157,6 @@ public static class SalvarInscricaoCommandHandler
             Domain.Services.DefinicaoDoProcesso.CodigoDaEtapa(FinalidadeFormulario.Inscricao, null),
             avaliavel.Value!.Ofertas);
         return Result<FormularioPortavel>.Success(recorte.Regras);
-    }
-
-    private static Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> ParaDominio(
-        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>? grupos)
-    {
-        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> resultado = new(StringComparer.Ordinal);
-        if (grupos is null)
-        {
-            return resultado;
-        }
-
-        foreach ((string codigo, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput> ocorrencias) in grupos)
-        {
-            resultado[codigo] = [.. ocorrencias.Select(static o => new OcorrenciaDeGrupoInscricao(
-                o.Id, o.Respostas is { } respostas ? new Dictionary<string, JsonElement>(respostas, StringComparer.Ordinal) : new(StringComparer.Ordinal)))];
-        }
-
-        return resultado;
-    }
-
-    private static Dictionary<string, IReadOnlyList<OcorrenciaRespondida>> ParaAvaliacao(
-        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos)
-    {
-        Dictionary<string, IReadOnlyList<OcorrenciaRespondida>> resultado = new(StringComparer.Ordinal);
-        foreach ((string codigo, IReadOnlyList<OcorrenciaDeGrupoInscricao> ocorrencias) in grupos)
-        {
-            resultado[codigo] = [.. ocorrencias.Select(static o => new OcorrenciaRespondida(o.Id, o.Respostas))];
-        }
-
-        return resultado;
     }
 
     /// <summary>
