@@ -750,6 +750,12 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new(OpcaoDeclaradaFatoErrorCodes.ReferenciadaPorExigenciaViva, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.opcao_declarada_fato.referenciada_por_exigencia_viva", "Uma exigência documental cita uma opção que deixaria de existir")),
         new(OpcaoDeclaradaFatoErrorCodes.FonteNaoEhDoProcesso, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.opcao_declarada_fato.fonte_nao_eh_do_processo", "Só se declaram opções para um fato cuja fonte dos valores é o processo")),
         new(OpcaoDeclaradaFatoErrorCodes.EdicaoEnemForaDeProcessoEnem, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.opcao_declarada_fato.edicao_enem_fora_de_processo_enem", "As edições do ENEM só podem ser declaradas quando a classificação do processo é baseada em ENEM")),
+        // Inscrição do candidato (issue #1858).
+        new(InscricaoErrorCodes.SubObrigatorio, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.selecao.inscricao.sub_obrigatorio", "O token precisa trazer o claim sub")),
+        new(InscricaoErrorCodes.EmissorObrigatorio, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.selecao.inscricao.emissor_obrigatorio", "O token precisa trazer o emissor")),
+        new(InscricaoErrorCodes.PrecondicaoRequerida, new DomainErrorMapping(StatusCodes.Status428PreconditionRequired, "uniplus.selecao.inscricao.precondicao_requerida", "A mutação da inscrição exige o If-Match com o ETag corrente")),
+        new(InscricaoErrorCodes.PrecondicaoFalhou, new DomainErrorMapping(StatusCodes.Status412PreconditionFailed, "uniplus.selecao.inscricao.precondicao_falhou", "O If-Match não corresponde ao estado atual da inscrição")),
+        new(InscricaoErrorCodes.DonoDivergente, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.selecao.inscricao.dono_divergente", "Esta inscrição pertence a outro candidato")),
         // Base legal 1:N (Story #554, PR #898, issue #549, ADR-0074) — DocumentoExigidoBaseLegal
         // e o gate de publicação (ValidadorBaseLegalExigencias) aflora pelo
         // ProcessoSeletivo.ConformidadeInsuficiente já registrado acima, sem código novo.
