@@ -44,24 +44,24 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirItens(
-            [FatoColetado.Criar("EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, origemValores: OrigemValoresColeta.OpcoesDoProcesso, classificacaoProtecao: "PESSOAL").Value!],
+            [FatoColetado.Criar("FATO_OPCAO_DE_TESTE", 0, "Fato de opção do processo", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, origemValores: OrigemValoresColeta.OpcoesDoProcesso, classificacaoProtecao: "PESSOAL").Value!],
             PrecondicaoIfMatch.Ausente, finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas(
-            "EDICAO_ENEM",
-            [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2025", "ENEM 2025", 0).Value!,
-             OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2024", "ENEM 2024", 1).Value!],
+            "FATO_OPCAO_DE_TESTE",
+            [OpcaoDeclaradaFato.Criar("FATO_OPCAO_DE_TESTE", "2025", "Opção 2025", 0).Value!,
+             OpcaoDeclaradaFato.Criar("FATO_OPCAO_DE_TESTE", "2024", "Opção 2024", 1).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Dictionary<string, FatoCandidatoView> catalogo = new(StringComparer.Ordinal)
         {
-            ["EDICAO_ENEM"] = FatoCategoricoDeEscopoProcesso("EDICAO_ENEM"),
+            ["FATO_OPCAO_DE_TESTE"] = FatoCategoricoDeEscopoProcesso("FATO_OPCAO_DE_TESTE"),
         };
 
         IReadOnlyList<ValorDominioDeclaradoCongelado>? valores =
-            ResolvedorValoresSelecionaveisCongelados.Resolver(processo, catalogo).Value!["EDICAO_ENEM"];
+            ResolvedorValoresSelecionaveisCongelados.Resolver(processo, catalogo).Value!["FATO_OPCAO_DE_TESTE"];
 
         valores!.Select(static v => v.Codigo).Should().Equal("2025", "2024");
-        valores![0].Descricao.Should().Be("ENEM 2025");
+        valores![0].Descricao.Should().Be("Opção 2025");
     }
 
     [Theory(DisplayName = "Resposta de campo que forma as opções de outro precisa ser opção desse outro na publicação")]

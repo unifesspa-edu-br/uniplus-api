@@ -192,6 +192,15 @@ public sealed class EnvelopeFechadoE2ETests
             HttpStatusCode.NoContent, "PUT classificacao", "/classificacao");
 
         // ══════════════════════════════════════════════════════════════════════════════
+        // Passo 7b — edições do ENEM admitidas (issue #1620): classificação baseada em ENEM
+        // exige ao menos uma opção declarada para o fato EDICAO_ENEM
+        // ══════════════════════════════════════════════════════════════════════════════
+
+        await ExecutarPassoAsync(
+            () => ctx.PutOpcoesDeclaradasAsync("EDICAO_ENEM", [new { codigo = "2026", rotulo = "2026" }]),
+            HttpStatusCode.NoContent, "PUT fatos/EDICAO_ENEM/opcoes", "/fatos/EDICAO_ENEM/opcoes");
+
+        // ══════════════════════════════════════════════════════════════════════════════
         // Passo 8 — cronograma de fases (resolve FaseCanonica/TipoBanca do catálogo semeado)
         // ══════════════════════════════════════════════════════════════════════════════
 
@@ -280,6 +289,7 @@ public sealed class EnvelopeFechadoE2ETests
                 "criterios_desempate_ausentes",
                 "classificacao_divisor_media_invalido",
                 "classificacao_resolucao_peso_area_enem_ausente",
+                "classificacao_edicao_enem_nao_declarada",
                 "distribuicao_vagas_oferta_sem_grupo_area_enem",
                 "classificacao_grupo_area_enem_da_oferta_fora_do_quadro",
 
@@ -622,6 +632,9 @@ public sealed class EnvelopeFechadoE2ETests
 
             return EnviarAsync(HttpMethod.Put, $"{Rota}/{ProcessoId}/criterios-desempate", criterios, ifMatch: null);
         }
+
+        public Task<HttpResponseMessage> PutOpcoesDeclaradasAsync(string fatoCodigo, object[] opcoes) =>
+            EnviarAsync(HttpMethod.Put, $"{Rota}/{ProcessoId}/fatos/{fatoCodigo}/opcoes", new { opcoes }, ifMatch: null);
 
         public Task<HttpResponseMessage> PutClassificacaoAsync(Guid objetivaId, string resolucaoPesoAreaEnem)
         {

@@ -1359,6 +1359,12 @@ public sealed class EnvelopeCodecRoundTripTests
     public void Decoder_NaoPerdeCampo_BaseadoEmEnem(bool valorBase, bool valorMutado)
     {
         ProcessoSeletivo processo = ProcessoSemEliminacaoEnem(valorBase);
+        if (valorBase)
+        {
+            processo.DefinirOpcoesDeclaradas(
+                "EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Ausente)
+                .IsSuccess.Should().BeTrue();
+        }
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
         CorpusEnvelope.Publicar(processo);
 
@@ -1411,6 +1417,9 @@ public sealed class EnvelopeCodecRoundTripTests
             resolucaoPesoAreaEnem: enviada,
             quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo()).Value!, etapaDeNotaDoEnem: false);
         processo.Classificacao!.ResolucaoPesoAreaEnem.Should().Be(doCadastro, "congelada na forma do cadastro");
+        processo.DefinirOpcoesDeclaradas(
+            "EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
 
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
         CorpusEnvelope.Publicar(processo);
@@ -1441,6 +1450,9 @@ public sealed class EnvelopeCodecRoundTripTests
             baseadoEmEnem: true,
             resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,
             quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo()).Value!, etapaDeNotaDoEnem: true);
+        processo.DefinirOpcoesDeclaradas(
+            "EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
 
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
         Envelope(congelado)["etapas"]![0]!["tipoEtapa"]!["notaDeOrigemNoEnem"]!.GetValue<bool>().Should().BeTrue(
@@ -1460,20 +1472,20 @@ public sealed class EnvelopeCodecRoundTripTests
     {
         ProcessoSeletivo processo = ProcessoSemEliminacaoEnem(baseadoEmEnem: false);
         processo.DefinirItens(
-            [FatoColetado.Criar("EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
+            [FatoColetado.Criar("FATO_OPCAO_DE_TESTE", 0, "Opção de Teste", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
                 origemValores: OrigemValoresColeta.OpcoesDoProcesso, classificacaoProtecao: "PESSOAL").Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas(
-            "EDICAO_ENEM",
-            [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2025", "ENEM 2025", 0).Value!,
-             OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2024", "ENEM 2024", 1).Value!],
+            "FATO_OPCAO_DE_TESTE",
+            [OpcaoDeclaradaFato.Criar("FATO_OPCAO_DE_TESTE", "2025", "Opção 2025", 0).Value!,
+             OpcaoDeclaradaFato.Criar("FATO_OPCAO_DE_TESTE", "2024", "Opção 2024", 1).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         EntradaCanonicalizacao entrada = CorpusEnvelope.Entrada(processo) with
         {
             ValoresSelecionaveisCongelados = CatalogoDoConjuntoBasico.ComValoresCongelados(new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
             {
-                ["EDICAO_ENEM"] = [.. processo.OpcoesDoProcesso("EDICAO_ENEM")
+                ["FATO_OPCAO_DE_TESTE"] = [.. processo.OpcoesDoProcesso("FATO_OPCAO_DE_TESTE")
                     .Select(static o => new ValorDominioDeclaradoCongelado(o.Codigo, o.Rotulo, o.Ordem))],
             }),
         };
@@ -1486,9 +1498,9 @@ public sealed class EnvelopeCodecRoundTripTests
         processo.LimparColetaEDerivacaoParaRestauracao();
         processo.RestaurarConfiguracaoCongelada(versao, reidratado.Value!.Grafo).IsSuccess.Should().BeTrue();
 
-        processo.OpcoesDoProcesso("EDICAO_ENEM").Should().Equal(
-            new OpcaoDoProcesso("2025", "ENEM 2025", 0),
-            new OpcaoDoProcesso("2024", "ENEM 2024", 1));
+        processo.OpcoesDoProcesso("FATO_OPCAO_DE_TESTE").Should().Equal(
+            new OpcaoDoProcesso("2025", "Opção 2025", 0),
+            new OpcaoDoProcesso("2024", "Opção 2024", 1));
     }
 
     [Fact(DisplayName = "O descarte repõe as opções congeladas e preserva as de fato que a versão não coleta")]
@@ -1496,13 +1508,13 @@ public sealed class EnvelopeCodecRoundTripTests
     {
         ProcessoSeletivo processo = ProcessoSemEliminacaoEnem(baseadoEmEnem: false);
         processo.DefinirItens(
-            [FatoColetado.Criar("EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
+            [FatoColetado.Criar("FATO_OPCAO_DE_TESTE", 0, "Opção de Teste", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
                 origemValores: OrigemValoresColeta.OpcoesDoProcesso, classificacaoProtecao: "PESSOAL").Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas(
-            "EDICAO_ENEM",
-            [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2025", "ENEM 2025", 0).Value!,
-             OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2024", "ENEM 2024", 1).Value!],
+            "FATO_OPCAO_DE_TESTE",
+            [OpcaoDeclaradaFato.Criar("FATO_OPCAO_DE_TESTE", "2025", "Opção 2025", 0).Value!,
+             OpcaoDeclaradaFato.Criar("FATO_OPCAO_DE_TESTE", "2024", "Opção 2024", 1).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas(
             "LOCAL_PROVA", [OpcaoDeclaradaFato.Criar("LOCAL_PROVA", "MARABA", "Marabá", 0).Value!],
@@ -1512,7 +1524,7 @@ public sealed class EnvelopeCodecRoundTripTests
         {
             ValoresSelecionaveisCongelados = CatalogoDoConjuntoBasico.ComValoresCongelados(new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
             {
-                ["EDICAO_ENEM"] = [.. processo.OpcoesDoProcesso("EDICAO_ENEM")
+                ["FATO_OPCAO_DE_TESTE"] = [.. processo.OpcoesDoProcesso("FATO_OPCAO_DE_TESTE")
                     .Select(static o => new ValorDominioDeclaradoCongelado(o.Codigo, o.Rotulo, o.Ordem))],
             }),
         };
@@ -1527,24 +1539,24 @@ public sealed class EnvelopeCodecRoundTripTests
         processo.AbrirRetificacao("Ajusta as opções", versao, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "teste", DateTimeOffset.UtcNow)
             .IsSuccess.Should().BeTrue();
         processo.DefinirItens(
-            [FatoColetado.Criar("EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
+            [FatoColetado.Criar("FATO_OPCAO_DE_TESTE", 0, "Opção de Teste", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
                 origemValores: OrigemValoresColeta.OpcoesDoProcesso, classificacaoProtecao: "PESSOAL").Value!,
              FatoColetado.Criar("LOCAL_PROVA", 1, "Local de prova", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
                 origemValores: OrigemValoresColeta.OpcoesDoProcesso, classificacaoProtecao: "PESSOAL").Value!],
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas(
-            "EDICAO_ENEM",
-            [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2024", "ENEM 2024", 0).Value!,
-             OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2025", "Editado na sessão", 1).Value!,
-             OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2023", "ENEM 2023", 2).Value!],
+            "FATO_OPCAO_DE_TESTE",
+            [OpcaoDeclaradaFato.Criar("FATO_OPCAO_DE_TESTE", "2024", "Opção 2024", 0).Value!,
+             OpcaoDeclaradaFato.Criar("FATO_OPCAO_DE_TESTE", "2025", "Editado na sessão", 1).Value!,
+             OpcaoDeclaradaFato.Criar("FATO_OPCAO_DE_TESTE", "2023", "Opção 2023", 2).Value!],
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
         processo.LimparColetaEDerivacaoParaRestauracao();
         processo.RestaurarConfiguracaoCongelada(versao, reidratado.Value!.Grafo).IsSuccess.Should().BeTrue();
 
-        processo.OpcoesDoProcesso("EDICAO_ENEM").Should().Equal(
-            new OpcaoDoProcesso("2025", "ENEM 2025", 0),
-            new OpcaoDoProcesso("2024", "ENEM 2024", 1));
+        processo.OpcoesDoProcesso("FATO_OPCAO_DE_TESTE").Should().Equal(
+            new OpcaoDoProcesso("2025", "Opção 2025", 0),
+            new OpcaoDoProcesso("2024", "Opção 2024", 1));
         processo.OpcoesDeclaradas.Should().Contain(static o => o.FatoCodigo == "LOCAL_PROVA" && o.Codigo == "MARABA",
             "a versão não congela as opções de fato que não coleta: elas são configuração viva");
     }

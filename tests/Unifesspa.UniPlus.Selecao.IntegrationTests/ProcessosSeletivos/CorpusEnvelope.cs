@@ -356,6 +356,11 @@ internal static class CorpusEnvelope
             resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,
             quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo(inverterOrdem: permutar)).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
+        // Classificação baseada em ENEM exige ao menos uma edição admitida (issue #1620).
+        processo.DefinirOpcoesDeclaradas(
+            "EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
         processo.DefinirCronogramaFases(
             Ordem([FaseInscricao(variante), FaseResultadoPreliminarComRecurso(variante, permutar), FaseResultadoFinal(variante)], permutar), [], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();

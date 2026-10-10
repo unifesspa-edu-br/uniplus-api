@@ -981,6 +981,8 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'), Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'), 2,
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), 1, [], baseadoEmEnem: true,
             resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao, quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo()).Value!);
+        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
         // A ordem mal formada não passa por CriterioDesempate.Criar: os args são trocados depois,
         // como num critério que chega ao agregado por outro caminho.
         CriterioDesempate criterio = CriterioDesempate.Criar(
@@ -1047,6 +1049,8 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'), Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'), 2,
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), 1, [], baseadoEmEnem: true,
             resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao, quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo()).Value!);
+        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
         // Direto na lista: a gravação recusa a área repetida, e o gate cobre o estado que
         // chega por outro caminho.
         List<CriterioDesempate> criterios = (List<CriterioDesempate>)typeof(ProcessoSeletivo)
@@ -1076,6 +1080,8 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'), Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'), 2,
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), 1, [], baseadoEmEnem: true,
             resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao, quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo()).Value!);
+        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
 
         SoEstesItensVermelhos(processo, "desempate_area_enem_fora_do_quadro");
 
@@ -1374,6 +1380,11 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirDistribuicaoVagas(ofertas, FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(ClassificacaoEnemLocal(quadro ?? QuadroPesoAreaEnemDeTeste.Completo()), PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
+        // Classificação baseada em ENEM exige ao menos uma edição admitida (issue #1620) — sem
+        // ela, o item "classificacao_edicao_enem_nao_declarada" ficaria vermelho e interferiria
+        // nos testes desta classe, que focam nos itens do quadro de pesos por área.
+        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;
     }
@@ -1629,6 +1640,8 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
                 Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), 1, [], baseadoEmEnem: true,
                 resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!,
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
 
         processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Select(static i => i.Codigo).Should().NotContain(
             ["classificacao_resolucao_peso_area_enem_ausente", "distribuicao_vagas_oferta_sem_grupo_area_enem", "classificacao_grupo_area_enem_da_oferta_fora_do_quadro"]);
@@ -1642,33 +1655,33 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     // Opções declaradas pelo processo (issue #1619)
     // ══════════════════════════════════════════════════════════════════════════════════════
 
-    private static FatoColetado FatoEdicaoEnem() => FatoColetado.Criar(
-        "EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
+    private static FatoColetado FatoDeOpcaoDeTeste() => FatoColetado.Criar(
+        "FATO_OPCAO_DE_TESTE", 0, "Fato de opção do processo", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
         origemValores: OrigemValoresColeta.OpcoesDoProcesso, classificacaoProtecao: "PESSOAL").Value!;
 
     private static OpcaoDeclaradaFato Opcao(string codigo, int ordem = 0) =>
-        OpcaoDeclaradaFato.Criar("EDICAO_ENEM", codigo, $"ENEM {codigo}", ordem).Value!;
+        OpcaoDeclaradaFato.Criar("FATO_OPCAO_DE_TESTE", codigo, $"Opção {codigo}", ordem).Value!;
 
     [Fact(DisplayName = "Fato coletado de fonte do processo sem opção declarada: item vermelho e publicação recusada; com opção, liberado")]
     public void FatoDeFonteDoProcessoSemOpcao_RecusaAtePrimeiraOpcao()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirItensComFaseDeInscricao([FatoEdicaoEnem()]).IsSuccess.Should().BeTrue();
+        processo.DefinirItensComFaseDeInscricao([FatoDeOpcaoDeTeste()]).IsSuccess.Should().BeTrue();
 
         VermelhosForaDoFormulario(processo).Should().ContainSingle()
             .Which.Codigo.Should().Be("fato_coletavel_sem_valores_ofertados");
 
-        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [Opcao("2025")], PrecondicaoIfMatch.Ausente)
+        processo.DefinirOpcoesDeclaradas("FATO_OPCAO_DE_TESTE", [Opcao("2025")], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo).Should().BeNull();
-        processo.OpcoesDoProcesso("EDICAO_ENEM").Should().ContainSingle().Which.Codigo.Should().Be("2025");
+        processo.OpcoesDoProcesso("FATO_OPCAO_DE_TESTE").Should().ContainSingle().Which.Codigo.Should().Be("2025");
     }
 
     [Theory(DisplayName = "Definir opções declaradas recusa fato da oferta de atendimento, lista vazia e código repetido")]
     [InlineData("CONDICAO_ATENDIMENTO", 1, "OpcaoDeclaradaFato.GeridasPelaOfertaDeAtendimento")]
-    [InlineData("EDICAO_ENEM", 0, "OpcaoDeclaradaFato.ListaVazia")]
-    [InlineData("EDICAO_ENEM", 2, "OpcaoDeclaradaFato.CodigoRepetido")]
+    [InlineData("FATO_OPCAO_DE_TESTE", 0, "OpcaoDeclaradaFato.ListaVazia")]
+    [InlineData("FATO_OPCAO_DE_TESTE", 2, "OpcaoDeclaradaFato.CodigoRepetido")]
     public void DefinirOpcoesDeclaradas_Recusa(string fato, int quantidade, string codigoEsperado)
     {
         ProcessoSeletivo processo = ProcessoConforme();
@@ -1682,19 +1695,19 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     public void DefinirOpcoesDeclaradas_OpcaoCitadaPorExigencia_Recusa()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [Opcao("2024"), Opcao("2025", 1)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirOpcoesDeclaradas("FATO_OPCAO_DE_TESTE", [Opcao("2024"), Opcao("2025", 1)], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
         Guid faseId = processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id;
         DocumentoExigido exigencia = DocumentoExigido.Criar(
-            faseId, Guid.CreateVersion7(), "BOLETIM_ENEM_2024", "Boletim do ENEM 2024", "ACADEMICO",
+            faseId, Guid.CreateVersion7(), "COMPROVANTE_2024", "Comprovante 2024", "ACADEMICO",
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
-            condicoes: [CondicaoGatilho.Criar(0, "EDICAO_ENEM", Operador.Igual, JsonSerializer.SerializeToElement("2024")).Value!],
+            condicoes: [CondicaoGatilho.Criar(0, "FATO_OPCAO_DE_TESTE", Operador.Igual, JsonSerializer.SerializeToElement("2024")).Value!],
             basesLegais: [BaseLegalResolvida()], idadeMaximaEmissao: null,
             formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [Opcao("2025")], PrecondicaoIfMatch.Ausente)
+        processo.DefinirOpcoesDeclaradas("FATO_OPCAO_DE_TESTE", [Opcao("2025")], PrecondicaoIfMatch.Ausente)
             .Error!.Code.Should().Be("OpcaoDeclaradaFato.ReferenciadaPorExigenciaViva");
     }
 
@@ -1709,8 +1722,8 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "Declaração", "Texto", "Base legal", formaAceite, new string('a', 64)),
             exibicao, Obrigatoriedade.Sempre).Value!;
 
-    private static PredicadoDnf EdicaoEnem(string edicao) => PredicadoDnf.CriarDeCondicoesAgrupadas(
-        [(0, CondicaoDnf.Criar("EDICAO_ENEM", Operador.Igual, JsonSerializer.SerializeToElement(edicao)).Value!)]).Value!;
+    private static PredicadoDnf CondicaoDeOpcaoDeTeste(string opcao) => PredicadoDnf.CriarDeCondicoesAgrupadas(
+        [(0, CondicaoDnf.Criar("FATO_OPCAO_DE_TESTE", Operador.Igual, JsonSerializer.SerializeToElement(opcao)).Value!)]).Value!;
 
     [Fact(DisplayName = "Termo cuja versão não definiu a forma de aceite: item vermelho e publicação recusada; com registro digital, liberado")]
     public void TermoSemFormaDeAceite_RecusaAteHaverRegistroDigital()
@@ -1755,9 +1768,9 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     public void TermoCitaFatoNaoColetado_RecusaPublicacao()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirItensComFaseDeInscricao([FatoEdicaoEnem()]).IsSuccess.Should().BeTrue();
-        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [Opcao("2025")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirTermos([Termo("DECLARACAO", 0, exibicao: EdicaoEnem("2025"))], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItensComFaseDeInscricao([FatoDeOpcaoDeTeste()]).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeclaradas("FATO_OPCAO_DE_TESTE", [Opcao("2025")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirTermos([Termo("DECLARACAO", 0, exibicao: CondicaoDeOpcaoDeTeste("2025"))], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
         processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo).Should().BeNull();
 
@@ -1770,13 +1783,13 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     public void DefinirOpcoesDeclaradas_OpcaoCitadaPorTermo_Recusa()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirItensComFaseDeInscricao([FatoEdicaoEnem()]).IsSuccess.Should().BeTrue();
-        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [Opcao("2024"), Opcao("2025", 1)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItensComFaseDeInscricao([FatoDeOpcaoDeTeste()]).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeclaradas("FATO_OPCAO_DE_TESTE", [Opcao("2024"), Opcao("2025", 1)], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
-        processo.DefinirTermos([Termo("DECLARACAO", 0, exibicao: EdicaoEnem("2024"))], PrecondicaoIfMatch.Ausente)
+        processo.DefinirTermos([Termo("DECLARACAO", 0, exibicao: CondicaoDeOpcaoDeTeste("2024"))], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [Opcao("2025")], PrecondicaoIfMatch.Ausente)
+        processo.DefinirOpcoesDeclaradas("FATO_OPCAO_DE_TESTE", [Opcao("2025")], PrecondicaoIfMatch.Ausente)
             .Error!.Code.Should().Be("OpcaoDeclaradaFato.ReferenciadaPorExigenciaViva");
     }
 

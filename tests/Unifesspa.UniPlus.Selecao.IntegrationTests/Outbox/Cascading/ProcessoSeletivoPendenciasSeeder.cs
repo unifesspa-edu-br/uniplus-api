@@ -199,6 +199,11 @@ internal static class ProcessoSeletivoPendenciasSeeder
         Result classificacaoDefinirResult = processo.DefinirClassificacao(classificacaoResult.Value!, PrecondicaoIfMatch.Curinga);
         classificacaoDefinirResult.IsSuccess.Should().BeTrue(classificacaoDefinirResult.Error?.Message);
 
+        // Classificação baseada em ENEM exige ao menos uma edição admitida (issue #1620).
+        Result opcoesResult = processo.DefinirOpcoesDeclaradas(
+            "EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Curinga);
+        opcoesResult.IsSuccess.Should().BeTrue(opcoesResult.Error?.Message);
+
         Result cronogramaResult = processo.DefinirCronogramaFases(
             [faseBuilder(coletaInscricao: true)], [], PrecondicaoIfMatch.Ausente);
         cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);

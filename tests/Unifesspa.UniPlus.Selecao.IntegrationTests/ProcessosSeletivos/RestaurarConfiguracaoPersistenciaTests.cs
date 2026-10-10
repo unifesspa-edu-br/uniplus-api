@@ -391,6 +391,11 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
             .Include(p => p.Campos).ThenInclude(f => f.Precondicoes)
             .Include(p => p.GruposColetados).ThenInclude(g => g.Subitens)
             .Include(p => p.RegrasDerivacao).ThenInclude(c => c.Regras).ThenInclude(r => r.Condicoes)
+            // Opções declaradas pelo processo (issue #1619): mesmo motivo do Include de
+            // Campos/GruposColetados acima — sem ele, a coleção tracked nasce vazia e
+            // DefinirOpcoesDeclaradas (ou a restauração) tentaria inserir uma linha nova para
+            // (ProcessoSeletivoId, FatoCodigo, Codigo) já persistido, colidindo no índice único.
+            .Include(p => p.OpcoesDeclaradas)
             // Termos exigidos (UNI-REQ-0086): mesmo motivo, no índice único de código do termo.
             .Include(p => p.Formularios).ThenInclude(f => f.Etapas)
             .Include(p => p.TermosExigidos)
