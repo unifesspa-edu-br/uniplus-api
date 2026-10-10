@@ -180,11 +180,15 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
             + "OR (dominio <> 'TEXTO' AND formato IS NULL)");
 
         // Texto, data e endereço nunca são menos que dado pessoal (invariante da factory), salvo o
-        // nome social de sistema, texto público (ADR-0082, ADR-0136).
+        // nome social de sistema, texto público (ADR-0082, ADR-0136). Só o domínio texto também
+        // aceita `IDENTIFICADOR` — número de documento é sempre texto, nunca data nem endereço
+        // (ADR-0136, emenda 2).
         table.HasCheckConstraint(
             "ck_rol_de_fatos_candidato_classificacao_minima_do_dominio",
             $"(sistema AND codigo = '{FatoCandidato.CodigoDoNomeSocial}' AND dominio = 'TEXTO' AND classificacao_protecao = 'PUBLICO') "
-            + "OR dominio NOT IN ('TEXTO', 'DATA', 'ENDERECO') OR classificacao_protecao IN ('PESSOAL', 'SENSIVEL')");
+            + "OR dominio NOT IN ('TEXTO', 'DATA', 'ENDERECO') "
+            + "OR (dominio = 'TEXTO' AND classificacao_protecao IN ('PESSOAL', 'IDENTIFICADOR', 'SENSIVEL')) "
+            + "OR (dominio IN ('DATA', 'ENDERECO') AND classificacao_protecao IN ('PESSOAL', 'SENSIVEL'))");
 
         table.HasCheckConstraint(
             "ck_rol_de_fatos_candidato_escopo",

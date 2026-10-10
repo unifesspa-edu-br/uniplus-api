@@ -18,6 +18,10 @@ public static class FormaDoItem
     public const int RotuloMaxLength = 300;
 
     public const int FormatoMaxLength = 30;
+
+    /// <summary>A mesma grandeza do formato — token canônico curto (o maior hoje é "IDENTIFICADOR").</summary>
+    public const int ClassificacaoProtecaoMaxLength = 30;
+
     public const int AjudaMaxLength = 1000;
 
     /// <summary>A mensagem que explica ao candidato por que a resposta impede a inscrição.</summary>

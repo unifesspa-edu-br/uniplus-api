@@ -70,6 +70,14 @@ public sealed class FatoCandidatoPersistenceTests
         }
     }
 
+    [Theory(DisplayName = "CA-01 — os três fatos de sistema de número de documento são semeados como Identificador")]
+    [InlineData("CPF")]
+    [InlineData("RG_NUMERO")]
+    [InlineData("DOCUMENTO_ESTRANGEIRO_NUMERO")]
+    public void Seed_FatoDeNumeroDeDocumento_EhIdentificador(string codigo) =>
+        FatoCandidatoSeed.Itens.Single(i => i.Codigo == codigo).ClassificacaoProtecao
+            .Should().Be(ClassificacaoProtecaoDado.Identificador);
+
     [Fact(DisplayName = "Cada cota tem par elegibilidade + opt-in como fatos independentes (UNI-REQ-0078)")]
     public async Task Seed_CadaCotaTemParElegibilidadeEOptIn()
     {

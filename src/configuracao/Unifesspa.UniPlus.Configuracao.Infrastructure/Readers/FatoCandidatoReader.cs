@@ -104,6 +104,7 @@ internal sealed class FatoCandidatoReader : IFatoCandidatoReader
             valoresDominioDeclarados,
             f.FonteValores is { } fonte ? FontesValoresFato.ParaTokenCanonico(fonte) : null,
             f.Ativo,
+            ClassificacoesProtecaoDado.ParaTokenCanonico(f.ClassificacaoProtecao),
             f.Formato is { } formato and not FormatoTexto.Nenhum ? FormatosTexto.ParaTokenCanonico(formato) : null,
             EscoposFato.ParaTokenCanonico(f.Escopo));
     }

@@ -13,6 +13,7 @@ public static class ClassificacoesProtecaoDado
         [ClassificacaoProtecaoDado.Publico] = "PUBLICO",
         [ClassificacaoProtecaoDado.Interno] = "INTERNO",
         [ClassificacaoProtecaoDado.Pessoal] = "PESSOAL",
+        [ClassificacaoProtecaoDado.Identificador] = "IDENTIFICADOR",
         [ClassificacaoProtecaoDado.Sensivel] = "SENSIVEL",
     };
 

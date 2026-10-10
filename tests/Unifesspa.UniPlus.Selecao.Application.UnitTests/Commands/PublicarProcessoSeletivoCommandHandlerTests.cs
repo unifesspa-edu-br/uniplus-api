@@ -69,7 +69,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
         ValoresDominio: null,
         PontoResolucao: "INSCRICAO",
         Binding: "REGRA_DERIVACAO:MODALIDADE",
-        ValoresDominioDeclarados: null, FonteValores: "MODALIDADE", Ativo: true);
+        ValoresDominioDeclarados: null, FonteValores: "MODALIDADE", Ativo: true, ClassificacaoProtecao: "PESSOAL");
 
     private sealed record Mocks(
         IProcessoSeletivoRepository ProcessoRepository,

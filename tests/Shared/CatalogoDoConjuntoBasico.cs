@@ -42,15 +42,15 @@ internal static class CatalogoDoConjuntoBasico
     [
         Texto("NOME", "NOME_PESSOA"),
         Declarado("DESEJA_NOME_SOCIAL", "BOOLEANO"),
-        Texto("NOME_SOCIAL", "NOME_PESSOA"),
+        Texto("NOME_SOCIAL", "NOME_PESSOA", classificacao: "PUBLICO"),
         Categorico("NACIONALIDADE", "NATO", "NATURALIZADO", "ESTRANGEIRO"),
-        Texto("CPF", "CPF"),
-        Texto("RG_NUMERO", "LIVRE"),
+        Texto("CPF", "CPF", classificacao: "IDENTIFICADOR"),
+        Texto("RG_NUMERO", "LIVRE", classificacao: "IDENTIFICADOR"),
         Texto("RG_ORGAO_EMISSOR", "LIVRE"),
         Geo("RG_UF", "GEO_UF"),
         Declarado("RG_DATA_EMISSAO", "DATA"),
         Categorico("DOCUMENTO_ESTRANGEIRO_TIPO", "PASSAPORTE", "RNM"),
-        Texto("DOCUMENTO_ESTRANGEIRO_NUMERO", "LIVRE"),
+        Texto("DOCUMENTO_ESTRANGEIRO_NUMERO", "LIVRE", classificacao: "IDENTIFICADOR"),
         Declarado("DATA_NASCIMENTO", "DATA"),
         Geo("NATURALIDADE_UF", "GEO_UF"),
         Geo("NATURALIDADE_MUNICIPIO", "GEO_MUNICIPIO"),
@@ -66,11 +66,15 @@ internal static class CatalogoDoConjuntoBasico
         Declarado("ENDERECO_RESIDENCIAL", "ENDERECO"),
     ];
 
-    private static FatoCandidatoView Declarado(string codigo, string dominio, string? formato = null, string? fonte = null, IReadOnlyList<string>? valores = null) =>
+    private static FatoCandidatoView Declarado(
+        string codigo, string dominio, string? formato = null, string? fonte = null,
+        IReadOnlyList<string>? valores = null, string classificacao = "PESSOAL") =>
         new(Guid.CreateVersion7(), codigo, codigo, null, dominio, "DECLARADO", "ESCALAR", valores, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}",
-            valores?.Select(static (v, ordem) => new FatoValorDominioViewItem(v, v, ordem, true)).ToList(), fonte, Ativo: true, Formato: formato);
+            valores?.Select(static (v, ordem) => new FatoValorDominioViewItem(v, v, ordem, true)).ToList(), fonte, Ativo: true,
+            ClassificacaoProtecao: classificacao, Formato: formato);
 
-    private static FatoCandidatoView Texto(string codigo, string formato) => Declarado(codigo, "TEXTO", formato);
+    private static FatoCandidatoView Texto(string codigo, string formato, string classificacao = "PESSOAL") =>
+        Declarado(codigo, "TEXTO", formato, classificacao: classificacao);
 
     private static FatoCandidatoView Geo(string codigo, string fonte) => Declarado(codigo, "CATEGORICO", fonte: fonte);
 

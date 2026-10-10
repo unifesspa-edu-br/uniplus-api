@@ -90,6 +90,22 @@ public sealed class FatoCandidatoTests
             binding: "CAMPO_FORMULARIO:DADO", classificacao: classificacao, hipotese: HipoteseLegalTratamento.ExecucaoPoliticasPublicas)
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio);
 
+    [Fact(DisplayName = "CA-01 — fato de texto aceita a classificação Identificador")]
+    public void Criar_TextoComIdentificador_Aceita() =>
+        Criar(
+            codigo: "CPF", dominio: DominioFato.Texto, formato: FormatoTexto.Cpf, binding: "CAMPO_FORMULARIO:CPF",
+            classificacao: ClassificacaoProtecaoDado.Identificador, hipotese: HipoteseLegalTratamento.CumprimentoObrigacaoLegal)
+            .IsSuccess.Should().BeTrue();
+
+    [Theory(DisplayName = "Identificador é classificação mínima só para texto — data e endereço continuam exigindo Pessoal ou Sensível")]
+    [InlineData(DominioFato.Data)]
+    [InlineData(DominioFato.Endereco)]
+    public void Criar_DataOuEnderecoComIdentificador_Recusa(DominioFato dominio) =>
+        Criar(
+            codigo: "DADO", dominio: dominio, binding: "CAMPO_FORMULARIO:DADO",
+            classificacao: ClassificacaoProtecaoDado.Identificador, hipotese: HipoteseLegalTratamento.ExecucaoPoliticasPublicas)
+            .Error!.Code.Should().Be(FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio);
+
     [Theory(DisplayName = "Só o nome social de sistema é texto público; outro texto de sistema, o nome social do administrador ou outra classificação abaixo de pessoal, não")]
     [InlineData(FatoCandidato.CodigoDoNomeSocial, true, ClassificacaoProtecaoDado.Publico, true)]
     [InlineData(FatoCandidato.CodigoDoNomeSocial, false, ClassificacaoProtecaoDado.Publico, false)]

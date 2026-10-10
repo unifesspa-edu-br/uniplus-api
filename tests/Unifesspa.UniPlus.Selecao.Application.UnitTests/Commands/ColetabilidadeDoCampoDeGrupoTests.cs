@@ -35,7 +35,7 @@ public sealed class ColetabilidadeDoCampoDeGrupoTests
         {
             ["PARENTESCO"] = new(
                 Guid.CreateVersion7(), "PARENTESCO", "Parentesco", null, "BOOLEANO", "DECLARADO", "ESCALAR", null, "INSCRICAO",
-                "CAMPO_FORMULARIO:PARENTESCO", null, FonteValores: null, Ativo: true, Escopo: escopo),
+                "CAMPO_FORMULARIO:PARENTESCO", null, FonteValores: null, Ativo: true, ClassificacaoProtecao: "PESSOAL", Escopo: escopo),
         };
 
         Result resultado = ConferenciaDeColetabilidadeDeFatos.Conferir(processo, catalogo);

@@ -93,6 +93,14 @@ public sealed class FatoColetado : EntityBase
     /// </summary>
     public string? Formato { get; private set; }
 
+    /// <summary>
+    /// Classificação de proteção de dados do fato (token canônico: PUBLICO, INTERNO, PESSOAL,
+    /// IDENTIFICADOR, SENSIVEL), copiada do catálogo quando a coleta é definida e congelada na
+    /// publicação — reclassificar o fato no catálogo depois não muda o que já foi congelado
+    /// (ADR-0136, emenda 1).
+    /// </summary>
+    public string ClassificacaoProtecao { get; private set; } = string.Empty;
+
     /// <summary>Se as opções do campo são as que o processo declara.</summary>
     public bool OpcoesDoProcesso => OrigemValores == OrigemValoresColeta.OpcoesDoProcesso;
 
@@ -128,7 +136,8 @@ public sealed class FatoColetado : EntityBase
         string? ajuda = null,
         bool pedirConfirmacao = false,
         IReadOnlyList<RestricaoValor>? restricoes = null,
-        Impedimento? impedimento = null)
+        Impedimento? impedimento = null,
+        string classificacaoProtecao = "PESSOAL")
     {
         ArgumentNullException.ThrowIfNull(obrigatoriedade);
         IReadOnlyList<RestricaoValor> restricoesDoItem = restricoes ?? [];
@@ -156,6 +165,7 @@ public sealed class FatoColetado : EntityBase
             Impedimento = impedimento,
             OrigemValores = origemValores,
             Formato = FormaDoItem.TextoOpcional(formato),
+            ClassificacaoProtecao = classificacaoProtecao,
             EtapaCodigo = string.IsNullOrWhiteSpace(etapaCodigo) ? null : etapaCodigo.Trim().Normalize(System.Text.NormalizationForm.FormC),
 
             // O processo atribui a finalidade ao definir os itens; quem remonta o envelope a informa.

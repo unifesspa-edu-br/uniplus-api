@@ -737,15 +737,14 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
             Recusar("classificacaoProtecao", FatoCandidatoErrorCodes.ClassificacaoProtecaoObrigatoria,
                 "Classificação de proteção de dados do fato é obrigatória.");
         }
-        else if (!nomeSocialPublico
-            && dominio is DominioFato.Texto or DominioFato.Data or DominioFato.Endereco
-            && classificacao is not (ClassificacaoProtecaoDado.Pessoal or ClassificacaoProtecaoDado.Sensivel))
+        else if (!nomeSocialPublico && !AtendeClassificacaoMinimaDoDominio(dominio, classificacao))
         {
             // Texto (em todo formato, inclusive o livre, que pode conter qualquer coisa), data e
-            // endereço identificam ou localizam a pessoa: nunca são menos que dado pessoal. A
-            // exceção é o nome social de sistema, texto público (ADR-0082, ADR-0136).
+            // endereço identificam ou localizam a pessoa: nunca são menos que dado pessoal. Texto
+            // também aceita `Identificador` — número de documento é sempre texto (ADR-0136,
+            // emenda 1). A exceção é o nome social de sistema, texto público (ADR-0082, ADR-0136).
             Recusar("classificacaoProtecao", FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio,
-                "Fato de texto, data ou endereço é classificado como pessoal ou sensível.");
+                "Fato de texto, data ou endereço é classificado como pessoal, identificador (só texto) ou sensível.");
         }
 
         string finalidadeNormalizada = finalidade?.Trim() ?? string.Empty;
@@ -774,6 +773,16 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
             ? Result<ProtecaoValidada>.ValidationFailure(erros)
             : Result<ProtecaoValidada>.Success(new ProtecaoValidada(classificacao, finalidadeNormalizada, hipotese));
     }
+
+    private static bool AtendeClassificacaoMinimaDoDominio(DominioFato dominio, ClassificacaoProtecaoDado classificacao) =>
+        dominio switch
+        {
+            DominioFato.Texto => classificacao is ClassificacaoProtecaoDado.Pessoal
+                or ClassificacaoProtecaoDado.Identificador or ClassificacaoProtecaoDado.Sensivel,
+            DominioFato.Data or DominioFato.Endereco => classificacao is ClassificacaoProtecaoDado.Pessoal
+                or ClassificacaoProtecaoDado.Sensivel,
+            _ => true,
+        };
 
     private static Result<string> ValidarPontoResolucao(string pontoResolucao)
     {
