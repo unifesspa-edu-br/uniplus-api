@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -384,6 +385,8 @@ internal static class CorpusEnvelope
                     (0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!),
                 ]).Value!,
                 "A renda declarada está acima do limite deste processo."), classificacaoProtecao: "PESSOAL").Value!,
+            // A classificação é baseada em ENEM: a inscrição pede a edição, entre as admitidas.
+            FormularioDeTeste.CampoDaEdicaoDoEnem(3),
         ], permutar), PrecondicaoIfMatch.Ausente, grupos: [ComposicaoFamiliar(permutar)]).IsSuccess.Should().BeTrue();
 
         // Formulário de inscrição (Story #559, UNI-REQ-0086): título e um termo com exibição e
@@ -862,6 +865,8 @@ internal static class CorpusEnvelope
             ["RENDA"] = renda,
             [CandidatoComoMembro.FatoParentesco] = parentesco,
             ["NATURALIDADE_UF"] = ufs,
+            // As opções do processo vêm das edições declaradas, que o processo rico admite.
+            [EdicaoDoEnem.Fato] = [new ValorDominioDeclaradoCongelado("2026", "2026", 0)],
         });
     }
 

@@ -223,6 +223,9 @@ public static class FormularioProcessoErrorCodes
     /// <summary>Formulário de inscrição publicado sem algum dado do conjunto básico do candidato.</summary>
     public const string InscricaoSemConjuntoBasico = "ProcessoSeletivo.InscricaoSemConjuntoBasico";
 
+    /// <summary>Classificação baseada em ENEM com inscrição própria, e o formulário de inscrição não pede a edição do ENEM a todo candidato.</summary>
+    public const string InscricaoSemEdicaoDoEnem = "ProcessoSeletivo.InscricaoSemEdicaoDoEnem";
+
     /// <summary>A fase do cronograma é usada por um formulário e não pode sair.</summary>
     public const string FaseReferenciadaPorFormulario = "ProcessoSeletivo.FaseReferenciadaPorFormulario";
 }

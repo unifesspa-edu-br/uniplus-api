@@ -43,6 +43,10 @@ public sealed record ProcessoSeletivoDto(
     // da publicação — o GET público projeta só da versão vigente, e não serve para reler a tela de
     // edição. Cada formulário traz os itens e os termos dele.
     IReadOnlyList<FormularioDto> Formularios,
+    // Opções que o processo declara para os fatos cuja fonte de valores é ele, como as edições do
+    // ENEM admitidas (issue #1620): read-back administrativo. Declarar e coletar são passos
+    // independentes, e o fato coletado só mostra as opções depois que um formulário o coleta.
+    IReadOnlyList<OpcoesDeclaradasDoFatoDto> OpcoesDeclaradas,
     // Divulgação pública (UNI-REQ-0050, issue #563): read-back administrativo pelo mesmo motivo
     // do formulário acima — sem ele, a tela de edição (uniplus-web#504) não conseguiria reler a
     // configuração salva e poderia sobrescrevê-la com o default ao reenviar. A regra de

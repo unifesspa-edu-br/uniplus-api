@@ -260,6 +260,7 @@ public static class SementePsrMedicina2027
 
     private static ConteudoDoModelo ConteudoDaInscricao()
     {
+        const string enem = "ENEM";
         const string escolaridade = "ESCOLARIDADE";
         const string cotas = "RESERVA_DE_VAGAS";
         const string bonus = "BONUS_REGIONAL";
@@ -267,14 +268,17 @@ public static class SementePsrMedicina2027
         return new(
             "Inscrição no Processo Seletivo Regular Unificado de Medicina 2027",
             [
-                Secao(escolaridade, 1, "Ensino médio", "Como você concluiu o ensino médio e onde o cursou."),
-                Secao(cotas, 2, "Reserva de vagas", "Condições que permitem concorrer às vagas reservadas da Lei nº 12.711/2012 e às ações afirmativas do edital."),
-                Secao(bonus, 3, "Bônus regional", "Pedido do bônus regional previsto no edital."),
-                Bloco("MODALIDADES", 4, BlocoSistema.ModalidadesCalculadas, "Modalidades de concorrência"),
-                Bloco("DOCUMENTOS", 5, BlocoSistema.ComprovacaoDocumental, "Documentos"),
-                Bloco("REVISAO", 6, BlocoSistema.RevisaoEAceite, "Revisão e aceite"),
+                Secao(enem, 1, "ENEM", "A edição do ENEM cujas notas você vai usar neste processo seletivo."),
+                Secao(escolaridade, 2, "Ensino médio", "Como você concluiu o ensino médio e onde o cursou."),
+                Secao(cotas, 3, "Reserva de vagas", "Condições que permitem concorrer às vagas reservadas da Lei nº 12.711/2012 e às ações afirmativas do edital."),
+                Secao(bonus, 4, "Bônus regional", "Pedido do bônus regional previsto no edital."),
+                Bloco("MODALIDADES", 5, BlocoSistema.ModalidadesCalculadas, "Modalidades de concorrência"),
+                Bloco("DOCUMENTOS", 6, BlocoSistema.ComprovacaoDocumental, "Documentos"),
+                Bloco("REVISAO", 7, BlocoSistema.RevisaoEAceite, "Revisão e aceite"),
             ],
             [
+                Campo(EdicaoDoEnem.Fato, 102, enem, "Qual edição do ENEM você vai usar?", TipoRenderizacao.SelecaoUnica,
+                    "Só aparecem as edições que o edital aceita."),
                 Campo(OrigemEscolar.FatoFormaDeConclusao, 103, escolaridade, "Como você concluiu o ensino médio?", TipoRenderizacao.SelecaoUnica, null),
                 Campo(OrigemEscolar.FatoOndeCursou, 104, escolaridade, "Onde você cursou o ensino médio?", TipoRenderizacao.SelecaoUnica,
                     "A resposta define se você pode concorrer às vagas para quem cursou o ensino médio em escola pública.",

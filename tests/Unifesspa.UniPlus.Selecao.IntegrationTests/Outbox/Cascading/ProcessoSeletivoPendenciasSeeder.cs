@@ -208,6 +208,9 @@ internal static class ProcessoSeletivoPendenciasSeeder
             [faseBuilder(coletaInscricao: true)], [], PrecondicaoIfMatch.Ausente);
         cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);
 
+        Result itensResult = processo.DefinirItens([FormularioDeTeste.CampoDaEdicaoDoEnem(0)], PrecondicaoIfMatch.Curinga);
+        itensResult.IsSuccess.Should().BeTrue(itensResult.Error?.Message);
+
         return await PersistirComDocumentoConfirmadoAsync(db, processo);
     }
 

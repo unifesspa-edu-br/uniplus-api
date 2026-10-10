@@ -338,6 +338,7 @@ public sealed class EnvelopeFechadoE2ETests
                 "termo_exigido_sem_forma_de_aceite",
                 "formulario_inscricao_ausente",
                 "formulario_inscricao_sem_conjunto_basico",
+                "formulario_inscricao_sem_edicao_enem",
                 "formulario_fase_incoerente",
                 "formulario_isencao_sem_taxa",
                 "formulario_item_fora_de_secao",
@@ -734,6 +735,15 @@ public sealed class EnvelopeFechadoE2ETests
                     tipoRenderizacao = TipoRenderizacaoCodigo.Booleano,
                     obrigatoriedade = "NUNCA",
                     precondicao = new[] { new[] { new { fato = "COR_RACA", @operador = OperadorCodigo.Igual, valor = "PRETA" } } },
+                },
+                // A classificação é baseada em ENEM: a inscrição pede a edição, entre as declaradas.
+                new
+                {
+                    fatoCodigo = "EDICAO_ENEM",
+                    ordem = 1,
+                    rotulo = "Qual edição do ENEM você vai usar?",
+                    tipoRenderizacao = TipoRenderizacaoCodigo.SelecaoUnica,
+                    obrigatoriedade = "SEMPRE",
                 },
             ];
 

@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -135,6 +136,15 @@ internal static class FormularioDeTeste
 
         return trocado;
     }
+
+    /// <summary>
+    /// O campo da edição do ENEM, que a inscrição pede a todo candidato quando a classificação do
+    /// processo é baseada em ENEM; as opções são as edições declaradas pelo processo.
+    /// </summary>
+    public static FatoColetado CampoDaEdicaoDoEnem(int ordem) =>
+        FatoColetado.Criar(
+            EdicaoDoEnem.Fato, ordem, "Qual edição do ENEM você vai usar?", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
+            "PESSOAL", Unifesspa.UniPlus.Selecao.Domain.Enums.OrigemValoresColeta.OpcoesDoProcesso).Value!;
 
     /// <summary>
     /// Processo com inscrição própria publica o formulário de inscrição (UNI-REQ-0144): cria o
