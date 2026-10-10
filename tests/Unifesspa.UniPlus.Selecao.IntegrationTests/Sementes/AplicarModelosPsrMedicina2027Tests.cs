@@ -57,7 +57,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         processo.Formularios.Select(static f => f.Finalidade)
             .Should().BeEquivalentTo([FinalidadeFormulario.Inscricao, FinalidadeFormulario.Habilitacao]);
         processo.GruposColetados.Should().ContainSingle(static g => g.Codigo == "COMPOSICAO_FAMILIAR");
-        processo.Campos.Should().ContainSingle(static c => c.FatoCodigo == "MUNICIPIO_EM_AREA_BONUS");
+        processo.Campos.Should().ContainSingle(static c => c.FatoCodigo == "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO");
     }
 
     private async Task<Guid> SemearProcessoPsrAsync()

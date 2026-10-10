@@ -316,7 +316,7 @@ public sealed class ModeloFormularioAdminEndpointTests
         JsonObject formulario = JsonNode.Parse(await (await EnviarAsync(client, HttpMethod.Get, $"{Base}/{id}/renderizavel", null)).Content.ReadAsStringAsync())!.AsObject();
 
         List<string> codigos = [.. formulario["fatosColetados"]!.AsArray()
-            .Single(static f => f!["fatoCodigo"]!.GetValue<string>() == "MUNICIPIO_EM_AREA_BONUS")!["valoresSelecionaveis"]!.AsArray()
+            .Single(static f => f!["fatoCodigo"]!.GetValue<string>() == "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO")!["valoresSelecionaveis"]!.AsArray()
             .Select(static v => v!["codigo"]!.GetValue<string>())];
         codigos.Should().Contain(["1500131", "1504208"]).And.OnlyHaveUniqueItems("o município de duas bases aparece uma vez");
     }

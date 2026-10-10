@@ -54,7 +54,8 @@ public static class SementePsrMedicina2027
 
     private static readonly DateTimeOffset Instante = new(2026, 10, 5, 0, 0, 0, TimeSpan.Zero);
 
-    private const string FinalidadeDoEndereco = FatoCandidatoSeed.FinalidadeResidencia;
+    private const string FinalidadeDoFator =
+        "Concessão do Fator de Atenuação das Desigualdades de Acesso previsto no edital do processo seletivo.";
     private const string FinalidadeDaEscolaridade = FatoCandidatoSeed.FinalidadeReservaDeVagas;
     private const string FinalidadeDaHabilitacao = FatoCandidatoSeed.FinalidadeRequisitos;
     private const string FinalidadeDaFamilia = FatoCandidatoSeed.FinalidadeComposicaoFamiliar;
@@ -117,29 +118,18 @@ public static class SementePsrMedicina2027
     /// <summary>Os fatos que os formulários de Medicina coletam e que o catálogo de sistema não tem.</summary>
     private static IReadOnlyList<FatoDaSemente> Fatos { get; } =
     [
-        // Inscrição: o bônus regional, pedido pelo candidato e conferido pelo município da área do bônus.
-        new(3, _ => FatoCandidato.CriarDoAdministrador(
-                "SOLICITA_BONUS_REGIONAL", "Solicita o bônus regional", "Se o candidato pede o bônus regional previsto no edital.", DominioFato.Booleano, CardinalidadeFato.Escalar,
-                null, null, PontoInscricao, EscopoFato.Candidato, ClassificacaoProtecaoDado.Pessoal,
-                FinalidadeDoEndereco, HipoteseLegal),
-            Sem()),
-        new(4, _ => FatoCandidato.CriarDoAdministrador(
-                "MUNICIPIO_EM_AREA_BONUS", "Município da área do bônus regional", "O município da área do bônus regional em que o candidato reside, entre os que o edital lista.", DominioFato.Categorico,
-                CardinalidadeFato.Escalar, FonteValoresFato.MunicipiosBonus, null, PontoInscricao, EscopoFato.Candidato,
-                ClassificacaoProtecaoDado.Pessoal, FinalidadeDoEndereco, HipoteseLegal),
-            Sem()),
-
-        // Fator de atenuação por certificação (edital, item 9.42): quem concluiu por proficiência,
-        // ENCCEJA ou ENEM pede o fator pelo município em que residiu, não pelo de ensino médio.
+        // Inscrição: o Fator de Atenuação das Desigualdades de Acesso, pedido pelo candidato que reside
+        // num município da área de abrangência (edital, itens 1.5 e 1.6). Quem o recebe é a configuração
+        // do processo que decide, citando o pedido.
         new(11, _ => FatoCandidato.CriarDoAdministrador(
-                "SOLICITA_FATOR_ATENUACAO", "Solicita o fator de atenuação", "Se o candidato que concluiu o ensino médio por certificação pede o fator de atenuação do edital.", DominioFato.Booleano,
+                "SOLICITA_FATOR_ATENUACAO", "Solicita o Fator de Atenuação das Desigualdades de Acesso", "Se o candidato pede o Fator de Atenuação das Desigualdades de Acesso previsto no edital.", DominioFato.Booleano,
                 CardinalidadeFato.Escalar, null, null, PontoInscricao, EscopoFato.Candidato,
-                ClassificacaoProtecaoDado.Pessoal, FinalidadeDaEscolaridade, HipoteseLegal),
+                ClassificacaoProtecaoDado.Pessoal, FinalidadeDoFator, HipoteseLegal),
             Sem()),
-        new(12, _ => FatoCandidato.CriarDoAdministrador(
-                "MUNICIPIO_FATOR_ATENUACAO", "Município de residência para o fator de atenuação", "O município em que o candidato residiu no período de referência do edital, entre os que o edital lista para o fator de atenuação.", DominioFato.Categorico,
+        new(13, _ => FatoCandidato.CriarDoAdministrador(
+                "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO", "Município de residência para o Fator de Atenuação", "O município da área de abrangência do edital em que o candidato reside, entre os que o edital lista.", DominioFato.Categorico,
                 CardinalidadeFato.Escalar, FonteValoresFato.MunicipiosBonus, null, PontoInscricao, EscopoFato.Candidato,
-                ClassificacaoProtecaoDado.Pessoal, FinalidadeDaEscolaridade, HipoteseLegal),
+                ClassificacaoProtecaoDado.Pessoal, FinalidadeDoFator, HipoteseLegal),
             Sem()),
 
         // Habilitação: o que o edital pede de quem é convocado (itens 9.16, 9.21 e 9.24).
@@ -245,6 +235,21 @@ public static class SementePsrMedicina2027
         $"DELETE FROM configuracao.rol_de_fatos_candidato WHERE id = {Uuid(Id(TabelaFato, 5))};",
     ];
 
+    /// <summary>
+    /// Os comandos que tiram do banco os fatos do pedido do acréscimo que a semente gravava antes: dois
+    /// pedidos e dois municípios viraram um pedido e o município de residência.
+    /// </summary>
+    public static IReadOnlyList<string> ComandosQueRetiramOsFatosAntigosDoFator() =>
+    [
+        .. FatosAntigosDoFator.SelectMany(static n => new[]
+        {
+            $"DELETE FROM configuracao.fato_valor_dominio WHERE fato_candidato_id = {Uuid(Id(TabelaFato, n))};",
+            $"DELETE FROM configuracao.rol_de_fatos_candidato WHERE id = {Uuid(Id(TabelaFato, n))};",
+        }),
+    ];
+
+    private static readonly int[] FatosAntigosDoFator = [3, 4, 11, 12];
+
     /// <summary>Os comandos que apagam os modelos semeados, para o <c>Down</c> da migration.</summary>
     public static IReadOnlyList<string> ComandosDeRemocaoDosModelos() =>
     [
@@ -263,15 +268,15 @@ public static class SementePsrMedicina2027
         const string enem = "ENEM";
         const string escolaridade = "ESCOLARIDADE";
         const string cotas = "RESERVA_DE_VAGAS";
-        const string bonus = "BONUS_REGIONAL";
+        const string fator = "FATOR_ATENUACAO";
 
         return new(
             "Inscrição no Processo Seletivo Regular Unificado de Medicina 2027",
             [
                 Secao(enem, 1, "ENEM", "A edição do ENEM cujas notas você vai usar neste processo seletivo."),
                 Secao(escolaridade, 2, "Ensino médio", "Como você concluiu o ensino médio e onde o cursou."),
-                Secao(cotas, 3, "Reserva de vagas", "Condições que permitem concorrer às vagas reservadas da Lei nº 12.711/2012 e às ações afirmativas do edital."),
-                Secao(bonus, 4, "Bônus regional", "Pedido do bônus regional previsto no edital."),
+                Secao(fator, 3, "Fator de Atenuação das Desigualdades de Acesso", "Pedido do Fator de Atenuação das Desigualdades de Acesso previsto no edital."),
+                Secao(cotas, 4, "Reserva de vagas", "Condições que permitem concorrer às vagas reservadas da Lei nº 12.711/2012 e às ações afirmativas do edital."),
                 Bloco("MODALIDADES", 5, BlocoSistema.ModalidadesCalculadas, "Modalidades de concorrência"),
                 Bloco("DOCUMENTOS", 6, BlocoSistema.ComprovacaoDocumental, "Documentos"),
                 Bloco("REVISAO", 7, BlocoSistema.RevisaoEAceite, "Revisão e aceite"),
@@ -283,14 +288,11 @@ public static class SementePsrMedicina2027
                 Campo(OrigemEscolar.FatoOndeCursou, 104, escolaridade, "Onde você cursou o ensino médio?", TipoRenderizacao.SelecaoUnica,
                     "A resposta define se você pode concorrer às vagas para quem cursou o ensino médio em escola pública.",
                     restricoes: [OpcoesDeOndeCursou()]),
-                Campo("SOLICITA_FATOR_ATENUACAO", 105, escolaridade, "Deseja solicitar o fator de atenuação do edital?", TipoRenderizacao.Booleano,
-                    "O fator de atenuação considera o município em que você residiu no período do edital, em vez do município em que cursou o ensino médio.",
-                    exibicao: Se(OrigemEscolar.FatoFormaDeConclusao, Operador.Em, OrigemEscolar.Certificacoes)),
-                Campo("MUNICIPIO_FATOR_ATENUACAO", 106, escolaridade, "Em qual município você residiu no período do edital?", TipoRenderizacao.SelecaoUnica,
-                    "Só aparecem os municípios que o edital lista para o fator de atenuação. A residência é comprovada na habilitação.",
-                    exibicao: SeTudo(
-                        (OrigemEscolar.FatoFormaDeConclusao, Operador.Em, OrigemEscolar.Certificacoes),
-                        ("SOLICITA_FATOR_ATENUACAO", Operador.Igual, true))),
+                Campo("SOLICITA_FATOR_ATENUACAO", 105, fator, "Deseja solicitar o Fator de Atenuação das Desigualdades de Acesso?", TipoRenderizacao.Booleano,
+                    "Para quem reside num dos municípios da área de abrangência que o edital lista. A residência é comprovada por conta de água, luz ou telefone."),
+                Campo("MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO", 106, fator, "Em qual município da área de abrangência você reside?", TipoRenderizacao.SelecaoUnica,
+                    "Só aparecem os municípios que o edital lista.",
+                    exibicao: Se("SOLICITA_FATOR_ATENUACAO", Operador.Igual, true)),
                 Campo("PCD", 107, cotas, "Você é pessoa com deficiência?", TipoRenderizacao.Booleano,
                     "A deficiência é comprovada por laudo, conforme o edital."),
                 Campo("TIPO_DEFICIENCIA", 108, cotas, "Tipo de deficiência", TipoRenderizacao.SelecaoUnica, null,
@@ -312,10 +314,6 @@ public static class SementePsrMedicina2027
                 Campo("CONDICAO_ATENDIMENTO", 117, cotas, "Precisa de atendimento especializado nas etapas do processo?", TipoRenderizacao.SelecaoMultipla,
                     "Marque o que se aplica a você. Deixe em branco se não precisar.",
                     obrigatoriedade: Obrigatoriedade.Nunca),
-                Campo("SOLICITA_BONUS_REGIONAL", 118, bonus, "Deseja solicitar o bônus regional?", TipoRenderizacao.Booleano, null),
-                Campo("MUNICIPIO_EM_AREA_BONUS", 119, bonus, "Em qual município da área do bônus você mora?", TipoRenderizacao.SelecaoUnica,
-                    "Só aparecem os municípios que o edital lista.",
-                    exibicao: Se("SOLICITA_BONUS_REGIONAL", Operador.Igual, true)),
             ],
             [
                 Termo(Termos[0], 1),
@@ -400,17 +398,6 @@ public static class SementePsrMedicina2027
     {
         CondicaoDnf condicao = Exigir(CondicaoDnf.Criar(fato, operador, JsonSerializer.SerializeToElement(valor)), $"condição sobre {fato}");
         return Exigir(PredicadoDnf.CriarDeCondicoesAgrupadas([(1, condicao)]), $"predicado sobre {fato}");
-    }
-
-    /// <summary>Todas as condições precisam valer juntas — uma única cláusula DNF com todas elas (AND).</summary>
-    private static PredicadoDnf SeTudo(params (string Fato, Operador Operador, object Valor)[] condicoes)
-    {
-        List<(int Grupo, CondicaoDnf Condicao)> grupo =
-        [
-            .. condicoes.Select(c => (1, Exigir(
-                CondicaoDnf.Criar(c.Fato, c.Operador, JsonSerializer.SerializeToElement(c.Valor)), $"condição sobre {c.Fato}"))),
-        ];
-        return Exigir(PredicadoDnf.CriarDeCondicoesAgrupadas(grupo), "predicado composto");
     }
 
     private static string ComandoDoModelo(
