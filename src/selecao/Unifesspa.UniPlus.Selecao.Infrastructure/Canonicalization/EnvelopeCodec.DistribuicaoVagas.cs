@@ -588,16 +588,17 @@ public sealed partial class EnvelopeCodec
         {
             string path = $"atendimento.recursos[{i}]";
             JsonObject item = leitor.ItemObjeto(arrayRecursos, i, "atendimento.recursos");
-            leitor.ExigirChaves(item, path, "recursoOrigemId", "recursoNome");
+            leitor.ExigirChaves(item, path, "recursoOrigemId", "recursoCodigo", "recursoNome");
 
             Guid origemId = leitor.Identificador(item, "recursoOrigemId", path);
+            string codigo = leitor.TextoNaoVazio(item, "recursoCodigo", path, LimitesDoEnvelope.RecursoCodigo);
             string nome = leitor.TextoNaoVazio(item, "recursoNome", path, LimitesDoEnvelope.NomeDeCadastro);
             if (leitor.Falhou)
             {
                 return null;
             }
 
-            recursos.Add(OfertaRecurso.Criar(origemId, nome));
+            recursos.Add(OfertaRecurso.Criar(origemId, codigo, nome));
         }
 
         List<OfertaTipoDeficiencia> tipos = [];

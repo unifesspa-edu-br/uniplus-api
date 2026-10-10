@@ -4,12 +4,13 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Atualiza um recurso de acessibilidade existente. O <c>Nome</c> é editável, com
-/// nova checagem de unicidade entre vivos; a descrição também pode ser editada. O
-/// <c>Id</c> é imutável. O ator (<c>updated_by</c>) é carimbado server-side via
-/// <c>IUserContext</c>.
+/// Atualiza um recurso de acessibilidade existente. <c>Codigo</c> e <c>Nome</c> são
+/// editáveis, com nova checagem de unicidade entre vivos; a descrição também pode ser
+/// editada. O <c>Id</c> é imutável. O ator (<c>updated_by</c>) é carimbado server-side
+/// via <c>IUserContext</c>.
 /// </summary>
 public sealed record AtualizarRecursoAcessibilidadeCommand(
     Guid Id,
+    string? Codigo,
     string? Nome,
     string? Descricao = null) : ICommand<Result>;

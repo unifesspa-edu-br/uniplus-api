@@ -13,9 +13,10 @@ using Unifesspa.UniPlus.Regras.Services;
 /// integração, mesmo papel de <see cref="FatoCandidatoSeed"/> para o pai.
 /// </summary>
 /// <remarks>
-/// <c>MODALIDADE</c>, <c>CONDICAO_ATENDIMENTO</c> e <c>TIPO_DEFICIENCIA</c> são
-/// categóricos de <b>escopo-processo</b> — não têm linhas aqui; seu domínio vem do
-/// cadastro vivo (Modalidade, CondicaoAtendimentoEspecializado, TipoDeficiencia) via
+/// <c>MODALIDADE</c>, <c>CONDICAO_ATENDIMENTO</c>, <c>RECURSO_ACESSIBILIDADE</c> e
+/// <c>TIPO_DEFICIENCIA</c> são categóricos de <b>escopo-processo</b> — não têm linhas aqui;
+/// seu domínio vem do cadastro vivo (Modalidade, CondicaoAtendimentoEspecializado,
+/// RecursoAcessibilidade, TipoDeficiencia) via
 /// projeção do processo, nunca duplicado neste catálogo.
 /// </remarks>
 public static class FatoValorDominioSeed

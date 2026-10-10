@@ -17,7 +17,7 @@ public sealed class CriarRecursoAcessibilidadeCommandHandlerTests
     private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
     private static CriarRecursoAcessibilidadeCommand ComandoValido() =>
-        new("Ledor", "Profissional que lê a prova ao candidato");
+        new("LEDOR", "Ledor", "Profissional que lê a prova ao candidato");
 
     [Fact(DisplayName = "Nome livre cria o recurso, persiste e retorna o Id")]
     public async Task Handle_NomeLivre_CriaEPersiste()
@@ -32,6 +32,20 @@ public sealed class CriarRecursoAcessibilidadeCommandHandlerTests
         resultado.Value.Should().NotBe(Guid.Empty);
         await _repository.Received(1).AdicionarAsync(Arg.Any<RecursoAcessibilidade>(), Arg.Any<CancellationToken>());
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Código já existente entre vivos retorna conflito (CodigoJaExiste) sem persistir")]
+    public async Task Handle_CodigoDuplicado_RetornaConflito()
+    {
+        _repository.CodigoExisteEntreVivosAsync("LEDOR", null, Arg.Any<CancellationToken>())
+            .Returns(true);
+
+        Result<Guid> resultado = await CriarRecursoAcessibilidadeCommandHandler.Handle(
+            ComandoValido(), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(RecursoAcessibilidadeErrorCodes.CodigoJaExiste);
+        await _repository.DidNotReceive().AdicionarAsync(Arg.Any<RecursoAcessibilidade>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Nome já existente entre vivos retorna conflito (NomeJaExiste) sem persistir")]
@@ -73,6 +87,8 @@ public sealed class CriarRecursoAcessibilidadeCommandHandlerTests
             comando, _repository, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
+        await _repository.DidNotReceive().CodigoExisteEntreVivosAsync(
+            Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
         await _repository.DidNotReceive().NomeExisteEntreVivosAsync(
             Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
         await _repository.DidNotReceive().AdicionarAsync(Arg.Any<RecursoAcessibilidade>(), Arg.Any<CancellationToken>());

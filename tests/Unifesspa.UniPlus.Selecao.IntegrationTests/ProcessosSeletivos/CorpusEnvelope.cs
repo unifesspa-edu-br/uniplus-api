@@ -301,8 +301,8 @@ internal static class CorpusEnvelope
                 OfertaCondicao.Criar(new Guid("eeee0000-0000-4000-8000-000000000002"), "LACTANTE", "Lactante"),
             ], permutar),
             recursos: Ordem<OfertaRecurso>([
-                OfertaRecurso.Criar(new Guid("ffff0000-0000-4000-8000-000000000001"), "Ledor"),
-                OfertaRecurso.Criar(new Guid("ffff0000-0000-4000-8000-000000000002"), "Prova ampliada"),
+                OfertaRecurso.Criar(new Guid("ffff0000-0000-4000-8000-000000000001"), "LEDOR", "Ledor"),
+                OfertaRecurso.Criar(new Guid("ffff0000-0000-4000-8000-000000000002"), "PROVA_AMPLIADA", "Prova ampliada"),
             ], permutar),
             tiposDeficiencia: Ordem<OfertaTipoDeficiencia>([
                 OfertaTipoDeficiencia.Criar(new Guid("1111aaaa-0000-4000-8000-000000000001"), "DEFICIENCIA_VISUAL", "Deficiência visual"),

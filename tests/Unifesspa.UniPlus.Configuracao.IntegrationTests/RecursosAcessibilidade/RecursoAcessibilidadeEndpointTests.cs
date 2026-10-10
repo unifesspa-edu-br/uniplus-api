@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 /// <summary>
 /// Smoke + caminho de escrita dos endpoints de <c>RecursoAcessibilidade</c>
 /// (UNI-REQ-0012): routing, vendor media type, HATEOAS, autenticação/autorização,
-/// idempotência e unicidade do nome (409) — com Wolverine contra Postgres efêmero.
+/// idempotência e unicidade do código e do nome (409) — com Wolverine contra Postgres efêmero.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
 [SuppressMessage(
@@ -70,7 +70,7 @@ public sealed class RecursoAcessibilidadeEndpointTests
     [Fact(DisplayName = "POST autenticado sem role plataforma-admin retorna 403")]
     public async Task Criar_SemRoleAdmin_Retorna403()
     {
-        var body = new { nome = NomeUnico(), descricao = "Sem permissão" };
+        var body = new { codigo = CodigoUnico(), nome = NomeUnico(), descricao = "Sem permissão" };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/configuracao/admin/recursos-acessibilidade", UriKind.Relative));
@@ -102,9 +102,11 @@ public sealed class RecursoAcessibilidadeEndpointTests
     [Fact(DisplayName = "POST cria (201) e o GET subsequente retorna os campos + HATEOAS")]
     public async Task Criar_ComAuthEIdempotency_Retorna201EPersiste()
     {
+        string codigo = CodigoUnico();
         string nome = NomeUnico();
         var body = new
         {
+            codigo,
             nome,
             descricao = "Profissional que lê a prova ao candidato",
         };
@@ -122,6 +124,7 @@ public sealed class RecursoAcessibilidadeEndpointTests
 
         using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
         JsonElement root = doc.RootElement;
+        root.GetProperty("codigo").GetString().Should().Be(codigo);
         root.GetProperty("nome").GetString().Should().Be(nome);
         root.GetProperty("descricao").GetString().Should().Be("Profissional que lê a prova ao candidato");
         root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
@@ -131,15 +134,33 @@ public sealed class RecursoAcessibilidadeEndpointTests
     public async Task Criar_NomeDuplicado_Retorna409()
     {
         string nome = NomeUnico();
-        var body = new { nome, descricao = "Primeiro" };
+        var body = new { codigo = CodigoUnico(), nome, descricao = "Primeiro" };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage primeiro = await EnviarPostAdmin(client, body);
         primeiro.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        HttpResponseMessage segundo = await EnviarPostAdmin(client, new { nome, descricao = "Segundo" });
+        HttpResponseMessage segundo = await EnviarPostAdmin(client, new { codigo = CodigoUnico(), nome, descricao = "Segundo" });
         segundo.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
+
+    [Fact(DisplayName = "POST com código já existente entre vivos retorna 409 com o vendor code do código")]
+    public async Task Criar_CodigoDuplicado_Retorna409()
+    {
+        string codigo = CodigoUnico();
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage primeiro = await EnviarPostAdmin(client, new { codigo, nome = NomeUnico() });
+        primeiro.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        HttpResponseMessage segundo = await EnviarPostAdmin(client, new { codigo, nome = NomeUnico() });
+        segundo.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        using JsonDocument problema = JsonDocument.Parse(await segundo.Content.ReadAsStringAsync());
+        problema.RootElement.GetProperty("code").GetString()
+            .Should().Be("uniplus.configuracao.recurso_acessibilidade.codigo_ja_existe");
+    }
+
+    private static string CodigoUnico() => $"REC_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
 
     private static string NomeUnico() => $"Recurso {Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
 

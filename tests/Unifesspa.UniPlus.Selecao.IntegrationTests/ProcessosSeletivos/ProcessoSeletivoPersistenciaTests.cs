@@ -55,7 +55,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
 
         Result<OfertaAtendimentoEspecializado> ofertaResult = OfertaAtendimentoEspecializado.Criar(
             condicoes: [OfertaCondicao.Criar(condicaoOrigemId, "PCD", "Pessoa com deficiência")],
-            recursos: [OfertaRecurso.Criar(recursoOrigemId, "Ledor")],
+            recursos: [OfertaRecurso.Criar(recursoOrigemId, "LEDOR", "Ledor")],
             tiposDeficiencia: [OfertaTipoDeficiencia.Criar(tipoDeficienciaOrigemId, "DEFICIENCIA_VISUAL", "Deficiência visual")]);
         ofertaResult.IsSuccess.Should().BeTrue();
         processo.DefinirOfertaAtendimento(ofertaResult.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -86,6 +86,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         recarregado.OfertaAtendimento.Should().NotBeNull();
         recarregado.OfertaAtendimento!.Condicoes.Single().CondicaoOrigemId.Should().Be(condicaoOrigemId);
         recarregado.OfertaAtendimento.Recursos.Single().RecursoOrigemId.Should().Be(recursoOrigemId);
+        recarregado.OfertaAtendimento.Recursos.Single().RecursoCodigo.Should().Be("LEDOR");
         recarregado.OfertaAtendimento.TiposDeficiencia.Single().TipoDeficienciaOrigemId.Should().Be(tipoDeficienciaOrigemId);
     }
 
@@ -375,7 +376,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
 
         processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar(
             condicoes: [OfertaCondicao.Criar(condicaoOrigemId, "PCD", "Pessoa com deficiência")],
-            recursos: [OfertaRecurso.Criar(recursoOrigemId, "Ledor")],
+            recursos: [OfertaRecurso.Criar(recursoOrigemId, "LEDOR", "Ledor")],
             tiposDeficiencia: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ReferenciaRegra regraDistribuicao = ReferenciaRegra.Criar(

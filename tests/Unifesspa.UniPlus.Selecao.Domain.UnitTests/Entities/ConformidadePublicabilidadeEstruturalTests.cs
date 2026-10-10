@@ -752,6 +752,46 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.FatoColetadoSemValoresOfertados");
     }
 
+    private static FatoColetado CampoRecursoAcessibilidade() => FatoColetado.Criar(
+        OfertaAtendimentoEspecializado.FatoRecursoAcessibilidade, 0, "De qual recurso de acessibilidade você vai precisar?",
+        TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, precondicoes: null, classificacaoProtecao: "SENSIVEL").Value!;
+
+    [Fact(DisplayName = "Pré-canonicalização: fato coletável RECURSO_ACESSIBILIDADE sem nenhum recurso ofertado — item vermelho e Publicar recusa com FatoColetadoSemValoresOfertados")]
+    public void PreCanon_FatoColetadoRecursoAcessibilidadeSemValoresOfertados()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+        // ProcessoConforme já oferta atendimento vazio (sem recursos) — só falta o fato coletável.
+        processo.DefinirItensComFaseDeInscricao([CampoRecursoAcessibilidade()]).IsSuccess.Should().BeTrue();
+
+        VermelhosForaDoFormulario(processo).Should().ContainSingle()
+            .Which.Codigo.Should().Be("fato_coletavel_sem_valores_ofertados");
+
+        Result<VersaoConfiguracao> resultado = Publicar(processo);
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.FatoColetadoSemValoresOfertados");
+    }
+
+    [Fact(DisplayName = "Fato coletável RECURSO_ACESSIBILIDADE oferece os recursos da oferta de atendimento, pelo código, e o processo publica")]
+    public void FatoColetadoRecursoAcessibilidade_OpcoesSaoOsRecursosOfertados()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+        processo.DefinirOfertaAtendimento(
+            OfertaAtendimentoEspecializado.Criar(
+                [],
+                [OfertaRecurso.Criar(Guid.CreateVersion7(), "SALA_AMAMENTACAO", "Sala para amamentação"),
+                 OfertaRecurso.Criar(Guid.CreateVersion7(), "LEDOR", "Ledor")],
+                []).Value!,
+            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirItensComFaseDeInscricao([CampoRecursoAcessibilidade()]).IsSuccess.Should().BeTrue();
+
+        processo.OpcoesDoProcesso(OfertaAtendimentoEspecializado.FatoRecursoAcessibilidade)
+            .Select(static o => (o.Codigo, o.Rotulo, o.Ordem))
+            .Should().Equal(("LEDOR", "Ledor", 0), ("SALA_AMAMENTACAO", "Sala para amamentação", 1));
+
+        Result<VersaoConfiguracao> resultado = Publicar(processo);
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
     [Fact(DisplayName = "Pré-canonicalização: MODALIDADE contribui código fora do domínio ofertado — item vermelho e Publicar recusa com RegrasDerivacaoFatoErrorCodes.ContribuiForaDoDominio")]
     public void PreCanon_ModalidadeContribuiForaDoDominio()
     {

@@ -15036,6 +15036,7 @@
         "required": [
           "id",
           "recursoOrigemId",
+          "recursoCodigo",
           "recursoNome"
         ],
         "type": "object",
@@ -15047,6 +15048,9 @@
           "recursoOrigemId": {
             "type": "string",
             "format": "uuid"
+          },
+          "recursoCodigo": {
+            "type": "string"
           },
           "recursoNome": {
             "type": "string"

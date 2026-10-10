@@ -4,8 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Pagination;
+using Unifesspa.UniPlus.Kernel.Results;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",
@@ -33,6 +35,9 @@ public sealed class RecursoAcessibilidadeRepository : IRecursoAcessibilidadeRepo
             .AsNoTracking()
             .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
     }
+
+    public async Task<IReadOnlyList<RecursoAcessibilidade>> ListarVivosParaLeituraAsync(CancellationToken cancellationToken) =>
+        await _dbContext.RecursosAcessibilidade.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
 
     public async Task<(IReadOnlyList<RecursoAcessibilidade> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
         Guid? afterId,
@@ -75,5 +80,29 @@ public sealed class RecursoAcessibilidadeRepository : IRecursoAcessibilidadeRepo
             .AsNoTracking()
             .Where(r => excluirId == null || r.Id != excluirId)
             .AnyAsync(r => r.Nome == nomeNorm, cancellationToken);
+    }
+
+    public Task<bool> CodigoExisteEntreVivosAsync(
+        string codigo,
+        Guid? excluirId,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(codigo);
+
+        // Um código fora do formato nunca tem recurso vivo — evita query desnecessária
+        // e garante que a comparação use o valor canônico normalizado (Trim).
+        // Case-sensitive (default do Postgres) — alinhado ao índice único.
+        Result<CodigoRecursoAcessibilidade> codigoResult = CodigoRecursoAcessibilidade.Criar(codigo);
+        if (codigoResult.IsFailure)
+        {
+            return Task.FromResult(false);
+        }
+
+        CodigoRecursoAcessibilidade codigoVo = codigoResult.Value!;
+
+        return _dbContext.RecursosAcessibilidade
+            .AsNoTracking()
+            .Where(r => excluirId == null || r.Id != excluirId)
+            .AnyAsync(r => r.Codigo == codigoVo, cancellationToken);
     }
 }

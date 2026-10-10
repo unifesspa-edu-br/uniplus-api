@@ -7,24 +7,27 @@ using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
-/// As opções que o processo oferta, quando ainda não há processo. No processo, a condição de atendimento
-/// e o tipo de deficiência são os que a oferta de atendimento especializado dele declara, e os municípios
+/// As opções que o processo oferta, quando ainda não há processo. No processo, a condição de atendimento,
+/// o recurso de acessibilidade e o tipo de deficiência são os que a oferta de atendimento especializado
+/// dele declara, e os municípios
 /// do bônus, os da base legal que ele adota; no modelo, a simulação oferece o cadastro institucional vivo
 /// — os municípios de todas as bases legais, sem repetir —, na mesma ordem que o processo usa.
 /// </summary>
 internal static class OpcoesDoCadastroInstitucional
 {
     private const string FatoCondicaoAtendimento = "CONDICAO_ATENDIMENTO";
+    private const string FatoRecursoAcessibilidade = "RECURSO_ACESSIBILIDADE";
     private const string FatoTipoDeficiencia = "TIPO_DEFICIENCIA";
 
     /// <summary>
     /// Preenche as opções que o catálogo deixou nulas e que o cadastro institucional supre: condição de
-    /// atendimento, tipo de deficiência e municípios do bônus.
+    /// atendimento, recurso de acessibilidade, tipo de deficiência e municípios do bônus.
     /// </summary>
     public static async Task CompletarAsync(
         Dictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes,
         IReadOnlyList<FatoCandidato> fatos,
         ICondicaoAtendimentoRepository condicaoRepository,
+        IRecursoAcessibilidadeRepository recursoRepository,
         ITipoDeficienciaRepository tipoDeficienciaRepository,
         IBaseLegalBonusRegionalRepository baseLegalBonusRepository,
         CancellationToken cancellationToken)
@@ -56,6 +59,15 @@ internal static class OpcoesDoCadastroInstitucional
             opcoes[FatoCondicaoAtendimento] = [.. cadastro
                 .OrderBy(static c => c.Codigo.Valor, StringComparer.Ordinal)
                 .Select(static (c, ordem) => new ValorSelecionavel(c.Codigo.Valor, c.Nome, ordem))];
+        }
+
+        if (opcoes.TryGetValue(FatoRecursoAcessibilidade, out IReadOnlyList<ValorSelecionavel>? recursos) && recursos is null)
+        {
+            IReadOnlyList<RecursoAcessibilidade> cadastro =
+                await recursoRepository.ListarVivosParaLeituraAsync(cancellationToken).ConfigureAwait(false);
+            opcoes[FatoRecursoAcessibilidade] = [.. cadastro
+                .OrderBy(static r => r.Codigo.Valor, StringComparer.Ordinal)
+                .Select(static (r, ordem) => new ValorSelecionavel(r.Codigo.Valor, r.Nome, ordem))];
         }
 
         if (opcoes.TryGetValue(FatoTipoDeficiencia, out IReadOnlyList<ValorSelecionavel>? tipos) && tipos is null)

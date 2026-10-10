@@ -46,6 +46,7 @@ public static class PreVisualizarModeloFormularioQueryHandler
         IModeloFormularioRepository repository,
         IFatoCandidatoRepository fatoRepository,
         ICondicaoAtendimentoRepository condicaoRepository,
+        IRecursoAcessibilidadeRepository recursoRepository,
         ITipoDeficienciaRepository tipoDeficienciaRepository,
         IBaseLegalBonusRegionalRepository baseLegalBonusRepository,
         CancellationToken cancellationToken)
@@ -54,6 +55,7 @@ public static class PreVisualizarModeloFormularioQueryHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(fatoRepository);
         ArgumentNullException.ThrowIfNull(condicaoRepository);
+        ArgumentNullException.ThrowIfNull(recursoRepository);
         ArgumentNullException.ThrowIfNull(tipoDeficienciaRepository);
         ArgumentNullException.ThrowIfNull(baseLegalBonusRepository);
 
@@ -77,7 +79,7 @@ public static class PreVisualizarModeloFormularioQueryHandler
         // O mesmo conteúdo do renderizável: o do modelo aplicado, o de inscrição com o conjunto básico.
         ConteudoDoModelo conteudo = EscritaDoModelo.ComoAplicado(modelo, fatos);
         Dictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes = VocabularioDoCatalogo.OpcoesDoModelo(fatos, conteudo);
-        await OpcoesDoCadastroInstitucional.CompletarAsync(opcoes, fatos, condicaoRepository, tipoDeficienciaRepository, baseLegalBonusRepository, cancellationToken).ConfigureAwait(false);
+        await OpcoesDoCadastroInstitucional.CompletarAsync(opcoes, fatos, condicaoRepository, recursoRepository, tipoDeficienciaRepository, baseLegalBonusRepository, cancellationToken).ConfigureAwait(false);
         Dictionary<string, IReadOnlySet<string>> ofertas = VocabularioDoCatalogo.Ofertas(opcoes);
         AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(
             conteudo.ParaAvaliacao(VocabularioDoCatalogo.RegrasDeDerivacao(fatos), VocabularioDoCatalogo.AgregadosDosGrupos(fatos, conteudo.Grupos)),

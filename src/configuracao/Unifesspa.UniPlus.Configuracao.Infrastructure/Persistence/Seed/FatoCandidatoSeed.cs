@@ -315,6 +315,13 @@ public static class FatoCandidatoSeed
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:INDIGENA",
             ClassificacaoProtecaoDado.Sensivel, FinalidadeReservaDeVagas),
+
+        // O recurso de que o candidato precisa nas etapas (sala para amamentação, ledor, intérprete de
+        // Libras…), escolhido entre os que a oferta de atendimento do processo declara (UNI-REQ-0026).
+        new(SeedId(53), "RECURSO_ACESSIBILIDADE", "Recurso de acessibilidade", null,
+            DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Multivalorado, FonteValoresFato.Processo,
+            PontoResolucaoInscricao, "CAMPO_FORMULARIO:RECURSO_ACESSIBILIDADE",
+            ClassificacaoProtecaoDado.Sensivel, FinalidadeAtendimento),
     ];
 
     /// <summary>Um dado declarado do candidato, escalar e coletado na inscrição.</summary>

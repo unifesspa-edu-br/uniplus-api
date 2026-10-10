@@ -4,14 +4,15 @@ using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Handler do <see cref="AtualizarRecursoAcessibilidadeCommand"/>. Valida o
-/// payload (422, sem I/O) ANTES de buscar o recurso por Id — validação sempre
-/// vence 404. Como o nome é editável, confere a unicidade entre recursos vivos
-/// quando ele muda (ignorando o próprio registro) e protege a corrida traduzindo
-/// a violação do índice único parcial em <c>NomeJaExiste</c>.
+/// Handler do <see cref="AtualizarRecursoAcessibilidadeCommand"/>. Valida código, nome
+/// e descrição (422, sem I/O) ANTES de buscar o recurso por Id — validação sempre vence
+/// 404. Como código e nome são editáveis, confere a unicidade de cada um entre recursos
+/// vivos quando ele muda (ignorando o próprio registro) e protege a corrida traduzindo
+/// a violação do índice único parcial no conflito da constraint violada.
 /// </summary>
 public static class AtualizarRecursoAcessibilidadeCommandHandler
 {
@@ -25,10 +26,11 @@ public static class AtualizarRecursoAcessibilidadeCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        Result preCheck = RecursoAcessibilidade.ValidarCamposDoPayload(command.Nome, command.Descricao);
-        if (preCheck.IsFailure)
+        Result<(CodigoRecursoAcessibilidade Codigo, string Nome, string? Descricao)> campos =
+            RecursoAcessibilidade.ValidarCamposEditaveis(command.Codigo, command.Nome, command.Descricao);
+        if (campos.IsFailure)
         {
-            return Result.ValidationFailure(preCheck.Errors);
+            return Result.ValidationFailure(campos.Errors);
         }
 
         RecursoAcessibilidade? recurso = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
@@ -39,15 +41,21 @@ public static class AtualizarRecursoAcessibilidadeCommandHandler
                 "Recurso de acessibilidade não encontrado."));
         }
 
-        // Nome é case-sensitive (Ordinal), normalizado por Trim no agregado — só
-        // checa colisão quando o nome efetivamente muda.
-        if (!string.Equals(command.Nome!.Trim(), recurso.Nome, StringComparison.Ordinal)
-            && await repository.NomeExisteEntreVivosAsync(command.Nome, command.Id, cancellationToken).ConfigureAwait(false))
+        // Código e nome são case-sensitive (Ordinal) — só checa colisão quando o valor
+        // normalizado efetivamente muda em relação ao atual.
+        if (!string.Equals(campos.Value.Codigo.Valor, recurso.Codigo.Valor, StringComparison.Ordinal)
+            && await repository.CodigoExisteEntreVivosAsync(campos.Value.Codigo.Valor, command.Id, cancellationToken).ConfigureAwait(false))
         {
-            return Result.Failure(NomeJaExisteErro());
+            return Result.Failure(UniqueConstraintViolation.CodigoJaExisteErro());
         }
 
-        Result atualizarResult = recurso.Atualizar(command.Nome, command.Descricao);
+        if (!string.Equals(campos.Value.Nome, recurso.Nome, StringComparison.Ordinal)
+            && await repository.NomeExisteEntreVivosAsync(campos.Value.Nome, command.Id, cancellationToken).ConfigureAwait(false))
+        {
+            return Result.Failure(UniqueConstraintViolation.NomeJaExisteErro());
+        }
+
+        Result atualizarResult = recurso.Atualizar(command.Codigo, command.Nome, command.Descricao);
         if (atualizarResult.IsFailure)
         {
             return atualizarResult;
@@ -57,19 +65,14 @@ public static class AtualizarRecursoAcessibilidadeCommandHandler
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint
-            && UniqueConstraintViolation.IsNomeConflict(constraint))
+        catch (Exception ex) when (UniqueConstraintViolation.ConflitoDeUnicidade(ex) is { } conflito)
         {
             // Corrida entre a checagem de unicidade e o UPDATE: o índice único parcial
-            // dispara 23505 e viramos o mesmo NomeJaExiste do caminho não-race.
+            // dispara 23505 e viramos o mesmo conflito do caminho não-race.
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result.Failure(NomeJaExisteErro());
+            return Result.Failure(conflito);
         }
 
         return Result.Success();
     }
-
-    private static DomainError NomeJaExisteErro() =>
-        new(RecursoAcessibilidadeErrorCodes.NomeJaExiste,
-            "Já existe um recurso de acessibilidade vivo com o nome informado.");
 }

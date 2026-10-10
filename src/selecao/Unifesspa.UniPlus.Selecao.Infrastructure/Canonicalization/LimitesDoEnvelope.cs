@@ -47,6 +47,12 @@ public static class LimitesDoEnvelope
     /// do value object <c>CodigoTipoDeficiencia</c> no cadastro de origem.
     /// </summary>
     public const int TipoDeficienciaCodigo = 50;
+
+    /// <summary>
+    /// Código do recurso de acessibilidade congelado na oferta de atendimento — mesmo teto
+    /// do value object <c>CodigoRecursoAcessibilidade</c> no cadastro de origem.
+    /// </summary>
+    public const int RecursoCodigo = 50;
     public const int NomeDeCadastro = 300;
     public const int CensoReferencia = 20;
 

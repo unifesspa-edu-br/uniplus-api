@@ -679,8 +679,8 @@ public sealed class PoliticaDeOrdenacaoTests
         OfertaCondicao condicaoComOrigemMaior = OfertaCondicao.Criar(IdFixo(2), "COD_ALFA", "Alfa Nome");
         OfertaCondicao condicaoPcd = OfertaCondicao.Criar(IdFixo(9), OfertaAtendimentoEspecializado.CodigoCondicaoPcd, "Atendimento PCD");
 
-        OfertaRecurso recursoComOrigemMenor = OfertaRecurso.Criar(IdFixo(1), "Zeta Recurso");
-        OfertaRecurso recursoComOrigemMaior = OfertaRecurso.Criar(IdFixo(2), "Alfa Recurso");
+        OfertaRecurso recursoComOrigemMenor = OfertaRecurso.Criar(IdFixo(1), "ZETA_RECURSO", "Zeta Recurso");
+        OfertaRecurso recursoComOrigemMaior = OfertaRecurso.Criar(IdFixo(2), "ALFA_RECURSO", "Alfa Recurso");
 
         OfertaTipoDeficiencia tipoComOrigemMenor = OfertaTipoDeficiencia.Criar(IdFixo(1), "ZETA_TIPO", "Zeta Tipo");
         OfertaTipoDeficiencia tipoComOrigemMaior = OfertaTipoDeficiencia.Criar(IdFixo(2), "ALFA_TIPO", "Alfa Tipo");

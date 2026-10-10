@@ -173,7 +173,7 @@ public sealed class FatoCandidatoPersistenceTests
 
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
 
-        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(50);
+        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(51);
         fatos.Select(f => f.Codigo).Should().OnlyHaveUniqueItems();
 
         foreach (FatoCandidatoSeedItem item in FatoCandidatoSeed.Itens)
@@ -205,7 +205,7 @@ public sealed class FatoCandidatoPersistenceTests
         fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoProtecaoDado.Sensivel)
             .Select(f => f.Codigo).Order(StringComparer.Ordinal).Should().Equal(
                 "CONCORRER_PCD", "CONCORRER_PPI", "CONCORRER_Q", "CONDICAO_ATENDIMENTO", "COR_RACA", "INDIGENA", "MODALIDADE",
-                "MODALIDADE_CONVOCACAO", "PCD", "QUILOMBOLA", "TIPO_DEFICIENCIA");
+                "MODALIDADE_CONVOCACAO", "PCD", "QUILOMBOLA", "RECURSO_ACESSIBILIDADE", "TIPO_DEFICIENCIA");
         fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoProtecaoDado.Publico)
             .Select(f => f.Codigo).Should().Equal("NOME_SOCIAL");
         fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoProtecaoDado.Identificador)
@@ -380,7 +380,7 @@ public sealed class FatoCandidatoPersistenceTests
         fatos.Single(static f => f.Codigo == "RENDA_ATE_UM_SALARIO_MINIMO_E_MEIO").PontoResolucao.Should().Be("SOLICITACAO_ISENCAO");
     }
 
-    [Fact(DisplayName = "Cardinalidade: só MODALIDADE e CONDICAO_ATENDIMENTO são multivalorados; os demais escalares")]
+    [Fact(DisplayName = "Cardinalidade: só MODALIDADE, CONDICAO_ATENDIMENTO e RECURSO_ACESSIBILIDADE são multivalorados; os demais escalares")]
     public async Task Seed_CardinalidadeCoerente()
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
@@ -392,7 +392,7 @@ public sealed class FatoCandidatoPersistenceTests
             .Select(f => f.Codigo)
             .OrderBy(c => c, StringComparer.Ordinal)];
 
-        multivalorados.Should().Equal("CONDICAO_ATENDIMENTO", "MODALIDADE");
+        multivalorados.Should().Equal("CONDICAO_ATENDIMENTO", "MODALIDADE", "RECURSO_ACESSIBILIDADE");
         fatos.Where(f => f.Cardinalidade != CardinalidadeFato.Multivalorado)
             .Should().OnlyContain(f => f.Cardinalidade == CardinalidadeFato.Escalar);
     }
@@ -488,7 +488,7 @@ public sealed class FatoCandidatoPersistenceTests
         IReadOnlyList<FatoCandidatoView> views =
             [.. (await reader.ListarAsync()).Where(static v => FatoCandidatoSeed.Itens.Any(i => i.Codigo == v.Codigo))];
 
-        views.Should().HaveCount(50);
+        views.Should().HaveCount(51);
         views.Select(v => v.Codigo).Should().BeInAscendingOrder(StringComparer.Ordinal);
 
         FatoCandidatoView corRaca = views.Single(v => v.Codigo == "COR_RACA");
@@ -638,6 +638,7 @@ public sealed class FatoCandidatoPersistenceTests
             ("INDIGENA", "050", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:INDIGENA", "INSCRICAO"),
             ("PASSAPORTE_NUMERO", "051", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:PASSAPORTE_NUMERO", "INSCRICAO"),
             ("RNM_NUMERO", "052", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:RNM_NUMERO", "INSCRICAO"),
+            ("RECURSO_ACESSIBILIDADE", "053", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Multivalorado, "CAMPO_FORMULARIO:RECURSO_ACESSIBILIDADE", "INSCRICAO"),
         ];
 
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);

@@ -74,7 +74,7 @@ public sealed class ManifestoDoEnvelopeTests
             [("OfertaAtendimentoEspecializadoId", "FK interna.")]),
 
         [typeof(OfertaRecurso)] = (
-            ["RecursoOrigemId", "RecursoNome"],
+            ["RecursoOrigemId", "RecursoCodigo", "RecursoNome"],
             [("OfertaAtendimentoEspecializadoId", "FK interna.")]),
 
         [typeof(OfertaTipoDeficiencia)] = (

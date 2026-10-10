@@ -15,7 +15,8 @@ public enum FonteValoresFato
 
     /// <summary>
     /// Os valores são as opções que cada processo declara, congeladas no edital (ex.:
-    /// CONDICAO_ATENDIMENTO e TIPO_DEFICIENCIA, a partir da oferta de atendimento).
+    /// CONDICAO_ATENDIMENTO, RECURSO_ACESSIBILIDADE e TIPO_DEFICIENCIA, a partir da oferta de
+    /// atendimento).
     /// </summary>
     Processo,
 

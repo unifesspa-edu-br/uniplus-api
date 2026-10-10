@@ -147,7 +147,7 @@ internal static class ResolvedorValoresSelecionaveisCongelados
         }
 
         // Defesa em profundidade (issue #1077): o caminho esperado para um fato de escopo-processo
-        // (CONDICAO_ATENDIMENTO/TIPO_DEFICIENCIA) sem nenhum valor ofertado é
+        // (CONDICAO_ATENDIMENTO/RECURSO_ACESSIBILIDADE/TIPO_DEFICIENCIA) sem nenhum valor ofertado é
         // ProcessoSeletivo.PendenciaDeFatoColetadoSemValoresOfertados, avaliado ANTES deste
         // resolvedor rodar (PendenciaPreCanonicalizacao precede a canonicalização, ADR-0109 D5).
         // Chegar aqui com lista vazia significaria o gate e este resolvedor operando sobre

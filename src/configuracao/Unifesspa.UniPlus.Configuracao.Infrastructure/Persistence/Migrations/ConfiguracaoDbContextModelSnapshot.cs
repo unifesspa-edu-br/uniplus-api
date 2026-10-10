@@ -2220,6 +2220,27 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
                             Sistema = true
+                        },
+                        new
+                        {
+                            Id = new Guid("fa700000-0000-7000-8000-000000000053"),
+                            Ativo = true,
+                            Binding = "CAMPO_FORMULARIO:RECURSO_ACESSIBILIDADE",
+                            Cardinalidade = "MULTIVALORADO",
+                            ClassificacaoProtecao = "SENSIVEL",
+                            Codigo = "RECURSO_ACESSIBILIDADE",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Dependencias = new string[0],
+                            Dominio = "CATEGORICO",
+                            Escopo = "CANDIDATO",
+                            FinalidadeTratamento = "Oferta de atendimento especializado ao candidato na realização das etapas do processo seletivo.",
+                            FonteValores = "PROCESSO",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            Nome = "Recurso de acessibilidade",
+                            Origem = "DECLARADO",
+                            PontoResolucao = "INSCRICAO",
+                            RegrasPadrao = "[]",
+                            Sistema = true
                         });
                 });
 
@@ -3647,6 +3668,12 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("codigo");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -3691,12 +3718,20 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_recurso_acessibilidade");
 
+                    b.HasIndex("Codigo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_recurso_acessibilidade_codigo_vivo")
+                        .HasFilter("is_deleted = false");
+
                     b.HasIndex("Nome")
                         .IsUnique()
                         .HasDatabaseName("ix_recurso_acessibilidade_nome_vivo")
                         .HasFilter("is_deleted = false");
 
-                    b.ToTable("recurso_acessibilidade", "configuracao");
+                    b.ToTable("recurso_acessibilidade", "configuracao", t =>
+                        {
+                            t.HasCheckConstraint("ck_recurso_acessibilidade_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.ReferenciaReservaDemografica", b =>

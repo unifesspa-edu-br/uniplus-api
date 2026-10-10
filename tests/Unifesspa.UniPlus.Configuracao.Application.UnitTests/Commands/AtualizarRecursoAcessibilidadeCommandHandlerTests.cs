@@ -17,10 +17,10 @@ public sealed class AtualizarRecursoAcessibilidadeCommandHandlerTests
     private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
     private static RecursoAcessibilidade Existente(string nome = "Ledor") =>
-        RecursoAcessibilidade.Criar(nome, null).Value!;
+        RecursoAcessibilidade.Criar("LEDOR", nome, null).Value!;
 
-    private static AtualizarRecursoAcessibilidadeCommand Comando(Guid id, string nome = "Ledor") =>
-        new(id, nome, "Descrição atualizada");
+    private static AtualizarRecursoAcessibilidadeCommand Comando(Guid id, string nome = "Ledor", string codigo = "LEDOR") =>
+        new(id, codigo, nome, "Descrição atualizada");
 
     [Fact(DisplayName = "Recurso inexistente retorna NaoEncontrado (404)")]
     public async Task Handle_Inexistente_RetornaNaoEncontrado()
@@ -33,6 +33,21 @@ public sealed class AtualizarRecursoAcessibilidadeCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(RecursoAcessibilidadeErrorCodes.NaoEncontrado);
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Editar para um código que colide com outro recurso vivo retorna conflito (409)")]
+    public async Task Handle_CodigoColidente_RetornaConflito()
+    {
+        RecursoAcessibilidade existente = Existente("Ledor");
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+        _repository.CodigoExisteEntreVivosAsync("TEMPO_ADICIONAL", existente.Id, Arg.Any<CancellationToken>()).Returns(true);
+
+        Result resultado = await AtualizarRecursoAcessibilidadeCommandHandler.Handle(
+            Comando(existente.Id, codigo: "TEMPO_ADICIONAL"), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(RecursoAcessibilidadeErrorCodes.CodigoJaExiste);
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -67,7 +82,7 @@ public sealed class AtualizarRecursoAcessibilidadeCommandHandlerTests
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Editar sem mudar o nome não consulta a unicidade")]
+    [Fact(DisplayName = "Editar sem mudar código nem nome não consulta a unicidade")]
     public async Task Handle_NomeInalterado_NaoChecaUnicidade()
     {
         RecursoAcessibilidade existente = Existente("Ledor");
@@ -78,6 +93,8 @@ public sealed class AtualizarRecursoAcessibilidadeCommandHandlerTests
 
         resultado.IsSuccess.Should().BeTrue();
         await _repository.DidNotReceive()
+            .CodigoExisteEntreVivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
+        await _repository.DidNotReceive()
             .NomeExisteEntreVivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
@@ -86,7 +103,7 @@ public sealed class AtualizarRecursoAcessibilidadeCommandHandlerTests
     public async Task Handle_CampoInvalido_RetornaErroSemBuscarPorId()
     {
         Result resultado = await AtualizarRecursoAcessibilidadeCommandHandler.Handle(
-            new AtualizarRecursoAcessibilidadeCommand(Guid.CreateVersion7(), "A"), _repository, _unitOfWork, CancellationToken.None);
+            new AtualizarRecursoAcessibilidadeCommand(Guid.CreateVersion7(), "LEDOR", "A"), _repository, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(RecursoAcessibilidadeErrorCodes.NomeTamanho);

@@ -2380,6 +2380,12 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("oferta_atendimento_especializado_id");
 
+                    b.Property<string>("RecursoCodigo")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("recurso_codigo");
+
                     b.Property<string>("RecursoNome")
                         .IsRequired()
                         .HasMaxLength(300)
