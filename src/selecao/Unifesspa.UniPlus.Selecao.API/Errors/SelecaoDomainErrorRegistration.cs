@@ -766,6 +766,13 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("Inscricao.CorridaInconsistente", new DomainErrorMapping(StatusCodes.Status500InternalServerError, "uniplus.selecao.inscricao.corrida_inconsistente", "A inscrição colidiu no índice único, mas não foi possível relê-la")),
         new(InscricaoErrorCodes.NaoEncontrada, new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.inscricao.nao_encontrada", "Nenhuma inscrição deste candidato neste processo seletivo")),
         new(InscricaoErrorCodes.RespostaInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.resposta_invalida", "A resposta não atende a uma restrição do formulário")),
+        // Veredito de submissão (issue #1859) — só avaliados no POST .../submissao.
+        new(InscricaoErrorCodes.ItemObrigatorioAusente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.item_obrigatorio_ausente", "Um item visível e obrigatório está sem resposta")),
+        new(InscricaoErrorCodes.Impedimento, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.impedimento", "Uma resposta impede a submissão desta inscrição")),
+        new(InscricaoErrorCodes.GrupoContagemInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.grupo_contagem_invalida", "O número de ocorrências do grupo não respeita o mínimo ou o máximo exigido")),
+        new(InscricaoErrorCodes.GrupoCandidatoAusente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.grupo_candidato_ausente", "O grupo inclui o candidato, mas nenhuma ocorrência o representa")),
+        new(InscricaoErrorCodes.GrupoIdDuplicado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.grupo_id_duplicado", "Duas ocorrências do grupo repetem o mesmo id")),
+        new(InscricaoErrorCodes.TermoNaoAceito, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.termo_nao_aceito", "Um termo obrigatório não foi aceito na versão da inscrição")),
         // Base legal 1:N (Story #554, PR #898, issue #549, ADR-0074) — DocumentoExigidoBaseLegal
         // e o gate de publicação (ValidadorBaseLegalExigencias) aflora pelo
         // ProcessoSeletivo.ConformidadeInsuficiente já registrado acima, sem código novo.

@@ -10,4 +10,13 @@ public static class InscricaoErrorCodes
     public const string DonoDivergente = "Inscricao.DonoDivergente";
     public const string NaoEncontrada = "Inscricao.NaoEncontrada";
     public const string RespostaInvalida = "Inscricao.RespostaInvalida";
+
+    // Veredito de submissão (issue #1859) — só avaliados no POST .../submissao, nunca no PUT do
+    // rascunho, que não exige obrigatórios.
+    public const string ItemObrigatorioAusente = "Inscricao.ItemObrigatorioAusente";
+    public const string Impedimento = "Inscricao.Impedimento";
+    public const string GrupoContagemInvalida = "Inscricao.GrupoContagemInvalida";
+    public const string GrupoCandidatoAusente = "Inscricao.GrupoCandidatoAusente";
+    public const string GrupoIdDuplicado = "Inscricao.GrupoIdDuplicado";
+    public const string TermoNaoAceito = "Inscricao.TermoNaoAceito";
 }
