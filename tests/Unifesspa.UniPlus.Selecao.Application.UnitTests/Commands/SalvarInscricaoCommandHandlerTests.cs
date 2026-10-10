@@ -97,6 +97,30 @@ public sealed class SalvarInscricaoCommandHandlerTests
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Versão fixada que não existe mais entre as versões do processo aflora como corrupção, sem gravar nada")]
+    public async Task Handle_VersaoFixadaInexistente_AfloraComoCorrupcao()
+    {
+        Cpf cpf = PersonasDeTeste.FernandaDrumond;
+        Inscricao existente = NovaInscricao(cpf, "sub-1", Guid.CreateVersion7());
+
+        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
+        inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
+
+        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([]);
+
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+
+        Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
+            new SalvarInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags([existente.ETag])),
+            inscricaoRepository, processoRepository, Substitute.For<IRegistroCodecsEnvelope>(), unitOfWork, UsuarioComCpf(cpf), CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("Snapshot.VigenteAusente");
+        await inscricaoRepository.DidNotReceive().AtualizarAsync(Arg.Any<Inscricao>(), Arg.Any<CancellationToken>());
+        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
     private static (VersaoConfiguracao Versao, GrafoConfiguracao Grafo) MontarVersaoComItem(
         FatoColetado item, IReadOnlyList<GrupoColetado>? grupos = null)
     {
