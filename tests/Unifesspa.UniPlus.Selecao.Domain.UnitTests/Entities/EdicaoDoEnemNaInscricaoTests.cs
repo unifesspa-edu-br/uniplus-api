@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -121,6 +122,87 @@ public sealed class EdicaoDoEnemNaInscricaoTests
 
         itens.Should().NotContain(i => i.Codigo == ItemDasEdicoes);
         itens.Single(i => i.Codigo == ItemDoCampo).Ok.Should().BeTrue();
+    }
+
+    private static ConfiguracaoClassificacao ClassificacaoImportadaSemEnem() =>
+        ConfiguracaoClassificacao.Criar(
+            ProcessoConformeFactory.Regra(RegraCalculoCodigo.ClassificacaoImportada, "a"), null, null,
+            ProcessoConformeFactory.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"), 1, [],
+            baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!;
+
+    [Fact(DisplayName = "A classificação que deixa de ser baseada em ENEM retira as edições do ENEM declaradas")]
+    public void DefinirClassificacao_DeixaDeSerEnem_RetiraAsEdicoes()
+    {
+        ProcessoSeletivo processo = ProcessoDoEnem();
+
+        processo.DefinirClassificacao(ClassificacaoImportadaSemEnem(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+
+        processo.OpcoesDoProcesso(EdicaoDoEnem.Fato).Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Voltar à classificação baseada em ENEM exige declarar as edições de novo")]
+    public void DefinirClassificacao_VoltaAoEnem_ExigeDeclararAsEdicoes()
+    {
+        ProcessoSeletivo processo = ProcessoDoEnem();
+        processo.DefinirClassificacao(ClassificacaoImportadaSemEnem(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+
+        processo.DefinirClassificacao(ClassificacaoImportadaDoEnem(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+
+        ItemOk(processo, ItemDasEdicoes).Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Deixar de ser ENEM é recusado quando uma condição viva cita uma edição, e as edições ficam")]
+    public void DefinirClassificacao_EdicaoCitadaPorCondicao_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoDoEnem();
+        FatoColetado citaAEdicao = FatoColetado.Criar(
+            "APELIDO", FormularioDeTeste.PrimeiraOrdemDeInscricao + 1, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Sempre,
+            [CondicaoPrecondicaoFato.Criar(0, EdicaoDoEnem.Fato, Operador.Igual, JsonSerializer.SerializeToElement("2026")).Value!],
+            "PESSOAL", formato: "LIVRE", etapaCodigo: FormularioDeTeste.Secao).Value!;
+        Result itens = processo.DefinirItens([CampoDaEdicao(), citaAEdicao]);
+        itens.IsSuccess.Should().BeTrue(itens.Error?.Message ?? string.Join("; ", itens.Errors.Select(static e => e.Error.Message)));
+
+        Result resultado = processo.DefinirClassificacao(ClassificacaoImportadaSemEnem(), PrecondicaoIfMatch.Curinga);
+
+        resultado.Errors.Should().ContainSingle(e =>
+            e.Field == "baseadoEmEnem" && e.Error.Code == OpcaoDeclaradaFatoErrorCodes.ReferenciadaPorExigenciaViva);
+        processo.OpcoesDoProcesso(EdicaoDoEnem.Fato).Should().ContainSingle();
+    }
+
+    [Theory(DisplayName = "Sem classificação baseada em ENEM, a publicação e o checklist recusam o formulário que pede a edição")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Publicacao_CampoDaEdicaoSemEnem_Recusa(bool comOCampo)
+    {
+        ProcessoSeletivo processo = ProcessoDoEnem();
+        processo.DefinirItens(comOCampo ? [CampoDaEdicao()] : []).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoImportadaSemEnem(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+
+        DomainError? pendencia = processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo);
+
+        (pendencia?.Code).Should().Be(comOCampo ? FormularioProcessoErrorCodes.EdicaoDoEnemSemClassificacaoEnem : null);
+        ItemOk(processo, "formulario_edicao_enem_sem_classificacao_enem").Should().Be(!comOCampo);
+    }
+
+    [Fact(DisplayName = "Sem ENEM, o campo da edição vem antes do termo sem forma de aceite no checklist, na ordem em que a publicação recusa")]
+    public void Checklist_CampoDaEdicaoSemEnem_NaOrdemDaPublicacao()
+    {
+        ProcessoSeletivo processo = ProcessoDoEnem();
+        processo.DefinirItens([CampoDaEdicao()]).IsSuccess.Should().BeTrue();
+        TermoExigidoFormulario termoSemForma = TermoExigidoFormulario.Criar(
+            "DECLARACAO", 0,
+            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "Declaração", "Texto", "Base legal", "A_DEFINIR", new string('a', 64)),
+            null, Obrigatoriedade.Sempre).Value!;
+        processo.DefinirTermos([termoSemForma], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoImportadaSemEnem(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+
+        List<string> vermelhos = [.. processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo)
+            .Where(static i => !i.Ok).Select(static i => i.Codigo)];
+
+        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code
+            .Should().Be(FormularioProcessoErrorCodes.EdicaoDoEnemSemClassificacaoEnem);
+        vermelhos.IndexOf("formulario_edicao_enem_sem_classificacao_enem")
+            .Should().BeGreaterThanOrEqualTo(0).And.BeLessThan(vermelhos.IndexOf("termo_exigido_sem_forma_de_aceite"));
     }
 
     [Fact(DisplayName = "Com inscrição própria e sem formulário de inscrição, a falta é só a do formulário")]

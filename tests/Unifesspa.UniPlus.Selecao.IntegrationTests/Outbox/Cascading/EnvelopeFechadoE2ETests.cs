@@ -334,6 +334,7 @@ public sealed class EnvelopeFechadoE2ETests
                 "formulario_fato_ausente_de_versao_publicada",
                 "formulario_campo_opcional_alimenta_regra",
                 "exigencia_repete_por_grupo_do_formulario",
+                "formulario_edicao_enem_sem_classificacao_enem",
                 "fato_coletavel_sem_valores_ofertados",
                 "fato_coletavel_municipio_citado_fora_da_area_do_bonus",
                 "termo_exigido_sem_forma_de_aceite",

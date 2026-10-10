@@ -302,6 +302,13 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
                 ErrosCodecEnvelope.EnvelopeMalformado, $"'fatosColetados': {citacaoInvalida.Message}"));
         }
 
+        if (ProcessoSeletivo.EdicaoDoEnemSemClassificacaoEnem(
+                [.. fatosColetados, .. gruposColetados.SelectMany(static g => g.Subitens)], classificacao) is { } edicaoSemEnem)
+        {
+            return Result<EnvelopeReidratado>.Failure(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado, $"'fatosColetados': {edicaoSemEnem.Message}"));
+        }
+
         Result<IReadOnlyList<OpcaoDeclaradaFato>> opcoesDeclaradas =
             ReconstruirOpcoesDeclaradas([.. fatosColetados, .. gruposColetados.SelectMany(static g => g.Subitens)], fatosColetadosLidos.ValoresSelecionaveis);
         if (opcoesDeclaradas.IsFailure)
