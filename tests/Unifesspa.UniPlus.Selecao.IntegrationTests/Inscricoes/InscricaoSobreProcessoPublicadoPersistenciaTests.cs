@@ -268,7 +268,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         await using NpgsqlConnection connection = new(_fixture.ConnectionString);
         await connection.OpenAsync();
         await using NpgsqlCommand command = connection.CreateCommand();
-        command.CommandText = "SELECT cpf_ciphertext, documentos_cifrados, respostas FROM selecao.inscricoes WHERE id = @id";
+        command.CommandText = "SELECT cpf_ciphertext, documentos_cifrados, respostas, grupos FROM selecao.inscricoes WHERE id = @id";
         command.Parameters.AddWithValue("id", inscricao.Id);
         await using NpgsqlDataReader reader = await command.ExecuteReaderAsync();
         (await reader.ReadAsync()).Should().BeTrue();
@@ -276,10 +276,12 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         byte[] cpfCiphertext = (byte[])reader["cpf_ciphertext"];
         byte[] documentosCifrados = (byte[])reader["documentos_cifrados"];
         string respostas = (string)reader["respostas"];
+        string grupos = (string)reader["grupos"];
 
         Encoding.UTF8.GetString(cpfCiphertext).Should().NotContain(PersonasDeTeste.KevinCarvalho.Valor);
         Encoding.UTF8.GetString(documentosCifrados).Should().NotContain("30.111.222-9").And.NotContain("40.333.444-5");
         respostas.Should().NotContain("30.111.222-9", "o número de documento nunca entra no jsonb em claro, mesmo quando a versão vem de uma publicação real");
+        grupos.Should().NotContain("40.333.444-5", "o número de documento do membro do grupo é removido antes de serializar a coluna grupos — é só o que documentos_cifrados guarda");
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
         InscricaoRepository readRepository = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
