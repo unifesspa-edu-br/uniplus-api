@@ -50,7 +50,6 @@ public sealed class ObterComprovanteQueryHandlerTests
                 TestSupport.DefinicoesDeTeste.Das(respostas),
                 new Dictionary<string, JsonElement>(StringComparer.Ordinal),
                 TestSupport.DefinicoesDeTeste.Nenhuma(),
-                new string((char)('a' + i), 64),
                 PrecondicaoIfMatch.DeTags([inscricao.ETag]),
                 new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero).AddMinutes(i));
             submetido.IsSuccess.Should().BeTrue(submetido.Error?.Message);

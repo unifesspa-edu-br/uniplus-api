@@ -244,7 +244,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
         existente.Submeter(
             "000001", null, semRespostas, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [],
             new RespostasAdmitidas(new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal), new HashSet<Guid>()),
-            semRespostas, new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal), "sha256-teste",
+            semRespostas, new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal),
             PrecondicaoIfMatch.DeTags([existente.ETag]), DateTimeOffset.UnixEpoch).IsSuccess.Should().BeTrue();
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();

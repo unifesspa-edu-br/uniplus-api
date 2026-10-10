@@ -326,7 +326,6 @@ public sealed class Inscricao : EntityBase
         RespostasAdmitidas admitidas,
         IReadOnlyDictionary<string, JsonElement> derivados,
         IReadOnlyDictionary<string, DefinicaoDaResposta> definicoesDosDerivados,
-        string hashIntegridade,
         PrecondicaoIfMatch precondicao,
         DateTimeOffset instante)
     {
@@ -337,7 +336,6 @@ public sealed class Inscricao : EntityBase
         ArgumentNullException.ThrowIfNull(aceites);
         ArgumentNullException.ThrowIfNull(admitidas);
         ArgumentNullException.ThrowIfNull(definicoesDosDerivados);
-        ArgumentException.ThrowIfNullOrWhiteSpace(hashIntegridade);
 
         if (ConferirPrecondicao(precondicao) is { } erroPrecondicao)
         {
@@ -373,7 +371,7 @@ public sealed class Inscricao : EntityBase
         Revisao++;
 
         ComprovanteInscricao comprovante = ComprovanteInscricao.Emitir(
-            Id, NumeroInscricao, instante, hashIntegridade, OfertaCursoId,
+            Id, NumeroInscricao, instante, OfertaCursoId,
             SemNumerosDeDocumento(Respostas), SemNumerosDeDocumento(Derivados), SemNumerosDeDocumentoNosGrupos(Grupos), Aceites);
         _comprovantes.Add(comprovante);
 

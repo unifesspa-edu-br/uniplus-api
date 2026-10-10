@@ -121,10 +121,10 @@ public sealed class MinhasInscricoesQueryHandlerTests
         });
         IReadOnlyList<ComprovanteInscricao> comprovantes =
         [
-            ComprovanteInscricao.Emitir(inscricao.Id, "00000001", instante, new string('a', 64), null,
+            ComprovanteInscricao.Emitir(inscricao.Id, "00000001", instante, null,
                 new Dictionary<string, JsonElement>(StringComparer.Ordinal), new Dictionary<string, JsonElement>(StringComparer.Ordinal),
                 new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), []),
-            ComprovanteInscricao.Emitir(inscricao.Id, "00000001", instante.AddHours(1), new string('b', 64), null,
+            ComprovanteInscricao.Emitir(inscricao.Id, "00000001", instante.AddHours(1), null,
                 new Dictionary<string, JsonElement>(StringComparer.Ordinal), new Dictionary<string, JsonElement>(StringComparer.Ordinal),
                 new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), []),
         ];
