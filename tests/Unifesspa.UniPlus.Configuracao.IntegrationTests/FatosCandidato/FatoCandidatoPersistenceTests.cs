@@ -194,7 +194,7 @@ public sealed class FatoCandidatoPersistenceTests
         }
     }
 
-    [Fact(DisplayName = "Cor ou raça, deficiência, tipo de deficiência e o que os revela são sensíveis; o nome social é público; os demais, pessoais")]
+    [Fact(DisplayName = "Cor ou raça, deficiência, tipo de deficiência e o que os revela são sensíveis; o nome social é público; CPF, RG e documento do estrangeiro são identificador; os demais, pessoais")]
     public async Task Seed_ClassificacaoDeProtecao()
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
@@ -207,7 +207,11 @@ public sealed class FatoCandidatoPersistenceTests
                 "MODALIDADE_CONVOCACAO", "PCD", "QUILOMBOLA", "TIPO_DEFICIENCIA");
         fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoProtecaoDado.Publico)
             .Select(f => f.Codigo).Should().Equal("NOME_SOCIAL");
-        fatos.Where(f => f.ClassificacaoProtecao is not (ClassificacaoProtecaoDado.Sensivel or ClassificacaoProtecaoDado.Publico))
+        fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoProtecaoDado.Identificador)
+            .Select(f => f.Codigo).Order(StringComparer.Ordinal).Should().Equal(
+                "CPF", "DOCUMENTO_ESTRANGEIRO_NUMERO", "RG_NUMERO");
+        fatos.Where(f => f.ClassificacaoProtecao is not (
+                ClassificacaoProtecaoDado.Sensivel or ClassificacaoProtecaoDado.Publico or ClassificacaoProtecaoDado.Identificador))
             .Should().OnlyContain(f => f.ClassificacaoProtecao == ClassificacaoProtecaoDado.Pessoal);
     }
 

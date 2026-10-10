@@ -16442,7 +16442,8 @@
           "binding",
           "valoresDominioDeclarados",
           "fonteValores",
-          "ativo"
+          "ativo",
+          "classificacaoProtecao"
         ],
         "type": "object",
         "properties": {
@@ -16503,6 +16504,9 @@
           },
           "ativo": {
             "type": "boolean"
+          },
+          "classificacaoProtecao": {
+            "type": "string"
           },
           "formato": {
             "type": [
