@@ -87,7 +87,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
 
                     b.ToTable("base_legal_bonus_regional", "configuracao", t =>
                         {
-                            t.HasCheckConstraint("CK_base_legal_bonus_regional_tipo_instrumento", "tipo_instrumento IN ('LEI','DECRETO','PORTARIA','RESOLUCAO','INSTRUCAO_NORMATIVA','PARECER')");
+                            t.HasCheckConstraint("CK_base_legal_bonus_regional_tipo_instrumento", "tipo_instrumento IN ('LEI','DECRETO','PORTARIA','RESOLUCAO','INSTRUCAO_NORMATIVA','PARECER','EDITAL')");
                         });
                 });
 

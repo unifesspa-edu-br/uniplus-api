@@ -116,7 +116,7 @@ public sealed class VocabulariosEndpointTests
         codigos.Should().AllSatisfy(c => c.Nome.Should().NotBeNullOrWhiteSpace());
     }
 
-    [Fact(DisplayName = "GET /vocabularios/tipos-instrumento-normativo devolve os seis tipos com código, nome e descrição, na ordem publicada, sem exigir autenticação")]
+    [Fact(DisplayName = "GET /vocabularios/tipos-instrumento-normativo devolve os tipos com código, nome e descrição, na ordem publicada, sem exigir autenticação")]
     public async Task ListarCodigosTipoInstrumentoNormativo_DevolveVocabularioCompleto()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -140,7 +140,8 @@ public sealed class VocabulariosEndpointTests
             "PORTARIA",
             "RESOLUCAO",
             "INSTRUCAO_NORMATIVA",
-            "PARECER");
+            "PARECER",
+            "EDITAL");
         codigos.Should().AllSatisfy(c =>
         {
             c.Nome.Should().NotBeNullOrWhiteSpace();

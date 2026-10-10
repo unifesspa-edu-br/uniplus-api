@@ -28,7 +28,7 @@ public sealed class BaseLegalBonusRegionalConfiguration : IEntityTypeConfigurati
             .HasMaxLength(30)
             .IsRequired();
 
-        builder.ToTable(t => t.HasCheckConstraint("CK_base_legal_bonus_regional_tipo_instrumento", "tipo_instrumento IN ('LEI','DECRETO','PORTARIA','RESOLUCAO','INSTRUCAO_NORMATIVA','PARECER')"));
+        builder.ToTable(t => t.HasCheckConstraint("CK_base_legal_bonus_regional_tipo_instrumento", "tipo_instrumento IN ('LEI','DECRETO','PORTARIA','RESOLUCAO','INSTRUCAO_NORMATIVA','PARECER','EDITAL')"));
 
         builder.Property(e => e.Identificacao).HasMaxLength(500).IsRequired();
         builder.Property(e => e.Descricao).HasMaxLength(2000).IsRequired();

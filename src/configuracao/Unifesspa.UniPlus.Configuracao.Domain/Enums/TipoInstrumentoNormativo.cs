@@ -2,8 +2,8 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 /// <summary>
 /// Tipo de instrumento normativo aceito na Base Legal de Bônus Regional.
-/// Vocabulário fechado — lista exata dos seis documentos formais que a legislação
-/// brasileira usa para instituir ou modificar bônus em processo seletivo de IFES.
+/// Vocabulário fechado dos documentos formais que instituem ou modificam o bônus em
+/// processo seletivo de IFES — os atos normativos e o próprio edital do processo.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -15,7 +15,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// <para>
 /// A ordem de declaração define a ordem do vocabulário anunciado pelo endpoint
 /// <c>GET /api/configuracao/vocabularios/tipos-instrumento-normativo</c>: lei primeiro,
-/// parecer por último — hierarquia de força normativa.
+/// parecer e edital por último — hierarquia de força normativa.
 /// </para>
 /// </remarks>
 public enum TipoInstrumentoNormativo
@@ -27,4 +27,5 @@ public enum TipoInstrumentoNormativo
     Resolucao = 4,
     InstrucaoNormativa = 5,
     Parecer = 6,
+    Edital = 7,
 }

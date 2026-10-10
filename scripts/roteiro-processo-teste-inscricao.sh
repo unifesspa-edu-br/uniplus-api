@@ -304,12 +304,11 @@ setup_configuracao() {
         TIPO_DEFICIENCIA_IDS=$(jq -c --arg id "$id" '. + [$id]' <<< "$TIPO_DEFICIENCIA_IDS")
     done <<< "$tipos"
 
-    # Item 1.5: os municípios das regiões de influência destes oito polos. A
-    # minuta não lista os demais. O catálogo não tem o edital como tipo de
-    # instrumento, e é o edital (item 1.6) que institui o fator.
+    # O próprio edital institui o fator (itens 1.5 e 1.6), com os municípios das
+    # regiões de influência destes oito polos. A minuta não lista os demais.
     local bonus_identificacao="Edital nº XX/2026-CEPS/Unifesspa, itens 1.5 e 1.6"
     BASE_LEGAL_BONUS_ID=$(post_tolerante "/api/configuracao/admin/base-legal-bonus-regional" "{
-        \"tipoInstrumento\": \"PORTARIA\", \"identificacao\": \"$bonus_identificacao\",
+        \"tipoInstrumento\": \"EDITAL\", \"identificacao\": \"$bonus_identificacao\",
         \"descricao\": \"Fator de Atenuação das Desigualdades de Acesso\",
         \"municipios\": [
             {\"codigoIbge\": \"1504208\", \"nome\": \"Marabá\", \"uf\": \"PA\"},
