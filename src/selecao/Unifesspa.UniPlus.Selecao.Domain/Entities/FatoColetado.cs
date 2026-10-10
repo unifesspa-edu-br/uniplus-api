@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
+using System.Collections.Frozen;
 using System.Text.Json;
 
 using Enums;
@@ -34,6 +35,13 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </remarks>
 public sealed class FatoColetado : EntityBase
 {
+    /// <summary>
+    /// Os mesmos tokens canônicos de <c>ClassificacoesProtecaoDado</c> (Configuração) —
+    /// duplicados aqui porque este Domain não alcança o de outro módulo (ADR-0097).
+    /// </summary>
+    private static readonly FrozenSet<string> TokensDeClassificacaoProtecao = FrozenSet.ToFrozenSet(
+        ["PUBLICO", "INTERNO", "PESSOAL", "IDENTIFICADOR", "SENSIVEL"], StringComparer.Ordinal);
+
     private readonly List<CondicaoPrecondicaoFato> _precondicoes = [];
 
     public Guid ProcessoSeletivoId { get; private set; }
@@ -147,6 +155,16 @@ public sealed class FatoColetado : EntityBase
             fatoCodigo, ordem, rotulo, tipoRenderizacao, formato, ajuda, condicoes.Select(static c => c.Fato), obrigatoriedade, restricoesDoItem,
             impedimento);
 
+        if (!TokensDeClassificacaoProtecao.Contains(classificacaoProtecao))
+        {
+            // O vocabulário fechado é o mesmo token canônico de ClassificacoesProtecaoDado
+            // (Configuração), espelhado aqui porque o Domain da Seleção não alcança o Domain de
+            // outro módulo (ADR-0097) — a Seleção só copia o valor já validado pelo catálogo.
+            erros.Add(new("classificacaoProtecao", new DomainError(
+                FatoColetadoErrorCodes.ClassificacaoProtecaoInvalida,
+                "Classificação de proteção de dados fora do vocabulário fechado.")));
+        }
+
         if (erros.Count > 0)
         {
             return Result<FatoColetado>.ValidationFailure(erros);
@@ -249,4 +267,5 @@ public static class FatoColetadoErrorCodes
     public const string ObrigatoriedadeInvalida = "FatoColetado.ObrigatoriedadeInvalida";
     public const string FatoDuplicado = "FatoColetado.FatoDuplicado";
     public const string PrecondicaoCitaFatoNaoColetado = "FatoColetado.PrecondicaoCitaFatoNaoColetado";
+    public const string ClassificacaoProtecaoInvalida = "FatoColetado.ClassificacaoProtecaoInvalida";
 }

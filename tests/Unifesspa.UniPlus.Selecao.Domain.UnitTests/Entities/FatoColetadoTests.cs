@@ -28,6 +28,19 @@ public sealed class FatoColetadoTests
         resultado.Error!.Code.Should().Be(ItemFormularioErrorCodes.RotuloObrigatorio);
     }
 
+    [Theory(DisplayName = "Classificação de proteção de dados fora do vocabulário fechado é recusada")]
+    [InlineData("")]
+    [InlineData("SEGREDO")]
+    [InlineData("pessoal")]
+    public void Criar_ClassificacaoProtecaoForaDoVocabulario_RetornaFalha(string classificacao)
+    {
+        Result<FatoColetado> resultado = FatoColetado.Criar(
+            "COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: classificacao);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.ClassificacaoProtecaoInvalida);
+    }
+
     [Fact(DisplayName = "Rótulo só de espaço é recusado")]
     public void Criar_RotuloSoEspaco_RetornaFalha()
     {

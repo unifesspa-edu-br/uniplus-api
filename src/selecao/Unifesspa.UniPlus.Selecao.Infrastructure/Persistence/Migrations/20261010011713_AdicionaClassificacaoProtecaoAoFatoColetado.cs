@@ -5,11 +5,19 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
+    /// <remarks>
+    /// Um fato coletado existente não tem como receber retroativamente a classificação certa
+    /// sem consultar o catálogo, que a migration não alcança. Sem produção, um rascunho de
+    /// processo em homologação é descartável (ADR-0137) — apaga em vez de gravar um valor fora
+    /// do vocabulário fechado que o decoder do envelope recusaria na publicação.
+    /// </remarks>
     public partial class AdicionaClassificacaoProtecaoAoFatoColetado : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.Sql("DELETE FROM selecao.fatos_coletados;");
+
             migrationBuilder.AddColumn<string>(
                 name: "classificacao_protecao",
                 schema: "selecao",
