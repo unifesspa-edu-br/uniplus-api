@@ -189,8 +189,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             """{"cep":"68500000","logradouro":"Folha 31","cidade":{"codigoIbge":"1504208","nome":"Marabá","uf":"PA"},"origem":"geo-api"}""");
         original.Submeter(
             "000321", OfertaDoProcesso, respostas, SemGrupos(), [], Admitidas,
-            Respostas(("FAIXA_ETARIA", 25), ("UF_RESIDENCIA", "PA")), DefinicoesDosDerivados,
-            new string('a', 64), PrecondicaoIfMatch.DeTags([original.ETag]), DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
+            Respostas(("FAIXA_ETARIA", 25), ("UF_RESIDENCIA", "PA")), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
 
         await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
         InscricaoRepository writeRepository = new(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
@@ -275,8 +274,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         Inscricao original = NovaInscricao(PersonasDeTeste.KevinCarvalho, Guid.CreateVersion7());
         original.Submeter(
             "000654", OfertaDoProcesso, Respostas(("NOME_SOCIAL", "Kevin")), SemGrupos(), [], Admitidas,
-            Respostas(("UF_RESIDENCIA", "PA")), DefinicoesDosDerivados,
-            new string('b', 64), PrecondicaoIfMatch.DeTags([original.ETag]), DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
+            Respostas(("UF_RESIDENCIA", "PA")), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
 
         await using (SelecaoDbContext context = _fixture.CreateDbContext())
         {
@@ -306,16 +304,18 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         Guid processo = Guid.CreateVersion7();
         Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, processo);
         DateTimeOffset primeira = new(2026, 10, 10, 12, 0, 0, TimeSpan.Zero);
+        string hashDaCorrecao;
 
         await using (SelecaoDbContext context = _fixture.CreateDbContext())
         {
             InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
             ComprovanteInscricao envio = original.Submeter(
                 "000777", OfertaDoProcesso, Respostas(("NOME_SOCIAL", "Ariel")), SemGrupos(), [], Admitidas,
-                Respostas(), DefinicoesDosDerivados, new string('c', 64), PrecondicaoIfMatch.DeTags([original.ETag]), primeira).Value!;
+                Respostas(), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), primeira).Value!;
             ComprovanteInscricao correcao = original.Submeter(
                 "000777", OfertaDoProcesso, Respostas(("NOME_SOCIAL", "Ariel D.")), SemGrupos(), [], Admitidas,
-                Respostas(), DefinicoesDosDerivados, new string('d', 64), PrecondicaoIfMatch.DeTags([original.ETag]), primeira.AddMinutes(5)).Value!;
+                Respostas(), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), primeira.AddMinutes(5)).Value!;
+            hashDaCorrecao = correcao.HashIntegridade;
             await repositorio.AdicionarAsync(original);
             await repositorio.AdicionarComprovanteAsync(correcao);
             await repositorio.AdicionarComprovanteAsync(envio);
@@ -334,8 +334,37 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             new ObterComprovanteQuery(processo, 3), leitura, dono, CancellationToken.None);
 
         segundo.IsSuccess.Should().BeTrue(segundo.Error?.Message);
-        segundo.Value!.HashIntegridade.Should().Be(new string('d', 64), "o 2 é a correção, emitida depois, mesmo gravada antes");
+        segundo.Value!.HashIntegridade.Should().Be(hashDaCorrecao, "o 2 é a correção, emitida depois, mesmo gravada antes");
         terceiro.Error!.Code.Should().Be("Inscricao.ComprovanteNaoEncontrado");
+    }
+
+    [Fact(DisplayName = "O hash recalculado do comprovante relido do banco confere, mesmo com número em notação exponencial")]
+    public async Task ComprovanteGravado_TemIntegridadeReproduzivel()
+    {
+        Guid processo = Guid.CreateVersion7();
+        Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, processo);
+        Dictionary<string, JsonElement> derivados = new(StringComparer.Ordinal)
+        {
+            ["FAIXA_ETARIA"] = JsonDocument.Parse("1e3").RootElement.Clone(),
+        };
+
+        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        {
+            InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+            ComprovanteInscricao envio = original.Submeter(
+                "000778", OfertaDoProcesso, Respostas(("NOME_SOCIAL", "Ariel")), SemGrupos(), [], Admitidas,
+                derivados, DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]),
+                new DateTimeOffset(2026, 10, 10, 12, 0, 0, 123, TimeSpan.Zero)).Value!;
+            await repositorio.AdicionarAsync(original);
+            await repositorio.AdicionarComprovanteAsync(envio);
+            await context.SaveChangesAsync();
+        }
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        InscricaoRepository leitura = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+        IReadOnlyList<ComprovanteInscricao> gravados = await leitura.ObterComprovantesAsync([original.Id], CancellationToken.None);
+
+        gravados.Should().ContainSingle().Which.IntegridadeConfere().Should().BeTrue();
     }
 
     [Fact(DisplayName = "A consulta de candidatos por fato e valor usa índice, sem operador JSON")]

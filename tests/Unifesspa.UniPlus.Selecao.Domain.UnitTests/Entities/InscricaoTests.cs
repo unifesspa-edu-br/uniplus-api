@@ -156,7 +156,7 @@ public sealed class InscricaoTests
         Inscricao inscricao = NovaInscricao();
 
         Result<ComprovanteInscricao> resultado = inscricao.Submeter(
-            "000123", OfertaDoProcesso, Respostas(), SemGrupos(), SemAceites(), Admitidas, SemDerivados(), DefinicoesDosDerivados, "sha256-abc",
+            "000123", OfertaDoProcesso, Respostas(), SemGrupos(), SemAceites(), Admitidas, SemDerivados(), DefinicoesDosDerivados,
             PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
 
         resultado.IsSuccess.Should().BeTrue();
@@ -171,12 +171,12 @@ public sealed class InscricaoTests
     {
         Inscricao inscricao = NovaInscricao();
         inscricao.Submeter(
-            "000123", OfertaDoProcesso, Respostas(), SemGrupos(), SemAceites(), Admitidas, SemDerivados(), DefinicoesDosDerivados, "sha256-abc",
+            "000123", OfertaDoProcesso, Respostas(), SemGrupos(), SemAceites(), Admitidas, SemDerivados(), DefinicoesDosDerivados,
             PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
         inscricao.ClearDomainEvents();
 
         Result<ComprovanteInscricao> resultado = inscricao.Submeter(
-            "999999", OfertaDoProcesso, Respostas(), SemGrupos(), SemAceites(), Admitidas, SemDerivados(), DefinicoesDosDerivados, "sha256-def",
+            "999999", OfertaDoProcesso, Respostas(), SemGrupos(), SemAceites(), Admitidas, SemDerivados(), DefinicoesDosDerivados,
             PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
 
         resultado.IsSuccess.Should().BeTrue();
@@ -190,7 +190,7 @@ public sealed class InscricaoTests
     {
         Inscricao inscricao = NovaInscricao();
         inscricao.Submeter(
-            "000123", OfertaDoProcesso, Respostas(), SemGrupos(), SemAceites(), Admitidas, SemDerivados(), DefinicoesDosDerivados, "sha256-abc",
+            "000123", OfertaDoProcesso, Respostas(), SemGrupos(), SemAceites(), Admitidas, SemDerivados(), DefinicoesDosDerivados,
             PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
         int revisao = inscricao.Revisao;
 
@@ -214,7 +214,7 @@ public sealed class InscricaoTests
         };
 
         Result<ComprovanteInscricao> resultado = inscricao.Submeter(
-            "000123", OfertaDoProcesso, respostas, SemGrupos(), SemAceites(), Admitidas, SemDerivados(), DefinicoesDosDerivados, "sha256-abc",
+            "000123", OfertaDoProcesso, respostas, SemGrupos(), SemAceites(), Admitidas, SemDerivados(), DefinicoesDosDerivados,
             PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
 
         resultado.Value!.Respostas.Should().NotContainKey("RG_NUMERO");
@@ -239,7 +239,7 @@ public sealed class InscricaoTests
         };
 
         Result<ComprovanteInscricao> resultado = inscricao.Submeter(
-            "000123", OfertaDoProcesso, Respostas(), grupos, SemAceites(), Admitidas, SemDerivados(), DefinicoesDosDerivados, "sha256-abc",
+            "000123", OfertaDoProcesso, Respostas(), grupos, SemAceites(), Admitidas, SemDerivados(), DefinicoesDosDerivados,
             PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
 
         IReadOnlyList<OcorrenciaDeGrupoInscricao> ocorrencias = resultado.Value!.Grupos.Should()
@@ -350,7 +350,7 @@ public sealed class InscricaoTests
         };
 
         Result<ComprovanteInscricao> resultado = inscricao.Submeter(
-            "000123", OfertaDoProcesso, respostas, SemGrupos(), SemAceites(), Admitidas, SemDerivados(), DefinicoesDosDerivados, "sha256-abc",
+            "000123", OfertaDoProcesso, respostas, SemGrupos(), SemAceites(), Admitidas, SemDerivados(), DefinicoesDosDerivados,
             PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
 
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.FatoForaDoFormulario);
@@ -366,7 +366,7 @@ public sealed class InscricaoTests
         };
 
         Result<ComprovanteInscricao> resultado = inscricao.Submeter(
-            "000123", OfertaDoProcesso, Respostas(), SemGrupos(), SemAceites(), Admitidas, derivados, DefinicoesDosDerivados, "sha256-abc",
+            "000123", OfertaDoProcesso, Respostas(), SemGrupos(), SemAceites(), Admitidas, derivados, DefinicoesDosDerivados,
             PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
 
         inscricao.Derivados.Should().ContainKey("UF_RESIDENCIA");
@@ -418,7 +418,7 @@ public sealed class InscricaoTests
             .IsSuccess.Should().BeTrue();
 
         Result<ComprovanteInscricao> resultado = inscricao.Submeter(
-            "000123", null, Respostas(), SemGrupos(), SemAceites(), Admitidas, SemDerivados(), DefinicoesDosDerivados, "sha256-abc",
+            "000123", null, Respostas(), SemGrupos(), SemAceites(), Admitidas, SemDerivados(), DefinicoesDosDerivados,
             PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
 
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.OfertaObrigatoria);

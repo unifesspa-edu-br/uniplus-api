@@ -1,14 +1,12 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.Inscricoes;
 
 using System.Text.Json;
-using System.Text.Json.Nodes;
 
 using Abstractions;
 
 using Domain.Entities;
 using Domain.Errors;
 using Domain.Interfaces;
-using Domain.ValueObjects;
 
 using DTOs;
 
@@ -134,13 +132,12 @@ public static class SubmeterInscricaoCommandHandler
         }
 
         string numeroGerado = await geradorDeNumeroInscricao.ProximoAsync(cancellationToken).ConfigureAwait(false);
-        string hashIntegridade = ComputarHashDaRequisicao(command.Request);
         DateTimeOffset instante = timeProvider.GetUtcNow();
 
         Result<ComprovanteInscricao> submetido = inscricao.Submeter(
             numeroGerado, command.Request.OfertaCursoId, respostasDoCorpo, grupos, aceites, contexto.Value!.Admitidas,
             derivados.Value!, Services.DerivadosDoSistemaInscricao.DefinicoesDasRespostas,
-            hashIntegridade, command.Precondicao, instante);
+            command.Precondicao, instante);
         if (submetido.IsFailure)
         {
             return Result<ComprovanteInscricaoDto>.ValidationFailure(submetido.Errors);
@@ -163,18 +160,5 @@ public static class SubmeterInscricaoCommandHandler
         }
 
         return Result<ComprovanteInscricaoDto>.Success(ComprovanteInscricaoDto.De(submetido.Value!, inscricao.Cpf));
-    }
-
-    /// <summary>
-    /// O hash é computado sobre o corpo RECEBIDO nesta submissão, nunca sobre o estado mesclado ou
-    /// os derivados calculados — evita o ciclo de depender do próprio resultado de
-    /// <c>Inscricao.Submeter</c> para produzir um dos seus parâmetros de entrada.
-    /// </summary>
-    private static string ComputarHashDaRequisicao(InscricaoRequest request)
-    {
-        JsonNode payload = JsonSerializer.SerializeToNode(request, HashCanonicalComputer.CanonicalOptions)
-            ?? throw new InvalidOperationException("A serialização de InscricaoRequest não pode devolver nulo.");
-
-        return HashCanonicalComputer.ComputeSha256Hex(HashCanonicalComputer.ComputeSnapshotBytes((JsonObject)payload));
     }
 }
