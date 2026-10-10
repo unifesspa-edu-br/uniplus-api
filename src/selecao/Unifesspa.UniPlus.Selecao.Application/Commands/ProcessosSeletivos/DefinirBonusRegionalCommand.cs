@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// configuração do bônus. <see cref="Aplica"/> falso dispensa a configuração; verdadeiro a exige.
 /// </summary>
 /// <param name="Aplica">Declaração obrigatória: o processo aplica ou não o bônus regional.</param>
+/// <param name="FatoElegibilidadeCodigo">O fato booleano do processo que decide quem recebe o acréscimo (ADR-0142).</param>
 public sealed record DefinirBonusRegionalCommand(
     Guid ProcessoSeletivoId,
     bool Aplica,
@@ -18,5 +19,6 @@ public sealed record DefinirBonusRegionalCommand(
     string? RegraVersao,
     decimal? Fator,
     decimal? Teto,
+    string? FatoElegibilidadeCodigo,
     Guid? BaseLegalBonusRegionalId,
     PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;

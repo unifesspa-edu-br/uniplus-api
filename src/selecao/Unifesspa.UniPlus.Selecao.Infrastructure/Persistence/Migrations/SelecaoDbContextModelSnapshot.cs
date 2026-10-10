@@ -609,6 +609,11 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(2000)")
                         .HasColumnName("descricao");
 
+                    b.Property<string>("FatoElegibilidadeCodigo")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("fato_elegibilidade_codigo");
+
                     b.Property<decimal>("Fator")
                         .HasPrecision(6, 4)
                         .HasColumnType("numeric(6,4)")

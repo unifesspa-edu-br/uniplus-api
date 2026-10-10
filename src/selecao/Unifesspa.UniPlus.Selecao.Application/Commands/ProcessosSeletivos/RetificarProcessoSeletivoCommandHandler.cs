@@ -264,6 +264,11 @@ public static class RetificarProcessoSeletivoCommandHandler
             return (Result.Failure(gatilhoIncoerente), []);
         }
 
+        if (ConferenciaDoFatoDeElegibilidade.Conferir(processo, catalogoPorCodigo) is { } elegibilidadeIncoerente)
+        {
+            return (Result.Failure(elegibilidadeIncoerente), []);
+        }
+
         // Story #1059 (UNI-REQ-0072): os valores que o candidato pode escolher para cada fato de
         // seleção coletado — mesmo raciocínio da publicação de abertura.
         Result<IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>> valoresSelecionaveisResult =

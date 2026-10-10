@@ -48,12 +48,13 @@ public sealed partial class EnvelopeCodec
         }
 
         leitor.ExigirChaves(
-            bloco, "bonusRegional", "presente", "regra", "fator", "teto",
+            bloco, "bonusRegional", "presente", "regra", "fator", "teto", "fatoElegibilidadeCodigo",
             "baseLegalBonusRegionalId", "tipoInstrumento", "identificacao", "descricao", "municipios");
 
         ReferenciaRegra regra = leitor.Regra(bloco, "regra", "bonusRegional", RegraBonusCodigo.Multiplicativo);
         decimal fator = leitor.Decimal(bloco, "fator", EscalaPadrao, "bonusRegional", LimitesDoEnvelope.PrecisaoBonus);
         decimal? teto = leitor.DecimalOpcional(bloco, "teto", EscalaPadrao, "bonusRegional", LimitesDoEnvelope.PrecisaoBonus);
+        string? fatoElegibilidade = leitor.TextoOpcional(bloco, "fatoElegibilidadeCodigo", "bonusRegional", LimitesDoEnvelope.FatoElegibilidadeBonusRegional);
         Guid baseLegalBonusRegionalId = leitor.Identificador(bloco, "baseLegalBonusRegionalId", "bonusRegional");
         string tipoInstrumento = leitor.TextoNaoVazio(bloco, "tipoInstrumento", "bonusRegional", LimitesDoEnvelope.TipoInstrumentoNormativo);
         string identificacao = leitor.TextoNaoVazio(bloco, "identificacao", "bonusRegional", LimitesDoEnvelope.IdentificacaoBaseLegalBonusRegional);
@@ -83,7 +84,7 @@ public sealed partial class EnvelopeCodec
         }
 
         Result<ConfiguracaoBonusRegional> bonus = ConfiguracaoBonusRegional.Criar(
-            regra, fator, teto, baseLegalBonusRegionalId, tipoInstrumento, identificacao, descricao, municipios);
+            regra, fator, teto, fatoElegibilidade, baseLegalBonusRegionalId, tipoInstrumento, identificacao, descricao, municipios);
         return bonus.IsFailure ? leitor.Propagar<ConfiguracaoBonusRegional>(bonus.Error!) : bonus.Value;
     }
 

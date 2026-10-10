@@ -38,6 +38,7 @@ public sealed record ConfiguracaoBonusRegionalDto(
     ReferenciaRegraDto Regra,
     decimal Fator,
     decimal? Teto,
+    string? FatoElegibilidadeCodigo,
     Guid BaseLegalBonusRegionalId,
     string TipoInstrumento,
     string Identificacao,

@@ -315,6 +315,7 @@ internal static class CorpusEnvelope
             Regra(RegraBonusCodigo.Multiplicativo, 'b'),
             fator: 1.2000m,
             teto: 95.5000m,
+            fatoElegibilidadeCodigo: FormularioDeTeste.FatoBooleanoDaInscricao,
             baseLegalBonusRegionalId: new Guid("baba0000-0000-4000-8000-000000000001"),
             tipoInstrumento: "PORTARIA",
             identificacao: "Portaria Unifesspa nº 2514/2023",

@@ -40,6 +40,12 @@ internal static class FormularioDeTeste
     }
 
     /// <summary>Os itens do conjunto básico, como a escrita os monta, sem os que o teste já declara.</summary>
+    /// <summary>
+    /// Um fato booleano que todo formulário de inscrição de teste coleta, por ser do conjunto básico:
+    /// serve de fato de elegibilidade do acréscimo onde o acréscimo não é o assunto.
+    /// </summary>
+    public const string FatoBooleanoDaInscricao = "DESEJA_NOME_SOCIAL";
+
     public static IReadOnlyList<FatoColetado> DadosBasicos(IEnumerable<string>? exceto = null)
     {
         HashSet<string> declarados = new(exceto ?? [], StringComparer.Ordinal);

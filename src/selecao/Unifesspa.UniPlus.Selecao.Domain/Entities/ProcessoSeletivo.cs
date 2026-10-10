@@ -3070,6 +3070,86 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         AplicaBonusRegional is { } aplica && aplica == (BonusRegional is not null);
 
     /// <summary>
+    /// O fato que decide quem recebe o acréscimo (ADR-0142). Com inscrição própria, a citação é
+    /// obrigatória; citado, o fato é booleano, campo do formulário de inscrição fora de grupo ou
+    /// derivado por regra do processo, e conhecido até a fase da inscrição sem depender do que só a
+    /// isenção coleta — o motor o resolve para todo candidato. O ponto de resolução que o catálogo dá
+    /// a cada fato entra no congelamento, por quem o lê.
+    /// </summary>
+    public DomainError? RecusaDoFatoDeElegibilidade(
+        IReadOnlyDictionary<string, string> pontoResolucaoPorFato,
+        IReadOnlyDictionary<string, string> membroPorAgregado)
+    {
+        ArgumentNullException.ThrowIfNull(pontoResolucaoPorFato);
+        ArgumentNullException.ThrowIfNull(membroPorAgregado);
+
+        if (BonusRegional is not { } bonus)
+        {
+            return null;
+        }
+
+        if (bonus.FatoElegibilidadeCodigo is not { } fato)
+        {
+            return OrigemCandidatos == OrigemCandidatos.InscricaoPropria
+                ? new DomainError(
+                    ProcessoSeletivoErrorCodes.FatoElegibilidadeAusente,
+                    "O processo com inscrição própria que aplica o acréscimo precisa citar o fato que decide quem o recebe.")
+                : null;
+        }
+
+        FatoColetado? coletado = Itens.FirstOrDefault(f =>
+            f.Finalidade == FinalidadeFormulario.Inscricao && string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal));
+        ConfiguracaoDerivacaoFato? derivado = _regrasDerivacao.Find(d => string.Equals(d.CodigoFato, fato, StringComparison.Ordinal));
+        if (coletado is null && derivado is null)
+        {
+            // O campo de grupo repetível tem um valor por membro; o acréscimo é do candidato.
+            return _campos.Any(f => f.GrupoColetadoId is not null && f.Finalidade == FinalidadeFormulario.Inscricao
+                    && string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal))
+                ? new DomainError(
+                    ProcessoSeletivoErrorCodes.FatoElegibilidadeDeMembroDeGrupo,
+                    $"O fato '{fato}', que decide quem recebe o acréscimo, é campo de membro de um grupo do formulário de inscrição; o acréscimo é decidido por um fato do candidato.")
+                : new DomainError(
+                    ProcessoSeletivoErrorCodes.FatoElegibilidadeForaDoProcesso,
+                    $"O fato '{fato}', que decide quem recebe o acréscimo, não é campo do formulário de inscrição nem derivado pelo processo.");
+        }
+
+        if (coletado is { TipoRenderizacao: not TipoRenderizacao.Booleano } || derivado is { Booleano: false })
+        {
+            return new DomainError(
+                ProcessoSeletivoErrorCodes.FatoElegibilidadeNaoBooleano,
+                $"O fato '{fato}', que decide quem recebe o acréscimo, precisa ser booleano.");
+        }
+
+        // Sem o formulário de inscrição na fase dele, a pendência é a do próprio formulário.
+        if (FormularioDe(FinalidadeFormulario.Inscricao)?.FaseId is not { } faseId
+            || _cronogramaFases.Find(f => f.Id == faseId) is not { } faseDaInscricao)
+        {
+            return null;
+        }
+
+        FaseEfetiva efetiva = FaseEfetivaDoFato(fato, pontoResolucaoPorFato, membroPorAgregado, []);
+        if (efetiva.Recusa is { } recusa)
+        {
+            return recusa;
+        }
+
+        if (efetiva.Fase is { } fase && fase.Ordem > faseDaInscricao.Ordem)
+        {
+            return new DomainError(
+                ProcessoSeletivoErrorCodes.FatoElegibilidadeConhecidoDepoisDaInscricao,
+                $"O fato '{fato}', que decide quem recebe o acréscimo, só é conhecido na fase '{fase.Codigo}', depois da inscrição.");
+        }
+
+        return DependeDeFatoSoDaIsencao(fato, membroPorAgregado, [])
+            ? new DomainError(
+                ProcessoSeletivoErrorCodes.FatoElegibilidadeDaIsencao,
+                $"O fato '{fato}', que decide quem recebe o acréscimo, depende do que só o formulário de isenção coleta.")
+            : null;
+    }
+
+    private DomainError? PendenciaDoFatoDeElegibilidade() => RecusaDoFatoDeElegibilidade(SemCatalogo, SemCatalogo);
+
+    /// <summary>
     /// Recusa gerar versão sem identificador legível: o certame publicado ficaria sem endereço
     /// legível e sem chave no acervo público.
     /// </summary>
@@ -3277,6 +3357,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             // significa mais "sem bônus". Declaração e configuração também precisam concordar:
             // o EF hidrata a linha sem passar por DefinirBonusRegional.
             new ItemConformidade("bonus_regional_nao_declarado", DimensaoConformidade.BonusRegional, "Bônus regional: aplica ou não aplica", BonusRegionalDeclarado()),
+            new ItemConformidade("bonus_regional_fato_de_elegibilidade", DimensaoConformidade.BonusRegional, "Bônus regional: com inscrição própria, cita o fato booleano que decide quem recebe o acréscimo, conhecido na inscrição", PendenciaDoFatoDeElegibilidade() is null),
             // Com inscrição própria o desempate é obrigatório; com resultado importado a lista
             // já vem classificada e o desempate não se aplica.
             new ItemConformidade("criterios_desempate_ausentes", DimensaoConformidade.Desempate, "Critérios de desempate (inscrição própria)", OrigemCandidatos != OrigemCandidatos.InscricaoPropria || _criteriosDesempate.Count > 0),

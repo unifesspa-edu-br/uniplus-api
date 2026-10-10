@@ -220,6 +220,9 @@ public static class LimitesDoEnvelope
     /// <summary><c>ConfiguracaoBonusRegional.TipoInstrumento</c> — snapshot-copy do código canônico de <c>TipoInstrumentoNormativo</c> (Story #1464).</summary>
     public const int TipoInstrumentoNormativo = 30;
 
+    /// <summary><c>ConfiguracaoBonusRegional.FatoElegibilidadeCodigo</c> — código do fato que decide quem recebe o acréscimo.</summary>
+    public const int FatoElegibilidadeBonusRegional = FormaDoItem.FatoCodigoMaxLength;
+
     /// <summary><c>ConfiguracaoBonusRegional.Identificacao</c> — snapshot-copy da identificação da Base Legal.</summary>
     public const int IdentificacaoBaseLegalBonusRegional = 500;
 

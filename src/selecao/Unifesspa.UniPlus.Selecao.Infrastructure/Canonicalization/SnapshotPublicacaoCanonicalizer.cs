@@ -284,8 +284,12 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// admite —, ordenados pelo código. É o que o formulário mostra do derivado do sistema e do que
     /// outra fase produz. Sem produção em ambiente nenhum: fixture nova, <c>0.0.23</c> deixa de ser
     /// reconhecida.
+    /// O bump para <c>0.0.25</c> acrescenta ao bloco <c>bonusRegional</c> o
+    /// <c>fatoElegibilidadeCodigo</c>: o fato booleano que decide quem recebe o acréscimo, nulo no
+    /// processo de resultado importado (ADR-0142). Sem novo bloco de topo. Sem produção em ambiente
+    /// nenhum: fixture nova, <c>0.0.24</c> deixa de ser reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.24";
+    internal const string SchemaVersionAtual = "0.0.25";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -864,6 +868,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["regra"] = SerializarReferenciaRegra(bonus.Regra),
             ["fator"] = HashCanonicalComputer.SerializeDecimalCanonical(bonus.Fator, EscalaPadrao),
             ["teto"] = bonus.Teto is { } teto ? HashCanonicalComputer.SerializeDecimalCanonical(teto, EscalaPadrao) : null,
+            ["fatoElegibilidadeCodigo"] = bonus.FatoElegibilidadeCodigo,
             ["baseLegalBonusRegionalId"] = bonus.BaseLegalBonusRegionalId,
             ["tipoInstrumento"] = HashCanonicalComputer.NormalizeNfc(bonus.TipoInstrumento),
             ["identificacao"] = HashCanonicalComputer.NormalizeNfc(bonus.Identificacao),

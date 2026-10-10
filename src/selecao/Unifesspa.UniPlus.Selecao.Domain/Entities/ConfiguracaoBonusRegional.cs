@@ -4,6 +4,7 @@ using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -18,6 +19,14 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// habilita o bônus. A ausência da entidade só significa "sem bônus" quando a declaração é falsa;
 /// com a declaração nula, significa "por declarar" e bloqueia a publicação. O bônus se aplica
 /// sobre a nota final, após os pesos (decisão do P.O.: multiplicativo, ex. ×1,20, sem teto).
+/// <para>
+/// <strong>Elegibilidade (ADR-0142):</strong> quem recebe o Fator de Atenuação das Desigualdades
+/// de Acesso é decidido pelo fato booleano que a configuração cita
+/// (<see cref="FatoElegibilidadeCodigo"/>): o motor aplica o acréscimo ao candidato em quem esse
+/// fato resolve verdadeiro. O fato é do processo — coletado no formulário ou derivado por regra —,
+/// nunca um código fixo no sistema. Com inscrição própria, a citação é exigida para publicar; com
+/// resultado importado, a classificação já vem pronta e não há o que citar.
+/// </para>
 /// </remarks>
 public sealed class ConfiguracaoBonusRegional : EntityBase
 {
@@ -27,6 +36,9 @@ public sealed class ConfiguracaoBonusRegional : EntityBase
     public ReferenciaRegra Regra { get; private set; } = null!;
     public decimal Fator { get; private set; }
     public decimal? Teto { get; private set; }
+
+    /// <summary>O fato booleano do processo que decide quem recebe o acréscimo (ADR-0142).</summary>
+    public string? FatoElegibilidadeCodigo { get; private set; }
 
     /// <summary>Id do cadastro de Base Legal de Bônus Regional (Configuração, Story #1465) referenciado.</summary>
     public Guid BaseLegalBonusRegionalId { get; private set; }
@@ -57,6 +69,7 @@ public sealed class ConfiguracaoBonusRegional : EntityBase
         ReferenciaRegra regra,
         decimal fator,
         decimal? teto,
+        string? fatoElegibilidadeCodigo,
         Guid baseLegalBonusRegionalId,
         string tipoInstrumento,
         string identificacao,
@@ -88,6 +101,14 @@ public sealed class ConfiguracaoBonusRegional : EntityBase
                 "ConfiguracaoBonusRegional.TetoInvalido", "O teto do bônus, quando informado, deve ser maior que zero.")));
         }
 
+        string? fatoElegibilidade = fatoElegibilidadeCodigo?.Trim();
+        if (fatoElegibilidade is { Length: 0 } || fatoElegibilidade?.Length > FormaDoItem.FatoCodigoMaxLength)
+        {
+            erros.Add(new("fatoElegibilidadeCodigo", new DomainError(
+                "ConfiguracaoBonusRegional.FatoElegibilidadeInvalido",
+                $"O código do fato que decide quem recebe o acréscimo, quando citado, tem de 1 a {FormaDoItem.FatoCodigoMaxLength} caracteres.")));
+        }
+
         // Defesa em profundidade: o handler já resolve municipiosLista a partir de um
         // BaseLegalBonusRegionalView que a Story #1465 garante não-vazio, mas o decoder do
         // envelope (Story #1466) reconstrói ConfiguracaoBonusRegional a partir de bytes —
@@ -110,6 +131,7 @@ public sealed class ConfiguracaoBonusRegional : EntityBase
             Regra = regra,
             Fator = fator,
             Teto = teto,
+            FatoElegibilidadeCodigo = fatoElegibilidade,
             BaseLegalBonusRegionalId = baseLegalBonusRegionalId,
             TipoInstrumento = tipoInstrumento,
             Identificacao = identificacao,

@@ -452,10 +452,13 @@ definir_bonus_regional() {
     log "Definir Bônus Regional (BONUS-MULTIPLICATIVO)"
     # O modelo da Medicina coleta MUNICIPIO_EM_AREA_BONUS, cujas opções são os
     # municípios da área do bônus — a conformidade exige bônus regional
-    # declarado para que esse fato tenha de onde tirar valores.
+    # declarado para que esse fato tenha de onde tirar valores. Recebe o
+    # acréscimo quem o pede no formulário (item 1.6): a configuração cita o
+    # pedido que o modelo semeado coleta hoje, até a semente trazer o do Fator.
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/bonus-regional" "{
         \"aplica\": true, \"regraCodigo\": \"BONUS-MULTIPLICATIVO\", \"regraVersao\": \"v1\",
-        \"fator\": 1.2, \"teto\": null, \"baseLegalBonusRegionalId\": \"$BASE_LEGAL_BONUS_ID\"
+        \"fator\": 1.2, \"teto\": null, \"fatoElegibilidadeCodigo\": \"SOLICITA_BONUS_REGIONAL\",
+        \"baseLegalBonusRegionalId\": \"$BASE_LEGAL_BONUS_ID\"
     }" >/dev/null
     ok "bônus regional definido (acréscimo de 20%, itens 1.6 e 5.1)"
 }

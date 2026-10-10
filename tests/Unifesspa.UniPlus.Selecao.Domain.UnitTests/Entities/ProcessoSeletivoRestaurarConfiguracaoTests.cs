@@ -132,7 +132,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
 
         ProcessoSeletivo comBonus = ProcessoPublicado(TipoProcesso.PSIQ);
         ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(
-            Regra(RegraBonusCodigo.Multiplicativo, 'a'), 1.20m, null, Guid.NewGuid(), "PORTARIA",
+            Regra(RegraBonusCodigo.Multiplicativo, 'a'), 1.20m, null, null, Guid.NewGuid(), "PORTARIA",
             "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")]).Value!;
         comBonus.RestaurarConfiguracaoCongelada(VersaoDo(comBonus), GrafoComBonus(bonus)).IsSuccess.Should().BeTrue();
         comBonus.AplicaBonusRegional.Should().BeTrue();

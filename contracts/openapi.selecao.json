@@ -10471,6 +10471,7 @@
           "regra",
           "fator",
           "teto",
+          "fatoElegibilidadeCodigo",
           "baseLegalBonusRegionalId",
           "tipoInstrumento",
           "identificacao",
@@ -10502,6 +10503,12 @@
               "string"
             ],
             "format": "double"
+          },
+          "fatoElegibilidadeCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "baseLegalBonusRegionalId": {
             "type": "string",
@@ -11352,6 +11359,7 @@
           "regraVersao",
           "fator",
           "teto",
+          "fatoElegibilidadeCodigo",
           "baseLegalBonusRegionalId"
         ],
         "type": "object",
@@ -11388,6 +11396,12 @@
               "string"
             ],
             "format": "double"
+          },
+          "fatoElegibilidadeCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "baseLegalBonusRegionalId": {
             "type": [

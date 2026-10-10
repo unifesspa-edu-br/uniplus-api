@@ -107,7 +107,7 @@ public sealed class ManifestoDoEnvelopeTests
         // de Bônus Regional (Configuração, Story #1465) — o snapshot congelado no momento da
         // gravação substitui os dois campos de texto livre.
         [typeof(ConfiguracaoBonusRegional)] = (
-            ["Regra", "Fator", "Teto", "BaseLegalBonusRegionalId", "TipoInstrumento", "Identificacao", "Descricao", "Municipios"],
+            ["Regra", "Fator", "Teto", "FatoElegibilidadeCodigo", "BaseLegalBonusRegionalId", "TipoInstrumento", "Identificacao", "Descricao", "Municipios"],
             [("ProcessoSeletivoId", "FK interna.")]),
 
         [typeof(ConfiguracaoBonusRegionalMunicipio)] = (

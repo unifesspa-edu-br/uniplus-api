@@ -19,9 +19,10 @@ public sealed class ConfiguracaoBonusRegionalTests
         decimal fator = 1.20m,
         decimal? teto = null,
         ReferenciaRegra? regra = null,
-        IEnumerable<(string CodigoIbge, string Nome, string Uf)>? municipios = null) =>
+        IEnumerable<(string CodigoIbge, string Nome, string Uf)>? municipios = null,
+        string? fatoElegibilidade = null) =>
         ConfiguracaoBonusRegional.Criar(
-            regra ?? RegraMultiplicativo(), fator, teto, BaseLegalId,
+            regra ?? RegraMultiplicativo(), fator, teto, fatoElegibilidade, BaseLegalId,
             "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
             municipios ?? MunicipioValido);
 
@@ -41,6 +42,16 @@ public sealed class ConfiguracaoBonusRegionalTests
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Teto.Should().Be(10m);
+    }
+
+    [Theory(DisplayName = "O fato de elegibilidade, quando citado, tem de 1 a 60 caracteres")]
+    [InlineData("   ")]
+    [InlineData("FATO_DE_ELEGIBILIDADE_COM_UM_CODIGO_QUE_PASSA_DE_SESSENTA_CARACTERES")]
+    public void Criar_FatoDeElegibilidadeMalFormado_Falha(string fato)
+    {
+        Result<ConfiguracaoBonusRegional> resultado = Criar(fatoElegibilidade: fato);
+
+        resultado.Errors.Should().ContainSingle(e => e.Error.Code == "ConfiguracaoBonusRegional.FatoElegibilidadeInvalido");
     }
 
     [Fact(DisplayName = "Criar congela o snapshot da Base Legal (Id, tipo, identificação, descrição e municípios)")]
