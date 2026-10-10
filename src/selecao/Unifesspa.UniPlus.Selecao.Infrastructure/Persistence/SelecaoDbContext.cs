@@ -18,6 +18,15 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     /// </summary>
     public const string Schema = "selecao";
 
+    /// <summary>
+    /// Sequência do número de inscrição (issue #1858): gerado só na primeira submissão, sem
+    /// exigência de não ter lacunas (um `nextval` de uma submissão que falhe antes de gravar não
+    /// é reaproveitado) — <c>bigint</c> nativo do Postgres, nunca um contador em memória nem uma
+    /// coluna identity da tabela, porque o número precisa existir ANTES da linha gravada (o
+    /// domínio o recebe pronto em <see cref="Domain.Entities.Inscricao.Submeter"/>).
+    /// </summary>
+    public const string SequenciaDeNumeroDeInscricao = "numero_inscricao_seq";
+
     public SelecaoDbContext(DbContextOptions<SelecaoDbContext> options) : base(options)
     {
     }
@@ -183,6 +192,10 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
             typeof(PgFunctions).GetMethod(nameof(PgFunctions.NormalizeForComparison))!)
             .HasName("normalizar_para_comparacao")
             .HasSchema(Schema);
+
+        modelBuilder.HasSequence<long>(SequenciaDeNumeroDeInscricao, Schema)
+            .StartsAt(1)
+            .IncrementsBy(1);
     }
 
     public async Task<int> SalvarAlteracoesAsync(CancellationToken cancellationToken = default)

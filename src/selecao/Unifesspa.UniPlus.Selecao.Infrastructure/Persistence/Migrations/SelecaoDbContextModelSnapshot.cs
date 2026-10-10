@@ -23,6 +23,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.HasSequence("numero_inscricao_seq", "selecao");
+
             modelBuilder.Entity("Unifesspa.UniPlus.Infrastructure.Core.Idempotency.IdempotencyEntry", b =>
                 {
                     b.Property<Guid>("Id")
