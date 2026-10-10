@@ -100,7 +100,7 @@ public static class SalvarInscricaoCommandHandler
         List<AceiteDeTermo> aceites = Services.InscricaoRequestMapper.ParaAceites(command.Request.Aceites);
 
         Result salvar = inscricao.Salvar(
-            command.Request.OfertaCursoId, respostas, grupos, aceites, contexto.Value!.DefinicoesDasRespostas, command.Precondicao);
+            command.Request.OfertaCursoId, respostas, grupos, aceites, contexto.Value!.Admitidas, command.Precondicao);
         if (salvar.IsFailure)
         {
             return Result<InscricaoDto>.ValidationFailure(salvar.Errors);

@@ -220,7 +220,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         Result<ContextoDaVersaoFixada> contexto = await ContextoDaVersaoFixadaResolver.ResolverAsync(
             gravada!.VersaoFormularioId, processoId, new ProcessoSeletivoRepository(readContext, TimeProvider.System), RegistroCodecs, CancellationToken.None);
         contexto.IsSuccess.Should().BeTrue(contexto.Error?.Message);
-        contexto.Value!.DefinicoesDasRespostas.Where(static f => f.Value.Identificador).Select(static f => f.Key).Should().BeEquivalentTo(
+        contexto.Value!.Admitidas.Definicoes.Where(static f => f.Value.Identificador).Select(static f => f.Key).Should().BeEquivalentTo(
             ["CPF", "RG_NUMERO", "PASSAPORTE_NUMERO", "RNM_NUMERO", "RG_NUMERO_MEMBRO"],
             "o conjunto junta os fatos Identificador do conjunto básico do candidato (CPF, RG, passaporte e RNM) " +
             "com o do campo de grupo declarado por este teste — da classificação CONGELADA na publicação, não do catálogo vivo");
@@ -244,9 +244,9 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
         Inscricao? inscricao = await inscricaoRepository.ObterPorIdAsync(iniciar.Value!.Id);
         inscricao.Should().NotBeNull();
-        IReadOnlyDictionary<string, DefinicaoDaResposta> definicoes = (await ContextoDaVersaoFixadaResolver.ResolverAsync(
+        RespostasAdmitidas admitidas = (await ContextoDaVersaoFixadaResolver.ResolverAsync(
             inscricao!.VersaoFormularioId, processoId, new ProcessoSeletivoRepository(writeContext, TimeProvider.System), RegistroCodecs, CancellationToken.None))
-            .Value!.DefinicoesDasRespostas;
+            .Value!.Admitidas;
 
         inscricao!.Salvar(
             null,
@@ -266,7 +266,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
                 ],
             },
             [],
-            definicoes,
+            admitidas,
             PrecondicaoIfMatch.DeTags([inscricao.ETag]));
 
         await inscricaoRepository.AtualizarAsync(inscricao, CancellationToken.None);

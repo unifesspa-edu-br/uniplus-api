@@ -26,10 +26,15 @@ public sealed class InscricaoTests
     private static readonly Dictionary<string, DefinicaoDaResposta> DefinicoesDasRespostas = new(StringComparer.Ordinal)
     {
         ["NOME_SOCIAL"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: false),
+        ["CPF"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: true),
         ["DESEJA_NOME_SOCIAL"] = new(TipoDoValorDeResposta.Booleano, Multivalorado: false, Identificador: false),
         ["RG_NUMERO"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: true),
         ["PARENTESCO"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false),
     };
+
+    private static readonly Guid OfertaDoProcesso = Guid.CreateVersion7();
+
+    private static readonly RespostasAdmitidas Admitidas = new(DefinicoesDasRespostas, new HashSet<Guid> { OfertaDoProcesso });
 
     private static readonly Dictionary<string, DefinicaoDaResposta> DefinicoesDosDerivados = new(StringComparer.Ordinal)
     {
@@ -85,7 +90,7 @@ public sealed class InscricaoTests
         Inscricao inscricao = NovaInscricao();
 
         Result resultado = inscricao.Salvar(
-            null, Respostas(), SemGrupos(), SemAceites(), DefinicoesDasRespostas, PrecondicaoIfMatch.Ausente);
+            null, Respostas(), SemGrupos(), SemAceites(), Admitidas, PrecondicaoIfMatch.Ausente);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.PrecondicaoRequerida);
@@ -98,7 +103,7 @@ public sealed class InscricaoTests
         string etagOriginal = inscricao.ETag;
 
         Result resultado = inscricao.Salvar(
-            Guid.NewGuid(), Respostas(), SemGrupos(), SemAceites(), DefinicoesDasRespostas, PrecondicaoIfMatch.DeTags(["\"etag-velho\""]));
+            Guid.NewGuid(), Respostas(), SemGrupos(), SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags(["\"etag-velho\""]));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.PrecondicaoFalhou);
@@ -110,10 +115,10 @@ public sealed class InscricaoTests
     public void Salvar_IfMatchCorreto_GravaEAvancaRevisao()
     {
         Inscricao inscricao = NovaInscricao();
-        Guid oferta = Guid.NewGuid();
+        Guid oferta = OfertaDoProcesso;
 
         Result resultado = inscricao.Salvar(
-            oferta, Respostas(), SemGrupos(), SemAceites(), DefinicoesDasRespostas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+            oferta, Respostas(), SemGrupos(), SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
 
         resultado.IsSuccess.Should().BeTrue();
         inscricao.OfertaCursoId.Should().Be(oferta);
@@ -130,14 +135,14 @@ public sealed class InscricaoTests
         {
             ["RG_NUMERO"] = JsonSerializer.SerializeToElement("12.868.927-4"),
         };
-        inscricao.Salvar(null, comRg, SemGrupos(), SemAceites(), DefinicoesDasRespostas, PrecondicaoIfMatch.DeTags([inscricao.ETag]))
+        inscricao.Salvar(null, comRg, SemGrupos(), SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]))
             .IsSuccess.Should().BeTrue();
 
         Dictionary<string, JsonElement> semRg = new(StringComparer.Ordinal)
         {
             ["NOME_SOCIAL"] = JsonSerializer.SerializeToElement("Ariel Drumond"),
         };
-        inscricao.Salvar(null, semRg, SemGrupos(), SemAceites(), DefinicoesDasRespostas, PrecondicaoIfMatch.DeTags([inscricao.ETag]))
+        inscricao.Salvar(null, semRg, SemGrupos(), SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]))
             .IsSuccess.Should().BeTrue();
 
         inscricao.Respostas.Should().ContainKey("RG_NUMERO")
@@ -151,7 +156,7 @@ public sealed class InscricaoTests
         Inscricao inscricao = NovaInscricao();
 
         Result<ComprovanteInscricao> resultado = inscricao.Submeter(
-            "000123", null, Respostas(), SemGrupos(), SemAceites(), DefinicoesDasRespostas, SemDerivados(), DefinicoesDosDerivados, "sha256-abc",
+            "000123", OfertaDoProcesso, Respostas(), SemGrupos(), SemAceites(), Admitidas, SemDerivados(), DefinicoesDosDerivados, "sha256-abc",
             PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
 
         resultado.IsSuccess.Should().BeTrue();
@@ -166,12 +171,12 @@ public sealed class InscricaoTests
     {
         Inscricao inscricao = NovaInscricao();
         inscricao.Submeter(
-            "000123", null, Respostas(), SemGrupos(), SemAceites(), DefinicoesDasRespostas, SemDerivados(), DefinicoesDosDerivados, "sha256-abc",
+            "000123", OfertaDoProcesso, Respostas(), SemGrupos(), SemAceites(), Admitidas, SemDerivados(), DefinicoesDosDerivados, "sha256-abc",
             PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
         inscricao.ClearDomainEvents();
 
         Result<ComprovanteInscricao> resultado = inscricao.Submeter(
-            "999999", null, Respostas(), SemGrupos(), SemAceites(), DefinicoesDasRespostas, SemDerivados(), DefinicoesDosDerivados, "sha256-def",
+            "999999", OfertaDoProcesso, Respostas(), SemGrupos(), SemAceites(), Admitidas, SemDerivados(), DefinicoesDosDerivados, "sha256-def",
             PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
 
         resultado.IsSuccess.Should().BeTrue();
@@ -192,7 +197,7 @@ public sealed class InscricaoTests
         };
 
         Result<ComprovanteInscricao> resultado = inscricao.Submeter(
-            "000123", null, respostas, SemGrupos(), SemAceites(), DefinicoesDasRespostas, SemDerivados(), DefinicoesDosDerivados, "sha256-abc",
+            "000123", OfertaDoProcesso, respostas, SemGrupos(), SemAceites(), Admitidas, SemDerivados(), DefinicoesDosDerivados, "sha256-abc",
             PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
 
         resultado.Value!.Respostas.Should().NotContainKey("RG_NUMERO");
@@ -217,7 +222,7 @@ public sealed class InscricaoTests
         };
 
         Result<ComprovanteInscricao> resultado = inscricao.Submeter(
-            "000123", null, Respostas(), grupos, SemAceites(), DefinicoesDasRespostas, SemDerivados(), DefinicoesDosDerivados, "sha256-abc",
+            "000123", OfertaDoProcesso, Respostas(), grupos, SemAceites(), Admitidas, SemDerivados(), DefinicoesDosDerivados, "sha256-abc",
             PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
 
         IReadOnlyList<OcorrenciaDeGrupoInscricao> ocorrencias = resultado.Value!.Grupos.Should()
@@ -263,7 +268,7 @@ public sealed class InscricaoTests
             ["CAMPO_INVENTADO"] = JsonSerializer.SerializeToElement("valor"),
         };
 
-        Result resultado = inscricao.Salvar(null, respostas, SemGrupos(), SemAceites(), DefinicoesDasRespostas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+        Result resultado = inscricao.Salvar(null, respostas, SemGrupos(), SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("CAMPO_INVENTADO");
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.FatoForaDoFormulario);
@@ -279,7 +284,7 @@ public sealed class InscricaoTests
             ["DESEJA_NOME_SOCIAL"] = JsonSerializer.SerializeToElement("sim"),
         };
 
-        Result resultado = inscricao.Salvar(null, respostas, SemGrupos(), SemAceites(), DefinicoesDasRespostas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+        Result resultado = inscricao.Salvar(null, respostas, SemGrupos(), SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
 
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.ValorForaDoTipo);
     }
@@ -297,7 +302,7 @@ public sealed class InscricaoTests
             ],
         };
 
-        Result resultado = inscricao.Salvar(null, Respostas(), grupos, SemAceites(), DefinicoesDasRespostas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+        Result resultado = inscricao.Salvar(null, Respostas(), grupos, SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
 
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.GrupoIdDuplicado);
     }
@@ -306,13 +311,13 @@ public sealed class InscricaoTests
     public void Salvar_Nulo_ApagaResposta()
     {
         Inscricao inscricao = NovaInscricao();
-        inscricao.Salvar(null, Respostas(), SemGrupos(), SemAceites(), DefinicoesDasRespostas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+        inscricao.Salvar(null, Respostas(), SemGrupos(), SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
         Dictionary<string, JsonElement> limpa = new(StringComparer.Ordinal)
         {
             ["NOME_SOCIAL"] = JsonSerializer.SerializeToElement<string?>(null),
         };
 
-        inscricao.Salvar(null, limpa, SemGrupos(), SemAceites(), DefinicoesDasRespostas, PrecondicaoIfMatch.DeTags([inscricao.ETag]))
+        inscricao.Salvar(null, limpa, SemGrupos(), SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]))
             .IsSuccess.Should().BeTrue();
 
         inscricao.Respostas.Should().NotContainKey("NOME_SOCIAL");
@@ -328,7 +333,7 @@ public sealed class InscricaoTests
         };
 
         Result<ComprovanteInscricao> resultado = inscricao.Submeter(
-            "000123", null, respostas, SemGrupos(), SemAceites(), DefinicoesDasRespostas, SemDerivados(), DefinicoesDosDerivados, "sha256-abc",
+            "000123", OfertaDoProcesso, respostas, SemGrupos(), SemAceites(), Admitidas, SemDerivados(), DefinicoesDosDerivados, "sha256-abc",
             PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
 
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.FatoForaDoFormulario);
@@ -344,7 +349,7 @@ public sealed class InscricaoTests
         };
 
         Result<ComprovanteInscricao> resultado = inscricao.Submeter(
-            "000123", null, Respostas(), SemGrupos(), SemAceites(), DefinicoesDasRespostas, derivados, DefinicoesDosDerivados, "sha256-abc",
+            "000123", OfertaDoProcesso, Respostas(), SemGrupos(), SemAceites(), Admitidas, derivados, DefinicoesDosDerivados, "sha256-abc",
             PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
 
         inscricao.Derivados.Should().ContainKey("UF_RESIDENCIA");
@@ -362,14 +367,63 @@ public sealed class InscricaoTests
             ["UF_RESIDENCIA"] = JsonSerializer.SerializeToElement("PA"),
         };
         inscricao.Submeter(
-            "000123", null, Respostas(), SemGrupos(), SemAceites(), DefinicoesDasRespostas, derivados, DefinicoesDosDerivados, "sha256-abc",
+            "000123", OfertaDoProcesso, Respostas(), SemGrupos(), SemAceites(), Admitidas, derivados, DefinicoesDosDerivados, "sha256-abc",
             PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
 
-        inscricao.Salvar(null, Respostas(), SemGrupos(), SemAceites(), DefinicoesDasRespostas, PrecondicaoIfMatch.DeTags([inscricao.ETag]))
+        inscricao.Salvar(null, Respostas(), SemGrupos(), SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]))
             .IsSuccess.Should().BeTrue();
 
         inscricao.Derivados.Should().ContainKey("UF_RESIDENCIA");
         inscricao.DefinicoesDasRespostas.Should().ContainKey("UF_RESIDENCIA", "o derivado continua gravado e precisa da definição para virar linha");
+    }
+
+    [Theory(DisplayName = "A resposta do CPF é aceita só quando é o CPF do dono, com ou sem pontuação")]
+    [InlineData("69959836371", true)]
+    [InlineData("699.598.363-71", true)]
+    [InlineData("33257350376", false)]
+    public void Salvar_CpfDaResposta_TemDeSerODoDono(string cpfRespondido, bool aceito)
+    {
+        Inscricao inscricao = Inscricao.Iniciar(
+            Processo, PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", VersaoFormulario).Value!;
+        Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal)
+        {
+            ["CPF"] = JsonSerializer.SerializeToElement(cpfRespondido),
+        };
+
+        Result resultado = inscricao.Salvar(null, respostas, SemGrupos(), SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+
+        resultado.IsSuccess.Should().Be(aceito);
+        if (!aceito)
+        {
+            resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(
+                e => e.Field == "CPF" && e.Error.Code == InscricaoErrorCodes.CpfDiferenteDoDono);
+        }
+    }
+
+    [Fact(DisplayName = "Uma oferta de curso que não é do processo é recusada já no rascunho")]
+    public void Salvar_OfertaForaDoProcesso_Recusa()
+    {
+        Inscricao inscricao = NovaInscricao();
+
+        Result resultado = inscricao.Salvar(
+            Guid.CreateVersion7(), Respostas(), SemGrupos(), SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+
+        resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(
+            e => e.Field == "ofertaCursoId" && e.Error.Code == InscricaoErrorCodes.OfertaForaDoProcesso);
+    }
+
+    [Fact(DisplayName = "Submeter sem oferta, num processo com ofertas, é recusado; o rascunho aceita")]
+    public void Submeter_SemOfertaNumProcessoComOfertas_Recusa()
+    {
+        Inscricao inscricao = NovaInscricao();
+        inscricao.Salvar(null, Respostas(), SemGrupos(), SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]))
+            .IsSuccess.Should().BeTrue();
+
+        Result<ComprovanteInscricao> resultado = inscricao.Submeter(
+            "000123", null, Respostas(), SemGrupos(), SemAceites(), Admitidas, SemDerivados(), DefinicoesDosDerivados, "sha256-abc",
+            PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
+
+        resultado.Error!.Code.Should().Be(InscricaoErrorCodes.OfertaObrigatoria);
     }
 
     private static Inscricao NovaInscricao() =>

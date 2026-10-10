@@ -12,6 +12,9 @@ public static class InscricaoErrorCodes
     public const string RespostaInvalida = "Inscricao.RespostaInvalida";
     public const string FatoForaDoFormulario = "Inscricao.FatoForaDoFormulario";
     public const string ValorForaDoTipo = "Inscricao.ValorForaDoTipo";
+    public const string CpfDiferenteDoDono = "Inscricao.CpfDiferenteDoDono";
+    public const string OfertaForaDoProcesso = "Inscricao.OfertaForaDoProcesso";
+    public const string OfertaObrigatoria = "Inscricao.OfertaObrigatoria";
 
     // Veredito de submissão (issue #1859) — só avaliados no POST .../submissao, nunca no PUT do
     // rascunho, que não exige obrigatórios.
