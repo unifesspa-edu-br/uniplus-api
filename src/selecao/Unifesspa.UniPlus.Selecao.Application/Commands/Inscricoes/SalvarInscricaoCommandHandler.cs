@@ -70,18 +70,18 @@ public static class SalvarInscricaoCommandHandler
             return Result<InscricaoDto>.Failure(erroDono);
         }
 
-        Result<FormularioPortavel> regras = await ResolverRegrasDaVersaoFixadaAsync(
+        Result<Services.ContextoDaVersaoFixada> contexto = await Services.ContextoDaVersaoFixadaResolver.ResolverAsync(
             inscricao.VersaoFormularioId, command.ProcessoSeletivoId, processoSeletivoRepository, registroCodecs, cancellationToken)
             .ConfigureAwait(false);
-        if (regras.IsFailure)
+        if (contexto.IsFailure)
         {
-            return Result<InscricaoDto>.Failure(regras.Error!);
+            return Result<InscricaoDto>.Failure(contexto.Error!);
         }
 
         Dictionary<string, JsonElement> respostas = Services.InscricaoRequestMapper.ParaRespostas(command.Request.Respostas);
         Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = Services.InscricaoRequestMapper.ParaGrupos(command.Request.Grupos);
 
-        Result<AvaliacaoFormulario> avaliacao = regras.Value!.Avaliar(new EntradaAvaliacaoFormulario(
+        Result<AvaliacaoFormulario> avaliacao = contexto.Value!.Regras.Avaliar(new EntradaAvaliacaoFormulario(
             respostas,
             EtapasConcluidas: new HashSet<string>(StringComparer.Ordinal),
             FatosConhecidos: new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
@@ -109,54 +109,6 @@ public static class SalvarInscricaoCommandHandler
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
         return Result<InscricaoDto>.Success(InscricaoDto.De(inscricao));
-    }
-
-    /// <summary>
-    /// As regras da finalidade Inscrição, recortadas da versão FIXADA pela inscrição ao iniciar —
-    /// nunca a vigente por relógio: uma retificação publicada depois não muda a validação de uma
-    /// inscrição já em curso (UNI-REQ-0084).
-    /// </summary>
-    private static async Task<Result<FormularioPortavel>> ResolverRegrasDaVersaoFixadaAsync(
-        Guid versaoFormularioId,
-        Guid processoSeletivoId,
-        IProcessoSeletivoRepository processoSeletivoRepository,
-        IRegistroCodecsEnvelope registroCodecs,
-        CancellationToken cancellationToken)
-    {
-        Result<VersaoConfiguracao> resolvida = await Services.VersaoFixadaDaInscricaoResolver
-            .ResolverAsync(versaoFormularioId, processoSeletivoId, processoSeletivoRepository, cancellationToken)
-            .ConfigureAwait(false);
-        if (resolvida.IsFailure)
-        {
-            return Result<FormularioPortavel>.Failure(resolvida.Error!);
-        }
-
-        VersaoConfiguracao versao = resolvida.Value!;
-
-        if (!registroCodecs.SabeLer(versao.SchemaVersion))
-        {
-            return Result<FormularioPortavel>.Failure(new DomainError(
-                ErrosCodecEnvelope.VersaoDesconhecida,
-                $"A versão '{versao.SchemaVersion}' do envelope congelado não está entre as capacidades de leitura reconhecidas pelo codec vivo."));
-        }
-
-        Result<EnvelopeReidratado> reidratado = registroCodecs.Reidratar(versao);
-        if (reidratado.IsFailure)
-        {
-            return Result<FormularioPortavel>.Failure(reidratado.Error!);
-        }
-
-        Result<Services.DefinicaoAvaliavel> avaliavel = Services.DefinicaoAvaliavelDoProcesso.DoCongelado(reidratado.Value!);
-        if (avaliavel.IsFailure)
-        {
-            return Result<FormularioPortavel>.Failure(avaliavel.Error!);
-        }
-
-        RecorteDaFinalidade recorte = RecorteDaFinalidade.De(
-            avaliavel.Value!.Definicao,
-            Domain.Services.DefinicaoDoProcesso.CodigoDaEtapa(FinalidadeFormulario.Inscricao, null),
-            avaliavel.Value!.Ofertas);
-        return Result<FormularioPortavel>.Success(recorte.Regras);
     }
 
     /// <summary>

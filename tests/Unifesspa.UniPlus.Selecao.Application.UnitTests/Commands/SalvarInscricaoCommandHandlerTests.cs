@@ -139,8 +139,11 @@ public sealed class SalvarInscricaoCommandHandlerTests
             formularios: [.. processoBase.Formularios],
             gruposColetados: [.. processoBase.GruposColetados]);
 
+        // O bloco documentosExigidos.dataReferenciaFatos é lido do JSON cru por
+        // ContextoDaVersaoFixadaResolver (issue #1859) — presente em todo envelope real; aqui
+        // nulo, porque este processo de teste não declara referência temporal.
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
-            ProcessoId, Encoding.UTF8.GetBytes("{}"), "0.0.22", "canonical-json/sha256@v1",
+            ProcessoId, Encoding.UTF8.GetBytes("""{"documentosExigidos":{"dataReferenciaFatos":null}}"""), "0.0.22", "canonical-json/sha256@v1",
             Guid.CreateVersion7(), new string('a', 64), "user-sub-1", new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero));
 
         return (versao, grafo);
