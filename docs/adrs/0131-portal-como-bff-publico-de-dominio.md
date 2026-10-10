@@ -210,6 +210,14 @@ Com isso, "o selo cobre as duas origens" e "a parte composta não é guardada" d
 
 A confirmação "Ausência de oráculo" lê-se com a distinção já registrada na emenda de 2026-09-17: o mesmo "não encontrado" vale para processo inexistente, em rascunho e cuja **abertura** teve o registro do ato recusado. Na retificação recusada, o certame continua servido com o conteúdo anterior, que é o que tem ato.
 
+## Emenda 2 (2026-10-10) — a inscrição autenticada ainda não passa pelo Portal
+
+Esta decisão trata da superfície **pública e anônima** — a vitrine e o detalhe do certame publicado. A frente seguinte, antecipada no texto original como "estado do candidato e superfície autenticada", chegou com a inscrição (issue #1859, UNI-REQ-0084): o frontend do candidato consome os endpoints de inscrição (iniciar, consultar, salvar rascunho, obter o formulário renderizável, submeter) **diretamente do módulo Seleção**, sob a policy `Candidato`, não através do Portal.
+
+Isso não revoga nem contradiz a decisão: o que ela proíbe é o Portal — ou qualquer consumidor público e anônimo — lendo o envelope congelado ou recebendo privilégio administrativo. A inscrição é autenticada, por candidato, e o contrato que ela expõe já é desenhado campo a campo (`InscricaoRequest`/`InscricaoDto`/`FormularioRenderizavelDto`), não uma projeção do envelope. O que fica registrado é que o Portal **ainda não é o único ponto de entrada do candidato** — continua sendo até ele ganhar a responsabilidade de compor também essa frente.
+
+Quando a Portal API passar a servir a inscrição, o movimento compatível com esta decisão é o mesmo já previsto para a reversão da opção B: o Portal compõe o contrato de Seleção, nunca o envelope. Até lá, o frontend atravessa a fronteira de módulo que esta ADR reserva ao Portal — uma excepcionalidade que decorre de o Portal não cobrir ainda esta frente, não de nova decisão arquitetural.
+
 ## Mais informações
 
 Gatilhos de reversão, para que a revisão desta decisão não dependa de impressão:
