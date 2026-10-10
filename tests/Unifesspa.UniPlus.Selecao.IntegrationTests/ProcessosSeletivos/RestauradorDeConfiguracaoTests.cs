@@ -596,11 +596,13 @@ public sealed class RestauradorDeConfiguracaoTests
 
         // Substitui a coleta pelo mesmo par {COR_RACA, RENDA} do corpus rico — SEM a
         // pré-condição de RENDA, irrelevante para esta prova — acrescido de
-        // CONDICAO_ATENDIMENTO (escopo-processo, SELECAO_MULTIPLA).
+        // CONDICAO_ATENDIMENTO (escopo-processo, SELECAO_MULTIPLA) e da edição do ENEM, que a
+        // classificação do corpus exige na inscrição.
         processo.DefinirItens([
             FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
             FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
             FatoColetado.Criar("CONDICAO_ATENDIMENTO", 2, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL").Value!,
+            FormularioDeTeste.CampoDaEdicaoDoEnem(3),
         ], PrecondicaoIfMatch.Curinga, grupos: []).IsSuccess.Should().BeTrue();
 
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis =

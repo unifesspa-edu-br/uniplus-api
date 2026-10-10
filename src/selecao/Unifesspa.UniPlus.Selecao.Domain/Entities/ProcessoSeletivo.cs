@@ -249,10 +249,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "As opções deste fato vêm da oferta de atendimento especializado; defina-as na oferta."));
         }
 
-        // EDICAO_ENEM só tem sentido quando a classificação lê notas do ENEM do candidato —
+        // A edição do ENEM só tem sentido quando a classificação lê notas do ENEM do candidato —
         // mesmo raciocínio das regras de eliminação que exigem ENEM (ConfiguracaoClassificacao,
         // "ProcessoSeletivo.EliminacaoEnemForaDeProcessoEnem").
-        if (string.Equals(fato, "EDICAO_ENEM", StringComparison.Ordinal) && Classificacao is not { BaseadoEmEnem: true })
+        if (string.Equals(fato, EdicaoDoEnem.Fato, StringComparison.Ordinal) && Classificacao is not { BaseadoEmEnem: true })
         {
             return Result.Failure(new DomainError(
                 OpcaoDeclaradaFatoErrorCodes.EdicaoEnemForaDeProcessoEnem,
@@ -3292,16 +3292,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             itens.AddRange(ItensDaMediaPelosPesosPorAreaDoEnem(classificacaoEnem));
         }
 
-        if (Classificacao is { BaseadoEmEnem: true })
+        if (OrigemCandidatos == OrigemCandidatos.InscricaoPropria && Classificacao is { BaseadoEmEnem: true })
         {
-            // Importar a nota de qualquer forma (cálculo local ou classificação importada)
-            // exige saber de qual edição do ENEM — sem nenhuma edição admitida, a inscrição
-            // não tem o que coletar e a importação não tem o que ler (issue #1620).
+            // O candidato escolhe na inscrição, entre as edições admitidas, a do ENEM cujas notas a
+            // classificação usa (issue #1620). Com o resultado importado não há inscrição: a edição
+            // vem com a importação, e a declaração não teria quem a lesse.
             itens.Add(new ItemConformidade(
                 "classificacao_edicao_enem_nao_declarada",
                 DimensaoConformidade.Classificacao,
-                "Edições do ENEM admitidas (classificação baseada em ENEM)",
-                _opcoesDeclaradas.Any(static o => string.Equals(o.FatoCodigo, "EDICAO_ENEM", StringComparison.Ordinal))));
+                "Edições do ENEM admitidas (classificação baseada em ENEM com inscrição própria)",
+                _opcoesDeclaradas.Any(static o => string.Equals(o.FatoCodigo, EdicaoDoEnem.Fato, StringComparison.Ordinal))));
         }
 
         return itens;
@@ -3475,6 +3475,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("termo_exigido_sem_forma_de_aceite", DimensaoConformidade.ColetaDeFatos, "Termos do formulário: toda versão escolhida tem forma de aceite definida", PendenciaDeTermoSemFormaDeAceite() is null),
         new ItemConformidade("formulario_inscricao_ausente", DimensaoConformidade.ColetaDeFatos, "Formulários: processo com inscrição própria tem formulário de inscrição", PendenciaDoFormularioDeInscricao() is null),
         new ItemConformidade("formulario_inscricao_sem_conjunto_basico", DimensaoConformidade.ColetaDeFatos, "Formulários: o de inscrição coleta o conjunto básico de dados do candidato", PendenciaDoConjuntoBasico() is null),
+        new ItemConformidade("formulario_inscricao_sem_edicao_enem", DimensaoConformidade.ColetaDeFatos, "Formulários: com classificação baseada em ENEM, o de inscrição pede a edição do ENEM a todo candidato", PendenciaDaEdicaoDoEnem() is null),
         new ItemConformidade("formulario_fase_incoerente", DimensaoConformidade.ColetaDeFatos, "Formulários: cada um na fase do cronograma que a finalidade pede", PendenciaDaFaseDosFormularios() is null),
         new ItemConformidade("formulario_isencao_sem_taxa", DimensaoConformidade.ColetaDeFatos, "Formulários: isenção de taxa só em processo que cobra taxa", PendenciaDaIsencaoSemTaxa() is null),
         new ItemConformidade("formulario_item_fora_de_secao", DimensaoConformidade.ColetaDeFatos, "Formulários: todo item numa seção, na ordem das seções", PendenciaDosItensForaDeSecao() is null),
@@ -4353,6 +4354,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return semConjuntoBasico;
         }
 
+        if (PendenciaDaEdicaoDoEnem() is { } semEdicaoDoEnem)
+        {
+            return semEdicaoDoEnem;
+        }
+
         if (PendenciaDaFaseDosFormularios() is { } faseDoFormulario)
         {
             return faseDoFormulario;
@@ -4672,6 +4678,32 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             : new DomainError(
                 FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico,
                 $"O formulário de inscrição não coleta {faltam} dos dados básicos do candidato. Grave de novo o formulário e, depois, os itens dele: a gravação repõe a seção dos dados básicos.");
+    }
+
+    /// <summary>
+    /// Com inscrição própria e classificação baseada em ENEM, o formulário de inscrição pede a todo
+    /// candidato a edição do ENEM cujas notas a classificação usa (issue #1620): o item é obrigatório
+    /// sempre, sem exibição condicional, fora de grupo e numa seção que não se esconde. Sem formulário
+    /// de inscrição, a falta é a do próprio formulário.
+    /// </summary>
+    private DomainError? PendenciaDaEdicaoDoEnem()
+    {
+        if (OrigemCandidatos != OrigemCandidatos.InscricaoPropria
+            || Classificacao is not { BaseadoEmEnem: true }
+            || FormularioDe(FinalidadeFormulario.Inscricao) is not { } formulario)
+        {
+            return null;
+        }
+
+        FatoColetado? edicao = Itens.FirstOrDefault(static f => f.Finalidade == FinalidadeFormulario.Inscricao
+            && string.Equals(f.FatoCodigo, EdicaoDoEnem.Fato, StringComparison.Ordinal));
+        bool secaoCondicional = edicao?.EtapaCodigo is { } secao
+            && formulario.Etapas.Any(e => string.Equals(e.Codigo, secao, StringComparison.Ordinal) && e.Exibicao is not null);
+        return edicao is { SemPrecondicao: true, Obrigatoriedade.Tipo: TipoObrigatoriedade.Sempre } && !secaoCondicional
+            ? null
+            : new DomainError(
+                FormularioProcessoErrorCodes.InscricaoSemEdicaoDoEnem,
+                "A classificação usa as notas do ENEM, e o formulário de inscrição não pede a edição do ENEM a todo candidato: o campo da edição é obrigatório sempre, sem exibição condicional e numa seção que não se esconde.");
     }
 
     /// <summary>

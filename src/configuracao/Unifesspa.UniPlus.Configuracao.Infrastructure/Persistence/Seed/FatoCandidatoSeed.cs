@@ -304,9 +304,9 @@ public static class FatoCandidatoSeed
         // edições que o processo admite, declaradas por ele (ADR-0136, fonte PROCESSO), nunca
         // uma lista fixa no código. Só existe em processo com classificação baseada em ENEM
         // (ProcessoSeletivo.DefinirOpcoesDeclaradas recusa fora desse caso).
-        new(SeedId(49), "EDICAO_ENEM", "Edição do ENEM", null,
+        new(SeedId(49), EdicaoDoEnem.Fato, "Edição do ENEM", null,
             DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Processo,
-            PontoResolucaoInscricao, "CAMPO_FORMULARIO:EDICAO_ENEM",
+            PontoResolucaoInscricao, $"CAMPO_FORMULARIO:{EdicaoDoEnem.Fato}",
             ClassificacaoProtecaoDado.Pessoal, FinalidadeImportacaoDeNotasDoEnem),
 
         // A condição de indígena é dado próprio, e não só um valor da cor ou raça: exige declaração de
