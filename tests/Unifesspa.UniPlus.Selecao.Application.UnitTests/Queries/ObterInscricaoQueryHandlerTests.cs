@@ -44,7 +44,7 @@ public sealed class ObterInscricaoQueryHandlerTests
         await inscricaoRepository.DidNotReceive().ObterPorProcessoECpfAsync(Arg.Any<Guid>(), Arg.Any<Cpf>(), Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Sem inscrição para o CPF e o processo, recusa como não encontrada")]
+    [Fact(DisplayName = "Sem inscrição para o CPF e o processo, recusa como não encontrada, sem citar o CPF nem o processo")]
     public async Task Handle_SemInscricao_RecusaComoNaoEncontrada()
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
@@ -56,6 +56,7 @@ public sealed class ObterInscricaoQueryHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.NaoEncontrada");
+        resultado.Error.Message.Should().NotContain(cpf.Valor).And.NotContain(ProcessoId.ToString());
     }
 
     [Fact(DisplayName = "Sub diferente do gravado para o mesmo CPF é recusado como dono divergente")]

@@ -46,9 +46,7 @@ public static class ObterInscricaoQueryHandler
             .ConfigureAwait(false);
         if (inscricao is null)
         {
-            return Result<InscricaoDto>.Failure(new DomainError(
-                InscricaoErrorCodes.NaoEncontrada,
-                $"Nenhuma inscrição de {cpfDoToken} no processo seletivo {query.ProcessoSeletivoId}."));
+            return Result<InscricaoDto>.Failure(Inscricao.NaoEncontrada);
         }
 
         if (inscricao.ConferirDono(userContext.UserId ?? string.Empty) is { } erroDono)

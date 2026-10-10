@@ -72,9 +72,7 @@ public static class SubmeterInscricaoCommandHandler
             .ConfigureAwait(false);
         if (inscricao is null)
         {
-            return Result<ComprovanteInscricaoDto>.Failure(new DomainError(
-                InscricaoErrorCodes.NaoEncontrada,
-                $"Nenhuma inscrição de {cpfDoToken} no processo seletivo {command.ProcessoSeletivoId}."));
+            return Result<ComprovanteInscricaoDto>.Failure(Inscricao.NaoEncontrada);
         }
 
         if (inscricao.ConferirDono(userContext.UserId ?? string.Empty) is { } erroDono)
