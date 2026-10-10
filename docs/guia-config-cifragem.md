@@ -102,6 +102,16 @@ Rotacionar a chave HMAC no Vault, ou trocar `Provider` de `local` para `vault` (
 
 Sem um consumidor com volume de dados em produção ainda, este procedimento continua sendo plano, não ferramenta — a primeira aplicação real (unicidade de CPF na inscrição) é o gatilho para automatizá-lo.
 
+### Limitação conhecida — `BlindIndexKeyVersion` é único por processo, não por `keyName`
+
+A ADR-0121 decide uma chave HMAC por módulo, nunca compartilhada. `BlindIndexKeyVersion`, porém, é
+uma única configuração para todo o processo, aplicada a qualquer `keyName` que `ComputarAsync`
+receba. Hoje isso não é problema: há um único consumidor (a unicidade de CPF da inscrição) e uma
+única `keyName` em uso. Se um segundo módulo adotar o índice cego com chave própria, girar a chave
+de um módulo sem girar a do outro deixaria a versão fixa certa para um e errada para o outro — nesse
+momento, `BlindIndexKeyVersion` precisa virar configuração por `keyName` (ex.: mapa `keyName →
+versão`), antes de o segundo consumidor entrar em produção, não depois.
+
 ## Referência cruzada
 
 - ADR-0027 — Idempotency-Key (boundary validation completada por este fix).
