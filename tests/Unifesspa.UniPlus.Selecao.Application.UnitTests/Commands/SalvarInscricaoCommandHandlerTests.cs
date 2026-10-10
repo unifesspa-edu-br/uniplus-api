@@ -97,10 +97,11 @@ public sealed class SalvarInscricaoCommandHandlerTests
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    private static (VersaoConfiguracao Versao, GrafoConfiguracao Grafo) MontarVersaoComItem(FatoColetado item)
+    private static (VersaoConfiguracao Versao, GrafoConfiguracao Grafo) MontarVersaoComItem(
+        FatoColetado item, IReadOnlyList<GrupoColetado>? grupos = null)
     {
         ProcessoSeletivo processoBase = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Salvar rascunho");
-        processoBase.DefinirItens([item], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processoBase.DefinirItens([item], PrecondicaoIfMatch.Ausente, grupos: grupos).IsSuccess.Should().BeTrue();
 
         // A definição avaliável só reconhece um item que esteja numa etapa de um FORMULÁRIO
         // (RecorteDaFinalidade filtra por etapa de FormularioProcesso, não por EtapaProcesso do
@@ -197,6 +198,63 @@ public sealed class SalvarInscricaoCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle(e => e.Field == "APELIDO" && e.Error.Code == "Inscricao.RespostaInvalida");
+        await inscricaoRepository.DidNotReceive().AtualizarAsync(Arg.Any<Inscricao>(), Arg.Any<CancellationToken>());
+        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Resposta de um membro de grupo repetível que viola uma restrição do formulário também é recusada por campo, sem gravar nada")]
+    public async Task Handle_RespostaDeMembroDeGrupoViolaRestricao_RecusaPorCampoSemGravar()
+    {
+        Cpf cpf = PersonasDeTeste.FernandaDrumond;
+
+        FatoColetado itemDoTopo = FatoColetado.Criar(
+            "APELIDO", 0, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
+            classificacaoProtecao: "PESSOAL", formato: "LIVRE", restricoes: [new TamanhoTexto(1, 10)]).Value!;
+        GrupoColetado composicaoFamiliar = GrupoColetado.Criar(
+            "COMPOSICAO_FAMILIAR", 1, etapaCodigo: FormularioDeTeste.Secao, "Composição familiar",
+            minimo: 0, maximo: null, exibicao: null, Obrigatoriedade.Sempre,
+            [FatoColetado.Criar(
+                "RG_NUMERO_MEMBRO", 0, "RG do membro", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
+                classificacaoProtecao: "IDENTIFICADOR", formato: "LIVRE", restricoes: [new TamanhoTexto(1, 5)]).Value!],
+            FinalidadeFormulario.Inscricao).Value!;
+        (VersaoConfiguracao versao, GrafoConfiguracao grafo) = MontarVersaoComItem(itemDoTopo, [composicaoFamiliar]);
+        Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+
+        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
+        inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
+
+        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
+
+        IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
+        ConfigurarCodecs(registroCodecs, versao, grafo);
+
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+
+        // O RG do membro excede o TamanhoTexto(1, 5) do subitem do grupo — a mesma violação do
+        // teste anterior, agora dentro de uma ocorrência de COMPOSICAO_FAMILIAR.
+        InscricaoRequest request = new(
+            null,
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["APELIDO"] = JsonSerializer.SerializeToElement("Nanda") },
+            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>(StringComparer.Ordinal)
+            {
+                ["COMPOSICAO_FAMILIAR"] =
+                [
+                    new OcorrenciaDeGrupoInscricaoInput("membro-1", new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+                    {
+                        ["RG_NUMERO_MEMBRO"] = JsonSerializer.SerializeToElement("12.345.678-9"),
+                    }),
+                ],
+            },
+            null);
+
+        Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
+            new SalvarInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
+            inscricaoRepository, processoRepository, registroCodecs, unitOfWork, UsuarioComCpf(cpf), CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle(e =>
+            e.Field == "COMPOSICAO_FAMILIAR.membro-1.RG_NUMERO_MEMBRO" && e.Error.Code == "Inscricao.RespostaInvalida");
         await inscricaoRepository.DidNotReceive().AtualizarAsync(Arg.Any<Inscricao>(), Arg.Any<CancellationToken>());
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }

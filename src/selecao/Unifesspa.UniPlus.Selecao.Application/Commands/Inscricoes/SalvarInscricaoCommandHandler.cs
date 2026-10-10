@@ -195,14 +195,21 @@ public static class SalvarInscricaoCommandHandler
 
     /// <summary>
     /// Só a resposta que viola uma restrição do formulário é recusada — a ausência de resposta a um
-    /// item obrigatório não é, porque o rascunho não exige obrigatórios.
+    /// item obrigatório não é, porque o rascunho não exige obrigatórios. Cobre os itens de nível
+    /// superior e os de cada ocorrência de grupo repetível: o membro do grupo responde um item como
+    /// qualquer outro, e uma restrição violada ali é tão inválida quanto no nível superior.
     /// </summary>
     private static IReadOnlyList<FieldError> RecusasEstruturais(AvaliacaoFormulario avaliacao) =>
     [
         .. avaliacao.Itens
             .Where(static item => item.RestricoesVioladas.Count > 0)
-            .Select(static item => new FieldError(
-                item.FatoCodigo,
-                new DomainError(InscricaoErrorCodes.RespostaInvalida, $"A resposta de '{item.FatoCodigo}' não atende a uma restrição do formulário."))),
+            .Select(static item => RecusaDoItem(item.FatoCodigo, item.FatoCodigo)),
+        .. avaliacao.Grupos
+            .SelectMany(static grupo => grupo.Ocorrencias.SelectMany(ocorrencia => ocorrencia.Itens
+                .Where(static item => item.RestricoesVioladas.Count > 0)
+                .Select(item => RecusaDoItem($"{grupo.Codigo}.{ocorrencia.Id}.{item.FatoCodigo}", item.FatoCodigo)))),
     ];
+
+    private static FieldError RecusaDoItem(string campo, string fatoCodigo) => new(
+        campo, new DomainError(InscricaoErrorCodes.RespostaInvalida, $"A resposta de '{fatoCodigo}' não atende a uma restrição do formulário."));
 }
