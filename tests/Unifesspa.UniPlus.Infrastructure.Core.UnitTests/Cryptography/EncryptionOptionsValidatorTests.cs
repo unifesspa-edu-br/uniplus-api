@@ -265,6 +265,60 @@ public sealed class EncryptionOptionsValidatorTests
         resultado.Failures!.Should().Contain(f => f.Contains("KubernetesRole"));
     }
 
+    // ─── BlindIndexKeyVersion ────────────────────────────────────────────────
+
+    [Fact]
+    public void Validate_VaultComBlindIndexKeyVersionZero_DeveFalhar()
+    {
+        EncryptionOptions opts = new()
+        {
+            Provider = "vault",
+            VaultAddress = "http://vault.vault.svc:8200",
+            KubernetesRole = "uniplus-api",
+            BlindIndexKeyVersion = 0,
+        };
+
+        ValidateOptionsResult resultado = Sut.Validate(Options.DefaultName, opts);
+
+        resultado.Failed.Should().BeTrue();
+        resultado.Failures.Should().ContainSingle()
+            .Which.Should().Contain("BlindIndexKeyVersion");
+    }
+
+    [Fact]
+    public void Validate_VaultComBlindIndexKeyVersionNegativa_DeveFalhar()
+    {
+        EncryptionOptions opts = new()
+        {
+            Provider = "vault",
+            VaultAddress = "http://vault.vault.svc:8200",
+            KubernetesRole = "uniplus-api",
+            BlindIndexKeyVersion = -1,
+        };
+
+        ValidateOptionsResult resultado = Sut.Validate(Options.DefaultName, opts);
+
+        resultado.Failed.Should().BeTrue();
+        resultado.Failures.Should().ContainSingle()
+            .Which.Should().Contain("BlindIndexKeyVersion");
+    }
+
+    [Fact]
+    public void Validate_VaultComBlindIndexKeyVersionExplicitaMaiorQueUm_DeveSerSuccess()
+    {
+        EncryptionOptions opts = new()
+        {
+            Provider = "vault",
+            VaultAddress = "http://vault.vault.svc:8200",
+            KubernetesRole = "uniplus-api",
+            BlindIndexKeyVersion = 3,
+        };
+
+        ValidateOptionsResult resultado = Sut.Validate(Options.DefaultName, opts);
+
+        resultado.Succeeded.Should().BeTrue();
+    }
+
     // ─── Named options ────────────────────────────────────────────────────────
 
     [Fact]

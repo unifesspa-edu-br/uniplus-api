@@ -4,7 +4,9 @@ using Microsoft.Extensions.Hosting;
 
 /// <summary>
 /// <see cref="IHostedService"/> que força a resolução do singleton
-/// <see cref="IUniPlusEncryptionService"/> no startup da aplicação.
+/// <see cref="IUniPlusEncryptionService"/> e do <see cref="IUniPlusBlindIndexService"/>
+/// no startup da aplicação — os dois compartilham a mesma configuração (<c>Provider</c>,
+/// <c>LocalKey</c>, auth do Vault) e por isso falham pelos mesmos motivos.
 ///
 /// <para>
 /// O singleton é registrado com factory lazy em
@@ -36,13 +38,17 @@ using Microsoft.Extensions.Hosting;
 /// </summary>
 internal sealed class EncryptionWarmupHostedService : IHostedService
 {
-    public EncryptionWarmupHostedService(IUniPlusEncryptionService encryptionService)
+    public EncryptionWarmupHostedService(
+        IUniPlusEncryptionService encryptionService,
+        IUniPlusBlindIndexService blindIndexService)
     {
-        // O parâmetro existe para forçar a resolução do singleton via DI durante
-        // a enumeração dos IHostedService no Host.StartAsync — qualquer falha do
-        // construtor do serviço de cifragem dispara aqui, antes do app aceitar
-        // tráfego. ArgumentNullException.ThrowIfNull mantém o contrato explícito.
+        // Os parâmetros existem para forçar a resolução dos singletons via DI
+        // durante a enumeração dos IHostedService no Host.StartAsync — qualquer
+        // falha do construtor de um dos dois serviços (cifragem ou índice cego)
+        // dispara aqui, antes do app aceitar tráfego. ArgumentNullException.ThrowIfNull
+        // mantém o contrato explícito.
         ArgumentNullException.ThrowIfNull(encryptionService);
+        ArgumentNullException.ThrowIfNull(blindIndexService);
     }
 
     public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;

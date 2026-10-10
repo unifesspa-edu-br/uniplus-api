@@ -132,6 +132,16 @@ internal sealed class EncryptionOptionsValidator : IValidateOptions<EncryptionOp
                 "Em produção use KubernetesRole; em testes/dev use VaultToken. " +
                 $"{GuideHint}");
         }
+
+        if (options.BlindIndexKeyVersion < 1)
+        {
+            // key_version=0 no Transit significa "versão mais recente" — exatamente o
+            // comportamento que a versão fixa existe para evitar (ADR-0121, emenda 1.2):
+            // girar a chave passaria a trocar os índices já gravados em silêncio.
+            failures.Add(
+                $"UniPlus:Encryption:BlindIndexKeyVersion deve ser >= 1 quando Provider = 'vault'. " +
+                $"Recebido: {options.BlindIndexKeyVersion}. {GuideHint}");
+        }
     }
 
     private static bool IsAbsoluteHttpUri(string value) =>

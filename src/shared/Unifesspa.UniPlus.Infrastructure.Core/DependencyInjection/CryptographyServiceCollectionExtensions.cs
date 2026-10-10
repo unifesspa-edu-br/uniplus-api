@@ -58,6 +58,24 @@ public static class CryptographyServiceCollectionExtensions
                 $"UniPlus:Encryption:Provider inválido: '{opts.Provider}'. Use 'vault' ou 'local'.");
         });
 
+        services.AddSingleton<IUniPlusBlindIndexService>(sp =>
+        {
+            EncryptionOptions opts = sp.GetRequiredService<IOptions<EncryptionOptions>>().Value;
+
+            if (string.Equals(opts.Provider, "vault", StringComparison.OrdinalIgnoreCase))
+            {
+                return ActivatorUtilities.CreateInstance<VaultTransitBlindIndexService>(sp);
+            }
+
+            if (string.Equals(opts.Provider, "local", StringComparison.OrdinalIgnoreCase))
+            {
+                return ActivatorUtilities.CreateInstance<LocalHmacBlindIndexService>(sp);
+            }
+
+            throw new InvalidOperationException(
+                $"UniPlus:Encryption:Provider inválido: '{opts.Provider}'. Use 'vault' ou 'local'.");
+        });
+
         // Warmup hosted service força a resolução do IUniPlusEncryptionService no
         // Host.StartAsync — falha do construtor (JWT ausente, mutex auth method)
         // vira CrashLoopBackOff antes do app aceitar tráfego, em vez de 500 na

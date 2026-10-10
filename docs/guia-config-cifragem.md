@@ -1,6 +1,6 @@
 # Guia de configuração de cifragem (`UniPlus:Encryption`)
 
-A `uniplus-api` cifra dados sensíveis (cursor de paginação, payload de Idempotency-Key e, futuramente, outros campos do Domínio) por meio de `IUniPlusEncryptionService`. A escolha do provider e suas credenciais entram via configuração `IConfiguration` / variáveis de ambiente, sob a seção `UniPlus:Encryption`.
+A `uniplus-api` cifra dados sensíveis (cursor de paginação, payload de Idempotency-Key e, futuramente, outros campos do Domínio) por meio de `IUniPlusEncryptionService`. A mesma seção de configuração também escolhe o provider de `IUniPlusBlindIndexService` — o índice cego (HMAC) usado para buscar ou garantir unicidade de um valor cifrado sem decifrá-lo (ADR-0121), cujo primeiro consumidor é a unicidade de CPF na inscrição do candidato (Seleção). A escolha do provider e suas credenciais entram via configuração `IConfiguration` / variáveis de ambiente, sob a seção `UniPlus:Encryption`.
 
 A combinação de provider + campos dependentes é validada **no boot**. Configurações incoerentes derrubam o pod no startup com mensagem específica, em vez de retornar `500 Internal Server Error` silencioso na primeira requisição que toca cifragem. A validação combinada está em `EncryptionOptionsValidator` (registrado por `AddUniPlusEncryption`).
 
@@ -15,6 +15,7 @@ A combinação de provider + campos dependentes é validada **no boot**. Configu
 | `VaultToken` | ignorado | obrigatório (dev/CI) | Token estático para testes de integração — **nunca usar em produção**. **Mutuamente exclusivo** com `KubernetesRole`. |
 | `VaultTransitMount` | ignorado | opcional | Mount do engine `transit`. Default: `"transit"`. |
 | `KubernetesJwtPath` | ignorado | opcional | Path do JWT do Service Account. Default: `/var/run/secrets/kubernetes.io/serviceaccount/token`. |
+| `BlindIndexKeyVersion` | ignorado | opcional | Versão **fixa** da chave HMAC do índice cego (`transit/hmac/<keyName>/sha2-256`). Default: `1`. Não tem efeito no provider `local` — a derivação por HKDF não versiona. |
 
 Quando `Provider=vault`, exatamente um entre `KubernetesRole` e `VaultToken` precisa estar definido. A exclusividade é deliberada: o auth method de `VaultTransitEncryptionService` é determinado pela configuração — `KubernetesRole` ativa Kubernetes auth (lê o JWT do Service Account em `KubernetesJwtPath`); `VaultToken` ativa token auth. Não há heurística silenciosa de fallback. Se a configuração disser "K8s" mas o JWT não estiver disponível em disco (ou estiver vazio), o serviço falha no primeiro resolve com mensagem específica citando o path esperado, em vez de cair para outro auth method.
 
@@ -79,9 +80,33 @@ A trilha Vault Transit em produção depende de:
 
 Enquanto o Transit não está disponível em um environment, o provider default `local` permanece adequado para dev/CI desde que a chave esteja presente.
 
+## Índice cego (`IUniPlusBlindIndexService`)
+
+Mesma seção `UniPlus:Encryption`, mesmo `Provider` — escolher `vault` ou `local` troca os dois serviços (cifra e índice cego) juntos, nunca um sem o outro.
+
+- **Provider `local`:** HMAC-SHA256 com uma subchave derivada de `LocalKey` por HKDF-SHA256, com `info = "uniplus-indice-cego:" + keyName`. A subchave nunca é `LocalKey` diretamente — cada `keyName` tem a sua, derivada; a mesma `LocalKey` com `keyName` diferentes produz índices diferentes e não comparáveis entre si.
+- **Provider `vault`:** `transit/hmac/<keyName>/sha2-256`, com `key_version` fixado por `BlindIndexKeyVersion` (ver matriz acima). O HMAC devolvido pelo Vault vem prefixado com a versão (`vault:v1:<base64>`) — o serviço descarta esse prefixo antes de devolver o índice; o que é gravado no banco é só o valor HMAC.
+
+### Por que a versão da chave é fixa, não "a mais recente"
+
+O índice cego serve de chave de busca (ex.: unicidade de CPF por processo seletivo). Se o índice acompanhasse a versão mais recente da chave automaticamente, **girar a chave no Vault por qualquer motivo trocaria todos os índices já gravados em silêncio**, e nenhuma busca por um valor antigo encontraria a linha correspondente — a unicidade quebraria sem erro nenhum, só resultados que deixam de aparecer.
+
+### Procedimento de rotação (ou troca de provider)
+
+Rotacionar a chave HMAC no Vault, ou trocar `Provider` de `local` para `vault` (ou vice-versa), muda a função que produz o índice — os índices já gravados ficam órfãos (nenhuma busca por eles bate mais). Não é uma operação de "rodar e esquecer":
+
+1. Girar a chave no Vault (`POST transit/keys/<keyName>/rotate`) ou preparar o novo provider — a versão antiga continua decifrável, só não é mais a versão corrente.
+2. Decifrar (não o índice — o **valor original protegido**, via `IUniPlusEncryptionService`) cada linha que tem índice da versão antiga.
+3. Recalcular o índice de cada uma com a chave/versão nova.
+4. Só então atualizar `BlindIndexKeyVersion` (ou `Provider`) na configuração do deploy, depois que todas as linhas tiverem o índice novo gravado — nunca antes, senão o período de transição tem linhas com índices de duas gerações e nenhuma query cobre as duas ao mesmo tempo.
+
+Sem um consumidor com volume de dados em produção ainda, este procedimento continua sendo plano, não ferramenta — a primeira aplicação real (unicidade de CPF na inscrição) é o gatilho para automatizá-lo.
+
 ## Referência cruzada
 
 - ADR-0027 — Idempotency-Key (boundary validation completada por este fix).
 - ADR-0010 — Estratégia de segredos via Vault + ESO.
+- ADR-0121 — Cifra em repouso; emenda do índice cego (primeiro consumidor, versão fixa, rotação).
+- ADR-0136 e ADR-0081 — classificação de proteção de dados; emenda da cifra só de `Identificador`.
 - Story uniplus-infra#219 — stand-up do Vault Transit no standalone.
 - Story uniplus-infra#220 — wire-up `uniplus-api → Vault Transit`.
