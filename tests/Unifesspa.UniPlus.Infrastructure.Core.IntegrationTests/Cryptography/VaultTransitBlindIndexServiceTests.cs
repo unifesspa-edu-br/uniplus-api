@@ -35,7 +35,7 @@ public sealed class VaultTransitBlindIndexServiceTests(VaultContainerFixture vau
     {
         await vault.EnsureKeyExistsAsync(KeyName, keyType: "hmac");
         IUniPlusBlindIndexService sut = CriarServico();
-        byte[] valor = "24843803480"u8.ToArray();
+        byte[] valor = "valor-opaco-um"u8.ToArray();
 
         byte[] indice1 = await sut.ComputarAsync(KeyName, valor);
         byte[] indice2 = await sut.ComputarAsync(KeyName, valor);
@@ -50,7 +50,7 @@ public sealed class VaultTransitBlindIndexServiceTests(VaultContainerFixture vau
         await vault.EnsureKeyExistsAsync(KeyName, keyType: "hmac");
         await vault.EnsureKeyExistsAsync(outraChave, keyType: "hmac");
         IUniPlusBlindIndexService sut = CriarServico();
-        byte[] valor = "24843803480"u8.ToArray();
+        byte[] valor = "valor-opaco-um"u8.ToArray();
 
         byte[] indiceA = await sut.ComputarAsync(KeyName, valor);
         byte[] indiceB = await sut.ComputarAsync(outraChave, valor);
@@ -65,7 +65,7 @@ public sealed class VaultTransitBlindIndexServiceTests(VaultContainerFixture vau
     {
         await vault.EnsureKeyExistsAsync(KeyName, keyType: "hmac");
         IUniPlusBlindIndexService sutVersao1 = CriarServico(blindIndexKeyVersion: 1);
-        byte[] valor = "24843803480"u8.ToArray();
+        byte[] valor = "valor-opaco-um"u8.ToArray();
 
         byte[] indiceAntes = await sutVersao1.ComputarAsync(KeyName, valor);
 
@@ -81,7 +81,7 @@ public sealed class VaultTransitBlindIndexServiceTests(VaultContainerFixture vau
     {
         await vault.EnsureKeyExistsAsync(KeyName, keyType: "hmac");
         await vault.RotateKeyAsync(KeyName);
-        byte[] valor = "24843803480"u8.ToArray();
+        byte[] valor = "valor-opaco-um"u8.ToArray();
 
         byte[] indiceV1 = await CriarServico(blindIndexKeyVersion: 1).ComputarAsync(KeyName, valor);
         byte[] indiceV2 = await CriarServico(blindIndexKeyVersion: 2).ComputarAsync(KeyName, valor);
