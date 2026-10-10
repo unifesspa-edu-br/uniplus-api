@@ -24,7 +24,7 @@ public static class DerivadosDoSistemaInscricao
 
     public static async Task<Result<IReadOnlyDictionary<string, JsonElement>>> CalcularAsync(
         IReadOnlyDictionary<string, JsonElement> respostas,
-        DateOnly dataReferenciaFatos,
+        DateOnly? dataReferenciaFatos,
         IConferenciaEnderecoGeo conferencia,
         CancellationToken cancellationToken = default)
     {
@@ -42,7 +42,14 @@ public static class DerivadosDoSistemaInscricao
                     "Inscricao.DataNascimentoInvalida", "A data de nascimento não é uma data válida."));
             }
 
-            derivados["FAIXA_ETARIA"] = JsonSerializer.SerializeToElement(IdadeEmAnos(nascimento, dataReferenciaFatos));
+            if (dataReferenciaFatos is not { } referencia)
+            {
+                return Result<IReadOnlyDictionary<string, JsonElement>>.Failure(new DomainError(
+                    "Inscricao.DataReferenciaFatosAusente",
+                    "O processo não declara uma data de referência para apurar FAIXA_ETARIA, mas a resposta tem DATA_NASCIMENTO."));
+            }
+
+            derivados["FAIXA_ETARIA"] = JsonSerializer.SerializeToElement(IdadeEmAnos(nascimento, referencia));
         }
 
         if (respostas.TryGetValue("ENDERECO_RESIDENCIAL", out JsonElement enderecoElemento))

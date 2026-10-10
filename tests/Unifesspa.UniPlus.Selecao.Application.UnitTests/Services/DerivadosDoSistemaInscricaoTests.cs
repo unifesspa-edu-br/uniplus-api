@@ -66,6 +66,18 @@ public sealed class DerivadosDoSistemaInscricaoTests
         resultado.Value!["FAIXA_ETARIA"].GetInt32().Should().Be(idadeEsperada);
     }
 
+    [Fact(DisplayName = "DATA_NASCIMENTO respondida sem o processo declarar data de referência recusa, nunca calcula contra hoje")]
+    public async Task CalcularAsync_DataNascimentoSemReferenciaDoProcesso_Recusa()
+    {
+        IConferenciaEnderecoGeo conferencia = Substitute.For<IConferenciaEnderecoGeo>();
+
+        Result<IReadOnlyDictionary<string, JsonElement>> resultado = await DerivadosDoSistemaInscricao.CalcularAsync(
+            Respostas(("DATA_NASCIMENTO", Texto("2008-12-10"))), dataReferenciaFatos: null, conferencia);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("Inscricao.DataReferenciaFatosAusente");
+    }
+
     [Fact(DisplayName = "Data de nascimento que não é uma data válida recusa")]
     public async Task CalcularAsync_DataNascimentoInvalida_Recusa()
     {

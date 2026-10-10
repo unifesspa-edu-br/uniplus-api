@@ -775,7 +775,8 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new(InscricaoErrorCodes.TermoNaoAceito, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.termo_nao_aceito", "Um termo obrigatório não foi aceito na versão da inscrição")),
         // Derivados do sistema (issue #1859, ADR-0136) — calculados só na submissão.
         new("Inscricao.DataNascimentoInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.data_nascimento_invalida", "A data de nascimento não é uma data válida")),
-        new("Inscricao.EnderecoResidencialInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.endereco_residencial_invalido", "O endereço residencial não tem o CEP e a cidade que a conferência no Geo exige")),
+        new("Inscricao.DataReferenciaFatosAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.data_referencia_fatos_ausente", "O processo não declara a data de referência que FAIXA_ETARIA exige")),
+        new("Inscricao.EnderecoResidencialInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.endereco_residencial_invalido", "O endereço residencial não tem a cidade que a conferência no Geo exige")),
         // Base legal 1:N (Story #554, PR #898, issue #549, ADR-0074) — DocumentoExigidoBaseLegal
         // e o gate de publicação (ValidadorBaseLegalExigencias) aflora pelo
         // ProcessoSeletivo.ConformidadeInsuficiente já registrado acima, sem código novo.

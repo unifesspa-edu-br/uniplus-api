@@ -98,6 +98,7 @@ public sealed class InscricaoContratoProvisorioTests
             {
                 ["NOME_SOCIAL"] = JsonSerializer.SerializeToElement("Ana"),
             },
+            Grupos: new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>(StringComparer.Ordinal),
             Aceites: [new AceiteDeTermoInput("TERMO_VERACIDADE", Guid.Parse("0199e000-0000-7000-8000-000000000002"), "sha256-abc")]);
 
         JsonNode json = JsonSerializer.SerializeToNode(dto, Opcoes)!;

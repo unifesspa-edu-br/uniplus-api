@@ -97,6 +97,27 @@ public static class ProjecaoDoFormularioDaVersao
     }
 
     /// <summary>
+    /// A mesma data de referência dos fatos que <see cref="Projetar"/> usa para montar a
+    /// apresentação — reusada pelo handler de Submeter (issue #1859) para calcular
+    /// <c>FAIXA_ETARIA</c> na data CONGELADA na publicação, nunca na de hoje. Nula quando o
+    /// processo não declara referência temporal.
+    /// </summary>
+    public static Result<DateOnly?> ResolverDataReferenciaFatos(VersaoConfiguracao versao)
+    {
+        ArgumentNullException.ThrowIfNull(versao);
+
+        if (!TentarLerEnvelope(versao.ConfiguracaoCongelada, out JsonObject? envelope)
+            || !TentarDataReferenciaFatos(envelope, out DateOnly? data))
+        {
+            return Result<DateOnly?>.Failure(new DomainError(
+                "Snapshot.VigenteAusente",
+                $"A configuração congelada do processo {versao.ProcessoSeletivoId} não é um documento legível."));
+        }
+
+        return Result<DateOnly?>.Success(data);
+    }
+
+    /// <summary>
     /// Lê o documento congelado como objeto JSON, sem deixar passar exceção de análise.
     /// </summary>
     private static bool TentarLerEnvelope(string congelado, [NotNullWhen(true)] out JsonObject? envelope)
