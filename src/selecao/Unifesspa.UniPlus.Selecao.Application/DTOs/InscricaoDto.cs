@@ -5,6 +5,8 @@ using System.Text.Json;
 using Domain.Entities;
 using Domain.Enums;
 
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
+
 /// <summary>
 /// Contrato provisório da inscrição do candidato (issue #1858, primeiro commit): DTOs de entrada e
 /// saída dos endpoints do candidato, publicados antes dos endpoints existirem (a2 de #1859), para o
@@ -81,8 +83,11 @@ public sealed record InscricaoDto(
 /// <summary>
 /// O comprovante de uma submissão: cópia do que foi enviado, sem nenhum número de documento (§4.1
 /// do plano da #1855), com o hash de integridade (SHA-256 do conteúdo) para provar que não mudou.
+/// O CPF do titular vem mascarado (issue #1860) — o comprovante nunca o devolve em claro, mesmo
+/// para o próprio dono.
 /// </summary>
 public sealed record ComprovanteInscricaoDto(
+    string CpfMascarado,
     string NumeroInscricao,
     DateTimeOffset Instante,
     string HashIntegridade,
@@ -91,11 +96,13 @@ public sealed record ComprovanteInscricaoDto(
     IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>> Grupos,
     IReadOnlyList<AceiteDeTermoInput> Aceites)
 {
-    public static ComprovanteInscricaoDto De(ComprovanteInscricao comprovante)
+    public static ComprovanteInscricaoDto De(ComprovanteInscricao comprovante, Cpf cpf)
     {
         ArgumentNullException.ThrowIfNull(comprovante);
+        ArgumentNullException.ThrowIfNull(cpf);
 
         return new ComprovanteInscricaoDto(
+            cpf.Mascarado,
             comprovante.NumeroInscricao,
             comprovante.Instante,
             comprovante.HashIntegridade,
@@ -110,9 +117,44 @@ public sealed record ComprovanteInscricaoDto(
     }
 }
 
-/// <summary>Um item de "Minhas inscrições": o nome preferido é o social, quando o candidato o declarou.</summary>
+/// <summary>
+/// Um item de "Minhas inscrições" (issue #1860): o nome preferido é o social, quando o candidato
+/// o declarou, e o CPF vem mascarado — nenhum outro número de documento aparece na lista.
+/// </summary>
 public sealed record MinhaInscricaoDto(
     Guid ProcessoSeletivoId,
     string? NumeroInscricao,
     SituacaoInscricao Situacao,
-    string NomePreferido);
+    string NomePreferido,
+    string CpfMascarado)
+{
+    /// <summary>
+    /// O nome social só prevalece quando o candidato declarou DESEJA_NOME_SOCIAL e preencheu
+    /// NOME_SOCIAL (UNI-REQ-0032) — a ausência de qualquer um dos dois cai no nome civil, nunca
+    /// em branco.
+    /// </summary>
+    public static MinhaInscricaoDto De(Inscricao inscricao)
+    {
+        ArgumentNullException.ThrowIfNull(inscricao);
+        return new MinhaInscricaoDto(
+            inscricao.ProcessoSeletivoId, inscricao.NumeroInscricao, inscricao.Situacao,
+            ResolverNomePreferido(inscricao.Respostas), inscricao.Cpf.Mascarado);
+    }
+
+    private static string ResolverNomePreferido(IReadOnlyDictionary<string, JsonElement> respostas)
+    {
+        bool desejaNomeSocial = respostas.TryGetValue("DESEJA_NOME_SOCIAL", out JsonElement deseja)
+            && deseja.ValueKind == JsonValueKind.True;
+        if (desejaNomeSocial
+            && respostas.TryGetValue("NOME_SOCIAL", out JsonElement nomeSocial)
+            && nomeSocial.ValueKind == JsonValueKind.String
+            && nomeSocial.GetString() is { Length: > 0 } preferido)
+        {
+            return preferido;
+        }
+
+        return respostas.TryGetValue("NOME", out JsonElement nome) && nome.ValueKind == JsonValueKind.String
+            ? nome.GetString() ?? string.Empty
+            : string.Empty;
+    }
+}

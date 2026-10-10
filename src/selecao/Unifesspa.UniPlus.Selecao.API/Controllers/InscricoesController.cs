@@ -193,4 +193,19 @@ public sealed class InscricoesController : ControllerBase
             .ConfigureAwait(false);
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
+
+    /// <summary>As inscrições do dono do token em qualquer processo seletivo (issue #1860), com o nome preferido.</summary>
+    [HttpGet("minhas-inscricoes")]
+    [Authorize(Policy = "Candidato")]
+    [VendorMediaType(Resource = "minhas-inscricoes", Versions = [1])]
+    [ProducesResponseType(typeof(IReadOnlyList<MinhaInscricaoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> MinhasInscricoes(CancellationToken cancellationToken)
+    {
+        Result<IReadOnlyList<MinhaInscricaoDto>> resultado = await _queryBus
+            .Send(new MinhasInscricoesQuery(), cancellationToken)
+            .ConfigureAwait(false);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
+    }
 }

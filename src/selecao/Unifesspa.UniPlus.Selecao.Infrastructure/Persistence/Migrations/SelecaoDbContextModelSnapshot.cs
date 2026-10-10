@@ -3619,6 +3619,9 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_inscricoes");
 
+                    b.HasIndex("CpfIndice")
+                        .HasDatabaseName("ix_inscricoes_cpf_indice");
+
                     b.HasIndex("ProcessoSeletivoId", "CpfIndice")
                         .IsUnique()
                         .HasDatabaseName("ux_inscricoes_processo_cpf_indice");

@@ -111,5 +111,10 @@ internal sealed class InscricaoRecordConfiguration : IEntityTypeConfiguration<In
         builder.HasIndex(i => new { i.ProcessoSeletivoId, i.CpfIndice })
             .IsUnique()
             .HasDatabaseName("ux_inscricoes_processo_cpf_indice");
+
+        // "Minhas inscrições" (issue #1860) busca por CPF em qualquer processo — o índice
+        // composto acima não serve essa consulta, porque não filtra por ProcessoSeletivoId.
+        builder.HasIndex(i => i.CpfIndice)
+            .HasDatabaseName("ix_inscricoes_cpf_indice");
     }
 }

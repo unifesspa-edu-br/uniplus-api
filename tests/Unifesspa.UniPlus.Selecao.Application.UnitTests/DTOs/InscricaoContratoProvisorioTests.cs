@@ -90,6 +90,7 @@ public sealed class InscricaoContratoProvisorioTests
     public void ComprovanteInscricaoDto_Exemplo_NaoCarregaDocumento()
     {
         ComprovanteInscricaoDto dto = new(
+            CpfMascarado: "***.456.789-**",
             NumeroInscricao: "000123",
             Instante: new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero),
             HashIntegridade: "sha256-def",
@@ -114,7 +115,8 @@ public sealed class InscricaoContratoProvisorioTests
             ProcessoSeletivoId: Guid.Parse("0199e000-0000-7000-8000-000000000011"),
             NumeroInscricao: "000123",
             Situacao: SituacaoInscricao.Submetida,
-            NomePreferido: "Ana (nome social)");
+            NomePreferido: "Ana (nome social)",
+            CpfMascarado: "***.456.789-**");
 
         JsonNode json = JsonSerializer.SerializeToNode(dto, Opcoes)!;
 

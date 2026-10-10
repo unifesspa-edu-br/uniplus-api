@@ -265,6 +265,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.NumeroInscricao.Should().Be("00000042");
+        resultado.Value!.CpfMascarado.Should().Be(cpf.Mascarado);
         resultado.Value!.Respostas.Should().ContainKey("APELIDO").WhoseValue.GetString().Should().Be("Nanda");
         HashCanonicalComputer.IsValidHashShape(resultado.Value!.HashIntegridade).Should().BeTrue();
         await inscricaoRepository.Received(1).AtualizarAsync(existente, Arg.Any<CancellationToken>());

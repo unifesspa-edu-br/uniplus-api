@@ -68,6 +68,6 @@ public static class ObterComprovanteQueryHandler
                 $"A inscrição não tem o comprovante número {query.Numero}."));
         }
 
-        return Result<ComprovanteInscricaoDto>.Success(ComprovanteInscricaoDto.De(comprovante));
+        return Result<ComprovanteInscricaoDto>.Success(ComprovanteInscricaoDto.De(comprovante, inscricao.Cpf));
     }
 }

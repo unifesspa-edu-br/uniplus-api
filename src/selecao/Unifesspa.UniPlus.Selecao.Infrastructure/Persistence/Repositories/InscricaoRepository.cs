@@ -81,6 +81,26 @@ public sealed class InscricaoRepository : IInscricaoRepository
         return record is null ? null : await ParaDominioAsync(record, cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyList<Inscricao>> ObterTodasPorCpfAsync(Cpf cpf, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(cpf);
+
+        byte[] indice = await ComputarIndiceAsync(cpf, cancellationToken).ConfigureAwait(false);
+
+        List<InscricaoRecord> records = await _dbContext.Inscricoes
+            .Where(r => r.CpfIndice.SequenceEqual(indice))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        List<Inscricao> inscricoes = new(records.Count);
+        foreach (InscricaoRecord record in records)
+        {
+            inscricoes.Add(await ParaDominioAsync(record, cancellationToken).ConfigureAwait(false));
+        }
+
+        return inscricoes;
+    }
+
     public async Task AdicionarAsync(Inscricao entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);

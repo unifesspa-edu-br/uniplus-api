@@ -15,6 +15,13 @@ public interface IInscricaoRepository
     /// </summary>
     Task<Inscricao?> ObterPorProcessoECpfAsync(Guid processoSeletivoId, Cpf cpf, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Todas as inscrições do dono (CPF), em qualquer processo seletivo (issue #1860, "Minhas
+    /// inscrições") — mesmo índice cego de <see cref="ObterPorProcessoECpfAsync"/>, sem o filtro
+    /// de processo.
+    /// </summary>
+    Task<IReadOnlyList<Inscricao>> ObterTodasPorCpfAsync(Cpf cpf, CancellationToken cancellationToken = default);
+
     Task AdicionarAsync(Inscricao entity, CancellationToken cancellationToken = default);
 
     /// <summary>

@@ -143,6 +143,34 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         respostas.Should().NotContain("12.868.927-4", "o número de documento nunca entra no jsonb em claro");
     }
 
+    [Fact(DisplayName = "ObterTodasPorCpf devolve as inscrições do CPF em todos os processos, nunca as de outro CPF (issue #1860)")]
+    public async Task ObterTodasPorCpf_DevolveTodasDoCpfEmQualquerProcesso()
+    {
+        Guid processoA = Guid.CreateVersion7();
+        Guid processoB = Guid.CreateVersion7();
+        Inscricao naA = NovaInscricao(PersonasDeTeste.FernandaDrumond, processoA);
+        Inscricao naB = NovaInscricao(PersonasDeTeste.FernandaDrumond, processoB);
+        Inscricao deOutroCpf = NovaInscricao(PersonasDeTeste.KevinCarvalho, Guid.CreateVersion7());
+
+        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+        InscricaoRepository writeRepository = new(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+        await writeRepository.AdicionarAsync(naA);
+        await writeRepository.AdicionarAsync(naB);
+        await writeRepository.AdicionarAsync(deOutroCpf);
+        await writeContext.SaveChangesAsync();
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        InscricaoRepository readRepository = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+        IReadOnlyList<Inscricao> lidas = await readRepository.ObterTodasPorCpfAsync(PersonasDeTeste.FernandaDrumond);
+
+        // O fixture é compartilhado entre os testes desta classe — outros já gravaram inscrições
+        // da mesma persona; a prova é que as duas NOVAS aparecem, e nenhuma do outro CPF aparece,
+        // não que a lista inteira do CPF seja só estas duas.
+        IReadOnlySet<Guid> ids = lidas.Select(static i => i.Id).ToHashSet();
+        ids.Should().Contain([naA.Id, naB.Id]);
+        ids.Should().NotContain(deOutroCpf.Id);
+    }
+
     [Fact(DisplayName = "Dois inícios simultâneos do mesmo CPF no mesmo processo colidem no índice único, não geram duas linhas")]
     public async Task IndiceUnico_RecusaDuasInscricoesDoMesmoCpfNoMesmoProcesso()
     {
