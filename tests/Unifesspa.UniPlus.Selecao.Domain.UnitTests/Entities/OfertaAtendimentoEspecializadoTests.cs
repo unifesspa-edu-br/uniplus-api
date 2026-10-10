@@ -57,7 +57,7 @@ public sealed class OfertaAtendimentoEspecializadoTests
 
         Result<OfertaAtendimentoEspecializado> resultado = OfertaAtendimentoEspecializado.Criar(
             [OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")],
-            [OfertaRecurso.Criar(recursoId, "Ledor"), OfertaRecurso.Criar(recursoId, "Ledor")],
+            [OfertaRecurso.Criar(recursoId, "LEDOR", "Ledor"), OfertaRecurso.Criar(recursoId, "LEDOR", "Ledor")],
             [OfertaTipoDeficiencia.Criar(tipoId, "DEFICIENCIA_VISUAL", "Deficiência visual"), OfertaTipoDeficiencia.Criar(tipoId, "DEFICIENCIA_VISUAL", "Deficiência visual")]);
 
         resultado.IsFailure.Should().BeTrue();

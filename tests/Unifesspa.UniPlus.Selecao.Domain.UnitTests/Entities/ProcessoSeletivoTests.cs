@@ -162,7 +162,7 @@ public sealed class ProcessoSeletivoTests
     {
         Result<OfertaAtendimentoEspecializado> result = OfertaAtendimentoEspecializado.Criar(
             condicoes: [OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")],
-            recursos: [OfertaRecurso.Criar(Guid.CreateVersion7(), "Ledor")],
+            recursos: [OfertaRecurso.Criar(Guid.CreateVersion7(), "LEDOR", "Ledor")],
             tiposDeficiencia: [OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "DEFICIENCIA_VISUAL", "Deficiência visual")]);
 
         result.IsSuccess.Should().BeTrue();
@@ -206,7 +206,7 @@ public sealed class ProcessoSeletivoTests
 
         Result<OfertaAtendimentoEspecializado> result = OfertaAtendimentoEspecializado.Criar(
             condicoes: [],
-            recursos: [OfertaRecurso.Criar(recursoId, "Ledor"), OfertaRecurso.Criar(recursoId, "Ledor")],
+            recursos: [OfertaRecurso.Criar(recursoId, "LEDOR", "Ledor"), OfertaRecurso.Criar(recursoId, "LEDOR", "Ledor")],
             tiposDeficiencia: []);
 
         result.IsFailure.Should().BeTrue();
@@ -237,7 +237,7 @@ public sealed class ProcessoSeletivoTests
         ProcessoSeletivo processo = NovoProcesso();
         OfertaAtendimentoEspecializado oferta = OfertaAtendimentoEspecializado.Criar(
             condicoes: [OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")],
-            recursos: [OfertaRecurso.Criar(Guid.CreateVersion7(), "Prova ampliada")],
+            recursos: [OfertaRecurso.Criar(Guid.CreateVersion7(), "PROVA_AMPLIADA", "Prova ampliada")],
             tiposDeficiencia: []).Value!;
 
         Result result = processo.DefinirOfertaAtendimento(oferta, PrecondicaoIfMatch.Ausente);

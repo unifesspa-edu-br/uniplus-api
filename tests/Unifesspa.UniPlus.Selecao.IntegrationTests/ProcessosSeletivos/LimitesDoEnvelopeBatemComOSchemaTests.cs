@@ -51,6 +51,7 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         ("CondicaoCodigo", LimitesDoEnvelope.CondicaoCodigo, typeof(OfertaCondicao), nameof(OfertaCondicao.CondicaoCodigo)),
         ("TipoDeficienciaCodigo", LimitesDoEnvelope.TipoDeficienciaCodigo, typeof(OfertaTipoDeficiencia), nameof(OfertaTipoDeficiencia.TipoDeficienciaCodigo)),
         ("NomeDeCadastro", LimitesDoEnvelope.NomeDeCadastro, typeof(OfertaCondicao), nameof(OfertaCondicao.CondicaoNome)),
+        ("RecursoCodigo", LimitesDoEnvelope.RecursoCodigo, typeof(OfertaRecurso), nameof(OfertaRecurso.RecursoCodigo)),
         ("NomeDeCadastro", LimitesDoEnvelope.NomeDeCadastro, typeof(OfertaRecurso), nameof(OfertaRecurso.RecursoNome)),
         ("NomeDeCadastro", LimitesDoEnvelope.NomeDeCadastro, typeof(OfertaTipoDeficiencia), nameof(OfertaTipoDeficiencia.TipoDeficienciaNome)),
         // Story #1466 — bônus regional referencia Base Legal tipada (snapshot congelado).

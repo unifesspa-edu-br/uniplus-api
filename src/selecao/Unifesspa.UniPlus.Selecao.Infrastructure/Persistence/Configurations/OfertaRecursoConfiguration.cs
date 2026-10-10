@@ -19,6 +19,7 @@ public sealed class OfertaRecursoConfiguration : IEntityTypeConfiguration<Oferta
         builder.Property(r => r.Id).ValueGeneratedNever();
 
         builder.Property(r => r.RecursoOrigemId).IsRequired();
+        builder.Property(r => r.RecursoCodigo).HasMaxLength(50).IsRequired();
         builder.Property(r => r.RecursoNome).HasMaxLength(300).IsRequired();
 
         builder.HasIndex(r => new { r.OfertaAtendimentoEspecializadoId, r.RecursoOrigemId }).IsUnique();

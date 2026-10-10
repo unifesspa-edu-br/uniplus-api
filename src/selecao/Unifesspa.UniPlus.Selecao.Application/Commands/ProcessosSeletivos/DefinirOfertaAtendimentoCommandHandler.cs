@@ -102,7 +102,7 @@ public static class DefinirOfertaAtendimentoCommandHandler
                     $"Recurso de acessibilidade {recursoId} não encontrado ou não está mais vivo."));
             }
 
-            recursos.Add(OfertaRecurso.Criar(recurso.Id, recurso.Nome));
+            recursos.Add(OfertaRecurso.Criar(recurso.Id, recurso.Codigo, recurso.Nome));
         }
 
         List<OfertaTipoDeficiencia> tiposDeficiencia = [];

@@ -288,8 +288,12 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// <c>fatoElegibilidadeCodigo</c>: o fato booleano que decide quem recebe o acréscimo, nulo no
     /// processo de resultado importado (ADR-0142). Sem novo bloco de topo. Sem produção em ambiente
     /// nenhum: fixture nova, <c>0.0.24</c> deixa de ser reconhecida.
+    /// O bump para <c>0.0.26</c> acrescenta a cada item de <c>atendimento.recursos</c> o
+    /// <c>recursoCodigo</c>: o código do recurso de acessibilidade no cadastro, que o candidato
+    /// escolhe no fato <c>RECURSO_ACESSIBILIDADE</c>. Sem novo bloco de topo. Sem produção em
+    /// ambiente nenhum: fixture nova, <c>0.0.25</c> deixa de ser reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.25";
+    internal const string SchemaVersionAtual = "0.0.26";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -842,6 +846,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 .Select(static r => (JsonNode)new JsonObject
                 {
                     ["recursoOrigemId"] = r.RecursoOrigemId,
+                    ["recursoCodigo"] = r.RecursoCodigo,
                     ["recursoNome"] = HashCanonicalComputer.NormalizeNfc(r.RecursoNome),
                 })]),
             ["tiposDeficiencia"] = new JsonArray([.. oferta.TiposDeficiencia
