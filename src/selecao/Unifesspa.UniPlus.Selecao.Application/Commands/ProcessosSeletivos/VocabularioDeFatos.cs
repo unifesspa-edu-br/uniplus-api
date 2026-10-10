@@ -217,16 +217,16 @@ internal static class VocabularioDeFatos
             switch (fato)
             {
                 case { Dominio: DominioCategorico, FonteValores: FonteProcesso }:
-                    dominios[fato.Codigo] = DominioDeValores.Enumerado(
+                    dominios[fato.Codigo] = DominioDeValores.OfertadoPeloProcesso(
                         processo.OpcoesDoProcesso(VinculoDeFato.Nomeado(fato.Binding, VinculoDeFato.AgregacaoDeGrupo) ?? fato.Codigo)
                             .Select(static o => o.Codigo));
                     break;
                 case { Dominio: DominioCategorico, FonteValores: FonteModalidade }:
-                    dominios[fato.Codigo] = DominioDeValores.Enumerado(
+                    dominios[fato.Codigo] = DominioDeValores.OfertadoPeloProcesso(
                         processo.DistribuicaoVagas.SelectMany(static d => d.Modalidades).Select(static m => m.Codigo));
                     break;
                 case { Dominio: DominioCategorico, FonteValores: FonteMunicipiosBonus }:
-                    dominios[fato.Codigo] = DominioDeValores.Enumerado(
+                    dominios[fato.Codigo] = DominioDeValores.OfertadoPeloProcesso(
                         MunicipiosDoBonus(processo).Select(static m => m.CodigoIbge));
                     break;
                 case { Dominio: DominioCategorico, FonteValores: FonteGeoUf }:

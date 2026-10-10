@@ -1,10 +1,14 @@
 namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
+using System.Text.Json;
+
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -48,6 +52,40 @@ public sealed class VocabularioDeFatosTests
         dominios["MUNICIPIO_RESIDENCIA"].Contem("1504208").Should().BeTrue();
         dominios["MUNICIPIO_RESIDENCIA"].Contem("9904208").Should().BeFalse("não há UF com prefixo 99");
         dominios["MUNICIPIO_RESIDENCIA"].Contem("150420").Should().BeFalse("o código IBGE de município tem sete dígitos");
+    }
+
+    [Fact(DisplayName = "A recusa do valor fora da oferta do processo nomeia o valor e orienta ofertá-lo no processo")]
+    public void Recusa_ValorForaDaOfertaDoProcesso_OrientaAOferta()
+    {
+        FatoCandidatoView condicao = Derivado("CONDICAO_ATENDIMENTO", "PROCESSO");
+
+        Result recusa = ValidarCondicao(Processo(), condicao, "OUTRA_CONDICAO");
+
+        recusa.Error!.Message.Should().Be(
+            "O valor 'OUTRA_CONDICAO' da condição sobre 'CONDICAO_ATENDIMENTO' não está entre os valores que o processo oferece para o fato; oferte o valor no processo ou ajuste a condição.");
+    }
+
+    [Fact(DisplayName = "A recusa da UF que não existe nomeia o valor sem mandar ofertá-lo, porque a UF não vem do processo")]
+    public void Recusa_UfInexistente_SemOrientarOferta()
+    {
+        FatoCandidatoView uf = Derivado("UF_RESIDENCIA", "GEO_UF");
+
+        Result recusa = ValidarCondicao(Processo(), uf, "XX");
+
+        recusa.Error!.Message.Should().Be("O valor 'XX' da condição sobre 'UF_RESIDENCIA' não é um valor admitido para o fato.");
+    }
+
+    /// <summary>A condição "fato igual a valor", validada com o domínio que o processo dá ao fato.</summary>
+    private static Result ValidarCondicao(ProcessoSeletivo processo, FatoCandidatoView fato, string valor)
+    {
+        Dictionary<string, DescritorFatoCandidato> vocabulario = new(StringComparer.Ordinal)
+        {
+            [fato.Codigo] = DescritorFatoCandidato.Criar(fato.Codigo, VocabularioDeFatos.Classificar(fato)!.Value, null).Value!,
+        };
+        CondicaoDnf condicao = CondicaoDnf.Criar(fato.Codigo, Operador.Igual, JsonSerializer.SerializeToElement(valor)).Value!;
+        PredicadoDnf predicado = PredicadoDnf.CriarDeCondicoesAgrupadas([(0, condicao)]).Value!;
+        return PredicadoDnfValidador.Validar(
+            predicado, vocabulario, null, VocabularioDeFatos.DominiosDinamicos(processo, [fato]));
     }
 
     private static FatoCandidatoView Derivado(string codigo, string fonte) => new(
