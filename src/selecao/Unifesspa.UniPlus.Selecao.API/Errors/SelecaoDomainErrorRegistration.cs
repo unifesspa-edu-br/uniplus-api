@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes",
@@ -872,5 +873,12 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("ConfiguracaoTaxaInscricao.FundamentoExigeCobranca", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_taxa_inscricao.fundamento_exige_cobranca", "Processo que declara não cobrar taxa não pode configurar fundamento de isenção")),
         new("ConfiguracaoTaxaInscricao.FundamentoDesconhecido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_taxa_inscricao.fundamento_desconhecido", "O fundamento de isenção informado não é conhecido")),
         new("ConfiguracaoTaxaInscricao.FundamentoObrigatorioQuandoCobra", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_taxa_inscricao.fundamento_obrigatorio_quando_cobra", "Processo que cobra taxa de inscrição exige ao menos um fundamento de isenção")),
+        // Conferência do endereço do candidato no Geo (issue #1865, ADR-0136).
+        new(ConferenciaEnderecoGeoErrorCodes.CepNaoResolve, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.conferencia_endereco_geo.cep_nao_resolve", "O CEP informado não tem cobertura no Geo")),
+        new(ConferenciaEnderecoGeoErrorCodes.CidadeDivergente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.conferencia_endereco_geo.cidade_divergente", "O CEP informado resolve para uma cidade diferente da declarada")),
+        new(ConferenciaEnderecoGeoErrorCodes.MunicipioNaoEncontrado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.conferencia_endereco_geo.municipio_nao_encontrado", "O município informado não existe no Geo")),
+        new(ConferenciaEnderecoGeoErrorCodes.MunicipioDivergente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.conferencia_endereco_geo.municipio_divergente", "O município informado não pertence à UF declarada")),
+        // Falha fechada: o Geo não respondeu — temporário, nunca "aceito".
+        new(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel, new DomainErrorMapping(StatusCodes.Status503ServiceUnavailable, "uniplus.selecao.conferencia_endereco_geo.geo_indisponivel", "O Geo não respondeu — a submissão é recusada, mas o rascunho continua salvável")),
     ];
 }

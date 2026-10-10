@@ -6,6 +6,8 @@ using Domain.Interfaces;
 
 using ExternalServices;
 
+using Geo;
+
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -74,6 +76,7 @@ public static class SelecaoInfrastructureRegistration
         services.AddScoped<IDocumentoEditalRepository, DocumentoEditalRepository>();
         services.AddScoped<IModeloDeDocumentoRepository, ModeloDeDocumentoRepository>();
         services.AddScoped<IRascunhoDePublicacaoRepository, RascunhoDePublicacaoRepository>();
+        services.AddGeoClient();
         services.AddScoped<IRegraCatalogoReader, RegraCatalogoReader>();
         services.AddScoped<IRetificacaoEmCursoReader, RetificacaoEmCursoReader>();
         services.AddScoped<IGovBrAuthService, GovBrAuthService>();

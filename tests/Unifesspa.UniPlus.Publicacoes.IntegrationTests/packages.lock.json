@@ -1671,7 +1671,10 @@
           "Confluent.SchemaRegistry.Serdes.Avro": "[2.15.1, )",
           "Microsoft.EntityFrameworkCore": "[10.0.12, )",
           "Microsoft.EntityFrameworkCore.Relational": "[10.0.12, )",
+          "Microsoft.Extensions.Http.Resilience": "[10.10.0, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
+          "Refit": "[15.2.0, )",
+          "Refit.HttpClientFactory": "[15.2.0, )",
           "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
           "Unifesspa.UniPlus.Selecao.Application": "[1.0.0, )"
         }

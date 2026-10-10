@@ -50,6 +50,18 @@ acervoPublico:
 reverseProxy:
   trustedNetworks: []
 
+# Conferência do endereço do candidato no Geo (issue #1865, ADR-0136): baseUrl é
+# obrigatório — AddGeoClient().ValidateOnStart() rejeita vazio, sem ele o pod
+# crashloopa no startup, em qualquer ASPNETCORE_ENVIRONMENT. OAuth reaproveita o
+# client M2M já provisionado para o Schema Registry (uniplus-api-selecao,
+# uniplus-infra#163) — tokenEndpoint e clientId não são segredo (vão aqui);
+# clientSecret vai em secrets.geoOAuthClientSecret, provisionado pela infra.
+# Viram Geo__BaseUrl / Geo__OAuth__TokenEndpoint / Geo__OAuth__ClientId.
+geo:
+  baseUrl: ""
+  oauthTokenEndpoint: ""
+  oauthClientId: ""
+
 # Chaves esperadas no Secret externo `{{ .Release.Name }}-uniplus-secrets`
 # (provisionado pelo RUNBOOK do uniplus-infra — NÃO renderizado por este chart).
 # O monólito usa as 6 connection strings apontando para o MESMO banco `uniplus`
@@ -79,6 +91,7 @@ secrets:
   # (UniPlus__Encryption__VaultAddress / __VaultRole / __VaultTransitMount / ...).
   encryptionProvider: ""         # UniPlus__Encryption__Provider ("local" ou "vault")
   encryptionLocalKey: ""         # UniPlus__Encryption__LocalKey (obrigatória quando Provider=local)
+  geoOAuthClientSecret: ""       # Geo__OAuth__ClientSecret (issue #1865) — secret do client M2M uniplus-api-selecao (uniplus-infra#163)
 
 healthcheck:
   # Liveness usa endpoint dependency-free (sem checks externos) para evitar

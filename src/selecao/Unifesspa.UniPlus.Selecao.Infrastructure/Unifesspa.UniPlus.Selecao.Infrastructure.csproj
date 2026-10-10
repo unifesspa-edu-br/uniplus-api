@@ -18,6 +18,14 @@
       explicitamente para clareza do contrato de produção/consumo Avro.
     -->
     <PackageReference Include="Confluent.SchemaRegistry.Serdes.Avro" />
+    <!--
+      Cliente HTTP do Geo (issue #1865): Refit gera o cliente a partir da interface,
+      Microsoft.Extensions.Http.Resilience aplica timeout/retry/circuit breaker — mesmo
+      par usado pelo cliente SIGAA em Discentes.Infrastructure.
+    -->
+    <PackageReference Include="Refit" />
+    <PackageReference Include="Refit.HttpClientFactory" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
   </ItemGroup>
 
   <ItemGroup>

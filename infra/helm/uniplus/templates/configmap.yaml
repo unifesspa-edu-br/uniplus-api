@@ -17,3 +17,6 @@ data:
   {{- end }}
   AcervoPublico__Bucket: {{ .Values.acervoPublico.bucket | quote }}
   AcervoPublico__EnderecoBase: {{ .Values.acervoPublico.enderecoBase | quote }}
+  Geo__BaseUrl: {{ .Values.geo.baseUrl | quote }}
+  Geo__OAuth__TokenEndpoint: {{ .Values.geo.oauthTokenEndpoint | quote }}
+  Geo__OAuth__ClientId: {{ .Values.geo.oauthClientId | quote }}
