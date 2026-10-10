@@ -172,7 +172,7 @@ public sealed class FatoCandidatoPersistenceTests
 
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
 
-        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(48);
+        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(49);
         fatos.Select(f => f.Codigo).Should().OnlyHaveUniqueItems();
 
         foreach (FatoCandidatoSeedItem item in FatoCandidatoSeed.Itens)
@@ -491,7 +491,7 @@ public sealed class FatoCandidatoPersistenceTests
         IReadOnlyList<FatoCandidatoView> views =
             [.. (await reader.ListarAsync()).Where(static v => FatoCandidatoSeed.Itens.Any(i => i.Codigo == v.Codigo))];
 
-        views.Should().HaveCount(48);
+        views.Should().HaveCount(49);
         views.Select(v => v.Codigo).Should().BeInAscendingOrder(StringComparer.Ordinal);
 
         FatoCandidatoView corRaca = views.Single(v => v.Codigo == "COR_RACA");
@@ -639,6 +639,7 @@ public sealed class FatoCandidatoPersistenceTests
             ("FORMA_CONCLUSAO_EM", "046", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:FORMA_CONCLUSAO_EM", "INSCRICAO"),
             ("ONDE_CURSOU_EM", "047", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:ONDE_CURSOU_EM", "INSCRICAO"),
             ("RENDA_ATE_UM_SALARIO_MINIMO_E_MEIO", "048", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:RENDA_ATE_UM_SALARIO_MINIMO_E_MEIO", "SOLICITACAO_ISENCAO"),
+            ("EDICAO_ENEM", "049", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:EDICAO_ENEM", "INSCRICAO"),
         ];
 
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);

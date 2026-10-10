@@ -87,6 +87,9 @@ public static class FatoCandidatoSeed
     private const string FinalidadeComunicacao =
         "Comunicação com o candidato sobre o processo seletivo.";
 
+    internal const string FinalidadeImportacaoDeNotasDoEnem =
+        "Importação das notas do ENEM da edição escolhida pelo candidato, na classificação do processo seletivo.";
+
     // Prefixo determinístico próprio do catálogo de fatos (distinto do
     // rol_de_regras, para não confundir identidades entre tabelas).
     private static Guid SeedId(int n) =>
@@ -296,6 +299,15 @@ public static class FatoCandidatoSeed
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
             FaseCanonicaCatalogo.CodigoSolicitacaoIsencao, $"CAMPO_FORMULARIO:{IsencaoPorCarenciaSocioeconomica.FatoRenda}",
             ClassificacaoProtecaoDado.Pessoal, FinalidadeIsencaoDaTaxa),
+
+        // A edição do ENEM cujas notas serão importadas (issue #1620) — as opções são as
+        // edições que o processo admite, declaradas por ele (ADR-0136, fonte PROCESSO), nunca
+        // uma lista fixa no código. Só existe em processo com classificação baseada em ENEM
+        // (ProcessoSeletivo.DefinirOpcoesDeclaradas recusa fora desse caso).
+        new(SeedId(49), "EDICAO_ENEM", "Edição do ENEM", null,
+            DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Processo,
+            PontoResolucaoInscricao, "CAMPO_FORMULARIO:EDICAO_ENEM",
+            ClassificacaoProtecaoDado.Pessoal, FinalidadeImportacaoDeNotasDoEnem),
     ];
 
     /// <summary>Um dado declarado do candidato, escalar e coletado na inscrição.</summary>

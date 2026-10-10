@@ -2179,6 +2179,27 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             PontoResolucao = "SOLICITACAO_ISENCAO",
                             RegrasPadrao = "[]",
                             Sistema = true
+                        },
+                        new
+                        {
+                            Id = new Guid("fa700000-0000-7000-8000-000000000049"),
+                            Ativo = true,
+                            Binding = "CAMPO_FORMULARIO:EDICAO_ENEM",
+                            Cardinalidade = "ESCALAR",
+                            ClassificacaoProtecao = "PESSOAL",
+                            Codigo = "EDICAO_ENEM",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Dependencias = new string[0],
+                            Dominio = "CATEGORICO",
+                            Escopo = "CANDIDATO",
+                            FinalidadeTratamento = "Importação das notas do ENEM da edição escolhida pelo candidato, na classificação do processo seletivo.",
+                            FonteValores = "PROCESSO",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            Nome = "Edição do ENEM",
+                            Origem = "DECLARADO",
+                            PontoResolucao = "INSCRICAO",
+                            RegrasPadrao = "[]",
+                            Sistema = true
                         });
                 });
 
