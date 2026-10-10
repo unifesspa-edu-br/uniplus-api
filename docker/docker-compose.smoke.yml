@@ -12,6 +12,9 @@
 #                  -f docker-compose.smoke.yml \
 #                  up -d postgres redis kafka minio apicurio keycloak \
 #                        uniplus-api geo-api portal-api
+#
+# Limitação: a conferência do endereço no Geo pede token ao realm `unifesspa`, e o Geo
+# aqui valida `unifesspa-dev-local` — o smoke não cobre a submissão da inscrição.
 services:
   uniplus-api:
     environment:

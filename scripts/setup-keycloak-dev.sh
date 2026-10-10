@@ -305,11 +305,19 @@ geo_m2m_client_secret() {
     local env_file
     env_file="$(dirname "$0")/../docker/.env"
     [ -f "$env_file" ] || fail "Defina UNIPLUS_API_SELECAO_CLIENT_SECRET ou crie docker/.env a partir de docker/.env.example"
-    sed -n 's/^UNIPLUS_API_SELECAO_CLIENT_SECRET=//p' "$env_file" | tail -n 1
+    # Como o compose lê: sem o CR de arquivo editado no Windows e sem as aspas externas.
+    sed -n 's/^UNIPLUS_API_SELECAO_CLIENT_SECRET=//p' "$env_file" | tail -n 1 \
+        | tr -d '\r' | sed -E 's/^"(.*)"$/\1/; s/^'"'"'(.*)'"'"'$/\1/'
 }
 
 ensure_geo_m2m_client() {
     log "Garantindo client M2M '$GEO_M2M_CLIENT_ID' (conferência do endereço no Geo)"
+
+    # Fora daqui o client é da infra, com o secret do Vault: o de dev não pode sobrescrevê-lo.
+    if [[ "$KC_URL" != http://localhost:* ]] && [[ "$KC_URL" != http://127.0.0.1:* ]]; then
+        warn "KC_URL não é localhost — client '$GEO_M2M_CLIENT_ID' não foi tocado."
+        return
+    fi
 
     local secret body existing_id
     secret=$(geo_m2m_client_secret)

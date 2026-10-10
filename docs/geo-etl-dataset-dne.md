@@ -47,7 +47,7 @@ Na stack local, o staging é o banco próprio `uniplus_geo_staging` (schema `pub
 
    Os dumps trazem `DROP TABLE IF EXISTS`: restaurar de novo é limpo, e os avisos do `DROP` são esperados.
 
-2. **Disparar a importação** no `geo-api` (porta 5400 no override de exemplo), com o token do `admin` do realm `unifesspa`, que tem o papel `plataforma-admin`. Pelo `admin-cli`, a senha vai com `--data-urlencode`, por causa do `+`:
+2. **Disparar a importação** no `geo-api` (porta 5400 no override de exemplo), com o token do `admin` do realm `unifesspa`, que tem o papel `plataforma-admin`. O `scripts/setup-keycloak-dev.sh` tem de ter rodado antes: é ele que dá ao `admin-cli` a audiência `uniplus`. Pelo `admin-cli`, a senha vai com `--data-urlencode`, por causa do `+`:
 
    ```bash
    TOKEN=$(curl -s http://localhost:8080/realms/unifesspa/protocol/openid-connect/token \
