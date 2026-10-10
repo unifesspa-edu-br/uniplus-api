@@ -276,17 +276,32 @@ setup_configuracao() {
     # opções do próprio processo) e TIPO_DEFICIENCIA (opções = o atendimento
     # especializado declarado na oferta) — a conformidade recusa publicar os dois
     # fatos coletáveis sem ao menos uma opção.
+    # As condições são as do atendimento especializado do INEP (Edital ENEM
+    # 52/2025): atendimento especializado não é só de quem tem deficiência.
     # "PCD" é o código reconhecido por OfertaAtendimentoEspecializado.CodigoCondicaoPcd
     # (ADR-0067) — tipo de deficiência só é aceito sob essa condição, por esse código.
-    CONDICAO_ATENDIMENTO_CODIGO="PCD"
-    CONDICAO_ATENDIMENTO_ID=$(post_tolerante "/api/configuracao/admin/condicoes-atendimento" "{
-        \"codigo\": \"$CONDICAO_ATENDIMENTO_CODIGO\", \"nome\": \"Pessoa com deficiência\", \"descricao\": null
-    }")
-    [ -z "$CONDICAO_ATENDIMENTO_ID" ] && CONDICAO_ATENDIMENTO_ID=$(api_get "/api/configuracao/condicoes-atendimento?limit=100" | jq -r ".[] | select(.codigo==\"$CONDICAO_ATENDIMENTO_CODIGO\") | .id")
-    exigir_id "CONDICAO_ATENDIMENTO_ID" "$CONDICAO_ATENDIMENTO_ID"
+    local condicoes codigo nome descricao id
+    CONDICAO_ATENDIMENTO_IDS="[]"
+    condicoes=$(jq -nr '[
+        ["PCD", "Pessoa com deficiência", "Deficiência, com o tipo informado na pergunta seguinte."],
+        ["GESTANTE", "Gestante", "Pessoa em período de gestação."],
+        ["LACTANTE", "Lactante", "Pessoa que amamenta."],
+        ["PESSOA_IDOSA", "Pessoa idosa", "Pessoa com 60 anos ou mais."],
+        ["DISLEXIA", "Dislexia", "Transtorno específico da leitura."],
+        ["DISCALCULIA", "Discalculia", "Transtorno específico da matemática."],
+        ["DEFICIT_ATENCAO", "Déficit de atenção", "Transtorno do déficit de atenção, com ou sem hiperatividade."],
+        ["OUTRA_CONDICAO", "Outra condição específica", "Condição específica que não consta da lista."]
+    ][] | @tsv')
+    while IFS=$'\t' read -r codigo nome descricao; do
+        id=$(post_tolerante "/api/configuracao/admin/condicoes-atendimento" "$(jq -nc \
+            --arg c "$codigo" --arg n "$nome" --arg d "$descricao" '{codigo: $c, nome: $n, descricao: $d}')")
+        [ -z "$id" ] && id=$(api_get "/api/configuracao/condicoes-atendimento?limit=100" | jq -r --arg c "$codigo" '.[] | select(.codigo==$c) | .id')
+        exigir_id "condição de atendimento $codigo" "$id"
+        CONDICAO_ATENDIMENTO_IDS=$(jq -c --arg id "$id" '. + [$id]' <<< "$CONDICAO_ATENDIMENTO_IDS")
+    done <<< "$condicoes"
 
     # Os tipos de deficiência do item 11.2.2 da minuta.
-    local tipos codigo nome id
+    local tipos
     TIPO_DEFICIENCIA_IDS="[]"
     tipos=$(jq -nr '[
         ["FISICA", "Deficiência física"], ["SURDEZ", "Surdez"],
@@ -350,7 +365,7 @@ setup_configuracao() {
         api POST "/api/configuracao/admin/calendarios-dias-uteis/$calendario_id/vigente" "" >/dev/null
     fi
 
-    ok "fase_inscricao=$FASE_INSCRICAO_ID fase_resultado=$FASE_RESULTADO_ID reserva_demografica=$RESERVA_DEMOGRAFICA_ID tipo_processo=$TIPO_PROCESSO_ID condicao_atendimento=$CONDICAO_ATENDIMENTO_ID tipos_deficiencia=$TIPO_DEFICIENCIA_IDS base_legal_bonus=$BASE_LEGAL_BONUS_ID calendario_dias_uteis=$calendario_id"
+    ok "fase_inscricao=$FASE_INSCRICAO_ID fase_resultado=$FASE_RESULTADO_ID reserva_demografica=$RESERVA_DEMOGRAFICA_ID tipo_processo=$TIPO_PROCESSO_ID condicoes_atendimento=$CONDICAO_ATENDIMENTO_IDS tipos_deficiencia=$TIPO_DEFICIENCIA_IDS base_legal_bonus=$BASE_LEGAL_BONUS_ID calendario_dias_uteis=$calendario_id"
 }
 
 criar_processo() {
@@ -380,7 +395,7 @@ definir_algoritmo_contagem_prazo() {
 definir_oferta_atendimento() {
     log "Definir Oferta de Atendimento"
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/oferta-atendimento" "{
-        \"condicaoIds\": [\"$CONDICAO_ATENDIMENTO_ID\"], \"recursoIds\": [],
+        \"condicaoIds\": $CONDICAO_ATENDIMENTO_IDS, \"recursoIds\": [],
         \"tipoDeficienciaIds\": $TIPO_DEFICIENCIA_IDS
     }" >/dev/null
     ok "oferta de atendimento definida"
