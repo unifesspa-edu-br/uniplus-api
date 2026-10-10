@@ -2,9 +2,9 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services;
 
 using System.Text.Json;
 
-using DTOs;
-
 using Domain.Entities;
+
+using DTOs;
 
 using Unifesspa.UniPlus.Regras.Formularios;
 

@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 
 /// <summary>
 /// O veredito de submissão (issue #1859) é NOVO: a ausência de resposta a um item obrigatório, um
@@ -161,24 +162,30 @@ public sealed class VeredictoDeSubmissaoTests
         TermoExigidoFormulario.Criar(
             codigo, 0,
             new VersaoTermoEscolhida(Guid.NewGuid(), versaoId, "Declaração de veracidade", "Declaro que é verdade.", "Lei 9.784/1999, art. 4º", "REGISTRO_DIGITAL_SEM_LOG_IP", hash),
-            exibicao: null, Obrigatoriedade.Sempre).Value!;
+            exibicao: null, Obrigatoriedade.Sempre, FinalidadeFormulario.Inscricao).Value!;
+
+    /// <summary>
+    /// avaliacao.Termos usa o código PREFIXADO pela finalidade (DefinicaoDoProcesso.CodigoDoTermo) —
+    /// termosExigidos e aceites usam o código nu que o candidato conhece e envia.
+    /// </summary>
+    private static readonly string CodigoPrefixado = DefinicaoDoProcesso.CodigoDoTermo(FinalidadeFormulario.Inscricao, "DECLARACAO_VERACIDADE");
 
     [Fact(DisplayName = "Termo obrigatório não aceito recusa a submissão")]
     public void Avaliar_TermoObrigatorioNaoAceito_Recusa()
     {
-        AvaliacaoTermo termo = new("DECLARACAO_VERACIDADE", Ternario.Verdadeiro, Ternario.Verdadeiro);
+        AvaliacaoTermo termo = new(CodigoPrefixado, Ternario.Verdadeiro, Ternario.Verdadeiro);
         AvaliacaoFormulario avaliacao = AvaliacaoCom(new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), termos: [termo]);
         TermoExigidoFormulario exigido = NovoTermo("DECLARACAO_VERACIDADE", Guid.NewGuid(), new string('a', 64));
 
         IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, [exigido], SemAceites);
 
-        recusas.Should().ContainSingle(r => r.Field == "DECLARACAO_VERACIDADE" && r.Error.Code == "Inscricao.TermoNaoAceito");
+        recusas.Should().ContainSingle(r => r.Field == CodigoPrefixado && r.Error.Code == "Inscricao.TermoNaoAceito");
     }
 
     [Fact(DisplayName = "Termo aceito com hash diferente do da versão fixada recusa a submissão")]
     public void Avaliar_TermoAceitoComHashDiferente_Recusa()
     {
-        AvaliacaoTermo termo = new("DECLARACAO_VERACIDADE", Ternario.Verdadeiro, Ternario.Verdadeiro);
+        AvaliacaoTermo termo = new(CodigoPrefixado, Ternario.Verdadeiro, Ternario.Verdadeiro);
         AvaliacaoFormulario avaliacao = AvaliacaoCom(new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), termos: [termo]);
         Guid versaoId = Guid.NewGuid();
         TermoExigidoFormulario exigido = NovoTermo("DECLARACAO_VERACIDADE", versaoId, new string('a', 64));
@@ -186,13 +193,13 @@ public sealed class VeredictoDeSubmissaoTests
 
         IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, [exigido], [aceite]);
 
-        recusas.Should().ContainSingle(r => r.Field == "DECLARACAO_VERACIDADE" && r.Error.Code == "Inscricao.TermoNaoAceito");
+        recusas.Should().ContainSingle(r => r.Field == CodigoPrefixado && r.Error.Code == "Inscricao.TermoNaoAceito");
     }
 
     [Fact(DisplayName = "Termo aceito com a mesma versão e o mesmo hash da versão fixada não recusa")]
     public void Avaliar_TermoAceitoNaVersaoFixada_NaoRecusa()
     {
-        AvaliacaoTermo termo = new("DECLARACAO_VERACIDADE", Ternario.Verdadeiro, Ternario.Verdadeiro);
+        AvaliacaoTermo termo = new(CodigoPrefixado, Ternario.Verdadeiro, Ternario.Verdadeiro);
         AvaliacaoFormulario avaliacao = AvaliacaoCom(new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), termos: [termo]);
         Guid versaoId = Guid.NewGuid();
         TermoExigidoFormulario exigido = NovoTermo("DECLARACAO_VERACIDADE", versaoId, new string('a', 64));

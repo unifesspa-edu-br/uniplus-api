@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services;
 
 using Domain.Entities;
 using Domain.Errors;
+using Domain.Services;
 
 using Kernel.Results;
 
@@ -78,8 +79,14 @@ public static class VeredictoDeSubmissao
                 continue;
             }
 
-            TermoExigidoFormulario? exigido = termosExigidos.FirstOrDefault(t => string.Equals(t.Codigo, termo.Codigo, StringComparison.Ordinal));
-            AceiteDeTermo? aceite = aceites.FirstOrDefault(a => string.Equals(a.Codigo, termo.Codigo, StringComparison.Ordinal));
+            // avaliacao.Termos usa o código PREFIXADO pela finalidade (DefinicaoDoProcesso.CodigoDoTermo) —
+            // o mesmo que a apresentação do formulário já expõe (ProjecaoDoFormularioRenderizavel.Termo).
+            // termosExigidos e aceites usam o código NU, que é o que o candidato conhece e envia.
+            TermoExigidoFormulario? exigido = termosExigidos.FirstOrDefault(t =>
+                string.Equals(DefinicaoDoProcesso.CodigoDoTermo(t.Finalidade, t.Codigo), termo.Codigo, StringComparison.Ordinal));
+            AceiteDeTermo? aceite = exigido is null
+                ? null
+                : aceites.FirstOrDefault(a => string.Equals(a.Codigo, exigido.Codigo, StringComparison.Ordinal));
 
             bool aceitoNaVersaoFixada = exigido is not null && aceite is not null
                 && aceite.VersaoId == exigido.VersaoId
