@@ -20,11 +20,13 @@ public static class MinhasInscricoesQueryHandler
     public static async Task<Result<IReadOnlyList<MinhaInscricaoDto>>> Handle(
         MinhasInscricoesQuery query,
         IInscricaoRepository inscricaoRepository,
+        ICertameDivulgadoRepository certameDivulgadoRepository,
         IUserContext userContext,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(inscricaoRepository);
+        ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
         ArgumentNullException.ThrowIfNull(userContext);
 
         if (userContext.Cpf is not { } cpfDoToken)
@@ -49,7 +51,23 @@ public static class MinhasInscricoesQueryHandler
         // ver Inscricao.ConferirDono) — uma inscrição assim não é do dono do token, e listá-la
         // vazaria estado de outro candidato.
         string sub = userContext.UserId ?? string.Empty;
+        List<Inscricao> doDono = [.. inscricoes.Where(i => i.ConferirDono(sub) is null)];
+
+        ILookup<Guid, ComprovanteInscricao> comprovantes = (await inscricaoRepository
+            .ObterComprovantesAsync([.. doDono.Select(static i => i.Id)], cancellationToken)
+            .ConfigureAwait(false))
+            .ToLookup(static c => c.InscricaoId);
+
+        Dictionary<Guid, string?> nomes = [];
+        foreach (Guid processo in doDono.Select(static i => i.ProcessoSeletivoId).Distinct())
+        {
+            CertameDivulgado? divulgado = await certameDivulgadoRepository
+                .ObterParaLeituraAsync(processo, cancellationToken)
+                .ConfigureAwait(false);
+            nomes[processo] = divulgado?.Nome;
+        }
+
         return Result<IReadOnlyList<MinhaInscricaoDto>>.Success(
-            [.. inscricoes.Where(i => i.ConferirDono(sub) is null).Select(MinhaInscricaoDto.De)]);
+            [.. doDono.Select(i => MinhaInscricaoDto.De(i, nomes[i.ProcessoSeletivoId], [.. comprovantes[i.Id]]))]);
     }
 }

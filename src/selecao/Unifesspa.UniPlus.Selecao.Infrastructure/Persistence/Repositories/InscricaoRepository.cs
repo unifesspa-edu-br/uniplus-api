@@ -121,6 +121,19 @@ public sealed class InscricaoRepository : IInscricaoRepository
         Sincronizar(atuais, desejadas);
     }
 
+    public async Task<IReadOnlyList<ComprovanteInscricao>> ObterComprovantesAsync(
+        IReadOnlyCollection<Guid> inscricoes, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(inscricoes);
+
+        return await _dbContext.ComprovantesInscricao
+            .AsNoTracking()
+            .Where(c => inscricoes.Contains(c.InscricaoId))
+            .OrderBy(static c => c.Instante)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public Task AdicionarComprovanteAsync(ComprovanteInscricao comprovante, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(comprovante);

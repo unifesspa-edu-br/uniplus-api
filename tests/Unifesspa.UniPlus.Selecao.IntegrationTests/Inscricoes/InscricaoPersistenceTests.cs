@@ -9,7 +9,13 @@ using Microsoft.EntityFrameworkCore;
 
 using Npgsql;
 
+using NSubstitute;
+
+using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.Queries.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -292,6 +298,44 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             .ObterPorIdAsync(original.Id))!;
         relida.Derivados["UF_RESIDENCIA"].GetString().Should().Be("PA");
         relida.Respostas["NOME_SOCIAL"].GetString().Should().Be("Kevin C.");
+    }
+
+    [Fact(DisplayName = "O comprovante é lido do banco, na ordem de emissão: o 1 é a primeira submissão e o 2 a correção")]
+    public async Task ObterComprovante_LeOsComprovantesGravados()
+    {
+        Guid processo = Guid.CreateVersion7();
+        Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, processo);
+        DateTimeOffset primeira = new(2026, 10, 10, 12, 0, 0, TimeSpan.Zero);
+
+        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        {
+            InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+            ComprovanteInscricao envio = original.Submeter(
+                "000777", OfertaDoProcesso, Respostas(("NOME_SOCIAL", "Ariel")), SemGrupos(), [], Admitidas,
+                Respostas(), DefinicoesDosDerivados, new string('c', 64), PrecondicaoIfMatch.DeTags([original.ETag]), primeira).Value!;
+            ComprovanteInscricao correcao = original.Submeter(
+                "000777", OfertaDoProcesso, Respostas(("NOME_SOCIAL", "Ariel D.")), SemGrupos(), [], Admitidas,
+                Respostas(), DefinicoesDosDerivados, new string('d', 64), PrecondicaoIfMatch.DeTags([original.ETag]), primeira.AddMinutes(5)).Value!;
+            await repositorio.AdicionarAsync(original);
+            await repositorio.AdicionarComprovanteAsync(correcao);
+            await repositorio.AdicionarComprovanteAsync(envio);
+            await context.SaveChangesAsync();
+        }
+
+        IUserContext dono = Substitute.For<IUserContext>();
+        dono.Cpf.Returns(PersonasDeTeste.FernandaDrumond.Valor);
+        dono.UserId.Returns("sub-1");
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        InscricaoRepository leitura = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+        Result<ComprovanteInscricaoDto> segundo = await ObterComprovanteQueryHandler.Handle(
+            new ObterComprovanteQuery(processo, 2), leitura, dono, CancellationToken.None);
+        Result<ComprovanteInscricaoDto> terceiro = await ObterComprovanteQueryHandler.Handle(
+            new ObterComprovanteQuery(processo, 3), leitura, dono, CancellationToken.None);
+
+        segundo.IsSuccess.Should().BeTrue(segundo.Error?.Message);
+        segundo.Value!.HashIntegridade.Should().Be(new string('d', 64), "o 2 é a correção, emitida depois, mesmo gravada antes");
+        terceiro.Error!.Code.Should().Be("Inscricao.ComprovanteNaoEncontrado");
     }
 
     [Fact(DisplayName = "A consulta de candidatos por fato e valor usa índice, sem operador JSON")]

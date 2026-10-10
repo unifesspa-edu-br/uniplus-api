@@ -56,11 +56,12 @@ public static class ObterComprovanteQueryHandler
             return Result<ComprovanteInscricaoDto>.Failure(erroDono);
         }
 
-        // O comprovante 1 é a primeira submissão; cada correção emite o próximo (append-only,
-        // CA-01) — a ordem de emissão é a ordem cronológica, nunca a de armazenamento.
-        ComprovanteInscricao? comprovante = inscricao.Comprovantes
-            .OrderBy(static c => c.Instante)
-            .ElementAtOrDefault(query.Numero - 1);
+        // O comprovante 1 é a primeira submissão; cada correção emite o próximo (append-only) — a
+        // ordem de emissão é a ordem cronológica, nunca a de armazenamento.
+        IReadOnlyList<ComprovanteInscricao> comprovantes = await inscricaoRepository
+            .ObterComprovantesAsync([inscricao.Id], cancellationToken)
+            .ConfigureAwait(false);
+        ComprovanteInscricao? comprovante = query.Numero > 0 ? comprovantes.ElementAtOrDefault(query.Numero - 1) : null;
         if (comprovante is null)
         {
             return Result<ComprovanteInscricaoDto>.Failure(new DomainError(

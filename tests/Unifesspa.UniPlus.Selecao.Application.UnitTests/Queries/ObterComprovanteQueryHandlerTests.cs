@@ -96,6 +96,7 @@ public sealed class ObterComprovanteQueryHandlerTests
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
+        inscricaoRepository.ObterComprovantesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(existente.Comprovantes);
 
         Result<ComprovanteInscricaoDto> resultado = await ObterComprovanteQueryHandler.Handle(
             new ObterComprovanteQuery(ProcessoId, 1), inscricaoRepository, UsuarioComCpf(cpf, sub: "sub-outro"), CancellationToken.None);
@@ -112,6 +113,7 @@ public sealed class ObterComprovanteQueryHandlerTests
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
+        inscricaoRepository.ObterComprovantesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(existente.Comprovantes);
 
         Result<ComprovanteInscricaoDto> resultado = await ObterComprovanteQueryHandler.Handle(
             new ObterComprovanteQuery(ProcessoId, 1), inscricaoRepository, UsuarioComCpf(cpf), CancellationToken.None);
@@ -130,6 +132,7 @@ public sealed class ObterComprovanteQueryHandlerTests
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
+        inscricaoRepository.ObterComprovantesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(existente.Comprovantes);
 
         Result<ComprovanteInscricaoDto> primeiro = await ObterComprovanteQueryHandler.Handle(
             new ObterComprovanteQuery(ProcessoId, 1), inscricaoRepository, UsuarioComCpf(cpf), CancellationToken.None);
@@ -151,6 +154,7 @@ public sealed class ObterComprovanteQueryHandlerTests
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
+        inscricaoRepository.ObterComprovantesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(existente.Comprovantes);
 
         Result<ComprovanteInscricaoDto> resultado = await ObterComprovanteQueryHandler.Handle(
             new ObterComprovanteQuery(ProcessoId, numero), inscricaoRepository, UsuarioComCpf(cpf), CancellationToken.None);
