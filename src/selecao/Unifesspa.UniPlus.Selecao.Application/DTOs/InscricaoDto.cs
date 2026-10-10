@@ -88,7 +88,27 @@ public sealed record ComprovanteInscricaoDto(
     string HashIntegridade,
     Guid? OfertaCursoId,
     IReadOnlyDictionary<string, JsonElement> Respostas,
-    IReadOnlyList<AceiteDeTermoInput> Aceites);
+    IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>> Grupos,
+    IReadOnlyList<AceiteDeTermoInput> Aceites)
+{
+    public static ComprovanteInscricaoDto De(ComprovanteInscricao comprovante)
+    {
+        ArgumentNullException.ThrowIfNull(comprovante);
+
+        return new ComprovanteInscricaoDto(
+            comprovante.NumeroInscricao,
+            comprovante.Instante,
+            comprovante.HashIntegridade,
+            comprovante.OfertaCursoId,
+            comprovante.Respostas,
+            comprovante.Grupos.ToDictionary(
+                static g => g.Key,
+                g => (IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>)
+                    [.. g.Value.Select(static o => new OcorrenciaDeGrupoInscricaoInput(o.Id, o.Respostas))],
+                StringComparer.Ordinal),
+            [.. comprovante.Aceites.Select(static a => new AceiteDeTermoInput(a.Codigo, a.VersaoId, a.HashVersao))]);
+    }
+}
 
 /// <summary>Um item de "Minhas inscrições": o nome preferido é o social, quando o candidato o declarou.</summary>
 public sealed record MinhaInscricaoDto(
