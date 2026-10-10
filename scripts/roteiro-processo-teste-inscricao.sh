@@ -1,27 +1,32 @@
 #!/usr/bin/env bash
-# roteiro-processo-teste-inscricao.sh — cria, do zero, um ProcessoSeletivo de
-# teste com o modelo de inscrição da Medicina aplicado, publicado e divulgado,
-# com período de inscrição aberto na data de hoje (api#1861).
+# roteiro-processo-teste-inscricao.sh — cria o processo local de validação: o
+# Processo Seletivo para o Curso de Medicina Unifesspa 2027, pela minuta do
+# edital nº XX/2026-CEPS/Unifesspa, com o modelo de inscrição da Medicina
+# aplicado, publicado e divulgado, e a inscrição aberta no dia da execução.
 #
-# Sequência (tolera 409 nos catálogos verdadeiramente compartilhados — tipos de
-# ato, calendário vigente, fases canônicas; nesses, reaproveita o que já existe.
-# Unidade, campus, local de oferta, curso e oferta de curso são CRIADOS DE NOVO
-# a cada execução, com sufixo de dia-do-ano+horário — ficam acumulando no
-# catálogo administrativo, aceitável para uma ferramenta de desenvolvimento
-# descartável. O ProcessoSeletivo também é sempre NOVO a cada execução):
+# Os cadastros (unidades, campus, curso, oferta) têm os códigos da minuta e são
+# reaproveitados numa segunda execução. O processo é um só: com o identificador
+# legível já em uso, a criação recusa e o roteiro para — limpe a base antes.
+#
+# O que a minuta não define fica sem valor inventado:
+#   - os pesos por área da Resolução 805/2024 não constam dela, então a nota do
+#     ENEM entra importada (CLASSIFICACAO-IMPORTADA) até o cadastro dos pesos;
+#   - o percentual quilombola da reserva demográfica;
+#   - a lista completa das regiões de influência do bônus (item 1.5): entram os
+#     oito municípios-polo que a minuta nomeia;
+#   - as datas em branco do Anexo I: o cronograma tem só a inscrição e o
+#     resultado final.
+#
+# Sequência:
 #   Setup (Publicações/Organização/Configuração) →
-#   Criar ProcessoSeletivo → Etapas → Oferta de Atendimento → Distribuição de
-#   Vagas (DISTRIB-VAGAS-LEI-12711, rol fechado) → Cascata de Remanejamento
-#   (matriz da Portaria MEC 704/2025) → Bônus Regional → Critérios de
-#   Desempate → Classificação → Taxa de Inscrição → Cronograma de Fases
-#   (INSCRICAO aberta hoje + AVALIACAO depois) → aplicar o modelo de
-#   inscrição da Medicina → vincular a fase do formulário → Documento do
-#   Edital → Divulgação (sempre ANTES de publicar: depois da publicação o
-#   processo só aceita mutação por retificação) → Publicar.
-#
-# Nada aqui referencia código de fato nem regra específica da Medicina — o
-# modelo aplicado é dado de teste (SementePsrMedicina2027), não um caso
-# especial desta rotina.
+#   Criar ProcessoSeletivo → Oferta de Atendimento → Distribuição de Vagas
+#   (Anexo II) → Cascata de Remanejamento (Quadro 3) → Bônus Regional (item
+#   1.6) → Critérios de Desempate (item 6.3) → Classificação e eliminação
+#   (itens 5.6 e 8.1) → Taxa de Inscrição (gratuita, item 2.2) → Cronograma de
+#   Fases → aplicar o modelo de inscrição da Medicina → vincular a fase do
+#   formulário → Documento do Edital → Divulgação (sempre ANTES de publicar:
+#   depois da publicação o processo só aceita mutação por retificação) →
+#   Publicar.
 #
 # Pré-requisitos: stack local do docker compose no ar, com uniplus-api,
 # keycloak e os demais serviços de infraestrutura (ver docker/README.md ou
@@ -40,6 +45,8 @@
 #                 de setup-keycloak-dev.sh)
 #   MODELO_MEDICINA_ID (default: 5e3d0006-0000-7000-8000-000000000001 —
 #                 PSR_MEDICINA_2027_INSCRICAO, SementePsrMedicina2027)
+#   EDITAL_PDF    (default: nenhum) — PDF enviado como documento do edital, por
+#                 exemplo a minuta; sem ele, vai um PDF mínimo
 
 set -euo pipefail
 
@@ -51,11 +58,7 @@ ADMIN_USER="${ADMIN_USER:-admin}"
 # diferente, o admin está com esse valor, não com Uni+Teste26.
 ADMIN_PASS="${ADMIN_PASS:-${TEST_PASSWORD:-Uni+Teste26}}"
 MODELO_MEDICINA_ID="${MODELO_MEDICINA_ID:-5e3d0006-0000-7000-8000-000000000001}"
-
-# Dia do ano (001-366) + hora — mais curto que a data completa, porque
-# "SEDE-RTI-$RUN_SUFFIX" tem de caber no limite de 20 caracteres da sigla do
-# Campus (reduz, mas não zera, a chance de colisão entre execuções).
-RUN_SUFFIX="$(date +%j%H%M%S)"
+EDITAL_PDF="${EDITAL_PDF:-}"
 TOKEN=""
 
 log()  { printf '\033[1;36m==> %s\033[0m\n' "$*" >&2; }
@@ -179,94 +182,88 @@ setup_organizacao() {
         "cidadeNome": "Marabá", "cidadeUf": "PA"
     }' >/dev/null
 
-    local unidade_codigo="CEPS-RTI-$RUN_SUFFIX"
-    UNIDADE_ID=$(post_tolerante "/api/organizacao/admin/unidades" "{
-        \"nome\": \"Comissão Especial de Processos Seletivos\", \"alias\": \"CEPS\",
-        \"slug\": \"ceps-$RUN_SUFFIX\", \"sigla\": \"CEPS-$RUN_SUFFIX\",
-        \"codigo\": \"$unidade_codigo\", \"unidadeSuperiorId\": null,
-        \"tipo\": \"coordenacao\", \"unidadeAcademica\": false,
+    # O CEPS conduz o processo (item 1.1); o IESB oferta o curso (Anexo II).
+    UNIDADE_ID=$(criar_unidade "CEPS" "Centro de Processos Seletivos" "centro" false)
+    UNIDADE_OFERTANTE_ID=$(criar_unidade "IESB" "Instituto de Estudos em Saúde e Biológicas" "instituto" true)
+    ok "unidade=$UNIDADE_ID unidade_ofertante=$UNIDADE_OFERTANTE_ID"
+}
+
+# $1=sigla $2=nome $3=tipo $4=unidadeAcademica — devolve o id, criado ou reaproveitado pelo código.
+criar_unidade() {
+    local sigla="$1" nome="$2" tipo="$3" academica="$4" id
+    id=$(post_tolerante "/api/organizacao/admin/unidades" "{
+        \"nome\": \"$nome\", \"alias\": \"$sigla\",
+        \"slug\": \"${sigla,,}\", \"sigla\": \"$sigla\",
+        \"codigo\": \"$sigla\", \"unidadeSuperiorId\": null,
+        \"tipo\": \"$tipo\", \"unidadeAcademica\": $academica,
         \"vigenciaInicio\": \"2020-01-01\", \"vigenciaFim\": null,
         \"cidadeCodigoIbge\": \"1504208\", \"cidadeNome\": \"Marabá\", \"cidadeUf\": \"PA\",
         \"origem\": \"criadoNoUniPlus\"
     }")
-    [ -z "$UNIDADE_ID" ] && UNIDADE_ID=$(api_get "/api/organizacao/unidades?limit=100" | jq -r --arg c "$unidade_codigo" '.[] | select(.codigo==$c) | .id' | head -1)
-    exigir_id "UNIDADE_ID" "$UNIDADE_ID"
-    ok "unidade=$UNIDADE_ID"
+    [ -z "$id" ] && id=$(api_get "/api/organizacao/unidades?limit=100" | jq -r --arg c "$sigla" '.[] | select(.codigo==$c) | .id' | head -1)
+    exigir_id "unidade $sigla" "$id"
+    echo "$id"
 }
 
 setup_configuracao() {
     log "Setup — Configuração (campus, local de oferta, curso, oferta de curso)"
-    local campus_sigla="SEDE-RTI-$RUN_SUFFIX" curso_codigo="MED-RTI-$RUN_SUFFIX"
-    CAMPUS_ID=$(post_tolerante "/api/configuracao/admin/campi" "{
-        \"sigla\": \"$campus_sigla\", \"nome\": \"Campus Sede (roteiro de teste)\",
-        \"cidadeCodigoIbge\": \"1504208\", \"cidadeNome\": \"Marabá\", \"cidadeUf\": \"PA\",
-        \"endereco\": null, \"codigoEmec\": null
-    }")
-    [ -z "$CAMPUS_ID" ] && CAMPUS_ID=$(api_get "/api/configuracao/campi?limit=100" | jq -r --arg s "$campus_sigla" '.[] | select(.sigla==$s) | .id' | head -1)
+    CAMPUS_ID=$(post_tolerante "/api/configuracao/admin/campi" '{
+        "sigla": "MARABA", "nome": "Campus de Marabá",
+        "cidadeCodigoIbge": "1504208", "cidadeNome": "Marabá", "cidadeUf": "PA",
+        "endereco": null, "codigoEmec": null
+    }')
+    [ -z "$CAMPUS_ID" ] && CAMPUS_ID=$(api_get "/api/configuracao/campi?limit=100" | jq -r '.[] | select(.sigla=="MARABA") | .id' | head -1)
     exigir_id "CAMPUS_ID" "$CAMPUS_ID"
-    LOCAL_OFERTA_ID=$(post_tolerante "/api/configuracao/admin/locais-oferta" "{
-        \"tipo\": \"campusSede\", \"campusResponsavelId\": \"$CAMPUS_ID\",
-        \"cidadeCodigoIbge\": \"1504208\", \"cidadeNome\": \"Marabá\", \"cidadeUf\": \"PA\",
-        \"endereco\": null, \"codigoEmec\": null
-    }")
-    # Sem campo próprio de unicidade (não é por codigo/sigla) — sem fallback
-    # por busca; se um 409 um dia acontecer aqui, falhar alto é melhor que um
-    # id vazio descendo em silêncio para o PUT de distribuição de vagas.
-    [ -n "$LOCAL_OFERTA_ID" ] || fail "criar local de oferta falhou sem id (409 sem entrada equivalente a reaproveitar)"
-    CURSO_ID=$(post_tolerante "/api/configuracao/admin/cursos" "{
-        \"codigo\": \"$curso_codigo\", \"nome\": \"Medicina (roteiro de teste)\",
-        \"grau\": \"Bacharelado\", \"nivelEnsino\": \"Graduação\", \"grupoAreaEnem\": null
-    }")
-    [ -z "$CURSO_ID" ] && CURSO_ID=$(api_get "/api/configuracao/cursos?limit=100" | jq -r --arg c "$curso_codigo" '.[] | select(.codigo==$c) | .id' | head -1)
+    # O local de oferta e a oferta de curso não têm código próprio: reaproveita
+    # pelo campus e pelo curso antes de criar.
+    LOCAL_OFERTA_ID=$(api_get "/api/configuracao/locais-oferta?limit=100" | jq -r --arg c "$CAMPUS_ID" '.[] | select(.campusResponsavelId==$c) | .id' | head -1)
+    if [ -z "$LOCAL_OFERTA_ID" ]; then
+        LOCAL_OFERTA_ID=$(post_tolerante "/api/configuracao/admin/locais-oferta" "{
+            \"tipo\": \"campusSede\", \"campusResponsavelId\": \"$CAMPUS_ID\",
+            \"cidadeCodigoIbge\": \"1504208\", \"cidadeNome\": \"Marabá\", \"cidadeUf\": \"PA\",
+            \"endereco\": null, \"codigoEmec\": null
+        }")
+    fi
+    exigir_id "LOCAL_OFERTA_ID" "$LOCAL_OFERTA_ID"
+    CURSO_ID=$(post_tolerante "/api/configuracao/admin/cursos" '{
+        "codigo": "MEDICINA", "nome": "Medicina",
+        "grau": "Bacharelado", "nivelEnsino": "Graduação", "grupoAreaEnem": null
+    }')
+    [ -z "$CURSO_ID" ] && CURSO_ID=$(api_get "/api/configuracao/cursos?limit=100" | jq -r '.[] | select(.codigo=="MEDICINA") | .id' | head -1)
     exigir_id "CURSO_ID" "$CURSO_ID"
-    OFERTA_CURSO_ID=$(post_tolerante "/api/configuracao/admin/ofertas-curso" "{
-        \"cursoId\": \"$CURSO_ID\", \"localOfertaId\": \"$LOCAL_OFERTA_ID\",
-        \"unidadeOfertanteOrigemId\": \"$UNIDADE_ID\", \"programaDeOferta\": \"REGULAR\",
-        \"regimeDeFuncionamento\": \"EXTENSIVO\", \"formatoPedagogico\": \"PRESENCIAL\",
-        \"regimeDeTurno\": \"REGULAR\", \"turnos\": [\"MATUTINO\"],
-        \"eMecCodigo\": null, \"codigoSga\": null, \"vagasAnuaisAutorizadas\": null,
-        \"baseLegal\": null, \"atoAutorizacaoMec\": null
-    }")
-    [ -n "$OFERTA_CURSO_ID" ] || fail "criar oferta de curso falhou sem id (409 sem entrada equivalente a reaproveitar)"
+    OFERTA_CURSO_ID=$(api_get "/api/configuracao/ofertas-curso?limit=100" | jq -r --arg c "$CURSO_ID" '.[] | select(.cursoId==$c) | .id' | head -1)
+    if [ -z "$OFERTA_CURSO_ID" ]; then
+        OFERTA_CURSO_ID=$(post_tolerante "/api/configuracao/admin/ofertas-curso" "{
+            \"cursoId\": \"$CURSO_ID\", \"localOfertaId\": \"$LOCAL_OFERTA_ID\",
+            \"unidadeOfertanteOrigemId\": \"$UNIDADE_OFERTANTE_ID\", \"programaDeOferta\": \"REGULAR\",
+            \"regimeDeFuncionamento\": \"EXTENSIVO\", \"formatoPedagogico\": \"PRESENCIAL\",
+            \"regimeDeTurno\": \"REGULAR\", \"turnos\": [\"MATUTINO\"],
+            \"eMecCodigo\": null, \"codigoSga\": null, \"vagasAnuaisAutorizadas\": null,
+            \"baseLegal\": null, \"atoAutorizacaoMec\": null
+        }")
+    fi
+    exigir_id "OFERTA_CURSO_ID" "$OFERTA_CURSO_ID"
     ok "campus=$CAMPUS_ID local_oferta=$LOCAL_OFERTA_ID curso=$CURSO_ID oferta_curso=$OFERTA_CURSO_ID"
 
     log "Setup — fases canônicas e referência de reserva demográfica"
-    FASE_INSCRICAO_ID=$(post_tolerante "/api/configuracao/admin/fases-canonicas" '{
-        "codigo": "INSCRICAO", "nome": "Inscrição", "descricao": null,
-        "donoTipico": "CEPS", "agrupaEtapas": false, "permiteComplementacao": false,
-        "baseLegal": null, "produzResultado": false, "resultadoDefinitivo": false,
-        "coletaInscricao": true, "origemData": "PROPRIA"
-    }')
-    if [ -z "$FASE_INSCRICAO_ID" ]; then
-        local fase_inscricao_existente
-        fase_inscricao_existente=$(api_get "/api/configuracao/fases-canonicas?limit=100" | jq -c '.[] | select(.codigo=="INSCRICAO")')
-        [ "$(jq -r '.coletaInscricao' <<< "$fase_inscricao_existente")" = "true" ] \
-            || fail "fase canônica INSCRICAO já existe sem coletaInscricao=true — o roteiro não pode fixar o período de inscrição nela"
-        FASE_INSCRICAO_ID=$(jq -r '.id' <<< "$fase_inscricao_existente")
-    fi
+    # As fases vêm do catálogo semeado (FaseCanonicaSeed).
+    local fases
+    fases=$(api_get "/api/configuracao/fases-canonicas?limit=100")
+    FASE_INSCRICAO_ID=$(jq -r '.[] | select(.codigo=="INSCRICAO") | .id' <<< "$fases")
+    FASE_RESULTADO_ID=$(jq -r '.[] | select(.codigo=="RESULTADO_FINAL") | .id' <<< "$fases")
+    exigir_id "FASE_INSCRICAO_ID" "$FASE_INSCRICAO_ID"
+    exigir_id "FASE_RESULTADO_ID" "$FASE_RESULTADO_ID"
 
-    FASE_AVALIACAO_ID=$(post_tolerante "/api/configuracao/admin/fases-canonicas" '{
-        "codigo": "AVALIACAO", "nome": "Avaliação", "descricao": null,
-        "donoTipico": "CEPS", "agrupaEtapas": true, "permiteComplementacao": false,
-        "baseLegal": null, "produzResultado": true, "resultadoDefinitivo": true,
-        "coletaInscricao": false, "origemData": "PROPRIA"
-    }')
-    if [ -z "$FASE_AVALIACAO_ID" ]; then
-        local fase_avaliacao_existente
-        fase_avaliacao_existente=$(api_get "/api/configuracao/fases-canonicas?limit=100" | jq -c '.[] | select(.codigo=="AVALIACAO")')
-        # GET fases-canonicas não devolve produzResultado (só o PUT/POST o
-        # recebem) — a única propriedade conferível por aqui é agrupaEtapas.
-        [ "$(jq -r '.agrupaEtapas' <<< "$fase_avaliacao_existente")" = "true" ] \
-            || fail "fase canônica AVALIACAO já existe sem agrupaEtapas=true — o cronograma não pode agrupar a etapa pontuada nela"
-        FASE_AVALIACAO_ID=$(jq -r '.id' <<< "$fase_avaliacao_existente")
-    fi
-
-    RESERVA_DEMOGRAFICA_ID=$(post_tolerante "/api/configuracao/admin/referencias-reserva-demografica" '{
-        "censoReferencia": "IBGE 2022",
-        "ppiPercentual": 50, "quilombolaPercentual": 2, "pcdPercentual": 1,
-        "baseLegal": "IBGE Censo 2022"
-    }')
-    [ -z "$RESERVA_DEMOGRAFICA_ID" ] && RESERVA_DEMOGRAFICA_ID=$(api_get "/api/configuracao/referencias-reserva-demografica?limit=100" | jq -r '.[] | select(.censoReferencia=="IBGE 2022") | .id' | head -1)
+    # Nota 2 do Anexo II: PPI do Pará pelo Censo 2022 (9,77 + 69,87 + 0,85) e
+    # PcD do Pará pelo Censo 2010. A minuta não dá o percentual quilombola: vai
+    # o do Pará no Censo 2022 (135.033 pessoas, 1,66%), conferido pelo quadro.
+    local censo="IBGE 2022/2010 PA"
+    RESERVA_DEMOGRAFICA_ID=$(post_tolerante "/api/configuracao/admin/referencias-reserva-demografica" "{
+        \"censoReferencia\": \"$censo\",
+        \"ppiPercentual\": 80.49, \"quilombolaPercentual\": 1.66, \"pcdPercentual\": 6.65,
+        \"baseLegal\": \"Edital Medicina 2027, Anexo II, nota 2\"
+    }")
+    [ -z "$RESERVA_DEMOGRAFICA_ID" ] && RESERVA_DEMOGRAFICA_ID=$(api_get "/api/configuracao/referencias-reserva-demografica?limit=100" | jq -r --arg c "$censo" '.[] | select(.censoReferencia==$c) | .id' | head -1)
     exigir_id "RESERVA_DEMOGRAFICA_ID" "$RESERVA_DEMOGRAFICA_ID"
 
     # PSR (Processo Seletivo Regular) é o tipo de processo do modelo de
@@ -274,8 +271,6 @@ setup_configuracao() {
     # modelo exige que o processo seja do mesmo tipo.
     TIPO_PROCESSO_ID=$(api_get "/api/configuracao/tipos-processo?limit=100" | jq -r '.[] | select(.codigo=="PSR") | .id')
     [ -n "$TIPO_PROCESSO_ID" ] || fail "tipo de processo 'PSR' não encontrado no catálogo semeado"
-    TIPO_ETAPA_PROVA_ID=$(api_get "/api/configuracao/tipos-etapa?limit=100" | jq -r '.[] | select(.codigo=="PROVA_OBJETIVA") | .id')
-    [ -n "$TIPO_ETAPA_PROVA_ID" ] || fail "tipo de etapa 'PROVA_OBJETIVA' não encontrado no catálogo semeado"
 
     # O modelo de inscrição da Medicina coleta CONDICAO_ATENDIMENTO (seleção múltipla,
     # opções do próprio processo) e TIPO_DEFICIENCIA (opções = o atendimento
@@ -290,19 +285,44 @@ setup_configuracao() {
     [ -z "$CONDICAO_ATENDIMENTO_ID" ] && CONDICAO_ATENDIMENTO_ID=$(api_get "/api/configuracao/condicoes-atendimento?limit=100" | jq -r ".[] | select(.codigo==\"$CONDICAO_ATENDIMENTO_CODIGO\") | .id")
     exigir_id "CONDICAO_ATENDIMENTO_ID" "$CONDICAO_ATENDIMENTO_ID"
 
-    TIPO_DEFICIENCIA_ID=$(post_tolerante "/api/configuracao/admin/tipos-deficiencia" '{
-        "codigo": "BAIXA_VISAO", "nome": "Baixa visão",
-        "descricao": "Acuidade visual reduzida, conforme laudo.", "permanente": true
-    }')
-    [ -z "$TIPO_DEFICIENCIA_ID" ] && TIPO_DEFICIENCIA_ID=$(api_get "/api/configuracao/tipos-deficiencia?limit=100" | jq -r '.[] | select(.codigo=="BAIXA_VISAO") | .id')
-    exigir_id "TIPO_DEFICIENCIA_ID" "$TIPO_DEFICIENCIA_ID"
+    # Os tipos de deficiência do item 11.2.2 da minuta.
+    local tipos codigo nome id
+    TIPO_DEFICIENCIA_IDS="[]"
+    tipos=$(jq -nr '[
+        ["FISICA", "Deficiência física"], ["SURDEZ", "Surdez"],
+        ["AUDITIVA", "Deficiência auditiva"], ["DEFICIENCIA_VISUAL", "Deficiência visual"],
+        ["INTELECTUAL", "Deficiência intelectual"],
+        ["MULTIPLA", "Deficiência múltipla"], ["TEA", "Transtorno do Espectro Autista"],
+        ["FIBROMIALGIA", "Fibromialgia"]
+    ][] | @tsv')
+    while IFS=$'\t' read -r codigo nome; do
+        id=$(post_tolerante "/api/configuracao/admin/tipos-deficiencia" "{
+            \"codigo\": \"$codigo\", \"nome\": \"$nome\", \"descricao\": \"$nome, conforme laudo.\", \"permanente\": true
+        }")
+        [ -z "$id" ] && id=$(api_get "/api/configuracao/tipos-deficiencia?limit=100" | jq -r --arg c "$codigo" '.[] | select(.codigo==$c) | .id')
+        exigir_id "tipo de deficiência $codigo" "$id"
+        TIPO_DEFICIENCIA_IDS=$(jq -c --arg id "$id" '. + [$id]' <<< "$TIPO_DEFICIENCIA_IDS")
+    done <<< "$tipos"
 
-    BASE_LEGAL_BONUS_ID=$(post_tolerante "/api/configuracao/admin/base-legal-bonus-regional" '{
-        "tipoInstrumento": "PORTARIA", "identificacao": "Edital Medicina 2027 (roteiro de teste)",
-        "descricao": "Bônus regional do roteiro de teste",
-        "municipios": [{"codigoIbge": "1504208", "nome": "Marabá", "uf": "PA"}]
-    }')
-    [ -z "$BASE_LEGAL_BONUS_ID" ] && BASE_LEGAL_BONUS_ID=$(api_get "/api/configuracao/base-legal-bonus-regional?limit=100" | jq -r '.[] | select(.identificacao=="Edital Medicina 2027 (roteiro de teste)") | .id' | head -1)
+    # Item 1.5: os municípios das regiões de influência destes oito polos. A
+    # minuta não lista os demais. O catálogo não tem o edital como tipo de
+    # instrumento, e é o edital (item 1.6) que institui o fator.
+    local bonus_identificacao="Edital nº XX/2026-CEPS/Unifesspa, itens 1.5 e 1.6"
+    BASE_LEGAL_BONUS_ID=$(post_tolerante "/api/configuracao/admin/base-legal-bonus-regional" "{
+        \"tipoInstrumento\": \"PORTARIA\", \"identificacao\": \"$bonus_identificacao\",
+        \"descricao\": \"Fator de Atenuação das Desigualdades de Acesso\",
+        \"municipios\": [
+            {\"codigoIbge\": \"1504208\", \"nome\": \"Marabá\", \"uf\": \"PA\"},
+            {\"codigoIbge\": \"1506187\", \"nome\": \"Rondon do Pará\", \"uf\": \"PA\"},
+            {\"codigoIbge\": \"1508407\", \"nome\": \"Xinguara\", \"uf\": \"PA\"},
+            {\"codigoIbge\": \"1507300\", \"nome\": \"São Félix do Xingu\", \"uf\": \"PA\"},
+            {\"codigoIbge\": \"1506708\", \"nome\": \"Santana do Araguaia\", \"uf\": \"PA\"},
+            {\"codigoIbge\": \"1502152\", \"nome\": \"Canaã dos Carajás\", \"uf\": \"PA\"},
+            {\"codigoIbge\": \"2105302\", \"nome\": \"Imperatriz\", \"uf\": \"MA\"},
+            {\"codigoIbge\": \"1702109\", \"nome\": \"Araguaína\", \"uf\": \"TO\"}
+        ]
+    }")
+    [ -z "$BASE_LEGAL_BONUS_ID" ] && BASE_LEGAL_BONUS_ID=$(api_get "/api/configuracao/base-legal-bonus-regional?limit=100" | jq -r --arg i "$bonus_identificacao" '.[] | select(.identificacao==$i) | .id' | head -1)
     exigir_id "BASE_LEGAL_BONUS_ID" "$BASE_LEGAL_BONUS_ID"
 
     # Pré-requisito explícito do roteiro: calendário de dias úteis vigente.
@@ -331,35 +351,23 @@ setup_configuracao() {
         api POST "/api/configuracao/admin/calendarios-dias-uteis/$calendario_id/vigente" "" >/dev/null
     fi
 
-    ok "fase_inscricao=$FASE_INSCRICAO_ID fase_avaliacao=$FASE_AVALIACAO_ID reserva_demografica=$RESERVA_DEMOGRAFICA_ID tipo_processo=$TIPO_PROCESSO_ID condicao_atendimento=$CONDICAO_ATENDIMENTO_ID tipo_deficiencia=$TIPO_DEFICIENCIA_ID base_legal_bonus=$BASE_LEGAL_BONUS_ID calendario_dias_uteis=$calendario_id"
+    ok "fase_inscricao=$FASE_INSCRICAO_ID fase_resultado=$FASE_RESULTADO_ID reserva_demografica=$RESERVA_DEMOGRAFICA_ID tipo_processo=$TIPO_PROCESSO_ID condicao_atendimento=$CONDICAO_ATENDIMENTO_ID tipos_deficiencia=$TIPO_DEFICIENCIA_IDS base_legal_bonus=$BASE_LEGAL_BONUS_ID calendario_dias_uteis=$calendario_id"
 }
 
 criar_processo() {
     log "Criar ProcessoSeletivo"
     local resp
     resp=$(api POST "/api/selecao/processos-seletivos" "{
-        \"nome\": \"Processo de teste da inscrição (roteiro $RUN_SUFFIX)\",
+        \"nome\": \"Processo Seletivo para o Curso de Medicina Unifesspa 2027\",
         \"tipoProcessoOrigemId\": \"$TIPO_PROCESSO_ID\",
         \"origemCandidatos\": \"inscricaoPropria\",
         \"unidadeAdministradoraOrigemId\": \"$UNIDADE_ID\",
         \"localidadeCodigoIbge\": \"1504208\", \"localidadeNome\": \"Marabá\", \"localidadeUf\": \"PA\",
-        \"identificadorLegivel\": \"roteiro-inscricao-$RUN_SUFFIX\"
+        \"identificadorLegivel\": \"psm-2027\"
     }")
     PROCESSO_ID=$(jq -r 'if type == "object" then .id else . end' <<< "$resp")
     [ -n "$PROCESSO_ID" ] && [ "$PROCESSO_ID" != "null" ] || fail "Criar ProcessoSeletivo falhou: $resp"
     ok "processo=$PROCESSO_ID"
-}
-
-definir_etapas() {
-    log "Definir Etapas (uma etapa pontuada, para a fase AVALIACAO agrupar)"
-    api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/etapas" "[
-        {
-            \"nome\": \"Prova Objetiva\", \"tipoEtapaOrigemId\": \"$TIPO_ETAPA_PROVA_ID\",
-            \"carater\": \"classificatoria\", \"peso\": 1.0, \"notaMinima\": null,
-            \"ordem\": 1, \"produtos\": [], \"bancas\": [], \"recursos\": []
-        }
-    ]" >/dev/null
-    ok "etapas definidas"
 }
 
 definir_algoritmo_contagem_prazo() {
@@ -374,13 +382,17 @@ definir_oferta_atendimento() {
     log "Definir Oferta de Atendimento"
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/oferta-atendimento" "{
         \"condicaoIds\": [\"$CONDICAO_ATENDIMENTO_ID\"], \"recursoIds\": [],
-        \"tipoDeficienciaIds\": [\"$TIPO_DEFICIENCIA_ID\"]
+        \"tipoDeficienciaIds\": $TIPO_DEFICIENCIA_IDS
     }" >/dev/null
     ok "oferta de atendimento definida"
 }
 
 definir_distribuicao_vagas() {
-    log "Definir Distribuição de Vagas (DISTRIB-VAGAS-LEI-12711)"
+    log "Definir Distribuição de Vagas (Anexo II: 30 vagas, 2 delas V)"
+    # AC e as oito cotas da Lei 12.711, mais a V (AC_PCD, Res. CONSEPE 532/2021),
+    # retirada da ampla concorrência com quantidade fixa (item 3.3). Com a
+    # reserva de 50% do item 3.2, o arredondamento do art. 11 dá as 18 vagas
+    # de cota do quadro.
     local modalidades='[
         "70da1000-0000-7000-8000-000000000001",
         "70da1000-0000-7000-8000-000000000002",
@@ -390,15 +402,16 @@ definir_distribuicao_vagas() {
         "70da1000-0000-7000-8000-000000000006",
         "70da1000-0000-7000-8000-000000000007",
         "70da1000-0000-7000-8000-000000000008",
-        "70da1000-0000-7000-8000-000000000009"
+        "70da1000-0000-7000-8000-000000000009",
+        "70da1000-0000-7000-8000-000000000010"
     ]'
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/distribuicao-vagas" "[{
-        \"ofertaCursoId\": \"$OFERTA_CURSO_ID\", \"voBase\": 40, \"pr\": 0.5,
-        \"regraDistribuicaoCodigo\": \"DISTRIB-VAGAS-LEI-12711\", \"regraDistribuicaoVersao\": \"v1\",
+        \"ofertaCursoId\": \"$OFERTA_CURSO_ID\", \"voBase\": 30, \"pr\": 0.5,
+        \"regraDistribuicaoCodigo\": \"DISTRIB-VAGAS-LEI-12711-COM-AC-PCD\", \"regraDistribuicaoVersao\": \"v1\",
         \"regraAjusteCodigo\": \"RECONCILIACAO-VAGAS-ART11-PU\", \"regraAjusteVersao\": \"v1\",
         \"referenciaReservaDemograficaId\": \"$RESERVA_DEMOGRAFICA_ID\",
         \"modalidadeIds\": $modalidades,
-        \"quadro\": []
+        \"quadro\": [{\"modalidadeId\": \"70da1000-0000-7000-8000-000000000010\", \"quantidade\": 2}]
     }]" >/dev/null
     ok "distribuição de vagas definida"
 }
@@ -407,8 +420,9 @@ definir_cascata_remanejamento() {
     log "Definir Cascata de Remanejamento (REMANEJ-CASCATA-LEI-12711)"
     # A matriz tem de bater exatamente com o esquema_args congelado da regra
     # REMANEJ-CASCATA-LEI-12711/v1 (Portaria MEC 704/2025, art. 2º e Anexo) —
-    # ver RegraCatalogoSeed.cs, SeedId(19). Oito origens, sete destinos cada,
-    # ordem fixa, terminal sempre AC (fallback, não listado nos destinos).
+    # ver RegraCatalogoSeed.cs, SeedId(19), e é a do Quadro 3 da minuta. Oito
+    # origens, sete destinos cada, ordem fixa, terminal sempre AC (fallback,
+    # não listado nos destinos).
     local destinos
     destinos=$(jq -nc '
         {
@@ -432,7 +446,7 @@ definir_cascata_remanejamento() {
         \"regraCodigo\": \"REMANEJ-CASCATA-LEI-12711\", \"regraVersao\": \"v1\",
         \"fallbackCodigo\": \"AC\", \"destinos\": $destinos
     }" >/dev/null
-    ok "cascata de remanejamento definida (matriz da Portaria MEC 704/2025)"
+    ok "cascata de remanejamento definida (Quadro 3)"
 }
 
 definir_bonus_regional() {
@@ -442,13 +456,17 @@ definir_bonus_regional() {
     # declarado para que esse fato tenha de onde tirar valores.
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/bonus-regional" "{
         \"aplica\": true, \"regraCodigo\": \"BONUS-MULTIPLICATIVO\", \"regraVersao\": \"v1\",
-        \"fator\": 1.1, \"teto\": null, \"baseLegalBonusRegionalId\": \"$BASE_LEGAL_BONUS_ID\"
+        \"fator\": 1.2, \"teto\": null, \"baseLegalBonusRegionalId\": \"$BASE_LEGAL_BONUS_ID\"
     }" >/dev/null
-    ok "bônus regional definido (fator 1.1)"
+    ok "bônus regional definido (acréscimo de 20%, itens 1.6 e 5.1)"
 }
 
 definir_criterios_desempate() {
     log "Definir Critérios de Desempate"
+    # O item 6.3 desempata pela nota da Redação, de Linguagens, de Matemática,
+    # de Ciências da Natureza e de Ciências Humanas, e por último pela maior
+    # idade. O desempate por área só cita área do quadro de pesos da
+    # Resolução 805/2024, que a minuta não traz: fica a maior idade.
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/criterios-desempate" '[
         {
             "ordem": 1, "regraCodigo": "DESEMPATE-MAIOR-IDADE", "regraVersao": "v1",
@@ -461,14 +479,32 @@ definir_criterios_desempate() {
 
 definir_classificacao() {
     log "Definir Classificação"
+    # A minuta classifica pela média ponderada do ENEM, truncada na segunda
+    # casa (item 5.6), com eliminação (item 8.1). Os pesos da Resolução
+    # 805/2024 não constam dela, e sem eles não há cálculo local: a nota entra
+    # importada, e truncamento e eliminação só se aplicam ao cálculo local.
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/classificacao" '{
         "regraCalculoCodigo": "CLASSIFICACAO-IMPORTADA", "regraCalculoVersao": "v1",
         "regraArredondamentoCodigo": null, "regraArredondamentoVersao": null,
         "casasArredondamento": null,
         "regraOrdemAlocacaoCodigo": "ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA", "regraOrdemAlocacaoVersao": "v1",
-        "nOpcoesAlocacao": 1, "regrasEliminacao": [], "baseadoEmEnem": false
+        "nOpcoesAlocacao": 1, "regrasEliminacao": [], "baseadoEmEnem": true
     }' >/dev/null
     ok "classificação definida"
+}
+
+definir_edicoes_enem() {
+    log "Declarar as edições do ENEM admitidas (2024, 2025 e 2026)"
+    # Item 1.2: o candidato escolhe a edição entre as três, sem troca depois do
+    # fim da inscrição (itens 5.2 e 5.3).
+    api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/fatos/EDICAO_ENEM/opcoes" '{
+        "opcoes": [
+            {"codigo": "2024", "rotulo": "ENEM 2024"},
+            {"codigo": "2025", "rotulo": "ENEM 2025"},
+            {"codigo": "2026", "rotulo": "ENEM 2026"}
+        ]
+    }' >/dev/null
+    ok "edições do ENEM declaradas"
 }
 
 definir_taxa_inscricao() {
@@ -479,15 +515,19 @@ definir_taxa_inscricao() {
 }
 
 definir_cronograma_fases() {
-    log "Definir Cronograma de Fases (INSCRICAO aberta hoje, fuso America/Belem)"
-    # America/Belém é UTC-3 fixo (sem horário de verão) — as datas são o
-    # horário local de Belém, com o offset -03:00 explícito, não meia-noite UTC.
-    local hoje inicio_inscricao fim_inscricao inicio_avaliacao fim_avaliacao
+    log "Definir Cronograma de Fases (Anexo I deslocado, fuso America/Belem)"
+    # Anexo I: inscrição de 10/12/2026 a 10/01/2027 e 1ª chamada em 25/01/2027.
+    # As datas andam juntas, de modo que a inscrição tenha aberto ontem; o
+    # resultado final, em branco na minuta, fica entre o fim da inscrição e a
+    # 1ª chamada. America/Belém é UTC-3 fixo, sem horário de verão.
+    local hoje deslocamento inicio_inscricao fim_inscricao inicio_resultado fim_resultado
     hoje=$(TZ=America/Belem date +%Y-%m-%d)
-    inicio_inscricao="$(TZ=America/Belem date -d "$hoje -7 days" +%Y-%m-%dT00:00:00-03:00)"
-    fim_inscricao="$(TZ=America/Belem date -d "$hoje +60 days" +%Y-%m-%dT23:59:59-03:00)"
-    inicio_avaliacao="$(TZ=America/Belem date -d "$hoje +90 days" +%Y-%m-%dT00:00:00-03:00)"
-    fim_avaliacao="$(TZ=America/Belem date -d "$hoje +120 days" +%Y-%m-%dT00:00:00-03:00)"
+    deslocamento=$(( ($(date -d "$hoje -1 day" +%s) - $(date -d 2026-12-10 +%s)) / 86400 ))
+    na_data() { TZ=America/Belem date -d "$1 $deslocamento days" +%Y-%m-%dT"$2"-03:00; }
+    inicio_inscricao=$(na_data 2026-12-10 00:00:00)
+    fim_inscricao=$(na_data 2027-01-10 23:59:59)
+    inicio_resultado=$(na_data 2027-01-11 00:00:00)
+    fim_resultado=$(na_data 2027-01-24 23:59:59)
 
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/cronograma-fases" "[
         {
@@ -497,8 +537,8 @@ definir_cronograma_fases() {
             \"emiteParecerIndividual\": false, \"bancasRequeridas\": [], \"regraRecurso\": null
         },
         {
-            \"ordem\": 2, \"faseCanonicaId\": \"$FASE_AVALIACAO_ID\",
-            \"inicio\": \"$inicio_avaliacao\", \"fim\": \"$fim_avaliacao\",
+            \"ordem\": 2, \"faseCanonicaId\": \"$FASE_RESULTADO_ID\",
+            \"inicio\": \"$inicio_resultado\", \"fim\": \"$fim_resultado\",
             \"produtos\": [{\"atoCodigo\": \"RESULTADO_FINAL\", \"papel\": \"DEFINITIVO\"}],
             \"faseConcluinteCodigo\": null, \"emiteParecerIndividual\": false,
             \"bancasRequeridas\": [], \"regraRecurso\": null
@@ -569,8 +609,9 @@ documento_do_edital() {
 
     log "Documento do Edital — PUT direto no MinIO"
     local upload_http_code
-    upload_http_code=$(curl -sS -o /dev/null -w '%{http_code}' -X PUT "$url_upload" -H "Content-Type: $content_type" \
-        --data-binary '%PDF-1.4 roteiro de teste da inscrição (api#1861).')
+    local corpo=(--data-binary '%PDF-1.4 processo de validação da inscrição.')
+    [ -n "$EDITAL_PDF" ] && corpo=(--data-binary "@$EDITAL_PDF")
+    upload_http_code=$(curl -sS -o /dev/null -w '%{http_code}' -X PUT "$url_upload" -H "Content-Type: $content_type" "${corpo[@]}")
     [ "$upload_http_code" = "200" ] || fail "PUT no MinIO falhou (http=$upload_http_code) — url presumivelmente expirada ou host interno (minio:9000) não resolvido pelo cliente"
 
     log "Documento do Edital — confirmar upload"
@@ -586,12 +627,12 @@ publicar() {
     ano=$(TZ=America/Belem date +%Y)
     data_publicacao=$(TZ=America/Belem date +%Y-%m-%d)
     api POST "/api/selecao/processos-seletivos/$PROCESSO_ID/publicacao" "{
-        \"numero\": \"ROTEIRO-$RUN_SUFFIX/$ano\",
+        \"numero\": \"XX/$ano\",
         \"documentoEditalId\": \"$DOCUMENTO_EDITAL_ID\",
         \"ato\": {
             \"orgao\": \"CEPS\", \"serie\": \"EDITAL\", \"ano\": $ano,
             \"dataPublicacao\": \"$data_publicacao\",
-            \"assinante\": \"Diretor do CEPS\", \"tipoAtoCodigo\": \"EDITAL_ABERTURA\"
+            \"assinante\": \"Reitor da Unifesspa\", \"tipoAtoCodigo\": \"EDITAL_ABERTURA\"
         }
     }" >/dev/null
     ok "processo publicado"
@@ -600,7 +641,8 @@ publicar() {
 divulgar() {
     log "Divulgação pública do processo"
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/divulgacao" \
-        '{"camposPublicos": ["numero_inscricao", "nome_abreviado"], "justificativa": null}' >/dev/null
+        '{"camposPublicos": ["numero_inscricao", "nome"],
+          "justificativa": "Item 1.9 do edital: a inscrição autoriza divulgar nome, número de inscrição, pontuação, colocação e resultado."}' >/dev/null
     ok "processo divulgado"
 }
 
@@ -648,13 +690,13 @@ main() {
     setup_configuracao
     criar_processo
     definir_algoritmo_contagem_prazo
-    definir_etapas
     definir_oferta_atendimento
     definir_distribuicao_vagas
     definir_cascata_remanejamento
     definir_bonus_regional
     definir_criterios_desempate
     definir_classificacao
+    definir_edicoes_enem
     definir_taxa_inscricao
     definir_cronograma_fases
     aplicar_modelo_medicina
