@@ -290,8 +290,8 @@ setup_configuracao() {
     TIPO_DEFICIENCIA_IDS="[]"
     tipos=$(jq -nr '[
         ["FISICA", "Deficiência física"], ["SURDEZ", "Surdez"],
-        ["AUDITIVA", "Deficiência auditiva"], ["CEGUEIRA", "Cegueira"],
-        ["BAIXA_VISAO", "Baixa visão"], ["INTELECTUAL", "Deficiência intelectual"],
+        ["AUDITIVA", "Deficiência auditiva"], ["DEFICIENCIA_VISUAL", "Deficiência visual"],
+        ["INTELECTUAL", "Deficiência intelectual"],
         ["MULTIPLA", "Deficiência múltipla"], ["TEA", "Transtorno do Espectro Autista"],
         ["FIBROMIALGIA", "Fibromialgia"]
     ][] | @tsv')
