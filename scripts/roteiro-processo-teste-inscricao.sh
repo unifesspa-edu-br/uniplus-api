@@ -449,18 +449,16 @@ definir_cascata_remanejamento() {
 }
 
 definir_bonus_regional() {
-    log "Definir Bônus Regional (BONUS-MULTIPLICATIVO)"
-    # O modelo da Medicina coleta MUNICIPIO_EM_AREA_BONUS, cujas opções são os
-    # municípios da área do bônus — a conformidade exige bônus regional
-    # declarado para que esse fato tenha de onde tirar valores. Recebe o
-    # acréscimo quem o pede no formulário (item 1.6): a configuração cita o
-    # pedido que o modelo semeado coleta hoje, até a semente trazer o do Fator.
+    log "Definir o Fator de Atenuação das Desigualdades de Acesso (BONUS-MULTIPLICATIVO)"
+    # O modelo da Medicina pede o município de residência a quem pede o Fator,
+    # com as opções da base legal do acréscimo. Recebe o acréscimo quem o pede
+    # no formulário (item 1.6): a configuração cita o pedido.
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/bonus-regional" "{
         \"aplica\": true, \"regraCodigo\": \"BONUS-MULTIPLICATIVO\", \"regraVersao\": \"v1\",
-        \"fator\": 1.2, \"teto\": null, \"fatoElegibilidadeCodigo\": \"SOLICITA_BONUS_REGIONAL\",
+        \"fator\": 1.2, \"teto\": null, \"fatoElegibilidadeCodigo\": \"SOLICITA_FATOR_ATENUACAO\",
         \"baseLegalBonusRegionalId\": \"$BASE_LEGAL_BONUS_ID\"
     }" >/dev/null
-    ok "bônus regional definido (acréscimo de 20%, itens 1.6 e 5.1)"
+    ok "Fator de Atenuação definido (acréscimo de 20%, itens 1.6 e 5.1)"
 }
 
 definir_criterios_desempate() {
