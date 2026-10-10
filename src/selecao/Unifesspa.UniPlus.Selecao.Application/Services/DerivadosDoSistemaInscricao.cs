@@ -37,20 +37,15 @@ public static class DerivadosDoSistemaInscricao
 
         Dictionary<string, JsonElement> derivados = new(StringComparer.Ordinal);
 
-        if (respostas.TryGetValue("DATA_NASCIMENTO", out JsonElement dataNascimentoElemento))
+        // Sem data de referência, nenhuma regra do processo cita a faixa etária: não há o que apurar.
+        if (dataReferenciaFatos is { } referencia
+            && respostas.TryGetValue("DATA_NASCIMENTO", out JsonElement dataNascimentoElemento))
         {
             if (dataNascimentoElemento.ValueKind != JsonValueKind.String
                 || !DateOnly.TryParse(dataNascimentoElemento.GetString(), CultureInfo.InvariantCulture, out DateOnly nascimento))
             {
                 return Result<IReadOnlyDictionary<string, JsonElement>>.Failure(new DomainError(
                     "Inscricao.DataNascimentoInvalida", "A data de nascimento não é uma data válida."));
-            }
-
-            if (dataReferenciaFatos is not { } referencia)
-            {
-                return Result<IReadOnlyDictionary<string, JsonElement>>.Failure(new DomainError(
-                    "Inscricao.DataReferenciaFatosAusente",
-                    "O processo não declara uma data de referência para apurar FAIXA_ETARIA, mas a resposta tem DATA_NASCIMENTO."));
             }
 
             derivados["FAIXA_ETARIA"] = JsonSerializer.SerializeToElement(IdadeEmAnos(nascimento, referencia));
