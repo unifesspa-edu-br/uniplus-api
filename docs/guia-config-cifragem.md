@@ -100,7 +100,9 @@ Rotacionar a chave HMAC no Vault, ou trocar `Provider` de `local` para `vault` (
 3. Recalcular o índice de cada uma com a chave/versão nova.
 4. Só então atualizar `BlindIndexKeyVersion` (ou `Provider`) na configuração do deploy, depois que todas as linhas tiverem o índice novo gravado — nunca antes, senão o período de transição tem linhas com índices de duas gerações e nenhuma query cobre as duas ao mesmo tempo.
 
-Sem um consumidor com volume de dados em produção ainda, este procedimento continua sendo plano, não ferramenta — a primeira aplicação real (unicidade de CPF na inscrição) é o gatilho para automatizá-lo.
+**Os passos 2-4 não convivem com escrita concorrente nem com deploy incremental.** Entre regravar a primeira linha (passo 3) e atualizar a configuração de todas as instâncias (passo 4), toda instância ainda calculando pela versão antiga deixa de encontrar as linhas já migradas — uma checagem de unicidade concorrente nesse intervalo pode admitir duplicata. Um deploy rolling piora isso: instâncias velha e nova convivem, cada uma calculando uma versão diferente, para a mesma tabela. Este procedimento só é seguro com escrita pausada durante a janela de regravação **e** troca de configuração atômica em todas as instâncias (nunca rolling) — ou com um desenho que consulte as duas versões até a migração e o deploy terminarem, o que este plano ainda não detalha.
+
+Sem um consumidor com volume de dados em produção ainda, este procedimento continua sendo plano, não ferramenta — a primeira aplicação real (unicidade de CPF na inscrição) é o gatilho para detalhá-lo e automatizá-lo.
 
 ### Limitação conhecida — `BlindIndexKeyVersion` é único por processo, não por `keyName`
 
