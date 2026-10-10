@@ -861,7 +861,7 @@ public sealed class PoliticaDeOrdenacaoTests
     public void BonusRegional_MunicipiosComMesmoCodigoIbge_DesempataPorNomeEUf()
     {
         ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(
-            Regra(RegraBonusCodigo.Multiplicativo, 'd'), 1.20m, null, Guid.CreateVersion7(),
+            Regra(RegraBonusCodigo.Multiplicativo, 'd'), 1.20m, null, null, Guid.CreateVersion7(),
             "PORTARIA", "Portaria Teste 1/2026", "Descrição de teste",
             // Inserido fisicamente na ordem ERRADA (Zebu antes de Abaco) — um canonicalizador que
             // preservasse a ordem de ENTRADA para um empate de CodigoIbge reproduziria esta mesma

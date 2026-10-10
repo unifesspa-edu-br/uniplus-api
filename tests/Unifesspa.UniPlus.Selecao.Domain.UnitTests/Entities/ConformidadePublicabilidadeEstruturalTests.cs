@@ -1824,7 +1824,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     private static ConfiguracaoBonusRegional Bonus(params (string CodigoIbge, string Nome, string Uf)[] municipios) =>
         ConfiguracaoBonusRegional.Criar(
             ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)).Value!,
-            1.20m, null, Guid.NewGuid(), "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
+            1.20m, null, null, Guid.NewGuid(), "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
             municipios).Value!;
 
     [Fact(DisplayName = "Fato coletado com os municípios do bônus num processo sem bônus: item vermelho; com bônus, liberado")]

@@ -26,7 +26,7 @@ public sealed class BonusEDesempateObrigatoriosTests
     private static ConfiguracaoBonusRegional Bonus() =>
         ConfiguracaoBonusRegional.Criar(
             ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)).Value!,
-            1.20m, null, Guid.NewGuid(), "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
+            1.20m, null, FormularioDeTeste.FatoBooleanoDaInscricao, Guid.NewGuid(), "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
             [("1504208", "Marabá", "PA")]).Value!;
 
     [Fact(DisplayName = "Bônus por declarar é a única pendência, e declarar que não aplica a resolve")]

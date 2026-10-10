@@ -287,6 +287,7 @@ public sealed class EnvelopeFechadoE2ETests
                 "taxa_inscricao_sem_fundamento_de_isencao",
                 "exigencias_base_legal_nao_resolvida",
                 "bonus_regional_nao_declarado",
+                "bonus_regional_fato_de_elegibilidade",
                 "criterios_desempate_ausentes",
                 "classificacao_divisor_media_invalido",
                 "classificacao_resolucao_peso_area_enem_ausente",
@@ -609,6 +610,7 @@ public sealed class EnvelopeFechadoE2ETests
                 regraVersao = "v1",
                 fator = 1.2000m,
                 teto = 95.5000m,
+                fatoElegibilidadeCodigo = FormularioDeTeste.FatoBooleanoDaInscricao,
                 baseLegalBonusRegionalId,
             },
             ifMatch: null);

@@ -244,6 +244,7 @@ public static class ObterProcessoSeletivoQueryHandler
             new ReferenciaRegraDto(bonus.Regra.Codigo, bonus.Regra.Versao, bonus.Regra.Hash),
             bonus.Fator,
             bonus.Teto,
+            bonus.FatoElegibilidadeCodigo,
             bonus.BaseLegalBonusRegionalId,
             bonus.TipoInstrumento,
             bonus.Identificacao,

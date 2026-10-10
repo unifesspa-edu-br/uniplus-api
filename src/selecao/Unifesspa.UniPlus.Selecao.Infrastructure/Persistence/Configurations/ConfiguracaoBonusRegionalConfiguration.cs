@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>
@@ -34,6 +35,7 @@ internal sealed class ConfiguracaoBonusRegionalConfiguration : IEntityTypeConfig
 
         builder.Property(b => b.Fator).HasPrecision(6, 4).IsRequired();
         builder.Property(b => b.Teto).HasPrecision(6, 4);
+        builder.Property(b => b.FatoElegibilidadeCodigo).HasMaxLength(FormaDoItem.FatoCodigoMaxLength);
 
         builder.Property(b => b.BaseLegalBonusRegionalId).IsRequired();
         builder.Property(b => b.TipoInstrumento).HasMaxLength(TipoInstrumentoMaxLength).IsRequired();

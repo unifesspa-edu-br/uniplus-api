@@ -923,7 +923,7 @@ public sealed class ProcessoSeletivoPublicarTests
         processo.DefinirBonusRegional(
             aplica: true, bonus: ConfiguracaoBonusRegional.Criar(
                 ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", HashFixo).Value!,
-                fator: 1.2m, teto: null, baseLegalBonusRegionalId: Guid.CreateVersion7(),
+                fator: 1.2m, teto: null, fatoElegibilidadeCodigo: FormularioDeTeste.FatoBooleanoDaInscricao, baseLegalBonusRegionalId: Guid.CreateVersion7(),
                 tipoInstrumento: "PORTARIA", identificacao: "Portaria Unifesspa nº 2514/2023",
                 descricao: "Institui inclusão regional", municipios: [("1504208", "Marabá", "PA")]).Value!,
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
