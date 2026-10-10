@@ -105,10 +105,13 @@ public static class OidcAuthenticationConfiguration
                 tags: ["ready", "auth"]);
 
         // TODO(#26-followup): registrar policies por role/permissão (Admin, Gestor, Avaliador).
-        // "Candidato" (issue #1859) é a primeira: claim, não role — o candidato não tem papel
-        // operacional nenhum, só o claim cpf que o Keycloak Gov.br emite para pessoa física.
+        // "Candidato" (issue #1859) é a primeira. O claim cpf SOZINHO não basta: o scope que o
+        // carrega (uniplus-profile) é defaultClientScope dos clients administrativos também, e
+        // um gestor ou avaliador pode ter CPF cadastrado no Keycloak sem ser candidato de nada —
+        // a role "candidato" (mapeada de realm_access.roles por KeycloakRolesClaimsTransformation)
+        // é quem de fato distingue a pessoa física inscrita de um usuário institucional.
         services.AddAuthorizationBuilder()
-            .AddPolicy("Candidato", policy => policy.RequireClaim("cpf"));
+            .AddPolicy("Candidato", policy => policy.RequireClaim("cpf").RequireRole("candidato"));
 
         return services;
     }
