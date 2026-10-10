@@ -24,6 +24,9 @@ public static class ConjuntoBasicoDaInscricao
 {
     public const string CodigoDaSecao = "DADOS_BASICOS";
 
+    /// <summary>O CPF do candidato, que tem de ser o do dono da inscrição.</summary>
+    public const string Cpf = "CPF";
+
     private const string Nacionalidade = "NACIONALIDADE";
     private const string Estrangeiro = "ESTRANGEIRO";
     private const string DesejaNomeSocial = "DESEJA_NOME_SOCIAL";
@@ -221,7 +224,7 @@ public static class ConjuntoBasicoDaInscricao
             new(DesejaNomeSocial, 0, "Deseja usar nome social?", TipoRenderizacaoCodigo.Booleano, sempre, null),
             new("NOME_SOCIAL", 0, "Nome social", texto, sempre, Quando(DesejaNomeSocial, OperadorCodigo.Igual, true)),
             new(Nacionalidade, 0, "Nacionalidade", selecao, sempre, null),
-            new("CPF", 0, "CPF", texto, PredicadoDnfJson.ObrigatoriedadeQuando, null, PredicadoObrigatoriedade: naoEstrangeiro),
+            new(Cpf, 0, "CPF", texto, PredicadoDnfJson.ObrigatoriedadeQuando, null, PredicadoObrigatoriedade: naoEstrangeiro),
             new("RG_NUMERO", 0, "Número do RG", texto, sempre, naoEstrangeiro),
             new("RG_ORGAO_EMISSOR", 0, "Órgão emissor do RG", texto, sempre, naoEstrangeiro),
             new("RG_UF", 0, "UF de emissão do RG", selecao, sempre, naoEstrangeiro),

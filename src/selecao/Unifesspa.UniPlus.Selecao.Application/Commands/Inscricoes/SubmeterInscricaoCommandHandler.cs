@@ -138,7 +138,7 @@ public static class SubmeterInscricaoCommandHandler
         DateTimeOffset instante = timeProvider.GetUtcNow();
 
         Result<ComprovanteInscricao> submetido = inscricao.Submeter(
-            numeroGerado, command.Request.OfertaCursoId, respostasDoCorpo, grupos, aceites, contexto.Value!.DefinicoesDasRespostas,
+            numeroGerado, command.Request.OfertaCursoId, respostasDoCorpo, grupos, aceites, contexto.Value!.Admitidas,
             derivados.Value!, Services.DerivadosDoSistemaInscricao.DefinicoesDasRespostas,
             hashIntegridade, command.Precondicao, instante);
         if (submetido.IsFailure)

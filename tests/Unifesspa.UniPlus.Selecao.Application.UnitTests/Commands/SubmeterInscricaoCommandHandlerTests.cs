@@ -233,12 +233,15 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         registroCodecs.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(envelopeReidratado));
     }
 
-    private static InscricaoRequest RequestComApelidoETermoAceito(Cpf cpf, VersaoTermoEscolhida termo, string apelido = "Nanda")
+    private static InscricaoRequest RequestComApelidoETermoAceito(
+        Cpf cpf, VersaoTermoEscolhida termo, GrafoConfiguracao grafo, string apelido = "Nanda")
     {
         Dictionary<string, JsonElement> respostas = RespostasDoConjuntoBasico(cpf);
         respostas["APELIDO"] = JsonSerializer.SerializeToElement(apelido);
-        return new(null, respostas, null, [new AceiteDeTermoInput("TERMO_VERACIDADE", termo.VersaoId, termo.Hash)]);
+        return new(OfertaDo(grafo), respostas, null, [new AceiteDeTermoInput("TERMO_VERACIDADE", termo.VersaoId, termo.Hash)]);
     }
+
+    private static Guid OfertaDo(GrafoConfiguracao grafo) => grafo.DistribuicaoVagas[0].OfertaCursoOrigemId;
 
     [Fact(DisplayName = "Item obrigatório respondido e termo obrigatório aceito na versão fixada: submete, gera número e grava o comprovante")]
     public async Task Handle_ItemRespondidoETermoAceito_Submete()
@@ -260,7 +263,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         IGeradorDeNumeroInscricao gerador = GeradorQueDevolve("00000042");
 
         Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
-            new SubmeterInscricaoCommand(ProcessoId, RequestComApelidoETermoAceito(cpf, termo), PrecondicaoIfMatch.DeTags([existente.ETag])),
+            new SubmeterInscricaoCommand(ProcessoId, RequestComApelidoETermoAceito(cpf, termo, grafo), PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, registroCodecs, unitOfWork, UsuarioComCpf(cpf), geradorDeNumeroInscricao: gerador);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -395,7 +398,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         Result salvo = existente.Salvar(
             null, respostasDoRascunho,
             new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [],
-            Unifesspa.UniPlus.Selecao.Application.Services.ContextoDaVersaoFixadaResolver.DefinicoesDasRespostasDaInscricao(grafo), PrecondicaoIfMatch.DeTags([existente.ETag]));
+            Unifesspa.UniPlus.Selecao.Application.Services.ContextoDaVersaoFixadaResolver.Admitidas(grafo), PrecondicaoIfMatch.DeTags([existente.ETag]));
         salvo.IsSuccess.Should().BeTrue(salvo.Error?.Message);
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
@@ -411,7 +414,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
 
         // Só o aceite do termo vem nesta chamada — APELIDO já estava gravado pela chamada de Salvar.
         InscricaoRequest request = new(
-            null, new Dictionary<string, JsonElement>(StringComparer.Ordinal), null,
+            OfertaDo(grafo), new Dictionary<string, JsonElement>(StringComparer.Ordinal), null,
             [new AceiteDeTermoInput("TERMO_VERACIDADE", termo.VersaoId, termo.Hash)]);
 
         Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
@@ -443,7 +446,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             .ThrowsAsync(new DbUpdateConcurrencyException("conflito sintético de teste"));
 
         Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
-            new SubmeterInscricaoCommand(ProcessoId, RequestComApelidoETermoAceito(cpf, termo), PrecondicaoIfMatch.DeTags([existente.ETag])),
+            new SubmeterInscricaoCommand(ProcessoId, RequestComApelidoETermoAceito(cpf, termo, grafo), PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, registroCodecs, unitOfWork, UsuarioComCpf(cpf));
 
         resultado.IsFailure.Should().BeTrue();

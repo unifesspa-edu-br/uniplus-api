@@ -41,6 +41,10 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         ["PARENTESCO"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false),
     };
 
+    private static readonly Guid OfertaDoProcesso = Guid.CreateVersion7();
+
+    private static readonly RespostasAdmitidas Admitidas = new(DefinicoesDasRespostas, new HashSet<Guid> { OfertaDoProcesso });
+
     private static readonly Dictionary<string, DefinicaoDaResposta> DefinicoesDosDerivados = new(StringComparer.Ordinal)
     {
         ["FAIXA_ETARIA"] = new(TipoDoValorDeResposta.Numero, Multivalorado: false, Identificador: false),
@@ -74,7 +78,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         Guid processo = Guid.CreateVersion7();
         Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, processo);
         original.Salvar(
-            Guid.NewGuid(),
+            OfertaDoProcesso,
             new Dictionary<string, JsonElement>(StringComparer.Ordinal)
             {
                 ["NOME_SOCIAL"] = JsonSerializer.SerializeToElement("Ariel Drumond"),
@@ -92,7 +96,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
                 ],
             },
             [new AceiteDeTermo("TERMO_VERACIDADE", Guid.NewGuid(), "sha256-abc")],
-            DefinicoesDasRespostas,
+            Admitidas,
             PrecondicaoIfMatch.DeTags([original.ETag]));
 
         await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
@@ -142,7 +146,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
     {
         Guid processo = Guid.CreateVersion7();
         Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, processo);
-        original.Salvar(null, Respostas(("RG_NUMERO", "12.868.927-4")), SemGrupos(), [], DefinicoesDasRespostas, PrecondicaoIfMatch.DeTags([original.ETag]));
+        original.Salvar(null, Respostas(("RG_NUMERO", "12.868.927-4")), SemGrupos(), [], Admitidas, PrecondicaoIfMatch.DeTags([original.ETag]));
 
         await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
         InscricaoRepository writeRepository = new(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
@@ -177,7 +181,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         respostas["ENDERECO_RESIDENCIAL"] = JsonSerializer.Deserialize<JsonElement>(
             """{"cep":"68500000","logradouro":"Folha 31","cidade":{"codigoIbge":"1504208","nome":"Marabá","uf":"PA"},"origem":"geo-api"}""");
         original.Submeter(
-            "000321", null, respostas, SemGrupos(), [], DefinicoesDasRespostas,
+            "000321", OfertaDoProcesso, respostas, SemGrupos(), [], Admitidas,
             Respostas(("FAIXA_ETARIA", 25), ("UF_RESIDENCIA", "PA")), DefinicoesDosDerivados,
             new string('a', 64), PrecondicaoIfMatch.DeTags([original.ETag]), DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
 
@@ -229,7 +233,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, Guid.CreateVersion7());
         original.Salvar(
             null, Respostas(("NOME_SOCIAL", "Ariel"), ("MODALIDADES", new[] { "AC", "LB_PPI" })), Familia("membro-1", "membro-2"), [],
-            DefinicoesDasRespostas, PrecondicaoIfMatch.DeTags([original.ETag]));
+            Admitidas, PrecondicaoIfMatch.DeTags([original.ETag]));
 
         await using (SelecaoDbContext context = _fixture.CreateDbContext())
         {
@@ -243,7 +247,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             Inscricao lida = (await repositorio.ObterPorIdAsync(original.Id))!;
             Dictionary<string, JsonElement> mudanca = Respostas(("MODALIDADES", new[] { "LB_PPI" }));
             mudanca["NOME_SOCIAL"] = JsonSerializer.SerializeToElement<string?>(null);
-            lida.Salvar(null, mudanca, Familia("membro-2", "membro-3"), [], DefinicoesDasRespostas, PrecondicaoIfMatch.DeTags([lida.ETag]))
+            lida.Salvar(null, mudanca, Familia("membro-2", "membro-3"), [], Admitidas, PrecondicaoIfMatch.DeTags([lida.ETag]))
                 .IsSuccess.Should().BeTrue();
             await repositorio.AtualizarAsync(lida);
             await context.SaveChangesAsync();
@@ -263,7 +267,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
     {
         Inscricao original = NovaInscricao(PersonasDeTeste.KevinCarvalho, Guid.CreateVersion7());
         original.Submeter(
-            "000654", null, Respostas(("NOME_SOCIAL", "Kevin")), SemGrupos(), [], DefinicoesDasRespostas,
+            "000654", OfertaDoProcesso, Respostas(("NOME_SOCIAL", "Kevin")), SemGrupos(), [], Admitidas,
             Respostas(("UF_RESIDENCIA", "PA")), DefinicoesDosDerivados,
             new string('b', 64), PrecondicaoIfMatch.DeTags([original.ETag]), DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
 
@@ -277,7 +281,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         {
             InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
             Inscricao lida = (await repositorio.ObterPorIdAsync(original.Id))!;
-            lida.Salvar(null, Respostas(("NOME_SOCIAL", "Kevin C.")), SemGrupos(), [], DefinicoesDasRespostas, PrecondicaoIfMatch.DeTags([lida.ETag]))
+            lida.Salvar(null, Respostas(("NOME_SOCIAL", "Kevin C.")), SemGrupos(), [], Admitidas, PrecondicaoIfMatch.DeTags([lida.ETag]))
                 .IsSuccess.Should().BeTrue();
             await repositorio.AtualizarAsync(lida);
             await context.SaveChangesAsync();

@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Events;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Events;
@@ -74,6 +75,8 @@ public sealed class Inscricao : EntityBase
 
     public IReadOnlyDictionary<string, DefinicaoDaResposta> DefinicoesDasRespostas { get; private set; } =
         new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal);
+
+    private const string CampoDaOferta = "ofertaCursoId";
 
     private readonly List<ComprovanteInscricao> _comprovantes = [];
 
@@ -253,26 +256,30 @@ public sealed class Inscricao : EntityBase
     /// submissão (issue #1859). Preserva um número de documento ausente do corpo: ausência nunca
     /// apaga, só um valor enviado substitui.
     /// </summary>
-    /// <param name="definições">As definições dos fatos da versão fixada.</param>
     public Result Salvar(
         Guid? ofertaCursoId,
         IReadOnlyDictionary<string, JsonElement> respostas,
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
         IReadOnlyList<AceiteDeTermo> aceites,
-        IReadOnlyDictionary<string, DefinicaoDaResposta> definicoes,
+        RespostasAdmitidas admitidas,
         PrecondicaoIfMatch precondicao)
     {
         ArgumentNullException.ThrowIfNull(respostas);
         ArgumentNullException.ThrowIfNull(grupos);
         ArgumentNullException.ThrowIfNull(aceites);
-        ArgumentNullException.ThrowIfNull(definicoes);
+        ArgumentNullException.ThrowIfNull(admitidas);
 
         if (ConferirPrecondicao(precondicao) is { } erroPrecondicao)
         {
             return Result.Failure(erroPrecondicao);
         }
 
-        List<FieldError> recusas = ConferirValores(respostas, grupos, definicoes);
+        List<FieldError> recusas =
+        [
+            .. ConferirValores(respostas, grupos, admitidas.Definicoes),
+            .. RecusasDoCpf(respostas),
+            .. RecusasDaOferta(ofertaCursoId, admitidas.OfertasDeCurso, exigida: false),
+        ];
         if (recusas.Count > 0)
         {
             return Result.ValidationFailure(recusas);
@@ -282,7 +289,7 @@ public sealed class Inscricao : EntityBase
         Respostas = MesclarPreservandoAusentes(Respostas, respostas);
         Grupos = SemValoresNulos(grupos);
         Aceites = aceites;
-        DefinicoesDasRespostas = ComAsDefinicoesDosDerivados(definicoes);
+        DefinicoesDasRespostas = ComAsDefinicoesDosDerivados(admitidas.Definicoes);
         Revisao++;
 
         return Result.Success();
@@ -295,7 +302,6 @@ public sealed class Inscricao : EntityBase
     /// completa (obrigatórios, restrições, impedimentos, termos, Geo) é da issue #1859 — aqui só o
     /// ciclo de vida do agregado.
     /// </summary>
-    /// <param name="definições">As definições dos fatos da versão fixada.</param>
     /// <param name="derivados">Substituem os da submissão anterior; o candidato nunca os informa.</param>
     public Result<ComprovanteInscricao> Submeter(
         string numeroGeradoSeNecessario,
@@ -303,7 +309,7 @@ public sealed class Inscricao : EntityBase
         IReadOnlyDictionary<string, JsonElement> respostas,
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
         IReadOnlyList<AceiteDeTermo> aceites,
-        IReadOnlyDictionary<string, DefinicaoDaResposta> definicoes,
+        RespostasAdmitidas admitidas,
         IReadOnlyDictionary<string, JsonElement> derivados,
         IReadOnlyDictionary<string, DefinicaoDaResposta> definicoesDosDerivados,
         string hashIntegridade,
@@ -315,7 +321,7 @@ public sealed class Inscricao : EntityBase
         ArgumentNullException.ThrowIfNull(derivados);
         ArgumentNullException.ThrowIfNull(grupos);
         ArgumentNullException.ThrowIfNull(aceites);
-        ArgumentNullException.ThrowIfNull(definicoes);
+        ArgumentNullException.ThrowIfNull(admitidas);
         ArgumentNullException.ThrowIfNull(definicoesDosDerivados);
         ArgumentException.ThrowIfNullOrWhiteSpace(hashIntegridade);
 
@@ -326,8 +332,10 @@ public sealed class Inscricao : EntityBase
 
         IReadOnlyList<FieldError> recusas =
         [
-            .. ConferirValores(respostas, grupos, definicoes),
+            .. ConferirValores(respostas, grupos, admitidas.Definicoes),
             .. ConferirValores(derivados, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), definicoesDosDerivados),
+            .. RecusasDoCpf(respostas),
+            .. RecusasDaOferta(ofertaCursoId, admitidas.OfertasDeCurso, exigida: admitidas.OfertasDeCurso.Count > 0),
         ];
         if (recusas.Count > 0)
         {
@@ -344,7 +352,7 @@ public sealed class Inscricao : EntityBase
             .ToDictionary(static r => r.Key, static r => r.Value, StringComparer.Ordinal);
         Grupos = SemValoresNulos(grupos);
         Aceites = aceites;
-        DefinicoesDasRespostas = definicoes.Concat(definicoesDosDerivados)
+        DefinicoesDasRespostas = admitidas.Definicoes.Concat(definicoesDosDerivados)
             .GroupBy(static f => f.Key, StringComparer.Ordinal)
             .ToDictionary(static g => g.Key, static g => g.Last().Value, StringComparer.Ordinal);
         Situacao = SituacaoInscricao.Submetida;
@@ -436,6 +444,38 @@ public sealed class Inscricao : EntityBase
         }
 
         return recusas;
+    }
+
+    /// <summary>A inscrição é do CPF do token; a resposta do CPF não pode ser de outra pessoa.</summary>
+    private IEnumerable<FieldError> RecusasDoCpf(IReadOnlyDictionary<string, JsonElement> respostas)
+    {
+        if (!respostas.TryGetValue(ConjuntoBasicoDaInscricao.Cpf, out JsonElement valor) || valor.ValueKind == JsonValueKind.Null)
+        {
+            yield break;
+        }
+
+        bool doDono = valor.ValueKind == JsonValueKind.String
+            && Cpf.Criar(valor.GetString()) is { IsSuccess: true } respondido
+            && respondido.Value!.Valor == Cpf.Valor;
+        if (!doDono)
+        {
+            yield return new FieldError(ConjuntoBasicoDaInscricao.Cpf, new DomainError(
+                InscricaoErrorCodes.CpfDiferenteDoDono, "O CPF informado tem de ser o do titular da conta."));
+        }
+    }
+
+    private static IEnumerable<FieldError> RecusasDaOferta(Guid? oferta, IReadOnlySet<Guid> ofertasDeCurso, bool exigida)
+    {
+        if (oferta is { } escolhida && !ofertasDeCurso.Contains(escolhida))
+        {
+            yield return new FieldError(CampoDaOferta, new DomainError(
+                InscricaoErrorCodes.OfertaForaDoProcesso, "A oferta de curso escolhida não é deste processo seletivo."));
+        }
+        else if (oferta is null && exigida)
+        {
+            yield return new FieldError(CampoDaOferta, new DomainError(
+                InscricaoErrorCodes.OfertaObrigatoria, "Escolha a oferta de curso para enviar a inscrição."));
+        }
     }
 
     private static IEnumerable<FieldError> RecusasDeValor(

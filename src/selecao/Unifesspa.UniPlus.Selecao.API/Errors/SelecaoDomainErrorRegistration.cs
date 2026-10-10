@@ -768,6 +768,9 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new(InscricaoErrorCodes.RespostaInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.resposta_invalida", "A resposta não atende a uma restrição do formulário")),
         new(InscricaoErrorCodes.FatoForaDoFormulario, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.fato_fora_do_formulario", "A resposta é de um campo que o formulário não coleta")),
         new(InscricaoErrorCodes.ValorForaDoTipo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.valor_fora_do_tipo", "A resposta não tem o tipo que o campo pede")),
+        new(InscricaoErrorCodes.CpfDiferenteDoDono, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.cpf_diferente_do_dono", "O CPF informado não é o do titular da conta")),
+        new(InscricaoErrorCodes.OfertaForaDoProcesso, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.oferta_fora_do_processo", "A oferta de curso escolhida não é deste processo seletivo")),
+        new(InscricaoErrorCodes.OfertaObrigatoria, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.oferta_obrigatoria", "A inscrição precisa de uma oferta de curso")),
         // Veredito de submissão (issue #1859) — só avaliados no POST .../submissao.
         new(InscricaoErrorCodes.ItemObrigatorioAusente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.item_obrigatorio_ausente", "Um item visível e obrigatório está sem resposta")),
         new(InscricaoErrorCodes.Impedimento, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.impedimento", "Uma resposta impede a submissão desta inscrição")),
