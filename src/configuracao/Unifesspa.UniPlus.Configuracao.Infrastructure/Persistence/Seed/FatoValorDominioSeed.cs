@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Regras.Services;
 /// Fonte única do seed de <c>fato_valor_dominio</c> (ADR-0116): a descrição por
 /// valor dos fatos categóricos <b>estáticos</b> desta colheita —
 /// <c>COR_RACA</c> (6), <c>SEXO</c> (3), <c>NACIONALIDADE</c> (3), <c>PARENTESCO</c> (12),
-/// <c>DOCUMENTO_ESTRANGEIRO_TIPO</c> (2), <c>ESTADO_CIVIL</c> (6), <c>TIPO_ENDERECO</c> (7) e a origem
+/// <c>ESTADO_CIVIL</c> (6), <c>TIPO_ENDERECO</c> (7) e a origem
 /// escolar, <c>FORMA_CONCLUSAO_EM</c> (5) e <c>ONDE_CURSOU_EM</c> (12). Consumida pela
 /// configuração EF Core (<c>HasData</c> na migration) e pelos testes de
 /// integração, mesmo papel de <see cref="FatoCandidatoSeed"/> para o pai.
@@ -33,8 +33,8 @@ public static class FatoValorDominioSeed
     private static readonly Guid OndeCursou = FatoCandidatoId(OrigemEscolar.FatoOndeCursou);
 
     /// <summary>
-    /// As linhas do seed (6 COR_RACA + 3 SEXO + 3 NACIONALIDADE + 12 PARENTESCO + 2
-    /// DOCUMENTO_ESTRANGEIRO_TIPO + 6 ESTADO_CIVIL + 7 TIPO_ENDERECO + 5 FORMA_CONCLUSAO_EM + 12 ONDE_CURSOU_EM).
+    /// As linhas do seed (6 COR_RACA + 3 SEXO + 3 NACIONALIDADE + 12 PARENTESCO + 6 ESTADO_CIVIL
+    /// + 7 TIPO_ENDERECO + 5 FORMA_CONCLUSAO_EM + 12 ONDE_CURSOU_EM).
     /// </summary>
     public static IReadOnlyList<FatoValorDominioSeedItem> Itens { get; } =
     [
@@ -81,11 +81,6 @@ public static class FatoValorDominioSeed
         new(SeedId(23), FatoCandidatoId(CandidatoComoMembro.FatoParentesco), "OUTRO_PARENTE", "Outro parente", 10, true),
         new(SeedId(24), FatoCandidatoId(CandidatoComoMembro.FatoParentesco), "NAO_PARENTE", "Sem parentesco", 11, true,
             "Pessoa sem parentesco com o candidato que integra o grupo familiar."),
-
-        // ── DOCUMENTO_ESTRANGEIRO_TIPO ───────────────────────────────────
-        // O documento que identifica o estrangeiro no lugar do RG.
-        new(SeedId(25), FatoCandidatoId("DOCUMENTO_ESTRANGEIRO_TIPO"), "PASSAPORTE", "Passaporte", 0, true),
-        new(SeedId(26), FatoCandidatoId("DOCUMENTO_ESTRANGEIRO_TIPO"), "RNM", "Registro Nacional Migratório (RNM)", 1, true),
 
         // ── ESTADO_CIVIL ─────────────────────────────────────────────────
         new(SeedId(27), FatoCandidatoId("ESTADO_CIVIL"), "SOLTEIRO", "Solteiro(a)", 0, true),

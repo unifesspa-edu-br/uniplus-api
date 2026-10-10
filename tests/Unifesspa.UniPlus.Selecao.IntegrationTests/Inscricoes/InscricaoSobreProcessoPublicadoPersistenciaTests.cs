@@ -142,11 +142,11 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
             new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
 
-        // O conjunto básico do candidato (sempre presente num formulário de inscrição) traz oito
+        // O conjunto básico do candidato (sempre presente num formulário de inscrição) traz sete
         // fatos de seleção (nacionalidade, estado civil, sexo, cor/raça, tipo de localidade, UF do
-        // RG, UF de naturalidade e tipo de documento do estrangeiro) — o canonicalizador exige uma
-        // entrada não vazia para cada; os valores em si não importam para o que este teste prova
-        // (a resolução da versão divulgada e a cifra dos documentos).
+        // RG e UF de naturalidade) — o canonicalizador exige uma entrada não vazia para cada; os
+        // valores em si não importam para o que este teste prova (a resolução da versão divulgada e
+        // a cifra dos documentos).
         Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresDoConjuntoBasico = new(StringComparer.Ordinal)
         {
             ["NACIONALIDADE"] = [new ValorDominioDeclaradoCongelado("BRASILEIRA", "Nacionalidade brasileira.", 0)],
@@ -156,7 +156,6 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             ["TIPO_ENDERECO"] = [new ValorDominioDeclaradoCongelado("URBANO", "Endereço urbano.", 0)],
             ["RG_UF"] = [new ValorDominioDeclaradoCongelado("PA", "Pará.", 0)],
             ["NATURALIDADE_UF"] = [new ValorDominioDeclaradoCongelado("PA", "Pará.", 0)],
-            ["DOCUMENTO_ESTRANGEIRO_TIPO"] = [new ValorDominioDeclaradoCongelado("PASSAPORTE", "Passaporte.", 0)],
         };
 
         SnapshotCanonico congelado = Canonicalizer.Canonicalizar(
@@ -218,8 +217,8 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
         gravada.Should().NotBeNull();
         gravada!.FatosIdentificadorDeclarados.Should().BeEquivalentTo(
-            ["CPF", "RG_NUMERO", "DOCUMENTO_ESTRANGEIRO_NUMERO", "RG_NUMERO_MEMBRO"],
-            "o conjunto junta os fatos Identificador do conjunto básico do candidato (CPF, RG, documento do estrangeiro) " +
+            ["CPF", "RG_NUMERO", "PASSAPORTE_NUMERO", "RNM_NUMERO", "RG_NUMERO_MEMBRO"],
+            "o conjunto junta os fatos Identificador do conjunto básico do candidato (CPF, RG, passaporte e RNM) " +
             "com o do campo de grupo declarado por este teste — da classificação CONGELADA na publicação, não do catálogo vivo");
     }
 
