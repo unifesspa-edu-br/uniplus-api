@@ -159,7 +159,7 @@ public sealed class ProcessoSeletivoAplicarModeloTests
     private static FatoColetado Item(string fato, int ordem, string? exibidoQuando = null) => FatoColetado.Criar(
         fato, ordem, fato, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre,
         exibidoQuando is null ? null : [CondicaoPrecondicaoFato.Criar(0, exibidoQuando, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!],
-        etapaCodigo: FormularioDeTeste.Secao).Value!;
+        etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL").Value!;
 
     private static ConfiguracaoDerivacaoFato Derivacao(string fato, string citado) => ConfiguracaoDerivacaoFato.Criar(
         fato,

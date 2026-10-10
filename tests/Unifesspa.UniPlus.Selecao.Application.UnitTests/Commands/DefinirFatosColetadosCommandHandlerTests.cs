@@ -52,33 +52,33 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     private static IReadOnlyList<FatoCandidatoView> VocabularioSeed() =>
     [
         new(Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", null, "CATEGORICO", "DECLARADO", "ESCALAR",
-            ["BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA", "NAO_INFORMADO"], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", null, "GLOBAL", Ativo: true),
+            ["BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA", "NAO_INFORMADO"], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL"),
         new(Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", null, "BOOLEANO", "DECLARADO", "ESCALAR",
-            null, "INSCRICAO", "CAMPO_FORMULARIO:BAIXA_RENDA", null, null, Ativo: true),
+            null, "INSCRICAO", "CAMPO_FORMULARIO:BAIXA_RENDA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL"),
         new(Guid.CreateVersion7(), "MODALIDADE", "Modalidade", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO",
-            null, "INSCRICAO", "REGRA_DERIVACAO:MODALIDADE", null, "MODALIDADE", Ativo: true),
+            null, "INSCRICAO", "REGRA_DERIVACAO:MODALIDADE", null, "MODALIDADE", Ativo: true, ClassificacaoProtecao: "PESSOAL"),
         new(Guid.CreateVersion7(), "RENDA_PER_CAPITA", "Renda per capita", null, "NUMERICO", "DERIVADO", "ESCALAR",
-            null, "INSCRICAO", "ATRIBUTO_CANDIDATO:RENDA_PER_CAPITA", null, null, Ativo: true),
+            null, "INSCRICAO", "ATRIBUTO_CANDIDATO:RENDA_PER_CAPITA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL"),
         new(Guid.CreateVersion7(), "NOME_SOCIAL", "Nome social", null, "TEXTO", "DECLARADO", "ESCALAR",
-            null, "INSCRICAO", "CAMPO_FORMULARIO:NOME_SOCIAL", null, null, Ativo: true, Formato: "NOME_PESSOA"),
+            null, "INSCRICAO", "CAMPO_FORMULARIO:NOME_SOCIAL", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", Formato: "NOME_PESSOA"),
         new(Guid.CreateVersion7(), "DATA_NASCIMENTO", "Data de nascimento", null, "DATA", "DECLARADO", "ESCALAR",
-            null, "INSCRICAO", "CAMPO_FORMULARIO:DATA_NASCIMENTO", null, null, Ativo: true),
+            null, "INSCRICAO", "CAMPO_FORMULARIO:DATA_NASCIMENTO", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL"),
         new(Guid.CreateVersion7(), "ENDERECO_RESIDENCIAL", "Endereço residencial", null, "ENDERECO", "DECLARADO", "ESCALAR",
-            null, "INSCRICAO", "CAMPO_FORMULARIO:ENDERECO_RESIDENCIAL", null, null, Ativo: true),
+            null, "INSCRICAO", "CAMPO_FORMULARIO:ENDERECO_RESIDENCIAL", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL"),
         new(Guid.CreateVersion7(), "OPCAO_CURSO_1", "1ª opção de curso", null, "CATEGORICO", "DECLARADO", "ESCALAR",
-            ["MEDICINA", "ENFERMAGEM"], "INSCRICAO", "CAMPO_FORMULARIO:OPCAO_CURSO_1", null, "GLOBAL", Ativo: true),
+            ["MEDICINA", "ENFERMAGEM"], "INSCRICAO", "CAMPO_FORMULARIO:OPCAO_CURSO_1", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL"),
         new(Guid.CreateVersion7(), "OPCAO_LISTA_ESPERA", "Opção da lista de espera", null, "CATEGORICO", "DECLARADO", "ESCALAR",
-            ["MEDICINA", "ENFERMAGEM"], "INSCRICAO", "CAMPO_FORMULARIO:OPCAO_LISTA_ESPERA", null, "GLOBAL", Ativo: true),
+            ["MEDICINA", "ENFERMAGEM"], "INSCRICAO", "CAMPO_FORMULARIO:OPCAO_LISTA_ESPERA", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL"),
         new(Guid.CreateVersion7(), "OPCAO_CURSO_2", "2ª opção de curso", null, "CATEGORICO", "DECLARADO", "ESCALAR",
-            ["MEDICINA"], "INSCRICAO", "CAMPO_FORMULARIO:OPCAO_CURSO_2", null, "GLOBAL", Ativo: true),
+            ["MEDICINA"], "INSCRICAO", "CAMPO_FORMULARIO:OPCAO_CURSO_2", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL"),
         new(Guid.CreateVersion7(), "FAIXA_DE_RENDA", "Faixa de renda", null, "CATEGORICO", "DERIVADO", "ESCALAR",
-            ["MENOR_DE_18", "DE_18_A_59", "60_OU_MAIS"], "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_DE_RENDA", null, "GLOBAL", Ativo: true),
+            ["MENOR_DE_18", "DE_18_A_59", "60_OU_MAIS"], "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_DE_RENDA", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL"),
         new(Guid.CreateVersion7(), "FAIXA_ETARIA", "Faixa etária", null, "NUMERICO", "DERIVADO", "ESCALAR",
-            null, "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null, null, Ativo: true),
+            null, "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL"),
         new(Guid.CreateVersion7(), "PARENTESCO", "Parentesco", null, "CATEGORICO", "DECLARADO", "ESCALAR",
-            ["PAI", "MAE", "FILHO"], "HABILITACAO", "CAMPO_FORMULARIO:PARENTESCO", null, "GLOBAL", Ativo: true, Escopo: "MEMBRO_GRUPO"),
+            ["PAI", "MAE", "FILHO"], "HABILITACAO", "CAMPO_FORMULARIO:PARENTESCO", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", Escopo: "MEMBRO_GRUPO"),
         new(Guid.CreateVersion7(), "MENOR_SOB_GUARDA", "Menor sob guarda", null, "BOOLEANO", "DECLARADO", "ESCALAR",
-            null, "HABILITACAO", "CAMPO_FORMULARIO:MENOR_SOB_GUARDA", null, null, Ativo: true, Escopo: "MEMBRO_GRUPO"),
+            null, "HABILITACAO", "CAMPO_FORMULARIO:MENOR_SOB_GUARDA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", Escopo: "MEMBRO_GRUPO"),
     ];
 
     private static ProcessoSeletivo ProcessoEmRascunho()
@@ -154,7 +154,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         (await HandleAsync(mocks, coletaBaixaRenda)).Error!.Code.Should().Be(VinculoCatalogoErrorCodes.FatoDesativado);
 
         processo.DefinirItens(
-            [FatoColetado.Criar("BAIXA_RENDA", 0, "Baixa renda", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null).Value!],
+            [FatoColetado.Criar("BAIXA_RENDA", 0, "Baixa renda", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL").Value!],
             PrecondicaoIfMatch.Ausente, FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         (await HandleAsync(mocks, coletaBaixaRenda)).IsSuccess.Should().BeTrue("o fato já era coletado pelo processo");
     }
@@ -377,6 +377,20 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.FatosColetados.Single().Formato.Should().Be("NOME_PESSOA");
+    }
+
+    [Fact(DisplayName = "CA-02 — congela a classificação de proteção de dados do fato no catálogo")]
+    public async Task Handle_CampoDeTexto_CongelaAClassificacaoDoCatalogo()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao,
+            [new FatoColetadoInput("CPF", 0, "CPF", "TEXTO", "NUNCA", null)], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.FatosColetados.Single().ClassificacaoProtecao.Should().Be("IDENTIFICADOR");
     }
 
     [Fact(DisplayName = "ADR-0125: violações de forma de FatoColetado.Criar acumulam entre fatos, com o índice prefixado ao field")]

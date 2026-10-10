@@ -55,7 +55,7 @@ public sealed class ValoresSelecionaveisResolverTests
             Dominio: "CATEGORICO", Origem: "DECLARADO", Cardinalidade: "ESCALAR",
             ValoresDominio: [.. seisValores.Select(static v => v.Codigo)],
             PontoResolucao: "INSCRICAO", Binding: "CAMPO_FORMULARIO:COR_RACA",
-            ValoresDominioDeclarados: seisValores, FonteValores: "GLOBAL", Ativo: true);
+            ValoresDominioDeclarados: seisValores, FonteValores: "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL");
 
         EntradaCanonicalizacao? entradaCapturada = null;
         (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo, e => entradaCapturada = e);
@@ -82,14 +82,14 @@ public sealed class ValoresSelecionaveisResolverTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         FatoColetado baixaRenda = FatoColetado.Criar(
-            "BAIXA_RENDA", 0, "Baixa renda", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null).Value!;
+            "BAIXA_RENDA", 0, "Baixa renda", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL").Value!;
         processo.DefinirItens([baixaRenda], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         FatoCandidatoView baixaRendaNoCatalogo = new(
             Id: Guid.CreateVersion7(), Codigo: "BAIXA_RENDA", Nome: "Baixa renda", Descricao: null,
             Dominio: "BOOLEANO", Origem: "DECLARADO", Cardinalidade: "ESCALAR",
             ValoresDominio: null, PontoResolucao: "INSCRICAO", Binding: "CAMPO_FORMULARIO:BAIXA_RENDA",
-            ValoresDominioDeclarados: null, FonteValores: null, Ativo: true);
+            ValoresDominioDeclarados: null, FonteValores: null, Ativo: true, ClassificacaoProtecao: "PESSOAL");
 
         EntradaCanonicalizacao? entradaCapturada = null;
         (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo, e => entradaCapturada = e);
@@ -126,14 +126,14 @@ public sealed class ValoresSelecionaveisResolverTests
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
         FatoColetado condicaoAtendimento = FatoColetado.Criar(
-            "CONDICAO_ATENDIMENTO", 0, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null).Value!;
+            "CONDICAO_ATENDIMENTO", 0, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL").Value!;
         processo.DefinirItens([condicaoAtendimento], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
         FatoCandidatoView condicaoAtendimentoNoCatalogo = new(
             Id: Guid.CreateVersion7(), Codigo: "CONDICAO_ATENDIMENTO", Nome: "Condição de atendimento", Descricao: null,
             Dominio: "CATEGORICO", Origem: "DECLARADO", Cardinalidade: "MULTIVALORADO",
             ValoresDominio: null, PontoResolucao: "INSCRICAO", Binding: "CAMPO_FORMULARIO:CONDICAO_ATENDIMENTO",
-            ValoresDominioDeclarados: null, FonteValores: "PROCESSO", Ativo: true);
+            ValoresDominioDeclarados: null, FonteValores: "PROCESSO", Ativo: true, ClassificacaoProtecao: "PESSOAL");
 
         EntradaCanonicalizacao? entradaCapturada = null;
         (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo, e => entradaCapturada = e);
@@ -173,14 +173,14 @@ public sealed class ValoresSelecionaveisResolverTests
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
         FatoColetado condicaoAtendimento = FatoColetado.Criar(
-            "CONDICAO_ATENDIMENTO", 0, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null).Value!;
+            "CONDICAO_ATENDIMENTO", 0, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL").Value!;
         processo.DefinirItens([condicaoAtendimento], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
         FatoCandidatoView condicaoAtendimentoNoCatalogo = new(
             Id: Guid.CreateVersion7(), Codigo: "CONDICAO_ATENDIMENTO", Nome: "Condição de atendimento", Descricao: null,
             Dominio: "CATEGORICO", Origem: "DECLARADO", Cardinalidade: "MULTIVALORADO",
             ValoresDominio: null, PontoResolucao: "INSCRICAO", Binding: "CAMPO_FORMULARIO:CONDICAO_ATENDIMENTO",
-            ValoresDominioDeclarados: null, FonteValores: "PROCESSO", Ativo: true);
+            ValoresDominioDeclarados: null, FonteValores: "PROCESSO", Ativo: true, ClassificacaoProtecao: "PESSOAL");
 
         EntradaCanonicalizacao? entradaCapturada = null;
         (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo, e => entradaCapturada = e);

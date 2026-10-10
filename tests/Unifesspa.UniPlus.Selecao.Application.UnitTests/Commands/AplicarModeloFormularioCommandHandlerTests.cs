@@ -47,20 +47,20 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         Declarado("SOB_GUARDA") with { Escopo = "MEMBRO_GRUPO", Ativo = false },
         Declarado("BAIXA_RENDA") with { Ativo = false },
         new(Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", null, "CATEGORICO", "DECLARADO", "ESCALAR", ["PRETA", "AMARELA", "INDIGENA"], "INSCRICAO",
-            "CAMPO_FORMULARIO:COR_RACA", [new("PRETA", "Preta", 0, true), new("AMARELA", "Amarela", 1, false), new("INDIGENA", "Indígena", 2, false)], "GLOBAL", Ativo: true),
+            "CAMPO_FORMULARIO:COR_RACA", [new("PRETA", "Preta", 0, true), new("AMARELA", "Amarela", 1, false), new("INDIGENA", "Indígena", 2, false)], "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL"),
         new(Guid.CreateVersion7(), "PERFIL", "Perfil", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO", ["A", "B"], "INSCRICAO",
-            "REGRA_DERIVACAO:PERFIL", [new("A", "A", 0, true), new("B", "B", 1, true)], "GLOBAL", Ativo: true),
-        new(Guid.CreateVersion7(), "FLAG", "Flag", null, "BOOLEANO", "DERIVADO", "ESCALAR", null, "INSCRICAO", "REGRA_DERIVACAO:FLAG", null, null, Ativo: true),
+            "REGRA_DERIVACAO:PERFIL", [new("A", "A", 0, true), new("B", "B", 1, true)], "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL"),
+        new(Guid.CreateVersion7(), "FLAG", "Flag", null, "BOOLEANO", "DERIVADO", "ESCALAR", null, "INSCRICAO", "REGRA_DERIVACAO:FLAG", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL"),
         new(Guid.CreateVersion7(), "FLAG_SEM_REGRA", "Flag sem regra", null, "BOOLEANO", "DERIVADO", "ESCALAR", null, "INSCRICAO",
-            "REGRA_DERIVACAO:FLAG_SEM_REGRA", null, null, Ativo: true),
+            "REGRA_DERIVACAO:FLAG_SEM_REGRA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL"),
         new(Guid.CreateVersion7(), "COTISTA", "Cotista", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO", ["SIM"], "INSCRICAO",
-            "REGRA_DERIVACAO:COTISTA", [new("SIM", "Sim", 0, true)], "GLOBAL", Ativo: true),
+            "REGRA_DERIVACAO:COTISTA", [new("SIM", "Sim", 0, true)], "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL"),
         new(Guid.CreateVersion7(), "SEM_REGRA", "Sem regra", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO", ["X"], "INSCRICAO",
-            "REGRA_DERIVACAO:SEM_REGRA", [new("X", "X", 0, true)], "GLOBAL", Ativo: true),
+            "REGRA_DERIVACAO:SEM_REGRA", [new("X", "X", 0, true)], "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL"),
         new(Guid.CreateVersion7(), "MODALIDADE", "Modalidade", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO", null, "INSCRICAO",
-            "REGRA_DERIVACAO:MODALIDADE", null, "MODALIDADE", Ativo: true),
+            "REGRA_DERIVACAO:MODALIDADE", null, "MODALIDADE", Ativo: true, ClassificacaoProtecao: "PESSOAL"),
         new(Guid.CreateVersion7(), "FAIXA_ETARIA", "Faixa etária", null, "NUMERICO", "DERIVADO", "ESCALAR", null, "INSCRICAO",
-            "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null, null, Ativo: true),
+            "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL"),
     ];
 
     public AplicarModeloFormularioCommandHandlerTests()
@@ -180,7 +180,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     [Fact(DisplayName = "O fato desativado que o processo já coleta não é vínculo novo e fica na cópia")]
     public async Task Handle_FatoDesativadoJaColetado_Mantem()
     {
-        _processo.DefinirItens([FatoColetado.Criar("BAIXA_RENDA", 0, "Baixa renda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null).Value!])
+        _processo.DefinirItens([FatoColetado.Criar("BAIXA_RENDA", 0, "Baixa renda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!])
             .IsSuccess.Should().BeTrue();
 
         Result<AplicacaoDeModeloDto> resultado = await AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("BAIXA_RENDA", 0)]));
@@ -214,7 +214,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     [Fact(DisplayName = "Fora da inscrição, o fato que a inscrição coleta fica nela e sai da cópia")]
     public async Task Handle_HabilitacaoComFatoDaInscricao_MantemNaInscricao()
     {
-        _processo.DefinirItens([FatoColetado.Criar("QUILOMBOLA", 0, "Quilombola", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null).Value!])
+        _processo.DefinirItens([FatoColetado.Criar("QUILOMBOLA", 0, "Quilombola", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!])
             .IsSuccess.Should().BeTrue();
         ModeloFormularioView modelo = Modelo(FinalidadeFormulario.Habilitacao, [Item("QUILOMBOLA", 0), Item("CERTIFICADO", 1)]);
 
@@ -230,7 +230,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     public async Task Handle_InscricaoComFatoDeOutraFinalidade_TrazERelata()
     {
         _processo.DefinirItens(
-            [FatoColetado.Criar("CERTIFICADO", 0, "Certificado", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null).Value!],
+            [FatoColetado.Criar("CERTIFICADO", 0, "Certificado", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!],
             finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
         Result<AplicacaoDeModeloDto> resultado = await AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("CERTIFICADO", 0)]));
@@ -293,7 +293,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     public async Task Handle_RecusaDoAgregadoDepoisDeDescarte_ApontaAPosicaoNoModelo()
     {
         _processo.DefinirItens(
-            [FatoColetado.Criar("CERTIFICADO", 0, "Certificado", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null).Value!],
+            [FatoColetado.Criar("CERTIFICADO", 0, "Certificado", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!],
             finalidade: FinalidadeFormulario.IsencaoTaxa).IsSuccess.Should().BeTrue();
         Guid termoId = Guid.NewGuid();
         Guid versaoId = Guid.NewGuid();
@@ -419,7 +419,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         new(fato, ordem, fato, tipo, "SEMPRE", null, EtapaCodigo: "DADOS");
 
     private static FatoCandidatoView Declarado(string codigo) =>
-        new(Guid.CreateVersion7(), codigo, codigo, null, "BOOLEANO", "DECLARADO", "ESCALAR", null, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}", null, null, Ativo: true);
+        new(Guid.CreateVersion7(), codigo, codigo, null, "BOOLEANO", "DECLARADO", "ESCALAR", null, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL");
 
     private static PredicadoDnf Quando(string fato, object valor) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(valor)).Value!)]).Value!;

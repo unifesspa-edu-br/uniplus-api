@@ -721,7 +721,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         // ProcessoConforme já oferta atendimento vazio (sem condições) — só falta o fato coletável.
         FatoColetado fato = FatoColetado.Criar(
             "CONDICAO_ATENDIMENTO", 0, "Você se enquadra em alguma condição de atendimento?",
-            TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, precondicoes: null).Value!;
+            TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, precondicoes: null, classificacaoProtecao: "PESSOAL").Value!;
         processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
 
         VermelhosForaDoFormulario(processo).Should().ContainSingle()
@@ -741,7 +741,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirOfertaAtendimento(OfertaComCondicaoPcd(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         FatoColetado fato = FatoColetado.Criar(
             "TIPO_DEFICIENCIA", 0, "Qual o tipo de deficiência?",
-            TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, precondicoes: null).Value!;
+            TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, precondicoes: null, classificacaoProtecao: "PESSOAL").Value!;
         processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
 
         VermelhosForaDoFormulario(processo).Should().ContainSingle()
@@ -829,7 +829,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         ProcessoSeletivo processo = ProcessoComCotaEAcaoAfirmativa();
         FatoColetado condicao = FatoColetado.Criar(
             "CONDICAO_ATENDIMENTO", 0, "Você se enquadra em alguma condição de atendimento?",
-            TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, precondicoes: null).Value!;
+            TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, precondicoes: null, classificacaoProtecao: "PESSOAL").Value!;
         processo.DefinirItensComFaseDeInscricao([condicao]).IsSuccess.Should().BeTrue();
         processo.DefinirRegrasDerivacao(
             [CotaEAcaoAfirmativaPor("CONDICAO_ATENDIMENTO", "A", "B")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -1005,7 +1005,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         ((List<FatoColetado>)typeof(ProcessoSeletivo).GetField("_campos", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(processo)!)
             .AddRange(Enumerable.Range(0, FormaDoItem.MaximoDeItens + 1).Select(static i => FatoColetado.Criar(
                 $"FATO_{i}", FormularioDeTeste.PrimeiraOrdemDeInscricao + i, "Campo", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null,
-                etapaCodigo: FormularioDeTeste.Secao, finalidade: FinalidadeFormulario.Inscricao).Value!));
+                etapaCodigo: FormularioDeTeste.Secao, finalidade: FinalidadeFormulario.Inscricao, classificacaoProtecao: "PESSOAL").Value!));
 
         SoEstesItensVermelhos(processo, "formulario_itens_em_excesso");
 
@@ -1174,7 +1174,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirOfertaAtendimento(OfertaComCondicaoPcd(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         FatoColetado fato = FatoColetado.Criar(
             "CONDICAO_ATENDIMENTO", 0, "Você se enquadra em alguma condição de atendimento?",
-            TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, precondicoes: null).Value!;
+            TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, precondicoes: null, classificacaoProtecao: "PESSOAL").Value!;
         processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
 
         processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().Contain(
@@ -1192,7 +1192,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         // — o gate só se aplica a campo com opções, que é o que fica vazio sem oferta.
         FatoColetado fato = FatoColetado.Criar(
             "CONDICAO_ATENDIMENTO", 0, "Possui alguma condição de atendimento?",
-            TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, precondicoes: null).Value!;
+            TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, precondicoes: null, classificacaoProtecao: "PESSOAL").Value!;
         processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
 
         processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().Contain(
@@ -1644,7 +1644,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
 
     private static FatoColetado FatoEdicaoEnem() => FatoColetado.Criar(
         "EDICAO_ENEM", 0, "Edição do ENEM", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
-        origemValores: OrigemValoresColeta.OpcoesDoProcesso).Value!;
+        origemValores: OrigemValoresColeta.OpcoesDoProcesso, classificacaoProtecao: "PESSOAL").Value!;
 
     private static OpcaoDeclaradaFato Opcao(string codigo, int ordem = 0) =>
         OpcaoDeclaradaFato.Criar("EDICAO_ENEM", codigo, $"ENEM {codigo}", ordem).Value!;
@@ -1786,7 +1786,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
 
     private static FatoColetado FatoMunicipioDoBonus() => FatoColetado.Criar(
         "MUNICIPIO_EM_AREA_BONUS", 0, "Município", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
-        origemValores: OrigemValoresColeta.MunicipiosDoBonus).Value!;
+        origemValores: OrigemValoresColeta.MunicipiosDoBonus, classificacaoProtecao: "PESSOAL").Value!;
 
     private static ConfiguracaoBonusRegional Bonus(params (string CodigoIbge, string Nome, string Uf)[] municipios) =>
         ConfiguracaoBonusRegional.Criar(

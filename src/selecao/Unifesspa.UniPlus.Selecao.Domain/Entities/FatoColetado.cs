@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
+using System.Collections.Frozen;
 using System.Text.Json;
 
 using Enums;
@@ -34,6 +35,13 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </remarks>
 public sealed class FatoColetado : EntityBase
 {
+    /// <summary>
+    /// Os mesmos tokens canônicos de <c>ClassificacoesProtecaoDado</c> (Configuração) —
+    /// duplicados aqui porque este Domain não alcança o de outro módulo (ADR-0097).
+    /// </summary>
+    private static readonly FrozenSet<string> TokensDeClassificacaoProtecao = FrozenSet.ToFrozenSet(
+        ["PUBLICO", "INTERNO", "PESSOAL", "IDENTIFICADOR", "SENSIVEL"], StringComparer.Ordinal);
+
     private readonly List<CondicaoPrecondicaoFato> _precondicoes = [];
 
     public Guid ProcessoSeletivoId { get; private set; }
@@ -93,6 +101,14 @@ public sealed class FatoColetado : EntityBase
     /// </summary>
     public string? Formato { get; private set; }
 
+    /// <summary>
+    /// Classificação de proteção de dados do fato (token canônico: PUBLICO, INTERNO, PESSOAL,
+    /// IDENTIFICADOR, SENSIVEL), copiada do catálogo quando a coleta é definida e congelada na
+    /// publicação — reclassificar o fato no catálogo depois não muda o que já foi congelado
+    /// (ADR-0136, emenda de #1857).
+    /// </summary>
+    public string ClassificacaoProtecao { get; private set; } = string.Empty;
+
     /// <summary>Se as opções do campo são as que o processo declara.</summary>
     public bool OpcoesDoProcesso => OrigemValores == OrigemValoresColeta.OpcoesDoProcesso;
 
@@ -121,6 +137,7 @@ public sealed class FatoColetado : EntityBase
         TipoRenderizacao tipoRenderizacao,
         Obrigatoriedade obrigatoriedade,
         IReadOnlyList<CondicaoPrecondicaoFato>? precondicoes,
+        string classificacaoProtecao,
         OrigemValoresColeta origemValores = OrigemValoresColeta.Catalogo,
         string? etapaCodigo = null,
         FinalidadeFormulario finalidade = FinalidadeFormulario.Nenhuma,
@@ -137,6 +154,16 @@ public sealed class FatoColetado : EntityBase
         List<FieldError> erros = FormaDoItem.Conferir(
             fatoCodigo, ordem, rotulo, tipoRenderizacao, formato, ajuda, condicoes.Select(static c => c.Fato), obrigatoriedade, restricoesDoItem,
             impedimento);
+
+        if (!TokensDeClassificacaoProtecao.Contains(classificacaoProtecao))
+        {
+            // O vocabulário fechado é o mesmo token canônico de ClassificacoesProtecaoDado
+            // (Configuração), espelhado aqui porque o Domain da Seleção não alcança o Domain de
+            // outro módulo (ADR-0097) — a Seleção só copia o valor já validado pelo catálogo.
+            erros.Add(new("classificacaoProtecao", new DomainError(
+                FatoColetadoErrorCodes.ClassificacaoProtecaoInvalida,
+                "Classificação de proteção de dados fora do vocabulário fechado.")));
+        }
 
         if (erros.Count > 0)
         {
@@ -156,6 +183,7 @@ public sealed class FatoColetado : EntityBase
             Impedimento = impedimento,
             OrigemValores = origemValores,
             Formato = FormaDoItem.TextoOpcional(formato),
+            ClassificacaoProtecao = classificacaoProtecao,
             EtapaCodigo = string.IsNullOrWhiteSpace(etapaCodigo) ? null : etapaCodigo.Trim().Normalize(System.Text.NormalizationForm.FormC),
 
             // O processo atribui a finalidade ao definir os itens; quem remonta o envelope a informa.
@@ -239,4 +267,5 @@ public static class FatoColetadoErrorCodes
     public const string ObrigatoriedadeInvalida = "FatoColetado.ObrigatoriedadeInvalida";
     public const string FatoDuplicado = "FatoColetado.FatoDuplicado";
     public const string PrecondicaoCitaFatoNaoColetado = "FatoColetado.PrecondicaoCitaFatoNaoColetado";
+    public const string ClassificacaoProtecaoInvalida = "FatoColetado.ClassificacaoProtecaoInvalida";
 }

@@ -15,11 +15,11 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// O codec do envelope de congelamento — <b>um só</b>. Enquanto não há produção nem certame
 /// congelado, o sistema emite e lê uma forma canônica corrente (ver <see cref="SchemaVersion"/>)
 /// e a evolui livremente: mudar a forma reescreve a fixture, não gera um encoder congelado ao
-/// lado. O
-/// versionamento forense — um codec por <c>schema_version</c>, encoders aposentados só quando
-/// deixam de ser correntes — volta a valer no primeiro certame publicado em qualquer ambiente,
-/// inclusive homologação. Não se espera a primeira release de produção: publicar em homologação
-/// já cria um envelope que precisa ser preservado.
+/// lado. O versionamento forense — um codec por <c>schema_version</c>, encoders aposentados só
+/// quando deixam de ser correntes — volta a valer no primeiro certame publicado em <b>produção</b>,
+/// não em qualquer ambiente (ADR-0137, emenda às ADRs 0109 e 0110): processos de homologação são
+/// descartáveis e recriados quando a forma muda. Até a primeira publicação em produção, a versão
+/// sobe sem manter o codec anterior, e nenhum código legado é mantido.
 /// </summary>
 /// <remarks>
 /// <c>Codificar</c> delega ao <see cref="SnapshotPublicacaoCanonicalizer"/>, a projeção viva —
@@ -77,7 +77,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
 
     private readonly SnapshotPublicacaoCanonicalizer _encoder = new();
 
-    public string SchemaVersion => "0.0.21";
+    public string SchemaVersion => "0.0.22";
 
     public IPerfilCanonico Perfil => PerfilCanonicoV1.Instancia;
 

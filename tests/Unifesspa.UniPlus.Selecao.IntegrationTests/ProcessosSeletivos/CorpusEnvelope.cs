@@ -378,7 +378,7 @@ internal static class CorpusEnvelope
                     (0, CondicaoDnf.Criar("RENDA", Operador.Igual, JsonSerializer.SerializeToElement("ACIMA_10_SM")).Value!),
                     (0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!),
                 ]).Value!,
-                "A renda declarada está acima do limite deste processo.")).Value!,
+                "A renda declarada está acima do limite deste processo."), classificacaoProtecao: "PESSOAL").Value!,
         ], permutar), PrecondicaoIfMatch.Ausente, grupos: [ComposicaoFamiliar(permutar)]).IsSuccess.Should().BeTrue();
 
         // Formulário de inscrição (Story #559, UNI-REQ-0086): título e um termo com exibição e
@@ -872,11 +872,13 @@ internal static class CorpusEnvelope
             [(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!,
         Obrigatoriedade.Nunca,
         Ordem([
-            FatoColetado.Criar("TRABALHADOR_RURAL", 0, "Trabalha no campo", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null).Value!,
+            FatoColetado.Criar("TRABALHADOR_RURAL", 0, "Trabalha no campo", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
+            // Classificação Identificador só para provar que o codec a carrega também em subitem de
+            // grupo — não tem relação com o conteúdo real do fato (#1857).
             FatoColetado.Criar("MENOR_SOB_GUARDA", 1, "Menor sob guarda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, [
                 CondicaoPrecondicaoFato.Criar(0, "TRABALHADOR_RURAL", Operador.Igual, JsonSerializer.SerializeToElement(false)).Value!,
-            ]).Value!,
-            FatoColetado.Criar(CandidatoComoMembro.FatoParentesco, 2, "Parentesco", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!,
+            ], classificacaoProtecao: "IDENTIFICADOR").Value!,
+            FatoColetado.Criar(CandidatoComoMembro.FatoParentesco, 2, "Parentesco", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
         ], permutar),
         incluiCandidato: true).Value!;
 

@@ -354,7 +354,8 @@ public sealed partial class EnvelopeCodec
             leitor.ExigirChaves(
                 item, path,
                 "fatoCodigo", "finalidade", "etapaCodigo", "ordem", "rotulo", "tipoRenderizacao", "obrigatoriedade", "ajuda",
-                "pedirConfirmacao", "restricoes", "impedimento", "origemValores", "formato", "precondicao", "valoresSelecionaveis");
+                "pedirConfirmacao", "restricoes", "impedimento", "origemValores", "formato", "classificacaoProtecao", "precondicao",
+                "valoresSelecionaveis");
 
             string fatoCodigo = leitor.TextoNaoVazio(item, "fatoCodigo", path, LimitesDoEnvelope.Fato);
             FinalidadeFormulario finalidade = EstruturaFormulario.FinalidadeDoToken(leitor.TextoNaoVazio(item, "finalidade", path));
@@ -366,6 +367,7 @@ public sealed partial class EnvelopeCodec
             bool pedirConfirmacao = leitor.Booleano(item, "pedirConfirmacao", path);
             OrigemValoresColeta origemValores = leitor.Enumeracao<OrigemValoresColeta>(item, "origemValores", path);
             string? formato = leitor.TextoOpcional(item, "formato", path, LimitesDoEnvelope.Token);
+            string classificacaoProtecao = leitor.TextoNaoVazio(item, "classificacaoProtecao", path, LimitesDoEnvelope.Token);
             if (leitor.Falhou)
             {
                 return [];
@@ -431,8 +433,8 @@ public sealed partial class EnvelopeCodec
             }
 
             Result<FatoColetado> fatoColetado = FatoColetado.Criar(
-                fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatoriedade, precondicoes, origemValores, etapaCodigo, finalidade, formato,
-                ajuda, pedirConfirmacao, restricoes, impedimento);
+                fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatoriedade, precondicoes, classificacaoProtecao, origemValores, etapaCodigo,
+                finalidade, formato, ajuda, pedirConfirmacao, restricoes, impedimento);
             if (fatoColetado.IsFailure)
             {
                 return leitor.Propagar<IReadOnlyList<FatoColetado>>(fatoColetado.Error!) ?? [];

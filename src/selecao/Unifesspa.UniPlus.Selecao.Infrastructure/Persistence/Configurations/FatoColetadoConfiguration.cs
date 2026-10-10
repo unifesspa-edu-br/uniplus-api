@@ -42,6 +42,7 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
             .HasColumnType("jsonb");
         builder.Property(f => f.OrigemValores).HasConversion<int>().IsRequired();
         builder.Property(f => f.Formato).HasMaxLength(FormaDoItem.FormatoMaxLength);
+        builder.Property(f => f.ClassificacaoProtecao).HasMaxLength(FormaDoItem.ClassificacaoProtecaoMaxLength).IsRequired();
         builder.Ignore(f => f.OpcoesDoProcesso);
         builder.Ignore(f => f.Condicoes);
         builder.Ignore(f => f.Exibicao);

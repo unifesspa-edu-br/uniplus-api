@@ -193,7 +193,7 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
 
         GrupoColetado composicao = GrupoColetado.Criar(
             "COMPOSICAO_FAMILIAR", 0, FormularioDeTeste.Secao, "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre,
-            [FatoColetado.Criar("MAIOR_IDADE", 0, "Maior de idade", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null).Value!]).Value!;
+            [FatoColetado.Criar("MAIOR_IDADE", 0, "Maior de idade", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!]).Value!;
         Result formulario = processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase.Id, null, FormularioDeTeste.Etapas(), PrecondicaoIfMatch.Ausente);
         formulario.IsSuccess.Should().BeTrue(formulario.Error?.Message);
         processo.DefinirItens([], grupos: [composicao]).IsSuccess.Should().BeTrue();

@@ -455,8 +455,8 @@ public sealed class PoliticaDeOrdenacaoTests
     [Fact(DisplayName = "fatosColetados: Ordem governa sobre o conteúdo (FatoCodigo) — oráculo de sequência exata")]
     public void FatosColetados_OrdemGovernaSobreConteudo()
     {
-        FatoColetado fatoZeta = FatoColetado.Criar("ZETA_FATO", 0, "Rótulo Zeta", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null).Value!;
-        FatoColetado fatoAlfa = FatoColetado.Criar("ALFA_FATO", 1, "Rótulo Alfa", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null).Value!;
+        FatoColetado fatoZeta = FatoColetado.Criar("ZETA_FATO", 0, "Rótulo Zeta", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL").Value!;
+        FatoColetado fatoAlfa = FatoColetado.Criar("ALFA_FATO", 1, "Rótulo Alfa", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL").Value!;
 
         new[] { fatoZeta, fatoAlfa }.OrderBy(static f => f.FatoCodigo, StringComparer.Ordinal).Select(static f => f.FatoCodigo)
             .Should().Equal(["ALFA_FATO", "ZETA_FATO"], "pré-condição: ordenar pelo FatoCodigo (proxy de conteúdo) dá o oposto do oráculo de Ordem abaixo");
@@ -796,10 +796,10 @@ public sealed class PoliticaDeOrdenacaoTests
     [Fact(DisplayName = "grafoDependencia.nos/arestas/ordemTopologica: delegação — a ordem produzida pelo domínio é preservada, não reordenada alfabeticamente")]
     public void GrafoDependencia_OrdemTopologica_PreservaAOrdemDoDominio_NaoReordenaAlfabeticamente()
     {
-        FatoColetado fatoB = FatoColetado.Criar("B_FATO", 0, "Rótulo B", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null).Value!;
+        FatoColetado fatoB = FatoColetado.Criar("B_FATO", 0, "Rótulo B", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL").Value!;
         FatoColetado fatoA = FatoColetado.Criar("A_FATO", 1, "Rótulo A", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, [
             CondicaoPrecondicaoFato.Criar(0, "B_FATO", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!,
-        ]).Value!;
+        ], classificacaoProtecao: "PESSOAL").Value!;
 
         ProcessoSeletivo processo = Montar(fatosColetados: [fatoA, fatoB]);
 

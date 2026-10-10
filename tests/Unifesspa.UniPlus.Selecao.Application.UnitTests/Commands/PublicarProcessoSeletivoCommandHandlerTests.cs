@@ -69,7 +69,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
         ValoresDominio: null,
         PontoResolucao: "INSCRICAO",
         Binding: "REGRA_DERIVACAO:MODALIDADE",
-        ValoresDominioDeclarados: null, FonteValores: "MODALIDADE", Ativo: true);
+        ValoresDominioDeclarados: null, FonteValores: "MODALIDADE", Ativo: true, ClassificacaoProtecao: "PESSOAL");
 
     private sealed record Mocks(
         IProcessoSeletivoRepository ProcessoRepository,
@@ -248,7 +248,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme(out Guid faseId);
         processo.DefinirItens(
-            [FatoColetado.Criar("TEM_RENDA", 0, "Tem renda?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao).Value!],
+            [FatoColetado.Criar("TEM_RENDA", 0, "Tem renda?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL").Value!],
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         processo.DefinirRegrasDerivacao(
         [

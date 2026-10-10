@@ -20,6 +20,14 @@ public enum ClassificacaoProtecaoDado
     /// <summary>Dado pessoal (LGPD, art. 5º, I).</summary>
     Pessoal,
 
+    /// <summary>
+    /// Dado pessoal que identifica diretamente o titular: número de documento (CPF, RG,
+    /// passaporte). Isola um indivíduo entre os demais sem revelar nenhum atributo seu —
+    /// por isso cifrado em repouso, diferente de <see cref="Pessoal"/> e <see cref="Sensivel"/>
+    /// (ADR-0121, ADR-0136, emenda de #1856).
+    /// </summary>
+    Identificador,
+
     /// <summary>Dado pessoal sensível (LGPD, art. 5º, II), como origem racial ou saúde.</summary>
     Sensivel,
 }

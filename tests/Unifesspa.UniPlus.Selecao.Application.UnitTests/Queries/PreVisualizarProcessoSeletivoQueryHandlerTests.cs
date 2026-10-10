@@ -155,7 +155,7 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
             etapaCodigo: FormularioDeTeste.Secao,
             impedimento: new Impedimento(
                 PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("VINCULO_PARFOR", Operador.Igual, Json(true)).Value!)]).Value!,
-                Mensagem)).Value!;
+                Mensagem), classificacaoProtecao: "PESSOAL").Value!;
         processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, [.. FormularioDeTeste.DadosBasicos(), parfor], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
@@ -258,8 +258,8 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
             PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("COR_RACA", Operador.Em, Json(new[] { "PRETA", "PARDA", "INDIGENA" })).Value!)]).Value!,
             Obrigatoriedade.Sempre,
             [
-                FatoColetado.Criar("CATEGORIA_RENDA", 0, "Categoria de renda", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null).Value!,
-                FatoColetado.Criar("MENOR_SOB_GUARDA", 1, "Menor sob guarda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null).Value!,
+                FatoColetado.Criar("CATEGORIA_RENDA", 0, "Categoria de renda", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
+                FatoColetado.Criar("MENOR_SOB_GUARDA", 1, "Menor sob guarda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
             ],
             FinalidadeFormulario.Habilitacao).Value!;
         processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [], PrecondicaoIfMatch.Ausente, [composicao]).IsSuccess.Should().BeTrue();
@@ -309,9 +309,9 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
             Membro("CATEGORIA_RENDA", "CATEGORICO", ["URBANO", "RURAL"]),
             Membro("MENOR_SOB_GUARDA", "BOOLEANO", null),
             new(Guid.CreateVersion7(), "VINCULO_PARFOR", "Vínculo com o PARFOR", null, "BOOLEANO", "DECLARADO", "ESCALAR", null, "INSCRICAO",
-                "CAMPO_FORMULARIO:VINCULO_PARFOR", null, null, Ativo: true),
+                "CAMPO_FORMULARIO:VINCULO_PARFOR", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL"),
             new(Guid.CreateVersion7(), "CATEGORIAS_RENDA_FAMILIA", "Categorias de renda da família", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO",
-                null, "HABILITACAO", "AGREGACAO_GRUPO:CATEGORIA_RENDA", null, "GLOBAL", Ativo: true),
+                null, "HABILITACAO", "AGREGACAO_GRUPO:CATEGORIA_RENDA", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL"),
         ]));
         return leitor;
     }
@@ -319,5 +319,5 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
     private static FatoCandidatoView Membro(string codigo, string dominio, IReadOnlyList<string>? valores) => new(
         Guid.CreateVersion7(), codigo, codigo, null, dominio, "DECLARADO", "ESCALAR", valores, "HABILITACAO", $"CAMPO_FORMULARIO:{codigo}",
         valores?.Select(static (v, ordem) => new FatoValorDominioViewItem(v, v, ordem, true)).ToList(), valores is null ? null : "GLOBAL",
-        Ativo: true, Escopo: "MEMBRO_GRUPO");
+        Ativo: true, ClassificacaoProtecao: "PESSOAL", Escopo: "MEMBRO_GRUPO");
 }

@@ -28,7 +28,10 @@ public static class FatoCandidatoErrorCodes
     public const string FormatoObrigatorio = "FatoCandidato.FormatoObrigatorio";
     public const string FormatoForaDeTexto = "FatoCandidato.FormatoForaDeTexto";
 
-    /// <summary>Texto, data e endereço exigem classificação pessoal ou sensível.</summary>
+    /// <summary>
+    /// Texto exige pessoal, identificador ou sensível; data e endereço exigem pessoal ou
+    /// sensível; os demais domínios recusam identificador (ADR-0136, emenda de #1857).
+    /// </summary>
     public const string ClassificacaoAbaixoDoMinimoDoDominio = "FatoCandidato.ClassificacaoAbaixoDoMinimoDoDominio";
     public const string ClassificacaoProtecaoObrigatoria = "FatoCandidato.ClassificacaoProtecaoObrigatoria";
     public const string FinalidadeTratamentoObrigatoria = "FatoCandidato.FinalidadeTratamentoObrigatoria";

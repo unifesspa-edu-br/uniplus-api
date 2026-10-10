@@ -27,7 +27,7 @@ public sealed class ColetabilidadeDoCampoDeGrupoTests
             "PS Grupo", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        FatoColetado campo = FatoColetado.Criar("PARENTESCO", 0, "Parentesco", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null).Value!;
+        FatoColetado campo = FatoColetado.Criar("PARENTESCO", 0, "Parentesco", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!;
         GrupoColetado grupo = GrupoColetado.Criar(
             "COMPOSICAO", 0, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null, Obrigatoriedade.Nunca, [campo]).Value!;
         processo.DefinirItens([], grupos: [grupo], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
@@ -35,7 +35,7 @@ public sealed class ColetabilidadeDoCampoDeGrupoTests
         {
             ["PARENTESCO"] = new(
                 Guid.CreateVersion7(), "PARENTESCO", "Parentesco", null, "BOOLEANO", "DECLARADO", "ESCALAR", null, "INSCRICAO",
-                "CAMPO_FORMULARIO:PARENTESCO", null, FonteValores: null, Ativo: true, Escopo: escopo),
+                "CAMPO_FORMULARIO:PARENTESCO", null, FonteValores: null, Ativo: true, ClassificacaoProtecao: "PESSOAL", Escopo: escopo),
         };
 
         Result resultado = ConferenciaDeColetabilidadeDeFatos.Conferir(processo, catalogo);

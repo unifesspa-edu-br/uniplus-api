@@ -452,6 +452,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("FatoColetado.ObrigatoriedadeInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.obrigatoriedade_invalida", "Obrigatoriedade do campo inválida")),
         new("FatoColetado.FatoDuplicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.fato_duplicado", "O fato já é coletado por outro formulário do processo")),
         new("FatoColetado.PrecondicaoCitaFatoNaoColetado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.precondicao_cita_fato_nao_coletado", "A regra de derivação cita um fato que este processo não coleta nem deriva")),
+        new("FatoColetado.ClassificacaoProtecaoInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.classificacao_protecao_invalida", "Classificação de proteção de dados fora do vocabulário fechado")),
         new("CondicaoPrecondicaoFato.ClausulaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.condicao_precondicao_fato.clausula_invalida", "O ordinal da cláusula da pré-condição não pode ser negativo")),
         // Coletabilidade de fato (Story #984) — semântica cross-módulo resolvida na Application:
         // um fato coletado tem de existir no vocabulário e ser declarado com binding de campo de

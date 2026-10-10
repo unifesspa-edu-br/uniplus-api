@@ -330,7 +330,8 @@ internal static class EscritaDosItens
             input.FatoCodigo, input.Ordem, input.Rotulo, tipoRenderizacao, regras.Obrigatoriedade,
             precondicoesResult.IsSuccess ? precondicoesResult.Value : null,
             origemValores: VocabularioDeFatos.OrigemValores(view), etapaCodigo: input.EtapaCodigo, formato: view.Formato,
-            ajuda: input.Ajuda, pedirConfirmacao: input.PedirConfirmacao, restricoes: regras.Restricoes, impedimento: regras.Impedimento);
+            ajuda: input.Ajuda, pedirConfirmacao: input.PedirConfirmacao, restricoes: regras.Restricoes, impedimento: regras.Impedimento,
+            classificacaoProtecao: view.ClassificacaoProtecao);
         return erros.Count == 0
             ? fato
             : Result<FatoColetado>.ValidationFailure([.. erros, .. fato.IsFailure ? fato.Errors : []]);

@@ -125,10 +125,11 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// sem migration, mas também sem obrigação de bump a cada mudança. O
     /// versionamento forense (um bump por chave nova ou por stub virando
     /// conteúdo real, com encoder anterior aposentado) começa a valer a
-    /// partir do primeiro certame publicado em qualquer ambiente, inclusive
-    /// homologação — não da primeira release de produção. Toda versão aqui
-    /// declarada tem de ter a sua golden fixture correspondente — um teste
-    /// de política falha o build se não tiver.
+    /// partir do primeiro certame publicado em <b>produção</b>, não em
+    /// qualquer ambiente (ADR-0137, emenda às ADRs 0109 e 0110): processos
+    /// de homologação são descartáveis e recriados quando a forma muda.
+    /// Toda versão aqui declarada tem de ter a sua golden fixture
+    /// correspondente — um teste de política falha o build se não tiver.
     /// </summary>
     /// <remarks>
     /// Story #575: <c>cascataRemanejamento</c> sai de stub para bloco real
@@ -264,8 +265,15 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// <c>fatosColetados[]</c> traz <c>impedimento</c>: a condição em DNF sobre a resposta do próprio
     /// campo, e se preciso as anteriores, que impede a inscrição, e a mensagem ao candidato — nulo
     /// quando o campo não tem impedimento, o que vale para todo formulário que não é o de inscrição.
+    /// O bump para <c>0.0.22</c> acrescenta <c>classificacaoProtecao</c> a cada item de
+    /// <c>fatosColetados[]</c> e de <c>gruposColetados[].subitens[]</c> — a classificação de proteção
+    /// de dados do fato (token canônico: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR, SENSIVEL),
+    /// copiada do catálogo quando a coleta é definida e congelada aqui: reclassificar o fato no
+    /// catálogo depois da publicação não muda o que já foi congelado (ADR-0136, emenda de #1857). Sem novo
+    /// bloco de topo. Sem produção em ambiente nenhum: fixture nova, <c>0.0.21</c> deixa de ser
+    /// reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.21";
+    internal const string SchemaVersionAtual = "0.0.22";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -1914,6 +1922,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 ["impedimento"] = fato.Impedimento is { } impedimento ? SerializarImpedimento(impedimento) : null,
                 ["origemValores"] = fato.OrigemValores.ToString(),
                 ["formato"] = fato.Formato,
+                ["classificacaoProtecao"] = fato.ClassificacaoProtecao,
                 ["precondicao"] = SerializarDnf(fato.Precondicoes.Select(
                     static c => (c.Clausula, c.Fato, c.Operador, c.Valor))),
                 ["valoresSelecionaveis"] = ehFatoDeSelecao
