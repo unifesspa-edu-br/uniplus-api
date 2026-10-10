@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -21,6 +22,13 @@ internal static class FormularioDeTeste
 
     /// <summary>A ordem a partir da qual o teste declara os itens do formulário de inscrição.</summary>
     public static int PrimeiraOrdemDeInscricao => ConjuntoBasicoDaInscricao.Itens.Count;
+
+    /// <summary>
+    /// A avaliação de quem responde só o que aparece, para o envio cujo assunto não é o descarte do
+    /// que não se aplica: nenhum fato não aplicável, nada a descartar.
+    /// </summary>
+    public static AvaliacaoFormulario AvaliacaoSemOcultos { get; } =
+        new(new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), [], [], [], []);
 
     public static IReadOnlyList<EtapaFormulario> Etapas(FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao)
     {

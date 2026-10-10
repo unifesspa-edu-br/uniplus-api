@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -246,8 +247,12 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
-    /// <summary>Um item obrigatório na seção do formulário, mais um termo obrigatório exigido na mesma finalidade.</summary>
-    private static (VersaoConfiguracao Versao, GrafoConfiguracao Grafo, VersaoTermoEscolhida Termo) MontarVersaoComItemObrigatorioETermo()
+    /// <summary>
+    /// Um item obrigatório na seção do formulário, mais um termo obrigatório exigido na mesma
+    /// finalidade; <paramref name="outrosItens"/> e <paramref name="grupos"/> entram na mesma seção.
+    /// </summary>
+    private static (VersaoConfiguracao Versao, GrafoConfiguracao Grafo, VersaoTermoEscolhida Termo) MontarVersaoComItemObrigatorioETermo(
+        IReadOnlyList<FatoColetado>? outrosItens = null, IReadOnlyList<GrupoColetado>? grupos = null)
     {
         FatoColetado item = FatoColetado.Criar(
             "APELIDO", 0, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
@@ -260,7 +265,8 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             "TERMO_VERACIDADE", 0, versaoDoTermo, exibicao: null, Obrigatoriedade.Sempre, FinalidadeFormulario.Inscricao).Value!;
 
         ProcessoSeletivo processoBase = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Submeter inscrição");
-        processoBase.DefinirItens([item], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        Result itensDefinidos = processoBase.DefinirItens([item, .. outrosItens ?? []], PrecondicaoIfMatch.Ausente, grupos: grupos);
+        itensDefinidos.IsSuccess.Should().BeTrue(itensDefinidos.Error?.Message);
         processoBase.DefinirTermosDoFormulario(FinalidadeFormulario.Inscricao, [termo], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue(
             "o termo não cita fato nenhum, então não tem citação pendente de garantir");
 
@@ -270,7 +276,8 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             [.. processoBase.CronogramaFases], [.. processoBase.DocumentosExigidos], [], null,
             fatosColetados: [.. processoBase.FatosColetados],
             formularios: [.. processoBase.Formularios],
-            termosExigidos: [.. processoBase.TermosExigidos]);
+            termosExigidos: [.. processoBase.TermosExigidos],
+            gruposColetados: [.. processoBase.GruposColetados]);
 
         // documentosExigidos.dataReferenciaFatos congelada: o conjunto básico traz DATA_NASCIMENTO,
         // que FAIXA_ETARIA apura contra esta data, nunca a de hoje.
@@ -466,6 +473,113 @@ public sealed class SubmeterInscricaoCommandHandlerTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Respostas.Should().ContainKey("APELIDO").WhoseValue.GetString().Should().Be("Nanda");
+    }
+
+    /// <summary>Um booleano que, respondido "não", esconde o que depende dele.</summary>
+    private static FatoColetado Pergunta(string fato, int ordem) => FatoColetado.Criar(
+        fato, ordem, fato, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "SENSIVEL").Value!;
+
+    /// <summary>Um texto opcional que só aparece com <paramref name="pergunta"/> respondida "sim".</summary>
+    private static FatoColetado SoComSim(string fato, int ordem, string pergunta) => FatoColetado.Criar(
+        fato, ordem, fato, TipoRenderizacao.Texto, Obrigatoriedade.Nunca,
+        [CondicaoPrecondicaoFato.Criar(0, pergunta, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!],
+        classificacaoProtecao: "SENSIVEL", formato: "LIVRE").Value!;
+
+    private static async Task<(Result<ComprovanteInscricaoDto> Resultado, Inscricao Inscricao)> SubmeterComAsync(
+        IReadOnlyList<FatoColetado> itens,
+        IReadOnlyList<GrupoColetado>? grupos,
+        IReadOnlyDictionary<string, JsonElement> respostas,
+        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>? respostasDosGrupos = null)
+    {
+        Cpf cpf = PersonasDeTeste.FernandaDrumond;
+        (VersaoConfiguracao versao, GrafoConfiguracao grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo(itens, grupos);
+        Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+
+        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
+        inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
+        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
+        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
+
+        InscricaoRequest comApelido = RequestComApelidoETermoAceito(cpf, termo, grafo);
+        Dictionary<string, JsonElement> todas = new(comApelido.Respostas!, StringComparer.Ordinal);
+        foreach ((string fato, JsonElement valor) in respostas)
+        {
+            todas[fato] = valor;
+        }
+
+        Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
+            new SubmeterInscricaoCommand(ProcessoId, comApelido with { Respostas = todas, Grupos = respostasDosGrupos }, PrecondicaoIfMatch.DeTags([existente.ETag])),
+            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf));
+        return (resultado, existente);
+    }
+
+    [Fact(DisplayName = "A resposta ao item que outra resposta esconde é descartada no envio: não fica gravada nem sai no comprovante, e o envio passa")]
+    public async Task Handle_RespostaDeItemOculto_EDescartadaSemRecusar()
+    {
+        (Result<ComprovanteInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
+            [Pergunta("PRECISA_ATENDIMENTO", 1), SoComSim("CONDICAO_DESCRITA", 2, "PRECISA_ATENDIMENTO")],
+            grupos: null,
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+            {
+                ["PRECISA_ATENDIMENTO"] = JsonSerializer.SerializeToElement(false),
+                ["CONDICAO_DESCRITA"] = JsonSerializer.SerializeToElement("Lactante"),
+            });
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.Respostas.Should().ContainKey("PRECISA_ATENDIMENTO").And.NotContainKey("CONDICAO_DESCRITA");
+        inscricao.Respostas.Should().NotContainKey("CONDICAO_DESCRITA", "a inscrição enviada guarda só o que se aplica");
+    }
+
+    [Fact(DisplayName = "O grupo que outra resposta esconde é descartado inteiro no envio")]
+    public async Task Handle_GrupoOculto_EDescartadoInteiro()
+    {
+        GrupoColetado dependentes = GrupoColetado.Criar(
+            "DEPENDENTES", 2, FormularioDeTeste.Secao, "Dependentes", minimo: 0, maximo: null,
+            PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("TEM_DEPENDENTES", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!,
+            Obrigatoriedade.Nunca,
+            [FatoColetado.Criar("NOME_DEPENDENTE", 0, "Nome", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", formato: "LIVRE").Value!],
+            FinalidadeFormulario.Inscricao).Value!;
+
+        (Result<ComprovanteInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
+            [Pergunta("TEM_DEPENDENTES", 1)],
+            [dependentes],
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["TEM_DEPENDENTES"] = JsonSerializer.SerializeToElement(false) },
+            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>(StringComparer.Ordinal)
+            {
+                ["DEPENDENTES"] = [new("dependente-1", new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["NOME_DEPENDENTE"] = JsonSerializer.SerializeToElement("Ana Drumond") })],
+            });
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.Grupos.Should().NotContainKey("DEPENDENTES");
+        inscricao.Grupos.Should().NotContainKey("DEPENDENTES");
+    }
+
+    [Fact(DisplayName = "No grupo que aparece, a resposta ao subitem que a ocorrência esconde é descartada, e a dos demais subitens fica")]
+    public async Task Handle_SubitemOcultoNaOcorrencia_EDescartado()
+    {
+        GrupoColetado composicao = GrupoColetado.Criar(
+            "COMPOSICAO_FAMILIAR", 1, FormularioDeTeste.Secao, "Composição familiar", minimo: 0, maximo: null, exibicao: null,
+            Obrigatoriedade.Nunca,
+            [Pergunta("MEMBRO_TEM_RENDA", 0), SoComSim("RENDA_DO_MEMBRO", 1, "MEMBRO_TEM_RENDA")],
+            FinalidadeFormulario.Inscricao).Value!;
+
+        (Result<ComprovanteInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
+            [],
+            [composicao],
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal),
+            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>(StringComparer.Ordinal)
+            {
+                ["COMPOSICAO_FAMILIAR"] = [new("membro-1", new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+                {
+                    ["MEMBRO_TEM_RENDA"] = JsonSerializer.SerializeToElement(false),
+                    ["RENDA_DO_MEMBRO"] = JsonSerializer.SerializeToElement("1500"),
+                })],
+            });
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.Grupos["COMPOSICAO_FAMILIAR"].Single().Respostas.Should().ContainKey("MEMBRO_TEM_RENDA").And.NotContainKey("RENDA_DO_MEMBRO");
+        inscricao.Grupos["COMPOSICAO_FAMILIAR"].Single().Respostas.Should().NotContainKey("RENDA_DO_MEMBRO");
     }
 
     [Fact(DisplayName = "DbUpdateConcurrencyException (xmin) no commit descarta o rastreamento e devolve conflito, sem deixar a exceção propagar")]

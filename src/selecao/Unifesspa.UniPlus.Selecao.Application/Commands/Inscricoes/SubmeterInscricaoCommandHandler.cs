@@ -146,7 +146,7 @@ public static class SubmeterInscricaoCommandHandler
 
         Result<ComprovanteInscricao> submetido = inscricao.Submeter(
             numeroGerado, command.Request.OfertaCursoId, respostasDoCorpo, grupos, aceites, contexto.Value!.Admitidas,
-            derivados.Value!, Services.DerivadosDoSistemaInscricao.DefinicoesDasRespostas,
+            avaliacao.Value!, derivados.Value!, Services.DerivadosDoSistemaInscricao.DefinicoesDasRespostas,
             command.Precondicao, instante);
         if (submetido.IsFailure)
         {
