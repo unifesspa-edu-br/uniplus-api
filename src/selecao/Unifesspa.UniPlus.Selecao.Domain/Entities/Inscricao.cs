@@ -225,6 +225,10 @@ public sealed class Inscricao : EntityBase
         return null;
     }
 
+    /// <summary>A recusa de quem não tem inscrição no processo. Não cita o CPF nem o processo: vai para a resposta e para o log.</summary>
+    public static DomainError NaoEncontrada { get; } = new(
+        InscricaoErrorCodes.NaoEncontrada, "Você ainda não tem inscrição neste processo seletivo.");
+
     /// <summary>Depois do envio, a inscrição só muda por novo envio, que emite novo comprovante.</summary>
     public DomainError? ConferirAindaEmRascunho() =>
         Situacao == SituacaoInscricao.Submetida

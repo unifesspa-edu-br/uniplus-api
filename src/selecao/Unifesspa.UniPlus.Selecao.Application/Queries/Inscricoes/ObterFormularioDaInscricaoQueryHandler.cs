@@ -60,9 +60,7 @@ public static class ObterFormularioDaInscricaoQueryHandler
             .ConfigureAwait(false);
         if (inscricao is null)
         {
-            return Result<FormularioRenderizavelDto>.Failure(new DomainError(
-                InscricaoErrorCodes.NaoEncontrada,
-                $"Nenhuma inscrição de {cpfDoToken} no processo seletivo {query.ProcessoSeletivoId}."));
+            return Result<FormularioRenderizavelDto>.Failure(Inscricao.NaoEncontrada);
         }
 
         if (inscricao.ConferirDono(userContext.UserId ?? string.Empty) is { } erroDono)
