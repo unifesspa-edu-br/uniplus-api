@@ -105,8 +105,9 @@ internal sealed class InscricaoRecordConfiguration : IEntityTypeConfiguration<In
         builder.Property(i => i.UpdatedAt);
 
         // Dois "iniciar" simultâneos do mesmo CPF no mesmo processo: um insere, o outro colide
-        // aqui e recebe a inscrição existente (tradução da violação, no repositório) — nunca um
-        // 500 nem duas linhas para o mesmo candidato.
+        // aqui — InscricaoRepository.AdicionarAsync não traduz a violação (sem catch, de propósito,
+        // ver o teste de colisão); é o handler de "iniciar" que, ao capturar a exceção, decide
+        // devolver a inscrição existente em vez de um 500. Nunca duas linhas para o mesmo candidato.
         builder.HasIndex(i => new { i.ProcessoSeletivoId, i.CpfIndice })
             .IsUnique()
             .HasDatabaseName("ux_inscricoes_processo_cpf_indice");
