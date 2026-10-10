@@ -106,17 +106,34 @@ public sealed class DerivadosDoSistemaInscricaoTests
         resultado.Error!.Code.Should().Be("ConferenciaEnderecoGeo.CidadeDivergente");
     }
 
-    [Fact(DisplayName = "Endereço sem CEP ou sem cidade recusa sem nem chamar o Geo")]
-    public async Task CalcularAsync_EnderecoSemCepOuCidade_RecusaSemChamarOGeo()
+    [Fact(DisplayName = "Endereço sem CEP, com a cidade escolhida manualmente, confere pelo município — nunca recusa por falta de CEP")]
+    public async Task CalcularAsync_EnderecoSemCepComCidade_ConfereProMunicipioEDeriva()
     {
         IConferenciaEnderecoGeo conferencia = Substitute.For<IConferenciaEnderecoGeo>();
-        JsonElement enderecoSemCep = JsonSerializer.SerializeToElement(new { cidade = new { codigoIbge = "1504208", uf = "PA" } });
+        conferencia.ConferirMunicipioAsync("1504208", "PA", Arg.Any<CancellationToken>()).Returns(Result.Success());
+        JsonElement enderecoSemCep = JsonSerializer.SerializeToElement(new { cep = (string?)null, cidade = new { codigoIbge = "1504208", uf = "PA" } });
 
         Result<IReadOnlyDictionary<string, JsonElement>> resultado = await DerivadosDoSistemaInscricao.CalcularAsync(
             Respostas(("ENDERECO_RESIDENCIAL", enderecoSemCep)), new DateOnly(2026, 12, 10), conferencia);
 
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!["UF_RESIDENCIA"].GetString().Should().Be("PA");
+        resultado.Value!["MUNICIPIO_RESIDENCIA"].GetString().Should().Be("1504208");
+        await conferencia.DidNotReceive().ConferirCepAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Endereço sem cidade nenhuma recusa sem nem chamar o Geo")]
+    public async Task CalcularAsync_EnderecoSemCidade_RecusaSemChamarOGeo()
+    {
+        IConferenciaEnderecoGeo conferencia = Substitute.For<IConferenciaEnderecoGeo>();
+        JsonElement enderecoSemCidade = JsonSerializer.SerializeToElement(new { cep = "68500000" });
+
+        Result<IReadOnlyDictionary<string, JsonElement>> resultado = await DerivadosDoSistemaInscricao.CalcularAsync(
+            Respostas(("ENDERECO_RESIDENCIAL", enderecoSemCidade)), new DateOnly(2026, 12, 10), conferencia);
+
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.EnderecoResidencialInvalido");
         await conferencia.DidNotReceive().ConferirCepAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await conferencia.DidNotReceive().ConferirMunicipioAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 }

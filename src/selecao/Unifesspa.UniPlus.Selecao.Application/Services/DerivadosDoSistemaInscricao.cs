@@ -51,15 +51,18 @@ public static class DerivadosDoSistemaInscricao
                 ? enderecoElemento.Deserialize<EnderecoEstruturadoInput>(EnderecoJsonOptions)
                 : null;
 
-            if (endereco is not { Cep: { Length: > 0 }, Cidade: { CodigoIbge: { Length: > 0 }, Uf: { Length: > 0 } } })
+            if (endereco is not { Cidade: { CodigoIbge: { Length: > 0 }, Uf: { Length: > 0 } } })
             {
                 return Result<IReadOnlyDictionary<string, JsonElement>>.Failure(new DomainError(
-                    "Inscricao.EnderecoResidencialInvalido", "O endereço residencial não tem o CEP e a cidade que a conferência no Geo exige."));
+                    "Inscricao.EnderecoResidencialInvalido", "O endereço residencial não tem a cidade que a conferência no Geo exige."));
             }
 
-            Result conferido = await conferencia
-                .ConferirCepAsync(endereco.Cep, endereco.Cidade.CodigoIbge, endereco.Cidade.Uf, cancellationToken)
-                .ConfigureAwait(false);
+            // O componente de endereço admite o preenchimento sem CEP (cidade escolhida
+            // manualmente, ex.: município sem cobertura no DNE) — nesse caso confere pela cidade,
+            // nunca recusa por falta de CEP.
+            Result conferido = endereco.Cep is { Length: > 0 }
+                ? await conferencia.ConferirCepAsync(endereco.Cep, endereco.Cidade.CodigoIbge, endereco.Cidade.Uf, cancellationToken).ConfigureAwait(false)
+                : await conferencia.ConferirMunicipioAsync(endereco.Cidade.CodigoIbge, endereco.Cidade.Uf, cancellationToken).ConfigureAwait(false);
             if (conferido.IsFailure)
             {
                 return Result<IReadOnlyDictionary<string, JsonElement>>.Failure(conferido.Error!);
