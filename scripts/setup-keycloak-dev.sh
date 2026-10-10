@@ -11,6 +11,8 @@
 #                                             (libera smoke tests via curl)
 #   4. ensure_configuracao_web_client       — client OIDC do app Configuração
 #                                             para ambientes já provisionados
+#   4b. ensure_geo_m2m_client               — client M2M uniplus-api-selecao, com
+#                                             que a API confere o endereço no Geo
 #   5. reset_test_user_passwords            — 4 users de teste, senha não-temporária
 #   5b. ensure_personas                     — 30 personas fictícias do portal de
 #                                             documentação (api#1861), mesma senha
@@ -46,6 +48,8 @@
 #   KC_REALM                (default: unifesspa)
 #   KC_ADMIN_USER           (default: admin)
 #   KC_ADMIN_PASS           (default: admin)
+#   UNIPLUS_API_SELECAO_CLIENT_SECRET (default: o valor de docker/.env) — secret do
+#                           client M2M do Geo; tem de ser o mesmo que a API recebe
 #   TEST_PASSWORD           (default: Uni+Teste26) — vale para os 4 usuários de
 #                           teste e para as personas fictícias (etapa 5b)
 #
@@ -71,6 +75,7 @@ TEST_PASSWORD="${TEST_PASSWORD:-Uni+Teste26}"
 readonly TEST_USERS=("admin" "gestor" "avaliador" "candidato")
 readonly CONFIGURACAO_WEB_CLIENT_ID="configuracao-web"
 readonly CONFIGURACAO_WEB_ORIGIN="http://localhost:4203"
+readonly GEO_M2M_CLIENT_ID="uniplus-api-selecao"
 
 LDAP_HOST="${LDAP_HOST:-openldap}"
 LDAP_PORT="${LDAP_PORT:-389}"
@@ -287,6 +292,69 @@ ensure_configuracao_web_client() {
     role_payload=$(auth "$API/roles/plataforma-admin" | jq '[.]')
     auth_json -X POST "$API/clients/$existing_id/scope-mappings/realm" -d "$role_payload" >/dev/null
     ok "scope mapping 'plataforma-admin' adicionado a '$CONFIGURACAO_WEB_CLIENT_ID'"
+}
+
+# ---- Etapa 4b — Client M2M do Geo -------------------------------------------
+
+# O secret sai do docker/.env, que também o entrega à API pelo override de exemplo.
+geo_m2m_client_secret() {
+    if [ -n "${UNIPLUS_API_SELECAO_CLIENT_SECRET:-}" ]; then
+        printf '%s' "$UNIPLUS_API_SELECAO_CLIENT_SECRET"
+        return
+    fi
+    local env_file
+    env_file="$(dirname "$0")/../docker/.env"
+    [ -f "$env_file" ] || fail "Defina UNIPLUS_API_SELECAO_CLIENT_SECRET ou crie docker/.env a partir de docker/.env.example"
+    sed -n 's/^UNIPLUS_API_SELECAO_CLIENT_SECRET=//p' "$env_file" | tail -n 1
+}
+
+ensure_geo_m2m_client() {
+    log "Garantindo client M2M '$GEO_M2M_CLIENT_ID' (conferência do endereço no Geo)"
+
+    local secret body existing_id
+    secret=$(geo_m2m_client_secret)
+    [ -n "$secret" ] || fail "UNIPLUS_API_SELECAO_CLIENT_SECRET vazio em docker/.env"
+
+    body=$(jq -nc --arg clientId "$GEO_M2M_CLIENT_ID" --arg secret "$secret" '{
+        clientId: $clientId,
+        name: $clientId,
+        description: "API UniPlus chamando o Geo (client_credentials)",
+        enabled: true,
+        clientAuthenticatorType: "client-secret",
+        secret: $secret,
+        publicClient: false,
+        bearerOnly: false,
+        standardFlowEnabled: false,
+        implicitFlowEnabled: false,
+        directAccessGrantsEnabled: false,
+        serviceAccountsEnabled: true,
+        protocol: "openid-connect",
+        protocolMappers: [{
+            name: "audience-uniplus",
+            protocol: "openid-connect",
+            protocolMapper: "oidc-audience-mapper",
+            consentRequired: false,
+            config: {
+                "included.custom.audience": "uniplus",
+                "access.token.claim": "true",
+                "id.token.claim": "false",
+                "introspection.token.claim": "true"
+            }
+        }]
+    }')
+    existing_id=$(auth "$API/clients?clientId=$GEO_M2M_CLIENT_ID" | jq -r '.[0].id // empty')
+
+    if [ -n "$existing_id" ]; then
+        # O PUT não recria mappers: o de audiência é conferido à parte.
+        auth_json -X PUT "$API/clients/$existing_id" -d "$(echo "$body" | jq 'del(.protocolMappers)')" >/dev/null
+        if ! auth "$API/clients/$existing_id/protocol-mappers/models" | jq -e '.[] | select(.name=="audience-uniplus")' >/dev/null; then
+            auth_json -X POST "$API/clients/$existing_id/protocol-mappers/models" -d "$(echo "$body" | jq '.protocolMappers[0]')" >/dev/null
+        fi
+        ok "client '$GEO_M2M_CLIENT_ID' atualizado"
+    else
+        auth_json -X POST "$API/clients" -d "$body" >/dev/null
+        ok "client '$GEO_M2M_CLIENT_ID' criado"
+    fi
 }
 
 # ---- Etapa 5 — Senhas dos usuários de teste --------------------------------
@@ -753,6 +821,7 @@ main() {
     obtain_admin_token
     configure_admin_cli_for_ropc
     ensure_configuracao_web_client
+    ensure_geo_m2m_client
     reset_test_user_passwords
     ensure_personas
     configure_ldap_federation_if_available
