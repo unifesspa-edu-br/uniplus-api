@@ -68,13 +68,15 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                 schema: "configuracao",
                 table: "rol_de_fatos_candidato");
 
+            // Blindado (não condicionado ao código semeado): o Down é ferramenta de
+            // desenvolvimento, e a volta às duas CHECKs antigas exige que NENHUMA linha fique
+            // com IDENTIFICADOR — inclusive um fato de texto que um administrador tenha
+            // cadastrado com essa classificação depois do Up, que a CHECK antiga recusaria.
             migrationBuilder.Sql(
-                $"""
+                """
                 UPDATE configuracao.rol_de_fatos_candidato
                    SET classificacao_protecao = 'PESSOAL'
-                 WHERE sistema
-                   AND codigo IN ({CodigosIdentificador})
-                   AND classificacao_protecao = 'IDENTIFICADOR';
+                 WHERE classificacao_protecao = 'IDENTIFICADOR';
                 """);
 
             migrationBuilder.AddCheckConstraint(
