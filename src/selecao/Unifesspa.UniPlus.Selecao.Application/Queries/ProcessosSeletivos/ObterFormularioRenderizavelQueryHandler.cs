@@ -57,37 +57,17 @@ public static class ObterFormularioRenderizavelQueryHandler
         ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(enderecoNoAcervo);
 
-        CertameDivulgado? divulgado = await certameDivulgadoRepository
-            .ObterParaLeituraAsync(query.ProcessoSeletivoId, cancellationToken)
+        Result<Services.VersaoDivulgada> divulgada = await Services.VersaoDivulgadaResolver
+            .ResolverAsync(query.ProcessoSeletivoId, certameDivulgadoRepository, processoSeletivoRepository, cancellationToken)
             .ConfigureAwait(false);
-
-        if (divulgado is null)
+        if (divulgada.IsFailure)
         {
-            return NaoEncontrado(query.ProcessoSeletivoId);
+            return Result<FormularioRenderizavelDto>.Failure(divulgada.Error!);
         }
 
-        // A linha aponta o ato que confirmou a publicidade, e é por ele que se chega à versão
-        // exata que o certame serve — não à mais nova, que sob retificação pendente ainda não tem
-        // publicidade nenhuma.
-        IReadOnlyList<VersaoConfiguracao> versoes = await processoSeletivoRepository
-            .ObterVersoesPorAtoCriadorAsync([divulgado.AtoCriadorId], cancellationToken)
-            .ConfigureAwait(false);
-
-        if (versoes.Count == 0)
-        {
-            // Divulgação sem a versão que ela aponta é corrupção, não ausência: a linha só nasce
-            // junto da versão. Recusar como não encontrado esconderia o defeito atrás de uma
-            // resposta plausível — e aqui não há oráculo a proteger, porque a existência da linha
-            // já disse que o processo é público.
-            return Result<FormularioRenderizavelDto>.Failure(new DomainError(
-                "Snapshot.VigenteAusente",
-                $"A divulgação do processo {query.ProcessoSeletivoId} aponta uma versão de configuração que não existe."));
-        }
-
-        VersaoConfiguracao versao = versoes[0];
 
         Result<FormularioRenderizavelDto> projetado = ProjecaoDoFormularioDaVersao.Projetar(
-            versao, query.Finalidade, divulgado.AtoCriadorId, registroCodecs, enderecoNoAcervo);
+            divulgada.Value!.Versao, query.Finalidade, divulgada.Value!.AtoDaDivulgacao, registroCodecs, enderecoNoAcervo);
 
         // A projeção compartilhada nomeia a ausência de formulário da finalidade; a leitura
         // pública a colapsa no mesmo não encontrado dos demais casos sem linha (ver remarks).
