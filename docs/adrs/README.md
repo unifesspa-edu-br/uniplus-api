@@ -169,8 +169,9 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0138](0138-grupo-repetivel-como-fonte-das-instancias-de-exigencia.md) | O grupo repetível do formulário é a fonte das instâncias da exigência repetida por entidade; fora do grupo, citam-se só os agregados — emenda a ADR-0136: o administrador declara o agregado com `AGREGACAO_GRUPO:` | accepted | 2026-09-29 |
 | [0139](0139-interpretador-de-regras-de-formulario-no-front.md) | O front interpreta as regras do formulário publicadas pela API, e a API valida tudo no envio: o contrato público declara os derivados e agregados que o formulário cita, um conversor de mão dupla garante a completude e um corpus de casos compartilhado mantém as duas implementações iguais | accepted | 2026-10-05 |
 | [0140](0140-gatilho-diario-duravel-de-sincronizacao.md) | Gatilho diário durável para a sincronização de discentes | accepted | 2026-10-06 |
+| [0141](0141-respostas-da-inscricao-em-tabela.md) | As respostas da inscrição ficam em tabela, uma linha por valor, com o tipo e a origem de cada valor; `jsonb` fica para o que é congelado | proposed | 2026-10-10 |
 
-> **Nota de numeração:** a sequência de `0001` a `0140` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0141+`.
+> **Nota de numeração:** a sequência de `0001` a `0141` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0142+`.
 
 ## Como adicionar um novo ADR
 
