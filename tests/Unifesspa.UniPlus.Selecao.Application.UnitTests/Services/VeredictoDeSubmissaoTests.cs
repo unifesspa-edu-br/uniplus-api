@@ -166,7 +166,8 @@ public sealed class VeredictoDeSubmissaoTests
 
     /// <summary>
     /// avaliacao.Termos usa o código PREFIXADO pela finalidade (DefinicaoDoProcesso.CodigoDoTermo) —
-    /// termosExigidos e aceites usam o código nu que o candidato conhece e envia.
+    /// termosExigidos e aceites usam o código nu que o candidato conhece e envia, e é nele que a
+    /// recusa sai.
     /// </summary>
     private static readonly string CodigoPrefixado = DefinicaoDoProcesso.CodigoDoTermo(FinalidadeFormulario.Inscricao, "DECLARACAO_VERACIDADE");
 
@@ -179,7 +180,7 @@ public sealed class VeredictoDeSubmissaoTests
 
         IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, [exigido], SemAceites);
 
-        recusas.Should().ContainSingle(r => r.Field == CodigoPrefixado && r.Error.Code == "Inscricao.TermoNaoAceito");
+        recusas.Should().ContainSingle(r => r.Field == "DECLARACAO_VERACIDADE" && r.Error.Code == "Inscricao.TermoNaoAceito");
     }
 
     [Fact(DisplayName = "Termo aceito com hash diferente do da versão fixada recusa a submissão")]
@@ -193,7 +194,7 @@ public sealed class VeredictoDeSubmissaoTests
 
         IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, [exigido], [aceite]);
 
-        recusas.Should().ContainSingle(r => r.Field == CodigoPrefixado && r.Error.Code == "Inscricao.TermoNaoAceito");
+        recusas.Should().ContainSingle(r => r.Field == "DECLARACAO_VERACIDADE" && r.Error.Code == "Inscricao.TermoNaoAceito");
     }
 
     [Fact(DisplayName = "Termo aceito com a mesma versão e o mesmo hash da versão fixada não recusa")]

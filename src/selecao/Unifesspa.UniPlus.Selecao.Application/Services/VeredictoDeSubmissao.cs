@@ -83,7 +83,8 @@ public static class VeredictoDeSubmissao
 
             // avaliacao.Termos usa o código PREFIXADO pela finalidade (DefinicaoDoProcesso.CodigoDoTermo) —
             // o mesmo que a apresentação do formulário já expõe (ProjecaoDoFormularioRenderizavel.Termo).
-            // termosExigidos e aceites usam o código NU, que é o que o candidato conhece e envia.
+            // termosExigidos e aceites usam o código NU, que é o que o candidato conhece e envia; a
+            // recusa é sobre o aceite, então sai nele.
             TermoExigidoFormulario? exigido = termosExigidos.FirstOrDefault(t =>
                 string.Equals(DefinicaoDoProcesso.CodigoDoTermo(t.Finalidade, t.Codigo), termo.Codigo, StringComparison.Ordinal));
             AceiteDeTermo? aceite = exigido is null
@@ -96,7 +97,8 @@ public static class VeredictoDeSubmissao
 
             if (!aceitoNaVersaoFixada)
             {
-                recusas.Add(Recusa(termo.Codigo, InscricaoErrorCodes.TermoNaoAceito, $"O termo '{termo.Codigo}' é obrigatório e não foi aceito na versão fixada da inscrição."));
+                string campo = exigido?.Codigo ?? termo.Codigo;
+                recusas.Add(Recusa(campo, InscricaoErrorCodes.TermoNaoAceito, $"O termo '{campo}' é obrigatório e não foi aceito na versão fixada da inscrição."));
             }
         }
 
