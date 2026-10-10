@@ -19,4 +19,10 @@ public static class InscricaoErrorCodes
     public const string GrupoCandidatoAusente = "Inscricao.GrupoCandidatoAusente";
     public const string GrupoIdDuplicado = "Inscricao.GrupoIdDuplicado";
     public const string TermoNaoAceito = "Inscricao.TermoNaoAceito";
+
+    /// <summary>
+    /// A submissão tem Idempotency-Key (ADR-0119) — o handler captura a corrida de xmin
+    /// localmente em vez de deixá-la propagar para o 409 central do GlobalExceptionMiddleware.
+    /// </summary>
+    public const string ConflitoDeConcorrencia = "Inscricao.ConflitoDeConcorrencia";
 }

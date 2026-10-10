@@ -1,0 +1,173 @@
+namespace Unifesspa.UniPlus.Selecao.Application.Commands.Inscricoes;
+
+using System.Text.Json;
+using System.Text.Json.Nodes;
+
+using Abstractions;
+
+using Domain.Entities;
+using Domain.Errors;
+using Domain.Interfaces;
+using Domain.ValueObjects;
+
+using DTOs;
+
+using Kernel.Domain.ValueObjects;
+using Kernel.Results;
+
+using MotivosDecisaoIsencao;
+
+using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.ValueObjects;
+
+/// <summary>
+/// Envia ou corrige a inscrição (issue #1859): a avaliação completa decide o veredito, nunca a
+/// gravação — ou tudo passa, ou nada é persistido. Diferente de <see cref="SalvarInscricaoCommandHandler"/>,
+/// a avaliação roda sobre o estado FINAL (o que já estava gravado, mesclado com o corpo recebido —
+/// nunca só o delta desta chamada), porque a submissão exige obrigatórios do formulário inteiro.
+/// </summary>
+public static class SubmeterInscricaoCommandHandler
+{
+    public static async Task<Result<ComprovanteInscricaoDto>> Handle(
+        SubmeterInscricaoCommand command,
+        IInscricaoRepository inscricaoRepository,
+        IProcessoSeletivoRepository processoSeletivoRepository,
+        IRegistroCodecsEnvelope registroCodecs,
+        IConferenciaEnderecoGeo conferenciaEnderecoGeo,
+        IGeradorDeNumeroInscricao geradorDeNumeroInscricao,
+        ISelecaoUnitOfWork unitOfWork,
+        IUserContext userContext,
+        TimeProvider timeProvider,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(inscricaoRepository);
+        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
+        ArgumentNullException.ThrowIfNull(registroCodecs);
+        ArgumentNullException.ThrowIfNull(conferenciaEnderecoGeo);
+        ArgumentNullException.ThrowIfNull(geradorDeNumeroInscricao);
+        ArgumentNullException.ThrowIfNull(unitOfWork);
+        ArgumentNullException.ThrowIfNull(userContext);
+        ArgumentNullException.ThrowIfNull(timeProvider);
+
+        if (userContext.Cpf is not { } cpfDoToken)
+        {
+            return Result<ComprovanteInscricaoDto>.Failure(new DomainError(
+                "Inscricao.CpfAusenteNoToken",
+                "O token não traz o claim cpf — só um candidato autenticado com CPF pode submeter a inscrição."));
+        }
+
+        Result<Cpf> cpfResult = Cpf.Criar(cpfDoToken);
+        if (cpfResult.IsFailure)
+        {
+            return Result<ComprovanteInscricaoDto>.Failure(new DomainError(
+                "Inscricao.CpfAusenteNoToken", "O claim cpf do token não é um CPF válido."));
+        }
+
+        Inscricao? inscricao = await inscricaoRepository
+            .ObterPorProcessoECpfAsync(command.ProcessoSeletivoId, cpfResult.Value!, cancellationToken)
+            .ConfigureAwait(false);
+        if (inscricao is null)
+        {
+            return Result<ComprovanteInscricaoDto>.Failure(new DomainError(
+                InscricaoErrorCodes.NaoEncontrada,
+                $"Nenhuma inscrição de {cpfDoToken} no processo seletivo {command.ProcessoSeletivoId}."));
+        }
+
+        if (inscricao.ConferirDono(userContext.UserId ?? string.Empty) is { } erroDono)
+        {
+            return Result<ComprovanteInscricaoDto>.Failure(erroDono);
+        }
+
+        Result<Services.ContextoDaVersaoFixada> contexto = await Services.ContextoDaVersaoFixadaResolver.ResolverAsync(
+            inscricao.VersaoFormularioId, command.ProcessoSeletivoId, processoSeletivoRepository, registroCodecs, cancellationToken)
+            .ConfigureAwait(false);
+        if (contexto.IsFailure)
+        {
+            return Result<ComprovanteInscricaoDto>.Failure(contexto.Error!);
+        }
+
+        Dictionary<string, JsonElement> respostasDoCorpo = Services.InscricaoRequestMapper.ParaRespostas(command.Request.Respostas);
+        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = Services.InscricaoRequestMapper.ParaGrupos(command.Request.Grupos);
+        List<AceiteDeTermo> aceites = Services.InscricaoRequestMapper.ParaAceites(command.Request.Aceites);
+
+        // O veredito avalia o estado que SERÁ persistido — um campo respondido numa chamada
+        // anterior de Salvar e não reenviado aqui continua preenchido, nunca indeterminado.
+        IReadOnlyDictionary<string, JsonElement> respostasMescladas = inscricao.RespostasAposMesclar(respostasDoCorpo);
+
+        Result<IReadOnlyDictionary<string, JsonElement>> derivados = await Services.DerivadosDoSistemaInscricao
+            .CalcularAsync(respostasMescladas, contexto.Value!.DataReferenciaFatos, conferenciaEnderecoGeo, cancellationToken)
+            .ConfigureAwait(false);
+        if (derivados.IsFailure)
+        {
+            return Result<ComprovanteInscricaoDto>.Failure(derivados.Error!);
+        }
+
+        Dictionary<string, JsonElement> respostasFinais = new(respostasMescladas, StringComparer.Ordinal);
+        foreach ((string codigo, JsonElement valor) in derivados.Value!)
+        {
+            respostasFinais[codigo] = valor;
+        }
+
+        Result<AvaliacaoFormulario> avaliacao = contexto.Value!.Regras.Avaliar(new EntradaAvaliacaoFormulario(
+            respostasFinais,
+            EtapasConcluidas: new HashSet<string>(contexto.Value!.Regras.Etapas.Select(static e => e.Codigo), StringComparer.Ordinal),
+            FatosConhecidos: new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
+            RespostasDosGrupos: Services.InscricaoRequestMapper.ParaAvaliacao(grupos)));
+        if (avaliacao.IsFailure)
+        {
+            return Result<ComprovanteInscricaoDto>.Failure(avaliacao.Error!);
+        }
+
+        IReadOnlyList<FieldError> recusas = Services.VeredictoDeSubmissao.Avaliar(
+            avaliacao.Value!, [.. contexto.Value!.TermosExigidos], aceites);
+        if (recusas.Count > 0)
+        {
+            return Result<ComprovanteInscricaoDto>.ValidationFailure(recusas);
+        }
+
+        string numeroGerado = await geradorDeNumeroInscricao.ProximoAsync(cancellationToken).ConfigureAwait(false);
+        string hashIntegridade = ComputarHashDaRequisicao(command.Request);
+        DateTimeOffset instante = timeProvider.GetUtcNow();
+
+        Result<ComprovanteInscricao> submetido = inscricao.Submeter(
+            numeroGerado, command.Request.OfertaCursoId, respostasFinais, grupos, aceites,
+            hashIntegridade, command.Precondicao, instante);
+        if (submetido.IsFailure)
+        {
+            return Result<ComprovanteInscricaoDto>.Failure(submetido.Error!);
+        }
+
+        await inscricaoRepository.AtualizarAsync(inscricao, cancellationToken).ConfigureAwait(false);
+        await inscricaoRepository.AdicionarComprovanteAsync(submetido.Value!, cancellationToken).ConfigureAwait(false);
+
+        try
+        {
+            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (OptimisticConcurrencyViolation.Is(ex))
+        {
+            // O endpoint tem Idempotency-Key (ADR-0119): captura local e descarte, para o
+            // SaveChangesAsync do outbox não reencontrar a entidade modificada.
+            unitOfWork.DescartarAlteracoesNaoSalvas();
+            return Result<ComprovanteInscricaoDto>.Failure(new DomainError(
+                InscricaoErrorCodes.ConflitoDeConcorrencia, "Esta inscrição foi alterada concorrentemente. Tente novamente."));
+        }
+
+        return Result<ComprovanteInscricaoDto>.Success(ComprovanteInscricaoDto.De(submetido.Value!));
+    }
+
+    /// <summary>
+    /// O hash é computado sobre o corpo RECEBIDO nesta submissão, nunca sobre o estado mesclado ou
+    /// os derivados calculados — evita o ciclo de depender do próprio resultado de
+    /// <c>Inscricao.Submeter</c> para produzir um dos seus parâmetros de entrada.
+    /// </summary>
+    private static string ComputarHashDaRequisicao(InscricaoRequest request)
+    {
+        JsonNode payload = JsonSerializer.SerializeToNode(request, HashCanonicalComputer.CanonicalOptions)
+            ?? throw new InvalidOperationException("A serialização de InscricaoRequest não pode devolver nulo.");
+
+        return HashCanonicalComputer.ComputeSha256Hex(HashCanonicalComputer.ComputeSnapshotBytes((JsonObject)payload));
+    }
+}

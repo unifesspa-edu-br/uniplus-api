@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Mvc;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
+using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -131,6 +132,44 @@ public sealed class InscricoesController : ControllerBase
 
         Result<InscricaoDto> resultado = await _commandBus
             .Send(new SalvarInscricaoCommand(id, request, analise.Value!), cancellationToken)
+            .ConfigureAwait(false);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
+    /// Envia ou corrige a inscrição: exige obrigatórios, restrições, impedimentos, grupos e termos
+    /// — a validação completa do veredito de submissão. Exige <c>If-Match</c> com o
+    /// <see cref="InscricaoDto.ETag"/> corrente, e <c>Idempotency-Key</c> (ADR-0027): a repetição da
+    /// mesma chave devolve o comprovante já emitido, sem gerar outro número de inscrição.
+    /// </summary>
+    [HttpPost("processos-seletivos/{id:guid}/inscricao/submissao")]
+    [Authorize(Policy = "Candidato")]
+    [RequiresIdempotencyKey]
+    [VendorMediaType(Resource = "comprovante-inscricao", Versions = [1])]
+    [ProducesResponseType(typeof(ComprovanteInscricaoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
+    public async Task<IActionResult> Submeter(
+        Guid id,
+        [FromBody] InscricaoRequest request,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        Result<PrecondicaoIfMatch> analise = IfMatchHeader.Analisar(ifMatch);
+        if (analise.IsFailure)
+        {
+            return analise.ToActionResult(_mapper);
+        }
+
+        Result<ComprovanteInscricaoDto> resultado = await _commandBus
+            .Send(new SubmeterInscricaoCommand(id, request, analise.Value!), cancellationToken)
             .ConfigureAwait(false);
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }

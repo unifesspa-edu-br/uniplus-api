@@ -235,6 +235,19 @@ public sealed class Inscricao : EntityBase
     }
 
     /// <summary>
+    /// As respostas de nível superior após o mesmo merge que <see cref="Salvar"/> e
+    /// <see cref="Submeter"/> aplicam internamente — ausência no corpo recebido preserva o valor já
+    /// gravado, nunca apaga. O veredito de submissão (issue #1859) avalia sobre este resultado, não
+    /// sobre o corpo recebido isolado: o candidato pode ter preenchido um campo numa chamada
+    /// anterior e não reenviá-lo nesta, e o veredito precisa refletir o estado que será persistido.
+    /// </summary>
+    public IReadOnlyDictionary<string, JsonElement> RespostasAposMesclar(IReadOnlyDictionary<string, JsonElement> recebida)
+    {
+        ArgumentNullException.ThrowIfNull(recebida);
+        return MesclarPreservandoAusentes(Respostas, recebida);
+    }
+
+    /// <summary>
     /// Salva o rascunho: validação estrutural, sem exigir obrigatórios — a validação completa é da
     /// submissão (issue #1859). Preserva um número de documento ausente do corpo: ausência nunca
     /// apaga, só um valor enviado substitui.
