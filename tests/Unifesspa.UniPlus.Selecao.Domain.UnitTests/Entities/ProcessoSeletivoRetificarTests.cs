@@ -97,7 +97,7 @@ public sealed class ProcessoSeletivoRetificarTests
             regraDistribuicao: regraDistribuicao,
             regraAjuste: null,
             referenciaDemografica: null,
-            modalidades: [modalidade]).Value!;
+            modalidades: [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
         processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
@@ -445,7 +445,7 @@ public sealed class ProcessoSeletivoRetificarTests
             regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Lei12711, "v1", HashFixo).Value!,
             regraAjuste: ReferenciaRegra.Criar("RECONCILIACAO-VAGAS-ART11-PU", "v1", HashFixo).Value!,
             referenciaDemografica: ReferenciaReservaDemograficaSnapshot.Criar(Guid.CreateVersion7(), "2022", 79m, 1.5m, 8.5m, "Censo 2022").Value!,
-            modalidades: [.. demaisFederais, ppi, ac]).Value!;
+            modalidades: [.. demaisFederais, ppi, ac], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
         processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         List<DestinoRemanejamento> destinosCascata = [];

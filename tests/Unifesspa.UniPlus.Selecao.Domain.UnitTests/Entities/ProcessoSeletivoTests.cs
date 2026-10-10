@@ -259,7 +259,7 @@ public sealed class ProcessoSeletivoTests
             RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!;
 
         return ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoId, voBase: 50, pr: 1m, regra, regraAjuste: null, referenciaDemografica: null, [ampla]).Value!;
+            ofertaCursoId, voBase: 50, pr: 1m, regra, regraAjuste: null, referenciaDemografica: null, [ampla], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
     }
 
     [Fact(DisplayName = "DefinirDistribuicaoVagas vincula a configuração à raiz (Story #773)")]
@@ -291,10 +291,10 @@ public sealed class ProcessoSeletivoTests
 
         ConfiguracaoDistribuicaoVagas ofertaA = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 10, pr: 1m, regra, regraAjuste: null, referenciaDemografica: null,
-            [V("RECLASSIFICAR_AC", 2), Ac(8)]).Value!;
+            [V("RECLASSIFICAR_AC", 2), Ac(8)], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
         ConfiguracaoDistribuicaoVagas ofertaB = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 10, pr: 1m, regra, regraAjuste: null, referenciaDemografica: null,
-            [V("RECLASSIFICAR_REGRA_EDITAL", 2), Ac(8)]).Value!;
+            [V("RECLASSIFICAR_REGRA_EDITAL", 2), Ac(8)], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
 
         Result result = processo.DefinirDistribuicaoVagas([ofertaA, ofertaB], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
 
@@ -612,7 +612,7 @@ public sealed class ProcessoSeletivoTests
             Guid.CreateVersion7(), voBase: 50, pr: 1m,
             ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('f', 64)).Value!,
             regraAjuste: null,
-            referenciaDemografica: null, [ampla, cotaReservada]).Value!;
+            referenciaDemografica: null, [ampla, cotaReservada], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
 
         processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
 

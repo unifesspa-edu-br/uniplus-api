@@ -157,7 +157,7 @@ public sealed class AvaliadorConformidadeLegalTests
                 "DISTRIBUICAO-PADRAO", "v1", new string('a', 64)).Value!,
             regraAjuste: null,
             referenciaDemografica: null,
-            modalidades: modalidades).Value!;
+            modalidades: modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
 
     [Fact(DisplayName = "CA-03 (ModalidadesMinimas): aprova sse TODA oferta contém todas as modalidades exigidas")]
     public void ModalidadesMinimas_TodasAsOfertasTemAModalidade_Aprova()

@@ -60,7 +60,7 @@ public sealed class ProcessoSeletivoCascataTests
 
     private static ConfiguracaoDistribuicaoVagas OfertaFederalCompleta() =>
         ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711(), RegraAjuste(), Demografica(), AsOitoFederaisMaisAc()).Value!;
+            Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711(), RegraAjuste(), Demografica(), AsOitoFederaisMaisAc(), ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
 
     private static DestinoRemanejamento Destino(string origem, int ordem, string destino) =>
         DestinoRemanejamento.Criar(origem, ordem, destino).Value!;
@@ -148,7 +148,7 @@ public sealed class ProcessoSeletivoCascataTests
             null, null, null, [], null, "base legal", quantidadeDeclarada: 2).Value!;
         ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711ComAcPcd(), RegraAjuste(), Demografica(),
-            [.. AsOitoFederaisMaisAc(), acPcd]).Value!;
+            [.. AsOitoFederaisMaisAc(), acPcd], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
         ProcessoSeletivo processo = NovoProcessoComOferta(oferta);
         processo.DefinirCascataRemanejamento(CascataCompleta(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -177,7 +177,7 @@ public sealed class ProcessoSeletivoCascataTests
         ModalidadeSelecionada ampla = Modalidade("AC", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, quantidadeDeclarada: 8);
         ConfiguracaoDistribuicaoVagas ofertaInstitucional = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 10, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null,
-            [cotaFederalSobRegimeErrado, ampla]).Value!;
+            [cotaFederalSobRegimeErrado, ampla], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
         ProcessoSeletivo processo = NovoProcessoComOferta(ofertaInstitucional);
 
         DomainError? pendencia = processo.PendenciaDaCascata();
@@ -225,7 +225,7 @@ public sealed class ProcessoSeletivoCascataTests
         // origens SegueCascata em alguma oferta) é quem detecta a origem morta.
         ModalidadeSelecionada ampla = Modalidade(ModalidadesFederaisLei12711.Ac, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, quantidadeDeclarada: 10);
         ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 10, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, [ampla]).Value!;
+            Guid.CreateVersion7(), voBase: 10, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, [ampla], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
         ProcessoSeletivo processo = NovoProcessoComOferta(oferta);
         ConfiguracaoCascataRemanejamento cascataComOrigemMorta = ConfiguracaoCascataRemanejamento.Criar(
             RegraCascata(), ModalidadesFederaisLei12711.Ac,
@@ -287,7 +287,7 @@ public sealed class ProcessoSeletivoCascataTests
     {
         ModalidadeSelecionada ampla = Modalidade(ModalidadesFederaisLei12711.Ac, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, quantidadeDeclarada: 10);
         ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 10, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, [ampla]).Value!;
+            Guid.CreateVersion7(), voBase: 10, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, [ampla], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
         ProcessoSeletivo processo = NovoProcessoComOferta(oferta);
 
         processo.PendenciaDaCascata().Should().BeNull();

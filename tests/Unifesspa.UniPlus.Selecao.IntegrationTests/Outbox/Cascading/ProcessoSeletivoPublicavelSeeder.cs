@@ -82,7 +82,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
             regraDistribuicao: regraDistribuicao,
             regraAjuste: null,
             referenciaDemografica: null,
-            modalidades: [modalidade]);
+            modalidades: [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina);
         distribuicaoResult.IsSuccess.Should().BeTrue(distribuicaoResult.Error?.Message);
         Result distribuicaoDefinirResult = processo.DefinirDistribuicaoVagas([distribuicaoResult.Value!], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
         distribuicaoDefinirResult.IsSuccess.Should().BeTrue(distribuicaoDefinirResult.Error?.Message);

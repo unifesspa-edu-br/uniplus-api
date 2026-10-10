@@ -60,6 +60,13 @@ internal static class ConfiguracaoDistribuicaoVagasResolver
                 $"Oferta de curso {input.OfertaCursoId} não encontrada ou não está mais viva."));
         }
 
+        Result<OfertaCursoSnapshot> ofertaCurso = OfertaCursoSnapshot.Criar(
+            oferta.CursoNome, oferta.CursoGrau, oferta.UnidadeOfertanteNome, oferta.Turnos);
+        if (ofertaCurso.IsFailure)
+        {
+            return Result<ConfiguracaoDistribuicaoVagas>.Failure(ofertaCurso.Error!);
+        }
+
         RegraCatalogo? regra = await regraCatalogoReader
             .ObterAsync(input.RegraDistribuicaoCodigo, input.RegraDistribuicaoVersao, cancellationToken)
             .ConfigureAwait(false);
@@ -178,7 +185,8 @@ internal static class ConfiguracaoDistribuicaoVagasResolver
             oferta.VagasAnuaisAutorizadas,
             ModalidadesAdmitidasDoEsquemaArgs.Extrair(regra),
             input.ArgsAjuste,
-            oferta.GrupoAreaEnem is { } grupo ? (grupo.Codigo, grupo.Rotulo) : null);
+            oferta.GrupoAreaEnem is { } grupo ? (grupo.Codigo, grupo.Rotulo) : null,
+            ofertaCurso.Value);
     }
 
     /// <summary>

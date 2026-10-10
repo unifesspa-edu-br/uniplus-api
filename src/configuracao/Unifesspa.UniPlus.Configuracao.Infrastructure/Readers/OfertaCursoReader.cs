@@ -38,10 +38,10 @@ internal sealed class OfertaCursoReader : IOfertaCursoReader
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        Dictionary<Guid, GrupoCurso?> gruposPorCurso = await ObterGruposDosCursosAsync(
+        Dictionary<Guid, CursoDaOferta> cursos = await ObterCursosAsync(
             [.. entidades.Select(o => o.CursoId).Distinct()], cancellationToken).ConfigureAwait(false);
 
-        return [.. entidades.Select(o => ParaView(o, gruposPorCurso.GetValueOrDefault(o.CursoId)))];
+        return [.. entidades.Select(o => ParaView(o, cursos.GetValueOrDefault(o.CursoId)))];
     }
 
     public async Task<OfertaCursoView?> ObterPorIdAsync(
@@ -58,29 +58,30 @@ internal sealed class OfertaCursoReader : IOfertaCursoReader
             return null;
         }
 
-        Dictionary<Guid, GrupoCurso?> gruposPorCurso = await ObterGruposDosCursosAsync(
+        Dictionary<Guid, CursoDaOferta> cursos = await ObterCursosAsync(
             [entidade.CursoId], cancellationToken).ConfigureAwait(false);
 
-        return ParaView(entidade, gruposPorCurso.GetValueOrDefault(entidade.CursoId));
+        return ParaView(entidade, cursos.GetValueOrDefault(entidade.CursoId));
     }
 
     /// <summary>
-    /// O grupo de área do ENEM de cada curso pedido. A oferta não navega até o curso, e
-    /// o consumidor precisa do grupo para congelá-lo junto da oferta; curso ausente da
-    /// leitura deixa a oferta sem grupo, nunca fora da resposta.
+    /// O nome, o grau e o grupo de área do ENEM de cada curso pedido. A oferta não navega até o
+    /// curso, e o consumidor precisa deles para congelá-los junto da oferta; curso ausente da
+    /// leitura deixa a oferta sem nome de curso e sem grupo, nunca fora da resposta.
     /// </summary>
-    private Task<Dictionary<Guid, GrupoCurso?>> ObterGruposDosCursosAsync(
+    private Task<Dictionary<Guid, CursoDaOferta>> ObterCursosAsync(
         List<Guid> cursoIds,
         CancellationToken cancellationToken) =>
         _dbContext.Cursos
             .AsNoTracking()
             .Where(c => cursoIds.Contains(c.Id))
-            .Select(c => new { c.Id, c.GrupoAreaEnem })
-            .ToDictionaryAsync(c => c.Id, c => c.GrupoAreaEnem, cancellationToken);
+            .Select(c => new { c.Id, c.Nome, c.Grau, c.GrupoAreaEnem })
+            .ToDictionaryAsync(c => c.Id, c => new CursoDaOferta(c.Nome, c.Grau, c.GrupoAreaEnem), cancellationToken);
 
-    private static OfertaCursoView ParaView(OfertaCurso o, GrupoCurso? grupoAreaEnem)
+    private static OfertaCursoView ParaView(OfertaCurso o, CursoDaOferta? curso)
     {
         UnidadeOfertante unidade = o.UnidadeOfertante;
+        GrupoCurso? grupoAreaEnem = curso?.GrupoAreaEnem;
 
         return new OfertaCursoView(
             o.Id,
@@ -100,6 +101,10 @@ internal sealed class OfertaCursoReader : IOfertaCursoReader
             o.VagasAnuaisAutorizadas,
             o.BaseLegal,
             o.AtoAutorizacaoMec,
-            grupoAreaEnem is null ? null : new GrupoAreaEnemView(grupoAreaEnem.Codigo, grupoAreaEnem.Rotulo));
+            grupoAreaEnem is null ? null : new GrupoAreaEnemView(grupoAreaEnem.Codigo, grupoAreaEnem.Rotulo),
+            curso?.Nome ?? string.Empty,
+            curso?.Grau ?? string.Empty);
     }
+
+    private sealed record CursoDaOferta(string Nome, string Grau, GrupoCurso? GrupoAreaEnem);
 }

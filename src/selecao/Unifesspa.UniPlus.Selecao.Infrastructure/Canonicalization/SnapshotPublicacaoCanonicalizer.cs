@@ -272,8 +272,14 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// catálogo depois da publicação não muda o que já foi congelado (ADR-0136, emenda de #1857). Sem novo
     /// bloco de topo. Sem produção em ambiente nenhum: fixture nova, <c>0.0.21</c> deixa de ser
     /// reconhecida.
+    /// O bump para <c>0.0.23</c> troca cada item de <c>ofertas</c>, que era o identificador da
+    /// oferta de curso, por um objeto com o identificador e o que nomeia a oferta para o candidato —
+    /// <c>cursoNome</c>, <c>cursoGrau</c>, <c>unidadeOfertanteNome</c> e <c>turnos</c> —, congelado
+    /// por valor na definição da distribuição de vagas. É o que o candidato vê ao escolher a oferta.
+    /// Sem novo bloco de topo. Sem produção em ambiente nenhum: fixture nova, <c>0.0.22</c> deixa de
+    /// ser reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.22";
+    internal const string SchemaVersionAtual = "0.0.23";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -764,12 +770,26 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
 
     private static JsonArray SerializarOfertas(ProcessoSeletivo processo)
     {
-        IEnumerable<string> ofertaIds = processo.DistribuicaoVagas
-            .Select(static d => d.OfertaCursoOrigemId.ToString())
-            .Distinct(StringComparer.Ordinal)
-            .OrderBy(static id => id, StringComparer.Ordinal);
+        JsonArray array = [];
+        foreach (ConfiguracaoDistribuicaoVagas configuracao in processo.DistribuicaoVagas
+            .OrderBy(static d => d.OfertaCursoOrigemId.ToString(), StringComparer.Ordinal))
+        {
+            // O gate de conformidade recusa publicar oferta sem nome congelado; chegar aqui sem ele
+            // é invariante quebrada.
+            OfertaCursoSnapshot oferta = configuracao.OfertaCurso ?? throw new InvalidOperationException(
+                $"Canonicalização de oferta de curso sem nome congelado ({configuracao.OfertaCursoOrigemId}) — o gate de conformidade deveria ter recusado a transição antes deste ponto.");
 
-        return new JsonArray([.. ofertaIds.Select(static id => (JsonNode?)JsonValue.Create(id))]);
+            array.Add(new JsonObject
+            {
+                ["ofertaCursoOrigemId"] = configuracao.OfertaCursoOrigemId,
+                ["cursoNome"] = HashCanonicalComputer.NormalizeNfc(oferta.CursoNome),
+                ["cursoGrau"] = HashCanonicalComputer.NormalizeNfc(oferta.CursoGrau),
+                ["unidadeOfertanteNome"] = HashCanonicalComputer.NormalizeNfc(oferta.UnidadeOfertanteNome),
+                ["turnos"] = new JsonArray([.. oferta.Turnos.Select(static t => (JsonNode?)JsonValue.Create(HashCanonicalComputer.NormalizeNfc(t)))]),
+            });
+        }
+
+        return array;
     }
 
     private static JsonObject SerializarAtendimento(ProcessoSeletivo processo)

@@ -71,7 +71,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         ReferenciaRegra regraInstitucional = ReferenciaRegra.Criar(
             RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!;
         ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 50, pr: 1m, regraInstitucional, regraAjuste: null, referenciaDemografica: null, [ampla]).Value!;
+            Guid.CreateVersion7(), voBase: 50, pr: 1m, regraInstitucional, regraAjuste: null, referenciaDemografica: null, [ampla], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
         processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
@@ -135,7 +135,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         ReferenciaRegra regraInstitucional = ReferenciaRegra.Criar(
             RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!;
         ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 50, pr: 1m, regraInstitucional, regraAjuste: null, referenciaDemografica: null, [ampla]).Value!;
+            Guid.CreateVersion7(), voBase: 50, pr: 1m, regraInstitucional, regraAjuste: null, referenciaDemografica: null, [ampla], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
         processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
 
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(

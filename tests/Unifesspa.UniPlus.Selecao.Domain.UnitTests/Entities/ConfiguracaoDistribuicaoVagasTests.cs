@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class ConfiguracaoDistribuicaoVagasTests
 {
@@ -64,7 +65,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     public void Criar_Lei12711Completa_Sucesso()
     {
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711(), RegraAjuste(), Demografica(), AsOitoFederaisMaisAc());
+            Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711(), RegraAjuste(), Demografica(), AsOitoFederaisMaisAc(), ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Modalidades.Should().HaveCount(9);
@@ -80,7 +81,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 60, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, modalidades);
+            Guid.CreateVersion7(), voBase: 60, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.VagasOfertadas.Should().HaveCount(2);
@@ -99,7 +100,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 60, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, modalidades,
-            grupoAreaEnem: codigo is null ? null : (codigo, rotulo));
+            grupoAreaEnem: codigo is null ? null : (codigo, rotulo), ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         if (codigo is null)
@@ -126,7 +127,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 0, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, modalidades,
-            grupoAreaEnem: (codigo, rotulo));
+            grupoAreaEnem: (codigo, rotulo), ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().Contain(e => e.Field == "grupoAreaEnem" && e.Error.Code == codigoDeErro);
@@ -144,7 +145,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, modalidades);
+            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsFailure.Should().BeTrue(
             "as quantidades dividem o total da oferta; publicar 42 numa oferta de 40 contradiz o VO_base declarado");
@@ -161,7 +162,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, modalidades);
+            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsFailure.Should().BeTrue("a oferta tem 40 vagas e o quadro distribuiu 4");
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.QuadroNaoCompletaVoBase");
@@ -180,7 +181,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, modalidades);
+            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.QuadroExcedeVoBase");
@@ -196,7 +197,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711(), RegraAjuste(), Demografica(), modalidades);
+            Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711(), RegraAjuste(), Demografica(), modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsSuccess.Should().BeTrue("no ramo federal a suplementar acresce ao VO_base, e a igualdade do quadro já vem da calculadora");
         resultado.Value!.TotalPublicado.Should().Be(55);
@@ -213,7 +214,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711(), RegraAjuste(), Demografica(), modalidades,
-            vagasAnuaisAutorizadas: null, modalidadesAdmitidas: RolLei12711);
+            vagasAnuaisAutorizadas: null, modalidadesAdmitidas: RolLei12711, ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsFailure.Should().BeTrue("AC_PCD não está no rol de nove da regra pura — só a variação -COM-AC-PCD o admite");
         resultado.Errors.Should().Contain(e =>
@@ -232,7 +233,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711ComAcPcd(), RegraAjuste(), Demografica(), modalidades,
-            vagasAnuaisAutorizadas: null, modalidadesAdmitidas: RolLei12711ComAcPcd);
+            vagasAnuaisAutorizadas: null, modalidadesAdmitidas: RolLei12711ComAcPcd, ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsSuccess.Should().BeTrue(
             "sem EhRamoFederal cobrindo a variação, ela cairia no ramo que materializa quadro vazio sem erro");
@@ -250,7 +251,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraComAcPcd(), regraAjuste: null, referenciaDemografica: null,
-            modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: ["AC", "AC_PCD"]);
+            modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: ["AC", "AC_PCD"], ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsFailure.Should().BeTrue("o rol de COM-AC-PCD só admite AC e AC_PCD — nenhuma cota da Lei 12.711");
         resultado.Errors.Should().Contain(e =>
@@ -263,7 +264,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     {
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 99999, pr: 0.5m, RegraLei12711(), RegraAjuste(), Demografica(),
-            AsOitoFederaisMaisAc(), vagasAnuaisAutorizadas: 40);
+            AsOitoFederaisMaisAc(), vagasAnuaisAutorizadas: 40, ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsFailure.Should().BeTrue(
             "o certame que ultrapassa o teto publica mais vagas do que o e-MEC autoriza para a oferta");
@@ -275,7 +276,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     {
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 40, pr: 0.5m, RegraLei12711(), RegraAjuste(), Demografica(),
-            AsOitoFederaisMaisAc(), vagasAnuaisAutorizadas: 40);
+            AsOitoFederaisMaisAc(), vagasAnuaisAutorizadas: 40, ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsSuccess.Should().BeTrue("o teto é o limite, e alcançá-lo é legítimo");
     }
@@ -287,7 +288,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         // o que confrontar, e recusar equivaleria a tratar a lacuna como zero.
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 99999, pr: 0.5m, RegraLei12711(), RegraAjuste(), Demografica(),
-            AsOitoFederaisMaisAc(), vagasAnuaisAutorizadas: null);
+            AsOitoFederaisMaisAc(), vagasAnuaisAutorizadas: null, ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsSuccess.Should().BeTrue();
     }
@@ -304,7 +305,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 10, pr: 1m, RegraPsiq(), regraAjuste: null, referenciaDemografica: null,
-            modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: ["AC_I", "AC_Q"]);
+            modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: ["AC_I", "AC_Q"], ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsFailure.Should().BeTrue("o PSIQ é certame exclusivo — não oferta ampla concorrência");
         resultado.Errors.Should().Contain(e =>
@@ -323,7 +324,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 2, pr: 1m, RegraPsiq(), regraAjuste: null, referenciaDemografica: null,
-            modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: ["AC_I", "AC_Q"]);
+            modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: ["AC_I", "AC_Q"], ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsFailure.Should().BeTrue("o rol do PSIQ é fechado nos dois sentidos — AC_Q ausente não fecha o quadro que a regra declara");
         resultado.Errors.Should().Contain(e =>
@@ -342,7 +343,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 4, pr: 1m, RegraPsiq(), regraAjuste: null, referenciaDemografica: null,
-            modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: ["AC_I", "AC_Q"]);
+            modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: ["AC_I", "AC_Q"], ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.TotalPublicado.Should().Be(4,
@@ -360,7 +361,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraComAcPcd(), regraAjuste: null, referenciaDemografica: null,
-            modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: ["AC", "AC_PCD"]);
+            modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: ["AC", "AC_PCD"], ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.TotalPublicado.Should().Be(40, "AC_PCD retira de AC — o par fecha no VO_base");
@@ -376,7 +377,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 10, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null,
-            modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: null);
+            modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: null, ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsSuccess.Should().BeTrue(
             "rol aberto atende o certame institucional que ainda não tem regra própria");
@@ -394,7 +395,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraComAcPcd(), RegraAjuste(), referenciaDemografica: null,
             modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: null,
-            argsAjuste: new ArgsReduzirDe("AC"));
+            argsAjuste: new ArgsReduzirDe("AC"), ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.TotalPublicado.Should().Be(40);
@@ -415,7 +416,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraComAcPcd(), regraAjuste: null, referenciaDemografica: null,
-            modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: null, argsAjuste: null);
+            modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: null, argsAjuste: null, ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsFailure.Should().BeTrue("sem motor declarado não há de onde tirar");
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.QuadroExcedeVoBase");
@@ -432,7 +433,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraInstitucional(), RegraAjuste(), referenciaDemografica: null,
             modalidades, vagasAnuaisAutorizadas: null, modalidadesAdmitidas: null,
-            argsAjuste: new ArgsReduzirDe("AC"));
+            argsAjuste: new ArgsReduzirDe("AC"), ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsFailure.Should().BeTrue(
             "acrescer seria o sistema criar vaga que ninguém autorizou — quem configura fecha a conta");
@@ -453,7 +454,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 4, pr: 1m, RegraPsiq(), regraAjuste: null, referenciaDemografica: null, modalidades);
+            Guid.CreateVersion7(), voBase: 4, pr: 1m, RegraPsiq(), regraAjuste: null, referenciaDemografica: null, modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().Contain(e =>
@@ -471,7 +472,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraComAcPcd(), regraAjuste: null, referenciaDemografica: null, modalidades);
+            Guid.CreateVersion7(), voBase: 40, pr: 1m, RegraComAcPcd(), regraAjuste: null, referenciaDemografica: null, modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsSuccess.Should().BeTrue("a ampla está ofertada — o destino da reclassificação existe");
     }
@@ -486,7 +487,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 4, pr: 1m, RegraPsiq(), regraAjuste: null, referenciaDemografica: null, modalidades);
+            Guid.CreateVersion7(), voBase: 4, pr: 1m, RegraPsiq(), regraAjuste: null, referenciaDemografica: null, modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsSuccess.Should().BeTrue(
             "o token delega o destino à regra do edital e não nomeia modalidade nenhuma");
@@ -515,7 +516,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 4, pr: 1m, RegraPsiq(), regraAjuste: null, referenciaDemografica: null, modalidades);
+            Guid.CreateVersion7(), voBase: 4, pr: 1m, RegraPsiq(), regraAjuste: null, referenciaDemografica: null, modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsSuccess.Should().BeTrue("é o par do PSIQ, recíproco desde o seed");
     }
@@ -531,7 +532,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 6, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, modalidades);
+            Guid.CreateVersion7(), voBase: 6, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().Contain(e =>
@@ -549,7 +550,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 4, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, modalidades);
+            Guid.CreateVersion7(), voBase: 4, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsFailure.Should().BeTrue("o cruzamento exige que os dois lados o declarem");
         resultado.Errors.Should().Contain(e => e.Error.Code == "ConfiguracaoDistribuicaoVagas.ParCruzadoNaoReciproco");
@@ -561,7 +562,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         List<ModalidadeSelecionada> modalidades = [ModalidadeCruzada("AC_I", par: "AC_I")];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 2, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, modalidades);
+            Guid.CreateVersion7(), voBase: 2, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsFailure.Should().BeTrue(
             "o auto-laço satisfaz a comparação recíproca mas não tem para onde remanejar");
@@ -584,7 +585,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     public void Criar_VoBaseInvalido_Falha(int voBase)
     {
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase, pr: 0.5m, RegraLei12711(), RegraAjuste(), Demografica(), AsOitoFederaisMaisAc());
+            Guid.CreateVersion7(), voBase, pr: 0.5m, RegraLei12711(), RegraAjuste(), Demografica(), AsOitoFederaisMaisAc(), ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.VoBaseInvalido");
@@ -596,7 +597,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     public void Criar_PrForaDoLimite_Falha(double pr)
     {
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 50, (decimal)pr, RegraLei12711(), RegraAjuste(), Demografica(), AsOitoFederaisMaisAc());
+            Guid.CreateVersion7(), voBase: 50, (decimal)pr, RegraLei12711(), RegraAjuste(), Demografica(), AsOitoFederaisMaisAc(), ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.PrForaDoLimite");
@@ -606,7 +607,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     public void Criar_ModalidadesVazias_Falha()
     {
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711(), RegraAjuste(), Demografica(), []);
+            Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711(), RegraAjuste(), Demografica(), [], ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.ModalidadesVazias");
@@ -622,7 +623,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 50, pr: 1m, RegraInstitucional(), null, null, modalidades);
+            Guid.CreateVersion7(), voBase: 50, pr: 1m, RegraInstitucional(), null, null, modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.ModalidadeDuplicada");
@@ -638,7 +639,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         // "AC" não está selecionado nesta oferta — a origem do RETIRA_DE
         // aponta para uma modalidade ausente do conjunto.
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 50, pr: 1m, RegraInstitucional(), null, null, [retiraDeSemOrigemSelecionada]);
+            Guid.CreateVersion7(), voBase: 50, pr: 1m, RegraInstitucional(), null, null, [retiraDeSemOrigemSelecionada], ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.ComposicaoOrigemNaoSelecionada");
@@ -656,7 +657,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
 
         // "QUIL" (o par) não está selecionado — só "IND" e "AC" (o fallback).
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 50, pr: 1m, RegraInstitucional(), null, null, [indSemParSelecionado, ac]);
+            Guid.CreateVersion7(), voBase: 50, pr: 1m, RegraInstitucional(), null, null, [indSemParSelecionado, ac], ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.RemanejamentoParNaoSelecionado");
@@ -666,7 +667,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     public void Criar_Lei12711SemDemografica_Falha()
     {
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711(), RegraAjuste(), referenciaDemografica: null, AsOitoFederaisMaisAc());
+            Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711(), RegraAjuste(), referenciaDemografica: null, AsOitoFederaisMaisAc(), ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.ReferenciaDemograficaObrigatoria");
@@ -678,7 +679,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         List<ModalidadeSelecionada> modalidades = [.. AsOitoFederaisMaisAc().Where(m => m.Codigo != ModalidadesFederaisLei12711.LiEp)];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711(), RegraAjuste(), Demografica(), modalidades);
+            Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711(), RegraAjuste(), Demografica(), modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.ModalidadesFederaisIncompletas");
@@ -695,7 +696,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         List<ModalidadeSelecionada> modalidades = [.. AsOitoFederaisMaisAc(), retiradaDeSubReserva];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711(), RegraAjuste(), Demografica(), modalidades);
+            Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711(), RegraAjuste(), Demografica(), modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.RetiradaFederalDeveSerDeAmplaConcorrencia");
@@ -707,7 +708,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         List<ModalidadeSelecionada> modalidades = [Modalidade("IND", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal)];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 60, pr: 1m, RegraInstitucional(), null, Demografica(), modalidades);
+            Guid.CreateVersion7(), voBase: 60, pr: 1m, RegraInstitucional(), null, Demografica(), modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.ReferenciaDemograficaIndevida");
@@ -717,7 +718,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     public void Criar_VoBaseInvalidoEPrForaDoLimite_AcumulaAsDuasViolacoes()
     {
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 0, pr: 1.5m, RegraInstitucional(), null, null, []);
+            Guid.CreateVersion7(), voBase: 0, pr: 1.5m, RegraInstitucional(), null, null, [], ofertaCurso: OfertaCursoDeTeste.Medicina);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(

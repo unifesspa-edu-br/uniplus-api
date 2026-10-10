@@ -154,7 +154,7 @@ public sealed class DefinirConfiguracaoDivulgacaoCommandHandlerTests
             regraDistribuicao: regraDistribuicao,
             regraAjuste: null,
             referenciaDemografica: null,
-            modalidades: [modalidade]).Value!;
+            modalidades: [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
         processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ReferenciaRegra regraCalculo = ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", hashFixo).Value!;

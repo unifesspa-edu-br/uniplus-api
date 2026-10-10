@@ -64,7 +64,7 @@ public sealed partial class EnvelopeCodec
         JsonArray arrayDistribuicao = leitor.Array(payload, "distribuicao", "$");
         JsonArray arrayModalidades = leitor.Array(payload, "modalidades", "$");
         JsonArray arrayVagas = leitor.Array(payload, "vagas", "$");
-        IReadOnlyList<string> ofertasDeclaradas = leitor.Textos(payload, "ofertas", "$");
+        List<(Guid Id, OfertaCursoSnapshot Oferta)> ofertasDeclaradas = LerOfertas(leitor, payload);
         if (leitor.Falhou)
         {
             return [];
@@ -173,10 +173,12 @@ public sealed partial class EnvelopeCodec
             inputs.Add((ofertaId, voBase, pr, regra, regraAjuste, demografica, grupoAreaEnem));
         }
 
-        if (VerificarBlocosDerivados(ofertasEmDistribuicao, ofertasEmModalidades, ofertasEmVagas, ofertasDeclaradas) is { } incoerencia)
+        if (VerificarBlocosDerivados(ofertasEmDistribuicao, ofertasEmModalidades, ofertasEmVagas, [.. ofertasDeclaradas.Select(static o => o.Id)]) is { } incoerencia)
         {
             return leitor.Propagar<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>(incoerencia) ?? [];
         }
+
+        Dictionary<Guid, OfertaCursoSnapshot> nomePorOferta = ofertasDeclaradas.ToDictionary(static o => o.Id, static o => o.Oferta);
 
         List<ConfiguracaoDistribuicaoVagas> distribuicao = [];
         foreach ((Guid oferta, int voBase, decimal pr, ReferenciaRegra regra, ReferenciaRegra? regraAjuste, ReferenciaReservaDemograficaSnapshot? demografica, (string? Codigo, string? Rotulo)? grupoAreaEnem) in inputs)
@@ -184,7 +186,8 @@ public sealed partial class EnvelopeCodec
             Result<ConfiguracaoDistribuicaoVagas> configuracao = ConfiguracaoDistribuicaoVagas.Criar(
                 oferta, voBase, pr, regra, regraAjuste, demografica, modalidadesPorOferta[oferta],
                 modalidadesAdmitidas: RegraDistribuicaoVagasCodigo.RolFechado(regra.Codigo),
-                grupoAreaEnem: grupoAreaEnem);
+                grupoAreaEnem: grupoAreaEnem,
+                ofertaCurso: nomePorOferta[oferta]);
             if (configuracao.IsFailure)
             {
                 return leitor.Propagar<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>(configuracao.Error!) ?? [];
@@ -196,11 +199,51 @@ public sealed partial class EnvelopeCodec
         return distribuicao;
     }
 
+    /// <summary>
+    /// Cada oferta de curso com o que a nomeia para o candidato, congelado na definição da
+    /// distribuição.
+    /// </summary>
+    private static List<(Guid Id, OfertaCursoSnapshot Oferta)> LerOfertas(LeitorEnvelope leitor, JsonObject payload)
+    {
+        if (leitor.Falhou)
+        {
+            return [];
+        }
+
+        JsonArray array = leitor.Array(payload, "ofertas", "$");
+        List<(Guid, OfertaCursoSnapshot)> ofertas = [];
+        for (int i = 0; !leitor.Falhou && i < array.Count; i++)
+        {
+            string path = $"ofertas[{i}]";
+            JsonObject item = leitor.ItemObjeto(array, i, "ofertas");
+            leitor.ExigirChaves(item, path, "ofertaCursoOrigemId", "cursoNome", "cursoGrau", "unidadeOfertanteNome", "turnos");
+            Guid id = leitor.Identificador(item, "ofertaCursoOrigemId", path);
+            string cursoNome = leitor.TextoNaoVazio(item, "cursoNome", path, OfertaCursoSnapshot.CursoNomeMaxLength);
+            string cursoGrau = leitor.TextoNaoVazio(item, "cursoGrau", path, OfertaCursoSnapshot.CursoGrauMaxLength);
+            string unidade = leitor.TextoNaoVazio(item, "unidadeOfertanteNome", path, OfertaCursoSnapshot.UnidadeOfertanteNomeMaxLength);
+            IReadOnlyList<string> turnos = leitor.Textos(item, "turnos", path);
+            if (leitor.Falhou)
+            {
+                break;
+            }
+
+            Result<OfertaCursoSnapshot> oferta = OfertaCursoSnapshot.Criar(cursoNome, cursoGrau, unidade, turnos);
+            if (oferta.IsFailure)
+            {
+                return leitor.Propagar<List<(Guid, OfertaCursoSnapshot)>>(oferta.Error!) ?? [];
+            }
+
+            ofertas.Add((id, oferta.Value!));
+        }
+
+        return ofertas;
+    }
+
     private static DomainError? VerificarBlocosDerivados(
         List<Guid> emDistribuicao,
         List<Guid> emModalidades,
         List<Guid> emVagas,
-        IReadOnlyList<string> emOfertas)
+        List<Guid> ofertas)
     {
         if (emDistribuicao.Distinct().Count() != emDistribuicao.Count)
         {
@@ -214,21 +257,6 @@ public sealed partial class EnvelopeCodec
             return new DomainError(
                 ErrosCodecEnvelope.BlocosDerivadosIncoerentes,
                 "O bloco 'vagas' repete uma oferta de curso — cada oferta tem no máximo um quadro.");
-        }
-
-        List<Guid> ofertas = [];
-        foreach (string texto in emOfertas)
-        {
-            if (!Guid.TryParseExact(texto, "D", out Guid oferta)
-                || !string.Equals(oferta.ToString(), texto, StringComparison.Ordinal)
-                || oferta == Guid.Empty)
-            {
-                return new DomainError(
-                    ErrosCodecEnvelope.EnvelopeMalformado,
-                    $"Envelope malformado em 'ofertas': '{texto}' não é um Guid canônico não vazio.");
-            }
-
-            ofertas.Add(oferta);
         }
 
         if (ofertas.Distinct().Count() != ofertas.Count)

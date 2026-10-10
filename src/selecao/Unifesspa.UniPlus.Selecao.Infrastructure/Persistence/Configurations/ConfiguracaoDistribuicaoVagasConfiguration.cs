@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 /// <summary>
@@ -72,6 +73,28 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
                 .HasComment("Rótulo do grupo de área do ENEM do curso da oferta, congelado por valor junto do código na definição da distribuição. Nulo quando o curso não declara grupo.");
         });
         builder.Navigation(c => c.GrupoAreaEnem).IsRequired(false);
+
+        // O que nomeia a oferta para o candidato, congelado por valor (ADR-0061). Colunas nulas
+        // só em distribuição definida antes de a oferta ser nomeada aqui.
+        builder.OwnsOne(c => c.OfertaCurso, oferta =>
+        {
+            oferta.Property(o => o.CursoNome)
+                .HasColumnName("oferta_curso_nome")
+                .HasMaxLength(OfertaCursoSnapshot.CursoNomeMaxLength)
+                .HasComment("Nome do curso da oferta, congelado por valor do cadastro na definição da distribuição.");
+            oferta.Property(o => o.CursoGrau)
+                .HasColumnName("oferta_curso_grau")
+                .HasMaxLength(OfertaCursoSnapshot.CursoGrauMaxLength)
+                .HasComment("Grau do curso da oferta, congelado por valor do cadastro na definição da distribuição.");
+            oferta.Property(o => o.UnidadeOfertanteNome)
+                .HasColumnName("oferta_unidade_ofertante_nome")
+                .HasMaxLength(OfertaCursoSnapshot.UnidadeOfertanteNomeMaxLength)
+                .HasComment("Nome da unidade ofertante, congelado por valor do cadastro na definição da distribuição.");
+            oferta.Property(o => o.Turnos)
+                .HasColumnName("oferta_turnos")
+                .HasComment("Turnos que a oferta ocupa (tokens), congelados por valor do cadastro na definição da distribuição.");
+        });
+        builder.Navigation(c => c.OfertaCurso).IsRequired(false);
 
         // RegraAjuste (issue #848/ADR-0115) — obrigatória no ramo federal, opcional
         // no institucional (quadro fixo não reconcilia).

@@ -346,7 +346,7 @@ public sealed class RestauradorDeConfiguracaoTests
             regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!,
             regraAjuste: null,
             referenciaDemografica: null,
-            modalidades: [modalidade]).Value!;
+            modalidades: [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
         processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
@@ -505,7 +505,7 @@ public sealed class RestauradorDeConfiguracaoTests
             ValoresSelecionaveisCongelados: valoresSelecionaveis,
             CalendarioDiasUteis: CorpusEnvelope.CalendarioRico());
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.22", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.23", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,

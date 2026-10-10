@@ -36,7 +36,7 @@ internal static class ProjecaoDoCertamePublicado
     /// envelope congelado, que continua o mesmo quando só a projeção muda, e um cache endereçado
     /// apenas por ele serviria a resposta antiga depois do deploy.
     /// </summary>
-    public const string Versao = "4";
+    public const string Versao = "5";
 
     /// <summary>
     /// Forma do documento divulgado — a MESMA do wire, e a usada para lê-lo de volta.
@@ -211,7 +211,7 @@ internal static class ProjecaoDoCertamePublicado
             return Recusar("documento do edital");
         }
 
-        if (!TentarIdentificadores(envelope, BlocoPublico("ofertas"), out List<Guid>? ofertas))
+        if (!TentarOfertas(envelope, out List<OfertaDeCursoCertameDto>? ofertas))
         {
             return Recusar("ofertas");
         }
@@ -345,6 +345,34 @@ internal static class ProjecaoDoCertamePublicado
         // O identificador de origem e o slug ficam fora: são chave de integração com o cadastro
         // institucional, não informação que o edital comunica ao candidato.
         unidade = new UnidadeAdministradoraCertameDto(sigla, nome, tipo, cidadeNome, cidadeUf);
+        return true;
+    }
+
+    private static bool TentarOfertas(JsonObject envelope, [NotNullWhen(true)] out List<OfertaDeCursoCertameDto>? ofertas)
+    {
+        ofertas = null;
+        if (!TentarArray(envelope, BlocoPublico("ofertas"), out JsonArray? array))
+        {
+            return false;
+        }
+
+        List<OfertaDeCursoCertameDto> lidas = [];
+        foreach (JsonNode? item in array)
+        {
+            if (item is not JsonObject oferta
+                || !TentarIdentificador(oferta, "ofertaCursoOrigemId", out Guid id)
+                || !TentarTexto(oferta, "cursoNome", out string cursoNome)
+                || !TentarTexto(oferta, "cursoGrau", out string cursoGrau)
+                || !TentarTexto(oferta, "unidadeOfertanteNome", out string unidade)
+                || !TentarTextos(oferta, "turnos", out List<string>? turnos))
+            {
+                return false;
+            }
+
+            lidas.Add(new OfertaDeCursoCertameDto(id, cursoNome, cursoGrau, unidade, turnos));
+        }
+
+        ofertas = lidas;
         return true;
     }
 

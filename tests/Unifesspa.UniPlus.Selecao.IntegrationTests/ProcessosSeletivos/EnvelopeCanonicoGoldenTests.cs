@@ -307,7 +307,7 @@ public sealed class EnvelopeCanonicoGoldenTests
                     acaoQuandoIndeferido: null,
                     baseLegal: "Res. Unifesspa 532/2021",
                     quantidadeDeclarada: 40).Value!,
-            ]).Value!;
+            ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
 
     internal static DadosEdital DadosDeReferencia() => DadosEdital.Criar(
         numero: "001/2026",

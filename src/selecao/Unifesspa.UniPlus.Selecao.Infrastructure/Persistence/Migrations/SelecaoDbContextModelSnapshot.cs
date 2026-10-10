@@ -4301,6 +4301,48 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                                 .HasConstraintName("fk_configuracoes_distribuicao_vagas_configuracoes_distribuicao");
                         });
 
+                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.OfertaCursoSnapshot", "OfertaCurso", b1 =>
+                        {
+                            b1.Property<Guid>("ConfiguracaoDistribuicaoVagasId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("CursoGrau")
+                                .IsRequired()
+                                .HasMaxLength(60)
+                                .HasColumnType("character varying(60)")
+                                .HasColumnName("oferta_curso_grau")
+                                .HasComment("Grau do curso da oferta, congelado por valor do cadastro na definição da distribuição.");
+
+                            b1.Property<string>("CursoNome")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("oferta_curso_nome")
+                                .HasComment("Nome do curso da oferta, congelado por valor do cadastro na definição da distribuição.");
+
+                            b1.PrimitiveCollection<string[]>("Turnos")
+                                .IsRequired()
+                                .HasColumnType("text[]")
+                                .HasColumnName("oferta_turnos")
+                                .HasComment("Turnos que a oferta ocupa (tokens), congelados por valor do cadastro na definição da distribuição.");
+
+                            b1.Property<string>("UnidadeOfertanteNome")
+                                .IsRequired()
+                                .HasMaxLength(250)
+                                .HasColumnType("character varying(250)")
+                                .HasColumnName("oferta_unidade_ofertante_nome")
+                                .HasComment("Nome da unidade ofertante, congelado por valor do cadastro na definição da distribuição.");
+
+                            b1.HasKey("ConfiguracaoDistribuicaoVagasId");
+
+                            b1.ToTable("configuracoes_distribuicao_vagas", "selecao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ConfiguracaoDistribuicaoVagasId")
+                                .HasConstraintName("fk_configuracoes_distribuicao_vagas_configuracoes_distribuicao");
+                        });
+
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ReferenciaReservaDemograficaSnapshot", "ReferenciaDemografica", b1 =>
                         {
                             b1.Property<Guid>("ConfiguracaoDistribuicaoVagasId")
@@ -4348,6 +4390,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         });
 
                     b.Navigation("GrupoAreaEnem");
+
+                    b.Navigation("OfertaCurso");
 
                     b.Navigation("ReferenciaDemografica");
 

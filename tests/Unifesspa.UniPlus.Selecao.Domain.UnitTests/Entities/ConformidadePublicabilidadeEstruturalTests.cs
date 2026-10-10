@@ -73,7 +73,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             Guid.CreateVersion7(), voBase, pr: 1m,
             Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), regraAjuste: null, referenciaDemografica: null,
             [Modalidade("AC", NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.Nenhuma, voBase, acaoQuandoIndeferido)],
-            grupoAreaEnem: grupoAreaEnem).Value!;
+            grupoAreaEnem: grupoAreaEnem, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
 
     /// <summary>
     /// Os itens vermelhos do checklist, sem os do formulário: os testes que isolam uma razão de
@@ -296,7 +296,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     private static ReferenciaRegra RegraAjusteArt11() => Regra("RECONCILIACAO-VAGAS-ART11-PU", 'd');
 
     private static ConfiguracaoDistribuicaoVagas OfertaFederalCompleta() => ConfiguracaoDistribuicaoVagas.Criar(
-        Guid.CreateVersion7(), voBase: 40, pr: 0.5m, RegraLei12711(), RegraAjusteArt11(), Demografica(), AsOitoFederaisMaisAc()).Value!;
+        Guid.CreateVersion7(), voBase: 40, pr: 0.5m, RegraLei12711(), RegraAjusteArt11(), Demografica(), AsOitoFederaisMaisAc(), ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
 
     /// <summary>A matriz legal completa (8×7), fallback AC — cada origem resolve nas outras sete, todas ofertadas.</summary>
     private static ConfiguracaoCascataRemanejamento CascataCompleta()
@@ -332,7 +332,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             [
                 Modalidade("AC", NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.Nenhuma, 8),
                 Modalidade("LB_PPI", NaturezaLegalModalidade.CotaReservada, RegraRemanejamentoModalidade.SegueCascata, 2),
-            ]).Value!;
+            ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
         ProcessoSeletivo processo = ProcessoConforme([oferta]);
 
         // A cascata (item agregado, comportamento pré-existente) TAMBÉM vai a vermelho —
@@ -383,7 +383,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 10, pr: 1m,
             Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), regraAjuste: null, referenciaDemografica: null,
-            [Modalidade("AC", NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.Nenhuma, 10)]).Value!;
+            [Modalidade("AC", NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.Nenhuma, 10)], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
         ProcessoSeletivo processo = ProcessoConforme([oferta]);
         // Nenhuma modalidade desta oferta é SegueCascata — o loop por oferta não recusa nada; só
         // a checagem global (origem declarada × origens SegueCascata em alguma oferta) alcança.
@@ -777,7 +777,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             ModalidadesFederaisLei12711.Ac, RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null, "base legal", 2).Value!;
         ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 40, pr: 0.5m, RegraLei12711(), RegraAjusteArt11(), Demografica(),
-            [.. AsOitoFederaisMaisAc(), acPcd]).Value!;
+            [.. AsOitoFederaisMaisAc(), acPcd], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
 
         ProcessoSeletivo processo = ProcessoConforme([oferta]);
         processo.DefinirCascataRemanejamento(CascataCompleta(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -1449,6 +1449,26 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
         resultado.Error.Message.Should().Contain("Resolução de Pesos por Área");
+    }
+
+    [Fact(DisplayName = "Oferta sem nome congelado — só o item do nome fica vermelho, nomeando a oferta, e Publicar recusa")]
+    public void OfertaSemNomeCongelado()
+    {
+        ConfiguracaoDistribuicaoVagas nomeada = OfertaAmpla(10, grupoAreaEnem: null);
+        ConfiguracaoDistribuicaoVagas semNome = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), 5, pr: 1m,
+            Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), regraAjuste: null, referenciaDemografica: null,
+            [Modalidade("AC", NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.Nenhuma, 5, null)]).Value!;
+        ProcessoSeletivo processo = ProcessoConforme([nomeada, semNome]);
+
+        SoEstesItensVermelhos(processo, "distribuicao_vagas_oferta_sem_nome");
+        Item(processo, "distribuicao_vagas_oferta_sem_nome").Mensagem.Should()
+            .Contain(semNome.OfertaCursoOrigemId.ToString())
+            .And.NotContain(nomeada.OfertaCursoOrigemId.ToString());
+
+        Result<VersaoConfiguracao> resultado = Publicar(processo);
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
     }
 
     [Fact(DisplayName = "ENEM com cálculo local: ofertas sem grupo de área — só o item do grupo fica vermelho, nomeando as ofertas, e Publicar recusa")]

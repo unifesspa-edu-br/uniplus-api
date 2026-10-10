@@ -72,7 +72,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
         Result<ConfiguracaoDistribuicaoVagas> distribuicaoResult = ConfiguracaoDistribuicaoVagas.Criar(
             ofertaCursoOrigemId: Guid.CreateVersion7(), voBase: 10, pr: 1m,
             regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!,
-            regraAjuste: null, referenciaDemografica: null, modalidades: [ampla, cotaSegueCascataForaDoFederal]);
+            regraAjuste: null, referenciaDemografica: null, modalidades: [ampla, cotaSegueCascataForaDoFederal], ofertaCurso: OfertaCursoDeTeste.Medicina);
         distribuicaoResult.IsSuccess.Should().BeTrue(distribuicaoResult.Error?.Message);
 
         ProcessoSeletivo processo = ProcessoBaseConforme(nome, out FaseCronogramaBuilder faseBuilder, distribuicao: [distribuicaoResult.Value!]);
@@ -223,7 +223,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
         return ConfiguracaoDistribuicaoVagas.Criar(
             ofertaCursoOrigemId: Guid.CreateVersion7(), voBase: 40, pr: 1m,
             regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!,
-            regraAjuste: null, referenciaDemografica: null, modalidades: [modalidade], grupoAreaEnem: grupoAreaEnem).Value!;
+            regraAjuste: null, referenciaDemografica: null, modalidades: [modalidade], grupoAreaEnem: grupoAreaEnem, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
     }
 
     private static ProcessoSeletivo ProcessoBaseConforme(

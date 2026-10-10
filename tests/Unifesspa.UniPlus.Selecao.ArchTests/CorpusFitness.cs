@@ -64,7 +64,7 @@ internal static class CorpusFitness
                         NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
                         RegraRemanejamentoModalidade.Nenhuma, null, null, null,
                         [], null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
-                ]).Value!,
+                ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!,
         ], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(

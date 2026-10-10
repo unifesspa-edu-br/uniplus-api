@@ -280,6 +280,7 @@ public sealed class EnvelopeFechadoE2ETests
                 // ── PendenciaDeConformidade (itens estruturais originais) ──
                 "atendimento_especializado_ausente",
                 "distribuicao_vagas_ausente",
+                "distribuicao_vagas_oferta_sem_nome",
                 "classificacao_ausente",
                 "cronograma_fases_ausente",
                 "taxa_inscricao_nao_declarada",

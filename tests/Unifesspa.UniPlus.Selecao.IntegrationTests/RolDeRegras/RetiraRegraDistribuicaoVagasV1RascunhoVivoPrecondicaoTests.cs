@@ -146,7 +146,7 @@ public sealed class RetiraRegraDistribuicaoVagasV1RascunhoVivoPrecondicaoTests :
             regraDistribuicao: regraDistribuicao,
             regraAjuste: null,
             referenciaDemografica: null,
-            modalidades: [modalidade]);
+            modalidades: [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina);
         distribuicaoResult.IsSuccess.Should().BeTrue(distribuicaoResult.Error?.Message);
 
         Result definirResult = processo.DefinirDistribuicaoVagas([distribuicaoResult.Value!], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);

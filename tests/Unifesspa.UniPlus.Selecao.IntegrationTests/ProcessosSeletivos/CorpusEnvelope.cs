@@ -752,7 +752,7 @@ internal static class CorpusEnvelope
                 pcdPercentual: 8.40m,
                 baseLegal: "Lei 12.711/2012 art. 3º").Value!,
             modalidades: modalidades,
-            grupoAreaEnem: ("SAUDE_E_BIOLOGICAS", "Saúde e Biológicas")).Value!;
+            grupoAreaEnem: ("SAUDE_E_BIOLOGICAS", "Saúde e Biológicas"), ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
     }
 
     /// <summary>
@@ -794,7 +794,7 @@ internal static class CorpusEnvelope
                     RegraRemanejamentoModalidade.Cruzado, null, "IND", "AC",
                     ["autodeclaracao"], "RECLASSIFICAR_REGRA_EDITAL", "Res. Unifesspa 326/2019", quantidadeDeclarada: 10).Value!,
             ],
-            grupoAreaEnem: grupoAreaEnem).Value!;
+            grupoAreaEnem: grupoAreaEnem, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
 
     /// <summary>
     /// O período espelha a janela da fase que coleta inscrição (<c>INSCRICAO</c>), porque é dela

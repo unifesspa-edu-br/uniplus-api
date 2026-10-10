@@ -671,10 +671,10 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
 
         ConfiguracaoDistribuicaoVagas ofertaA = ConfiguracaoDistribuicaoVagas.Criar(
             new Guid("bbbb0000-0000-4000-8000-000000000001"), voBase: 10, pr: 1m, regra,
-            regraAjuste: null, referenciaDemografica: null, [V("RECLASSIFICAR_AC", 2), Ac(8)]).Value!;
+            regraAjuste: null, referenciaDemografica: null, [V("RECLASSIFICAR_AC", 2), Ac(8)], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
         ConfiguracaoDistribuicaoVagas ofertaB = ConfiguracaoDistribuicaoVagas.Criar(
             new Guid("bbbb0000-0000-4000-8000-000000000002"), voBase: 10, pr: 1m, regra,
-            regraAjuste: null, referenciaDemografica: null, [V("RECLASSIFICAR_REGRA_EDITAL", 2), Ac(8)]).Value!;
+            regraAjuste: null, referenciaDemografica: null, [V("RECLASSIFICAR_REGRA_EDITAL", 2), Ac(8)], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
 
         GrafoConfiguracao invalido = new(
             etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 1m, null, 1)],
@@ -1372,7 +1372,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
                     NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
                     RegraRemanejamentoModalidade.Nenhuma, null, null, null,
                     [], null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
-            ]).Value!;
+            ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
 
     private static ConfiguracaoClassificacao Classificacao(IReadOnlyList<RegraEliminacao> eliminacoes) =>
         ConfiguracaoClassificacao.Criar(
