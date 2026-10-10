@@ -30,6 +30,13 @@ public interface IInscricaoRepository
     /// </summary>
     Task AtualizarAsync(Inscricao entity, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Os comprovantes gravados das inscrições, em ordem de emissão — o agregado reidratado não os
+    /// carrega.
+    /// </summary>
+    Task<IReadOnlyList<ComprovanteInscricao>> ObterComprovantesAsync(
+        IReadOnlyCollection<Guid> inscricoes, CancellationToken cancellationToken = default);
+
     /// <summary>Grava o comprovante emitido por <see cref="Inscricao.Submeter"/> — nunca pela navegação do agregado.</summary>
     Task AdicionarComprovanteAsync(ComprovanteInscricao comprovante, CancellationToken cancellationToken = default);
 }

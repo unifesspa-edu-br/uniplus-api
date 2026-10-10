@@ -128,24 +128,31 @@ public sealed record ComprovanteInscricaoDto(
 /// Um item de "Minhas inscrições" (issue #1860): o nome preferido é o social, quando o candidato
 /// o declarou, e o CPF vem mascarado — nenhum outro número de documento aparece na lista.
 /// </summary>
+/// <param name="NomeDoProcesso">O nome do processo como está divulgado; nulo se ele deixou de ser público.</param>
+/// <param name="Comprovantes">Os comprovantes emitidos, em ordem de emissão; vazio em rascunho.</param>
 public sealed record MinhaInscricaoDto(
     Guid ProcessoSeletivoId,
+    string? NomeDoProcesso,
     string? NumeroInscricao,
     SituacaoInscricao Situacao,
     string NomePreferido,
-    string CpfMascarado)
+    string CpfMascarado,
+    IReadOnlyList<ComprovanteEmitidoDto> Comprovantes)
 {
     /// <summary>
     /// O nome social só prevalece quando o candidato declarou DESEJA_NOME_SOCIAL e preencheu
     /// NOME_SOCIAL (UNI-REQ-0032) — a ausência de qualquer um dos dois cai no nome civil, nunca
     /// em branco.
     /// </summary>
-    public static MinhaInscricaoDto De(Inscricao inscricao)
+    /// <param name="comprovantes">Os da inscrição, em ordem de emissão.</param>
+    public static MinhaInscricaoDto De(Inscricao inscricao, string? nomeDoProcesso, IReadOnlyList<ComprovanteInscricao> comprovantes)
     {
         ArgumentNullException.ThrowIfNull(inscricao);
+        ArgumentNullException.ThrowIfNull(comprovantes);
         return new MinhaInscricaoDto(
-            inscricao.ProcessoSeletivoId, inscricao.NumeroInscricao, inscricao.Situacao,
-            ResolverNomePreferido(inscricao.Respostas), inscricao.Cpf.Mascarado);
+            inscricao.ProcessoSeletivoId, nomeDoProcesso, inscricao.NumeroInscricao, inscricao.Situacao,
+            ResolverNomePreferido(inscricao.Respostas), inscricao.Cpf.Mascarado,
+            [.. comprovantes.Select(static (c, i) => new ComprovanteEmitidoDto(i + 1, c.Instante))]);
     }
 
     private static string ResolverNomePreferido(IReadOnlyDictionary<string, JsonElement> respostas)
@@ -165,3 +172,6 @@ public sealed record MinhaInscricaoDto(
             : string.Empty;
     }
 }
+
+/// <summary>Um comprovante emitido, pelo número com que se lê em <c>GET .../comprovantes/{numero}</c>.</summary>
+public sealed record ComprovanteEmitidoDto(int Numero, DateTimeOffset Instante);
