@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
@@ -392,6 +393,62 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         _modelos.ObterAsync(modelo.Id, Arg.Any<CancellationToken>()).Returns(modelo);
         return AplicarAsync(modelo.Id);
     }
+
+    [Fact(DisplayName = "Modelo que cita a opção pelas cotas num processo sem cota da lei ofertada é recusado, sem copiar a opção")]
+    public async Task Handle_OpcaoPelasCotasSemCotaOfertada_Recusa()
+    {
+        Ofertar(Ofertada("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula));
+        FatoColetadoInput porOpcao = Item("QUILOMBOLA", 1) with { Precondicao = [[new CondicaoPrecondicaoInput(OpcaoPelasCotasDaLei.Fato, "IGUAL", JsonSerializer.SerializeToElement(true))]] };
+
+        Result<AplicacaoDeModeloDto> resultado = await AplicarAsync(Modelo(FinalidadeFormulario.Inscricao, [Item("CERTIFICADO", 0), porOpcao]));
+
+        resultado.Errors.Select(static e => e.Error.Code).Should().Contain(AplicacaoDeModeloErrorCodes.SemCotaDaLeiOfertada);
+        _processo.RegrasDerivacao.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Com cota da lei ofertada, a opção pelas cotas vem da oferta e o que ela cita recebe a regra padrão")]
+    public async Task Handle_OpcaoPelasCotasComCotaOfertada_CopiaODeQueElaDepende()
+    {
+        Ofertar(
+            Ofertada("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula),
+            Ofertada("LI_EP", NaturezaLegalModalidade.CotaReservada, Quando(OpcaoPelasCotasDaLei.Fato, true)));
+        FatoColetadoInput porOpcao = Item("QUILOMBOLA", 2) with { Precondicao = [[new CondicaoPrecondicaoInput(OpcaoPelasCotasDaLei.Fato, "IGUAL", JsonSerializer.SerializeToElement(true))]] };
+
+        Result<AplicacaoDeModeloDto> resultado = await AplicarAsync(Modelo(
+            FinalidadeFormulario.Inscricao, [Item("CERTIFICADO", 0), Item(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 1), porOpcao]));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.DerivacoesMantidas.Should().Contain(OpcaoPelasCotasDaLei.Fato);
+        resultado.Value.DerivacoesCopiadas.Should().Equal(OrigemEscolar.FatoEgresso);
+        _processo.RegrasDerivacao.Select(static r => r.CodigoFato).Should().Equal(OrigemEscolar.FatoEgresso);
+    }
+
+    private void Ofertar(params ModalidadeSelecionada[] modalidades)
+    {
+        _catalogo.Add(new FatoCandidatoView(Guid.CreateVersion7(), OpcaoPelasCotasDaLei.Fato, "Optou", null, "BOOLEANO", "DERIVADO", "ESCALAR", null, "INSCRICAO",
+            $"REGRA_DERIVACAO:{OpcaoPelasCotasDaLei.Fato}", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL"));
+        _catalogo.Add(new FatoCandidatoView(Guid.CreateVersion7(), OrigemEscolar.FatoEgresso, "Egresso", null, "BOOLEANO", "DERIVADO", "ESCALAR", null, "INSCRICAO",
+            $"REGRA_DERIVACAO:{OrigemEscolar.FatoEgresso}", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL"));
+        _catalogo.Add(Declarado(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica));
+        _fatos.ListarRegrasPadraoAsync(Arg.Any<CancellationToken>()).Returns(new Dictionary<string, IReadOnlyList<RegraDerivacao>>(StringComparer.Ordinal)
+        {
+            [OpcaoPelasCotasDaLei.Fato] = OpcaoPelasCotasDaLei.RegrasDaOpcao,
+            [OrigemEscolar.FatoEgresso] = [RegraDerivacao.CriarBooleana(Quando("CERTIFICADO", true))],
+        });
+        _processo.DefinirDistribuicaoVagas(
+            [ConfiguracaoDistribuicaoVagas.Criar(
+                Guid.CreateVersion7(), 10 * modalidades.Length, 1m,
+                ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!,
+                null, null, modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!],
+            FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+    }
+
+    private static ModalidadeSelecionada Ofertada(string codigo, NaturezaLegalModalidade natureza, PredicadoDnf regra) =>
+        ModalidadeSelecionada.Criar(
+            Guid.CreateVersion7(), codigo, null, natureza,
+            natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.ResidualDoVo : ComposicaoVagasModalidade.SuplementarAoTotal, null,
+            natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueCascata : RegraRemanejamentoModalidade.Nenhuma,
+            null, null, null, regra, null, "base legal", quantidadeDeclarada: 10).Value!;
 
     private Task<Result<AplicacaoDeModeloDto>> AplicarAsync(Guid modeloId) =>
         AplicarModeloFormularioCommandHandler.Handle(

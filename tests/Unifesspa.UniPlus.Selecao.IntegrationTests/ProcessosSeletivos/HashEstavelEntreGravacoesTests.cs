@@ -187,7 +187,7 @@ public sealed class HashEstavelEntreGravacoesTests
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
             ModalidadeOrigem, "AC", null, NaturezaLegalModalidade.Ampla,
             ComposicaoVagasModalidade.ResidualDoVo, null, RegraRemanejamentoModalidade.Nenhuma,
-            null, null, null, PredicadoDnf.SemClausula, null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!;
+            null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!;
         processo.DefinirDistribuicaoVagas([ConfiguracaoDistribuicaoVagas.Criar(
             DistribuicaoOrigem, 40, 1m,
             ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!,

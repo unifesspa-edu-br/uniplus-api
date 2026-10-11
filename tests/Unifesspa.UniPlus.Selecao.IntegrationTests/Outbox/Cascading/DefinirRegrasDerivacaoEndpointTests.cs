@@ -28,11 +28,13 @@ using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 [Trait("Category", "OutboxCascading")]
 public sealed class DefinirRegrasDerivacaoEndpointTests
 {
+    private const string Derivado = "EGRESSO_ESCOLA_PUBLICA";
+
     private readonly CascadingFixture _fixture;
 
     public DefinirRegrasDerivacaoEndpointTests(CascadingFixture fixture) => _fixture = fixture;
 
-    [Fact(DisplayName = "Derivação de MODALIDADE válida (âncora + condicional citando fato coletado) é aceita com 204 e persiste")]
+    [Fact(DisplayName = "Derivação válida (condicional citando fato coletado) é aceita com 204 e persiste")]
     public async Task Rascunho_DerivacaoValida_204()
     {
         Contexto ctx = await SemearRascunhoAsync(nameof(Rascunho_DerivacaoValida_204));
@@ -44,14 +46,13 @@ public sealed class DefinirRegrasDerivacaoEndpointTests
         [
             new
             {
-                codigoFato = "MODALIDADE",
+                codigoFato = Derivado,
                 regras = new object[]
                 {
-                    new { ordem = 0, contribui = "AC", quando = (object?)null },
                     new
                     {
-                        ordem = 1,
-                        contribui = "AC",
+                        ordem = 0,
+                        contribui = (string?)null,
                         quando = new[] { new[] { new { fato = "COR_RACA", operador = "IGUAL", valor = "PRETA" } } },
                     },
                 },
@@ -67,26 +68,27 @@ public sealed class DefinirRegrasDerivacaoEndpointTests
         SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
         List<ConfiguracaoDerivacaoFato> configs = await db.Set<ConfiguracaoDerivacaoFato>().AsNoTracking()
             .Where(c => c.ProcessoSeletivoId == ctx.ProcessoId).ToListAsync();
-        configs.Select(c => c.CodigoFato).Should().BeEquivalentTo(["MODALIDADE"]);
+        configs.Select(c => c.CodigoFato).Should().BeEquivalentTo([Derivado]);
     }
 
-    [Fact(DisplayName = "Contribui fora das modalidades ofertadas é recusado com 422")]
-    public async Task Rascunho_ContribuiForaDoDominio_422()
+    [Fact(DisplayName = "A modalidade do candidato, que sai das modalidades ofertadas, é recusada com 422")]
+    public async Task Rascunho_DerivacaoDaOferta_422()
     {
-        Contexto ctx = await SemearRascunhoAsync(nameof(Rascunho_ContribuiForaDoDominio_422));
+        Contexto ctx = await SemearRascunhoAsync(nameof(Rascunho_DerivacaoDaOferta_422));
 
         object[] corpo =
         [
             new
             {
                 codigoFato = "MODALIDADE",
-                regras = new object[] { new { ordem = 0, contribui = "V", quando = (object?)null } },
+                regras = new object[] { new { ordem = 0, contribui = "AC", quando = (object?)null } },
             },
         ];
 
         HttpResponseMessage resposta = await ctx.PutRegrasAsync(corpo);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.selecao.processo_seletivo.derivacao_da_oferta");
     }
 
     [Fact(DisplayName = "Alvo declarado (não derivável) é recusado com 422")]
@@ -118,8 +120,8 @@ public sealed class DefinirRegrasDerivacaoEndpointTests
         [
             new
             {
-                codigoFato = "MODALIDADE",
-                regras = new object[] { new { ordem = 0, contribui = "AC", quando = (object?)null } },
+                codigoFato = Derivado,
+                regras = new object[] { new { ordem = 0, contribui = (string?)null, quando = (object?)null } },
             },
         ];
 
@@ -136,8 +138,8 @@ public sealed class DefinirRegrasDerivacaoEndpointTests
         [
             new
             {
-                codigoFato = "MODALIDADE",
-                regras = new object[] { new { ordem = 0, contribui = "AC", quando = (object?)null } },
+                codigoFato = Derivado,
+                regras = new object[] { new { ordem = 0, contribui = (string?)null, quando = (object?)null } },
             },
         ];
         string chave = MakeIdempotencyKey();
@@ -155,7 +157,7 @@ public sealed class DefinirRegrasDerivacaoEndpointTests
         Contexto ctx = await SemearRascunhoAsync(nameof(SemAutenticacao_401));
 
         HttpResponseMessage resposta = await ctx.PutRegrasAsync(
-            [new { codigoFato = "MODALIDADE", regras = new object[] { new { ordem = 0, contribui = "AC", quando = (object?)null } } }],
+            [new { codigoFato = Derivado, regras = new object[] { new { ordem = 0, contribui = (string?)null, quando = (object?)null } } }],
             autenticar: Autenticacao.Nenhuma);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -167,7 +169,7 @@ public sealed class DefinirRegrasDerivacaoEndpointTests
         Contexto ctx = await SemearRascunhoAsync(nameof(SemPapel_403));
 
         HttpResponseMessage resposta = await ctx.PutRegrasAsync(
-            [new { codigoFato = "MODALIDADE", regras = new object[] { new { ordem = 0, contribui = "AC", quando = (object?)null } } }],
+            [new { codigoFato = Derivado, regras = new object[] { new { ordem = 0, contribui = (string?)null, quando = (object?)null } } }],
             autenticar: Autenticacao.PapelErrado);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.Forbidden);

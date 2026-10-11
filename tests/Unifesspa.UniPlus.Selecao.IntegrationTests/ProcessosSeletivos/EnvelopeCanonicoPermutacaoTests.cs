@@ -128,22 +128,22 @@ public sealed class EnvelopeCanonicoPermutacaoTests
                 "pré-condição: a permutação tem de inverter a ordem de entrada da lista de configurações de derivação");
 
         // A lista EXTERNA de configurações de derivação já está coberta acima — mas o `permutar`
-        // também inverte, DENTRO da configuração de MODALIDADE, a lista de regras (AC/LB_PPI) e,
-        // dentro da regra LB_PPI, a lista de condições aninhadas (COR_RACA/RENDA). Nenhuma das duas
+        // também inverte, DENTRO da configuração de REGIME_INGRESSO, a lista de regras (AMPLA/COTISTA)
+        // e, dentro da regra COTISTA, a lista de condições aninhadas (COR_RACA/RENDA). Nenhuma das duas
         // tinha pré-condição própria: um agregado que normalizasse a ordem de QUALQUER uma na
         // entrada (por exemplo, reordenando por `Ordem`/`Clausula` num factory futuro) passaria
         // pela comparação de bytes ao final por vacuidade, sem que a lacuna aparecesse (issue #1087).
-        ConfiguracaoDerivacaoFato derivacaoModalidadeDireto = direto.RegrasDerivacao.Single(static c => c.CodigoFato == "MODALIDADE");
-        ConfiguracaoDerivacaoFato derivacaoModalidadePermutado = permutado.RegrasDerivacao.Single(static c => c.CodigoFato == "MODALIDADE");
-        derivacaoModalidadeDireto.Regras.Select(static r => r.Contribui)
-            .Should().NotEqual(derivacaoModalidadePermutado.Regras.Select(static r => r.Contribui),
-                "pré-condição: a permutação tem de inverter a ordem de entrada das regras dentro da configuração de derivação de MODALIDADE");
+        ConfiguracaoDerivacaoFato derivacaoDireto = direto.RegrasDerivacao.Single(static c => c.CodigoFato == "REGIME_INGRESSO");
+        ConfiguracaoDerivacaoFato derivacaoPermutado = permutado.RegrasDerivacao.Single(static c => c.CodigoFato == "REGIME_INGRESSO");
+        derivacaoDireto.Regras.Select(static r => r.Contribui)
+            .Should().NotEqual(derivacaoPermutado.Regras.Select(static r => r.Contribui),
+                "pré-condição: a permutação tem de inverter a ordem de entrada das regras dentro da configuração de derivação");
 
-        RegraDerivacaoConfigurada regraComCondicoesDireto = derivacaoModalidadeDireto.Regras.Single(static r => r.Contribui == "LB_PPI");
-        RegraDerivacaoConfigurada regraComCondicoesPermutado = derivacaoModalidadePermutado.Regras.Single(static r => r.Contribui == "LB_PPI");
+        RegraDerivacaoConfigurada regraComCondicoesDireto = derivacaoDireto.Regras.Single(static r => r.Contribui == "COTISTA");
+        RegraDerivacaoConfigurada regraComCondicoesPermutado = derivacaoPermutado.Regras.Single(static r => r.Contribui == "COTISTA");
         regraComCondicoesDireto.Condicoes.Select(static c => c.Fato)
             .Should().NotEqual(regraComCondicoesPermutado.Condicoes.Select(static c => c.Fato),
-                "pré-condição: a permutação tem de inverter a ordem de entrada das condições aninhadas da regra que contribui LB_PPI");
+                "pré-condição: a permutação tem de inverter a ordem de entrada das condições aninhadas da regra que contribui COTISTA");
 
         // A origem fixada é a primeira das 8 federais — permutar embaralha os DESTINOS dentro dela;
         // inverter a sequência de ORIGENS não provaria nada (cada origem aparece uma única vez na

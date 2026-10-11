@@ -68,7 +68,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
 
         ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, PredicadoDnf.SemClausula, null, "base legal", quantidadeDeclarada: 50).Value!;
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base legal", quantidadeDeclarada: 50).Value!;
         ReferenciaRegra regraInstitucional = ReferenciaRegra.Criar(
             RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!;
         ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
@@ -132,7 +132,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
 
         ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, PredicadoDnf.SemClausula, null, "base legal", quantidadeDeclarada: 50).Value!;
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base legal", quantidadeDeclarada: 50).Value!;
         ReferenciaRegra regraInstitucional = ReferenciaRegra.Criar(
             RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!;
         ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(

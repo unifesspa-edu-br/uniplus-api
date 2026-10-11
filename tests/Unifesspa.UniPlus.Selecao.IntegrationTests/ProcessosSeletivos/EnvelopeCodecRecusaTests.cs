@@ -999,7 +999,7 @@ public sealed class EnvelopeCodecRecusaTests
             modalidades: [
                 ModalidadeSelecionada.Criar(
                     Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-                    null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, PredicadoDnf.SemClausula, null, "Res. Unifesspa 532/2021",
+                    null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021",
                     quantidadeDeclarada: 40).Value!,
             ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
         processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -1942,21 +1942,19 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error.Message.Should().Contain(".impedimento'");
     }
 
-    [Fact(DisplayName = "Código contribuído por MODALIDADE fora do domínio de modalidades ofertadas é recusado")]
-    public void ContribuiForaDoDominioDeModalidades_Recusa()
+    [Fact(DisplayName = "A modalidade do candidato gravada entre as derivações do processo é recusada")]
+    public void ModalidadeGravadaComoDerivacao_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-        {
-            // A regra âncora de MODALIDADE contribui um código que o processo não oferta — o conjunto
-            // de modalidades ofertadas congelado prova o domínio, mas não que cada contribui caiba nele.
-            JsonObject modalidade = envelope["regrasDerivacao"]!.AsArray()
-                .Single(no => no!["codigoFato"]!.GetValue<string>() == "MODALIDADE")!.AsObject();
-            modalidade["regras"]!.AsArray()[0]!["contribui"] = "CODIGO_NAO_OFERTADO";
-        });
+            envelope["regrasDerivacao"]!.AsArray().Add(new JsonObject
+            {
+                ["codigoFato"] = "MODALIDADE",
+                ["regras"] = new JsonArray(new JsonObject { ["ordem"] = 0, ["contribui"] = "AC", ["quando"] = null }),
+            }));
 
-        resultado.IsFailure.Should().BeTrue(
-            "uma regra que contribui um código fora do domínio de modalidades ofertadas resolveria um valor " +
-            "impossível — a reconstrução do VO da regra contra o domínio congelado recusa");
+        resultado.IsFailure.Should().BeTrue("a modalidade sai das modalidades ofertadas, e o encoder não a grava");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error.Message.Should().Contain("derivado da oferta");
     }
 
     // ── Taxa de inscrição e isenção (issue #1112) — mesmo raciocínio de forma fechada e

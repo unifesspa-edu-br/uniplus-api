@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
@@ -195,10 +196,8 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
     [Fact(DisplayName = "Com condição de gatilho resolvida, MetadadosFatosCongelados carrega o metadado do fato citado")]
     public async Task Handle_ComCondicaoDeGatilhoResolvida_ResolveMetadadoDoFato()
     {
+        // A modalidade do candidato vem da ampla concorrência que o processo oferta.
         ProcessoSeletivo processo = NovoProcessoConforme(out Guid faseId);
-        processo.DefinirRegrasDerivacao(
-            [ConfiguracaoDerivacaoFato.Criar("MODALIDADE", [RegraDerivacaoConfigurada.Criar(0, "AC", null).Value!]).Value!],
-            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilhoPorFato(faseId, "MODALIDADE"), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
@@ -225,17 +224,19 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
     [Fact(DisplayName = "Gatilho que cita fato que o processo deixou de derivar recusa a publicação")]
     public async Task Handle_GatilhoCitaFatoForaDoProcesso_Recusa()
     {
+        const string derivado = "REGIME_DE_VAGA";
         ProcessoSeletivo processo = NovoProcessoConforme(out Guid faseId);
         processo.DefinirRegrasDerivacao(
-            [ConfiguracaoDerivacaoFato.Criar("MODALIDADE", [RegraDerivacaoConfigurada.Criar(0, "AC", null).Value!]).Value!],
+            [ConfiguracaoDerivacaoFato.Criar(derivado, [RegraDerivacaoConfigurada.Criar(0, "AC", null).Value!]).Value!],
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilhoPorFato(faseId, "MODALIDADE"), 0).Value!], PrecondicaoIfMatch.Curinga)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilhoPorFato(faseId, derivado), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
         processo.DefinirRegrasDerivacao([], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
         (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo);
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[FatoModalidade() with { PontoResolucao = "RESULTADO_FINAL" }]));
+            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[
+                FatoModalidade() with { Codigo = derivado, Binding = $"REGRA_DERIVACAO:{derivado}", PontoResolucao = "RESULTADO_FINAL" }]));
 
         (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento);
 
@@ -250,14 +251,10 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
         processo.DefinirItens(
             [FatoColetado.Criar("TEM_RENDA", 0, "Tem renda?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL").Value!],
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
-        processo.DefinirRegrasDerivacao(
-        [
-            ConfiguracaoDerivacaoFato.Criar("MODALIDADE",
-            [
-                RegraDerivacaoConfigurada.Criar(0, "AC",
-                    [CondicaoRegraDerivacao.Criar(0, "TEM_RENDA", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]).Value!,
-            ]).Value!,
-        ], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas(
+            [ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(PredicadoDnf.CriarDeCondicoesAgrupadas(
+                [(0, CondicaoDnf.Criar("TEM_RENDA", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!)],
+            FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilhoPorFato(faseId, "MODALIDADE"), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 

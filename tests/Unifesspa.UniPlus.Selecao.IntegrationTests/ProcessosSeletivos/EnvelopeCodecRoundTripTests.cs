@@ -12,6 +12,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -110,6 +111,7 @@ public sealed class EnvelopeCodecRoundTripTests
                     [(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!),
                 null, ajuda: "Renda por pessoa da família", pedirConfirmacao: true, classificacaoProtecao: "PESSOAL").Value!,
             FormularioDeTeste.CampoDaEdicaoDoEnem(3),
+            FatoColetado.Criar(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 4, "Deseja concorrer às vagas de escola pública?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
         ], grupos: []).IsSuccess.Should().BeTrue();
 
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
@@ -136,6 +138,7 @@ public sealed class EnvelopeCodecRoundTripTests
             FatoColetado.Criar("DATA_NASCIMENTO", 3, "Data de nascimento", TipoRenderizacao.Data, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
             FatoColetado.Criar("ENDERECO_RESIDENCIAL", 4, "Endereço residencial", TipoRenderizacao.Endereco, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
             FormularioDeTeste.CampoDaEdicaoDoEnem(5),
+            FatoColetado.Criar(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 6, "Deseja concorrer às vagas de escola pública?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
         ], grupos: []).IsSuccess.Should().BeTrue();
 
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
@@ -551,7 +554,7 @@ public sealed class EnvelopeCodecRoundTripTests
     [InlineData("distribuicao.0.referenciaDemografica.baseLegal", "Lei 14.723/2023 art. 3º")]
     [InlineData("modalidades.0.baseLegal", "Outra base legal inteiramente diversa")]
     [InlineData("modalidades.0.descricao", "Outra descrição")]
-    [InlineData("modalidades.1.acaoQuandoIndeferido", "RECLASSIFICAR_REGRA_EDITAL")]
+    [InlineData("modalidades.1.acaoQuandoIndeferido|modalidades.10.acaoQuandoIndeferido", "RECLASSIFICAR_REGRA_EDITAL")]
     [InlineData("bonusRegional.fator", "1.9900")]
     [InlineData("bonusRegional.teto", "42.5000")]
     [InlineData("bonusRegional.identificacao", "Portaria Unifesspa nº 999/2026")]
@@ -595,7 +598,7 @@ public sealed class EnvelopeCodecRoundTripTests
     [InlineData("classificacao.regrasEliminacao.1.args.notaMinima", "88.7500")]
     [InlineData("classificacao.regrasEliminacao.0.args.minimo", "555.0000")]
     [InlineData("classificacao.regrasEliminacao.0.args.areaCodigo", "MATEMATICA")]
-    [InlineData("modalidades.1.regraDeAplicabilidade.0.0.valor", "ATE_MEIO_SM")]
+    [InlineData("modalidades.1.regraDeAplicabilidade.0.0.valor|modalidades.10.regraDeAplicabilidade.0.0.valor", "ATE_MEIO_SM")]
     public void Decoder_NaoPerdeCampoDeOrdenacao(string caminho, string valorNovo)
     {
         (byte[] originais, byte[] _, byte[] recodificados) = MutarEReidratar(caminho, valorNovo);
@@ -628,12 +631,19 @@ public sealed class EnvelopeCodecRoundTripTests
 
     private static (byte[] Originais, byte[] Mutados, byte[] Recodificados) MutarEReidratar(string caminho, string valorNovo)
     {
+        ArgumentNullException.ThrowIfNull(caminho);
+
         ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
         CorpusEnvelope.Publicar(processo);
 
+        // A mesma modalidade é ofertada pelos dois cursos do processo rico, e o processo não aceita
+        // duas cópias diferentes dela: o caminho pode nomear as duas ocorrências, separadas por '|'.
         JsonObject mutado = Envelope(congelado);
-        Mutar(mutado, caminho, valorNovo);
+        foreach (string ocorrencia in caminho.Split('|'))
+        {
+            Mutar(mutado, ocorrencia, valorNovo);
+        }
 
         byte[] bytesMutados = PerfilCanonicoV1.Instancia.Serializar(mutado);
         bytesMutados.Should().NotEqual(congelado.Bytes, $"pré-condição: mutar '{caminho}' tem de mudar os bytes");
@@ -927,7 +937,7 @@ public sealed class EnvelopeCodecRoundTripTests
                     remanejamentoDestino: null,
                     remanejamentoPar: null,
                     remanejamentoFallback: null,
-                    regraDeAplicabilidade: PredicadoDnf.SemClausula,
+                    regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
                     acaoQuandoIndeferido: null,
                     baseLegal: "Res. Unifesspa 532/2021",
                     quantidadeDeclarada: 40).Value!,
@@ -1111,7 +1121,7 @@ public sealed class EnvelopeCodecRoundTripTests
             remanejamentoDestino: null,
             remanejamentoPar: null,
             remanejamentoFallback: null,
-            regraDeAplicabilidade: PredicadoDnf.SemClausula,
+            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
             acaoQuandoIndeferido: null,
             baseLegal: "Res. Unifesspa 532/2021",
             quantidadeDeclarada: 40).Value!;
@@ -1610,7 +1620,7 @@ public sealed class EnvelopeCodecRoundTripTests
                 ModalidadeSelecionada.Criar(
                     Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla,
                     ComposicaoVagasModalidade.ResidualDoVo, null, RegraRemanejamentoModalidade.Nenhuma,
-                    null, null, null, PredicadoDnf.SemClausula, null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
+                    null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
             ],
             grupoAreaEnem: ("TECNOLOGICA", "Tecnológica"), ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
         processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();

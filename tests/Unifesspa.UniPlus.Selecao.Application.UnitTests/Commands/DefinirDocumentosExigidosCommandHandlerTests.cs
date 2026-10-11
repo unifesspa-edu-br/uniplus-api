@@ -281,17 +281,12 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         null, "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL");
 
     /// <summary>
-    /// Declara a derivação da modalidade. É o que torna um gatilho por modalidade resolvível:
-    /// a modalidade de um candidato é calculada das respostas dele, não perguntada.
+    /// Oferta só a ampla concorrência. É o que torna um gatilho por modalidade resolvível: a
+    /// modalidade de um candidato é derivada das modalidades ofertadas, não perguntada.
     /// </summary>
-    private static void DeclararDerivacaoDeModalidade(ProcessoSeletivo processo)
-    {
-        // Uma regra âncora incondicional basta: o que este helper precisa é que o processo
-        // DECLARE a derivação, não que ela cubra o quadro de vagas inteiro.
-        RegraDerivacaoConfigurada regra = RegraDerivacaoConfigurada.Criar(0, "AC", null).Value!;
-        ConfiguracaoDerivacaoFato derivacao = ConfiguracaoDerivacaoFato.Criar("MODALIDADE", [regra]).Value!;
-        processo.DefinirRegrasDerivacao([derivacao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-    }
+    private static void OfertarAmplaConcorrencia(ProcessoSeletivo processo) =>
+        processo.DefinirDistribuicaoVagas([ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
 
     /// <summary>
     /// Faz o processo coletar o fato, que é o que torna um gatilho sobre ele resolvível.
@@ -335,7 +330,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseQualquer();
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        // Processo NÃO oferece nenhuma modalidade — DistribuicaoVagas vazia.
+        // O processo oferta só a ampla concorrência.
 
         Mocks mocks = NovosMocks(processo, processo.Id);
         Guid tipoDocumentoId = Guid.CreateVersion7();
@@ -344,10 +339,10 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
             .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[FatoModalidade()]));
 
-        // A modalidade é fato derivado POR REGRA: sem regra declarada, o processo não a resolve
-        // e a recusa seria outra. Declarar a derivação é o que deixa este teste chegar à
-        // conferência que ele de fato mede — o valor contra o domínio ofertado.
-        DeclararDerivacaoDeModalidade(processo);
+        // Sem modalidade ofertada, o processo não deriva a modalidade e a recusa seria outra. Ofertar
+        // a ampla é o que deixa este teste chegar à conferência que ele de fato mede — o valor contra
+        // o domínio ofertado.
+        OfertarAmplaConcorrencia(processo);
         CondicaoGatilhoInput condicao = new(0, "MODALIDADE", "IGUAL", "\"LB_PPI\"");
         ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, [condicao], [], null, Qualquer, null);
         DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);

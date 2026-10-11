@@ -145,7 +145,7 @@ public sealed class AvaliadorConformidadeLegalTests
             remanejamentoDestino: null,
             remanejamentoPar: null,
             remanejamentoFallback: null,
-            regraDeAplicabilidade: PredicadoDnf.SemClausula,
+            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(natureza),
             acaoQuandoIndeferido: null,
             baseLegal: "Lei 12.711/2012").Value!;
 

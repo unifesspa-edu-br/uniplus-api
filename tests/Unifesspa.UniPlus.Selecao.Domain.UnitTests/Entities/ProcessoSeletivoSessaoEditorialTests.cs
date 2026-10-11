@@ -275,7 +275,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         ProcessoSeletivo processo = ComSessaoAberta(out RascunhoRetificacao rascunho);
         int revisaoAntes = rascunho.Revisao;
 
-        ConfiguracaoDerivacaoFato config = ConfiguracaoDerivacaoFato.Criar("MODALIDADE",
+        ConfiguracaoDerivacaoFato config = ConfiguracaoDerivacaoFato.Criar("REGIME_DE_VAGA",
             [RegraDerivacaoConfigurada.Criar(0, "AC", condicoes: null).Value!]).Value!;
 
         processo.DefinirRegrasDerivacao([config], PrecondicaoIfMatch.DeTags([rascunho.ETag]))
@@ -283,7 +283,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         rascunho.Revisao.Should().Be(revisaoAntes + 1);
 
         ProcessoSeletivo semSessao = NovoProcessoPublicado(out _);
-        ConfiguracaoDerivacaoFato config2 = ConfiguracaoDerivacaoFato.Criar("MODALIDADE",
+        ConfiguracaoDerivacaoFato config2 = ConfiguracaoDerivacaoFato.Criar("REGIME_DE_VAGA",
             [RegraDerivacaoConfigurada.Criar(0, "AC", condicoes: null).Value!]).Value!;
         Result recusa = semSessao.DefinirRegrasDerivacao([config2], PrecondicaoIfMatch.Ausente);
         recusa.IsFailure.Should().BeTrue();
@@ -631,7 +631,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
             remanejamentoDestino: null,
             remanejamentoPar: null,
             remanejamentoFallback: null,
-            regraDeAplicabilidade: PredicadoDnf.SemClausula,
+            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
             acaoQuandoIndeferido: null,
             baseLegal: "Res. Unifesspa 532/2021",
             quantidadeDeclarada: 40).Value!;

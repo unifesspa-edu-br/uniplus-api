@@ -128,8 +128,8 @@ internal static class VocabularioDeFatos
     /// </summary>
     /// <remarks>
     /// São cinco conjuntos, e omitir qualquer um recusa configuração legítima: o que o processo
-    /// coleta nos formulários; o que ele deriva por regra declarada (a modalidade de
-    /// concorrência); o agregado cujo fato de membro é campo de um grupo do processo; o que o
+    /// coleta nos formulários; o que ele deriva por regra, declarada nele ou definida pela oferta de
+    /// vagas (a modalidade de concorrência); o agregado cujo fato de membro é campo de um grupo do processo; o que o
     /// sistema calcula de atributos do candidato (faixa etária, renda per capita) — o que declara
     /// dependências, só quando o processo coleta todas elas, porque sem a data de nascimento a faixa
     /// etária nunca se resolve; e o que a classificação produz (o grupo em que o candidato foi
@@ -148,7 +148,7 @@ internal static class VocabularioDeFatos
         bool DependenciasColetadas(string codigo) => !DerivadosDoSistema.Dependencias.ContainsKey(codigo) || resolvidos.Contains(codigo);
         return new(
             coletados
-                .Concat(processo.RegrasDerivacao.Select(static r => r.CodigoFato))
+                .Concat(processo.DerivacoesEfetivas().Select(static r => r.CodigoFato))
                 .Concat(MembroPorAgregado(fatos).Where(a => camposDeGrupo.Contains(a.Value)).Select(static a => a.Key))
                 .Concat(fatos
                     .Where(f => f.Binding is { } binding

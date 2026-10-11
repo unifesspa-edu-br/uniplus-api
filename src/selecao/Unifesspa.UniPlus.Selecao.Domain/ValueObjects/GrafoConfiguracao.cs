@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 
 /// <summary>
 /// As dimensões da configuração de um <see cref="ProcessoSeletivo"/>,
@@ -160,6 +161,12 @@ public sealed class GrafoConfiguracao
     /// envelope e repostas na restauração, mesma garantia de imutabilidade de <see cref="FatosColetados"/>.
     /// </summary>
     public IReadOnlyList<ConfiguracaoDerivacaoFato> RegrasDerivacao { get; }
+
+    /// <summary>
+    /// As derivações congeladas e as que a oferta de vagas congelada define (<see cref="DerivacoesDaOferta"/>),
+    /// as mesmas que o processo vivo avaliava.
+    /// </summary>
+    public IReadOnlyList<ConfiguracaoDerivacaoFato> DerivacoesEfetivas() => DerivacoesDaOferta.Efetivas(RegrasDerivacao, DistribuicaoVagas);
 
     /// <summary>
     /// A cascata de remanejamento das cotas reservadas (Story #575) — congelada no envelope e

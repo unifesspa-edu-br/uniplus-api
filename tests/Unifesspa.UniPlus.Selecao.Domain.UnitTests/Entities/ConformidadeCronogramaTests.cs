@@ -35,7 +35,7 @@ public sealed class ConformidadeCronogramaTests
                 ModalidadeSelecionada.Criar(
                     Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla,
                     ComposicaoVagasModalidade.ResidualDoVo, null, RegraRemanejamentoModalidade.Nenhuma,
-                    null, null, null, PredicadoDnf.SemClausula, null, "Res. Unifesspa 532/2021", quantidadeDeclarada: voBase).Value!,
+                    null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: voBase).Value!,
             ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
 
     private static Result<FaseCronograma> Fase(

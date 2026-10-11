@@ -64,7 +64,7 @@ public sealed class ProcessoSeletivoPublicarTests
             remanejamentoDestino: null,
             remanejamentoPar: null,
             remanejamentoFallback: null,
-            regraDeAplicabilidade: PredicadoDnf.SemClausula,
+            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
             acaoQuandoIndeferido: null,
             baseLegal: "Res. Unifesspa 532/2021",
             quantidadeDeclarada: 40).Value!;
@@ -659,7 +659,7 @@ public sealed class ProcessoSeletivoPublicarTests
             remanejamentoDestino: null,
             remanejamentoPar: null,
             remanejamentoFallback: null,
-            regraDeAplicabilidade: PredicadoDnf.SemClausula,
+            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(naturezaLegal),
             acaoQuandoIndeferido: acaoQuandoIndeferido,
             baseLegal: "Lei 12.711/2012",
             // Story #575: sob o regime federal (Lei 12.711), a quantidade de uma modalidade
@@ -724,11 +724,11 @@ public sealed class ProcessoSeletivoPublicarTests
                     .Where(codigo => codigo != modalidade.Codigo)
                     .Select(codigo => ModalidadeSelecionada.Criar(
                         Guid.CreateVersion7(), codigo, null, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr,
-                        null, RegraRemanejamentoModalidade.SegueCascata, null, null, null, PredicadoDnf.SemClausula, null, "Lei 12.711/2012", quantidadeDeclarada: null).Value!),
+                        null, RegraRemanejamentoModalidade.SegueCascata, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.CotaReservada), null, "Lei 12.711/2012", quantidadeDeclarada: null).Value!),
                 modalidade,
                 ModalidadeSelecionada.Criar(
                     Guid.CreateVersion7(), ModalidadesFederaisLei12711.Ac, null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-                    null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, PredicadoDnf.SemClausula, null, "base legal", quantidadeDeclarada: null).Value!,
+                    null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base legal", quantidadeDeclarada: null).Value!,
             ];
             distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
                 ofertaCursoOrigemId: Guid.CreateVersion7(),
@@ -772,6 +772,7 @@ public sealed class ProcessoSeletivoPublicarTests
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
+        RegrasDeAplicabilidadeDeTeste.DerivarOQueAOpcaoPelasCotasCita(processo);
         return processo;
     }
 

@@ -44,7 +44,6 @@ public sealed class CarregamentoDeMutacaoTests
         "Unifesspa.UniPlus.Selecao.Application/Queries/ProcessosSeletivos/ObterProcessoSeletivoQueryHandler.cs",
         "Unifesspa.UniPlus.Selecao.Application/Queries/ProcessosSeletivos/ObterConformidadeProcessoSeletivoQueryHandler.cs",
         "Unifesspa.UniPlus.Selecao.Application/Queries/ProcessosSeletivos/ObterConformidadeLegalProcessoSeletivoQueryHandler.cs",
-        "Unifesspa.UniPlus.Selecao.Application/Queries/ProcessosSeletivos/ObterRegrasDerivacaoNormativasQueryHandler.cs",
         "Unifesspa.UniPlus.Selecao.Application/Queries/ProcessosSeletivos/PreVisualizarProcessoSeletivoQuery.cs",
         "Unifesspa.UniPlus.Selecao.Application/Queries/ProcessosSeletivos/ObterFormularioRenderizavelDoRascunhoQuery.cs",
     ];

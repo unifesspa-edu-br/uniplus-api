@@ -72,7 +72,7 @@ public static class DefinirTermosDoFormularioCommandHandler
         // sistema cujas dependências o processo coleta.
         HashSet<string> coletados = new(processo.FatosColetados.Select(static f => f.FatoCodigo), StringComparer.Ordinal);
         HashSet<string> universo = new(
-            coletados.Concat(processo.RegrasDerivacao.Select(static r => r.CodigoFato)).Concat(VocabularioDeFatos.DerivadosDoSistemaResolvidos(coletados)),
+            coletados.Concat(processo.DerivacoesEfetivas().Select(static r => r.CodigoFato)).Concat(VocabularioDeFatos.DerivadosDoSistemaResolvidos(coletados)),
             StringComparer.Ordinal);
         (List<TermoExigidoFormulario> termos, List<FieldError> erros) =
             EscritaDosTermos.Resolver(lidos, contexto, versoes.ToDictionary(static v => v.VersaoId), universo);

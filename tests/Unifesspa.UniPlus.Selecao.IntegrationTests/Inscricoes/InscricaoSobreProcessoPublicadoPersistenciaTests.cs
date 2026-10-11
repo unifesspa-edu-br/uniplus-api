@@ -85,7 +85,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, PredicadoDnf.SemClausula, null, "Res. Unifesspa 532/2021",
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021",
             quantidadeDeclarada: 40).Value!;
         processo.DefinirDistribuicaoVagas(
             [ConfiguracaoDistribuicaoVagas.Criar(
@@ -620,16 +620,11 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         FatoColetado concorrerPcd = FatoColetado.Criar(
             "CONCORRER_PCD", 1, "Você quer concorrer às vagas para pessoa com deficiência?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null,
             classificacaoProtecao: "SENSIVEL", etapaCodigo: FormularioDeTeste.Secao, finalidade: FinalidadeFormulario.Inscricao).Value!;
-        ProcessoSeletivo processo = NovoProcessoDeInscricao(nome, camposAdicionais: [concorrerPcd]);
-        processo.DefinirRegrasDerivacao(
-        [
-            ConfiguracaoDerivacaoFato.Criar(AvaliacaoDaInscricao.FatoDaModalidade,
-            [
-                RegraDerivacaoConfigurada.Criar(0, "AC",
-                    [CondicaoRegraDerivacao.Criar(1, "CONCORRER_PCD", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]).Value!,
-            ]).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        return processo;
+        ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(
+            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, Clausulas([("CONCORRER_PCD", true)]), null, "Res. Unifesspa 532/2021",
+            quantidadeDeclarada: 40).Value!;
+        return NovoProcessoDeInscricao(nome, camposAdicionais: [concorrerPcd], modalidades: [ampla]);
     }
 
     private async Task<Result<AvaliacaoDaInscricaoDto>> AvaliarAsync(
@@ -678,11 +673,11 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         gravada.ETag.Should().Be(iniciar.Value!.ETag, "nenhuma consulta muda a revisão da inscrição");
     }
 
-    [Fact(DisplayName = "Sobre o processo que não deriva a modalidade, a consulta diz que não deriva, sem situação")]
-    public async Task Consulta_SemDerivacao_DizQueNaoDeriva()
+    [Fact(DisplayName = "Sobre o processo que só oferta a ampla, incondicional, a consulta diz que o candidato concorre a ela")]
+    public async Task Consulta_SoAmpla_ConcorreAAmpla()
     {
         await using SelecaoDbContext db = _fixture.CreateDbContext();
-        (Guid processoId, _) = await PublicarEDivulgarAsync(db, NovoProcessoDeInscricao(nameof(Consulta_SemDerivacao_DizQueNaoDeriva)));
+        (Guid processoId, _) = await PublicarEDivulgarAsync(db, NovoProcessoDeInscricao(nameof(Consulta_SoAmpla_ConcorreAAmpla)));
         IUserContext fernanda = UsuarioComCpf(PersonasDeTeste.FernandaDrumond);
         (await IniciarInscricaoCommandHandler.Handle(
             new IniciarInscricaoCommand(processoId),
@@ -692,7 +687,9 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
         Result<AvaliacaoDaInscricaoDto> avaliacao = await AvaliarAsync(db, processoId, fernanda, null);
 
-        avaliacao.Value!.Modalidades.Should().BeEquivalentTo(new ModalidadesDaInscricaoDto(false, null, [], []));
+        avaliacao.Value!.Modalidades.Derivada.Should().BeTrue("a modalidade sai das modalidades ofertadas");
+        avaliacao.Value.Modalidades.Situacao.Should().Be("CONCORRE");
+        avaliacao.Value.Modalidades.Itens.Select(static m => m.Codigo).Should().Equal(["AC"]);
     }
 
     [Fact(DisplayName = "A consulta só responde ao titular: sem inscrição no processo é não encontrada, e o sub divergente é dono divergente")]
@@ -741,9 +738,9 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     }
 
     /// <summary>
-    /// Um processo publicado com a matriz normativa da Lei 12.711 inteira (UNI-REQ-0076): as dez
-    /// modalidades ofertadas, as opções de concorrência e a origem escolar perguntadas, e o egresso de
-    /// escola pública derivado da origem escolar.
+    /// Um processo publicado com as dez modalidades da Lei 12.711 ofertadas, cada uma com a regra de
+    /// aplicabilidade da matriz da lei (UNI-REQ-0076), as opções de concorrência e a origem escolar
+    /// perguntadas, e o egresso de escola pública derivado da origem escolar.
     /// </summary>
     private static ProcessoSeletivo ProcessoComAMatrizNormativa(string nome)
     {
@@ -762,12 +759,11 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
                 Booleano("CONCORRER_PCD", 3), Booleano("CONCORRER_EP", 4), Booleano("CONCORRER_PPI", 5),
                 Booleano("CONCORRER_Q", 6), Booleano("CONCORRER_RENDA", 7),
             ],
-            modalidades: [.. RegrasDerivacaoModalidadeLei12711.DominioCanonico.Select(ModalidadeDaLei)]);
+            modalidades: [.. RegrasDaLei.Select(static r => ModalidadeDaLei(r.Key, r.Value))]);
         processo.DefinirRegrasDerivacao(
         [
             Configurada(RegrasDerivacaoFato.CriarBooleana(
                 OrigemEscolar.FatoEgresso, OrigemEscolar.RegrasDoEgresso, OrigemEscolar.DependenciasDoEgresso).Value!),
-            Configurada(RegrasDerivacaoModalidadeLei12711.Construir()),
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         return processo;
     }
@@ -782,16 +778,49 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     };
 
     /// <summary>
-    /// A modalidade ofertada, num quadro institucional fixo: a ampla concorrência e as demais retirando
-    /// vagas dela. O que se prova aqui é a derivação das modalidades, e não o cálculo do quadro da lei.
+    /// As regras da matriz da lei sobre a opção de cada dimensão: optar pelas cotas é ser egresso de
+    /// escola pública e optar pelas vagas de escola pública, a cota de renda acrescenta a renda, e a
+    /// reserva de pessoa com deficiência vale para quem não optou pelas cotas.
     /// </summary>
-    private static ModalidadeSelecionada ModalidadeDaLei(string codigo) => codigo == "AC"
+    private static readonly Dictionary<string, PredicadoDnf> RegrasDaLei = new(StringComparer.Ordinal)
+    {
+        ["AC"] = PredicadoDnf.SemClausula,
+        ["AC_PCD"] = Clausulas(
+            [(OpcaoPelasCotasDaLei.Fato, false), ("CONCORRER_PCD", true), (OrigemEscolar.FatoEgresso, false)],
+            [(OpcaoPelasCotasDaLei.Fato, false), ("CONCORRER_PCD", true), ("CONCORRER_EP", false)]),
+        ["LI_EP"] = Clausulas([.. OptouPelasCotas]),
+        ["LB_EP"] = Clausulas([.. OptouPelasCotas, ("CONCORRER_RENDA", true)]),
+        ["LI_PPI"] = Clausulas([.. OptouPelasCotas, ("CONCORRER_PPI", true)]),
+        ["LB_PPI"] = Clausulas([.. OptouPelasCotas, ("CONCORRER_PPI", true), ("CONCORRER_RENDA", true)]),
+        ["LI_Q"] = Clausulas([.. OptouPelasCotas, ("CONCORRER_Q", true)]),
+        ["LB_Q"] = Clausulas([.. OptouPelasCotas, ("CONCORRER_Q", true), ("CONCORRER_RENDA", true)]),
+        ["LI_PCD"] = Clausulas([.. OptouPelasCotas, ("CONCORRER_PCD", true)]),
+        ["LB_PCD"] = Clausulas([.. OptouPelasCotas, ("CONCORRER_PCD", true), ("CONCORRER_RENDA", true)]),
+    };
+
+    private static (string, bool)[] OptouPelasCotas => [(OrigemEscolar.FatoEgresso, true), ("CONCORRER_EP", true)];
+
+    private static PredicadoDnf Clausulas(params (string Fato, bool Valor)[][] clausulas) =>
+        PredicadoDnf.CriarDeCondicoesAgrupadas([.. clausulas.SelectMany(static (atomos, indice) => atomos.Select(a =>
+            (indice, CondicaoDnf.Criar(a.Fato, Operador.Igual, JsonSerializer.SerializeToElement(a.Valor)).Value!)))]).Value!;
+
+    /// <summary>
+    /// A modalidade ofertada, num quadro institucional fixo: a ampla concorrência e as demais retirando
+    /// vagas dela. O que se prova aqui é a derivação das modalidades, e não o cálculo do quadro da lei
+    /// nem a cascata das cotas, então só a reserva PcD tem a natureza de ação afirmativa, sem cota da
+    /// lei ofertada.
+    /// </summary>
+    private static ModalidadeSelecionada ModalidadeDaLei(string codigo, PredicadoDnf regra) => codigo == "AC"
         ? ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), codigo, "Ampla concorrência", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, PredicadoDnf.SemClausula, null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 22).Value!
-        : ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), codigo, $"Modalidade {codigo}", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe,
-            "AC", RegraRemanejamentoModalidade.DestinoUnico, "AC", null, null, PredicadoDnf.SemClausula, null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 2).Value!;
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, regra, null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 22).Value!
+        : codigo == "AC_PCD"
+            ? ModalidadeSelecionada.Criar(
+                Guid.CreateVersion7(), codigo, $"Modalidade {codigo}", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe,
+                "AC", RegraRemanejamentoModalidade.DestinoUnico, "AC", null, null, regra, null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 2).Value!
+            : ModalidadeSelecionada.Criar(
+                Guid.CreateVersion7(), codigo, $"Modalidade {codigo}", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RetiraDe,
+                "AC", RegraRemanejamentoModalidade.Nenhuma, null, null, null, regra, null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 2).Value!;
 
     /// <summary>A derivação na forma que o processo grava: cada cláusula do predicado vira um grupo de condições.</summary>
     private static ConfiguracaoDerivacaoFato Configurada(RegrasDerivacaoFato derivacao) =>

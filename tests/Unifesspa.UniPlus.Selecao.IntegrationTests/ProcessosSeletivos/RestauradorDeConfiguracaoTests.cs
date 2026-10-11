@@ -10,6 +10,7 @@ using NSubstitute;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Services;
@@ -336,7 +337,7 @@ public sealed class RestauradorDeConfiguracaoTests
             remanejamentoDestino: null,
             remanejamentoPar: null,
             remanejamentoFallback: null,
-            regraDeAplicabilidade: PredicadoDnf.SemClausula,
+            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
             acaoQuandoIndeferido: null,
             baseLegal: "Res. Unifesspa 532/2021",
             quantidadeDeclarada: 40).Value!;
@@ -597,13 +598,15 @@ public sealed class RestauradorDeConfiguracaoTests
 
         // Substitui a coleta pelo mesmo par {COR_RACA, RENDA} do corpus rico — SEM a
         // pré-condição de RENDA, irrelevante para esta prova — acrescido de
-        // CONDICAO_ATENDIMENTO (escopo-processo, SELECAO_MULTIPLA) e da edição do ENEM, que a
-        // classificação do corpus exige na inscrição.
+        // CONDICAO_ATENDIMENTO (escopo-processo, SELECAO_MULTIPLA), da edição do ENEM, que a
+        // classificação do corpus exige na inscrição, e da opção pelas vagas de escola pública, de
+        // que a opção pelas cotas depende.
         processo.DefinirItens([
             FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
             FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
             FatoColetado.Criar("CONDICAO_ATENDIMENTO", 2, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL").Value!,
             FormularioDeTeste.CampoDaEdicaoDoEnem(3),
+            FatoColetado.Criar(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 4, "Deseja concorrer às vagas de escola pública?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
         ], PrecondicaoIfMatch.Curinga, grupos: []).IsSuccess.Should().BeTrue();
 
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis =

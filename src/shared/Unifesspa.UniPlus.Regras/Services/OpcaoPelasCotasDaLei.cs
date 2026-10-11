@@ -46,6 +46,16 @@ public static class OpcaoPelasCotasDaLei
             && c.Valor.ValueKind == (optou ? JsonValueKind.True : JsonValueKind.False));
     }
 
+    /// <summary>
+    /// Se toda cláusula da regra exige a opção pelas cotas com o valor dado: é a forma da regra de uma
+    /// cota da lei (verdadeiro) e de uma ação afirmativa (falso). A regra sem cláusula não exige nada.
+    /// </summary>
+    public static bool TodaClausulaExige(PredicadoDnf regra, bool optou)
+    {
+        ArgumentNullException.ThrowIfNull(regra);
+        return regra.Clausulas.Count > 0 && regra.Clausulas.All(c => ClausulaExige(c, optou));
+    }
+
     private static CondicaoDnf Condicao(string fato, bool valor) =>
         Exigir(CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(valor)));
 

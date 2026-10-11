@@ -46,4 +46,5 @@ public static class AplicacaoDeModeloErrorCodes
     public const string PressupostoAusente = "AplicacaoDeModelo.PressupostoAusente";
     public const string DerivadoSemRegra = "AplicacaoDeModelo.DerivadoSemRegra";
     public const string SemDistribuicaoDeVagas = "AplicacaoDeModelo.SemDistribuicaoDeVagas";
+    public const string SemCotaDaLeiOfertada = "AplicacaoDeModelo.SemCotaDaLeiOfertada";
 }

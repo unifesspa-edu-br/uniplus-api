@@ -89,7 +89,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
 
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, PredicadoDnf.SemClausula, null, "Res. Unifesspa 532/2021",
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021",
             quantidadeDeclarada: 40).Value!;
         processo.DefinirDistribuicaoVagas(
             [ConfiguracaoDistribuicaoVagas.Criar(
@@ -212,7 +212,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
     public async Task Handle_Regras_SaoAsDaConfiguracaoPublicadaRecortadas()
     {
         // O corpus rico tem seção, termo e grupo exibidos por condição, impedimento, três derivações
-        // que nenhuma regra da inscrição cita e dois agregados sobre a composição familiar, que o
+        // configuradas e as duas da oferta, que nenhuma regra da inscrição cita e dois agregados sobre a composição familiar, que o
         // envelope congela e nenhuma regra do formulário cita.
         ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico(variante: 9);
         EntradaCanonicalizacao entrada = CorpusEnvelope.Entrada(processo);
@@ -260,7 +260,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         lido.Value!.Pressupostos.Select(static p => p.FatoCodigo).Should().Equal(esperado.Pressupostos);
         lido.Value.Regras.Agregados.Should().BeEmpty("nenhuma regra da inscrição cita os agregados da composição familiar");
         lido.Value.Regras.Etapas.Should().Contain(e => e.Exibicao != null, "a seção de pertencimento só aparece para quem se declarou preto");
-        processo.RegrasDerivacao.Should().HaveCount(3);
+        processo.DerivacoesEfetivas().Should().HaveCount(5);
         lido.Value.Regras.Derivacoes.Should().BeEmpty("nenhuma regra da inscrição cita derivado, e o contrato não publica o que o formulário não usa");
     }
 

@@ -47,7 +47,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
             Guid.CreateVersion7(), codigo, null, natureza, composicao,
             composicaoOrigemCodigo,
             natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueCascata : RegraRemanejamentoModalidade.Nenhuma,
-            null, null, null, PredicadoDnf.SemClausula, null, "base legal", quantidadeDeclarada).Value!;
+            null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(natureza), null, "base legal", quantidadeDeclarada).Value!;
 
     private static List<ModalidadeSelecionada> AsOitoFederaisMaisAc() =>
     [
@@ -505,7 +505,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
             composicaoOrigemCodigo is null ? ComposicaoVagasModalidade.SuplementarAoTotal : ComposicaoVagasModalidade.RetiraDe,
             composicaoOrigemCodigo,
             RegraRemanejamentoModalidade.Nenhuma,
-            null, null, null, PredicadoDnf.SemClausula, acaoQuandoIndeferido, "base legal", quantidadeDeclarada).Value!;
+            null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), acaoQuandoIndeferido, "base legal", quantidadeDeclarada).Value!;
 
     [Fact(DisplayName = "Par cruzado recíproco é aceito")]
     public void Criar_ParCruzadoReciproco_Sucesso()
@@ -577,7 +577,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
             composicaoOrigemCodigo: null,
             RegraRemanejamentoModalidade.Cruzado,
             remanejamentoDestino: null, remanejamentoPar: par, remanejamentoFallback: null,
-            regraDeAplicabilidade: PredicadoDnf.SemClausula, acaoQuandoIndeferido: null, baseLegal: "base legal",
+            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), acaoQuandoIndeferido: null, baseLegal: "base legal",
             quantidadeDeclarada: 2).Value!;
 
     [Theory(DisplayName = "Criar com VO_base não positivo falha")]
@@ -635,7 +635,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     {
         ModalidadeSelecionada retiraDeSemOrigemSelecionada = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "V", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe,
-            composicaoOrigemCodigo: "AC", RegraRemanejamentoModalidade.Nenhuma, null, null, null, PredicadoDnf.SemClausula, null, "base legal").Value!;
+            composicaoOrigemCodigo: "AC", RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), null, "base legal").Value!;
 
         // "AC" não está selecionado nesta oferta — a origem do RETIRA_DE
         // aponta para uma modalidade ausente do conjunto.
@@ -652,7 +652,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         ModalidadeSelecionada indSemParSelecionado = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "IND", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal,
             null, RegraRemanejamentoModalidade.Cruzado, null, remanejamentoPar: "QUIL", remanejamentoFallback: "AC",
-            regraDeAplicabilidade: PredicadoDnf.SemClausula, acaoQuandoIndeferido: null, baseLegal: "base legal").Value!;
+            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), acaoQuandoIndeferido: null, baseLegal: "base legal").Value!;
 
         ModalidadeSelecionada ac = Modalidade(ModalidadesFederaisLei12711.Ac, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo);
 
@@ -692,7 +692,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         ModalidadeSelecionada retiradaDeSubReserva = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "V", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe,
             composicaoOrigemCodigo: ModalidadesFederaisLei12711.LbPpi, RegraRemanejamentoModalidade.Nenhuma,
-            null, null, null, PredicadoDnf.SemClausula, null, "base legal", quantidadeDeclarada: 1).Value!;
+            null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), null, "base legal", quantidadeDeclarada: 1).Value!;
 
         List<ModalidadeSelecionada> modalidades = [.. AsOitoFederaisMaisAc(), retiradaDeSubReserva];
 

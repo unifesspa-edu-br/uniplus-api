@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -23,10 +24,12 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// <summary>
 /// Cobertura do <see cref="DefinirRegrasDerivacaoCommandHandler"/> (Story #985): o alvo derivado
 /// com binding de regra, a semântica das condições <c>quando</c> contra o vocabulário e a oferta do
-/// processo, o domínio de contribuição de MODALIDADE, e a delegação estrutural ao agregado.
+/// processo, a recusa das derivações que a oferta define, e a delegação estrutural ao agregado.
 /// </summary>
 public sealed class DefinirRegrasDerivacaoCommandHandlerTests
 {
+    private const string Derivado = "REGIME_DE_VAGA";
+
     private const string HashFixo = "ab01234567ab01234567ab01234567ab01234567ab01234567ab01234567ab01";
 
     private sealed record Mocks(
@@ -54,14 +57,16 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
             ["BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA", "NAO_INFORMADO"], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL"),
         new(Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", null, "BOOLEANO", "DECLARADO", "ESCALAR",
             null, "INSCRICAO", "CAMPO_FORMULARIO:BAIXA_RENDA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL"),
-        new(Guid.CreateVersion7(), "MODALIDADE", "Modalidade", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO",
-            null, "INSCRICAO", "REGRA_DERIVACAO:MODALIDADE", null, "MODALIDADE", Ativo: true, ClassificacaoProtecao: "PESSOAL"),
+        new(Guid.CreateVersion7(), Derivado, "Regime de vaga", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO",
+            ["AC", "AC_PCD"], "INSCRICAO", $"REGRA_DERIVACAO:{Derivado}",
+            [new FatoValorDominioViewItem("AC", "Ampla", 0, true), new FatoValorDominioViewItem("AC_PCD", "Reserva", 1, true)],
+            "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL"),
     ];
 
     private static ProcessoSeletivo ProcessoBase() =>
         ProcessoSeletivo.Criar("PS Regras", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
-    /// <summary>Processo em rascunho que oferta a modalidade AC e coleta COR_RACA — o mínimo para uma derivação de MODALIDADE válida.</summary>
+    /// <summary>Processo em rascunho que oferta a modalidade AC e coleta COR_RACA — o mínimo para uma derivação válida.</summary>
     private static ProcessoSeletivo ProcessoComModalidadeAcEColeta()
     {
         ProcessoSeletivo processo = ProcessoBase();
@@ -82,7 +87,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
             remanejamentoDestino: null,
             remanejamentoPar: null,
             remanejamentoFallback: null,
-            regraDeAplicabilidade: PredicadoDnf.SemClausula,
+            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
             acaoQuandoIndeferido: null,
             baseLegal: "Res. Unifesspa 532/2021",
             quantidadeDeclarada: 40).Value!;
@@ -102,8 +107,8 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
     private static CondicaoDerivacaoInput Condicao(string fato, string operador, object valor) =>
         new(fato, operador, JsonSerializer.SerializeToElement(valor));
 
-    private static ConfiguracaoDerivacaoInput ConfigModalidade(params RegraDerivacaoInput[] regras) =>
-        new("MODALIDADE", regras);
+    private static ConfiguracaoDerivacaoInput ConfigDerivado(params RegraDerivacaoInput[] regras) =>
+        new(Derivado, regras);
 
     [Fact(DisplayName = "Processo inexistente retorna ProcessoSeletivo.NaoEncontrado")]
     public async Task Handle_ProcessoInexistente_RetornaNaoEncontrado()
@@ -117,7 +122,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
     }
 
-    [Fact(DisplayName = "Derivação de MODALIDADE válida (âncora + condicional) é aceita e persistida")]
+    [Fact(DisplayName = "Derivação válida (âncora + condicional) é aceita e persistida")]
     public async Task Handle_DerivacaoValida_DefineEPersiste()
     {
         ProcessoSeletivo processo = ProcessoComModalidadeAcEColeta();
@@ -125,7 +130,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
 
         DefinirRegrasDerivacaoCommand command = new(processo.Id,
         [
-            ConfigModalidade(
+            ConfigDerivado(
                 new RegraDerivacaoInput(0, "AC", null),
                 new RegraDerivacaoInput(1, "AC", [[Condicao("COR_RACA", "IGUAL", "PRETA")]])),
         ], PrecondicaoIfMatch.Ausente);
@@ -134,7 +139,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.ETag.Should().BeNull("em rascunho não há sessão editorial nem ETag");
-        processo.RegrasDerivacao.Should().ContainSingle(c => c.CodigoFato == "MODALIDADE");
+        processo.RegrasDerivacao.Should().ContainSingle(c => c.CodigoFato == Derivado);
         await mocks.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -221,20 +226,21 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         }
     }
 
-    [Fact(DisplayName = "Contribui fora das modalidades ofertadas é recusado com ContribuiForaDoDominio")]
-    public async Task Handle_ContribuiForaDoDominio_Recusa()
+    [Theory(DisplayName = "A modalidade do candidato e a opção pelas cotas da lei são recusadas na forma, antes do vocabulário")]
+    [InlineData("MODALIDADE")]
+    [InlineData("OPTOU_PELAS_COTAS_DA_LEI")]
+    public async Task Handle_DerivacaoDaOferta_Recusa(string codigoFato)
     {
         ProcessoSeletivo processo = ProcessoComModalidadeAcEColeta();
         Mocks mocks = NovosMocks(processo, processo.Id);
 
-        // "V" não é uma modalidade ofertada (só AC é).
-        DefinirRegrasDerivacaoCommand command = new(processo.Id,
-            [ConfigModalidade(new RegraDerivacaoInput(0, "V", null))], PrecondicaoIfMatch.Ausente);
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, new DefinirRegrasDerivacaoCommand(processo.Id,
+            [new ConfiguracaoDerivacaoInput(codigoFato, [new RegraDerivacaoInput(0, "AC", null)])], PrecondicaoIfMatch.Ausente));
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("RegrasDerivacaoFato.ContribuiForaDoDominio");
+        resultado.IsFailure.Should().BeTrue("as duas saem das modalidades ofertadas");
+        resultado.Errors.Should().ContainSingle(e => e.Field == "configuracoes[0].codigoFato")
+            .Which.Error.Code.Should().Be(ProcessoSeletivoErrorCodes.DerivacaoDaOferta);
+        await mocks.FatoCandidatoReader.DidNotReceive().ListarAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Condição 'quando' que cita fato não disponível na configuração é recusada")]
@@ -245,7 +251,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
 
         // BAIXA_RENDA existe no vocabulário mas não é coletado nem derivado neste processo.
         DefinirRegrasDerivacaoCommand command = new(processo.Id,
-            [ConfigModalidade(new RegraDerivacaoInput(0, "AC", [[Condicao("BAIXA_RENDA", "IGUAL", true)]]))], PrecondicaoIfMatch.Ausente);
+            [ConfigDerivado(new RegraDerivacaoInput(0, "AC", [[Condicao("BAIXA_RENDA", "IGUAL", true)]]))], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -262,7 +268,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         DefinirRegrasDerivacaoCommand command = new(processo.Id,
         [
             new ConfiguracaoDerivacaoInput("", [new RegraDerivacaoInput(0, "AC", null)]),
-            ConfigModalidade(new RegraDerivacaoInput(-1, "", null)),
+            ConfigDerivado(new RegraDerivacaoInput(-1, "", null)),
         ], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
@@ -285,7 +291,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
 
         // COR_RACA é categórico: MAIOR_IGUAL não se aplica.
         DefinirRegrasDerivacaoCommand command = new(processo.Id,
-            [ConfigModalidade(new RegraDerivacaoInput(0, "AC", [[Condicao("COR_RACA", "MAIOR_IGUAL", "PRETA")]]))], PrecondicaoIfMatch.Ausente);
+            [ConfigDerivado(new RegraDerivacaoInput(0, "AC", [[Condicao("COR_RACA", "MAIOR_IGUAL", "PRETA")]]))], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 

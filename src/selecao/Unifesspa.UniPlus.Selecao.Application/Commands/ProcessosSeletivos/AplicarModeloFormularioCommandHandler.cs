@@ -6,6 +6,7 @@ using Abstractions;
 
 using Domain.Entities;
 using Domain.Interfaces;
+using Domain.Services;
 using Domain.ValueObjects;
 
 using Kernel.Results;
@@ -36,8 +37,9 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </para>
 /// <para>
 /// Os derivados por regra que a cópia cita, direta ou transitivamente, recebem do catálogo as
-/// regras padrão quando o processo ainda não os configura. A configuração existente, como a da
-/// modalidade, nunca é trocada.
+/// regras padrão quando o processo ainda não os configura. A configuração existente nunca é
+/// trocada. A modalidade do candidato e a opção pelas cotas da lei vêm da oferta de vagas e nunca
+/// são copiadas: quando a cópia as cita, o que elas citam é que recebe as regras padrão.
 /// </para>
 /// </remarks>
 public static partial class AplicarModeloFormularioCommandHandler
@@ -216,7 +218,7 @@ public static partial class AplicarModeloFormularioCommandHandler
         HashSet<string> universo = new(
             processo.FatosColetados.Select(static f => f.FatoCodigo)
                 .Concat(itens.Select(static i => i.FatoCodigo))
-                .Concat(processo.RegrasDerivacao.Select(static r => r.CodigoFato))
+                .Concat(processo.DerivacoesEfetivas().Select(static r => r.CodigoFato))
                 .Concat(derivacoesACopiar.Select(static d => d.CodigoFato)),
             StringComparer.Ordinal);
         List<ConfiguracaoDerivacaoFato> derivacoes = [];
@@ -349,8 +351,10 @@ public static partial class AplicarModeloFormularioCommandHandler
 
     /// <summary>
     /// Os derivados por regra citados pela cópia, direta ou transitivamente: o que o processo já
-    /// configura fica como está; o que não configura recebe as regras padrão do catálogo, salvo o
-    /// derivado sem regra padrão, que o processo precisa configurar antes.
+    /// deriva fica como está; o que não deriva recebe as regras padrão do catálogo, salvo o
+    /// derivado sem regra padrão, que o processo precisa configurar antes. O derivado da oferta de
+    /// vagas não é copiado: o que ele cita segue na fila, e a opção pelas cotas da lei, sem cota da
+    /// lei ofertada, é recusada.
     /// </summary>
     private static List<ConfiguracaoDerivacaoInput> EscolherDerivacoes(
         IEnumerable<string> citados,
@@ -360,7 +364,8 @@ public static partial class AplicarModeloFormularioCommandHandler
         Relatorio relatorio,
         List<FieldError> erros)
     {
-        HashSet<string> configurados = new(processo.RegrasDerivacao.Select(static r => r.CodigoFato), StringComparer.Ordinal);
+        Dictionary<string, ConfiguracaoDerivacaoFato> derivados =
+            processo.DerivacoesEfetivas().ToDictionary(static r => r.CodigoFato, StringComparer.Ordinal);
         HashSet<string> vistos = new(StringComparer.Ordinal);
         Queue<string> pendentes = new(citados.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal));
         List<ConfiguracaoDerivacaoInput> aCopiar = [];
@@ -373,9 +378,26 @@ public static partial class AplicarModeloFormularioCommandHandler
                 continue;
             }
 
-            if (configurados.Contains(codigo))
+            if (derivados.TryGetValue(codigo, out ConfiguracaoDerivacaoFato? derivado))
             {
                 relatorio.Mantidas.Add(codigo);
+                if (DerivacoesDaOferta.Deriva(codigo))
+                {
+                    foreach (string dependencia in derivado.FatosCitados)
+                    {
+                        pendentes.Enqueue(dependencia);
+                    }
+                }
+            }
+            else if (string.Equals(codigo, OpcaoPelasCotasDaLei.Fato, StringComparison.Ordinal))
+            {
+                erros.Add(new($"derivacoes[{codigo}]", new DomainError(
+                    AplicacaoDeModeloErrorCodes.SemCotaDaLeiOfertada,
+                    $"O modelo cita '{codigo}', que só existe no processo que oferta cota da lei; oferte as cotas na distribuição de vagas antes.")));
+            }
+            else if (DerivacoesDaOferta.Deriva(codigo))
+            {
+                // A modalidade sem modalidade ofertada: a recusa é a da distribuição de vagas que falta.
             }
             else if (!regrasPadrao.TryGetValue(codigo, out IReadOnlyList<RegraDerivacao>? regras))
             {

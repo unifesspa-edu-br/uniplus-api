@@ -17,15 +17,17 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
 /// <summary>
 /// Os modelos de inscrição e de habilitação do edital de Medicina 2027, semeados pela migration da
-/// Configuração, são aplicados a um processo PSR em rascunho, com bônus regional e a oferta de
-/// atendimento especializado, pelo passo Formulários, sem recusa.
+/// Configuração, são aplicados a um processo PSR em rascunho, com bônus regional, a oferta de
+/// atendimento especializado e cota da lei ofertada, pelo passo Formulários, sem recusa.
 /// </summary>
 [Collection(CascadingCollection.Name)]
 [Trait("Category", "OutboxCapability")]
@@ -75,12 +77,27 @@ public sealed class AplicarModelosPsrMedicina2027Tests
     }
 
     /// <summary>
-    /// O bônus regional com um município, de onde o campo do município do bônus tira as opções, e a
+    /// O bônus regional com um município, de onde o campo do município do bônus tira as opções; a
     /// oferta de atendimento com a condição fora da lista, cuja escolha a inscrição cita para pedir a
-    /// descrição, e um recurso.
+    /// descrição, e um recurso; e uma cota da lei ofertada, porque a inscrição pergunta pela opção
+    /// pelas cotas.
     /// </summary>
     private static void ComBonusRegionalEAtendimento(ProcessoSeletivo processo)
     {
+        Result distribuida = processo.DefinirDistribuicaoVagas(
+            [ConfiguracaoDistribuicaoVagas.Criar(
+                Guid.CreateVersion7(), 40, 1m,
+                ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!,
+                null, null,
+                [
+                    Modalidade("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula, 30),
+                    Modalidade("LI_EP", NaturezaLegalModalidade.CotaReservada, PredicadoDnf.CriarDeCondicoesAgrupadas(
+                        [(0, CondicaoDnf.Criar(OpcaoPelasCotasDaLei.Fato, Operador.Igual, System.Text.Json.JsonSerializer.SerializeToElement(true)).Value!)]).Value!, 10),
+                ],
+                ofertaCurso: Testes.Compartilhado.OfertaCursoDeTeste.Medicina).Value!],
+            Testes.Compartilhado.FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
+        distribuida.IsSuccess.Should().BeTrue(distribuida.Error?.Message);
+
         ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(
             ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", new string('e', 64)).Value!, 1.20m, null, null,
             Guid.CreateVersion7(), "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
@@ -95,6 +112,13 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         Result ofertada = processo.DefinirOfertaAtendimento(oferta, PrecondicaoIfMatch.Ausente);
         ofertada.IsSuccess.Should().BeTrue(ofertada.Error?.Message);
     }
+
+    private static ModalidadeSelecionada Modalidade(string codigo, NaturezaLegalModalidade natureza, PredicadoDnf regra, int vagas) =>
+        ModalidadeSelecionada.Criar(
+            Guid.CreateVersion7(), codigo, null, natureza,
+            natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.ResidualDoVo : ComposicaoVagasModalidade.SuplementarAoTotal, null,
+            natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueCascata : RegraRemanejamentoModalidade.Nenhuma,
+            null, null, null, regra, null, "Lei 12.711/2012", quantidadeDeclarada: vagas).Value!;
 
     private async Task<Guid> ModeloAsync(string codigo)
     {

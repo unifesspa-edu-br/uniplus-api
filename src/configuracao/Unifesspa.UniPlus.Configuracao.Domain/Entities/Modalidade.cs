@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
-using System.Text.Json;
-
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
@@ -210,7 +208,7 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
         || !string.Equals(campos.ComposicaoOrigem, ComposicaoOrigem, StringComparison.Ordinal)
         || campos.RegraRemanejamento != RegraRemanejamento
         || campos.RemanejamentoArgs != RemanejamentoArgs
-        || !MesmoPredicado(campos.RegraDeAplicabilidade!, RegraDeAplicabilidade)
+        || !campos.RegraDeAplicabilidade!.MesmoConteudo(RegraDeAplicabilidade)
         || campos.AcaoQuandoIndeferido != AcaoQuandoIndeferido;
 
     private void AplicarCampos(CamposResolvidos campos)
@@ -614,26 +612,14 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
         NaturezaLegal.Ampla when regra.Clausulas.Count > 0 => new("regraDeAplicabilidade", new DomainError(
             ModalidadeErrorCodes.AmplaConcorrenciaComCondicao,
             "A ampla concorrência vale para todo candidato: a regra dela não tem condição.")),
-        NaturezaLegal.CotaReservada when !TodaClausulaExige(regra, optou: true) => new("regraDeAplicabilidade", new DomainError(
+        NaturezaLegal.CotaReservada when !OpcaoPelasCotasDaLei.TodaClausulaExige(regra, optou: true) => new("regraDeAplicabilidade", new DomainError(
             ModalidadeErrorCodes.CotaSemOpcaoPelasCotasDaLei,
             $"Toda cláusula da regra de uma cota da lei exige {OpcaoPelasCotasDaLei.Fato} verdadeiro.")),
-        NaturezaLegal.AcaoAfirmativa when !TodaClausulaExige(regra, optou: false) => new("regraDeAplicabilidade", new DomainError(
+        NaturezaLegal.AcaoAfirmativa when !OpcaoPelasCotasDaLei.TodaClausulaExige(regra, optou: false) => new("regraDeAplicabilidade", new DomainError(
             ModalidadeErrorCodes.AcaoAfirmativaComOpcaoPelasCotasDaLei,
             $"Toda cláusula da regra de uma ação afirmativa exige {OpcaoPelasCotasDaLei.Fato} falso: quem optou pelas cotas da lei não concorre a ela.")),
         _ => null,
     };
-
-    private static bool TodaClausulaExige(PredicadoDnf regra, bool optou) =>
-        regra.Clausulas.Count > 0 && regra.Clausulas.All(c => OpcaoPelasCotasDaLei.ClausulaExige(c, optou));
-
-    private static bool MesmoPredicado(PredicadoDnf um, PredicadoDnf outro) =>
-        um.Clausulas.Count == outro.Clausulas.Count
-        && um.Clausulas.Zip(outro.Clausulas).All(static par =>
-            par.First.Condicoes.Count == par.Second.Condicoes.Count
-            && par.First.Condicoes.Zip(par.Second.Condicoes).All(static c =>
-                string.Equals(c.First.Fato, c.Second.Fato, StringComparison.Ordinal)
-                && c.First.Operador == c.Second.Operador
-                && JsonElement.DeepEquals(c.First.Valor, c.Second.Valor)));
 
     private static string? NormalizarOpcional(string? valor) =>
         string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();

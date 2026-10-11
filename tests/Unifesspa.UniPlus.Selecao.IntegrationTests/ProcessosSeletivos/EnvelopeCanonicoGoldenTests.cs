@@ -201,11 +201,10 @@ public sealed class EnvelopeCanonicoGoldenTests
             ReferenciaTemporalFatos.Criar(ReferenciaTipo.DataEspecifica, new DateOnly(2026, 1, 31), null).Value!,
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
-        // Coleta de fatos + derivação de MODALIDADE (Story #928, §7.4). O documento de referência é
-        // gatado por MODALIDADE (derivado), então congelar a derivação é o que fecha as QUATRO
-        // classes de aresta do grafo conjunto no mesmo snapshot — produção (campo→fato),
-        // pré-condição (COR_RACA gata RENDA), derivação (RENDA→MODALIDADE) e gatilho
-        // (MODALIDADE→exigência). MODALIDADE só contribui AC, a única modalidade ofertada.
+        // Coleta de fatos + derivação (Story #928, §7.4). Com o documento de referência gatado pela
+        // modalidade do candidato, derivada da única ofertada, o snapshot fecha as QUATRO classes de
+        // aresta do grafo conjunto — produção (campo→fato), pré-condição (COR_RACA gata RENDA),
+        // derivação (RENDA→REGIME_DE_VAGA) e gatilho (MODALIDADE→exigência).
         processo.DefinirItens([
             FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
             FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, [
@@ -220,7 +219,7 @@ public sealed class EnvelopeCanonicoGoldenTests
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirRegrasDerivacao([
-            ConfiguracaoDerivacaoFato.Criar("MODALIDADE", [
+            ConfiguracaoDerivacaoFato.Criar("REGIME_DE_VAGA", [
                 RegraDerivacaoConfigurada.Criar(0, "AC", null).Value!,
                 RegraDerivacaoConfigurada.Criar(1, "AC", [
                     CondicaoRegraDerivacao.Criar(0, "RENDA", Operador.Igual, JsonSerializer.SerializeToElement("ATE_1_SM")).Value!,
@@ -304,7 +303,7 @@ public sealed class EnvelopeCanonicoGoldenTests
                     remanejamentoDestino: null,
                     remanejamentoPar: null,
                     remanejamentoFallback: null,
-                    regraDeAplicabilidade: PredicadoDnf.SemClausula,
+                    regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
                     acaoQuandoIndeferido: null,
                     baseLegal: "Res. Unifesspa 532/2021",
                     quantidadeDeclarada: 40).Value!,

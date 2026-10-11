@@ -300,7 +300,9 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// O bump para <c>0.0.28</c> troca, em cada modalidade de <c>distribuicaoVagas.modalidades</c>,
     /// os <c>criteriosCumulativos</c> pela <c>regraDeAplicabilidade</c>: o predicado em DNF sobre os
     /// fatos do candidato que diz quem concorre a ela (ADR-0144), nulo na modalidade incondicional.
-    /// Sem novo bloco de topo. Sem produção em ambiente nenhum: fixture nova, <c>0.0.27</c> deixa de
+    /// Ainda sob a MESMA <c>0.0.28</c>, no mesmo trem de mudanças, <c>regrasDerivacao[]</c> deixa de
+    /// trazer a modalidade do candidato e a opção pelas cotas da lei: as duas saem das modalidades
+    /// ofertadas, e o grafo de dependência as projeta delas. Sem novo bloco de topo. Sem produção em ambiente nenhum: fixture nova, <c>0.0.27</c> deixa de
     /// ser reconhecida.
     /// </remarks>
     internal const string SchemaVersionAtual = "0.0.28";

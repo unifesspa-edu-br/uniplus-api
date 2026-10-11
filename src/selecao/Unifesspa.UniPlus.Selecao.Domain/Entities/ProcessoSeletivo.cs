@@ -296,11 +296,18 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     private readonly List<ConfiguracaoDerivacaoFato> _regrasDerivacao = [];
 
     /// <summary>
-    /// As regras de derivação dos fatos derivados deste processo, por código de fato (Story #927):
-    /// a configuração <c>{quando, contribui}</c> que o motor usa para resolver, por exemplo,
-    /// <c>MODALIDADE</c> a partir dos fatos declarados.
+    /// As regras de derivação que o processo configura, por código de fato (Story #927): a
+    /// configuração <c>{quando, contribui}</c> que o motor usa para resolver um fato a partir dos
+    /// fatos declarados. As que a oferta de vagas define estão em <see cref="DerivacoesEfetivas"/>.
     /// </summary>
     public IReadOnlyCollection<ConfiguracaoDerivacaoFato> RegrasDerivacao => _regrasDerivacao.AsReadOnly();
+
+    /// <summary>
+    /// Todas as derivações do processo: as que ele configura e as que a oferta de vagas define — a
+    /// modalidade do candidato e a opção pelas cotas da lei (<see cref="DerivacoesDaOferta"/>). É a
+    /// fonte de quem avalia, confere ou cita um fato derivado.
+    /// </summary>
+    public IReadOnlyList<ConfiguracaoDerivacaoFato> DerivacoesEfetivas() => DerivacoesDaOferta.Efetivas(_regrasDerivacao, _distribuicaoVagas);
 
     private readonly List<NoExigencia> _nosExigencia = [];
     public IReadOnlyCollection<NoExigencia> NosExigencia => _nosExigencia.AsReadOnly();
@@ -1314,7 +1321,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             }
         }
 
-        HashSet<string> derivados = new(_regrasDerivacao.Select(static c => c.CodigoFato), StringComparer.Ordinal);
+        erros.AddRange(copia.DerivacoesNovas
+            .Where(static c => DerivacoesDaOferta.Deriva(c.CodigoFato))
+            .Select(static c => new FieldError("derivacoes", DerivacoesDaOferta.RecusaDeConfiguracao(c.CodigoFato))));
+        HashSet<string> derivados = new(DerivacoesEfetivas().Select(static c => c.CodigoFato), StringComparer.Ordinal);
         erros.AddRange(copia.DerivacoesNovas
             .Where(c => !derivados.Add(c.CodigoFato))
             .Select(static c => new FieldError("derivacoes", new DomainError(
@@ -1342,7 +1352,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         // O estado final: os outros formulários sem o que a cópia trouxe para cá, e a cópia.
         FatoColetado[] itensFinais = [.. Itens.Where(f => f.Finalidade != finalidade && !daCopia.Contains(f.FatoCodigo)), .. copia.Itens];
-        ConfiguracaoDerivacaoFato[] derivacoesFinais = [.. _regrasDerivacao, .. copia.DerivacoesNovas];
+        ConfiguracaoDerivacaoFato[] derivacoesFinais = [.. DerivacoesEfetivas(), .. copia.DerivacoesNovas];
         TermoExigidoFormulario[] termosFinais = [.. _termosExigidos.Where(t => t.Finalidade != finalidade), .. copia.Termos];
         GrupoColetado[] gruposFinais = [.. _gruposColetados.Where(g => g.Finalidade != finalidade), .. copia.Grupos];
         Dictionary<string, IReadOnlyCollection<string>> dependenciasDasDerivacoes =
@@ -2168,7 +2178,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// agregado sobre grupo repetível.
     /// </summary>
     private IEnumerable<string> DependenciasDoFato(string fato, IReadOnlyDictionary<string, string> membroPorAgregado) =>
-        (_regrasDerivacao.Find(r => string.Equals(r.CodigoFato, fato, StringComparison.Ordinal))?.FatosCitados ?? [])
+        (DerivacoesEfetivas().FirstOrDefault(r => string.Equals(r.CodigoFato, fato, StringComparison.Ordinal))?.FatosCitados ?? [])
             .Concat(DerivadosDoSistema.Dependencias.GetValueOrDefault(fato) ?? [])
             .Concat(membroPorAgregado.TryGetValue(fato, out string? membro) ? [membro] : []);
 
@@ -2587,6 +2597,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         HashSet<string> codigos = new(StringComparer.Ordinal);
         foreach (ConfiguracaoDerivacaoFato config in regrasDerivacao)
         {
+            if (DerivacoesDaOferta.Deriva(config.CodigoFato))
+            {
+                return Result.Failure(DerivacoesDaOferta.RecusaDeConfiguracao(config.CodigoFato));
+            }
+
             if (!codigos.Add(config.CodigoFato))
             {
                 return Result.Failure(new DomainError(
@@ -2646,7 +2661,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// a recusa de publicação por ciclo são da fatia de determinismo (§7).
     /// </summary>
     public Result<GrafoDependenciaConjunta> ConstruirGrafoDependencia() =>
-        GrafoDependenciaConjunta.Construir(FatosColetados, _regrasDerivacao, _documentosExigidos, _formularios, _termosExigidos, _gruposColetados);
+        GrafoDependenciaConjunta.Construir(FatosColetados, DerivacoesEfetivas(), _documentosExigidos, _formularios, _termosExigidos, _gruposColetados);
 
     /// <summary>Os fatos coletados pela inscrição, que os formulários das outras finalidades podem citar.</summary>
     private static HashSet<string> FatosDaInscricao(IEnumerable<FatoColetado> fatos) =>
@@ -2924,7 +2939,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             derivacoes);
 
     private Dictionary<string, IReadOnlyCollection<string>> DependenciasDasDerivacoes() =>
-        MapaDeDerivacoes(_regrasDerivacao);
+        MapaDeDerivacoes(DerivacoesEfetivas());
 
     /// <summary>
     /// As dependências de cada derivado que uma regra do formulário pode citar: os derivados por regra
@@ -3131,7 +3146,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         FatoColetado? coletado = Itens.FirstOrDefault(f =>
             f.Finalidade == FinalidadeFormulario.Inscricao && string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal));
-        ConfiguracaoDerivacaoFato? derivado = _regrasDerivacao.Find(d => string.Equals(d.CodigoFato, fato, StringComparison.Ordinal));
+        ConfiguracaoDerivacaoFato? derivado = DerivacoesEfetivas().FirstOrDefault(d => string.Equals(d.CodigoFato, fato, StringComparison.Ordinal));
         if (coletado is null && derivado is null)
         {
             // O campo de grupo repetível tem um valor por membro; o acréscimo é do candidato.
@@ -3579,6 +3594,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("referencia_temporal_fase_fora_do_cronograma", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: fase âncora pertence ao cronograma", !ReferenciaTemporalFatosFaseNaoPertenceAoCronograma()),
         new ItemConformidade("referencia_temporal_extremo_da_fase_ausente", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: extremo da fase âncora definido", !ReferenciaTemporalFatosExtremoDaFaseAusente()),
         new ItemConformidade("referencia_temporal_fim_inscricao_indisponivel", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: fase de coleta com Fim definido para FIM_INSCRICAO", !ReferenciaTemporalFatosFimInscricaoIndisponivel()),
+        new ItemConformidade("modalidade_regra_cita_fato_nao_coletado", DimensaoConformidade.DistribuicaoVagas, "Modalidades: a regra de aplicabilidade cita só fatos que o processo coleta ou deriva", PendenciaDasRegrasDasModalidades() is null),
         new ItemConformidade("derivacao_fatos_citados_inexistentes", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: fatos citados existem no processo", PendenciaDeFatosCitados() is null),
         new ItemConformidade("formulario_fato_ausente_de_versao_publicada", DimensaoConformidade.ColetaDeFatos, "Formulários: na retificação, fato de outra finalidade só quando coletado em todas as versões publicadas", PendenciaDeFatoAusenteDeVersaoPublicada() is null),
         new ItemConformidade("formulario_campo_opcional_alimenta_regra", DimensaoConformidade.ColetaDeFatos, "Formulários: campo que alimenta derivação, negação ou impedimento é obrigatório sempre que exibido", PendenciaDeCampoOpcionalQueAlimentaRegra() is null),
@@ -3594,8 +3610,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("formulario_isencao_sem_taxa", DimensaoConformidade.ColetaDeFatos, "Formulários: isenção de taxa só em processo que cobra taxa", PendenciaDaIsencaoSemTaxa() is null),
         new ItemConformidade("formulario_item_fora_de_secao", DimensaoConformidade.ColetaDeFatos, "Formulários: todo item numa seção, na ordem das seções", PendenciaDosItensForaDeSecao() is null),
         new ItemConformidade("formulario_itens_em_excesso", DimensaoConformidade.ColetaDeFatos, $"Formulários: no máximo {FormaDoItem.MaximoDeItens} itens cada", PendenciaDosItensEmExcesso() is null),
-        new ItemConformidade("derivacao_dominio_de_contribuicao_invalido", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: código contribuído pertence ao domínio ofertado", PendenciaDoDominioDeContribuicao() is null),
-        new ItemConformidade("derivacao_cota_e_acao_afirmativa_juntas", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: cota da lei e ação afirmativa não derivam juntas", PendenciaDaExclusividadeEntreCotaEAcaoAfirmativa() is null),
+        new ItemConformidade("modalidade_regra_incoerente_com_a_natureza", DimensaoConformidade.DistribuicaoVagas, "Modalidades: a regra de cada cota da lei exige a opção pelas cotas, e a de cada ação afirmativa a recusa", RegraIncoerenteComANatureza(_distribuicaoVagas) is null),
+        new ItemConformidade("modalidade_cotas_da_lei_diferentes_entre_ofertas", DimensaoConformidade.DistribuicaoVagas, "Modalidades: todos os cursos ofertam as mesmas cotas da lei", PendenciaDasCotasDaLeiEntreOfertas() is null),
+        new ItemConformidade("modalidade_reserva_pcd_sem_cota_pcd_da_lei", DimensaoConformidade.DistribuicaoVagas, "Modalidades: com cota da lei, a reserva de pessoa com deficiência de ampla concorrência vem com a cota da lei para ela", PendenciaDaReservaPcdSemCotaPcdDaLei() is null),
+        new ItemConformidade("derivacao_cota_e_acao_afirmativa_juntas", DimensaoConformidade.ColetaDeFatos, "Modalidades: cota da lei e ação afirmativa não se aplicam ao mesmo candidato", PendenciaDaExclusividadeEntreCotaEAcaoAfirmativa() is null),
         new ItemConformidade("grafo_dependencia_com_ciclo", DimensaoConformidade.ColetaDeFatos, "Grafo de dependência conjunto: sem ciclo", PendenciaDoGrafoConjunto() is null),
         new ItemConformidade("criterios_desempate_em_excesso", DimensaoConformidade.Classificacao, $"Critérios de desempate: no máximo {CriteriosDesempateMaximo}", ValidarQuantidadeDeCriteriosDesempate(_criteriosDesempate.Count).Count == 0),
         new ItemConformidade("desempate_area_enem_areas_mal_formadas", DimensaoConformidade.Classificacao, "Desempate por área do ENEM: cada critério tem ao menos uma área, sem exceder o teto, com códigos bem formados e sem repetição", Sem(desempate, DesempatePorAreaEnemErrorCodes.AreasObrigatorias, DesempatePorAreaEnemErrorCodes.AreasEmExcesso, DesempatePorAreaEnemErrorCodes.AreaInvalida, DesempatePorAreaEnemErrorCodes.AreaRepetida)),
@@ -4423,6 +4441,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return referenciaTemporal;
         }
 
+        if (PendenciaDasRegrasDasModalidades() is { } regraDeModalidade)
+        {
+            return regraDeModalidade;
+        }
+
         if (PendenciaDeFatosCitados() is { } fatoCitado)
         {
             return fatoCitado;
@@ -4500,9 +4523,19 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return itensEmExcesso;
         }
 
-        if (PendenciaDoDominioDeContribuicao() is { } contribuicaoForaDoDominio)
+        if (RegraIncoerenteComANatureza(_distribuicaoVagas) is { } regraIncoerente)
         {
-            return contribuicaoForaDoDominio;
+            return regraIncoerente;
+        }
+
+        if (PendenciaDasCotasDaLeiEntreOfertas() is { } cotasDiferentes)
+        {
+            return cotasDiferentes;
+        }
+
+        if (PendenciaDaReservaPcdSemCotaPcdDaLei() is { } reservaPcdSemCota)
+        {
+            return reservaPcdSemCota;
         }
 
         if (PendenciaDaExclusividadeEntreCotaEAcaoAfirmativa() is { } cotaEAcaoAfirmativa)
@@ -4519,45 +4552,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// O código que a derivação de <c>MODALIDADE</c> contribui tem de pertencer ao domínio congelado
-    /// daquele processo — o conjunto de modalidades ofertadas (Story #928, §7.2). Um código fora dele
-    /// é recusado com erro nomeado, <b>sem tradução de alias</b>: <c>V</c>, por exemplo, é rótulo de
-    /// exibição de <c>AC_PCD</c> no edital, nunca um código de entrada. A canonicidade é avaliada
-    /// contra o domínio da configuração, não contra o conjunto federal global.
-    /// </summary>
-    /// <remarks>
-    /// Reconstruir o VO da regra contra o domínio (<see cref="ConfiguracaoDerivacaoFato.ParaRegrasDerivacao"/>)
-    /// é o contrato que faz a recusa: o VO valida que todo <c>contribui</c> pertence ao domínio, e
-    /// devolve o mesmo erro nomeado que o decodificador do envelope aplica na reidratação — publish e
-    /// decode barram o mesmo código desconhecido.
-    /// </remarks>
-    private DomainError? PendenciaDoDominioDeContribuicao()
-    {
-        IReadOnlyCollection<string> modalidadesOfertadas =
-            [.. _distribuicaoVagas.SelectMany(static d => d.Modalidades).Select(static m => m.Codigo).Distinct(StringComparer.Ordinal)];
-
-        foreach (ConfiguracaoDerivacaoFato config in _regrasDerivacao)
-        {
-            if (!string.Equals(config.CodigoFato, RegrasDerivacaoModalidadeLei12711.CodigoFato, StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            Result<RegrasDerivacaoFato> regras = config.ParaRegrasDerivacao(modalidadesOfertadas);
-            if (regras.IsFailure)
-            {
-                return regras.Error;
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// A mesma inscrição não concorre a cota da lei e a ação afirmativa (UNI-REQ-0142). A derivação de
-    /// <c>MODALIDADE</c> é o que define as modalidades do candidato, então a recusa é sobre ela: se
-    /// alguma combinação de respostas faz valer, ao mesmo tempo, uma regra que contribui cota e outra
-    /// que contribui ação afirmativa, o processo não publica.
+    /// A mesma inscrição não concorre a cota da lei e a ação afirmativa (UNI-REQ-0142). As regras de
+    /// aplicabilidade das modalidades ofertadas definem as modalidades do candidato, então a recusa é
+    /// sobre elas: se alguma combinação de respostas faz valer, ao mesmo tempo, a regra de uma cota e
+    /// a de uma ação afirmativa, o processo não publica. O cadastro já recusa a regra que permitiria
+    /// isso; aqui é a defesa sobre a cópia congelada.
     /// </summary>
     /// <remarks>
     /// Duas cláusulas só valem juntas se nenhum fato é exigido com valores incompatíveis nelas. A prova
@@ -4570,52 +4569,147 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </remarks>
     private DomainError? PendenciaDaExclusividadeEntreCotaEAcaoAfirmativa()
     {
-        Dictionary<string, NaturezaLegalModalidade> naturezas = _distribuicaoVagas
-            .SelectMany(static d => d.Modalidades)
-            .DistinctBy(static m => m.Codigo, StringComparer.Ordinal)
-            .ToDictionary(static m => m.Codigo, static m => m.NaturezaLegal, StringComparer.Ordinal);
-
+        List<ModalidadeSelecionada> ofertadas = ModalidadesOfertadas();
+        IReadOnlyList<ConfiguracaoDerivacaoFato> derivacoes = DerivacoesEfetivas();
         HashSet<string> fatosMultivalorados = [
             .. Itens
                 .Where(static f => f.TipoRenderizacao == TipoRenderizacao.SelecaoMultipla)
                 .Select(static f => f.FatoCodigo),
-            .. _regrasDerivacao.Where(static c => !c.Booleano).Select(static c => c.CodigoFato),
+            .. derivacoes.Where(static c => !c.Booleano).Select(static c => c.CodigoFato),
         ];
 
-        foreach (ConfiguracaoDerivacaoFato config in _regrasDerivacao)
+        foreach (ModalidadeSelecionada cota in ofertadas.Where(static m => m.NaturezaLegal == NaturezaLegalModalidade.CotaReservada))
         {
-            if (!string.Equals(config.CodigoFato, RegrasDerivacaoModalidadeLei12711.CodigoFato, StringComparison.Ordinal))
+            foreach (ModalidadeSelecionada acaoAfirmativa in ofertadas.Where(static m => m.NaturezaLegal == NaturezaLegalModalidade.AcaoAfirmativa))
             {
-                continue;
-            }
-
-            List<RegraDerivacao> regras = [.. config.Regras
-                .OrderBy(static r => r.Ordem)
-                .Select(static r => r.ParaRegraDerivacao())
-                .Where(static r => r.IsSuccess)
-                .Select(static r => r.Value!)];
-
-            foreach (RegraDerivacao cota in regras.Where(r => NaturezaDe(r) == NaturezaLegalModalidade.CotaReservada))
-            {
-                foreach (RegraDerivacao acaoAfirmativa in regras.Where(r => NaturezaDe(r) == NaturezaLegalModalidade.AcaoAfirmativa))
+                if (PodemValerJuntas(cota.RegraDeAplicabilidade, acaoAfirmativa.RegraDeAplicabilidade, fatosMultivalorados))
                 {
-                    if (PodemValerJuntas(cota.Quando, acaoAfirmativa.Quando, fatosMultivalorados))
-                    {
-                        return new DomainError(
-                            "ProcessoSeletivo.CotaEAcaoAfirmativaDerivaveisJuntas",
-                            $"As regras de derivação permitem que o mesmo candidato concorra à cota \"{cota.Contribui}\" "
-                            + $"e à ação afirmativa \"{acaoAfirmativa.Contribui}\"; quem opta pelas cotas da lei "
-                            + "não concorre a ação afirmativa.");
-                    }
+                    return new DomainError(
+                        "ProcessoSeletivo.CotaEAcaoAfirmativaDerivaveisJuntas",
+                        $"As regras de aplicabilidade permitem que o mesmo candidato concorra à cota \"{cota.Codigo}\" "
+                        + $"e à ação afirmativa \"{acaoAfirmativa.Codigo}\"; quem opta pelas cotas da lei "
+                        + "não concorre a ação afirmativa.");
                 }
             }
         }
 
         return null;
-
-        NaturezaLegalModalidade NaturezaDe(RegraDerivacao regra) =>
-            regra.Contribui is { } modalidade ? naturezas.GetValueOrDefault(modalidade, NaturezaLegalModalidade.Nenhuma) : NaturezaLegalModalidade.Nenhuma;
     }
+
+    /// <summary>
+    /// Os cursos de um processo ofertam o mesmo conjunto de cotas da lei. A opção pelas cotas é do
+    /// candidato no processo, e não por curso: num processo em que um curso oferta cota e outro não,
+    /// quem optou pelas cotas perderia, no curso sem cota, a ação afirmativa que lá lhe caberia.
+    /// </summary>
+    private DomainError? PendenciaDasCotasDaLeiEntreOfertas()
+    {
+        List<HashSet<string>> cotasPorOferta = [.. _distribuicaoVagas.Select(static d => new HashSet<string>(
+            d.Modalidades.Where(static m => m.NaturezaLegal == NaturezaLegalModalidade.CotaReservada).Select(static m => m.Codigo),
+            StringComparer.Ordinal))];
+        return cotasPorOferta.Count > 1 && cotasPorOferta.Skip(1).Any(c => !c.SetEquals(cotasPorOferta[0]))
+            ? new DomainError(
+                ProcessoSeletivoErrorCodes.CotasDaLeiDiferentesEntreOfertas,
+                "Os cursos do processo ofertam conjuntos diferentes de cotas da lei; todos os cursos de um processo ofertam as mesmas cotas.")
+            : null;
+    }
+
+    /// <summary>
+    /// A reserva de vagas para pessoa com deficiência de ampla concorrência é de quem não optou pelas
+    /// cotas da lei (UNI-REQ-0142). Num processo que oferta essa reserva e alguma cota da lei, quem
+    /// optou pelas cotas só tem reserva de pessoa com deficiência se o processo também ofertar a cota
+    /// da lei para ela.
+    /// </summary>
+    private DomainError? PendenciaDaReservaPcdSemCotaPcdDaLei()
+    {
+        HashSet<string> ofertadas = new(ModalidadesOfertadas().Select(static m => m.Codigo), StringComparer.Ordinal);
+        bool ofertaCotaDaLei = ModalidadesOfertadas().Exists(static m => m.NaturezaLegal == NaturezaLegalModalidade.CotaReservada);
+        return ofertaCotaDaLei
+            && ofertadas.Contains(ModalidadesFederaisLei12711.AcPcd)
+            && !ofertadas.Contains(ModalidadesFederaisLei12711.LiPcd)
+            && !ofertadas.Contains(ModalidadesFederaisLei12711.LbPcd)
+            ? new DomainError(
+                ProcessoSeletivoErrorCodes.ReservaPcdSemCotaPcdDaLei,
+                $"O processo oferta {ModalidadesFederaisLei12711.AcPcd} e cota da lei, mas nenhuma cota da lei para pessoa com deficiência; "
+                + $"oferte {ModalidadesFederaisLei12711.LiPcd} ou {ModalidadesFederaisLei12711.LbPcd}, para que quem optou pelas cotas tenha reserva.")
+            : null;
+    }
+
+    /// <summary>
+    /// A regra de aplicabilidade de cada modalidade ofertada, como vale na oferta, depende só de fatos
+    /// que o formulário de inscrição coleta, diretamente ou pelos derivados que ela cita: a modalidade
+    /// é decidida na inscrição, e o fato que ela não pergunta deixaria a modalidade sem candidato que
+    /// se saiba se concorre a ela. No processo de resultado importado, a modalidade vem com o
+    /// candidato, e as regras não são avaliadas.
+    /// </summary>
+    /// <remarks>
+    /// É também a conferência das citações das derivações da oferta: a modalidade do candidato cita o
+    /// que as regras citam, e a opção pelas cotas só é derivada quando uma regra a cita.
+    /// </remarks>
+    private DomainError? PendenciaDasRegrasDasModalidades()
+    {
+        if (OrigemCandidatos != OrigemCandidatos.InscricaoPropria)
+        {
+            return null;
+        }
+
+        HashSet<string> daInscricao = FatosDaInscricao(Itens);
+        foreach ((ModalidadeSelecionada modalidade, PredicadoDnf regra) in DerivacoesDaOferta.RegrasNaOferta(_distribuicaoVagas.SelectMany(static d => d.Modalidades)))
+        {
+            if (regra.FatosCitados.Select(f => FatoForaDaInscricao(f, daInscricao, new HashSet<string>(StringComparer.Ordinal))).FirstOrDefault(static f => f is not null) is { } fato)
+            {
+                return new DomainError(
+                    ProcessoSeletivoErrorCodes.RegraDeModalidadeCitaFatoNaoColetado,
+                    $"A regra de aplicabilidade da modalidade {modalidade.Codigo} depende de '{fato}', que o formulário de inscrição não pergunta.");
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// O primeiro fato de que o fato depende e que o formulário de inscrição não coleta: o próprio,
+    /// quando nem a inscrição o pergunta nem o processo o deriva, ou uma dependência do derivado.
+    /// </summary>
+    private string? FatoForaDaInscricao(string fato, IReadOnlySet<string> daInscricao, HashSet<string> emAvaliacao)
+    {
+        if (daInscricao.Contains(fato) || !emAvaliacao.Add(fato))
+        {
+            return null;
+        }
+
+        bool derivado = DerivacoesEfetivas().Any(d => string.Equals(d.CodigoFato, fato, StringComparison.Ordinal))
+            || DerivadosDoSistema.Dependencias.ContainsKey(fato);
+        return derivado
+            ? DependenciasDoFato(fato, SemCatalogo).Select(d => FatoForaDaInscricao(d, daInscricao, emAvaliacao)).FirstOrDefault(static d => d is not null)
+            : fato;
+    }
+
+    /// <summary>
+    /// A regra congelada tem a forma que a natureza da modalidade pede no cadastro: toda cláusula de
+    /// uma cota da lei exige a opção pelas cotas, e toda cláusula de uma ação afirmativa a recusa. A
+    /// cópia que não a tem não veio do cadastro como ele é hoje, e a distribuição de vagas tem de ser
+    /// gravada de novo.
+    /// </summary>
+    private static DomainError? RegraIncoerenteComANatureza(IEnumerable<ConfiguracaoDistribuicaoVagas> distribuicaoVagas) =>
+        distribuicaoVagas
+            .SelectMany(static d => d.Modalidades)
+            .FirstOrDefault(static m => m.NaturezaLegal switch
+            {
+                NaturezaLegalModalidade.CotaReservada => !OpcaoPelasCotasDaLei.TodaClausulaExige(m.RegraDeAplicabilidade, optou: true),
+                NaturezaLegalModalidade.AcaoAfirmativa => !OpcaoPelasCotasDaLei.TodaClausulaExige(m.RegraDeAplicabilidade, optou: false),
+                _ => false,
+            }) is { } incoerente
+            ? new DomainError(
+                ProcessoSeletivoErrorCodes.RegraIncoerenteComANatureza,
+                $"A regra de aplicabilidade da modalidade {incoerente.Codigo} não tem a forma que a natureza dela pede; grave a distribuição de vagas de novo para copiar a regra do cadastro.")
+            : null;
+
+    /// <summary>As modalidades ofertadas, uma por código, na ordem do código.</summary>
+    private List<ModalidadeSelecionada> ModalidadesOfertadas() =>
+        [.. _distribuicaoVagas
+            .SelectMany(static d => d.Modalidades)
+            .DistinctBy(static m => m.Codigo, StringComparer.Ordinal)
+            .OrderBy(static m => m.Codigo, StringComparer.Ordinal)];
 
     private static bool PodemValerJuntas(PredicadoDnf primeiro, PredicadoDnf segundo, IReadOnlySet<string> fatosMultivalorados) =>
         ClausulasDe(primeiro).Any(a => ClausulasDe(segundo).Any(b => !Incompativeis(a, b, fatosMultivalorados)));
@@ -4654,24 +4748,23 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// aciclicidade e a ordem topológica sejam congeladas (RN08).
     /// </summary>
     /// <remarks>
+    /// <para>
     /// As regras dos itens e dos termos são conferidas de novo aqui, pela mesma regra da definição
     /// (<see cref="ValidarGrafoDeFatos"/>), porque os itens e as derivações mudam depois. O gatilho
     /// de exigência cita pelo mesmo vocabulário e caberá aqui quando passar a exigir os seus fatos.
+    /// </para>
+    /// <para>
+    /// As derivações da oferta são conferidas por <see cref="PendenciaDasRegrasDasModalidades"/>, que
+    /// nomeia a modalidade e segue as citações até o formulário de inscrição.
+    /// </para>
     /// </remarks>
     private DomainError? PendenciaDeFatosCitados()
     {
-        HashSet<string> universo = new(StringComparer.Ordinal);
-        foreach (FatoColetado fato in Itens)
-        {
-            universo.Add(fato.FatoCodigo);
-        }
+        IReadOnlyList<ConfiguracaoDerivacaoFato> derivacoes = DerivacoesEfetivas();
+        HashSet<string> universo = new(
+            Itens.Select(static f => f.FatoCodigo).Concat(derivacoes.Select(static d => d.CodigoFato)), StringComparer.Ordinal);
 
-        foreach (ConfiguracaoDerivacaoFato derivacao in _regrasDerivacao)
-        {
-            universo.Add(derivacao.CodigoFato);
-        }
-
-        foreach (ConfiguracaoDerivacaoFato derivacao in _regrasDerivacao)
+        foreach (ConfiguracaoDerivacaoFato derivacao in derivacoes.Where(static d => !DerivacoesDaOferta.Deriva(d.CodigoFato)))
         {
             foreach (RegraDerivacaoConfigurada regra in derivacao.Regras)
             {
@@ -4690,7 +4783,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         // As regras dos itens, a exibição das seções e as condições dos termos citam o que o
         // formulário conhece; os itens e as derivações podem ter mudado depois da citação.
-        return CitacaoInvalidaNosFormularios(_formularios, FatosColetados, _termosExigidos, _regrasDerivacao, _gruposColetados);
+        return CitacaoInvalidaNosFormularios(_formularios, FatosColetados, _termosExigidos, derivacoes, _gruposColetados);
     }
 
     /// <summary>
@@ -4703,7 +4796,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 .Concat(_gruposColetados.OrderBy(static g => g.Finalidade).ThenBy(static g => g.Ordem)
                     .SelectMany(static g => g.Subitens).Select(static f => (f.FatoCodigo, f.Obrigatoriedade.Tipo))),
             CampoQueAlimentaRegra.Fatos(
-                _regrasDerivacao.SelectMany(static c => c.FatosCitados).Concat(DependenciasDosDerivadosDoSistemaCitados()),
+                DerivacoesEfetivas().SelectMany(static c => c.FatosCitados).Concat(DependenciasDosDerivadosDoSistemaCitados()),
                 CondicoesVivasComOperador().Select(static c => (c.Fato, c.Operador)),
                 Itens.Where(static f => f.Impedimento is not null).Select(static f => f.FatoCodigo)));
 
@@ -5346,10 +5439,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// os valores citados ou contribuídos: o vínculo existente que a desativação de um fato ou valor
     /// preserva.
     /// </summary>
-    public VinculosDeFatos Vinculos() => VinculosDeFatos.De(
-        _campos.Select(static f => f.FatoCodigo).Concat(_regrasDerivacao.Select(static r => r.CodigoFato)),
-        CondicoesVivas(),
-        _regrasDerivacao.SelectMany(static c => c.CodigosContribuidos));
+    public VinculosDeFatos Vinculos()
+    {
+        IReadOnlyList<ConfiguracaoDerivacaoFato> derivacoes = DerivacoesEfetivas();
+        return VinculosDeFatos.De(
+            _campos.Select(static f => f.FatoCodigo).Concat(derivacoes.Select(static r => r.CodigoFato)),
+            CondicoesVivas(),
+            derivacoes.SelectMany(static c => c.CodigosContribuidos));
+    }
 
     /// <summary>
     /// Todo predicado vivo que cita fato por valor: gatilhos de exigência, regras dos itens,
@@ -5364,7 +5461,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         _documentosExigidos.SelectMany(static d => d.Condicoes).Select(static c => (c.Fato, c.Operador, c.Valor))
             .Concat(Itens.SelectMany(static f => f.Condicoes).Select(static c => (c.Fato, c.Operador, c.Valor)))
             .Concat(_gruposColetados.SelectMany(static g => g.Condicoes).Select(static c => (c.Fato, c.Operador, c.Valor)))
-            .Concat(_regrasDerivacao.SelectMany(static r => r.Regras).SelectMany(static r => r.Condicoes)
+            .Concat(DerivacoesEfetivas().SelectMany(static r => r.Regras).SelectMany(static r => r.Condicoes)
                 .Select(static c => (c.Fato, c.Operador, c.Valor)))
             .Concat(_criteriosDesempate.Select(static c => c.Args).OfType<ArgsDesempatePredicadoFato>()
                 .Select(static a => (a.Condicao.Fato, a.Condicao.Operador, a.Condicao.Valor)))
@@ -6441,6 +6538,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         if (RegraDeAplicabilidadeDivergenteEntreOfertas(grafo.DistribuicaoVagas) is { } regraDivergente)
         {
             return regraDivergente;
+        }
+
+        if (RegraIncoerenteComANatureza(grafo.DistribuicaoVagas) is { } regraIncoerente)
+        {
+            return regraIncoerente;
         }
 
         // O mesmo teto da gravação: sem o espelho, a restauração aplicaria uma lista que o PUT

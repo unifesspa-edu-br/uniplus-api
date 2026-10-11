@@ -44,7 +44,7 @@ public sealed class ProcessoSeletivoCascataTests
             Guid.CreateVersion7(), codigo, null, natureza, composicao,
             composicaoOrigemCodigo: null,
             natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueCascata : RegraRemanejamentoModalidade.Nenhuma,
-            null, null, null, PredicadoDnf.SemClausula, null, "base legal", quantidadeDeclarada).Value!;
+            null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(natureza), null, "base legal", quantidadeDeclarada).Value!;
 
     private static List<ModalidadeSelecionada> AsOitoFederaisMaisAc() =>
     [
@@ -146,7 +146,7 @@ public sealed class ProcessoSeletivoCascataTests
         ModalidadeSelecionada acPcd = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC_PCD", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe,
             composicaoOrigemCodigo: ModalidadesFederaisLei12711.Ac, RegraRemanejamentoModalidade.Nenhuma,
-            null, null, null, PredicadoDnf.SemClausula, null, "base legal", quantidadeDeclarada: 2).Value!;
+            null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), null, "base legal", quantidadeDeclarada: 2).Value!;
         ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711ComAcPcd(), RegraAjuste(), Demografica(),
             [.. AsOitoFederaisMaisAc(), acPcd], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;

@@ -99,7 +99,9 @@ public sealed class ObterInscricaoQueryHandlerTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Id.Should().Be(existente.Id);
         resultado.Value!.ETag.Should().Be(existente.ETag);
-        resultado.Value!.Avaliacao.Modalidades.Should().BeEquivalentTo(
-            new ModalidadesDaInscricaoDto(false, null, [], []), "o processo de teste não deriva a modalidade");
+        ModalidadesDaInscricaoDto modalidades = resultado.Value!.Avaliacao.Modalidades;
+        modalidades.Derivada.Should().BeTrue("a modalidade sai das modalidades que a versão oferta");
+        modalidades.Situacao.Should().Be("CONCORRE");
+        modalidades.Itens.Select(static m => m.Codigo).Should().Equal(["AC"], "a única ofertada é a ampla, incondicional");
     }
 }

@@ -222,7 +222,7 @@ public sealed class EnvelopeFechadoE2ETests
             HttpStatusCode.NoContent, "PUT itens do formulario", "admin/processos-seletivos/{id}/formularios/INSCRICAO/itens");
 
         // ══════════════════════════════════════════════════════════════════════════════
-        // Passo 10 — regras de derivação (MODALIDADE: AC âncora, LI_PPI quando COR_RACA=PRETA)
+        // Passo 10 — regras de derivação (o egresso de escola pública quando COR_RACA=PRETA)
         // ══════════════════════════════════════════════════════════════════════════════
 
         await ExecutarPassoAsync(
@@ -330,6 +330,7 @@ public sealed class EnvelopeFechadoE2ETests
                 "referencia_temporal_fase_fora_do_cronograma",
                 "referencia_temporal_extremo_da_fase_ausente",
                 "referencia_temporal_fim_inscricao_indisponivel",
+                "modalidade_regra_cita_fato_nao_coletado",
                 "derivacao_fatos_citados_inexistentes",
                 "formulario_fato_ausente_de_versao_publicada",
                 "formulario_campo_opcional_alimenta_regra",
@@ -345,7 +346,9 @@ public sealed class EnvelopeFechadoE2ETests
                 "formulario_isencao_sem_taxa",
                 "formulario_item_fora_de_secao",
                 "formulario_itens_em_excesso",
-                "derivacao_dominio_de_contribuicao_invalido",
+                "modalidade_regra_incoerente_com_a_natureza",
+                "modalidade_cotas_da_lei_diferentes_entre_ofertas",
+                "modalidade_reserva_pcd_sem_cota_pcd_da_lei",
                 "derivacao_cota_e_acao_afirmativa_juntas",
                 "grafo_dependencia_com_ciclo",
                 "criterios_desempate_em_excesso",
@@ -727,7 +730,10 @@ public sealed class EnvelopeFechadoE2ETests
 
         public Task<HttpResponseMessage> PutFatosColetadosAsync()
         {
-            // COR_RACA vem da seção do conjunto básico, que a gravação inclui.
+            // COR_RACA vem da seção do conjunto básico, que a gravação inclui. As perguntas da reserva
+            // de vagas são as que as regras das modalidades ofertadas citam.
+            string[] perguntasDaReserva =
+                ["CONCORRER_EP", "PCD", "CONCORRER_PCD", "INDIGENA", "QUILOMBOLA", "CONCORRER_PPI", "CONCORRER_Q", "CONCORRER_RENDA"];
             object[] fatos =
             [
                 new
@@ -736,7 +742,7 @@ public sealed class EnvelopeFechadoE2ETests
                     ordem = 0,
                     rotulo = "Baixa renda",
                     tipoRenderizacao = TipoRenderizacaoCodigo.Booleano,
-                    obrigatoriedade = "NUNCA",
+                    obrigatoriedade = "SEMPRE",
                     precondicao = new[] { new[] { new { fato = "COR_RACA", @operador = OperadorCodigo.Igual, valor = "PRETA" } } },
                 },
                 // A classificação é baseada em ENEM: a inscrição pede a edição, entre as declaradas.
@@ -748,6 +754,14 @@ public sealed class EnvelopeFechadoE2ETests
                     tipoRenderizacao = TipoRenderizacaoCodigo.SelecaoUnica,
                     obrigatoriedade = "SEMPRE",
                 },
+                .. perguntasDaReserva.Select(static (fato, indice) => (object)new
+                {
+                    fatoCodigo = fato,
+                    ordem = indice + 2,
+                    rotulo = fato,
+                    tipoRenderizacao = TipoRenderizacaoCodigo.Booleano,
+                    obrigatoriedade = "SEMPRE",
+                }),
             ];
 
             return EnviarAsync(
@@ -761,14 +775,13 @@ public sealed class EnvelopeFechadoE2ETests
             [
                 new
                 {
-                    codigoFato = "MODALIDADE",
+                    codigoFato = "EGRESSO_ESCOLA_PUBLICA",
                     regras = new object[]
                     {
-                        new { ordem = 0, contribui = "AC", quando = (object?)null },
                         new
                         {
-                            ordem = 1,
-                            contribui = "LI_PPI",
+                            ordem = 0,
+                            contribui = (string?)null,
                             quando = new[] { new[] { new { fato = "COR_RACA", @operador = OperadorCodigo.Igual, valor = "PRETA" } } },
                         },
                     },

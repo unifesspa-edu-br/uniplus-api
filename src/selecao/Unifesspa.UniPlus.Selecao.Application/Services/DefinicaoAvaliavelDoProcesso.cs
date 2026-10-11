@@ -91,7 +91,7 @@ public static class DefinicaoAvaliavelDoProcesso
 
         GrafoConfiguracao grafo = envelope.Grafo;
         List<RegrasDerivacaoFato> derivacoes = [];
-        foreach (ConfiguracaoDerivacaoFato configuracao in grafo.RegrasDerivacao.OrderBy(static c => c.CodigoFato, StringComparer.Ordinal))
+        foreach (ConfiguracaoDerivacaoFato configuracao in grafo.DerivacoesEfetivas().OrderBy(static c => c.CodigoFato, StringComparer.Ordinal))
         {
             Result<RegrasDerivacaoFato> regras = configuracao.ParaRegrasDerivacao(Contribuicoes(configuracao));
             if (regras.IsFailure)
@@ -147,7 +147,7 @@ public static class DefinicaoAvaliavelDoProcesso
     {
         Dictionary<string, DominioDeValores> dominios = VocabularioDeFatos.DominiosDinamicos(processo, catalogo.Values);
         List<RegrasDerivacaoFato> derivacoes = [];
-        foreach (ConfiguracaoDerivacaoFato configuracao in processo.RegrasDerivacao.OrderBy(static c => c.CodigoFato, StringComparer.Ordinal))
+        foreach (ConfiguracaoDerivacaoFato configuracao in processo.DerivacoesEfetivas().OrderBy(static c => c.CodigoFato, StringComparer.Ordinal))
         {
             IReadOnlyCollection<string> dominio =
                 catalogo.TryGetValue(configuracao.CodigoFato, out FatoCandidatoView? fato) && VocabularioDeFatos.DominioDeContribuicao(fato, dominios) is { } doCatalogo

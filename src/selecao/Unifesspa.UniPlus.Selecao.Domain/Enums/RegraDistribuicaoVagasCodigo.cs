@@ -69,9 +69,9 @@ public static class RegraDistribuicaoVagasCodigo
     public static IReadOnlyList<string>? RolFechado(string codigo) => codigo switch
     {
         Lei12711 => ModalidadesFederaisLei12711.CodigosComAc,
-        Lei12711ComAcPcd => [.. ModalidadesFederaisLei12711.CodigosComAc, "AC_PCD"],
+        Lei12711ComAcPcd => [.. ModalidadesFederaisLei12711.CodigosComAc, ModalidadesFederaisLei12711.AcPcd],
         Psiq => ["AC_I", "AC_Q"],
-        ComAcPcd => ["AC", "AC_PCD"],
+        ComAcPcd => [ModalidadesFederaisLei12711.Ac, ModalidadesFederaisLei12711.AcPcd],
         _ => null,
     };
 }

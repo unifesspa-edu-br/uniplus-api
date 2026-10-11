@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class ModalidadeSelecionadaTests
 {
@@ -14,7 +15,7 @@ public sealed class ModalidadeSelecionadaTests
         NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
         composicaoOrigemCodigo: null, RegraRemanejamentoModalidade.Nenhuma,
         remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-        regraDeAplicabilidade: PredicadoDnf.SemClausula, acaoQuandoIndeferido: null, baseLegal: "Lei 12.711/2012");
+        regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), acaoQuandoIndeferido: null, baseLegal: "Lei 12.711/2012");
 
     [Fact(DisplayName = "Criar sem a identidade da modalidade de origem recusa")]
     public void Criar_SemIdentidadeDeOrigem_Recusa()
@@ -24,7 +25,7 @@ public sealed class ModalidadeSelecionadaTests
             NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
             composicaoOrigemCodigo: null, RegraRemanejamentoModalidade.Nenhuma,
             remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-            regraDeAplicabilidade: PredicadoDnf.SemClausula, acaoQuandoIndeferido: null, baseLegal: "Lei 12.711/2012");
+            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), acaoQuandoIndeferido: null, baseLegal: "Lei 12.711/2012");
 
         resultado.IsFailure.Should().BeTrue(
             "a identidade da origem é o que decide se esta oferta é a modalidade que uma regra legal exige");
@@ -49,7 +50,7 @@ public sealed class ModalidadeSelecionadaTests
             NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr,
             composicaoOrigemCodigo: null, RegraRemanejamentoModalidade.SegueCascata,
             remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-            regraDeAplicabilidade: PredicadoDnf.SemClausula, acaoQuandoIndeferido: "RECLASSIFICA_AC",
+            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.CotaReservada), acaoQuandoIndeferido: "RECLASSIFICA_AC",
             baseLegal: "Lei 12.711/2012 art. 3º");
 
         resultado.IsSuccess.Should().BeTrue();
@@ -63,7 +64,7 @@ public sealed class ModalidadeSelecionadaTests
             NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe,
             composicaoOrigemCodigo: "AC", RegraRemanejamentoModalidade.Nenhuma,
             remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-            regraDeAplicabilidade: PredicadoDnf.SemClausula, acaoQuandoIndeferido: null, baseLegal: "Edital SiSU 4.1.2");
+            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), acaoQuandoIndeferido: null, baseLegal: "Edital SiSU 4.1.2");
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.ComposicaoOrigemCodigo.Should().Be("AC");
@@ -77,7 +78,7 @@ public sealed class ModalidadeSelecionadaTests
             NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal,
             composicaoOrigemCodigo: null, RegraRemanejamentoModalidade.Cruzado,
             remanejamentoDestino: null, remanejamentoPar: "QUIL", remanejamentoFallback: "AC",
-            regraDeAplicabilidade: PredicadoDnf.SemClausula, acaoQuandoIndeferido: null, baseLegal: "Res. 532/2021");
+            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), acaoQuandoIndeferido: null, baseLegal: "Res. 532/2021");
 
         resultado.IsSuccess.Should().BeTrue();
     }
@@ -88,7 +89,7 @@ public sealed class ModalidadeSelecionadaTests
         Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "", null,
             NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, PredicadoDnf.SemClausula, null, "base");
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.CodigoObrigatorio");
@@ -100,7 +101,7 @@ public sealed class ModalidadeSelecionadaTests
         Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC", null,
             NaturezaLegalModalidade.Nenhuma, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, PredicadoDnf.SemClausula, null, "base");
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Nenhuma), null, "base");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.NaturezaLegalObrigatoria");
@@ -112,7 +113,7 @@ public sealed class ModalidadeSelecionadaTests
         Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC", null,
             NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.Nenhuma,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, PredicadoDnf.SemClausula, null, "base");
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.ComposicaoVagasObrigatoria");
@@ -124,7 +125,7 @@ public sealed class ModalidadeSelecionadaTests
         Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC", null,
             NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, PredicadoDnf.SemClausula, null, "");
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.BaseLegalObrigatoria");
@@ -136,7 +137,7 @@ public sealed class ModalidadeSelecionadaTests
         Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "V", null,
             NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe,
-            composicaoOrigemCodigo: null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, PredicadoDnf.SemClausula, null, "base");
+            composicaoOrigemCodigo: null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), null, "base");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.ComposicaoOrigemObrigatoria");
@@ -148,7 +149,7 @@ public sealed class ModalidadeSelecionadaTests
         Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC", null,
             NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            composicaoOrigemCodigo: "X", RegraRemanejamentoModalidade.Nenhuma, null, null, null, PredicadoDnf.SemClausula, null, "base");
+            composicaoOrigemCodigo: "X", RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.ComposicaoOrigemIndevida");
@@ -160,7 +161,7 @@ public sealed class ModalidadeSelecionadaTests
         Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "LB_PPI", null,
             NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr,
-            null, RegraRemanejamentoModalidade.DestinoUnico, "AC", null, null, PredicadoDnf.SemClausula, null, "base");
+            null, RegraRemanejamentoModalidade.DestinoUnico, "AC", null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.CotaReservada), null, "base");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.CotaReservadaExigeCascata");
@@ -172,7 +173,7 @@ public sealed class ModalidadeSelecionadaTests
         Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "X", null,
             NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal,
-            null, RegraRemanejamentoModalidade.DestinoUnico, remanejamentoDestino: null, null, null, PredicadoDnf.SemClausula, null, "base");
+            null, RegraRemanejamentoModalidade.DestinoUnico, remanejamentoDestino: null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), null, "base");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.RemanejamentoDestinoObrigatorio");
@@ -185,7 +186,7 @@ public sealed class ModalidadeSelecionadaTests
             Guid.CreateVersion7(), "IND", null,
             NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal,
             null, RegraRemanejamentoModalidade.Cruzado, null, remanejamentoPar: null, remanejamentoFallback: "AC",
-            regraDeAplicabilidade: PredicadoDnf.SemClausula, acaoQuandoIndeferido: null, baseLegal: "base");
+            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), acaoQuandoIndeferido: null, baseLegal: "base");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.RemanejamentoCruzadoIncompleto");
@@ -199,7 +200,7 @@ public sealed class ModalidadeSelecionadaTests
             NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal,
             composicaoOrigemCodigo: null, RegraRemanejamentoModalidade.Cruzado,
             remanejamentoDestino: null, remanejamentoPar: "AC_Q", remanejamentoFallback: null,
-            regraDeAplicabilidade: PredicadoDnf.SemClausula, acaoQuandoIndeferido: null, baseLegal: "Res. 532/2021");
+            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), acaoQuandoIndeferido: null, baseLegal: "Res. 532/2021");
 
         resultado.IsSuccess.Should().BeTrue(
             "o PSIQ não oferta ampla concorrência, então a vaga que nem AC_I nem AC_Q preencherem "
@@ -213,7 +214,7 @@ public sealed class ModalidadeSelecionadaTests
         Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC", null,
             NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, remanejamentoDestino: "X", null, null, PredicadoDnf.SemClausula, null, "base");
+            null, RegraRemanejamentoModalidade.Nenhuma, remanejamentoDestino: "X", null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.RemanejamentoDestinoIndevido");
@@ -226,7 +227,7 @@ public sealed class ModalidadeSelecionadaTests
             Guid.CreateVersion7(), "AC", null,
             NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
             null, RegraRemanejamentoModalidade.Nenhuma, null, remanejamentoPar: "X", remanejamentoFallback: "Y",
-            regraDeAplicabilidade: PredicadoDnf.SemClausula, acaoQuandoIndeferido: null, baseLegal: "base");
+            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), acaoQuandoIndeferido: null, baseLegal: "base");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.RemanejamentoCruzadoIndevido");

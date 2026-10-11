@@ -84,7 +84,8 @@ internal static class ProcessoSeletivoConformeBuilder
     public static ProcessoSeletivo Criar(string nome) => Criar(nome, out _);
 
     /// <summary>Uma oferta com as 40 vagas na ampla concorrência (AC).</summary>
-    public static ConfiguracaoDistribuicaoVagas DistribuicaoAmplaConcorrencia()
+    /// <summary>A distribuição só com a ampla concorrência, com a regra de aplicabilidade dada ou incondicional.</summary>
+    public static ConfiguracaoDistribuicaoVagas DistribuicaoAmplaConcorrencia(PredicadoDnf? regraDeAplicabilidade = null)
     {
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
             modalidadeOrigemId: Guid.CreateVersion7(),
@@ -97,7 +98,7 @@ internal static class ProcessoSeletivoConformeBuilder
             remanejamentoDestino: null,
             remanejamentoPar: null,
             remanejamentoFallback: null,
-            regraDeAplicabilidade: PredicadoDnf.SemClausula,
+            regraDeAplicabilidade: regraDeAplicabilidade ?? PredicadoDnf.SemClausula,
             acaoQuandoIndeferido: null,
             baseLegal: "Res. Unifesspa 532/2021",
             quantidadeDeclarada: 40).Value!;

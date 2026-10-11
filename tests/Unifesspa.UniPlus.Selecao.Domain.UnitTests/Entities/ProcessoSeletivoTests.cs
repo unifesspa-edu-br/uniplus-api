@@ -258,7 +258,7 @@ public sealed class ProcessoSeletivoTests
     {
         ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, PredicadoDnf.SemClausula, null, "base legal", quantidadeDeclarada: 50).Value!;
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base legal", quantidadeDeclarada: 50).Value!;
 
         ReferenciaRegra regra = ReferenciaRegra.Criar(
             RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!;
@@ -288,11 +288,11 @@ public sealed class ProcessoSeletivoTests
 
         static ModalidadeSelecionada Ac(int quantidade) => ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, PredicadoDnf.SemClausula, null, "base legal", quantidadeDeclarada: quantidade).Value!;
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base legal", quantidadeDeclarada: quantidade).Value!;
 
         static ModalidadeSelecionada V(string acaoQuandoIndeferido, int quantidade) => ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "V", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal,
-            null, RegraRemanejamentoModalidade.DestinoUnico, "AC", null, null, PredicadoDnf.SemClausula, acaoQuandoIndeferido, "base legal", quantidadeDeclarada: quantidade).Value!;
+            null, RegraRemanejamentoModalidade.DestinoUnico, "AC", null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), acaoQuandoIndeferido, "base legal", quantidadeDeclarada: quantidade).Value!;
 
         ConfiguracaoDistribuicaoVagas ofertaA = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 10, pr: 1m, regra, regraAjuste: null, referenciaDemografica: null,
@@ -318,7 +318,7 @@ public sealed class ProcessoSeletivoTests
 
         static ModalidadeSelecionada Ac(int quantidade) => ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, PredicadoDnf.SemClausula, null, "base legal", quantidadeDeclarada: quantidade).Value!;
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base legal", quantidadeDeclarada: quantidade).Value!;
 
         static ModalidadeSelecionada V(PredicadoDnf regraDeAplicabilidade) => ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "V", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal,
@@ -634,10 +634,10 @@ public sealed class ProcessoSeletivoTests
 
         ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, PredicadoDnf.SemClausula, null, "base legal", quantidadeDeclarada: 30).Value!;
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base legal", quantidadeDeclarada: 30).Value!;
         ModalidadeSelecionada cotaReservada = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "LB_PPI", null, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr,
-            null, RegraRemanejamentoModalidade.SegueCascata, null, null, null, PredicadoDnf.SemClausula, null, "Lei 12.711/2012 art. 3º", quantidadeDeclarada: 20).Value!;
+            null, RegraRemanejamentoModalidade.SegueCascata, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.CotaReservada), null, "Lei 12.711/2012 art. 3º", quantidadeDeclarada: 20).Value!;
 
         // Só para exercitar o cenário mínimo de derivação — INV-6 (8 federais+AC)
         // não precisa estar satisfeita aqui, já que quem valida isso é
