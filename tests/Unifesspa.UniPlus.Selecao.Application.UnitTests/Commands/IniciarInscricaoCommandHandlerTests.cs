@@ -49,6 +49,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
             Substitute.For<IProcessoSeletivoRepository>(),
             Substitute.For<IRegistroCodecsEnvelope>(),
             Fuso(),
+            Substitute.For<IConferenciaEnderecoGeo>(),
             TimeProvider.System,
             Substitute.For<ISelecaoUnitOfWork>(),
             userContext,
@@ -63,8 +64,9 @@ public sealed class IniciarInscricaoCommandHandlerTests
     public async Task Handle_InscricaoJaExiste_DevolveAExistenteSemGravar()
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
+        Cenario cenario = MontarCriacao(cpf);
         Inscricao existente = Inscricao.Iniciar(
-            ProcessoId, cpf, "sub-1", "https://issuer", Guid.CreateVersion7()).Value!;
+            ProcessoId, cpf, "sub-1", "https://issuer", cenario.Versao.Id).Value!;
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
@@ -75,15 +77,16 @@ public sealed class IniciarInscricaoCommandHandlerTests
             new IniciarInscricaoCommand(ProcessoId),
             inscricaoRepository,
             Substitute.For<ICertameDivulgadoRepository>(),
-            Substitute.For<IProcessoSeletivoRepository>(),
-            Substitute.For<IRegistroCodecsEnvelope>(),
+            cenario.Processos,
+            cenario.Codecs,
             Fuso(),
+            Substitute.For<IConferenciaEnderecoGeo>(),
             new RelogioFixo(DentroDoPeriodo.AddYears(4)),
             unitOfWork,
             UsuarioComCpf(cpf),
             CancellationToken.None);
 
-        resultado.IsSuccess.Should().BeTrue();
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Id.Should().Be(existente.Id);
         await inscricaoRepository.DidNotReceive().AdicionarAsync(Arg.Any<Inscricao>(), Arg.Any<CancellationToken>());
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
@@ -107,6 +110,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
             Substitute.For<IProcessoSeletivoRepository>(),
             Substitute.For<IRegistroCodecsEnvelope>(),
             Fuso(),
+            Substitute.For<IConferenciaEnderecoGeo>(),
             TimeProvider.System,
             Substitute.For<ISelecaoUnitOfWork>(),
             UsuarioComCpf(cpf),
@@ -177,7 +181,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
             gruposColetados: [grupoComDocumento]);
 
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
-            ProcessoId, Encoding.UTF8.GetBytes("{}"), "0.0.22", "canonical-json/sha256@v1",
+            ProcessoId, Encoding.UTF8.GetBytes("""{"documentosExigidos":{"dataReferenciaFatos":null}}"""), "0.0.22", "canonical-json/sha256@v1",
             Guid.CreateVersion7(), new string('a', 64), "user-sub-1", DataHoraFixa);
 
         CertameDivulgado divulgado = CertameDivulgado.Criar(
@@ -199,6 +203,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         processoRepository.ObterVersoesPorAtoCriadorAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns([versao]);
+        processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
 
         IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
         registroCodecs.Capacidades.Returns([new CapacidadeCodec("0.0.22", TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null)]);
@@ -215,6 +220,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
             cenario.Processos,
             cenario.Codecs,
             Fuso(),
+            Substitute.For<IConferenciaEnderecoGeo>(),
             relogio,
             Substitute.For<ISelecaoUnitOfWork>(),
             UsuarioComCpf(cpf),

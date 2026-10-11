@@ -2097,6 +2097,121 @@
         ]
       }
     },
+    "/api/selecao/processos-seletivos/{id}/inscricao/avaliacoes": {
+      "post": {
+        "tags": [
+          "Inscricoes"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AvaliacaoDaInscricaoRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AvaliacaoDaInscricaoRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/AvaliacaoDaInscricaoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.avaliacao-da-inscricao.v1\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvaliacaoDaInscricaoDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/selecao/processos-seletivos/{id}/inscricao/submissao": {
       "post": {
         "tags": [
@@ -9781,6 +9896,44 @@
           }
         }
       },
+      "AvaliacaoDaInscricaoDto": {
+        "required": [
+          "modalidades"
+        ],
+        "type": "object",
+        "properties": {
+          "modalidades": {
+            "$ref": "#/components/schemas/ModalidadesDaInscricaoDto"
+          }
+        }
+      },
+      "AvaliacaoDaInscricaoRequest": {
+        "required": [
+          "respostas",
+          "grupos"
+        ],
+        "type": "object",
+        "properties": {
+          "respostas": {
+            "type": [
+              "null",
+              "object"
+            ]
+          },
+          "grupos": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/OcorrenciaDeGrupoInscricaoInput"
+              }
+            }
+          }
+        }
+      },
       "BancaDaEtapaDto": {
         "required": [
           "id",
@@ -11778,6 +11931,27 @@
           }
         }
       },
+      "DependenciasDaAvaliacaoDto": {
+        "required": [
+          "fatos",
+          "grupos"
+        ],
+        "type": "object",
+        "properties": {
+          "fatos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "grupos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "DerivacaoPortavel": {
         "required": [
           "fatoCodigo",
@@ -13182,6 +13356,7 @@
       "FormularioRenderizavelDto": {
         "required": [
           "comprovacaoDocumental",
+          "dependenciasDaAvaliacao",
           "finalidade",
           "titulo",
           "etapas",
@@ -13203,6 +13378,16 @@
             "items": {
               "$ref": "#/components/schemas/ExigenciaDocumentalCertameDto"
             }
+          },
+          "dependenciasDaAvaliacao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DependenciasDaAvaliacaoDto"
+              }
+            ]
           },
           "finalidade": {
             "type": "string"
@@ -13936,7 +14121,8 @@
           "derivados",
           "grupos",
           "aceites",
-          "eTag"
+          "eTag",
+          "avaliacao"
         ],
         "type": "object",
         "properties": {
@@ -13991,6 +14177,9 @@
           },
           "eTag": {
             "type": "string"
+          },
+          "avaliacao": {
+            "$ref": "#/components/schemas/AvaliacaoDaInscricaoDto"
           }
         }
       },
@@ -14450,6 +14639,62 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ComprovanteEmitidoDto"
+            }
+          }
+        }
+      },
+      "ModalidadeDaInscricaoDto": {
+        "required": [
+          "codigo",
+          "nome",
+          "ordem"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "ordem": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ModalidadesDaInscricaoDto": {
+        "required": [
+          "derivada",
+          "situacao",
+          "itens",
+          "pendencias"
+        ],
+        "type": "object",
+        "properties": {
+          "derivada": {
+            "type": "boolean"
+          },
+          "situacao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModalidadeDaInscricaoDto"
+            }
+          },
+          "pendencias": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PendenciaDaAvaliacaoDto"
             }
           }
         }
@@ -15332,6 +15577,28 @@
           },
           "motivo": {
             "type": "string"
+          }
+        }
+      },
+      "PendenciaDaAvaliacaoDto": {
+        "required": [
+          "fatoCodigo",
+          "rotulo",
+          "secaoCodigo"
+        ],
+        "type": "object",
+        "properties": {
+          "fatoCodigo": {
+            "type": "string"
+          },
+          "rotulo": {
+            "type": "string"
+          },
+          "secaoCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

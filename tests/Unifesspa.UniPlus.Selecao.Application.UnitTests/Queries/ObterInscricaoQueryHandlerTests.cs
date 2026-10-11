@@ -7,10 +7,13 @@ using NSubstitute;
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -37,7 +40,7 @@ public sealed class ObterInscricaoQueryHandlerTests
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
 
         Result<InscricaoDto> resultado = await ObterInscricaoQueryHandler.Handle(
-            new ObterInscricaoQuery(ProcessoId), inscricaoRepository, userContext, CancellationToken.None);
+            new ObterInscricaoQuery(ProcessoId), inscricaoRepository, Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(), DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), userContext, DivulgacaoDeTeste.Relogio, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.CpfAusenteNoToken");
@@ -52,7 +55,7 @@ public sealed class ObterInscricaoQueryHandlerTests
         inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns((Inscricao?)null);
 
         Result<InscricaoDto> resultado = await ObterInscricaoQueryHandler.Handle(
-            new ObterInscricaoQuery(ProcessoId), inscricaoRepository, UsuarioComCpf(cpf), CancellationToken.None);
+            new ObterInscricaoQuery(ProcessoId), inscricaoRepository, Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(), DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), UsuarioComCpf(cpf), DivulgacaoDeTeste.Relogio, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.NaoEncontrada");
@@ -70,27 +73,33 @@ public sealed class ObterInscricaoQueryHandlerTests
         inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
 
         Result<InscricaoDto> resultado = await ObterInscricaoQueryHandler.Handle(
-            new ObterInscricaoQuery(ProcessoId), inscricaoRepository, UsuarioComCpf(cpf, sub: "sub-outro"), CancellationToken.None);
+            new ObterInscricaoQuery(ProcessoId), inscricaoRepository, Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(), DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), UsuarioComCpf(cpf, sub: "sub-outro"), DivulgacaoDeTeste.Relogio, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.DonoDivergente");
     }
 
-    [Fact(DisplayName = "Inscrição do dono é devolvida com o ETag corrente")]
+    [Fact(DisplayName = "Inscrição do dono é devolvida com o ETag corrente e a avaliação da versão que ela fixou")]
     public async Task Handle_InscricaoDoDono_Devolve()
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        Inscricao existente = Inscricao.Iniciar(
-            ProcessoId, cpf, "sub-1", "https://issuer", Guid.CreateVersion7()).Value!;
+        (VersaoConfiguracao versao, GrafoConfiguracao grafo) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
+        Inscricao existente = Inscricao.Iniciar(ProcessoId, cpf, "sub-1", "https://issuer", versao.Id).Value!;
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
+        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
+        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
 
         Result<InscricaoDto> resultado = await ObterInscricaoQueryHandler.Handle(
-            new ObterInscricaoQuery(ProcessoId), inscricaoRepository, UsuarioComCpf(cpf), CancellationToken.None);
+            new ObterInscricaoQuery(ProcessoId), inscricaoRepository, processoRepository, registroCodecs, DivulgacaoDeTeste.Fuso(),
+            Substitute.For<IConferenciaEnderecoGeo>(), UsuarioComCpf(cpf), DivulgacaoDeTeste.Relogio, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Id.Should().Be(existente.Id);
         resultado.Value!.ETag.Should().Be(existente.ETag);
+        resultado.Value!.Avaliacao.Modalidades.Should().BeEquivalentTo(
+            new ModalidadesDaInscricaoDto(false, null, [], []), "o processo de teste não deriva a modalidade");
     }
 }

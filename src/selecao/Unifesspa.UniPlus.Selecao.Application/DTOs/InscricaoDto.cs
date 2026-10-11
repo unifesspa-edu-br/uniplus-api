@@ -44,7 +44,8 @@ public sealed record AceiteDeTermoInput(string Codigo, Guid VersaoId, string Has
 /// declarados (RG, documento do estrangeiro) voltam dentro de <see cref="Respostas"/>, decifrados
 /// pelo repositório — só para o próprio dono; o CPF nunca aparece aqui porque já está no token, e o
 /// comprovante o devolve mascarado. <see cref="Derivados"/> é o que o sistema calculou das
-/// respostas na última submissão.
+/// respostas na última submissão. <see cref="Avaliacao"/> é a avaliação das respostas gravadas, a
+/// mesma que a consulta do candidato devolve — calculada a cada leitura, nunca gravada (ADR-0143).
 /// </summary>
 public sealed record InscricaoDto(
     Guid Id,
@@ -57,12 +58,14 @@ public sealed record InscricaoDto(
     IReadOnlyDictionary<string, JsonElement> Derivados,
     IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>> Grupos,
     IReadOnlyList<AceiteDeTermoInput> Aceites,
-    string ETag)
+    string ETag,
+    AvaliacaoDaInscricaoDto Avaliacao)
 {
     /// <summary>Projeta o agregado no contrato — <c>Grupos</c>/<c>Aceites</c> do domínio têm a mesma forma, em tipos próprios do contrato (não acopla um ao outro).</summary>
-    public static InscricaoDto De(Inscricao inscricao)
+    public static InscricaoDto De(Inscricao inscricao, AvaliacaoDaInscricaoDto avaliacao)
     {
         ArgumentNullException.ThrowIfNull(inscricao);
+        ArgumentNullException.ThrowIfNull(avaliacao);
 
         return new InscricaoDto(
             inscricao.Id,
@@ -79,7 +82,8 @@ public sealed record InscricaoDto(
                     [.. g.Value.Select(static o => new OcorrenciaDeGrupoInscricaoInput(o.Id, o.Respostas))],
                 StringComparer.Ordinal),
             [.. inscricao.Aceites.Select(static a => new AceiteDeTermoInput(a.Codigo, a.VersaoId, a.HashVersao))],
-            inscricao.ETag);
+            inscricao.ETag,
+            avaliacao);
     }
 }
 

@@ -7,6 +7,8 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 
@@ -147,5 +149,33 @@ public sealed class DerivadosDoSistemaInscricaoTests
         resultado.Error!.Code.Should().Be("Inscricao.EnderecoResidencialInvalido");
         await conferencia.DidNotReceive().ConferirCepAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
         await conferencia.DidNotReceive().ConferirMunicipioAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Fora do envio, o endereço que o Geo recusa deixa a residência indeterminada, sem recusar")]
+    public async Task ApurarAsync_GeoRecusaOEndereco_FicaIndeterminado()
+    {
+        IConferenciaEnderecoGeo conferencia = Substitute.For<IConferenciaEnderecoGeo>();
+        conferencia.ConferirCepAsync("68500000", "1504208", "PA", Arg.Any<CancellationToken>())
+            .Returns(Result.Failure(new DomainError("ConferenciaEnderecoGeo.GeoIndisponivel", "O Geo não respondeu.")));
+
+        IReadOnlyDictionary<string, FatoResolvido> apurados = await DerivadosDoSistemaInscricao.ApurarAsync(
+            Respostas(("ENDERECO_RESIDENCIAL", Endereco("68500000", "1504208", "PA"))), new DateOnly(2026, 12, 10), conferencia,
+            new HashSet<string>(["UF_RESIDENCIA"], StringComparer.Ordinal));
+
+        apurados["UF_RESIDENCIA"].Estado.Should().Be(EstadoFato.Indeterminado);
+        apurados["MUNICIPIO_RESIDENCIA"].Estado.Should().Be(EstadoFato.Indeterminado);
+    }
+
+    [Fact(DisplayName = "Fora do envio, só se apura o derivado de que a avaliação depende: sem pedido, o Geo não é consultado")]
+    public async Task ApurarAsync_SemPedido_NaoConsultaOGeo()
+    {
+        IConferenciaEnderecoGeo conferencia = Substitute.For<IConferenciaEnderecoGeo>();
+
+        IReadOnlyDictionary<string, FatoResolvido> apurados = await DerivadosDoSistemaInscricao.ApurarAsync(
+            Respostas(("ENDERECO_RESIDENCIAL", Endereco("68500000", "1504208", "PA")), ("DATA_NASCIMENTO", Texto("2008-12-10"))),
+            new DateOnly(2026, 12, 10), conferencia, new HashSet<string>(["FAIXA_ETARIA"], StringComparer.Ordinal));
+
+        apurados.Should().ContainKey("FAIXA_ETARIA").And.NotContainKey("UF_RESIDENCIA");
+        await conferencia.DidNotReceiveWithAnyArgs().ConferirCepAsync(default!, default!, default!, default);
     }
 }

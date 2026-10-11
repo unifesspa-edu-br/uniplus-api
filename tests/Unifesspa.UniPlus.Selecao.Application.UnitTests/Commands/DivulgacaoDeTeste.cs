@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
+using System.Text;
+
 using NSubstitute;
 
 using Unifesspa.UniPlus.Kernel.Results;
@@ -42,6 +44,26 @@ internal static class DivulgacaoDeTeste
         IResolvedorFusoInstitucional fuso = Substitute.For<IResolvedorFusoInstitucional>();
         fuso.Resolver().Returns(Result<TimeZoneInfo>.Success(TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId)));
         return fuso;
+    }
+
+    /// <summary>
+    /// Uma versão publicada do processo conforme de teste, legível pelo contexto da versão fixada: o
+    /// grafo do processo e o bloco de documentos exigidos, sem referência temporal.
+    /// </summary>
+    public static (VersaoConfiguracao Versao, GrafoConfiguracao Grafo) VersaoConforme(Guid processoId)
+    {
+        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Inscrição");
+        GrafoConfiguracao grafo = new(
+            [.. processo.Etapas], processo.OfertaAtendimento!, [.. processo.DistribuicaoVagas],
+            processo.BonusRegional, [.. processo.CriteriosDesempate], processo.Classificacao!,
+            [.. processo.CronogramaFases], [.. processo.DocumentosExigidos], [], null,
+            fatosColetados: [.. processo.FatosColetados],
+            formularios: [.. processo.Formularios],
+            gruposColetados: [.. processo.GruposColetados]);
+        VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
+            processoId, Encoding.UTF8.GetBytes("""{"documentosExigidos":{"dataReferenciaFatos":null}}"""), "0.0.22", "canonical-json/sha256@v1",
+            Guid.CreateVersion7(), new string('a', 64), "user-sub-1", new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero));
+        return (versao, grafo);
     }
 
     /// <summary>A versão é a fixada pela inscrição e a divulgada pelo certame.</summary>

@@ -14,13 +14,17 @@ using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Inscricoes;
+using Unifesspa.UniPlus.Selecao.Application.Queries.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -56,7 +60,10 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     public InscricaoSobreProcessoPublicadoPersistenciaTests(InscricaoDbFixture fixture) => _fixture = fixture;
 
     private static ProcessoSeletivo NovoProcessoDeInscricao(
-        string nome, OfertaAtendimentoEspecializado? oferta = null, IReadOnlyList<FatoColetado>? camposAdicionais = null)
+        string nome,
+        OfertaAtendimentoEspecializado? oferta = null,
+        IReadOnlyList<FatoColetado>? camposAdicionais = null,
+        IReadOnlyList<ModalidadeSelecionada>? modalidades = null)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             nome, TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
@@ -81,7 +88,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             [ConfiguracaoDistribuicaoVagas.Criar(
                 Guid.CreateVersion7(), 40, 1m,
                 ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!,
-                null, null, [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!],
+                null, null, modalidades ?? [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!],
             FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
@@ -134,7 +141,10 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     }
 
     /// <summary>Publica e divulga o processo com os repositórios de produção, no mesmo <paramref name="db"/>.</summary>
-    private static async Task<(Guid ProcessoId, DadosEdital Dados)> PublicarEDivulgarAsync(SelecaoDbContext db, ProcessoSeletivo processo)
+    private static async Task<(Guid ProcessoId, DadosEdital Dados)> PublicarEDivulgarAsync(
+        SelecaoDbContext db,
+        ProcessoSeletivo processo,
+        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresDosCampos = null)
     {
         await db.ProcessosSeletivos.AddAsync(processo);
         await db.SaveChangesAsync();
@@ -160,6 +170,11 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             ["RG_UF"] = [new ValorDominioDeclaradoCongelado("PA", "Pará.", 0)],
             ["NATURALIDADE_UF"] = [new ValorDominioDeclaradoCongelado("PA", "Pará.", 0)],
         };
+
+        foreach ((string campo, IReadOnlyList<ValorDominioDeclaradoCongelado>? valores) in valoresDosCampos ?? new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>())
+        {
+            valoresDoConjuntoBasico[campo] = valores;
+        }
 
         // O campo cujas opções o processo oferta congela essas opções, pela mesma leitura que o
         // resolvedor da publicação usa.
@@ -226,7 +241,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
         Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
             new IniciarInscricaoCommand(processoId),
-            inscricaoRepository, divulgadoRepository, processoRepository, RegistroCodecs, Fuso(), DentroDoPeriodo, writeContext,
+            inscricaoRepository, divulgadoRepository, processoRepository, RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), DentroDoPeriodo, writeContext,
             UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None);
 
         iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
@@ -259,7 +274,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
             new IniciarInscricaoCommand(processoId),
             inscricaoRepository, new CertameDivulgadoRepository(writeContext), new ProcessoSeletivoRepository(writeContext, TimeProvider.System),
-            RegistroCodecs, Fuso(), DentroDoPeriodo, writeContext, UsuarioComCpf(PersonasDeTeste.KevinCarvalho), CancellationToken.None);
+            RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), DentroDoPeriodo, writeContext, UsuarioComCpf(PersonasDeTeste.KevinCarvalho), CancellationToken.None);
         iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
 
         Inscricao? inscricao = await inscricaoRepository.ObterPorIdAsync(iniciar.Value!.Id);
@@ -340,7 +355,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             new IniciarInscricaoCommand(processoId),
             new InscricaoRepository(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
             new CertameDivulgadoRepository(writeContext), new ProcessoSeletivoRepository(writeContext, TimeProvider.System),
-            RegistroCodecs, Fuso(), DentroDoPeriodo, writeContext, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None);
+            RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), DentroDoPeriodo, writeContext, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None);
         iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
@@ -380,7 +395,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
             new IniciarInscricaoCommand(processoId),
             inscricaoRepository, new CertameDivulgadoRepository(writeContext), new ProcessoSeletivoRepository(writeContext, TimeProvider.System),
-            RegistroCodecs, Fuso(), DentroDoPeriodo, writeContext, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None);
+            RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), DentroDoPeriodo, writeContext, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None);
         iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
 
         Inscricao inscricao = (await inscricaoRepository.ObterPorIdAsync(iniciar.Value!.Id))!;
@@ -427,5 +442,281 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         ComprovanteInscricao gravado = (await leitura.ObterComprovantesAsync([inscricao.Id], CancellationToken.None)).Single();
         gravado.Respostas.Should().NotContainKey("CONDICAO_DESCRITA");
         gravado.IntegridadeConfere().Should().BeTrue("o hash cobre só o que foi gravado");
+    }
+
+    /// <summary>
+    /// Um processo publicado em que a modalidade deriva de uma resposta: a ampla concorrência só a quem
+    /// declara a deficiência, para as três situações caberem numa oferta só.
+    /// </summary>
+    private static ProcessoSeletivo ProcessoQueDerivaAModalidade(string nome)
+    {
+        FatoColetado concorrerPcd = FatoColetado.Criar(
+            "CONCORRER_PCD", 1, "Você quer concorrer às vagas para pessoa com deficiência?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null,
+            classificacaoProtecao: "SENSIVEL", etapaCodigo: FormularioDeTeste.Secao, finalidade: FinalidadeFormulario.Inscricao).Value!;
+        ProcessoSeletivo processo = NovoProcessoDeInscricao(nome, camposAdicionais: [concorrerPcd]);
+        processo.DefinirRegrasDerivacao(
+        [
+            ConfiguracaoDerivacaoFato.Criar(AvaliacaoDaInscricao.FatoDaModalidade,
+            [
+                RegraDerivacaoConfigurada.Criar(0, "AC",
+                    [CondicaoRegraDerivacao.Criar(1, "CONCORRER_PCD", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]).Value!,
+            ]).Value!,
+        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        return processo;
+    }
+
+    private async Task<Result<AvaliacaoDaInscricaoDto>> AvaliarAsync(
+        SelecaoDbContext db, Guid processoId, IUserContext usuario, Dictionary<string, JsonElement>? respostas) =>
+        await AvaliarInscricaoQueryHandler.Handle(
+            new AvaliarInscricaoQuery(processoId, new AvaliacaoDaInscricaoRequest(respostas, null)),
+            new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
+            new ProcessoSeletivoRepository(db, TimeProvider.System), new CertameDivulgadoRepository(db),
+            RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), usuario, DentroDoPeriodo, CancellationToken.None);
+
+    [Fact(DisplayName = "A consulta da inscrição sobre o processo publicado devolve as modalidades das respostas, o que falta e o nome congelado, sem gravar nada")]
+    public async Task Consulta_SobreVersaoFixadaReal_DevolveAsModalidadesSemGravar()
+    {
+        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        (Guid processoId, _) = await PublicarEDivulgarAsync(db, ProcessoQueDerivaAModalidade(nameof(Consulta_SobreVersaoFixadaReal_DevolveAsModalidadesSemGravar)));
+        IUserContext fernanda = UsuarioComCpf(PersonasDeTeste.FernandaDrumond);
+        Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
+            new IniciarInscricaoCommand(processoId),
+            new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System), new CertameDivulgadoRepository(db),
+            new ProcessoSeletivoRepository(db, TimeProvider.System), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(),
+            DentroDoPeriodo, db, fernanda, CancellationToken.None);
+        iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
+        iniciar.Value!.Avaliacao.Modalidades.Should().BeEquivalentTo(new ModalidadesDaInscricaoDto(
+            true, "FALTA_RESPONDER", [],
+            [new PendenciaDaAvaliacaoDto("CONCORRER_PCD", "Você quer concorrer às vagas para pessoa com deficiência?", FormularioDeTeste.Secao)]));
+
+        Result<AvaliacaoDaInscricaoDto> concorre = await AvaliarAsync(db, processoId, fernanda, new(StringComparer.Ordinal)
+        {
+            ["CONCORRER_PCD"] = JsonSerializer.SerializeToElement(true),
+        });
+        Result<AvaliacaoDaInscricaoDto> naoConcorre = await AvaliarAsync(db, processoId, fernanda, new(StringComparer.Ordinal)
+        {
+            ["CONCORRER_PCD"] = JsonSerializer.SerializeToElement(false),
+        });
+
+        concorre.IsSuccess.Should().BeTrue(concorre.Error?.Message);
+        concorre.Value!.Modalidades.Situacao.Should().Be("CONCORRE");
+        concorre.Value!.Modalidades.Itens.Should().Equal(new ModalidadeDaInscricaoDto("AC", "AC", 0));
+        naoConcorre.Value!.Modalidades.Situacao.Should().Be("NAO_CONCORRE");
+        naoConcorre.Value!.Modalidades.Itens.Should().BeEmpty();
+
+        await using SelecaoDbContext leitura = _fixture.CreateDbContext();
+        Inscricao gravada = (await new InscricaoRepository(leitura, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System)
+            .ObterPorIdAsync(iniciar.Value!.Id))!;
+        gravada.Respostas.Should().NotContainKey("CONCORRER_PCD", "a consulta não grava nada");
+        gravada.ETag.Should().Be(iniciar.Value!.ETag, "nenhuma consulta muda a revisão da inscrição");
+    }
+
+    [Fact(DisplayName = "Sobre o processo que não deriva a modalidade, a consulta diz que não deriva, sem situação")]
+    public async Task Consulta_SemDerivacao_DizQueNaoDeriva()
+    {
+        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        (Guid processoId, _) = await PublicarEDivulgarAsync(db, NovoProcessoDeInscricao(nameof(Consulta_SemDerivacao_DizQueNaoDeriva)));
+        IUserContext fernanda = UsuarioComCpf(PersonasDeTeste.FernandaDrumond);
+        (await IniciarInscricaoCommandHandler.Handle(
+            new IniciarInscricaoCommand(processoId),
+            new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System), new CertameDivulgadoRepository(db),
+            new ProcessoSeletivoRepository(db, TimeProvider.System), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(),
+            DentroDoPeriodo, db, fernanda, CancellationToken.None)).IsSuccess.Should().BeTrue();
+
+        Result<AvaliacaoDaInscricaoDto> avaliacao = await AvaliarAsync(db, processoId, fernanda, null);
+
+        avaliacao.Value!.Modalidades.Should().BeEquivalentTo(new ModalidadesDaInscricaoDto(false, null, [], []));
+    }
+
+    [Fact(DisplayName = "A consulta só responde ao titular: sem inscrição no processo é não encontrada, e o sub divergente é dono divergente")]
+    public async Task Consulta_SoAoTitular()
+    {
+        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        (Guid processoId, _) = await PublicarEDivulgarAsync(db, ProcessoQueDerivaAModalidade(nameof(Consulta_SoAoTitular)));
+        (await IniciarInscricaoCommandHandler.Handle(
+            new IniciarInscricaoCommand(processoId),
+            new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System), new CertameDivulgadoRepository(db),
+            new ProcessoSeletivoRepository(db, TimeProvider.System), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(),
+            DentroDoPeriodo, db, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None)).IsSuccess.Should().BeTrue();
+
+        IUserContext mesmoCpfOutroSub = UsuarioComCpf(PersonasDeTeste.FernandaDrumond);
+        mesmoCpfOutroSub.UserId.Returns("sub-de-outra-conta");
+
+        (await AvaliarAsync(db, processoId, UsuarioComCpf(PersonasDeTeste.KevinCarvalho), null)).Error!.Code
+            .Should().Be(InscricaoErrorCodes.NaoEncontrada);
+        (await AvaliarAsync(db, processoId, mesmoCpfOutroSub, null)).Error!.Code
+            .Should().Be(InscricaoErrorCodes.DonoDivergente);
+    }
+
+    [Fact(DisplayName = "O formulário da inscrição publicado diz, só pelo código, de que campos a avaliação depende, sem regra nem valor")]
+    public async Task FormularioDaInscricao_TrazAsDependenciasDaAvaliacaoSoPeloCodigo()
+    {
+        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        (Guid processoId, _) = await PublicarEDivulgarAsync(db, ProcessoQueDerivaAModalidade(nameof(FormularioDaInscricao_TrazAsDependenciasDaAvaliacaoSoPeloCodigo)));
+        IUserContext fernanda = UsuarioComCpf(PersonasDeTeste.FernandaDrumond);
+        (await IniciarInscricaoCommandHandler.Handle(
+            new IniciarInscricaoCommand(processoId),
+            new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System), new CertameDivulgadoRepository(db),
+            new ProcessoSeletivoRepository(db, TimeProvider.System), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(),
+            DentroDoPeriodo, db, fernanda, CancellationToken.None)).IsSuccess.Should().BeTrue();
+
+        Result<FormularioRenderizavelDto> formulario = await ObterFormularioDaInscricaoQueryHandler.Handle(
+            new ObterFormularioDaInscricaoQuery(processoId),
+            new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
+            new ProcessoSeletivoRepository(db, TimeProvider.System), RegistroCodecs, Substitute.For<IEnderecoNoAcervoPublico>(), fernanda,
+            CancellationToken.None);
+
+        formulario.IsSuccess.Should().BeTrue(formulario.Error?.Message);
+        formulario.Value!.DependenciasDaAvaliacao.Should().BeEquivalentTo(new DependenciasDaAvaliacaoDto(["CONCORRER_PCD"], []));
+        JsonSerializer.Serialize(formulario.Value!.DependenciasDaAvaliacao).Should().NotContain("AC", "a matriz e o que ela contribui não saem");
+        formulario.Value!.Regras.Derivacoes.Should().NotContain(d => d.FatoCodigo == AvaliacaoDaInscricao.FatoDaModalidade,
+            "a derivação da modalidade não vai ao navegador");
+    }
+
+    /// <summary>
+    /// Um processo publicado com a matriz normativa da Lei 12.711 inteira (UNI-REQ-0076): as dez
+    /// modalidades ofertadas, as opções de concorrência e a origem escolar perguntadas, e o egresso de
+    /// escola pública derivado da origem escolar.
+    /// </summary>
+    private static ProcessoSeletivo ProcessoComAMatrizNormativa(string nome)
+    {
+        FatoColetado Booleano(string codigo, int ordem) => FatoColetado.Criar(
+            codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "SENSIVEL",
+            etapaCodigo: FormularioDeTeste.Secao, finalidade: FinalidadeFormulario.Inscricao).Value!;
+        FatoColetado Selecao(string codigo, int ordem) => FatoColetado.Criar(
+            codigo, ordem, $"Rótulo de {codigo}", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL",
+            etapaCodigo: FormularioDeTeste.Secao, finalidade: FinalidadeFormulario.Inscricao).Value!;
+
+        ProcessoSeletivo processo = NovoProcessoDeInscricao(
+            nome,
+            camposAdicionais:
+            [
+                Selecao(OrigemEscolar.FatoFormaDeConclusao, 1), Selecao(OrigemEscolar.FatoOndeCursou, 2),
+                Booleano("CONCORRER_PCD", 3), Booleano("CONCORRER_EP", 4), Booleano("CONCORRER_PPI", 5),
+                Booleano("CONCORRER_Q", 6), Booleano("CONCORRER_RENDA", 7),
+            ],
+            modalidades: [.. RegrasDerivacaoModalidadeLei12711.DominioCanonico.Select(ModalidadeDaLei)]);
+        processo.DefinirRegrasDerivacao(
+        [
+            Configurada(RegrasDerivacaoFato.CriarBooleana(
+                OrigemEscolar.FatoEgresso, OrigemEscolar.RegrasDoEgresso, OrigemEscolar.DependenciasDoEgresso).Value!),
+            Configurada(RegrasDerivacaoModalidadeLei12711.Construir()),
+        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        return processo;
+    }
+
+    /// <summary>As opções da origem escolar que a publicação congela para as duas perguntas.</summary>
+    private static Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> OpcoesDaOrigemEscolar() => new(StringComparer.Ordinal)
+    {
+        [OrigemEscolar.FatoFormaDeConclusao] = [.. new[] { OrigemEscolar.Regular, OrigemEscolar.Eja, OrigemEscolar.Encceja }
+            .Select(static (c, i) => new ValorDominioDeclaradoCongelado(c, c, i))],
+        [OrigemEscolar.FatoOndeCursou] = [.. OrigemEscolar.OndeCursouSemCertificacao.Append(OrigemEscolar.ConcluiuPorCertificacao)
+            .Select(static (c, i) => new ValorDominioDeclaradoCongelado(c, c, i))],
+    };
+
+    /// <summary>
+    /// A modalidade ofertada, num quadro institucional fixo: a ampla concorrência e as demais retirando
+    /// vagas dela. O que se prova aqui é a derivação das modalidades, e não o cálculo do quadro da lei.
+    /// </summary>
+    private static ModalidadeSelecionada ModalidadeDaLei(string codigo) => codigo == "AC"
+        ? ModalidadeSelecionada.Criar(
+            Guid.CreateVersion7(), codigo, "Ampla concorrência", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 22).Value!
+        : ModalidadeSelecionada.Criar(
+            Guid.CreateVersion7(), codigo, $"Modalidade {codigo}", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe,
+            "AC", RegraRemanejamentoModalidade.DestinoUnico, "AC", null, null, [], null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 2).Value!;
+
+    /// <summary>A derivação na forma que o processo grava: cada cláusula do predicado vira um grupo de condições.</summary>
+    private static ConfiguracaoDerivacaoFato Configurada(RegrasDerivacaoFato derivacao) =>
+        ConfiguracaoDerivacaoFato.Criar(derivacao.CodigoFato,
+        [
+            .. derivacao.Regras.Select((regra, ordem) => RegraDerivacaoConfigurada.Criar(
+                ordem,
+                regra.Contribui,
+                regra.EhAncora
+                    ? null
+                    : [.. regra.Quando.Clausulas.SelectMany((clausula, indice) => clausula.Condicoes.Select(c =>
+                        CondicaoRegraDerivacao.Criar(indice + 1, c.Fato, c.Operador, c.Valor).Value!))]).Value!),
+        ]).Value!;
+
+    private static Dictionary<string, JsonElement> RespostasDaOrigemEDasCotas(string? ondeCursou, bool ep, bool ppi, bool renda)
+    {
+        Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal)
+        {
+            ["CONCORRER_PCD"] = JsonSerializer.SerializeToElement(false),
+            ["CONCORRER_EP"] = JsonSerializer.SerializeToElement(ep),
+            ["CONCORRER_PPI"] = JsonSerializer.SerializeToElement(ppi),
+            ["CONCORRER_Q"] = JsonSerializer.SerializeToElement(false),
+            ["CONCORRER_RENDA"] = JsonSerializer.SerializeToElement(renda),
+        };
+        if (ondeCursou is not null)
+        {
+            respostas[OrigemEscolar.FatoFormaDeConclusao] = JsonSerializer.SerializeToElement(OrigemEscolar.Regular);
+            respostas[OrigemEscolar.FatoOndeCursou] = JsonSerializer.SerializeToElement(ondeCursou);
+        }
+
+        return respostas;
+    }
+
+    [Fact(DisplayName = "Sobre a versão publicada com a matriz da Lei 12.711, a consulta deriva as modalidades da origem escolar e da opção pelas cotas")]
+    public async Task Consulta_ComAMatrizNormativaPublicada_DerivaAsModalidadesDaLei()
+    {
+        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        (Guid processoId, _) = await PublicarEDivulgarAsync(
+            db, ProcessoComAMatrizNormativa(nameof(Consulta_ComAMatrizNormativaPublicada_DerivaAsModalidadesDaLei)), OpcoesDaOrigemEscolar());
+        IUserContext fernanda = UsuarioComCpf(PersonasDeTeste.FernandaDrumond);
+        Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
+            new IniciarInscricaoCommand(processoId),
+            new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System), new CertameDivulgadoRepository(db),
+            new ProcessoSeletivoRepository(db, TimeProvider.System), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(),
+            DentroDoPeriodo, db, fernanda, CancellationToken.None);
+        iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
+
+        ModalidadesDaInscricaoDto comCotas = (await AvaliarAsync(db, processoId, fernanda,
+            RespostasDaOrigemEDasCotas(OrigemEscolar.SomentePublica, ep: true, ppi: true, renda: true))).Value!.Modalidades;
+        ModalidadesDaInscricaoDto semCotas = (await AvaliarAsync(db, processoId, fernanda,
+            RespostasDaOrigemEDasCotas(OrigemEscolar.SomentePublica, ep: false, ppi: false, renda: false))).Value!.Modalidades;
+        ModalidadesDaInscricaoDto semOrigem = (await AvaliarAsync(db, processoId, fernanda,
+            RespostasDaOrigemEDasCotas(ondeCursou: null, ep: true, ppi: false, renda: false))).Value!.Modalidades;
+
+        comCotas.Situacao.Should().Be("CONCORRE");
+        comCotas.Itens.Select(static m => m.Codigo).Should().Equal("AC", "LB_EP", "LB_PPI", "LI_EP", "LI_PPI");
+        comCotas.Itens.Single(static m => m.Codigo == "AC").Nome.Should().Be("Ampla concorrência");
+        semCotas.Itens.Select(static m => m.Codigo).Should().Equal("AC");
+        semOrigem.Situacao.Should().Be("FALTA_RESPONDER");
+        semOrigem.Pendencias.Select(static p => p.FatoCodigo).Should().Equal(OrigemEscolar.FatoFormaDeConclusao, OrigemEscolar.FatoOndeCursou);
+    }
+
+    [Fact(DisplayName = "Salvar e ler a inscrição devolvem a avaliação do que ficou gravado, com as modalidades que a resposta decide")]
+    public async Task SalvarELer_DevolvemAAvaliacaoDoGravado()
+    {
+        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        (Guid processoId, _) = await PublicarEDivulgarAsync(db, ProcessoQueDerivaAModalidade(nameof(SalvarELer_DevolvemAAvaliacaoDoGravado)));
+        IUserContext fernanda = UsuarioComCpf(PersonasDeTeste.FernandaDrumond);
+        InscricaoRepository inscricoes = new(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+        ProcessoSeletivoRepository processos = new(db, TimeProvider.System);
+        Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
+            new IniciarInscricaoCommand(processoId), inscricoes, new CertameDivulgadoRepository(db), processos, RegistroCodecs, Fuso(),
+            Substitute.For<IConferenciaEnderecoGeo>(), DentroDoPeriodo, db, fernanda, CancellationToken.None);
+        iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
+
+        Result<InscricaoDto> salvar = await SalvarInscricaoCommandHandler.Handle(
+            new SalvarInscricaoCommand(
+                processoId,
+                new InscricaoRequest(null, new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+                {
+                    ["CONCORRER_PCD"] = JsonSerializer.SerializeToElement(true),
+                }, null, null),
+                PrecondicaoIfMatch.DeTags([iniciar.Value!.ETag])),
+            inscricoes, processos, new CertameDivulgadoRepository(db), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(),
+            db, fernanda, DentroDoPeriodo, CancellationToken.None);
+        Result<InscricaoDto> ler = await ObterInscricaoQueryHandler.Handle(
+            new ObterInscricaoQuery(processoId), inscricoes, processos, RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), fernanda,
+            DentroDoPeriodo, CancellationToken.None);
+
+        salvar.IsSuccess.Should().BeTrue(salvar.Error?.Message);
+        ModalidadesDaInscricaoDto concorre = new(true, "CONCORRE", [new ModalidadeDaInscricaoDto("AC", "AC", 0)], []);
+        salvar.Value!.Avaliacao.Modalidades.Should().BeEquivalentTo(concorre);
+        ler.Value!.Avaliacao.Modalidades.Should().BeEquivalentTo(concorre);
     }
 }
