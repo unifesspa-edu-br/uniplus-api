@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Regras.Services;
 /// Fonte única do seed de <c>fato_valor_dominio</c> (ADR-0116): a descrição por
 /// valor dos fatos categóricos <b>estáticos</b> desta colheita —
 /// <c>COR_RACA</c> (6), <c>SEXO</c> (3), <c>NACIONALIDADE</c> (3), <c>PARENTESCO</c> (12),
-/// <c>ESTADO_CIVIL</c> (6), <c>TIPO_ENDERECO</c> (7) e a origem
+/// <c>ESTADO_CIVIL</c> (6), <c>RG_ORGAO_EMISSOR</c> (12), <c>TIPO_ENDERECO</c> (7) e a origem
 /// escolar, <c>FORMA_CONCLUSAO_EM</c> (5) e <c>ONDE_CURSOU_EM</c> (12). Consumida pela
 /// configuração EF Core (<c>HasData</c> na migration) e pelos testes de
 /// integração, mesmo papel de <see cref="FatoCandidatoSeed"/> para o pai.
@@ -33,9 +33,11 @@ public static class FatoValorDominioSeed
 
     private static readonly Guid OndeCursou = FatoCandidatoId(OrigemEscolar.FatoOndeCursou);
 
+    private static readonly Guid OrgaoEmissor = FatoCandidatoId("RG_ORGAO_EMISSOR");
+
     /// <summary>
     /// As linhas do seed (6 COR_RACA + 3 SEXO + 3 NACIONALIDADE + 12 PARENTESCO + 6 ESTADO_CIVIL
-    /// + 7 TIPO_ENDERECO + 5 FORMA_CONCLUSAO_EM + 12 ONDE_CURSOU_EM).
+    /// + 12 RG_ORGAO_EMISSOR + 7 TIPO_ENDERECO + 5 FORMA_CONCLUSAO_EM + 12 ONDE_CURSOU_EM).
     /// </summary>
     public static IReadOnlyList<FatoValorDominioSeedItem> Itens { get; } =
     [
@@ -90,6 +92,21 @@ public static class FatoValorDominioSeed
         new(SeedId(30), FatoCandidatoId("ESTADO_CIVIL"), "SEPARADO", "Separado(a) judicialmente", 3, true),
         new(SeedId(31), FatoCandidatoId("ESTADO_CIVIL"), "DIVORCIADO", "Divorciado(a)", 4, true),
         new(SeedId(32), FatoCandidatoId("ESTADO_CIVIL"), "VIUVO", "Viúvo(a)", 5, true),
+
+        // ── RG_ORGAO_EMISSOR ─────────────────────────────────────────────
+        // O órgão que emitiu o RG. Quem escolhe "Outro" escreve o nome do órgão.
+        new(SeedId(57), OrgaoEmissor, "SSP", "Secretaria de Segurança Pública (SSP)", 0, true),
+        new(SeedId(58), OrgaoEmissor, "PC", "Polícia Civil (PC)", 1, true),
+        new(SeedId(59), OrgaoEmissor, "DETRAN", "Departamento Estadual de Trânsito (DETRAN)", 2, true),
+        new(SeedId(60), OrgaoEmissor, "IFP", "Instituto Félix Pacheco (IFP)", 3, true),
+        new(SeedId(61), OrgaoEmissor, "PM", "Polícia Militar (PM)", 4, true),
+        new(SeedId(62), OrgaoEmissor, "CBM", "Corpo de Bombeiros Militar (CBM)", 5, true),
+        new(SeedId(63), OrgaoEmissor, "EB", "Exército Brasileiro (EB)", 6, true),
+        new(SeedId(64), OrgaoEmissor, "MB", "Marinha do Brasil (MB)", 7, true),
+        new(SeedId(65), OrgaoEmissor, "FAB", "Força Aérea Brasileira (FAB)", 8, true),
+        new(SeedId(66), OrgaoEmissor, "DPF", "Departamento de Polícia Federal (DPF)", 9, true),
+        new(SeedId(67), OrgaoEmissor, "MRE", "Ministério das Relações Exteriores (MRE)", 10, true),
+        new(SeedId(68), OrgaoEmissor, "OUTRO", "Outro", 11, true),
 
         // ── TIPO_ENDERECO ────────────────────────────────────────────────
         // O tipo de localidade da residência; aldeia, comunidade tradicional e quilombo pedem o nome.

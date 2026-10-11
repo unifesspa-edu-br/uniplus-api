@@ -257,7 +257,7 @@ internal static class FormularioDeTeste
         ["EMAIL"] = "EMAIL",
         ["TELEFONE"] = "TELEFONE",
         ["RG_NUMERO"] = "LIVRE",
-        ["RG_ORGAO_EMISSOR"] = "LIVRE",
+        ["RG_ORGAO_EMISSOR_OUTRO"] = "LIVRE",
         ["PASSAPORTE_NUMERO"] = "LIVRE",
         ["RNM_NUMERO"] = "LIVRE",
         ["NOME_COMUNIDADE"] = "LIVRE",

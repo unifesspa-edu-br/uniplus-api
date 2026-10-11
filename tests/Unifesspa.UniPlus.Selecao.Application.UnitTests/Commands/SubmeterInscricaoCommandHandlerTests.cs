@@ -81,11 +81,12 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     }
 
     /// <summary>
-    /// As respostas de TODO o conjunto básico do candidato (24 fatos, UNI-REQ-0144): toda inscrição
+    /// As respostas de TODO o conjunto básico do candidato (25 fatos, UNI-REQ-0144): toda inscrição
     /// coleta esses fatos na seção reservada, então o veredito de submissão só passa quando todos
     /// os obrigatórios estão preenchidos — não só o item que o teste declara além do básico.
     /// Escolhas que mantêm os condicionais fora de obrigatoriedade: nacionalidade NATO (sem
-    /// documento de estrangeiro), não deseja nome social, tipo de endereço urbano (sem comunidade).
+    /// documento de estrangeiro), órgão emissor da lista (sem o nome do outro órgão), não deseja nome
+    /// social, tipo de endereço urbano (sem comunidade).
     /// </summary>
     private static Dictionary<string, JsonElement> RespostasDoConjuntoBasico(Cpf cpf) => new(StringComparer.Ordinal)
     {

@@ -20,8 +20,8 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
     private static readonly int Teto = ConjuntoBasicoDaInscricao.Itens.Count;
 
     [Theory(DisplayName = "Os itens do cliente sobem acima da seção só quando colidem com ela, e os básicos omitidos entram")]
-    [InlineData(0, 24)]
-    [InlineData(24, 24)]
+    [InlineData(0, 25)]
+    [InlineData(25, 25)]
     [InlineData(40, 40)]
     public void MesclarItens_ItemDoCliente_SobeSoQuandoColide(int ordemEnviada, int ordemGravada)
     {
@@ -175,6 +175,29 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
 
         Item(avaliacao, "NOME_SOCIAL").Visivel.Should().Be(visivel);
         Item(avaliacao, "NOME_PAI").Obrigatorio.Should().Be(Ternario.Falso);
+    }
+
+    [Theory(DisplayName = "O nome do órgão emissor só é pedido, e obrigatório, a quem escolhe Outro na lista")]
+    [InlineData("NATO", "OUTRO", Ternario.Verdadeiro)]
+    [InlineData("NATO", "SSP", Ternario.Falso)]
+    [InlineData("ESTRANGEIRO", "OUTRO", Ternario.Falso)]
+    public void Avaliar_NomeDoOrgaoEmissorPeloOutro(string nacionalidade, string orgao, Ternario pedido)
+    {
+        AvaliacaoFormulario avaliacao = Avaliar(("NACIONALIDADE", nacionalidade), ("RG_ORGAO_EMISSOR", orgao));
+
+        Item(avaliacao, "RG_ORGAO_EMISSOR_OUTRO").Visivel.Should().Be(pedido);
+        Item(avaliacao, "RG_ORGAO_EMISSOR_OUTRO").Obrigatorio.Should().Be(pedido);
+    }
+
+    [Theory(DisplayName = "O nome do órgão emissor tem até 60 caracteres")]
+    [InlineData(60, false)]
+    [InlineData(61, true)]
+    public void Avaliar_NomeDoOrgaoEmissorLongo_Viola(int tamanho, bool viola)
+    {
+        AvaliacaoFormulario avaliacao = Avaliar(
+            ("NACIONALIDADE", "NATO"), ("RG_ORGAO_EMISSOR", "OUTRO"), ("RG_ORGAO_EMISSOR_OUTRO", new string('A', tamanho)));
+
+        Item(avaliacao, "RG_ORGAO_EMISSOR_OUTRO").RestricoesVioladas.Any(static r => r is TamanhoTexto).Should().Be(viola);
     }
 
     [Theory(DisplayName = "As datas de nascimento e de emissão do RG ficam entre 120 anos antes do envio e o dia do envio")]
