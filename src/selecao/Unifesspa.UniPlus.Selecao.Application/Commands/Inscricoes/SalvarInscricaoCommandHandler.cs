@@ -7,6 +7,7 @@ using Abstractions;
 using Domain.Entities;
 using Domain.Errors;
 using Domain.Interfaces;
+using Domain.Services;
 using Domain.ValueObjects;
 
 using DTOs;
@@ -112,18 +113,20 @@ public static class SalvarInscricaoCommandHandler
         Dictionary<string, JsonElement> respostas = Services.InscricaoRequestMapper.ParaRespostas(command.Request.Respostas);
         Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = Services.InscricaoRequestMapper.ParaGrupos(command.Request.Grupos);
 
-        Result<AvaliacaoFormulario> avaliacao = contexto.Value!.Regras.Avaliar(new EntradaAvaliacaoFormulario(
+        // A mesma avaliação do envio e da consulta (ADR-0143), sem etapa concluída: o rascunho ainda
+        // está sendo preenchido, e só o que o corpo traz é conferido.
+        Result<ResultadoDaAvaliacaoDaInscricao> avaliacao = AvaliacaoDaInscricao.Avaliar(contexto.Value!.Configuracao, new EntradaDaAvaliacaoDaInscricao(
             respostas,
-            EtapasConcluidas: new HashSet<string>(StringComparer.Ordinal),
-            FatosConhecidos: new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
-            envio,
-            RespostasDosGrupos: Services.InscricaoRequestMapper.ParaAvaliacao(grupos)));
+            Services.InscricaoRequestMapper.ParaAvaliacao(grupos),
+            new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
+            new HashSet<string>(StringComparer.Ordinal),
+            envio));
         if (avaliacao.IsFailure)
         {
             return Result<InscricaoDto>.Failure(avaliacao.Error!);
         }
 
-        IReadOnlyList<FieldError> recusas = RecusasEstruturais(avaliacao.Value!, envio.Dia);
+        IReadOnlyList<FieldError> recusas = RecusasEstruturais(AvaliacaoDaInscricao.DaInscricao(avaliacao.Value!.Formulario), envio.Dia);
         if (recusas.Count > 0)
         {
             return Result<InscricaoDto>.ValidationFailure(recusas);

@@ -7,6 +7,8 @@ using Abstractions;
 using Domain.Entities;
 using Domain.Errors;
 using Domain.Interfaces;
+using Domain.Services;
+using Domain.ValueObjects;
 
 using DTOs;
 
@@ -116,37 +118,42 @@ public static class SubmeterInscricaoCommandHandler
             return Result<ComprovanteInscricaoDto>.Failure(derivados.Error!);
         }
 
-        Dictionary<string, JsonElement> respostasFinais = new(respostasMescladas, StringComparer.Ordinal);
-        foreach ((string codigo, JsonElement valor) in derivados.Value!)
-        {
-            respostasFinais[codigo] = valor;
-        }
-
         Result<TimeZoneInfo> fuso = resolvedorFuso.Resolver();
         if (fuso.IsFailure)
         {
             return Result<ComprovanteInscricaoDto>.Failure(fuso.Error!);
         }
 
+        // A avaliação da definição inteira da versão fixada (ADR-0143), a mesma do rascunho e da
+        // consulta do candidato, com as etapas da inscrição concluídas: o envio é o candidato dizendo
+        // que terminou. O veredito olha só o que o formulário de inscrição pergunta.
         EnvioDasRespostas envio = new(instante, fuso.Value!);
-        Result<AvaliacaoFormulario> avaliacao = contexto.Value!.Regras.Avaliar(new EntradaAvaliacaoFormulario(
-            respostasFinais,
-            EtapasConcluidas: new HashSet<string>(contexto.Value!.Regras.Etapas.Select(static e => e.Codigo), StringComparer.Ordinal),
-            FatosConhecidos: new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
-            envio,
-            RespostasDosGrupos: Services.InscricaoRequestMapper.ParaAvaliacao(grupos)));
+        ConfiguracaoAvaliavel configuracao = contexto.Value!.Configuracao;
+        Result<ResultadoDaAvaliacaoDaInscricao> avaliacao = AvaliacaoDaInscricao.Avaliar(configuracao, new EntradaDaAvaliacaoDaInscricao(
+            respostasMescladas,
+            Services.InscricaoRequestMapper.ParaAvaliacao(grupos),
+            derivados.Value!.ToDictionary(static d => d.Key, static d => FatoResolvido.Resolvido(d.Value), StringComparer.Ordinal),
+            AvaliacaoDaInscricao.CodigosDasEtapasDaInscricao(configuracao.Definicao),
+            envio));
         if (avaliacao.IsFailure)
         {
             return Result<ComprovanteInscricaoDto>.Failure(avaliacao.Error!);
         }
 
+        Dictionary<string, JsonElement> respostasFinais = new(respostasMescladas, StringComparer.Ordinal);
+        foreach ((string codigo, JsonElement valor) in derivados.Value!)
+        {
+            respostasFinais[codigo] = valor;
+        }
+
         // O avaliador descarta em silêncio a resposta cujo código não pertence à oferta vigente
-        // (FormularioPortavel.Avaliar via RespostaDeCampo.DentroDaOferta) — sem esta checagem sobre
-        // as respostas BRUTAS, uma opção fora da oferta num campo opcional passaria sem recusa.
+        // (RespostaDeCampo.DentroDaOferta) — sem esta checagem sobre as respostas BRUTAS, uma opção
+        // fora da oferta num campo opcional passaria sem recusa.
         IReadOnlyList<FieldError> recusas =
         [
             .. Services.VeredictoDeSubmissao.RecusasDeOpcaoForaDaOferta(respostasFinais, grupos, contexto.Value!.Ofertas),
-            .. Services.VeredictoDeSubmissao.Avaliar(avaliacao.Value!, [.. contexto.Value!.TermosExigidos], aceites, envio.Dia),
+            .. Services.VeredictoDeSubmissao.Avaliar(
+                AvaliacaoDaInscricao.DaInscricao(avaliacao.Value!.Formulario), [.. contexto.Value!.TermosExigidos], aceites, envio.Dia),
         ];
         if (recusas.Count > 0)
         {

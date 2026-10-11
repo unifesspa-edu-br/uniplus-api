@@ -418,6 +418,11 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("instante");
 
+                    b.Property<string>("Modalidades")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("modalidades")
+                        .HasComment("As modalidades em que o candidato concorre nesta submissão, com o nome congelado e a ordem das ofertadas; nulo quando a versão não deriva a modalidade.");
+
                     b.Property<string>("NumeroInscricao")
                         .IsRequired()
                         .HasMaxLength(20)

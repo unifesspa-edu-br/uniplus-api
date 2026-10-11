@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Events;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -319,8 +320,8 @@ public sealed class Inscricao : EntityBase
     /// Envia ou corrige: gera o número de inscrição na primeira vez (a sequência vem de fora — o
     /// domínio não acessa o banco), muda a situação para <see cref="SituacaoInscricao.Submetida"/> e
     /// grava um <see cref="ComprovanteInscricao"/> novo, sem tocar nos anteriores. A validação
-    /// completa (obrigatórios, restrições, impedimentos, termos, Geo) é da issue #1859 — aqui só o
-    /// ciclo de vida do agregado.
+    /// completa (obrigatórios, restrições, impedimentos, termos, Geo) é da issue #1859; aqui ficam o
+    /// ciclo de vida do agregado e a modalidade em que o candidato concorre.
     /// </summary>
     /// <remarks>
     /// A inscrição enviada guarda só o que se aplica a ela. A resposta a um item que a
@@ -330,8 +331,13 @@ public sealed class Inscricao : EntityBase
     /// ela não vale para o processo e seria dado pessoal guardado sem finalidade. O descarte não
     /// recusa o envio. O rascunho (<see cref="Salvar"/>) continua guardando a resposta oculta, para o
     /// candidato poder voltar atrás.
+    /// <para>
+    /// Quando a versão fixada deriva a modalidade, o envio só sai se o candidato concorre a alguma das
+    /// ofertadas (UNI-REQ-0076). A modalidade derivada é gravada com os derivados, e o comprovante a
+    /// registra com o nome congelado na publicação.
+    /// </para>
     /// </remarks>
-    /// <param name="avaliacao">A avaliação do formulário sobre o estado final da inscrição, com todas as etapas concluídas.</param>
+    /// <param name="avaliacao">A avaliação da inscrição sobre o estado final dela, com todas as etapas da inscrição concluídas.</param>
     /// <param name="derivados">Substituem os da submissão anterior; o candidato nunca os informa.</param>
     public Result<ComprovanteInscricao> Submeter(
         string numeroGeradoSeNecessario,
@@ -340,7 +346,7 @@ public sealed class Inscricao : EntityBase
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
         IReadOnlyList<AceiteDeTermo> aceites,
         RespostasAdmitidas admitidas,
-        AvaliacaoFormulario avaliacao,
+        ResultadoDaAvaliacaoDaInscricao avaliacao,
         IReadOnlyDictionary<string, JsonElement> derivados,
         IReadOnlyDictionary<string, DefinicaoDaResposta> definicoesDosDerivados,
         PrecondicaoIfMatch precondicao,
@@ -366,31 +372,46 @@ public sealed class Inscricao : EntityBase
             .. ConferirValores(derivados, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), definicoesDosDerivados),
             .. RecusasDoCpf(respostas),
             .. RecusasDaOferta(ofertaCursoId, admitidas.OfertasDeCurso, exigida: admitidas.OfertasDeCurso.Count > 0),
+            .. RecusasDaModalidade(avaliacao.Modalidades),
         ];
         if (recusas.Count > 0)
         {
             return Result<ComprovanteInscricao>.ValidationFailure(recusas);
         }
 
+        ModalidadesDeConcorrencia modalidades = avaliacao.Modalidades;
         bool primeiraSubmissao = NumeroInscricao is null;
         NumeroInscricao ??= numeroGeradoSeNecessario;
 
         OfertaCursoId = ofertaCursoId;
-        Derivados = MesclarPreservandoAusentes(new Dictionary<string, JsonElement>(StringComparer.Ordinal), derivados);
-        Respostas = SoAsQueSeAplicam(NaFormaCanonica(MesclarPreservandoAusentes(Respostas, respostas), admitidas.Definicoes), avaliacao.Fatos)
+        Dictionary<string, JsonElement> derivadosDoEnvio = MesclarPreservandoAusentes(new Dictionary<string, JsonElement>(StringComparer.Ordinal), derivados);
+        Dictionary<string, DefinicaoDaResposta> definicoesDoEnvio = new(definicoesDosDerivados, StringComparer.Ordinal);
+        if (modalidades.Derivada)
+        {
+            derivadosDoEnvio[AvaliacaoDaInscricao.FatoDaModalidade] = JsonSerializer.SerializeToElement(modalidades.Itens.Select(static m => m.Codigo));
+            definicoesDoEnvio[AvaliacaoDaInscricao.FatoDaModalidade] = AvaliacaoDaInscricao.DefinicaoDaModalidade;
+        }
+
+        Derivados = derivadosDoEnvio;
+        Respostas = SoAsQueSeAplicam(NaFormaCanonica(MesclarPreservandoAusentes(Respostas, respostas), admitidas.Definicoes), avaliacao.Formulario.Fatos)
             .Where(r => !Derivados.ContainsKey(r.Key))
             .ToDictionary(static r => r.Key, static r => r.Value, StringComparer.Ordinal);
-        Grupos = GruposQueSeAplicam(NaFormaCanonicaNosGrupos(SemValoresNulos(grupos), admitidas.Definicoes), avaliacao.Grupos);
+        Grupos = GruposQueSeAplicam(NaFormaCanonicaNosGrupos(SemValoresNulos(grupos), admitidas.Definicoes), avaliacao.Formulario.Grupos);
         Aceites = aceites;
-        DefinicoesDasRespostas = admitidas.Definicoes.Concat(definicoesDosDerivados)
+        DefinicoesDasRespostas = admitidas.Definicoes.Concat(definicoesDoEnvio)
             .GroupBy(static f => f.Key, StringComparer.Ordinal)
             .ToDictionary(static g => g.Key, static g => g.Last().Value, StringComparer.Ordinal);
         Situacao = SituacaoInscricao.Submetida;
         Revisao++;
 
+        // A modalidade vai ao comprovante na seção própria, com o nome; nos derivados, ficaria só o código.
         ComprovanteInscricao comprovante = ComprovanteInscricao.Emitir(
             Id, NumeroInscricao, instante, OfertaCursoId,
-            SemNumerosDeDocumento(Respostas), SemNumerosDeDocumento(Derivados), SemNumerosDeDocumentoNosGrupos(Grupos), Aceites);
+            SemNumerosDeDocumento(Respostas),
+            SemNumerosDeDocumento(Derivados).Where(static d => d.Key != AvaliacaoDaInscricao.FatoDaModalidade)
+                .ToDictionary(static d => d.Key, static d => d.Value, StringComparer.Ordinal),
+            SemNumerosDeDocumentoNosGrupos(Grupos), Aceites,
+            modalidades.Derivada ? modalidades.Itens : null);
         _comprovantes.Add(comprovante);
 
         AddDomainEvent(primeiraSubmissao
@@ -517,6 +538,39 @@ public sealed class Inscricao : EntityBase
 
         return recusas;
     }
+
+    /// <summary>
+    /// Com a modalidade derivada, o envio exige que ela esteja decidida e não vazia. A recusa sai em
+    /// cada campo de que a modalidade depende, para o candidato conferir as respostas; a modalidade que
+    /// falta decidir sai nos campos que faltam responder.
+    /// </summary>
+    private static IEnumerable<FieldError> RecusasDaModalidade(ModalidadesDeConcorrencia modalidades)
+    {
+        if (!modalidades.Derivada || modalidades.Situacao == SituacaoDasModalidades.Concorre)
+        {
+            return [];
+        }
+
+        if (modalidades.Situacao == SituacaoDasModalidades.NaoConcorre)
+        {
+            DomainError nenhuma = new(
+                InscricaoErrorCodes.NenhumaModalidade,
+                "Com estas respostas, você não concorre a nenhuma das modalidades ofertadas neste processo seletivo. "
+                + "Confira as respostas indicadas. Se as respostas estão corretas, você não atende às condições de nenhuma "
+                + "modalidade deste processo; consulte o edital.");
+            return CamposOuAModalidade([.. modalidades.Dependencias.Fatos.Where(static f => !f.Contains('.', StringComparison.Ordinal)), .. modalidades.Dependencias.Grupos])
+                .Select(campo => new FieldError(campo, nenhuma));
+        }
+
+        DomainError naoDecidida = new(
+            InscricaoErrorCodes.ModalidadeNaoDecidida,
+            "Ainda não é possível saber em quais modalidades você concorre. Responda os campos indicados e envie de novo.");
+        return CamposOuAModalidade([.. modalidades.Pendencias.Select(static p => p.FatoCodigo)])
+            .Select(campo => new FieldError(campo, naoDecidida));
+    }
+
+    private static IReadOnlyList<string> CamposOuAModalidade(IReadOnlyList<string> campos) =>
+        campos.Count > 0 ? campos : [AvaliacaoDaInscricao.FatoDaModalidade];
 
     /// <summary>A inscrição é do CPF do token; a resposta do CPF não pode ser de outra pessoa.</summary>
     private IEnumerable<FieldError> RecusasDoCpf(IReadOnlyDictionary<string, JsonElement> respostas)

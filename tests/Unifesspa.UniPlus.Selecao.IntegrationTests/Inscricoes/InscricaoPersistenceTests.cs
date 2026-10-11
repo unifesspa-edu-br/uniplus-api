@@ -367,6 +367,59 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         gravados.Should().ContainSingle().Which.IntegridadeConfere().Should().BeTrue();
     }
 
+    [Fact(DisplayName = "A modalidade do envio é gravada derivada, uma linha por código na ordem das ofertadas, e o comprovante relido do banco a traz e confere")]
+    public async Task Submeter_GravaAModalidadeEOComprovanteRelidoConfere()
+    {
+        Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, Guid.CreateVersion7());
+        ModalidadeDeConcorrencia[] modalidades =
+        [
+            new("AC", "Ampla concorrência", 0),
+            new("LI_EP", "Egressos de escola pública", 4),
+        ];
+        ResultadoDaAvaliacaoDaInscricao avaliacao = FormularioDeTeste.AvaliacaoSemOcultos with
+        {
+            Modalidades = new ModalidadesDeConcorrencia(true, SituacaoDasModalidades.Concorre, modalidades, [], new DependenciasDaAvaliacao([], [])),
+        };
+        ComprovanteInscricao envio = original.Submeter(
+            "000901", OfertaDoProcesso, Respostas(("NOME_SOCIAL", "Ariel")), SemGrupos(), [], Admitidas, avaliacao,
+            Respostas(), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), DateTimeOffset.UtcNow).Value!;
+
+        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        {
+            InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+            await repositorio.AdicionarAsync(original);
+            await repositorio.AdicionarComprovanteAsync(envio);
+            await context.SaveChangesAsync();
+        }
+
+        await using NpgsqlConnection connection = new(_fixture.ConnectionString);
+        await connection.OpenAsync();
+        await using NpgsqlCommand command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT posicao, origem, tipo, valor_codigo FROM selecao.respostas_da_inscricao
+            WHERE inscricao_id = @id AND fato_codigo = 'MODALIDADE' ORDER BY posicao
+            """;
+        command.Parameters.AddWithValue("id", original.Id);
+        List<(int Posicao, int Origem, int Tipo, string Codigo)> linhas = [];
+        await using (NpgsqlDataReader reader = await command.ExecuteReaderAsync())
+        {
+            while (await reader.ReadAsync())
+            {
+                linhas.Add((reader.GetInt32(0), reader.GetInt32(1), reader.GetInt32(2), reader.GetString(3)));
+            }
+        }
+
+        linhas.Should().Equal(
+            (0, (int)OrigemDaResposta.Derivada, (int)TipoDoValorDeResposta.Codigo, "AC"),
+            (1, (int)OrigemDaResposta.Derivada, (int)TipoDoValorDeResposta.Codigo, "LI_EP"));
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        InscricaoRepository leitura = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+        ComprovanteInscricao relido = (await leitura.ObterComprovantesAsync([original.Id], CancellationToken.None)).Single();
+        relido.Modalidades.Should().Equal(modalidades);
+        relido.IntegridadeConfere().Should().BeTrue();
+    }
+
     [Fact(DisplayName = "A consulta de candidatos por fato e valor usa índice, sem operador JSON")]
     public async Task ConsultaPorFatoEValor_UsaIndice()
     {

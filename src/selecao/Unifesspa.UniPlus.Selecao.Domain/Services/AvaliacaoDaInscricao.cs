@@ -27,7 +27,8 @@ public static class AvaliacaoDaInscricao
     /// <summary>O fato que diz em quais modalidades o candidato concorre.</summary>
     public const string FatoDaModalidade = "MODALIDADE";
 
-    private static readonly string EtapaDaInscricao = DefinicaoDoProcesso.CodigoDaEtapa(FinalidadeFormulario.Inscricao, null);
+    /// <summary>Como a modalidade derivada é gravada: os códigos das modalidades, um por linha, na ordem das ofertadas.</summary>
+    public static DefinicaoDaResposta DefinicaoDaModalidade { get; } = new(TipoDoValorDeResposta.Codigo, Multivalorado: true, Identificador: false);
 
     public static Result<ResultadoDaAvaliacaoDaInscricao> Avaliar(ConfiguracaoAvaliavel configuracao, EntradaDaAvaliacaoDaInscricao entrada)
     {
@@ -158,8 +159,35 @@ public static class AvaliacaoDaInscricao
             .Where(DerivadosDoSistema.Dependencias.ContainsKey)
             .SelectMany(static p => DerivadosDoSistema.Dependencias[p]));
 
+    /// <summary>Os códigos das etapas da finalidade Inscrição, que o envio dá como concluídas.</summary>
+    public static IReadOnlySet<string> CodigosDasEtapasDaInscricao(DefinicaoFormulario definicao)
+    {
+        ArgumentNullException.ThrowIfNull(definicao);
+        return EtapasDaInscricao(definicao).Select(static e => e.Codigo).ToHashSet(StringComparer.Ordinal);
+    }
+
+    /// <summary>
+    /// A avaliação só com o que o formulário de inscrição pergunta: as etapas, os itens, os grupos e os
+    /// termos da finalidade Inscrição. Os fatos ficam todos, porque a derivação pode citar um fato que
+    /// outra finalidade coleta. É sobre ela que se decide o veredito da inscrição: o item obrigatório de
+    /// outra finalidade, como a isenção, não é pendência da inscrição.
+    /// </summary>
+    public static AvaliacaoFormulario DaInscricao(AvaliacaoFormulario formulario)
+    {
+        ArgumentNullException.ThrowIfNull(formulario);
+        return formulario with
+        {
+            Etapas = [.. formulario.Etapas.Where(static e => DaInscricao(e.Codigo))],
+            Itens = [.. formulario.Itens.Where(static i => DaInscricao(i.EtapaCodigo))],
+            Grupos = [.. formulario.Grupos.Where(static g => DaInscricao(g.EtapaCodigo))],
+            Termos = [.. formulario.Termos.Where(static t => DaInscricao(t.Codigo))],
+        };
+    }
+
+    private static bool DaInscricao(string codigo) => DefinicaoDoProcesso.EhDaFinalidade(codigo, FinalidadeFormulario.Inscricao);
+
     private static IEnumerable<DefinicaoEtapa> EtapasDaInscricao(DefinicaoFormulario definicao) =>
-        definicao.Etapas.Where(static e => e.Codigo == EtapaDaInscricao || e.Codigo.StartsWith(EtapaDaInscricao + ":", StringComparison.Ordinal));
+        definicao.Etapas.Where(static e => DaInscricao(e.Codigo));
 
     private static ModalidadesDeConcorrencia Modalidades(ConfiguracaoAvaliavel configuracao, AvaliacaoFormulario formulario)
     {
@@ -168,11 +196,12 @@ public static class AvaliacaoDaInscricao
             return ModalidadesDeConcorrencia.SemDerivacao;
         }
 
+        DependenciasDaAvaliacao dependencias = Dependencias(configuracao.Definicao);
         FatoResolvido modalidade = formulario.Fatos.GetValueOrDefault(FatoDaModalidade) ?? FatoResolvido.Indeterminado();
         if (modalidade is not { Estado: EstadoFato.Resolvido, Valor: { } valor })
         {
             return new ModalidadesDeConcorrencia(
-                true, SituacaoDasModalidades.FaltaResponder, [], Pendencias(configuracao, formulario));
+                true, SituacaoDasModalidades.FaltaResponder, [], Pendencias(configuracao, formulario, dependencias), dependencias);
         }
 
         // A publicação confere cada contribuição da derivação contra as modalidades ofertadas: todo
@@ -184,7 +213,7 @@ public static class AvaliacaoDaInscricao
             .OrderBy(static m => m.Ordem)];
 
         return new ModalidadesDeConcorrencia(
-            true, itens.Length > 0 ? SituacaoDasModalidades.Concorre : SituacaoDasModalidades.NaoConcorre, itens, []);
+            true, itens.Length > 0 ? SituacaoDasModalidades.Concorre : SituacaoDasModalidades.NaoConcorre, itens, [], dependencias);
     }
 
     /// <summary>
@@ -205,9 +234,9 @@ public static class AvaliacaoDaInscricao
     /// a derivação depende e que continuam indeterminados. O campo cuja exibição ainda não se decide não
     /// entra: o que falta é a resposta que decide se ele aparece.
     /// </summary>
-    private static List<PendenciaDaAvaliacao> Pendencias(ConfiguracaoAvaliavel configuracao, AvaliacaoFormulario formulario)
+    private static List<PendenciaDaAvaliacao> Pendencias(
+        ConfiguracaoAvaliavel configuracao, AvaliacaoFormulario formulario, DependenciasDaAvaliacao dependencias)
     {
-        DependenciasDaAvaliacao dependencias = Dependencias(configuracao.Definicao);
         HashSet<string> campos = new(dependencias.Fatos, StringComparer.Ordinal);
         HashSet<string> grupos = new(dependencias.Grupos, StringComparer.Ordinal);
         Dictionary<string, AvaliacaoItem> itemPorFato = formulario.Itens.ToDictionary(static i => i.FatoCodigo, StringComparer.Ordinal);

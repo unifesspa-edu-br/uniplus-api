@@ -25,10 +25,15 @@ internal static class FormularioDeTeste
 
     /// <summary>
     /// A avaliação de quem responde só o que aparece, para o envio cujo assunto não é o descarte do
-    /// que não se aplica: nenhum fato não aplicável, nada a descartar.
+    /// que não se aplica nem a modalidade: nenhum fato não aplicável, nada a descartar, e uma versão
+    /// que não deriva a modalidade.
     /// </summary>
-    public static AvaliacaoFormulario AvaliacaoSemOcultos { get; } =
-        new(new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), [], [], [], []);
+    public static ResultadoDaAvaliacaoDaInscricao AvaliacaoSemOcultos { get; } =
+        AvaliacaoDoEnvio(new(new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), [], [], [], []));
+
+    /// <summary>A avaliação do envio com o formulário dado, numa versão que não deriva a modalidade.</summary>
+    public static ResultadoDaAvaliacaoDaInscricao AvaliacaoDoEnvio(AvaliacaoFormulario formulario) =>
+        new(formulario, ModalidadesDeConcorrencia.SemDerivacao, []);
 
     public static IReadOnlyList<EtapaFormulario> Etapas(FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao)
     {

@@ -620,10 +620,11 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         Inscricao rascunho = (await envioRepository.ObterPorIdAsync(inscricao.Id))!;
         rascunho.Respostas.Should().ContainKey("CONDICAO_DESCRITA", "o rascunho guarda a resposta oculta, para o candidato poder voltar atrás");
 
-        AvaliacaoFormulario avaliacao = contexto.Regras.Avaliar(new EntradaAvaliacaoFormulario(
+        ResultadoDaAvaliacaoDaInscricao avaliacao = AvaliacaoDaInscricao.Avaliar(contexto.Configuracao, new EntradaDaAvaliacaoDaInscricao(
             rascunho.Respostas,
-            new HashSet<string>(contexto.Regras.Etapas.Select(static e => e.Codigo), StringComparer.Ordinal),
+            new Dictionary<string, IReadOnlyList<OcorrenciaRespondida>>(StringComparer.Ordinal),
             new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
+            AvaliacaoDaInscricao.CodigosDasEtapasDaInscricao(contexto.Configuracao.Definicao),
             Envio: null)).Value!;
         ComprovanteInscricao comprovante = rascunho.Submeter(
             "000901", contexto.Admitidas.OfertasDeCurso.Single(), new Dictionary<string, JsonElement>(StringComparer.Ordinal),
@@ -913,6 +914,194 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         semCotas.Itens.Select(static m => m.Codigo).Should().Equal("AC");
         semOrigem.Situacao.Should().Be("FALTA_RESPONDER");
         semOrigem.Pendencias.Select(static p => p.FatoCodigo).Should().Equal(OrigemEscolar.FatoFormaDeConclusao, OrigemEscolar.FatoOndeCursou);
+    }
+
+    /// <summary>
+    /// O conjunto básico respondido com os valores que a publicação deste teste congela, o membro da
+    /// composição familiar e as respostas próprias do processo: o envio só passa com todo obrigatório
+    /// respondido.
+    /// </summary>
+    private static InscricaoRequest PedidoDeEnvio(ProcessoSeletivo processo, IReadOnlyDictionary<string, JsonElement> doProcesso)
+    {
+        Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal)
+        {
+            ["NOME"] = JsonSerializer.SerializeToElement("Fernanda Drumond"),
+            ["DESEJA_NOME_SOCIAL"] = JsonSerializer.SerializeToElement(false),
+            ["NACIONALIDADE"] = JsonSerializer.SerializeToElement("BRASILEIRA"),
+            ["CPF"] = JsonSerializer.SerializeToElement(PersonasDeTeste.FernandaDrumond.Valor),
+            ["RG_NUMERO"] = JsonSerializer.SerializeToElement("1234567"),
+            ["RG_ORGAO_EMISSOR"] = JsonSerializer.SerializeToElement("SSP"),
+            ["RG_UF"] = JsonSerializer.SerializeToElement("PA"),
+            ["RG_DATA_EMISSAO"] = JsonSerializer.SerializeToElement("2010-01-01"),
+            ["DATA_NASCIMENTO"] = JsonSerializer.SerializeToElement("2000-01-01"),
+            ["NATURALIDADE_UF"] = JsonSerializer.SerializeToElement("PA"),
+            ["NATURALIDADE_MUNICIPIO"] = JsonSerializer.SerializeToElement("1504208"),
+            ["NOME_MAE"] = JsonSerializer.SerializeToElement("Maria Drumond"),
+            ["ESTADO_CIVIL"] = JsonSerializer.SerializeToElement("SOLTEIRO"),
+            ["SEXO"] = JsonSerializer.SerializeToElement("FEMININO"),
+            ["COR_RACA"] = JsonSerializer.SerializeToElement("NAO_DECLARADO"),
+            ["EMAIL"] = JsonSerializer.SerializeToElement("fernanda.drumond@example.com"),
+            ["TELEFONE"] = JsonSerializer.SerializeToElement("94999999999"),
+            ["TIPO_ENDERECO"] = JsonSerializer.SerializeToElement("URBANO"),
+            ["ENDERECO_RESIDENCIAL"] = JsonSerializer.SerializeToElement(new { cep = (string?)null, cidade = new { codigoIbge = "1504208", uf = "PA" } }),
+        };
+        foreach ((string fato, JsonElement valor) in doProcesso)
+        {
+            respostas[fato] = valor;
+        }
+
+        TermoExigidoFormulario termo = processo.TermosExigidos.Single();
+        return new InscricaoRequest(
+            processo.DistribuicaoVagas.Single().OfertaCursoOrigemId,
+            respostas,
+            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>(StringComparer.Ordinal)
+            {
+                ["COMPOSICAO_FAMILIAR"] =
+                [
+                    new OcorrenciaDeGrupoInscricaoInput("membro-1", new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+                    {
+                        ["RG_NUMERO_MEMBRO"] = JsonSerializer.SerializeToElement("7654321"),
+                        ["PARENTESCO"] = JsonSerializer.SerializeToElement("Mãe"),
+                    }),
+                ],
+            },
+            [new AceiteDeTermoInput(termo.Codigo, termo.VersaoId, termo.HashVersao)]);
+    }
+
+    private static IConferenciaEnderecoGeo GeoQueConfirma()
+    {
+        IConferenciaEnderecoGeo geo = Substitute.For<IConferenciaEnderecoGeo>();
+        geo.ConferirMunicipioAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Result.Success());
+        geo.ConferirCepAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Result.Success());
+        return geo;
+    }
+
+    /// <summary>Inicia a inscrição da Fernanda no processo publicado e devolve o ETag com que ela é enviada.</summary>
+    private async Task<string> IniciarAsync(SelecaoDbContext db, Guid processoId)
+    {
+        Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
+            new IniciarInscricaoCommand(processoId),
+            new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System), new CertameDivulgadoRepository(db),
+            new ProcessoSeletivoRepository(db, TimeProvider.System), RegistroCodecs, Fuso(), GeoQueConfirma(),
+            DentroDoPeriodo, db, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None);
+        iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
+        return iniciar.Value!.ETag;
+    }
+
+    private async Task<Result<ComprovanteInscricaoDto>> EnviarAsync(SelecaoDbContext db, Guid processoId, InscricaoRequest pedido, string etag, string numero) =>
+        await SubmeterInscricaoCommandHandler.Handle(
+            new SubmeterInscricaoCommand(processoId, pedido, PrecondicaoIfMatch.DeTags([etag])),
+            new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
+            new ProcessoSeletivoRepository(db, TimeProvider.System), new CertameDivulgadoRepository(db), RegistroCodecs, Fuso(), GeoQueConfirma(),
+            GeradorQueDevolve(numero), db, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), DentroDoPeriodo, CancellationToken.None);
+
+    private static IGeradorDeNumeroInscricao GeradorQueDevolve(string numero)
+    {
+        IGeradorDeNumeroInscricao gerador = Substitute.For<IGeradorDeNumeroInscricao>();
+        gerador.ProximoAsync(Arg.Any<CancellationToken>()).Returns(numero);
+        return gerador;
+    }
+
+    private async Task<(Inscricao Inscricao, IReadOnlyList<ComprovanteInscricao> Comprovantes)> RelerAsync(Guid processoId)
+    {
+        await using SelecaoDbContext leitura = _fixture.CreateDbContext();
+        InscricaoRepository repositorio = new(leitura, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+        Inscricao inscricao = (await repositorio.ObterPorProcessoECpfAsync(processoId, PersonasDeTeste.FernandaDrumond, CancellationToken.None))!;
+        return (inscricao, await repositorio.ObterComprovantesAsync([inscricao.Id], CancellationToken.None));
+    }
+
+    private async Task<List<(int Posicao, int Origem, string Codigo)>> LinhasDaModalidadeAsync(Guid inscricaoId)
+    {
+        await using NpgsqlConnection connection = new(_fixture.ConnectionString);
+        await connection.OpenAsync();
+        await using NpgsqlCommand command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT posicao, origem, valor_codigo FROM selecao.respostas_da_inscricao
+            WHERE inscricao_id = @id AND fato_codigo = 'MODALIDADE' ORDER BY posicao
+            """;
+        command.Parameters.AddWithValue("id", inscricaoId);
+        List<(int, int, string)> linhas = [];
+        await using NpgsqlDataReader reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            linhas.Add((reader.GetInt32(0), reader.GetInt32(1), reader.GetString(2)));
+        }
+
+        return linhas;
+    }
+
+    [Fact(DisplayName = "O envio sobre a versão publicada grava as modalidades em que o candidato concorre e o comprovante relido as traz com o nome congelado")]
+    public async Task Envio_SobreAVersaoPublicada_GravaAsModalidadesEComprova()
+    {
+        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        ProcessoSeletivo processo = ProcessoComAMatrizNormativa(nameof(Envio_SobreAVersaoPublicada_GravaAsModalidadesEComprova));
+        (Guid processoId, _) = await PublicarEDivulgarAsync(db, processo, OpcoesDaOrigemEscolar());
+        string etag = await IniciarAsync(db, processoId);
+
+        Result<ComprovanteInscricaoDto> envio = await EnviarAsync(
+            db, processoId, PedidoDeEnvio(processo, RespostasDaOrigemEDasCotas(OrigemEscolar.SomentePublica, ep: true, ppi: true, renda: true)),
+            etag, "00000101");
+
+        envio.IsSuccess.Should().BeTrue(envio.Error?.Message ?? string.Join("; ", envio.Errors.Select(static e => $"{e.Field}: {e.Error.Message}")));
+        (Inscricao enviada, IReadOnlyList<ComprovanteInscricao> comprovantes) = await RelerAsync(processoId);
+        (await LinhasDaModalidadeAsync(enviada.Id)).Should().Equal(
+            (0, (int)OrigemDaResposta.Derivada, "AC"), (1, (int)OrigemDaResposta.Derivada, "LB_EP"), (2, (int)OrigemDaResposta.Derivada, "LB_PPI"),
+            (3, (int)OrigemDaResposta.Derivada, "LI_EP"), (4, (int)OrigemDaResposta.Derivada, "LI_PPI"));
+        ComprovanteInscricao comprovante = comprovantes.Should().ContainSingle().Subject;
+        comprovante.Modalidades!.Select(static m => (m.Codigo, m.Nome)).Should().Equal(
+            ("AC", "Ampla concorrência"), ("LB_EP", "Modalidade LB_EP"), ("LB_PPI", "Modalidade LB_PPI"),
+            ("LI_EP", "Modalidade LI_EP"), ("LI_PPI", "Modalidade LI_PPI"));
+        comprovante.IntegridadeConfere().Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "O envio sobre a versão publicada sem nenhuma modalidade aplicável é recusado, sem comprovante, e a inscrição continua em rascunho")]
+    public async Task Envio_SemModalidade_RecusaEMantemORascunho()
+    {
+        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        ProcessoSeletivo processo = ProcessoQueDerivaAModalidade(nameof(Envio_SemModalidade_RecusaEMantemORascunho));
+        (Guid processoId, _) = await PublicarEDivulgarAsync(db, processo);
+        string etag = await IniciarAsync(db, processoId);
+
+        Result<ComprovanteInscricaoDto> envio = await EnviarAsync(
+            db, processoId,
+            PedidoDeEnvio(processo, new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["CONCORRER_PCD"] = JsonSerializer.SerializeToElement(false) }),
+            etag, "00000102");
+
+        envio.Errors.Should().ContainSingle().Which.Field.Should().Be("CONCORRER_PCD");
+        envio.Errors[0].Error.Code.Should().Be(InscricaoErrorCodes.NenhumaModalidade);
+        (Inscricao inscricao, IReadOnlyList<ComprovanteInscricao> comprovantes) = await RelerAsync(processoId);
+        inscricao.Situacao.Should().Be(SituacaoInscricao.Rascunho);
+        comprovantes.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "A correção que troca as modalidades emite um comprovante novo, com hash próprio, e o anterior fica como estava")]
+    public async Task Correcao_QueTrocaAsModalidades_EmiteComprovanteNovo()
+    {
+        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        ProcessoSeletivo processo = ProcessoComAMatrizNormativa(nameof(Correcao_QueTrocaAsModalidades_EmiteComprovanteNovo));
+        (Guid processoId, _) = await PublicarEDivulgarAsync(db, processo, OpcoesDaOrigemEscolar());
+        string etag = await IniciarAsync(db, processoId);
+        Result<ComprovanteInscricaoDto> primeiro = await EnviarAsync(
+            db, processoId, PedidoDeEnvio(processo, RespostasDaOrigemEDasCotas(OrigemEscolar.SomentePublica, ep: true, ppi: false, renda: false)),
+            etag, "00000103");
+        primeiro.IsSuccess.Should().BeTrue(primeiro.Error?.Message);
+        (Inscricao enviada, _) = await RelerAsync(processoId);
+
+        Result<ComprovanteInscricaoDto> correcao = await EnviarAsync(
+            db, processoId, PedidoDeEnvio(processo, RespostasDaOrigemEDasCotas(OrigemEscolar.SomentePublica, ep: false, ppi: false, renda: false)),
+            enviada.ETag, "00000103");
+
+        correcao.IsSuccess.Should().BeTrue(correcao.Error?.Message);
+        (Inscricao corrigida, IReadOnlyList<ComprovanteInscricao> comprovantes) = await RelerAsync(processoId);
+        comprovantes.Should().HaveCount(2);
+        ComprovanteInscricao anterior = comprovantes.Single(c => c.HashIntegridade == primeiro.Value!.HashIntegridade);
+        ComprovanteInscricao novo = comprovantes.Single(c => c.HashIntegridade == correcao.Value!.HashIntegridade);
+        anterior.Modalidades!.Select(static m => m.Codigo).Should().Equal("AC", "LI_EP");
+        anterior.IntegridadeConfere().Should().BeTrue();
+        novo.Modalidades!.Select(static m => m.Codigo).Should().Equal("AC");
+        novo.HashIntegridade.Should().NotBe(anterior.HashIntegridade);
+        novo.IntegridadeConfere().Should().BeTrue();
+        (await LinhasDaModalidadeAsync(corrigida.Id)).Select(static l => l.Codigo).Should().Equal("AC");
     }
 
     [Fact(DisplayName = "Salvar e ler a inscrição devolvem a avaliação do que ficou gravado, com as modalidades que a resposta decide")]

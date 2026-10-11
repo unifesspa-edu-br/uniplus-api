@@ -5,6 +5,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public sealed class ComprovanteInscricaoTests
 {
@@ -19,7 +20,8 @@ public sealed class ComprovanteInscricaoTests
         Dictionary<string, JsonElement> Respostas,
         Dictionary<string, JsonElement> Derivados,
         Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> Grupos,
-        List<AceiteDeTermo> Aceites);
+        List<AceiteDeTermo> Aceites,
+        List<ModalidadeDeConcorrencia>? Modalidades);
 
     private static Conteudo Base() => new(
         "00000001",
@@ -31,13 +33,14 @@ public sealed class ComprovanteInscricaoTests
         {
             ["COMPOSICAO_FAMILIAR"] = [new OcorrenciaDeGrupoInscricao("membro-1", Valores(("PARENTESCO", "MAE")))],
         },
-        [new AceiteDeTermo("VERACIDADE", Guid.Parse("01a12693-0000-7000-8000-000000000001"), new string('a', 64))]);
+        [new AceiteDeTermo("VERACIDADE", Guid.Parse("01a12693-0000-7000-8000-000000000001"), new string('a', 64))],
+        [new ModalidadeDeConcorrencia("AC", "Ampla concorrência", 0), new ModalidadeDeConcorrencia("LI_EP", "Escola pública", 1)]);
 
     private static Dictionary<string, JsonElement> Valores(params (string Fato, string Valor)[] valores) =>
         valores.ToDictionary(static v => v.Fato, static v => JsonSerializer.SerializeToElement(v.Valor), StringComparer.Ordinal);
 
     private static string Hash(Conteudo c) =>
-        ComprovanteInscricao.Emitir(Inscricao, c.Numero, c.Instante, c.Oferta, c.Respostas, c.Derivados, c.Grupos, c.Aceites).HashIntegridade;
+        ComprovanteInscricao.Emitir(Inscricao, c.Numero, c.Instante, c.Oferta, c.Respostas, c.Derivados, c.Grupos, c.Aceites, c.Modalidades).HashIntegridade;
 
     [Fact(DisplayName = "O mesmo conteúdo dá o mesmo hash, em qualquer emissão")]
     public void Hash_MesmoConteudo_MesmoHash()
@@ -57,6 +60,9 @@ public sealed class ComprovanteInscricaoTests
         { "derivado", static c => c with { Derivados = Valores(("UF_RESIDENCIA", "PA")) } },
         { "grupo", static c => c with { Grupos = new(StringComparer.Ordinal) } },
         { "aceite", static c => c with { Aceites = [] } },
+        { "modalidade", static c => c with { Modalidades = [new ModalidadeDeConcorrencia("AC", "Ampla concorrência", 0)] } },
+        { "nome da modalidade", static c => c with { Modalidades = [new ModalidadeDeConcorrencia("AC", "Ampla", 0), new ModalidadeDeConcorrencia("LI_EP", "Escola pública", 1)] } },
+        { "seção das modalidades", static c => c with { Modalidades = null } },
     };
 
     [Theory(DisplayName = "Qualquer mudança no conteúdo comprovado muda o hash")]

@@ -11,13 +11,12 @@ using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// O contexto de avaliação da finalidade Inscrição na versão FIXADA por uma inscrição ao iniciar —
-/// nunca a vigente por relógio (UNI-REQ-0084): as regras recortadas, os termos exigidos dessa
-/// finalidade, a data de referência dos fatos congelada na publicação, o que a versão admite como
-/// resposta e a configuração inteira que a avaliação da inscrição lê (ADR-0143). Reusado por Salvar e
-/// por Submeter (issue #1859), que avaliam a mesma versão do mesmo jeito.
+/// nunca a vigente por relógio (UNI-REQ-0084): os termos exigidos dessa finalidade, a data de
+/// referência dos fatos congelada na publicação, a oferta de valores de cada campo, o que a versão
+/// admite como resposta e a configuração inteira que a avaliação da inscrição lê (ADR-0143). Reusado
+/// por Salvar, por Submeter e pela consulta do candidato, que avaliam a mesma versão do mesmo jeito.
 /// </summary>
 public sealed record ContextoDaVersaoFixada(
-    FormularioPortavel Regras,
     IReadOnlyCollection<TermoExigidoFormulario> TermosExigidos,
     DateOnly? DataReferenciaFatos,
     IReadOnlyDictionary<string, IReadOnlySet<string>> Ofertas,
@@ -62,11 +61,6 @@ public static class ContextoDaVersaoFixadaResolver
             return Result<ContextoDaVersaoFixada>.Failure(avaliavel.Error!);
         }
 
-        RecorteDaFinalidade recorte = RecorteDaFinalidade.De(
-            avaliavel.Value!.Definicao,
-            Domain.Services.DefinicaoDoProcesso.CodigoDaEtapa(FinalidadeFormulario.Inscricao, null),
-            avaliavel.Value!.Ofertas);
-
         Result<DateOnly?> dataReferencia = ProjecaoDoFormularioDaVersao.ResolverDataReferenciaFatos(versao);
         if (dataReferencia.IsFailure)
         {
@@ -77,7 +71,7 @@ public static class ContextoDaVersaoFixadaResolver
             [.. reidratado.Value!.Grafo.TermosExigidos.Where(static t => t.Finalidade == FinalidadeFormulario.Inscricao)];
 
         return Result<ContextoDaVersaoFixada>.Success(new ContextoDaVersaoFixada(
-            recorte.Regras, termos, dataReferencia.Value, avaliavel.Value!.Ofertas, Admitidas(reidratado.Value!.Grafo),
+            termos, dataReferencia.Value, avaliavel.Value!.Ofertas, Admitidas(reidratado.Value!.Grafo),
             ConfiguracaoAvaliavelDoProcesso.DoCongelado(reidratado.Value!.Grafo, avaliavel.Value!)));
     }
 

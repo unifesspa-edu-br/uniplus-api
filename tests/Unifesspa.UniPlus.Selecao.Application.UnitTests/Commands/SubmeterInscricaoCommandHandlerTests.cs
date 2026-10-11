@@ -250,10 +250,11 @@ public sealed class SubmeterInscricaoCommandHandlerTests
 
     /// <summary>
     /// Um item obrigatório na seção do formulário, mais um termo obrigatório exigido na mesma
-    /// finalidade; <paramref name="outrosItens"/> e <paramref name="grupos"/> entram na mesma seção.
+    /// finalidade; <paramref name="outrosItens"/> e <paramref name="grupos"/> entram na mesma seção, e
+    /// <paramref name="ajustar"/> muda o processo antes de a versão o congelar.
     /// </summary>
     private static (VersaoConfiguracao Versao, GrafoConfiguracao Grafo, VersaoTermoEscolhida Termo) MontarVersaoComItemObrigatorioETermo(
-        IReadOnlyList<FatoColetado>? outrosItens = null, IReadOnlyList<GrupoColetado>? grupos = null)
+        IReadOnlyList<FatoColetado>? outrosItens = null, IReadOnlyList<GrupoColetado>? grupos = null, Action<ProcessoSeletivo>? ajustar = null)
     {
         FatoColetado item = FatoColetado.Criar(
             "APELIDO", 0, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
@@ -270,6 +271,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         itensDefinidos.IsSuccess.Should().BeTrue(itensDefinidos.Error?.Message);
         processoBase.DefinirTermosDoFormulario(FinalidadeFormulario.Inscricao, [termo], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue(
             "o termo não cita fato nenhum, então não tem citação pendente de garantir");
+        ajustar?.Invoke(processoBase);
 
         GrafoConfiguracao grafo = new(
             [.. processoBase.Etapas], processoBase.OfertaAtendimento!, [.. processoBase.DistribuicaoVagas],
@@ -490,10 +492,11 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         IReadOnlyList<FatoColetado> itens,
         IReadOnlyList<GrupoColetado>? grupos,
         IReadOnlyDictionary<string, JsonElement> respostas,
-        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>? respostasDosGrupos = null)
+        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>? respostasDosGrupos = null,
+        Action<ProcessoSeletivo>? ajustar = null)
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        (VersaoConfiguracao versao, GrafoConfiguracao grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo(itens, grupos);
+        (VersaoConfiguracao versao, GrafoConfiguracao grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo(itens, grupos, ajustar);
         Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
@@ -513,6 +516,84 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             new SubmeterInscricaoCommand(ProcessoId, comApelido with { Respostas = todas, Grupos = respostasDosGrupos }, PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf));
         return (resultado, existente);
+    }
+
+    /// <summary>A ampla concorrência só para quem quer concorrer às vagas de pessoa com deficiência: a modalidade decide pela resposta.</summary>
+    private static void AmplaSoComDeficiencia(ProcessoSeletivo processo) =>
+        processo.DefinirDistribuicaoVagas(
+            [ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(PredicadoDnf.CriarDeCondicoesAgrupadas(
+                [(0, CondicaoDnf.Criar("CONCORRER_PCD", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!)],
+            FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+    [Fact(DisplayName = "Sem nenhuma modalidade aplicável, o envio é recusado no campo de que ela depende, sem gravar nada")]
+    public async Task Handle_NenhumaModalidade_RecusaNoCampoQueADecide()
+    {
+        (Result<ComprovanteInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
+            [Pergunta("CONCORRER_PCD", 1)], grupos: null,
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["CONCORRER_PCD"] = JsonSerializer.SerializeToElement(false) },
+            ajustar: AmplaSoComDeficiencia);
+
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("CONCORRER_PCD");
+        resultado.Errors[0].Error.Code.Should().Be(InscricaoErrorCodes.NenhumaModalidade);
+        inscricao.Situacao.Should().Be(Domain.Enums.SituacaoInscricao.Rascunho);
+        inscricao.Comprovantes.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Com a modalidade aplicável, o envio a grava como derivada e o comprovante a traz com o nome congelado")]
+    public async Task Handle_ComModalidade_GravaEComprova()
+    {
+        (Result<ComprovanteInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
+            [Pergunta("CONCORRER_PCD", 1)], grupos: null,
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["CONCORRER_PCD"] = JsonSerializer.SerializeToElement(true) },
+            ajustar: AmplaSoComDeficiencia);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.Modalidades.Should().Equal(new ModalidadeDaInscricaoDto("AC", "AC", 0));
+        inscricao.Derivados["MODALIDADE"].EnumerateArray().Select(static v => v.GetString()).Should().Equal("AC");
+        inscricao.Comprovantes.Should().ContainSingle().Which.IntegridadeConfere().Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "A modalidade enviada pelo candidato é recusada e nunca gravada")]
+    public async Task Handle_ModalidadeEnviadaPeloCandidato_Recusa()
+    {
+        (Result<ComprovanteInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
+            [Pergunta("CONCORRER_PCD", 1)], grupos: null,
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+            {
+                ["CONCORRER_PCD"] = JsonSerializer.SerializeToElement(true),
+                ["MODALIDADE"] = JsonSerializer.SerializeToElement(new[] { "AC" }),
+            },
+            ajustar: AmplaSoComDeficiencia);
+
+        resultado.Errors.Should().Contain(e => e.Field == "MODALIDADE" && e.Error.Code == InscricaoErrorCodes.FatoForaDoFormulario);
+        inscricao.Derivados.Should().NotContainKey("MODALIDADE");
+        inscricao.Respostas.Should().NotContainKey("MODALIDADE");
+    }
+
+    [Fact(DisplayName = "O item e o termo obrigatórios de outra finalidade, como a isenção, não recusam o envio da inscrição")]
+    public async Task Handle_ObrigatoriosDaIsencao_NaoRecusamOEnvio()
+    {
+        VersaoTermoEscolhida versaoDoTermo = new(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "Termo da isenção", "Declaro a renda informada.",
+            "Lei 12.799/2013", "ACEITE_EXPLICITO", new string('d', 64));
+
+        (Result<ComprovanteInscricaoDto> resultado, _) = await SubmeterComAsync(
+            [], grupos: null, new Dictionary<string, JsonElement>(StringComparer.Ordinal),
+            ajustar: processo =>
+            {
+                FormularioDeTeste.DefinirItens(
+                    processo,
+                    [FatoColetado.Criar(
+                        "RENDA_DECLARADA", 0, "Renda declarada", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
+                        classificacaoProtecao: "PESSOAL", formato: "LIVRE", finalidade: FinalidadeFormulario.IsencaoTaxa).Value!],
+                    finalidade: FinalidadeFormulario.IsencaoTaxa).IsSuccess.Should().BeTrue();
+                FormularioDeTeste.DefinirTermos(
+                    processo,
+                    [TermoExigidoFormulario.Criar("TERMO_ISENCAO", 0, versaoDoTermo, exibicao: null, Obrigatoriedade.Sempre, FinalidadeFormulario.IsencaoTaxa).Value!],
+                    finalidade: FinalidadeFormulario.IsencaoTaxa).IsSuccess.Should().BeTrue();
+            });
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
     [Fact(DisplayName = "A resposta ao item que outra resposta esconde é descartada no envio: não fica gravada nem sai no comprovante, e o envio passa")]

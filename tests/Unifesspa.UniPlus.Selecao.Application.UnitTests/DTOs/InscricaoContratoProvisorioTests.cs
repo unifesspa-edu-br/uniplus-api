@@ -105,7 +105,8 @@ public sealed class InscricaoContratoProvisorioTests
             },
             Derivados: new Dictionary<string, JsonElement>(StringComparer.Ordinal),
             Grupos: new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>(StringComparer.Ordinal),
-            Aceites: [new AceiteDeTermoInput("TERMO_VERACIDADE", Guid.Parse("0199e000-0000-7000-8000-000000000002"), "sha256-abc")]);
+            Aceites: [new AceiteDeTermoInput("TERMO_VERACIDADE", Guid.Parse("0199e000-0000-7000-8000-000000000002"), "sha256-abc")],
+            Modalidades: [new ModalidadeDaInscricaoDto("AC", "Ampla concorrência", 0)]);
 
         JsonNode json = JsonSerializer.SerializeToNode(dto, Opcoes)!;
 
