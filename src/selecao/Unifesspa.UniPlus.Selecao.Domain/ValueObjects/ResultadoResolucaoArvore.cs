@@ -79,6 +79,8 @@ public sealed record StatusPorEntidade(Guid DocumentoExigidoId, string EntidadeI
 /// nó aqui projeta <see cref="EstadoSatisfacao.Indeterminado"/> na agregação, mas não emite
 /// consequência nem orientação — distingue "bloqueado" (não pedir) de "indeterminado no ponto
 /// devido" (pode emitir), que compartilham o mesmo estado. Vazio quando não há fronteira a mascarar.
+/// Cobre os nós fora de repetição: dentro de uma subárvore repetida, a máscara é de cada ocorrência e
+/// já se reflete nas consequências emitidas por ela.
 /// </param>
 public sealed record ResultadoResolucaoArvore(
     IReadOnlyDictionary<Guid, EstadoSatisfacao> EstadosPorNo,
