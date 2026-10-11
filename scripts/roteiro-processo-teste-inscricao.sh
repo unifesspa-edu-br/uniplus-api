@@ -46,8 +46,8 @@
 #                 de setup-keycloak-dev.sh)
 #   MODELO_MEDICINA_ID (default: 5e3d0006-0000-7000-8000-000000000001 —
 #                 PSR_MEDICINA_2027_INSCRICAO, SementePsrMedicina2027)
-#   EDITAL_PDF    (default: nenhum) — PDF enviado como documento do edital, por
-#                 exemplo a minuta; sem ele, vai um PDF mínimo
+#   EDITAL_PDF    (default: scripts/edital-de-teste.pdf) — PDF enviado como
+#                 documento do edital, por exemplo a minuta
 
 set -euo pipefail
 
@@ -59,7 +59,9 @@ ADMIN_USER="${ADMIN_USER:-admin}"
 # diferente, o admin está com esse valor, não com Uni+Teste26.
 ADMIN_PASS="${ADMIN_PASS:-${TEST_PASSWORD:-Uni+Teste26}}"
 MODELO_MEDICINA_ID="${MODELO_MEDICINA_ID:-5e3d0006-0000-7000-8000-000000000001}"
-EDITAL_PDF="${EDITAL_PDF:-}"
+# Um PDF de verdade: o portal abre o edital no navegador, e bytes que só começam
+# com %PDF- abririam uma aba em branco.
+EDITAL_PDF="${EDITAL_PDF:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/edital-de-teste.pdf}"
 TOKEN=""
 
 log()  { printf '\033[1;36m==> %s\033[0m\n' "$*" >&2; }
@@ -709,9 +711,8 @@ documento_do_edital() {
 
     log "Documento do Edital — PUT direto no MinIO"
     local upload_http_code
-    local corpo=(--data-binary '%PDF-1.4 processo de validação da inscrição.')
-    [ -n "$EDITAL_PDF" ] && corpo=(--data-binary "@$EDITAL_PDF")
-    upload_http_code=$(curl -sS -o /dev/null -w '%{http_code}' -X PUT "$url_upload" -H "Content-Type: $content_type" "${corpo[@]}")
+    [ -f "$EDITAL_PDF" ] || fail "PDF do edital não encontrado: $EDITAL_PDF"
+    upload_http_code=$(curl -sS -o /dev/null -w '%{http_code}' -X PUT "$url_upload" -H "Content-Type: $content_type" --data-binary "@$EDITAL_PDF")
     [ "$upload_http_code" = "200" ] || fail "PUT no MinIO falhou (http=$upload_http_code) — url presumivelmente expirada ou host interno (minio:9000) não resolvido pelo cliente"
 
     log "Documento do Edital — confirmar upload"

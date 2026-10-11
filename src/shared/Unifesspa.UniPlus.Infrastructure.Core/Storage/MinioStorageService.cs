@@ -25,6 +25,15 @@ public sealed class MinioStorageService : IStorageService
 
     private const string PrefixoDeMetadado = "x-amz-meta-";
 
+    /// <summary>
+    /// Tipos que o navegador exibe sozinho: abrem na aba que o link abriu, em vez de virar download
+    /// com a aba em branco. Os demais (modelos editáveis, por exemplo) só servem baixados.
+    /// </summary>
+    private static readonly HashSet<string> TiposExibidosNoNavegador = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "application/pdf",
+    };
+
     private readonly IMinioClient _minioClient;
     private readonly IMinioClient _presignClient;
     private readonly IHttpClientFactory _httpClientFactory;
@@ -242,7 +251,7 @@ public sealed class MinioStorageService : IStorageService
             ["x-amz-metadata-directive"] = "REPLACE",
             ["content-type"] = apresentacao.ContentType,
             ["cache-control"] = CacheControlDoObjetoImutavel,
-            ["content-disposition"] = ContentDispositionDeAnexo(apresentacao.NomeDeApresentacao),
+            ["content-disposition"] = ContentDisposition(apresentacao.ContentType, apresentacao.NomeDeApresentacao),
         };
 
         foreach ((string nome, string valor) in apresentacao.Procedencia)
@@ -299,14 +308,18 @@ public sealed class MinioStorageService : IStorageService
     }
 
     /// <summary>
-    /// <c>Content-Disposition</c> de anexo com o nome em duas formas (RFC 6266): <c>filename*</c> em
+    /// <c>Content-Disposition</c> com o nome em duas formas (RFC 6266): <c>filename*</c> em
     /// UTF-8 codificado (RFC 5987), que todo navegador atual lê, e <c>filename</c> em ASCII para o
     /// cliente que só conhece a forma antiga — com os acentos retirados e o que não couber em ASCII
-    /// imprimível trocado por sublinhado.
+    /// imprimível trocado por sublinhado. O nome vale também no <c>inline</c>: é o que o navegador
+    /// propõe quando o candidato salva o arquivo aberto.
     /// </summary>
-    private static string ContentDispositionDeAnexo(string nome)
+    private static string ContentDisposition(string contentType, string nome)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(nome);
+
+        string tipo = contentType.Split(';', 2)[0].Trim();
+        string disposicao = TiposExibidosNoNavegador.Contains(tipo) ? "inline" : "attachment";
 
         string composto = nome.Normalize(NormalizationForm.FormC);
         string semAcento = string.Concat(composto
@@ -314,7 +327,7 @@ public sealed class MinioStorageService : IStorageService
             .Where(static c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
             .Select(static c => c is >= ' ' and <= '~' and not '"' and not '\\' ? c : '_'));
 
-        return $"attachment; filename=\"{semAcento}\"; filename*=UTF-8''{Uri.EscapeDataString(composto)}";
+        return $"{disposicao}; filename=\"{semAcento}\"; filename*=UTF-8''{Uri.EscapeDataString(composto)}";
     }
 
     private async Task GarantirBucketExisteAsync(string bucket, CancellationToken cancellationToken)

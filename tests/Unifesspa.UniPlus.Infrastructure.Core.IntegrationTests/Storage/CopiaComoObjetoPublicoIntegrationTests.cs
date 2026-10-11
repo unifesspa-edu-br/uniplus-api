@@ -57,6 +57,28 @@ public sealed class CopiaComoObjetoPublicoIntegrationTests(MinioContainerFixture
         resposta.Headers.NonValidated["x-amz-meta-sha256"].ToString().Should().Be(new string('a', 64));
     }
 
+    [Fact(DisplayName = "O PDF é gravado para abrir no navegador, com o mesmo nome de apresentação")]
+    public async Task Copiar_Pdf_AbreNoNavegador()
+    {
+        await minio.ProvisionarAcervoPublicoAsync();
+        await using ServiceProvider provider = Provider();
+        IStorageService storage = provider.GetRequiredService<IStorageService>();
+        string destino = $"testes/{Guid.NewGuid():N}.pdf";
+
+        await storage.CopiarComoObjetoPublicoAsync(
+            BucketPrivado,
+            await EnviarAoPrivadoAsync(storage, Encoding.UTF8.GetBytes("%PDF-1.4 edital")),
+            MinioContainerFixture.BucketDoAcervoPublico,
+            destino,
+            Apresentacao with { ContentType = "application/pdf", NomeDeApresentacao = "Edital de abertura.pdf" });
+
+        using HttpClient anonimo = new();
+        using HttpResponseMessage resposta = await anonimo.GetAsync(new Uri($"{minio.EnderecoDoAcervoPublico}/{destino}"));
+        resposta.EnsureSuccessStatusCode();
+        resposta.Content.Headers.NonValidated["Content-Disposition"].ToString().Should().Be(
+            "inline; filename=\"Edital de abertura.pdf\"; filename*=UTF-8''Edital%20de%20abertura.pdf");
+    }
+
     [Fact(DisplayName = "A cópia aceita nome de apresentação com espaços seguidos, gravado como foi dado")]
     public async Task Copiar_NomeComEspacosSeguidos_CopiaComONomeIntacto()
     {
