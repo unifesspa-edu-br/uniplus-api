@@ -14479,45 +14479,45 @@
           }
         }
       },
+      "CondicaoDoPredicadoDto": {
+        "required": [
+          "fato",
+          "operador",
+          "valor"
+        ],
+        "type": "object",
+        "properties": {
+          "fato": {
+            "type": "string"
+          },
+          "operador": {
+            "type": "string"
+          },
+          "valor": {
+            "$ref": "#/components/schemas/JsonElement"
+          }
+        }
+      },
+      "CondicaoDoPredicadoInput": {
+        "required": [
+          "fato",
+          "operador",
+          "valor"
+        ],
+        "type": "object",
+        "properties": {
+          "fato": {
+            "type": "string"
+          },
+          "operador": {
+            "type": "string"
+          },
+          "valor": {
+            "$ref": "#/components/schemas/JsonElement"
+          }
+        }
+      },
       "CondicaoPrecondicaoInput": {
-        "required": [
-          "fato",
-          "operador",
-          "valor"
-        ],
-        "type": "object",
-        "properties": {
-          "fato": {
-            "type": "string"
-          },
-          "operador": {
-            "type": "string"
-          },
-          "valor": {
-            "$ref": "#/components/schemas/JsonElement"
-          }
-        }
-      },
-      "CondicaoRegraPadraoDto": {
-        "required": [
-          "fato",
-          "operador",
-          "valor"
-        ],
-        "type": "object",
-        "properties": {
-          "fato": {
-            "type": "string"
-          },
-          "operador": {
-            "type": "string"
-          },
-          "valor": {
-            "$ref": "#/components/schemas/JsonElement"
-          }
-        }
-      },
-      "CondicaoRegraPadraoInput": {
         "required": [
           "fato",
           "operador",
@@ -18249,7 +18249,7 @@
             "items": {
               "type": "array",
               "items": {
-                "$ref": "#/components/schemas/CondicaoRegraPadraoDto"
+                "$ref": "#/components/schemas/CondicaoDoPredicadoDto"
               }
             }
           }
@@ -18276,7 +18276,7 @@
             "items": {
               "type": "array",
               "items": {
-                "$ref": "#/components/schemas/CondicaoRegraPadraoInput"
+                "$ref": "#/components/schemas/CondicaoDoPredicadoInput"
               }
             }
           }

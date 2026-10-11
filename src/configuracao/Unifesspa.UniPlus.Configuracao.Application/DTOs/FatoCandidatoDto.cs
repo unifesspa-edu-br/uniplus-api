@@ -35,7 +35,5 @@ public sealed record FatoValorDominioDto(string Codigo, string? Descricao, int O
 /// Uma regra padrão do derivado: o que contribui (nulo no booleano) e o predicado, OU de cláusulas
 /// que são E de condições; vazio na regra incondicional.
 /// </summary>
-public sealed record RegraPadraoDto(string? Contribui, IReadOnlyList<IReadOnlyList<CondicaoRegraPadraoDto>> Quando);
+public sealed record RegraPadraoDto(string? Contribui, IReadOnlyList<IReadOnlyList<CondicaoDoPredicadoDto>> Quando);
 
-/// <summary>Uma condição de regra padrão: fato, operador em token canônico e valor JSON.</summary>
-public sealed record CondicaoRegraPadraoDto(string Fato, string Operador, JsonElement Valor);
