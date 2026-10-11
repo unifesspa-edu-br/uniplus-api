@@ -171,7 +171,10 @@ internal static class VocabularioDeFatos
     public static FatosDeModalidade ComValoresDeModalidade(IEnumerable<FatoCandidatoView> catalogo)
     {
         ArgumentNullException.ThrowIfNull(catalogo);
-        return new FatosDeModalidade(catalogo.Where(static f => f.FonteValores == FonteModalidade).Select(static f => f.Codigo));
+        FatoCandidatoView[] fatos = [.. catalogo];
+        return new FatosDeModalidade(
+            fatos.Where(static f => f.FonteValores == FonteModalidade).Select(static f => f.Codigo),
+            MembroPorAgregado(fatos));
     }
 
     /// <summary>A fase canônica em que o catálogo situa cada fato, base da fase efetiva do fato no processo.</summary>

@@ -3596,7 +3596,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("referencia_temporal_fase_fora_do_cronograma", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: fase âncora pertence ao cronograma", !ReferenciaTemporalFatosFaseNaoPertenceAoCronograma()),
         new ItemConformidade("referencia_temporal_extremo_da_fase_ausente", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: extremo da fase âncora definido", !ReferenciaTemporalFatosExtremoDaFaseAusente()),
         new ItemConformidade("referencia_temporal_fim_inscricao_indisponivel", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: fase de coleta com Fim definido para FIM_INSCRICAO", !ReferenciaTemporalFatosFimInscricaoIndisponivel()),
-        new ItemConformidade("modalidade_regra_cita_fato_nao_coletado", DimensaoConformidade.DistribuicaoVagas, "Modalidades: a regra de aplicabilidade cita só fatos que o processo coleta ou deriva", PendenciaDasRegrasDasModalidades() is null),
+        new ItemConformidade("modalidade_regra_cita_fato_nao_coletado", DimensaoConformidade.DistribuicaoVagas, "Modalidades: a regra de aplicabilidade cita só fatos que o processo coleta ou deriva", PendenciaDasRegrasDasModalidades(fatosDeModalidade.MembroPorAgregado) is null),
         new ItemConformidade("derivacao_fatos_citados_inexistentes", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: fatos citados existem no processo", PendenciaDeFatosCitados() is null),
         new ItemConformidade("formulario_fato_ausente_de_versao_publicada", DimensaoConformidade.ColetaDeFatos, "Formulários: na retificação, fato de outra finalidade só quando coletado em todas as versões publicadas", PendenciaDeFatoAusenteDeVersaoPublicada() is null),
         new ItemConformidade("formulario_campo_opcional_alimenta_regra", DimensaoConformidade.ColetaDeFatos, "Formulários: campo que alimenta derivação, negação ou impedimento é obrigatório sempre que exibido", PendenciaDeCampoOpcionalQueAlimentaRegra() is null),
@@ -4444,7 +4444,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return referenciaTemporal;
         }
 
-        if (PendenciaDasRegrasDasModalidades() is { } regraDeModalidade)
+        if (PendenciaDasRegrasDasModalidades(fatosDeModalidade.MembroPorAgregado) is { } regraDeModalidade)
         {
             return regraDeModalidade;
         }
@@ -4653,7 +4653,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// É também a conferência das citações das derivações da oferta: a modalidade do candidato cita o
     /// que as regras citam, e a opção pelas cotas só é derivada quando uma regra a cita.
     /// </remarks>
-    private DomainError? PendenciaDasRegrasDasModalidades()
+    private DomainError? PendenciaDasRegrasDasModalidades(IReadOnlyDictionary<string, string> membroPorAgregado)
     {
         if (OrigemCandidatos != OrigemCandidatos.InscricaoPropria)
         {
@@ -4661,9 +4661,15 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         }
 
         HashSet<string> daInscricao = FatosDaInscricao(Itens);
+        HashSet<string> camposDosGruposDaInscricao = new(
+            _gruposColetados.Where(static g => g.Finalidade == FinalidadeFormulario.Inscricao)
+                .SelectMany(static g => g.Subitens).Select(static s => s.FatoCodigo),
+            StringComparer.Ordinal);
         foreach ((ModalidadeSelecionada modalidade, PredicadoDnf regra) in DerivacoesDaOferta.RegrasNaOferta(_distribuicaoVagas.SelectMany(static d => d.Modalidades)))
         {
-            if (regra.FatosCitados.Select(f => FatoForaDaInscricao(f, daInscricao, new HashSet<string>(StringComparer.Ordinal))).FirstOrDefault(static f => f is not null) is { } fato)
+            if (regra.FatosCitados
+                    .Select(f => FatoForaDaInscricao(f, daInscricao, camposDosGruposDaInscricao, membroPorAgregado, new HashSet<string>(StringComparer.Ordinal)))
+                    .FirstOrDefault(static f => f is not null) is { } fato)
             {
                 return new DomainError(
                     ProcessoSeletivoErrorCodes.RegraDeModalidadeCitaFatoNaoColetado,
@@ -4676,19 +4682,34 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>
     /// O primeiro fato de que o fato depende e que o formulário de inscrição não coleta: o próprio,
-    /// quando nem a inscrição o pergunta nem o processo o deriva, ou uma dependência do derivado.
+    /// quando nem a inscrição o pergunta nem o processo o deriva; uma dependência do derivado; ou, no
+    /// agregado sobre grupo repetível, o campo de membro que nenhum grupo da inscrição pergunta.
     /// </summary>
-    private string? FatoForaDaInscricao(string fato, IReadOnlySet<string> daInscricao, HashSet<string> emAvaliacao)
+    private string? FatoForaDaInscricao(
+        string fato,
+        IReadOnlySet<string> daInscricao,
+        IReadOnlySet<string> camposDosGruposDaInscricao,
+        IReadOnlyDictionary<string, string> membroPorAgregado,
+        HashSet<string> emAvaliacao)
     {
         if (daInscricao.Contains(fato) || !emAvaliacao.Add(fato))
         {
             return null;
         }
 
+        // O agregado se calcula sobre as ocorrências do grupo: basta que um grupo da inscrição
+        // pergunte o campo de membro. Citado sozinho, o campo de grupo não decide a modalidade.
+        if (membroPorAgregado.TryGetValue(fato, out string? membro))
+        {
+            return camposDosGruposDaInscricao.Contains(membro) ? null : membro;
+        }
+
         bool derivado = DerivacoesEfetivas().Any(d => string.Equals(d.CodigoFato, fato, StringComparison.Ordinal))
             || DerivadosDoSistema.Dependencias.ContainsKey(fato);
         return derivado
-            ? DependenciasDoFato(fato, SemCatalogo).Select(d => FatoForaDaInscricao(d, daInscricao, emAvaliacao)).FirstOrDefault(static d => d is not null)
+            ? DependenciasDoFato(fato, membroPorAgregado)
+                .Select(d => FatoForaDaInscricao(d, daInscricao, camposDosGruposDaInscricao, membroPorAgregado, emAvaliacao))
+                .FirstOrDefault(static d => d is not null)
             : fato;
     }
 
