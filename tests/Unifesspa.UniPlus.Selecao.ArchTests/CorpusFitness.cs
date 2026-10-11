@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.ArchTests;
 
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -63,7 +64,7 @@ internal static class CorpusFitness
                         new Guid("22222222-2222-2222-2222-222222222222"), "AC", null,
                         NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
                         RegraRemanejamentoModalidade.Nenhuma, null, null, null,
-                        [], null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
+                        RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
                 ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!,
         ], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
 

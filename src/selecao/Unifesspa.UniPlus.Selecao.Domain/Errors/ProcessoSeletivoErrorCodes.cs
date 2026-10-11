@@ -23,4 +23,10 @@ public static class ProcessoSeletivoErrorCodes
     public const string FatoElegibilidadeDaIsencao = "ProcessoSeletivo.FatoElegibilidadeDaIsencao";
     public const string IdentificadorLegivelEmUso = "ProcessoSeletivo.IdentificadorLegivelEmUso";
     public const string RecursoAcessibilidadeReferenciadoPorCondicaoViva = "ProcessoSeletivo.RecursoAcessibilidadeReferenciadoPorCondicaoViva";
+    public const string RegraDeAplicabilidadeDivergente = "ProcessoSeletivo.RegraDeAplicabilidadeDivergente";
+    public const string DerivacaoDaOferta = "ProcessoSeletivo.DerivacaoDaOferta";
+    public const string RegraDeModalidadeCitaFatoNaoColetado = "ProcessoSeletivo.RegraDeModalidadeCitaFatoNaoColetado";
+    public const string CotasDaLeiDiferentesEntreOfertas = "ProcessoSeletivo.CotasDaLeiDiferentesEntreOfertas";
+    public const string ReservaPcdSemCotaPcdDaLei = "ProcessoSeletivo.ReservaPcdSemCotaPcdDaLei";
+    public const string RegraIncoerenteComANatureza = "ProcessoSeletivo.RegraIncoerenteComANatureza";
 }

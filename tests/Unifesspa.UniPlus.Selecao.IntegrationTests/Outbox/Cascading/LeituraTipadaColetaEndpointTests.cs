@@ -54,19 +54,19 @@ public sealed class LeituraTipadaColetaEndpointTests
             },
         ])).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        // Derivação de MODALIDADE: regra âncora (quando null) + condicional citando COR_RACA. Ambas contribuem AC (única modalidade ofertada pelo seeder).
+        // Derivação do egresso de escola pública: regra âncora (quando null) + condicional citando COR_RACA.
         (await ctx.PutRegrasAsync(
         [
             new
             {
-                codigoFato = "MODALIDADE",
+                codigoFato = "EGRESSO_ESCOLA_PUBLICA",
                 regras = new object[]
                 {
-                    new { ordem = 0, contribui = "AC", quando = (object?)null },
+                    new { ordem = 0, contribui = (string?)null, quando = (object?)null },
                     new
                     {
                         ordem = 1,
-                        contribui = "AC",
+                        contribui = (string?)null,
                         quando = new[] { new[] { new { fato = "COR_RACA", operador = "IGUAL", valor = "PRETA" } } },
                     },
                 },
@@ -97,14 +97,14 @@ public sealed class LeituraTipadaColetaEndpointTests
         condicao.GetProperty("operador").GetString().Should().Be("IGUAL");
         condicao.GetProperty("valor").GetString().Should().Be("PRETA");
 
-        // Regras de derivação — MODALIDADE, regras por ordem, âncora com quando null.
+        // Regras de derivação — as do processo, regras por ordem, âncora com quando null.
         JsonElement regrasDerivacao = root.GetProperty("regrasDerivacao");
         regrasDerivacao.GetArrayLength().Should().Be(1);
         JsonElement config = regrasDerivacao[0];
-        config.GetProperty("codigoFato").GetString().Should().Be("MODALIDADE");
+        config.GetProperty("codigoFato").GetString().Should().Be("EGRESSO_ESCOLA_PUBLICA");
         JsonElement regras = config.GetProperty("regras");
         regras.GetArrayLength().Should().Be(2);
-        regras[0].GetProperty("contribui").GetString().Should().Be("AC");
+        regras[0].GetProperty("contribui").ValueKind.Should().Be(JsonValueKind.Null, "o derivado booleano não contribui código");
         regras[0].GetProperty("quando").ValueKind.Should().Be(JsonValueKind.Null, "a regra âncora tem quando null, nunca []");
         regras[1].GetProperty("quando").ValueKind.Should().Be(JsonValueKind.Array);
     }

@@ -25,10 +25,11 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// não alcança: o fato alvo é <b>derivado com binding de regra de derivação</b>; cada condição
 /// <c>quando</c> valida operador × domínio × valor do fato citado, contra a oferta do próprio
 /// processo para os domínios dinâmicos; todo fato citado está disponível na configuração final
-/// (coletado ou derivado no processo); e o código contribuído pertence ao domínio do fato — para
-/// <c>MODALIDADE</c>, ao conjunto de modalidades ofertadas — parando na primeira configuração/
-/// regra que falhar, granularidade nunca coberta pelo FluentValidation. O guard de rascunho é do
-/// agregado (<see cref="ProcessoSeletivo.DefinirRegrasDerivacao"/>).
+/// (coletado ou derivado no processo); e o código contribuído pertence ao domínio do fato —
+/// parando na primeira configuração/regra que falhar, granularidade nunca coberta pelo
+/// FluentValidation. A modalidade do candidato e a opção pelas cotas da lei vêm da oferta de vagas
+/// e são recusadas na primeira passada. O guard de rascunho é do agregado
+/// (<see cref="ProcessoSeletivo.DefinirRegrasDerivacao"/>).
 /// </summary>
 public static class DefinirRegrasDerivacaoCommandHandler
 {
@@ -74,6 +75,10 @@ public static class DefinirRegrasDerivacaoCommandHandler
             List<FieldError> configErros = ConfiguracaoDerivacaoFato.ValidarFormaBasica(
                 configInput.CodigoFato, [.. configInput.Regras.Select(static r => (r.Ordem, r.Contribui))]);
             formaErros.AddRange(configErros.Select(erro => erro with { Field = $"configuracoes[{indiceConfig}].{erro.Field}" }));
+            if (configInput.CodigoFato is { } codigoFato && DerivacoesDaOferta.Deriva(codigoFato.Trim()))
+            {
+                formaErros.Add(new($"configuracoes[{indiceConfig}].codigoFato", DerivacoesDaOferta.RecusaDeConfiguracao(codigoFato.Trim())));
+            }
 
             for (int indiceRegra = 0; indiceRegra < configInput.Regras.Count; indiceRegra++)
             {
@@ -99,7 +104,8 @@ public static class DefinirRegrasDerivacaoCommandHandler
         // Universo dos fatos disponíveis na configuração final: os coletados pelo processo mais os
         // derivados definidos neste mesmo comando (a substituição é integral). Uma condição só pode
         // citar um fato deste universo — coerente com a recusa de fato citado inexistente do publish.
-        HashSet<string> universo = new(StringComparer.Ordinal);
+        HashSet<string> universo = new(
+            processo.DerivacoesEfetivas().Select(static d => d.CodigoFato).Where(DerivacoesDaOferta.Deriva), StringComparer.Ordinal);
         foreach (FatoColetado fato in processo.FatosColetados)
         {
             universo.Add(fato.FatoCodigo);

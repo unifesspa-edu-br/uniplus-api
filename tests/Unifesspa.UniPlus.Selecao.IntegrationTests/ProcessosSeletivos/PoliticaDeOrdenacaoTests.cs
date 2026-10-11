@@ -7,6 +7,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -70,8 +71,8 @@ using Xunit;
 /// <para>
 /// <b>Fora do escopo desta suíte, por já terem oráculo de sequência exata próprio</b> (chave de
 /// conteúdo, ADR-0109 D9 — a camada que este arquivo não repete): <c>classificacao.regrasEliminacao</c>
-/// (<see cref="EnvelopeCanonicoGoldenTests.Envelope_IndependeDaOrdemDeCriacao"/>) e os sete conjuntos
-/// da issue #1067 — <c>criteriosCumulativos</c>, <c>ocorrenciasEsperadas</c>,
+/// (<see cref="EnvelopeCanonicoGoldenTests.Envelope_IndependeDaOrdemDeCriacao"/>) e os seis conjuntos
+/// da issue #1067 — <c>ocorrenciasEsperadas</c>,
 /// <c>formatosPermitidos.lista</c>, <c>obrigatoriedades</c>, os dois <c>predicado.args</c> e
 /// <c>valoresDominio</c> — todos em <c>OrdenacaoDeConjuntosCanonicosTests</c>. Repetir esses oráculos
 /// aqui duplicaria a fonte da política sem acrescentar cobertura (achado 7.2 do parecer da issue).
@@ -118,7 +119,7 @@ public sealed class PoliticaDeOrdenacaoTests
         modalidades: [
             ModalidadeSelecionada.Criar(
                 Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
-                RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
+                RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
         ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
 
     private static FaseCronograma FaseMinima() => FaseCronograma.Criar(

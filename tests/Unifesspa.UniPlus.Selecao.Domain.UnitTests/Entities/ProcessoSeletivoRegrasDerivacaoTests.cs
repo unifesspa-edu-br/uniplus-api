@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -21,8 +22,9 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 public sealed class ProcessoSeletivoRegrasDerivacaoTests
 {
-    private static readonly IReadOnlyCollection<string> DominioModalidade =
-        RegrasDerivacaoModalidadeLei12711.DominioCanonico;
+    private const string Derivado = "REGIME_DE_VAGA";
+
+    private static readonly IReadOnlyCollection<string> DominioDoDerivado = ["AC", "AC_PCD", "LI_PCD"];
 
     private static ProcessoSeletivo NovoProcesso() =>
         ProcessoSeletivo.Criar("PS Derivação", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
@@ -36,22 +38,23 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
     private static RegraDerivacaoConfigurada Ancora(int ordem, string contribui) =>
         RegraDerivacaoConfigurada.Criar(ordem, contribui, condicoes: null).Value!;
 
-    private static ConfiguracaoDerivacaoFato ConfigModalidade() =>
-        ConfiguracaoDerivacaoFato.Criar("MODALIDADE",
+    private static ConfiguracaoDerivacaoFato ConfigDerivado() =>
+        ConfiguracaoDerivacaoFato.Criar(Derivado,
         [
             Ancora(0, "AC"),
             Regra(1, "AC_PCD", ("CONCORRER_PCD", true)),
             Regra(2, "LI_PCD", ("CONCORRER_PCD", true), ("EGRESSO_ESCOLA_PUBLICA", true)),
         ]).Value!;
 
-    /// <summary>Oferta uma distribuição mínima cujas modalidades são o domínio congelado de contribuição.</summary>
-    private static void OfertarModalidades(ProcessoSeletivo processo, params string[] codigos)
+    /// <summary>Oferta uma distribuição mínima com as modalidades dadas, cada uma com a regra dada.</summary>
+    private static void OfertarModalidades(ProcessoSeletivo processo, params (string Codigo, PredicadoDnf Regra)[] ofertadas)
     {
+        string[] codigos = [.. ofertadas.Select(static o => o.Codigo)];
         List<ModalidadeSelecionada> modalidades =
         [
-            .. codigos.Select(static codigo => ModalidadeSelecionada.Criar(
+            .. ofertadas.Select(static oferta => ModalidadeSelecionada.Criar(
                 modalidadeOrigemId: Guid.CreateVersion7(),
-                codigo: codigo,
+                codigo: oferta.Codigo,
                 descricao: null,
                 naturezaLegal: NaturezaLegalModalidade.Ampla,
                 composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
@@ -60,7 +63,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
                 remanejamentoDestino: null,
                 remanejamentoPar: null,
                 remanejamentoFallback: null,
-                criteriosCumulativos: [],
+                regraDeAplicabilidade: oferta.Regra,
                 acaoQuandoIndeferido: null,
                 baseLegal: "Res. Unifesspa 532/2021",
                 quantidadeDeclarada: 10).Value!),
@@ -101,33 +104,18 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
             .Should().Be(GrafoDependenciaConjuntaErrorCodes.GrafoConjuntoComCiclo);
     }
 
-    [Fact(DisplayName = "MODALIDADE que contribui código fora das modalidades ofertadas é recusada no gate de pré-canonicalização")]
-    public void ContribuiForaDoDominioDoProcesso_RecusadoNoGateDePublicacao()
+    [Theory(DisplayName = "A modalidade do candidato e a opção pelas cotas da lei não se configuram no processo")]
+    [InlineData("MODALIDADE")]
+    [InlineData("OPTOU_PELAS_COTAS_DA_LEI")]
+    public void DerivacaoDaOferta_Recusada(string codigoFato)
     {
         ProcessoSeletivo processo = NovoProcesso();
-        OfertarModalidades(processo, "AC");
 
-        // "V" é rótulo de exibição de AC_PCD no edital, nunca código — e não está entre as
-        // modalidades ofertadas por este processo. Contribuí-lo é recusado, sem tradução de alias.
-        processo.DefinirRegrasDerivacao([ConfiguracaoDerivacaoFato.Criar("MODALIDADE", [Ancora(0, "V")]).Value!], PrecondicaoIfMatch.Ausente)
-            .IsSuccess.Should().BeTrue("a definição isolada não conhece o domínio de modalidades ofertadas");
+        Result resultado = processo.DefinirRegrasDerivacao(
+            [ConfiguracaoDerivacaoFato.Criar(codigoFato, [Ancora(0, "AC")]).Value!], PrecondicaoIfMatch.Ausente);
 
-        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo).Should().NotBeNull();
-        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code
-            .Should().Be(RegrasDerivacaoFatoErrorCodes.ContribuiForaDoDominio);
-    }
-
-    [Fact(DisplayName = "MODALIDADE que contribui apenas códigos ofertados passa o gate de pré-canonicalização")]
-    public void ContribuiDentroDoDominioDoProcesso_PassaNoGateDePublicacao()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-        OfertarModalidades(processo, "AC");
-
-        processo.DefinirRegrasDerivacao([ConfiguracaoDerivacaoFato.Criar("MODALIDADE", [Ancora(0, "AC")]).Value!], PrecondicaoIfMatch.Ausente)
-            .IsSuccess.Should().BeTrue();
-
-        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo).Should().BeNull(
-            "AC está entre as modalidades ofertadas — o gate de domínio de contribuição não barra");
+        resultado.IsFailure.Should().BeTrue("as duas saem das modalidades ofertadas");
+        resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.DerivacaoDaOferta);
     }
 
     [Fact(DisplayName = "Regra de derivação que cita fato inexistente é recusada no gate de pré-canonicalização")]
@@ -150,33 +138,33 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
     {
         ProcessoSeletivo processo = NovoProcesso();
 
-        Result resultado = processo.DefinirRegrasDerivacao([ConfigModalidade()], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirRegrasDerivacao([ConfigDerivado()], PrecondicaoIfMatch.Ausente);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        processo.RegrasDerivacao.Should().ContainSingle(c => c.CodigoFato == "MODALIDADE");
+        processo.RegrasDerivacao.Should().ContainSingle(c => c.CodigoFato == Derivado);
         processo.RegrasDerivacao.Single().Regras.Should().HaveCount(3);
     }
 
     [Fact(DisplayName = "A âncora é a regra sem condição — reconstrói uma regra incondicional")]
     public void Ancora_SemCondicao()
     {
-        ConfiguracaoDerivacaoFato config = ConfiguracaoDerivacaoFato.Criar("MODALIDADE", [Ancora(0, "AC")]).Value!;
+        ConfiguracaoDerivacaoFato config = ConfiguracaoDerivacaoFato.Criar(Derivado, [Ancora(0, "AC")]).Value!;
 
         config.Regras.Single().Condicoes.Should().BeEmpty("a âncora não tem condição");
 
-        RegrasDerivacaoFato vo = config.ParaRegrasDerivacao(DominioModalidade).Value!;
+        RegrasDerivacaoFato vo = config.ParaRegrasDerivacao(DominioDoDerivado).Value!;
         vo.Regras.Single().EhAncora.Should().BeTrue("uma regra sem condição é a âncora incondicional");
     }
 
     [Fact(DisplayName = "Reconstrói o value object da regra que o motor consome, contra o domínio dado")]
     public void ParaRegrasDerivacao_ReconstroiVo()
     {
-        ConfiguracaoDerivacaoFato config = ConfigModalidade();
+        ConfiguracaoDerivacaoFato config = ConfigDerivado();
 
-        Result<RegrasDerivacaoFato> vo = config.ParaRegrasDerivacao(DominioModalidade);
+        Result<RegrasDerivacaoFato> vo = config.ParaRegrasDerivacao(DominioDoDerivado);
 
         vo.IsSuccess.Should().BeTrue(vo.Error?.Message);
-        vo.Value!.CodigoFato.Should().Be("MODALIDADE");
+        vo.Value!.CodigoFato.Should().Be(Derivado);
         vo.Value.Regras.Should().HaveCount(3);
         vo.Value.DependenciasDeclaradas.Should().BeEquivalentTo(["CONCORRER_PCD", "EGRESSO_ESCOLA_PUBLICA"],
             "as dependências são recomputadas da união dos fatos citados, nunca persistidas");
@@ -185,10 +173,10 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
     [Fact(DisplayName = "Reconstrução recusa código contribuído fora do domínio dado")]
     public void ParaRegrasDerivacao_ContribuiForaDoDominio_Falha()
     {
-        ConfiguracaoDerivacaoFato config = ConfiguracaoDerivacaoFato.Criar("MODALIDADE",
+        ConfiguracaoDerivacaoFato config = ConfiguracaoDerivacaoFato.Criar(Derivado,
             [Ancora(0, "CODIGO_INEXISTENTE")]).Value!;
 
-        Result<RegrasDerivacaoFato> vo = config.ParaRegrasDerivacao(DominioModalidade);
+        Result<RegrasDerivacaoFato> vo = config.ParaRegrasDerivacao(DominioDoDerivado);
 
         vo.IsFailure.Should().BeTrue("um código fora do domínio congelado do processo é recusado, nunca traduzido");
     }
@@ -198,7 +186,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
     {
         ProcessoSeletivo processo = NovoProcesso();
 
-        Result resultado = processo.DefinirRegrasDerivacao([ConfigModalidade(), ConfigModalidade()], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirRegrasDerivacao([ConfigDerivado(), ConfigDerivado()], PrecondicaoIfMatch.Ausente);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ConfiguracaoDerivacaoFatoErrorCodes.CodigoFatoDuplicado);
@@ -207,7 +195,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
     [Fact(DisplayName = "Ordem de regra duplicada na mesma configuração é recusada")]
     public void OrdemRegraDuplicada_Recusada()
     {
-        Result<ConfiguracaoDerivacaoFato> resultado = ConfiguracaoDerivacaoFato.Criar("MODALIDADE",
+        Result<ConfiguracaoDerivacaoFato> resultado = ConfiguracaoDerivacaoFato.Criar(Derivado,
             [Ancora(0, "AC"), Regra(0, "AC_PCD", ("CONCORRER_PCD", true))]);
 
         resultado.IsFailure.Should().BeTrue("a ordem das regras é total, para serialização determinística");
@@ -217,7 +205,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
     [Fact(DisplayName = "Configuração sem regra alguma é recusada")]
     public void SemRegras_Recusada()
     {
-        Result<ConfiguracaoDerivacaoFato> resultado = ConfiguracaoDerivacaoFato.Criar("MODALIDADE", regras: []);
+        Result<ConfiguracaoDerivacaoFato> resultado = ConfiguracaoDerivacaoFato.Criar(Derivado, regras: []);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ConfiguracaoDerivacaoFatoErrorCodes.SemRegras);
@@ -227,7 +215,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
     public void Definir_SubstituiPorInteiro()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirRegrasDerivacao([ConfigModalidade()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([ConfigDerivado()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ConfiguracaoDerivacaoFato outra = ConfiguracaoDerivacaoFato.Criar("OUTRO_DERIVADO",
             [Ancora(0, "X")]).Value!;
@@ -241,7 +229,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
     {
         ProcessoSeletivo processo = NovoProcesso();
 
-        processo.DefinirRegrasDerivacao([ConfigModalidade()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([ConfigDerivado()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ConfiguracaoDerivacaoFato config = processo.RegrasDerivacao.Single();
         config.ProcessoSeletivoId.Should().Be(processo.Id);
@@ -263,7 +251,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
                     1, c, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!,
         ]).Value!;
 
-    [Fact(DisplayName = "Constrói o grafo conjunto acíclico da configuração do processo em rascunho")]
+    [Fact(DisplayName = "Constrói o grafo conjunto acíclico, com a modalidade do candidato projetada das regras ofertadas")]
     public void ConstruirGrafoDependencia_ConfigAciclica_Sucesso()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -272,7 +260,8 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
             FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL").Value!,
             FatoColetado.Criar("CONCORRER_PCD", 1, "CONCORRER_PCD", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [Precond("PCD")], classificacaoProtecao: "PESSOAL").Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirRegrasDerivacao([DerivadoDe("MODALIDADE", "CONCORRER_PCD")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        OfertarModalidades(processo, ("AC", PredicadoDnf.SemClausula), ("AC_PCD", PredicadoDnf.CriarDeCondicoesAgrupadas(
+            [(0, CondicaoDnf.Criar("CONCORRER_PCD", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!));
 
         Result<GrafoDependenciaConjunta> grafo = processo.ConstruirGrafoDependencia();
 

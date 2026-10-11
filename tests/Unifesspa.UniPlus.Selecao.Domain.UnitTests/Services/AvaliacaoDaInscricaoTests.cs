@@ -14,9 +14,10 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// As modalidades em que o candidato concorre, pela matriz normativa da Lei 12.711 (UNI-REQ-0076),
-/// com o egresso de escola pública derivado da origem escolar (UNI-REQ-0148): o que se aplica, o que
-/// falta responder e o que a avaliação diz quando a configuração não deriva a modalidade.
+/// As modalidades em que o candidato concorre, pelas regras de aplicabilidade das modalidades
+/// ofertadas (UNI-REQ-0076), com a opção pelas cotas da lei e o egresso de escola pública derivado
+/// da origem escolar (UNI-REQ-0148): o que se aplica, o que falta responder e o que a avaliação diz
+/// quando a configuração não deriva a modalidade.
 /// </summary>
 public sealed class AvaliacaoDaInscricaoTests
 {
@@ -141,18 +142,22 @@ public sealed class AvaliacaoDaInscricaoTests
         string[] perguntas = rendaSoParaBaixaRenda ? [BaixaRenda, .. Perguntas] : Perguntas;
         RegrasDerivacaoFato egresso = RegrasDerivacaoFato.CriarBooleana(
             OrigemEscolar.FatoEgresso, OrigemEscolar.RegrasDoEgresso, OrigemEscolar.DependenciasDoEgresso).Value!;
+        FatoColetado[] campos = [.. perguntas.Select(static (f, ordem) => FatoColetado.Criar(
+            f, ordem, $"Rótulo de {f}", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, "SENSIVEL",
+            etapaCodigo: Secao, finalidade: FinalidadeFormulario.Inscricao).Value!)];
+        ModalidadeSelecionada[] ofertadas = [.. Ofertadas()];
+        List<RegrasDerivacaoFato> derivacoes = [egresso];
+        if (derivaModalidade)
+        {
+            derivacoes.AddRange(DerivacoesDaOferta.Efetivas([], ofertadas).Select(static d =>
+                d.ParaRegrasDerivacao([.. d.Regras.Select(static r => r.Contribui).OfType<string>()]).Value!));
+        }
+
         DefinicaoFormulario definicao = new(
             [new DefinicaoEtapa(Etapa, null, [.. perguntas.Select(f => new DefinicaoItem(
                 f, rendaSoParaBaixaRenda && f == "CONCORRER_RENDA" ? soComBaixaRenda : null, Obrigatoriedade.Sempre, []))])],
             [],
-            derivaModalidade ? [egresso, RegrasDerivacaoModalidadeLei12711.Construir()] : [egresso]);
-
-        FatoColetado[] campos = [.. perguntas.Select(static (f, ordem) => FatoColetado.Criar(
-            f, ordem, $"Rótulo de {f}", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, "SENSIVEL",
-            etapaCodigo: Secao, finalidade: FinalidadeFormulario.Inscricao).Value!)];
-        ModalidadeSelecionada[] ofertadas = [.. RegrasDerivacaoModalidadeLei12711.DominioCanonico.Select(static codigo => ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), codigo, $"Nome de {codigo}", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null, "Lei 12.711/2012").Value!)];
+            derivacoes);
 
         return new ConfiguracaoAvaliavel(
             definicao,
@@ -162,4 +167,30 @@ public sealed class AvaliacaoDaInscricaoTests
             [],
             ofertadas);
     }
+
+    /// <summary>
+    /// As modalidades da Lei de Cotas, com regras no molde das do cadastro: cada cota exige a opção
+    /// pelas cotas e, na dimensão dela, a opção por concorrer; a de renda exige também a renda.
+    /// </summary>
+    private static IEnumerable<ModalidadeSelecionada> Ofertadas()
+    {
+        (string, bool) optou = (OpcaoPelasCotasDaLei.Fato, true);
+        yield return Modalidade("AC", NaturezaLegalModalidade.Ampla);
+        yield return Modalidade("AC_PCD", NaturezaLegalModalidade.AcaoAfirmativa, (OpcaoPelasCotasDaLei.Fato, false), ("CONCORRER_PCD", true));
+        foreach ((string sufixo, string? opcao) in new[] { ("EP", (string?)null), ("PPI", "CONCORRER_PPI"), ("Q", "CONCORRER_Q"), ("PCD", "CONCORRER_PCD") })
+        {
+            (string, bool)[] atomos = opcao is null ? [optou] : [optou, (opcao, true)];
+            yield return Modalidade($"LI_{sufixo}", NaturezaLegalModalidade.CotaReservada, atomos);
+            yield return Modalidade($"LB_{sufixo}", NaturezaLegalModalidade.CotaReservada, [.. atomos, ("CONCORRER_RENDA", true)]);
+        }
+    }
+
+    private static ModalidadeSelecionada Modalidade(string codigo, NaturezaLegalModalidade natureza, params (string Fato, bool Valor)[] atomos) =>
+        ModalidadeSelecionada.Criar(
+            Guid.CreateVersion7(), codigo, $"Nome de {codigo}", natureza, ComposicaoVagasModalidade.ResidualDoVo,
+            null, natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueCascata : RegraRemanejamentoModalidade.Nenhuma,
+            null, null, null,
+            PredicadoDnf.CriarDeCondicoesAgrupadas([.. atomos.Select(static a => (0, CondicaoDnf.Criar(
+                a.Fato, Operador.Igual, JsonSerializer.SerializeToElement(a.Valor)).Value!))]).Value!,
+            null, "Lei 12.711/2012").Value!;
 }

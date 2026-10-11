@@ -17,7 +17,9 @@ public sealed record ModalidadeSelecionadaDto(
     string? RemanejamentoDestino,
     string? RemanejamentoPar,
     string? RemanejamentoFallback,
-    IReadOnlyList<string> CriteriosCumulativos,
+    // Quem concorre à modalidade, como o cadastro a declarou quando a distribuição foi
+    // gravada: sem cláusula, a modalidade é incondicional.
+    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>> RegraDeAplicabilidade,
     string? AcaoQuandoIndeferido,
     string BaseLegal,
     int? QuantidadeDeclarada);

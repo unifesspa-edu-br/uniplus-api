@@ -245,7 +245,8 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
     /// vaga para pretos, pardos e indígenas e se declarou indígena, declaração de trabalhador rural
     /// quando a família tem renda rural, certidão de guarda por menor sob guarda e o documento de
     /// identidade conforme a nacionalidade. A composição familiar aparece a quem se declarou preto,
-    /// pardo ou indígena, e a modalidade derivada da cor ou raça pede um comprovante dela.
+    /// pardo ou indígena, e a ampla concorrência, que aqui só vale para quem se declarou indígena, pede
+    /// um comprovante dela.
     /// </summary>
     /// <param name="minimoDaComposicao">O mínimo de membros; zero admite declarar que não há membros.</param>
     private static ProcessoSeletivo ProcessoDeMedicina(int minimoDaComposicao = 1)
@@ -264,13 +265,10 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
             FinalidadeFormulario.Habilitacao).Value!;
         processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [], PrecondicaoIfMatch.Ausente, [composicao]).IsSuccess.Should().BeTrue();
 
-        processo.DefinirRegrasDerivacao(
-        [
-            ConfiguracaoDerivacaoFato.Criar("MODALIDADE",
-            [
-                RegraDerivacaoConfigurada.Criar(0, "AC", [CondicaoRegraDerivacao.Criar(0, "COR_RACA", Operador.Igual, Json("INDIGENA")).Value!]).Value!,
-            ]).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas(
+            [ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(
+                PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, Json("INDIGENA")).Value!)]).Value!)],
+            FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirDocumentosExigidos(
         [

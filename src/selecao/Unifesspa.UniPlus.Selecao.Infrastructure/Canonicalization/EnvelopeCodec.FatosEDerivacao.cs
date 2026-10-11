@@ -777,8 +777,8 @@ public sealed partial class EnvelopeCodec
 
     /// <summary>
     /// Recusa fail-closed do bloco de coleta/derivação (RN08): um envelope válido nunca declara fato
-    /// duplicado, cita fato inexistente, contribui código fora do domínio de modalidades, fecha ciclo,
-    /// nem congela um grafo/modalidades que não reproduzem o recomputado. Um envelope adulterado que o
+    /// duplicado, grava derivação que a oferta define, cita fato inexistente, fecha ciclo, nem
+    /// congela um grafo/modalidades que não reproduzem o recomputado. Um envelope adulterado que o
     /// faça é recusado como malformado — o grafo conjunto ignora deliberadamente referências ausentes
     /// (projeta só o que existe), então o testemunho por si só não prova a completude do vocabulário
     /// citado; estas checagens fecham o que o grafo não prova. Devolve <see langword="null"/> quando o
@@ -792,7 +792,6 @@ public sealed partial class EnvelopeCodec
         IReadOnlyList<FormularioProcesso> formularios,
         IReadOnlyList<TermoExigidoFormulario> termos,
         string versaoInterpretador,
-        IReadOnlyList<string> modalidadesOfertadas,
         IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicao,
         JsonObject payload)
     {
@@ -872,6 +871,12 @@ public sealed partial class EnvelopeCodec
                 return Malformado($"'regrasDerivacao': o fato '{config.CodigoFato}' tem mais de uma configuração de derivação.");
             }
 
+            // A modalidade do candidato e a opção pelas cotas saem da oferta, e o encoder não as grava.
+            if (DerivacoesDaOferta.Deriva(config.CodigoFato))
+            {
+                return Malformado($"'regrasDerivacao': o fato '{config.CodigoFato}' é derivado da oferta de vagas, e não se grava.");
+            }
+
             // O derivado não é fato coletado — item ou campo de grupo — nem grupo.
             if (coletados.Contains(config.CodigoFato) || codigosDeGrupo.Contains(config.CodigoFato))
             {
@@ -881,7 +886,11 @@ public sealed partial class EnvelopeCodec
             universo.Add(config.CodigoFato);
         }
 
-        // Toda citação de regra de derivação e de gatilho de exigência existe em coletados ∪ derivados.
+        // Toda citação de regra de derivação gravada existe em coletados ∪ derivados, inclusive os que a
+        // oferta define. As regras da oferta não são conferidas aqui: no resultado importado elas não
+        // são avaliadas, e o envelope não diz a origem dos candidatos; a publicação as conferiu.
+        IReadOnlyList<ConfiguracaoDerivacaoFato> efetivas = DerivacoesDaOferta.Efetivas(regrasDerivacao, distribuicao);
+        universo.UnionWith(efetivas.Select(static d => d.CodigoFato));
         foreach (ConfiguracaoDerivacaoFato config in regrasDerivacao)
         {
             foreach (RegraDerivacaoConfigurada regra in config.Regras)
@@ -903,26 +912,10 @@ public sealed partial class EnvelopeCodec
         // citação a fato ausente, então o testemunho reproduz o mesmo grafo (sem a aresta) dos dois
         // lados — consistente até a fatia que fecha a recusa no publish.
 
-        // O código contribuído pela derivação de MODALIDADE tem de pertencer ao domínio congelado das
-        // modalidades ofertadas — o testemunho de conjunto prova o domínio, não que cada `contribui`
-        // caiba nele. O VO da regra é o contrato: reconstruí-lo contra o domínio recusa `contribui`
-        // fora dele (e revalida dependências/auto-referência de brinde).
-        foreach (ConfiguracaoDerivacaoFato config in regrasDerivacao)
-        {
-            if (string.Equals(config.CodigoFato, RegrasDerivacaoModalidadeLei12711.CodigoFato, StringComparison.Ordinal))
-            {
-                Result<RegrasDerivacaoFato> vo = config.ParaRegrasDerivacao(modalidadesOfertadas);
-                if (vo.IsFailure)
-                {
-                    return vo.Error;
-                }
-            }
-        }
-
         // Aciclicidade do grafo conjunto + testemunho: o grafo/modalidades congelados têm de reproduzir
         // exatamente o recomputado das partes reidratadas (byte a byte, pela mesma projeção canônica).
         Result<GrafoDependenciaConjunta> grafo =
-            GrafoDependenciaConjunta.Construir(fatos, regrasDerivacao, documentosExigidos, formularios, termos, grupos);
+            GrafoDependenciaConjunta.Construir(fatos, efetivas, documentosExigidos, formularios, termos, grupos);
         if (grafo.IsFailure)
         {
             return grafo.Error;

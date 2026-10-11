@@ -9,6 +9,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -829,26 +830,17 @@ public sealed class EnvelopeCodecRecusaTests
     }
 
     /// <summary>
-    /// O cadastro normaliza os critérios (<c>Modalidade.NormalizarCriterios</c>) e o motor de
-    /// homologação os avalia por <b>comparação exata</b>. Um item em branco é um requisito
-    /// que não diz nada; um item com espaços nas pontas é pior — é um requisito que
-    /// <b>ninguém reconhece</b>. O encoder reemite o array verbatim, então os dois fazem
-    /// round-trip perfeito.
+    /// A modalidade incondicional sai com a regra nula. A lista vazia de cláusulas é outra forma,
+    /// que o encoder nunca produz: aceitá-la reidrataria em silêncio um snapshot que o certame não
+    /// congelou.
     /// </summary>
-    [Theory(DisplayName = "Critério cumulativo em branco ou não-normalizado é recusado")]
-    [InlineData("   ")]
-    [InlineData(" renda_per_capita_ate_1sm ")]
-    [InlineData("renda_per_capita_ate_1sm ")]
-    [InlineData("\trenda_per_capita_ate_1sm")]
-    public void CriterioCumulativoMalFormado_Recusa(string criterio)
+    [Fact(DisplayName = "Regra de aplicabilidade gravada como lista vazia é recusada")]
+    public void RegraDeAplicabilidadeVazia_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            envelope["modalidades"]!.AsArray()[1]!["criteriosCumulativos"]!.AsArray()[0] = criterio);
+            envelope["modalidades"]!.AsArray()[1]!["regraDeAplicabilidade"] = new JsonArray());
 
-        resultado.IsFailure.Should().BeTrue(
-            $"'{criterio}' não é a forma que o cadastro produz. A guarda RECUSA em vez de normalizar: aparar o " +
-            "espaço aqui mudaria o valor em relação aos bytes congelados, e a prova de round-trip passaria a " +
-            "recusar o descarte de um certame legítimo — trocaríamos um dado sujo por um certame sem descarte.");
+        resultado.IsFailure.Should().BeTrue("a ausência de condição é nula, nunca uma lista vazia");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
@@ -1007,7 +999,7 @@ public sealed class EnvelopeCodecRecusaTests
             modalidades: [
                 ModalidadeSelecionada.Criar(
                     Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-                    null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null, "Res. Unifesspa 532/2021",
+                    null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021",
                     quantidadeDeclarada: 40).Value!,
             ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
         processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -1950,21 +1942,19 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error.Message.Should().Contain(".impedimento'");
     }
 
-    [Fact(DisplayName = "Código contribuído por MODALIDADE fora do domínio de modalidades ofertadas é recusado")]
-    public void ContribuiForaDoDominioDeModalidades_Recusa()
+    [Fact(DisplayName = "A modalidade do candidato gravada entre as derivações do processo é recusada")]
+    public void ModalidadeGravadaComoDerivacao_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-        {
-            // A regra âncora de MODALIDADE contribui um código que o processo não oferta — o conjunto
-            // de modalidades ofertadas congelado prova o domínio, mas não que cada contribui caiba nele.
-            JsonObject modalidade = envelope["regrasDerivacao"]!.AsArray()
-                .Single(no => no!["codigoFato"]!.GetValue<string>() == "MODALIDADE")!.AsObject();
-            modalidade["regras"]!.AsArray()[0]!["contribui"] = "CODIGO_NAO_OFERTADO";
-        });
+            envelope["regrasDerivacao"]!.AsArray().Add(new JsonObject
+            {
+                ["codigoFato"] = "MODALIDADE",
+                ["regras"] = new JsonArray(new JsonObject { ["ordem"] = 0, ["contribui"] = "AC", ["quando"] = null }),
+            }));
 
-        resultado.IsFailure.Should().BeTrue(
-            "uma regra que contribui um código fora do domínio de modalidades ofertadas resolveria um valor " +
-            "impossível — a reconstrução do VO da regra contra o domínio congelado recusa");
+        resultado.IsFailure.Should().BeTrue("a modalidade sai das modalidades ofertadas, e o encoder não a grava");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error.Message.Should().Contain("derivado da oferta");
     }
 
     // ── Taxa de inscrição e isenção (issue #1112) — mesmo raciocínio de forma fechada e

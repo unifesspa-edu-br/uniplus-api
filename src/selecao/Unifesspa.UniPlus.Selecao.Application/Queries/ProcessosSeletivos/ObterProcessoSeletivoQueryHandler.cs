@@ -224,7 +224,7 @@ public static class ObterProcessoSeletivoQueryHandler
         [.. configuracao.Modalidades.Select(m => new ModalidadeSelecionadaDto(
             m.Id, m.ModalidadeOrigemId, m.Codigo, m.Descricao, m.NaturezaLegal.ToCodigo(), m.ComposicaoVagas.ToCodigo(),
             m.ComposicaoOrigemCodigo, m.RegraRemanejamento.ToCodigo(), m.RemanejamentoDestino, m.RemanejamentoPar, m.RemanejamentoFallback,
-            m.CriteriosCumulativos, m.AcaoQuandoIndeferido, m.BaseLegal, m.QuantidadeDeclarada))],
+            m.RegraDeAplicabilidade.ToDto(), m.AcaoQuandoIndeferido, m.BaseLegal, m.QuantidadeDeclarada))],
         [.. configuracao.VagasOfertadas.Select(v => new VagaOfertadaDto(v.Id, v.ModalidadeOrigemId, v.ModalidadeCodigo, v.Quantidade))],
         configuracao.VrNominal,
         configuracao.VrFinal,

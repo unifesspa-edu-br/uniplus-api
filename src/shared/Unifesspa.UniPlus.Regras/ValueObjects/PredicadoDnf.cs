@@ -26,6 +26,9 @@ public sealed record PredicadoDnf
         Clausulas = clausulas;
     }
 
+    /// <summary>O predicado sem cláusula: a regra de derivação incondicional, a âncora.</summary>
+    public static PredicadoDnf SemClausula { get; } = new([]);
+
     public IReadOnlyList<ClausulaDnf> Clausulas { get; }
 
     /// <summary>Os códigos de fato citados pelas condições, sem repetição, na ordem em que aparecem.</summary>
@@ -34,6 +37,22 @@ public sealed record PredicadoDnf
             .SelectMany(static c => c.Condicoes)
             .Select(static cond => cond.Fato)
             .Distinct(StringComparer.Ordinal)];
+
+    /// <summary>
+    /// Se o outro predicado tem as mesmas cláusulas, na mesma ordem, com as mesmas condições. É a
+    /// igualdade de conteúdo: o valor da condição é comparado como JSON, não pela referência.
+    /// </summary>
+    public bool MesmoConteudo(PredicadoDnf outro)
+    {
+        ArgumentNullException.ThrowIfNull(outro);
+        return Clausulas.Count == outro.Clausulas.Count
+            && Clausulas.Zip(outro.Clausulas).All(static par =>
+                par.First.Condicoes.Count == par.Second.Condicoes.Count
+                && par.First.Condicoes.Zip(par.Second.Condicoes).All(static c =>
+                    string.Equals(c.First.Fato, c.Second.Fato, StringComparison.Ordinal)
+                    && c.First.Operador == c.Second.Operador
+                    && JsonElement.DeepEquals(c.First.Valor, c.Second.Valor)));
+    }
 
     /// <summary>
     /// Agrupa condições por ordinal de cláusula (o formato bruto que

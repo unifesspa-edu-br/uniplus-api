@@ -1150,40 +1150,6 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
-    /// Consulta a matriz normativa de derivação de modalidade do ramo da Lei 12.711/2012 (red.
-    /// Lei 14.723/2023), já recortada para as modalidades que ESTE processo oferta e na mesma
-    /// forma que <c>PUT …/regras-derivacao</c> recebe — o cliente a envia de volta sem
-    /// transformação.
-    /// </summary>
-    /// <remarks>
-    /// É proposta, não configuração: nada é gravado por esta leitura, e um processo do ramo
-    /// institucional traz outra matriz. Publicá-la é o que evita o cliente reescrever de que
-    /// opt-ins e de que elegibilidades cada cota se compõe — uma segunda cópia da lei divergiria
-    /// em silêncio, e a divergência só apareceria na classificação de um candidato real.
-    /// <para>
-    /// Lista vazia é resposta legítima: processo que ainda não declarou quadro de vagas, ou que
-    /// oferta só modalidade de outro ramo, não tem regra normativa a propor.
-    /// </para>
-    /// </remarks>
-    [HttpGet("{id:guid}/regras-derivacao/normativas")]
-    [VendorMediaType(Resource = "regras-derivacao-normativas", Versions = [1])]
-    [ProducesResponseType(typeof(IReadOnlyList<ConfiguracaoDerivacaoDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
-    public async Task<IActionResult> ObterRegrasDerivacaoNormativas(Guid id, CancellationToken cancellationToken)
-    {
-        IReadOnlyList<ConfiguracaoDerivacaoDto>? normativas = await _queryBus
-            .Send(new ObterRegrasDerivacaoNormativasQuery(id), cancellationToken)
-            .ConfigureAwait(false);
-        if (normativas is null)
-        {
-            return NotFound();
-        }
-
-        return Ok(normativas);
-    }
-
-    /// <summary>
     /// Consulta a conformidade ESTRUTURAL do processo (CA-07, issue #1092): checklist
     /// bicondicional com os seis gates estruturais de <c>Publicar</c>/<c>Retificar</c> — todo
     /// item <c>Ok</c> se e somente se nenhum dos seis gates tem pendência. Não altera o

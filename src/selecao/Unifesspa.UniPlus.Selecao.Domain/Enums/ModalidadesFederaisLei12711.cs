@@ -21,6 +21,12 @@ public static class ModalidadesFederaisLei12711
     /// <summary>Ampla concorrência — sempre obrigatória junto das 8 federais.</summary>
     public const string Ac = "AC";
 
+    /// <summary>
+    /// A reserva de pessoa com deficiência de ampla concorrência, ação afirmativa que convive com as
+    /// cotas da lei para quem não optou por elas (UNI-REQ-0141).
+    /// </summary>
+    public const string AcPcd = "AC_PCD";
+
     /// <summary>Os 8 códigos federais (sem AC) — ordem I a VIII (art. 10, §2º).</summary>
     public static readonly IReadOnlyList<string> Codigos =
         [LbPpi, LbQ, LbPcd, LbEp, LiPpi, LiQ, LiPcd, LiEp];

@@ -309,7 +309,9 @@ internal static class CorpusEnvelope
                 OfertaTipoDeficiencia.Criar(new Guid("1111aaaa-0000-4000-8000-000000000002"), "DEFICIENCIA_AUDITIVA", "Deficiência auditiva"),
             ], permutar)).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.DefinirDistribuicaoVagas(Ordem([DistribuicaoLei12711(), DistribuicaoInstitucional(("HUMANISTICA_I", "Humanística I"))], permutar), FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas(
+            Ordem([DistribuicaoLei12711(), DistribuicaoLei12711(OfertaDireito, ("HUMANISTICA_I", "Humanística I"))], permutar),
+            FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirBonusRegional(aplica: true, bonus: ConfiguracaoBonusRegional.Criar(
             Regra(RegraBonusCodigo.Multiplicativo, 'b'),
@@ -367,12 +369,11 @@ internal static class CorpusEnvelope
             Ordem([FaseInscricao(variante), FaseResultadoPreliminarComRecurso(variante, permutar), FaseResultadoFinal(variante)], permutar), [], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        // Coleta de fatos + derivação de MODALIDADE (Story #928, §7.4): COR_RACA vem da seção do
-        // conjunto básico, sem gate; RENDA é gatado por COR_RACA (pré-condição); MODALIDADE é
-        // derivado — âncora AC e a regra que contribui LB_PPI quando COR_RACA=PRETA E
-        // RENDA=ATE_1_SM. Exercita, no mesmo snapshot, as arestas de produção, pré-condição e
-        // derivação, com predicado DNF de duas condições numa cláusula. Ambos os códigos
-        // contribuídos (AC, LB_PPI) são ofertados. A seção traz também a UF do Geo, seleção com as
+        // Coleta de fatos + derivação (Story #928, §7.4): COR_RACA vem da seção do conjunto básico,
+        // sem gate; RENDA é gatado por COR_RACA (pré-condição); a modalidade do candidato é
+        // derivada das regras das modalidades ofertadas, e a das cotas de renda cita COR_RACA e
+        // RENDA. Exercita, no mesmo snapshot, as arestas de produção, pré-condição e derivação,
+        // com predicado DNF de duas condições numa cláusula. A seção traz também a UF do Geo, seleção com as
         // UFs congeladas, e o município, sem lista, que cita a UF. A renda acima de dez salários
         // impede a inscrição de quem se declarou preto, com a mensagem ao candidato.
         processo.DefinirItens(Ordem([
@@ -392,6 +393,9 @@ internal static class CorpusEnvelope
                 restricoes: [new FaixaDeData(LimiteDeData.Fixo(new DateOnly(1950, 1, 1)), LimiteDeData.NoEnvio(anos: 0, dias: -1))]).Value!,
             // A classificação é baseada em ENEM: a inscrição pede a edição, entre as admitidas.
             FormularioDeTeste.CampoDaEdicaoDoEnem(3),
+            // A opção pelas vagas de escola pública, de que a opção pelas cotas da lei depende.
+            FatoColetado.Criar(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 5, "Deseja concorrer às vagas de escola pública?",
+                TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
         ], permutar), PrecondicaoIfMatch.Ausente, grupos: [ComposicaoFamiliar(permutar)]).IsSuccess.Should().BeTrue();
 
         // Formulário de inscrição (Story #559, UNI-REQ-0086): título e um termo com exibição e
@@ -417,20 +421,20 @@ internal static class CorpusEnvelope
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirRegrasDerivacao(Ordem([
-            ConfiguracaoDerivacaoFato.Criar("MODALIDADE", Ordem([
-                RegraDerivacaoConfigurada.Criar(0, "AC", null).Value!,
-                RegraDerivacaoConfigurada.Criar(1, "LB_PPI", Ordem([
+            // A lista EXTERNA de configurações de derivação é ordenada por codigoFato na projeção, e a
+            // de regras, pela ordem; sem dois itens em cada uma, a permutação não seria exercitada.
+            // Cita COR_RACA e RENDA (coletados), sem ciclo.
+            ConfiguracaoDerivacaoFato.Criar("REGIME_INGRESSO", Ordem([
+                RegraDerivacaoConfigurada.Criar(0, "AMPLA", null).Value!,
+                RegraDerivacaoConfigurada.Criar(1, "COTISTA", Ordem([
                     CondicaoRegraDerivacao.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
                     CondicaoRegraDerivacao.Criar(0, "RENDA", Operador.Igual, JsonSerializer.SerializeToElement("ATE_1_SM")).Value!,
                 ], permutar)).Value!,
             ], permutar)).Value!,
-            // Segundo fato derivado (não MODALIDADE) — a lista EXTERNA de configurações de derivação é
-            // ordenada por codigoFato na projeção; sem dois itens, a permutação da lista externa não
-            // seria exercitada. Cita COR_RACA (coletado), sem ciclo; domínio próprio, não o de MODALIDADE.
-            ConfiguracaoDerivacaoFato.Criar("REGIME_INGRESSO", [
-                RegraDerivacaoConfigurada.Criar(0, "AMPLA", null).Value!,
-                RegraDerivacaoConfigurada.Criar(1, "COTISTA", [
-                    CondicaoRegraDerivacao.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
+            // O egresso de escola pública, de que a opção pelas cotas da lei depende.
+            ConfiguracaoDerivacaoFato.Criar(OrigemEscolar.FatoEgresso, [
+                RegraDerivacaoConfigurada.Criar(0, null, [
+                    CondicaoRegraDerivacao.Criar(0, OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!,
                 ]).Value!,
             ]).Value!,
             // Derivado booleano: as regras não contribuem código, e o envelope grava contribui nulo.
@@ -694,11 +698,29 @@ internal static class CorpusEnvelope
         bancasRequeridas: [],
         regraRecurso: null);
 
+    private static PredicadoDnf RegraDaCotaIndependenteDeRenda => PredicadoDnf.CriarDeCondicoesAgrupadas(
+    [
+        (0, CondicaoDnf.Criar(OpcaoPelasCotasDaLei.Fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!),
+        (0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!),
+    ]).Value!;
+
+    private static PredicadoDnf RegraDaCotaDeRenda => PredicadoDnf.CriarDeCondicoesAgrupadas(
+    [
+        (0, CondicaoDnf.Criar("RENDA", Operador.Igual, JsonSerializer.SerializeToElement("ATE_1_SM")).Value!),
+        (0, CondicaoDnf.Criar(OpcaoPelasCotasDaLei.Fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!),
+        (0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!),
+        (1, CondicaoDnf.Criar("RENDA", Operador.Igual, JsonSerializer.SerializeToElement("ATE_1_SM")).Value!),
+        (1, CondicaoDnf.Criar(OpcaoPelasCotasDaLei.Fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!),
+    ]).Value!;
+
     /// <summary>
     /// Oferta sob a Lei 12.711: exige a referência demográfica (INV-5) e as 8 modalidades
-    /// federais + AC (INV-6). É o ramo com <c>referenciaDemografica</c> preenchida.
+    /// federais + AC (INV-6). É o ramo com <c>referenciaDemografica</c> preenchida. As duas ofertas
+    /// do processo rico são deste ramo, porque os cursos de um processo ofertam as mesmas cotas da
+    /// lei; as variantes de remanejamento que as cotas não usam ficam na oferta institucional.
     /// </summary>
-    private static ConfiguracaoDistribuicaoVagas DistribuicaoLei12711()
+    private static ConfiguracaoDistribuicaoVagas DistribuicaoLei12711(
+        Guid? ofertaCursoOrigemId = null, (string? Codigo, string? Rotulo)? grupoAreaEnem = null)
     {
         List<ModalidadeSelecionada> modalidades =
         [
@@ -706,7 +728,7 @@ internal static class CorpusEnvelope
                 new Guid("2222bbbb-0000-4000-8000-000000000001"), "AC", "Ampla concorrência",
                 NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
                 RegraRemanejamentoModalidade.Nenhuma, null, null, null,
-                criteriosCumulativos: [], acaoQuandoIndeferido: null,
+                regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), acaoQuandoIndeferido: null,
                 baseLegal: "Lei 12.711/2012 art. 1º").Value!,
         ];
 
@@ -731,23 +753,18 @@ internal static class CorpusEnvelope
                 null,
                 null,
                 null,
-                // Dois critérios FORA da ordem alfabética de propósito (issue #1067): o
-                // encoder ordena este array pela chave de conteúdo — é um conjunto, sem
-                // posição própria entre os critérios — então o envelope sai com
-                // "egresso_escola_publica" antes de "renda_per_capita_ate_1sm",
-                // independente da ordem declarada aqui. Um decoder que preservasse esta
-                // ordem de ENTRADA em vez de ler a canônica já gravada produziria bytes
-                // distintos dos congelados.
-                criteriosCumulativos: codigo.StartsWith("LB", StringComparison.Ordinal)
-                    ? ["renda_per_capita_ate_1sm", "egresso_escola_publica"]
-                    : ["egresso_escola_publica"],
+                // A regra da cota de renda tem duas cláusulas FORA da ordem canônica de propósito: o
+                // encoder ordena as cláusulas e as condições pela chave de conteúdo, então um decoder
+                // que preservasse a ordem de ENTRADA em vez de ler a canônica já gravada produziria
+                // bytes distintos dos congelados.
+                codigo.StartsWith("LB", StringComparison.Ordinal) ? RegraDaCotaDeRenda : RegraDaCotaIndependenteDeRenda,
                 acaoQuandoIndeferido: "RECLASSIFICAR_AC",
                 baseLegal: "Lei 12.711/2012, alterada pela Lei 14.723/2023").Value!);
             sufixo++;
         }
 
         return ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoOrigemId: OfertaMedicina,
+            ofertaCursoOrigemId: ofertaCursoOrigemId ?? OfertaMedicina,
             voBase: 60,
             pr: 0.7500m,
             regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Lei12711, '7'),
@@ -760,7 +777,7 @@ internal static class CorpusEnvelope
                 pcdPercentual: 8.40m,
                 baseLegal: "Lei 12.711/2012 art. 3º").Value!,
             modalidades: modalidades,
-            grupoAreaEnem: ("SAUDE_E_BIOLOGICAS", "Saúde e Biológicas"), ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+            grupoAreaEnem: grupoAreaEnem ?? ("SAUDE_E_BIOLOGICAS", "Saúde e Biológicas"), ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
     }
 
     /// <summary>
@@ -785,22 +802,22 @@ internal static class CorpusEnvelope
                     new Guid("3333cccc-0000-4000-8000-000000000001"), "AC", null,
                     NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
                     RegraRemanejamentoModalidade.Nenhuma, null, null, null,
-                    [], null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 15).Value!,
+                    RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 15).Value!,
                 ModalidadeSelecionada.Criar(
                     new Guid("3333cccc-0000-4000-8000-000000000002"), "V", "PcD em ampla concorrência",
                     NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, null,
                     RegraRemanejamentoModalidade.DestinoUnico, "AC", null, null,
-                    ["laudo_medico"], "RECLASSIFICAR_AC", "Lei 13.146/2015", quantidadeDeclarada: 5).Value!,
+                    RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), "RECLASSIFICAR_AC", "Lei 13.146/2015", quantidadeDeclarada: 5).Value!,
                 ModalidadeSelecionada.Criar(
                     new Guid("3333cccc-0000-4000-8000-000000000003"), "IND", "Indígena",
                     NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe, "AC",
                     RegraRemanejamentoModalidade.Cruzado, null, "QUI", "AC",
-                    ["autodeclaracao", "documento_funai"], "RECLASSIFICAR_REGRA_EDITAL", "Res. Unifesspa 326/2019", quantidadeDeclarada: 10).Value!,
+                    RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), "RECLASSIFICAR_REGRA_EDITAL", "Res. Unifesspa 326/2019", quantidadeDeclarada: 10).Value!,
                 ModalidadeSelecionada.Criar(
                     new Guid("3333cccc-0000-4000-8000-000000000004"), "QUI", "Quilombola",
                     NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe, "AC",
                     RegraRemanejamentoModalidade.Cruzado, null, "IND", "AC",
-                    ["autodeclaracao"], "RECLASSIFICAR_REGRA_EDITAL", "Res. Unifesspa 326/2019", quantidadeDeclarada: 10).Value!,
+                    RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), "RECLASSIFICAR_REGRA_EDITAL", "Res. Unifesspa 326/2019", quantidadeDeclarada: 10).Value!,
             ],
             grupoAreaEnem: grupoAreaEnem, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
 

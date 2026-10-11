@@ -51,8 +51,8 @@ public sealed class EdicaoColetaSobRetificacaoEndpointTests
     [
         new
         {
-            codigoFato = "MODALIDADE",
-            regras = new object[] { new { ordem = 0, contribui = "AC", quando = (object?)null } },
+            codigoFato = "EGRESSO_ESCOLA_PUBLICA",
+            regras = new object[] { new { ordem = 0, contribui = (string?)null, quando = (object?)null } },
         },
     ];
 

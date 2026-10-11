@@ -79,13 +79,13 @@ public sealed class ObterProcessoSeletivoQueryHandlerColetaDeFatosTests
         RegraDerivacaoConfigurada condicional = RegraDerivacaoConfigurada.Criar(1, "LB_PPI",
             [CondicaoRegra(0, "COR_RACA", Operador.Igual, "PRETA")]).Value!;
         // Regras fora de ordem — a projeção ordena por Ordem.
-        ConfiguracaoDerivacaoFato config = ConfiguracaoDerivacaoFato.Criar("MODALIDADE", [condicional, ancora]).Value!;
+        ConfiguracaoDerivacaoFato config = ConfiguracaoDerivacaoFato.Criar("REGIME_DE_VAGA", [condicional, ancora]).Value!;
         processo.DefinirRegrasDerivacao([config], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ProcessoSeletivoDto dto = await ProjetarAsync(processo);
 
         ConfiguracaoDerivacaoDto projetada = dto.RegrasDerivacao.Should().ContainSingle().Which;
-        projetada.CodigoFato.Should().Be("MODALIDADE");
+        projetada.CodigoFato.Should().Be("REGIME_DE_VAGA");
         projetada.Regras.Select(r => r.Ordem).Should().ContainInOrder(0, 1);
 
         RegraDerivacaoDto regraAncora = projetada.Regras[0];

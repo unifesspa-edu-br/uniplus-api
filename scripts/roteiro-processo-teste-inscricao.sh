@@ -25,8 +25,8 @@
 #   1.6) → Critérios de Desempate (item 6.3) → Classificação e eliminação
 #   (itens 5.6 e 8.1) → Taxa de Inscrição (gratuita, item 2.2) → Cronograma de
 #   Fases → aplicar o modelo de inscrição da Medicina → vincular a fase do
-#   formulário → derivação da modalidade (proposta normativa) → documentos
-#   que comprovam o Fator na habilitação → Documento do Edital → Divulgação (sempre ANTES de publicar: depois da publicação o
+#   formulário → documentos que comprovam o Fator na habilitação → Documento do
+#   Edital → Divulgação (sempre ANTES de publicar: depois da publicação o
 #   processo só aceita mutação por retificação) → Publicar.
 #
 # Pré-requisitos: stack local do docker compose no ar, com uniplus-api,
@@ -660,29 +660,6 @@ vincular_fase_do_formulario() {
     ok "formulário vinculado à fase $fase_inscricao_processo_id"
 }
 
-# Grava a matriz que deriva a MODALIDADE de cada candidato a partir das
-# respostas — sem ela, a inscrição não calcula em que modalidades ele concorre.
-# A matriz é a proposta normativa que o próprio sistema publica para as
-# modalidades ofertadas, sem ajuste. Vem depois do modelo: as condições citam
-# fatos que o formulário coleta, e a gravação recusa fato fora do processo.
-# A substituição é integral, então as derivações já presentes (copiadas pelo
-# modelo) vão junto; a proposta não repete as que o processo já deriva, e a da
-# MODALIDADE substitui a anterior. Em rascunho não há ETag nem If-Match.
-definir_regras_derivacao() {
-    log "Definir a derivação da modalidade (proposta normativa)"
-    local atuais normativas configuracoes
-    atuais=$(api_get "/api/selecao/processos-seletivos/$PROCESSO_ID" | jq -c '.regrasDerivacao')
-    normativas=$(api_get "/api/selecao/processos-seletivos/$PROCESSO_ID/regras-derivacao/normativas")
-    jq -e 'any(.[]; .codigoFato == "MODALIDADE")' <<< "$normativas" >/dev/null \
-        || fail "a proposta normativa não traz a MODALIDADE — o quadro de vagas foi definido?"
-    configuracoes=$(jq -nc --argjson atuais "$atuais" --argjson normativas "$normativas" \
-        '($normativas | map(.codigoFato)) as $propostos
-         | [$atuais[] | select(.codigoFato | IN($propostos[]) | not)] + $normativas')
-
-    api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/regras-derivacao" "$configuracoes" >/dev/null
-    ok "derivação gravada: $(jq -r 'map(.codigoFato) | join(", ")' <<< "$configuracoes")"
-}
-
 # Cadastra, na fase de habilitação, o documento que comprova cada caminho do
 # Fator (itens 1.6 e 13): o histórico escolar para quem pede pelo ensino médio
 # cursado na área — quem concluiu no regular ou na EJA, ou quem concluiu por
@@ -824,7 +801,6 @@ main() {
     definir_cronograma_fases
     aplicar_modelo_medicina
     vincular_fase_do_formulario
-    definir_regras_derivacao
     definir_documentos_exigidos
     documento_do_edital
     divulgar

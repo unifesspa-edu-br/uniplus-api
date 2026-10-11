@@ -261,7 +261,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Derivação", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
-        ConfiguracaoDerivacaoFato config = ConfiguracaoDerivacaoFato.Criar("MODALIDADE",
+        ConfiguracaoDerivacaoFato config = ConfiguracaoDerivacaoFato.Criar("REGIME_DE_VAGA",
         [
             RegraDerivacaoConfigurada.Criar(0, "AC", condicoes: null).Value!,
             RegraDerivacaoConfigurada.Criar(1, "AC_PCD",
@@ -282,12 +282,12 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
 
         recarregado.Should().NotBeNull();
         ConfiguracaoDerivacaoFato recarregadaConfig = recarregado!.RegrasDerivacao.Single();
-        recarregadaConfig.CodigoFato.Should().Be("MODALIDADE");
+        recarregadaConfig.CodigoFato.Should().Be("REGIME_DE_VAGA");
         recarregadaConfig.Regras.Should().HaveCount(2, "os três níveis reidratam — a configuração, as regras e as condições");
         recarregadaConfig.Regras.Single(r => r.Contribui == "AC_PCD").Condicoes.Should().ContainSingle(c => c.Fato == "CONCORRER_PCD");
 
         // Round-trip completo: a reconstrução do value object que o motor consome bate com o cadastro.
-        RegrasDerivacaoFato vo = recarregadaConfig.ParaRegrasDerivacao(RegrasDerivacaoModalidadeLei12711.DominioCanonico).Value!;
+        RegrasDerivacaoFato vo = recarregadaConfig.ParaRegrasDerivacao(["AC", "AC_PCD"]).Value!;
         vo.Regras.Should().HaveCount(2);
         vo.DependenciasDeclaradas.Should().BeEquivalentTo(["CONCORRER_PCD"]);
     }
@@ -298,7 +298,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Redefinição", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirRegrasDerivacao(
         [
-            ConfiguracaoDerivacaoFato.Criar("MODALIDADE",
+            ConfiguracaoDerivacaoFato.Criar("REGIME_DE_VAGA",
             [
                 RegraDerivacaoConfigurada.Criar(0, "AC", condicoes: null).Value!,
                 RegraDerivacaoConfigurada.Criar(1, "AC_PCD",
@@ -322,7 +322,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
 
             carregado.DefinirRegrasDerivacao(
             [
-                ConfiguracaoDerivacaoFato.Criar("MODALIDADE",
+                ConfiguracaoDerivacaoFato.Criar("REGIME_DE_VAGA",
                 [
                     RegraDerivacaoConfigurada.Criar(0, "AC", condicoes: null).Value!,
                 ]).Value!,
@@ -383,7 +383,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
             RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixoTeste).Value!;
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
             modalidadeOrigemId, "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null,
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null,
             "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!;
         ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 40, pr: 1m, regraDistribuicao, regraAjuste: null,

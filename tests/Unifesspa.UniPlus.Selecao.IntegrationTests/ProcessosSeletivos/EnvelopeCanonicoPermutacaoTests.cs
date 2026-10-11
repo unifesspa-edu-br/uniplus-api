@@ -38,15 +38,14 @@ using Xunit;
 /// entrada de cada uma).
 /// </para>
 /// <para>
-/// FORA desta prova, por decisão: <c>modalidades[].criteriosCumulativos</c> e
+/// FORA desta prova, por decisão: <c>modalidades[].regraDeAplicabilidade</c> e
 /// <c>classificacao.regrasEliminacao</c> — as duas coleções que não têm identidade de negócio nem
 /// de origem entre os elementos, e por isso o encoder ordena pela CHAVE DE CONTEÚDO do próprio
 /// item (ADR-0109 D9). <c>classificacao.regrasEliminacao</c> tem prova própria —
 /// <c>EnvelopeCanonicoGoldenTests.Envelope_IndependeDaOrdemDeCriacao</c> varia a ordem de CRIAÇÃO
 /// de duas regras de eliminação (e, com ela, a ordem dos Guid v7) e prova que o envelope resultante
-/// não muda. <c>modalidades[].criteriosCumulativos</c> tem prova própria em
-/// <c>OrdenacaoDeConjuntosCanonicosTests.CriteriosCumulativos_OrdenaPelaChaveDeConteudoEmBytesUtf8</c>,
-/// que compara os bytes de duas entradas com o mesmo conteúdo em ordens de entrada diferentes.
+/// não muda. As cláusulas e condições de um predicado têm prova própria em
+/// <c>PredicadoDnfOrdenacaoCanonicaTests</c>.
 /// </para>
 /// <para>
 /// <c>documentosExigidos.exigencias</c> também fica FORA, por um motivo distinto dos dois acima: a
@@ -129,22 +128,22 @@ public sealed class EnvelopeCanonicoPermutacaoTests
                 "pré-condição: a permutação tem de inverter a ordem de entrada da lista de configurações de derivação");
 
         // A lista EXTERNA de configurações de derivação já está coberta acima — mas o `permutar`
-        // também inverte, DENTRO da configuração de MODALIDADE, a lista de regras (AC/LB_PPI) e,
-        // dentro da regra LB_PPI, a lista de condições aninhadas (COR_RACA/RENDA). Nenhuma das duas
+        // também inverte, DENTRO da configuração de REGIME_INGRESSO, a lista de regras (AMPLA/COTISTA)
+        // e, dentro da regra COTISTA, a lista de condições aninhadas (COR_RACA/RENDA). Nenhuma das duas
         // tinha pré-condição própria: um agregado que normalizasse a ordem de QUALQUER uma na
         // entrada (por exemplo, reordenando por `Ordem`/`Clausula` num factory futuro) passaria
         // pela comparação de bytes ao final por vacuidade, sem que a lacuna aparecesse (issue #1087).
-        ConfiguracaoDerivacaoFato derivacaoModalidadeDireto = direto.RegrasDerivacao.Single(static c => c.CodigoFato == "MODALIDADE");
-        ConfiguracaoDerivacaoFato derivacaoModalidadePermutado = permutado.RegrasDerivacao.Single(static c => c.CodigoFato == "MODALIDADE");
-        derivacaoModalidadeDireto.Regras.Select(static r => r.Contribui)
-            .Should().NotEqual(derivacaoModalidadePermutado.Regras.Select(static r => r.Contribui),
-                "pré-condição: a permutação tem de inverter a ordem de entrada das regras dentro da configuração de derivação de MODALIDADE");
+        ConfiguracaoDerivacaoFato derivacaoDireto = direto.RegrasDerivacao.Single(static c => c.CodigoFato == "REGIME_INGRESSO");
+        ConfiguracaoDerivacaoFato derivacaoPermutado = permutado.RegrasDerivacao.Single(static c => c.CodigoFato == "REGIME_INGRESSO");
+        derivacaoDireto.Regras.Select(static r => r.Contribui)
+            .Should().NotEqual(derivacaoPermutado.Regras.Select(static r => r.Contribui),
+                "pré-condição: a permutação tem de inverter a ordem de entrada das regras dentro da configuração de derivação");
 
-        RegraDerivacaoConfigurada regraComCondicoesDireto = derivacaoModalidadeDireto.Regras.Single(static r => r.Contribui == "LB_PPI");
-        RegraDerivacaoConfigurada regraComCondicoesPermutado = derivacaoModalidadePermutado.Regras.Single(static r => r.Contribui == "LB_PPI");
+        RegraDerivacaoConfigurada regraComCondicoesDireto = derivacaoDireto.Regras.Single(static r => r.Contribui == "COTISTA");
+        RegraDerivacaoConfigurada regraComCondicoesPermutado = derivacaoPermutado.Regras.Single(static r => r.Contribui == "COTISTA");
         regraComCondicoesDireto.Condicoes.Select(static c => c.Fato)
             .Should().NotEqual(regraComCondicoesPermutado.Condicoes.Select(static c => c.Fato),
-                "pré-condição: a permutação tem de inverter a ordem de entrada das condições aninhadas da regra que contribui LB_PPI");
+                "pré-condição: a permutação tem de inverter a ordem de entrada das condições aninhadas da regra que contribui COTISTA");
 
         // A origem fixada é a primeira das 8 federais — permutar embaralha os DESTINOS dentro dela;
         // inverter a sequência de ORIGENS não provaria nada (cada origem aparece uma única vez na

@@ -12,6 +12,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -110,6 +111,7 @@ public sealed class EnvelopeCodecRoundTripTests
                     [(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!),
                 null, ajuda: "Renda por pessoa da família", pedirConfirmacao: true, classificacaoProtecao: "PESSOAL").Value!,
             FormularioDeTeste.CampoDaEdicaoDoEnem(3),
+            FatoColetado.Criar(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 4, "Deseja concorrer às vagas de escola pública?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
         ], grupos: []).IsSuccess.Should().BeTrue();
 
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
@@ -136,6 +138,7 @@ public sealed class EnvelopeCodecRoundTripTests
             FatoColetado.Criar("DATA_NASCIMENTO", 3, "Data de nascimento", TipoRenderizacao.Data, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
             FatoColetado.Criar("ENDERECO_RESIDENCIAL", 4, "Endereço residencial", TipoRenderizacao.Endereco, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
             FormularioDeTeste.CampoDaEdicaoDoEnem(5),
+            FatoColetado.Criar(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 6, "Deseja concorrer às vagas de escola pública?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
         ], grupos: []).IsSuccess.Should().BeTrue();
 
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
@@ -531,7 +534,7 @@ public sealed class EnvelopeCodecRoundTripTests
     /// A igualdade com o JSON mutado é a asserção <b>secundária</b>, mais forte, e só vale
     /// enquanto os paths abaixo ficarem <b>fora das chaves de ordenação</b> (o que é o caso:
     /// nenhum deles muta <c>ordem</c>, <c>id</c>, <c>codigo</c>, <c>ofertaCursoOrigemId</c>,
-    /// o interior de <c>regrasEliminacao</c>, nem um elemento de <c>criteriosCumulativos</c>
+    /// o interior de <c>regrasEliminacao</c>, nem uma condição de <c>regraDeAplicabilidade</c>
     /// ou dos demais conjuntos ordenados por chave de conteúdo, issue #1067). Os
     /// campos que <b>são</b> chave de ordenação estão no teste seguinte, com a asserção
     /// primária apenas.
@@ -551,7 +554,7 @@ public sealed class EnvelopeCodecRoundTripTests
     [InlineData("distribuicao.0.referenciaDemografica.baseLegal", "Lei 14.723/2023 art. 3º")]
     [InlineData("modalidades.0.baseLegal", "Outra base legal inteiramente diversa")]
     [InlineData("modalidades.0.descricao", "Outra descrição")]
-    [InlineData("modalidades.1.acaoQuandoIndeferido", "RECLASSIFICAR_REGRA_EDITAL")]
+    [InlineData("modalidades.1.acaoQuandoIndeferido|modalidades.10.acaoQuandoIndeferido", "RECLASSIFICAR_REGRA_EDITAL")]
     [InlineData("bonusRegional.fator", "1.9900")]
     [InlineData("bonusRegional.teto", "42.5000")]
     [InlineData("bonusRegional.identificacao", "Portaria Unifesspa nº 999/2026")]
@@ -583,12 +586,11 @@ public sealed class EnvelopeCodecRoundTripTests
     /// o “JSON mutado no lugar” reprovaria a implementação correta.
     /// </summary>
     /// <remarks>
-    /// <c>modalidades.1.criteriosCumulativos.0</c> entrou aqui pela mesma razão de
-    /// <c>regrasEliminacao</c> (issue #1067): desde que <c>criteriosCumulativos</c> passou a
-    /// ser ordenado pela chave de conteúdo, mutar o valor de UM critério pode mudar a posição
-    /// dele entre os dois — a modalidade <c>LB_EP</c> (índice 1 do array) tem exatamente dois
-    /// critérios (<see cref="CorpusEnvelope.ProcessoRico"/>), o mínimo para a reordenação ser
-    /// observável.
+    /// <c>modalidades.1.regraDeAplicabilidade.0.0.valor</c> entrou aqui pela mesma razão de
+    /// <c>regrasEliminacao</c> (issue #1067): as cláusulas da regra são ordenadas pela chave de
+    /// conteúdo, e mutar o valor de uma condição pode mudar a posição da cláusula entre as duas —
+    /// a modalidade <c>LB_EP</c> (índice 1 do array) tem exatamente duas cláusulas
+    /// (<see cref="CorpusEnvelope.ProcessoRico"/>), o mínimo para a reordenação ser observável.
     /// </remarks>
     [Theory(DisplayName = "O decoder lê também os campos que são chave de ordenação")]
     [InlineData("etapas.0.ordem", "9")]
@@ -596,7 +598,7 @@ public sealed class EnvelopeCodecRoundTripTests
     [InlineData("classificacao.regrasEliminacao.1.args.notaMinima", "88.7500")]
     [InlineData("classificacao.regrasEliminacao.0.args.minimo", "555.0000")]
     [InlineData("classificacao.regrasEliminacao.0.args.areaCodigo", "MATEMATICA")]
-    [InlineData("modalidades.1.criteriosCumulativos.0", "renda_per_capita_ate_meio_sm")]
+    [InlineData("modalidades.1.regraDeAplicabilidade.0.0.valor|modalidades.10.regraDeAplicabilidade.0.0.valor", "ATE_MEIO_SM")]
     public void Decoder_NaoPerdeCampoDeOrdenacao(string caminho, string valorNovo)
     {
         (byte[] originais, byte[] _, byte[] recodificados) = MutarEReidratar(caminho, valorNovo);
@@ -629,12 +631,19 @@ public sealed class EnvelopeCodecRoundTripTests
 
     private static (byte[] Originais, byte[] Mutados, byte[] Recodificados) MutarEReidratar(string caminho, string valorNovo)
     {
+        ArgumentNullException.ThrowIfNull(caminho);
+
         ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
         CorpusEnvelope.Publicar(processo);
 
+        // A mesma modalidade é ofertada pelos dois cursos do processo rico, e o processo não aceita
+        // duas cópias diferentes dela: o caminho pode nomear as duas ocorrências, separadas por '|'.
         JsonObject mutado = Envelope(congelado);
-        Mutar(mutado, caminho, valorNovo);
+        foreach (string ocorrencia in caminho.Split('|'))
+        {
+            Mutar(mutado, ocorrencia, valorNovo);
+        }
 
         byte[] bytesMutados = PerfilCanonicoV1.Instancia.Serializar(mutado);
         bytesMutados.Should().NotEqual(congelado.Bytes, $"pré-condição: mutar '{caminho}' tem de mudar os bytes");
@@ -851,7 +860,7 @@ public sealed class EnvelopeCodecRoundTripTests
             MetadadosFatosCongelados: metadadosFatos,
             ValoresSelecionaveisCongelados: valoresSelecionaveis);
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.27", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.28", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             entrada.Dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -928,7 +937,7 @@ public sealed class EnvelopeCodecRoundTripTests
                     remanejamentoDestino: null,
                     remanejamentoPar: null,
                     remanejamentoFallback: null,
-                    criteriosCumulativos: [],
+                    regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
                     acaoQuandoIndeferido: null,
                     baseLegal: "Res. Unifesspa 532/2021",
                     quantidadeDeclarada: 40).Value!,
@@ -1011,7 +1020,7 @@ public sealed class EnvelopeCodecRoundTripTests
 
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(
             new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados()));
-        congelado.SchemaVersion.Should().Be("0.0.27", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.28", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -1065,11 +1074,11 @@ public sealed class EnvelopeCodecRoundTripTests
         folhaRendaRecarregada.DocumentoExigido!.TipoDocumentoCodigo.Should().Be("COMPROVANTE_RENDA");
     }
 
-    // ── issue #1067 — os sete conjuntos ordenados por conteúdo, povoados no mesmo envelope ──
+    // ── issue #1067 — os seis conjuntos ordenados por conteúdo, povoados no mesmo envelope ──
 
     /// <summary>
-    /// Prova que o decoder NÃO reordena (ADR-0109 D9) com os sete arrays da issue #1067
-    /// povoados ao mesmo tempo: <c>criteriosCumulativos</c>, <c>ocorrenciasEsperadas</c>,
+    /// Prova que o decoder NÃO reordena (ADR-0109 D9) com os seis arrays da issue #1067
+    /// povoados ao mesmo tempo: <c>ocorrenciasEsperadas</c>,
     /// <c>documentosExigidos.exigencias[].formatosPermitidos.lista</c>,
     /// <c>documentosExigidos.obrigatoriedades</c>, os dois <c>predicado.args</c>
     /// (<c>codigos</c>/<c>necessidades</c>) e <c>documentosExigidos.metadadosFatos[].valoresDominio</c>.
@@ -1084,11 +1093,11 @@ public sealed class EnvelopeCodecRoundTripTests
     /// decodificado, antes de qualquer recodificação: só um decoder que preserva a ordem lida
     /// (um laço sequencial para <c>List&lt;T&gt;</c>, nunca um dicionário) bate as duas.
     /// </remarks>
-    [Fact(DisplayName = "Round-trip com os sete conjuntos da issue #1067 povoados — bytes idênticos e a sequência imediatamente decodificada bate com o JSON")]
-    public void RoundTrip_SeteConjuntosDaIssue1067Povoados_PreservaSequenciaImediatamenteDecodificada()
+    [Fact(DisplayName = "Round-trip com os seis conjuntos da issue #1067 povoados — bytes idênticos e a sequência imediatamente decodificada bate com o JSON")]
+    public void RoundTrip_SeisConjuntosDaIssue1067Povoados_PreservaSequenciaImediatamenteDecodificada()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Sete Conjuntos", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PS Seis Conjuntos", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
         processo.DefinirEtapas([
@@ -1112,7 +1121,7 @@ public sealed class EnvelopeCodecRoundTripTests
             remanejamentoDestino: null,
             remanejamentoPar: null,
             remanejamentoFallback: null,
-            criteriosCumulativos: ["zzz_criterio", "aaa_criterio"],
+            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
             acaoQuandoIndeferido: null,
             baseLegal: "Res. Unifesspa 532/2021",
             quantidadeDeclarada: 40).Value!;
@@ -1229,17 +1238,15 @@ public sealed class EnvelopeCodecRoundTripTests
             processo, dados, hashDocumento, FusoInstitucional.ZoneId, Conformidade: conformidade, MetadadosFatosCongelados: metadadosFatos,
             ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados());
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.27", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.28", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            hashDocumento, "user-sub-sete-conjuntos", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
+            hashDocumento, "user-sub-seis-conjuntos", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         VersaoConfiguracao v1 = publicacao.Value!;
 
         JsonObject envelopeJson = Envelope(congelado);
-        IReadOnlyList<string> criteriosNoJson =
-            [.. envelopeJson["modalidades"]![0]!["criteriosCumulativos"]!.AsArray().Select(static c => c!.GetValue<string>())];
         IReadOnlyList<string> ocorrenciasNoJson =
             [.. envelopeJson["arvoreSatisfacao"]![0]!["ocorrenciasEsperadas"]!.AsArray().Select(static o => o!.GetValue<string>())];
         IReadOnlyList<string> formatosNoJson =
@@ -1263,9 +1270,8 @@ public sealed class EnvelopeCodecRoundTripTests
         EnvelopeReidratado envelope = reidratado.Value!;
 
         // ── A sequência IMEDIATAMENTE decodificada — antes de qualquer recodificação. ──
-        envelope.Grafo.DistribuicaoVagas.Single().Modalidades.Single().CriteriosCumulativos.Should().Equal(
-            criteriosNoJson, "o decoder tem de preservar a sequência que leu — nunca recalculá-la");
-        envelope.Grafo.NosExigencia.Single().OcorrenciasEsperadas.Should().Equal(ocorrenciasNoJson);
+        envelope.Grafo.NosExigencia.Single().OcorrenciasEsperadas.Should().Equal(
+            ocorrenciasNoJson, "o decoder tem de preservar a sequência que leu — nunca recalculá-la");
         envelope.Grafo.DocumentosExigidos.Single().FormatosPermitidos.Lista!
             .Select(static f => f.Formato.ToCodigo()).Should().Equal(formatosNoJson);
         envelope.Conformidade!.Regras.Select(static r => r.RegraCodigo).Should().Equal(regraCodigosNoJson);
@@ -1289,7 +1295,7 @@ public sealed class EnvelopeCodecRoundTripTests
                 envelope.MetadadosFatosCongelados, envelope.ValoresSelecionaveisCongelados)).Value!.Bytes;
 
         recodificado.Should().Equal(congelado.Bytes,
-            "reidratar e recanonicalizar os sete conjuntos da issue #1067, todos povoados ao mesmo tempo, tem de " +
+            "reidratar e recanonicalizar os seis conjuntos da issue #1067, todos povoados ao mesmo tempo, tem de " +
             "reproduzir os bytes congelados inteiros");
     }
 
@@ -1614,7 +1620,7 @@ public sealed class EnvelopeCodecRoundTripTests
                 ModalidadeSelecionada.Criar(
                     Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla,
                     ComposicaoVagasModalidade.ResidualDoVo, null, RegraRemanejamentoModalidade.Nenhuma,
-                    null, null, null, [], null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
+                    null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
             ],
             grupoAreaEnem: ("TECNOLOGICA", "Tecnológica"), ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
         processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();

@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -65,7 +66,7 @@ internal static class ProcessoConformeFactory
                         remanejamentoDestino: null,
                         remanejamentoPar: null,
                         remanejamentoFallback: null,
-                        criteriosCumulativos: [],
+                        regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
                         acaoQuandoIndeferido: null,
                         baseLegal: "Res. Unifesspa 532/2021",
                         quantidadeDeclarada: 40).Value!,

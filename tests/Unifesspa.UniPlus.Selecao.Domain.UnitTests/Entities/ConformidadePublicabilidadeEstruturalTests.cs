@@ -9,9 +9,11 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -56,11 +58,12 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         NaturezaLegalModalidade natureza,
         RegraRemanejamentoModalidade remanejamento,
         int? quantidadeDeclarada,
-        string? acaoQuandoIndeferido = null) =>
+        string? acaoQuandoIndeferido = null,
+        PredicadoDnf? regra = null) =>
         ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), codigo, null, natureza,
             natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.ResidualDoVo : ComposicaoVagasModalidade.DentroDoVr,
-            null, remanejamento, null, null, null, [], acaoQuandoIndeferido, "base legal", quantidadeDeclarada).Value!;
+            null, remanejamento, null, null, null, regra ?? RegrasDeAplicabilidadeDeTeste.DaNatureza(natureza), acaoQuandoIndeferido, "base legal", quantidadeDeclarada).Value!;
 
     private static readonly (string? Codigo, string? Rotulo) GrupoTecnologica = ("TECNOLOGICA", "Tecnológica");
 
@@ -792,32 +795,56 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
-    [Fact(DisplayName = "Pré-canonicalização: MODALIDADE contribui código fora do domínio ofertado — item vermelho e Publicar recusa com RegrasDerivacaoFatoErrorCodes.ContribuiForaDoDominio")]
-    public void PreCanon_ModalidadeContribuiForaDoDominio()
+    [Fact(DisplayName = "Pré-canonicalização: cursos com conjuntos diferentes de cotas da lei — item vermelho e Publicar recusa")]
+    public void PreCanon_CotasDaLeiDiferentesEntreOfertas()
     {
-        ProcessoSeletivo processo = ProcessoConforme([DistribuicaoAmpla(10)]); // domínio ofertado = { AC }
-        RegraDerivacaoConfigurada ancora = RegraDerivacaoConfigurada.Criar(0, "V", condicoes: null).Value!;
-        ConfiguracaoDerivacaoFato configuracao = ConfiguracaoDerivacaoFato.Criar("MODALIDADE", [ancora]).Value!;
-        processo.DefinirRegrasDerivacao([configuracao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue(
-            "\"V\" é rótulo de exibição de AC_PCD no edital, nunca código de entrada — e não está no domínio ofertado (só AC)");
+        ProcessoSeletivo processo = ProcessoConforme([OfertaFederalCompleta(), DistribuicaoAmpla(10)]);
+        processo.DefinirCascataRemanejamento(CascataCompleta(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().ContainSingle(i => !i.Ok)
-            .Which.Codigo.Should().Be("derivacao_dominio_de_contribuicao_invalido");
+        SoEstesItensVermelhos(processo, "modalidade_cotas_da_lei_diferentes_entre_ofertas");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(RegrasDerivacaoFatoErrorCodes.ContribuiForaDoDominio);
+        resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.CotasDaLeiDiferentesEntreOfertas);
     }
 
-    /// <summary>As oito cotas da lei, a ampla e a ação afirmativa de PcD retirando duas vagas da ampla.</summary>
-    private static ProcessoSeletivo ProcessoComCotaEAcaoAfirmativa()
+    [Theory(DisplayName = "Pré-canonicalização: reserva de PcD de ampla concorrência com cota da lei exige a cota da lei para PcD")]
+    [InlineData(true, true)]
+    [InlineData(false, false)]
+    public void PreCanon_ReservaPcdSemCotaPcdDaLei(bool comCotaPcd, bool esperadoOk)
+    {
+        ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 10, pr: 1m,
+            Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), regraAjuste: null, referenciaDemografica: null,
+            [
+                Modalidade("AC", NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.Nenhuma, 6),
+                Modalidade("AC_PCD", NaturezaLegalModalidade.AcaoAfirmativa, RegraRemanejamentoModalidade.Nenhuma, 2),
+                Modalidade(comCotaPcd ? "LI_PCD" : "LI_PPI", NaturezaLegalModalidade.CotaReservada, RegraRemanejamentoModalidade.SegueCascata, 2,
+                    regra: Exige((OpcaoPelasCotasDaLei.Fato, true))),
+            ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+        ProcessoSeletivo processo = ProcessoConforme([oferta]);
+
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo)
+            .Single(static i => i.Codigo == "modalidade_reserva_pcd_sem_cota_pcd_da_lei").Ok.Should().Be(esperadoOk);
+    }
+
+    /// <summary>
+    /// As oito cotas da lei, a ampla e a ação afirmativa de PcD retirando duas vagas da ampla, cada uma
+    /// com a regra de aplicabilidade dada.
+    /// </summary>
+    private static ProcessoSeletivo ProcessoComCotaEAcaoAfirmativa(PredicadoDnf regraDasCotas, PredicadoDnf regraDaAcaoAfirmativa)
     {
         ModalidadeSelecionada acPcd = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC_PCD", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe,
-            ModalidadesFederaisLei12711.Ac, RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null, "base legal", 2).Value!;
+            ModalidadesFederaisLei12711.Ac, RegraRemanejamentoModalidade.Nenhuma, null, null, null, regraDaAcaoAfirmativa, null, "base legal", 2).Value!;
         ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 40, pr: 0.5m, RegraLei12711(), RegraAjusteArt11(), Demografica(),
-            [.. AsOitoFederaisMaisAc(), acPcd], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+            [
+                .. OrigensFederais.Select(codigo =>
+                    Modalidade(codigo, NaturezaLegalModalidade.CotaReservada, RegraRemanejamentoModalidade.SegueCascata, quantidadeDeclarada: null, regra: regraDasCotas)),
+                Modalidade(ModalidadesFederaisLei12711.Ac, NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.Nenhuma, quantidadeDeclarada: null),
+                acPcd,
+            ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
 
         ProcessoSeletivo processo = ProcessoConforme([oferta]);
         processo.DefinirCascataRemanejamento(CascataCompleta(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -825,39 +852,33 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         return processo;
     }
 
-    [Fact(DisplayName = "Pré-canonicalização: regras que derivam cota e ação afirmativa para o mesmo candidato — item vermelho e Publicar recusa nomeando o par")]
+    /// <summary>
+    /// A regra copiada sem a opção pelas cotas — a linha anterior à cópia da regra — dá cota e ação
+    /// afirmativa a todo candidato: os dois itens acendem, e a publicação recusa pela forma da regra,
+    /// que é o que pede gravar a distribuição de novo.
+    /// </summary>
+    [Fact(DisplayName = "Pré-canonicalização: regras que dão cota e ação afirmativa ao mesmo candidato — item vermelho e Publicar recusa")]
     public void PreCanon_CotaEAcaoAfirmativaDerivaveisJuntas()
     {
-        ProcessoSeletivo processo = ProcessoComCotaEAcaoAfirmativa();
-        ConfiguracaoDerivacaoFato configuracao = ConfiguracaoDerivacaoFato.Criar("MODALIDADE",
-        [
-            RegraDerivacaoConfigurada.Criar(0, "AC", condicoes: null).Value!,
-            RegraDerivacaoConfigurada.Criar(1, "AC_PCD", condicoes: null).Value!,
-            RegraDerivacaoConfigurada.Criar(2, "LI_PCD", condicoes: null).Value!,
-        ]).Value!;
-        processo.DefinirRegrasDerivacao([configuracao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ProcessoSeletivo processo = ProcessoComCotaEAcaoAfirmativa(PredicadoDnf.SemClausula, PredicadoDnf.SemClausula);
 
-        SoEstesItensVermelhos(processo, "derivacao_cota_e_acao_afirmativa_juntas");
+        SoEstesItensVermelhos(processo, "modalidade_regra_incoerente_com_a_natureza", "derivacao_cota_e_acao_afirmativa_juntas");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.CotaEAcaoAfirmativaDerivaveisJuntas");
-        resultado.Error.Message.Should().Contain("\"LI_PCD\"").And.Contain("\"AC_PCD\"");
+        resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.RegraIncoerenteComANatureza);
     }
 
     private static bool ItemDaExclusividadeOk(ProcessoSeletivo processo) =>
         processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo)
             .Single(i => i.Codigo == "derivacao_cota_e_acao_afirmativa_juntas").Ok;
 
-    private static ConfiguracaoDerivacaoFato CotaEAcaoAfirmativaPor(string fato, object valorDaCota, object valorDaAcaoAfirmativa) =>
-        ConfiguracaoDerivacaoFato.Criar("MODALIDADE",
-        [
-            RegraDerivacaoConfigurada.Criar(0, "AC", condicoes: null).Value!,
-            RegraDerivacaoConfigurada.Criar(1, "LI_PCD",
-                [CondicaoRegraDerivacao.Criar(1, fato, Operador.Igual, JsonSerializer.SerializeToElement(valorDaCota)).Value!]).Value!,
-            RegraDerivacaoConfigurada.Criar(2, "AC_PCD",
-                [CondicaoRegraDerivacao.Criar(1, fato, Operador.Igual, JsonSerializer.SerializeToElement(valorDaAcaoAfirmativa)).Value!]).Value!,
-        ]).Value!;
+    private static ProcessoSeletivo CotaEAcaoAfirmativaPor(string fato, object valorDaCota, object valorDaAcaoAfirmativa) =>
+        ProcessoComCotaEAcaoAfirmativa(Exige((fato, valorDaCota)), Exige((fato, valorDaAcaoAfirmativa)));
+
+    private static PredicadoDnf Exige(params (string Fato, object Valor)[] atomos) =>
+        PredicadoDnf.CriarDeCondicoesAgrupadas([.. atomos.Select(static a => (0, CondicaoDnf.Criar(
+            a.Fato, Operador.Igual, JsonSerializer.SerializeToElement(a.Valor)).Value!))]).Value!;
 
     /// <summary>
     /// Sobre fato de seleção múltipla, <c>IGUAL</c> é pertinência: o candidato que marca os dois
@@ -866,13 +887,11 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     [Fact(DisplayName = "Pré-canonicalização: IGUAL a valores diferentes em fato de seleção múltipla não separa cota de ação afirmativa")]
     public void PreCanon_FatoMultivalorado_NaoProvaExclusao()
     {
-        ProcessoSeletivo processo = ProcessoComCotaEAcaoAfirmativa();
+        ProcessoSeletivo processo = CotaEAcaoAfirmativaPor("CONDICAO_ATENDIMENTO", "A", "B");
         FatoColetado condicao = FatoColetado.Criar(
             "CONDICAO_ATENDIMENTO", 0, "Você se enquadra em alguma condição de atendimento?",
             TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, precondicoes: null, classificacaoProtecao: "PESSOAL").Value!;
         processo.DefinirItensComFaseDeInscricao([condicao]).IsSuccess.Should().BeTrue();
-        processo.DefinirRegrasDerivacao(
-            [CotaEAcaoAfirmativaPor("CONDICAO_ATENDIMENTO", "A", "B")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ItemDaExclusividadeOk(processo).Should().BeFalse();
     }
@@ -880,49 +899,27 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     [Fact(DisplayName = "Pré-canonicalização: o derivado booleano é escalar, e IGUAL a verdadeiro e a falso separa cota de ação afirmativa")]
     public void PreCanon_DerivadoBooleano_ProvaExclusao()
     {
-        ProcessoSeletivo processo = ProcessoComCotaEAcaoAfirmativa();
+        ProcessoSeletivo processo = CotaEAcaoAfirmativaPor("EGRESSO_ESCOLA_PUBLICA", true, false);
         ConfiguracaoDerivacaoFato egresso = ConfiguracaoDerivacaoFato.Criar(
             "EGRESSO_ESCOLA_PUBLICA", [RegraDerivacaoConfigurada.Criar(0, contribui: null, condicoes: null).Value!]).Value!;
-        processo.DefinirRegrasDerivacao(
-            [egresso, CotaEAcaoAfirmativaPor("EGRESSO_ESCOLA_PUBLICA", true, false)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([egresso], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ItemDaExclusividadeOk(processo).Should().BeTrue();
     }
 
     [Fact(DisplayName = "Pré-canonicalização: 1 e 1.0 são o mesmo número e não separam cota de ação afirmativa")]
-    public void PreCanon_NumeroEquivalente_NaoProvaExclusao()
-    {
-        ProcessoSeletivo processo = ProcessoComCotaEAcaoAfirmativa();
-        processo.DefinirRegrasDerivacao(
-            [CotaEAcaoAfirmativaPor("NOTA", 1, 1.0m)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        ItemDaExclusividadeOk(processo).Should().BeFalse();
-    }
+    public void PreCanon_NumeroEquivalente_NaoProvaExclusao() =>
+        ItemDaExclusividadeOk(CotaEAcaoAfirmativaPor("NOTA", 1, 1.0m)).Should().BeFalse();
 
     /// <summary>
-    /// A matriz normativa passa pela recusa: cada cláusula de <c>AC_PCD</c> contradiz, num fato,
-    /// a opção pelas cotas que toda cota exige.
+    /// As regras semeadas passam pela recusa: cada cláusula de <c>AC_PCD</c> recusa a opção pelas
+    /// cotas que toda cota exige.
     /// </summary>
-    [Fact(DisplayName = "Pré-canonicalização: a matriz normativa, com cota e AC_PCD, não acende o item")]
-    public void PreCanon_MatrizNormativa_ItemOk()
-    {
-        ProcessoSeletivo processo = ProcessoComCotaEAcaoAfirmativa();
-        List<RegraDerivacaoConfigurada> regras =
-        [
-            .. RegrasDerivacaoModalidadeLei12711.Construir().Regras.Select((regra, ordem) =>
-                RegraDerivacaoConfigurada.Criar(
-                    ordem,
-                    regra.Contribui!,
-                    regra.EhAncora
-                        ? null
-                        : [.. regra.Quando.Clausulas.SelectMany((clausula, indice) => clausula.Condicoes.Select(c =>
-                            CondicaoRegraDerivacao.Criar(indice + 1, c.Fato, c.Operador, c.Valor).Value!))]).Value!),
-        ];
-        ConfiguracaoDerivacaoFato configuracao = ConfiguracaoDerivacaoFato.Criar("MODALIDADE", regras).Value!;
-        processo.DefinirRegrasDerivacao([configuracao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        ItemDaExclusividadeOk(processo).Should().BeTrue();
-    }
+    [Fact(DisplayName = "Pré-canonicalização: cotas que exigem a opção e AC_PCD que a recusa não acendem o item")]
+    public void PreCanon_OpcaoPelasCotasSeparaCotaDeAcaoAfirmativa_ItemOk() =>
+        ItemDaExclusividadeOk(ProcessoComCotaEAcaoAfirmativa(
+                Exige((OpcaoPelasCotasDaLei.Fato, true)), Exige((OpcaoPelasCotasDaLei.Fato, false), ("PCD", true))))
+            .Should().BeTrue();
 
     [Fact(DisplayName = "Pré-canonicalização: ciclo entre duas configurações de derivação — item vermelho e Publicar recusa com GrafoDependenciaConjuntaErrorCodes.GrafoConjuntoComCiclo")]
     public void PreCanon_GrafoConjuntoComCiclo()

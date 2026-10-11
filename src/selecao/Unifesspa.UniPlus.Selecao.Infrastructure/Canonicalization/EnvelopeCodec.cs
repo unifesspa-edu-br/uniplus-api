@@ -79,7 +79,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
 
     private readonly SnapshotPublicacaoCanonicalizer _encoder = new();
 
-    public string SchemaVersion => "0.0.27";
+    public string SchemaVersion => "0.0.28";
 
     public IPerfilCanonico Perfil => PerfilCanonicoV1.Instancia;
 
@@ -246,7 +246,6 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
             : LerGruposColetados(leitor, payload, fatosColetadosLidos.ValoresSelecionaveis, agregadosDosGrupos);
         IReadOnlyList<ConfiguracaoDerivacaoFato> regrasDerivacao = LerRegrasDerivacao(leitor, payload);
         string versaoInterpretador = leitor.TextoNaoVazio(payload, "versaoInterpretador", "$");
-        IReadOnlyList<string> modalidadesOfertadas = leitor.Textos(payload, "modalidadesOfertadas", "$");
         Dictionary<string, ApresentacaoDoFato> apresentacaoDosPressupostos = LerApresentacaoDosPressupostos(leitor, payload);
         if (leitor.Falhou)
         {
@@ -288,7 +287,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
         // divirjam do recomputado, é recusado como malformado — nunca reidratado como se fosse íntegro.
         if (ValidarBlocoDeFatosEDerivacao(
             fatosColetados, gruposColetados, regrasDerivacao, documentosExigidos, formularios, termosExigidos,
-            versaoInterpretador, modalidadesOfertadas, distribuicao, payload) is { } malformado)
+            versaoInterpretador, distribuicao, payload) is { } malformado)
         {
             return Result<EnvelopeReidratado>.Failure(malformado);
         }
