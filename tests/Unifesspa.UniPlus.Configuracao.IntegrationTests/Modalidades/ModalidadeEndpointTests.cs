@@ -137,6 +137,28 @@ public sealed class ModalidadeEndpointTests
         root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
     }
 
+    [Fact(DisplayName = "GET informa se a modalidade é do catálogo legal fixo")]
+    public async Task Obter_InformaSeELegalFixa()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage criar = await EnviarPostAdmin(
+            client, new { codigo = CodigoUnico(), naturezaLegal = "AMPLA", regraDeAplicabilidade = Incondicional });
+        criar.StatusCode.Should().Be(HttpStatusCode.Created);
+        Guid institucional = await criar.Content.ReadFromJsonAsync<Guid>();
+
+        (await LerLegalFixa(client, IdSemeado("AC"))).Should().BeTrue();
+        (await LerLegalFixa(client, institucional)).Should().BeFalse();
+    }
+
+    private static async Task<bool> LerLegalFixa(HttpClient client, Guid id)
+    {
+        HttpResponseMessage obter = await client.GetAsync(
+            new Uri($"/api/configuracao/modalidades/{id}", UriKind.Relative));
+        obter.StatusCode.Should().Be(HttpStatusCode.OK);
+        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
+        return doc.RootElement.GetProperty("legalFixa").GetBoolean();
+    }
+
     [Fact(DisplayName = "POST com natureza fora do domínio fechado retorna 422")]
     public async Task Criar_NaturezaInvalida_Retorna422()
     {

@@ -7,10 +7,13 @@ using System.Text.Json.Serialization;
 /// Level 1 via <c>_links</c> (ADR-0029). Os enums são expostos como tokens
 /// canônicos UPPER_SNAKE; os argumentos de remanejamento como campos planos. A regra de
 /// aplicabilidade sai como OU de cláusulas, cada uma o E de condições; vazia na incondicional.
+/// <c>LegalFixa</c> diz se a modalidade é do catálogo legal fixo, cuja estrutura e regra vêm da
+/// norma e só aceitam editar a descrição e a base legal.
 /// </summary>
 public sealed record ModalidadeDto(
     Guid Id,
     string Codigo,
+    bool LegalFixa,
     string? Descricao,
     string NaturezaLegal,
     string ComposicaoVagas,
