@@ -12,7 +12,6 @@ public static class ModeloFormularioMapping
     public static ModeloFormularioView ToView(this ModeloFormulario modelo)
     {
         ArgumentNullException.ThrowIfNull(modelo);
-        ConteudoDoModelo conteudo = modelo.Conteudo;
         return new ModeloFormularioView(
             modelo.Id,
             modelo.Codigo,
@@ -21,20 +20,27 @@ public static class ModeloFormularioMapping
             EstruturaFormulario.ParaToken(modelo.Finalidade),
             modelo.TipoProcessoCodigo,
             modelo.Ativo,
-            new ConteudoDoModeloInput(
-                conteudo.Titulo,
-                [.. conteudo.Etapas.Select(static e => new EtapaFormularioInput(
-                    e.Codigo, e.Ordem, EstruturaFormulario.ParaToken(e.Tipo), EstruturaFormulario.ParaToken(e.Bloco),
-                    e.Titulo, e.Descricao, e.Aviso, EntradaDeRegras.ParaEntrada(e.Exibicao)))],
-                [.. conteudo.Itens.Select(ParaEntrada)],
-                [.. conteudo.Termos.Select(static t => new TermoExigidoInput(
-                    t.Codigo, t.Ordem, t.TermoId, t.VersaoId, EntradaDeRegras.ParaEntrada(t.Exibicao),
-                    EntradaDeRegras.ParaEntrada(t.Obrigatoriedade), EntradaDeRegras.ParaEntrada(t.Obrigatoriedade.Predicado)))],
-                conteudo.Pressupostos,
-                [.. conteudo.Grupos.Select(static g => new GrupoColetadoInput(
-                    g.Codigo, g.Ordem, g.Rotulo, g.EtapaCodigo, g.Minimo, g.Maximo, EntradaDeRegras.ParaEntrada(g.Exibicao),
-                    EntradaDeRegras.ParaEntrada(g.Obrigatoriedade), EntradaDeRegras.ParaEntrada(g.Obrigatoriedade.Predicado),
-                    [.. g.Subitens.Select(ParaEntrada)], g.IncluiCandidato))]));
+            modelo.Conteudo.ParaEntrada());
+    }
+
+    /// <summary>O conteúdo do modelo na forma de entrada da escrita.</summary>
+    public static ConteudoDoModeloInput ParaEntrada(this ConteudoDoModelo conteudo)
+    {
+        ArgumentNullException.ThrowIfNull(conteudo);
+        return new ConteudoDoModeloInput(
+            conteudo.Titulo,
+            [.. conteudo.Etapas.Select(static e => new EtapaFormularioInput(
+                e.Codigo, e.Ordem, EstruturaFormulario.ParaToken(e.Tipo), EstruturaFormulario.ParaToken(e.Bloco),
+                e.Titulo, e.Descricao, e.Aviso, EntradaDeRegras.ParaEntrada(e.Exibicao)))],
+            [.. conteudo.Itens.Select(ParaEntrada)],
+            [.. conteudo.Termos.Select(static t => new TermoExigidoInput(
+                t.Codigo, t.Ordem, t.TermoId, t.VersaoId, EntradaDeRegras.ParaEntrada(t.Exibicao),
+                EntradaDeRegras.ParaEntrada(t.Obrigatoriedade), EntradaDeRegras.ParaEntrada(t.Obrigatoriedade.Predicado)))],
+            conteudo.Pressupostos,
+            [.. conteudo.Grupos.Select(static g => new GrupoColetadoInput(
+                g.Codigo, g.Ordem, g.Rotulo, g.EtapaCodigo, g.Minimo, g.Maximo, EntradaDeRegras.ParaEntrada(g.Exibicao),
+                EntradaDeRegras.ParaEntrada(g.Obrigatoriedade), EntradaDeRegras.ParaEntrada(g.Obrigatoriedade.Predicado),
+                [.. g.Subitens.Select(ParaEntrada)], g.IncluiCandidato))]);
     }
 
     private static FatoColetadoInput ParaEntrada(ItemDoModelo campo) => new(
