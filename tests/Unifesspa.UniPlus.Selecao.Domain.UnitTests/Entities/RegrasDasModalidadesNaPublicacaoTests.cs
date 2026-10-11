@@ -23,6 +23,7 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
 {
     private const string ItemFatoNaoColetado = "modalidade_regra_cita_fato_nao_coletado";
     private const string ItemNatureza = "modalidade_regra_incoerente_com_a_natureza";
+    private const string ItemRemanejamento = "modalidade_remanejamento_incoerente_com_a_natureza";
 
     [Fact(DisplayName = "Sem cota da lei ofertada, a reserva PcD que recusa a opção pelas cotas publica com as perguntas de PcD na inscrição")]
     public void SemCota_ReservaPcd_Publica()
@@ -95,6 +96,36 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
         Item(processo, ItemNatureza).Ok.Should().Be(esperadoOk);
     }
 
+    [Theory(DisplayName = "O remanejamento copiado é o que a natureza pede: a ampla não remaneja, e a ação afirmativa remaneja para um destino ou para o par")]
+    [InlineData(NaturezaLegalModalidade.AcaoAfirmativa, RegraRemanejamentoModalidade.DestinoUnico, true)]
+    [InlineData(NaturezaLegalModalidade.AcaoAfirmativa, RegraRemanejamentoModalidade.Nenhuma, false)]
+    [InlineData(NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.DestinoUnico, false)]
+    public void Remanejamento_DecidePelaNatureza(NaturezaLegalModalidade natureza, RegraRemanejamentoModalidade remanejamento, bool esperadoOk)
+    {
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
+        ModalidadeSelecionada copia = ModalidadeSelecionada.Criar(
+            Guid.CreateVersion7(), "X", null, natureza, ComposicaoVagasModalidade.SuplementarAoTotal, null, remanejamento,
+            remanejamento == RegraRemanejamentoModalidade.DestinoUnico ? "AC" : null, null, null,
+            RegrasDeAplicabilidadeDeTeste.DaNatureza(natureza), null, "base legal", quantidadeDeclarada: 10).Value!;
+        Ofertar(processo, Modalidade("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula), copia);
+
+        Item(processo, ItemRemanejamento).Ok.Should().Be(esperadoOk);
+    }
+
+    [Fact(DisplayName = "A ação afirmativa copiada sem remanejamento recusa a publicação com erro nomeado")]
+    public void AcaoAfirmativaSemRemanejamento_RecusaAPublicacao()
+    {
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
+        ModalidadeSelecionada semRemanejamento = ModalidadeSelecionada.Criar(
+            Guid.CreateVersion7(), ModalidadesFederaisLei12711.AcPcd, null, NaturezaLegalModalidade.AcaoAfirmativa,
+            ComposicaoVagasModalidade.SuplementarAoTotal, null, RegraRemanejamentoModalidade.Nenhuma, null, null, null,
+            RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), null, "base legal", quantidadeDeclarada: 10).Value!;
+        Ofertar(processo, Modalidade("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula), semRemanejamento);
+
+        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code
+            .Should().Be(ProcessoSeletivoErrorCodes.RemanejamentoIncoerenteComANatureza);
+    }
+
     /// <summary>A ampla e a reserva PcD de ampla concorrência, sem cota da lei, no processo conforme com inscrição própria.</summary>
     private static ProcessoSeletivo ProcessoComAmplaEReservaPcd()
     {
@@ -122,8 +153,13 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
         ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), codigo, null, natureza,
             natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.ResidualDoVo : ComposicaoVagasModalidade.SuplementarAoTotal, null,
-            natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueCascata : RegraRemanejamentoModalidade.Nenhuma,
-            null, null, null, regra, null, "base legal", quantidadeDeclarada: 10).Value!;
+            natureza switch
+            {
+                NaturezaLegalModalidade.CotaReservada => RegraRemanejamentoModalidade.SegueCascata,
+                NaturezaLegalModalidade.AcaoAfirmativa => RegraRemanejamentoModalidade.DestinoUnico,
+                _ => RegraRemanejamentoModalidade.Nenhuma,
+            },
+            natureza == NaturezaLegalModalidade.AcaoAfirmativa ? "AC" : null, null, null, regra, null, "base legal", quantidadeDeclarada: 10).Value!;
 
     private static FatoColetado Booleano(string fato, int ordem) =>
         FatoColetado.Criar(fato, ordem, fato, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "SENSIVEL").Value!;

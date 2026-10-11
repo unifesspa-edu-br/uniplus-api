@@ -418,11 +418,6 @@ public sealed partial class EnvelopeCodec
             return leitor.Propagar<ModalidadeSelecionada>(vocabulario);
         }
 
-        if (CoerenciaNaturezaRemanejamento(codigo, natureza, remanejamento) is { } incoerencia)
-        {
-            return leitor.Propagar<ModalidadeSelecionada>(incoerencia);
-        }
-
         Result<PredicadoDnf?> regraLida = PredicadoOpcional(regra);
         if (regraLida.IsFailure)
         {
@@ -445,7 +440,23 @@ public sealed partial class EnvelopeCodec
             baseLegal,
             quantidadeDeclarada);
 
-        return modalidade.IsFailure ? leitor.Propagar<ModalidadeSelecionada>(modalidade.Error!) : modalidade.Value;
+        if (modalidade.IsFailure)
+        {
+            return leitor.Propagar<ModalidadeSelecionada>(modalidade.Error!);
+        }
+
+        // A coerência entre natureza e remanejamento é do cadastro, e a cópia congelada não passa
+        // por ele: um envelope adulterado restauraria, por exemplo, uma ampla concorrência que
+        // remaneja as próprias vagas ociosas, entrada do motor de vagas do certame. A regra é a
+        // mesma que a publicação aplica.
+        if (!modalidade.Value!.RemanejamentoCoerenteComANatureza())
+        {
+            return leitor.Propagar<ModalidadeSelecionada>(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado,
+                $"Envelope malformado em 'modalidades': a regra de remanejamento de {codigo} não é a que a natureza dela pede."));
+        }
+
+        return modalidade.Value;
     }
 
     /// <summary>
@@ -490,60 +501,6 @@ public sealed partial class EnvelopeCodec
 
         return null;
     }
-
-    /// <summary>
-    /// A coerência entre a <b>natureza legal</b> e a <b>regra de remanejamento</b>, congelada
-    /// nesta forma do envelope.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// A regra é do <b>cadastro</b> de modalidades
-    /// (<c>Modalidade.ValidarCoerenciaNaturezaRemanejamento</c>, módulo Configuração), e é
-    /// por isso que o caminho de comando <b>nunca</b> a viola: o handler não lê estes campos
-    /// do payload — <b>copia-os da view do cadastro</b>. Mas o snapshot-copy (ADR-0061)
-    /// congela os três <b>por valor</b>, e quem reconstrói a modalidade a partir dos bytes
-    /// não passa pelo cadastro. <c>ModalidadeSelecionada.Criar</c> só replica <b>uma</b> das
-    /// três (a INV-12).
-    /// </para>
-    /// <para>
-    /// Sem as outras duas, um envelope adulterado com
-    /// <c>{naturezaLegal: "Ampla", regraRemanejamento: "DestinoUnico"}</c> restaura uma
-    /// <b>ampla concorrência que remaneja as próprias vagas ociosas</b> — configuração que o
-    /// caminho de escrita jamais produz, que faz round-trip <b>perfeito</b> (o encoder
-    /// reemite os enums verbatim) e que é <b>input do motor de vagas</b> do certame.
-    /// </para>
-    /// <para>
-    /// <b>Por que aqui, e não em <c>ModalidadeSelecionada.Criar</c>.</b> A entidade é a cópia
-    /// congelada de uma modalidade — não a modalidade viva. Se o cadastro mudar a tabela de
-    /// coerência amanhã, um snapshot <b>legítimo</b> de hoje passaria a ser irreidratável, e
-    /// o certame publicado ficaria sem descarte: exatamente o que o congelamento existe para
-    /// impedir. Aqui, a tabela é a que esta forma do envelope congelou — uma regra nova é
-    /// mudança de forma, que reescreve a fixture enquanto não há certame publicado a
-    /// preservar (ver <see cref="EnvelopeCodec"/>).
-    /// </para>
-    /// </remarks>
-    private static DomainError? CoerenciaNaturezaRemanejamento(
-        string codigo,
-        NaturezaLegalModalidade natureza,
-        RegraRemanejamentoModalidade remanejamento) => natureza switch
-        {
-            // A INV-12 já é da entidade; repeti-la aqui seria redundância — ela cai na
-            // factory logo abaixo. As duas que faltam:
-            NaturezaLegalModalidade.Ampla when remanejamento != RegraRemanejamentoModalidade.Nenhuma =>
-                new DomainError(
-                    ErrosCodecEnvelope.EnvelopeMalformado,
-                    $"Envelope malformado em 'modalidades': {codigo} é de ampla concorrência e não admite regra de " +
-                    "remanejamento — as vagas ociosas dela não vão para lugar nenhum."),
-
-            NaturezaLegalModalidade.AcaoAfirmativa
-                when remanejamento is not (RegraRemanejamentoModalidade.DestinoUnico or RegraRemanejamentoModalidade.Cruzado) =>
-                new DomainError(
-                    ErrosCodecEnvelope.EnvelopeMalformado,
-                    $"Envelope malformado em 'modalidades': {codigo} é ação afirmativa e exige " +
-                    "regra de remanejamento DESTINO_UNICO ou CRUZADO."),
-
-            _ => null,
-        };
 
     private static OfertaAtendimentoEspecializado? LerAtendimento(LeitorEnvelope leitor, JsonObject payload)
     {

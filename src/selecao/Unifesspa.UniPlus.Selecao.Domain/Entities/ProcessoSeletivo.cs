@@ -3611,6 +3611,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("formulario_item_fora_de_secao", DimensaoConformidade.ColetaDeFatos, "Formulários: todo item numa seção, na ordem das seções", PendenciaDosItensForaDeSecao() is null),
         new ItemConformidade("formulario_itens_em_excesso", DimensaoConformidade.ColetaDeFatos, $"Formulários: no máximo {FormaDoItem.MaximoDeItens} itens cada", PendenciaDosItensEmExcesso() is null),
         new ItemConformidade("modalidade_regra_incoerente_com_a_natureza", DimensaoConformidade.DistribuicaoVagas, "Modalidades: a regra de cada cota da lei exige a opção pelas cotas, e a de cada ação afirmativa a recusa", RegraIncoerenteComANatureza(_distribuicaoVagas) is null),
+        new ItemConformidade("modalidade_remanejamento_incoerente_com_a_natureza", DimensaoConformidade.DistribuicaoVagas, "Modalidades: a ampla concorrência não remaneja as vagas ociosas, e cada ação afirmativa as remaneja para um destino único ou para o par", RemanejamentoIncoerenteComANatureza(_distribuicaoVagas) is null),
         new ItemConformidade("modalidade_cotas_da_lei_diferentes_entre_ofertas", DimensaoConformidade.DistribuicaoVagas, "Modalidades: todos os cursos ofertam as mesmas cotas da lei", PendenciaDasCotasDaLeiEntreOfertas() is null),
         new ItemConformidade("modalidade_reserva_pcd_sem_cota_pcd_da_lei", DimensaoConformidade.DistribuicaoVagas, "Modalidades: com cota da lei, a reserva de pessoa com deficiência de ampla concorrência vem com a cota da lei para ela", PendenciaDaReservaPcdSemCotaPcdDaLei() is null),
         new ItemConformidade("derivacao_cota_e_acao_afirmativa_juntas", DimensaoConformidade.ColetaDeFatos, "Modalidades: cota da lei e ação afirmativa não se aplicam ao mesmo candidato", PendenciaDaExclusividadeEntreCotaEAcaoAfirmativa() is null),
@@ -4528,6 +4529,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return regraIncoerente;
         }
 
+        if (RemanejamentoIncoerenteComANatureza(_distribuicaoVagas) is { } remanejamentoIncoerente)
+        {
+            return remanejamentoIncoerente;
+        }
+
         if (PendenciaDasCotasDaLeiEntreOfertas() is { } cotasDiferentes)
         {
             return cotasDiferentes;
@@ -4702,6 +4708,19 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             ? new DomainError(
                 ProcessoSeletivoErrorCodes.RegraIncoerenteComANatureza,
                 $"A regra de aplicabilidade da modalidade {incoerente.Codigo} não tem a forma que a natureza dela pede; grave a distribuição de vagas de novo para copiar a regra do cadastro.")
+            : null;
+
+    /// <summary>
+    /// A cópia cujo remanejamento não é o que a natureza pede não veio do cadastro como ele é hoje:
+    /// a distribuição de vagas tem de ser gravada de novo.
+    /// </summary>
+    private static DomainError? RemanejamentoIncoerenteComANatureza(IEnumerable<ConfiguracaoDistribuicaoVagas> distribuicaoVagas) =>
+        distribuicaoVagas
+            .SelectMany(static d => d.Modalidades)
+            .FirstOrDefault(static m => !m.RemanejamentoCoerenteComANatureza()) is { } incoerente
+            ? new DomainError(
+                ProcessoSeletivoErrorCodes.RemanejamentoIncoerenteComANatureza,
+                $"A regra de remanejamento da modalidade {incoerente.Codigo} não é a que a natureza dela pede; grave a distribuição de vagas de novo para copiar o remanejamento do cadastro.")
             : null;
 
     /// <summary>As modalidades ofertadas, uma por código, na ordem do código.</summary>
@@ -6543,6 +6562,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         if (RegraIncoerenteComANatureza(grafo.DistribuicaoVagas) is { } regraIncoerente)
         {
             return regraIncoerente;
+        }
+
+        if (RemanejamentoIncoerenteComANatureza(grafo.DistribuicaoVagas) is { } remanejamentoIncoerente)
+        {
+            return remanejamentoIncoerente;
         }
 
         // O mesmo teto da gravação: sem o espelho, a restauração aplicaria uma lista que o PUT
