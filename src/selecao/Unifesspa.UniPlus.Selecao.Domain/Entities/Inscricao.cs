@@ -306,8 +306,8 @@ public sealed class Inscricao : EntityBase
         }
 
         OfertaCursoId = ofertaCursoId;
-        Respostas = MesclarPreservandoAusentes(Respostas, respostas);
-        Grupos = SemValoresNulos(grupos);
+        Respostas = NaFormaCanonica(MesclarPreservandoAusentes(Respostas, respostas), admitidas.Definicoes);
+        Grupos = NaFormaCanonicaNosGrupos(SemValoresNulos(grupos), admitidas.Definicoes);
         Aceites = aceites;
         DefinicoesDasRespostas = admitidas.Definicoes;
         Revisao++;
@@ -377,10 +377,10 @@ public sealed class Inscricao : EntityBase
 
         OfertaCursoId = ofertaCursoId;
         Derivados = MesclarPreservandoAusentes(new Dictionary<string, JsonElement>(StringComparer.Ordinal), derivados);
-        Respostas = SoAsQueSeAplicam(MesclarPreservandoAusentes(Respostas, respostas), avaliacao.Fatos)
+        Respostas = SoAsQueSeAplicam(NaFormaCanonica(MesclarPreservandoAusentes(Respostas, respostas), admitidas.Definicoes), avaliacao.Fatos)
             .Where(r => !Derivados.ContainsKey(r.Key))
             .ToDictionary(static r => r.Key, static r => r.Value, StringComparer.Ordinal);
-        Grupos = GruposQueSeAplicam(SemValoresNulos(grupos), avaliacao.Grupos);
+        Grupos = GruposQueSeAplicam(NaFormaCanonicaNosGrupos(SemValoresNulos(grupos), admitidas.Definicoes), avaliacao.Grupos);
         Aceites = aceites;
         DefinicoesDasRespostas = admitidas.Definicoes.Concat(definicoesDosDerivados)
             .GroupBy(static f => f.Key, StringComparer.Ordinal)
@@ -424,6 +424,22 @@ public sealed class Inscricao : EntityBase
 
         return mesclado;
     }
+
+    /// <summary>Cada resposta como é gravada, na forma canônica do formato do campo (<see cref="DefinicaoDaResposta.NaFormaCanonica"/>).</summary>
+    private static Dictionary<string, JsonElement> NaFormaCanonica(
+        IReadOnlyDictionary<string, JsonElement> respostas, IReadOnlyDictionary<string, DefinicaoDaResposta> definicoes) =>
+        respostas.ToDictionary(
+            static r => r.Key,
+            r => definicoes.TryGetValue(r.Key, out DefinicaoDaResposta? definicao) ? definicao.NaFormaCanonica(r.Value) : r.Value,
+            StringComparer.Ordinal);
+
+    private static Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> NaFormaCanonicaNosGrupos(
+        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos, IReadOnlyDictionary<string, DefinicaoDaResposta> definicoes) =>
+        grupos.ToDictionary(
+            static g => g.Key,
+            g => (IReadOnlyList<OcorrenciaDeGrupoInscricao>)
+                [.. g.Value.Select(o => o with { Respostas = NaFormaCanonica(o.Respostas, definicoes) })],
+            StringComparer.Ordinal);
 
     /// <summary>As respostas cujo fato a avaliação não dá como não aplicável; a de fato que ela não conhece fica.</summary>
     private static Dictionary<string, JsonElement> SoAsQueSeAplicam(
