@@ -100,7 +100,7 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
 
         return Result<PreVisualizacaoDoProcessoDto>.Success(new PreVisualizacaoDoProcessoDto(
             Formularios(processo, avaliada.Value!.Formulario),
-            [.. avaliada.Value!.Documentos.Select(Documento)]));
+            [.. avaliada.Value!.Documentos.Itens.Select(Documento)]));
     }
 
     private static List<FormularioSimuladoDto> Formularios(ProcessoSeletivo processo, AvaliacaoFormulario avaliacao)
@@ -146,14 +146,20 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
         return new(
             documento.Id, documento.TipoDocumentoCodigo, documento.TipoDocumentoNome, documento.Obrigatorio,
             documento.ExigidoNaFaseId, documento.Finalidade is { } finalidade ? EstruturaFormulario.ParaToken(finalidade) : null,
-            documento.ExigidoNaEtapaId, Situacao(avaliado.Status), avaliado.OcorrenciaId,
-            [.. avaliado.Alternativas.Select(static a => new AlternativasSimuladasDto(a.GrupoId, a.Minimo))]);
+            documento.ExigidoNaEtapaId, Situacao(avaliado.Situacao), avaliado.OcorrenciaId,
+            [.. avaliado.Grupos
+                .Where(static g => g.Tipo == TipoNo.GrupoOu)
+                .Select(static g => new AlternativasSimuladasDto(g.GrupoId, g.Minimo!.Value))]);
     }
 
-    private static string Situacao(StatusResolucaoExigencia status) => status switch
+    /// <summary>
+    /// A situação no vocabulário da pré-visualização, que simula o perfil inteiro: ela diz só se o
+    /// documento é exigido, se não é, ou se o perfil simulado ainda não o decide.
+    /// </summary>
+    private static string Situacao(SituacaoDoDocumento situacao) => situacao switch
     {
-        StatusResolucaoExigencia.Pendente or StatusResolucaoExigencia.Satisfeita => "EXIGIDO",
-        StatusResolucaoExigencia.NaoAplicavel => "NAO_EXIGIDO",
+        SituacaoDoDocumento.Exigido => "EXIGIDO",
+        SituacaoDoDocumento.NaoExigido => "NAO_EXIGIDO",
         _ => "INDETERMINADO",
     };
 }

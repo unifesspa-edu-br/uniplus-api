@@ -77,16 +77,20 @@ public sealed class AvaliacaoDaInscricaoTests
     [Fact(DisplayName = "As dependências da avaliação são os campos que a matriz alcança, inclusive pela origem escolar")]
     public void Dependencias_SaoOsCamposQueAMatrizAlcanca()
     {
-        DependenciasDaAvaliacao dependencias = AvaliacaoDaInscricao.Dependencias(Configuracao(derivaModalidade: true).Definicao);
+        DependenciasDaAvaliacao dependencias = AvaliacaoDaInscricao.Dependencias(Configuracao(derivaModalidade: true));
 
         dependencias.Fatos.Should().BeEquivalentTo(Perguntas);
         dependencias.Grupos.Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Sem derivação da modalidade, a avaliação não depende de campo nenhum")]
-    public void SemDerivacao_SemDependencias() =>
-        AvaliacaoDaInscricao.Dependencias(Configuracao(derivaModalidade: false).Definicao)
-            .Should().Be(new DependenciasDaAvaliacao([], []));
+    public void SemDerivacao_SemDependencias()
+    {
+        DependenciasDaAvaliacao dependencias = AvaliacaoDaInscricao.Dependencias(Configuracao(derivaModalidade: false));
+
+        dependencias.Fatos.Should().BeEmpty();
+        dependencias.Grupos.Should().BeEmpty();
+    }
 
     [Fact(DisplayName = "A resposta que decide se um campo da matriz aparece também é dependência, e é ela que falta enquanto não se responde")]
     public void CampoDaMatrizCondicionado_ARespostaQueOExibeEDependencia()
@@ -95,7 +99,7 @@ public sealed class AvaliacaoDaInscricaoTests
         Dictionary<string, JsonElement> semBaixaRenda = Respostas(
             ondeCursou: OrigemEscolar.SomentePublica, pcd: false, ep: true, ppi: false, q: false, renda: true);
 
-        AvaliacaoDaInscricao.Dependencias(configuracao.Definicao).Fatos.Should().Contain(BaixaRenda);
+        AvaliacaoDaInscricao.Dependencias(configuracao).Fatos.Should().Contain(BaixaRenda);
         Avaliar(configuracao, semBaixaRenda).Modalidades.Pendencias.Select(static p => p.FatoCodigo)
             .Should().Equal([BaixaRenda], "o campo de renda ainda não aparece: falta a resposta que decide se ele aparece");
     }
@@ -165,7 +169,9 @@ public sealed class AvaliacaoDaInscricaoTests
             ArvoreExigenciasCongelada.DeGrafoReidratado([]),
             campos,
             [],
-            ofertadas);
+            ofertadas,
+            [],
+            []);
     }
 
     /// <summary>

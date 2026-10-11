@@ -47,17 +47,8 @@ public sealed record RecorteDaFinalidade(FormularioPortavel Regras, IReadOnlyLis
     private static RecorteDaFinalidade Recortar(
         DefinicaoFormulario definicao, DefinicaoEtapa[] etapas, DefinicaoTermo[] termos, IReadOnlyDictionary<string, IReadOnlySet<string>>? ofertas)
     {
-        HashSet<string> grupos = new(etapas.SelectMany(static e => e.Grupos).Select(static g => g.Codigo), StringComparer.Ordinal);
-        HashSet<string> produzidos = new(
-            etapas.SelectMany(static e => e.Itens.Select(static i => i.FatoCodigo)
-                .Concat(e.Grupos.SelectMany(static g => g.Subitens).Select(static s => s.FatoCodigo))),
-            StringComparer.Ordinal);
-
-        FechamentoDasDependencias fechamento = FechamentoDasDependencias.De(
-            CitadosPeloFormulario(etapas, termos),
-            produzidos,
-            definicao.Derivacoes.ToDictionary(static d => d.CodigoFato, StringComparer.Ordinal),
-            definicao.Agregados.Where(a => grupos.Contains(a.GrupoCodigo)).ToDictionary(static a => a.Codigo, StringComparer.Ordinal));
+        ProducaoDasEtapas producao = ProducaoDasEtapas.De(definicao, etapas);
+        FechamentoDasDependencias fechamento = producao.Fechamento(CitadosPeloFormulario(etapas, termos));
 
         DefinicaoFormulario recortada = new(
             etapas,
@@ -66,7 +57,7 @@ public sealed record RecorteDaFinalidade(FormularioPortavel Regras, IReadOnlyLis
             [.. definicao.Agregados.Where(a => fechamento.Agregados.Contains(a.Codigo))]);
 
         IReadOnlyDictionary<string, IReadOnlySet<string>>? ofertasDoRecorte = ofertas?
-            .Where(o => produzidos.Contains(o.Key))
+            .Where(o => producao.Produzidos.Contains(o.Key))
             .ToDictionary(static o => o.Key, static o => o.Value, StringComparer.Ordinal);
 
         return new(FormularioPortavel.De(recortada, ofertasDoRecorte), fechamento.Pressupostos);

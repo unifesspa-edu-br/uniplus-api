@@ -28,6 +28,7 @@ public static class ObterInscricaoQueryHandler
         IRegistroCodecsEnvelope registroCodecs,
         IResolvedorFusoInstitucional resolvedorFuso,
         IConferenciaEnderecoGeo conferenciaEnderecoGeo,
+        IEnderecoNoAcervoPublico enderecoNoAcervo,
         IUserContext userContext,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
@@ -64,12 +65,13 @@ public static class ObterInscricaoQueryHandler
             return Result<InscricaoDto>.Failure(erroDono);
         }
 
-        Result<ResultadoDaAvaliacaoDaInscricao> avaliacao = await Services.PreparacaoDaAvaliacaoDaInscricao
-            .AvaliarGravadaAsync(
-                inscricao, processoSeletivoRepository, registroCodecs, resolvedorFuso, conferenciaEnderecoGeo, timeProvider.GetUtcNow(), cancellationToken)
+        Result<AvaliacaoDaInscricaoDto> avaliacao = await Services.PreparacaoDaAvaliacaoDaInscricao
+            .ProjetarGravadaAsync(
+                inscricao, processoSeletivoRepository, registroCodecs, resolvedorFuso, conferenciaEnderecoGeo, enderecoNoAcervo,
+                timeProvider.GetUtcNow(), cancellationToken)
             .ConfigureAwait(false);
         return avaliacao.IsFailure
             ? Result<InscricaoDto>.Failure(avaliacao.Error!)
-            : Result<InscricaoDto>.Success(InscricaoDto.De(inscricao, AvaliacaoDaInscricaoDto.De(avaliacao.Value!)));
+            : Result<InscricaoDto>.Success(InscricaoDto.De(inscricao, avaliacao.Value!));
     }
 }

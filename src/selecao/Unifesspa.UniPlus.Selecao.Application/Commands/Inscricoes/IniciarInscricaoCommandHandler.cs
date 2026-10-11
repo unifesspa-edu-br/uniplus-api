@@ -41,6 +41,7 @@ public static class IniciarInscricaoCommandHandler
         IRegistroCodecsEnvelope registroCodecs,
         IResolvedorFusoInstitucional resolvedorFuso,
         IConferenciaEnderecoGeo conferenciaEnderecoGeo,
+        IEnderecoNoAcervoPublico enderecoNoAcervo,
         TimeProvider timeProvider,
         ISelecaoUnitOfWork unitOfWork,
         IUserContext userContext,
@@ -134,13 +135,14 @@ public static class IniciarInscricaoCommandHandler
 
         async Task<Result<InscricaoDto>> ComAvaliacaoAsync(Inscricao lida)
         {
-            Result<ResultadoDaAvaliacaoDaInscricao> avaliacao = await Services.PreparacaoDaAvaliacaoDaInscricao
-                .AvaliarGravadaAsync(
-                    lida, processoSeletivoRepository, registroCodecs, resolvedorFuso, conferenciaEnderecoGeo, timeProvider.GetUtcNow(), cancellationToken)
+            Result<AvaliacaoDaInscricaoDto> avaliacao = await Services.PreparacaoDaAvaliacaoDaInscricao
+                .ProjetarGravadaAsync(
+                    lida, processoSeletivoRepository, registroCodecs, resolvedorFuso, conferenciaEnderecoGeo, enderecoNoAcervo,
+                    timeProvider.GetUtcNow(), cancellationToken)
                 .ConfigureAwait(false);
             return avaliacao.IsFailure
                 ? Result<InscricaoDto>.Failure(avaliacao.Error!)
-                : Result<InscricaoDto>.Success(InscricaoDto.De(lida, AvaliacaoDaInscricaoDto.De(avaliacao.Value!)));
+                : Result<InscricaoDto>.Success(InscricaoDto.De(lida, avaliacao.Value!));
         }
     }
 }

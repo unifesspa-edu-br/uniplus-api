@@ -46,12 +46,20 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
         return acervo;
     }
 
-    private static (VersaoConfiguracao Versao, EnvelopeReidratado Envelope) MontarVersaoComFormularioDeInscricao()
+    /// <param name="faseDoBloco">A fase do formulário, que ganha o bloco de comprovação documental; sem ela, o formulário só tem a revisão.</param>
+    /// <param name="exigencias">As exigências congeladas, em JSON.</param>
+    private static (VersaoConfiguracao Versao, EnvelopeReidratado Envelope) MontarVersaoComFormularioDeInscricao(
+        Guid? faseDoBloco = null, string exigencias = "")
     {
         ProcessoSeletivo processoBase = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Formulário da inscrição");
         FormularioProcesso formulario = FormularioProcesso.Criar(
-            FinalidadeFormulario.Inscricao, null, null,
-            [EtapaFormulario.Criar("REVISAO", 0, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null).Value!]).Value!;
+            FinalidadeFormulario.Inscricao, faseDoBloco, null,
+            [
+                .. faseDoBloco is null
+                    ? Array.Empty<EtapaFormulario>()
+                    : [EtapaFormulario.Criar("DOCUMENTOS", 0, TipoEtapaFormulario.Bloco, BlocoSistema.ComprovacaoDocumental, "Documentos", null, null).Value!],
+                EtapaFormulario.Criar("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null).Value!,
+            ]).Value!;
 
         EnvelopeReidratado envelope = new(
             new GrafoConfiguracao(
@@ -63,7 +71,7 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
             new string('a', 64), "America/Belem", retificacao: null, conformidade: null);
 
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
-            ProcessoId, Encoding.UTF8.GetBytes("""{"documentosExigidos": {"dataReferenciaFatos": null}}"""), SchemaVersion, "canonical-json/sha256@v1",
+            ProcessoId, Encoding.UTF8.GetBytes($$$"""{"documentosExigidos": {"dataReferenciaFatos": null, "exigencias": [{{{exigencias}}}]}}"""), SchemaVersion, "canonical-json/sha256@v1",
             Guid.CreateVersion7(), new string('a', 64), "user-sub-1", new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero));
 
         return (versao, envelope);
@@ -128,5 +136,49 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Finalidade.Should().Be(EstruturaFormulario.ParaToken(FinalidadeFormulario.Inscricao));
+    }
+
+    [Fact(DisplayName = "O formulário da inscrição do candidato não traz a lista de comprovação: os documentos dele vêm da avaliação")]
+    public async Task Handle_FormularioComBlocoDeComprovacao_NaoTrazALista()
+    {
+        Cpf cpf = PersonasDeTeste.KevinCarvalho;
+        Guid fase = Guid.Parse("0199a000-0000-7000-8000-0000000000f1");
+        (VersaoConfiguracao versao, EnvelopeReidratado envelope) = MontarVersaoComFormularioDeInscricao(
+            fase,
+            $$"""
+            {"tipoDocumentoNome": "Comprovante de residência", "aplicabilidade": "Condicional", "obrigatorio": true, "exigidoNaFaseId": "{{fase}}",
+             "finalidade": "INSCRICAO", "formatosPermitidos": {"lista": null, "qualquer": true}, "modelo": null}
+            """);
+        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
+        inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>())
+            .Returns(Inscricao.Iniciar(ProcessoId, cpf, "sub-1", "https://issuer", versao.Id).Value!);
+        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
+
+        Result<FormularioRenderizavelDto> resultado = await ObterFormularioDaInscricaoQueryHandler.Handle(
+            new ObterFormularioDaInscricaoQuery(ProcessoId), inscricaoRepository, processoRepository,
+            RegistroReidratando(envelope), CriarAcervo(), UsuarioComCpf(cpf), CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.ComprovacaoDocumental.Should().BeNull("a lista do certame não diz o que se aplica ao candidato");
+    }
+
+    [Fact(DisplayName = "O formulário da inscrição diz a fase em que é respondido, que separa os documentos dela na avaliação")]
+    public async Task Handle_FormularioComFase_PublicaAFase()
+    {
+        Cpf cpf = PersonasDeTeste.KevinCarvalho;
+        Guid fase = Guid.Parse("0199a000-0000-7000-8000-0000000000f1");
+        (VersaoConfiguracao versao, EnvelopeReidratado envelope) = MontarVersaoComFormularioDeInscricao(fase);
+        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
+        inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>())
+            .Returns(Inscricao.Iniciar(ProcessoId, cpf, "sub-1", "https://issuer", versao.Id).Value!);
+        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
+
+        Result<FormularioRenderizavelDto> resultado = await ObterFormularioDaInscricaoQueryHandler.Handle(
+            new ObterFormularioDaInscricaoQuery(ProcessoId), inscricaoRepository, processoRepository,
+            RegistroReidratando(envelope), CriarAcervo(), UsuarioComCpf(cpf), CancellationToken.None);
+
+        resultado.Value!.FaseId.Should().Be(fase);
     }
 }

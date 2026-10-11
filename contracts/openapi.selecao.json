@@ -2111,6 +2111,14 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "faseId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "requestBody": {
@@ -9820,12 +9828,16 @@
       },
       "AvaliacaoDaInscricaoDto": {
         "required": [
-          "modalidades"
+          "modalidades",
+          "documentos"
         ],
         "type": "object",
         "properties": {
           "modalidades": {
             "$ref": "#/components/schemas/ModalidadesDaInscricaoDto"
+          },
+          "documentos": {
+            "$ref": "#/components/schemas/DocumentosDaInscricaoDto"
           }
         }
       },
@@ -11965,6 +11977,92 @@
           }
         }
       },
+      "DocumentoDaInscricaoDto": {
+        "required": [
+          "exigenciaId",
+          "tipoDocumentoCodigo",
+          "nome",
+          "obrigatorio",
+          "finalidade",
+          "etapaId",
+          "formatos",
+          "modelo",
+          "situacao",
+          "grupoCodigo",
+          "ocorrenciaId",
+          "grupos",
+          "repetePorEntidade"
+        ],
+        "type": "object",
+        "properties": {
+          "exigenciaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipoDocumentoCodigo": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "obrigatorio": {
+            "type": "boolean"
+          },
+          "finalidade": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "etapaId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "formatos": {
+            "$ref": "#/components/schemas/FormatosAceitosCertameDto"
+          },
+          "modelo": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ModeloDocumentalCertameDto"
+              }
+            ]
+          },
+          "situacao": {
+            "type": "string"
+          },
+          "grupoCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ocorrenciaId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "grupos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GrupoDaArvoreDto"
+            }
+          },
+          "repetePorEntidade": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "DocumentoEditalCertameDto": {
         "required": [
           "documentoEditalId",
@@ -12148,6 +12246,20 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "DocumentosDaInscricaoDto": {
+        "required": [
+          "fases"
+        ],
+        "type": "object",
+        "properties": {
+          "fases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FaseDosDocumentosDto"
+            }
           }
         }
       },
@@ -12928,6 +13040,45 @@
           }
         }
       },
+      "FaseDosDocumentosDto": {
+        "required": [
+          "faseId",
+          "codigo",
+          "ordem",
+          "documentos",
+          "pendencias"
+        ],
+        "type": "object",
+        "properties": {
+          "faseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "ordem": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "documentos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDaInscricaoDto"
+            }
+          },
+          "pendencias": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PendenciaDaAvaliacaoDto"
+            }
+          }
+        }
+      },
       "FatoColetadoDto": {
         "required": [
           "fatoCodigo",
@@ -13289,6 +13440,7 @@
         "required": [
           "comprovacaoDocumental",
           "dependenciasDaAvaliacao",
+          "faseId",
           "finalidade",
           "titulo",
           "etapas",
@@ -13320,6 +13472,13 @@
                 "$ref": "#/components/schemas/DependenciasDaAvaliacaoDto"
               }
             ]
+          },
+          "faseId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           },
           "finalidade": {
             "type": "string"
@@ -13635,6 +13794,39 @@
           "incluiCandidato": {
             "type": "boolean",
             "default": false
+          }
+        }
+      },
+      "GrupoDaArvoreDto": {
+        "required": [
+          "grupoId",
+          "tipo",
+          "minimo",
+          "repetePorEntidade"
+        ],
+        "type": "object",
+        "properties": {
+          "grupoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "minimo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "repetePorEntidade": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

@@ -44,6 +44,9 @@ public static class InscricaoErrorCodes
     /// </summary>
     public const string ConflitoDeConcorrencia = "Inscricao.ConflitoDeConcorrencia";
 
+    /// <summary>A fase pedida na avaliação da inscrição não está no cronograma da versão que a inscrição fixou.</summary>
+    public const string FaseNaoEncontrada = "Inscricao.FaseNaoEncontrada";
+
     /// <summary>O número da URL não corresponde a nenhum comprovante emitido (issue #1860).</summary>
     public const string ComprovanteNaoEncontrado = "Inscricao.ComprovanteNaoEncontrado";
 }

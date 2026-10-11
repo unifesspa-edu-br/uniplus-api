@@ -77,6 +77,7 @@ public static class ObterFormularioDaInscricaoQueryHandler
         }
 
         return ProjecaoDoFormularioDaVersao.Projetar(
-            resolvida.Value!, FinalidadeFormulario.Inscricao, resolvida.Value!.AtoCriadorId, registroCodecs, enderecoNoAcervo);
+            resolvida.Value!, FinalidadeFormulario.Inscricao, resolvida.Value!.AtoCriadorId, registroCodecs, enderecoNoAcervo,
+            comComprovacaoDocumental: false);
     }
 }

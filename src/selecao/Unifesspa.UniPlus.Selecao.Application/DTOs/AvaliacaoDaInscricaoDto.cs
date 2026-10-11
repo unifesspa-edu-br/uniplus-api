@@ -2,8 +2,11 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 using System.Text.Json;
 
+using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
+
+using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// O que o candidato consulta enquanto preenche, sem gravar nada (ADR-0143): as respostas como estão
@@ -13,20 +16,127 @@ public sealed record AvaliacaoDaInscricaoRequest(
     IReadOnlyDictionary<string, JsonElement>? Respostas,
     IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>? Grupos);
 
-/// <summary>A avaliação da inscrição diante das respostas do candidato: por ora, as modalidades em que ele concorre.</summary>
-public sealed record AvaliacaoDaInscricaoDto(ModalidadesDaInscricaoDto Modalidades)
+/// <summary>
+/// A avaliação da inscrição diante das respostas do candidato: as modalidades em que ele concorre e os
+/// documentos que o edital exige dele, por fase.
+/// </summary>
+public sealed record AvaliacaoDaInscricaoDto(ModalidadesDaInscricaoDto Modalidades, DocumentosDaInscricaoDto Documentos)
 {
-    public static AvaliacaoDaInscricaoDto De(ResultadoDaAvaliacaoDaInscricao resultado)
+    /// <param name="fases">As fases que a resposta lista, na ordem do cronograma.</param>
+    /// <param name="enderecoDoModelo">O endereço no acervo público do modelo que a exigência oferece.</param>
+    public static AvaliacaoDaInscricaoDto De(
+        ResultadoDaAvaliacaoDaInscricao resultado, IEnumerable<FaseCronograma> fases, Func<ModeloDaExigencia, Uri> enderecoDoModelo)
     {
         ArgumentNullException.ThrowIfNull(resultado);
+        ArgumentNullException.ThrowIfNull(fases);
+        ArgumentNullException.ThrowIfNull(enderecoDoModelo);
+
         ModalidadesDeConcorrencia modalidades = resultado.Modalidades;
-        return new AvaliacaoDaInscricaoDto(new ModalidadesDaInscricaoDto(
-            modalidades.Derivada,
-            modalidades.Situacao.ToCodigo(),
-            [.. modalidades.Itens.Select(static m => new ModalidadeDaInscricaoDto(m.Codigo, m.Nome, m.Ordem))],
-            [.. modalidades.Pendencias.Select(static p => new PendenciaDaAvaliacaoDto(p.FatoCodigo, p.Rotulo, p.SecaoCodigo))]));
+        ILookup<Guid, DocumentoAvaliado> documentosPorFase = resultado.Documentos.Itens
+            .Where(static d => d.Situacao != SituacaoDoDocumento.NaoExigido)
+            .ToLookup(static d => d.Documento.ExigidoNaFaseId);
+        return new AvaliacaoDaInscricaoDto(
+            new ModalidadesDaInscricaoDto(
+                modalidades.Derivada,
+                modalidades.Situacao.ToCodigo(),
+                [.. modalidades.Itens.Select(static m => new ModalidadeDaInscricaoDto(m.Codigo, m.Nome, m.Ordem))],
+                [.. modalidades.Pendencias.Select(Pendencia)]),
+            new DocumentosDaInscricaoDto(
+                [.. fases.OrderBy(static f => f.Ordem).Select(f => new FaseDosDocumentosDto(
+                    f.Id,
+                    f.Codigo,
+                    f.Ordem,
+                    [.. documentosPorFase[f.Id].Select(d => Documento(d, enderecoDoModelo))],
+                    [.. resultado.Documentos.PendenciasPorFase.GetValueOrDefault(f.Id, []).Select(Pendencia)]))]));
+    }
+
+    private static PendenciaDaAvaliacaoDto Pendencia(PendenciaDaAvaliacao pendencia) =>
+        new(pendencia.FatoCodigo, pendencia.Rotulo, pendencia.SecaoCodigo);
+
+    private static DocumentoDaInscricaoDto Documento(DocumentoAvaliado avaliado, Func<ModeloDaExigencia, Uri> enderecoDoModelo)
+    {
+        DocumentoExigido documento = avaliado.Documento;
+        return new DocumentoDaInscricaoDto(
+            documento.Id,
+            documento.TipoDocumentoCodigo,
+            documento.TipoDocumentoNome,
+            documento.Obrigatorio,
+            documento.Finalidade is { } finalidade ? EstruturaFormulario.ParaToken(finalidade) : null,
+            documento.ExigidoNaEtapaId,
+            new FormatosAceitosCertameDto(
+                documento.FormatosPermitidos.Qualquer,
+                documento.FormatosPermitidos.Lista?.Select(static e => e.Formato.ToCodigo()).ToList()),
+            documento.Modelo is { } modelo
+                ? new ModeloDocumentalCertameDto(modelo.NomeArquivo, ModeloDeDocumento.TokenDe(modelo.Formato), modelo.HashSha256, enderecoDoModelo(modelo))
+                : null,
+            avaliado.Situacao.ToCodigo(),
+            avaliado.GrupoCodigo,
+            avaliado.OcorrenciaId,
+            [.. avaliado.Grupos.Select(static g => new GrupoDaArvoreDto(g.GrupoId, g.Tipo.ToCodigo(), g.Minimo, g.RepetePorEntidade))],
+            avaliado.RepetePorEntidade);
     }
 }
+
+/// <summary>
+/// Os documentos que o edital exige do candidato, diante das respostas dele (UNI-REQ-0069, UNI-REQ-0077),
+/// pelas fases do cronograma.
+/// </summary>
+public sealed record DocumentosDaInscricaoDto(IReadOnlyList<FaseDosDocumentosDto> Fases);
+
+/// <summary>
+/// Uma fase do cronograma, as exigências dela que se aplicam ou podem se aplicar ao candidato, e o que
+/// falta responder para saber se as que podem ser exigidas nela se aplicam.
+/// </summary>
+public sealed record FaseDosDocumentosDto(
+    Guid FaseId,
+    string Codigo,
+    int Ordem,
+    IReadOnlyList<DocumentoDaInscricaoDto> Documentos,
+    IReadOnlyList<PendenciaDaAvaliacaoDto> Pendencias);
+
+/// <summary>
+/// Uma exigência documental diante do candidato.
+/// </summary>
+/// <param name="ExigenciaId">A exigência na versão fixada, que identifica a vaga do documento.</param>
+/// <param name="Finalidade">O formulário em que o documento é apresentado, como <c>INSCRICAO</c> ou <c>ISENCAO_TAXA</c>; nulo quando a exigência não o declara.</param>
+/// <param name="EtapaId">A etapa da fase em que o documento é exigido; nula quando vale a fase inteira.</param>
+/// <param name="Situacao">
+/// <c>EXIGIDO</c>, <c>PODE_SER_EXIGIDO</c> — uma resposta que ainda falta decide — ou
+/// <c>DEPENDE_DE_FASE_POSTERIOR</c> — decide um fato que só se conhece depois da inscrição.
+/// </param>
+/// <param name="GrupoCodigo">O grupo de membros a que a exigência se liga, uma vez por membro; nulo fora de repetição.</param>
+/// <param name="OcorrenciaId">A ocorrência do grupo a que a exigência se liga; nula quando ainda não se sabe quais membros o grupo tem.</param>
+/// <param name="Grupos">
+/// Os grupos da árvore de exigências que contêm a exigência, do mais externo ao mais interno. Os
+/// documentos que dividem um grupo dividem o <c>grupoId</c>, e assim se reconstrói a escolha: o OU, o
+/// N-de e o E dentro deles. A repetição por membro vale do grupo que a declara para baixo.
+/// </param>
+/// <param name="RepetePorEntidade">
+/// O grupo de membros pelo qual a própria exigência se repete, quando a repetição começa nela; nulo
+/// quando ela não se repete ou quando a repetição vem de um grupo que a contém.
+/// </param>
+public sealed record DocumentoDaInscricaoDto(
+    Guid ExigenciaId,
+    string TipoDocumentoCodigo,
+    string Nome,
+    bool Obrigatorio,
+    string? Finalidade,
+    Guid? EtapaId,
+    FormatosAceitosCertameDto Formatos,
+    ModeloDocumentalCertameDto? Modelo,
+    string Situacao,
+    string? GrupoCodigo,
+    string? OcorrenciaId,
+    IReadOnlyList<GrupoDaArvoreDto> Grupos,
+    string? RepetePorEntidade);
+
+/// <summary>
+/// Um grupo da árvore de exigências: o nó, o tipo — <c>E</c>, em que todos os filhos são exigidos, ou
+/// <c>OU</c>, em que bastam <see cref="Minimo"/> deles, o N-de quando o mínimo passa de um —, o mínimo,
+/// nulo no E, e o grupo de membros pelo qual o nó se repete, quando a repetição começa nele: a escolha
+/// vale então para cada membro.
+/// </summary>
+public sealed record GrupoDaArvoreDto(Guid GrupoId, string Tipo, int? Minimo, string? RepetePorEntidade);
 
 /// <summary>
 /// As modalidades em que o candidato concorre (UNI-REQ-0076). Sem derivação da modalidade na versão,
