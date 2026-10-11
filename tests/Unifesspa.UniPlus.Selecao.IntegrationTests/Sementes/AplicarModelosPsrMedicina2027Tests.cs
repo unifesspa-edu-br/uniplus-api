@@ -36,7 +36,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
 
     public AplicarModelosPsrMedicina2027Tests(CascadingFixture fixture) => _fixture = fixture;
 
-    [Fact(DisplayName = "A inscrição e a habilitação de Medicina são aplicadas ao processo PSR com bônus regional e oferta de atendimento, com o município do bônus, o atendimento especializado e a composição familiar")]
+    [Fact(DisplayName = "A inscrição e a habilitação de Medicina são aplicadas ao processo PSR com bônus regional e oferta de atendimento, com os municípios do bônus, o atendimento especializado e a composição familiar")]
     public async Task ModelosDeMedicina_SaoAplicadosAoProcessoPsr()
     {
         Guid processoId = await SemearProcessoPsrAsync();
@@ -57,7 +57,8 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         processo.Formularios.Select(static f => f.Finalidade)
             .Should().BeEquivalentTo([FinalidadeFormulario.Inscricao, FinalidadeFormulario.Habilitacao]);
         processo.GruposColetados.Should().ContainSingle(static g => g.Codigo == "COMPOSICAO_FAMILIAR");
-        processo.Campos.Should().ContainSingle(static c => c.FatoCodigo == "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO");
+        processo.Campos.Select(static c => c.FatoCodigo).Should().Contain(
+            ["CAMINHO_FATOR_ATENUACAO", "MUNICIPIO_ENSINO_MEDIO_FATOR_ATENUACAO", "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO"]);
         processo.Campos.Select(static c => c.FatoCodigo).Should().Contain(
             ["SOLICITA_ATENDIMENTO_ESPECIALIZADO", "CONDICAO_ATENDIMENTO", "DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO", "RECURSO_ACESSIBILIDADE"]);
     }

@@ -32,7 +32,7 @@ public sealed class SementePsrMedicina2027Tests
 {
     private static readonly string[] CodigosDosFatos =
     [
-        "SOLICITA_FATOR_ATENUACAO", "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO",
+        "SOLICITA_FATOR_ATENUACAO", "CAMINHO_FATOR_ATENUACAO", "MUNICIPIO_ENSINO_MEDIO_FATOR_ATENUACAO", "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO",
         "SOLICITA_ATENDIMENTO_ESPECIALIZADO", "DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO",
         "CERTIFICADO_EM_EMITIDO", "HABILITACAO_POR_PROCURADOR", "VINCULO_OUTRA_IES_PUBLICA_OU_PROUNI", "CATEGORIA_RENDA",
         "CATEGORIAS_RENDA_FAMILIA",
@@ -102,7 +102,29 @@ public sealed class SementePsrMedicina2027Tests
         (await RetratoAsync(ctx)).Should().Be(antes);
     }
 
-    [Fact(DisplayName = "O termo do Banco Central está só na habilitação, condicionado a CONCORRER_RENDA, e o Fator de Atenuação é pedido uma vez, com o município de residência só para quem o pede")]
+    [Fact(DisplayName = "Regravar o município de residência do Fator troca a descrição que falava da residência atual, que a reaplicação da semente não altera")]
+    public async Task RegravarMunicipioDeResidenciaDoFator_TrocaADescricaoAntiga()
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        const string codigo = "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO";
+        string atual = await DescricaoAsync(ctx, codigo);
+        await ctx.Database.ExecuteSqlRawAsync(
+            "UPDATE configuracao.rol_de_fatos_candidato SET descricao = 'O município da área de abrangência do edital em que o candidato reside.' WHERE codigo = {0};",
+            codigo);
+
+        foreach (string comando in SementePsrMedicina2027.ComandosQueRetiramOMunicipioDeResidenciaDoFator()
+            .Concat(SementePsrMedicina2027.ComandosDoTipoTermosEFatos()))
+        {
+            await ctx.Database.ExecuteSqlRawAsync(comando);
+        }
+
+        (await DescricaoAsync(ctx, codigo)).Should().Be(atual);
+    }
+
+    private static Task<string> DescricaoAsync(ConfiguracaoDbContext ctx, string codigo) =>
+        ctx.FatosCandidato.AsNoTracking().Where(f => f.Codigo == codigo).Select(static f => f.Descricao!).SingleAsync();
+
+    [Fact(DisplayName = "O termo do Banco Central está só na habilitação, condicionado a CONCORRER_RENDA, e o Fator de Atenuação é pedido uma vez, com o município conforme a forma de conclusão do ensino médio")]
     public async Task Modelos_TermoDoBancoCentralNaHabilitacaoEFatorDeAtenuacaoNaInscricao()
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
@@ -117,11 +139,15 @@ public sealed class SementePsrMedicina2027Tests
         termoDoBancoCentral.FatosCitados.Should().BeEquivalentTo(["CONCORRER_RENDA"]);
         habilitacao.Conteudo.Pressupostos.Should().Contain("CONCORRER_RENDA");
 
-        ItemDoModelo municipioAtenuacao = inscricao.Conteudo.Itens.Should()
-            .ContainSingle(static i => i.FatoCodigo == "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO").Subject;
-        municipioAtenuacao.FatosCitados.Should().BeEquivalentTo(["SOLICITA_FATOR_ATENUACAO"]);
-        inscricao.Conteudo.Itens.Should().ContainSingle(static i => i.FatoCodigo == "SOLICITA_FATOR_ATENUACAO")
-            .Which.FatosCitados.Should().BeEmpty("o pedido é feito a todo candidato");
+        Dictionary<string, ItemDoModelo> itens = inscricao.Conteudo.Itens.ToDictionary(static i => i.FatoCodigo, StringComparer.Ordinal);
+        itens["SOLICITA_FATOR_ATENUACAO"].FatosCitados.Should().BeEmpty("o pedido é feito a todo candidato");
+        itens["SOLICITA_FATOR_ATENUACAO"].Ajuda.Should().NotContainAny(["reside", "conta de"]);
+        itens["CAMINHO_FATOR_ATENUACAO"].FatosCitados.Should().BeEquivalentTo(["SOLICITA_FATOR_ATENUACAO", "FORMA_CONCLUSAO_EM"]);
+        itens["MUNICIPIO_ENSINO_MEDIO_FATOR_ATENUACAO"].FatosCitados.Should()
+            .BeEquivalentTo(["SOLICITA_FATOR_ATENUACAO", "FORMA_CONCLUSAO_EM", "CAMINHO_FATOR_ATENUACAO"]);
+        itens["MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO"].FatosCitados.Should().BeEquivalentTo(["SOLICITA_FATOR_ATENUACAO", "CAMINHO_FATOR_ATENUACAO"]);
+        string[] doFator = ["CAMINHO_FATOR_ATENUACAO", "MUNICIPIO_ENSINO_MEDIO_FATOR_ATENUACAO", "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO"];
+        doFator.Should().OnlyContain(c => itens[c].Obrigatoriedade.Tipo == TipoObrigatoriedade.Sempre, "o que aparece é exigido");
     }
 
     [Fact(DisplayName = "A inscrição pergunta a todo candidato se ele se autodeclara indígena, sem depender da cor ou raça")]
