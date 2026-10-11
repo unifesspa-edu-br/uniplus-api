@@ -14,8 +14,9 @@
 #   - o percentual quilombola da reserva demográfica;
 #   - a lista completa das regiões de influência do bônus (item 1.5): entram os
 #     oito municípios-polo que a minuta nomeia;
-#   - as datas em branco do Anexo I: o cronograma tem só a inscrição e o
-#     resultado final.
+#   - as datas em branco do Anexo I: o cronograma tem a inscrição, o
+#     resultado final e a habilitação, que abre na 1ª chamada e dura cinco
+#     dias.
 #
 # Sequência:
 #   Setup (Publicações/Organização/Configuração) →
@@ -24,8 +25,8 @@
 #   1.6) → Critérios de Desempate (item 6.3) → Classificação e eliminação
 #   (itens 5.6 e 8.1) → Taxa de Inscrição (gratuita, item 2.2) → Cronograma de
 #   Fases → aplicar o modelo de inscrição da Medicina → vincular a fase do
-#   formulário → derivação da modalidade (proposta normativa) → Documento do
-#   Edital → Divulgação (sempre ANTES de publicar: depois da publicação o
+#   formulário → derivação da modalidade (proposta normativa) → documentos
+#   que comprovam o Fator na habilitação → Documento do Edital → Divulgação (sempre ANTES de publicar: depois da publicação o
 #   processo só aceita mutação por retificação) → Publicar.
 #
 # Pré-requisitos: stack local do docker compose no ar, com uniplus-api,
@@ -251,8 +252,20 @@ setup_configuracao() {
     fases=$(api_get "/api/configuracao/fases-canonicas?limit=100")
     FASE_INSCRICAO_ID=$(jq -r '.[] | select(.codigo=="INSCRICAO") | .id' <<< "$fases")
     FASE_RESULTADO_ID=$(jq -r '.[] | select(.codigo=="RESULTADO_FINAL") | .id' <<< "$fases")
+    FASE_HABILITACAO_ID=$(jq -r '.[] | select(.codigo=="HABILITACAO") | .id' <<< "$fases")
     exigir_id "FASE_INSCRICAO_ID" "$FASE_INSCRICAO_ID"
     exigir_id "FASE_RESULTADO_ID" "$FASE_RESULTADO_ID"
+    exigir_id "FASE_HABILITACAO_ID" "$FASE_HABILITACAO_ID"
+
+    # Os tipos de documento vêm do catálogo semeado (TipoDocumentoSeed): o
+    # histórico prova o ensino médio cursado na área, e o comprovante de
+    # residência, a residência no período.
+    local tipos_documento
+    tipos_documento=$(api_get "/api/configuracao/tipos-documento?limit=100")
+    TIPO_DOCUMENTO_HISTORICO_ID=$(jq -r '.[] | select(.codigo=="HISTORICO_ENSINO_MEDIO") | .id' <<< "$tipos_documento")
+    TIPO_DOCUMENTO_RESIDENCIA_ID=$(jq -r '.[] | select(.codigo=="COMPROVANTE_RESIDENCIA") | .id' <<< "$tipos_documento")
+    exigir_id "TIPO_DOCUMENTO_HISTORICO_ID" "$TIPO_DOCUMENTO_HISTORICO_ID"
+    exigir_id "TIPO_DOCUMENTO_RESIDENCIA_ID" "$TIPO_DOCUMENTO_RESIDENCIA_ID"
 
     # Nota 2 do Anexo II: PPI do Pará pelo Censo 2022 (9,77 + 69,87 + 0,85) e
     # PcD do Pará pelo Censo 2010. A minuta não dá o percentual quilombola: vai
@@ -490,9 +503,11 @@ definir_cascata_remanejamento() {
 
 definir_bonus_regional() {
     log "Definir o Fator de Atenuação das Desigualdades de Acesso (BONUS-MULTIPLICATIVO)"
-    # O modelo da Medicina pede o município de residência a quem pede o Fator,
-    # com as opções da base legal do acréscimo. Recebe o acréscimo quem o pede
-    # no formulário (item 1.6): a configuração cita o pedido.
+    # O modelo da Medicina pede a quem pede o Fator o município do ensino
+    # médio ou, a quem concluiu por certificação e escolhe esse caminho, o da
+    # residência no período, com as opções da base legal do acréscimo. Recebe
+    # o acréscimo quem o pede no formulário (item 1.6): a configuração cita o
+    # pedido.
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/bonus-regional" "{
         \"aplica\": true, \"regraCodigo\": \"BONUS-MULTIPLICATIVO\", \"regraVersao\": \"v1\",
         \"fator\": 1.2, \"teto\": null, \"fatoElegibilidadeCodigo\": \"SOLICITA_FATOR_ATENUACAO\",
@@ -560,7 +575,7 @@ definir_cronograma_fases() {
     # As datas andam juntas, de modo que a inscrição tenha aberto ontem; o
     # resultado final, em branco na minuta, fica entre o fim da inscrição e a
     # 1ª chamada. America/Belém é UTC-3 fixo, sem horário de verão.
-    local hoje deslocamento inicio_inscricao fim_inscricao inicio_resultado fim_resultado
+    local hoje deslocamento inicio_inscricao fim_inscricao inicio_resultado fim_resultado inicio_habilitacao fim_habilitacao
     hoje=$(TZ=America/Belem date +%Y-%m-%d)
     deslocamento=$(( ($(date -d "$hoje -1 day" +%s) - $(date -d 2026-12-10 +%s)) / 86400 ))
     na_data() { TZ=America/Belem date -d "$1 $deslocamento days" +%Y-%m-%dT"$2"-03:00; }
@@ -568,6 +583,8 @@ definir_cronograma_fases() {
     fim_inscricao=$(na_data 2027-01-10 23:59:59)
     inicio_resultado=$(na_data 2027-01-11 00:00:00)
     fim_resultado=$(na_data 2027-01-24 23:59:59)
+    inicio_habilitacao=$(na_data 2027-01-25 00:00:00)
+    fim_habilitacao=$(na_data 2027-01-29 23:59:59)
 
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/cronograma-fases" "[
         {
@@ -582,6 +599,12 @@ definir_cronograma_fases() {
             \"produtos\": [{\"atoCodigo\": \"RESULTADO_FINAL\", \"papel\": \"DEFINITIVO\"}],
             \"faseConcluinteCodigo\": null, \"emiteParecerIndividual\": false,
             \"bancasRequeridas\": [], \"regraRecurso\": null
+        },
+        {
+            \"ordem\": 3, \"faseCanonicaId\": \"$FASE_HABILITACAO_ID\",
+            \"inicio\": \"$inicio_habilitacao\", \"fim\": \"$fim_habilitacao\",
+            \"produtos\": [], \"faseConcluinteCodigo\": null,
+            \"emiteParecerIndividual\": false, \"bancasRequeridas\": [], \"regraRecurso\": null
         }
     ]" >/dev/null
     ok "cronograma definido — inscrição de $inicio_inscricao a $fim_inscricao"
@@ -660,6 +683,43 @@ definir_regras_derivacao() {
     ok "derivação gravada: $(jq -r 'map(.codigoFato) | join(", ")' <<< "$configuracoes")"
 }
 
+# Cadastra, na fase de habilitação, o documento que comprova cada caminho do
+# Fator (itens 1.6 e 13): o histórico escolar para quem pede pelo ensino médio
+# cursado na área — quem concluiu no regular ou na EJA, ou quem concluiu por
+# certificação e escolheu esse caminho — e a conta de energia, água ou
+# telefone do período para quem escolheu a residência. A comprovação negada
+# remove o acréscimo, não elimina. Vem depois do modelo: os gatilhos citam
+# fatos que o formulário coleta.
+definir_documentos_exigidos() {
+    log "Definir os documentos que comprovam o Fator na habilitação"
+    local fase_habilitacao_processo_id base_legal
+    fase_habilitacao_processo_id=$(api_get "/api/selecao/processos-seletivos/$PROCESSO_ID" | jq -r '.cronogramaFases[] | select(.codigo=="HABILITACAO") | .id')
+    [ -n "$fase_habilitacao_processo_id" ] || fail "fase HABILITACAO não encontrada no cronograma do processo $PROCESSO_ID"
+    base_legal='[{"referencia": "Edital nº XX/2026-CEPS/Unifesspa, itens 1.6 e 13", "abrangencia": "INTERNA_EDITAL", "status": "RESOLVIDO", "observacao": null}]'
+
+    api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/documentos-exigidos" "$(jq -nc \
+        --arg fase "$fase_habilitacao_processo_id" --arg historico "$TIPO_DOCUMENTO_HISTORICO_ID" \
+        --arg residencia "$TIPO_DOCUMENTO_RESIDENCIA_ID" --argjson basesLegais "$base_legal" '
+        def folha($tipo; $condicoes): {
+            tipo: "FOLHA",
+            documento: {
+                exigidoNaFaseId: $fase, finalidade: "HABILITACAO", tipoDocumentoId: $tipo, aplicabilidade: "CONDICIONAL",
+                obrigatorio: true, consequenciaIndeferimento: "REMOVE_VANTAGEM",
+                condicoes: $condicoes, basesLegais: $basesLegais, formatosPermitidos: "QUALQUER"
+            }
+        };
+        def pedido($clausula): {clausula: $clausula, fato: "SOLICITA_FATOR_ATENUACAO", operador: "IGUAL", valor: "true"};
+        [
+            folha($historico; [
+                pedido(0), {clausula: 0, fato: "FORMA_CONCLUSAO_EM", operador: "EM", valor: "[\"REGULAR\",\"EJA\"]"},
+                pedido(1), {clausula: 1, fato: "CAMINHO_FATOR_ATENUACAO", operador: "IGUAL", valor: "\"ENSINO_MEDIO\""}
+            ]),
+            folha($residencia; [
+                pedido(0), {clausula: 0, fato: "CAMINHO_FATOR_ATENUACAO", operador: "IGUAL", valor: "\"RESIDENCIA\""}
+            ])
+        ]')" >/dev/null
+    ok "documentos do Fator definidos na fase $fase_habilitacao_processo_id"
+}
 
 documento_do_edital() {
     log "Documento do Edital — iniciar upload"
@@ -765,6 +825,7 @@ main() {
     aplicar_modelo_medicina
     vincular_fase_do_formulario
     definir_regras_derivacao
+    definir_documentos_exigidos
     documento_do_edital
     divulgar
     publicar
