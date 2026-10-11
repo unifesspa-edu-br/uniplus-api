@@ -34,6 +34,7 @@ public static class SalvarInscricaoCommandHandler
         IRegistroCodecsEnvelope registroCodecs,
         IResolvedorFusoInstitucional resolvedorFuso,
         IConferenciaEnderecoGeo conferenciaEnderecoGeo,
+        IEnderecoNoAcervoPublico enderecoNoAcervo,
         ISelecaoUnitOfWork unitOfWork,
         IUserContext userContext,
         TimeProvider timeProvider,
@@ -120,7 +121,8 @@ public static class SalvarInscricaoCommandHandler
             Services.InscricaoRequestMapper.ParaAvaliacao(grupos),
             new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
             new HashSet<string>(StringComparer.Ordinal),
-            envio));
+            envio,
+            NaFaseDaInscricao: true));
         if (avaliacao.IsFailure)
         {
             return Result<InscricaoDto>.Failure(avaliacao.Error!);
@@ -153,9 +155,16 @@ public static class SalvarInscricaoCommandHandler
             envio,
             conferenciaEnderecoGeo,
             cancellationToken).ConfigureAwait(false);
-        return avaliada.IsFailure
-            ? Result<InscricaoDto>.Failure(avaliada.Error!)
-            : Result<InscricaoDto>.Success(InscricaoDto.De(inscricao, AvaliacaoDaInscricaoDto.De(avaliada.Value!)));
+        if (avaliada.IsFailure)
+        {
+            return Result<InscricaoDto>.Failure(avaliada.Error!);
+        }
+
+        Result<AvaliacaoDaInscricaoDto> projetada = Services.ProjecaoDaAvaliacaoDaInscricao.Projetar(
+            avaliada.Value!, contexto.Value!, inscricao.ProcessoSeletivoId, enderecoNoAcervo);
+        return projetada.IsFailure
+            ? Result<InscricaoDto>.Failure(projetada.Error!)
+            : Result<InscricaoDto>.Success(InscricaoDto.De(inscricao, projetada.Value!));
     }
 
     /// <summary>

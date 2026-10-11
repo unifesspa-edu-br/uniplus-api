@@ -33,7 +33,7 @@ internal static class FormularioDeTeste
 
     /// <summary>A avaliação do envio com o formulário dado, numa versão que não deriva a modalidade.</summary>
     public static ResultadoDaAvaliacaoDaInscricao AvaliacaoDoEnvio(AvaliacaoFormulario formulario) =>
-        new(formulario, ModalidadesDeConcorrencia.SemDerivacao, []);
+        new(formulario, ModalidadesDeConcorrencia.SemDerivacao, new DocumentosDaInscricao([], new Dictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>>()));
 
     public static IReadOnlyList<EtapaFormulario> Etapas(FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao)
     {

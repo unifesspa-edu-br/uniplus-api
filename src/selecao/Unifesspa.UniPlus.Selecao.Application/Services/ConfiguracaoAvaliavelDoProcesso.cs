@@ -21,7 +21,9 @@ public static class ConfiguracaoAvaliavelDoProcesso
             ArvoreExigenciasCongelada.DaConfiguracaoViva(processo),
             processo.FatosColetados,
             processo.GruposColetados,
-            [.. processo.DistribuicaoVagas.SelectMany(static d => d.Modalidades)]);
+            [.. processo.DistribuicaoVagas.SelectMany(static d => d.Modalidades)],
+            processo.CronogramaFases,
+            processo.Formularios);
     }
 
     public static ConfiguracaoAvaliavel DoCongelado(GrafoConfiguracao grafo, DefinicaoAvaliavel avaliavel)
@@ -35,6 +37,8 @@ public static class ConfiguracaoAvaliavelDoProcesso
             ArvoreExigenciasCongelada.DeGrafoReidratado([.. grafo.NosExigencia.Where(static n => n.NoPaiId is null)]),
             grafo.FatosColetados,
             grafo.GruposColetados,
-            [.. grafo.DistribuicaoVagas.SelectMany(static d => d.Modalidades)]);
+            [.. grafo.DistribuicaoVagas.SelectMany(static d => d.Modalidades)],
+            grafo.CronogramaFases,
+            grafo.Formularios);
     }
 }

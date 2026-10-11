@@ -8,6 +8,8 @@ using Domain.Entities;
 using Domain.Services;
 using Domain.ValueObjects;
 
+using DTOs;
+
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -24,14 +26,16 @@ public static class PreparacaoDaAvaliacaoDaInscricao
 {
     /// <summary>
     /// A avaliação do que a inscrição gravou, na versão que ela fixou ao iniciar, como se as respostas
-    /// fossem gravadas em <paramref name="instante"/>, no fuso da janela de inscrição.
+    /// fossem gravadas em <paramref name="instante"/>, no fuso da janela de inscrição — na forma que o
+    /// candidato recebe.
     /// </summary>
-    public static async Task<Result<ResultadoDaAvaliacaoDaInscricao>> AvaliarGravadaAsync(
+    public static async Task<Result<AvaliacaoDaInscricaoDto>> ProjetarGravadaAsync(
         Inscricao inscricao,
         Domain.Interfaces.IProcessoSeletivoRepository processoSeletivoRepository,
         IRegistroCodecsEnvelope registroCodecs,
         IResolvedorFusoInstitucional resolvedorFuso,
         IConferenciaEnderecoGeo conferenciaEnderecoGeo,
+        IEnderecoNoAcervoPublico enderecoNoAcervo,
         DateTimeOffset instante,
         CancellationToken cancellationToken)
     {
@@ -41,7 +45,7 @@ public static class PreparacaoDaAvaliacaoDaInscricao
         Result<TimeZoneInfo> fuso = resolvedorFuso.Resolver();
         if (fuso.IsFailure)
         {
-            return Result<ResultadoDaAvaliacaoDaInscricao>.Failure(fuso.Error!);
+            return Result<AvaliacaoDaInscricaoDto>.Failure(fuso.Error!);
         }
 
         Result<ContextoDaVersaoFixada> contexto = await ContextoDaVersaoFixadaResolver.ResolverAsync(
@@ -49,10 +53,10 @@ public static class PreparacaoDaAvaliacaoDaInscricao
             .ConfigureAwait(false);
         if (contexto.IsFailure)
         {
-            return Result<ResultadoDaAvaliacaoDaInscricao>.Failure(contexto.Error!);
+            return Result<AvaliacaoDaInscricaoDto>.Failure(contexto.Error!);
         }
 
-        return await AvaliarAsync(
+        Result<ResultadoDaAvaliacaoDaInscricao> avaliacao = await AvaliarAsync(
             inscricao,
             contexto.Value!,
             new Dictionary<string, JsonElement>(StringComparer.Ordinal),
@@ -60,6 +64,9 @@ public static class PreparacaoDaAvaliacaoDaInscricao
             new EnvioDasRespostas(instante, fuso.Value!),
             conferenciaEnderecoGeo,
             cancellationToken).ConfigureAwait(false);
+        return avaliacao.IsFailure
+            ? Result<AvaliacaoDaInscricaoDto>.Failure(avaliacao.Error!)
+            : ProjecaoDaAvaliacaoDaInscricao.Projetar(avaliacao.Value!, contexto.Value!, inscricao.ProcessoSeletivoId, enderecoNoAcervo);
     }
 
     /// <param name="respostasRecebidas">As respostas que chegaram; o campo ausente vale o que já está gravado.</param>
@@ -91,11 +98,11 @@ public static class PreparacaoDaAvaliacaoDaInscricao
             respostas,
             contexto.DataReferenciaFatos,
             conferenciaEnderecoGeo,
-            AvaliacaoDaInscricao.DerivadosDoSistemaCitados(contexto.Configuracao.Definicao),
+            AvaliacaoDaInscricao.DerivadosDoSistemaCitados(contexto.Configuracao),
             cancellationToken).ConfigureAwait(false);
 
         return AvaliacaoDaInscricao.Avaliar(
             contexto.Configuracao,
-            new EntradaDaAvaliacaoDaInscricao(respostas, grupos, derivados, new HashSet<string>(StringComparer.Ordinal), envio));
+            new EntradaDaAvaliacaoDaInscricao(respostas, grupos, derivados, new HashSet<string>(StringComparer.Ordinal), envio, NaFaseDaInscricao: true));
     }
 }

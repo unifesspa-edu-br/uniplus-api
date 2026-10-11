@@ -13,15 +13,17 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// O contexto de avaliação da finalidade Inscrição na versão FIXADA por uma inscrição ao iniciar —
 /// nunca a vigente por relógio (UNI-REQ-0084): os termos exigidos dessa finalidade, a data de
 /// referência dos fatos congelada na publicação, a oferta de valores de cada campo, o que a versão
-/// admite como resposta e a configuração inteira que a avaliação da inscrição lê (ADR-0143). Reusado
-/// por Salvar, por Submeter e pela consulta do candidato, que avaliam a mesma versão do mesmo jeito.
+/// admite como resposta, a configuração inteira que a avaliação da inscrição lê (ADR-0143) e o ato que
+/// publicou a versão, de que é o endereço dos modelos de documento no acervo. Reusado por Salvar, por
+/// Submeter e pela consulta do candidato, que avaliam a mesma versão do mesmo jeito.
 /// </summary>
 public sealed record ContextoDaVersaoFixada(
     IReadOnlyCollection<TermoExigidoFormulario> TermosExigidos,
     DateOnly? DataReferenciaFatos,
     IReadOnlyDictionary<string, IReadOnlySet<string>> Ofertas,
     RespostasAdmitidas Admitidas,
-    ConfiguracaoAvaliavel Configuracao);
+    ConfiguracaoAvaliavel Configuracao,
+    Guid AtoCriadorId);
 
 public static class ContextoDaVersaoFixadaResolver
 {
@@ -72,7 +74,8 @@ public static class ContextoDaVersaoFixadaResolver
 
         return Result<ContextoDaVersaoFixada>.Success(new ContextoDaVersaoFixada(
             termos, dataReferencia.Value, avaliavel.Value!.Ofertas, Admitidas(reidratado.Value!.Grafo),
-            ConfiguracaoAvaliavelDoProcesso.DoCongelado(reidratado.Value!.Grafo, avaliavel.Value!)));
+            ConfiguracaoAvaliavelDoProcesso.DoCongelado(reidratado.Value!.Grafo, avaliavel.Value!),
+            versao.AtoCriadorId));
     }
 
     public static RespostasAdmitidas Admitidas(GrafoConfiguracao grafo)

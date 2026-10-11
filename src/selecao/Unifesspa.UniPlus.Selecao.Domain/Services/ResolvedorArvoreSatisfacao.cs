@@ -173,9 +173,7 @@ public static class ResolvedorArvoreSatisfacao
         Dictionary<Guid, List<InstanciaResolvida>> instanciasResolvidasPorNo)
     {
         EstadoSatisfacao estado = no.RepetePorEntidade is { } grupo
-            // Fronteira de disponibilidade não mascara dentro de subárvore repetida (fora do escopo
-            // do §6): as instâncias resolvem como antes, sem conjunto de bloqueio.
-            ? ResolverNoRepetido(no, grupo, fatos, apresentacoes, instanciasPorGrupo, instanciasResolvidasPorNo)
+            ? ResolverNoRepetido(no, grupo, fatos, apresentacoes, instanciasPorGrupo, bloqueadas, instanciasResolvidasPorNo)
             : no.Tipo == TipoNo.Folha
                 ? ResolverFolha(no, fatos, apresentacoes, bloqueadas, statusPorExigencia)
                 : ResolverGrupo(no, fatos, apresentacoes, instanciasPorGrupo, bloqueadas, estados, statusPorExigencia, instanciasResolvidasPorNo);
@@ -195,6 +193,7 @@ public static class ResolvedorArvoreSatisfacao
         IReadOnlyDictionary<string, FatoResolvido> fatosCandidato,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes,
         IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>> instanciasPorGrupo,
+        IReadOnlySet<Guid> bloqueadas,
         Dictionary<Guid, List<InstanciaResolvida>> instanciasResolvidasPorNo)
     {
         IReadOnlyList<InstanciaEntidade> instancias = instanciasPorGrupo.GetValueOrDefault(grupo, []);
@@ -219,15 +218,19 @@ public static class ResolvedorArvoreSatisfacao
             // descendente aqui dentro pode ser, ele mesmo, repetePorEntidade; um dicionário
             // vazio é seguro (nunca populado nesta subárvore).
             Dictionary<Guid, List<InstanciaResolvida>> semRepeticaoAninhada = [];
-            // Sem máscara de fronteira dentro da repetição (fora do escopo do §6) — conjunto vazio.
-            IReadOnlySet<Guid> semBloqueio = new HashSet<Guid>();
+            // A fronteira de disponibilidade vale também dentro da repetição: a folha bloqueada de uma
+            // ocorrência projeta indeterminado e não emite, como fora dela.
             EstadoSatisfacao estadoInstancia = no.Tipo == TipoNo.Folha
-                ? ResolverFolha(no, fatosDaInstancia, apresentacoesDaInstancia, semBloqueio, statusDaInstancia)
+                ? ResolverFolha(no, fatosDaInstancia, apresentacoesDaInstancia, bloqueadas, statusDaInstancia)
                 : ResolverGrupo(
-                    no, fatosDaInstancia, apresentacoesDaInstancia, instanciasPorGrupo, semBloqueio,
+                    no, fatosDaInstancia, apresentacoesDaInstancia, instanciasPorGrupo, bloqueadas,
                     estadosDaInstancia, statusDaInstancia, semRepeticaoAninhada);
+            estadosDaInstancia[no.Id] = estadoInstancia;
 
-            resolvidas.Add(new InstanciaResolvida(instancia.EntidadeId, estadoInstancia, estadosDaInstancia, statusDaInstancia));
+            HashSet<Guid> suprimidosDaInstancia = [];
+            CalcularEmissionBlocked(no, estadosDaInstancia, bloqueadas, suprimidosDaInstancia, naInstancia: true);
+            resolvidas.Add(new InstanciaResolvida(
+                instancia.EntidadeId, estadoInstancia, estadosDaInstancia, statusDaInstancia, suprimidosDaInstancia));
         }
 
         instanciasResolvidasPorNo[no.Id] = resolvidas;
@@ -429,11 +432,12 @@ public static class ResolvedorArvoreSatisfacao
         NoExigencia no,
         IReadOnlyDictionary<Guid, EstadoSatisfacao> estados,
         IReadOnlySet<Guid> bloqueadas,
-        HashSet<Guid> suprimidos)
+        HashSet<Guid> suprimidos,
+        bool naInstancia = false)
     {
-        // Subárvore repetida está fora do escopo da fronteira (§6): nunca é suprimida, e a sua emissão
-        // não consulta o conjunto global — não precisa percorrer os descendentes por-instância aqui.
-        if (no.RepetePorEntidade is not null)
+        // A subárvore repetida tem estados por ocorrência: a máscara dela é calculada em cada
+        // instância, sobre os estados dela, e não entra no conjunto global.
+        if (no.RepetePorEntidade is not null && !naInstancia)
         {
             return false;
         }
@@ -461,7 +465,7 @@ public static class ResolvedorArvoreSatisfacao
         List<bool> decisivosBloqueados = [];
         foreach (NoExigencia filho in no.Filhos)
         {
-            bool filhoBloqueado = CalcularEmissionBlocked(filho, estados, bloqueadas, suprimidos);
+            bool filhoBloqueado = CalcularEmissionBlocked(filho, estados, bloqueadas, suprimidos, naInstancia);
             if (estados[filho.Id] is not (EstadoSatisfacao.Satisfeito or EstadoSatisfacao.NaoAplicavel))
             {
                 decisivosBloqueados.Add(filhoBloqueado);
@@ -520,9 +524,13 @@ public static class ResolvedorArvoreSatisfacao
 
                 List<ConsequenciaEmitida> consequenciasDaInstancia = [];
                 List<PendenciaDeOrientacao> pendenciasDaInstancia = [];
-                // Sem máscara de fronteira dentro da repetição (fora do escopo do §6) — conjunto vazio.
+                if (instancia.NosEmissaoSuprimida.Contains(no.Id))
+                {
+                    continue;
+                }
+
                 EmitirFronteiraNormal(
-                    no, instancia.Estado, instancia.EstadosDescendentes, new HashSet<Guid>(),
+                    no, instancia.Estado, instancia.EstadosDescendentes, instancia.NosEmissaoSuprimida,
                     consequenciasDaInstancia, pendenciasDaInstancia, instanciasResolvidasPorNo);
 
                 consequenciasVigentes.AddRange(
@@ -618,5 +626,6 @@ public static class ResolvedorArvoreSatisfacao
         string EntidadeId,
         EstadoSatisfacao Estado,
         Dictionary<Guid, EstadoSatisfacao> EstadosDescendentes,
-        Dictionary<Guid, StatusResolucaoExigencia> StatusDescendentes);
+        Dictionary<Guid, StatusResolucaoExigencia> StatusDescendentes,
+        IReadOnlySet<Guid> NosEmissaoSuprimida);
 }

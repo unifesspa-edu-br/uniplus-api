@@ -78,7 +78,8 @@ public sealed class InscricaoContratoProvisorioTests
             Aceites: [new AceiteDeTermoInput("TERMO_VERACIDADE", Guid.Parse("0199e000-0000-7000-8000-000000000002"), "sha256-abc")],
             ETag: "\"42\"",
             Avaliacao: new AvaliacaoDaInscricaoDto(new ModalidadesDaInscricaoDto(
-                Derivada: true, Situacao: "CONCORRE", [new ModalidadeDaInscricaoDto("AC", "Ampla concorrência", 0)], [])));
+                Derivada: true, Situacao: "CONCORRE", [new ModalidadeDaInscricaoDto("AC", "Ampla concorrência", 0)], []),
+                new DocumentosDaInscricaoDto([])));
 
         JsonNode json = JsonSerializer.SerializeToNode(dto, Opcoes)!;
 

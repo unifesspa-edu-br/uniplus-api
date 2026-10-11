@@ -134,7 +134,8 @@ public static class SubmeterInscricaoCommandHandler
             Services.InscricaoRequestMapper.ParaAvaliacao(grupos),
             derivados.Value!.ToDictionary(static d => d.Key, static d => FatoResolvido.Resolvido(d.Value), StringComparer.Ordinal),
             AvaliacaoDaInscricao.CodigosDasEtapasDaInscricao(configuracao.Definicao),
-            envio));
+            envio,
+            NaFaseDaInscricao: true));
         if (avaliacao.IsFailure)
         {
             return Result<ComprovanteInscricaoDto>.Failure(avaliacao.Error!);

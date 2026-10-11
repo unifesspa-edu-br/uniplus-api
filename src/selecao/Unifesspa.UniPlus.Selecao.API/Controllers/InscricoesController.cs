@@ -84,8 +84,10 @@ public sealed class InscricoesController : ControllerBase
 
     /// <summary>
     /// Avalia, sem gravar nada, as respostas que o dono do token tem na tela (ADR-0143): as
-    /// modalidades em que ele concorre e o que falta responder, na versão fixada ao iniciar. É prévia:
-    /// não recusa por restrição nem por obrigatoriedade, só pela forma do corpo.
+    /// modalidades em que ele concorre, os documentos que o edital exige dele em cada fase e o que falta
+    /// responder, na versão fixada ao iniciar. <c>faseId</c> restringe os documentos a uma fase do
+    /// cronograma dessa versão. É prévia: não recusa por restrição nem por obrigatoriedade, só pela forma
+    /// do corpo.
     /// </summary>
     [HttpPost("processos-seletivos/{id:guid}/inscricao/avaliacoes")]
     [Authorize(Policy = "Candidato")]
@@ -96,11 +98,12 @@ public sealed class InscricoesController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Avaliar(Guid id, [FromBody] AvaliacaoDaInscricaoRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Avaliar(
+        Guid id, [FromBody] AvaliacaoDaInscricaoRequest request, [FromQuery] Guid? faseId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         Result<AvaliacaoDaInscricaoDto> resultado = await _queryBus
-            .Send(new AvaliarInscricaoQuery(id, request), cancellationToken)
+            .Send(new AvaliarInscricaoQuery(id, request, faseId), cancellationToken)
             .ConfigureAwait(false);
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }

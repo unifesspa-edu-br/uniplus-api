@@ -206,6 +206,35 @@ public sealed class ResolvedorArvoreSatisfacaoEmissionBlockedTests
         r.ConsequenciasVigentes.Should().Contain(c => c.NoExigenciaId == raiz.Id && c.Consequencia == "ELIMINA");
     }
 
+    [Fact(DisplayName = "Dentro da repetição por membro, a folha BLOQUEADA projeta INDETERMINADO em cada ocorrência e não emite")]
+    public void RepeticaoPorMembro_FolhaBloqueada_NaoEmiteEmNenhumaOcorrencia()
+    {
+        DocumentoExigido bloqueado = DocumentoGeral("ELIMINA");
+        DocumentoExigido aberto = DocumentoGeral("REMOVE_VANTAGEM");
+        NoExigencia raiz = NoExigencia.CriarGrupo(
+            TipoNo.GrupoE, 0, null, null, [],
+            [NoExigencia.CriarFolha(bloqueado, 0).Value!, NoExigencia.CriarFolha(aberto, 1).Value!],
+            repetePorEntidade: "FAMILIA").Value!;
+        Dictionary<string, IReadOnlyList<InstanciaEntidade>> membros = new(StringComparer.Ordinal)
+        {
+            ["FAMILIA"] =
+            [
+                new InstanciaEntidade("m1", new Dictionary<string, FatoResolvido>(StringComparer.Ordinal)),
+                new InstanciaEntidade("m2", new Dictionary<string, FatoResolvido>(StringComparer.Ordinal)),
+            ],
+        };
+
+        ResultadoResolucaoArvore r = ResolvedorArvoreSatisfacao.Resolver(
+            Arvore(raiz), new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), SemApresentacoes, membros,
+            new HashSet<Guid> { bloqueado.Id }).Value!;
+
+        r.StatusPorEntidade.Where(s => s.DocumentoExigidoId == bloqueado.Id)
+            .Should().OnlyContain(static s => s.Status == StatusResolucaoExigencia.AplicabilidadeIndeterminada);
+        r.ConsequenciasVigentes.Should().NotContain(static c => c.Consequencia == "ELIMINA", "a folha bloqueada não emite em ocorrência nenhuma");
+        r.ConsequenciasVigentes.Where(static c => c.Consequencia == "REMOVE_VANTAGEM").Select(static c => c.EntidadeId)
+            .Should().Equal("m1", "m2");
+    }
+
     [Fact(DisplayName = "Sem conjunto bloqueado, a resolução é idêntica à anterior — a fronteira não muda o comportamento existente")]
     public void SemBloqueio_ComportamentoInalterado()
     {

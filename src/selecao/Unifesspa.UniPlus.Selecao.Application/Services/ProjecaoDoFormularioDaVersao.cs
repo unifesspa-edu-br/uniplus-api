@@ -27,12 +27,18 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// </summary>
 public static class ProjecaoDoFormularioDaVersao
 {
+    /// <param name="comComprovacaoDocumental">
+    /// Se a projeção traz a lista do bloco de comprovação documental. O certame público a traz; o
+    /// formulário da inscrição do candidato não, porque os documentos que se aplicam a ele vêm da
+    /// avaliação da inscrição, sobre as respostas dele (ADR-0143).
+    /// </param>
     public static Result<FormularioRenderizavelDto> Projetar(
         VersaoConfiguracao versao,
         FinalidadeFormulario finalidade,
         Guid atoCriadorId,
         IRegistroCodecsEnvelope registroCodecs,
-        IEnderecoNoAcervoPublico enderecoNoAcervo)
+        IEnderecoNoAcervoPublico enderecoNoAcervo,
+        bool comComprovacaoDocumental = true)
     {
         ArgumentNullException.ThrowIfNull(versao);
         ArgumentNullException.ThrowIfNull(registroCodecs);
@@ -88,16 +94,18 @@ public static class ProjecaoDoFormularioDaVersao
 
         DocumentosDoAtoNoAcervo acervo = new(versao.ProcessoSeletivoId, atoCriadorId, enderecoNoAcervo.De);
         FormularioProcesso doFormulario = grafo.Formularios.First(f => f.Finalidade == finalidade);
-        if (!TentarComprovacaoDocumental(envelope, doFormulario, formulario.Finalidade, acervo, out List<ExigenciaDocumentalCertameDto>? comprovacao))
+        List<ExigenciaDocumentalCertameDto>? comprovacao = null;
+        if (comComprovacaoDocumental
+            && !TentarComprovacaoDocumental(envelope, doFormulario, formulario.Finalidade, acervo, out comprovacao))
         {
             return VersaoSemApresentacao();
         }
 
         DependenciasDaAvaliacaoDto? dependencias = finalidade == FinalidadeFormulario.Inscricao
-            && Domain.Services.AvaliacaoDaInscricao.Dependencias(avaliavel.Value!.Definicao) is { } daAvaliacao
+            && Domain.Services.AvaliacaoDaInscricao.Dependencias(ConfiguracaoAvaliavelDoProcesso.DoCongelado(grafo, avaliavel.Value!)) is { } daAvaliacao
                 ? new DependenciasDaAvaliacaoDto(daAvaliacao.Fatos, daAvaliacao.Grupos)
                 : null;
-        return Result<FormularioRenderizavelDto>.Success(FormularioRenderizavelDto.De(formulario, comprovacao, dependencias));
+        return Result<FormularioRenderizavelDto>.Success(FormularioRenderizavelDto.De(formulario, comprovacao, dependencias, doFormulario.FaseId));
     }
 
     /// <summary>

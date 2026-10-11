@@ -34,6 +34,7 @@ public static class AvaliarInscricaoQueryHandler
         IRegistroCodecsEnvelope registroCodecs,
         IResolvedorFusoInstitucional resolvedorFuso,
         IConferenciaEnderecoGeo conferenciaEnderecoGeo,
+        IEnderecoNoAcervoPublico enderecoNoAcervo,
         IUserContext userContext,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
@@ -43,6 +44,7 @@ public static class AvaliarInscricaoQueryHandler
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(resolvedorFuso);
+        ArgumentNullException.ThrowIfNull(enderecoNoAcervo);
 
         if (userContext.Cpf is not { } cpfDoToken || Cpf.Criar(cpfDoToken) is not { IsSuccess: true } cpf)
         {
@@ -105,8 +107,11 @@ public static class AvaliarInscricaoQueryHandler
             new EnvioDasRespostas(instante, fuso.Value!),
             conferenciaEnderecoGeo,
             cancellationToken).ConfigureAwait(false);
-        return avaliacao.IsFailure
-            ? Result<AvaliacaoDaInscricaoDto>.Failure(avaliacao.Error!)
-            : Result<AvaliacaoDaInscricaoDto>.Success(AvaliacaoDaInscricaoDto.De(avaliacao.Value!));
+        if (avaliacao.IsFailure)
+        {
+            return Result<AvaliacaoDaInscricaoDto>.Failure(avaliacao.Error!);
+        }
+
+        return ProjecaoDaAvaliacaoDaInscricao.Projetar(avaliacao.Value!, contexto.Value!, query.ProcessoSeletivoId, enderecoNoAcervo, query.FaseId);
     }
 }
