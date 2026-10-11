@@ -40,7 +40,7 @@ public static class ObterCertamePublicadoQueryHandler
             .ObterParaLeituraAsync(query.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
 
-        return Servir(divulgado);
+        return Servir(divulgado, query.Instante);
     }
 
     public static async Task<Result<CertamePublicadoDto>> Handle(
@@ -55,23 +55,29 @@ public static class ObterCertamePublicadoQueryHandler
             .ObterParaLeituraPorIdentificadorAsync(query.IdentificadorLegivel, cancellationToken)
             .ConfigureAwait(false);
 
-        return Servir(divulgado);
+        return Servir(divulgado, query.Instante);
     }
 
     /// <summary>
     /// A leitura comum às duas chaves: a ausência da linha é a única recusa de visibilidade, e uma
     /// projeção que não se deixa ler aflora como falha de leitura.
     /// </summary>
-    private static Result<CertamePublicadoDto> Servir(CertameDivulgado? divulgado)
+    private static Result<CertamePublicadoDto> Servir(CertameDivulgado? divulgado, DateTimeOffset instante)
     {
         if (divulgado is null)
         {
             return NaoEncontrado();
         }
 
-        return ProjecaoDoCertamePublicado.TentarLerProjecao(divulgado.Certame, out CertamePublicadoDto? certame)
-            ? Result<CertamePublicadoDto>.Success(certame)
-            : ProjecaoDoCertamePublicado.RecusarDocumentoIlegivel();
+        if (!ProjecaoDoCertamePublicado.TentarLerProjecao(divulgado.Certame, out CertamePublicadoDto? certame))
+        {
+            return ProjecaoDoCertamePublicado.RecusarDocumentoIlegivel();
+        }
+
+        SituacaoDoCertame situacao = SituacaoDaVitrine.Classificar(
+            divulgado.InscricoesDe, divulgado.InscricoesAte, instante, SituacaoDaVitrine.LimiarDosUltimosDias);
+
+        return Result<CertamePublicadoDto>.Success(certame with { Situacao = situacao });
     }
 
     private static Result<CertamePublicadoDto> NaoEncontrado() =>

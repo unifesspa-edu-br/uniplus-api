@@ -30,17 +30,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 public static class ListarCertamesPublicadosQueryHandler
 {
     /// <summary>
-    /// A partir de quanto tempo do encerramento um certame é "últimos dias".
-    /// </summary>
-    /// <remarks>
-    /// <b>Valor provisório.</b> O estado aparece no modelo de interface do portal, mas o limiar que o
-    /// define não está declarado em requisito nem em regra de negócio publicada — e ele é decisão de
-    /// produto, não de implementação: encurtá-lo ou alargá-lo muda o que o cidadão lê como urgente.
-    /// Sete dias é o que se assume até a regra existir, e trocá-lo é mudar esta constante.
-    /// </remarks>
-    private static readonly TimeSpan LimiarDosUltimosDias = TimeSpan.FromDays(7);
-
-    /// <summary>
     /// A ordem que vale quando a consulta não pede outra: vazia, porque a rotação por urgência não
     /// é composta de campos do catálogo — ela mistura o segmento aberto/encerrado, que depende do
     /// instante da consulta e não é atributo de linha nenhuma, com o prazo. Quem a monta é a
@@ -75,7 +64,7 @@ public static class ListarCertamesPublicadosQueryHandler
 
         PaginaDaVitrine pagina = await certameDivulgadoRepository
             .ListarVitrineAsync(
-                query.Instante, query.Recorte, ordenacao.Value!, LimiarDosUltimosDias,
+                query.Instante, query.Recorte, ordenacao.Value!, SituacaoDaVitrine.LimiarDosUltimosDias,
                 query.AfterSortKey, query.AfterId, query.Limit, query.Direction,
                 query.IncluirContadores, ProjecaoDoCertamePublicado.Versao, cancellationToken)
             .ConfigureAwait(false);
@@ -100,7 +89,7 @@ public static class ListarCertamesPublicadosQueryHandler
                 divulgado.InscricoesDe,
                 divulgado.InscricoesAte,
                 SituacaoDaVitrine.Classificar(
-                    divulgado.InscricoesDe, divulgado.InscricoesAte, instante, LimiarDosUltimosDias),
+                    divulgado.InscricoesDe, divulgado.InscricoesAte, instante, SituacaoDaVitrine.LimiarDosUltimosDias),
                 certame.Vagas.Sum(static v => v.TotalPublicado)));
         }
 

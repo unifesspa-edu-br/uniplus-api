@@ -78,7 +78,7 @@ public sealed class CertamePublicadoController : ControllerBase
         + "recomeçar.";
 
     private const string DescricaoDoSeloDoCertame =
-        "Selo da representação servida, no formato \"{versaoDaProjecao}:{hashDaConfiguracao}\". "
+        "Selo da representação servida, no formato \"{versaoDaProjecao}:{hashDaConfiguracao}:{situacao}\". "
         + "Devolva-o no If-None-Match da próxima leitura: a resposta é de revalidação obrigatória "
         + "(Cache-Control: no-cache), e o selo é o que permite receber 304 em vez do documento "
         + "inteiro. Esta rota é somente leitura e não aceita If-Match.";
@@ -225,8 +225,8 @@ public sealed class CertamePublicadoController : ControllerBase
         CancellationToken cancellationToken)
     {
         IQuery<Result<CertamePublicadoDto>> consulta = Guid.TryParse(id, out Guid processoSeletivoId)
-            ? new ObterCertamePublicadoQuery(processoSeletivoId)
-            : new ObterCertamePublicadoPorIdentificadorQuery(id);
+            ? new ObterCertamePublicadoQuery(processoSeletivoId, _relogio.GetUtcNow())
+            : new ObterCertamePublicadoPorIdentificadorQuery(id, _relogio.GetUtcNow());
 
         return ServirAsync(consulta, ifNoneMatch, cancellationToken);
     }
@@ -251,7 +251,7 @@ public sealed class CertamePublicadoController : ControllerBase
         }
 
         CertamePublicadoDto certame = resultado.Value!;
-        string etag = $"\"{certame.VersaoProjecao}:{certame.HashConfiguracao}\"";
+        string etag = SeloDoCertamePublicado.De(certame);
 
         Response.Headers.ETag = etag;
 

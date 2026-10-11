@@ -40,7 +40,9 @@ internal static class ProjecaoDoCertamePublicado
     public const string Versao = "7";
 
     /// <summary>
-    /// Forma do documento divulgado — a MESMA do wire, e a usada para lê-lo de volta.
+    /// Forma do documento divulgado — a MESMA do wire, e a usada para lê-lo de volta. A única parte
+    /// da resposta que não está no documento é a situação da janela de inscrição, que depende do
+    /// instante e é acrescentada na leitura (<see cref="CertamePublicadoDto.Situacao"/>).
     /// </summary>
     /// <remarks>
     /// <para>

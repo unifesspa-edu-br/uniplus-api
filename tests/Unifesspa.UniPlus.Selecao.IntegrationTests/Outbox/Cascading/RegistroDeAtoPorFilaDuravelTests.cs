@@ -771,6 +771,11 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
         JsonElement item = ItensDaVitrine(itens.RootElement)
             .Single(i => i.GetProperty("processoSeletivoId").GetGuid() == processoId);
         item.GetProperty("identificadorLegivel").GetString().Should().Be(identificador);
+
+        // O detalhe traz a situação com o mesmo vocabulário e a mesma regra da vitrine.
+        using JsonDocument detalheComSituacao = JsonDocument.Parse(corpoPeloIdentificador);
+        detalheComSituacao.RootElement.GetProperty("situacao").GetString()
+            .Should().Be(item.GetProperty("situacao").GetString());
     }
 
     private static async Task<string> CodigoDaRecusaAsync(HttpClient client, string identificador)

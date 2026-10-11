@@ -14,5 +14,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// nenhum certame público pode tê-lo, e distinguir o formato inválido do certame ausente não ajuda o
 /// chamador anônimo a nada além de sondar a regra.
 /// </remarks>
+/// <param name="Instante">Instante da leitura, contra o qual se resolve a situação da janela de inscrição.</param>
 public sealed record ObterCertamePublicadoPorIdentificadorQuery(
-    string IdentificadorLegivel) : IQuery<Result<CertamePublicadoDto>>;
+    string IdentificadorLegivel,
+    DateTimeOffset Instante) : IQuery<Result<CertamePublicadoDto>>;

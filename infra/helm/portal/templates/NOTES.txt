@@ -67,10 +67,26 @@ Pre-requisito obrigatorio 3 — redes confiaveis do proxy:
       -f docker/docker-compose.override.yml` em vez do chart Helm — o
       compose já injeta as variáveis correspondentes (porta 5302).
 
+Pre-requisito 4 — origens da pagina publica do certame:
+  A rota GET /api/portal/certames/{identificador} compoe o contrato publico de
+  Selecao com a consulta de atos de Publicacoes, ambos no deployable
+  monolitico. Os enderecos (`origens.selecaoBaseUrl` e
+  `origens.publicacoesBaseUrl`) sao obrigatorios e validados na subida: sem
+  eles, ou com endereco invalido, o pod crashloopa com
+  OptionsValidationException. O padrao aponta para o Service do chart
+  infra/helm/uniplus com o release "uniplus"; ajuste ao nome real do release
+  do monolito:
+
+    origens:
+      selecaoBaseUrl: http://<release-do-monolito>-uniplus-api
+      publicacoesBaseUrl: http://<release-do-monolito>-uniplus-api
+
 Endpoints expostos pela API após o pod ficar Ready:
   GET /health/live               -> liveness (dependency-free, sempre 200 enquanto vivo)
-  GET /health                    -> readiness (agregado: OIDC, Postgres, Kafka, Redis)
+  GET /health/ready              -> readiness (so o provedor de identidade, usado pelas rotas de sessao e perfil)
+  GET /health                    -> mesmas verificacoes da readiness, sem filtro
   GET /api/portal/ping           -> endpoint dummy para validar OpenAPI
+  GET /api/portal/certames/{identificador} -> pagina publica do certame (anonima)
   GET /openapi/portal.json       -> documento OpenAPI 3.1
   GET /api/auth/me               -> claims do token (autenticado)
   GET /api/profile/me            -> perfil consolidado (autenticado)

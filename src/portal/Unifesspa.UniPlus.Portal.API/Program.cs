@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Portal.API;
 using Unifesspa.UniPlus.Portal.API.Errors;
 using Unifesspa.UniPlus.Portal.Application;
 using Unifesspa.UniPlus.Portal.Infrastructure;
+using Unifesspa.UniPlus.Portal.Infrastructure.Origens;
 using Unifesspa.UniPlus.Portal.Infrastructure.Persistence;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -32,6 +33,8 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.Converters.Add(
+            new System.Text.Json.Serialization.JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy.CamelCase));
     });
 
 // Minimal API endpoints use a separate JSON options pipeline (ConfigureHttpJsonOptions),
@@ -39,6 +42,8 @@ builder.Services.AddControllers()
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+    options.SerializerOptions.Converters.Add(
+        new System.Text.Json.Serialization.JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy.CamelCase));
 });
 
 // TimeProvider — registrado explicitamente porque Selecao/Ingresso o ganham
@@ -74,6 +79,10 @@ builder.Services.AdicionarObservabilidade(nomeServicoPortal, builder.Configurati
 // injetada no factory do AddDbContext — simetria com Selecao/Ingresso (#204).
 builder.Services.AddPortalApplication();
 builder.Services.AddPortalInfrastructure();
+
+// Origens da página pública do certame — contrato público de Seleção e consulta unificada de atos
+// de Publicações (ADR-0131). Configuração obrigatória, validada na subida.
+builder.Services.AddPortalOrigens(builder.Configuration);
 
 // Migrations EF Core do módulo Portal aplicadas no host StartAsync via IHostedService —
 // pareado com AutoBuildMessageStorageOnStartup do Wolverine (issue #344). Como hosted

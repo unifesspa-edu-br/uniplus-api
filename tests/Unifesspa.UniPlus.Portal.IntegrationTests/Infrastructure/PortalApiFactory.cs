@@ -20,5 +20,8 @@ public sealed class PortalApiFactory : ApiFactoryBase<PortalApiAssemblyMarker>
         new("Kafka:BootstrapServers", string.Empty),
         new("Auth:Authority", "http://localhost/test-realm"),
         new("Auth:Audience", "uniplus"),
+        // Obrigatórias na subida; endereços que nenhum teste desta fixture chama.
+        new("Origens:SelecaoBaseUrl", "http://uniplus-api.integration-not-real:8080"),
+        new("Origens:PublicacoesBaseUrl", "http://uniplus-api.integration-not-real:8080"),
     ];
 }

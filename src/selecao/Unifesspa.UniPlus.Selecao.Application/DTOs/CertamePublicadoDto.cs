@@ -1,5 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
+using System.Text.Json.Serialization;
+
+using Domain.Interfaces;
+
 /// <summary>
 /// Par código/nome de um item de catálogo congelado na publicação — serve tanto ao tipo do
 /// processo quanto ao tipo de uma etapa.
@@ -186,6 +190,10 @@ public sealed record AtendimentoCertameDto(
 /// altera — um cache endereçado só por ele continuaria servindo a resposta anterior depois do
 /// deploy. A versão da projeção é o que separa as duas.
 /// </para>
+/// <para>
+/// <see cref="Situacao"/> é a única parte da resposta que não vem da projeção: depende do instante
+/// da leitura, e por isso é calculada a cada consulta e nunca guardada no documento divulgado.
+/// </para>
 /// </remarks>
 public sealed record CertamePublicadoDto(
     Guid ProcessoSeletivoId,
@@ -208,4 +216,15 @@ public sealed record CertamePublicadoDto(
     IReadOnlyList<ExigenciaDocumentalCertameDto> DocumentosExigidos,
     AtendimentoCertameDto Atendimento,
     TaxaInscricaoCertameDto? TaxaInscricao,
-    RetificacaoCertameDto? Retificacao);
+    RetificacaoCertameDto? Retificacao)
+{
+    /// <summary>
+    /// Situação da janela de inscrição no instante da leitura, pela mesma regra da vitrine.
+    /// </summary>
+    /// <remarks>
+    /// Fica fora do construtor e é omitida quando nula: o documento divulgado é gravado sem ela, e a
+    /// leitura a acrescenta. Na resposta da consulta ela está sempre presente.
+    /// </remarks>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public SituacaoDoCertame? Situacao { get; init; }
+}

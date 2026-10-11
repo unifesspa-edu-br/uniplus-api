@@ -15,3 +15,6 @@ data:
   {{- range $index, $network := .Values.reverseProxy.trustedNetworks }}
   ReverseProxy__TrustedNetworks__{{ $index }}: {{ $network | quote }}
   {{- end }}
+  Origens__SelecaoBaseUrl: {{ required "origens.selecaoBaseUrl e obrigatorio: a Portal nao sobe sem o endereco de Selecao" .Values.origens.selecaoBaseUrl | quote }}
+  Origens__PublicacoesBaseUrl: {{ required "origens.publicacoesBaseUrl e obrigatorio: a Portal nao sobe sem o endereco de Publicacoes" .Values.origens.publicacoesBaseUrl | quote }}
+  Origens__ReencaminharAposEmSegundos: {{ .Values.origens.reencaminharAposEmSegundos | quote }}

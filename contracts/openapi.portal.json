@@ -99,6 +99,100 @@
         ]
       }
     },
+    "/api/portal/certames/{identificador}": {
+      "get": {
+        "tags": [
+          "CertamePublico"
+        ],
+        "parameters": [
+          {
+            "name": "identificador",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "If-None-Match",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "description": "Selo da p\u00E1gina composta. Devolva-o no If-None-Match da pr\u00F3xima leitura: a resposta \u00E9 de revalida\u00E7\u00E3o obrigat\u00F3ria (Cache-Control: no-cache), e o selo permite receber 304 em vez da p\u00E1gina inteira. Ausente quando a linha do tempo est\u00E1 incompleta, porque essa resposta n\u00E3o \u00E9 guardada.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/vnd.uniplus.certame-publico.v1\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/CertamePublicoResponse"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not Modified",
+            "headers": {
+              "ETag": {
+                "description": "Selo da p\u00E1gina composta. Devolva-o no If-None-Match da pr\u00F3xima leitura: a resposta \u00E9 de revalida\u00E7\u00E3o obrigat\u00F3ria (Cache-Control: no-cache), e o selo permite receber 304 em vez da p\u00E1gina inteira. Ausente quando a linha do tempo est\u00E1 incompleta, porque essa resposta n\u00E3o \u00E9 guardada.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "headers": {
+              "Retry-After": {
+                "description": "Em quantos segundos vale tentar de novo. Presente quando os dados do certame est\u00E3o temporariamente indispon\u00EDveis.",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/portal/ping": {
       "get": {
         "tags": [
@@ -171,6 +265,118 @@
           }
         }
       },
+      "CertamePublicoResponse": {
+        "required": [
+          "identificador",
+          "nome",
+          "numeroEdital",
+          "situacao",
+          "documentoEditalUrl",
+          "dataPublicacao",
+          "linhaDoTempo",
+          "aviso"
+        ],
+        "type": "object",
+        "properties": {
+          "identificador": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "numeroEdital": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "situacao": {
+            "$ref": "#/components/schemas/SituacaoDaInscricao"
+          },
+          "documentoEditalUrl": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uri"
+          },
+          "dataPublicacao": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "linhaDoTempo": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventoDaLinhaDoTempoResponse"
+            }
+          },
+          "aviso": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "EventoDaLinhaDoTempoResponse": {
+        "required": [
+          "id",
+          "data",
+          "titulo",
+          "numero",
+          "ano",
+          "tipo",
+          "descricao",
+          "documentoUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "data": {
+            "type": "string",
+            "format": "date"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "numero": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ano": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "tipo": {
+            "$ref": "#/components/schemas/TipoDoEventoResponse"
+          },
+          "descricao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "documentoUrl": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uri"
+          }
+        }
+      },
       "PingResponse": {
         "required": [
           "pong",
@@ -226,6 +432,30 @@
           "retryable": {
             "type": "boolean",
             "description": "Presente e \u0060true\u0060 quando o conflito descreve uma corrida que j\u00E1 passou: a mesma requisi\u00E7\u00E3o, repetida sem altera\u00E7\u00E3o, pode agora ser aceita. A aus\u00EAncia \u00E9 o default conservador do servidor \u2014 diz que o conflito n\u00E3o foi declarado retent\u00E1vel, n\u00E3o que repetir esteja descartado; nesse caso vale a descri\u00E7\u00E3o da pr\u00F3pria resposta."
+          }
+        }
+      },
+      "SituacaoDaInscricao": {
+        "enum": [
+          "emBreve",
+          "inscricoesAbertas",
+          "ultimosDias",
+          "encerradas"
+        ],
+        "type": "string"
+      },
+      "TipoDoEventoResponse": {
+        "required": [
+          "codigo",
+          "nome"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
           }
         }
       },
@@ -301,6 +531,9 @@
     },
     {
       "name": "Profile"
+    },
+    {
+      "name": "CertamePublico"
     },
     {
       "name": "Ping"

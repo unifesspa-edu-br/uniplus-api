@@ -195,6 +195,10 @@ services:
       # passado por aqui. Sob /portal, tudo que o documento do Portal invoca chega a
       # este processo, seja qual for o path da operação.
       UniPlus__OpenApi__LocalServerUrl: "http://localhost:5299/portal"
+      # Origens da página pública do certame (ADR-0131): Seleção e Publicações são
+      # servidos pelo monólito, consultados sem credencial pela rede interna do compose.
+      Origens__SelecaoBaseUrl: "http://uniplus-api:8080"
+      Origens__PublicacoesBaseUrl: "http://uniplus-api:8080"
     ports:
       - "5302:8080"
     depends_on:

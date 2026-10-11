@@ -38,6 +38,21 @@ cors:
 reverseProxy:
   trustedNetworks: []
 
+# Origens que a pagina publica do certame compoe (ADR-0131): o contrato publico
+# de leitura do certame (Selecao) e a consulta unificada de atos (Publicacoes),
+# ambos servidos pelo deployable monolitico, sem credencial. Endereco base, sem
+# caminho. Configuracao OBRIGATORIA: a Portal valida os dois enderecos na
+# subida e nao sobe sem eles. O padrao aponta para o Service do chart
+# infra/helm/uniplus instalado com o release "uniplus"
+# ({{ .Release.Name }}-uniplus-api, porta 80); ajuste se o monolito tiver
+# outro nome de release. Cada chave vira a env var Origens__<Chave> via
+# ConfigMap.
+origens:
+  selecaoBaseUrl: http://uniplus-uniplus-api
+  publicacoesBaseUrl: http://uniplus-uniplus-api
+  # Segundos do Retry-After da resposta 503 quando Selecao esta indisponivel.
+  reencaminharAposEmSegundos: 15
+
 secrets:
   connectionString: ""
   redisConnection: ""
