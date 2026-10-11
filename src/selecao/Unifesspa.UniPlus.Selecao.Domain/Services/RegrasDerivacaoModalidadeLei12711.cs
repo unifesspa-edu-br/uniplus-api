@@ -29,7 +29,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </remarks>
 public static class RegrasDerivacaoModalidadeLei12711
 {
-    public const string CodigoFato = "MODALIDADE";
+    public const string CodigoFato = AvaliacaoDaInscricao.FatoDaModalidade;
 
     private const string ConcorrerPcd = "CONCORRER_PCD";
     private const string ConcorrerEp = "CONCORRER_EP";

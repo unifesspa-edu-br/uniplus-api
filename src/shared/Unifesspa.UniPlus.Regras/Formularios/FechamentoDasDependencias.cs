@@ -9,7 +9,9 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// a definição não pergunta nem calcula — os de outra fase e os do sistema.
 /// </summary>
 /// <remarks>
-/// O agregado sobre um grupo é folha do fechamento: ele depende do grupo inteiro, que é perguntado.
+/// O agregado sobre um grupo depende do grupo inteiro, que é perguntado. O perguntado e o agregado são
+/// folhas, a menos que se diga do que eles dependem para aparecer e ser exigidos: aí o fechamento
+/// segue também esses fatos, até o ponto fixo.
 /// </remarks>
 public sealed record FechamentoDasDependencias(
     IReadOnlySet<string> Derivacoes,
@@ -21,11 +23,16 @@ public sealed record FechamentoDasDependencias(
     /// <param name="perguntados">Os fatos que a definição pergunta, em item ou subitem.</param>
     /// <param name="derivacoes">As derivações que o fechamento pode atravessar, pelo fato derivado.</param>
     /// <param name="agregados">Os agregados que o fechamento pode alcançar, pelo fato agregado.</param>
+    /// <param name="condicoes">
+    /// Do que o perguntado ou o agregado alcançado depende para aparecer e ser exigido — a exibição e a
+    /// obrigatoriedade do campo, ou do grupo, e a exibição da seção dele. Sem a entrada, é folha.
+    /// </param>
     public static FechamentoDasDependencias De(
         IEnumerable<string> citados,
         IReadOnlySet<string> perguntados,
         IReadOnlyDictionary<string, RegrasDerivacaoFato> derivacoes,
-        IReadOnlyDictionary<string, DefinicaoAgregado> agregados)
+        IReadOnlyDictionary<string, DefinicaoAgregado> agregados,
+        IReadOnlyDictionary<string, IReadOnlyCollection<string>>? condicoes = null)
     {
         ArgumentNullException.ThrowIfNull(citados);
         ArgumentNullException.ThrowIfNull(perguntados);
@@ -48,6 +55,7 @@ public sealed record FechamentoDasDependencias(
             if (perguntados.Contains(fato))
             {
                 perguntadosAlcancados.Add(fato);
+                SeguirCondicoes(fato);
             }
             else if (derivacoes.TryGetValue(fato, out RegrasDerivacaoFato? derivacao))
             {
@@ -60,6 +68,7 @@ public sealed record FechamentoDasDependencias(
             else if (agregados.ContainsKey(fato))
             {
                 agregadosAlcancados.Add(fato);
+                SeguirCondicoes(fato);
             }
             else
             {
@@ -68,5 +77,13 @@ public sealed record FechamentoDasDependencias(
         }
 
         return new(derivacoesAlcancadas, agregadosAlcancados, perguntadosAlcancados, [.. pressupostos.Order(StringComparer.Ordinal)]);
+
+        void SeguirCondicoes(string fato)
+        {
+            foreach (string condicao in condicoes?.GetValueOrDefault(fato) ?? [])
+            {
+                aVisitar.Enqueue(condicao);
+            }
+        }
     }
 }
