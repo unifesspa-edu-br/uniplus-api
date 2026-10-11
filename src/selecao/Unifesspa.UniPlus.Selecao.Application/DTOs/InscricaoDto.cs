@@ -96,6 +96,8 @@ public sealed record InscricaoDto(
 /// para o próprio dono.
 /// <see cref="FusoHorario"/> é a zona em que o <see cref="Instante"/> se lê: o comprovante se
 /// apresenta sem depender de o certame estar disponível.
+/// <see cref="Modalidades"/> são as modalidades em que o candidato concorre, na ordem das ofertadas;
+/// nulas quando o processo não define pela inscrição as modalidades de concorrência.
 /// </summary>
 public sealed record ComprovanteInscricaoDto(
     string CpfMascarado,
@@ -107,7 +109,8 @@ public sealed record ComprovanteInscricaoDto(
     IReadOnlyDictionary<string, JsonElement> Respostas,
     IReadOnlyDictionary<string, JsonElement> Derivados,
     IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>> Grupos,
-    IReadOnlyList<AceiteDeTermoInput> Aceites)
+    IReadOnlyList<AceiteDeTermoInput> Aceites,
+    IReadOnlyList<ModalidadeDaInscricaoDto>? Modalidades)
 {
     public static ComprovanteInscricaoDto De(ComprovanteInscricao comprovante, Cpf cpf)
     {
@@ -128,7 +131,8 @@ public sealed record ComprovanteInscricaoDto(
                 g => (IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>)
                     [.. g.Value.Select(static o => new OcorrenciaDeGrupoInscricaoInput(o.Id, o.Respostas))],
                 StringComparer.Ordinal),
-            [.. comprovante.Aceites.Select(static a => new AceiteDeTermoInput(a.Codigo, a.VersaoId, a.HashVersao))]);
+            [.. comprovante.Aceites.Select(static a => new AceiteDeTermoInput(a.Codigo, a.VersaoId, a.HashVersao))],
+            comprovante.Modalidades?.Select(static m => new ModalidadeDaInscricaoDto(m.Codigo, m.Nome, m.Ordem)).ToList());
     }
 }
 

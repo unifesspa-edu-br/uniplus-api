@@ -10342,7 +10342,8 @@
           "respostas",
           "derivados",
           "grupos",
-          "aceites"
+          "aceites",
+          "modalidades"
         ],
         "type": "object",
         "properties": {
@@ -10388,6 +10389,15 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AceiteDeTermoInput"
+            }
+          },
+          "modalidades": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ModalidadeDaInscricaoDto"
             }
           }
         }

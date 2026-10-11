@@ -29,6 +29,15 @@ public static class InscricaoErrorCodes
     public const string GrupoIdDuplicado = "Inscricao.GrupoIdDuplicado";
     public const string TermoNaoAceito = "Inscricao.TermoNaoAceito";
 
+    /// <summary>A versão fixada deriva a modalidade, e as respostas não dão nenhuma das ofertadas (UNI-REQ-0076).</summary>
+    public const string NenhumaModalidade = "Inscricao.NenhumaModalidade";
+
+    /// <summary>
+    /// A versão fixada deriva a modalidade, e as respostas, sem nenhum obrigatório em falta, ainda não
+    /// a decidem: o envio não sai sem saber em que o candidato concorre.
+    /// </summary>
+    public const string ModalidadeNaoDecidida = "Inscricao.ModalidadeNaoDecidida";
+
     /// <summary>
     /// A submissão tem Idempotency-Key (ADR-0119) — o handler captura a corrida de xmin
     /// localmente em vez de deixá-la propagar para o 409 central do GlobalExceptionMiddleware.

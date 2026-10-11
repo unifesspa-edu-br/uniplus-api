@@ -20,9 +20,11 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// recusam a submissão — nada disso é tolerado no rascunho.
 /// </summary>
 /// <remarks>
-/// Recebe a avaliação já pronta (<see cref="AvaliacaoFormulario"/>), calculada com
-/// <c>EtapasConcluidas</c> = todas as etapas do recorte: a submissão É o candidato declarando que
-/// terminou, então o veredito avalia como se tudo estivesse concluído — um campo opcional sem
+/// Recebe a avaliação já pronta: a da definição inteira da versão fixada, feita pela
+/// <see cref="AvaliacaoDaInscricao"/> com as etapas da inscrição concluídas, e restrita à finalidade
+/// Inscrição por <see cref="AvaliacaoDaInscricao.DaInscricao"/>. Quem chama passa só essa parte: um
+/// item ou termo obrigatório de outra finalidade, como a isenção, não é pendência da inscrição. Com as
+/// etapas concluídas, a submissão é o candidato declarando que terminou: um campo opcional sem
 /// resposta deixa de ser pendência (<see cref="EstadoFato.Indeterminado"/>) e passa a
 /// <see cref="EstadoFato.NaoInformado"/>, que não pesa; só o obrigatório sem resposta permanece
 /// indeterminado.
@@ -108,7 +110,7 @@ public static class VeredictoDeSubmissao
     }
 
     /// <summary>
-    /// <see cref="FormularioPortavel.Avaliar"/> descarta em silêncio, via <c>RespostaDeCampo.DentroDaOferta</c>,
+    /// A <see cref="AvaliacaoDaInscricao"/> descarta em silêncio, via <c>RespostaDeCampo.DentroDaOferta</c>,
     /// a resposta de um fato ofertado cujo código não pertence à oferta vigente — o item some da
     /// avaliação como se não houvesse resposta, e a submissão recusaria no máximo por obrigatoriedade
     /// (nunca por fato de o código ser inválido, e nem recusaria nada se o item for opcional). A

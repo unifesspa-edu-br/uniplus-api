@@ -49,15 +49,18 @@ public sealed record ResultadoDaAvaliacaoDaInscricao(
 
 /// <summary>
 /// As modalidades em que o candidato concorre (UNI-REQ-0076). <see cref="Derivada"/> diz se a
-/// configuração deriva a modalidade; sem derivação não há situação, item nem pendência.
+/// configuração deriva a modalidade; sem derivação não há situação, item, pendência nem dependência.
+/// <see cref="Dependencias"/> são os campos e os grupos da inscrição de que a modalidade depende: é
+/// neles que o candidato confere as respostas quando não concorre a nenhuma.
 /// </summary>
 public sealed record ModalidadesDeConcorrencia(
     bool Derivada,
     SituacaoDasModalidades Situacao,
     IReadOnlyList<ModalidadeDeConcorrencia> Itens,
-    IReadOnlyList<PendenciaDaAvaliacao> Pendencias)
+    IReadOnlyList<PendenciaDaAvaliacao> Pendencias,
+    DependenciasDaAvaliacao Dependencias)
 {
-    public static ModalidadesDeConcorrencia SemDerivacao { get; } = new(false, SituacaoDasModalidades.Nenhuma, [], []);
+    public static ModalidadesDeConcorrencia SemDerivacao { get; } = new(false, SituacaoDasModalidades.Nenhuma, [], [], new DependenciasDaAvaliacao([], []));
 }
 
 /// <summary>Uma modalidade em que o candidato concorre: o código, o nome congelado e a posição na ordem das ofertadas.</summary>

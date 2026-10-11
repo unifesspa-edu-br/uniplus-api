@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 
 /// <summary>
@@ -69,6 +70,11 @@ internal sealed class ComprovanteInscricaoConfiguration : IEntityTypeConfigurati
             .HasColumnType("jsonb")
             .IsRequired();
 
+        builder.Property(c => c.Modalidades)
+            .HasConversion(ModalidadesConverter, ModalidadesComparer)
+            .HasColumnType("jsonb")
+            .HasComment("As modalidades em que o candidato concorre nesta submissão, com o nome congelado e a ordem das ofertadas; nulo quando a versão não deriva a modalidade.");
+
         // Mesmo padrão de ObrigatoriedadeLegalHistoricoConfiguration: sem navigation property —
         // a forensic não navega de volta para a Inscricao em queries de histórico.
         builder.HasOne<InscricaoRecord>()
@@ -100,6 +106,16 @@ internal sealed class ComprovanteInscricaoConfiguration : IEntityTypeConfigurati
             (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
             v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null).GetHashCode(StringComparison.Ordinal),
             v => JsonSerializer.Deserialize<Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>>(JsonSerializer.Serialize(v, (JsonSerializerOptions?)null), (JsonSerializerOptions?)null)!);
+
+    private static readonly ValueConverter<IReadOnlyList<ModalidadeDeConcorrencia>?, string?> ModalidadesConverter =
+        new(valor => valor == null ? null : JsonSerializer.Serialize(valor, (JsonSerializerOptions?)null),
+            json => json == null ? null : JsonSerializer.Deserialize<List<ModalidadeDeConcorrencia>>(json, (JsonSerializerOptions?)null));
+
+    private static readonly ValueComparer<IReadOnlyList<ModalidadeDeConcorrencia>?> ModalidadesComparer =
+        new(
+            (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
+            v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null).GetHashCode(StringComparison.Ordinal),
+            v => v == null ? null : JsonSerializer.Deserialize<List<ModalidadeDeConcorrencia>>(JsonSerializer.Serialize(v, (JsonSerializerOptions?)null), (JsonSerializerOptions?)null));
 
     private static readonly ValueConverter<IReadOnlyList<AceiteDeTermo>, string> AceitesConverter =
         new(valor => JsonSerializer.Serialize(valor, (JsonSerializerOptions?)null),

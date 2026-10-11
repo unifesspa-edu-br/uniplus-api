@@ -10,8 +10,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// O comprovante de uma submissão da <see cref="Inscricao"/> (issue #1858, §4.1 do plano da
 /// #1855): cópia do que foi enviado, SEM nenhum número de documento, com o hash de integridade
 /// que prova que o comprovante não mudou. O hash é o SHA-256 do JSON canônico do conteúdo
-/// (número, instante em segundos UTC, oferta, respostas, derivados, grupos e aceites); qualquer
-/// um o recalcula, e não é um código de autenticação.
+/// (número, instante em segundos UTC, oferta, respostas, derivados, grupos, aceites e, quando a
+/// versão deriva a modalidade, as modalidades em que o candidato concorre); qualquer um o
+/// recalcula, e não é um código de autenticação.
 /// </summary>
 /// <remarks>
 /// Implementa <see cref="IForensicEntity"/> per ADR-0063: append-only, NÃO herda
@@ -46,6 +47,12 @@ public sealed class ComprovanteInscricao : IForensicEntity
 
     public IReadOnlyList<AceiteDeTermo> Aceites { get; private init; } = [];
 
+    /// <summary>
+    /// As modalidades em que o candidato concorre nesta submissão, com o nome congelado na publicação e
+    /// a ordem das ofertadas (UNI-REQ-0076); nulo quando a versão fixada não deriva a modalidade.
+    /// </summary>
+    public IReadOnlyList<ModalidadeDeConcorrencia>? Modalidades { get; private init; }
+
     // Construtor de materialização do EF Core.
     private ComprovanteInscricao() { }
 
@@ -57,7 +64,8 @@ public sealed class ComprovanteInscricao : IForensicEntity
         IReadOnlyDictionary<string, JsonElement> respostas,
         IReadOnlyDictionary<string, JsonElement> derivados,
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
-        IReadOnlyList<AceiteDeTermo> aceites)
+        IReadOnlyList<AceiteDeTermo> aceites,
+        IReadOnlyList<ModalidadeDeConcorrencia>? modalidades = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(numeroInscricao);
         ArgumentNullException.ThrowIfNull(respostas);
@@ -79,12 +87,13 @@ public sealed class ComprovanteInscricao : IForensicEntity
             NumeroInscricao = numeroInscricao,
             Instante = instante,
             HashIntegridade = HashDoConteudo(
-                numeroInscricao, instante, ofertaCursoId, respostasGravadas, derivadosGravados, gruposGravados, aceites),
+                numeroInscricao, instante, ofertaCursoId, respostasGravadas, derivadosGravados, gruposGravados, aceites, modalidades),
             Grupos = gruposGravados,
             OfertaCursoId = ofertaCursoId,
             Respostas = respostasGravadas,
             Derivados = derivadosGravados,
             Aceites = aceites,
+            Modalidades = modalidades,
         };
     }
 
@@ -92,7 +101,7 @@ public sealed class ComprovanteInscricao : IForensicEntity
     public bool IntegridadeConfere() =>
         string.Equals(
             HashIntegridade,
-            HashDoConteudo(NumeroInscricao, Instante, OfertaCursoId, Respostas, Derivados, Grupos, Aceites),
+            HashDoConteudo(NumeroInscricao, Instante, OfertaCursoId, Respostas, Derivados, Grupos, Aceites, Modalidades),
             StringComparison.Ordinal);
 
     /// <summary>
@@ -154,7 +163,8 @@ public sealed class ComprovanteInscricao : IForensicEntity
         IReadOnlyDictionary<string, JsonElement> respostas,
         IReadOnlyDictionary<string, JsonElement> derivados,
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
-        IReadOnlyList<AceiteDeTermo> aceites)
+        IReadOnlyList<AceiteDeTermo> aceites,
+        IReadOnlyList<ModalidadeDeConcorrencia>? modalidades)
     {
         JsonObject conteudo = new()
         {
@@ -166,6 +176,11 @@ public sealed class ComprovanteInscricao : IForensicEntity
             ["grupos"] = Nodo(grupos),
             ["aceites"] = Nodo(aceites),
         };
+
+        if (modalidades is not null)
+        {
+            conteudo["modalidades"] = Nodo(modalidades);
+        }
 
         return HashCanonicalComputer.ComputeSha256Hex(HashCanonicalComputer.ComputeSnapshotBytes(conteudo));
     }

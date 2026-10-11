@@ -62,6 +62,14 @@ public static class DefinicaoDoProcesso
     public static string CodigoDoTermo(FinalidadeFormulario finalidade, string codigo) =>
         $"{finalidade}:{codigo}";
 
+    /// <summary>Se a etapa ou o termo, pelo código que tem na definição do processo, é da finalidade.</summary>
+    public static bool EhDaFinalidade(string codigo, FinalidadeFormulario finalidade)
+    {
+        ArgumentNullException.ThrowIfNull(codigo);
+        string prefixo = finalidade.ToString();
+        return codigo == prefixo || codigo.StartsWith(prefixo + ":", StringComparison.Ordinal);
+    }
+
     private static IEnumerable<DefinicaoEtapa> EtapasDaFinalidade(
         FinalidadeFormulario finalidade, FormularioProcesso? formulario, IReadOnlyList<FatoColetado> itens, IReadOnlyList<GrupoColetado> grupos)
     {
