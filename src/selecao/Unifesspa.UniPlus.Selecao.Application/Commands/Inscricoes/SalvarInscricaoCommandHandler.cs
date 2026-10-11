@@ -74,9 +74,11 @@ public static class SalvarInscricaoCommandHandler
             return Result<InscricaoDto>.Failure(erroDono);
         }
 
+        // O mesmo instante confere o período e é o envio de que se contam os limites da faixa de data.
+        DateTimeOffset instante = timeProvider.GetUtcNow();
         DomainError? foraDoPeriodo = await Services.PeriodoDaInscricaoResolver.ConferirAsync(
             command.ProcessoSeletivoId, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, resolvedorFuso,
-            timeProvider, cancellationToken).ConfigureAwait(false);
+            instante, cancellationToken).ConfigureAwait(false);
         if (foraDoPeriodo is not null)
         {
             return Result<InscricaoDto>.Failure(foraDoPeriodo);
@@ -98,6 +100,13 @@ public static class SalvarInscricaoCommandHandler
             return Result<InscricaoDto>.Failure(contexto.Error!);
         }
 
+        Result<TimeZoneInfo> fuso = resolvedorFuso.Resolver();
+        if (fuso.IsFailure)
+        {
+            return Result<InscricaoDto>.Failure(fuso.Error!);
+        }
+
+        EnvioDasRespostas envio = new(instante, fuso.Value!);
         Dictionary<string, JsonElement> respostas = Services.InscricaoRequestMapper.ParaRespostas(command.Request.Respostas);
         Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = Services.InscricaoRequestMapper.ParaGrupos(command.Request.Grupos);
 
@@ -105,6 +114,7 @@ public static class SalvarInscricaoCommandHandler
             respostas,
             EtapasConcluidas: new HashSet<string>(StringComparer.Ordinal),
             FatosConhecidos: new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
+            envio,
             RespostasDosGrupos: Services.InscricaoRequestMapper.ParaAvaliacao(grupos)));
         if (avaliacao.IsFailure)
         {

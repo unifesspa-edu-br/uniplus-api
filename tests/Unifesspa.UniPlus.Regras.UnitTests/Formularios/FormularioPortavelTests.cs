@@ -80,7 +80,7 @@ public sealed class FormularioPortavelTests
     private static AvaliacaoFormulario Avaliar(FormularioPortavel formulario, IReadOnlyDictionary<string, JsonElement> respostas)
     {
         Result<AvaliacaoFormulario> avaliacao = formulario.Avaliar(new EntradaAvaliacaoFormulario(
-            respostas, new HashSet<string>(StringComparer.Ordinal), new Dictionary<string, Regras.ValueObjects.FatoResolvido>(StringComparer.Ordinal)));
+            respostas, new HashSet<string>(StringComparer.Ordinal), new Dictionary<string, Regras.ValueObjects.FatoResolvido>(StringComparer.Ordinal), Envio: null));
         avaliacao.IsSuccess.Should().BeTrue(avaliacao.Error?.Message);
         return avaliacao.Value!;
     }

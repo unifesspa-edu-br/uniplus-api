@@ -92,6 +92,7 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
                         .Select(static e => DefinicaoDoProcesso.CodigoDaEtapa(EstruturaFormulario.FinalidadeDoToken(e.Finalidade), e.Etapa)),
                     StringComparer.Ordinal),
                 RespostaDeCampo.ComoFatosConhecidos(simulacao.Pressupostos),
+                Envio: null,
                 ocorrencias.ToDictionary(
                     static o => o.Key,
                     o => (IReadOnlyList<OcorrenciaRespondida>)[.. o.Value.Select(r => r with { Respostas = RespostaDeCampo.DentroDaOferta(r.Respostas, ofertados) })],

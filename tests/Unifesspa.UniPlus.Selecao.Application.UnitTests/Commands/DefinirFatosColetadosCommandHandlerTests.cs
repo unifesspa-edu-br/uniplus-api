@@ -485,6 +485,31 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         });
     }
 
+    [Fact(DisplayName = "Faixa de data com a mínima depois da máxima e faixa de data fora do campo de data são recusadas juntas")]
+    public async Task Handle_FaixaDeDataInvalida_RecusaCadaUmaNoSeuCampo()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        RestricaoValorInput ateOEnvio = new("FAIXA_DE_DATA", DataMaxima: new LimiteDeDataInput("ENVIO", Anos: 0, Dias: 0));
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao,
+        [
+            new FatoColetadoInput("DATA_NASCIMENTO", 0, "Data de nascimento", "DATA", "SEMPRE", null,
+                Restricoes: [new RestricaoValorInput(
+                    "FAIXA_DE_DATA",
+                    DataMinima: new LimiteDeDataInput("DATA_FIXA", Data: new DateOnly(2011, 1, 1)),
+                    DataMaxima: new LimiteDeDataInput("DATA_FIXA", Data: new DateOnly(2010, 12, 31)))]),
+            new FatoColetadoInput("NOME_SOCIAL", 1, "Nome social", "TEXTO", "NUNCA", null, Restricoes: [ateOEnvio]),
+        ], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
+        [
+            ("itens[0].restricoes[0]", "RestricaoValor.LimitesIncoerentes"),
+            ("itens[1].restricoes[0]", "ItemFormulario.RestricaoIncoerente"),
+        ]);
+    }
+
     [Fact(DisplayName = "Opção permitida fora do domínio do próprio fato é recusada no grupo dela")]
     public async Task Handle_OpcaoForaDoDominio_Recusa()
     {

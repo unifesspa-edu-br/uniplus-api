@@ -14007,6 +14007,16 @@
               "null",
               "object"
             ]
+          },
+          "envio": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EnvioSimuladoInput"
+              }
+            ]
           }
         }
       },
@@ -16142,6 +16152,22 @@
           }
         }
       },
+      "EnvioSimuladoInput": {
+        "required": [
+          "instante",
+          "fuso"
+        ],
+        "type": "object",
+        "properties": {
+          "instante": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fuso": {
+            "type": "string"
+          }
+        }
+      },
       "EtapaAvaliada": {
         "required": [
           "codigo",
@@ -16749,7 +16775,8 @@
           "grupos",
           "regras",
           "pressupostos",
-          "dataReferenciaFatos"
+          "dataReferenciaFatos",
+          "fusoDoEnvio"
         ],
         "type": "object",
         "properties": {
@@ -16801,6 +16828,12 @@
               "string"
             ],
             "format": "date"
+          },
+          "fusoDoEnvio": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -17280,6 +17313,42 @@
         }
       },
       "JsonElement": {},
+      "LimiteDeDataInput": {
+        "required": [
+          "ancora"
+        ],
+        "type": "object",
+        "properties": {
+          "ancora": {
+            "type": "string"
+          },
+          "data": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "anos": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "dias": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "LocalOfertaDto": {
         "required": [
           "id",
@@ -18271,6 +18340,26 @@
             "items": {
               "type": "string"
             }
+          },
+          "dataMinima": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LimiteDeDataInput"
+              }
+            ]
+          },
+          "dataMaxima": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LimiteDeDataInput"
+              }
+            ]
           }
         }
       },

@@ -1,0 +1,100 @@
+{
+  "descricao": "Sem o envio, o limite contado dele fica indeterminado e o fato fica pendente; a data que já viola o limite fixo viola em definitivo.",
+  "regras": {
+    "etapas": [
+      {
+        "codigo": "DADOS",
+        "exibicao": null,
+        "itens": [
+          {
+            "fatoCodigo": "DATA_A",
+            "exibicao": null,
+            "obrigatoriedade": "SEMPRE",
+            "predicadoObrigatoriedade": null,
+            "restricoes": [
+              {
+                "tipo": "FAIXA_DE_DATA",
+                "minimo": null,
+                "maximo": null,
+                "entradas": null,
+                "fatos": null,
+                "dataMinima": {
+                  "ancora": "DATA_FIXA",
+                  "data": "2000-01-01",
+                  "anos": null,
+                  "dias": null
+                },
+                "dataMaxima": {
+                  "ancora": "ENVIO",
+                  "data": null,
+                  "anos": 0,
+                  "dias": 0
+                }
+              }
+            ],
+            "impedimento": null,
+            "oferta": null,
+            "formato": null
+          },
+          {
+            "fatoCodigo": "DATA_B",
+            "exibicao": null,
+            "obrigatoriedade": "SEMPRE",
+            "predicadoObrigatoriedade": null,
+            "restricoes": [
+              {
+                "tipo": "FAIXA_DE_DATA",
+                "minimo": null,
+                "maximo": null,
+                "entradas": null,
+                "fatos": null,
+                "dataMinima": {
+                  "ancora": "DATA_FIXA",
+                  "data": "2000-01-01",
+                  "anos": null,
+                  "dias": null
+                },
+                "dataMaxima": {
+                  "ancora": "ENVIO",
+                  "data": null,
+                  "anos": 0,
+                  "dias": 0
+                }
+              }
+            ],
+            "impedimento": null,
+            "oferta": null,
+            "formato": null
+          }
+        ],
+        "grupos": []
+      }
+    ],
+    "termos": [],
+    "derivacoes": [],
+    "agregados": []
+  },
+  "respostas": {
+    "DATA_A": "2005-06-15",
+    "DATA_B": "1999-12-31"
+  },
+  "grupos": {},
+  "etapasConcluidas": [],
+  "pressupostos": {},
+  "esperado": {
+    "campos": [
+      {
+        "fatoCodigo": "DATA_A",
+        "estado": "INDETERMINADO",
+        "restricoesVioladas": []
+      },
+      {
+        "fatoCodigo": "DATA_B",
+        "estado": "INDETERMINADO",
+        "restricoesVioladas": [
+          "FAIXA_DE_DATA"
+        ]
+      }
+    ]
+  }
+}

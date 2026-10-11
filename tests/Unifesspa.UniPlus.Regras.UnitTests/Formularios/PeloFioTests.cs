@@ -64,3 +64,9 @@ public sealed class ConjuntoBasicoDaInscricaoPeloFioTests : ConjuntoBasicoDaInsc
     protected override AvaliacaoFormulario AvaliarDefinicao(DefinicaoFormulario definicao, EntradaAvaliacaoFormulario entrada) =>
         PeloFio.Avaliar(definicao, entrada);
 }
+
+public sealed class FaixaDeDataNaAvaliacaoPeloFioTests : FaixaDeDataNaAvaliacaoTests
+{
+    protected override AvaliacaoFormulario AvaliarDefinicao(DefinicaoFormulario definicao, EntradaAvaliacaoFormulario entrada) =>
+        PeloFio.Avaliar(definicao, entrada);
+}

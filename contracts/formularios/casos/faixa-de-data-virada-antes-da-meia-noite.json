@@ -1,0 +1,103 @@
+{
+  "descricao": "Às 23h59 de 10/10/2026 em Belém (02h59 de 11/10 em UTC) o dia do envio ainda é 10/10: a data de 10/10 atende ao limite de até o envio, e a de 11/10 viola.",
+  "regras": {
+    "etapas": [
+      {
+        "codigo": "DADOS",
+        "exibicao": null,
+        "itens": [
+          {
+            "fatoCodigo": "DATA_HOJE",
+            "exibicao": null,
+            "obrigatoriedade": "SEMPRE",
+            "predicadoObrigatoriedade": null,
+            "restricoes": [
+              {
+                "tipo": "FAIXA_DE_DATA",
+                "minimo": null,
+                "maximo": null,
+                "entradas": null,
+                "fatos": null,
+                "dataMinima": {
+                  "ancora": "ENVIO",
+                  "data": null,
+                  "anos": -120,
+                  "dias": 0
+                },
+                "dataMaxima": {
+                  "ancora": "ENVIO",
+                  "data": null,
+                  "anos": 0,
+                  "dias": 0
+                }
+              }
+            ],
+            "impedimento": null,
+            "oferta": null,
+            "formato": null
+          },
+          {
+            "fatoCodigo": "DATA_AMANHA",
+            "exibicao": null,
+            "obrigatoriedade": "SEMPRE",
+            "predicadoObrigatoriedade": null,
+            "restricoes": [
+              {
+                "tipo": "FAIXA_DE_DATA",
+                "minimo": null,
+                "maximo": null,
+                "entradas": null,
+                "fatos": null,
+                "dataMinima": {
+                  "ancora": "ENVIO",
+                  "data": null,
+                  "anos": -120,
+                  "dias": 0
+                },
+                "dataMaxima": {
+                  "ancora": "ENVIO",
+                  "data": null,
+                  "anos": 0,
+                  "dias": 0
+                }
+              }
+            ],
+            "impedimento": null,
+            "oferta": null,
+            "formato": null
+          }
+        ],
+        "grupos": []
+      }
+    ],
+    "termos": [],
+    "derivacoes": [],
+    "agregados": []
+  },
+  "respostas": {
+    "DATA_HOJE": "2026-10-10",
+    "DATA_AMANHA": "2026-10-11"
+  },
+  "grupos": {},
+  "etapasConcluidas": [],
+  "pressupostos": {},
+  "envio": {
+    "instante": "2026-10-11T02:59:59Z",
+    "fuso": "America/Belem"
+  },
+  "esperado": {
+    "campos": [
+      {
+        "fatoCodigo": "DATA_HOJE",
+        "estado": "RESOLVIDO",
+        "restricoesVioladas": []
+      },
+      {
+        "fatoCodigo": "DATA_AMANHA",
+        "restricoesVioladas": [
+          "FAIXA_DE_DATA"
+        ]
+      }
+    ]
+  }
+}

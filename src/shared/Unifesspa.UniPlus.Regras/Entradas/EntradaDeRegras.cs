@@ -109,11 +109,84 @@ public static class EntradaDeRegras
             TipoRestricaoValor.OpcoesPermitidas => Opcoes(input.Entradas ?? []),
             TipoRestricaoValor.OpcoesDasRespostas => RestricoesDeValor.DasRespostas(input.Fatos ?? []),
             TipoRestricaoValor.MunicipiosDaUf => RestricoesDeValor.DaUf(input.Fatos ?? []),
+            TipoRestricaoValor.FaixaDeData => LerFaixaDeData(input.DataMinima, input.DataMaxima),
             _ => Result<RestricaoValor>.Failure(new DomainError(
                 RestricaoValorErrorCodes.TipoDesconhecido,
-                "O tipo da restrição é FAIXA_NUMERICA, TAMANHO_TEXTO, OPCOES_PERMITIDAS, OPCOES_DAS_RESPOSTAS ou MUNICIPIOS_DA_UF.")),
+                "O tipo da restrição é FAIXA_NUMERICA, TAMANHO_TEXTO, OPCOES_PERMITIDAS, OPCOES_DAS_RESPOSTAS, MUNICIPIOS_DA_UF ou FAIXA_DE_DATA.")),
         };
     }
+
+    private static Result<RestricaoValor> LerFaixaDeData(LimiteDeDataInput? minima, LimiteDeDataInput? maxima)
+    {
+        Result<LimiteDeData?> lidaMinima = LerLimite(minima);
+        Result<LimiteDeData?> lidaMaxima = LerLimite(maxima);
+        return lidaMinima.IsFailure || lidaMaxima.IsFailure
+            ? Result<RestricaoValor>.Failure((lidaMinima.Error ?? lidaMaxima.Error)!)
+            : RestricoesDeValor.FaixaDeData(lidaMinima.Value, lidaMaxima.Value);
+    }
+
+    private static Result<LimiteDeData?> LerLimite(LimiteDeDataInput? input)
+    {
+        if (input is null)
+        {
+            return Result<LimiteDeData?>.Success(null);
+        }
+
+        Result<LimiteDeData> lido = RestricoesDeValor.Limite(input.Ancora, input.Data, input.Anos, input.Dias);
+        return lido.IsSuccess ? Result<LimiteDeData?>.Success(lido.Value) : Result<LimiteDeData?>.Failure(lido.Error!);
+    }
+
+    /// <summary>
+    /// O envio que a simulação supõe; nulo quando ela não o informa. A zona é procurada na base de fusos
+    /// do ambiente, e a que ela não reconhece é recusada no fuso. O instante ausente — que chega como o
+    /// primeiro instante do calendário — e o que fica perto demais das pontas do calendário para os
+    /// limites da faixa de data se contarem dele são recusados no instante.
+    /// </summary>
+    public static Result<EnvioDasRespostas?> Envio(EnvioSimuladoInput? input)
+    {
+        if (input is null)
+        {
+            return Result<EnvioDasRespostas?>.Success(null);
+        }
+
+        if (Fuso(input.Fuso) is not { } fuso)
+        {
+            return Result<EnvioDasRespostas?>.ValidationFailure([new FieldError("envio.fuso", new DomainError(
+                FormularioPortavelErrorCodes.FusoDoEnvioDesconhecido, $"A zona '{input.Fuso}' do envio não é reconhecida."))]);
+        }
+
+        EnvioDasRespostas envio = new(input.Instante, fuso);
+        return LimiteDeData.ComportaOsDeslocamentos(envio.Dia)
+            ? Result<EnvioDasRespostas?>.Success(envio)
+            : Result<EnvioDasRespostas?>.ValidationFailure([new FieldError("envio.instante", new DomainError(
+                FormularioPortavelErrorCodes.InstanteDoEnvioForaDoCalendario,
+                "O instante do envio falta ou fica fora do calendário que os limites da faixa de data alcançam."))]);
+    }
+
+    private static TimeZoneInfo? Fuso(string? zona)
+    {
+        if (string.IsNullOrWhiteSpace(zona))
+        {
+            return null;
+        }
+
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById(zona);
+        }
+        catch (Exception excecao) when (excecao is TimeZoneNotFoundException or InvalidTimeZoneException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>O limite da faixa de data na forma da entrada; nulo quando o limite falta.</summary>
+    public static LimiteDeDataInput? ParaEntrada(LimiteDeData? limite) => limite switch
+    {
+        null => null,
+        { Ancora: AncoraDoLimiteDeData.DataFixa } => new(RestricaoValorJson.AncoraDataFixa, Data: limite.Data),
+        _ => new(RestricaoValorJson.AncoraEnvio, Anos: limite.Anos, Dias: limite.Dias),
+    };
 
     private static Result<RestricaoValor> Opcoes(IReadOnlyList<OpcoesCondicionadasInput> entradas)
     {
@@ -168,6 +241,7 @@ public static class EntradaDeRegras
                 new OpcoesCondicionadasInput(ParaEntrada(e.Quando), [.. e.Valores.Order(StringComparer.Ordinal)]))]),
             OpcoesDasRespostas respostas => new(tipo, Fatos: respostas.Fatos),
             MunicipiosDaUf daUf => new(tipo, Fatos: [daUf.FatoUf]),
+            FaixaDeData faixaDeData => new(tipo, DataMinima: ParaEntrada(faixaDeData.Minima), DataMaxima: ParaEntrada(faixaDeData.Maxima)),
             _ => throw new ArgumentOutOfRangeException(nameof(restricao), restricao.Tipo, "Restrição de valor fora do vocabulário."),
         };
     }

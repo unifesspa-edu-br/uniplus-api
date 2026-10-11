@@ -2,7 +2,7 @@
 
 Casos de avaliação do formulário que a API e o interpretador do front rodam igual (ADR-0139). Se um caso diverge entre os dois, o front está interpretando uma regra de forma diferente do servidor.
 
-Cada arquivo é o corpo do `POST /api/configuracao/admin/avaliacoes-de-formulario` — `regras`, `respostas`, `grupos`, `etapasConcluidas` e `pressupostos` — acrescido de duas chaves:
+Cada arquivo é o corpo do `POST /api/configuracao/admin/avaliacoes-de-formulario` — `regras`, `respostas`, `grupos`, `etapasConcluidas`, `pressupostos` e, quando o caso depende do dia do envio, `envio` (`instante` em ISO 8601 e `fuso` no identificador IANA) — acrescido de duas chaves:
 
 - `descricao` — a regra que o caso protege, em prosa;
 - `esperado` — parte do resultado da avaliação (`AvaliacaoPortavel`) que precisa aparecer nele.

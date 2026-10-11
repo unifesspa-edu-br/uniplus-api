@@ -24,6 +24,7 @@ public sealed class RestricaoValorJsonTests
             new TamanhoTexto(null, 80),
             new OpcoesPermitidas([new OpcoesCondicionadas(maiorDeIdade, ["B", "A"]), new OpcoesCondicionadas(null, ["C"])]),
             new OpcoesDasRespostas(["OPCAO_CURSO_2", "OPCAO_CURSO_1"]),
+            new FaixaDeData(LimiteDeData.Fixo(new DateOnly(1906, 1, 1)), LimiteDeData.NoEnvio(anos: -16, dias: 0)),
         ];
 
         using JsonDocument gravado = JsonDocument.Parse(RestricaoValorJson.ParaJson(restricoes).ToJsonString());
@@ -33,6 +34,7 @@ public sealed class RestricaoValorJsonTests
         lidas[0].Should().Be(new FaixaNumerica(1.5m, null));
         ((OpcoesPermitidas)lidas[2]).Entradas[0].Quando!.FatosCitados.Should().Equal("IDADE");
         ((OpcoesDasRespostas)lidas[3]).Fatos.Should().Equal("OPCAO_CURSO_1", "OPCAO_CURSO_2");
+        lidas[4].Should().Be(new FaixaDeData(LimiteDeData.Fixo(new DateOnly(1906, 1, 1)), LimiteDeData.NoEnvio(anos: -16, dias: 0)));
     }
 
     [Theory(DisplayName = "Forma gravada que viola a restrição é recusada, nunca aceita em silêncio")]
@@ -41,6 +43,8 @@ public sealed class RestricaoValorJsonTests
     [InlineData("""{"tipo":"OPCOES_PERMITIDAS","entradas":[]}""", RestricaoValorErrorCodes.OpcoesVazias)]
     [InlineData("""{"tipo":"OPCOES_DAS_RESPOSTAS","fatos":[]}""", RestricaoValorErrorCodes.FatosVazios)]
     [InlineData("""{"tipo":"REGEX"}""", RestricaoValorErrorCodes.FormaJsonInvalida)]
+    [InlineData("""{"tipo":"FAIXA_DE_DATA","dataMinima":{"ancora":"HOJE"}}""", RestricaoValorErrorCodes.LimiteDeDataInvalido)]
+    [InlineData("""{"tipo":"FAIXA_DE_DATA","dataMaxima":{"ancora":"DATA_FIXA","data":"10/01/2027"}}""", RestricaoValorErrorCodes.FormaJsonInvalida)]
     public void DeJson_FormaInvalida_Recusa(string json, string codigo)
     {
         using JsonDocument documento = JsonDocument.Parse(json);

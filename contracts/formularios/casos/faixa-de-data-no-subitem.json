@@ -1,0 +1,111 @@
+{
+  "descricao": "A faixa de data vale no subitem de cada ocorrência do grupo: o membro nascido depois do envio viola, o outro não.",
+  "regras": {
+    "etapas": [
+      {
+        "codigo": "DADOS",
+        "exibicao": null,
+        "itens": [],
+        "grupos": [
+          {
+            "codigo": "FAMILIA",
+            "exibicao": null,
+            "obrigatoriedade": "NUNCA",
+            "predicadoObrigatoriedade": null,
+            "minimo": 0,
+            "maximo": null,
+            "incluiCandidato": false,
+            "subitens": [
+              {
+                "fatoCodigo": "NASCIMENTO_MEMBRO",
+                "exibicao": null,
+                "obrigatoriedade": "SEMPRE",
+                "predicadoObrigatoriedade": null,
+                "restricoes": [
+                  {
+                    "tipo": "FAIXA_DE_DATA",
+                    "minimo": null,
+                    "maximo": null,
+                    "entradas": null,
+                    "fatos": null,
+                    "dataMinima": {
+                      "ancora": "ENVIO",
+                      "data": null,
+                      "anos": -120,
+                      "dias": 0
+                    },
+                    "dataMaxima": {
+                      "ancora": "ENVIO",
+                      "data": null,
+                      "anos": 0,
+                      "dias": 0
+                    }
+                  }
+                ],
+                "impedimento": null,
+                "oferta": null,
+                "formato": null
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "termos": [],
+    "derivacoes": [],
+    "agregados": []
+  },
+  "respostas": {},
+  "grupos": {
+    "FAMILIA": [
+      {
+        "id": "m1",
+        "respostas": {
+          "NASCIMENTO_MEMBRO": "2000-05-01"
+        }
+      },
+      {
+        "id": "m2",
+        "respostas": {
+          "NASCIMENTO_MEMBRO": "2030-05-01"
+        }
+      }
+    ]
+  },
+  "etapasConcluidas": [],
+  "pressupostos": {},
+  "envio": {
+    "instante": "2026-10-10T15:00:00Z",
+    "fuso": "America/Belem"
+  },
+  "esperado": {
+    "grupos": [
+      {
+        "codigo": "FAMILIA",
+        "ocorrencias": [
+          {
+            "id": "m1",
+            "campos": [
+              {
+                "fatoCodigo": "NASCIMENTO_MEMBRO",
+                "estado": "RESOLVIDO",
+                "restricoesVioladas": []
+              }
+            ]
+          },
+          {
+            "id": "m2",
+            "campos": [
+              {
+                "fatoCodigo": "NASCIMENTO_MEMBRO",
+                "restricoesVioladas": [
+                  "FAIXA_DE_DATA"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

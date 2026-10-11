@@ -66,7 +66,8 @@ public static class ResolvedorEstadoFatos
             new EntradaAvaliacaoFormulario(
                 RespostaDeCampo.DentroDaOferta(respostasBrutas, valoresOfertados),
                 EtapasConcluidas: new HashSet<string>(StringComparer.Ordinal),
-                FatosConhecidos: new Dictionary<string, FatoResolvido>(StringComparer.Ordinal)));
+                FatosConhecidos: new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
+                Envio: null));
 
         // Os derivados entram só na avaliação; o resultado é o estado dos fatos coletados.
         return fatosColetados.ToDictionary(static f => f.FatoCodigo, f => avaliacao.Fatos[f.FatoCodigo], StringComparer.Ordinal);

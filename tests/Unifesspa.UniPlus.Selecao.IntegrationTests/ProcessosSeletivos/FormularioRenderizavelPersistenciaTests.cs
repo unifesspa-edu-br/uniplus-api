@@ -401,7 +401,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         }
 
         return new EntradaAvaliacaoFormulario(
-            respostas, new HashSet<string>(StringComparer.Ordinal), new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
+            respostas, new HashSet<string>(StringComparer.Ordinal), new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), Envio: null,
             new Dictionary<string, IReadOnlyList<OcorrenciaRespondida>>(StringComparer.Ordinal)
             {
                 ["COMPOSICAO_FAMILIAR"] =

@@ -146,7 +146,7 @@ public sealed class RecorteDaFinalidadeTests
 
     private static EntradaAvaliacaoFormulario Entrada(
         Dictionary<string, JsonElement> respostas, Dictionary<string, FatoResolvido> conhecidos) =>
-        new(respostas, new HashSet<string>(StringComparer.Ordinal), conhecidos);
+        new(respostas, new HashSet<string>(StringComparer.Ordinal), conhecidos, Envio: null);
 
     private static JsonElement Json(object valor) => JsonSerializer.SerializeToElement(valor);
 

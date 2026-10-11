@@ -1,0 +1,66 @@
+{
+  "descricao": "O campo de data opcional deixado em branco, com a etapa concluída, é não informado: a faixa de data não pesa sobre a resposta que não existe.",
+  "regras": {
+    "etapas": [
+      {
+        "codigo": "DADOS",
+        "exibicao": null,
+        "itens": [
+          {
+            "fatoCodigo": "DATA_OPCIONAL",
+            "exibicao": null,
+            "obrigatoriedade": "NUNCA",
+            "predicadoObrigatoriedade": null,
+            "restricoes": [
+              {
+                "tipo": "FAIXA_DE_DATA",
+                "minimo": null,
+                "maximo": null,
+                "entradas": null,
+                "fatos": null,
+                "dataMinima": {
+                  "ancora": "ENVIO",
+                  "data": null,
+                  "anos": -120,
+                  "dias": 0
+                },
+                "dataMaxima": {
+                  "ancora": "ENVIO",
+                  "data": null,
+                  "anos": 0,
+                  "dias": 0
+                }
+              }
+            ],
+            "impedimento": null,
+            "oferta": null,
+            "formato": null
+          }
+        ],
+        "grupos": []
+      }
+    ],
+    "termos": [],
+    "derivacoes": [],
+    "agregados": []
+  },
+  "respostas": {},
+  "grupos": {},
+  "etapasConcluidas": [
+    "DADOS"
+  ],
+  "pressupostos": {},
+  "envio": {
+    "instante": "2026-10-10T15:00:00Z",
+    "fuso": "America/Belem"
+  },
+  "esperado": {
+    "campos": [
+      {
+        "fatoCodigo": "DATA_OPCIONAL",
+        "estado": "NAO_INFORMADO",
+        "restricoesVioladas": []
+      }
+    ]
+  }
+}

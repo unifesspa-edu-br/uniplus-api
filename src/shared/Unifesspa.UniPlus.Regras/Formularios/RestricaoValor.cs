@@ -8,6 +8,12 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
+/// O que uma restrição de valor conhece além da resposta: os fatos já resolvidos e o dia do envio da
+/// resposta, nulo quando a avaliação não tem envio — a simulação que não o informa.
+/// </summary>
+public sealed record ContextoDaResposta(IReadOnlyDictionary<string, FatoResolvido> Fatos, DateOnly? DiaDoEnvio);
+
+/// <summary>
 /// Restrição sobre o valor que o candidato responde num item do formulário (UNI-REQ-0145).
 /// <see cref="Avaliar"/> diz se a resposta a atende: <see cref="Ternario.Verdadeiro"/> quando
 /// atende, <see cref="Ternario.Falso"/> quando viola, e <see cref="Ternario.Indeterminado"/> quando
@@ -30,7 +36,7 @@ public abstract record RestricaoValor
     public virtual IReadOnlyCollection<string> FatosCitados => [];
 
     /// <summary>Avalia a resposta, já sabida não vazia, contra a restrição.</summary>
-    public abstract Ternario Avaliar(JsonElement resposta, IReadOnlyDictionary<string, FatoResolvido> fatos);
+    public abstract Ternario Avaliar(JsonElement resposta, ContextoDaResposta contexto);
 
     /// <summary>
     /// As opções que a restrição deixa escolher diante das respostas anteriores; nula quando ela não
@@ -61,7 +67,7 @@ public sealed record FaixaNumerica : RestricaoValor
 
     public decimal? Maximo { get; }
 
-    public override Ternario Avaliar(JsonElement resposta, IReadOnlyDictionary<string, FatoResolvido> fatos)
+    public override Ternario Avaliar(JsonElement resposta, ContextoDaResposta contexto)
     {
         if (resposta.ValueKind != JsonValueKind.Number || !resposta.TryGetDecimal(out decimal valor))
         {
@@ -99,7 +105,7 @@ public sealed record TamanhoTexto : RestricaoValor
 
     public int? Maximo { get; }
 
-    public override Ternario Avaliar(JsonElement resposta, IReadOnlyDictionary<string, FatoResolvido> fatos)
+    public override Ternario Avaliar(JsonElement resposta, ContextoDaResposta contexto)
     {
         if (resposta.ValueKind != JsonValueKind.String)
         {
@@ -146,9 +152,10 @@ public sealed record OpcoesPermitidas : RestricaoValor
     public override IReadOnlyCollection<string> FatosCitados =>
         [.. Entradas.SelectMany(static e => e.Quando?.FatosCitados ?? []).Distinct(StringComparer.Ordinal)];
 
-    public override Ternario Avaliar(JsonElement resposta, IReadOnlyDictionary<string, FatoResolvido> fatos)
+    public override Ternario Avaliar(JsonElement resposta, ContextoDaResposta contexto)
     {
-        (HashSet<string> vigentes, HashSet<string> talvezVigentes) = Vigentes(fatos);
+        ArgumentNullException.ThrowIfNull(contexto);
+        (HashSet<string> vigentes, HashSet<string> talvezVigentes) = Vigentes(contexto.Fatos);
         return EscolheSoEntre(resposta, vigentes, talvezVigentes);
     }
 
@@ -264,9 +271,10 @@ public sealed record OpcoesDasRespostas : RestricaoValor
 
     public override IReadOnlyCollection<string> FatosCitados => Fatos;
 
-    public override Ternario Avaliar(JsonElement resposta, IReadOnlyDictionary<string, FatoResolvido> fatos)
+    public override Ternario Avaliar(JsonElement resposta, ContextoDaResposta contexto)
     {
-        OpcoesVigentes opcoes = Opcoes(fatos)!;
+        ArgumentNullException.ThrowIfNull(contexto);
+        OpcoesVigentes opcoes = Opcoes(contexto.Fatos)!;
         Ternario resultado = OpcoesPermitidas.EscolheSoEntre(
             resposta, opcoes.Codigos.ToHashSet(StringComparer.Ordinal), talvezVigentes: new HashSet<string>(StringComparer.Ordinal));
 
@@ -333,9 +341,10 @@ public sealed record MunicipiosDaUf : RestricaoValor
 
     public override IReadOnlyCollection<string> FatosCitados => [FatoUf];
 
-    public override Ternario Avaliar(JsonElement resposta, IReadOnlyDictionary<string, FatoResolvido> fatos)
+    public override Ternario Avaliar(JsonElement resposta, ContextoDaResposta contexto)
     {
-        if (!fatos.TryGetValue(FatoUf, out FatoResolvido? uf) || uf is null || uf.Estado == EstadoFato.Indeterminado)
+        ArgumentNullException.ThrowIfNull(contexto);
+        if (!contexto.Fatos.TryGetValue(FatoUf, out FatoResolvido? uf) || uf is null || uf.Estado == EstadoFato.Indeterminado)
         {
             return Ternario.Indeterminado;
         }
@@ -349,4 +358,58 @@ public sealed record MunicipiosDaUf : RestricaoValor
 
     internal static string? Violacao(IReadOnlyCollection<string> fatos) =>
         fatos.Count != 1 || fatos.Any(string.IsNullOrWhiteSpace) ? "Os municípios da UF citam exatamente um fato, o da UF." : null;
+}
+
+/// <summary>
+/// A resposta de data fica entre a data mínima e a máxima, inclusive; um dos limites pode faltar
+/// (UNI-REQ-0145). O limite contado do envio fica indeterminado enquanto o dia do envio não se sabe,
+/// e a resposta que já viola o outro limite viola em definitivo.
+/// </summary>
+public sealed record FaixaDeData : RestricaoValor
+{
+    public FaixaDeData(LimiteDeData? minima, LimiteDeData? maxima)
+    {
+        if (Violacao(minima, maxima) is { } violacao)
+        {
+            throw new ArgumentException(violacao);
+        }
+
+        Minima = minima;
+        Maxima = maxima;
+    }
+
+    public override TipoRestricaoValor Tipo => TipoRestricaoValor.FaixaDeData;
+
+    public LimiteDeData? Minima { get; }
+
+    public LimiteDeData? Maxima { get; }
+
+    /// <summary>As datas dos limites no dia do envio; o limite que falta, ou que conta do envio sem ele, é nulo.</summary>
+    public (DateOnly? Minima, DateOnly? Maxima) Limites(DateOnly? diaDoEnvio) => (Minima?.No(diaDoEnvio), Maxima?.No(diaDoEnvio));
+
+    public override Ternario Avaliar(JsonElement resposta, ContextoDaResposta contexto)
+    {
+        ArgumentNullException.ThrowIfNull(contexto);
+        if (DiaDoCalendario.Ler(resposta) is not { } data)
+        {
+            return Ternario.Falso;
+        }
+
+        (DateOnly? minima, DateOnly? maxima) = Limites(contexto.DiaDoEnvio);
+        if (data < minima || data > maxima)
+        {
+            return Ternario.Falso;
+        }
+
+        return (Minima is not null && minima is null) || (Maxima is not null && maxima is null)
+            ? Ternario.Indeterminado
+            : Ternario.Verdadeiro;
+    }
+
+    internal static string? Violacao(LimiteDeData? minima, LimiteDeData? maxima) => (minima, maxima) switch
+    {
+        (null, null) => "A faixa de data precisa de ao menos um limite.",
+        ({ } min, { } max) when min.DepoisDe(max) == true => "A data mínima fica depois da data máxima.",
+        _ => null,
+    };
 }

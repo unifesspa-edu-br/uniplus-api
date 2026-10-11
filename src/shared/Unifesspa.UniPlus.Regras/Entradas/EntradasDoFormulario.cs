@@ -15,15 +15,31 @@ public sealed record CondicaoPrecondicaoInput(string Fato, string Operador, Json
 /// Uma restrição sobre o valor respondido no item, pelo <see cref="Tipo"/>: <c>FAIXA_NUMERICA</c>
 /// e <c>TAMANHO_TEXTO</c> com <see cref="Minimo"/> e <see cref="Maximo"/> (ao menos um; inteiros no
 /// tamanho), <c>OPCOES_PERMITIDAS</c> com as <see cref="Entradas"/>, <c>OPCOES_DAS_RESPOSTAS</c> com
-/// os <see cref="Fatos"/> cujas respostas formam as opções e <c>MUNICIPIOS_DA_UF</c> com o fato da
-/// UF em <see cref="Fatos"/>.
+/// os <see cref="Fatos"/> cujas respostas formam as opções, <c>MUNICIPIOS_DA_UF</c> com o fato da
+/// UF em <see cref="Fatos"/> e <c>FAIXA_DE_DATA</c> com <see cref="DataMinima"/> e
+/// <see cref="DataMaxima"/> (ao menos um).
 /// </summary>
 public sealed record RestricaoValorInput(
     string Tipo,
     decimal? Minimo = null,
     decimal? Maximo = null,
     IReadOnlyList<OpcoesCondicionadasInput>? Entradas = null,
-    IReadOnlyList<string>? Fatos = null);
+    IReadOnlyList<string>? Fatos = null,
+    LimiteDeDataInput? DataMinima = null,
+    LimiteDeDataInput? DataMaxima = null);
+
+/// <summary>
+/// Um limite da faixa de data, pela <see cref="Ancora"/>: <c>DATA_FIXA</c> com a <see cref="Data"/>,
+/// ou <c>ENVIO</c> — o dia do envio da resposta — deslocado em <see cref="Anos"/> e depois em
+/// <see cref="Dias"/>, que podem ser negativos; o deslocamento que falta é zero.
+/// </summary>
+public sealed record LimiteDeDataInput(string Ancora, DateOnly? Data = null, int? Anos = null, int? Dias = null);
+
+/// <summary>
+/// O envio que a simulação supõe: o instante e a zona, no identificador IANA, em que se conta o dia
+/// dele — o mesmo que o formulário renderizável publica em <c>fusoDoEnvio</c>.
+/// </summary>
+public sealed record EnvioSimuladoInput(DateTimeOffset Instante, string Fuso);
 
 /// <summary>
 /// Um grupo de opções permitidas e a condição, sobre respostas anteriores, em que ele vale; sem

@@ -44,15 +44,24 @@ public sealed record ImpedimentoDto(IReadOnlyList<IReadOnlyList<CondicaoPrecondi
 
 /// <summary>
 /// Uma restrição sobre o valor respondido no item, pelo <see cref="Tipo"/>: <c>FAIXA_NUMERICA</c>
-/// e <c>TAMANHO_TEXTO</c> com os limites, <c>OPCOES_PERMITIDAS</c> com os grupos de opções e
-/// <c>OPCOES_DAS_RESPOSTAS</c> com os fatos cujas respostas formam as opções.
+/// e <c>TAMANHO_TEXTO</c> com os limites, <c>OPCOES_PERMITIDAS</c> com os grupos de opções,
+/// <c>OPCOES_DAS_RESPOSTAS</c> com os fatos cujas respostas formam as opções, <c>MUNICIPIOS_DA_UF</c>
+/// com o fato da UF e <c>FAIXA_DE_DATA</c> com a data mínima e a máxima.
 /// </summary>
 public sealed record RestricaoValorDto(
     string Tipo,
     decimal? Minimo,
     decimal? Maximo,
     IReadOnlyList<OpcoesCondicionadasDto>? Entradas,
-    IReadOnlyList<string>? Fatos);
+    IReadOnlyList<string>? Fatos,
+    LimiteDeDataDto? DataMinima,
+    LimiteDeDataDto? DataMaxima);
+
+/// <summary>
+/// Um limite da faixa de data, pela âncora: <c>DATA_FIXA</c> com a data, ou <c>ENVIO</c> — o dia do
+/// envio da resposta — deslocado em anos e depois em dias, nulos no limite fixo.
+/// </summary>
+public sealed record LimiteDeDataDto(string Ancora, DateOnly? Data, int? Anos, int? Dias);
 
 /// <summary>Um grupo de opções permitidas e a condição em que ele vale; nula quando vale sempre.</summary>
 public sealed record OpcoesCondicionadasDto(

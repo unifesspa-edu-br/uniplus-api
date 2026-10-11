@@ -1,0 +1,176 @@
+{
+  "descricao": "Os limites fixos da faixa de data entram na faixa: 01/01/2000 e 31/12/2010 atendem, e o dia anterior ao mínimo e o seguinte ao máximo violam.",
+  "regras": {
+    "etapas": [
+      {
+        "codigo": "DADOS",
+        "exibicao": null,
+        "itens": [
+          {
+            "fatoCodigo": "DATA_A",
+            "exibicao": null,
+            "obrigatoriedade": "SEMPRE",
+            "predicadoObrigatoriedade": null,
+            "restricoes": [
+              {
+                "tipo": "FAIXA_DE_DATA",
+                "minimo": null,
+                "maximo": null,
+                "entradas": null,
+                "fatos": null,
+                "dataMinima": {
+                  "ancora": "DATA_FIXA",
+                  "data": "2000-01-01",
+                  "anos": null,
+                  "dias": null
+                },
+                "dataMaxima": {
+                  "ancora": "DATA_FIXA",
+                  "data": "2010-12-31",
+                  "anos": null,
+                  "dias": null
+                }
+              }
+            ],
+            "impedimento": null,
+            "oferta": null,
+            "formato": null
+          },
+          {
+            "fatoCodigo": "DATA_B",
+            "exibicao": null,
+            "obrigatoriedade": "SEMPRE",
+            "predicadoObrigatoriedade": null,
+            "restricoes": [
+              {
+                "tipo": "FAIXA_DE_DATA",
+                "minimo": null,
+                "maximo": null,
+                "entradas": null,
+                "fatos": null,
+                "dataMinima": {
+                  "ancora": "DATA_FIXA",
+                  "data": "2000-01-01",
+                  "anos": null,
+                  "dias": null
+                },
+                "dataMaxima": {
+                  "ancora": "DATA_FIXA",
+                  "data": "2010-12-31",
+                  "anos": null,
+                  "dias": null
+                }
+              }
+            ],
+            "impedimento": null,
+            "oferta": null,
+            "formato": null
+          },
+          {
+            "fatoCodigo": "DATA_C",
+            "exibicao": null,
+            "obrigatoriedade": "SEMPRE",
+            "predicadoObrigatoriedade": null,
+            "restricoes": [
+              {
+                "tipo": "FAIXA_DE_DATA",
+                "minimo": null,
+                "maximo": null,
+                "entradas": null,
+                "fatos": null,
+                "dataMinima": {
+                  "ancora": "DATA_FIXA",
+                  "data": "2000-01-01",
+                  "anos": null,
+                  "dias": null
+                },
+                "dataMaxima": {
+                  "ancora": "DATA_FIXA",
+                  "data": "2010-12-31",
+                  "anos": null,
+                  "dias": null
+                }
+              }
+            ],
+            "impedimento": null,
+            "oferta": null,
+            "formato": null
+          },
+          {
+            "fatoCodigo": "DATA_D",
+            "exibicao": null,
+            "obrigatoriedade": "SEMPRE",
+            "predicadoObrigatoriedade": null,
+            "restricoes": [
+              {
+                "tipo": "FAIXA_DE_DATA",
+                "minimo": null,
+                "maximo": null,
+                "entradas": null,
+                "fatos": null,
+                "dataMinima": {
+                  "ancora": "DATA_FIXA",
+                  "data": "2000-01-01",
+                  "anos": null,
+                  "dias": null
+                },
+                "dataMaxima": {
+                  "ancora": "DATA_FIXA",
+                  "data": "2010-12-31",
+                  "anos": null,
+                  "dias": null
+                }
+              }
+            ],
+            "impedimento": null,
+            "oferta": null,
+            "formato": null
+          }
+        ],
+        "grupos": []
+      }
+    ],
+    "termos": [],
+    "derivacoes": [],
+    "agregados": []
+  },
+  "respostas": {
+    "DATA_A": "1999-12-31",
+    "DATA_B": "2000-01-01",
+    "DATA_C": "2010-12-31",
+    "DATA_D": "2011-01-01"
+  },
+  "grupos": {},
+  "etapasConcluidas": [],
+  "pressupostos": {},
+  "envio": {
+    "instante": "2026-10-10T15:00:00Z",
+    "fuso": "America/Belem"
+  },
+  "esperado": {
+    "campos": [
+      {
+        "fatoCodigo": "DATA_A",
+        "restricoesVioladas": [
+          "FAIXA_DE_DATA"
+        ]
+      },
+      {
+        "fatoCodigo": "DATA_B",
+        "estado": "RESOLVIDO",
+        "restricoesVioladas": []
+      },
+      {
+        "fatoCodigo": "DATA_C",
+        "estado": "RESOLVIDO",
+        "restricoesVioladas": []
+      },
+      {
+        "fatoCodigo": "DATA_D",
+        "restricoesVioladas": [
+          "FAIXA_DE_DATA"
+        ]
+      }
+    ]
+  }
+}

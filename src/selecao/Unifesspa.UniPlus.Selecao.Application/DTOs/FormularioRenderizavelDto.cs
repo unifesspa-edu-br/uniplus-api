@@ -22,8 +22,9 @@ public sealed record FormularioRenderizavelDto(
     FormularioPortavel Regras,
     IReadOnlyList<PressupostoRenderizavel> Pressupostos,
     DateOnly? DataReferenciaFatos,
+    string? FusoDoEnvio,
     IReadOnlyList<ExigenciaDocumentalCertameDto>? ComprovacaoDocumental)
-    : FormularioRenderizavel(Finalidade, Titulo, Etapas, Termos, FatosColetados, Grupos, Regras, Pressupostos, DataReferenciaFatos)
+    : FormularioRenderizavel(Finalidade, Titulo, Etapas, Termos, FatosColetados, Grupos, Regras, Pressupostos, DataReferenciaFatos, FusoDoEnvio)
 {
     /// <summary>O formulário do processo a partir do renderizável comum e da comprovação documental.</summary>
     public static FormularioRenderizavelDto De(FormularioRenderizavel formulario, IReadOnlyList<ExigenciaDocumentalCertameDto>? comprovacaoDocumental)
@@ -31,6 +32,6 @@ public sealed record FormularioRenderizavelDto(
         ArgumentNullException.ThrowIfNull(formulario);
         return new(
             formulario.Finalidade, formulario.Titulo, formulario.Etapas, formulario.Termos, formulario.FatosColetados, formulario.Grupos,
-            formulario.Regras, formulario.Pressupostos, formulario.DataReferenciaFatos, comprovacaoDocumental);
+            formulario.Regras, formulario.Pressupostos, formulario.DataReferenciaFatos, formulario.FusoDoEnvio, comprovacaoDocumental);
     }
 }

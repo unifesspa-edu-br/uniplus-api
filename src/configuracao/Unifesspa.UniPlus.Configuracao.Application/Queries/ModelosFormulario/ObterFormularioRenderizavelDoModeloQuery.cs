@@ -100,7 +100,8 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
             camposDosOutrosFormularios: [],
             VocabularioDoCatalogo.ApresentacaoDos(fatos, recorte.Pressupostos),
             agregados,
-            dataReferenciaFatos: null);
+            dataReferenciaFatos: null,
+            fusoDoEnvio: null);
     }
 
     private static CampoRenderizavel Campo(ItemDoModelo item, Dictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes) => new(

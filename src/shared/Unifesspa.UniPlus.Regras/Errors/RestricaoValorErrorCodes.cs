@@ -9,4 +9,5 @@ public static class RestricaoValorErrorCodes
     public const string FatosVazios = "RestricaoValor.FatosVazios";
     public const string TipoRepetido = "RestricaoValor.TipoRepetido";
     public const string FormaJsonInvalida = "RestricaoValor.FormaJsonInvalida";
+    public const string LimiteDeDataInvalido = "RestricaoValor.LimiteDeDataInvalido";
 }

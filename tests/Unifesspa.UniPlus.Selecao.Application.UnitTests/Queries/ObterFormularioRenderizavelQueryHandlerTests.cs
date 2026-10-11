@@ -267,6 +267,18 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
         }
     }
 
+    [Fact(DisplayName = "O formulário publica o fuso em que se conta o dia do envio: o da janela de inscrição")]
+    public async Task Handle_FusoDoEnvio_EODaJanela()
+    {
+        Guid processoId = Guid.CreateVersion7();
+
+        Result<FormularioRenderizavelDto> resultado = await HandleAsync(
+            processoId, """{"documentosExigidos": {"dataReferenciaFatos": null}}""",
+            EnvelopeCom(Formulario(FinalidadeFormulario.Inscricao, null, comComprovacao: false)), FinalidadeFormulario.Inscricao);
+
+        resultado.Value!.FusoDoEnvio.Should().Be("America/Belem");
+    }
+
     [Fact(DisplayName = "O bloco de comprovação documental lista as exigências da fase do formulário, na forma pública e com o modelo editável; sem o bloco, nada")]
     public async Task Handle_BlocoDeComprovacao_ListaAsExigenciasDaFaseDoFormulario()
     {

@@ -80,9 +80,13 @@ public static class SubmeterInscricaoCommandHandler
             return Result<ComprovanteInscricaoDto>.Failure(erroDono);
         }
 
+        // Um instante só para o envio inteiro: confere o período, é o dia de que se contam os limites
+        // da faixa de data e fica no comprovante — quem reavaliar a inscrição pelo comprovante chega ao
+        // mesmo veredito, inclusive na virada do dia.
+        DateTimeOffset instante = timeProvider.GetUtcNow();
         DomainError? foraDoPeriodo = await Services.PeriodoDaInscricaoResolver.ConferirAsync(
             command.ProcessoSeletivoId, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, resolvedorFuso,
-            timeProvider, cancellationToken).ConfigureAwait(false);
+            instante, cancellationToken).ConfigureAwait(false);
         if (foraDoPeriodo is not null)
         {
             return Result<ComprovanteInscricaoDto>.Failure(foraDoPeriodo);
@@ -118,10 +122,18 @@ public static class SubmeterInscricaoCommandHandler
             respostasFinais[codigo] = valor;
         }
 
+        Result<TimeZoneInfo> fuso = resolvedorFuso.Resolver();
+        if (fuso.IsFailure)
+        {
+            return Result<ComprovanteInscricaoDto>.Failure(fuso.Error!);
+        }
+
+        EnvioDasRespostas envio = new(instante, fuso.Value!);
         Result<AvaliacaoFormulario> avaliacao = contexto.Value!.Regras.Avaliar(new EntradaAvaliacaoFormulario(
             respostasFinais,
             EtapasConcluidas: new HashSet<string>(contexto.Value!.Regras.Etapas.Select(static e => e.Codigo), StringComparer.Ordinal),
             FatosConhecidos: new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
+            envio,
             RespostasDosGrupos: Services.InscricaoRequestMapper.ParaAvaliacao(grupos)));
         if (avaliacao.IsFailure)
         {
@@ -142,7 +154,6 @@ public static class SubmeterInscricaoCommandHandler
         }
 
         string numeroGerado = await geradorDeNumeroInscricao.ProximoAsync(cancellationToken).ConfigureAwait(false);
-        DateTimeOffset instante = timeProvider.GetUtcNow();
 
         Result<ComprovanteInscricao> submetido = inscricao.Submeter(
             numeroGerado, command.Request.OfertaCursoId, respostasDoCorpo, grupos, aceites, contexto.Value!.Admitidas,

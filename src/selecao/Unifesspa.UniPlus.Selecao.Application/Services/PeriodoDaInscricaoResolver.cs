@@ -10,8 +10,9 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 /// <summary>
-/// Confere se a inscrição está no período: a janela vem da versão divulgada, e não da fixada pela
-/// inscrição, porque a retificação que prorroga o prazo vale para quem já iniciou.
+/// Confere se a inscrição está no período no instante de quem chama: a janela vem da versão
+/// divulgada, e não da fixada pela inscrição, porque a retificação que prorroga o prazo vale para quem
+/// já iniciou.
 /// </summary>
 public static class PeriodoDaInscricaoResolver
 {
@@ -21,7 +22,7 @@ public static class PeriodoDaInscricaoResolver
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegistroCodecsEnvelope registroCodecs,
         IResolvedorFusoInstitucional resolvedorFuso,
-        TimeProvider timeProvider,
+        DateTimeOffset instante,
         CancellationToken cancellationToken)
     {
         Result<VersaoDivulgada> divulgada = await VersaoDivulgadaResolver
@@ -29,7 +30,7 @@ public static class PeriodoDaInscricaoResolver
             .ConfigureAwait(false);
         return divulgada.IsFailure
             ? divulgada.Error
-            : Conferir(divulgada.Value!.Versao, registroCodecs, resolvedorFuso, timeProvider);
+            : Conferir(divulgada.Value!.Versao, registroCodecs, resolvedorFuso, instante);
     }
 
     /// <summary>A mesma conferência sobre a versão divulgada já resolvida por quem chama.</summary>
@@ -37,12 +38,11 @@ public static class PeriodoDaInscricaoResolver
         VersaoConfiguracao versaoDivulgada,
         IRegistroCodecsEnvelope registroCodecs,
         IResolvedorFusoInstitucional resolvedorFuso,
-        TimeProvider timeProvider)
+        DateTimeOffset instante)
     {
         ArgumentNullException.ThrowIfNull(versaoDivulgada);
         ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(resolvedorFuso);
-        ArgumentNullException.ThrowIfNull(timeProvider);
 
         if (!registroCodecs.SabeLer(versaoDivulgada.SchemaVersion))
         {
@@ -66,6 +66,6 @@ public static class PeriodoDaInscricaoResolver
         Result<TimeZoneInfo> fuso = resolvedorFuso.Resolver();
         return fuso.IsFailure
             ? fuso.Error
-            : janela.Value!.Conferir(timeProvider.GetUtcNow(), fuso.Value!);
+            : janela.Value!.Conferir(instante, fuso.Value!);
     }
 }

@@ -199,6 +199,7 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
         return AvaliarDefinicao(definicao, new EntradaAvaliacaoFormulario(
             respostas.ToDictionary(static r => r.Fato, static r => JsonSerializer.SerializeToElement(r.Valor), StringComparer.Ordinal),
             new HashSet<string>(StringComparer.Ordinal),
-            new Dictionary<string, FatoResolvido>(StringComparer.Ordinal)));
+            new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
+            Envio: null));
     }
 }

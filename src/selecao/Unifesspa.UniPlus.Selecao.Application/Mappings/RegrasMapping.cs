@@ -26,14 +26,23 @@ internal static class RegrasMapping
         string tipo = RestricaoValorJson.ParaToken(restricao.Tipo);
         return restricao switch
         {
-            FaixaNumerica faixa => new RestricaoValorDto(tipo, faixa.Minimo, faixa.Maximo, null, null),
-            TamanhoTexto tamanho => new RestricaoValorDto(tipo, tamanho.Minimo, tamanho.Maximo, null, null),
+            FaixaNumerica faixa => new RestricaoValorDto(tipo, faixa.Minimo, faixa.Maximo, null, null, null, null),
+            TamanhoTexto tamanho => new RestricaoValorDto(tipo, tamanho.Minimo, tamanho.Maximo, null, null, null, null),
             OpcoesPermitidas opcoes => new RestricaoValorDto(tipo, null, null, [.. opcoes.Entradas.Select(static e =>
-                new OpcoesCondicionadasDto(e.Quando?.ToDto(), [.. e.Valores.Order(StringComparer.Ordinal)]))], null),
-            OpcoesDasRespostas respostas => new RestricaoValorDto(tipo, null, null, null, respostas.Fatos),
-            MunicipiosDaUf daUf => new RestricaoValorDto(tipo, null, null, null, [daUf.FatoUf]),
+                new OpcoesCondicionadasDto(e.Quando?.ToDto(), [.. e.Valores.Order(StringComparer.Ordinal)]))], null, null, null),
+            OpcoesDasRespostas respostas => new RestricaoValorDto(tipo, null, null, null, respostas.Fatos, null, null),
+            MunicipiosDaUf daUf => new RestricaoValorDto(tipo, null, null, null, [daUf.FatoUf], null, null),
+            FaixaDeData faixaDeData => new RestricaoValorDto(tipo, null, null, null, null, faixaDeData.Minima?.ToDto(), faixaDeData.Maxima?.ToDto()),
             _ => throw new ArgumentOutOfRangeException(nameof(restricao), restricao.Tipo, "Tipo de restrição sem forma de leitura."),
         };
+    }
+
+    public static LimiteDeDataDto ToDto(this LimiteDeData limite)
+    {
+        ArgumentNullException.ThrowIfNull(limite);
+        return limite.Ancora == AncoraDoLimiteDeData.DataFixa
+            ? new LimiteDeDataDto(RestricaoValorJson.AncoraDataFixa, limite.Data, null, null)
+            : new LimiteDeDataDto(RestricaoValorJson.AncoraEnvio, null, limite.Anos, limite.Dias);
     }
 
     public static ImpedimentoDto ToDto(this Impedimento impedimento)

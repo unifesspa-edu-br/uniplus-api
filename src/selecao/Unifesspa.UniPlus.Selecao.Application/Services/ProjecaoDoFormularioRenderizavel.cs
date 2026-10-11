@@ -4,6 +4,7 @@ using Abstractions;
 
 using Domain.Entities;
 using Domain.Services;
+using Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -12,7 +13,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// O formulário renderizável de uma finalidade a partir da configuração do processo — a congelada na
 /// versão divulgada ou a viva do rascunho —: a apresentação sai das entidades e dos valores
 /// selecionáveis, e as regras, do recorte da definição avaliável (ADR-0139). Uma projeção só, para o
-/// público e para o rascunho servirem o mesmo formulário.
+/// público e para o rascunho servirem o mesmo formulário. O dia do envio se conta no fuso
+/// institucional, o mesmo da janela de inscrição.
 /// </summary>
 public static class ProjecaoDoFormularioRenderizavel
 {
@@ -50,7 +52,8 @@ public static class ProjecaoDoFormularioRenderizavel
             fatos.Where(f => f.Finalidade != finalidade).Select(f => Campo(f, valores)),
             avaliavel.ApresentacaoDosPressupostos,
             avaliavel.Definicao.Agregados,
-            dataReferenciaFatos);
+            dataReferenciaFatos,
+            FusoInstitucional.ZoneId);
     }
 
     private static SecaoRenderizavel Secao(FinalidadeFormulario finalidade, EtapaFormulario etapa) => new(
