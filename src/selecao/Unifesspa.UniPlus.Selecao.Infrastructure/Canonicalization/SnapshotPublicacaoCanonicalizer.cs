@@ -292,8 +292,13 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// <c>recursoCodigo</c>: o código do recurso de acessibilidade no cadastro, que o candidato
     /// escolhe no fato <c>RECURSO_ACESSIBILIDADE</c>. Sem novo bloco de topo. Sem produção em
     /// ambiente nenhum: fixture nova, <c>0.0.25</c> deixa de ser reconhecida.
+    /// O bump para <c>0.0.27</c> acrescenta às restrições de valor dos itens a <c>FAIXA_DE_DATA</c>,
+    /// com <c>dataMinima</c> e <c>dataMaxima</c>: cada limite é nulo, uma <c>DATA_FIXA</c> com a
+    /// <c>data</c>, ou o <c>ENVIO</c> com <c>anos</c> e <c>dias</c> de deslocamento. Sem novo bloco
+    /// de topo. Sem produção em ambiente nenhum: fixture nova, <c>0.0.26</c> deixa de ser
+    /// reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.26";
+    internal const string SchemaVersionAtual = "0.0.27";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -499,12 +504,28 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             case MunicipiosDaUf daUf:
                 json["fatos"] = CodigosEmOrdem([daUf.FatoUf]);
                 break;
+            case FaixaDeData faixaDeData:
+                json["dataMinima"] = SerializarLimiteDeData(faixaDeData.Minima);
+                json["dataMaxima"] = SerializarLimiteDeData(faixaDeData.Maxima);
+                break;
             default:
                 throw new InvalidOperationException($"Restrição de valor sem forma canônica: {restricao.Tipo}.");
         }
 
         return json;
     }
+
+    /// <summary>O limite da faixa de data com as chaves da âncora: a data no fixo, os anos e os dias no do envio.</summary>
+    private static JsonObject? SerializarLimiteDeData(LimiteDeData? limite) => limite switch
+    {
+        null => null,
+        { Ancora: AncoraDoLimiteDeData.DataFixa } => new JsonObject
+        {
+            ["ancora"] = RestricaoValorJson.AncoraDataFixa,
+            ["data"] = limite.Data!.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+        },
+        _ => new JsonObject { ["ancora"] = RestricaoValorJson.AncoraEnvio, ["anos"] = limite.Anos, ["dias"] = limite.Dias },
+    };
 
     private static string? LimiteDaFaixa(decimal? limite) =>
         limite is { } valor ? HashCanonicalComputer.SerializeDecimalCanonical(valor, FormaDoItem.CasasDecimaisDaFaixa) : null;
