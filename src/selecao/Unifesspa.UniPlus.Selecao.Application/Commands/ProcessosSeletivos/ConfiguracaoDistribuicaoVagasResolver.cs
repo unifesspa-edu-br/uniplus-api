@@ -161,9 +161,7 @@ internal static class ConfiguracaoDistribuicaoVagasResolver
                 view.RemanejamentoDestino,
                 view.RemanejamentoPar,
                 view.RemanejamentoFallback,
-                // O cadastro não tem mais critérios cumulativos: a regra de aplicabilidade os
-                // substituiu, e congelá-la no processo é a projeção dela na Seleção (#1900).
-                criteriosCumulativos: [],
+                view.RegraDeAplicabilidade,
                 view.AcaoQuandoIndeferido,
                 view.BaseLegal ?? string.Empty,
                 quantidadeDeclarada);

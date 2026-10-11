@@ -27,6 +27,15 @@ internal static class ConversoresDeRegras
             p => p == null ? 0 : SerializarPredicado(p).GetHashCode(StringComparison.Ordinal),
             p => p == null ? null : LerPredicado(SerializarPredicado(p)));
 
+    public static readonly ValueConverter<PredicadoDnf, string> PredicadoObrigatorio =
+        new(predicado => SerializarPredicado(predicado), json => LerPredicado(json));
+
+    public static readonly ValueComparer<PredicadoDnf> ComparadorDePredicadoObrigatorio =
+        new(
+            (a, b) => SerializarPredicado(a!) == SerializarPredicado(b!),
+            p => SerializarPredicado(p).GetHashCode(StringComparison.Ordinal),
+            p => LerPredicado(SerializarPredicado(p)));
+
     public static readonly ValueConverter<Obrigatoriedade, string> Obrigatoriedade =
         new(obrigatoriedade => SerializarObrigatoriedade(obrigatoriedade), json => LerObrigatoriedade(json));
 

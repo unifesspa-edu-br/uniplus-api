@@ -85,7 +85,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null, "Res. Unifesspa 532/2021",
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, PredicadoDnf.SemClausula, null, "Res. Unifesspa 532/2021",
             quantidadeDeclarada: 40).Value!;
         processo.DefinirDistribuicaoVagas(
             [ConfiguracaoDistribuicaoVagas.Criar(
@@ -788,10 +788,10 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     private static ModalidadeSelecionada ModalidadeDaLei(string codigo) => codigo == "AC"
         ? ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), codigo, "Ampla concorrência", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 22).Value!
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, PredicadoDnf.SemClausula, null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 22).Value!
         : ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), codigo, $"Modalidade {codigo}", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe,
-            "AC", RegraRemanejamentoModalidade.DestinoUnico, "AC", null, null, [], null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 2).Value!;
+            "AC", RegraRemanejamentoModalidade.DestinoUnico, "AC", null, null, PredicadoDnf.SemClausula, null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 2).Value!;
 
     /// <summary>A derivação na forma que o processo grava: cada cláusula do predicado vira um grupo de condições.</summary>
     private static ConfiguracaoDerivacaoFato Configurada(RegrasDerivacaoFato derivacao) =>

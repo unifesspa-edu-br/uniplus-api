@@ -82,7 +82,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
             remanejamentoDestino: null,
             remanejamentoPar: null,
             remanejamentoFallback: null,
-            criteriosCumulativos: [],
+            regraDeAplicabilidade: PredicadoDnf.SemClausula,
             acaoQuandoIndeferido: null,
             baseLegal: "Res. Unifesspa 532/2021",
             quantidadeDeclarada: 40).Value!;

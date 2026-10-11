@@ -676,6 +676,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "O mesmo código de modalidade não pode ter ações divergentes de vaga quando indeferido em ofertas distintas do processo."));
         }
 
+        if (RegraDeAplicabilidadeDivergenteEntreOfertas(distribuicaoVagas) is { } regraDivergente)
+        {
+            return Result.Failure(regraDivergente);
+        }
+
         // Story #554/issue #892 (CA-03): mesmo raciocínio do guard de CONDICAO_ATENDIMENTO em
         // DefinirOfertaAtendimento — todo fato cujos valores são modalidades (a de concorrência,
         // o grupo da convocação) referencia por código, então a checagem é precisa: só recusa se
@@ -6052,6 +6057,23 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             .Any(static grupo => grupo.Select(static m => m.AcaoQuandoIndeferido).Distinct().Count() > 1);
 
     /// <summary>
+    /// A modalidade tem uma regra de aplicabilidade só no processo, porque é dela que sai quem
+    /// concorre a ela (ADR-0144). Todas as distribuições são copiadas do cadastro na mesma gravação,
+    /// então duas cópias diferentes da mesma modalidade só aparecem se o cadastro mudou no meio dela,
+    /// ou num envelope adulterado.
+    /// </summary>
+    private static DomainError? RegraDeAplicabilidadeDivergenteEntreOfertas(IEnumerable<ConfiguracaoDistribuicaoVagas> distribuicaoVagas) =>
+        distribuicaoVagas
+            .SelectMany(static d => d.Modalidades)
+            .GroupBy(static m => m.Codigo, StringComparer.Ordinal)
+            .FirstOrDefault(static grupo => grupo.Skip(1).Any(m => !m.RegraDeAplicabilidade.MesmoConteudo(grupo.First().RegraDeAplicabilidade)))
+            is { } divergente
+            ? new DomainError(
+                ProcessoSeletivoErrorCodes.RegraDeAplicabilidadeDivergente,
+                $"A modalidade {divergente.Key} foi copiada com regras de aplicabilidade diferentes em ofertas do processo; grave a distribuição de vagas de novo.")
+            : null;
+
+    /// <summary>
     /// A etapa que declara nota de origem no ENEM (<see cref="EtapaProcesso.DeclaraNotaDoEnem"/>):
     /// é no máximo uma por processo, porque a nota do ENEM é uma só por candidato; compõe a
     /// média, porque é para gerar a nota final que o processo baseado em ENEM a declara; não
@@ -6414,6 +6436,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return new DomainError(
                 "ProcessoSeletivo.AcaoQuandoIndeferidoDivergente",
                 "O mesmo código de modalidade não pode ter ações divergentes de vaga quando indeferido em ofertas distintas do processo.");
+        }
+
+        if (RegraDeAplicabilidadeDivergenteEntreOfertas(grafo.DistribuicaoVagas) is { } regraDivergente)
+        {
+            return regraDivergente;
         }
 
         // O mesmo teto da gravação: sem o espelho, a restauração aplicaria uma lista que o PUT

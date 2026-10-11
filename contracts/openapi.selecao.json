@@ -14712,7 +14712,7 @@
           "remanejamentoDestino",
           "remanejamentoPar",
           "remanejamentoFallback",
-          "criteriosCumulativos",
+          "regraDeAplicabilidade",
           "acaoQuandoIndeferido",
           "baseLegal",
           "quantidadeDeclarada"
@@ -14772,10 +14772,13 @@
               "string"
             ]
           },
-          "criteriosCumulativos": {
+          "regraDeAplicabilidade": {
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoDto"
+              }
             }
           },
           "acaoQuandoIndeferido": {

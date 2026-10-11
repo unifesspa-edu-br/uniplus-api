@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -66,13 +67,12 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
 
     /// <summary>
     /// Um processo mínimo, válido para <see cref="SnapshotPublicacaoCanonicalizer.Canonicalizar"/>,
-    /// com os três knobs que os testes de <c>criteriosCumulativos</c>, <c>ocorrenciasEsperadas</c>
-    /// e <c>formatosPermitidos.lista</c> precisam variar — os outros quatro arrays da issue
+    /// com os dois knobs que os testes de <c>ocorrenciasEsperadas</c> e
+    /// <c>formatosPermitidos.lista</c> precisam variar — os outros quatro arrays da issue
     /// (<c>obrigatoriedades</c>, os dois <c>predicado.args</c> e <c>valoresDominio</c>) entram
     /// pela <see cref="EntradaCanonicalizacao"/>, não pelo agregado, e não precisam deste builder.
     /// </summary>
     private static ProcessoSeletivo MontarProcesso(
-        IReadOnlyList<string>? criteriosCumulativos = null,
         IReadOnlyList<string>? ocorrenciasEsperadas = null,
         IReadOnlyList<(string Formato, int? TamanhoMaximoBytesMax)>? formatosPermitidos = null)
     {
@@ -98,7 +98,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
             remanejamentoDestino: null,
             remanejamentoPar: null,
             remanejamentoFallback: null,
-            criteriosCumulativos: criteriosCumulativos ?? [],
+            regraDeAplicabilidade: PredicadoDnf.SemClausula,
             acaoQuandoIndeferido: null,
             baseLegal: "Res. Unifesspa 532/2021",
             quantidadeDeclarada: 40).Value!;
@@ -163,96 +163,6 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
         }
 
         return processo;
-    }
-
-    // ── criteriosCumulativos ──
-
-    /// <summary>
-    /// Oráculo por BYTE UTF-8 (não por unidade de código UTF-16). <c>System.Text.Json</c> — com
-    /// QUALQUER <c>JavaScriptEncoder</c>, inclusive <c>UnsafeRelaxedJsonEscaping</c> — escapa todo
-    /// caractere astral (acima de <c>U+FFFF</c>) como par substituto textual (<c>\uD83D\uDE00</c>
-    /// para 😀), porque o mecanismo de intervalos permitidos do encoder só cobre o plano básico
-    /// multilíngue: não existe como "permitir" um caractere astral passar literal. Por isso o
-    /// item escapado começa com <c>\</c> (<c>0x5C</c>) — byte MENOR que o de qualquer caractere
-    /// literal não-ASCII (que começa em <c>0xC2</c> ou mais). Um caractere comum como <c>'á'</c>
-    /// (literal, UTF-8 <c>0xC3 0xA1</c>) tem codepoint (<c>U+00E1</c> = 225) bem MENOR que a
-    /// primeira unidade de código do par substituto de 😀 (<c>0xD83D</c> = 55357) — a ordem
-    /// ORDINAL (<see cref="string.CompareOrdinal(string, string)"/>) põe <c>'á'</c> antes de 😀. A
-    /// ordem por BYTE (<see cref="ComparadorLexicograficoDeBytes"/>, a que o perfil usa) faz o
-    /// oposto: 😀 (escapado, primeiro byte <c>0x5C</c>) precede <c>'á'</c> (literal, primeiro byte
-    /// <c>0xC3</c>). Sem um caso acima de <c>U+FFFF</c> nesta posição, o teste provaria só
-    /// ordenação ASCII e não distinguiria as duas políticas de comparação.
-    /// </summary>
-    [Fact(DisplayName = "criteriosCumulativos ordena pela chave de conteúdo em bytes UTF-8 — oráculo escrito à mão, com caractere acima de U+FFFF")]
-    public void CriteriosCumulativos_OrdenaPelaChaveDeConteudoEmBytesUtf8()
-    {
-        string.CompareOrdinal("área", "😀").Should().BeLessThan(0,
-            "pré-condição: por ordem ORDINAL (UTF-16), 'área' (U+00E1 = 225) precede 😀 (par substituto " +
-            "iniciado em 0xD83D = 55357) — o oposto do oráculo de bytes abaixo");
-
-        ProcessoSeletivo entradaUm = MontarProcesso(criteriosCumulativos: ["😀", "banana", "área", "Apple"]);
-        JsonArray criteriosUm = EnvelopeCodecRoundTripTests.Envelope(
-            Canonicalizador.Canonicalizar(Entrada(entradaUm)))["modalidades"]![0]!["criteriosCumulativos"]!.AsArray();
-
-        criteriosUm.Select(static c => c!.GetValue<string>()).Should().Equal(
-            ["Apple", "😀", "banana", "área"],
-            "ordem por PRIMEIRO BYTE: 'A' (0x41) < 😀 escapado (0x5C, o '\\' do \\uD83D\\uDE00) < 'b' (0x62) < " +
-            "'á' literal (0xC3) — 😀 vem ANTES de 'banana' e 'área' em bytes, mesmo tendo o maior codepoint");
-
-        // CA-02 — a MESMA entrada em outra ordem produz os MESMOS bytes (determinismo canônico).
-        ProcessoSeletivo entradaDois = MontarProcesso(criteriosCumulativos: ["Apple", "área", "banana", "😀"]);
-        JsonArray criteriosDois = EnvelopeCodecRoundTripTests.Envelope(
-            Canonicalizador.Canonicalizar(Entrada(entradaDois)))["modalidades"]![0]!["criteriosCumulativos"]!.AsArray();
-
-        BytesDoFragmento(criteriosDois).Should().Equal(BytesDoFragmento(criteriosUm),
-            "duas entradas com o MESMO conteúdo em ordens DIFERENTES produzem o mesmo array canônico — a posição " +
-            "de entrada não sobrevive à canonicalização");
-    }
-
-    /// <summary>
-    /// Contraprova de forma composta e decomposta (D1) — e não só "os mesmos bytes no fim", mas
-    /// uma ORDEM que só bate se a normalização acontecer ANTES da comparação, não depois. Sem
-    /// normalizar, os bytes CRUS de <c>decomposta</c> (<c>63-61-66-65-CC-81</c>, terminando em
-    /// <c>'e'</c> 0x65 + acento combinante) comparam MENOR que <c>meio</c> (<c>63-61-66-7A…</c>,
-    /// quarto byte <c>'z'</c> 0x7A) — <c>decomposta</c> viria ANTES. Depois de normalizar (NFC),
-    /// os mesmos bytes de <c>composta</c>/<c>decomposta</c> começam com o 'é' pré-composto
-    /// (<c>C3-A9</c> no quarto byte, dentro das aspas do JSON) — MAIOR que <c>'z'</c> — e
-    /// <c>café</c> vem DEPOIS de <c>meio</c>. Se a chave de ordenação serializasse o texto FORA
-    /// do perfil (sem passar por <see cref="PerfilCanonicoV1.SerializarChave"/>), ela ordenaria
-    /// pela forma crua e produziria <c>[decomposta, meio]</c> — o oposto do oráculo abaixo.
-    /// </summary>
-    [Fact(DisplayName = "criteriosCumulativos: a chave de ordenação usa a forma NFC — 'café' decomposto ordena como se já fosse composto")]
-    public void CriteriosCumulativos_ChaveDeOrdenacaoUsaFormaNfc_NaoOTextoCru()
-    {
-        const string composta = "café"; // "café" — já é a forma NFC.
-        string decomposta = "café"; // "cafe" + acento agudo combinante (U+0301) — é NFD.
-        const string meio = "cafz_ponto_medio"; // Entre as duas ordens possíveis de 'café' — ver o summary.
-
-        composta.Should().NotBe(decomposta,
-            "pré-condição: são sequências de code points DIFERENTES para o mesmo texto visível");
-        composta.Should().Be(composta.Normalize(NormalizationForm.FormC),
-            "pré-condição: 'café' (com 'é' pré-composto) já é a forma NFC");
-        Encoding.UTF8.GetBytes(decomposta).AsSpan().SequenceCompareTo(Encoding.UTF8.GetBytes(meio)).Should().BeLessThan(0,
-            "pré-condição: SEM normalizar, os bytes crus de 'café' decomposto comparam ANTES de 'cafz_ponto_medio' " +
-            "— o oposto do oráculo de conteúdo abaixo, que normaliza antes de comparar");
-
-        JsonArray criteriosComposta = EnvelopeCodecRoundTripTests.Envelope(
-            Canonicalizador.Canonicalizar(Entrada(MontarProcesso(criteriosCumulativos: [composta, meio]))))
-            ["modalidades"]![0]!["criteriosCumulativos"]!.AsArray();
-
-        criteriosComposta.Select(static c => c!.GetValue<string>()).Should().Equal(
-            [meio, composta],
-            "'cafz_ponto_medio' (quarto byte 'z' = 0x7A) precede 'café' (quarto byte, dentro das aspas, é o " +
-            "primeiro byte do 'é' pré-composto = 0xC3) — só verdade DEPOIS de normalizar; o texto cru ordenaria " +
-            "ao contrário (ver pré-condição acima)");
-
-        JsonArray criteriosDecomposta = EnvelopeCodecRoundTripTests.Envelope(
-            Canonicalizador.Canonicalizar(Entrada(MontarProcesso(criteriosCumulativos: [decomposta, meio]))))
-            ["modalidades"]![0]!["criteriosCumulativos"]!.AsArray();
-
-        BytesDoFragmento(criteriosDecomposta).Should().Equal(BytesDoFragmento(criteriosComposta),
-            "o item decomposto ordena e serializa EXATAMENTE como o composto equivalente — mesma posição, mesmos " +
-            "bytes — porque a chave de ordenação passa pela mesma normalização NFC que a emissão final");
     }
 
     // ── ocorrenciasEsperadas ──

@@ -698,6 +698,16 @@ internal static class CorpusEnvelope
     /// Oferta sob a Lei 12.711: exige a referência demográfica (INV-5) e as 8 modalidades
     /// federais + AC (INV-6). É o ramo com <c>referenciaDemografica</c> preenchida.
     /// </summary>
+    private static PredicadoDnf RegraDaCotaIndependenteDeRenda => PredicadoDnf.CriarDeCondicoesAgrupadas(
+        [(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!;
+
+    private static PredicadoDnf RegraDaCotaDeRenda => PredicadoDnf.CriarDeCondicoesAgrupadas(
+    [
+        (0, CondicaoDnf.Criar("RENDA", Operador.Igual, JsonSerializer.SerializeToElement("ATE_1_SM")).Value!),
+        (0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!),
+        (1, CondicaoDnf.Criar("RENDA", Operador.Igual, JsonSerializer.SerializeToElement("ATE_1_SM")).Value!),
+    ]).Value!;
+
     private static ConfiguracaoDistribuicaoVagas DistribuicaoLei12711()
     {
         List<ModalidadeSelecionada> modalidades =
@@ -706,7 +716,7 @@ internal static class CorpusEnvelope
                 new Guid("2222bbbb-0000-4000-8000-000000000001"), "AC", "Ampla concorrência",
                 NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
                 RegraRemanejamentoModalidade.Nenhuma, null, null, null,
-                criteriosCumulativos: [], acaoQuandoIndeferido: null,
+                regraDeAplicabilidade: PredicadoDnf.SemClausula, acaoQuandoIndeferido: null,
                 baseLegal: "Lei 12.711/2012 art. 1º").Value!,
         ];
 
@@ -731,16 +741,11 @@ internal static class CorpusEnvelope
                 null,
                 null,
                 null,
-                // Dois critérios FORA da ordem alfabética de propósito (issue #1067): o
-                // encoder ordena este array pela chave de conteúdo — é um conjunto, sem
-                // posição própria entre os critérios — então o envelope sai com
-                // "egresso_escola_publica" antes de "renda_per_capita_ate_1sm",
-                // independente da ordem declarada aqui. Um decoder que preservasse esta
-                // ordem de ENTRADA em vez de ler a canônica já gravada produziria bytes
-                // distintos dos congelados.
-                criteriosCumulativos: codigo.StartsWith("LB", StringComparison.Ordinal)
-                    ? ["renda_per_capita_ate_1sm", "egresso_escola_publica"]
-                    : ["egresso_escola_publica"],
+                // A regra da cota de renda tem duas cláusulas FORA da ordem canônica de propósito: o
+                // encoder ordena as cláusulas e as condições pela chave de conteúdo, então um decoder
+                // que preservasse a ordem de ENTRADA em vez de ler a canônica já gravada produziria
+                // bytes distintos dos congelados.
+                codigo.StartsWith("LB", StringComparison.Ordinal) ? RegraDaCotaDeRenda : RegraDaCotaIndependenteDeRenda,
                 acaoQuandoIndeferido: "RECLASSIFICAR_AC",
                 baseLegal: "Lei 12.711/2012, alterada pela Lei 14.723/2023").Value!);
             sufixo++;
@@ -785,22 +790,22 @@ internal static class CorpusEnvelope
                     new Guid("3333cccc-0000-4000-8000-000000000001"), "AC", null,
                     NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
                     RegraRemanejamentoModalidade.Nenhuma, null, null, null,
-                    [], null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 15).Value!,
+                    PredicadoDnf.SemClausula, null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 15).Value!,
                 ModalidadeSelecionada.Criar(
                     new Guid("3333cccc-0000-4000-8000-000000000002"), "V", "PcD em ampla concorrência",
                     NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, null,
                     RegraRemanejamentoModalidade.DestinoUnico, "AC", null, null,
-                    ["laudo_medico"], "RECLASSIFICAR_AC", "Lei 13.146/2015", quantidadeDeclarada: 5).Value!,
+                    PredicadoDnf.SemClausula, "RECLASSIFICAR_AC", "Lei 13.146/2015", quantidadeDeclarada: 5).Value!,
                 ModalidadeSelecionada.Criar(
                     new Guid("3333cccc-0000-4000-8000-000000000003"), "IND", "Indígena",
                     NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe, "AC",
                     RegraRemanejamentoModalidade.Cruzado, null, "QUI", "AC",
-                    ["autodeclaracao", "documento_funai"], "RECLASSIFICAR_REGRA_EDITAL", "Res. Unifesspa 326/2019", quantidadeDeclarada: 10).Value!,
+                    PredicadoDnf.SemClausula, "RECLASSIFICAR_REGRA_EDITAL", "Res. Unifesspa 326/2019", quantidadeDeclarada: 10).Value!,
                 ModalidadeSelecionada.Criar(
                     new Guid("3333cccc-0000-4000-8000-000000000004"), "QUI", "Quilombola",
                     NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe, "AC",
                     RegraRemanejamentoModalidade.Cruzado, null, "IND", "AC",
-                    ["autodeclaracao"], "RECLASSIFICAR_REGRA_EDITAL", "Res. Unifesspa 326/2019", quantidadeDeclarada: 10).Value!,
+                    PredicadoDnf.SemClausula, "RECLASSIFICAR_REGRA_EDITAL", "Res. Unifesspa 326/2019", quantidadeDeclarada: 10).Value!,
             ],
             grupoAreaEnem: grupoAreaEnem, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
 

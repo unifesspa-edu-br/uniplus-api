@@ -92,7 +92,7 @@ public sealed class ManifestoDoEnvelopeTests
             [
                 "ModalidadeOrigemId", "Codigo", "Descricao", "NaturezaLegal", "ComposicaoVagas",
                 "ComposicaoOrigemCodigo", "RegraRemanejamento", "RemanejamentoDestino", "RemanejamentoPar",
-                "RemanejamentoFallback", "CriteriosCumulativos", "AcaoQuandoIndeferido", "BaseLegal",
+                "RemanejamentoFallback", "RegraDeAplicabilidade", "AcaoQuandoIndeferido", "BaseLegal",
                 "QuantidadeDeclarada",
             ],
             [("ConfiguracaoDistribuicaoVagasId", "FK interna.")]),

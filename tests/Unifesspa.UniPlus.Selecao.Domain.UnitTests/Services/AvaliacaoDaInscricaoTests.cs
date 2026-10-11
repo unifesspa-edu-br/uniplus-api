@@ -152,7 +152,7 @@ public sealed class AvaliacaoDaInscricaoTests
             etapaCodigo: Secao, finalidade: FinalidadeFormulario.Inscricao).Value!)];
         ModalidadeSelecionada[] ofertadas = [.. RegrasDerivacaoModalidadeLei12711.DominioCanonico.Select(static codigo => ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), codigo, $"Nome de {codigo}", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null, "Lei 12.711/2012").Value!)];
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, PredicadoDnf.SemClausula, null, "Lei 12.711/2012").Value!)];
 
         return new ConfiguracaoAvaliavel(
             definicao,

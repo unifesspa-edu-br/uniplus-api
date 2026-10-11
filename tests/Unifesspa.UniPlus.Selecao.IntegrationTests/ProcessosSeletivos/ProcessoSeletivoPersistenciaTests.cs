@@ -383,7 +383,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
             RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixoTeste).Value!;
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
             modalidadeOrigemId, "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null,
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, PredicadoDnf.SemClausula, null,
             "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!;
         ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 40, pr: 1m, regraDistribuicao, regraAjuste: null,

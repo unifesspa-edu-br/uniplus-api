@@ -6,6 +6,8 @@ using System.Text.RegularExpressions;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -383,7 +385,7 @@ public sealed partial class EnvelopeCodec
             "remanejamentoDestino",
             "remanejamentoPar",
             "remanejamentoFallback",
-            "criteriosCumulativos",
+            "regraDeAplicabilidade",
             "acaoQuandoIndeferido",
             "baseLegal",
             "quantidadeDeclarada");
@@ -399,12 +401,9 @@ public sealed partial class EnvelopeCodec
         string? par = leitor.TextoOpcional(item, "remanejamentoPar", path, LimitesDoEnvelope.ModalidadeCodigo);
         string? fallback = leitor.TextoOpcional(item, "remanejamentoFallback", path, LimitesDoEnvelope.ModalidadeCodigo);
 
-        // A ordem de `criteriosCumulativos` no envelope é a CANÔNICA (issue #1067, ADR-0109
-        // D9) — o array é um conjunto sem posição própria entre os critérios, e o encoder o
-        // ordena pela chave de conteúdo de cada item, não pela ordem de entrada. O decoder não
-        // reordena nada aqui: lê a sequência tal como está no JSON, que já é a canônica, e é
-        // essa mesma sequência que a recanonicalização tem de reproduzir byte a byte.
-        IReadOnlyList<string> criterios = leitor.Textos(item, "criteriosCumulativos", path);
+        // A modalidade incondicional não tem cláusula, e o encoder a grava nula.
+        IReadOnlyList<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> regra =
+            LerDnf(leitor, item, "regraDeAplicabilidade", path);
         string? acaoQuandoIndeferido = leitor.TextoOpcional(item, "acaoQuandoIndeferido", path, LimitesDoEnvelope.Token);
         string baseLegal = leitor.TextoNaoVazio(item, "baseLegal", path, LimitesDoEnvelope.BaseLegal);
         int? quantidadeDeclarada = leitor.InteiroOpcional(item, "quantidadeDeclarada", path);
@@ -424,6 +423,12 @@ public sealed partial class EnvelopeCodec
             return leitor.Propagar<ModalidadeSelecionada>(incoerencia);
         }
 
+        Result<PredicadoDnf?> regraLida = PredicadoOpcional(regra);
+        if (regraLida.IsFailure)
+        {
+            return leitor.Propagar<ModalidadeSelecionada>(regraLida.Error!);
+        }
+
         Result<ModalidadeSelecionada> modalidade = ModalidadeSelecionada.Criar(
             modalidadeOrigemId,
             codigo,
@@ -435,7 +440,7 @@ public sealed partial class EnvelopeCodec
             destino,
             par,
             fallback,
-            criterios,
+            regraLida.Value ?? PredicadoDnf.SemClausula,
             acaoQuandoIndeferido,
             baseLegal,
             quantidadeDeclarada);

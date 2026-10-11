@@ -1,10 +1,14 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
+using System.Text.Json;
+
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -34,11 +38,18 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
         string codigo, NaturezaLegalModalidade natureza, ComposicaoVagasModalidade composicao,
         string? composicaoOrigemCodigo = null,
         RegraRemanejamentoModalidade regraRemanejamento = RegraRemanejamentoModalidade.Nenhuma,
-        int? quantidadeDeclarada = null) =>
+        int? quantidadeDeclarada = null,
+        PredicadoDnf? regraDeAplicabilidade = null) =>
         ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), codigo, $"Modalidade {codigo}", natureza, composicao,
             composicaoOrigemCodigo, regraRemanejamento, null, null, null,
-            ["CRITERIO_A", "CRITERIO_B"], "RECLASSIFICA_AC", "Lei 12.711/2012", quantidadeDeclarada).Value!;
+            regraDeAplicabilidade ?? PredicadoDnf.SemClausula, "RECLASSIFICA_AC", "Lei 12.711/2012", quantidadeDeclarada).Value!;
+
+    private static readonly PredicadoDnf RegraDaReservaPcd = PredicadoDnf.CriarDeCondicoesAgrupadas(
+    [
+        (0, CondicaoDnf.Criar("PCD", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!),
+        (0, CondicaoDnf.Criar("CONCORRER_PCD", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!),
+    ]).Value!;
 
     [Fact(DisplayName = "Persiste e recarrega distribuição Lei 12.711 com referência demográfica e modalidades")]
     public async Task PersisteERecarrega_Lei12711ComDemografica()
@@ -57,7 +68,8 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
             .. ModalidadesFederaisLei12711.Codigos.Select(codigo =>
                 NovaModalidade(codigo, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr, regraRemanejamento: RegraRemanejamentoModalidade.SegueCascata)),
             NovaModalidade(ModalidadesFederaisLei12711.Ac, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo),
-            NovaModalidade("V", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe, composicaoOrigemCodigo: "AC", quantidadeDeclarada: 2),
+            NovaModalidade("V", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe, composicaoOrigemCodigo: "AC", quantidadeDeclarada: 2,
+                regraDeAplicabilidade: RegraDaReservaPcd),
         ];
 
         ReferenciaRegra regraAjuste = ReferenciaRegra.Criar(
@@ -103,7 +115,8 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
         ModalidadeSelecionada retiraDe = distribuicao.Modalidades.Single(m => m.Codigo == "V");
         retiraDe.ComposicaoVagas.Should().Be(ComposicaoVagasModalidade.RetiraDe);
         retiraDe.ComposicaoOrigemCodigo.Should().Be("AC");
-        retiraDe.CriteriosCumulativos.Should().BeEquivalentTo(["CRITERIO_A", "CRITERIO_B"]);
+        retiraDe.RegraDeAplicabilidade.MesmoConteudo(RegraDaReservaPcd).Should().BeTrue(
+            "a regra de aplicabilidade congelada volta do banco como foi gravada");
         retiraDe.QuantidadeDeclarada.Should().Be(2);
 
         ModalidadeSelecionada cotaReservada = distribuicao.Modalidades.Single(m => m.Codigo == "LB_PPI");

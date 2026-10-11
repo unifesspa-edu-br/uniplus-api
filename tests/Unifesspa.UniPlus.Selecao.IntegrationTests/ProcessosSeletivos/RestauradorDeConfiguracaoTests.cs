@@ -10,6 +10,7 @@ using NSubstitute;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -335,7 +336,7 @@ public sealed class RestauradorDeConfiguracaoTests
             remanejamentoDestino: null,
             remanejamentoPar: null,
             remanejamentoFallback: null,
-            criteriosCumulativos: [],
+            regraDeAplicabilidade: PredicadoDnf.SemClausula,
             acaoQuandoIndeferido: null,
             baseLegal: "Res. Unifesspa 532/2021",
             quantidadeDeclarada: 40).Value!;
@@ -505,7 +506,7 @@ public sealed class RestauradorDeConfiguracaoTests
             ValoresSelecionaveisCongelados: valoresSelecionaveis,
             CalendarioDiasUteis: CorpusEnvelope.CalendarioRico());
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.27", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.28", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,

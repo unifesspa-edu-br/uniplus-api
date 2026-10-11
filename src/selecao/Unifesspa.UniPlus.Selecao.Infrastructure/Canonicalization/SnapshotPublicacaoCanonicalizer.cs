@@ -297,8 +297,13 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// <c>data</c>, ou o <c>ENVIO</c> com <c>anos</c> e <c>dias</c> de deslocamento. Sem novo bloco
     /// de topo. Sem produção em ambiente nenhum: fixture nova, <c>0.0.26</c> deixa de ser
     /// reconhecida.
+    /// O bump para <c>0.0.28</c> troca, em cada modalidade de <c>distribuicaoVagas.modalidades</c>,
+    /// os <c>criteriosCumulativos</c> pela <c>regraDeAplicabilidade</c>: o predicado em DNF sobre os
+    /// fatos do candidato que diz quem concorre a ela (ADR-0144), nulo na modalidade incondicional.
+    /// Sem novo bloco de topo. Sem produção em ambiente nenhum: fixture nova, <c>0.0.27</c> deixa de
+    /// ser reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.27";
+    internal const string SchemaVersionAtual = "0.0.28";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -786,7 +791,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                     ["remanejamentoDestino"] = modalidade.RemanejamentoDestino,
                     ["remanejamentoPar"] = modalidade.RemanejamentoPar,
                     ["remanejamentoFallback"] = modalidade.RemanejamentoFallback,
-                    ["criteriosCumulativos"] = OrdenarPorConteudo(modalidade.CriteriosCumulativos.Select(static c => JsonValue.Create(c)!)),
+                    ["regraDeAplicabilidade"] = SerializarDnf(LinhasDoPredicado(modalidade.RegraDeAplicabilidade)),
                     ["acaoQuandoIndeferido"] = modalidade.AcaoQuandoIndeferido,
                     ["baseLegal"] = HashCanonicalComputer.NormalizeNfc(modalidade.BaseLegal),
                     ["quantidadeDeclarada"] = modalidade.QuantidadeDeclarada,
@@ -1786,8 +1791,8 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     }
 
     /// <summary>
-    /// A mesma chave de conteúdo (ADR-0109 D9) para os sete conjuntos que são arrays de
-    /// TEXTO puro — <c>criteriosCumulativos</c>, <c>ocorrenciasEsperadas</c>,
+    /// A mesma chave de conteúdo (ADR-0109 D9) para os seis conjuntos que são arrays de
+    /// TEXTO puro — <c>ocorrenciasEsperadas</c>,
     /// <c>valoresDominio</c>, os dois <c>args</c> de predicado de obrigatoriedade
     /// (<c>codigos</c>, <c>necessidades</c>), as alternativas de um átomo sob operador de
     /// pertencimento (<see cref="SerializarValorDeAtomo"/>, issue #1068) e
@@ -1799,10 +1804,10 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// <c>camposPublicos</c> chegou já ordenado — nunca reimplementa um comparador próprio.
     /// </summary>
     /// <remarks>
-    /// Um item nulo é invariante quebrada, não entrada tolerável: nenhum dos sete vocabulários
+    /// Um item nulo é invariante quebrada, não entrada tolerável: nenhum dos seis vocabulários
     /// admite <c>null</c> como elemento — <see cref="LeitorEnvelope.Textos"/> já o recusa na
-    /// leitura para os seis primeiros, e <see cref="Regras.Services.PredicadoDnfValidador"/> já
-    /// recusa alternativa não-string (logo nunca nula) antes da publicação para o sétimo. Um
+    /// leitura para os cinco primeiros, e <see cref="Regras.Services.PredicadoDnfValidador"/> já
+    /// recusa alternativa não-string (logo nunca nula) antes da publicação para o sexto. Um
     /// envelope que o emitisse produziria um documento que o próprio decoder da mesma versão
     /// rejeitaria. Falha alto aqui, com mensagem própria, em vez de deixar o
     /// <see langword="null"/> estourar mais adiante dentro da serialização com uma
@@ -1817,7 +1822,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             {
                 throw new InvalidOperationException(
                     "Um array de texto do envelope recebeu um elemento nulo antes da ordenação — nenhum dos " +
-                    "conjuntos de texto simples (criteriosCumulativos, ocorrenciasEsperadas, valoresDominio, " +
+                    "conjuntos de texto simples (ocorrenciasEsperadas, valoresDominio, " +
                     "codigos, necessidades, alternativas de átomo EM/NAO_EM) admite null como item.");
             }
 

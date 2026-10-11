@@ -32,8 +32,7 @@ internal sealed class ConfiguracaoDivulgacaoConfiguration : IEntityTypeConfigura
         builder.HasKey(c => c.Id);
         builder.Property(c => c.Id).ValueGeneratedNever();
 
-        // campos_publicos: lista de strings serializada como jsonb — mesmo molde de
-        // ModalidadeSelecionadaConfiguration.CriteriosCumulativos. SEM DEFAULT: uma lista vazia
+        // campos_publicos: lista de strings serializada como jsonb. SEM DEFAULT: uma lista vazia
         // é estado que ConfiguracaoDivulgacao.Criar nunca produz (viola o piso e a não-vacuidade
         // ao mesmo tempo) — a tabela é nova, sem linha a preencher, e a coluna exige valor
         // explícito em vez de um default que fabricaria um estado que o domínio proíbe.

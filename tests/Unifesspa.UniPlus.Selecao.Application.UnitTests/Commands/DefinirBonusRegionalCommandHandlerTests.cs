@@ -9,6 +9,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
@@ -284,7 +285,7 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
             remanejamentoDestino: null,
             remanejamentoPar: null,
             remanejamentoFallback: null,
-            criteriosCumulativos: [],
+            regraDeAplicabilidade: PredicadoDnf.SemClausula,
             acaoQuandoIndeferido: null,
             baseLegal: "Res. Unifesspa 532/2021",
             quantidadeDeclarada: 40).Value!;

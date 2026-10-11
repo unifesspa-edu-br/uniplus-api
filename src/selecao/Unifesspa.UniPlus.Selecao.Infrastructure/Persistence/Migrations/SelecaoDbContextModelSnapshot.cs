@@ -1798,13 +1798,6 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<string>("CriteriosCumulativos")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("criterios_cumulativos")
-                        .HasDefaultValueSql("'[]'::jsonb");
-
                     b.Property<string>("Descricao")
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)")
@@ -1823,6 +1816,11 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.Property<int?>("QuantidadeDeclarada")
                         .HasColumnType("integer")
                         .HasColumnName("quantidade_declarada");
+
+                    b.Property<string>("RegraDeAplicabilidade")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("regra_de_aplicabilidade");
 
                     b.Property<string>("RegraRemanejamento")
                         .IsRequired()

@@ -11,6 +11,7 @@ using Npgsql;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -76,7 +77,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             remanejamentoDestino: null,
             remanejamentoPar: null,
             remanejamentoFallback: null,
-            criteriosCumulativos: [],
+            regraDeAplicabilidade: PredicadoDnf.SemClausula,
             acaoQuandoIndeferido: null,
             baseLegal: "Res. Unifesspa 532/2021",
             quantidadeDeclarada: 40).Value!;

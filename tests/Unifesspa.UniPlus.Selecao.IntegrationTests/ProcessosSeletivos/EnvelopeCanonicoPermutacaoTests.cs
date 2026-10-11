@@ -38,15 +38,14 @@ using Xunit;
 /// entrada de cada uma).
 /// </para>
 /// <para>
-/// FORA desta prova, por decisão: <c>modalidades[].criteriosCumulativos</c> e
+/// FORA desta prova, por decisão: <c>modalidades[].regraDeAplicabilidade</c> e
 /// <c>classificacao.regrasEliminacao</c> — as duas coleções que não têm identidade de negócio nem
 /// de origem entre os elementos, e por isso o encoder ordena pela CHAVE DE CONTEÚDO do próprio
 /// item (ADR-0109 D9). <c>classificacao.regrasEliminacao</c> tem prova própria —
 /// <c>EnvelopeCanonicoGoldenTests.Envelope_IndependeDaOrdemDeCriacao</c> varia a ordem de CRIAÇÃO
 /// de duas regras de eliminação (e, com ela, a ordem dos Guid v7) e prova que o envelope resultante
-/// não muda. <c>modalidades[].criteriosCumulativos</c> tem prova própria em
-/// <c>OrdenacaoDeConjuntosCanonicosTests.CriteriosCumulativos_OrdenaPelaChaveDeConteudoEmBytesUtf8</c>,
-/// que compara os bytes de duas entradas com o mesmo conteúdo em ordens de entrada diferentes.
+/// não muda. As cláusulas e condições de um predicado têm prova própria em
+/// <c>PredicadoDnfOrdenacaoCanonicaTests</c>.
 /// </para>
 /// <para>
 /// <c>documentosExigidos.exigencias</c> também fica FORA, por um motivo distinto dos dois acima: a

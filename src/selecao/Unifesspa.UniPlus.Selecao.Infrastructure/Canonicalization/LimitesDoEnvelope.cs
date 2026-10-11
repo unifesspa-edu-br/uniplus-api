@@ -26,8 +26,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </para>
 /// <para>
 /// Os campos que vivem dentro de um <c>json</c>/<c>jsonb</c> (os <c>args</c> dos critérios
-/// e das regras de eliminação, os <c>criteriosCumulativos</c>) <b>não</b> têm limite de
-/// coluna — e por isso não aparecem aqui.
+/// e das regras de eliminação, a regra de aplicabilidade da modalidade) <b>não</b> têm limite
+/// de coluna — e por isso não aparecem aqui.
 /// </para>
 /// </remarks>
 public static class LimitesDoEnvelope

@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -660,11 +661,11 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             new Guid("cccc0000-0000-4000-8000-000000000001"), "AC", null,
             NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
             RegraRemanejamentoModalidade.Nenhuma, null, null, null,
-            [], null, "base legal", quantidadeDeclarada: quantidade).Value!;
+            PredicadoDnf.SemClausula, null, "base legal", quantidadeDeclarada: quantidade).Value!;
 
         static ModalidadeSelecionada V(string acaoQuandoIndeferido, int quantidade) => ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "V", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal,
-            null, RegraRemanejamentoModalidade.DestinoUnico, "AC", null, null, [], acaoQuandoIndeferido, "base legal",
+            null, RegraRemanejamentoModalidade.DestinoUnico, "AC", null, null, PredicadoDnf.SemClausula, acaoQuandoIndeferido, "base legal",
             quantidadeDeclarada: quantidade).Value!;
 
         ReferenciaRegra regra = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a');
@@ -1371,7 +1372,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
                     new Guid("cccc0000-0000-4000-8000-000000000001"), "AC", null,
                     NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
                     RegraRemanejamentoModalidade.Nenhuma, null, null, null,
-                    [], null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
+                    PredicadoDnf.SemClausula, null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
             ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
 
     private static ConfiguracaoClassificacao Classificacao(IReadOnlyList<RegraEliminacao> eliminacoes) =>

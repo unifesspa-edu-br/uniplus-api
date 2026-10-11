@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -963,7 +964,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         remanejamentoDestino: null,
         remanejamentoPar: null,
         remanejamentoFallback: null,
-        criteriosCumulativos: [],
+        regraDeAplicabilidade: PredicadoDnf.SemClausula,
         acaoQuandoIndeferido: null,
         baseLegal: "Res. Unifesspa 532/2021",
         quantidadeDeclarada: 10).Value!;

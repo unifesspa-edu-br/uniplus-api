@@ -4,6 +4,7 @@ using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Modalidade de concorrência selecionada para a distribuição de vagas de uma
@@ -31,7 +32,13 @@ public sealed class ModalidadeSelecionada : EntityBase
     public string? RemanejamentoDestino { get; private set; }
     public string? RemanejamentoPar { get; private set; }
     public string? RemanejamentoFallback { get; private set; }
-    public IReadOnlyList<string> CriteriosCumulativos { get; private set; } = [];
+
+    /// <summary>
+    /// Quem concorre à modalidade, pelos fatos do candidato (ADR-0144): a regra de aplicabilidade
+    /// do cadastro, congelada quando a distribuição é definida. Sem cláusula, a modalidade é
+    /// incondicional.
+    /// </summary>
+    public PredicadoDnf RegraDeAplicabilidade { get; private set; } = null!;
 
     /// <summary>
     /// Snapshot-copy da ação de indeferimento do cadastro de <c>Modalidade</c>
@@ -73,12 +80,12 @@ public sealed class ModalidadeSelecionada : EntityBase
         string? remanejamentoDestino,
         string? remanejamentoPar,
         string? remanejamentoFallback,
-        IReadOnlyList<string> criteriosCumulativos,
+        PredicadoDnf regraDeAplicabilidade,
         string? acaoQuandoIndeferido,
         string baseLegal,
         int? quantidadeDeclarada = null)
     {
-        ArgumentNullException.ThrowIfNull(criteriosCumulativos);
+        ArgumentNullException.ThrowIfNull(regraDeAplicabilidade);
 
         // A identidade da origem decide se esta oferta é a mesma modalidade que uma
         // obrigatoriedade legal exige (ADR-0129). Identidade vazia não identifica nada:
@@ -201,7 +208,7 @@ public sealed class ModalidadeSelecionada : EntityBase
             RemanejamentoDestino = remanejamentoDestino,
             RemanejamentoPar = remanejamentoPar,
             RemanejamentoFallback = remanejamentoFallback,
-            CriteriosCumulativos = [.. criteriosCumulativos],
+            RegraDeAplicabilidade = regraDeAplicabilidade,
             AcaoQuandoIndeferido = acaoQuandoIndeferido,
             BaseLegal = baseLegal.Trim(),
             QuantidadeDeclarada = quantidadeDeclarada,

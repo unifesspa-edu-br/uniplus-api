@@ -60,7 +60,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), codigo, null, natureza,
             natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.ResidualDoVo : ComposicaoVagasModalidade.DentroDoVr,
-            null, remanejamento, null, null, null, [], acaoQuandoIndeferido, "base legal", quantidadeDeclarada).Value!;
+            null, remanejamento, null, null, null, PredicadoDnf.SemClausula, acaoQuandoIndeferido, "base legal", quantidadeDeclarada).Value!;
 
     private static readonly (string? Codigo, string? Rotulo) GrupoTecnologica = ("TECNOLOGICA", "Tecnológica");
 
@@ -814,7 +814,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     {
         ModalidadeSelecionada acPcd = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC_PCD", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe,
-            ModalidadesFederaisLei12711.Ac, RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null, "base legal", 2).Value!;
+            ModalidadesFederaisLei12711.Ac, RegraRemanejamentoModalidade.Nenhuma, null, null, null, PredicadoDnf.SemClausula, null, "base legal", 2).Value!;
         ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 40, pr: 0.5m, RegraLei12711(), RegraAjusteArt11(), Demografica(),
             [.. AsOitoFederaisMaisAc(), acPcd], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;

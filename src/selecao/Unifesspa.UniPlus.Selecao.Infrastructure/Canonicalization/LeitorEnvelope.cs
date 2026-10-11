@@ -573,12 +573,12 @@ internal sealed class LeitorEnvelope
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Um item em branco em <c>criteriosCumulativos</c> é um <b>critério de elegibilidade
-    /// que não diz nada</b>; um item com espaços nas pontas (<c>" PCD "</c>) é pior: ele é
-    /// um critério que <b>ninguém reconhece</b>. Os dois entram no jsonb, fazem round-trip
-    /// perfeito (o encoder reemite o array item a item, verbatim) e viram requisitos que o
-    /// motor de homologação teria de avaliar por <b>comparação exata</b>. O cadastro nunca
-    /// os produz — ele normaliza os critérios (<c>Modalidade.NormalizarCriterios</c>).
+    /// Um item em branco num conjunto de códigos (<c>ocorrenciasEsperadas</c>,
+    /// <c>valoresDominio</c>) é um <b>código que não diz nada</b>; um item com espaços nas
+    /// pontas (<c>" PCD "</c>) é pior: ele é um código que <b>ninguém reconhece</b>. Os dois
+    /// entram no jsonb, fazem round-trip perfeito (o encoder reemite o array item a item,
+    /// verbatim) e viram valores que o motor teria de avaliar por <b>comparação exata</b>. O
+    /// cadastro nunca os produz, porque normaliza o que grava.
     /// </para>
     /// <para>
     /// <b>A guarda recusa; ela não normaliza.</b> Aparar o espaço aqui mudaria o valor em

@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -65,7 +66,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
             remanejamentoDestino: null,
             remanejamentoPar: null,
             remanejamentoFallback: null,
-            criteriosCumulativos: [],
+            regraDeAplicabilidade: PredicadoDnf.SemClausula,
             acaoQuandoIndeferido: null,
             baseLegal: "Res. Unifesspa 532/2021",
             quantidadeDeclarada: 40).Value!;
@@ -207,7 +208,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
                 Guid.CreateVersion7(), "AC", "Ampla concorrência",
                 NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
                 RegraRemanejamentoModalidade.Nenhuma, null, null, null,
-                criteriosCumulativos: [], acaoQuandoIndeferido: null,
+                regraDeAplicabilidade: PredicadoDnf.SemClausula, acaoQuandoIndeferido: null,
                 baseLegal: "Lei 12.711/2012 art. 1º").Value!,
         ];
 
@@ -217,7 +218,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
                 Guid.CreateVersion7(), codigo, $"Reserva {codigo}",
                 NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr, null,
                 RegraRemanejamentoModalidade.SegueCascata, null, null, null,
-                criteriosCumulativos: [], acaoQuandoIndeferido: "RECLASSIFICAR_AC",
+                regraDeAplicabilidade: PredicadoDnf.SemClausula, acaoQuandoIndeferido: "RECLASSIFICAR_AC",
                 baseLegal: "Lei 12.711/2012, alterada pela Lei 14.723/2023").Value!);
         }
 
