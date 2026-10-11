@@ -25,5 +25,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// exatamente o que a restrição de leitura administrativa existe para impedir.
 /// </para>
 /// </remarks>
+/// <param name="Instante">Instante da leitura, contra o qual se resolve a situação da janela de inscrição.</param>
 public sealed record ObterCertamePublicadoQuery(
-    Guid ProcessoSeletivoId) : IQuery<Result<CertamePublicadoDto>>;
+    Guid ProcessoSeletivoId,
+    DateTimeOffset Instante) : IQuery<Result<CertamePublicadoDto>>;

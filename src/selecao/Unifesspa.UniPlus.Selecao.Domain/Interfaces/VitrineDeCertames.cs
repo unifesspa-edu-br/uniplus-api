@@ -41,6 +41,18 @@ public enum SituacaoDoCertame
 public static class SituacaoDaVitrine
 {
     /// <summary>
+    /// A partir de quanto tempo do encerramento um certame é "últimos dias".
+    /// </summary>
+    /// <remarks>
+    /// <b>Valor provisório.</b> O estado aparece no modelo de interface do portal, mas o limiar que o
+    /// define não está declarado em requisito nem em regra de negócio publicada — e ele é decisão de
+    /// produto, não de implementação: encurtá-lo ou alargá-lo muda o que o cidadão lê como urgente.
+    /// Sete dias é o que se assume até a regra existir, e trocá-lo é mudar esta constante. A vitrine e
+    /// o detalhe do certame leem o mesmo valor, para o mesmo certame não sair com duas situações.
+    /// </remarks>
+    public static readonly TimeSpan LimiarDosUltimosDias = TimeSpan.FromDays(7);
+
+    /// <summary>
     /// Em qual situação está um certame cuja janela vai de <paramref name="inscricoesDe"/> a
     /// <paramref name="inscricoesAte"/>, no instante dado.
     /// </summary>

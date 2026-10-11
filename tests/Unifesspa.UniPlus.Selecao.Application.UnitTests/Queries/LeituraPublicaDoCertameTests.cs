@@ -37,7 +37,7 @@ public sealed class LeituraPublicaDoCertameTests
             .Returns((CertameDivulgado?)null);
 
         Result<CertamePublicadoDto> resultado = await ObterCertamePublicadoQueryHandler.Handle(
-            new ObterCertamePublicadoQuery(Guid.CreateVersion7()), repository, CancellationToken.None);
+            new ObterCertamePublicadoQuery(Guid.CreateVersion7(), Agora), repository, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
@@ -53,12 +53,53 @@ public sealed class LeituraPublicaDoCertameTests
             .Returns(Divulgado(processoId, esperado));
 
         Result<CertamePublicadoDto> resultado = await ObterCertamePublicadoQueryHandler.Handle(
-            new ObterCertamePublicadoQuery(processoId), repository, CancellationToken.None);
+            new ObterCertamePublicadoQuery(processoId, Agora), repository, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.AtoCriadorId.Should().Be(esperado.AtoCriadorId);
         resultado.Value.Periodo.Numero.Should().Be("001/2026");
         resultado.Value.Nome.Should().Be("SISU 2026.1", "o título é congelado na divulgação, não lido do agregado vivo");
+    }
+
+    [Theory(DisplayName = "O detalhe traz a situação da janela no instante da leitura, pela regra da vitrine")]
+    [InlineData(5, 30, SituacaoDoCertame.EmBreve)]
+    [InlineData(-1, 30, SituacaoDoCertame.InscricoesAbertas)]
+    [InlineData(-1, 3, SituacaoDoCertame.UltimosDias)]
+    [InlineData(-30, -1, SituacaoDoCertame.Encerradas)]
+    public async Task Detalhe_TrazASituacaoDoInstante(int diasAteAbrir, int diasAteFechar, SituacaoDoCertame esperada)
+    {
+        Guid processoId = Guid.CreateVersion7();
+        ICertameDivulgadoRepository repository = Substitute.For<ICertameDivulgadoRepository>();
+        repository.ObterParaLeituraAsync(processoId, Arg.Any<CancellationToken>())
+            .Returns(Divulgado(
+                processoId, Projecao(processoId),
+                inscricoesDe: Agora.AddDays(diasAteAbrir), inscricoesAte: Agora.AddDays(diasAteFechar)));
+
+        Result<CertamePublicadoDto> resultado = await ObterCertamePublicadoQueryHandler.Handle(
+            new ObterCertamePublicadoQuery(processoId, Agora), repository, CancellationToken.None);
+
+        resultado.Value!.Situacao.Should().Be(esperada);
+    }
+
+    [Fact(DisplayName = "A situação não entra no documento divulgado: é calculada na leitura")]
+    public void Situacao_NaoEntraNoDocumentoDivulgado()
+    {
+        CertamePublicadoDto lido = Projecao(Guid.CreateVersion7()) with { Situacao = SituacaoDoCertame.InscricoesAbertas };
+
+        string documento = JsonSerializer.Serialize(lido with { Situacao = null }, ProjecaoDoCertamePublicado.OpcoesDoDocumento);
+
+        documento.Should().NotContain("situacao");
+    }
+
+    [Fact(DisplayName = "O selo do detalhe muda quando a situação muda, com o mesmo documento divulgado")]
+    public void Selo_MudaComASituacao()
+    {
+        CertamePublicadoDto certame = Projecao(Guid.CreateVersion7());
+
+        string aberto = SeloDoCertamePublicado.De(certame with { Situacao = SituacaoDoCertame.InscricoesAbertas });
+        string ultimosDias = SeloDoCertamePublicado.De(certame with { Situacao = SituacaoDoCertame.UltimosDias });
+
+        ultimosDias.Should().NotBe(aberto);
     }
 
     [Fact(DisplayName = "A vitrine devolve a página inteira: não há descarte depois de formada")]
