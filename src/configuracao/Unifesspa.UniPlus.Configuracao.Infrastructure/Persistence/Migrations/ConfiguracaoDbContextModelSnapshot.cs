@@ -2223,6 +2223,47 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         },
                         new
                         {
+                            Id = new Guid("fa700000-0000-7000-8000-000000000054"),
+                            Ativo = true,
+                            Binding = "REGRA_DERIVACAO:OPTOU_PELAS_COTAS_DA_LEI",
+                            Cardinalidade = "ESCALAR",
+                            ClassificacaoProtecao = "PESSOAL",
+                            Codigo = "OPTOU_PELAS_COTAS_DA_LEI",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Dependencias = new string[0],
+                            Descricao = "Se o candidato é egresso de escola pública e optou por concorrer às vagas de escola pública.",
+                            Dominio = "BOOLEANO",
+                            Escopo = "CANDIDATO",
+                            FinalidadeTratamento = "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            Nome = "Optou pelas cotas da Lei nº 12.711/2012",
+                            Origem = "DERIVADO",
+                            PontoResolucao = "INSCRICAO",
+                            RegrasPadrao = "[{\"contribui\":null,\"quando\":[[{\"fato\":\"EGRESSO_ESCOLA_PUBLICA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_EP\",\"operador\":\"IGUAL\",\"valor\":true}]]}]",
+                            Sistema = true
+                        },
+                        new
+                        {
+                            Id = new Guid("fa700000-0000-7000-8000-000000000055"),
+                            Ativo = true,
+                            Binding = "CAMPO_FORMULARIO:CONCORRER_VAGA_POR_ACRESCIMO",
+                            Cardinalidade = "ESCALAR",
+                            ClassificacaoProtecao = "SENSIVEL",
+                            Codigo = "CONCORRER_VAGA_POR_ACRESCIMO",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Dependencias = new string[0],
+                            Dominio = "BOOLEANO",
+                            Escopo = "CANDIDATO",
+                            FinalidadeTratamento = "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            Nome = "Deseja concorrer às vagas por acréscimo para indígenas e quilombolas",
+                            Origem = "DECLARADO",
+                            PontoResolucao = "INSCRICAO",
+                            RegrasPadrao = "[]",
+                            Sistema = true
+                        },
+                        new
+                        {
                             Id = new Guid("fa700000-0000-7000-8000-000000000053"),
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:RECURSO_ACESSIBILIDADE",
