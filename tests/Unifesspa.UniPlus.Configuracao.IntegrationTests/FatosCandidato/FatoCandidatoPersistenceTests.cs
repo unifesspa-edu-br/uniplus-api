@@ -174,7 +174,7 @@ public sealed class FatoCandidatoPersistenceTests
 
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
 
-        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(53);
+        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(54);
         fatos.Select(f => f.Codigo).Should().OnlyHaveUniqueItems();
 
         foreach (FatoCandidatoSeedItem item in FatoCandidatoSeed.Itens)
@@ -426,7 +426,7 @@ public sealed class FatoCandidatoPersistenceTests
         List<FatoValorDominio> valores = await ctx.FatosValorDominio.AsNoTracking()
             .Where(v => ctx.FatosCandidato.Any(f => f.Id == v.FatoCandidatoId && f.Sistema))
             .ToListAsync();
-        valores.Should().HaveCount(FatoValorDominioSeed.Itens.Count).And.HaveCount(54);
+        valores.Should().HaveCount(FatoValorDominioSeed.Itens.Count).And.HaveCount(66);
 
         FatoCandidato corRaca = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "COR_RACA");
         string[] codigosCorRaca = [.. valores
@@ -462,6 +462,11 @@ public sealed class FatoCandidatoPersistenceTests
         FatoCandidato estadoCivil = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "ESTADO_CIVIL");
         valores.Where(v => v.FatoCandidatoId == estadoCivil.Id).OrderBy(v => v.Ordem).Select(v => v.Codigo)
             .Should().Equal("SOLTEIRO", "CASADO", "UNIAO_ESTAVEL", "SEPARADO", "DIVORCIADO", "VIUVO");
+
+        // O órgão emissor do RG: a lista fechada termina em "Outro", que pede o nome do órgão.
+        FatoCandidato orgaoEmissor = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "RG_ORGAO_EMISSOR");
+        valores.Where(v => v.FatoCandidatoId == orgaoEmissor.Id).OrderBy(v => v.Ordem).Select(v => v.Codigo)
+            .Should().Equal("SSP", "PC", "DETRAN", "IFP", "PM", "CBM", "EB", "MB", "FAB", "DPF", "MRE", "OUTRO");
 
         FatoCandidato formaDeConclusao = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "FORMA_CONCLUSAO_EM");
         valores.Where(v => v.FatoCandidatoId == formaDeConclusao.Id).OrderBy(v => v.Ordem).Select(v => v.Codigo)
@@ -508,7 +513,7 @@ public sealed class FatoCandidatoPersistenceTests
         IReadOnlyList<FatoCandidatoView> views =
             [.. (await reader.ListarAsync()).Where(static v => FatoCandidatoSeed.Itens.Any(i => i.Codigo == v.Codigo))];
 
-        views.Should().HaveCount(53);
+        views.Should().HaveCount(54);
         views.Select(v => v.Codigo).Should().BeInAscendingOrder(StringComparer.Ordinal);
 
         FatoCandidatoView corRaca = views.Single(v => v.Codigo == "COR_RACA");
@@ -639,7 +644,7 @@ public sealed class FatoCandidatoPersistenceTests
             ("NOME_SOCIAL", "029", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:NOME_SOCIAL", "INSCRICAO"),
             ("CPF", "030", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:CPF", "INSCRICAO"),
             ("RG_NUMERO", "031", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:RG_NUMERO", "INSCRICAO"),
-            ("RG_ORGAO_EMISSOR", "032", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:RG_ORGAO_EMISSOR", "INSCRICAO"),
+            ("RG_ORGAO_EMISSOR", "032", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:RG_ORGAO_EMISSOR", "INSCRICAO"),
             ("RG_DATA_EMISSAO", "033", DominioFato.Data, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:RG_DATA_EMISSAO", "INSCRICAO"),
             ("NOME_MAE", "036", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:NOME_MAE", "INSCRICAO"),
             ("NOME_PAI", "037", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:NOME_PAI", "INSCRICAO"),
@@ -661,6 +666,7 @@ public sealed class FatoCandidatoPersistenceTests
             ("RECURSO_ACESSIBILIDADE", "053", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Multivalorado, "CAMPO_FORMULARIO:RECURSO_ACESSIBILIDADE", "INSCRICAO"),
             ("OPTOU_PELAS_COTAS_DA_LEI", "054", DominioFato.Booleano, OrigemFato.Derivado, CardinalidadeFato.Escalar, "REGRA_DERIVACAO:OPTOU_PELAS_COTAS_DA_LEI", "INSCRICAO"),
             ("CONCORRER_VAGA_POR_ACRESCIMO", "055", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:CONCORRER_VAGA_POR_ACRESCIMO", "INSCRICAO"),
+            ("RG_ORGAO_EMISSOR_OUTRO", "056", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:RG_ORGAO_EMISSOR_OUTRO", "INSCRICAO"),
         ];
 
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);

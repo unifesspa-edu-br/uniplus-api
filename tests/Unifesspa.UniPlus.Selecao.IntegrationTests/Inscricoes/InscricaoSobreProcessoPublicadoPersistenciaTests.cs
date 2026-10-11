@@ -158,9 +158,9 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
             new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
 
-        // O conjunto básico do candidato (sempre presente num formulário de inscrição) traz sete
-        // fatos de seleção (nacionalidade, estado civil, sexo, cor/raça, tipo de localidade, UF do
-        // RG e UF de naturalidade) — o canonicalizador exige uma entrada não vazia para cada; os
+        // O conjunto básico do candidato (sempre presente num formulário de inscrição) traz oito
+        // fatos de seleção (nacionalidade, órgão emissor e UF do RG, estado civil, sexo, cor/raça,
+        // tipo de localidade e UF de naturalidade) — o canonicalizador exige uma entrada não vazia para cada; os
         // valores em si não importam para o que este teste prova (a resolução da versão divulgada e
         // a cifra dos documentos).
         Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresDoConjuntoBasico = new(StringComparer.Ordinal)
@@ -170,6 +170,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             ["SEXO"] = [new ValorDominioDeclaradoCongelado("FEMININO", "Feminino.", 0)],
             ["COR_RACA"] = [new ValorDominioDeclaradoCongelado("NAO_DECLARADO", "Prefere não declarar.", 0)],
             ["TIPO_ENDERECO"] = [new ValorDominioDeclaradoCongelado("URBANO", "Endereço urbano.", 0)],
+            ["RG_ORGAO_EMISSOR"] = [new ValorDominioDeclaradoCongelado("SSP", "Secretaria de Segurança Pública (SSP)", 0)],
             ["RG_UF"] = [new ValorDominioDeclaradoCongelado("PA", "Pará.", 0)],
             ["NATURALIDADE_UF"] = [new ValorDominioDeclaradoCongelado("PA", "Pará.", 0)],
         };
@@ -301,6 +302,63 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             faixa.Minima.Should().Be(LimiteDeData.NoEnvio(anos: -120, dias: 0));
             faixa.Maxima.Should().Be(LimiteDeData.NoEnvio(anos: 0, dias: 0));
         }
+    }
+
+    [Fact(DisplayName = "A migração regrava o formulário gravado com o órgão emissor em texto: a lista e o nome do outro órgão entram, e o que vinha depois desce")]
+    public async Task Migracao_FormularioComOrgaoEmissorEmTexto_RecebeAListaEONomeDoOutro()
+    {
+        ProcessoSeletivo processo = NovoProcessoDeInscricao(nameof(Migracao_FormularioComOrgaoEmissorEmTexto_RecebeAListaEONomeDoOutro));
+        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        {
+            await writeContext.ProcessosSeletivos.AddAsync(processo);
+            await writeContext.SaveChangesAsync();
+        }
+
+        await using NpgsqlConnection connection = new(_fixture.ConnectionString);
+        await connection.OpenAsync();
+        await using (NpgsqlCommand antes = connection.CreateCommand())
+        {
+            // O formulário como era gravado antes da lista: o órgão emissor em texto livre, sem o nome
+            // do outro órgão, e o que vem depois dele uma posição acima.
+            antes.CommandText = """
+                CREATE TEMPORARY TABLE rg_antes AS
+                SELECT ordem FROM selecao.fatos_coletados WHERE processo_seletivo_id = @id AND fato_codigo = 'RG_ORGAO_EMISSOR';
+                DELETE FROM selecao.fatos_coletados WHERE processo_seletivo_id = @id AND fato_codigo = 'RG_ORGAO_EMISSOR_OUTRO';
+                UPDATE selecao.fatos_coletados SET tipo_renderizacao = 5, formato = 'LIVRE'
+                WHERE processo_seletivo_id = @id AND fato_codigo = 'RG_ORGAO_EMISSOR';
+                UPDATE selecao.fatos_coletados SET ordem = ordem + 1000000
+                WHERE processo_seletivo_id = @id AND grupo_coletado_id IS NULL AND ordem > (SELECT ordem FROM rg_antes);
+                UPDATE selecao.fatos_coletados SET ordem = ordem - 1000001
+                WHERE processo_seletivo_id = @id AND grupo_coletado_id IS NULL AND ordem > 1000000;
+                UPDATE selecao.grupos_coletados SET ordem = ordem - 1
+                WHERE processo_seletivo_id = @id AND ordem > (SELECT ordem FROM rg_antes);
+                DROP TABLE rg_antes;
+                """;
+            antes.Parameters.AddWithValue("id", processo.Id);
+            await antes.ExecuteNonQueryAsync();
+        }
+
+        foreach (SqlOperation operacao in new EscolheOOrgaoEmissorDoRgDeUmaLista().UpOperations.OfType<SqlOperation>())
+        {
+            await using NpgsqlCommand migracao = connection.CreateCommand();
+            migracao.CommandText = operacao.Sql;
+            await migracao.ExecuteNonQueryAsync();
+        }
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        ProcessoSeletivo lido = (await new ProcessoSeletivoRepository(readContext, TimeProvider.System).ObterComConfiguracaoAsync(processo.Id))!;
+        Forma(lido).Should().BeEquivalentTo(Forma(processo), static o => o.WithStrictOrdering());
+        lido.GruposColetados.Select(static g => (g.Codigo, g.Ordem)).Should().BeEquivalentTo(processo.GruposColetados.Select(static g => (g.Codigo, g.Ordem)));
+
+        static IEnumerable<object> Forma(ProcessoSeletivo p) => p.FatosColetados
+            .Where(static f => f.GrupoColetadoId is null)
+            .OrderBy(static f => f.Ordem)
+            .Select(static f => new
+            {
+                f.FatoCodigo, f.Ordem, f.EtapaCodigo, f.Rotulo, f.TipoRenderizacao, f.Formato, f.ClassificacaoProtecao, f.OrigemValores,
+                Obrigatoriedade = f.Obrigatoriedade.Tipo, f.Restricoes,
+                Precondicoes = f.Precondicoes.Select(static c => (c.Clausula, c.Fato, c.Operador, JsonSerializer.Serialize(c.Valor))).ToList(),
+            });
     }
 
     [Fact(DisplayName = "O conjunto básico publicado recusa o nascimento depois do envio com os limites do dia, sem gravar o rascunho")]
@@ -453,6 +511,36 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
         recusas.Should().ContainSingle(e => e.Field == OfertaAtendimentoEspecializado.FatoRecursoAcessibilidade
             && e.Error.Code == "Inscricao.RespostaInvalida", "o intérprete de Libras não está na oferta deste processo");
+    }
+
+    [Fact(DisplayName = "A versão fixada oferece ao órgão emissor do RG a lista congelada, e a submissão recusa o órgão fora dela")]
+    public async Task OrgaoEmissor_ForaDaListaCongelada_ERecusado()
+    {
+        ProcessoSeletivo processo = NovoProcessoDeInscricao(nameof(OrgaoEmissor_ForaDaListaCongelada_ERecusado));
+
+        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+        (Guid processoId, _) = await PublicarEDivulgarAsync(writeContext, processo);
+
+        Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
+            new IniciarInscricaoCommand(processoId),
+            new InscricaoRepository(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
+            new CertameDivulgadoRepository(writeContext), new ProcessoSeletivoRepository(writeContext, TimeProvider.System),
+            RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), DentroDoPeriodo, writeContext, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None);
+        iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        Result<ContextoDaVersaoFixada> contexto = await ContextoDaVersaoFixadaResolver.ResolverAsync(
+            iniciar.Value!.VersaoFormularioId, processoId, new ProcessoSeletivoRepository(readContext, TimeProvider.System), RegistroCodecs, CancellationToken.None);
+        contexto.IsSuccess.Should().BeTrue(contexto.Error?.Message);
+
+        IReadOnlyList<FieldError> RecusasDe(string orgao) => VeredictoDeSubmissao.RecusasDeOpcaoForaDaOferta(
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["RG_ORGAO_EMISSOR"] = JsonSerializer.SerializeToElement(orgao) },
+            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal),
+            contexto.Value!.Ofertas);
+
+        RecusasDe("SSP").Should().BeEmpty();
+        RecusasDe("PA").Should().ContainSingle(static e => e.Field == "RG_ORGAO_EMISSOR" && e.Error.Code == InscricaoErrorCodes.RespostaInvalida,
+            "a UF não é órgão emissor");
     }
 
     [Fact(DisplayName = "O rascunho guarda a resposta ao item que outra resposta esconde, e o envio a descarta da inscrição gravada e do comprovante, que continua íntegro")]

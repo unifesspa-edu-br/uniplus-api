@@ -31,6 +31,12 @@ public static class ConjuntoBasicoDaInscricao
     private const string Estrangeiro = "ESTRANGEIRO";
     private const string DesejaNomeSocial = "DESEJA_NOME_SOCIAL";
     private const string TipoDeLocalidade = "TIPO_ENDERECO";
+    private const string OrgaoEmissor = "RG_ORGAO_EMISSOR";
+
+    /// <summary>O órgão emissor fora da lista, cujo nome o candidato escreve.</summary>
+    private const string OutroOrgaoEmissor = "OUTRO";
+
+    private const int TamanhoMaximoDoNomeDoOrgaoEmissor = 60;
 
     /// <summary>
     /// Quantos anos antes do envio a data de nascimento e a de emissão do RG ainda são plausíveis: o
@@ -248,7 +254,10 @@ public static class ConjuntoBasicoDaInscricao
             new(Nacionalidade, 0, "Nacionalidade", selecao, sempre, null),
             new(Cpf, 0, "CPF", texto, PredicadoDnfJson.ObrigatoriedadeQuando, null, PredicadoObrigatoriedade: naoEstrangeiro),
             new("RG_NUMERO", 0, "Número do RG", texto, sempre, naoEstrangeiro),
-            new("RG_ORGAO_EMISSOR", 0, "Órgão emissor do RG", texto, sempre, naoEstrangeiro),
+            new(OrgaoEmissor, 0, "Órgão emissor do RG", selecao, sempre, naoEstrangeiro),
+            new("RG_ORGAO_EMISSOR_OUTRO", 0, "Nome do órgão emissor", texto, sempre,
+                Quando(OrgaoEmissor, OperadorCodigo.Igual, OutroOrgaoEmissor),
+                Restricoes: [new RestricaoValorInput(RestricaoValorJson.TamanhoTexto, Maximo: TamanhoMaximoDoNomeDoOrgaoEmissor)]),
             new("RG_UF", 0, "UF de emissão do RG", selecao, sempre, naoEstrangeiro),
             new("RG_DATA_EMISSAO", 0, "Data de emissão do RG", data, sempre, naoEstrangeiro, Restricoes: dataPlausivel),
             new("PASSAPORTE_NUMERO", 0, "Número do passaporte", texto, sempre, estrangeiro),

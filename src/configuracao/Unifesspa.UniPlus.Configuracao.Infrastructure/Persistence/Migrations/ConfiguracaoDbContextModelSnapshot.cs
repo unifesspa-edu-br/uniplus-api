@@ -1832,12 +1832,34 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             Codigo = "RG_ORGAO_EMISSOR",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],
+                            Dominio = "CATEGORICO",
+                            Escopo = "CANDIDATO",
+                            FinalidadeTratamento = "Identificação do candidato no processo seletivo.",
+                            FonteValores = "GLOBAL",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            Nome = "Órgão emissor do RG",
+                            Origem = "DECLARADO",
+                            PontoResolucao = "INSCRICAO",
+                            RegrasPadrao = "[]",
+                            Sistema = true
+                        },
+                        new
+                        {
+                            Id = new Guid("fa700000-0000-7000-8000-000000000056"),
+                            Ativo = true,
+                            Binding = "CAMPO_FORMULARIO:RG_ORGAO_EMISSOR_OUTRO",
+                            Cardinalidade = "ESCALAR",
+                            ClassificacaoProtecao = "PESSOAL",
+                            Codigo = "RG_ORGAO_EMISSOR_OUTRO",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Dependencias = new string[0],
+                            Descricao = "O órgão emissor do RG que não está na lista.",
                             Dominio = "TEXTO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Identificação do candidato no processo seletivo.",
                             Formato = "LIVRE",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
-                            Nome = "Órgão emissor do RG",
+                            Nome = "Nome do órgão emissor do RG",
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
@@ -2645,6 +2667,126 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             Descricao = "Viúvo(a)",
                             FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000038"),
                             Ordem = 5
+                        },
+                        new
+                        {
+                            Id = new Guid("fa70d000-0000-7000-8000-000000000057"),
+                            Ativo = true,
+                            Codigo = "SSP",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Descricao = "Secretaria de Segurança Pública (SSP)",
+                            FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000032"),
+                            Ordem = 0
+                        },
+                        new
+                        {
+                            Id = new Guid("fa70d000-0000-7000-8000-000000000058"),
+                            Ativo = true,
+                            Codigo = "PC",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Descricao = "Polícia Civil (PC)",
+                            FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000032"),
+                            Ordem = 1
+                        },
+                        new
+                        {
+                            Id = new Guid("fa70d000-0000-7000-8000-000000000059"),
+                            Ativo = true,
+                            Codigo = "DETRAN",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Descricao = "Departamento Estadual de Trânsito (DETRAN)",
+                            FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000032"),
+                            Ordem = 2
+                        },
+                        new
+                        {
+                            Id = new Guid("fa70d000-0000-7000-8000-000000000060"),
+                            Ativo = true,
+                            Codigo = "IFP",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Descricao = "Instituto Félix Pacheco (IFP)",
+                            FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000032"),
+                            Ordem = 3
+                        },
+                        new
+                        {
+                            Id = new Guid("fa70d000-0000-7000-8000-000000000061"),
+                            Ativo = true,
+                            Codigo = "PM",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Descricao = "Polícia Militar (PM)",
+                            FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000032"),
+                            Ordem = 4
+                        },
+                        new
+                        {
+                            Id = new Guid("fa70d000-0000-7000-8000-000000000062"),
+                            Ativo = true,
+                            Codigo = "CBM",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Descricao = "Corpo de Bombeiros Militar (CBM)",
+                            FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000032"),
+                            Ordem = 5
+                        },
+                        new
+                        {
+                            Id = new Guid("fa70d000-0000-7000-8000-000000000063"),
+                            Ativo = true,
+                            Codigo = "EB",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Descricao = "Exército Brasileiro (EB)",
+                            FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000032"),
+                            Ordem = 6
+                        },
+                        new
+                        {
+                            Id = new Guid("fa70d000-0000-7000-8000-000000000064"),
+                            Ativo = true,
+                            Codigo = "MB",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Descricao = "Marinha do Brasil (MB)",
+                            FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000032"),
+                            Ordem = 7
+                        },
+                        new
+                        {
+                            Id = new Guid("fa70d000-0000-7000-8000-000000000065"),
+                            Ativo = true,
+                            Codigo = "FAB",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Descricao = "Força Aérea Brasileira (FAB)",
+                            FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000032"),
+                            Ordem = 8
+                        },
+                        new
+                        {
+                            Id = new Guid("fa70d000-0000-7000-8000-000000000066"),
+                            Ativo = true,
+                            Codigo = "DPF",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Descricao = "Departamento de Polícia Federal (DPF)",
+                            FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000032"),
+                            Ordem = 9
+                        },
+                        new
+                        {
+                            Id = new Guid("fa70d000-0000-7000-8000-000000000067"),
+                            Ativo = true,
+                            Codigo = "MRE",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Descricao = "Ministério das Relações Exteriores (MRE)",
+                            FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000032"),
+                            Ordem = 10
+                        },
+                        new
+                        {
+                            Id = new Guid("fa70d000-0000-7000-8000-000000000068"),
+                            Ativo = true,
+                            Codigo = "OUTRO",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Descricao = "Outro",
+                            FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000032"),
+                            Ordem = 11
                         },
                         new
                         {

@@ -8,6 +8,11 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore.Migrations.Operations;
+
+using Npgsql;
+
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -104,6 +109,66 @@ public sealed class ModeloFormularioAdminEndpointTests
 
         recusada.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await recusada.Content.ReadAsStringAsync()).Should().Contain("uniplus.estrutura_formulario.dado_basico_alterado");
+    }
+
+    [Fact(DisplayName = "A migração regrava o modelo gravado com o órgão emissor em texto: a lista e o nome do outro órgão entram, e o que vinha depois desce")]
+    public async Task Migracao_ModeloComOrgaoEmissorEmTexto_RecebeAListaEONomeDoOutro()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage criar = await EnviarAsync(client, HttpMethod.Post, Base, ModeloDeInscricao(CodigoUnico()));
+        criar.StatusCode.Should().Be(HttpStatusCode.Created, await criar.Content.ReadAsStringAsync());
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+        JsonNode esperado = (await ObterAsync(client, id))["conteudo"]!;
+
+        await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
+        await conexao.OpenAsync();
+        await using (NpgsqlCommand antes = conexao.CreateCommand())
+        {
+            antes.CommandText = "UPDATE configuracao.modelos_formulario SET conteudo = @conteudo::jsonb WHERE id = @id";
+            antes.Parameters.AddWithValue("id", id);
+            antes.Parameters.AddWithValue("conteudo", ConteudoComOrgaoEmissorEmTexto(await ConteudoGravadoAsync(conexao, id)));
+            (await antes.ExecuteNonQueryAsync()).Should().Be(1);
+        }
+
+        foreach (SqlOperation operacao in new EscolheOOrgaoEmissorDoRgDeUmaLista().UpOperations.OfType<SqlOperation>())
+        {
+            await using NpgsqlCommand migracao = conexao.CreateCommand();
+            migracao.CommandText = operacao.Sql;
+            await migracao.ExecuteNonQueryAsync();
+        }
+
+        JsonNode.DeepEquals((await ObterAsync(client, id))["conteudo"], esperado).Should().BeTrue(
+            "a migração devolve o modelo à forma que a escrita grava hoje");
+    }
+
+    private static async Task<string> ConteudoGravadoAsync(NpgsqlConnection conexao, Guid id)
+    {
+        await using NpgsqlCommand ler = conexao.CreateCommand();
+        ler.CommandText = "SELECT conteudo::text FROM configuracao.modelos_formulario WHERE id = @id";
+        ler.Parameters.AddWithValue("id", id);
+        return (string)(await ler.ExecuteScalarAsync())!;
+    }
+
+    /// <summary>
+    /// O conteúdo como era gravado antes da lista: o órgão emissor em texto livre, sem o nome do outro
+    /// órgão, e os itens e os grupos que vêm depois dele uma posição acima.
+    /// </summary>
+    private static string ConteudoComOrgaoEmissorEmTexto(string gravado)
+    {
+        JsonObject conteudo = JsonNode.Parse(gravado)!.AsObject();
+        JsonArray itens = conteudo["itens"]!.AsArray();
+        JsonNode outro = itens.Single(static i => i!["fatoCodigo"]!.GetValue<string>() == "RG_ORGAO_EMISSOR_OUTRO")!;
+        int ordemDoOutro = outro["ordem"]!.GetValue<int>();
+        itens.Remove(outro);
+        JsonNode orgao = itens.Single(static i => i!["fatoCodigo"]!.GetValue<string>() == "RG_ORGAO_EMISSOR")!;
+        orgao["tipoRenderizacao"] = "TEXTO";
+        orgao["formato"] = "LIVRE";
+        foreach (JsonNode posterior in itens.Concat(conteudo["grupos"]!.AsArray()).OfType<JsonNode>().Where(n => n["ordem"]!.GetValue<int>() > ordemDoOutro))
+        {
+            posterior["ordem"] = posterior["ordem"]!.GetValue<int>() - 1;
+        }
+
+        return conteudo.ToJsonString();
     }
 
     [Fact(DisplayName = "Item de fato derivado é recusado pela conferência contra o catálogo")]

@@ -251,8 +251,9 @@ public static class FatoCandidatoSeed
 
         // O conjunto básico que todo formulário de inscrição coleta: a identificação, a filiação e
         // os contatos do candidato. A UF do RG e a naturalidade têm as UFs e os municípios do Geo
-        // como opções. O nome social é público, porque é a identificação que o titular escolhe para
-        // aparecer (ADR-0082); os demais são pessoais.
+        // como opções; o órgão emissor do RG, uma lista fechada, e o nome do órgão que falta nela. O
+        // nome social é público, porque é a identificação que o titular escolhe para aparecer
+        // (ADR-0082); os demais são pessoais.
         DadoBasico(27, "NOME", "Nome", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.NomePessoa),
         DadoBasico(28, "DESEJA_NOME_SOCIAL", "Deseja usar nome social", DominioFato.Booleano, FinalidadeIdentificacao),
         DadoBasico(29, FatoCandidato.CodigoDoNomeSocial, "Nome social", DominioFato.Texto, FinalidadeIdentificacao,
@@ -261,7 +262,9 @@ public static class FatoCandidatoSeed
             classificacao: ClassificacaoProtecaoDado.Identificador),
         DadoBasico(31, "RG_NUMERO", "Número do RG", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.Livre,
             classificacao: ClassificacaoProtecaoDado.Identificador),
-        DadoBasico(32, "RG_ORGAO_EMISSOR", "Órgão emissor do RG", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.Livre),
+        DadoBasico(32, "RG_ORGAO_EMISSOR", "Órgão emissor do RG", DominioFato.Categorico, FinalidadeIdentificacao, fonte: FonteValoresFato.Global),
+        DadoBasico(56, "RG_ORGAO_EMISSOR_OUTRO", "Nome do órgão emissor do RG", DominioFato.Texto, FinalidadeIdentificacao,
+            formato: FormatoTexto.Livre, descricao: "O órgão emissor do RG que não está na lista."),
         DadoBasico(33, "RG_DATA_EMISSAO", "Data de emissão do RG", DominioFato.Data, FinalidadeIdentificacao),
         DadoBasico(51, "PASSAPORTE_NUMERO", "Número do passaporte", DominioFato.Texto, FinalidadeIdentificacao,
             formato: FormatoTexto.Livre, classificacao: ClassificacaoProtecaoDado.Identificador),
