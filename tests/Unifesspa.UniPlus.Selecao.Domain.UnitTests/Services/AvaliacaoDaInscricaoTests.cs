@@ -150,12 +150,12 @@ public sealed class AvaliacaoDaInscricaoTests
             f, ordem, $"Rótulo de {f}", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, "SENSIVEL",
             etapaCodigo: Secao, finalidade: FinalidadeFormulario.Inscricao).Value!)];
         ModalidadeSelecionada[] ofertadas = [.. Ofertadas()];
-        List<RegrasDerivacaoFato> derivacoes = [egresso];
-        if (derivaModalidade)
-        {
-            derivacoes.AddRange(DerivacoesDaOferta.Efetivas([], ofertadas).Select(static d =>
-                d.ParaRegrasDerivacao([.. d.Regras.Select(static r => r.Contribui).OfType<string>()]).Value!));
-        }
+        // Com a modalidade derivada, a oferta tem cota da lei e as derivações efetivas já trazem o
+        // egresso pela regra do sistema.
+        List<RegrasDerivacaoFato> derivacoes = derivaModalidade
+            ? [.. DerivacoesDaOferta.Efetivas([], ofertadas).Select(static d =>
+                d.ParaRegrasDerivacao([.. d.Regras.Select(static r => r.Contribui).OfType<string>()]).Value!)]
+            : [egresso];
 
         DefinicaoFormulario definicao = new(
             [new DefinicaoEtapa(Etapa, null, [.. perguntas.Select(f => new DefinicaoItem(

@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
@@ -57,6 +58,8 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
             ["BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA", "NAO_INFORMADO"], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL"),
         new(Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", null, "BOOLEANO", "DECLARADO", "ESCALAR",
             null, "INSCRICAO", "CAMPO_FORMULARIO:BAIXA_RENDA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL"),
+        new(Guid.CreateVersion7(), OrigemEscolar.FatoEgresso, "Egresso de escola pública", null, "BOOLEANO", "DERIVADO", "ESCALAR",
+            null, "INSCRICAO", $"REGRA_DERIVACAO:{OrigemEscolar.FatoEgresso}", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL"),
         new(Guid.CreateVersion7(), Derivado, "Regime de vaga", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO",
             ["AC", "AC_PCD"], "INSCRICAO", $"REGRA_DERIVACAO:{Derivado}",
             [new FatoValorDominioViewItem("AC", "Ampla", 0, true), new FatoValorDominioViewItem("AC_PCD", "Reserva", 1, true)],
@@ -103,6 +106,13 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
 
         return processo;
     }
+
+    private static ModalidadeSelecionada ModalidadeDe(string codigo, NaturezaLegalModalidade natureza) =>
+        ModalidadeSelecionada.Criar(
+            Guid.CreateVersion7(), codigo, null, natureza,
+            natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.ResidualDoVo : ComposicaoVagasModalidade.SuplementarAoTotal, null,
+            natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueCascata : RegraRemanejamentoModalidade.Nenhuma,
+            null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(natureza), null, "base legal", quantidadeDeclarada: 20).Value!;
 
     private static CondicaoDerivacaoInput Condicao(string fato, string operador, object valor) =>
         new(fato, operador, JsonSerializer.SerializeToElement(valor));
@@ -241,6 +251,31 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         resultado.Errors.Should().ContainSingle(e => e.Field == "configuracoes[0].codigoFato")
             .Which.Error.Code.Should().Be(ProcessoSeletivoErrorCodes.DerivacaoDaOferta);
         await mocks.FatoCandidatoReader.DidNotReceive().ListarAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Com cota da lei ofertada, a derivação do operador pode citar o egresso que a oferta supre pela regra do sistema")]
+    public async Task Handle_CitaOEgressoSuprido_Aceita()
+    {
+        ProcessoSeletivo processo = ProcessoBase();
+        processo.DefinirItens([FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL").Value!], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas(
+            [ConfiguracaoDistribuicaoVagas.Criar(
+                Guid.CreateVersion7(), 40, 1m,
+                ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!,
+                null, null, [ModalidadeDe("AC", NaturezaLegalModalidade.Ampla), ModalidadeDe("LI_EP", NaturezaLegalModalidade.CotaReservada)],
+                ofertaCurso: OfertaCursoDeTeste.Medicina).Value!],
+            FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.RegrasDerivacao.Should().BeEmpty("o processo não configura o egresso");
+        Mocks mocks = NovosMocks(processo, processo.Id);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, new DefinirRegrasDerivacaoCommand(processo.Id,
+            [ConfigDerivado(
+                new RegraDerivacaoInput(0, "AC", null),
+                new RegraDerivacaoInput(1, "AC_PCD", [[Condicao(OrigemEscolar.FatoEgresso, "IGUAL", true)]]))],
+            PrecondicaoIfMatch.Ausente));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
     [Fact(DisplayName = "Condição 'quando' que cita fato não disponível na configuração é recusada")]

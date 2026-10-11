@@ -1324,7 +1324,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         erros.AddRange(copia.DerivacoesNovas
             .Where(static c => DerivacoesDaOferta.Deriva(c.CodigoFato))
             .Select(static c => new FieldError("derivacoes", DerivacoesDaOferta.RecusaDeConfiguracao(c.CodigoFato))));
-        HashSet<string> derivados = new(DerivacoesEfetivas().Select(static c => c.CodigoFato), StringComparer.Ordinal);
+        // A cópia não repete o que o processo grava. O egresso que a oferta supre pela regra do sistema
+        // cede lugar ao que a cópia traz, como cede ao que o operador configura.
+        HashSet<string> derivados = new(_regrasDerivacao.Select(static c => c.CodigoFato), StringComparer.Ordinal);
         erros.AddRange(copia.DerivacoesNovas
             .Where(c => !derivados.Add(c.CodigoFato))
             .Select(static c => new FieldError("derivacoes", new DomainError(
@@ -1352,7 +1354,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         // O estado final: os outros formulários sem o que a cópia trouxe para cá, e a cópia.
         FatoColetado[] itensFinais = [.. Itens.Where(f => f.Finalidade != finalidade && !daCopia.Contains(f.FatoCodigo)), .. copia.Itens];
-        ConfiguracaoDerivacaoFato[] derivacoesFinais = [.. DerivacoesEfetivas(), .. copia.DerivacoesNovas];
+        IReadOnlyList<ConfiguracaoDerivacaoFato> derivacoesFinais = DerivacoesDaOferta.Efetivas([.. _regrasDerivacao, .. copia.DerivacoesNovas], _distribuicaoVagas);
         TermoExigidoFormulario[] termosFinais = [.. _termosExigidos.Where(t => t.Finalidade != finalidade), .. copia.Termos];
         GrupoColetado[] gruposFinais = [.. _gruposColetados.Where(g => g.Finalidade != finalidade), .. copia.Grupos];
         Dictionary<string, IReadOnlyCollection<string>> dependenciasDasDerivacoes =
@@ -4773,8 +4775,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// de exigência cita pelo mesmo vocabulário e caberá aqui quando passar a exigir os seus fatos.
     /// </para>
     /// <para>
-    /// As derivações da oferta são conferidas por <see cref="PendenciaDasRegrasDasModalidades"/>, que
-    /// nomeia a modalidade e segue as citações até o formulário de inscrição.
+    /// Só as derivações que o processo grava são conferidas aqui. As que a oferta supre, inclusive o
+    /// egresso pela regra do sistema, são conferidas por <see cref="PendenciaDasRegrasDasModalidades"/>,
+    /// que nomeia a modalidade e segue as citações até o formulário de inscrição.
     /// </para>
     /// </remarks>
     private DomainError? PendenciaDeFatosCitados()
@@ -4783,7 +4786,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         HashSet<string> universo = new(
             Itens.Select(static f => f.FatoCodigo).Concat(derivacoes.Select(static d => d.CodigoFato)), StringComparer.Ordinal);
 
-        foreach (ConfiguracaoDerivacaoFato derivacao in derivacoes.Where(static d => !DerivacoesDaOferta.Deriva(d.CodigoFato)))
+        foreach (ConfiguracaoDerivacaoFato derivacao in RegrasDerivacao)
         {
             foreach (RegraDerivacaoConfigurada regra in derivacao.Regras)
             {
