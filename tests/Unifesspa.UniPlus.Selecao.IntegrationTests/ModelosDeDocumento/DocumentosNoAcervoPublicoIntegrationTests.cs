@@ -207,7 +207,9 @@ public sealed class DocumentosNoAcervoPublicoIntegrationTests : IClassFixture<Pr
         resposta.StatusCode.Should().Be(HttpStatusCode.OK);
         (await resposta.Content.ReadAsByteArrayAsync()).Should().Equal(pdf);
         resposta.Content.Headers.ContentType!.MediaType.Should().Be(DocumentoEdital.ContentTypeEsperado);
-        resposta.Content.Headers.NonValidated["Content-Disposition"].ToString().Should().EndWith(
+        string disposicao = resposta.Content.Headers.NonValidated["Content-Disposition"].ToString();
+        disposicao.Should().StartWith("inline;", "o link do portal abre o edital em nova aba; como anexo, a aba ficaria em branco");
+        disposicao.Should().EndWith(
             $"filename*=UTF-8''{identificador}-edital-abertura.pdf",
             "sem o nome de apresentação, o cidadão baixaria um arquivo chamado pelo resumo criptográfico");
 
