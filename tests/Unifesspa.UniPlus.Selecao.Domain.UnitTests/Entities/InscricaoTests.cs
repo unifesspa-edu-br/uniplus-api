@@ -30,6 +30,7 @@ public sealed class InscricaoTests
         ["DESEJA_NOME_SOCIAL"] = new(TipoDoValorDeResposta.Booleano, Multivalorado: false, Identificador: false),
         ["RG_NUMERO"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: true),
         ["PARENTESCO"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false),
+        ["TELEFONE"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: false, Formato: "TELEFONE"),
     };
 
     private static readonly Guid OfertaDoProcesso = Guid.CreateVersion7();
@@ -148,6 +149,41 @@ public sealed class InscricaoTests
         inscricao.Respostas.Should().ContainKey("RG_NUMERO")
             .WhoseValue.GetString().Should().Be("12.868.927-4", "ausência no corpo nunca apaga");
         inscricao.Respostas.Should().ContainKey("NOME_SOCIAL");
+    }
+
+    [Fact(DisplayName = "Salvar grava o telefone só com os dígitos; o texto fora do formato fica como veio, para o envio recusá-lo")]
+    public void Salvar_Telefone_GravaNaFormaCanonica()
+    {
+        Inscricao inscricao = NovaInscricao();
+
+        inscricao.Salvar(null, ComTelefone("(94) 3322-1234"), SemGrupos(), SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]))
+            .IsSuccess.Should().BeTrue();
+        inscricao.Respostas["TELEFONE"].GetString().Should().Be("9433221234");
+
+        inscricao.Salvar(null, ComTelefone("(94) 3322"), SemGrupos(), SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]))
+            .IsSuccess.Should().BeTrue();
+        inscricao.Respostas["TELEFONE"].GetString().Should().Be("(94) 3322");
+    }
+
+    [Fact(DisplayName = "Submeter grava e assina no comprovante o telefone só com os dígitos, também dentro de um grupo")]
+    public void Submeter_Telefone_ComprovanteCobreAFormaCanonica()
+    {
+        Inscricao inscricao = NovaInscricao();
+        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = new(StringComparer.Ordinal)
+        {
+            ["COMPOSICAO_FAMILIAR"] = [new OcorrenciaDeGrupoInscricao("1", ComTelefone("(94) 99123-4567"))],
+        };
+
+        Result<ComprovanteInscricao> resultado = inscricao.Submeter(
+            "000123", OfertaDoProcesso, ComTelefone("(94) 3322-1234"), grupos, SemAceites(), Admitidas, FormularioDeTeste.AvaliacaoSemOcultos,
+            SemDerivados(), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
+
+        ComprovanteInscricao comprovante = resultado.Value!;
+        inscricao.Respostas["TELEFONE"].GetString().Should().Be("9433221234");
+        comprovante.Respostas["TELEFONE"].GetString().Should().Be("9433221234");
+        comprovante.Grupos["COMPOSICAO_FAMILIAR"].Should().ContainSingle()
+            .Which.Respostas["TELEFONE"].GetString().Should().Be("94991234567");
+        comprovante.IntegridadeConfere().Should().BeTrue("o hash é calculado sobre o que o comprovante guarda");
     }
 
     [Fact(DisplayName = "Submeter pela primeira vez gera o número, muda a situação e emite InscricaoSubmetidaEvent")]
@@ -432,6 +468,11 @@ public sealed class InscricaoTests
     private static Dictionary<string, JsonElement> Respostas() => new(StringComparer.Ordinal)
     {
         ["NOME_SOCIAL"] = JsonSerializer.SerializeToElement("Ariel Drumond"),
+    };
+
+    private static Dictionary<string, JsonElement> ComTelefone(string telefone) => new(StringComparer.Ordinal)
+    {
+        ["TELEFONE"] = JsonSerializer.SerializeToElement(telefone),
     };
 
     private static Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> SemGrupos() =>

@@ -543,6 +543,38 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             "a UF não é órgão emissor");
     }
 
+    [Fact(DisplayName = "Sobre a versão fixada, a inscrição grava o telefone do conjunto básico só com os dígitos")]
+    public async Task Telefone_SobreVersaoFixada_GravaSoOsDigitos()
+    {
+        ProcessoSeletivo processo = NovoProcessoDeInscricao(nameof(Telefone_SobreVersaoFixada_GravaSoOsDigitos));
+
+        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+        (Guid processoId, _) = await PublicarEDivulgarAsync(writeContext, processo);
+
+        Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
+            new IniciarInscricaoCommand(processoId),
+            new InscricaoRepository(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
+            new CertameDivulgadoRepository(writeContext), new ProcessoSeletivoRepository(writeContext, TimeProvider.System),
+            RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), DentroDoPeriodo, writeContext, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None);
+        iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        Result<ContextoDaVersaoFixada> contexto = await ContextoDaVersaoFixadaResolver.ResolverAsync(
+            iniciar.Value!.VersaoFormularioId, processoId, new ProcessoSeletivoRepository(readContext, TimeProvider.System), RegistroCodecs, CancellationToken.None);
+        contexto.IsSuccess.Should().BeTrue(contexto.Error?.Message);
+
+        InscricaoRepository repositorio = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+        Inscricao inscricao = (await repositorio.ObterPorIdAsync(iniciar.Value!.Id))!;
+        inscricao.Salvar(
+            null,
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["TELEFONE"] = JsonSerializer.SerializeToElement("(94) 3322-1234") },
+            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal),
+            [], contexto.Value!.Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
+
+        inscricao.Respostas["TELEFONE"].GetString().Should().Be("9433221234",
+            "o formato do telefone congelado na versão chega à definição da resposta, que grava a forma canônica");
+    }
+
     [Fact(DisplayName = "O rascunho guarda a resposta ao item que outra resposta esconde, e o envio a descarta da inscrição gravada e do comprovante, que continua íntegro")]
     public async Task Envio_SobreVersaoFixadaReal_DescartaARespostaDoItemOculto()
     {
