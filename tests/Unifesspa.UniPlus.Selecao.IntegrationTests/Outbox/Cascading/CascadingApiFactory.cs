@@ -5,8 +5,11 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Selecao.Application.Abstractions;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
 /// Factory que sobe a API UniPlus (composition root) com Wolverine + migrations
@@ -20,7 +23,8 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 /// <c>AddSelecaoInfrastructure</c> com todos os interceptors
 /// (SoftDelete + Auditable + ObrigatoriedadeLegalHistorico) e snake_case por
 /// convenção (<c>UseUniPlusNpgsqlConventions</c>). Resta apenas o
-/// <see cref="DomainEventCollector"/> que o handler subscritor consome.
+/// <see cref="DomainEventCollector"/> que o handler subscritor consome, e o acervo público em
+/// memória: a divulgação publica o documento do edital, e esta fábrica não sobe armazenamento.
 /// </remarks>
 [SuppressMessage(
     "Performance",
@@ -42,6 +46,8 @@ public sealed class CascadingApiFactory : MonolitoApiFactory
         builder.ConfigureTestServices(services =>
         {
             services.AddSingleton<DomainEventCollector>();
+            services.RemoveAll<IAcervoPublico>();
+            services.AddSingleton<IAcervoPublico, AcervoPublicoEmMemoria>();
         });
     }
 }

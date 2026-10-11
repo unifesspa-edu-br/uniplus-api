@@ -7,6 +7,7 @@ using System.Text.Json.Nodes;
 
 using Domain.Entities;
 using Domain.Enums;
+using Domain.Services;
 using Domain.ValueObjects;
 
 using DTOs;
@@ -36,7 +37,7 @@ internal static class ProjecaoDoCertamePublicado
     /// envelope congelado, que continua o mesmo quando só a projeção muda, e um cache endereçado
     /// apenas por ele serviria a resposta antiga depois do deploy.
     /// </summary>
-    public const string Versao = "6";
+    public const string Versao = "7";
 
     /// <summary>
     /// Forma do documento divulgado — a MESMA do wire, e a usada para lê-lo de volta.
@@ -161,12 +162,14 @@ internal static class ProjecaoDoCertamePublicado
     /// </param>
     public static Result<CertamePublicadoDto> Projetar(
         Guid processoSeletivoId,
-        Guid atoCriadorId,
+        AtoDaDivulgacao ato,
         string nome,
         string hashConfiguracao,
         JsonObject envelope,
         Func<string, Uri> enderecoNoAcervo)
     {
+        ArgumentNullException.ThrowIfNull(ato);
+
         // Obrigatório na projeção, embora o bloco admita nulo no envelope: publicação e sucessão de
         // versão recusam a ausência, então uma versão divulgável sempre o traz. A regra do cadastro
         // é reaplicada ao valor lido porque é ele que a leitura pública usa como chave de busca.
@@ -207,9 +210,7 @@ internal static class ProjecaoDoCertamePublicado
             return Recusar("unidade administradora");
         }
 
-        if (!TentarObjeto(envelope, BlocoPublico("hashesEdital"), out JsonObject? hashes)
-            || !TentarIdentificador(hashes, "documentoEditalId", out Guid documentoEditalId)
-            || !TentarTexto(hashes, "hashSha256", out string hashSha256))
+        if (!TentarEditalNoAcervo(envelope, ato, out EditalNoAcervo? edital))
         {
             return Recusar("documento do edital");
         }
@@ -242,7 +243,7 @@ internal static class ProjecaoDoCertamePublicado
         if (!TentarExigencias(
             envelope,
             static _ => true,
-            new DocumentosDoAtoNoAcervo(processoSeletivoId, atoCriadorId, enderecoNoAcervo),
+            new DocumentosDoAtoNoAcervo(processoSeletivoId, ato.Id, enderecoNoAcervo),
             out List<ExigenciaDocumentalCertameDto>? exigencias))
         {
             return Recusar("documentos exigidos");
@@ -266,7 +267,7 @@ internal static class ProjecaoDoCertamePublicado
         return Result<CertamePublicadoDto>.Success(new CertamePublicadoDto(
             processoSeletivoId,
             identificadorLegivel,
-            atoCriadorId,
+            ato.Id,
             nome,
             Versao,
             hashConfiguracao,
@@ -274,7 +275,7 @@ internal static class ProjecaoDoCertamePublicado
             new PeriodoInscricaoCertameDto(numero, inicio, fim),
             new LocalidadeCertameDto(codigoIbge, localidadeNome, uf, FusoHorarioDto.Institucional),
             unidade,
-            new DocumentoEditalCertameDto(documentoEditalId, hashSha256),
+            new DocumentoEditalCertameDto(edital.DocumentoEditalId, edital.HashSha256, enderecoNoAcervo(edital.Chave)),
             ofertas,
             modalidades,
             vagas,
@@ -326,6 +327,44 @@ internal static class ProjecaoDoCertamePublicado
         }
 
         tipo = new TipoCatalogadoCertameDto(codigo, nome);
+        return true;
+    }
+
+    /// <summary>
+    /// O documento do edital que a versão congelou, como o ato o publica no acervo — o que a
+    /// divulgação copia e o endereço que o contrato público divulga, numa leitura só.
+    /// </summary>
+    /// <remarks>
+    /// A chave é a da ADR-0132 para o acervo de editais. O processo entra pelo identificador legível
+    /// e a unidade pelo slug, ambos congelados na publicação; o slug é chave do caminho, não campo
+    /// do contrato. O nome de apresentação usa os mesmos segmentos legíveis, para o arquivo baixado
+    /// dizer de qual certame e de qual ato é.
+    /// </remarks>
+    internal static bool TentarEditalNoAcervo(
+        JsonObject envelope,
+        AtoDaDivulgacao ato,
+        [NotNullWhen(true)] out EditalNoAcervo? edital)
+    {
+        ArgumentNullException.ThrowIfNull(ato);
+
+        edital = null;
+        if (!TentarTexto(envelope, BlocoPublico("identificadorLegivel"), out string identificadorLegivel)
+            || !TentarObjeto(envelope, BlocoPublico("identidadesUnidade"), out JsonObject? unidades)
+            || !TentarObjeto(unidades, "administradora", out JsonObject? administradora)
+            || !TentarTexto(administradora, "slug", out string unidade)
+            || !TentarObjeto(envelope, BlocoPublico("hashesEdital"), out JsonObject? hashes)
+            || !TentarIdentificador(hashes, "documentoEditalId", out Guid documentoEditalId)
+            || !TentarTexto(hashes, "hashSha256", out string hashSha256)
+            || string.IsNullOrWhiteSpace(unidade)
+            || string.IsNullOrWhiteSpace(hashSha256)
+            || string.IsNullOrWhiteSpace(ato.TipoCodigo))
+        {
+            return false;
+        }
+
+        string chave = ChaveNoAcervoPublico.DoEdital(ato.Ano, unidade, ato.TipoCodigo, identificadorLegivel, ato.Id, hashSha256);
+        string nomeDeApresentacao = $"{identificadorLegivel}-{ChaveNoAcervoPublico.SegmentoDoTipo(ato.TipoCodigo)}.pdf";
+        edital = new EditalNoAcervo(documentoEditalId, hashSha256, chave, nomeDeApresentacao);
         return true;
     }
 

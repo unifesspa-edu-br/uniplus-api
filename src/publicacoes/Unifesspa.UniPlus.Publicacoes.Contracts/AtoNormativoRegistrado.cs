@@ -19,6 +19,13 @@ namespace Unifesspa.UniPlus.Publicacoes.Contracts;
 /// A reentrega é esperada, e por isso o consumo do lado de quem publicou tem de ser idempotente: o
 /// mesmo ato pode ser anunciado mais de uma vez sem que nada mude.
 /// </para>
+/// <para>
+/// O ano e o tipo viajam com o anúncio porque compõem o endereço do documento que o emissor publica
+/// no acervo (ADR-0132): são atributos do ato registrado, que não muda depois de registrado, e o
+/// emissor não precisa consultar o registro central para conhecê-los.
+/// </para>
 /// </remarks>
 /// <param name="AtoId">Identificador do ato, o mesmo que o domínio decidiu ao publicar.</param>
-public sealed record AtoNormativoRegistrado(Guid AtoId);
+/// <param name="Ano">Ano do ato, o da numeração oficial.</param>
+/// <param name="TipoCodigo">Código do tipo do ato no catálogo de Publicações.</param>
+public sealed record AtoNormativoRegistrado(Guid AtoId, int Ano, string TipoCodigo);

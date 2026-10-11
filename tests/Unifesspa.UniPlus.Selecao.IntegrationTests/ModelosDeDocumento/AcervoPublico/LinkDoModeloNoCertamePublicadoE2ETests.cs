@@ -23,14 +23,18 @@ using Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// O modelo baixado pelo candidato, de ponta a ponta: o edital é publicado pela API, o ato é
-/// registrado pela fila, a divulgação copia o modelo para o acervo, e o link que o contrato público
-/// do certame divulga devolve, a quem não tem credencial nenhuma, o arquivo que o edital congelou.
+/// O edital e o modelo baixados pelo candidato, de ponta a ponta: o edital é publicado pela API, o
+/// ato é registrado pela fila, a divulgação copia os dois documentos para o acervo, e o link que o
+/// contrato público do certame divulga devolve, a quem não tem credencial nenhuma, o arquivo que o
+/// edital congelou.
 /// </summary>
 [Collection(AcervoPublicoE2ECollection.Name)]
 public sealed class LinkDoModeloNoCertamePublicadoE2ETests(AcervoPublicoE2EFixture fixture)
 {
-    [Fact(DisplayName = "Publicado o edital, o link do modelo no certame público baixa anonimamente o arquivo congelado")]
+    /// <summary>O conteúdo da cópia selada do documento do edital, como a confirmação do envio a deixa.</summary>
+    private static readonly byte[] PdfDoEdital = "%PDF-1.4\n% edital\n%%EOF\n"u8.ToArray();
+
+    [Fact(DisplayName = "Publicado o edital, os links do edital e do modelo no certame público baixam anonimamente os arquivos")]
     public async Task LinkDoModelo_BaixaAnonimamenteOArquivoCongelado()
     {
         AcervoPublicoApiFactory api = fixture.Factory;
@@ -46,13 +50,21 @@ public sealed class LinkDoModeloNoCertamePublicadoE2ETests(AcervoPublicoE2EFixtu
         }
 
         await EsperaDeAtoRegistrado.AguardarAsync(api, await AtoDaVersaoAsync(api, processoId), "ato da abertura", processoId);
-        Uri urlDownload = await UrlDoModeloNoCertameAsync(client, processoId);
+        using JsonDocument certame = await CertameDivulgadoAsync(client, processoId);
+        Uri urlDoModelo = new(certame.RootElement.GetProperty("documentosExigidos").EnumerateArray()
+            .Single()
+            .GetProperty("modelo")
+            .GetProperty("urlDownload")
+            .GetString()!);
+        Uri urlDoEdital = new(certame.RootElement.GetProperty("documentoEdital").GetProperty("urlDownload").GetString()!);
 
         using HttpClient anonimo = new();
-        byte[] baixado = await anonimo.GetByteArrayAsync(urlDownload);
-        Convert.ToHexStringLower(SHA256.HashData(baixado)).Should().Be(hash,
+        Convert.ToHexStringLower(SHA256.HashData(await anonimo.GetByteArrayAsync(urlDoModelo))).Should().Be(hash,
             "o candidato baixa exatamente o arquivo cujo hash o edital congelou");
+        (await anonimo.GetByteArrayAsync(urlDoEdital)).Should().Equal(PdfDoEdital,
+            "o cidadão baixa o documento do edital sem credencial, pelo endereço que o certame divulga");
     }
+
 
     /// <summary>
     /// O processo publicável com uma exigência que oferece um modelo confirmado — a cópia selada no
@@ -96,8 +108,9 @@ public sealed class LinkDoModeloNoCertamePublicadoE2ETests(AcervoPublicoE2EFixtu
                     .IsSuccess.Should().BeTrue();
             });
 
-        await scope.ServiceProvider.GetRequiredService<IArquivoArmazenadoStorage>()
-            .SalvarConteudoSeladoAsync(modelo!.ObjectKeyConfirmado!, conteudo, modelo.ContentType);
+        IArquivoArmazenadoStorage storage = scope.ServiceProvider.GetRequiredService<IArquivoArmazenadoStorage>();
+        await storage.SalvarConteudoSeladoAsync(modelo!.ObjectKeyConfirmado!, conteudo, modelo.ContentType);
+        await storage.SalvarConteudoSeladoAsync(documento.ObjectKeyConfirmado!, PdfDoEdital, DocumentoEdital.ContentTypeEsperado);
 
         return (processo.Id, documento.Id);
     }
@@ -139,10 +152,10 @@ public sealed class LinkDoModeloNoCertamePublicadoE2ETests(AcervoPublicoE2EFixtu
     }
 
     /// <summary>
-    /// O link do modelo no contrato público do certame, lido sem credencial. A divulgação chega pela
-    /// fila depois do registro do ato, então o certame pode ainda responder 404 por alguns instantes.
+    /// O contrato público do certame, lido sem credencial. A divulgação chega pela fila depois do
+    /// registro do ato, então o certame pode ainda responder 404 por alguns instantes.
     /// </summary>
-    private static async Task<Uri> UrlDoModeloNoCertameAsync(HttpClient client, Guid processoId)
+    private static async Task<JsonDocument> CertameDivulgadoAsync(HttpClient client, Guid processoId)
     {
         DateTimeOffset limite = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(30);
         while (true)
@@ -151,12 +164,7 @@ public sealed class LinkDoModeloNoCertamePublicadoE2ETests(AcervoPublicoE2EFixtu
                 new Uri($"/api/selecao/certames/{processoId}", UriKind.Relative), CancellationToken.None);
             if (resposta.StatusCode == HttpStatusCode.OK)
             {
-                using JsonDocument certame = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
-                return new Uri(certame.RootElement.GetProperty("documentosExigidos").EnumerateArray()
-                    .Single()
-                    .GetProperty("modelo")
-                    .GetProperty("urlDownload")
-                    .GetString()!);
+                return JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
             }
 
             DateTimeOffset.UtcNow.Should().BeBefore(limite, "a divulgação do certame não chegou depois do registro do ato");

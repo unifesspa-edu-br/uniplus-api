@@ -113,7 +113,7 @@ public static class RegistrarAtoNormativoRequisicaoHandler
             .ConfigureAwait(false);
         if (jaRegistrado is not null)
         {
-            return Registrado(requisicao.AtoId);
+            return Registrado(requisicao);
         }
 
         // O tipo tem de ser do CADASTRO — o vocabulário é de Publicações, e um domínio não
@@ -173,7 +173,7 @@ public static class RegistrarAtoNormativoRequisicaoHandler
             db.ChangeTracker.Clear();
             await GarantirRegistradoOuPropagarAsync(ex, requisicao.AtoId, atosRepository, cancellationToken)
                 .ConfigureAwait(false);
-            return Registrado(requisicao.AtoId);
+            return Registrado(requisicao);
         }
 
         if (resultado.IsFailure)
@@ -189,14 +189,14 @@ public static class RegistrarAtoNormativoRequisicaoHandler
                 .ConfigureAwait(false);
             if (registradoPorOutraEntrega is not null)
             {
-                return Registrado(requisicao.AtoId);
+                return Registrado(requisicao);
             }
 
             throw new RegistroDeAtoRecusadoException(
                 requisicao.AtoId, resultado.Error!.Code, resultado.Error!.Message);
         }
 
-        return Registrado(requisicao.AtoId);
+        return Registrado(requisicao);
     }
 
     /// <summary>
@@ -205,7 +205,8 @@ public static class RegistrarAtoNormativoRequisicaoHandler
     /// uma corrida —, porque o que o emissor precisa saber é o estado, não por qual porta se chegou
     /// nele. O envelope é instalado na mesma transação que gravou o ato.
     /// </summary>
-    private static AtoNormativoRegistrado Registrado(Guid atoId) => new(atoId);
+    private static AtoNormativoRegistrado Registrado(RegistrarAtoNormativoRequisicao requisicao) =>
+        new(requisicao.AtoId, requisicao.Ano, requisicao.TipoCodigo);
 
     /// <summary>
     /// Uma violação de unicidade só é reentrega se o ato deste envelope existir depois dela.
