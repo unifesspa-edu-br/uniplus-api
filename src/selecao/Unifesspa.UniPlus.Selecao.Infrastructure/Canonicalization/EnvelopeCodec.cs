@@ -293,9 +293,10 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
         }
 
         // As regras dos itens, das seções e dos termos citam só o que o formulário delas conhece,
-        // pela mesma conferência da escrita e da publicação.
+        // pela mesma conferência da escrita e da publicação, que inclui os fatos que a oferta deriva.
         if (ProcessoSeletivo.CitacaoInvalidaNosFormularios(
-                formularios, fatosColetados, termosExigidos, regrasDerivacao, gruposColetados) is { } citacaoInvalida)
+                formularios, fatosColetados, termosExigidos, DerivacoesDaOferta.Efetivas(regrasDerivacao, distribuicao),
+                gruposColetados) is { } citacaoInvalida)
         {
             return Result<EnvelopeReidratado>.Failure(new DomainError(
                 ErrosCodecEnvelope.EnvelopeMalformado, $"'fatosColetados': {citacaoInvalida.Message}"));

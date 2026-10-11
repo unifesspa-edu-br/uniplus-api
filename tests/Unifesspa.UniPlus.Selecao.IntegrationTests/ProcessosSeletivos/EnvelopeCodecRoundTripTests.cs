@@ -15,8 +15,10 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
@@ -122,6 +124,40 @@ public sealed class EnvelopeCodecRoundTripTests
             .Single(static f => f!["fatoCodigo"]!.GetValue<string>() == "TEM_BOLSA")!.AsObject();
         bolsa["obrigatoriedade"]!["tipo"]!.GetValue<string>().Should().Be("QUANDO");
         bolsa["pedirConfirmacao"]!.GetValue<bool>().Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Termo que aparece só para quem optou pelas cotas da lei reproduz os bytes")]
+    public void RoundTrip_FormularioCitaAOpcaoPelasCotas()
+    {
+        // A opção pelas cotas da lei sai da oferta e não é gravada entre as derivações: o decoder
+        // reconhece a citação pelas derivações efetivas, como a publicação.
+        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        PredicadoDnf optou = PredicadoDnf.CriarDeCondicoesAgrupadas(
+            [(0, CondicaoDnf.Criar(OpcaoPelasCotasDaLei.Fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
+        processo.DefinirTermos(
+            [CorpusEnvelope.Termo("CIENCIA_DA_RESERVA", 0, exibicao: optou, obrigatoriedade: Obrigatoriedade.Quando(optou))],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
+        CorpusEnvelope.Publicar(processo);
+
+        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        AssertRoundTrip(processo, versao, congelado);
+        Envelope(congelado)["regrasDerivacao"]!.AsArray()
+            .Select(static d => d!["codigoFato"]!.GetValue<string>())
+            .Should().NotContain(OpcaoPelasCotasDaLei.Fato);
+
+        // O formulário público leva a derivação da opção e o fechamento dela, para o interpretador do
+        // front decidir a exibição do termo (ADR-0139).
+        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
+        reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
+        Result<DefinicaoAvaliavel> avaliavel = DefinicaoAvaliavelDoProcesso.DoCongelado(reidratado.Value!);
+        avaliavel.IsSuccess.Should().BeTrue(avaliavel.Error?.Message);
+        RecorteDaFinalidade recorte = RecorteDaFinalidade.De(
+            avaliavel.Value!.Definicao, DefinicaoDoProcesso.CodigoDaEtapa(FinalidadeFormulario.Inscricao, null));
+        recorte.Regras.Derivacoes.Select(static d => d.FatoCodigo)
+            .Should().Contain([OpcaoPelasCotasDaLei.Fato, OrigemEscolar.FatoEgresso]);
+        recorte.Pressupostos.Should().NotContain(OpcaoPelasCotasDaLei.Fato);
     }
 
     [Fact(DisplayName = "Campos de texto com formato, de data e de endereço reproduzem os bytes")]
