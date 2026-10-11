@@ -82,9 +82,19 @@ internal sealed partial class ContratoPublicoDoCertameHttp : IContratoPublicoDoC
                 certame.AtoCriadorId,
                 certame.Nome,
                 string.IsNullOrWhiteSpace(certame.Periodo?.Numero) ? null : certame.Periodo.Numero,
+                DocumentoPublico(certame.DocumentoEdital?.UrlDownload),
                 resposta.Headers.ETag?.ToString()));
         }
     }
+
+    /// <summary>
+    /// Só endereço absoluto de leitura pública chega à página: qualquer outra forma é tratada como
+    /// documento ainda indisponível, e não vira link.
+    /// </summary>
+    private static Uri? DocumentoPublico(Uri? endereco) =>
+        endereco is { IsAbsoluteUri: true } && (endereco.Scheme == Uri.UriSchemeHttps || endereco.Scheme == Uri.UriSchemeHttp)
+            ? endereco
+            : null;
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Seleção não respondeu à consulta do detalhe público do certame.")]
     private static partial void LogOrigemSemResposta(ILogger logger, Exception? excecao);

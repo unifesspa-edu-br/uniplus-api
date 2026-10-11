@@ -112,15 +112,41 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "If-None-Match",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
           "200": {
             "description": "OK",
+            "headers": {
+              "ETag": {
+                "description": "Selo da p\u00E1gina composta. Devolva-o no If-None-Match da pr\u00F3xima leitura: a resposta \u00E9 de revalida\u00E7\u00E3o obrigat\u00F3ria (Cache-Control: no-cache), e o selo permite receber 304 em vez da p\u00E1gina inteira. Ausente quando a linha do tempo est\u00E1 incompleta, porque essa resposta n\u00E3o \u00E9 guardada.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/vnd.uniplus.certame-publico.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/CertamePublicoResponse"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not Modified",
+            "headers": {
+              "ETag": {
+                "description": "Selo da p\u00E1gina composta. Devolva-o no If-None-Match da pr\u00F3xima leitura: a resposta \u00E9 de revalida\u00E7\u00E3o obrigat\u00F3ria (Cache-Control: no-cache), e o selo permite receber 304 em vez da p\u00E1gina inteira. Ausente quando a linha do tempo est\u00E1 incompleta, porque essa resposta n\u00E3o \u00E9 guardada.",
+                "schema": {
+                  "type": "string"
                 }
               }
             }
@@ -245,6 +271,7 @@
           "nome",
           "numeroEdital",
           "documentoEditalUrl",
+          "dataPublicacao",
           "linhaDoTempo",
           "aviso"
         ],
@@ -266,7 +293,15 @@
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "format": "uri"
+          },
+          "dataPublicacao": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
           },
           "linhaDoTempo": {
             "type": "array",
@@ -333,7 +368,8 @@
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "format": "uri"
           }
         }
       },

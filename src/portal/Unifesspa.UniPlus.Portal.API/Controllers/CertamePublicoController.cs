@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Portal.API.Controllers;
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Security.Cryptography;
+using System.Text.Json;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -30,6 +32,14 @@ using Unifesspa.UniPlus.Portal.Infrastructure.Origens;
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public; sem isso o MVC ignora a classe e nenhum endpoint é registrado.")]
 public sealed class CertamePublicoController : ControllerBase
 {
+    private const string DescricaoDoSelo =
+        "Selo da página composta. Devolva-o no If-None-Match da próxima leitura: a resposta é de "
+        + "revalidação obrigatória (Cache-Control: no-cache), e o selo permite receber 304 em vez da "
+        + "página inteira. Ausente quando a linha do tempo está incompleta, porque essa resposta não "
+        + "é guardada.";
+
+    private static readonly JsonSerializerOptions OpcoesDoSelo = new(JsonSerializerDefaults.Web);
+
     private const string DescricaoDoRetryAfter =
         "Em quantos segundos vale tentar de novo. Presente quando os dados do certame estão "
         + "temporariamente indisponíveis.";
@@ -72,11 +82,16 @@ public sealed class CertamePublicoController : ControllerBase
     [HttpGet("certames/{identificador}")]
     [VendorMediaType(Resource = "certame-publico", Versions = [1])]
     [ProducesResponseType(typeof(CertamePublicoResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status304NotModified)]
+    [EmiteETag(Descricao = DescricaoDoSelo)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     [EmiteHeader("Retry-After", DescricaoDoRetryAfter, Status = "503", Inteiro = true)]
-    public async Task<IActionResult> ObterCertamePublico(string? identificador, CancellationToken cancellationToken)
+    public async Task<IActionResult> ObterCertamePublico(
+        string? identificador,
+        [FromHeader(Name = "If-None-Match")] string? ifNoneMatch,
+        CancellationToken cancellationToken)
     {
         // Anulável de propósito: o binder transforma um segmento só de espaços em nulo, e um
         // parâmetro obrigatório faria essa entrada sair como 400 de validação — o endereço fora do
@@ -107,11 +122,31 @@ public sealed class CertamePublicoController : ControllerBase
         }
 
         PaginaDoCertame pagina = resultado.Value!;
+        CertamePublicoResponse resposta = CertamePublicoResponse.De(identificador, pagina);
 
         // Linha do tempo degradada é estado transitório e não é guardada em camada nenhuma
         // (ADR-0131, Emenda 1); a completa é servida com revalidação obrigatória.
-        Response.Headers.CacheControl = pagina.Degradacao is null ? "no-cache" : "no-store";
+        if (pagina.Degradacao is not null)
+        {
+            Response.Headers.CacheControl = "no-store";
+            return Ok(resposta);
+        }
 
-        return Ok(CertamePublicoResponse.De(identificador, pagina));
+        Response.Headers.CacheControl = "no-cache";
+
+        // A página é composta de duas origens, e nenhum selo de origem sozinho muda quando a outra
+        // muda: o selo é o do conteúdo servido, calculado a cada leitura sem guardar a composição.
+        string selo = SeloDe(resposta);
+        Response.Headers.ETag = selo;
+
+        return SeloDeEntidade.IfNoneMatchCoincide(ifNoneMatch, selo)
+            ? StatusCode(StatusCodes.Status304NotModified)
+            : Ok(resposta);
+    }
+
+    private static string SeloDe(CertamePublicoResponse resposta)
+    {
+        byte[] conteudo = JsonSerializer.SerializeToUtf8Bytes(resposta, OpcoesDoSelo);
+        return $"\"{Convert.ToHexStringLower(SHA256.HashData(conteudo))}\"";
     }
 }

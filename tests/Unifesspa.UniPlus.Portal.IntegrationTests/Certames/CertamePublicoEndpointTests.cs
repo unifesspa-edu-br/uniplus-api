@@ -26,6 +26,8 @@ public sealed class CertamePublicoEndpointTests : IClassFixture<PortalComOrigens
     private static readonly Guid CriadorId = Guid.Parse("0199a000-0000-7000-8000-00000000000a");
     private static readonly Guid AvisoId = Guid.Parse("0199a000-0000-7000-8000-00000000000b");
     private static readonly Guid ResultadoId = Guid.Parse("0199a000-0000-7000-8000-00000000000c");
+    private static readonly Uri EditalNoAcervo =
+        new("https://acervo.example/editais/2026/ceps/edital-abertura/medicina-2027/0199a000-0000-7000-8000-00000000000a/abc.pdf");
 
     private readonly PortalComOrigensSimuladasApiFactory _factory;
 
@@ -55,7 +57,8 @@ public sealed class CertamePublicoEndpointTests : IClassFixture<PortalComOrigens
         raiz.GetProperty("identificador").GetString().Should().Be(Identificador);
         raiz.GetProperty("nome").GetString().Should().Be("Medicina 2027");
         raiz.GetProperty("numeroEdital").GetString().Should().Be("012/2026");
-        raiz.GetProperty("documentoEditalUrl").ValueKind.Should().Be(JsonValueKind.Null);
+        raiz.GetProperty("documentoEditalUrl").GetString().Should().Be(EditalNoAcervo.ToString());
+        raiz.GetProperty("dataPublicacao").GetString().Should().Be("2026-12-01", "é a data do edital vigente");
         raiz.GetProperty("aviso").ValueKind.Should().Be(JsonValueKind.Null);
 
         JsonElement[] linha = [.. raiz.GetProperty("linhaDoTempo").EnumerateArray()];
@@ -69,7 +72,8 @@ public sealed class CertamePublicoEndpointTests : IClassFixture<PortalComOrigens
         edital.GetProperty("tipo").GetProperty("codigo").GetString().Should().Be("EDITAL_ABERTURA");
         edital.GetProperty("tipo").GetProperty("nome").GetString().Should().Be("Edital de abertura");
         edital.GetProperty("descricao").ValueKind.Should().Be(JsonValueKind.Null);
-        edital.GetProperty("documentoUrl").ValueKind.Should().Be(JsonValueKind.Null);
+        edital.GetProperty("documentoUrl").GetString().Should().Be(EditalNoAcervo.ToString());
+        linha[0].GetProperty("documentoUrl").ValueKind.Should().Be(JsonValueKind.Null, "só o ato criador tem documento no acervo");
 
         // Ato sem nome do tipo copiado cai para o código, no título e no tipo.
         JsonElement aviso = linha[1];
@@ -186,6 +190,57 @@ public sealed class CertamePublicoEndpointTests : IClassFixture<PortalComOrigens
             caso);
     }
 
+    [Fact(DisplayName = "Página completa: selo do conteúdo composto, 304 quando o cliente já o tem")]
+    public async Task PaginaCompleta_RevalidaPorSelo()
+    {
+        ServirCertame();
+        _factory.Registro.Resposta = new LeituraDosAtos(AtosEmOrdemDaOrigem(), Falha: null);
+
+        using HttpClient client = _factory.CreateClient();
+        using HttpResponseMessage primeira = await client.GetAsync(new Uri(Rota, UriKind.Relative));
+        EntityTagHeaderValue selo = primeira.Headers.ETag!;
+
+        using HttpRequestMessage condicional = new(HttpMethod.Get, new Uri(Rota, UriKind.Relative));
+        condicional.Headers.IfNoneMatch.Add(selo);
+        using HttpResponseMessage segunda = await client.SendAsync(condicional);
+
+        segunda.StatusCode.Should().Be(HttpStatusCode.NotModified);
+        segunda.Headers.ETag.Should().Be(selo);
+    }
+
+    [Fact(DisplayName = "Ato novo em Publicações muda o selo, embora o selo de Seleção não mude")]
+    public async Task AtoNovo_MudaOSelo()
+    {
+        ServirCertame();
+        _factory.Registro.Resposta = new LeituraDosAtos([AtoCriador()], Falha: null);
+
+        using HttpClient client = _factory.CreateClient();
+        using HttpResponseMessage antes = await client.GetAsync(new Uri(Rota, UriKind.Relative));
+        EntityTagHeaderValue seloAntes = antes.Headers.ETag!;
+
+        _factory.Registro.Resposta = new LeituraDosAtos(AtosEmOrdemDaOrigem(), Falha: null);
+        using HttpRequestMessage condicional = new(HttpMethod.Get, new Uri(Rota, UriKind.Relative));
+        condicional.Headers.IfNoneMatch.Add(seloAntes);
+        using HttpResponseMessage depois = await client.SendAsync(condicional);
+
+        depois.StatusCode.Should().Be(HttpStatusCode.OK);
+        depois.Headers.ETag.Should().NotBe(seloAntes);
+    }
+
+    [Fact(DisplayName = "Linha do tempo degradada não emite selo")]
+    public async Task LinhaDoTempoDegradada_SemSelo()
+    {
+        ServirCertame();
+        _factory.Registro.Resposta = new LeituraDosAtos([], FalhaNaLeituraDosAtos.OrigemIndisponivel);
+
+        using HttpClient client = _factory.CreateClient();
+        using HttpResponseMessage resposta = await client.GetAsync(new Uri(Rota, UriKind.Relative));
+
+        resposta.Headers.ETag.Should().BeNull();
+        using JsonDocument corpo = await LerAsync(resposta);
+        corpo.RootElement.GetProperty("dataPublicacao").ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
     [Fact(DisplayName = "Versão do tipo de mídia não suportada: 406")]
     public async Task VersaoNaoSuportada_406()
     {
@@ -202,7 +257,7 @@ public sealed class CertamePublicoEndpointTests : IClassFixture<PortalComOrigens
 
     private void ServirCertame() =>
         _factory.Contrato.Resposta = new ConsultaDoCertame.Encontrado(
-            new CertameDaOrigem(ProcessoId, CriadorId, "Medicina 2027", "012/2026", "\"3:abc\""));
+            new CertameDaOrigem(ProcessoId, CriadorId, "Medicina 2027", "012/2026", EditalNoAcervo, "\"3:abc\""));
 
     /// <summary>Ordem da origem: do mais antigo para o mais recente.</summary>
     private static AtoDaOrigem[] AtosEmOrdemDaOrigem() =>

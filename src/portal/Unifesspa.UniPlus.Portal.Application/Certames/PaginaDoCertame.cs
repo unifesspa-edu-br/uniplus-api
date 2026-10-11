@@ -7,6 +7,11 @@ namespace Unifesspa.UniPlus.Portal.Application.Certames;
 /// <param name="ProcessoSeletivoId">Identificador do processo seletivo.</param>
 /// <param name="Nome">Título do certame congelado na publicação.</param>
 /// <param name="NumeroEdital">Número do edital, quando declarado na publicação.</param>
+/// <param name="DocumentoEditalUrl">Endereço público do edital vigente, quando publicado.</param>
+/// <param name="DataPublicacao">
+/// Data de publicação do edital vigente — a do ato que criou a versão servida. Nula quando a linha
+/// do tempo não alcança esse ato.
+/// </param>
 /// <param name="LinhaDoTempo">Atos do certame, do mais recente para o mais antigo.</param>
 /// <param name="Degradacao">
 /// Por que a linha do tempo está vazia ou incompleta; nulo quando ela está completa e consistente
@@ -17,6 +22,8 @@ public sealed record PaginaDoCertame(
     Guid ProcessoSeletivoId,
     string Nome,
     string? NumeroEdital,
+    Uri? DocumentoEditalUrl,
+    DateOnly? DataPublicacao,
     IReadOnlyList<EventoDaLinhaDoTempo> LinhaDoTempo,
     MotivoDaDegradacao? Degradacao,
     string? SeloDaOrigem);
@@ -31,6 +38,10 @@ public sealed record PaginaDoCertame(
 /// <param name="Ano">Ano da numeração declarada pelo órgão.</param>
 /// <param name="Tipo">Tipo do ato.</param>
 /// <param name="Descricao">Motivo da retificação, quando o ato retifica outro.</param>
+/// <param name="DocumentoUrl">
+/// Endereço público do documento do ato, quando o acervo o tem. Hoje só o ato que criou a versão
+/// servida tem: é o edital que Seleção publica no acervo.
+/// </param>
 public sealed record EventoDaLinhaDoTempo(
     Guid Id,
     DateOnly Data,
@@ -38,7 +49,8 @@ public sealed record EventoDaLinhaDoTempo(
     string? Numero,
     int Ano,
     TipoDoEvento Tipo,
-    string? Descricao);
+    string? Descricao,
+    Uri? DocumentoUrl);
 
 /// <summary>
 /// Tipo de um ato da linha do tempo.

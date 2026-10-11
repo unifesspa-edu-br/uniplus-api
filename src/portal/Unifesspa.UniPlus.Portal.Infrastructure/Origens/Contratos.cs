@@ -8,10 +8,14 @@ internal sealed record CertamePublicadoPayload(
     Guid ProcessoSeletivoId,
     Guid AtoCriadorId,
     string? Nome,
-    PeriodoDoCertamePayload? Periodo);
+    PeriodoDoCertamePayload? Periodo,
+    DocumentoEditalDoCertamePayload? DocumentoEdital);
 
 /// <summary>A parte do período de inscrição que a Portal usa: o número do edital.</summary>
 internal sealed record PeriodoDoCertamePayload(string? Numero);
+
+/// <summary>A parte do documento do edital que a Portal usa: o endereço público no acervo.</summary>
+internal sealed record DocumentoEditalDoCertamePayload(Uri? UrlDownload);
 
 /// <summary>
 /// Os campos de um ato da consulta unificada (Publicações) que a Portal lê. O assinante não é

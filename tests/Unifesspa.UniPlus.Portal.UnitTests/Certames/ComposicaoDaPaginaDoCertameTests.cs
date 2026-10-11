@@ -10,6 +10,7 @@ public sealed class ComposicaoDaPaginaDoCertameTests
 {
     private static readonly Guid ProcessoId = Guid.Parse("0192a000-0000-7000-8000-000000000001");
     private static readonly Guid Criador = Guid.Parse("0192a000-0000-7000-8000-0000000000a1");
+    private static readonly Uri EditalNoAcervo = new("https://acervo.example/editais/2026/ceps/edital-abertura/medicina-2027/0192a000-0000-7000-8000-0000000000a1/abc.pdf");
 
     [Fact]
     public async Task Compoe_os_dados_do_certame_com_a_linha_do_tempo_do_mais_recente_para_o_mais_antigo()
@@ -210,6 +211,39 @@ public sealed class ComposicaoDaPaginaDoCertameTests
     }
 
     [Fact]
+    public async Task Edital_vigente_e_o_documento_e_a_data_do_ato_que_criou_a_versao_servida()
+    {
+        AtoDaOrigem abertura = Ato(Guid.NewGuid(), "EDITAL", "Edital de abertura", "012/2026", new(2026, 3, 10), congela: true);
+        AtoDaOrigem retificacao = Ato(Criador, "RETIFICACAO", "Retificação", "013/2026", new(2026, 3, 20), congela: true);
+        AtoDaOrigem aviso = Ato(Guid.NewGuid(), "AVISO", "Aviso", null, new(2026, 4, 1));
+
+        ComposicaoDaPaginaDoCertame composicao = Montar(
+            Encontrado(),
+            new LeituraDosAtos([abertura, retificacao, aviso], null));
+
+        PaginaDoCertame pagina = (await composicao.ComporPorIdAsync(ProcessoId, CancellationToken.None)).Value!;
+
+        pagina.DocumentoEditalUrl.Should().Be(EditalNoAcervo);
+        pagina.DataPublicacao.Should().Be(new DateOnly(2026, 3, 20), "é a data do edital vigente, não a do ato mais recente");
+        pagina.LinhaDoTempo.Single(e => e.Id == Criador).DocumentoUrl.Should().Be(EditalNoAcervo);
+        pagina.LinhaDoTempo.Where(e => e.Id != Criador).Select(e => e.DocumentoUrl)
+            .Should().AllSatisfy(url => url.Should().BeNull(), "o edital do acervo é o da versão servida, e não de outro ato");
+    }
+
+    [Fact]
+    public async Task Linha_do_tempo_sem_o_ato_criador_fica_sem_data_de_publicacao()
+    {
+        AtoDaOrigem outro = Ato(Guid.NewGuid(), "AVISO", "Aviso", null, new(2026, 3, 10));
+
+        ComposicaoDaPaginaDoCertame composicao = Montar(Encontrado(), new LeituraDosAtos([outro], null));
+
+        PaginaDoCertame pagina = (await composicao.ComporPorIdAsync(ProcessoId, CancellationToken.None)).Value!;
+
+        pagina.DataPublicacao.Should().BeNull();
+        pagina.DocumentoEditalUrl.Should().Be(EditalNoAcervo, "o endereço vem de Seleção e não depende da linha do tempo");
+    }
+
+    [Fact]
     public void Nenhum_tipo_da_pagina_carrega_o_assinante_do_ato()
     {
         Type[] tipos = [typeof(AtoDaOrigem), typeof(EventoDaLinhaDoTempo), typeof(PaginaDoCertame), typeof(TipoDoEvento)];
@@ -219,7 +253,7 @@ public sealed class ComposicaoDaPaginaDoCertameTests
     }
 
     private static ConsultaDoCertame.Encontrado Encontrado() =>
-        new ConsultaDoCertame.Encontrado(new CertameDaOrigem(ProcessoId, Criador, "Medicina 2027", "012/2026", "\"1:abc\""));
+        new ConsultaDoCertame.Encontrado(new CertameDaOrigem(ProcessoId, Criador, "Medicina 2027", "012/2026", EditalNoAcervo, "\"1:abc\""));
 
     private static AtoDaOrigem Ato(
         Guid id,

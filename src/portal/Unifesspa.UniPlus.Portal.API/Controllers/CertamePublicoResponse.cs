@@ -10,8 +10,13 @@ using Unifesspa.UniPlus.Portal.Application.Certames;
 /// <param name="Nome">Título do certame congelado na publicação.</param>
 /// <param name="NumeroEdital">Número do edital como declarado na publicação, quando declarado.</param>
 /// <param name="DocumentoEditalUrl">
-/// Endereço público do edital no acervo. Ausente enquanto o documento não estiver disponível no
-/// acervo — é pendência de processamento, nunca erro. O documento não trafega pela Portal.
+/// Endereço público do edital vigente no acervo. Seleção só divulga o certame depois de copiar o
+/// edital, então a ausência quer dizer versão sem documento publicado, nunca erro. O documento não
+/// trafega pela Portal.
+/// </param>
+/// <param name="DataPublicacao">
+/// Data de publicação do edital vigente, a do ato que criou a versão servida. Ausente quando a
+/// linha do tempo não alcança esse ato.
 /// </param>
 /// <param name="LinhaDoTempo">Atos do certame, do mais recente para o mais antigo.</param>
 /// <param name="Aviso">
@@ -22,7 +27,8 @@ internal sealed record CertamePublicoResponse(
     string Identificador,
     string Nome,
     string? NumeroEdital,
-    string? DocumentoEditalUrl,
+    Uri? DocumentoEditalUrl,
+    DateOnly? DataPublicacao,
     IReadOnlyList<EventoDaLinhaDoTempoResponse> LinhaDoTempo,
     string? Aviso)
 {
@@ -39,7 +45,8 @@ internal sealed record CertamePublicoResponse(
             identificador,
             pagina.Nome,
             pagina.NumeroEdital,
-            DocumentoEditalUrl: null,
+            pagina.DocumentoEditalUrl,
+            pagina.DataPublicacao,
             [.. pagina.LinhaDoTempo.Select(EventoDaLinhaDoTempoResponse.De)],
             pagina.Degradacao is null ? null : AvisoDeLinhaDoTempoIncompleta);
 }
@@ -55,7 +62,8 @@ internal sealed record CertamePublicoResponse(
 /// <param name="Tipo">Tipo do ato.</param>
 /// <param name="Descricao">Motivo da retificação, quando o ato retifica outro.</param>
 /// <param name="DocumentoUrl">
-/// Endereço público do documento do ato no acervo. Ausente enquanto o acervo não tiver o documento.
+/// Endereço público do documento do ato no acervo. Ausente quando o acervo não tem o documento do
+/// ato — hoje só o ato que criou a versão vigente o tem.
 /// </param>
 internal sealed record EventoDaLinhaDoTempoResponse(
     Guid Id,
@@ -65,7 +73,7 @@ internal sealed record EventoDaLinhaDoTempoResponse(
     int Ano,
     TipoDoEventoResponse Tipo,
     string? Descricao,
-    string? DocumentoUrl)
+    Uri? DocumentoUrl)
 {
     internal static EventoDaLinhaDoTempoResponse De(EventoDaLinhaDoTempo evento) =>
         new(
@@ -76,7 +84,7 @@ internal sealed record EventoDaLinhaDoTempoResponse(
             evento.Ano,
             new TipoDoEventoResponse(evento.Tipo.Codigo, evento.Tipo.Nome),
             evento.Descricao,
-            DocumentoUrl: null);
+            evento.DocumentoUrl);
 }
 
 /// <summary>

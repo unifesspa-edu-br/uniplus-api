@@ -105,12 +105,17 @@ public sealed class ComposicaoDaPaginaDoCertame
 
         // A origem devolve do mais antigo para o mais recente, com o identificador de desempate;
         // a página mostra o inverso, e inverter preserva o mesmo desempate.
-        EventoDaLinhaDoTempo[] linhaDoTempo = [.. leitura.Atos.Reverse().Select(ParaEvento)];
+        EventoDaLinhaDoTempo[] linhaDoTempo =
+            [.. leitura.Atos.Reverse().Select(ato => ParaEvento(ato, DocumentoDo(ato, certame)))];
+
+        AtoDaOrigem? criador = leitura.Atos.FirstOrDefault(ato => ato.Id == certame.AtoCriadorId);
 
         return new PaginaDoCertame(
             certame.ProcessoSeletivoId,
             certame.Nome,
             certame.NumeroEdital,
+            certame.DocumentoEditalUrl,
+            criador?.DataPublicacao,
             linhaDoTempo,
             AvaliarDegradacao(certame, leitura),
             certame.Selo);
@@ -162,7 +167,14 @@ public sealed class ComposicaoDaPaginaDoCertame
         return null;
     }
 
-    private static EventoDaLinhaDoTempo ParaEvento(AtoDaOrigem ato)
+    /// <summary>
+    /// O documento do ato no acervo. O edital que Seleção publica é o do ato que criou a versão
+    /// servida; os demais atos ainda não têm documento no acervo.
+    /// </summary>
+    private static Uri? DocumentoDo(AtoDaOrigem ato, CertameDaOrigem certame) =>
+        ato.Id == certame.AtoCriadorId ? certame.DocumentoEditalUrl : null;
+
+    private static EventoDaLinhaDoTempo ParaEvento(AtoDaOrigem ato, Uri? documentoUrl)
     {
         string nomeDoTipo = string.IsNullOrWhiteSpace(ato.TipoNome) ? ato.TipoCodigo : ato.TipoNome;
         string? numero = string.IsNullOrWhiteSpace(ato.Numero) ? null : ato.Numero.Trim();
@@ -174,7 +186,8 @@ public sealed class ComposicaoDaPaginaDoCertame
             numero,
             ato.Ano,
             new TipoDoEvento(ato.TipoCodigo, nomeDoTipo),
-            ato.MotivoRetificacao);
+            ato.MotivoRetificacao,
+            documentoUrl);
     }
 
     /// <summary>

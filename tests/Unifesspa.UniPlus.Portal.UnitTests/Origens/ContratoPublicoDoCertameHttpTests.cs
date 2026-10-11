@@ -23,7 +23,8 @@ public sealed class ContratoPublicoDoCertameHttpTests
           "versaoProjecao": "1",
           "hashConfiguracao": "abc",
           "periodo": { "numero": "012/2026", "inicio": "2026-12-10T00:00:00-03:00", "fim": "2026-12-20T23:59:59-03:00" },
-          "localidade": { "codigoIbge": "1505536", "nome": "Marabá", "uf": "PA", "fusoHorario": "America/Belem" }
+          "localidade": { "codigoIbge": "1505536", "nome": "Marabá", "uf": "PA", "fusoHorario": "America/Belem" },
+          "documentoEdital": { "documentoEditalId": "0192a000-0000-7000-8000-0000000000d1", "hashSha256": "abc", "urlDownload": "https://acervo.example/editais/abc.pdf" }
         }
         """;
 
@@ -40,11 +41,27 @@ public sealed class ContratoPublicoDoCertameHttpTests
         ConsultaDoCertame consulta = await Consultar(rede, c => c.ObterPorIdAsync(ProcessoId, CancellationToken.None));
 
         consulta.Should().BeEquivalentTo(new ConsultaDoCertame.Encontrado(
-            new CertameDaOrigem(ProcessoId, Criador, "Medicina 2027", "012/2026", "\"1:abc\"")));
+            new CertameDaOrigem(
+                ProcessoId, Criador, "Medicina 2027", "012/2026", new Uri("https://acervo.example/editais/abc.pdf"), "\"1:abc\"")));
 
         HttpRequestMessage requisicao = rede.Requisicoes.Single();
         requisicao.RequestUri!.ToString().Should().Be($"{OrigensMontagem.EnderecoSelecao}/api/selecao/certames/{ProcessoId}");
         requisicao.Headers.Accept.Select(a => a.MediaType).Should().Equal(MediaType);
+    }
+
+    [Theory]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("/editais/abc.pdf")]
+    [InlineData("ftp://acervo.example/editais/abc.pdf")]
+    public async Task Endereco_do_edital_fora_de_http_absoluto_nao_vira_link(string endereco)
+    {
+        string corpo = CorpoDoCertame.Replace("https://acervo.example/editais/abc.pdf", endereco, StringComparison.Ordinal);
+        RedeSimulada rede = new((_, _) => RedeSimulada.Json(corpo, MediaType));
+
+        ConsultaDoCertame consulta = await Consultar(rede, c => c.ObterPorIdAsync(ProcessoId, CancellationToken.None));
+
+        consulta.Should().BeOfType<ConsultaDoCertame.Encontrado>()
+            .Which.Certame.DocumentoEditalUrl.Should().BeNull();
     }
 
     [Fact]
