@@ -393,6 +393,59 @@ public sealed class ModeloFormularioAdminEndpointTests
             .GetValue<string>().Should().Be(opcaoPelaEscolaPublicaVisivel);
     }
 
+    [Theory(DisplayName = "No modelo de inscrição semeado, quem cursou o ensino médio regular ou na EJA pede o Fator pelo município em que o cursou, mesmo com o endereço atual fora da área")]
+    [InlineData("REGULAR")]
+    [InlineData("EJA")]
+    public async Task ModeloDeInscricao_FatorPeloMunicipioDoEnsinoMedio(string formaDeConclusao)
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        Guid id = await ModeloDeInscricaoDaMedicinaAsync(client);
+        await RegistrarMarabaNoBonusAsync(client);
+
+        JsonArray itens = await PreVisualizarAsync(client, id, new Dictionary<string, object>
+        {
+            // Belém, fora da área do bônus: o Fator não confere o endereço atual.
+            ["ENDERECO_RESIDENCIAL"] = new { cep = (string?)null, cidade = new { codigoIbge = "1501402", uf = "PA" } },
+            ["FORMA_CONCLUSAO_EM"] = formaDeConclusao,
+            ["ONDE_CURSOU_EM"] = "SOMENTE_PUBLICA",
+            ["SOLICITA_FATOR_ATENUACAO"] = true,
+            ["MUNICIPIO_ENSINO_MEDIO_FATOR_ATENUACAO"] = Maraba,
+        });
+
+        JsonNode municipio = Item(itens, "MUNICIPIO_ENSINO_MEDIO_FATOR_ATENUACAO");
+        municipio["visivel"]!.GetValue<string>().Should().Be("VERDADEIRO");
+        municipio["obrigatorio"]!.GetValue<string>().Should().Be("VERDADEIRO");
+        municipio["restricoesVioladas"]!.AsArray().Should().BeEmpty();
+        municipio["impedido"]!.GetValue<string>().Should().Be("FALSO");
+        Item(itens, "CAMINHO_FATOR_ATENUACAO")["visivel"]!.GetValue<string>().Should().Be("FALSO", "só quem concluiu por certificação escolhe o caminho");
+        Item(itens, "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO")["visivel"]!.GetValue<string>().Should().Be("FALSO");
+    }
+
+    [Theory(DisplayName = "No modelo de inscrição semeado, quem concluiu por certificação e pede o Fator escolhe o caminho, que leva ao município do ensino médio ou ao da residência no período")]
+    [InlineData("ENEM", "ENSINO_MEDIO", "VERDADEIRO", "FALSO")]
+    [InlineData("ENCCEJA", "RESIDENCIA", "FALSO", "VERDADEIRO")]
+    [InlineData("PROFICIENCIA", "RESIDENCIA", "FALSO", "VERDADEIRO")]
+    public async Task ModeloDeInscricao_CertificacaoEscolheOCaminhoDoFator(
+        string formaDeConclusao, string caminho, string ensinoMedioVisivel, string residenciaVisivel)
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        Guid id = await ModeloDeInscricaoDaMedicinaAsync(client);
+
+        JsonArray itens = await PreVisualizarAsync(client, id, new Dictionary<string, object>
+        {
+            ["FORMA_CONCLUSAO_EM"] = formaDeConclusao,
+            ["ONDE_CURSOU_EM"] = "CERTIFICACAO",
+            ["SOLICITA_FATOR_ATENUACAO"] = true,
+            ["CAMINHO_FATOR_ATENUACAO"] = caminho,
+        });
+
+        JsonNode escolha = Item(itens, "CAMINHO_FATOR_ATENUACAO");
+        escolha["visivel"]!.GetValue<string>().Should().Be("VERDADEIRO");
+        escolha["obrigatorio"]!.GetValue<string>().Should().Be("VERDADEIRO");
+        Item(itens, "MUNICIPIO_ENSINO_MEDIO_FATOR_ATENUACAO")["visivel"]!.GetValue<string>().Should().Be(ensinoMedioVisivel);
+        Item(itens, "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO")["visivel"]!.GetValue<string>().Should().Be(residenciaVisivel);
+    }
+
     [Theory(DisplayName = "A avaliação sem cadastro das regras do modelo dá o mesmo resultado da pré-visualização do modelo")]
     [InlineData(false)]
     [InlineData(true)]
@@ -606,6 +659,39 @@ public sealed class ModeloFormularioAdminEndpointTests
             },
         },
     };
+
+    /// <summary>Marabá, município da área do bônus regional.</summary>
+    private const string Maraba = "1504208";
+
+    private static async Task<Guid> ModeloDeInscricaoDaMedicinaAsync(HttpClient client)
+    {
+        using JsonDocument lista = await ListarAsync(client, "?finalidade=INSCRICAO");
+        return lista.RootElement.EnumerateArray()
+            .Single(static m => m.GetProperty("codigo").GetString() == "PSR_MEDICINA_2027_INSCRICAO").GetProperty("id").GetGuid();
+    }
+
+    /// <summary>Uma base legal do bônus com Marabá, de onde vêm as opções de município do Fator.</summary>
+    private static async Task RegistrarMarabaNoBonusAsync(HttpClient client)
+    {
+        HttpResponseMessage criada = await EnviarAsync(client, HttpMethod.Post, "/api/configuracao/admin/base-legal-bonus-regional", new
+        {
+            tipoInstrumento = "PORTARIA",
+            identificacao = $"Portaria {Guid.NewGuid().ToString("N")[..8]}",
+            descricao = "Área do bônus regional",
+            municipios = new[] { new { codigoIbge = Maraba, nome = "Marabá", uf = "PA" } },
+        });
+        criada.StatusCode.Should().Be(HttpStatusCode.Created, await criada.Content.ReadAsStringAsync());
+    }
+
+    private static async Task<JsonArray> PreVisualizarAsync(HttpClient client, Guid id, Dictionary<string, object> respostas)
+    {
+        HttpResponseMessage previa = await EnviarAsync(client, HttpMethod.Post, $"{Base}/{id}/pre-visualizacao", new { respostas });
+        previa.StatusCode.Should().Be(HttpStatusCode.OK, await previa.Content.ReadAsStringAsync());
+        return JsonNode.Parse(await previa.Content.ReadAsStringAsync())!["itens"]!.AsArray();
+    }
+
+    private static JsonNode Item(JsonArray itens, string fatoCodigo) =>
+        itens.Single(i => i!["fatoCodigo"]!.GetValue<string>() == fatoCodigo)!;
 
     private static string CodigoUnico() => $"MODELO_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
 

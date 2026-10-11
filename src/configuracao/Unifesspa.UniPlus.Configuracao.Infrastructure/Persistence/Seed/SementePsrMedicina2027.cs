@@ -87,6 +87,16 @@ public static class SementePsrMedicina2027
     /// </summary>
     public const string CondicaoForaDaLista = "OUTRA_CONDICAO";
 
+    /// <summary>
+    /// O caminho do Fator de Atenuação de quem concluiu o ensino médio por certificação: o município
+    /// em que cursou pelo menos um ano do ensino médio, ou o município em que residiu no período que o
+    /// edital fixa.
+    /// </summary>
+    public const string CaminhoPeloEnsinoMedio = "ENSINO_MEDIO";
+
+    /// <inheritdoc cref="CaminhoPeloEnsinoMedio"/>
+    public const string CaminhoPelaResidencia = "RESIDENCIA";
+
     /// <summary>Um termo da inscrição: o código pelo qual o modelo o cita, o nome, o texto e a base legal.</summary>
     public sealed record TermoDaSemente(int N, string Codigo, string Nome, string Texto, string BaseLegal)
     {
@@ -125,19 +135,31 @@ public static class SementePsrMedicina2027
     /// <summary>Os fatos que os formulários de Medicina coletam e que o catálogo de sistema não tem.</summary>
     private static IReadOnlyList<FatoDaSemente> Fatos { get; } =
     [
-        // Inscrição: o Fator de Atenuação das Desigualdades de Acesso, pedido pelo candidato que reside
-        // num município da área de abrangência (edital, itens 1.5 e 1.6). Quem o recebe é a configuração
-        // do processo que decide, citando o pedido.
+        // Inscrição: o Fator de Atenuação das Desigualdades de Acesso, pedido pelo candidato que cursou
+        // pelo menos um ano do ensino médio num município da área ou, se concluiu por certificação,
+        // residiu num deles no período que o edital fixa (itens 1.5, 1.6 e 13). O endereço atual não
+        // conta. Quem recebe o acréscimo é a configuração do processo que decide, citando o pedido.
         new(11, _ => FatoCandidato.CriarDoAdministrador(
                 "SOLICITA_FATOR_ATENUACAO", "Solicita o Fator de Atenuação das Desigualdades de Acesso", "Se o candidato pede o Fator de Atenuação das Desigualdades de Acesso previsto no edital.", DominioFato.Booleano,
                 CardinalidadeFato.Escalar, null, null, PontoInscricao, EscopoFato.Candidato,
                 ClassificacaoProtecaoDado.Pessoal, FinalidadeDoFator, HipoteseLegal),
             Sem()),
         new(13, _ => FatoCandidato.CriarDoAdministrador(
-                "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO", "Município de residência para o Fator de Atenuação", "O município da área de abrangência do edital em que o candidato reside, entre os que o edital lista.", DominioFato.Categorico,
+                "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO", "Município de residência para o Fator de Atenuação", "O município da área de abrangência do edital em que o candidato residiu no período que o edital fixa, entre os que o edital lista.", DominioFato.Categorico,
                 CardinalidadeFato.Escalar, FonteValoresFato.MunicipiosBonus, null, PontoInscricao, EscopoFato.Candidato,
                 ClassificacaoProtecaoDado.Pessoal, FinalidadeDoFator, HipoteseLegal),
             Sem()),
+        new(16, _ => FatoCandidato.CriarDoAdministrador(
+                "MUNICIPIO_ENSINO_MEDIO_FATOR_ATENUACAO", "Município do ensino médio para o Fator de Atenuação", "O município da área de influência do edital em que o candidato cursou pelo menos um ano do ensino médio, entre os que o edital lista.", DominioFato.Categorico,
+                CardinalidadeFato.Escalar, FonteValoresFato.MunicipiosBonus, null, PontoInscricao, EscopoFato.Candidato,
+                ClassificacaoProtecaoDado.Pessoal, FinalidadeDoFator, HipoteseLegal),
+            Sem()),
+        new(17, _ => FatoCandidato.CriarDoAdministrador(
+                "CAMINHO_FATOR_ATENUACAO", "Caminho do Fator de Atenuação", "Por qual vínculo com a área do edital pede o Fator de Atenuação quem concluiu o ensino médio por certificação: o ensino médio cursado ou a residência no período.", DominioFato.Categorico,
+                CardinalidadeFato.Escalar, FonteValoresFato.Global, null, PontoInscricao, EscopoFato.Candidato,
+                ClassificacaoProtecaoDado.Pessoal, FinalidadeDoFator, HipoteseLegal),
+            [(CaminhoPeloEnsinoMedio, "Cursei pelo menos um ano do ensino médio na área"),
+             (CaminhoPelaResidencia, "Residi na área no período do edital")]),
 
         // Inscrição: o pedido de atendimento especializado nas etapas presenciais, que abre as
         // perguntas da condição e do recurso, e a descrição da condição que não consta da lista.
@@ -260,16 +282,22 @@ public static class SementePsrMedicina2027
     /// Os comandos que tiram do banco os fatos do pedido do acréscimo que a semente gravava antes: dois
     /// pedidos e dois municípios viraram um pedido e o município de residência.
     /// </summary>
-    public static IReadOnlyList<string> ComandosQueRetiramOsFatosAntigosDoFator() =>
+    public static IReadOnlyList<string> ComandosQueRetiramOsFatosAntigosDoFator() => ComandosQueRetiramOsFatos(3, 4, 11, 12);
+
+    /// <summary>
+    /// Os comandos que tiram do banco o município de residência do Fator, para ele ser gravado de novo
+    /// com a residência no período do edital no lugar da residência atual.
+    /// </summary>
+    public static IReadOnlyList<string> ComandosQueRetiramOMunicipioDeResidenciaDoFator() => ComandosQueRetiramOsFatos(13);
+
+    private static string[] ComandosQueRetiramOsFatos(params int[] fatos) =>
     [
-        .. FatosAntigosDoFator.SelectMany(static n => new[]
+        .. fatos.SelectMany(static n => new[]
         {
             $"DELETE FROM configuracao.fato_valor_dominio WHERE fato_candidato_id = {Uuid(Id(TabelaFato, n))};",
             $"DELETE FROM configuracao.rol_de_fatos_candidato WHERE id = {Uuid(Id(TabelaFato, n))};",
         }),
     ];
-
-    private static readonly int[] FatosAntigosDoFator = [3, 4, 11, 12];
 
     /// <summary>Os comandos que apagam os modelos semeados, para o <c>Down</c> da migration.</summary>
     public static IReadOnlyList<string> ComandosDeRemocaoDosModelos() =>
@@ -290,6 +318,8 @@ public static class SementePsrMedicina2027
         const string escolaridade = "ESCOLARIDADE";
         const string cotas = "RESERVA_DE_VAGAS";
         const string fator = "FATOR_ATENUACAO";
+        const string solicitaFator = "SOLICITA_FATOR_ATENUACAO";
+        const string caminhoFator = "CAMINHO_FATOR_ATENUACAO";
         const string atendimento = "ATENDIMENTO_ESPECIALIZADO";
         const string solicitaAtendimento = "SOLICITA_ATENDIMENTO_ESPECIALIZADO";
         const string condicaoAtendimento = "CONDICAO_ATENDIMENTO";
@@ -307,17 +337,27 @@ public static class SementePsrMedicina2027
                 Bloco("REVISAO", 8, BlocoSistema.RevisaoEAceite, "Revisão e aceite"),
             ],
             [
-                Campo(EdicaoDoEnem.Fato, 102, enem, "Qual edição do ENEM você vai usar?", TipoRenderizacao.SelecaoUnica,
+                Campo(EdicaoDoEnem.Fato, 100, enem, "Qual edição do ENEM você vai usar?", TipoRenderizacao.SelecaoUnica,
                     "Só aparecem as edições que o edital aceita."),
-                Campo(OrigemEscolar.FatoFormaDeConclusao, 103, escolaridade, "Como você concluiu o ensino médio?", TipoRenderizacao.SelecaoUnica, null),
-                Campo(OrigemEscolar.FatoOndeCursou, 104, escolaridade, "Onde você cursou o ensino médio?", TipoRenderizacao.SelecaoUnica,
+                Campo(OrigemEscolar.FatoFormaDeConclusao, 101, escolaridade, "Como você concluiu o ensino médio?", TipoRenderizacao.SelecaoUnica, null),
+                Campo(OrigemEscolar.FatoOndeCursou, 102, escolaridade, "Onde você cursou o ensino médio?", TipoRenderizacao.SelecaoUnica,
                     "A resposta define se você pode concorrer às vagas para quem cursou o ensino médio em escola pública.",
                     restricoes: [OpcoesDeOndeCursou()]),
-                Campo("SOLICITA_FATOR_ATENUACAO", 105, fator, "Deseja solicitar o Fator de Atenuação das Desigualdades de Acesso?", TipoRenderizacao.Booleano,
-                    "Para quem reside num dos municípios da área de abrangência que o edital lista. A residência é comprovada por conta de água, luz ou telefone."),
-                Campo("MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO", 106, fator, "Em qual município da área de abrangência você reside?", TipoRenderizacao.SelecaoUnica,
-                    "Só aparecem os municípios que o edital lista.",
-                    exibicao: Se("SOLICITA_FATOR_ATENUACAO", Operador.Igual, true)),
+                // Quem cursou o ensino médio regular ou na EJA pede pelo município em que o cursou; quem
+                // concluiu por certificação escolhe entre esse caminho e o da residência no período.
+                Campo(solicitaFator, 103, fator, "Deseja solicitar o Fator de Atenuação das Desigualdades de Acesso?", TipoRenderizacao.Booleano,
+                    "Para quem cursou pelo menos um ano do ensino médio num dos municípios da área que o edital lista ou, se concluiu por certificação, residiu num deles no período do edital. A comprovação é pedida na habilitação."),
+                Campo(caminhoFator, 104, fator, "Por qual vínculo com a área você solicita o Fator?", TipoRenderizacao.SelecaoUnica,
+                    "Como você concluiu o ensino médio por certificação, pode usar o ensino médio cursado na área ou a residência na área no período do edital.",
+                    exibicao: SeAlguma([Condicao(solicitaFator, Operador.Igual, true), Condicao(OrigemEscolar.FatoFormaDeConclusao, Operador.Em, OrigemEscolar.Certificacoes)])),
+                Campo("MUNICIPIO_ENSINO_MEDIO_FATOR_ATENUACAO", 105, fator, "Em qual município da área de influência você cursou o ensino médio? Se foi em mais de um, informe aquele em que estudou mais tempo.", TipoRenderizacao.SelecaoUnica,
+                    "Vale o município em que você cursou pelo menos um ano do ensino médio, em escola pública ou privada. Só aparecem os municípios que o edital lista.",
+                    exibicao: SeAlguma(
+                        [Condicao(solicitaFator, Operador.Igual, true), Condicao(OrigemEscolar.FatoFormaDeConclusao, Operador.Em, ConclusoesPorCurso)],
+                        [Condicao(solicitaFator, Operador.Igual, true), Condicao(caminhoFator, Operador.Igual, CaminhoPeloEnsinoMedio)])),
+                Campo("MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO", 106, fator, "Em qual município da área de abrangência você residiu no período? Se foi em mais de um, informe aquele em que residiu mais tempo.", TipoRenderizacao.SelecaoUnica,
+                    "Vale ter residido pelo menos um ano na área entre outubro de 2024 e outubro de 2026, conforme o edital.",
+                    exibicao: SeAlguma([Condicao(solicitaFator, Operador.Igual, true), Condicao(caminhoFator, Operador.Igual, CaminhoPelaResidencia)])),
                 Campo("PCD", 107, cotas, "Você é pessoa com deficiência?", TipoRenderizacao.Booleano,
                     "A deficiência é comprovada por laudo, conforme o edital."),
                 Campo("TIPO_DEFICIENCIA", 108, cotas, "Tipo de deficiência", TipoRenderizacao.SelecaoUnica, null,
@@ -430,12 +470,20 @@ public static class SementePsrMedicina2027
     private static TermoDoModelo Termo(TermoDaSemente termo, int ordem, PredicadoDnf? exibicao = null) =>
         new(termo.Codigo, ordem, termo.TermoId, termo.VersaoId, exibicao, Obrigatoriedade.Sempre);
 
+    /// <summary>As formas de conclusão de quem cursou o ensino médio, e não o concluiu por certificação.</summary>
+    private static IReadOnlyList<string> ConclusoesPorCurso { get; } = [OrigemEscolar.Regular, OrigemEscolar.Eja];
+
     /// <summary>A condição única "fato operador valor", como predicado de uma cláusula só.</summary>
-    private static PredicadoDnf Se<T>(string fato, Operador operador, T valor)
-    {
-        CondicaoDnf condicao = Exigir(CondicaoDnf.Criar(fato, operador, JsonSerializer.SerializeToElement(valor)), $"condição sobre {fato}");
-        return Exigir(PredicadoDnf.CriarDeCondicoesAgrupadas([(1, condicao)]), $"predicado sobre {fato}");
-    }
+    private static PredicadoDnf Se<T>(string fato, Operador operador, T valor) => SeAlguma([Condicao(fato, operador, valor)]);
+
+    /// <summary>O predicado que vale quando todas as condições de alguma das cláusulas valem.</summary>
+    private static PredicadoDnf SeAlguma(params CondicaoDnf[][] clausulas) =>
+        Exigir(
+            PredicadoDnf.CriarDeCondicoesAgrupadas([.. clausulas.SelectMany(static (condicoes, i) => condicoes.Select(c => (i + 1, c)))]),
+            $"predicado sobre {string.Join(", ", clausulas.SelectMany(static c => c).Select(static c => c.Fato).Distinct(StringComparer.Ordinal))}");
+
+    private static CondicaoDnf Condicao<T>(string fato, Operador operador, T valor) =>
+        Exigir(CondicaoDnf.Criar(fato, operador, JsonSerializer.SerializeToElement(valor)), $"condição sobre {fato}");
 
     private static string ComandoDoModelo(
         int n, string codigo, string nome, string descricao, FinalidadeFormulario finalidade, ConteudoDoModelo conteudo,
