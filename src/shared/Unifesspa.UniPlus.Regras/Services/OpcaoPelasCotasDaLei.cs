@@ -29,6 +29,10 @@ public static class OpcaoPelasCotasDaLei
         ]))),
     ];
 
+    /// <summary>Os fatos de que a opção pelas cotas depende: os que a regra dela cita.</summary>
+    public static IReadOnlyList<string> DependenciasDaOpcao { get; } =
+        [.. RegrasDaOpcao.SelectMany(static r => r.FatosCitados).Distinct(StringComparer.Ordinal)];
+
     /// <summary>
     /// Se a cláusula exige a opção pelas cotas com o valor dado: verdadeiro na cota da lei, falso na
     /// ação afirmativa.
