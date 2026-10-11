@@ -5,7 +5,8 @@ using System.Text.Json.Serialization;
 /// <summary>
 /// DTO de resposta HTTP para <c>Modalidade</c> de concorrência. Suporta HATEOAS
 /// Level 1 via <c>_links</c> (ADR-0029). Os enums são expostos como tokens
-/// canônicos UPPER_SNAKE; os argumentos de remanejamento como campos planos.
+/// canônicos UPPER_SNAKE; os argumentos de remanejamento como campos planos. A regra de
+/// aplicabilidade sai como OU de cláusulas, cada uma o E de condições; vazia na incondicional.
 /// </summary>
 public sealed record ModalidadeDto(
     Guid Id,
@@ -18,7 +19,7 @@ public sealed record ModalidadeDto(
     string? RemanejamentoDestino,
     string? RemanejamentoPar,
     string? RemanejamentoFallback,
-    IReadOnlyList<string> CriteriosCumulativos,
+    IReadOnlyList<IReadOnlyList<CondicaoDoPredicadoDto>> RegraDeAplicabilidade,
     string? AcaoQuandoIndeferido,
     string? BaseLegal,
     DateTimeOffset CriadoEm)

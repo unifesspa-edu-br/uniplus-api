@@ -48,5 +48,16 @@ public static class ModalidadeErrorCodes
     public const string RemanejamentoParCircular = "Modalidade.RemanejamentoParCircular";
     public const string RemanejamentoFallbackCircular = "Modalidade.RemanejamentoFallbackCircular";
 
+    public const string RegraDeAplicabilidadeObrigatoria = "Modalidade.RegraDeAplicabilidadeObrigatoria";
+    public const string RegraDeAplicabilidadeMalformada = "Modalidade.RegraDeAplicabilidadeMalformada";
+    public const string AmplaConcorrenciaComCondicao = "Modalidade.AmplaConcorrenciaComCondicao";
+    public const string CotaSemOpcaoPelasCotasDaLei = "Modalidade.CotaSemOpcaoPelasCotasDaLei";
+    public const string AcaoAfirmativaComOpcaoPelasCotasDaLei = "Modalidade.AcaoAfirmativaComOpcaoPelasCotasDaLei";
+    public const string RegraCitaFatoNaoCitavel = "Modalidade.RegraCitaFatoNaoCitavel";
+    public const string RegraCitaFatoDesativado = "Modalidade.RegraCitaFatoDesativado";
+    public const string RegraCitaValorDesativado = "Modalidade.RegraCitaValorDesativado";
+    public const string RegraCitaFatoPosteriorAInscricao = "Modalidade.RegraCitaFatoPosteriorAInscricao";
+    public const string RegraDependeDaModalidade = "Modalidade.RegraDependeDaModalidade";
+
     public const string NaoEncontrada = "Modalidade.NaoEncontrada";
 }

@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.Modalidades;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Configuracao.Application.Commands.Predicados;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -28,6 +29,6 @@ public sealed record AtualizarModalidadeCommand(
     string? RemanejamentoDestino = null,
     string? RemanejamentoPar = null,
     string? RemanejamentoFallback = null,
-    IReadOnlyList<string>? CriteriosCumulativos = null,
+    IReadOnlyList<IReadOnlyList<CondicaoDoPredicadoInput>>? RegraDeAplicabilidade = null,
     string? AcaoQuandoIndeferido = null,
     string? BaseLegal = null) : ICommand<Result>;

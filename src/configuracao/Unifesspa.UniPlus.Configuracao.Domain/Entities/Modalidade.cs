@@ -1,11 +1,15 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
+using System.Text.Json;
+
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Services;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Modalidade de concorrência — a entidade mais rica do módulo Configuração
@@ -54,7 +58,12 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
     public string? ComposicaoOrigem { get; private set; }
     public RegraRemanejamento? RegraRemanejamento { get; private set; }
     public RemanejamentoArgs RemanejamentoArgs { get; private set; } = RemanejamentoArgs.Vazio;
-    public IReadOnlyList<string> CriteriosCumulativos { get; private set; } = [];
+    /// <summary>
+    /// Quem concorre à modalidade: o predicado sobre os fatos do candidato que o enquadra nela
+    /// (ADR-0144). A ampla concorrência é incondicional, sem cláusula; a cota da lei exige a opção
+    /// pelas cotas em toda cláusula, e a ação afirmativa exige não tê-la feito (UNI-REQ-0142).
+    /// </summary>
+    public PredicadoDnf RegraDeAplicabilidade { get; private set; } = null!;
     /// <summary>
     /// O que fazer com o candidato quando a comprovação da reserva é indeferida.
     /// <see langword="null"/> declara que esta modalidade não reclassifica — quem responde
@@ -100,7 +109,7 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
         string? remanejamentoDestino,
         string? remanejamentoPar,
         string? remanejamentoFallback,
-        IReadOnlyList<string>? criteriosCumulativos,
+        PredicadoDnf? regraDeAplicabilidade,
         string? acaoQuandoIndeferido,
         string? baseLegal)
     {
@@ -115,7 +124,7 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
         Result<CamposResolvidos> camposResult = ValidarCampos(
             descricao, naturezaLegal, composicaoVagas, composicaoOrigem, regraRemanejamento,
             remanejamentoDestino, remanejamentoPar, remanejamentoFallback,
-            criteriosCumulativos, acaoQuandoIndeferido, baseLegal,
+            regraDeAplicabilidade, acaoQuandoIndeferido, baseLegal,
             codigoResult.IsSuccess ? codigoResult.Value : null);
         if (camposResult.IsFailure)
         {
@@ -155,14 +164,14 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
         string? remanejamentoDestino,
         string? remanejamentoPar,
         string? remanejamentoFallback,
-        IReadOnlyList<string>? criteriosCumulativos,
+        PredicadoDnf? regraDeAplicabilidade,
         string? acaoQuandoIndeferido,
         string? baseLegal)
     {
         (List<FieldError> erros, bool naturezaOk, bool composicaoOk, bool regraOk, CamposResolvidos campos) = ValidarCamposIndependentes(
             descricao, naturezaLegal, composicaoVagas, composicaoOrigem, regraRemanejamento,
             remanejamentoDestino, remanejamentoPar, remanejamentoFallback,
-            criteriosCumulativos, acaoQuandoIndeferido, baseLegal);
+            regraDeAplicabilidade, acaoQuandoIndeferido, baseLegal);
         if (erros.Count > 0)
         {
             return Result.ValidationFailure(erros);
@@ -173,8 +182,8 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
             return Result.Failure(new DomainError(
                 ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel,
                 "Esta modalidade pertence ao catálogo legal fixo e admite alteração apenas de "
-                + "descrição e base legal — natureza, composição, remanejamento, critérios e ação "
-                + "no indeferimento são fixados em lei."));
+                + "descrição e base legal — natureza, composição, remanejamento, regra de aplicabilidade "
+                + "e ação no indeferimento são fixados em lei."));
         }
 
         List<FieldError> violacoes = ValidarCoerenciaCruzada(campos, composicaoOk, naturezaOk, regraOk);
@@ -201,7 +210,7 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
         || !string.Equals(campos.ComposicaoOrigem, ComposicaoOrigem, StringComparison.Ordinal)
         || campos.RegraRemanejamento != RegraRemanejamento
         || campos.RemanejamentoArgs != RemanejamentoArgs
-        || !campos.CriteriosCumulativos.SequenceEqual(CriteriosCumulativos, StringComparer.Ordinal)
+        || !MesmoPredicado(campos.RegraDeAplicabilidade!, RegraDeAplicabilidade)
         || campos.AcaoQuandoIndeferido != AcaoQuandoIndeferido;
 
     private void AplicarCampos(CamposResolvidos campos)
@@ -212,7 +221,7 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
         ComposicaoOrigem = campos.ComposicaoOrigem;
         RegraRemanejamento = campos.RegraRemanejamento;
         RemanejamentoArgs = campos.RemanejamentoArgs;
-        CriteriosCumulativos = campos.CriteriosCumulativos;
+        RegraDeAplicabilidade = campos.RegraDeAplicabilidade!;
         AcaoQuandoIndeferido = campos.AcaoQuandoIndeferido;
         BaseLegal = campos.BaseLegal;
     }
@@ -240,7 +249,7 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
         string? remanejamentoDestino,
         string? remanejamentoPar,
         string? remanejamentoFallback,
-        IReadOnlyList<string>? criteriosCumulativos,
+        PredicadoDnf? regraDeAplicabilidade,
         string? acaoQuandoIndeferidoToken,
         string? baseLegal)
     {
@@ -333,10 +342,15 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
         RemanejamentoArgs args = RemanejamentoArgs.Criar(
             remanejamentoDestino, remanejamentoPar, remanejamentoFallback);
 
-        IReadOnlyList<string> criterios = NormalizarCriterios(criteriosCumulativos);
+        if (regraDeAplicabilidade is null)
+        {
+            erros.Add(new("regraDeAplicabilidade", new DomainError(
+                ModalidadeErrorCodes.RegraDeAplicabilidadeObrigatoria,
+                "A modalidade precisa da regra que diz quem concorre a ela; a ampla concorrência a declara sem condição.")));
+        }
 
         var campos = new CamposResolvidos(
-            descricaoNorm, natureza, composicao, origemNorm, regra, args, criterios, acao, baseLegalNorm);
+            descricaoNorm, natureza, composicao, origemNorm, regra, args, regraDeAplicabilidade, acao, baseLegalNorm);
 
         return (erros, naturezaOk, composicaoOk, regraOk, campos);
     }
@@ -361,14 +375,14 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
         string? remanejamentoDestino,
         string? remanejamentoPar,
         string? remanejamentoFallback,
-        IReadOnlyList<string>? criteriosCumulativos,
+        PredicadoDnf? regraDeAplicabilidade,
         string? acaoQuandoIndeferidoToken,
         string? baseLegal)
     {
         (List<FieldError> erros, _, _, _, _) = ValidarCamposIndependentes(
             descricao, naturezaLegalToken, composicaoVagasToken, composicaoOrigem, regraRemanejamentoToken,
             remanejamentoDestino, remanejamentoPar, remanejamentoFallback,
-            criteriosCumulativos, acaoQuandoIndeferidoToken, baseLegal);
+            regraDeAplicabilidade, acaoQuandoIndeferidoToken, baseLegal);
 
         return erros.Count == 0 ? Result.Success() : Result.ValidationFailure(erros);
     }
@@ -393,7 +407,7 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
         string? remanejamentoDestino,
         string? remanejamentoPar,
         string? remanejamentoFallback,
-        IReadOnlyList<string>? criteriosCumulativos,
+        PredicadoDnf? regraDeAplicabilidade,
         string? acaoQuandoIndeferidoToken,
         string? baseLegal,
         CodigoModalidade? codigo = null)
@@ -402,7 +416,7 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
             ValidarCamposIndependentes(
                 descricao, naturezaLegalToken, composicaoVagasToken, composicaoOrigem, regraRemanejamentoToken,
                 remanejamentoDestino, remanejamentoPar, remanejamentoFallback,
-                criteriosCumulativos, acaoQuandoIndeferidoToken, baseLegal);
+                regraDeAplicabilidade, acaoQuandoIndeferidoToken, baseLegal);
 
         erros.AddRange(ValidarCoerenciaCruzada(campos, composicaoOk, naturezaOk, regraOk));
 
@@ -500,6 +514,12 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
             erros.Add(argumentoInvalido);
         }
 
+        if (naturezaOk && campos.RegraDeAplicabilidade is { } regraDeAplicabilidade
+            && ValidarRegraPelaNatureza(campos.NaturezaLegal, regraDeAplicabilidade) is { } regraIncoerente)
+        {
+            erros.Add(regraIncoerente);
+        }
+
         return erros;
     }
 
@@ -584,17 +604,36 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
         }
     }
 
-    private static IReadOnlyList<string> NormalizarCriterios(IReadOnlyList<string>? criterios)
+    /// <remarks>
+    /// A natureza fixa a forma da regra: todo candidato concorre à ampla concorrência, e o candidato
+    /// nunca concorre a cota da lei e a ação afirmativa ao mesmo tempo, então cada cláusula da cota
+    /// exige a opção pelas cotas da lei e cada cláusula da ação afirmativa exige não tê-la feito.
+    /// </remarks>
+    private static FieldError? ValidarRegraPelaNatureza(NaturezaLegal natureza, PredicadoDnf regra) => natureza switch
     {
-        if (criterios is null || criterios.Count == 0)
-        {
-            return [];
-        }
+        NaturezaLegal.Ampla when regra.Clausulas.Count > 0 => new("regraDeAplicabilidade", new DomainError(
+            ModalidadeErrorCodes.AmplaConcorrenciaComCondicao,
+            "A ampla concorrência vale para todo candidato: a regra dela não tem condição.")),
+        NaturezaLegal.CotaReservada when !TodaClausulaExige(regra, optou: true) => new("regraDeAplicabilidade", new DomainError(
+            ModalidadeErrorCodes.CotaSemOpcaoPelasCotasDaLei,
+            $"Toda cláusula da regra de uma cota da lei exige {OpcaoPelasCotasDaLei.Fato} verdadeiro.")),
+        NaturezaLegal.AcaoAfirmativa when !TodaClausulaExige(regra, optou: false) => new("regraDeAplicabilidade", new DomainError(
+            ModalidadeErrorCodes.AcaoAfirmativaComOpcaoPelasCotasDaLei,
+            $"Toda cláusula da regra de uma ação afirmativa exige {OpcaoPelasCotasDaLei.Fato} falso: quem optou pelas cotas da lei não concorre a ela.")),
+        _ => null,
+    };
 
-        return [.. criterios
-            .Where(c => !string.IsNullOrWhiteSpace(c))
-            .Select(c => c.Trim())];
-    }
+    private static bool TodaClausulaExige(PredicadoDnf regra, bool optou) =>
+        regra.Clausulas.Count > 0 && regra.Clausulas.All(c => OpcaoPelasCotasDaLei.ClausulaExige(c, optou));
+
+    private static bool MesmoPredicado(PredicadoDnf um, PredicadoDnf outro) =>
+        um.Clausulas.Count == outro.Clausulas.Count
+        && um.Clausulas.Zip(outro.Clausulas).All(static par =>
+            par.First.Condicoes.Count == par.Second.Condicoes.Count
+            && par.First.Condicoes.Zip(par.Second.Condicoes).All(static c =>
+                string.Equals(c.First.Fato, c.Second.Fato, StringComparison.Ordinal)
+                && c.First.Operador == c.Second.Operador
+                && JsonElement.DeepEquals(c.First.Valor, c.Second.Valor)));
 
     private static string? NormalizarOpcional(string? valor) =>
         string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
@@ -606,7 +645,7 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
         string? ComposicaoOrigem,
         RegraRemanejamento? RegraRemanejamento,
         RemanejamentoArgs RemanejamentoArgs,
-        IReadOnlyList<string> CriteriosCumulativos,
+        PredicadoDnf? RegraDeAplicabilidade,
         AcaoQuandoIndeferido? AcaoQuandoIndeferido,
         string? BaseLegal);
 }

@@ -79,11 +79,11 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
             .HasDefaultValueSql("'{}'::jsonb")
             .IsRequired();
 
-        // criterios_cumulativos: lista de strings serializada como jsonb. Default '[]'.
-        builder.Property(m => m.CriteriosCumulativos)
-            .HasConversion(CriteriosConverter, CriteriosComparer)
+        // A regra de aplicabilidade (ADR-0144): o predicado como lista de cláusulas, cada uma lista
+        // de condições. Sem default: toda modalidade declara a sua, e a incondicional é a lista vazia.
+        builder.Property(m => m.RegraDeAplicabilidade)
+            .HasConversion(PredicadoDnfColunaJson.Converter, PredicadoDnfColunaJson.Comparer)
             .HasColumnType("jsonb")
-            .HasDefaultValueSql("'[]'::jsonb")
             .IsRequired();
 
         builder.Property(m => m.BaseLegal).HasMaxLength(BaseLegalMaxLength);
@@ -122,7 +122,7 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
             item.ComposicaoOrigem,
             RegraRemanejamento = item.Regra,
             item.RemanejamentoArgs,
-            CriteriosCumulativos = (IReadOnlyList<string>)[],
+            item.RegraDeAplicabilidade,
             AcaoQuandoIndeferido = (AcaoQuandoIndeferido?)null,
             item.BaseLegal,
             CreatedAt = seedCriadoEm,
@@ -184,23 +184,4 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
         string.IsNullOrEmpty(json)
             ? RemanejamentoArgs.Vazio
             : JsonSerializer.Deserialize<RemanejamentoArgs>(json, JsonOptions) ?? RemanejamentoArgs.Vazio;
-
-    private static readonly ValueConverter<IReadOnlyList<string>, string> CriteriosConverter =
-        new(
-            criterios => JsonSerializer.Serialize(criterios, JsonOptions),
-            json => (IReadOnlyList<string>)DeserializeCriterios(json));
-
-    private static readonly ValueComparer<IReadOnlyList<string>> CriteriosComparer =
-        new(
-            (a, b) => SerializeCriterios(a) == SerializeCriterios(b),
-            v => v == null ? 0 : SerializeCriterios(v).GetHashCode(StringComparison.Ordinal),
-            v => (IReadOnlyList<string>)DeserializeCriterios(SerializeCriterios(v)));
-
-    private static string SerializeCriterios(IReadOnlyList<string>? v) =>
-        v is null ? "[]" : JsonSerializer.Serialize(v, JsonOptions);
-
-    private static List<string> DeserializeCriterios(string json) =>
-        string.IsNullOrEmpty(json)
-            ? []
-            : JsonSerializer.Deserialize<List<string>>(json, JsonOptions) ?? [];
 }

@@ -1,11 +1,16 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities;
 
+using System.Text.Json;
+
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Services;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 
 public sealed class ModalidadeTests
 {
@@ -19,12 +24,31 @@ public sealed class ModalidadeTests
         string? destino = null,
         string? par = null,
         string? fallback = null,
-        IReadOnlyList<string>? criterios = null,
+        PredicadoDnf? aplicabilidade = null,
         string? acao = null,
-        string? baseLegal = null) =>
+        string? baseLegal = null,
+        bool semAplicabilidade = false) =>
         Modalidade.Criar(
             codigo, descricao, natureza, composicao, origem, regra,
-            destino, par, fallback, criterios, acao, baseLegal);
+            destino, par, fallback, semAplicabilidade ? null : aplicabilidade ?? AplicavelA(natureza), acao, baseLegal);
+
+    /// <summary>A regra de aplicabilidade mínima que a natureza admite.</summary>
+    private static PredicadoDnf AplicavelA(string? natureza) => natureza switch
+    {
+        "COTA_RESERVADA" => ComOpcaoPelasCotas(optou: true),
+        "ACAO_AFIRMATIVA" => ComOpcaoPelasCotas(optou: false),
+        _ => Incondicional(),
+    };
+
+    private static PredicadoDnf Incondicional() => PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!;
+
+    private static PredicadoDnf ComOpcaoPelasCotas(bool optou, params (string Fato, object Valor)[] demais) =>
+        Clausulas([[(OpcaoPelasCotasDaLei.Fato, optou), .. demais]]);
+
+    private static PredicadoDnf Clausulas(params (string Fato, object Valor)[][] clausulas) =>
+        PredicadoDnf.CriarDeCondicoesAgrupadas(
+            [.. clausulas.SelectMany((atomos, indice) => atomos.Select(a => (indice,
+                CondicaoDnf.Criar(a.Fato, Operador.Igual, JsonSerializer.SerializeToElement(a.Valor)).Value!)))]).Value!;
 
     // ── Factory válida ─────────────────────────────────────────────────────────
 
@@ -205,7 +229,7 @@ public sealed class ModalidadeTests
 
         Result resultado = m.Atualizar(
             null, "ACAO_AFIRMATIVA", "SUPLEMENTAR_AO_TOTAL", null, "CRUZADO",
-            null, "PSIQ_REGIONAL", null, null, null, null);
+            null, "PSIQ_REGIONAL", null, AplicavelA("ACAO_AFIRMATIVA"), null, null);
 
         resultado.IsFailure.Should().BeTrue("a recusa vale nos dois caminhos de escrita");
         resultado.Errors.Should().Contain(e => e.Error.Code == "Modalidade.RemanejamentoParCircular");
@@ -319,6 +343,70 @@ public sealed class ModalidadeTests
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.BaseLegalTamanho);
     }
 
+    // ── Regra de aplicabilidade pela natureza ──────────────────────────────────
+
+    [Fact(DisplayName = "Modalidade sem regra de aplicabilidade é recusada")]
+    public void Criar_SemRegraDeAplicabilidade_Falha()
+    {
+        Result<Modalidade> r = Criar(semAplicabilidade: true);
+
+        r.IsFailure.Should().BeTrue();
+        r.Errors.Should().ContainSingle(e => e.Field == "regraDeAplicabilidade"
+            && e.Error.Code == ModalidadeErrorCodes.RegraDeAplicabilidadeObrigatoria);
+    }
+
+    [Fact(DisplayName = "Ampla concorrência com condição na regra é recusada")]
+    public void Criar_AmplaComCondicao_Falha()
+    {
+        Result<Modalidade> r = Criar(aplicabilidade: Clausulas([("PCD", true)]));
+
+        r.Errors.Should().ContainSingle(e => e.Error.Code == ModalidadeErrorCodes.AmplaConcorrenciaComCondicao);
+    }
+
+    [Fact(DisplayName = "Cota em que uma cláusula não exige a opção pelas cotas da lei é recusada")]
+    public void Criar_CotaComClausulaSemOpcao_Falha()
+    {
+        Result<Modalidade> r = Criar(
+            codigo: "PSIQ_COTA", natureza: "COTA_RESERVADA", composicao: "DENTRO_DO_VR", regra: "SEGUE_CASCATA",
+            aplicabilidade: Clausulas([(OpcaoPelasCotasDaLei.Fato, true), ("PCD", true)], [("QUILOMBOLA", true)]));
+
+        r.Errors.Should().ContainSingle(e => e.Error.Code == ModalidadeErrorCodes.CotaSemOpcaoPelasCotasDaLei);
+    }
+
+    [Fact(DisplayName = "Cota incondicional é recusada: só concorre a ela quem optou pelas cotas da lei")]
+    public void Criar_CotaIncondicional_Falha()
+    {
+        Result<Modalidade> r = Criar(
+            codigo: "PSIQ_COTA", natureza: "COTA_RESERVADA", composicao: "DENTRO_DO_VR", regra: "SEGUE_CASCATA",
+            aplicabilidade: Incondicional());
+
+        r.Errors.Should().ContainSingle(e => e.Error.Code == ModalidadeErrorCodes.CotaSemOpcaoPelasCotasDaLei);
+    }
+
+    [Fact(DisplayName = "Ação afirmativa aberta a quem optou pelas cotas da lei é recusada")]
+    public void Criar_AcaoAfirmativaComOpcao_Falha()
+    {
+        Result<Modalidade> r = Criar(
+            codigo: "PSIQ_AA", natureza: "ACAO_AFIRMATIVA", composicao: "SUPLEMENTAR_AO_TOTAL",
+            regra: "DESTINO_UNICO", destino: "AC",
+            aplicabilidade: ComOpcaoPelasCotas(optou: true, ("INDIGENA", true)));
+
+        r.Errors.Should().ContainSingle(e => e.Error.Code == ModalidadeErrorCodes.AcaoAfirmativaComOpcaoPelasCotasDaLei);
+    }
+
+    [Fact(DisplayName = "Contraprova: cota e ação afirmativa com a opção certa em toda cláusula são aceitas")]
+    public void Criar_OpcaoCoerenteComANatureza_Aceita()
+    {
+        Criar(codigo: "PSIQ_COTA", natureza: "COTA_RESERVADA", composicao: "DENTRO_DO_VR", regra: "SEGUE_CASCATA",
+                aplicabilidade: Clausulas(
+                    [(OpcaoPelasCotasDaLei.Fato, true), ("PCD", true)],
+                    [(OpcaoPelasCotasDaLei.Fato, true), ("QUILOMBOLA", true)]))
+            .IsSuccess.Should().BeTrue();
+        Criar(codigo: "PSIQ_AA", natureza: "ACAO_AFIRMATIVA", composicao: "SUPLEMENTAR_AO_TOTAL",
+                regra: "DESTINO_UNICO", destino: "AC", aplicabilidade: ComOpcaoPelasCotas(optou: false, ("INDIGENA", true)))
+            .IsSuccess.Should().BeTrue();
+    }
+
     // ── Imutabilidade do código na atualização ─────────────────────────────────
 
     [Fact(DisplayName = "Atualizar troca atributos editáveis mantendo Codigo e Id imutáveis")]
@@ -333,7 +421,7 @@ public sealed class ModalidadeTests
             descricao: "Nova descrição", naturezaLegal: "AMPLA", composicaoVagas: "RESIDUAL_DO_VO",
             composicaoOrigem: null, regraRemanejamento: null,
             remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-            criteriosCumulativos: null, acaoQuandoIndeferido: null, baseLegal: null);
+            regraDeAplicabilidade: AplicavelA("AMPLA"), acaoQuandoIndeferido: null, baseLegal: null);
 
         r.IsSuccess.Should().BeTrue();
         m.Codigo.Valor.Should().Be("PSIQ_INDIGENA", "o código é imutável");
@@ -351,7 +439,7 @@ public sealed class ModalidadeTests
             descricao: null, naturezaLegal: "COTA_RESERVADA", composicaoVagas: "DENTRO_DO_VR",
             composicaoOrigem: null, regraRemanejamento: null,
             remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-            criteriosCumulativos: null, acaoQuandoIndeferido: null, baseLegal: null);
+            regraDeAplicabilidade: AplicavelA("COTA_RESERVADA"), acaoQuandoIndeferido: null, baseLegal: null);
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.NaturezaRemanejamentoIncoerente);
@@ -360,9 +448,9 @@ public sealed class ModalidadeTests
     // ── Proteção do catálogo legal fixo ────────────────────────────────────────
 
     /// <summary>Cota federal tal como semeada: reservada, dentro das vagas reservadas, cascata.</summary>
-    private static Modalidade CotaFederal(IReadOnlyList<string>? criterios = null) =>
+    private static Modalidade CotaFederal(PredicadoDnf? aplicabilidade = null) =>
         Criar(codigo: "LB_PPI", descricao: "Cota", natureza: "COTA_RESERVADA",
-            composicao: "DENTRO_DO_VR", regra: "SEGUE_CASCATA", criterios: criterios,
+            composicao: "DENTRO_DO_VR", regra: "SEGUE_CASCATA", aplicabilidade: aplicabilidade,
             baseLegal: "Lei 12.711/2012").Value!;
 
     /// <summary>Pessoa com deficiência na ampla concorrência: única fixa com argumento de remanejamento.</summary>
@@ -379,7 +467,7 @@ public sealed class ModalidadeTests
             descricao: "Cota", naturezaLegal: "AMPLA", composicaoVagas: "DENTRO_DO_VR",
             composicaoOrigem: null, regraRemanejamento: "SEGUE_CASCATA",
             remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-            criteriosCumulativos: null, acaoQuandoIndeferido: null, baseLegal: "Lei 12.711/2012");
+            regraDeAplicabilidade: AplicavelA("AMPLA"), acaoQuandoIndeferido: null, baseLegal: "Lei 12.711/2012");
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel);
@@ -395,7 +483,7 @@ public sealed class ModalidadeTests
             descricao: "Cota", naturezaLegal: "COTA_RESERVADA", composicaoVagas: "SUPLEMENTAR_AO_TOTAL",
             composicaoOrigem: null, regraRemanejamento: "SEGUE_CASCATA",
             remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-            criteriosCumulativos: null, acaoQuandoIndeferido: null, baseLegal: "Lei 12.711/2012");
+            regraDeAplicabilidade: AplicavelA("COTA_RESERVADA"), acaoQuandoIndeferido: null, baseLegal: "Lei 12.711/2012");
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel);
@@ -411,7 +499,7 @@ public sealed class ModalidadeTests
             descricao: "Cota", naturezaLegal: "COTA_RESERVADA", composicaoVagas: "DENTRO_DO_VR",
             composicaoOrigem: "AC", regraRemanejamento: "SEGUE_CASCATA",
             remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-            criteriosCumulativos: null, acaoQuandoIndeferido: null, baseLegal: "Lei 12.711/2012");
+            regraDeAplicabilidade: AplicavelA("COTA_RESERVADA"), acaoQuandoIndeferido: null, baseLegal: "Lei 12.711/2012");
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel);
@@ -427,15 +515,15 @@ public sealed class ModalidadeTests
             descricao: "Cota", naturezaLegal: "COTA_RESERVADA", composicaoVagas: "DENTRO_DO_VR",
             composicaoOrigem: null, regraRemanejamento: null,
             remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-            criteriosCumulativos: null, acaoQuandoIndeferido: null, baseLegal: "Lei 12.711/2012");
+            regraDeAplicabilidade: AplicavelA("COTA_RESERVADA"), acaoQuandoIndeferido: null, baseLegal: "Lei 12.711/2012");
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel);
         m.RegraRemanejamento.Should().Be(RegraRemanejamento.SegueCascata);
     }
 
-    [Fact(DisplayName = "Legal fixa recusa alteração dos critérios cumulativos")]
-    public void Atualizar_LegalFixaCriterios_Recusa()
+    [Fact(DisplayName = "Legal fixa recusa alteração da regra de aplicabilidade")]
+    public void Atualizar_LegalFixaRegraDeAplicabilidade_Recusa()
     {
         Modalidade m = CotaFederal();
 
@@ -443,12 +531,13 @@ public sealed class ModalidadeTests
             descricao: "Cota", naturezaLegal: "COTA_RESERVADA", composicaoVagas: "DENTRO_DO_VR",
             composicaoOrigem: null, regraRemanejamento: "SEGUE_CASCATA",
             remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-            criteriosCumulativos: ["RENDA_PER_CAPITA"], acaoQuandoIndeferido: null,
+            regraDeAplicabilidade: ComOpcaoPelasCotas(optou: true, ("BAIXA_RENDA", true)), acaoQuandoIndeferido: null,
             baseLegal: "Lei 12.711/2012");
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel);
-        m.CriteriosCumulativos.Should().BeEmpty();
+        m.RegraDeAplicabilidade.Clausulas.Should().ContainSingle()
+            .Which.Condicoes.Should().ContainSingle("a recusa não muta a regra");
     }
 
     [Fact(DisplayName = "Legal fixa recusa alteração da ação quando indeferido")]
@@ -460,7 +549,7 @@ public sealed class ModalidadeTests
             descricao: "Cota", naturezaLegal: "COTA_RESERVADA", composicaoVagas: "DENTRO_DO_VR",
             composicaoOrigem: null, regraRemanejamento: "SEGUE_CASCATA",
             remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-            criteriosCumulativos: null, acaoQuandoIndeferido: "RECLASSIFICAR_AC",
+            regraDeAplicabilidade: AplicavelA("COTA_RESERVADA"), acaoQuandoIndeferido: "RECLASSIFICAR_AC",
             baseLegal: "Lei 12.711/2012");
 
         r.IsFailure.Should().BeTrue();
@@ -480,7 +569,7 @@ public sealed class ModalidadeTests
             descricao: null, naturezaLegal: "ACAO_AFIRMATIVA", composicaoVagas: "RETIRA_DE",
             composicaoOrigem: "AC", regraRemanejamento: "DESTINO_UNICO",
             remanejamentoDestino: destino, remanejamentoPar: par, remanejamentoFallback: fallback,
-            criteriosCumulativos: null, acaoQuandoIndeferido: null, baseLegal: null);
+            regraDeAplicabilidade: AplicavelA("ACAO_AFIRMATIVA"), acaoQuandoIndeferido: null, baseLegal: null);
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel);
@@ -492,16 +581,15 @@ public sealed class ModalidadeTests
     [Fact(DisplayName = "Legal fixa aceita alteração de descrição e base legal com a estrutura reenviada idêntica")]
     public void Atualizar_LegalFixaSomenteRedacao_Aceita()
     {
-        // Critérios não vazios: com lista vazia os dois lados podem cair na mesma
-        // instância cacheada e o teste não distinguiria comparação por valor de
-        // comparação por referência.
-        Modalidade m = CotaFederal(criterios: ["RENDA_PER_CAPITA"]);
+        // A regra reenviada é outra instância com as mesmas condições: o teste distingue
+        // comparação por valor de comparação por referência.
+        Modalidade m = CotaFederal(ComOpcaoPelasCotas(optou: true, ("BAIXA_RENDA", true)));
 
         Result r = m.Atualizar(
             descricao: "Cota — baixa renda, preto/pardo/indígena", naturezaLegal: "COTA_RESERVADA",
             composicaoVagas: "DENTRO_DO_VR", composicaoOrigem: null, regraRemanejamento: "SEGUE_CASCATA",
             remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-            criteriosCumulativos: ["RENDA_PER_CAPITA"], acaoQuandoIndeferido: null,
+            regraDeAplicabilidade: ComOpcaoPelasCotas(optou: true, ("BAIXA_RENDA", true)), acaoQuandoIndeferido: null,
             baseLegal: "Lei 12.711/2012 (red. Lei 14.723/2023)");
 
         r.IsSuccess.Should().BeTrue();
@@ -521,7 +609,7 @@ public sealed class ModalidadeTests
             descricao: null, naturezaLegal: "ACAO_AFIRMATIVA", composicaoVagas: "SUPLEMENTAR_AO_TOTAL",
             composicaoOrigem: null, regraRemanejamento: "DESTINO_UNICO",
             remanejamentoDestino: "AC", remanejamentoPar: null, remanejamentoFallback: null,
-            criteriosCumulativos: null, acaoQuandoIndeferido: null, baseLegal: null);
+            regraDeAplicabilidade: AplicavelA("ACAO_AFIRMATIVA"), acaoQuandoIndeferido: null, baseLegal: null);
 
         r.IsSuccess.Should().BeTrue();
         m.NaturezaLegal.Should().Be(NaturezaLegal.AcaoAfirmativa);
@@ -536,7 +624,7 @@ public sealed class ModalidadeTests
             descricao: null, naturezaLegal: "XPTO", composicaoVagas: "DENTRO_DO_VR",
             composicaoOrigem: null, regraRemanejamento: "SEGUE_CASCATA",
             remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-            criteriosCumulativos: null, acaoQuandoIndeferido: null, baseLegal: null);
+            regraDeAplicabilidade: AplicavelA("XPTO"), acaoQuandoIndeferido: null, baseLegal: null);
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.NaturezaInvalida,
@@ -588,7 +676,7 @@ public sealed class ModalidadeTests
         Result<Modalidade.CamposResolvidos> r = Modalidade.ValidarCampos(
             descricao: null, naturezaLegalToken: "AMPLA", composicaoVagasToken: "RESIDUAL_DO_VO",
             composicaoOrigem: null, regraRemanejamentoToken: null, remanejamentoDestino: null,
-            remanejamentoPar: null, remanejamentoFallback: null, criteriosCumulativos: null,
+            remanejamentoPar: null, remanejamentoFallback: null, regraDeAplicabilidade: Incondicional(),
             acaoQuandoIndeferidoToken: null, baseLegal: null);
 
         r.IsSuccess.Should().BeTrue();
@@ -603,7 +691,7 @@ public sealed class ModalidadeTests
         Result r = Modalidade.ValidarCamposDoPayload(
             descricao: null, naturezaLegalToken: "AMPLA", composicaoVagasToken: "DENTRO_DO_VR",
             composicaoOrigem: null, regraRemanejamentoToken: "SEGUE_CASCATA", remanejamentoDestino: null,
-            remanejamentoPar: null, remanejamentoFallback: null, criteriosCumulativos: null,
+            remanejamentoPar: null, remanejamentoFallback: null, regraDeAplicabilidade: Incondicional(),
             acaoQuandoIndeferidoToken: null, baseLegal: null);
 
         r.IsSuccess.Should().BeTrue();

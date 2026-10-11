@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Mappings;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
-using Unifesspa.UniPlus.Regras.Enums;
 
 internal static class FatoCandidatoMapping
 {
@@ -32,9 +31,6 @@ internal static class FatoCandidatoMapping
                 .OrderBy(static v => v.Ordem)
                 .ThenBy(static v => v.Codigo, StringComparer.Ordinal)
                 .Select(static v => new FatoValorDominioDto(v.Codigo, v.Descricao, v.Ordem, v.Ativo, v.Orientacao))],
-            [.. fato.RegrasPadrao.Select(static r => new RegraPadraoDto(
-                r.Contribui,
-                [.. r.Quando.Clausulas.Select(static c => (IReadOnlyList<CondicaoRegraPadraoDto>)
-                    [.. c.Condicoes.Select(static d => new CondicaoRegraPadraoDto(d.Fato, d.Operador.ToCodigo(), d.Valor))])]))]);
+            [.. fato.RegrasPadrao.Select(static r => new RegraPadraoDto(r.Contribui, r.Quando.ToDto()))]);
     }
 }

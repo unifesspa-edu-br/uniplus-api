@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Testes.Compartilhado;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Cadastros de Configuração como os testes de outro assunto precisam vê-los: contendo os
@@ -141,7 +142,7 @@ internal static class CadastrosVivos
     }
 
     public static ModalidadeView Modalidade(string codigo) =>
-        new(IdentidadeDe(codigo), codigo, null, "COTA_RESERVADA", "DENTRO_DO_VR", null, null, null, null, null, [], null, null);
+        new(IdentidadeDe(codigo), codigo, null, "COTA_RESERVADA", "DENTRO_DO_VR", null, null, null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, null);
 
     public static TipoDocumentoView TipoDocumento(string codigo) =>
         new(IdentidadeDe(codigo), codigo, "Documento", "OUTROS");

@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// A leitura do processo devolve, para cada atributo de domínio fechado, o mesmo token que
@@ -111,7 +112,7 @@ public sealed class VocabularioDaLeituraDoProcessoTests
         // de remanejamento — a modalidade que não remaneja é representada por ausência.
         modalidades.ObterPorIdAsync(modalidadeId, Arg.Any<CancellationToken>()).Returns(new ModalidadeView(
             modalidadeId, "AC", "Ampla concorrência", "AMPLA", "RESIDUAL_DO_VO",
-            null, null, null, null, null, [], null, "Lei 12.711/2012"));
+            null, null, null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, "Lei 12.711/2012"));
 
         Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> simulada = await SimularDistribuicaoVagasQueryHandler.Handle(
             new SimularDistribuicaoVagasQuery(

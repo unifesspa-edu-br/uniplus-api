@@ -1,12 +1,12 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 
 using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Configuracao.Application.Commands.Predicados;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
@@ -80,35 +80,7 @@ public static class DefinirRegrasPadraoCommandHandler
             return Result<RegraDerivacao>.Failure(RegraNula());
         }
 
-        List<(int Clausula, CondicaoDnf Condicao)> linhas = [];
-        IReadOnlyList<IReadOnlyList<CondicaoRegraPadraoInput>> quando = entrada.Quando ?? [];
-        for (int clausula = 0; clausula < quando.Count; clausula++)
-        {
-            // Cláusula vazia é recusada pelo predicado; a regra incondicional é o quando vazio.
-            if (quando[clausula] is not { Count: > 0 } condicoes)
-            {
-                return Result<RegraDerivacao>.Failure(new DomainError(
-                    "ClausulaDnf.ClausulaVazia", "Uma cláusula deve ter ao menos uma condição."));
-            }
-
-            foreach (CondicaoRegraPadraoInput? condicao in condicoes)
-            {
-                if (condicao is null)
-                {
-                    return Result<RegraDerivacao>.Failure(RegraNula());
-                }
-
-                Result<CondicaoDnf> criada = CondicaoDnf.Criar(condicao.Fato, OperadorCodigo.FromCodigo(condicao.Operador), condicao.Valor);
-                if (criada.IsFailure)
-                {
-                    return Result<RegraDerivacao>.Failure(criada.Error!);
-                }
-
-                linhas.Add((clausula, criada.Value!));
-            }
-        }
-
-        Result<PredicadoDnf> predicado = PredicadoDnf.CriarDeCondicoesAgrupadas(linhas);
+        Result<PredicadoDnf> predicado = MontagemDoPredicado.Montar(entrada.Quando, RegraNula());
         if (predicado.IsFailure)
         {
             return Result<RegraDerivacao>.Failure(predicado.Error!);

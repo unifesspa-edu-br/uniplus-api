@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
@@ -173,7 +174,7 @@ public sealed class FatoCandidatoPersistenceTests
 
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
 
-        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(51);
+        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(53);
         fatos.Select(f => f.Codigo).Should().OnlyHaveUniqueItems();
 
         foreach (FatoCandidatoSeedItem item in FatoCandidatoSeed.Itens)
@@ -204,8 +205,8 @@ public sealed class FatoCandidatoPersistenceTests
 
         fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoProtecaoDado.Sensivel)
             .Select(f => f.Codigo).Order(StringComparer.Ordinal).Should().Equal(
-                "CONCORRER_PCD", "CONCORRER_PPI", "CONCORRER_Q", "CONDICAO_ATENDIMENTO", "COR_RACA", "INDIGENA", "MODALIDADE",
-                "MODALIDADE_CONVOCACAO", "PCD", "QUILOMBOLA", "RECURSO_ACESSIBILIDADE", "TIPO_DEFICIENCIA");
+                "CONCORRER_PCD", "CONCORRER_PPI", "CONCORRER_Q", "CONCORRER_VAGA_POR_ACRESCIMO", "CONDICAO_ATENDIMENTO", "COR_RACA",
+                "INDIGENA", "MODALIDADE", "MODALIDADE_CONVOCACAO", "PCD", "QUILOMBOLA", "RECURSO_ACESSIBILIDADE", "TIPO_DEFICIENCIA");
         fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoProtecaoDado.Publico)
             .Select(f => f.Codigo).Should().Equal("NOME_SOCIAL");
         fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoProtecaoDado.Identificador)
@@ -347,6 +348,24 @@ public sealed class FatoCandidatoPersistenceTests
             ClassificacaoProtecaoDado.Pessoal, "Teste", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: false).Value!;
     }
 
+    [Fact(DisplayName = "Seed: as regras padrão dos derivados semeados passam pela conferência do catálogo")]
+    public async Task Seed_RegrasPadrao_PassamPelaConferenciaDoCatalogo()
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Include(static f => f.ValoresDominioDeclarados).ToListAsync();
+        List<PrecedenciaFase> precedencias = await ctx.PrecedenciasFase.AsNoTracking().ToListAsync();
+        CatalogoDeFatos catalogo = new(fatos, precedencias);
+
+        foreach (FatoCandidato derivado in fatos.Where(static f => f.RegrasPadrao.Count > 0))
+        {
+            Result conferencia = ValidadorRegrasPadrao.Validar(derivado, derivado.RegrasPadrao, catalogo);
+
+            conferencia.IsSuccess.Should().BeTrue(
+                $"a regra padrão semeada de '{derivado.Codigo}' tem de valer no catálogo — "
+                + string.Join("; ", conferencia.Errors.Select(static e => e.Error.Message)));
+        }
+    }
+
     [Fact(DisplayName = "Origem: os calculados de atributo, a modalidade e a modalidade da convocação são Derivado; os demais são Declarado (ADR-0116)")]
     public async Task Seed_OrigemReclassificadaConformeADR0116()
     {
@@ -363,7 +382,8 @@ public sealed class FatoCandidatoPersistenceTests
         // dos fatos declarados contra as regras congeladas do processo (ADR-0116, emenda 2026-07-22).
         // O egresso de escola pública deriva das duas perguntas da origem escolar (UNI-REQ-0148).
         derivados.Should().Equal(
-            "EGRESSO_ESCOLA_PUBLICA", "FAIXA_ETARIA", "MODALIDADE", "MODALIDADE_CONVOCACAO", "MUNICIPIO_RESIDENCIA", "RENDA_PER_CAPITA", "UF_RESIDENCIA");
+            "EGRESSO_ESCOLA_PUBLICA", "FAIXA_ETARIA", "MODALIDADE", "MODALIDADE_CONVOCACAO", "MUNICIPIO_RESIDENCIA",
+            "OPTOU_PELAS_COTAS_DA_LEI", "RENDA_PER_CAPITA", "UF_RESIDENCIA");
         fatos.Where(f => f.Origem != OrigemFato.Derivado)
             .Should().OnlyContain(f => f.Origem == OrigemFato.Declarado);
     }
@@ -488,7 +508,7 @@ public sealed class FatoCandidatoPersistenceTests
         IReadOnlyList<FatoCandidatoView> views =
             [.. (await reader.ListarAsync()).Where(static v => FatoCandidatoSeed.Itens.Any(i => i.Codigo == v.Codigo))];
 
-        views.Should().HaveCount(51);
+        views.Should().HaveCount(53);
         views.Select(v => v.Codigo).Should().BeInAscendingOrder(StringComparer.Ordinal);
 
         FatoCandidatoView corRaca = views.Single(v => v.Codigo == "COR_RACA");
@@ -639,6 +659,8 @@ public sealed class FatoCandidatoPersistenceTests
             ("PASSAPORTE_NUMERO", "051", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:PASSAPORTE_NUMERO", "INSCRICAO"),
             ("RNM_NUMERO", "052", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:RNM_NUMERO", "INSCRICAO"),
             ("RECURSO_ACESSIBILIDADE", "053", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Multivalorado, "CAMPO_FORMULARIO:RECURSO_ACESSIBILIDADE", "INSCRICAO"),
+            ("OPTOU_PELAS_COTAS_DA_LEI", "054", DominioFato.Booleano, OrigemFato.Derivado, CardinalidadeFato.Escalar, "REGRA_DERIVACAO:OPTOU_PELAS_COTAS_DA_LEI", "INSCRICAO"),
+            ("CONCORRER_VAGA_POR_ACRESCIMO", "055", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:CONCORRER_VAGA_POR_ACRESCIMO", "INSCRICAO"),
         ];
 
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);

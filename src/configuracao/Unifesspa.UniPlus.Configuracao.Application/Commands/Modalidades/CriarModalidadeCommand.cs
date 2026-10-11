@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.Modalidades;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Configuracao.Application.Commands.Predicados;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -9,6 +10,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// UPPER_SNAKE para os enums (<c>NaturezaLegal</c>, <c>ComposicaoVagas</c>,
 /// <c>RegraRemanejamento</c>, <c>AcaoQuandoIndeferido</c>). Quando ausentes,
 /// <c>NaturezaLegal</c> assume AMPLA e <c>ComposicaoVagas</c> assume RESIDUAL_DO_VO.
+/// A <c>RegraDeAplicabilidade</c> é o OU de cláusulas, cada uma o E de condições, que diz quem
+/// concorre à modalidade (ADR-0144); a lista vazia é a regra incondicional, e a ausente é recusada.
 /// O ator de auditoria (<c>created_by</c>) é carimbado server-side via
 /// <c>IUserContext</c>, não no payload.
 /// </summary>
@@ -30,6 +33,6 @@ public sealed record CriarModalidadeCommand(
     string? RemanejamentoDestino = null,
     string? RemanejamentoPar = null,
     string? RemanejamentoFallback = null,
-    IReadOnlyList<string>? CriteriosCumulativos = null,
+    IReadOnlyList<IReadOnlyList<CondicaoDoPredicadoInput>>? RegraDeAplicabilidade = null,
     string? AcaoQuandoIndeferido = null,
     string? BaseLegal = null) : ICommand<Result<Guid>>;

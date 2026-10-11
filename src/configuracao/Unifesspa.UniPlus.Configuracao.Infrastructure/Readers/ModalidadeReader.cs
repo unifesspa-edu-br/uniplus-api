@@ -95,7 +95,7 @@ internal sealed class ModalidadeReader : IModalidadeReader
             m.RemanejamentoArgs.Destino,
             m.RemanejamentoArgs.Par,
             m.RemanejamentoArgs.Fallback,
-            m.CriteriosCumulativos,
+            m.RegraDeAplicabilidade,
             m.AcaoQuandoIndeferido is { } acao ? AcoesQuandoIndeferido.ParaTokenCanonico(acao) : null,
             m.BaseLegal);
 }

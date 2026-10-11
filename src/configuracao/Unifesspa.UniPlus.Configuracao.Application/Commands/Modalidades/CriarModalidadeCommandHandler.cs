@@ -4,12 +4,15 @@ using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Handler do <see cref="CriarModalidadeCommand"/> (convention-based Wolverine).
 /// Orquestra, nessa ordem: construção do agregado (validação de campos e coerência,
-/// 422, sem I/O — validação sempre vence I/O), reserva dos códigos do catálogo legal
+/// 422) com a conferência da regra de aplicabilidade contra o catálogo de fatos, as
+/// recusas das duas acumuladas (ADR-0125); reserva dos códigos do catálogo legal
 /// fixo (409, sem I/O), unicidade do código entre vivos (409, DB), integridade
 /// referencial dos códigos citados em composição/remanejamento (422, DB),
 /// persistência e commit. Protege a corrida check-then-act traduzindo a violação do
@@ -20,12 +23,19 @@ public static class CriarModalidadeCommandHandler
     public static async Task<Result<Guid>> Handle(
         CriarModalidadeCommand command,
         IModalidadeRepository repository,
+        IFatoCandidatoRepository fatoRepository,
+        IPrecedenciaFaseRepository precedenciaRepository,
         IConfiguracaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(repository);
+        ArgumentNullException.ThrowIfNull(fatoRepository);
+        ArgumentNullException.ThrowIfNull(precedenciaRepository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
+
+        Result<PredicadoDnf?> regra = RegraDeAplicabilidadeDaEntrada.Montar(command.RegraDeAplicabilidade);
+        PredicadoDnf? regraMontada = regra.IsSuccess ? regra.Value : null;
 
         Result<Modalidade> modalidadeResult = Modalidade.Criar(
             command.Codigo,
@@ -37,13 +47,22 @@ public static class CriarModalidadeCommandHandler
             command.RemanejamentoDestino,
             command.RemanejamentoPar,
             command.RemanejamentoFallback,
-            command.CriteriosCumulativos,
+            regraMontada,
             command.AcaoQuandoIndeferido,
             command.BaseLegal);
 
-        if (modalidadeResult.IsFailure)
+        List<FieldError> erros = RegraDeAplicabilidadeDaEntrada.ComAsRecusasDaMontagem(
+            regra, modalidadeResult.IsFailure ? modalidadeResult.Errors : []);
+        if (regraMontada is { } regraDeAplicabilidade)
         {
-            return Result<Guid>.ValidationFailure(modalidadeResult.Errors);
+            CatalogoDeFatos catalogo = await RegraDeAplicabilidadeDaEntrada
+                .CarregarCatalogoAsync(fatoRepository, precedenciaRepository, cancellationToken).ConfigureAwait(false);
+            erros.AddRange(ConferenciaDaRegraDeAplicabilidade.Conferir(regraDeAplicabilidade, vigente: null, catalogo));
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result<Guid>.ValidationFailure(erros);
         }
 
         Modalidade modalidade = modalidadeResult.Value!;

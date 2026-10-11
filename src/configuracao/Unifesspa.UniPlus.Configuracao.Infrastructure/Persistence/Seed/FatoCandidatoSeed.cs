@@ -31,8 +31,8 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </para>
 /// <para>
 /// <see cref="OrigemFato"/> (ADR-0116): <c>FAIXA_ETARIA</c> e <c>RENDA_PER_CAPITA</c>
-/// (computados de atributo do candidato), <c>MODALIDADE</c> e <c>EGRESSO_ESCOLA_PUBLICA</c>
-/// (derivados das regras congeladas do processo) e <c>MODALIDADE_CONVOCACAO</c> (resultado da classificação) são
+/// (computados de atributo do candidato), <c>MODALIDADE</c>, <c>EGRESSO_ESCOLA_PUBLICA</c> e
+/// <c>OPTOU_PELAS_COTAS_DA_LEI</c> (derivados das regras congeladas do processo) e <c>MODALIDADE_CONVOCACAO</c> (resultado da classificação) são
 /// <see cref="OrigemFato.Derivado"/>; todos os demais são
 /// <see cref="OrigemFato.Declarado"/> (resposta/seleção direta do candidato), inclusive
 /// os cinco opt-ins <c>CONCORRER_*</c> — que são seleção direta, ainda que expressem
@@ -139,9 +139,9 @@ public static class FatoCandidatoSeed
         // de modalidades resulta da avaliação deles contra as regras congeladas do processo. O
         // binding referencia a regra de derivação — o catálogo diz o mecanismo, a config do edital
         // diz o conteúdo (ADR-0116, emenda de 2026-07-22).
-        new(SeedId(8), "MODALIDADE", "Modalidade de concorrência", null,
+        new(SeedId(8), ModalidadeDoCandidato.Fato, "Modalidade de concorrência", null,
             DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Multivalorado, FonteValoresFato.Modalidade,
-            PontoResolucaoInscricao, "REGRA_DERIVACAO:MODALIDADE",
+            PontoResolucaoInscricao, $"REGRA_DERIVACAO:{ModalidadeDoCandidato.Fato}",
             ClassificacaoProtecaoDado.Sensivel, FinalidadeReservaDeVagas),
 
         new(SeedId(9), "CONDICAO_ATENDIMENTO", "Condição de atendimento especializado", null,
@@ -314,6 +314,22 @@ public static class FatoCandidatoSeed
         new(SeedId(50), "INDIGENA", "Indígena", null,
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:INDIGENA",
+            ClassificacaoProtecaoDado.Sensivel, FinalidadeReservaDeVagas),
+
+        // A opção pelas cotas da Lei nº 12.711/2012, que cada cota da lei exige e cada ação afirmativa
+        // recusa (UNI-REQ-0076, UNI-REQ-0142). O processo copia a regra padrão recortada pela oferta:
+        // sem cota da lei ofertada, ninguém optou por elas.
+        new(SeedId(54), OpcaoPelasCotasDaLei.Fato, "Optou pelas cotas da Lei nº 12.711/2012",
+            "Se o candidato é egresso de escola pública e optou por concorrer às vagas de escola pública.",
+            DominioFato.Booleano, OrigemFato.Derivado, CardinalidadeFato.Escalar, null,
+            PontoResolucaoInscricao, $"REGRA_DERIVACAO:{OpcaoPelasCotasDaLei.Fato}",
+            ClassificacaoProtecaoDado.Pessoal, FinalidadeReservaDeVagas, RegrasPadrao: OpcaoPelasCotasDaLei.RegrasDaOpcao),
+
+        // A opção pelas vagas por acréscimo do PSIQ, uma só para as duas: a autodeclaração indígena
+        // ou quilombola decide qual delas se aplica (UNI-REQ-0096).
+        new(SeedId(55), "CONCORRER_VAGA_POR_ACRESCIMO", "Deseja concorrer às vagas por acréscimo para indígenas e quilombolas", null,
+            DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
+            PontoResolucaoInscricao, "CAMPO_FORMULARIO:CONCORRER_VAGA_POR_ACRESCIMO",
             ClassificacaoProtecaoDado.Sensivel, FinalidadeReservaDeVagas),
 
         // O recurso de que o candidato precisa nas etapas (sala para amamentação, ledor, intérprete de

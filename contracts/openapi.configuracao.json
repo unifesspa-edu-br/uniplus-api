@@ -13459,13 +13459,16 @@
               "string"
             ]
           },
-          "criteriosCumulativos": {
+          "regraDeAplicabilidade": {
             "type": [
               "null",
               "array"
             ],
             "items": {
-              "type": "string"
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoDoPredicadoInput"
+              }
             }
           },
           "acaoQuandoIndeferido": {
@@ -14479,45 +14482,45 @@
           }
         }
       },
+      "CondicaoDoPredicadoDto": {
+        "required": [
+          "fato",
+          "operador",
+          "valor"
+        ],
+        "type": "object",
+        "properties": {
+          "fato": {
+            "type": "string"
+          },
+          "operador": {
+            "type": "string"
+          },
+          "valor": {
+            "$ref": "#/components/schemas/JsonElement"
+          }
+        }
+      },
+      "CondicaoDoPredicadoInput": {
+        "required": [
+          "fato",
+          "operador",
+          "valor"
+        ],
+        "type": "object",
+        "properties": {
+          "fato": {
+            "type": "string"
+          },
+          "operador": {
+            "type": "string"
+          },
+          "valor": {
+            "$ref": "#/components/schemas/JsonElement"
+          }
+        }
+      },
       "CondicaoPrecondicaoInput": {
-        "required": [
-          "fato",
-          "operador",
-          "valor"
-        ],
-        "type": "object",
-        "properties": {
-          "fato": {
-            "type": "string"
-          },
-          "operador": {
-            "type": "string"
-          },
-          "valor": {
-            "$ref": "#/components/schemas/JsonElement"
-          }
-        }
-      },
-      "CondicaoRegraPadraoDto": {
-        "required": [
-          "fato",
-          "operador",
-          "valor"
-        ],
-        "type": "object",
-        "properties": {
-          "fato": {
-            "type": "string"
-          },
-          "operador": {
-            "type": "string"
-          },
-          "valor": {
-            "$ref": "#/components/schemas/JsonElement"
-          }
-        }
-      },
-      "CondicaoRegraPadraoInput": {
         "required": [
           "fato",
           "operador",
@@ -15183,13 +15186,16 @@
               "string"
             ]
           },
-          "criteriosCumulativos": {
+          "regraDeAplicabilidade": {
             "type": [
               "null",
               "array"
             ],
             "items": {
-              "type": "string"
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoDoPredicadoInput"
+              }
             }
           },
           "acaoQuandoIndeferido": {
@@ -17421,7 +17427,7 @@
           "remanejamentoDestino",
           "remanejamentoPar",
           "remanejamentoFallback",
-          "criteriosCumulativos",
+          "regraDeAplicabilidade",
           "acaoQuandoIndeferido",
           "baseLegal",
           "criadoEm"
@@ -17477,10 +17483,13 @@
               "string"
             ]
           },
-          "criteriosCumulativos": {
+          "regraDeAplicabilidade": {
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoDoPredicadoDto"
+              }
             }
           },
           "acaoQuandoIndeferido": {
@@ -18249,7 +18258,7 @@
             "items": {
               "type": "array",
               "items": {
-                "$ref": "#/components/schemas/CondicaoRegraPadraoDto"
+                "$ref": "#/components/schemas/CondicaoDoPredicadoDto"
               }
             }
           }
@@ -18276,7 +18285,7 @@
             "items": {
               "type": "array",
               "items": {
-                "$ref": "#/components/schemas/CondicaoRegraPadraoInput"
+                "$ref": "#/components/schemas/CondicaoDoPredicadoInput"
               }
             }
           }

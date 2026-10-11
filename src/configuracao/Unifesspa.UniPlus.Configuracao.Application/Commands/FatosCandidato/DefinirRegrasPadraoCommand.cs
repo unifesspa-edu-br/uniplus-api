@@ -1,16 +1,10 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 
-using System.Text.Json;
 using System.Text.Json.Serialization;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Configuracao.Application.Commands.Predicados;
 using Unifesspa.UniPlus.Kernel.Results;
-
-/// <summary>
-/// Uma condição do predicado de uma regra: fato, operador em token canônico e valor JSON. O valor é
-/// obrigatório no corpo: omitido, chegaria como elemento indefinido em vez de ser recusado.
-/// </summary>
-public sealed record CondicaoRegraPadraoInput(string Fato, string Operador, [property: JsonRequired] JsonElement Valor);
 
 /// <summary>
 /// Uma regra padrão: quando o predicado é verdadeiro, contribui <see cref="Contribui"/> ao
@@ -20,7 +14,7 @@ public sealed record CondicaoRegraPadraoInput(string Fato, string Operador, [pro
 /// </summary>
 public sealed record RegraPadraoInput(
     string? Contribui,
-    IReadOnlyList<IReadOnlyList<CondicaoRegraPadraoInput>>? Quando);
+    IReadOnlyList<IReadOnlyList<CondicaoDoPredicadoInput>>? Quando);
 
 /// <summary>Substitui as regras padrão de um derivado por regra do administrador (ADR-0136).</summary>
 public sealed record DefinirRegrasPadraoCommand(Guid Id, IReadOnlyList<RegraPadraoInput> Regras) : ICommand<Result>;
