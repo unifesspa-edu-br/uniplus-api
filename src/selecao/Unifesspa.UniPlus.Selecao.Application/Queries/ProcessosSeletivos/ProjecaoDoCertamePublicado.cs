@@ -36,7 +36,7 @@ internal static class ProjecaoDoCertamePublicado
     /// envelope congelado, que continua o mesmo quando só a projeção muda, e um cache endereçado
     /// apenas por ele serviria a resposta antiga depois do deploy.
     /// </summary>
-    public const string Versao = "5";
+    public const string Versao = "6";
 
     /// <summary>
     /// Forma do documento divulgado — a MESMA do wire, e a usada para lê-lo de volta.
@@ -194,7 +194,10 @@ internal static class ProjecaoDoCertamePublicado
             || !TentarTexto(localidade, "codigoIbge", out string codigoIbge)
             || !TentarTexto(localidade, "nome", out string localidadeNome)
             || !TentarTexto(localidade, "uf", out string uf)
-            || !TentarTexto(localidade, "fusoHorario", out string fusoHorario))
+            || !TentarTexto(localidade, "fusoHorario", out string fusoHorario)
+            // O domínio só sabe dizer o nome da zona institucional, a única que a publicação
+            // congela; uma zona diferente sairia com o nome errado, e isso é meia projeção.
+            || fusoHorario != FusoHorarioDto.Institucional.Id)
         {
             return Recusar("localidade");
         }
@@ -269,7 +272,7 @@ internal static class ProjecaoDoCertamePublicado
             hashConfiguracao,
             tipoProcesso,
             new PeriodoInscricaoCertameDto(numero, inicio, fim),
-            new LocalidadeCertameDto(codigoIbge, localidadeNome, uf, fusoHorario),
+            new LocalidadeCertameDto(codigoIbge, localidadeNome, uf, FusoHorarioDto.Institucional),
             unidade,
             new DocumentoEditalCertameDto(documentoEditalId, hashSha256),
             ofertas,

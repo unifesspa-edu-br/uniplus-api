@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
@@ -168,6 +169,33 @@ public sealed class FronteiraDeBlocosDoCertameTests
         oferta.Turnos.Should().Equal("MATUTINO", "VESPERTINO");
     }
 
+    [Fact(DisplayName = "A projeção expõe o fuso da localidade com o identificador e o nome do domínio")]
+    public void Projetar_DeveExporOFusoComONome()
+    {
+        JsonObject envelope = (JsonObject)JsonNode.Parse(
+            EnvelopeCanonicoGoldenTests.CanonicalizarReferencia().Bytes)!;
+
+        Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
+
+        JsonNode json = JsonSerializer.SerializeToNode(resultado.Value!, ProjecaoDoCertamePublicado.OpcoesDoDocumento)!;
+        json["localidade"]!["fusoHorario"]!["id"]!.GetValue<string>().Should().Be(FusoInstitucional.ZoneId);
+        json["localidade"]!["fusoHorario"]!["nome"]!.GetValue<string>().Should().Be(FusoInstitucional.Nome);
+    }
+
+    [Fact(DisplayName = "Zona congelada diferente da institucional recusa a projeção, em vez de ganhar o nome errado")]
+    public void Projetar_QuandoAZonaCongeladaNaoEAInstitucional_DeveRecusar()
+    {
+        JsonObject envelope = (JsonObject)JsonNode.Parse(
+            EnvelopeCanonicoGoldenTests.CanonicalizarReferencia().Bytes)!;
+        envelope["localidade"]!["fusoHorario"] = "America/Sao_Paulo";
+
+        Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
+
+        resultado.IsFailure.Should().BeTrue();
+    }
+
     [Theory(DisplayName = "Documento com bloco presente mas incompleto é recusado, não servido com nulo")]
     [InlineData("tipoProcesso", "{}")]
     [InlineData("documentoEdital", """{"documentoEditalId":"01a0b13f-b9ed-70f4-9ff3-cfdc7503fc9b"}""")]
@@ -190,7 +218,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
 
     [Theory(DisplayName = "Membro obrigatório presente e NULO é recusado, como o ausente")]
     [InlineData("tipoProcesso", """{"codigo":null,"nome":"SISU"}""")]
-    [InlineData("localidade", """{"codigoIbge":"1504208","nome":null,"uf":"PA","fusoHorario":"America/Belem"}""")]
+    [InlineData("localidade", """{"codigoIbge":"1504208","nome":null,"uf":"PA","fusoHorario":{"id":"America/Belem","nome":"Belém (PA)"}}""")]
     public void TentarLerProjecao_QuandoMembroObrigatorioENulo_DeveRecusar(string bloco, string conteudoComNulo)
     {
         // A exigência de parâmetro de construtor separa ausência de nulo explícito: o argumento
@@ -323,8 +351,8 @@ public sealed class FronteiraDeBlocosDoCertameTests
     }
 
     [Theory(DisplayName = "Documento de outra versão de projeção é recusado, mesmo íntegro")]
-    [InlineData("6")]
-    [InlineData("4")]
+    [InlineData("7")]
+    [InlineData("5")]
     public void TentarLerProjecao_QuandoAVersaoNaoEADesteBinario_DeveRecusar(string outraVersao)
     {
         // Num deploy em fases, um processo novo materializa a versão seguinte e um processo antigo
