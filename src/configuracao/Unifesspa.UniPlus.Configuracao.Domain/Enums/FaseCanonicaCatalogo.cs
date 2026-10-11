@@ -16,6 +16,9 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 /// </remarks>
 public static class FaseCanonicaCatalogo
 {
+    /// <summary>Código canônico da fase de inscrição, em que o candidato responde ao formulário.</summary>
+    public const string CodigoInscricao = "INSCRICAO";
+
     /// <summary>Código canônico da fase de avaliação — a única que agrupa Etapas pontuadas.</summary>
     public const string CodigoAvaliacao = "AVALIACAO";
 
@@ -35,7 +38,7 @@ public static class FaseCanonicaCatalogo
     /// </summary>
     public static IReadOnlyList<FaseCanonicaDescrito> Descritos { get; } =
     [
-        new("INSCRICAO", "Inscrição"),
+        new(CodigoInscricao, "Inscrição"),
         new(CodigoSolicitacaoIsencao, "Solicitação de isenção"),
         new("HOMOLOGACAO", "Homologação das inscrições"),
         new("ENSALAMENTO", "Ensalamento"),

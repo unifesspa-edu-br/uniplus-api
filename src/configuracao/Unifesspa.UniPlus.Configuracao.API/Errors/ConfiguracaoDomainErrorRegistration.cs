@@ -1058,6 +1058,66 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.modalidade.base_legal_tamanho",
                 "Tamanho da base legal da modalidade inválido")),
 
+        new(ModalidadeErrorCodes.RegraDeAplicabilidadeObrigatoria,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.regra_de_aplicabilidade_obrigatoria",
+                "A modalidade precisa da regra que diz quem concorre a ela")),
+
+        new(ModalidadeErrorCodes.RegraDeAplicabilidadeMalformada,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.regra_de_aplicabilidade_malformada",
+                "A regra de aplicabilidade traz condição nula")),
+
+        new(ModalidadeErrorCodes.AmplaConcorrenciaComCondicao,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.ampla_concorrencia_com_condicao",
+                "A ampla concorrência vale para todo candidato e não admite condição")),
+
+        new(ModalidadeErrorCodes.CotaSemOpcaoPelasCotasDaLei,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.cota_sem_opcao_pelas_cotas_da_lei",
+                "A cota da lei exige a opção pelas cotas da lei em toda cláusula")),
+
+        new(ModalidadeErrorCodes.AcaoAfirmativaComOpcaoPelasCotasDaLei,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.acao_afirmativa_com_opcao_pelas_cotas_da_lei",
+                "A ação afirmativa exige não ter optado pelas cotas da lei em toda cláusula")),
+
+        new(ModalidadeErrorCodes.RegraCitaFatoNaoCitavel,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.regra_cita_fato_nao_citavel",
+                "A regra da modalidade cita fato que não pode entrar em regra")),
+
+        new(ModalidadeErrorCodes.RegraCitaFatoDesativado,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.regra_cita_fato_desativado",
+                "A regra da modalidade cita fato desativado")),
+
+        new(ModalidadeErrorCodes.RegraCitaValorDesativado,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.regra_cita_valor_desativado",
+                "A regra da modalidade cita valor desativado")),
+
+        new(ModalidadeErrorCodes.RegraCitaFatoPosteriorAInscricao,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.regra_cita_fato_posterior_a_inscricao",
+                "A regra da modalidade cita fato que só é conhecido depois da inscrição")),
+
+        new(ModalidadeErrorCodes.RegraDependeDaModalidade,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.regra_depende_da_modalidade",
+                "A regra da modalidade depende da própria modalidade")),
+
         new(ModalidadeErrorCodes.NaoEncontrada,
             new DomainErrorMapping(
                 StatusCodes.Status404NotFound,

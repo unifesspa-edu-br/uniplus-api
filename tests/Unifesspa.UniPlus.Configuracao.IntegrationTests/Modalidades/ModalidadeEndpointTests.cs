@@ -111,6 +111,7 @@ public sealed class ModalidadeEndpointTests
             naturezaLegal = "COTA_RESERVADA",
             composicaoVagas = "DENTRO_DO_VR",
             regraRemanejamento = "SEGUE_CASCATA",
+            regraDeAplicabilidade = OptouPelasCotas(),
             baseLegal = "Lei 12.711/2012",
         };
 
@@ -131,6 +132,8 @@ public sealed class ModalidadeEndpointTests
         root.GetProperty("naturezaLegal").GetString().Should().Be("COTA_RESERVADA");
         root.GetProperty("composicaoVagas").GetString().Should().Be("DENTRO_DO_VR");
         root.GetProperty("regraRemanejamento").GetString().Should().Be("SEGUE_CASCATA");
+        root.GetProperty("regraDeAplicabilidade").GetRawText().Should().Be(
+            """[[{"fato":"OPTOU_PELAS_COTAS_DA_LEI","operador":"IGUAL","valor":true}]]""");
         root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
     }
 
@@ -159,7 +162,7 @@ public sealed class ModalidadeEndpointTests
     [Fact(DisplayName = "POST sem o campo codigo no JSON retorna 422 (CodigoObrigatorio), não 400 de model binding")]
     public async Task Criar_CodigoAusenteNoJson_Retorna422()
     {
-        var body = new { naturezaLegal = "AMPLA" };
+        var body = new { naturezaLegal = "AMPLA", regraDeAplicabilidade = Incondicional };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);
@@ -174,20 +177,20 @@ public sealed class ModalidadeEndpointTests
     public async Task Criar_CodigoDuplicado_Retorna409()
     {
         string codigo = CodigoUnico();
-        var body = new { codigo, naturezaLegal = "AMPLA" };
+        var body = new { codigo, naturezaLegal = "AMPLA", regraDeAplicabilidade = Incondicional };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage primeiro = await EnviarPostAdmin(client, body);
         primeiro.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        HttpResponseMessage segundo = await EnviarPostAdmin(client, new { codigo, naturezaLegal = "AMPLA" });
+        HttpResponseMessage segundo = await EnviarPostAdmin(client, body);
         segundo.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
     [Fact(DisplayName = "POST com código do catálogo legal fixo retorna 409 com o código de erro da reserva")]
     public async Task Criar_CodigoLegalFixo_Retorna409Reservado()
     {
-        var body = new { codigo = "LB_PPI", naturezaLegal = "AMPLA" };
+        var body = new { codigo = "LB_PPI", naturezaLegal = "AMPLA", regraDeAplicabilidade = Incondicional };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);
@@ -232,6 +235,7 @@ public sealed class ModalidadeEndpointTests
             id,
             naturezaLegal = "AMPLA",
             composicaoVagas = "RESIDUAL_DO_VO",
+            regraDeAplicabilidade = Incondicional,
         });
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
@@ -254,6 +258,7 @@ public sealed class ModalidadeEndpointTests
             naturezaLegal = "COTA_RESERVADA",
             composicaoVagas = "DENTRO_DO_VR",
             regraRemanejamento = "SEGUE_CASCATA",
+            regraDeAplicabilidade = OptouPelasCotas(),
             baseLegal = BaseLegal,
         });
 
@@ -270,6 +275,45 @@ public sealed class ModalidadeEndpointTests
         root.GetProperty("composicaoVagas").GetString().Should().Be("DENTRO_DO_VR");
         root.GetProperty("regraRemanejamento").GetString().Should().Be("SEGUE_CASCATA");
     }
+
+    [Fact(DisplayName = "POST sem regra de aplicabilidade retorna 422 com o código da regra obrigatória")]
+    public async Task Criar_SemRegraDeAplicabilidade_Retorna422()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, new { codigo = CodigoUnico(), naturezaLegal = "AMPLA" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await LerCodigoDeErro(response)).Should().Be("uniplus.configuracao.modalidade.regra_de_aplicabilidade_obrigatoria");
+    }
+
+    [Fact(DisplayName = "POST com regra que cita fato de texto retorna 422 com o código do fato não citável")]
+    public async Task Criar_RegraCitaTexto_Retorna422()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, new
+        {
+            codigo = CodigoUnico(),
+            naturezaLegal = "COTA_RESERVADA",
+            composicaoVagas = "DENTRO_DO_VR",
+            regraRemanejamento = "SEGUE_CASCATA",
+            regraDeAplicabilidade = new[]
+            {
+                new object[]
+                {
+                    new { fato = "OPTOU_PELAS_COTAS_DA_LEI", operador = "IGUAL", valor = true },
+                    new { fato = "NOME", operador = "IGUAL", valor = "MARIA" },
+                },
+            },
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await LerCodigoDeErro(response)).Should().Be("uniplus.configuracao.modalidade.regra_cita_fato_nao_citavel");
+    }
+
+    private static readonly object[] Incondicional = [];
+
+    private static object[] OptouPelasCotas() =>
+        [new object[] { new { fato = "OPTOU_PELAS_COTAS_DA_LEI", operador = "IGUAL", valor = true } }];
 
     private static Guid IdSemeado(string codigo) =>
         ModalidadeSeed.Itens.Single(i => i.Codigo == codigo).Id;

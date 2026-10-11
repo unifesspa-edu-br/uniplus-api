@@ -3035,13 +3035,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(255)")
                         .HasColumnName("created_by");
 
-                    b.Property<string>("CriteriosCumulativos")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("criterios_cumulativos")
-                        .HasDefaultValueSql("'[]'::jsonb");
-
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at");
@@ -3064,6 +3057,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("natureza_legal");
+
+                    b.Property<string>("RegraDeAplicabilidade")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("regra_de_aplicabilidade");
 
                     b.Property<string>("RegraRemanejamento")
                         .HasMaxLength(30)
@@ -3117,10 +3115,10 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             Codigo = "AC",
                             ComposicaoVagas = "RESIDUAL_DO_VO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            CriteriosCumulativos = "[]",
                             Descricao = "Ampla concorrência",
                             IsDeleted = false,
                             NaturezaLegal = "AMPLA",
+                            RegraDeAplicabilidade = "[]",
                             RemanejamentoArgs = "{\"destino\":null,\"par\":null,\"fallback\":null}"
                         },
                         new
@@ -3130,10 +3128,10 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             Codigo = "LB_PPI",
                             ComposicaoVagas = "DENTRO_DO_VR",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            CriteriosCumulativos = "[]",
                             Descricao = "Cota — baixa renda, preto/pardo/indígena",
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
+                            RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"EM\",\"valor\":[\"PRETA\",\"PARDA\"]},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"IGUAL\",\"valor\":\"INDIGENA\"},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_CASCATA",
                             RemanejamentoArgs = "{\"destino\":null,\"par\":null,\"fallback\":null}"
                         },
@@ -3144,10 +3142,10 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             Codigo = "LB_Q",
                             ComposicaoVagas = "DENTRO_DO_VR",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            CriteriosCumulativos = "[]",
                             Descricao = "Cota — baixa renda, quilombola",
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
+                            RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_Q\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_CASCATA",
                             RemanejamentoArgs = "{\"destino\":null,\"par\":null,\"fallback\":null}"
                         },
@@ -3158,10 +3156,10 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             Codigo = "LB_PCD",
                             ComposicaoVagas = "DENTRO_DO_VR",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            CriteriosCumulativos = "[]",
                             Descricao = "Cota — baixa renda, pessoa com deficiência",
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
+                            RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_CASCATA",
                             RemanejamentoArgs = "{\"destino\":null,\"par\":null,\"fallback\":null}"
                         },
@@ -3172,10 +3170,10 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             Codigo = "LB_EP",
                             ComposicaoVagas = "DENTRO_DO_VR",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            CriteriosCumulativos = "[]",
                             Descricao = "Cota — baixa renda, egresso de escola pública",
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
+                            RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_CASCATA",
                             RemanejamentoArgs = "{\"destino\":null,\"par\":null,\"fallback\":null}"
                         },
@@ -3186,10 +3184,10 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             Codigo = "LI_PPI",
                             ComposicaoVagas = "DENTRO_DO_VR",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            CriteriosCumulativos = "[]",
                             Descricao = "Cota — independente de renda, preto/pardo/indígena",
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
+                            RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"EM\",\"valor\":[\"PRETA\",\"PARDA\"]},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"IGUAL\",\"valor\":\"INDIGENA\"},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_CASCATA",
                             RemanejamentoArgs = "{\"destino\":null,\"par\":null,\"fallback\":null}"
                         },
@@ -3200,10 +3198,10 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             Codigo = "LI_Q",
                             ComposicaoVagas = "DENTRO_DO_VR",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            CriteriosCumulativos = "[]",
                             Descricao = "Cota — independente de renda, quilombola",
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
+                            RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_Q\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_CASCATA",
                             RemanejamentoArgs = "{\"destino\":null,\"par\":null,\"fallback\":null}"
                         },
@@ -3214,10 +3212,10 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             Codigo = "LI_PCD",
                             ComposicaoVagas = "DENTRO_DO_VR",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            CriteriosCumulativos = "[]",
                             Descricao = "Cota — independente de renda, pessoa com deficiência",
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
+                            RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_CASCATA",
                             RemanejamentoArgs = "{\"destino\":null,\"par\":null,\"fallback\":null}"
                         },
@@ -3228,10 +3226,10 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             Codigo = "LI_EP",
                             ComposicaoVagas = "DENTRO_DO_VR",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            CriteriosCumulativos = "[]",
                             Descricao = "Cota — independente de renda, egresso de escola pública",
                             IsDeleted = false,
                             NaturezaLegal = "COTA_RESERVADA",
+                            RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "SEGUE_CASCATA",
                             RemanejamentoArgs = "{\"destino\":null,\"par\":null,\"fallback\":null}"
                         },
@@ -3243,10 +3241,10 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             ComposicaoOrigem = "AC",
                             ComposicaoVagas = "RETIRA_DE",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            CriteriosCumulativos = "[]",
                             Descricao = "Ampla Concorrência – Pessoa com Deficiência (V)",
                             IsDeleted = false,
                             NaturezaLegal = "ACAO_AFIRMATIVA",
+                            RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "DESTINO_UNICO",
                             RemanejamentoArgs = "{\"destino\":\"AC\",\"par\":null,\"fallback\":null}"
                         },
@@ -3257,10 +3255,10 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             Codigo = "AC_I",
                             ComposicaoVagas = "SUPLEMENTAR_AO_TOTAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            CriteriosCumulativos = "[]",
                             Descricao = "Vaga por acréscimo — candidato indígena (PSIQ)",
                             IsDeleted = false,
                             NaturezaLegal = "ACAO_AFIRMATIVA",
+                            RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_VAGA_POR_ACRESCIMO\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "CRUZADO",
                             RemanejamentoArgs = "{\"destino\":null,\"par\":\"AC_Q\",\"fallback\":null}"
                         },
@@ -3271,10 +3269,10 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             Codigo = "AC_Q",
                             ComposicaoVagas = "SUPLEMENTAR_AO_TOTAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            CriteriosCumulativos = "[]",
                             Descricao = "Vaga por acréscimo — candidato quilombola (PSIQ)",
                             IsDeleted = false,
                             NaturezaLegal = "ACAO_AFIRMATIVA",
+                            RegraDeAplicabilidade = "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_VAGA_POR_ACRESCIMO\",\"operador\":\"IGUAL\",\"valor\":true}]]",
                             RegraRemanejamento = "CRUZADO",
                             RemanejamentoArgs = "{\"destino\":null,\"par\":\"AC_I\",\"fallback\":null}"
                         });

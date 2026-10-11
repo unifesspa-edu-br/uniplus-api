@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Contracts;
 
+using Unifesspa.UniPlus.Regras.ValueObjects;
+
 /// <summary>
 /// DTO read-only de <c>Modalidade</c> de concorrência para consumo cross-módulo via
 /// <see cref="IModalidadeReader"/> (ADR-0056). Expõe a modalidade viva que o Módulo
@@ -17,7 +19,7 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// <param name="RemanejamentoDestino">Código de destino único (regra DESTINO_UNICO) ou null.</param>
 /// <param name="RemanejamentoPar">Código par (regra CRUZADO) ou null.</param>
 /// <param name="RemanejamentoFallback">Código de fallback (regra CRUZADO) ou null.</param>
-/// <param name="CriteriosCumulativos">Critérios cumulativos declarados (pode ser vazio).</param>
+/// <param name="RegraDeAplicabilidade">Quem concorre à modalidade: o predicado sobre os fatos do candidato (ADR-0144); sem cláusula na incondicional.</param>
 /// <param name="AcaoQuandoIndeferido">Ação ao indeferir (token) ou null.</param>
 /// <param name="BaseLegal">Base legal opcional.</param>
 public sealed record ModalidadeView(
@@ -31,6 +33,6 @@ public sealed record ModalidadeView(
     string? RemanejamentoDestino,
     string? RemanejamentoPar,
     string? RemanejamentoFallback,
-    IReadOnlyList<string> CriteriosCumulativos,
+    PredicadoDnf RegraDeAplicabilidade,
     string? AcaoQuandoIndeferido,
     string? BaseLegal);

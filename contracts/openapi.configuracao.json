@@ -13459,13 +13459,16 @@
               "string"
             ]
           },
-          "criteriosCumulativos": {
+          "regraDeAplicabilidade": {
             "type": [
               "null",
               "array"
             ],
             "items": {
-              "type": "string"
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoDoPredicadoInput"
+              }
             }
           },
           "acaoQuandoIndeferido": {
@@ -15183,13 +15186,16 @@
               "string"
             ]
           },
-          "criteriosCumulativos": {
+          "regraDeAplicabilidade": {
             "type": [
               "null",
               "array"
             ],
             "items": {
-              "type": "string"
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoDoPredicadoInput"
+              }
             }
           },
           "acaoQuandoIndeferido": {
@@ -17421,7 +17427,7 @@
           "remanejamentoDestino",
           "remanejamentoPar",
           "remanejamentoFallback",
-          "criteriosCumulativos",
+          "regraDeAplicabilidade",
           "acaoQuandoIndeferido",
           "baseLegal",
           "criadoEm"
@@ -17477,10 +17483,13 @@
               "string"
             ]
           },
-          "criteriosCumulativos": {
+          "regraDeAplicabilidade": {
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoDoPredicadoDto"
+              }
             }
           },
           "acaoQuandoIndeferido": {

@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 
 public sealed class DefinirDistribuicaoVagasCommandHandlerTests
 {
@@ -58,11 +59,11 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
 
     private static ModalidadeView NovaModalidadeAmpla(Guid id) => new(
         id, "AC", "Ampla concorrência", "AMPLA", "RESIDUAL_DO_VO",
-        null, null, null, null, null, [], null, "Lei 12.711/2012");
+        null, null, null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, "Lei 12.711/2012");
 
     private static ModalidadeView NovaModalidadeCotaReservada(Guid id, string codigo) => new(
         id, codigo, null, "COTA_RESERVADA", "DENTRO_DO_VR",
-        null, "SEGUE_CASCATA", null, null, null, [], null, "Lei 12.711/2012 art. 3º");
+        null, "SEGUE_CASCATA", null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, "Lei 12.711/2012 art. 3º");
 
     [Fact(DisplayName = "Handle com lista vazia devolve a causa de domínio, não a recusa de forma")]
     public async Task Handle_ListaVazia_DevolveCausaDeDominio()

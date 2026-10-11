@@ -139,9 +139,9 @@ public static class FatoCandidatoSeed
         // de modalidades resulta da avaliação deles contra as regras congeladas do processo. O
         // binding referencia a regra de derivação — o catálogo diz o mecanismo, a config do edital
         // diz o conteúdo (ADR-0116, emenda de 2026-07-22).
-        new(SeedId(8), "MODALIDADE", "Modalidade de concorrência", null,
+        new(SeedId(8), ModalidadeDoCandidato.Fato, "Modalidade de concorrência", null,
             DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Multivalorado, FonteValoresFato.Modalidade,
-            PontoResolucaoInscricao, "REGRA_DERIVACAO:MODALIDADE",
+            PontoResolucaoInscricao, $"REGRA_DERIVACAO:{ModalidadeDoCandidato.Fato}",
             ClassificacaoProtecaoDado.Sensivel, FinalidadeReservaDeVagas),
 
         new(SeedId(9), "CONDICAO_ATENDIMENTO", "Condição de atendimento especializado", null,

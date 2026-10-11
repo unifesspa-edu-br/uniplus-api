@@ -1,25 +1,47 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.UnitTests.Commands;
 
+using System.Text.Json;
+
 using AwesomeAssertions;
 
 using NSubstitute;
 
 using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Modalidades;
+using Unifesspa.UniPlus.Configuracao.Application.Commands.Predicados;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Services;
 
 public sealed class CriarModalidadeCommandHandlerTests
 {
     private readonly IModalidadeRepository _repository = Substitute.For<IModalidadeRepository>();
+    private static readonly IReadOnlyList<IReadOnlyList<CondicaoDoPredicadoInput>> Incondicional = [];
+
     private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
+    private readonly IFatoCandidatoRepository _fatoRepository = Substitute.For<IFatoCandidatoRepository>();
+    private readonly IPrecedenciaFaseRepository _precedenciaRepository = Substitute.For<IPrecedenciaFaseRepository>();
+
+    public CriarModalidadeCommandHandlerTests()
+    {
+        _fatoRepository.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns([Fato(OpcaoPelasCotasDaLei.Fato)]);
+        _precedenciaRepository.ListarVivasAsync(Arg.Any<CancellationToken>()).Returns([]);
+    }
+
+    private static IReadOnlyList<IReadOnlyList<CondicaoDoPredicadoInput>> OptouPelasCotas(bool optou) =>
+        [[Condicao(OpcaoPelasCotasDaLei.Fato, optou)]];
+
+    private static CondicaoDoPredicadoInput Condicao(string fato, bool valor) =>
+        new(fato, "IGUAL", JsonSerializer.SerializeToElement(valor));
 
     private const string CodigoInstitucional = "PSVR_AMPLA";
 
     private static CriarModalidadeCommand ComandoAmpla() =>
-        new(CodigoInstitucional, Descricao: "Ampla concorrência do vestibular remanescente", NaturezaLegal: "AMPLA");
+        new(CodigoInstitucional, Descricao: "Ampla concorrência do vestibular remanescente", NaturezaLegal: "AMPLA",
+            RegraDeAplicabilidade: Incondicional);
 
     [Fact(DisplayName = "Código livre cria a modalidade, persiste e retorna o Id")]
     public async Task Handle_CodigoLivre_CriaEPersiste()
@@ -27,7 +49,7 @@ public sealed class CriarModalidadeCommandHandlerTests
         _repository.CodigoExisteEntreVivosAsync(CodigoInstitucional, null, Arg.Any<CancellationToken>()).Returns(false);
 
         Result<Guid> resultado = await CriarModalidadeCommandHandler.Handle(
-            ComandoAmpla(), _repository, _unitOfWork, CancellationToken.None);
+            ComandoAmpla(), _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value.Should().NotBe(Guid.Empty);
@@ -44,10 +66,10 @@ public sealed class CriarModalidadeCommandHandlerTests
     [InlineData(" LB_PPI ")]
     public async Task Handle_CodigoReservado_RetornaConflito(string codigo)
     {
-        var comando = new CriarModalidadeCommand(codigo, NaturezaLegal: "AMPLA");
+        var comando = new CriarModalidadeCommand(codigo, NaturezaLegal: "AMPLA", RegraDeAplicabilidade: Incondicional);
 
         Result<Guid> resultado = await CriarModalidadeCommandHandler.Handle(
-            comando, _repository, _unitOfWork, CancellationToken.None);
+            comando, _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.CriacaoBloqueadaCodigoProtegido);
@@ -63,7 +85,7 @@ public sealed class CriarModalidadeCommandHandlerTests
         _repository.CodigoExisteEntreVivosAsync(CodigoInstitucional, null, Arg.Any<CancellationToken>()).Returns(true);
 
         Result<Guid> resultado = await CriarModalidadeCommandHandler.Handle(
-            ComandoAmpla(), _repository, _unitOfWork, CancellationToken.None);
+            ComandoAmpla(), _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.CodigoJaExiste);
@@ -79,10 +101,10 @@ public sealed class CriarModalidadeCommandHandlerTests
 
         // RETIRA_DE exige origem; a origem "XPTO" não existe viva.
         var comando = new CriarModalidadeCommand(
-            "PSIQ_QUILOMBOLA", NaturezaLegal: "AMPLA", ComposicaoVagas: "RETIRA_DE", ComposicaoOrigem: "XPTO");
+            "PSIQ_QUILOMBOLA", NaturezaLegal: "AMPLA", ComposicaoVagas: "RETIRA_DE", ComposicaoOrigem: "XPTO", RegraDeAplicabilidade: Incondicional);
 
         Result<Guid> resultado = await CriarModalidadeCommandHandler.Handle(
-            comando, _repository, _unitOfWork, CancellationToken.None);
+            comando, _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.ReferenciaInexistenteOuInativa);
@@ -96,10 +118,10 @@ public sealed class CriarModalidadeCommandHandlerTests
         _repository.CodigoExisteEntreVivosAsync(Arg.Any<string>(), null, Arg.Any<CancellationToken>()).Returns(false);
 
         var comando = new CriarModalidadeCommand(
-            "PSIQ_QUILOMBOLA", NaturezaLegal: "COTA_RESERVADA", ComposicaoVagas: "DENTRO_DO_VR");
+            "PSIQ_QUILOMBOLA", NaturezaLegal: "COTA_RESERVADA", ComposicaoVagas: "DENTRO_DO_VR", RegraDeAplicabilidade: OptouPelasCotas(true));
 
         Result<Guid> resultado = await CriarModalidadeCommandHandler.Handle(
-            comando, _repository, _unitOfWork, CancellationToken.None);
+            comando, _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.NaturezaRemanejamentoIncoerente);
@@ -109,10 +131,10 @@ public sealed class CriarModalidadeCommandHandlerTests
     [Fact(DisplayName = "Campo inválido propaga o erro sem consultar unicidade nem persistir — validação vence I/O")]
     public async Task Handle_CampoInvalido_RetornaErroSemConsultarBancoNemPersistir()
     {
-        var comando = new CriarModalidadeCommand(CodigoInstitucional, NaturezaLegal: "XPTO");
+        var comando = new CriarModalidadeCommand(CodigoInstitucional, NaturezaLegal: "XPTO", RegraDeAplicabilidade: Incondicional);
 
         Result<Guid> resultado = await CriarModalidadeCommandHandler.Handle(
-            comando, _repository, _unitOfWork, CancellationToken.None);
+            comando, _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.NaturezaInvalida);
@@ -120,5 +142,64 @@ public sealed class CriarModalidadeCommandHandlerTests
             Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
         await _repository.DidNotReceive().AdicionarAsync(Arg.Any<Modalidade>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Regra ausente é recusada como obrigatória sem persistir")]
+    public async Task Handle_SemRegra_Recusa()
+    {
+        Result<Guid> resultado = await CriarModalidadeCommandHandler.Handle(
+            new CriarModalidadeCommand(CodigoInstitucional, NaturezaLegal: "AMPLA"),
+            _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
+
+        resultado.Errors.Should().ContainSingle()
+            .Which.Error.Code.Should().Be(ModalidadeErrorCodes.RegraDeAplicabilidadeObrigatoria);
+        await _repository.DidNotReceive().AdicionarAsync(Arg.Any<Modalidade>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Regra malformada se acumula com as recusas dos demais campos, sem a de regra ausente")]
+    public async Task Handle_RegraMalformada_AcumulaComOsDemaisCampos()
+    {
+        var comando = new CriarModalidadeCommand(
+            CodigoInstitucional, Descricao: new string('a', 301), NaturezaLegal: "AMPLA", RegraDeAplicabilidade: [[]]);
+
+        Result<Guid> resultado = await CriarModalidadeCommandHandler.Handle(
+            comando, _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
+        [
+            ("descricao", ModalidadeErrorCodes.DescricaoTamanho),
+            ("regraDeAplicabilidade", "ClausulaDnf.ClausulaVazia"),
+        ]);
+        await _repository.DidNotReceive().AdicionarAsync(Arg.Any<Modalidade>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "A recusa do catálogo se acumula com a do agregado, sem persistir")]
+    public async Task Handle_RecusaDoCatalogo_AcumulaComADoAgregado()
+    {
+        _fatoRepository.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns([Fato(OpcaoPelasCotasDaLei.Fato), FatoDesativado("PCD")]);
+        var comando = new CriarModalidadeCommand(
+            CodigoInstitucional, Descricao: new string('a', 301), NaturezaLegal: "ACAO_AFIRMATIVA",
+            ComposicaoVagas: "SUPLEMENTAR_AO_TOTAL", RegraRemanejamento: "DESTINO_UNICO", RemanejamentoDestino: "AC",
+            RegraDeAplicabilidade: [[Condicao(OpcaoPelasCotasDaLei.Fato, false), Condicao("PCD", true)]]);
+
+        Result<Guid> resultado = await CriarModalidadeCommandHandler.Handle(
+            comando, _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
+
+        resultado.Errors.Select(static e => e.Error.Code).Should().Contain(
+            [ModalidadeErrorCodes.DescricaoTamanho, ModalidadeErrorCodes.RegraCitaFatoDesativado]);
+        await _repository.DidNotReceive().AdicionarAsync(Arg.Any<Modalidade>(), Arg.Any<CancellationToken>());
+    }
+
+    private static FatoCandidato Fato(string codigo) =>
+        FatoCandidato.CriarDoAdministrador(
+            codigo, codigo, null, DominioFato.Booleano, CardinalidadeFato.Escalar, null, null, "INSCRICAO",
+            EscopoFato.Candidato, ClassificacaoProtecaoDado.Sensivel, "Enquadramento na reserva de vagas.",
+            HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+
+    private static FatoCandidato FatoDesativado(string codigo)
+    {
+        FatoCandidato fato = Fato(codigo);
+        fato.Desativar();
+        return fato;
     }
 }

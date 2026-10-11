@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// A existência e a atividade do código de uma regra legal pertencem à Configuração;
@@ -60,7 +61,7 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
     }
 
     private static ModalidadeView ModalidadeViva(string codigo) =>
-        new(Guid.CreateVersion7(), codigo, null, "COTA_RESERVADA", "DENTRO_DO_VR", null, null, null, null, null, [], null, null);
+        new(Guid.CreateVersion7(), codigo, null, "COTA_RESERVADA", "DENTRO_DO_VR", null, null, null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, null);
 
     private static TipoDocumentoView TipoDocumentoVivo(string codigo) =>
         new(Guid.CreateVersion7(), codigo, "Documento", "OUTROS");

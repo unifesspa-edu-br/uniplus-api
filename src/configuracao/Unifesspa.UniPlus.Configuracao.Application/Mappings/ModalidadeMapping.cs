@@ -22,7 +22,7 @@ public static class ModalidadeMapping
             modalidade.RemanejamentoArgs.Destino,
             modalidade.RemanejamentoArgs.Par,
             modalidade.RemanejamentoArgs.Fallback,
-            modalidade.CriteriosCumulativos,
+            modalidade.RegraDeAplicabilidade.ToDto(),
             modalidade.AcaoQuandoIndeferido is { } acao
                 ? AcoesQuandoIndeferido.ParaTokenCanonico(acao)
                 : null,

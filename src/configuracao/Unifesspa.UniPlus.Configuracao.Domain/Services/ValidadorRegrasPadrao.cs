@@ -120,7 +120,7 @@ public static class ValidadorRegrasPadrao
         }
     }
 
-    private static bool ValorDesativado(Dictionary<string, FatoCandidato> fatos, string fato, string valor) =>
+    internal static bool ValorDesativado(Dictionary<string, FatoCandidato> fatos, string fato, string valor) =>
         fatos.TryGetValue(fato, out FatoCandidato? citado)
         && VocabularioDoCatalogo.ValoresDe(citado, fatos).Any(v => v.Codigo == valor && !v.Ativo);
 
