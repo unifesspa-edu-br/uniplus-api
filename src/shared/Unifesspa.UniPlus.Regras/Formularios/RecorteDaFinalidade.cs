@@ -53,52 +53,23 @@ public sealed record RecorteDaFinalidade(FormularioPortavel Regras, IReadOnlyLis
                 .Concat(e.Grupos.SelectMany(static g => g.Subitens).Select(static s => s.FatoCodigo))),
             StringComparer.Ordinal);
 
-        Dictionary<string, RegrasDerivacaoFato> derivacaoPorFato = definicao.Derivacoes.ToDictionary(static d => d.CodigoFato, StringComparer.Ordinal);
-        Dictionary<string, DefinicaoAgregado> agregadoPorFato = definicao.Agregados
-            .Where(a => grupos.Contains(a.GrupoCodigo))
-            .ToDictionary(static a => a.Codigo, StringComparer.Ordinal);
-
-        HashSet<string> derivacoesCitadas = new(StringComparer.Ordinal);
-        HashSet<string> agregadosCitados = new(StringComparer.Ordinal);
-        HashSet<string> pressupostos = new(StringComparer.Ordinal);
-        Queue<string> aVisitar = new(CitadosPeloFormulario(etapas, termos));
-        HashSet<string> visitados = new(StringComparer.Ordinal);
-        while (aVisitar.TryDequeue(out string? fato))
-        {
-            if (!visitados.Add(fato) || produzidos.Contains(fato))
-            {
-                continue;
-            }
-
-            if (derivacaoPorFato.TryGetValue(fato, out RegrasDerivacaoFato? derivacao))
-            {
-                derivacoesCitadas.Add(fato);
-                foreach (string dependencia in derivacao.DependenciasDeclaradas)
-                {
-                    aVisitar.Enqueue(dependencia);
-                }
-            }
-            else if (agregadoPorFato.ContainsKey(fato))
-            {
-                agregadosCitados.Add(fato);
-            }
-            else
-            {
-                pressupostos.Add(fato);
-            }
-        }
+        FechamentoDasDependencias fechamento = FechamentoDasDependencias.De(
+            CitadosPeloFormulario(etapas, termos),
+            produzidos,
+            definicao.Derivacoes.ToDictionary(static d => d.CodigoFato, StringComparer.Ordinal),
+            definicao.Agregados.Where(a => grupos.Contains(a.GrupoCodigo)).ToDictionary(static a => a.Codigo, StringComparer.Ordinal));
 
         DefinicaoFormulario recortada = new(
             etapas,
             termos,
-            [.. definicao.Derivacoes.Where(d => derivacoesCitadas.Contains(d.CodigoFato))],
-            [.. definicao.Agregados.Where(a => agregadosCitados.Contains(a.Codigo))]);
+            [.. definicao.Derivacoes.Where(d => fechamento.Derivacoes.Contains(d.CodigoFato))],
+            [.. definicao.Agregados.Where(a => fechamento.Agregados.Contains(a.Codigo))]);
 
         IReadOnlyDictionary<string, IReadOnlySet<string>>? ofertasDoRecorte = ofertas?
             .Where(o => produzidos.Contains(o.Key))
             .ToDictionary(static o => o.Key, static o => o.Value, StringComparer.Ordinal);
 
-        return new(FormularioPortavel.De(recortada, ofertasDoRecorte), [.. pressupostos.Order(StringComparer.Ordinal)]);
+        return new(FormularioPortavel.De(recortada, ofertasDoRecorte), fechamento.Pressupostos);
     }
 
     private static IEnumerable<string> CitadosPeloFormulario(IEnumerable<DefinicaoEtapa> etapas, IEnumerable<DefinicaoTermo> termos) =>
