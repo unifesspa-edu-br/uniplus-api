@@ -26,11 +26,16 @@ public sealed record LocalidadeCertameDto(string CodigoIbge, string Nome, string
 public sealed record TaxaInscricaoCertameDto(bool Cobra, string? Valor, IReadOnlyList<string> Fundamentos);
 
 /// <summary>
-/// Resumo do documento do edital: o identificador do documento e o seu resumo criptográfico. O
-/// endereço do arquivo no acervo público não trafega por aqui — o contrato o carregará como campo
-/// próprio quando a cópia para o acervo existir.
+/// O documento do edital: o identificador do documento, o seu resumo criptográfico e o endereço de
+/// onde baixá-lo.
 /// </summary>
-public sealed record DocumentoEditalCertameDto(Guid DocumentoEditalId, string HashSha256);
+/// <param name="UrlDownload">
+/// Endereço do arquivo no acervo público (ADR-0132): permanente, de leitura anônima e nunca
+/// pré-assinado. É do ato que publicou a versão, e continua servindo o mesmo arquivo depois de uma
+/// retificação. O certame só é divulgado depois de a cópia para o acervo concluir, então o endereço
+/// nunca aponta para arquivo ausente.
+/// </param>
+public sealed record DocumentoEditalCertameDto(Guid DocumentoEditalId, string HashSha256, Uri UrlDownload);
 
 /// <summary>
 /// Presente só quando o edital foi emendado: informa ao candidato que houve retificação e por quê.

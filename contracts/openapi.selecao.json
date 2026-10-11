@@ -11968,7 +11968,8 @@
       "DocumentoEditalCertameDto": {
         "required": [
           "documentoEditalId",
-          "hashSha256"
+          "hashSha256",
+          "urlDownload"
         ],
         "type": "object",
         "properties": {
@@ -11978,6 +11979,10 @@
           },
           "hashSha256": {
             "type": "string"
+          },
+          "urlDownload": {
+            "type": "string",
+            "format": "uri"
           }
         }
       },

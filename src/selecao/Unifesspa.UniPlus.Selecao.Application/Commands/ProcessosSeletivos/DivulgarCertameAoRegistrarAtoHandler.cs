@@ -36,10 +36,10 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// pretendido — a linha não avança, e o certame permanece no ar com o conteúdo da versão anterior.
 /// </para>
 /// <para>
-/// <b>É também o único caminho de escrita no acervo público (ADR-0132).</b> Os modelos de documento
-/// que o edital congelou são copiados para lá antes de a divulgação ser gravada, porque é aqui que o
-/// registro do ato está confirmado: nada fica público antes do ato, e o link só é divulgado depois de
-/// o arquivo estar no acervo. Falha na cópia lança, a divulgação não avança, e a reentrega repete —
+/// <b>É também o único caminho de escrita no acervo público (ADR-0132).</b> O documento do edital e
+/// os modelos de documento que ele congelou são copiados para lá antes de a divulgação ser gravada,
+/// porque é aqui que o registro do ato está confirmado: nada fica público antes do ato, e o link só é
+/// divulgado depois de o arquivo estar no acervo. Falha na cópia lança, a divulgação não avança, e a reentrega repete —
 /// encontrando no acervo o que já tinha sido copiado.
 /// </para>
 /// </remarks>
@@ -50,6 +50,7 @@ public static class DivulgarCertameAoRegistrarAtoHandler
         IProcessoSeletivoRepository processoSeletivoRepository,
         ICertameDivulgadoRepository certameDivulgadoRepository,
         IRegistroCodecsEnvelope registroCodecs,
+        IDocumentoEditalRepository documentoEditalRepository,
         IModeloDeDocumentoRepository modeloDeDocumentoRepository,
         IAcervoPublico acervoPublico,
         IEnderecoNoAcervoPublico enderecoNoAcervo,
@@ -61,6 +62,7 @@ public static class DivulgarCertameAoRegistrarAtoHandler
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
         ArgumentNullException.ThrowIfNull(registroCodecs);
+        ArgumentNullException.ThrowIfNull(documentoEditalRepository);
         ArgumentNullException.ThrowIfNull(modeloDeDocumentoRepository);
         ArgumentNullException.ThrowIfNull(acervoPublico);
         ArgumentNullException.ThrowIfNull(enderecoNoAcervo);
@@ -106,8 +108,9 @@ public static class DivulgarCertameAoRegistrarAtoHandler
                 $"Processo {versao.ProcessoSeletivoId} não encontrado para divulgar o certame.");
         }
 
+        AtoDaDivulgacao ato = new(versao.AtoCriadorId, mensagem.Ano, mensagem.TipoCodigo);
         Result<CertamePublicadoDto> projecao = ProjecaoDoCertamePublicado.Projetar(
-            versao.ProcessoSeletivoId, versao.AtoCriadorId, nome, versao.HashConfiguracao, envelope, enderecoNoAcervo.De);
+            versao.ProcessoSeletivoId, ato, nome, versao.HashConfiguracao, envelope, enderecoNoAcervo.De);
 
         if (projecao.IsFailure)
         {
@@ -117,6 +120,8 @@ public static class DivulgarCertameAoRegistrarAtoHandler
 
         // Antes de ler a linha de divulgação para mutação: a reentrega que a cópia falhada provoca
         // começa sem nada rastreado, e a cópia já feita é encontrada no acervo e não se repete.
+        await PublicarEditalNoAcervoAsync(versao, ato, envelope, documentoEditalRepository, acervoPublico, cancellationToken)
+            .ConfigureAwait(false);
         await PublicarModelosNoAcervoAsync(versao, envelope, modeloDeDocumentoRepository, acervoPublico, cancellationToken)
             .ConfigureAwait(false);
 
@@ -188,6 +193,55 @@ public static class DivulgarCertameAoRegistrarAtoHandler
 
             throw conflito;
         }
+    }
+
+    /// <summary>
+    /// Copia para o acervo público o documento do edital que a versão congelou, na chave do ato que a
+    /// criou.
+    /// </summary>
+    /// <remarks>
+    /// Mesma conferência dos modelos: do cadastro só se lê onde está a cópia selada privada, e um
+    /// documento sem cópia selada ou com outro conteúdo não é publicado — o endereço divulgado
+    /// apontaria para um arquivo que não é o que o ato oficializou.
+    /// </remarks>
+    private static async Task PublicarEditalNoAcervoAsync(
+        VersaoConfiguracao versao,
+        AtoDaDivulgacao ato,
+        JsonObject envelope,
+        IDocumentoEditalRepository documentoEditalRepository,
+        IAcervoPublico acervoPublico,
+        CancellationToken cancellationToken)
+    {
+        if (!ProjecaoDoCertamePublicado.TentarEditalNoAcervo(envelope, ato, out EditalNoAcervo? edital))
+        {
+            throw new InvalidOperationException(
+                $"Configuração congelada do processo {versao.ProcessoSeletivoId} não tem a forma esperada no documento do edital.");
+        }
+
+        DocumentoEdital? documento = await documentoEditalRepository
+            .ObterPorIdAsync(edital.DocumentoEditalId, cancellationToken)
+            .ConfigureAwait(false);
+        if (documento is null
+            || documento.ProcessoSeletivoId != versao.ProcessoSeletivoId
+            || documento.ObjectKeyConfirmado is not { } chavePrivada
+            || !string.Equals(documento.HashSha256, edital.HashSha256, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                $"O documento do edital {edital.DocumentoEditalId}, congelado na versão {versao.NumeroVersao} do processo {versao.ProcessoSeletivoId}, não tem cópia selada com o conteúdo congelado.");
+        }
+
+        await acervoPublico
+            .CopiarAsync(
+                chavePrivada,
+                edital.Chave,
+                new DocumentoNoAcervo(
+                    DocumentoEdital.ContentTypeEsperado,
+                    edital.NomeDeApresentacao,
+                    versao.AtoCriadorId,
+                    versao.ProcessoSeletivoId,
+                    edital.HashSha256),
+                cancellationToken)
+            .ConfigureAwait(false);
     }
 
     /// <summary>

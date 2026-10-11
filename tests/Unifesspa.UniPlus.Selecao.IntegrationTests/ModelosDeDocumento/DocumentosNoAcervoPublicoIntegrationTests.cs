@@ -41,19 +41,23 @@ using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// O modelo de documento no acervo público (ADR-0132), com Postgres e MinIO reais: a cópia nasce no
-/// registro do ato, pela materialização da divulgação, e o objeto é lido anonimamente, como o
-/// cidadão o lê.
+/// O documento do edital e o modelo de documento no acervo público (ADR-0132), com Postgres e MinIO
+/// reais: a cópia nasce no registro do ato, pela materialização da divulgação, e o objeto é lido
+/// anonimamente, como o cidadão o lê.
 /// </summary>
-public sealed class ModeloNoAcervoPublicoIntegrationTests : IClassFixture<ProcessoSeletivoDbFixture>, IClassFixture<MinioContainerFixture>
+public sealed class DocumentosNoAcervoPublicoIntegrationTests : IClassFixture<ProcessoSeletivoDbFixture>, IClassFixture<MinioContainerFixture>
 {
     private const string BucketPrivado = "uniplus-documentos-acervo-test";
+    private const int AnoDoAto = 2026;
+    private const string TipoDoAto = "EDITAL_ABERTURA";
+    private const string UnidadeDoEnvelope = "ceps";
+    private const string Retificacao = "EDITAL_RETIFICACAO";
 
     private readonly ProcessoSeletivoDbFixture _dbFixture;
     private readonly MinioContainerFixture _minio;
     private readonly ServiceProvider _provider;
 
-    public ModeloNoAcervoPublicoIntegrationTests(ProcessoSeletivoDbFixture dbFixture, MinioContainerFixture minio)
+    public DocumentosNoAcervoPublicoIntegrationTests(ProcessoSeletivoDbFixture dbFixture, MinioContainerFixture minio)
     {
         ArgumentNullException.ThrowIfNull(dbFixture);
         ArgumentNullException.ThrowIfNull(minio);
@@ -185,14 +189,136 @@ public sealed class ModeloNoAcervoPublicoIntegrationTests : IClassFixture<Proces
             "o ato retificado continua existindo, e o endereço que ele divulgou não muda de conteúdo nem some");
     }
 
-    private async Task DivulgarAsync(Guid ato, IAcervoPublico acervo)
+    [Fact(DisplayName = "O registro do ato copia o edital para o acervo, na chave da ADR-0132, com nome legível, e o certame divulga o endereço")]
+    public async Task RegistroDoAto_CopiaOEditalParaOAcervo()
+    {
+        await _minio.ProvisionarAcervoPublicoAsync();
+        (ProcessoSeletivo processo, ModeloDeDocumento modelo) = await SemearProcessoComModeloAsync(ArquivosDeModeloDeTeste.Odt());
+        byte[] pdf = ArquivoDeEdital();
+        DocumentoEdital edital = await SemearEditalAsync(processo.Id, pdf);
+        string identificador = IdentificadoresDeTeste.NovoValor();
+        Guid ato = Guid.CreateVersion7();
+        await SemearVersaoAsync(processo, modelo, ato, identificador, edital);
+
+        await DivulgarAsync(ato, Acervo());
+
+        using HttpClient anonimo = new();
+        using HttpResponseMessage resposta = await anonimo.GetAsync(EnderecoDoEdital(identificador, ato, edital));
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await resposta.Content.ReadAsByteArrayAsync()).Should().Equal(pdf);
+        resposta.Content.Headers.ContentType!.MediaType.Should().Be(DocumentoEdital.ContentTypeEsperado);
+        resposta.Content.Headers.NonValidated["Content-Disposition"].ToString().Should().EndWith(
+            $"filename*=UTF-8''{identificador}-edital-abertura.pdf",
+            "sem o nome de apresentação, o cidadão baixaria um arquivo chamado pelo resumo criptográfico");
+
+        await using SelecaoDbContext leitura = _dbFixture.CreateDbContext();
+        CertameDivulgado divulgado = await leitura.CertamesDivulgados.AsNoTracking().SingleAsync(c => c.Id == processo.Id);
+        JsonNode.Parse(divulgado.Certame)!["documentoEdital"]!["urlDownload"]!.GetValue<string>().Should().Be(
+            AcervoDeTeste.Endereco.De(ChaveNoAcervoPublico.DoEdital(AnoDoAto, UnidadeDoEnvelope, TipoDoAto, identificador, ato, edital.HashSha256!)).ToString(),
+            "o contrato divulga o endereço da mesma chave para a qual a divulgação copiou");
+    }
+
+    [Fact(DisplayName = "Edital confirmado de processo ainda sem ato não tem objeto no acervo")]
+    public async Task EditalConfirmadoSemAto_NaoTemObjetoNoAcervo()
+    {
+        await _minio.ProvisionarAcervoPublicoAsync();
+        (ProcessoSeletivo processo, ModeloDeDocumento modelo) = await SemearProcessoComModeloAsync(ArquivosDeModeloDeTeste.Odt());
+        DocumentoEdital edital = await SemearEditalAsync(processo.Id, ArquivoDeEdital());
+        string identificador = IdentificadoresDeTeste.NovoValor();
+        await SemearVersaoAsync(processo, modelo, Guid.CreateVersion7(), identificador, edital);
+
+        (await ObjetosNoAcervoAsync($"editais/{AnoDoAto:D4}/{UnidadeDoEnvelope}/edital-abertura/{identificador}/")).Should().BeEmpty(
+            "publicar sem o ato registrado ainda não é divulgar: o edital continua só no bucket privado");
+    }
+
+    [Fact(DisplayName = "Reentrega com o edital já no acervo conclui a divulgação sem regravar o objeto")]
+    public async Task Reentrega_ComEditalJaNoAcervo_NaoRegrava()
+    {
+        await _minio.ProvisionarAcervoPublicoAsync();
+        (ProcessoSeletivo processo, ModeloDeDocumento modelo) = await SemearProcessoComModeloAsync(ArquivosDeModeloDeTeste.Odt());
+        DocumentoEdital edital = await SemearEditalAsync(processo.Id, ArquivoDeEdital());
+        string identificador = IdentificadoresDeTeste.NovoValor();
+        Guid ato = Guid.CreateVersion7();
+        await SemearVersaoAsync(processo, modelo, ato, identificador, edital);
+        byte[] jaCopiado = Encoding.UTF8.GetBytes("cópia de uma entrega anterior");
+        using (MemoryStream stream = new(jaCopiado))
+        {
+            await _provider.GetRequiredService<IStorageService>().UploadAsync(
+                MinioContainerFixture.BucketDoAcervoPublico,
+                ChaveNoAcervoPublico.DoEdital(AnoDoAto, UnidadeDoEnvelope, TipoDoAto, identificador, ato, edital.HashSha256!),
+                stream,
+                "application/octet-stream");
+        }
+
+        await DivulgarAsync(ato, Acervo());
+
+        using HttpClient anonimo = new();
+        (await anonimo.GetByteArrayAsync(EnderecoDoEdital(identificador, ato, edital))).Should().Equal(jaCopiado);
+        await using SelecaoDbContext leitura = _dbFixture.CreateDbContext();
+        (await leitura.CertamesDivulgados.AsNoTracking().AnyAsync(c => c.Id == processo.Id)).Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Retificação que reaproveita o documento do edital publica outro objeto, e o do ato anterior continua acessível")]
+    public async Task RetificacaoQueReaproveitaOEdital_PublicaOutroObjeto()
+    {
+        await _minio.ProvisionarAcervoPublicoAsync();
+        (ProcessoSeletivo processo, ModeloDeDocumento modelo) = await SemearProcessoComModeloAsync(ArquivosDeModeloDeTeste.Odt());
+        byte[] pdf = ArquivoDeEdital();
+        DocumentoEdital edital = await SemearEditalAsync(processo.Id, pdf);
+        string identificador = IdentificadoresDeTeste.NovoValor();
+        Guid abertura = Guid.CreateVersion7();
+        Guid primeiraRetificacao = Guid.CreateVersion7();
+        Guid segundaRetificacao = Guid.CreateVersion7();
+        VersaoConfiguracao v1 = await SemearVersaoAsync(processo, modelo, abertura, identificador, edital);
+        await DivulgarAsync(abertura, Acervo());
+        VersaoConfiguracao v2 = await SemearRetificacaoAsync(v1, modelo, primeiraRetificacao, identificador, edital);
+        await DivulgarAsync(primeiraRetificacao, Acervo(), Retificacao);
+
+        // Duas retificações sucessivas com o mesmo documento repetem ano, unidade, tipo, processo e
+        // hash: é o identificador do ato que separa os objetos.
+        await SemearRetificacaoAsync(v2, modelo, segundaRetificacao, identificador, edital);
+        await DivulgarAsync(segundaRetificacao, Acervo(), Retificacao);
+
+        using HttpClient anonimo = new();
+        foreach (Guid ato in (Guid[])[primeiraRetificacao, segundaRetificacao])
+        {
+            using HttpResponseMessage resposta = await anonimo.GetAsync(EnderecoDoEdital(identificador, ato, edital, Retificacao));
+            (await resposta.Content.ReadAsByteArrayAsync()).Should().Equal(pdf);
+            resposta.Headers.NonValidated["x-amz-meta-ato-normativo-id"].ToString().Should().Be(ato.ToString("D"),
+                "cada ato tem o próprio objeto, com a própria procedência — sem o ato na chave, a segunda retificação cairia no objeto da primeira");
+        }
+
+        (await anonimo.GetByteArrayAsync(EnderecoDoEdital(identificador, abertura, edital))).Should().Equal(pdf,
+            "o ato retificado continua existindo, e o endereço que ele divulgou não some");
+    }
+
+    [Fact(DisplayName = "Edital sem cópia selada com o conteúdo congelado não é publicado, e a divulgação não avança")]
+    public async Task EditalComOutroConteudo_NaoEPublicado()
+    {
+        await _minio.ProvisionarAcervoPublicoAsync();
+        (ProcessoSeletivo processo, ModeloDeDocumento modelo) = await SemearProcessoComModeloAsync(ArquivosDeModeloDeTeste.Odt());
+        DocumentoEdital edital = await SemearEditalAsync(processo.Id, ArquivoDeEdital());
+        Guid ato = Guid.CreateVersion7();
+        // O envelope aponta o documento cadastrado, mas com um hash que não é o dele.
+        await SemearVersaoAsync(processo, modelo, ato, edital: edital, hashDoEditalCongelado: new string('e', 64));
+
+        Func<Task> divulgar = () => DivulgarAsync(ato, Acervo());
+
+        await divulgar.Should().ThrowAsync<InvalidOperationException>(
+            "o endereço divulgado apontaria para um arquivo que não é o que o ato oficializou");
+        await using SelecaoDbContext leitura = _dbFixture.CreateDbContext();
+        (await leitura.CertamesDivulgados.AsNoTracking().AnyAsync(c => c.Id == processo.Id)).Should().BeFalse();
+    }
+
+    private async Task DivulgarAsync(Guid ato, IAcervoPublico acervo, string tipoDoAto = TipoDoAto)
     {
         await using SelecaoDbContext context = _dbFixture.CreateDbContext();
         await DivulgarCertameAoRegistrarAtoHandler.Handle(
-            new AtoNormativoRegistrado(ato),
+            new AtoNormativoRegistrado(ato, AnoDoAto, tipoDoAto),
             new ProcessoSeletivoRepository(context, TimeProvider.System),
             new CertameDivulgadoRepository(context),
             new RegistroCodecsEnvelope(),
+            new DocumentoEditalRepository(context),
             new ModeloDeDocumentoRepository(context),
             acervo,
             AcervoDeTeste.Endereco,
@@ -229,11 +355,18 @@ public sealed class ModeloNoAcervoPublicoIntegrationTests : IClassFixture<Proces
     }
 
     private async Task<VersaoConfiguracao> SemearVersaoAsync(
-        ProcessoSeletivo processo, ModeloDeDocumento modelo, Guid ato, string? identificador = null)
+        ProcessoSeletivo processo,
+        ModeloDeDocumento modelo,
+        Guid ato,
+        string? identificador = null,
+        DocumentoEdital? edital = null,
+        string? hashDoEditalCongelado = null)
     {
+        edital ??= await SemearEditalAsync(processo.Id, ArquivoDeEdital());
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
             processo.Id,
-            EnvelopeComModelo(modelo, identificador ?? IdentificadoresDeTeste.NovoValor()),
+            EnvelopeComModelo(
+                modelo, identificador ?? IdentificadoresDeTeste.NovoValor(), edital.Id, hashDoEditalCongelado ?? edital.HashSha256!),
             CorpusEnvelope.Codec.SchemaVersion,
             CorpusEnvelope.Codec.AlgoritmoHash,
             atoCriadorId: ato,
@@ -246,11 +379,13 @@ public sealed class ModeloNoAcervoPublicoIntegrationTests : IClassFixture<Proces
         return versao;
     }
 
-    private async Task SemearRetificacaoAsync(VersaoConfiguracao anterior, ModeloDeDocumento modelo, Guid ato, string identificador)
+    private async Task<VersaoConfiguracao> SemearRetificacaoAsync(
+        VersaoConfiguracao anterior, ModeloDeDocumento modelo, Guid ato, string identificador, DocumentoEdital? edital = null)
     {
+        edital ??= await SemearEditalAsync(anterior.ProcessoSeletivoId, ArquivoDeEdital());
         VersaoConfiguracao versao = VersaoConfiguracao.Suceder(
             anterior,
-            EnvelopeComModelo(modelo, identificador),
+            EnvelopeComModelo(modelo, identificador, edital.Id, edital.HashSha256!),
             CorpusEnvelope.Codec.SchemaVersion,
             CorpusEnvelope.Codec.AlgoritmoHash,
             atoCriadorId: ato,
@@ -261,16 +396,23 @@ public sealed class ModeloNoAcervoPublicoIntegrationTests : IClassFixture<Proces
         await using SelecaoDbContext context = _dbFixture.CreateDbContext();
         context.VersoesConfiguracao.Add(versao);
         await context.SaveChangesAsync();
+        return versao;
     }
 
     /// <summary>
-    /// O envelope canônico de referência, com a exigência que oferece modelo apontando o modelo
-    /// semeado — a forma exata que a publicação congela.
+    /// O envelope canônico de referência, com o documento do edital e a exigência que oferece modelo
+    /// apontando os documentos semeados — a forma exata que a publicação congela.
     /// </summary>
-    private static byte[] EnvelopeComModelo(ModeloDeDocumento modelo, string identificador)
+    private static byte[] EnvelopeComModelo(ModeloDeDocumento modelo, string identificador, Guid editalId, string hashDoEdital)
     {
         JsonObject envelope = (JsonObject)JsonNode.Parse(EnvelopeCanonicoGoldenTests.CanonicalizarReferencia().Bytes)!;
         envelope["identificadorLegivel"] = identificador;
+        envelope["identidadesUnidade"]!["administradora"]!["slug"] = UnidadeDoEnvelope;
+        envelope["hashesEdital"] = new JsonObject
+        {
+            ["documentoEditalId"] = editalId,
+            ["hashSha256"] = hashDoEdital,
+        };
         JsonObject[] comModelo = [.. envelope["documentosExigidos"]!["exigencias"]!.AsArray()
             .OfType<JsonObject>()
             .Where(static e => e["modelo"] is JsonObject)];
@@ -289,19 +431,42 @@ public sealed class ModeloNoAcervoPublicoIntegrationTests : IClassFixture<Proces
         return Encoding.UTF8.GetBytes(envelope.ToJsonString());
     }
 
+    /// <summary>Um documento do edital confirmado, com a cópia selada no bucket privado.</summary>
+    private async Task<DocumentoEdital> SemearEditalAsync(Guid processoId, byte[] conteudo)
+    {
+        DocumentoEdital edital = DocumentoEdital.IniciarPendente(processoId, TimeProvider.System, TimeSpan.FromMinutes(15));
+        edital.Confirmar(conteudo.LongLength, Convert.ToHexStringLower(SHA256.HashData(conteudo)), TimeProvider.System)
+            .IsSuccess.Should().BeTrue();
+        await Storage().SalvarConteudoSeladoAsync(edital.ObjectKeyConfirmado!, conteudo, DocumentoEdital.ContentTypeEsperado);
+
+        await using SelecaoDbContext context = _dbFixture.CreateDbContext();
+        context.DocumentosEdital.Add(edital);
+        await context.SaveChangesAsync();
+        return edital;
+    }
+
+    /// <summary>Um PDF mínimo; o texto distingue editais diferentes pelo conteúdo, e portanto pelo hash.</summary>
+    private static byte[] ArquivoDeEdital(string texto = "edital") => Encoding.ASCII.GetBytes($"%PDF-1.4\n% {texto}\n%%EOF\n");
+
+    private Uri EnderecoDoEdital(string identificador, Guid ato, DocumentoEdital edital, string tipoDoAto = TipoDoAto) =>
+        new($"{_minio.EnderecoDoAcervoPublico}/{ChaveNoAcervoPublico.DoEdital(AnoDoAto, UnidadeDoEnvelope, tipoDoAto, identificador, ato, edital.HashSha256!)}");
+
     private static string ChaveNoAcervo(Guid processoId, Guid ato, ModeloDeDocumento modelo) =>
         ChaveNoAcervoPublico.DoModelo(processoId, ato, ModeloDaExigencia.Do(modelo).Value!);
 
     private Uri EnderecoNoAcervo(Guid processoId, Guid ato, ModeloDeDocumento modelo) =>
         new($"{_minio.EnderecoDoAcervoPublico}/{ChaveNoAcervo(processoId, ato, modelo)}");
 
-    private async Task<List<string>> ObjetosDoProcessoNoAcervoAsync(Guid processoId)
+    private Task<List<string>> ObjetosDoProcessoNoAcervoAsync(Guid processoId) =>
+        ObjetosNoAcervoAsync($"selecao/processos-seletivos/{processoId:D}/");
+
+    private async Task<List<string>> ObjetosNoAcervoAsync(string prefixo)
     {
         IMinioClient cliente = _provider.GetRequiredKeyedService<IMinioClient>(StorageServiceCollectionExtensions.StorageInternalClientKey);
         List<string> chaves = [];
         await foreach (Item item in cliente.ListObjectsEnumAsync(new ListObjectsArgs()
             .WithBucket(MinioContainerFixture.BucketDoAcervoPublico)
-            .WithPrefix($"selecao/processos-seletivos/{processoId:D}/")
+            .WithPrefix(prefixo)
             .WithRecursive(true)))
         {
             chaves.Add(item.Key);

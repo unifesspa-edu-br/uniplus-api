@@ -114,7 +114,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
             EnvelopeCanonicoGoldenTests.CanonicalizarReferencia().Bytes)!;
 
         Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
+            Guid.CreateVersion7(), AtoDeTeste(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
 
         resultado.IsSuccess.Should().BeTrue(
             "o contrato público precisa saber ler o envelope que o canonicalizador de fato emite — recusa: {0}",
@@ -135,7 +135,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
         envelope["identificadorLegivel"] = identificador;
 
         Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
+            Guid.CreateVersion7(), AtoDeTeste(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Message.Should().Contain("identificador legível");
@@ -149,7 +149,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
         envelope["identificadorLegivel"] = "psiq-2026";
 
         Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
+            Guid.CreateVersion7(), AtoDeTeste(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
 
         resultado.Value!.IdentificadorLegivel.Should().Be("psiq-2026");
     }
@@ -161,7 +161,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
             EnvelopeCanonicoGoldenTests.CanonicalizarReferencia().Bytes)!;
 
         Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
+            Guid.CreateVersion7(), AtoDeTeste(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
 
         OfertaDeCursoCertameDto oferta = resultado.Value!.Ofertas.Should().ContainSingle().Subject;
         (oferta.CursoNome, oferta.CursoGrau, oferta.UnidadeOfertanteNome).Should()
@@ -176,7 +176,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
             EnvelopeCanonicoGoldenTests.CanonicalizarReferencia().Bytes)!;
 
         Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
+            Guid.CreateVersion7(), AtoDeTeste(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
 
         JsonNode json = JsonSerializer.SerializeToNode(resultado.Value!, ProjecaoDoCertamePublicado.OpcoesDoDocumento)!;
         json["localidade"]!["fusoHorario"]!["id"]!.GetValue<string>().Should().Be(FusoInstitucional.ZoneId);
@@ -191,7 +191,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
         envelope["localidade"]!["fusoHorario"] = "America/Sao_Paulo";
 
         Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
+            Guid.CreateVersion7(), AtoDeTeste(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
 
         resultado.IsFailure.Should().BeTrue();
     }
@@ -351,8 +351,8 @@ public sealed class FronteiraDeBlocosDoCertameTests
     }
 
     [Theory(DisplayName = "Documento de outra versão de projeção é recusado, mesmo íntegro")]
-    [InlineData("7")]
-    [InlineData("5")]
+    [InlineData("8")]
+    [InlineData("6")]
     public void TentarLerProjecao_QuandoAVersaoNaoEADesteBinario_DeveRecusar(string outraVersao)
     {
         // Num deploy em fases, um processo novo materializa a versão seguinte e um processo antigo
@@ -386,7 +386,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
             EnvelopeCanonicoGoldenTests.CanonicalizarReferencia().Bytes)!;
 
         Result<CertamePublicadoDto> projecao = ProjecaoDoCertamePublicado.Projetar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
+            Guid.CreateVersion7(), AtoDeTeste(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
 
         projecao.IsSuccess.Should().BeTrue(projecao.Error?.Message);
 
@@ -404,4 +404,6 @@ public sealed class FronteiraDeBlocosDoCertameTests
         JsonObject envelope = (JsonObject)JsonNode.Parse(canonico.Bytes)!;
         return [.. envelope.Select(static par => par.Key)];
     }
+
+    private static AtoDaDivulgacao AtoDeTeste() => new(Guid.CreateVersion7(), 2026, "EDITAL_ABERTURA");
 }

@@ -33,4 +33,38 @@ public static class ChaveNoAcervoPublico
 
         return $"selecao/processos-seletivos/{processoSeletivoId:D}/atos/{atoId:D}/modelos-de-documento/{modelo.ModeloId:D}/{modelo.HashSha256}.{ModeloDeDocumento.ExtensaoDe(modelo.Formato)}";
     }
+
+    /// <summary>
+    /// A chave do documento do edital, na forma que a ADR-0132 fixa para o acervo de editais: ano,
+    /// unidade, tipo do ato, processo pelo identificador legível, ato e hash do documento.
+    /// </summary>
+    /// <remarks>
+    /// O ato é o último desempate: a retificação que reaproveita o documento do ato anterior repete
+    /// todos os outros segmentos, inclusive o hash.
+    /// </remarks>
+    public static string DoEdital(
+        int anoDoAto,
+        string unidadeAdministradora,
+        string tipoDoAto,
+        string identificadorLegivelDoProcesso,
+        Guid atoId,
+        string hashSha256)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(unidadeAdministradora);
+        ArgumentException.ThrowIfNullOrWhiteSpace(tipoDoAto);
+        ArgumentException.ThrowIfNullOrWhiteSpace(identificadorLegivelDoProcesso);
+        ArgumentException.ThrowIfNullOrWhiteSpace(hashSha256);
+
+        return $"editais/{anoDoAto:D4}/{unidadeAdministradora}/{SegmentoDoTipo(tipoDoAto)}/{identificadorLegivelDoProcesso}/{atoId:D}/{hashSha256}.pdf";
+    }
+
+    /// <summary>
+    /// O código do tipo do ato na forma dos demais segmentos legíveis do endereço: minúsculas e hífen.
+    /// </summary>
+    public static string SegmentoDoTipo(string tipoDoAto)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(tipoDoAto);
+
+        return tipoDoAto.ToLowerInvariant().Replace('_', '-');
+    }
 }

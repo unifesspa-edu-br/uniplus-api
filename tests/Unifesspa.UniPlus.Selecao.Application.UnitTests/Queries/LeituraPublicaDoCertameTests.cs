@@ -190,7 +190,7 @@ public sealed class LeituraPublicaDoCertameTests
         new PeriodoInscricaoCertameDto("001/2026", Agora.AddDays(-1), Agora.AddDays(20)),
         new LocalidadeCertameDto("1504208", "Marabá", "PA", FusoHorarioDto.Institucional),
         new UnidadeAdministradoraCertameDto("UNIFESSPA", "Universidade", "Autarquia", "Marabá", "PA"),
-        new DocumentoEditalCertameDto(Guid.CreateVersion7(), new string('b', 64)),
+        new DocumentoEditalCertameDto(Guid.CreateVersion7(), new string('b', 64), new Uri("https://acervo.teste/edital.pdf")),
         [],
         ["AC"],
         [new QuadroDeVagasCertameDto(Guid.CreateVersion7(), [], 100)],

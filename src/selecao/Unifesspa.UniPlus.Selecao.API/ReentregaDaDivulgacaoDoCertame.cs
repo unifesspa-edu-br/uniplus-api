@@ -63,9 +63,10 @@ internal sealed class ReentregaDaDivulgacaoDoCertame : IHandlerPolicy
                 .ScheduleRetry(TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(15))
                 .Then.MoveToErrorQueue();
 
-            // A divulgação espera o modelo estar no acervo público, então a indisponibilidade do
-            // armazenamento — reinício, bucket público ainda não provisionado no deploy — esconderia
-            // o certame inteiro se fosse tratada como blip. Mesma escala do caso acima.
+            // A divulgação espera o edital e os modelos estarem no acervo público, então a
+            // indisponibilidade do armazenamento — reinício, bucket público ainda não provisionado no
+            // deploy — esconderia o certame inteiro se fosse tratada como blip. Mesma escala do caso
+            // acima.
             chain.OnException<AcervoPublicoIndisponivelException>()
                 .ScheduleRetry(TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(15))
                 .Then.MoveToErrorQueue();

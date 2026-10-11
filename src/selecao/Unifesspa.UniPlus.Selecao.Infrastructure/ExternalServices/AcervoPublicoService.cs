@@ -17,8 +17,8 @@ public sealed class AcervoPublicoService : IAcervoPublico
     private readonly IOptions<AcervoPublicoOptions> _acervoOptions;
 
     /// <param name="storageService">
-    /// O storage, resolvido no uso: a materialização de todo certame depende deste port, e só a do
-    /// certame com documento a publicar precisa do armazenamento — e das credenciais dele.
+    /// O storage, resolvido no uso: o port entra em todo grafo que materializa a divulgação, e o
+    /// armazenamento — e as credenciais dele — só é exigido quando a cópia acontece.
     /// </param>
     public AcervoPublicoService(
         Func<IStorageService> storageService,

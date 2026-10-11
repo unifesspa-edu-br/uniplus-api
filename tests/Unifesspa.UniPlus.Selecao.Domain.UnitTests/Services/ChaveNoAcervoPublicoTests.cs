@@ -29,4 +29,20 @@ public sealed class ChaveNoAcervoPublicoTests
             + "/modelos-de-documento/0199a000-0000-7000-8000-0000000000aa"
             + "/dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd.odt");
     }
+
+    [Fact(DisplayName = "A chave do edital no acervo é a da ADR-0132: ano, unidade, tipo do ato, processo, ato e hash")]
+    public void DoEdital_FixaAChaveDoEnderecoPublicado()
+    {
+        string chave = ChaveNoAcervoPublico.DoEdital(
+            2026,
+            "ceps",
+            "EDITAL_RETIFICACAO",
+            "psr-medicina-2027",
+            new Guid("0199a000-0000-7000-8000-0000000000f0"),
+            new string('e', 64));
+
+        chave.Should().Be(
+            "editais/2026/ceps/edital-retificacao/psr-medicina-2027/0199a000-0000-7000-8000-0000000000f0"
+            + "/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee.pdf");
+    }
 }
