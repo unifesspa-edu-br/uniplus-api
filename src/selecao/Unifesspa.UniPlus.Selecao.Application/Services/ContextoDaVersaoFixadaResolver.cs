@@ -12,16 +12,17 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// <summary>
 /// O contexto de avaliação da finalidade Inscrição na versão FIXADA por uma inscrição ao iniciar —
 /// nunca a vigente por relógio (UNI-REQ-0084): as regras recortadas, os termos exigidos dessa
-/// finalidade, a data de referência dos fatos congelada na publicação e o que a versão admite como
-/// resposta. Reusado por Salvar e por Submeter (issue #1859), que avaliam a mesma versão do
-/// mesmo jeito.
+/// finalidade, a data de referência dos fatos congelada na publicação, o que a versão admite como
+/// resposta e a configuração inteira que a avaliação da inscrição lê (ADR-0143). Reusado por Salvar e
+/// por Submeter (issue #1859), que avaliam a mesma versão do mesmo jeito.
 /// </summary>
 public sealed record ContextoDaVersaoFixada(
     FormularioPortavel Regras,
     IReadOnlyCollection<TermoExigidoFormulario> TermosExigidos,
     DateOnly? DataReferenciaFatos,
     IReadOnlyDictionary<string, IReadOnlySet<string>> Ofertas,
-    RespostasAdmitidas Admitidas);
+    RespostasAdmitidas Admitidas,
+    ConfiguracaoAvaliavel Configuracao);
 
 public static class ContextoDaVersaoFixadaResolver
 {
@@ -76,7 +77,8 @@ public static class ContextoDaVersaoFixadaResolver
             [.. reidratado.Value!.Grafo.TermosExigidos.Where(static t => t.Finalidade == FinalidadeFormulario.Inscricao)];
 
         return Result<ContextoDaVersaoFixada>.Success(new ContextoDaVersaoFixada(
-            recorte.Regras, termos, dataReferencia.Value, avaliavel.Value!.Ofertas, Admitidas(reidratado.Value!.Grafo)));
+            recorte.Regras, termos, dataReferencia.Value, avaliavel.Value!.Ofertas, Admitidas(reidratado.Value!.Grafo),
+            ConfiguracaoAvaliavelDoProcesso.DoCongelado(reidratado.Value!.Grafo, avaliavel.Value!)));
     }
 
     public static RespostasAdmitidas Admitidas(GrafoConfiguracao grafo)

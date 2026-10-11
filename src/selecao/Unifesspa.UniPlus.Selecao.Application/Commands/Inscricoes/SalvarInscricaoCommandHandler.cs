@@ -32,6 +32,7 @@ public static class SalvarInscricaoCommandHandler
         ICertameDivulgadoRepository certameDivulgadoRepository,
         IRegistroCodecsEnvelope registroCodecs,
         IResolvedorFusoInstitucional resolvedorFuso,
+        IConferenciaEnderecoGeo conferenciaEnderecoGeo,
         ISelecaoUnitOfWork unitOfWork,
         IUserContext userContext,
         TimeProvider timeProvider,
@@ -43,6 +44,7 @@ public static class SalvarInscricaoCommandHandler
         ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
         ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(resolvedorFuso);
+        ArgumentNullException.ThrowIfNull(conferenciaEnderecoGeo);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -139,7 +141,18 @@ public static class SalvarInscricaoCommandHandler
         await inscricaoRepository.AtualizarAsync(inscricao, cancellationToken).ConfigureAwait(false);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        return Result<InscricaoDto>.Success(InscricaoDto.De(inscricao));
+        // A avaliação devolvida é a do que ficou gravado, e não se grava: o rascunho a recalcula.
+        Result<ResultadoDaAvaliacaoDaInscricao> avaliada = await Services.PreparacaoDaAvaliacaoDaInscricao.AvaliarAsync(
+            inscricao,
+            contexto.Value!,
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal),
+            new Dictionary<string, IReadOnlyList<OcorrenciaRespondida>>(StringComparer.Ordinal),
+            envio,
+            conferenciaEnderecoGeo,
+            cancellationToken).ConfigureAwait(false);
+        return avaliada.IsFailure
+            ? Result<InscricaoDto>.Failure(avaliada.Error!)
+            : Result<InscricaoDto>.Success(InscricaoDto.De(inscricao, AvaliacaoDaInscricaoDto.De(avaliada.Value!)));
     }
 
     /// <summary>

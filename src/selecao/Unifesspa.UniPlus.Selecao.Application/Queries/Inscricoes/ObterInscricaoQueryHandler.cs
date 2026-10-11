@@ -1,8 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.Inscricoes;
 
+using Abstractions;
+
 using Domain.Entities;
 using Domain.Errors;
 using Domain.Interfaces;
+using Domain.ValueObjects;
 
 using DTOs;
 
@@ -13,19 +16,26 @@ using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 
 /// <summary>
 /// Devolve a inscrição do dono do token — nunca de outro CPF, mesmo que o <c>sub</c> coincida por
-/// engano de emissor (<see cref="Inscricao.ConferirDono"/> confere o <c>sub</c> gravado).
+/// engano de emissor (<see cref="Inscricao.ConferirDono"/> confere o <c>sub</c> gravado) —, com a
+/// avaliação do que ela gravou.
 /// </summary>
 public static class ObterInscricaoQueryHandler
 {
     public static async Task<Result<InscricaoDto>> Handle(
         ObterInscricaoQuery query,
         IInscricaoRepository inscricaoRepository,
+        IProcessoSeletivoRepository processoSeletivoRepository,
+        IRegistroCodecsEnvelope registroCodecs,
+        IResolvedorFusoInstitucional resolvedorFuso,
+        IConferenciaEnderecoGeo conferenciaEnderecoGeo,
         IUserContext userContext,
+        TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(inscricaoRepository);
         ArgumentNullException.ThrowIfNull(userContext);
+        ArgumentNullException.ThrowIfNull(timeProvider);
 
         if (userContext.Cpf is not { } cpfDoToken)
         {
@@ -54,6 +64,12 @@ public static class ObterInscricaoQueryHandler
             return Result<InscricaoDto>.Failure(erroDono);
         }
 
-        return Result<InscricaoDto>.Success(InscricaoDto.De(inscricao));
+        Result<ResultadoDaAvaliacaoDaInscricao> avaliacao = await Services.PreparacaoDaAvaliacaoDaInscricao
+            .AvaliarGravadaAsync(
+                inscricao, processoSeletivoRepository, registroCodecs, resolvedorFuso, conferenciaEnderecoGeo, timeProvider.GetUtcNow(), cancellationToken)
+            .ConfigureAwait(false);
+        return avaliacao.IsFailure
+            ? Result<InscricaoDto>.Failure(avaliacao.Error!)
+            : Result<InscricaoDto>.Success(InscricaoDto.De(inscricao, AvaliacaoDaInscricaoDto.De(avaliacao.Value!)));
     }
 }

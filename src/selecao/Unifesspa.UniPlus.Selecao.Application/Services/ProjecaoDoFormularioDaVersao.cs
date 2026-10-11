@@ -93,7 +93,11 @@ public static class ProjecaoDoFormularioDaVersao
             return VersaoSemApresentacao();
         }
 
-        return Result<FormularioRenderizavelDto>.Success(FormularioRenderizavelDto.De(formulario, comprovacao));
+        DependenciasDaAvaliacaoDto? dependencias = finalidade == FinalidadeFormulario.Inscricao
+            && Domain.Services.AvaliacaoDaInscricao.Dependencias(avaliavel.Value!.Definicao) is { } daAvaliacao
+                ? new DependenciasDaAvaliacaoDto(daAvaliacao.Fatos, daAvaliacao.Grupos)
+                : null;
+        return Result<FormularioRenderizavelDto>.Success(FormularioRenderizavelDto.De(formulario, comprovacao, dependencias));
     }
 
     /// <summary>

@@ -40,6 +40,7 @@ public static class IniciarInscricaoCommandHandler
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegistroCodecsEnvelope registroCodecs,
         IResolvedorFusoInstitucional resolvedorFuso,
+        IConferenciaEnderecoGeo conferenciaEnderecoGeo,
         TimeProvider timeProvider,
         ISelecaoUnitOfWork unitOfWork,
         IUserContext userContext,
@@ -51,6 +52,7 @@ public static class IniciarInscricaoCommandHandler
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(resolvedorFuso);
+        ArgumentNullException.ThrowIfNull(conferenciaEnderecoGeo);
         ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(userContext);
@@ -77,7 +79,7 @@ public static class IniciarInscricaoCommandHandler
             .ConfigureAwait(false);
         if (existente is not null)
         {
-            return Result<InscricaoDto>.Success(InscricaoDto.De(existente));
+            return await ComAvaliacaoAsync(existente).ConfigureAwait(false);
         }
 
         Result<Services.VersaoDivulgada> versaoDivulgada = await Services.VersaoDivulgadaResolver
@@ -125,9 +127,20 @@ public static class IniciarInscricaoCommandHandler
                     "A inscrição colidiu no índice único, mas não foi possível relê-la."));
             }
 
-            return Result<InscricaoDto>.Success(InscricaoDto.De(vencedora));
+            return await ComAvaliacaoAsync(vencedora).ConfigureAwait(false);
         }
 
-        return Result<InscricaoDto>.Success(InscricaoDto.De(inscricao));
+        return await ComAvaliacaoAsync(inscricao).ConfigureAwait(false);
+
+        async Task<Result<InscricaoDto>> ComAvaliacaoAsync(Inscricao lida)
+        {
+            Result<ResultadoDaAvaliacaoDaInscricao> avaliacao = await Services.PreparacaoDaAvaliacaoDaInscricao
+                .AvaliarGravadaAsync(
+                    lida, processoSeletivoRepository, registroCodecs, resolvedorFuso, conferenciaEnderecoGeo, timeProvider.GetUtcNow(), cancellationToken)
+                .ConfigureAwait(false);
+            return avaliacao.IsFailure
+                ? Result<InscricaoDto>.Failure(avaliacao.Error!)
+                : Result<InscricaoDto>.Success(InscricaoDto.De(lida, AvaliacaoDaInscricaoDto.De(avaliacao.Value!)));
+        }
     }
 }

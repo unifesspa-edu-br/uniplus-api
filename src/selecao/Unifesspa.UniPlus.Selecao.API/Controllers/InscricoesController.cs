@@ -83,6 +83,29 @@ public sealed class InscricoesController : ControllerBase
     }
 
     /// <summary>
+    /// Avalia, sem gravar nada, as respostas que o dono do token tem na tela (ADR-0143): as
+    /// modalidades em que ele concorre e o que falta responder, na versão fixada ao iniciar. É prévia:
+    /// não recusa por restrição nem por obrigatoriedade, só pela forma do corpo.
+    /// </summary>
+    [HttpPost("processos-seletivos/{id:guid}/inscricao/avaliacoes")]
+    [Authorize(Policy = "Candidato")]
+    [VendorMediaType(Resource = "avaliacao-da-inscricao", Versions = [1])]
+    [ProducesResponseType(typeof(AvaliacaoDaInscricaoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> Avaliar(Guid id, [FromBody] AvaliacaoDaInscricaoRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        Result<AvaliacaoDaInscricaoDto> resultado = await _queryBus
+            .Send(new AvaliarInscricaoQuery(id, request), cancellationToken)
+            .ConfigureAwait(false);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
     /// Inicia a inscrição fixando a versão do formulário divulgada neste instante, ou devolve a
     /// que já existe para o mesmo CPF e processo — idempotente por construção (UNI-REQ-0023), não
     /// por <c>Idempotency-Key</c>.
