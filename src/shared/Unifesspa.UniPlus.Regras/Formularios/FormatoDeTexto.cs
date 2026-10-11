@@ -4,7 +4,6 @@ using System.Text.Json;
 
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Regras.Enums;
-using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// A resposta do campo de texto está no formato que o fato declara no catálogo (ADR-0136): o tipo de
@@ -41,6 +40,6 @@ public sealed record FormatoDeTexto : RestricaoValor
     /// <summary>O token do formato no catálogo, como <c>CPF</c> ou <c>EMAIL</c>.</summary>
     public string Formato { get; }
 
-    public override Ternario Avaliar(JsonElement resposta, IReadOnlyDictionary<string, FatoResolvido> fatos) =>
+    public override Ternario Avaliar(JsonElement resposta, ContextoDaResposta contexto) =>
         ComoTernario(resposta.ValueKind == JsonValueKind.String && Conferencias[Formato](resposta.GetString()!));
 }

@@ -1,0 +1,93 @@
+{
+  "descricao": "O deslocamento soma os anos e depois os dias, e o 29 de fevereiro que cai em ano sem ele vira 28: um ano e um dia antes do envio de 29/02/2028 é 27/02/2027, que atende, e 26/02/2027 viola.",
+  "regras": {
+    "etapas": [
+      {
+        "codigo": "DADOS",
+        "exibicao": null,
+        "itens": [
+          {
+            "fatoCodigo": "DATA_A",
+            "exibicao": null,
+            "obrigatoriedade": "SEMPRE",
+            "predicadoObrigatoriedade": null,
+            "restricoes": [
+              {
+                "tipo": "FAIXA_DE_DATA",
+                "minimo": null,
+                "maximo": null,
+                "entradas": null,
+                "fatos": null,
+                "dataMinima": {
+                  "ancora": "ENVIO",
+                  "data": null,
+                  "anos": -1,
+                  "dias": -1
+                },
+                "dataMaxima": null
+              }
+            ],
+            "impedimento": null,
+            "oferta": null,
+            "formato": null
+          },
+          {
+            "fatoCodigo": "DATA_B",
+            "exibicao": null,
+            "obrigatoriedade": "SEMPRE",
+            "predicadoObrigatoriedade": null,
+            "restricoes": [
+              {
+                "tipo": "FAIXA_DE_DATA",
+                "minimo": null,
+                "maximo": null,
+                "entradas": null,
+                "fatos": null,
+                "dataMinima": {
+                  "ancora": "ENVIO",
+                  "data": null,
+                  "anos": -1,
+                  "dias": -1
+                },
+                "dataMaxima": null
+              }
+            ],
+            "impedimento": null,
+            "oferta": null,
+            "formato": null
+          }
+        ],
+        "grupos": []
+      }
+    ],
+    "termos": [],
+    "derivacoes": [],
+    "agregados": []
+  },
+  "respostas": {
+    "DATA_A": "2027-02-27",
+    "DATA_B": "2027-02-26"
+  },
+  "grupos": {},
+  "etapasConcluidas": [],
+  "pressupostos": {},
+  "envio": {
+    "instante": "2028-02-29T15:00:00Z",
+    "fuso": "America/Belem"
+  },
+  "esperado": {
+    "campos": [
+      {
+        "fatoCodigo": "DATA_A",
+        "estado": "RESOLVIDO",
+        "restricoesVioladas": []
+      },
+      {
+        "fatoCodigo": "DATA_B",
+        "restricoesVioladas": [
+          "FAIXA_DE_DATA"
+        ]
+      }
+    ]
+  }
+}

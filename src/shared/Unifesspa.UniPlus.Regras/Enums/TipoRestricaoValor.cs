@@ -22,4 +22,7 @@ public enum TipoRestricaoValor
 
     /// <summary>A resposta de texto está no formato do fato no catálogo, como CPF ou e-mail.</summary>
     FormatoTexto = 6,
+
+    /// <summary>A resposta de data fica entre uma data mínima e uma máxima, fixas ou contadas do dia do envio.</summary>
+    FaixaDeData = 7,
 }

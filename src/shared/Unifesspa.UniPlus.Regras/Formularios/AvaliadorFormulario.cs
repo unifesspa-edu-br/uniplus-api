@@ -78,6 +78,7 @@ public static class AvaliadorFormulario
         ];
         OrdemTopologica ordem = GrafoDeFatos.Ordenar(nos);
 
+        DateOnly? diaDoEnvio = entrada.Envio?.Dia;
         Dictionary<string, FatoResolvido> fatos = new(entrada.FatosConhecidos, StringComparer.Ordinal);
         Dictionary<string, AvaliacaoItem> avaliacaoPorFato = new(StringComparer.Ordinal);
         Dictionary<string, AvaliacaoGrupo> avaliacaoPorGrupo = new(StringComparer.Ordinal);
@@ -98,7 +99,7 @@ public static class AvaliadorFormulario
 
             if (grupoPorCodigo.TryGetValue(codigo, out (DefinicaoEtapa Etapa, DefinicaoGrupo Grupo) doGrupo))
             {
-                avaliacaoPorGrupo[codigo] = AvaliarGrupo(doGrupo.Etapa, doGrupo.Grupo, entrada, fatos);
+                avaliacaoPorGrupo[codigo] = AvaliarGrupo(doGrupo.Etapa, doGrupo.Grupo, entrada, diaDoEnvio, fatos);
                 continue;
             }
 
@@ -109,6 +110,7 @@ public static class AvaliadorFormulario
                 item,
                 entrada.Respostas.TryGetValue(item.FatoCodigo, out JsonElement resposta) ? resposta : null,
                 entrada.EtapasConcluidas.Contains(etapa.Codigo),
+                diaDoEnvio,
                 fatos);
             fatos[codigo] = fato;
             avaliacaoPorFato[codigo] = avaliacao;
@@ -172,7 +174,11 @@ public static class AvaliadorFormulario
     /// mesmo modo que a resposta que viola restrição.
     /// </summary>
     private static AvaliacaoGrupo AvaliarGrupo(
-        DefinicaoEtapa etapa, DefinicaoGrupo grupo, EntradaAvaliacaoFormulario entrada, IReadOnlyDictionary<string, FatoResolvido> fatos)
+        DefinicaoEtapa etapa,
+        DefinicaoGrupo grupo,
+        EntradaAvaliacaoFormulario entrada,
+        DateOnly? diaDoEnvio,
+        IReadOnlyDictionary<string, FatoResolvido> fatos)
     {
         Ternario visivel = E(etapa.Exibicao?.Avaliar(fatos) ?? Ternario.Verdadeiro, grupo.Exibicao?.Avaliar(fatos) ?? Ternario.Verdadeiro);
         Ternario obrigatorio = ObrigatorioSeVisivel(visivel, grupo.Obrigatoriedade, fatos);
@@ -204,7 +210,7 @@ public static class AvaliadorFormulario
                 $"A identidade '{repetida.Key}' aparece em mais de uma ocorrência do grupo '{grupo.Codigo}'.", nameof(entrada));
         }
 
-        AvaliacaoOcorrencia[] ocorrencias = [.. respondidas.Select(o => AvaliarOcorrencia(etapa.Codigo, grupo, o, etapaConcluida, fatos))];
+        AvaliacaoOcorrencia[] ocorrencias = [.. respondidas.Select(o => AvaliarOcorrencia(etapa.Codigo, grupo, o, etapaConcluida, diaDoEnvio, fatos))];
         int quantas = ocorrencias.Length;
         bool contagemValida = (grupo.Maximo is not { } maximo || quantas <= maximo) && (quantas >= grupo.Minimo || (quantas == 0 && obrigatorio == Ternario.Falso));
         // A lista vazia, que só vale no grupo opcional, não tem ocorrência do candidato a conferir.
@@ -232,7 +238,12 @@ public static class AvaliadorFormulario
     /// anteriores da mesma ocorrência; a ocorrência resolve quando nenhum subitem ficou pendente.
     /// </summary>
     private static AvaliacaoOcorrencia AvaliarOcorrencia(
-        string etapaCodigo, DefinicaoGrupo grupo, OcorrenciaRespondida ocorrencia, bool etapaConcluida, IReadOnlyDictionary<string, FatoResolvido> fatos)
+        string etapaCodigo,
+        DefinicaoGrupo grupo,
+        OcorrenciaRespondida ocorrencia,
+        bool etapaConcluida,
+        DateOnly? diaDoEnvio,
+        IReadOnlyDictionary<string, FatoResolvido> fatos)
     {
         Dictionary<string, FatoResolvido> contexto = new(fatos, StringComparer.Ordinal);
         Dictionary<string, FatoResolvido> daOcorrencia = new(StringComparer.Ordinal);
@@ -245,6 +256,7 @@ public static class AvaliadorFormulario
                 subitem,
                 ocorrencia.Respostas.TryGetValue(subitem.FatoCodigo, out JsonElement resposta) ? resposta : null,
                 etapaConcluida,
+                diaDoEnvio,
                 contexto);
             contexto[subitem.FatoCodigo] = fato;
             daOcorrencia[subitem.FatoCodigo] = fato;
@@ -265,6 +277,7 @@ public static class AvaliadorFormulario
         DefinicaoItem item,
         JsonElement? resposta,
         bool etapaConcluida,
+        DateOnly? diaDoEnvio,
         IReadOnlyDictionary<string, FatoResolvido> fatos)
     {
         Ternario visivel = E(visivelDoContentor, item.Exibicao?.Avaliar(fatos) ?? Ternario.Verdadeiro);
@@ -298,9 +311,10 @@ public static class AvaliadorFormulario
         if (resposta is { } respondida && !RespostaDeCampo.EstaVazia(respondida))
         {
             bool algumaIndeterminada = false;
+            ContextoDaResposta contexto = new(fatos, diaDoEnvio);
             foreach (RestricaoValor restricao in item.RestricoesDaResposta)
             {
-                switch (restricao.Avaliar(respondida, fatos))
+                switch (restricao.Avaliar(respondida, contexto))
                 {
                     case Ternario.Falso:
                         violadas.Add(restricao);

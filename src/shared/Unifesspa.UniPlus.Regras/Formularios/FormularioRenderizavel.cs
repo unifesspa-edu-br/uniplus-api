@@ -107,6 +107,10 @@ public sealed record TermoRenderizavel(
 /// A data em que os fatos que dependem do tempo, como a faixa etária, são calculados. Nula quando o
 /// processo não declara referência temporal.
 /// </param>
+/// <param name="FusoDoEnvio">
+/// A zona, no identificador IANA, em que se conta o dia do envio, de que partem os limites da faixa de
+/// data: a da janela de inscrição. Nula no modelo, que não tem janela.
+/// </param>
 public record FormularioRenderizavel(
     string Finalidade,
     string? Titulo,
@@ -116,7 +120,8 @@ public record FormularioRenderizavel(
     IReadOnlyList<GrupoRenderizavel> Grupos,
     FormularioPortavel Regras,
     IReadOnlyList<PressupostoRenderizavel> Pressupostos,
-    DateOnly? DataReferenciaFatos)
+    DateOnly? DataReferenciaFatos,
+    string? FusoDoEnvio)
 {
     /// <summary>
     /// Monta o formulário a partir da apresentação, do recorte das regras da finalidade e do que
@@ -136,7 +141,8 @@ public record FormularioRenderizavel(
         IEnumerable<CampoRenderizavel> camposDosOutrosFormularios,
         IReadOnlyDictionary<string, ApresentacaoDoFato> apresentacaoDosNaoPerguntados,
         IEnumerable<DefinicaoAgregado> agregados,
-        DateOnly? dataReferenciaFatos)
+        DateOnly? dataReferenciaFatos,
+        string? fusoDoEnvio)
     {
         ArgumentNullException.ThrowIfNull(recorte);
         ArgumentNullException.ThrowIfNull(camposDosOutrosFormularios);
@@ -167,6 +173,6 @@ public record FormularioRenderizavel(
                     calculadoDe.GetValueOrDefault(codigo)))];
 
         return new FormularioRenderizavel(
-            finalidade, titulo, etapas, termos, campos, grupos, recorte.Regras, pressupostos, dataReferenciaFatos);
+            finalidade, titulo, etapas, termos, campos, grupos, recorte.Regras, pressupostos, dataReferenciaFatos, fusoDoEnvio);
     }
 }

@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Services;
 
-using System.Globalization;
 using System.Text.Json;
 
 using Abstractions;
@@ -9,6 +8,8 @@ using Domain.Enums;
 using Domain.ValueObjects;
 
 using Kernel.Results;
+
+using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Calcula no servidor os fatos que <c>Unifesspa.UniPlus.Regras.Services.DerivadosDoSistema</c>
@@ -41,8 +42,7 @@ public static class DerivadosDoSistemaInscricao
         if (dataReferenciaFatos is { } referencia
             && respostas.TryGetValue("DATA_NASCIMENTO", out JsonElement dataNascimentoElemento))
         {
-            if (dataNascimentoElemento.ValueKind != JsonValueKind.String
-                || !DateOnly.TryParse(dataNascimentoElemento.GetString(), CultureInfo.InvariantCulture, out DateOnly nascimento))
+            if (DiaDoCalendario.Ler(dataNascimentoElemento) is not { } nascimento)
             {
                 return Result<IReadOnlyDictionary<string, JsonElement>>.Failure(new DomainError(
                     "Inscricao.DataNascimentoInvalida", "A data de nascimento não é uma data válida."));

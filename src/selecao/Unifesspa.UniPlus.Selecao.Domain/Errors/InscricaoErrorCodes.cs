@@ -10,6 +10,7 @@ public static class InscricaoErrorCodes
     public const string DonoDivergente = "Inscricao.DonoDivergente";
     public const string NaoEncontrada = "Inscricao.NaoEncontrada";
     public const string RespostaInvalida = "Inscricao.RespostaInvalida";
+    public const string DataForaDaFaixa = "Inscricao.DataForaDaFaixa";
     public const string FatoForaDoFormulario = "Inscricao.FatoForaDoFormulario";
     public const string ValorForaDoTipo = "Inscricao.ValorForaDoTipo";
     public const string CpfDiferenteDoDono = "Inscricao.CpfDiferenteDoDono";

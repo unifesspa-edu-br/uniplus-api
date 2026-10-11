@@ -89,7 +89,7 @@ public static class IniciarInscricaoCommandHandler
         }
 
         // A inscrição já existente é devolvida acima mesmo fora do período: devolvê-la é leitura.
-        if (Services.PeriodoDaInscricaoResolver.Conferir(versaoDivulgada.Value!.Versao, registroCodecs, resolvedorFuso, timeProvider) is { } foraDoPeriodo)
+        if (Services.PeriodoDaInscricaoResolver.Conferir(versaoDivulgada.Value!.Versao, registroCodecs, resolvedorFuso, timeProvider.GetUtcNow()) is { } foraDoPeriodo)
         {
             return Result<InscricaoDto>.Failure(foraDoPeriodo);
         }

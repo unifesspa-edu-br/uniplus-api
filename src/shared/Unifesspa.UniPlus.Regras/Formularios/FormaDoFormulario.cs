@@ -208,6 +208,7 @@ public static class FormaDoItem
             TipoRestricaoValor.TamanhoTexto => campo == TipoRenderizacao.Texto,
             TipoRestricaoValor.OpcoesPermitidas or TipoRestricaoValor.OpcoesDasRespostas => campo.EhSelecao(),
             TipoRestricaoValor.MunicipiosDaUf => campo == TipoRenderizacao.Municipio,
+            TipoRestricaoValor.FaixaDeData => campo == TipoRenderizacao.Data,
             TipoRestricaoValor.Nenhuma => false,
             _ => throw new ArgumentOutOfRangeException(nameof(restricao), restricao, "Tipo de restrição desconhecido."),
         };
@@ -217,7 +218,8 @@ public static class FormaDoItem
 
     /// <summary>
     /// As restrições cabem no tipo do campo — faixa só no numérico, tamanho só no de texto, opções
-    /// só no de seleção, municípios da UF só no de município, onde são obrigatórios —, não se repetem
+    /// só no de seleção, municípios da UF só no de município, onde são obrigatórios, faixa de data só
+    /// no de data —, não se repetem
     /// por tipo, não citam o próprio fato, e os limites da faixa cabem nas casas decimais do edital.
     /// </summary>
     private static IEnumerable<FieldError> ConferirRestricoes(string codigo, TipoRenderizacao tipoRenderizacao, IReadOnlyList<RestricaoValor> restricoes)
@@ -239,7 +241,7 @@ public static class FormaDoItem
             {
                 yield return new($"restricoes[{indice}]", new DomainError(
                     ItemFormularioErrorCodes.RestricaoIncoerente,
-                    "A faixa numérica só se aplica ao campo numérico, o tamanho só ao de texto, as opções só ao de seleção e os municípios da UF só ao de município."));
+                    "A faixa numérica só se aplica ao campo numérico, o tamanho só ao de texto, as opções só ao de seleção, os municípios da UF só ao de município e a faixa de data só ao de data."));
             }
 
             if (restricoes[indice] is FaixaNumerica faixa

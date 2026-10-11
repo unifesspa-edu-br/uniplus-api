@@ -280,6 +280,35 @@ public sealed class SalvarInscricaoCommandHandlerTests
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Data fora da faixa é recusada no rascunho com os limites do dia do salvar")]
+    public async Task Handle_DataForaDaFaixa_RecusaComOsLimites()
+    {
+        Cpf cpf = PersonasDeTeste.KevinCarvalho;
+        FatoColetado item = FatoColetado.Criar(
+            "DATA_NASCIMENTO", 0, "Data de nascimento", TipoRenderizacao.Data, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL",
+            restricoes: [new FaixaDeData(LimiteDeData.NoEnvio(anos: -120, dias: 0), LimiteDeData.NoEnvio(anos: 0, dias: 0))]).Value!;
+        (VersaoConfiguracao versao, GrafoConfiguracao grafo) = MontarVersaoComItem(item);
+        Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+
+        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
+        inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
+        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
+        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+
+        InscricaoRequest request = new(
+            null, new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["DATA_NASCIMENTO"] = JsonSerializer.SerializeToElement("2027-01-10") }, null, null);
+
+        Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
+            new SalvarInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
+            inscricaoRepository, processoRepository, DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(), unitOfWork, UsuarioComCpf(cpf), DivulgacaoDeTeste.Relogio, CancellationToken.None);
+
+        resultado.Errors.Should().ContainSingle(static e => e.Field == "DATA_NASCIMENTO" && e.Error.Code == InscricaoErrorCodes.DataForaDaFaixa)
+            .Which.Error.Message.Should().Be("Informe uma data entre 15/01/1906 e 15/01/2026.");
+        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "Inscrição já enviada recusa o rascunho antes de conferir as respostas, mesmo com resposta inválida")]
     public async Task Handle_InscricaoEnviadaComRespostaInvalida_RecusaPeloEnvio()
     {

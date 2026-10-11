@@ -8,4 +8,6 @@ public static class FormularioPortavelErrorCodes
     public const string DerivacaoInvalida = "FormularioPortavel.DerivacaoInvalida";
     public const string EstruturaInvalida = "FormularioPortavel.EstruturaInvalida";
     public const string OcorrenciaInvalida = "FormularioPortavel.OcorrenciaInvalida";
+    public const string FusoDoEnvioDesconhecido = "FormularioPortavel.FusoDoEnvioDesconhecido";
+    public const string InstanteDoEnvioForaDoCalendario = "FormularioPortavel.InstanteDoEnvioForaDoCalendario";
 }

@@ -11,9 +11,10 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// A forma JSON de guardar as restrições de valor de um item: uma lista de objetos com
-/// <c>tipo</c> e os campos do tipo — <c>minimo</c>/<c>maximo</c> nas faixas, <c>entradas</c>
-/// (<c>{quando, valores}</c>) nas opções permitidas e <c>fatos</c> nas opções formadas pelas
-/// respostas. A leitura remonta por <see cref="RestricoesDeValor"/>, então conteúdo gravado que
+/// <c>tipo</c> e os campos do tipo — <c>minimo</c>/<c>maximo</c> nas faixas numéricas e de tamanho,
+/// <c>dataMinima</c>/<c>dataMaxima</c> (<c>{ancora, data, anos, dias}</c>) na faixa de data,
+/// <c>entradas</c> (<c>{quando, valores}</c>) nas opções permitidas e <c>fatos</c> nas opções formadas
+/// pelas respostas. A leitura remonta por <see cref="RestricoesDeValor"/>, então conteúdo gravado que
 /// viola as invariantes é recusado.
 /// </summary>
 public static class RestricaoValorJson
@@ -24,6 +25,10 @@ public static class RestricaoValorJson
     public const string OpcoesDasRespostas = "OPCOES_DAS_RESPOSTAS";
     public const string MunicipiosDaUf = "MUNICIPIOS_DA_UF";
     public const string FormatoTexto = "FORMATO_TEXTO";
+    public const string FaixaDeData = "FAIXA_DE_DATA";
+
+    public const string AncoraDataFixa = "DATA_FIXA";
+    public const string AncoraEnvio = "ENVIO";
 
     public static string ParaToken(TipoRestricaoValor tipo) => tipo switch
     {
@@ -33,6 +38,7 @@ public static class RestricaoValorJson
         TipoRestricaoValor.OpcoesDasRespostas => OpcoesDasRespostas,
         TipoRestricaoValor.MunicipiosDaUf => MunicipiosDaUf,
         TipoRestricaoValor.FormatoTexto => FormatoTexto,
+        TipoRestricaoValor.FaixaDeData => FaixaDeData,
         TipoRestricaoValor.Nenhuma => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, "O sentinela não tem token."),
         _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, "Tipo de restrição sem token."),
     };
@@ -45,7 +51,31 @@ public static class RestricaoValorJson
         OpcoesPermitidas => TipoRestricaoValor.OpcoesPermitidas,
         OpcoesDasRespostas => TipoRestricaoValor.OpcoesDasRespostas,
         MunicipiosDaUf => TipoRestricaoValor.MunicipiosDaUf,
+        FaixaDeData => TipoRestricaoValor.FaixaDeData,
         _ => TipoRestricaoValor.Nenhuma,
+    };
+
+    /// <summary>A âncora do token; nula quando o token não é uma âncora de limite de data.</summary>
+    public static AncoraDoLimiteDeData? AncoraDoToken(string? token) => token switch
+    {
+        AncoraDataFixa => AncoraDoLimiteDeData.DataFixa,
+        AncoraEnvio => AncoraDoLimiteDeData.Envio,
+        _ => null,
+    };
+
+    /// <summary>
+    /// O limite da faixa de data na forma JSON: a âncora e, conforme ela, a data ou o deslocamento em
+    /// anos e dias. O limite que falta é <c>null</c>.
+    /// </summary>
+    public static JsonObject? ParaJson(LimiteDeData? limite) => limite switch
+    {
+        null => null,
+        { Ancora: AncoraDoLimiteDeData.DataFixa } => new JsonObject
+        {
+            ["ancora"] = AncoraDataFixa,
+            ["data"] = DiaDoCalendario.Escrever(limite.Data!.Value),
+        },
+        _ => new JsonObject { ["ancora"] = AncoraEnvio, ["anos"] = limite.Anos, ["dias"] = limite.Dias },
     };
 
     public static JsonArray ParaJson(IEnumerable<RestricaoValor> restricoes)
@@ -80,6 +110,10 @@ public static class RestricaoValorJson
                 break;
             case Formularios.MunicipiosDaUf daUf:
                 json["fatos"] = new JsonArray(daUf.FatoUf);
+                break;
+            case Formularios.FaixaDeData faixaDeData:
+                json["dataMinima"] = ParaJson(faixaDeData.Minima);
+                json["dataMaxima"] = ParaJson(faixaDeData.Maxima);
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(restricao), restricao.Tipo, "Tipo de restrição sem forma JSON.");
@@ -134,6 +168,7 @@ public static class RestricaoValorJson
             TipoRestricaoValor.MunicipiosDaUf => Textos(json, "fatos") is { } fatosDaUf
                 ? RestricoesDeValor.DaUf(fatosDaUf)
                 : Falha("Os municípios da UF têm a lista com o fato da UF."),
+            TipoRestricaoValor.FaixaDeData => LerFaixaDeData(json),
             _ => Falha("O tipo da restrição de valor não é reconhecido."),
         };
     }
@@ -187,6 +222,76 @@ public static class RestricaoValorJson
         }
 
         return RestricoesDeValor.Opcoes(lidas);
+    }
+
+    private static Result<RestricaoValor> LerFaixaDeData(JsonElement json)
+    {
+        Result<LimiteDeData?> minima = LimiteDeJson(json, "dataMinima");
+        Result<LimiteDeData?> maxima = LimiteDeJson(json, "dataMaxima");
+        if (minima.IsFailure || maxima.IsFailure)
+        {
+            return Result<RestricaoValor>.Failure((minima.Error ?? maxima.Error)!);
+        }
+
+        return RestricoesDeValor.FaixaDeData(minima.Value, maxima.Value);
+    }
+
+    /// <summary>O limite da faixa de data guardado na chave; nulo quando a chave falta ou é nula.</summary>
+    private static Result<LimiteDeData?> LimiteDeJson(JsonElement json, string chave)
+    {
+        if (!json.TryGetProperty(chave, out JsonElement limite) || limite.ValueKind == JsonValueKind.Null)
+        {
+            return Result<LimiteDeData?>.Success(null);
+        }
+
+        if (limite.ValueKind != JsonValueKind.Object
+            || !Texto(limite, "ancora", out string? ancora)
+            || !Texto(limite, "data", out string? data)
+            || !InteiroOpcional(limite, "anos", out int? anos)
+            || !InteiroOpcional(limite, "dias", out int? dias))
+        {
+            return Result<LimiteDeData?>.Failure(Erro($"O limite '{chave}' da faixa de data tem a âncora e a data ou o deslocamento."));
+        }
+
+        DateOnly? dia = DiaDoCalendario.Ler(data);
+        if (data is not null && dia is null)
+        {
+            return Result<LimiteDeData?>.Failure(Erro($"A data do limite '{chave}' da faixa de data está em aaaa-mm-dd."));
+        }
+
+        Result<LimiteDeData> lidoDoLimite = RestricoesDeValor.Limite(ancora, dia, anos, dias);
+        return lidoDoLimite.IsSuccess
+            ? Result<LimiteDeData?>.Success(lidoDoLimite.Value)
+            : Result<LimiteDeData?>.Failure(lidoDoLimite.Error!);
+    }
+
+    private static bool Texto(JsonElement json, string chave, out string? texto)
+    {
+        texto = null;
+        if (!json.TryGetProperty(chave, out JsonElement valor) || valor.ValueKind == JsonValueKind.Null)
+        {
+            return true;
+        }
+
+        texto = valor.ValueKind == JsonValueKind.String ? valor.GetString() : null;
+        return texto is not null;
+    }
+
+    private static bool InteiroOpcional(JsonElement json, string chave, out int? inteiro)
+    {
+        inteiro = null;
+        if (!json.TryGetProperty(chave, out JsonElement valor) || valor.ValueKind == JsonValueKind.Null)
+        {
+            return true;
+        }
+
+        if (valor.ValueKind != JsonValueKind.Number || !valor.TryGetInt32(out int lido))
+        {
+            return false;
+        }
+
+        inteiro = lido;
+        return true;
     }
 
     private static bool LerLimites(JsonElement json, out decimal? minimo, out decimal? maximo) =>

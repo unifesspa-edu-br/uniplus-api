@@ -87,6 +87,7 @@ public static class PreVisualizarModeloFormularioQueryHandler
                 RespostaDeCampo.DentroDaOferta(simulacao.Respostas ?? new Dictionary<string, JsonElement>(), ofertas),
                 new HashSet<string>(simulacao.EtapasConcluidas ?? [], StringComparer.Ordinal),
                 RespostaDeCampo.ComoFatosConhecidos(simulacao.Pressupostos),
+                Envio: null,
                 ocorrencias.ToDictionary(
                     static o => o.Key,
                     o => (IReadOnlyList<OcorrenciaRespondida>)[.. o.Value.Select(r => r with { Respostas = RespostaDeCampo.DentroDaOferta(r.Respostas, ofertas) })],

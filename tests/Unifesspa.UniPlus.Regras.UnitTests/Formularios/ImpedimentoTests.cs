@@ -51,7 +51,7 @@ public class ImpedimentoTests : TestesDeAvaliacao
         }
 
         AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, new EntradaAvaliacaoFormulario(
-            respostas, new HashSet<string>(StringComparer.Ordinal), new Dictionary<string, FatoResolvido>(StringComparer.Ordinal)));
+            respostas, new HashSet<string>(StringComparer.Ordinal), new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), Envio: null));
 
         avaliacao.Itens.Single(static i => i.FatoCodigo == "VINCULO_PARFOR").Impedido.Should().Be(impedido);
     }

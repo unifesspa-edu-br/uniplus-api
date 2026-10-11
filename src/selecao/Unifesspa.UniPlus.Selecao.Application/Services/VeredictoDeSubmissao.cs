@@ -29,16 +29,18 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </remarks>
 public static class VeredictoDeSubmissao
 {
+    /// <param name="diaDoEnvio">O dia do envio com que a avaliação foi feita, de que a recusa da faixa de data diz os limites.</param>
     public static IReadOnlyList<FieldError> Avaliar(
         AvaliacaoFormulario avaliacao,
         IReadOnlyList<TermoExigidoFormulario> termosExigidos,
-        IReadOnlyList<AceiteDeTermo> aceites)
+        IReadOnlyList<AceiteDeTermo> aceites,
+        DateOnly diaDoEnvio)
     {
         ArgumentNullException.ThrowIfNull(avaliacao);
         ArgumentNullException.ThrowIfNull(termosExigidos);
         ArgumentNullException.ThrowIfNull(aceites);
 
-        List<FieldError> recusas = [.. ProblemasDosItens(avaliacao.Itens, avaliacao.Fatos, caminho: null)];
+        List<FieldError> recusas = [.. ProblemasDosItens(avaliacao.Itens, avaliacao.Fatos, caminho: null, diaDoEnvio)];
 
         foreach (AvaliacaoGrupo grupo in avaliacao.Grupos)
         {
@@ -70,7 +72,7 @@ public static class VeredictoDeSubmissao
                     recusas.Add(Recusa($"{grupo.Codigo}.{ocorrencia.Id}", InscricaoErrorCodes.GrupoIdDuplicado, $"Duas ocorrências do grupo '{grupo.Codigo}' repetem o id '{ocorrencia.Id}'."));
                 }
 
-                recusas.AddRange(ProblemasDosItens(ocorrencia.Itens, ocorrencia.Fatos, caminho: $"{grupo.Codigo}.{ocorrencia.Id}"));
+                recusas.AddRange(ProblemasDosItens(ocorrencia.Itens, ocorrencia.Fatos, caminho: $"{grupo.Codigo}.{ocorrencia.Id}", diaDoEnvio));
             }
         }
 
@@ -155,7 +157,7 @@ public static class VeredictoDeSubmissao
     }
 
     private static IEnumerable<FieldError> ProblemasDosItens(
-        IReadOnlyList<AvaliacaoItem> itens, IReadOnlyDictionary<string, FatoResolvido> fatos, string? caminho)
+        IReadOnlyList<AvaliacaoItem> itens, IReadOnlyDictionary<string, FatoResolvido> fatos, string? caminho, DateOnly diaDoEnvio)
     {
         foreach (AvaliacaoItem item in itens)
         {
@@ -173,7 +175,7 @@ public static class VeredictoDeSubmissao
 
             if (item.RestricoesVioladas.Count > 0)
             {
-                yield return Recusa(campo, InscricaoErrorCodes.RespostaInvalida, $"A resposta de '{item.FatoCodigo}' não atende a uma restrição do formulário.");
+                yield return RecusaDaResposta.De(campo, item, diaDoEnvio);
             }
 
             if (fatos.TryGetValue(item.FatoCodigo, out FatoResolvido? resolvido) && resolvido.Estado == EstadoFato.Indeterminado)

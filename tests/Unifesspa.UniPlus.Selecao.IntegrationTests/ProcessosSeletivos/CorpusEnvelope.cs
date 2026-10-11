@@ -386,6 +386,10 @@ internal static class CorpusEnvelope
                     (0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!),
                 ]).Value!,
                 "A renda declarada está acima do limite deste processo."), classificacaoProtecao: "PESSOAL").Value!,
+            // A faixa de data com os dois tipos de limite: uma data fixa e o dia do envio deslocado.
+            FatoColetado.Criar("CONCLUSAO_ENSINO_MEDIO", 4, "Data de conclusão do ensino médio", TipoRenderizacao.Data, Obrigatoriedade.Sempre, null,
+                classificacaoProtecao: "PESSOAL",
+                restricoes: [new FaixaDeData(LimiteDeData.Fixo(new DateOnly(1950, 1, 1)), LimiteDeData.NoEnvio(anos: 0, dias: -1))]).Value!,
             // A classificação é baseada em ENEM: a inscrição pede a edição, entre as admitidas.
             FormularioDeTeste.CampoDaEdicaoDoEnem(3),
         ], permutar), PrecondicaoIfMatch.Ausente, grupos: [ComposicaoFamiliar(permutar)]).IsSuccess.Should().BeTrue();

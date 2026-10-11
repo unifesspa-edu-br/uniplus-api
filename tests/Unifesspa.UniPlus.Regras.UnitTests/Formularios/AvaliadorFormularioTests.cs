@@ -522,7 +522,8 @@ public class AvaliadorFormularioTests : TestesDeAvaliacao
         new(
             Respostas(respostas),
             etapaConcluida ? new HashSet<string>([Etapa], StringComparer.Ordinal) : new HashSet<string>(StringComparer.Ordinal),
-            new Dictionary<string, FatoResolvido>(StringComparer.Ordinal));
+            new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
+            Envio: null);
 
     private static Dictionary<string, JsonElement> Respostas((string Fato, object Valor)[] respostas) =>
         respostas.ToDictionary(

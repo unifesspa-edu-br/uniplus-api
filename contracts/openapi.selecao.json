@@ -13190,7 +13190,8 @@
           "grupos",
           "regras",
           "pressupostos",
-          "dataReferenciaFatos"
+          "dataReferenciaFatos",
+          "fusoDoEnvio"
         ],
         "type": "object",
         "properties": {
@@ -13251,6 +13252,12 @@
               "string"
             ],
             "format": "date"
+          },
+          "fusoDoEnvio": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -14285,6 +14292,81 @@
       },
       "JsonElement": {},
       "JsonNode": {},
+      "LimiteDeDataDto": {
+        "required": [
+          "ancora",
+          "data",
+          "anos",
+          "dias"
+        ],
+        "type": "object",
+        "properties": {
+          "ancora": {
+            "type": "string"
+          },
+          "data": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "anos": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "dias": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "LimiteDeDataInput": {
+        "required": [
+          "ancora"
+        ],
+        "type": "object",
+        "properties": {
+          "ancora": {
+            "type": "string"
+          },
+          "data": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "anos": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "dias": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "LocalidadeCertameDto": {
         "required": [
           "codigoIbge",
@@ -16677,7 +16759,9 @@
           "minimo",
           "maximo",
           "entradas",
-          "fatos"
+          "fatos",
+          "dataMinima",
+          "dataMaxima"
         ],
         "type": "object",
         "properties": {
@@ -16719,6 +16803,26 @@
             "items": {
               "type": "string"
             }
+          },
+          "dataMinima": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LimiteDeDataDto"
+              }
+            ]
+          },
+          "dataMaxima": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LimiteDeDataDto"
+              }
+            ]
           }
         }
       },
@@ -16766,6 +16870,26 @@
             "items": {
               "type": "string"
             }
+          },
+          "dataMinima": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LimiteDeDataInput"
+              }
+            ]
+          },
+          "dataMaxima": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LimiteDeDataInput"
+              }
+            ]
           }
         }
       },

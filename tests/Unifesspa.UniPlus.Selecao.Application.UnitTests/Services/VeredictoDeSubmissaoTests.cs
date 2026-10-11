@@ -24,6 +24,7 @@ public sealed class VeredictoDeSubmissaoTests
 {
     private static readonly IReadOnlyList<TermoExigidoFormulario> SemTermos = [];
     private static readonly IReadOnlyList<AceiteDeTermo> SemAceites = [];
+    private static readonly DateOnly DiaDoEnvio = new(2026, 10, 10);
 
     private static AvaliacaoItem ItemVisivelObrigatorio(string fato, IReadOnlyList<RestricaoValor>? restricoesVioladas = null, Ternario impedido = Ternario.Falso) =>
         new(fato, "DADOS", Ternario.Verdadeiro, Ternario.Verdadeiro, restricoesVioladas ?? [], impedido);
@@ -42,7 +43,7 @@ public sealed class VeredictoDeSubmissaoTests
             new Dictionary<string, FatoResolvido>(StringComparer.Ordinal) { ["APELIDO"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement("Nanda")) },
             itens: [ItemVisivelObrigatorio("APELIDO")]);
 
-        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, SemTermos, SemAceites);
+        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, SemTermos, SemAceites, DiaDoEnvio);
 
         recusas.Should().BeEmpty();
     }
@@ -54,7 +55,7 @@ public sealed class VeredictoDeSubmissaoTests
             new Dictionary<string, FatoResolvido>(StringComparer.Ordinal) { ["APELIDO"] = FatoResolvido.Indeterminado() },
             itens: [ItemVisivelObrigatorio("APELIDO")]);
 
-        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, SemTermos, SemAceites);
+        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, SemTermos, SemAceites, DiaDoEnvio);
 
         recusas.Should().ContainSingle(r => r.Field == "APELIDO" && r.Error.Code == "Inscricao.ItemObrigatorioAusente");
     }
@@ -67,7 +68,7 @@ public sealed class VeredictoDeSubmissaoTests
             new Dictionary<string, FatoResolvido>(StringComparer.Ordinal) { ["APELIDO"] = FatoResolvido.NaoInformado() },
             itens: [item]);
 
-        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, SemTermos, SemAceites);
+        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, SemTermos, SemAceites, DiaDoEnvio);
 
         recusas.Should().BeEmpty();
     }
@@ -80,7 +81,7 @@ public sealed class VeredictoDeSubmissaoTests
             new Dictionary<string, FatoResolvido>(StringComparer.Ordinal) { ["APELIDO"] = FatoResolvido.NaoAplicavel() },
             itens: [item]);
 
-        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, SemTermos, SemAceites);
+        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, SemTermos, SemAceites, DiaDoEnvio);
 
         recusas.Should().BeEmpty();
     }
@@ -93,7 +94,7 @@ public sealed class VeredictoDeSubmissaoTests
             new Dictionary<string, FatoResolvido>(StringComparer.Ordinal) { ["APELIDO"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement("Apelido Enorme")) },
             itens: [item]);
 
-        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, SemTermos, SemAceites);
+        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, SemTermos, SemAceites, DiaDoEnvio);
 
         recusas.Should().ContainSingle(r => r.Field == "APELIDO" && r.Error.Code == "Inscricao.RespostaInvalida");
     }
@@ -106,7 +107,7 @@ public sealed class VeredictoDeSubmissaoTests
             new Dictionary<string, FatoResolvido>(StringComparer.Ordinal) { ["CONDICAO_IMPEDITIVA"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(true)) },
             itens: [item]);
 
-        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, SemTermos, SemAceites);
+        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, SemTermos, SemAceites, DiaDoEnvio);
 
         recusas.Should().ContainSingle(r => r.Field == "CONDICAO_IMPEDITIVA" && r.Error.Code == "Inscricao.Impedimento");
     }
@@ -119,7 +120,7 @@ public sealed class VeredictoDeSubmissaoTests
             ContagemValida: false, OcorrenciaDoCandidatoValida: false, Ocorrencias: []);
         AvaliacaoFormulario avaliacao = AvaliacaoCom(new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), grupos: [grupo]);
 
-        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, SemTermos, SemAceites);
+        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, SemTermos, SemAceites, DiaDoEnvio);
 
         recusas.Should().Contain(r => r.Field == "COMPOSICAO_FAMILIAR" && r.Error.Code == "Inscricao.GrupoContagemInvalida");
         recusas.Should().Contain(r => r.Field == "COMPOSICAO_FAMILIAR" && r.Error.Code == "Inscricao.GrupoCandidatoAusente");
@@ -135,7 +136,7 @@ public sealed class VeredictoDeSubmissaoTests
             ContagemValida: true, OcorrenciaDoCandidatoValida: true, Ocorrencias: [ocorrencia1, ocorrencia2]);
         AvaliacaoFormulario avaliacao = AvaliacaoCom(new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), grupos: [grupo]);
 
-        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, SemTermos, SemAceites);
+        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, SemTermos, SemAceites, DiaDoEnvio);
 
         recusas.Should().ContainSingle(r => r.Field == "COMPOSICAO_FAMILIAR.membro-1" && r.Error.Code == "Inscricao.GrupoIdDuplicado");
     }
@@ -153,7 +154,7 @@ public sealed class VeredictoDeSubmissaoTests
             ContagemValida: true, OcorrenciaDoCandidatoValida: true, Ocorrencias: [ocorrencia]);
         AvaliacaoFormulario avaliacao = AvaliacaoCom(new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), grupos: [grupo]);
 
-        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, SemTermos, SemAceites);
+        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, SemTermos, SemAceites, DiaDoEnvio);
 
         recusas.Should().ContainSingle(r => r.Field == "COMPOSICAO_FAMILIAR.membro-1.RG_NUMERO_MEMBRO" && r.Error.Code == "Inscricao.ItemObrigatorioAusente");
     }
@@ -178,7 +179,7 @@ public sealed class VeredictoDeSubmissaoTests
         AvaliacaoFormulario avaliacao = AvaliacaoCom(new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), termos: [termo]);
         TermoExigidoFormulario exigido = NovoTermo("DECLARACAO_VERACIDADE", Guid.NewGuid(), new string('a', 64));
 
-        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, [exigido], SemAceites);
+        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, [exigido], SemAceites, DiaDoEnvio);
 
         recusas.Should().ContainSingle(r => r.Field == "DECLARACAO_VERACIDADE" && r.Error.Code == "Inscricao.TermoNaoAceito");
     }
@@ -192,7 +193,7 @@ public sealed class VeredictoDeSubmissaoTests
         TermoExigidoFormulario exigido = NovoTermo("DECLARACAO_VERACIDADE", versaoId, new string('a', 64));
         AceiteDeTermo aceite = new("DECLARACAO_VERACIDADE", versaoId, new string('b', 64));
 
-        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, [exigido], [aceite]);
+        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, [exigido], [aceite], DiaDoEnvio);
 
         recusas.Should().ContainSingle(r => r.Field == "DECLARACAO_VERACIDADE" && r.Error.Code == "Inscricao.TermoNaoAceito");
     }
@@ -206,7 +207,7 @@ public sealed class VeredictoDeSubmissaoTests
         TermoExigidoFormulario exigido = NovoTermo("DECLARACAO_VERACIDADE", versaoId, new string('a', 64));
         AceiteDeTermo aceite = new("DECLARACAO_VERACIDADE", versaoId, new string('a', 64));
 
-        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, [exigido], [aceite]);
+        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, [exigido], [aceite], DiaDoEnvio);
 
         recusas.Should().BeEmpty();
     }
@@ -217,7 +218,7 @@ public sealed class VeredictoDeSubmissaoTests
         AvaliacaoTermo termo = new("TERMO_OPCIONAL", Ternario.Verdadeiro, Ternario.Falso);
         AvaliacaoFormulario avaliacao = AvaliacaoCom(new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), termos: [termo]);
 
-        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, SemTermos, SemAceites);
+        IReadOnlyList<FieldError> recusas = VeredictoDeSubmissao.Avaliar(avaliacao, SemTermos, SemAceites, DiaDoEnvio);
 
         recusas.Should().BeEmpty();
     }

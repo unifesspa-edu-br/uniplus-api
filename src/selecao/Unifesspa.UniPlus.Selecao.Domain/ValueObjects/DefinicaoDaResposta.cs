@@ -1,9 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-using System.Globalization;
 using System.Text.Json;
 
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
@@ -42,8 +42,7 @@ public sealed record DefinicaoDaResposta(TipoDoValorDeResposta Tipo, bool Multiv
         TipoDoValorDeResposta.Codigo => valor.ValueKind == JsonValueKind.String
             && valor.GetString() is { Length: > 0 and <= OpcaoDeclaradaFato.CodigoMaxLength },
         TipoDoValorDeResposta.Texto => valor.ValueKind == JsonValueKind.String,
-        TipoDoValorDeResposta.Data => valor.ValueKind == JsonValueKind.String
-            && DateOnly.TryParseExact(valor.GetString(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _),
+        TipoDoValorDeResposta.Data => DiaDoCalendario.Ler(valor) is not null,
         TipoDoValorDeResposta.Endereco => EnderecoDeclarado.TentarLer(valor, out _),
         _ => false,
     };

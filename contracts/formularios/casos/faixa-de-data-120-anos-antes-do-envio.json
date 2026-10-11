@@ -1,0 +1,103 @@
+{
+  "descricao": "O limite de 120 anos antes do envio de 10/10/2026 é 10/10/1906: essa data atende, e 09/10/1906 viola.",
+  "regras": {
+    "etapas": [
+      {
+        "codigo": "DADOS",
+        "exibicao": null,
+        "itens": [
+          {
+            "fatoCodigo": "NASCIMENTO_A",
+            "exibicao": null,
+            "obrigatoriedade": "SEMPRE",
+            "predicadoObrigatoriedade": null,
+            "restricoes": [
+              {
+                "tipo": "FAIXA_DE_DATA",
+                "minimo": null,
+                "maximo": null,
+                "entradas": null,
+                "fatos": null,
+                "dataMinima": {
+                  "ancora": "ENVIO",
+                  "data": null,
+                  "anos": -120,
+                  "dias": 0
+                },
+                "dataMaxima": {
+                  "ancora": "ENVIO",
+                  "data": null,
+                  "anos": 0,
+                  "dias": 0
+                }
+              }
+            ],
+            "impedimento": null,
+            "oferta": null,
+            "formato": null
+          },
+          {
+            "fatoCodigo": "NASCIMENTO_B",
+            "exibicao": null,
+            "obrigatoriedade": "SEMPRE",
+            "predicadoObrigatoriedade": null,
+            "restricoes": [
+              {
+                "tipo": "FAIXA_DE_DATA",
+                "minimo": null,
+                "maximo": null,
+                "entradas": null,
+                "fatos": null,
+                "dataMinima": {
+                  "ancora": "ENVIO",
+                  "data": null,
+                  "anos": -120,
+                  "dias": 0
+                },
+                "dataMaxima": {
+                  "ancora": "ENVIO",
+                  "data": null,
+                  "anos": 0,
+                  "dias": 0
+                }
+              }
+            ],
+            "impedimento": null,
+            "oferta": null,
+            "formato": null
+          }
+        ],
+        "grupos": []
+      }
+    ],
+    "termos": [],
+    "derivacoes": [],
+    "agregados": []
+  },
+  "respostas": {
+    "NASCIMENTO_A": "1906-10-10",
+    "NASCIMENTO_B": "1906-10-09"
+  },
+  "grupos": {},
+  "etapasConcluidas": [],
+  "pressupostos": {},
+  "envio": {
+    "instante": "2026-10-10T15:00:00Z",
+    "fuso": "America/Belem"
+  },
+  "esperado": {
+    "campos": [
+      {
+        "fatoCodigo": "NASCIMENTO_A",
+        "estado": "RESOLVIDO",
+        "restricoesVioladas": []
+      },
+      {
+        "fatoCodigo": "NASCIMENTO_B",
+        "restricoesVioladas": [
+          "FAIXA_DE_DATA"
+        ]
+      }
+    ]
+  }
+}

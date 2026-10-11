@@ -92,6 +92,7 @@ internal sealed class RegrasDomainErrorRegistration : IDomainErrorRegistration
         new(RestricaoValorErrorCodes.FatosVazios, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.restricao_valor.fatos_vazios", "As opções formadas pelas respostas precisam citar fatos")),
         new(RestricaoValorErrorCodes.FormaJsonInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.restricao_valor.forma_json_invalida", "A restrição de valor não tem a forma esperada")),
         new(RestricaoValorErrorCodes.TipoRepetido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.restricao_valor.tipo_repetido", "O item declara no máximo uma restrição de cada tipo")),
+        new(RestricaoValorErrorCodes.LimiteDeDataInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.restricao_valor.limite_de_data_invalido", "O limite da faixa de data é uma data fixa ou o envio deslocado em anos e dias")),
         new("PredicadoDnf.FormaJsonInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.predicado_dnf.forma_json_invalida", "O predicado ou a obrigatoriedade não tem a forma esperada")),
         new("ClausulaDnf.ClausulaVazia", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.clausula_dnf.clausula_vazia", "Uma cláusula do predicado deve ter ao menos uma condição")),
         new(PredicadoDnfErrorCodes.CondicaoNula, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.predicado_dnf.condicao_nula", "O predicado contém uma condição nula")),
@@ -114,6 +115,8 @@ internal sealed class RegrasDomainErrorRegistration : IDomainErrorRegistration
         new(FormularioPortavelErrorCodes.DerivacaoInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.formulario_portavel.derivacao_invalida", "A derivação do formulário não forma regras válidas")),
         new(FormularioPortavelErrorCodes.EstruturaInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.formulario_portavel.estrutura_invalida", "As regras não formam um formulário: elemento nulo, código repetido ou referência que não existe")),
         new(FormularioPortavelErrorCodes.OcorrenciaInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.formulario_portavel.ocorrencia_invalida", "Ocorrência de grupo sem identidade própria no grupo")),
+        new(FormularioPortavelErrorCodes.FusoDoEnvioDesconhecido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.formulario_portavel.fuso_do_envio_desconhecido", "A zona do envio simulado não é reconhecida")),
+        new(FormularioPortavelErrorCodes.InstanteDoEnvioForaDoCalendario, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.formulario_portavel.instante_do_envio_fora_do_calendario", "O instante do envio simulado está ausente ou fora do calendário que os limites da faixa de data alcançam")),
         new("RegrasDerivacaoFato.DerivacaoAutorreferente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.regras_derivacao_fato.derivacao_autorreferente", "Um fato derivado não pode depender de si mesmo")),
     ];
 }

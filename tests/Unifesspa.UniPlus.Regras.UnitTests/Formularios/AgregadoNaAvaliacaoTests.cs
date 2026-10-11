@@ -44,6 +44,7 @@ public class AgregadoNaAvaliacaoTests : TestesDeAvaliacao
             new Dictionary<string, JsonElement>(StringComparer.Ordinal),
             new HashSet<string>([Etapa], StringComparer.Ordinal),
             new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
+            Envio: null,
             new Dictionary<string, IReadOnlyList<OcorrenciaRespondida>>(StringComparer.Ordinal)
             {
                 ["FAMILIA"] = [Ocorrencia("M1", "TRABALHA_NO_CAMPO", trabalhaNoCampo)],

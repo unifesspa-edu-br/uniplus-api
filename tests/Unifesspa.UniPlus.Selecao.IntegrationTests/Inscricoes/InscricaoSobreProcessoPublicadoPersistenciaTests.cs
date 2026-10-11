@@ -409,7 +409,8 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         AvaliacaoFormulario avaliacao = contexto.Regras.Avaliar(new EntradaAvaliacaoFormulario(
             rascunho.Respostas,
             new HashSet<string>(contexto.Regras.Etapas.Select(static e => e.Codigo), StringComparer.Ordinal),
-            new Dictionary<string, FatoResolvido>(StringComparer.Ordinal))).Value!;
+            new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
+            Envio: null)).Value!;
         ComprovanteInscricao comprovante = rascunho.Submeter(
             "000901", contexto.Admitidas.OfertasDeCurso.Single(), new Dictionary<string, JsonElement>(StringComparer.Ordinal),
             new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [], contexto.Admitidas, avaliacao,

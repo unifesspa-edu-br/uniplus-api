@@ -74,9 +74,11 @@ public static class SalvarInscricaoCommandHandler
             return Result<InscricaoDto>.Failure(erroDono);
         }
 
+        // O mesmo instante confere o período e é o envio de que se contam os limites da faixa de data.
+        DateTimeOffset instante = timeProvider.GetUtcNow();
         DomainError? foraDoPeriodo = await Services.PeriodoDaInscricaoResolver.ConferirAsync(
             command.ProcessoSeletivoId, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, resolvedorFuso,
-            timeProvider, cancellationToken).ConfigureAwait(false);
+            instante, cancellationToken).ConfigureAwait(false);
         if (foraDoPeriodo is not null)
         {
             return Result<InscricaoDto>.Failure(foraDoPeriodo);
@@ -98,6 +100,13 @@ public static class SalvarInscricaoCommandHandler
             return Result<InscricaoDto>.Failure(contexto.Error!);
         }
 
+        Result<TimeZoneInfo> fuso = resolvedorFuso.Resolver();
+        if (fuso.IsFailure)
+        {
+            return Result<InscricaoDto>.Failure(fuso.Error!);
+        }
+
+        EnvioDasRespostas envio = new(instante, fuso.Value!);
         Dictionary<string, JsonElement> respostas = Services.InscricaoRequestMapper.ParaRespostas(command.Request.Respostas);
         Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = Services.InscricaoRequestMapper.ParaGrupos(command.Request.Grupos);
 
@@ -105,13 +114,14 @@ public static class SalvarInscricaoCommandHandler
             respostas,
             EtapasConcluidas: new HashSet<string>(StringComparer.Ordinal),
             FatosConhecidos: new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
+            envio,
             RespostasDosGrupos: Services.InscricaoRequestMapper.ParaAvaliacao(grupos)));
         if (avaliacao.IsFailure)
         {
             return Result<InscricaoDto>.Failure(avaliacao.Error!);
         }
 
-        IReadOnlyList<FieldError> recusas = RecusasEstruturais(avaliacao.Value!);
+        IReadOnlyList<FieldError> recusas = RecusasEstruturais(avaliacao.Value!, envio.Dia);
         if (recusas.Count > 0)
         {
             return Result<InscricaoDto>.ValidationFailure(recusas);
@@ -138,17 +148,14 @@ public static class SalvarInscricaoCommandHandler
     /// superior e os de cada ocorrência de grupo repetível: o membro do grupo responde um item como
     /// qualquer outro, e uma restrição violada ali é tão inválida quanto no nível superior.
     /// </summary>
-    private static IReadOnlyList<FieldError> RecusasEstruturais(AvaliacaoFormulario avaliacao) =>
+    private static IReadOnlyList<FieldError> RecusasEstruturais(AvaliacaoFormulario avaliacao, DateOnly diaDoEnvio) =>
     [
         .. avaliacao.Itens
             .Where(static item => item.RestricoesVioladas.Count > 0)
-            .Select(static item => RecusaDoItem(item.FatoCodigo, item.FatoCodigo)),
+            .Select(item => Services.RecusaDaResposta.De(item.FatoCodigo, item, diaDoEnvio)),
         .. avaliacao.Grupos
-            .SelectMany(static grupo => grupo.Ocorrencias.SelectMany(ocorrencia => ocorrencia.Itens
+            .SelectMany(grupo => grupo.Ocorrencias.SelectMany(ocorrencia => ocorrencia.Itens
                 .Where(static item => item.RestricoesVioladas.Count > 0)
-                .Select(item => RecusaDoItem($"{grupo.Codigo}.{ocorrencia.Id}.{item.FatoCodigo}", item.FatoCodigo)))),
+                .Select(item => Services.RecusaDaResposta.De($"{grupo.Codigo}.{ocorrencia.Id}.{item.FatoCodigo}", item, diaDoEnvio)))),
     ];
-
-    private static FieldError RecusaDoItem(string campo, string fatoCodigo) => new(
-        campo, new DomainError(InscricaoErrorCodes.RespostaInvalida, $"A resposta de '{fatoCodigo}' não atende a uma restrição do formulário."));
 }

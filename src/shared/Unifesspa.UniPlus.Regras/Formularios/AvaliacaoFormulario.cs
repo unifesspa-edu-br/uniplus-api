@@ -7,18 +7,32 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// O que o avaliador recebe além da descrição do formulário: as respostas do candidato, as etapas
-/// que ele já concluiu e os fatos já conhecidos de fora do formulário — os coletados por uma
-/// finalidade anterior e os derivados pelo sistema, como o grupo da convocação.
+/// que ele já concluiu, os fatos já conhecidos de fora do formulário — os coletados por uma
+/// finalidade anterior e os derivados pelo sistema, como o grupo da convocação — e o envio das
+/// respostas, de que se contam os limites da faixa de data.
 /// </summary>
 /// <remarks>
 /// Uma resposta a fato que o formulário não produz é ignorada: a descrição é a autoridade sobre o
-/// que existe, e uma resposta órfã não cria fato.
+/// que existe, e uma resposta órfã não cria fato. O envio é explícito para a avaliação continuar
+/// função pura, sem relógio: nulo quando não há envio, como na simulação que não o informa, e o
+/// limite contado do envio fica indeterminado.
 /// </remarks>
 public sealed record EntradaAvaliacaoFormulario(
     IReadOnlyDictionary<string, JsonElement> Respostas,
     IReadOnlySet<string> EtapasConcluidas,
     IReadOnlyDictionary<string, FatoResolvido> FatosConhecidos,
+    EnvioDasRespostas? Envio,
     IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaRespondida>>? RespostasDosGrupos = null);
+
+/// <summary>
+/// O instante em que as respostas são gravadas — o do rascunho ao salvar, o do envio ao enviar — e o
+/// fuso em que o dia dele é contado, que é o da janela de inscrição.
+/// </summary>
+public sealed record EnvioDasRespostas(DateTimeOffset Instante, TimeZoneInfo Fuso)
+{
+    /// <summary>O dia do calendário do instante, no fuso.</summary>
+    public DateOnly Dia => DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(Instante, Fuso).DateTime);
+}
 
 /// <summary>
 /// Uma ocorrência respondida de um grupo repetível, pela identidade estável que ela tem — a mesma que
