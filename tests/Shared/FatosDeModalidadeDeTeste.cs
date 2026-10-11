@@ -6,5 +6,5 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 internal static class FatosDeModalidadeDeTeste
 {
     /// <summary>A modalidade de concorrência e o grupo da convocação.</summary>
-    public static FatosDeModalidade DoCatalogo { get; } = new(["MODALIDADE", "MODALIDADE_CONVOCACAO"]);
+    public static FatosDeModalidade DoCatalogo { get; } = new(["MODALIDADE", "MODALIDADE_CONVOCACAO"], new Dictionary<string, string>(StringComparer.Ordinal));
 }

@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
@@ -95,6 +96,36 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
             "o egresso, de que a opção pelas cotas depende, vem pela regra do sistema, que cita a origem escolar");
     }
 
+    [Theory(DisplayName = "A regra que cita agregado sobre grupo é aceita quando um grupo da inscrição pergunta o campo de membro, e a recusa nomeia esse campo")]
+    [InlineData(FinalidadeFormulario.Inscricao, true)]
+    [InlineData(FinalidadeFormulario.Habilitacao, false)]
+    public void AgregadoDeGrupo_DependeDoCampoDeMembroNaInscricao(FinalidadeFormulario finalidadeDoGrupo, bool esperadoAceito)
+    {
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
+        Ofertar(processo,
+            Modalidade("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula),
+            Modalidade("X", NaturezaLegalModalidade.AcaoAfirmativa, Exige((OpcaoPelasCotasDaLei.Fato, false), (AgregadoDoGrupo, true))));
+        processo.DefinirItens([], finalidade: FinalidadeFormulario.Inscricao).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([], finalidade: finalidadeDoGrupo, grupos: [GrupoComOCampoDeMembro(finalidadeDoGrupo)]).IsSuccess.Should().BeTrue();
+
+        DomainError? recusa = processo.PendenciaPreCanonicalizacao(ComOAgregado);
+
+        if (esperadoAceito)
+        {
+            recusa.Should().BeNull("o grupo da inscrição pergunta o campo de que o agregado é calculado");
+        }
+        else
+        {
+            recusa!.Code.Should().Be(ProcessoSeletivoErrorCodes.RegraDeModalidadeCitaFatoNaoColetado);
+            recusa.Message.Should().Contain("modalidade X", "a recusa nomeia a modalidade");
+            recusa.Message.Should().Contain($"'{CampoDeMembro}'", "a recusa nomeia o campo que a inscrição não pergunta");
+            recusa.Message.Should().NotContain(AgregadoDoGrupo, "o agregado não é campo que o operador ponha no formulário");
+        }
+
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, ComOAgregado)
+            .Single(i => i.Codigo == ItemFatoNaoColetado).Ok.Should().Be(esperadoAceito);
+    }
+
     [Fact(DisplayName = "No processo que importa os candidatos, o egresso suprido pela oferta não exige as perguntas da origem escolar")]
     public void ImportacaoExterna_EgressoSuprido_NaoExigeAOrigemEscolar()
     {
@@ -176,6 +207,19 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
                 Exige((OpcaoPelasCotasDaLei.Fato, false), ("PCD", true), ("CONCORRER_PCD", true))));
         return processo;
     }
+
+    private const string AgregadoDoGrupo = "ALGUM_INTEGRANTE_SOLICITA";
+    private const string CampoDeMembro = "MEMBRO_PEDE";
+
+    /// <summary>O catálogo com o agregado sobre grupo cujo fato de membro é <see cref="CampoDeMembro"/>.</summary>
+    private static readonly FatosDeModalidade ComOAgregado = new(
+        FatosDeModalidadeDeTeste.DoCatalogo.Codigos,
+        new Dictionary<string, string>(StringComparer.Ordinal) { [AgregadoDoGrupo] = CampoDeMembro });
+
+    private static GrupoColetado GrupoComOCampoDeMembro(FinalidadeFormulario finalidade) =>
+        GrupoColetado.Criar("COMPOSICAO_FAMILIAR", 2, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null, Obrigatoriedade.Sempre,
+            [FatoColetado.Criar(CampoDeMembro, 0, "Membro pede", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!],
+            finalidade).Value!;
 
     private static ItemConformidade Item(ProcessoSeletivo processo, string codigo) =>
         processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Single(i => i.Codigo == codigo);
