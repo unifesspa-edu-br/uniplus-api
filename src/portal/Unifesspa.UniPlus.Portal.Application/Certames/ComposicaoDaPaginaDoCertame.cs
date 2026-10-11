@@ -34,18 +34,6 @@ public sealed class ComposicaoDaPaginaDoCertame
         _registro = registro;
     }
 
-    /// <summary>Compõe a página do certame identificado pelo processo seletivo.</summary>
-    public async Task<Result<PaginaDoCertame>> ComporPorIdAsync(
-        Guid processoSeletivoId,
-        CancellationToken cancellationToken)
-    {
-        ConsultaDoCertame consulta = await _contrato
-            .ObterPorIdAsync(processoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-
-        return await ComporAsync(consulta, cancellationToken).ConfigureAwait(false);
-    }
-
     /// <summary>Compõe a página do certame identificado pelo identificador legível.</summary>
     /// <remarks>
     /// Um valor fora do formato do identificador legível não identifica certame nenhum: responde
@@ -114,11 +102,11 @@ public sealed class ComposicaoDaPaginaDoCertame
             certame.ProcessoSeletivoId,
             certame.Nome,
             certame.NumeroEdital,
+            certame.Situacao,
             certame.DocumentoEditalUrl,
             criador?.DataPublicacao,
             linhaDoTempo,
-            AvaliarDegradacao(certame, leitura),
-            certame.Selo);
+            AvaliarDegradacao(certame, leitura));
     }
 
     private static MotivoDaDegradacao? AvaliarDegradacao(CertameDaOrigem certame, LeituraDosAtos leitura)

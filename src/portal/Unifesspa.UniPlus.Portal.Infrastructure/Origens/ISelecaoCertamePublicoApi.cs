@@ -11,10 +11,6 @@ using Refit;
 /// </remarks>
 internal interface ISelecaoCertamePublicoApi
 {
-    [Get("/api/selecao/certames/{id}")]
-    [Headers("Accept: application/vnd.uniplus.certame.v1+json")]
-    Task<IApiResponse<CertamePublicadoPayload>> ObterPorIdAsync(Guid id, CancellationToken cancellationToken);
-
     [Get("/api/selecao/certames/{identificador}")]
     [Headers("Accept: application/vnd.uniplus.certame.v1+json")]
     Task<IApiResponse<CertamePublicadoPayload>> ObterPorIdentificadorAsync(

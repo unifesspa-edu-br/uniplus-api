@@ -9,6 +9,7 @@ using AwesomeAssertions;
 
 using Infrastructure;
 
+using Unifesspa.UniPlus.Portal.Application.Certames;
 using Unifesspa.UniPlus.Portal.Application.Certames.Origens;
 
 [Trait("Category", "Integration")]
@@ -57,6 +58,7 @@ public sealed class CertamePublicoEndpointTests : IClassFixture<PortalComOrigens
         raiz.GetProperty("identificador").GetString().Should().Be(Identificador);
         raiz.GetProperty("nome").GetString().Should().Be("Medicina 2027");
         raiz.GetProperty("numeroEdital").GetString().Should().Be("012/2026");
+        raiz.GetProperty("situacao").GetString().Should().Be("ultimosDias", "a Portal repassa a situação de Seleção com o vocabulário da vitrine");
         raiz.GetProperty("documentoEditalUrl").GetString().Should().Be(EditalNoAcervo.ToString());
         raiz.GetProperty("dataPublicacao").GetString().Should().Be("2026-12-01", "é a data do edital vigente");
         raiz.GetProperty("aviso").ValueKind.Should().Be(JsonValueKind.Null);
@@ -257,7 +259,7 @@ public sealed class CertamePublicoEndpointTests : IClassFixture<PortalComOrigens
 
     private void ServirCertame() =>
         _factory.Contrato.Resposta = new ConsultaDoCertame.Encontrado(
-            new CertameDaOrigem(ProcessoId, CriadorId, "Medicina 2027", "012/2026", EditalNoAcervo, "\"3:abc\""));
+            new CertameDaOrigem(ProcessoId, CriadorId, "Medicina 2027", "012/2026", EditalNoAcervo, SituacaoDaInscricao.UltimosDias));
 
     /// <summary>Ordem da origem: do mais antigo para o mais recente.</summary>
     private static AtoDaOrigem[] AtosEmOrdemDaOrigem() =>

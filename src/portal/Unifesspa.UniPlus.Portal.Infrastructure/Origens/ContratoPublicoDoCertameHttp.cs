@@ -26,9 +26,6 @@ internal sealed partial class ContratoPublicoDoCertameHttp : IContratoPublicoDoC
         _logger = logger;
     }
 
-    public Task<ConsultaDoCertame> ObterPorIdAsync(Guid processoSeletivoId, CancellationToken cancellationToken) =>
-        ConsultarAsync(() => _api.ObterPorIdAsync(processoSeletivoId, cancellationToken), cancellationToken);
-
     public Task<ConsultaDoCertame> ObterPorIdentificadorAsync(string identificador, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(identificador);
@@ -68,7 +65,8 @@ internal sealed partial class ContratoPublicoDoCertameHttp : IContratoPublicoDoC
             if (resposta.Content is not { } certame
                 || certame.ProcessoSeletivoId == Guid.Empty
                 || certame.AtoCriadorId == Guid.Empty
-                || string.IsNullOrWhiteSpace(certame.Nome))
+                || string.IsNullOrWhiteSpace(certame.Nome)
+                || certame.Situacao is not { } situacao)
             {
                 // Um 200 sem os campos que a página exige não é certame: é contrato quebrado, e
                 // servi-lo mostraria ao candidato uma página sem título ou sem linha do tempo
@@ -83,7 +81,7 @@ internal sealed partial class ContratoPublicoDoCertameHttp : IContratoPublicoDoC
                 certame.Nome,
                 string.IsNullOrWhiteSpace(certame.Periodo?.Numero) ? null : certame.Periodo.Numero,
                 DocumentoPublico(certame.DocumentoEdital?.UrlDownload),
-                resposta.Headers.ETag?.ToString()));
+                situacao));
         }
     }
 

@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Portal.Infrastructure.Origens;
 
+using Unifesspa.UniPlus.Portal.Application.Certames;
+
 /// <summary>
 /// Os campos do detalhe público do certame (Seleção) que a Portal lê. Campos que a origem envia
 /// e não estão aqui são ignorados na leitura.
@@ -9,7 +11,8 @@ internal sealed record CertamePublicadoPayload(
     Guid AtoCriadorId,
     string? Nome,
     PeriodoDoCertamePayload? Periodo,
-    DocumentoEditalDoCertamePayload? DocumentoEdital);
+    DocumentoEditalDoCertamePayload? DocumentoEdital,
+    SituacaoDaInscricao? Situacao);
 
 /// <summary>A parte do período de inscrição que a Portal usa: o número do edital.</summary>
 internal sealed record PeriodoDoCertamePayload(string? Numero);

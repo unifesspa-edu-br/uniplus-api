@@ -73,9 +73,6 @@ public sealed class ContratoDoCertameSimulado : IContratoPublicoDoCertame
     /// <summary>Último identificador legível pedido.</summary>
     public string? UltimoIdentificador { get; private set; }
 
-    public Task<ConsultaDoCertame> ObterPorIdAsync(Guid processoSeletivoId, CancellationToken cancellationToken) =>
-        Task.FromResult(Resposta);
-
     public Task<ConsultaDoCertame> ObterPorIdentificadorAsync(string identificador, CancellationToken cancellationToken)
     {
         UltimoIdentificador = identificador;

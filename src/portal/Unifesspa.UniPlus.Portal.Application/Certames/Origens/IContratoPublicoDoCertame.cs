@@ -10,9 +10,6 @@ namespace Unifesspa.UniPlus.Portal.Application.Certames.Origens;
 /// </remarks>
 public interface IContratoPublicoDoCertame
 {
-    /// <summary>Consulta o certame pelo identificador do processo seletivo.</summary>
-    Task<ConsultaDoCertame> ObterPorIdAsync(Guid processoSeletivoId, CancellationToken cancellationToken);
-
     /// <summary>Consulta o certame pelo identificador legível congelado na publicação.</summary>
     Task<ConsultaDoCertame> ObterPorIdentificadorAsync(string identificador, CancellationToken cancellationToken);
 }

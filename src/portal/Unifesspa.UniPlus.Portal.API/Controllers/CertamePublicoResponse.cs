@@ -9,6 +9,9 @@ using Unifesspa.UniPlus.Portal.Application.Certames;
 /// <param name="Identificador">Identificador legível do certame, o mesmo do endereço da página.</param>
 /// <param name="Nome">Título do certame congelado na publicação.</param>
 /// <param name="NumeroEdital">Número do edital como declarado na publicação, quando declarado.</param>
+/// <param name="Situacao">
+/// Situação da janela de inscrição no instante da leitura, com o vocabulário da vitrine.
+/// </param>
 /// <param name="DocumentoEditalUrl">
 /// Endereço público do edital vigente no acervo. Seleção só divulga o certame depois de copiar o
 /// edital, então a ausência quer dizer versão sem documento publicado, nunca erro. O documento não
@@ -27,6 +30,7 @@ internal sealed record CertamePublicoResponse(
     string Identificador,
     string Nome,
     string? NumeroEdital,
+    SituacaoDaInscricao Situacao,
     Uri? DocumentoEditalUrl,
     DateOnly? DataPublicacao,
     IReadOnlyList<EventoDaLinhaDoTempoResponse> LinhaDoTempo,
@@ -45,6 +49,7 @@ internal sealed record CertamePublicoResponse(
             identificador,
             pagina.Nome,
             pagina.NumeroEdital,
+            pagina.Situacao,
             pagina.DocumentoEditalUrl,
             pagina.DataPublicacao,
             [.. pagina.LinhaDoTempo.Select(EventoDaLinhaDoTempoResponse.De)],

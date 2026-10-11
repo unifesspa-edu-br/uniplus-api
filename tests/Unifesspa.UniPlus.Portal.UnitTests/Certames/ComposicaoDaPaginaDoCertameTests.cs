@@ -8,6 +8,8 @@ using Unifesspa.UniPlus.Portal.Application.Certames.Origens;
 
 public sealed class ComposicaoDaPaginaDoCertameTests
 {
+    private const string Identificador = "medicina-2027";
+
     private static readonly Guid ProcessoId = Guid.Parse("0192a000-0000-7000-8000-000000000001");
     private static readonly Guid Criador = Guid.Parse("0192a000-0000-7000-8000-0000000000a1");
     private static readonly Uri EditalNoAcervo = new("https://acervo.example/editais/2026/ceps/edital-abertura/medicina-2027/0192a000-0000-7000-8000-0000000000a1/abc.pdf");
@@ -23,14 +25,14 @@ public sealed class ComposicaoDaPaginaDoCertameTests
             Encontrado(),
             new LeituraDosAtos([edital, aviso, homologacao], null));
 
-        Result<PaginaDoCertame> resultado = await composicao.ComporPorIdAsync(ProcessoId, CancellationToken.None);
+        Result<PaginaDoCertame> resultado = await composicao.ComporPorIdentificadorAsync(Identificador, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         PaginaDoCertame pagina = resultado.Value!;
         pagina.ProcessoSeletivoId.Should().Be(ProcessoId);
         pagina.Nome.Should().Be("Medicina 2027");
         pagina.NumeroEdital.Should().Be("012/2026");
-        pagina.SeloDaOrigem.Should().Be("\"1:abc\"");
+        pagina.Situacao.Should().Be(SituacaoDaInscricao.InscricoesAbertas);
         pagina.Degradacao.Should().BeNull();
 
         // Inverter a ordem da origem mantém o desempate dela: o aviso, registrado depois do edital
@@ -44,7 +46,7 @@ public sealed class ComposicaoDaPaginaDoCertameTests
         RegistroFalso registro = new(new LeituraDosAtos([], null));
         ComposicaoDaPaginaDoCertame composicao = new(new ContratoFalso(new ConsultaDoCertame.NaoEncontrado()), registro);
 
-        Result<PaginaDoCertame> resultado = await composicao.ComporPorIdAsync(ProcessoId, CancellationToken.None);
+        Result<PaginaDoCertame> resultado = await composicao.ComporPorIdentificadorAsync(Identificador, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(PaginaDoCertameErrorCodes.CertameNaoEncontrado);
@@ -57,7 +59,7 @@ public sealed class ComposicaoDaPaginaDoCertameTests
         RegistroFalso registro = new(new LeituraDosAtos([], null));
         ComposicaoDaPaginaDoCertame composicao = new(new ContratoFalso(new ConsultaDoCertame.Indisponivel()), registro);
 
-        Result<PaginaDoCertame> resultado = await composicao.ComporPorIdAsync(ProcessoId, CancellationToken.None);
+        Result<PaginaDoCertame> resultado = await composicao.ComporPorIdentificadorAsync(Identificador, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(PaginaDoCertameErrorCodes.OrigemIndisponivel);
@@ -76,7 +78,7 @@ public sealed class ComposicaoDaPaginaDoCertameTests
 
         ComposicaoDaPaginaDoCertame composicao = Montar(Encontrado(), new LeituraDosAtos([edital], falha));
 
-        PaginaDoCertame pagina = (await composicao.ComporPorIdAsync(ProcessoId, CancellationToken.None)).Value!;
+        PaginaDoCertame pagina = (await composicao.ComporPorIdentificadorAsync(Identificador, CancellationToken.None)).Value!;
 
         pagina.Degradacao.Should().Be(esperado);
         pagina.LinhaDoTempo.Select(e => e.Id).Should().Equal(edital.Id);
@@ -90,7 +92,7 @@ public sealed class ComposicaoDaPaginaDoCertameTests
 
         ComposicaoDaPaginaDoCertame composicao = Montar(Encontrado(), new LeituraDosAtos([outro], null));
 
-        PaginaDoCertame pagina = (await composicao.ComporPorIdAsync(ProcessoId, CancellationToken.None)).Value!;
+        PaginaDoCertame pagina = (await composicao.ComporPorIdentificadorAsync(Identificador, CancellationToken.None)).Value!;
 
         pagina.Degradacao.Should().Be(MotivoDaDegradacao.CriadorAusente);
     }
@@ -103,7 +105,7 @@ public sealed class ComposicaoDaPaginaDoCertameTests
 
         ComposicaoDaPaginaDoCertame composicao = Montar(Encontrado(), new LeituraDosAtos([edital, retificacao], null));
 
-        PaginaDoCertame pagina = (await composicao.ComporPorIdAsync(ProcessoId, CancellationToken.None)).Value!;
+        PaginaDoCertame pagina = (await composicao.ComporPorIdentificadorAsync(Identificador, CancellationToken.None)).Value!;
 
         pagina.Degradacao.Should().Be(
             MotivoDaDegradacao.DetalheAtrasado,
@@ -118,7 +120,7 @@ public sealed class ComposicaoDaPaginaDoCertameTests
 
         ComposicaoDaPaginaDoCertame composicao = Montar(Encontrado(), new LeituraDosAtos([edital, aviso], null));
 
-        PaginaDoCertame pagina = (await composicao.ComporPorIdAsync(ProcessoId, CancellationToken.None)).Value!;
+        PaginaDoCertame pagina = (await composicao.ComporPorIdentificadorAsync(Identificador, CancellationToken.None)).Value!;
 
         pagina.Degradacao.Should().BeNull();
     }
@@ -131,7 +133,7 @@ public sealed class ComposicaoDaPaginaDoCertameTests
 
         ComposicaoDaPaginaDoCertame composicao = Montar(Encontrado(), new LeituraDosAtos([abertura, retificacao], null));
 
-        PaginaDoCertame pagina = (await composicao.ComporPorIdAsync(ProcessoId, CancellationToken.None)).Value!;
+        PaginaDoCertame pagina = (await composicao.ComporPorIdentificadorAsync(Identificador, CancellationToken.None)).Value!;
 
         pagina.Degradacao.Should().BeNull("o detalhe já serve a versão mais recente");
     }
@@ -155,7 +157,7 @@ public sealed class ComposicaoDaPaginaDoCertameTests
 
         ComposicaoDaPaginaDoCertame composicao = Montar(Encontrado(), new LeituraDosAtos([ato], null));
 
-        EventoDaLinhaDoTempo evento = (await composicao.ComporPorIdAsync(ProcessoId, CancellationToken.None))
+        EventoDaLinhaDoTempo evento = (await composicao.ComporPorIdentificadorAsync(Identificador, CancellationToken.None))
             .Value!.LinhaDoTempo.Single();
 
         evento.Titulo.Should().Be(tituloEsperado);
@@ -172,7 +174,7 @@ public sealed class ComposicaoDaPaginaDoCertameTests
 
         ComposicaoDaPaginaDoCertame composicao = Montar(Encontrado(), new LeituraDosAtos([retificacao], null));
 
-        EventoDaLinhaDoTempo evento = (await composicao.ComporPorIdAsync(ProcessoId, CancellationToken.None))
+        EventoDaLinhaDoTempo evento = (await composicao.ComporPorIdentificadorAsync(Identificador, CancellationToken.None))
             .Value!.LinhaDoTempo.Single();
 
         evento.Descricao.Should().Be("Correção do cronograma");
@@ -221,7 +223,7 @@ public sealed class ComposicaoDaPaginaDoCertameTests
             Encontrado(),
             new LeituraDosAtos([abertura, retificacao, aviso], null));
 
-        PaginaDoCertame pagina = (await composicao.ComporPorIdAsync(ProcessoId, CancellationToken.None)).Value!;
+        PaginaDoCertame pagina = (await composicao.ComporPorIdentificadorAsync(Identificador, CancellationToken.None)).Value!;
 
         pagina.DocumentoEditalUrl.Should().Be(EditalNoAcervo);
         pagina.DataPublicacao.Should().Be(new DateOnly(2026, 3, 20), "é a data do edital vigente, não a do ato mais recente");
@@ -237,7 +239,7 @@ public sealed class ComposicaoDaPaginaDoCertameTests
 
         ComposicaoDaPaginaDoCertame composicao = Montar(Encontrado(), new LeituraDosAtos([outro], null));
 
-        PaginaDoCertame pagina = (await composicao.ComporPorIdAsync(ProcessoId, CancellationToken.None)).Value!;
+        PaginaDoCertame pagina = (await composicao.ComporPorIdentificadorAsync(Identificador, CancellationToken.None)).Value!;
 
         pagina.DataPublicacao.Should().BeNull();
         pagina.DocumentoEditalUrl.Should().Be(EditalNoAcervo, "o endereço vem de Seleção e não depende da linha do tempo");
@@ -253,7 +255,7 @@ public sealed class ComposicaoDaPaginaDoCertameTests
     }
 
     private static ConsultaDoCertame.Encontrado Encontrado() =>
-        new ConsultaDoCertame.Encontrado(new CertameDaOrigem(ProcessoId, Criador, "Medicina 2027", "012/2026", EditalNoAcervo, "\"1:abc\""));
+        new ConsultaDoCertame.Encontrado(new CertameDaOrigem(ProcessoId, Criador, "Medicina 2027", "012/2026", EditalNoAcervo, SituacaoDaInscricao.InscricoesAbertas));
 
     private static AtoDaOrigem Ato(
         Guid id,
@@ -270,9 +272,6 @@ public sealed class ComposicaoDaPaginaDoCertameTests
     private sealed class ContratoFalso(ConsultaDoCertame resposta) : IContratoPublicoDoCertame
     {
         public string? IdentificadorPedido { get; private set; }
-
-        public Task<ConsultaDoCertame> ObterPorIdAsync(Guid processoSeletivoId, CancellationToken cancellationToken) =>
-            Task.FromResult(resposta);
 
         public Task<ConsultaDoCertame> ObterPorIdentificadorAsync(string identificador, CancellationToken cancellationToken)
         {

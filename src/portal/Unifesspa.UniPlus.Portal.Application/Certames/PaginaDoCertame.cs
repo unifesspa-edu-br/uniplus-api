@@ -7,6 +7,7 @@ namespace Unifesspa.UniPlus.Portal.Application.Certames;
 /// <param name="ProcessoSeletivoId">Identificador do processo seletivo.</param>
 /// <param name="Nome">Título do certame congelado na publicação.</param>
 /// <param name="NumeroEdital">Número do edital, quando declarado na publicação.</param>
+/// <param name="Situacao">Situação da janela de inscrição, como Seleção a resolveu na leitura.</param>
 /// <param name="DocumentoEditalUrl">Endereço público do edital vigente, quando publicado.</param>
 /// <param name="DataPublicacao">
 /// Data de publicação do edital vigente — a do ato que criou a versão servida. Nula quando a linha
@@ -17,16 +18,15 @@ namespace Unifesspa.UniPlus.Portal.Application.Certames;
 /// Por que a linha do tempo está vazia ou incompleta; nulo quando ela está completa e consistente
 /// com o detalhe servido.
 /// </param>
-/// <param name="SeloDaOrigem">Selo do conteúdo emitido por Seleção, tal como recebido.</param>
 public sealed record PaginaDoCertame(
     Guid ProcessoSeletivoId,
     string Nome,
     string? NumeroEdital,
+    SituacaoDaInscricao Situacao,
     Uri? DocumentoEditalUrl,
     DateOnly? DataPublicacao,
     IReadOnlyList<EventoDaLinhaDoTempo> LinhaDoTempo,
-    MotivoDaDegradacao? Degradacao,
-    string? SeloDaOrigem);
+    MotivoDaDegradacao? Degradacao);
 
 /// <summary>
 /// Um ato na linha do tempo da página pública.
