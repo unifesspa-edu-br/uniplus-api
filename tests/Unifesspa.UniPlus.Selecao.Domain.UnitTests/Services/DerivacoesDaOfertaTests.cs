@@ -42,6 +42,38 @@ public sealed class DerivacoesDaOfertaTests
         opcao.FatosCitados.Should().BeEquivalentTo(OpcaoPelasCotasDaLei.DependenciasDaOpcao);
     }
 
+    [Fact(DisplayName = "Com cota da lei ofertada e sem o egresso configurado, o egresso vem pela regra do sistema")]
+    public void ComCota_SemEgressoConfigurado_UsaARegraDoSistema()
+    {
+        IReadOnlyList<ConfiguracaoDerivacaoFato> efetivas = DerivacoesDaOferta.Efetivas([], [Oferta(
+            Modalidade("AC", NaturezaLegalModalidade.Ampla),
+            Modalidade("LI_EP", NaturezaLegalModalidade.CotaReservada, [Optou]))]);
+
+        ConfiguracaoDerivacaoFato egresso = efetivas.Should().ContainSingle(d => d.CodigoFato == OrigemEscolar.FatoEgresso).Which;
+        egresso.Booleano.Should().BeTrue();
+        egresso.FatosCitados.Should().BeEquivalentTo(OrigemEscolar.DependenciasDoEgresso);
+    }
+
+    [Fact(DisplayName = "O egresso que o processo configura prevalece sobre a regra do sistema")]
+    public void EgressoConfigurado_Prevalece()
+    {
+        ConfiguracaoDerivacaoFato configurado = ConfiguracaoDerivacaoFato.Criar(
+            OrigemEscolar.FatoEgresso, [RegraDerivacaoConfigurada.Criar(0, null, null).Value!]).Value!;
+
+        IReadOnlyList<ConfiguracaoDerivacaoFato> efetivas = DerivacoesDaOferta.Efetivas([configurado], [Oferta(
+            Modalidade("AC", NaturezaLegalModalidade.Ampla),
+            Modalidade("LI_EP", NaturezaLegalModalidade.CotaReservada, [Optou]))]);
+
+        efetivas.Should().ContainSingle(d => d.CodigoFato == OrigemEscolar.FatoEgresso).Which.Should().BeSameAs(configurado);
+    }
+
+    [Fact(DisplayName = "Sem cota da lei ofertada, o egresso não vem pela regra do sistema")]
+    public void SemCota_NaoSupreOEgresso() =>
+        DerivacoesDaOferta.Efetivas([], [Oferta(
+                Modalidade("AC", NaturezaLegalModalidade.Ampla),
+                Modalidade("AC_PCD", NaturezaLegalModalidade.AcaoAfirmativa, [NaoOptou, ("PCD", true)]))])
+            .Should().NotContain(d => d.CodigoFato == OrigemEscolar.FatoEgresso);
+
     [Fact(DisplayName = "A modalidade do candidato é a união das regras das modalidades ofertadas, uma por código")]
     public void Modalidade_UneAsRegrasOfertadas()
     {

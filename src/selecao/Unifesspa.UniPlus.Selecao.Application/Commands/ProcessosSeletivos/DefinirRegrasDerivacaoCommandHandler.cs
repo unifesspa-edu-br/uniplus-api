@@ -101,11 +101,13 @@ public static class DefinirRegrasDerivacaoCommandHandler
         Dictionary<string, DominioDeValores> dominiosDinamicos =
             VocabularioDeFatos.DominiosDinamicos(processo, catalogo.Values);
 
-        // Universo dos fatos disponíveis na configuração final: os coletados pelo processo mais os
-        // derivados definidos neste mesmo comando (a substituição é integral). Uma condição só pode
-        // citar um fato deste universo — coerente com a recusa de fato citado inexistente do publish.
+        // Universo dos fatos disponíveis na configuração final: os coletados pelo processo, os
+        // derivados definidos neste mesmo comando (a substituição é integral) e os que a oferta supre
+        // quando o processo não configura nenhum — a modalidade, a opção pelas cotas e o egresso pela
+        // regra do sistema. Uma condição só pode citar um fato deste universo, coerente com a recusa
+        // de fato citado inexistente da publicação.
         HashSet<string> universo = new(
-            processo.DerivacoesEfetivas().Select(static d => d.CodigoFato).Where(DerivacoesDaOferta.Deriva), StringComparer.Ordinal);
+            DerivacoesDaOferta.Efetivas([], processo.DistribuicaoVagas).Select(static d => d.CodigoFato), StringComparer.Ordinal);
         foreach (FatoColetado fato in processo.FatosColetados)
         {
             universo.Add(fato.FatoCodigo);

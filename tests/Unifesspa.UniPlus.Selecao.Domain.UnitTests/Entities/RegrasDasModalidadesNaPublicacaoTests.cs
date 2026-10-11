@@ -72,6 +72,45 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
             "a opção pelas cotas é derivada da opção pelas vagas de escola pública, que a inscrição tem de perguntar");
     }
 
+    [Theory(DisplayName = "Sem o egresso configurado, a cota da lei depende das perguntas da origem escolar na inscrição, pela regra do sistema")]
+    [InlineData(true, true)]
+    [InlineData(false, false)]
+    public void SemEgressoConfigurado_DependeDaOrigemEscolar(bool perguntaAOrigemEscolar, bool esperadoOk)
+    {
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
+        Ofertar(processo,
+            Modalidade("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula),
+            Modalidade("LI_EP", NaturezaLegalModalidade.CotaReservada, Exige((OpcaoPelasCotasDaLei.Fato, true))));
+        List<FatoColetado> itens = [Booleano(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 0)];
+        if (perguntaAOrigemEscolar)
+        {
+            itens.Add(Booleano(OrigemEscolar.FatoOndeCursou, 1));
+            itens.Add(Booleano(OrigemEscolar.FatoFormaDeConclusao, 2));
+        }
+
+        processo.DefinirItens(itens, finalidade: FinalidadeFormulario.Inscricao).IsSuccess.Should().BeTrue();
+
+        processo.RegrasDerivacao.Should().BeEmpty("o processo não aplicou modelo nem configurou derivação");
+        Item(processo, ItemFatoNaoColetado).Ok.Should().Be(esperadoOk,
+            "o egresso, de que a opção pelas cotas depende, vem pela regra do sistema, que cita a origem escolar");
+    }
+
+    [Fact(DisplayName = "No processo que importa os candidatos, o egresso suprido pela oferta não exige as perguntas da origem escolar")]
+    public void ImportacaoExterna_EgressoSuprido_NaoExigeAOrigemEscolar()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
+            "PS SiSU", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        Ofertar(processo,
+            Modalidade("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula),
+            Modalidade("LI_EP", NaturezaLegalModalidade.CotaReservada, Exige((OpcaoPelasCotasDaLei.Fato, true))));
+
+        processo.DerivacoesEfetivas().Should().Contain(d => d.CodigoFato == OrigemEscolar.FatoEgresso);
+        Item(processo, "derivacao_fatos_citados_inexistentes").Ok.Should().BeTrue(
+            "a regra do sistema que a oferta supre não é configuração do processo, e o candidato chega com a modalidade");
+    }
+
     [Fact(DisplayName = "A cota da lei copiada sem a opção pelas cotas — a linha anterior à cópia da regra — recusa a publicação")]
     public void CotaSemOpcao_Recusa()
     {

@@ -22,7 +22,8 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// <remarks>
 /// <para>
 /// Com cota da lei ofertada, a opção é derivada pela regra padrão, de quem é egresso de escola pública
-/// e optou pelas vagas de escola pública, sempre que uma regra a cita. Sem cota da lei ofertada,
+/// e optou pelas vagas de escola pública, sempre que uma regra a cita; o egresso, quando o processo
+/// não o configura, vem pela regra do sistema. Sem cota da lei ofertada,
 /// ninguém optou por ela: a regra de cada modalidade é lida com a opção valendo falso. A cláusula que exige a opção não vale para ninguém, e a condição que a recusa vale
 /// para todos. A modalidade cujas cláusulas exigem todas a opção não é derivada.
 /// </para>
@@ -76,6 +77,14 @@ public static class DerivacoesDaOferta
         if (ofertaCotaDaLei && regras.Exists(static r => r.Quando.FatosCitados.Contains(OpcaoPelasCotasDaLei.Fato)))
         {
             efetivas.Add(Derivacao(OpcaoPelasCotasDaLei.Fato, [.. OpcaoPelasCotasDaLei.RegrasDaOpcao.Select(static r => (r.Contribui, r.Quando))]));
+
+            // A opção depende do egresso de escola pública. A regra dele é a do sistema, fixa no código
+            // e igual à padrão do catálogo, por isso vale sem cópia quando o processo não configura
+            // outra. A que o processo configura, vinda do modelo ou do operador, prevalece.
+            if (!efetivas.Exists(static d => string.Equals(d.CodigoFato, OrigemEscolar.FatoEgresso, StringComparison.Ordinal)))
+            {
+                efetivas.Add(Derivacao(OrigemEscolar.FatoEgresso, [.. OrigemEscolar.RegrasDoEgresso.Select(static r => (r.Contribui, r.Quando))]));
+            }
         }
 
         efetivas.Add(Derivacao(ModalidadeDoCandidato.Fato, regras));

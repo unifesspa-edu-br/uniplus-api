@@ -364,8 +364,12 @@ public static partial class AplicarModeloFormularioCommandHandler
         Relatorio relatorio,
         List<FieldError> erros)
     {
-        Dictionary<string, ConfiguracaoDerivacaoFato> derivados =
-            processo.DerivacoesEfetivas().ToDictionary(static r => r.CodigoFato, StringComparer.Ordinal);
+        // Mantém o que o processo grava e o que a oferta deriva. A regra do sistema que as derivações
+        // efetivas suprem enquanto o processo não grava outra é copiada como as demais: a cópia não
+        // pode depender de a oferta continuar com cota da lei.
+        Dictionary<string, ConfiguracaoDerivacaoFato> derivados = processo.DerivacoesEfetivas()
+            .Where(r => DerivacoesDaOferta.Deriva(r.CodigoFato) || processo.RegrasDerivacao.Any(g => string.Equals(g.CodigoFato, r.CodigoFato, StringComparison.Ordinal)))
+            .ToDictionary(static r => r.CodigoFato, StringComparer.Ordinal);
         HashSet<string> vistos = new(StringComparer.Ordinal);
         Queue<string> pendentes = new(citados.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal));
         List<ConfiguracaoDerivacaoInput> aCopiar = [];
