@@ -32,6 +32,12 @@ public static class ConjuntoBasicoDaInscricao
     private const string DesejaNomeSocial = "DESEJA_NOME_SOCIAL";
     private const string TipoDeLocalidade = "TIPO_ENDERECO";
 
+    /// <summary>
+    /// Quantos anos antes do envio a data de nascimento e a de emissão do RG ainda são plausíveis: o
+    /// limite de sanidade acima da maior longevidade registrada.
+    /// </summary>
+    private const int AnosDePlausibilidadeDaData = 120;
+
     /// <summary>Os tipos de localidade em que se pede o nome da aldeia, da comunidade ou do quilombo.</summary>
     private static readonly string[] LocalidadesComComunidade = ["ALDEIA", "COMUNIDADE", "QUILOMBO"];
 
@@ -180,9 +186,19 @@ public static class ConjuntoBasicoDaInscricao
             Precondicao = item.Precondicao is { Count: > 0 } precondicao ? precondicao : null,
             PredicadoObrigatoriedade = item.PredicadoObrigatoriedade is { Count: > 0 } predicado ? predicado : null,
             Ajuda = string.IsNullOrWhiteSpace(item.Ajuda) ? null : item.Ajuda.Trim(),
-            Restricoes = item.Restricoes is { Count: > 0 } restricoes ? restricoes : null,
+            Restricoes = item.Restricoes is { Count: > 0 } restricoes ? [.. restricoes.Select(static r => RestricaoCanonica(r)!)] : null,
         });
     }
+
+    /// <summary>
+    /// A restrição na forma que a escrita grava: lida pelo domínio e devolvida à entrada, para que o
+    /// deslocamento omitido de um limite de data e o explícito em zero sejam a mesma restrição. A
+    /// restrição ausente ou que o domínio recusa fica como veio, e a recusa sai na própria escrita.
+    /// </summary>
+    private static RestricaoValorInput? RestricaoCanonica(RestricaoValorInput? restricao) =>
+        restricao is not null && EntradaDeRegras.Restricao(restricao) is { IsSuccess: true } lida
+            ? EntradaDeRegras.ParaEntrada(lida.Value!)
+            : restricao;
 
     /// <summary>A condição sem valor não tem forma canônica, e o item que a traz não é o de referência.</summary>
     private static bool TemValorAusente(FatoColetadoInput item) =>
@@ -217,6 +233,12 @@ public static class ConjuntoBasicoDaInscricao
         string texto = TipoRenderizacaoCodigo.Texto;
         string data = TipoRenderizacaoCodigo.Data;
         string sempre = PredicadoDnfJson.ObrigatoriedadeSempre;
+        IReadOnlyList<RestricaoValorInput> dataPlausivel =
+        [
+            new(RestricaoValorJson.FaixaDeData,
+                DataMinima: new LimiteDeDataInput(RestricaoValorJson.AncoraEnvio, Anos: -AnosDePlausibilidadeDaData),
+                DataMaxima: new LimiteDeDataInput(RestricaoValorJson.AncoraEnvio)),
+        ];
 
         List<FatoColetadoInput> itens =
         [
@@ -228,10 +250,10 @@ public static class ConjuntoBasicoDaInscricao
             new("RG_NUMERO", 0, "Número do RG", texto, sempre, naoEstrangeiro),
             new("RG_ORGAO_EMISSOR", 0, "Órgão emissor do RG", texto, sempre, naoEstrangeiro),
             new("RG_UF", 0, "UF de emissão do RG", selecao, sempre, naoEstrangeiro),
-            new("RG_DATA_EMISSAO", 0, "Data de emissão do RG", data, sempre, naoEstrangeiro),
+            new("RG_DATA_EMISSAO", 0, "Data de emissão do RG", data, sempre, naoEstrangeiro, Restricoes: dataPlausivel),
             new("PASSAPORTE_NUMERO", 0, "Número do passaporte", texto, sempre, estrangeiro),
             new("RNM_NUMERO", 0, "Número do Registro Nacional Migratório (RNM)", texto, sempre, estrangeiro),
-            new("DATA_NASCIMENTO", 0, "Data de nascimento", data, sempre, null),
+            new("DATA_NASCIMENTO", 0, "Data de nascimento", data, sempre, null, Restricoes: dataPlausivel),
             new("NATURALIDADE_UF", 0, "UF de nascimento", selecao, sempre, naoEstrangeiro),
             new("NATURALIDADE_MUNICIPIO", 0, "Município de nascimento", TipoRenderizacaoCodigo.Municipio, sempre, naoEstrangeiro,
                 Restricoes: [new RestricaoValorInput(RestricaoValorJson.MunicipiosDaUf, Fatos: ["NATURALIDADE_UF"])]),

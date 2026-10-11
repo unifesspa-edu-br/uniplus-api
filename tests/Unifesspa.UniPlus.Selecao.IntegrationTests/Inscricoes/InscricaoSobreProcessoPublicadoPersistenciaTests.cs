@@ -5,6 +5,8 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore.Migrations.Operations;
+
 using Npgsql;
 
 using NSubstitute;
@@ -28,6 +30,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -259,6 +262,82 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             ["CPF", "RG_NUMERO", "PASSAPORTE_NUMERO", "RNM_NUMERO", "RG_NUMERO_MEMBRO"],
             "o conjunto junta os fatos Identificador do conjunto básico do candidato (CPF, RG, passaporte e RNM) " +
             "com o do campo de grupo declarado por este teste — da classificação CONGELADA na publicação, não do catálogo vivo");
+    }
+
+    [Fact(DisplayName = "A migração regrava o formulário gravado antes da faixa: as datas do conjunto básico passam a declará-la")]
+    public async Task Migracao_FormularioGravadoAntes_RecebeAFaixaNasDatasDoConjuntoBasico()
+    {
+        ProcessoSeletivo processo = NovoProcessoDeInscricao(nameof(Migracao_FormularioGravadoAntes_RecebeAFaixaNasDatasDoConjuntoBasico));
+        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        {
+            await writeContext.ProcessosSeletivos.AddAsync(processo);
+            await writeContext.SaveChangesAsync();
+        }
+
+        await using NpgsqlConnection connection = new(_fixture.ConnectionString);
+        await connection.OpenAsync();
+        await using (NpgsqlCommand antes = connection.CreateCommand())
+        {
+            antes.CommandText = """
+                UPDATE selecao.fatos_coletados SET restricoes = '[]'::jsonb
+                WHERE processo_seletivo_id = @id AND fato_codigo IN ('DATA_NASCIMENTO', 'RG_DATA_EMISSAO')
+                """;
+            antes.Parameters.AddWithValue("id", processo.Id);
+            (await antes.ExecuteNonQueryAsync()).Should().Be(2, "o formulário gravado antes da faixa tem as duas datas sem restrição");
+        }
+
+        foreach (SqlOperation operacao in new LimitaAsDatasDoConjuntoBasico().UpOperations.OfType<SqlOperation>())
+        {
+            await using NpgsqlCommand migracao = connection.CreateCommand();
+            migracao.CommandText = operacao.Sql;
+            await migracao.ExecuteNonQueryAsync();
+        }
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        ProcessoSeletivo lido = (await new ProcessoSeletivoRepository(readContext, TimeProvider.System).ObterComConfiguracaoAsync(processo.Id))!;
+        foreach (string fato in new[] { "DATA_NASCIMENTO", "RG_DATA_EMISSAO" })
+        {
+            FaixaDeData faixa = lido.FatosColetados.Single(f => f.FatoCodigo == fato).Restricoes.OfType<FaixaDeData>().Single();
+            faixa.Minima.Should().Be(LimiteDeData.NoEnvio(anos: -120, dias: 0));
+            faixa.Maxima.Should().Be(LimiteDeData.NoEnvio(anos: 0, dias: 0));
+        }
+    }
+
+    [Fact(DisplayName = "O conjunto básico publicado recusa o nascimento depois do envio com os limites do dia, sem gravar o rascunho")]
+    public async Task Salvar_SobreVersaoFixadaReal_RecusaONascimentoNoFuturo()
+    {
+        ProcessoSeletivo processo = NovoProcessoDeInscricao(nameof(Salvar_SobreVersaoFixadaReal_RecusaONascimentoNoFuturo));
+
+        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+        (Guid processoId, _) = await PublicarEDivulgarAsync(writeContext, processo);
+
+        InscricaoRepository inscricaoRepository = new(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+        ProcessoSeletivoRepository processoRepository = new(writeContext, TimeProvider.System);
+        CertameDivulgadoRepository divulgadoRepository = new(writeContext);
+        IUserContext usuario = UsuarioComCpf(PersonasDeTeste.FernandaDrumond);
+        Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
+            new IniciarInscricaoCommand(processoId),
+            inscricaoRepository, divulgadoRepository, processoRepository, RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(),
+            DentroDoPeriodo, writeContext, usuario, CancellationToken.None);
+        iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
+
+        InscricaoRequest request = new(
+            null,
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["DATA_NASCIMENTO"] = JsonSerializer.SerializeToElement("2027-01-10") },
+            null,
+            null);
+        Result<InscricaoDto> salvar = await SalvarInscricaoCommandHandler.Handle(
+            new SalvarInscricaoCommand(processoId, request, PrecondicaoIfMatch.DeTags([iniciar.Value!.ETag])),
+            inscricaoRepository, processoRepository, divulgadoRepository, RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(),
+            writeContext, usuario, DentroDoPeriodo, CancellationToken.None);
+
+        salvar.Errors.Should().ContainSingle(static e => e.Field == "DATA_NASCIMENTO" && e.Error.Code == InscricaoErrorCodes.DataForaDaFaixa)
+            .Which.Error.Message.Should().Be("Informe uma data entre 15/01/1906 e 15/01/2026.");
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        Inscricao? gravada = await new InscricaoRepository(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System)
+            .ObterPorIdAsync(iniciar.Value!.Id);
+        gravada!.Respostas.Should().NotContainKey("DATA_NASCIMENTO", "a resposta recusada não é gravada no rascunho");
     }
 
     [Fact(DisplayName = "Salvar um rascunho sobre a versão fixada cifra o RG e o RG do membro do grupo, sem expor nada em texto claro na linha crua")]

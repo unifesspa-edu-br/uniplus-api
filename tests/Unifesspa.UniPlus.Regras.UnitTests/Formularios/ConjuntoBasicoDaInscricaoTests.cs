@@ -177,13 +177,33 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
         Item(avaliacao, "NOME_PAI").Obrigatorio.Should().Be(Ternario.Falso);
     }
 
+    [Theory(DisplayName = "As datas de nascimento e de emissão do RG ficam entre 120 anos antes do envio e o dia do envio")]
+    [InlineData("DATA_NASCIMENTO", "2026-10-11", false)]
+    [InlineData("DATA_NASCIMENTO", "2026-10-12", true)]
+    [InlineData("DATA_NASCIMENTO", "1906-10-11", false)]
+    [InlineData("DATA_NASCIMENTO", "1906-10-10", true)]
+    [InlineData("RG_DATA_EMISSAO", "2027-01-10", true)]
+    [InlineData("RG_DATA_EMISSAO", "5244-05-04", true)]
+    [InlineData("RG_DATA_EMISSAO", "2010-03-15", false)]
+    public void Avaliar_DataForaDaFaixaPlausivel_Viola(string fato, string data, bool viola)
+    {
+        EnvioDasRespostas envio = new(
+            new DateTimeOffset(2026, 10, 11, 14, 0, 0, TimeSpan.Zero), TimeZoneInfo.FindSystemTimeZoneById("America/Belem"));
+
+        AvaliacaoFormulario avaliacao = Avaliar(envio, ("NACIONALIDADE", "NATO"), (fato, data));
+
+        Item(avaliacao, fato).RestricoesVioladas.Any(static r => r is FaixaDeData).Should().Be(viola);
+    }
+
     private static FatoColetadoInput ItemDoCliente(string fato, int ordem) =>
         new(fato, ordem, fato, "BOOLEANO", PredicadoDnfJson.ObrigatoriedadeSempre, null, "DADOS");
 
     private static AvaliacaoItem Item(AvaliacaoFormulario avaliacao, string fato) => avaliacao.Itens.Single(i => i.FatoCodigo == fato);
 
     /// <summary>Avalia a seção como a constante a declara, lida pelo mesmo caminho da escrita.</summary>
-    private AvaliacaoFormulario Avaliar(params (string Fato, object Valor)[] respostas)
+    private AvaliacaoFormulario Avaliar(params (string Fato, object Valor)[] respostas) => Avaliar(envio: null, respostas);
+
+    private AvaliacaoFormulario Avaliar(EnvioDasRespostas? envio, params (string Fato, object Valor)[] respostas)
     {
         DefinicaoItem[] itens = [.. ConjuntoBasicoDaInscricao.Itens.Select(static item =>
         {
@@ -200,6 +220,6 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
             respostas.ToDictionary(static r => r.Fato, static r => JsonSerializer.SerializeToElement(r.Valor), StringComparer.Ordinal),
             new HashSet<string>(StringComparer.Ordinal),
             new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
-            Envio: null));
+            Envio: envio));
     }
 }
