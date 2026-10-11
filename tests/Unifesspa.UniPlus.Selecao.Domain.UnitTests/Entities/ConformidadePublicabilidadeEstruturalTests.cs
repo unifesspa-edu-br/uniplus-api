@@ -836,7 +836,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     {
         ModalidadeSelecionada acPcd = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC_PCD", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe,
-            ModalidadesFederaisLei12711.Ac, RegraRemanejamentoModalidade.Nenhuma, null, null, null, regraDaAcaoAfirmativa, null, "base legal", 2).Value!;
+            ModalidadesFederaisLei12711.Ac, RegraRemanejamentoModalidade.DestinoUnico, ModalidadesFederaisLei12711.Ac, null, null, regraDaAcaoAfirmativa, null, "base legal", 2).Value!;
         ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 40, pr: 0.5m, RegraLei12711(), RegraAjusteArt11(), Demografica(),
             [

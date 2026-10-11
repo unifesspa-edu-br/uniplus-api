@@ -61,6 +61,23 @@ public sealed class ModalidadeSelecionada : EntityBase
     /// </summary>
     public int? QuantidadeDeclarada { get; private set; }
 
+    /// <summary>
+    /// O remanejamento é o que a natureza pede no cadastro: a ampla concorrência não remaneja as
+    /// próprias vagas ociosas, e a ação afirmativa as devolve a um destino único ou as cruza com o
+    /// par. A cota reservada, que segue a cascata legal, já é recusada na criação.
+    /// </summary>
+    /// <remarks>
+    /// Fica fora de <see cref="Criar"/> porque esta é a cópia congelada de uma modalidade: a
+    /// publicação recusa a cópia incoerente com erro nomeado, e a leitura do envelope publicado a
+    /// recusa como malformada, as duas por esta mesma regra.
+    /// </remarks>
+    public bool RemanejamentoCoerenteComANatureza() => NaturezaLegal switch
+    {
+        NaturezaLegalModalidade.Ampla => RegraRemanejamento == RegraRemanejamentoModalidade.Nenhuma,
+        NaturezaLegalModalidade.AcaoAfirmativa => RegraRemanejamento is RegraRemanejamentoModalidade.DestinoUnico or RegraRemanejamentoModalidade.Cruzado,
+        _ => true,
+    };
+
     private ModalidadeSelecionada() { }
 
     /// <summary>

@@ -736,6 +736,45 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         Estado.De(processo).Should().BeEquivalentTo(antes, "a restauração recusada não pode deixar o agregado meio-reposto");
     }
 
+    [Fact(DisplayName = "Restauração com uma ação afirmativa sem remanejamento é recusada")]
+    public void RestauracaoComAcaoAfirmativaSemRemanejamento_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        VersaoConfiguracao versao = VersaoDo(processo);
+        Estado antes = Estado.De(processo);
+
+        ModalidadeSelecionada ac = ModalidadeSelecionada.Criar(
+            new Guid("cccc0000-0000-4000-8000-000000000001"), "AC", null,
+            NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
+            RegraRemanejamentoModalidade.Nenhuma, null, null, null, PredicadoDnf.SemClausula, null, "base legal", quantidadeDeclarada: 8).Value!;
+        ModalidadeSelecionada reservaSemRemanejamento = ModalidadeSelecionada.Criar(
+            Guid.CreateVersion7(), "AC_PCD", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe,
+            "AC", RegraRemanejamentoModalidade.Nenhuma, null, null, null,
+            RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), null, "base legal",
+            quantidadeDeclarada: 2).Value!;
+        ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(
+            new Guid("bbbb0000-0000-4000-8000-000000000001"), voBase: 10, pr: 1m, Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
+            regraAjuste: null, referenciaDemografica: null, [reservaSemRemanejamento, ac], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+
+        GrafoConfiguracao invalido = new(
+            etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 1m, null, 1)],
+            ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
+            distribuicaoVagas: [oferta],
+            bonusRegional: null,
+            criteriosDesempate: [],
+            classificacao: Classificacao([]),
+            cronogramaFases: [FaseConforme()],
+            documentosExigidos: [],
+            nosExigencia: [],
+            referenciaTemporalFatos: null);
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(versao, invalido);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.RemanejamentoIncoerenteComANatureza);
+        Estado.De(processo).Should().BeEquivalentTo(antes, "a restauração recusada não pode deixar o agregado meio-reposto");
+    }
+
     // ── NoExigencia.Reidratar não revalida os invariantes de NoExigencia.CriarGrupo — um
     // envelope 1.4 adulterado com uma folha carregando filhos, um grupo vazio ou um OU
     // pedindo mais filhos do que tem precisa ser recusado na restauração, não só no
