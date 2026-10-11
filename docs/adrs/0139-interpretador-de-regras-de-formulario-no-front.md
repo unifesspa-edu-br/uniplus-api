@@ -41,6 +41,8 @@ A semântica passa a existir em duas implementações. Três coisas as mantêm i
 
 Para isso, o contrato público do formulário passa a declarar os derivados e os agregados **que o próprio formulário cita**, com o fechamento das dependências, além do domínio dos fatos citados, dos pressupostos e dos códigos com que o avaliador identifica etapa e termo. Quem preenche já observa o comportamento do formulário diante dessas regras, então publicá-las não revela nada novo. O que decide o resultado do certame e não é citado pelo formulário continua interno, como manda a ADR-0131.
 
+> **Emenda (2026-10-10):** o que depende dos fatos do candidato e não decide a forma do formulário, como as modalidades em que ele concorre e os documentos que o edital exige dele, não é interpretado no front: a API avalia sob demanda ([ADR-0143](0143-avaliacao-sob-demanda-dos-fatos-do-candidato.md)).
+
 ## Consequências
 
 ### Positivas
