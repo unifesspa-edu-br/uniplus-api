@@ -12,6 +12,7 @@ public static class ModalidadeMapping
         return new ModalidadeDto(
             modalidade.Id,
             modalidade.Codigo.Valor,
+            modalidade.Codigo.EhLegalFixa,
             modalidade.Descricao,
             NaturezasLegais.ParaTokenCanonico(modalidade.NaturezaLegal),
             ComposicoesVagas.ParaTokenCanonico(modalidade.ComposicaoVagas),

@@ -17419,6 +17419,7 @@
         "required": [
           "id",
           "codigo",
+          "legalFixa",
           "descricao",
           "naturezaLegal",
           "composicaoVagas",
@@ -17440,6 +17441,9 @@
           },
           "codigo": {
             "type": "string"
+          },
+          "legalFixa": {
+            "type": "boolean"
           },
           "descricao": {
             "type": [
