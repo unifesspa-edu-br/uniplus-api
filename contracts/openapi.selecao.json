@@ -10261,6 +10261,7 @@
           "cpfMascarado",
           "numeroInscricao",
           "instante",
+          "fusoHorario",
           "hashIntegridade",
           "ofertaCursoId",
           "respostas",
@@ -10279,6 +10280,9 @@
           "instante": {
             "type": "string",
             "format": "date-time"
+          },
+          "fusoHorario": {
+            "$ref": "#/components/schemas/FusoHorarioDto"
           },
           "hashIntegridade": {
             "type": "string"
@@ -13308,6 +13312,21 @@
           }
         }
       },
+      "FusoHorarioDto": {
+        "required": [
+          "id",
+          "nome"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          }
+        }
+      },
       "GrupoAreaEnemSnapshotDto": {
         "required": [
           "codigo",
@@ -14285,7 +14304,7 @@
             "type": "string"
           },
           "fusoHorario": {
-            "type": "string"
+            "$ref": "#/components/schemas/FusoHorarioDto"
           }
         }
       },

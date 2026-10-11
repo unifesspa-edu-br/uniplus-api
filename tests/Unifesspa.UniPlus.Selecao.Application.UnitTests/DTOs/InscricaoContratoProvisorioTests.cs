@@ -94,6 +94,7 @@ public sealed class InscricaoContratoProvisorioTests
             CpfMascarado: "***.456.789-**",
             NumeroInscricao: "000123",
             Instante: new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero),
+            FusoHorario: FusoHorarioDto.Institucional,
             HashIntegridade: "sha256-def",
             OfertaCursoId: Guid.Parse("0199e000-0000-7000-8000-000000000001"),
             Respostas: new Dictionary<string, JsonElement>(StringComparer.Ordinal)

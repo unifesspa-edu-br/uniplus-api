@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries;
 
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
@@ -24,6 +25,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed class ObterComprovanteQueryHandlerTests
 {
     private static readonly Guid ProcessoId = Guid.CreateVersion7();
+    private static readonly JsonSerializerOptions OpcoesDoContrato = new(JsonSerializerDefaults.Web);
 
     private static IUserContext UsuarioComCpf(Cpf cpf, string sub = "sub-1")
     {
@@ -122,6 +124,26 @@ public sealed class ObterComprovanteQueryHandlerTests
         resultado.Value!.NumeroInscricao.Should().Be("00000001");
         resultado.Value!.CpfMascarado.Should().Be(cpf.Mascarado);
         resultado.Value!.Respostas.Should().ContainKey("APELIDO").WhoseValue.GetString().Should().Be("versao-1");
+    }
+
+    [Fact(DisplayName = "O comprovante traz o fuso em que o instante se lê, com o nome do domínio")]
+    public async Task Handle_Comprovante_ProjetaOFusoInstitucionalComONome()
+    {
+        // Sem o fuso no próprio comprovante, quem o apresenta dependeria do certame para dizer em
+        // que horário o envio aconteceu — e, sem o certame, cairia no fuso do navegador.
+        Cpf cpf = PersonasDeTeste.FernandaDrumond;
+        Inscricao existente = InscricaoComComprovantes(cpf, "sub-1", quantidade: 1);
+
+        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
+        inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
+        inscricaoRepository.ObterComprovantesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(existente.Comprovantes);
+
+        Result<ComprovanteInscricaoDto> resultado = await ObterComprovanteQueryHandler.Handle(
+            new ObterComprovanteQuery(ProcessoId, 1), inscricaoRepository, UsuarioComCpf(cpf), CancellationToken.None);
+
+        JsonNode json = JsonSerializer.SerializeToNode(resultado.Value!, OpcoesDoContrato)!;
+        json["fusoHorario"]!["id"]!.GetValue<string>().Should().Be(FusoInstitucional.ZoneId);
+        json["fusoHorario"]!["nome"]!.GetValue<string>().Should().Be(FusoInstitucional.Nome);
     }
 
     [Fact(DisplayName = "Comprovante 2 é a correção, distinto do comprovante 1 — append-only (CA-01)")]

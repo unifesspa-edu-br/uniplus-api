@@ -188,7 +188,7 @@ public sealed class LeituraPublicaDoCertameTests
         new string('a', 64),
         new TipoCatalogadoCertameDto("SISU", "Sistema de Seleção Unificada"),
         new PeriodoInscricaoCertameDto("001/2026", Agora.AddDays(-1), Agora.AddDays(20)),
-        new LocalidadeCertameDto("1504208", "Marabá", "PA", "America/Belem"),
+        new LocalidadeCertameDto("1504208", "Marabá", "PA", FusoHorarioDto.Institucional),
         new UnidadeAdministradoraCertameDto("UNIFESSPA", "Universidade", "Autarquia", "Marabá", "PA"),
         new DocumentoEditalCertameDto(Guid.CreateVersion7(), new string('b', 64)),
         [],

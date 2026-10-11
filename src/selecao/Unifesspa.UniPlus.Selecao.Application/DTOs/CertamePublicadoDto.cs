@@ -17,7 +17,7 @@ public sealed record TipoCatalogadoCertameDto(string Codigo, string Nome);
 public sealed record PeriodoInscricaoCertameDto(string? Numero, DateTimeOffset Inicio, DateTimeOffset Fim);
 
 /// <summary>Município e fuso institucional congelados na publicação.</summary>
-public sealed record LocalidadeCertameDto(string CodigoIbge, string Nome, string Uf, string FusoHorario);
+public sealed record LocalidadeCertameDto(string CodigoIbge, string Nome, string Uf, FusoHorarioDto FusoHorario);
 
 /// <summary>
 /// Taxa de inscrição. <see langword="null"/> no lugar deste bloco quando a publicação não

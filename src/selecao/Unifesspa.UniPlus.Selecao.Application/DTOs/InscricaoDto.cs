@@ -90,11 +90,14 @@ public sealed record InscricaoDto(
 /// calculou delas.
 /// O CPF do titular vem mascarado (issue #1860) — o comprovante nunca o devolve em claro, mesmo
 /// para o próprio dono.
+/// <see cref="FusoHorario"/> é a zona em que o <see cref="Instante"/> se lê: o comprovante se
+/// apresenta sem depender de o certame estar disponível.
 /// </summary>
 public sealed record ComprovanteInscricaoDto(
     string CpfMascarado,
     string NumeroInscricao,
     DateTimeOffset Instante,
+    FusoHorarioDto FusoHorario,
     string HashIntegridade,
     Guid? OfertaCursoId,
     IReadOnlyDictionary<string, JsonElement> Respostas,
@@ -111,6 +114,7 @@ public sealed record ComprovanteInscricaoDto(
             cpf.Mascarado,
             comprovante.NumeroInscricao,
             comprovante.Instante,
+            FusoHorarioDto.Institucional,
             comprovante.HashIntegridade,
             comprovante.OfertaCursoId,
             comprovante.Respostas,
