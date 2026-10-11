@@ -511,6 +511,40 @@ public sealed class ModeloFormularioAdminEndpointTests
         Item(itens, "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO")["visivel"]!.GetValue<string>().Should().Be(residenciaVisivel);
     }
 
+    [Theory(DisplayName = "No modelo de inscrição semeado, as perguntas das cotas da lei só aparecem para quem optou por elas, e a da PPI só para quem é preto, pardo ou indígena com pertencimento")]
+    [InlineData("SOMENTE_PUBLICA", true, "BRANCA", false, false, false, "QUILOMBOLA,BAIXA_RENDA")]
+    [InlineData("SOMENTE_PUBLICA", true, "AMARELA", false, false, false, "QUILOMBOLA,BAIXA_RENDA")]
+    [InlineData("SOMENTE_PUBLICA", true, "PARDA", false, false, false, "QUILOMBOLA,CONCORRER_PPI,BAIXA_RENDA")]
+    [InlineData("SOMENTE_PUBLICA", true, "INDIGENA", false, false, false, "INDIGENA,QUILOMBOLA,BAIXA_RENDA")]
+    [InlineData("SOMENTE_PUBLICA", true, "INDIGENA", true, false, false, "INDIGENA,QUILOMBOLA,CONCORRER_PPI,BAIXA_RENDA")]
+    [InlineData("SOMENTE_PUBLICA", true, "PRETA", false, true, true, "QUILOMBOLA,CONCORRER_PPI,CONCORRER_Q,BAIXA_RENDA,CONCORRER_RENDA")]
+    [InlineData("SOMENTE_PUBLICA", false, "PARDA", true, true, true, "")]
+    [InlineData("PRIVADA", false, "INDIGENA", true, true, true, "")]
+    public async Task ModeloDeInscricao_ReservaPerguntaAElegibilidadeDeQuemOptou(
+        string ondeCursou, bool concorrerEscolaPublica, string corRaca, bool indigena, bool quilombola, bool baixaRenda, string visiveis)
+    {
+        ArgumentNullException.ThrowIfNull(visiveis);
+        using HttpClient client = _fixture.Factory.CreateClient();
+        Guid id = await ModeloDeInscricaoDaMedicinaAsync(client);
+
+        JsonArray itens = await PreVisualizarAsync(client, id, new Dictionary<string, object>
+        {
+            ["FORMA_CONCLUSAO_EM"] = "REGULAR",
+            ["ONDE_CURSOU_EM"] = ondeCursou,
+            ["CONCORRER_EP"] = concorrerEscolaPublica,
+            ["COR_RACA"] = corRaca,
+            ["INDIGENA"] = indigena,
+            ["QUILOMBOLA"] = quilombola,
+            ["BAIXA_RENDA"] = baixaRenda,
+        });
+
+        HashSet<string> esperados = [.. visiveis.Split(',', StringSplitOptions.RemoveEmptyEntries)];
+        foreach (string fato in new[] { "INDIGENA", "QUILOMBOLA", "CONCORRER_PPI", "CONCORRER_Q", "BAIXA_RENDA", "CONCORRER_RENDA" })
+        {
+            Item(itens, fato)["visivel"]!.GetValue<string>().Should().Be(esperados.Contains(fato) ? "VERDADEIRO" : "FALSO", fato);
+        }
+    }
+
     [Theory(DisplayName = "A avaliação sem cadastro das regras do modelo dá o mesmo resultado da pré-visualização do modelo")]
     [InlineData(false)]
     [InlineData(true)]

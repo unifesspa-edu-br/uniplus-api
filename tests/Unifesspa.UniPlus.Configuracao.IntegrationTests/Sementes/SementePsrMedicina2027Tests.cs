@@ -150,15 +150,17 @@ public sealed class SementePsrMedicina2027Tests
         doFator.Should().OnlyContain(c => itens[c].Obrigatoriedade.Tipo == TipoObrigatoriedade.Sempre, "o que aparece é exigido");
     }
 
-    [Fact(DisplayName = "A inscrição pergunta a todo candidato se ele se autodeclara indígena, sem depender da cor ou raça")]
-    public async Task Inscricao_ColetaIndigenaSemDependerDaCorOuRaca()
+    [Fact(DisplayName = "O modelo de inscrição semeado traz a seção dos dados básicos, e as regras dele citam a cor ou raça")]
+    public async Task Inscricao_TrazOsDadosBasicosECitaACorOuRaca()
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         ModeloFormulario inscricao = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricao);
 
-        ItemDoModelo indigena = inscricao.Conteudo.Itens.Should().ContainSingle(static i => i.FatoCodigo == "INDIGENA").Subject;
-        indigena.FatosCitados.Should().BeEmpty();
+        inscricao.Conteudo.Etapas.Should().Contain(static e => e.Codigo == ConjuntoBasicoDaInscricao.CodigoDaSecao);
+        inscricao.Conteudo.Itens.Where(static i => i.EtapaCodigo == ConjuntoBasicoDaInscricao.CodigoDaSecao).Select(static i => i.FatoCodigo)
+            .Should().Equal(ConjuntoBasicoDaInscricao.Itens.Select(static i => i.FatoCodigo));
+        inscricao.Conteudo.Itens.Single(static i => i.FatoCodigo == "CONCORRER_PPI").FatosCitados.Should().Contain("COR_RACA");
     }
 
     [Fact(DisplayName = "A inscrição pede o atendimento especializado em seção própria: quem pede escolhe a condição e o recurso, e descreve a condição fora da lista")]

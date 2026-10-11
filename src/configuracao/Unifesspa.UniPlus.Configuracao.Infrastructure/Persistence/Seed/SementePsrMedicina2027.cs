@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using System.Globalization;
 using System.Text.Json;
 
+using Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
@@ -225,26 +226,31 @@ public static class SementePsrMedicina2027
     /// Os comandos que gravam os fatos e os valores deles, construídos pelas factories do domínio:
     /// o fato ou o valor que o domínio recusa lança, em vez de virar linha que a API não aceita.
     /// </summary>
-    internal static IReadOnlyList<string> ComandosDosFatos(IReadOnlyList<FatoDaSemente> fatos)
+    internal static IReadOnlyList<string> ComandosDosFatos(IReadOnlyList<FatoDaSemente> fatos) =>
+    [
+        .. Construir(fatos).SelectMany(static c =>
+            new[] { ComandoDoFato(Id(TabelaFato, c.Semente.N), c.Fato) }.Concat(c.Fato.ValoresDominioDeclarados.Select((valor, i) =>
+                ComandoDoValor(Id(TabelaValor, (c.Semente.N * 100) + i + 1), Id(TabelaFato, c.Semente.N), valor)))),
+    ];
+
+    /// <summary>Os fatos construídos pelas factories do domínio, na ordem, cada um com os valores dele.</summary>
+    private static List<(FatoDaSemente Semente, FatoCandidato Fato)> Construir(IReadOnlyList<FatoDaSemente> fatos)
     {
-        List<string> comandos = [];
-        List<FatoCandidato> construidos = [];
+        List<(FatoDaSemente, FatoCandidato)> construidos = [];
         foreach (FatoDaSemente semente in fatos)
         {
-            FatoCandidato fato = Exigir(semente.Construir(new CatalogoDeFatos(construidos, [])), $"fato {semente.N}");
+            FatoCandidato fato = Exigir(
+                semente.Construir(new CatalogoDeFatos([.. construidos.Select(static c => c.Item2)], [])), $"fato {semente.N}");
             for (int ordem = 0; ordem < semente.Valores.Count; ordem++)
             {
                 (string codigo, string descricao) = semente.Valores[ordem];
                 Exigir(fato.AdicionarValorDominio(codigo, descricao, ordem, ativo: true), $"valor {codigo} de {fato.Codigo}");
             }
 
-            construidos.Add(fato);
-            comandos.Add(ComandoDoFato(Id(TabelaFato, semente.N), fato));
-            comandos.AddRange(fato.ValoresDominioDeclarados.Select((valor, i) =>
-                ComandoDoValor(Id(TabelaValor, (semente.N * 100) + i + 1), Id(TabelaFato, semente.N), valor)));
+            construidos.Add((semente, fato));
         }
 
-        return comandos;
+        return construidos;
     }
 
     /// <summary>
@@ -253,14 +259,14 @@ public static class SementePsrMedicina2027
     /// e grafo das regras —, e serializado pelo mesmo conversor que a aplicação usa para ler.
     /// </summary>
     /// <remarks>
-    /// O modelo de inscrição é gravado sem a seção dos dados básicos: a API a repõe ao editar o modelo
-    /// e ao aplicá-lo ao processo. Por isso as regras do modelo não citam os dados básicos.
+    /// O modelo de inscrição é gravado com a seção dos dados básicos, mesclada como a escrita do
+    /// modelo a mescla, para as regras dele poderem citar os dados básicos, como a cor ou raça.
     /// </remarks>
     public static IReadOnlyList<string> ComandosDosModelos() =>
     [
         ComandoDoModelo(1, ModeloDeInscricao, "Inscrição — Medicina 2027",
             "Formulário de inscrição do Processo Seletivo Regular Unificado de Medicina 2027.",
-            FinalidadeFormulario.Inscricao, ConteudoDaInscricao(), DerivacoesDaInscricao),
+            FinalidadeFormulario.Inscricao, ConjuntoBasicoDoModelo.Mesclar(ConteudoDaInscricao(), FormatosDoCatalogo()), DerivacoesDaInscricao),
         ComandoDoModelo(2, ModeloDeHabilitacao, "Habilitação — Medicina 2027",
             "Formulário de habilitação dos convocados no Processo Seletivo Regular Unificado de Medicina 2027.",
             FinalidadeFormulario.Habilitacao, ConteudoDaHabilitacao(),
@@ -305,12 +311,27 @@ public static class SementePsrMedicina2027
         $"DELETE FROM configuracao.modelos_formulario WHERE id::text LIKE '5e3d{TabelaModelo:D4}-%';",
     ];
 
-    /// <summary>A inscrição cita o egresso de escola pública, que deriva da origem escolar.</summary>
+    /// <summary>
+    /// A inscrição cita o egresso de escola pública, que deriva da origem escolar, e a opção pelas
+    /// cotas da lei, que deriva do egresso e da opção pelas vagas de escola pública.
+    /// </summary>
     private static IReadOnlyDictionary<string, IReadOnlyCollection<string>> DerivacoesDaInscricao { get; } =
         new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)
         {
             [OrigemEscolar.FatoEgresso] = [.. OrigemEscolar.DependenciasDoEgresso],
+            [OpcaoPelasCotasDaLei.Fato] = [.. OpcaoPelasCotasDaLei.DependenciasDaOpcao],
         };
+
+    /// <summary>
+    /// O formato da resposta de cada fato de texto que o modelo de inscrição coleta, os de sistema e os
+    /// desta semente, como a escrita do modelo o lê do catálogo.
+    /// </summary>
+    private static Dictionary<string, string> FormatosDoCatalogo() =>
+        FatoCandidatoSeed.Itens
+            .Where(static f => f.Formato is { } formato && formato != FormatoTexto.Nenhum)
+            .ToDictionary(static f => f.Codigo, static f => FormatosTexto.ParaTokenCanonico(f.Formato!.Value), StringComparer.Ordinal)
+            .Concat(VocabularioDoCatalogo.Formatos(Construir(Fatos).Select(static c => c.Fato)))
+            .ToDictionary(StringComparer.Ordinal);
 
     private static ConteudoDoModelo ConteudoDaInscricao()
     {
@@ -323,6 +344,9 @@ public static class SementePsrMedicina2027
         const string atendimento = "ATENDIMENTO_ESPECIALIZADO";
         const string solicitaAtendimento = "SOLICITA_ATENDIMENTO_ESPECIALIZADO";
         const string condicaoAtendimento = "CONDICAO_ATENDIMENTO";
+        const string indigena = "INDIGENA";
+        const string quilombola = "QUILOMBOLA";
+        const string baixaRenda = "BAIXA_RENDA";
 
         return new(
             "Inscrição no Processo Seletivo Regular Unificado de Medicina 2027",
@@ -364,18 +388,30 @@ public static class SementePsrMedicina2027
                     exibicao: Se("PCD", Operador.Igual, true)),
                 Campo("CONCORRER_PCD", 109, cotas, "Deseja concorrer às vagas para pessoas com deficiência?", TipoRenderizacao.Booleano, null,
                     exibicao: Se("PCD", Operador.Igual, true)),
-                Campo("CONCORRER_EP", 110, cotas, "Deseja concorrer às vagas para quem cursou o ensino médio em escola pública?", TipoRenderizacao.Booleano, null,
+                Campo(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 110, cotas, "Deseja concorrer às vagas para quem cursou o ensino médio em escola pública?", TipoRenderizacao.Booleano, null,
                     exibicao: Se(OrigemEscolar.FatoEgresso, Operador.Igual, true)),
-                Campo("CONCORRER_PPI", 111, cotas, "Deseja concorrer às vagas para pretos, pardos e indígenas?", TipoRenderizacao.Booleano,
-                    "Para quem se autodeclara preto, pardo ou indígena."),
-                Campo("INDIGENA", 112, cotas, "Você se autodeclara indígena?", TipoRenderizacao.Booleano, null),
-                Campo("QUILOMBOLA", 113, cotas, "Você se autodeclara quilombola?", TipoRenderizacao.Booleano, null),
+                // As perguntas das cotas da lei só se fazem a quem optou por elas (UNI-REQ-0073), e a
+                // elegibilidade vem antes da opção por concorrer: o pertencimento indígena, de quem se
+                // declarou indígena na cor ou raça, e a autodeclaração quilombola vêm antes da PPI e da
+                // cota de quilombolas.
+                Campo(indigena, 111, cotas, "Você pertence a um povo indígena?", TipoRenderizacao.Booleano,
+                    "O pertencimento é comprovado na habilitação, conforme o edital.",
+                    exibicao: SeAlguma([Optou, Condicao(CorRaca, Operador.Igual, CorIndigena)])),
+                Campo(quilombola, 112, cotas, "Você se autodeclara quilombola?", TipoRenderizacao.Booleano, null,
+                    exibicao: SeAlguma([Optou])),
+                // Concorre à PPI quem se declarou preto ou pardo, ou indígena com o pertencimento.
+                Campo("CONCORRER_PPI", 113, cotas, "Deseja concorrer às vagas para pretos, pardos e indígenas?", TipoRenderizacao.Booleano,
+                    "Para quem se autodeclara preto, pardo ou indígena.",
+                    exibicao: SeAlguma(
+                        [Optou, Condicao(CorRaca, Operador.Em, CoresPretaOuParda)],
+                        [Optou, Condicao(CorRaca, Operador.Igual, CorIndigena), Condicao(indigena, Operador.Igual, true)])),
                 Campo("CONCORRER_Q", 114, cotas, "Deseja concorrer às vagas para quilombolas?", TipoRenderizacao.Booleano, null,
-                    exibicao: Se("QUILOMBOLA", Operador.Igual, true)),
-                Campo("BAIXA_RENDA", 115, cotas, "A renda da sua família é de até um salário mínimo por pessoa?", TipoRenderizacao.Booleano,
-                    "Some a renda bruta mensal de todos da família e divida pelo número de pessoas. A renda é comprovada na habilitação."),
+                    exibicao: SeAlguma([Optou, Condicao(quilombola, Operador.Igual, true)])),
+                Campo(baixaRenda, 115, cotas, "A renda da sua família é de até um salário mínimo por pessoa?", TipoRenderizacao.Booleano,
+                    "Some a renda bruta mensal de todos da família e divida pelo número de pessoas. A renda é comprovada na habilitação.",
+                    exibicao: SeAlguma([Optou])),
                 Campo("CONCORRER_RENDA", 116, cotas, "Deseja concorrer às vagas com critério de renda?", TipoRenderizacao.Booleano, null,
-                    exibicao: Se("BAIXA_RENDA", Operador.Igual, true)),
+                    exibicao: SeAlguma([Optou, Condicao(baixaRenda, Operador.Igual, true)])),
                 // Atendimento especializado não é só de quem tem deficiência (UNI-REQ-0026): quem pede
                 // escolhe a condição e o recurso entre os que o processo oferta; a condição fora da
                 // lista é descrita.
@@ -469,6 +505,15 @@ public static class SementePsrMedicina2027
 
     private static TermoDoModelo Termo(TermoDaSemente termo, int ordem, PredicadoDnf? exibicao = null) =>
         new(termo.Codigo, ordem, termo.TermoId, termo.VersaoId, exibicao, Obrigatoriedade.Sempre);
+
+    private const string CorRaca = "COR_RACA";
+    private const string CorIndigena = "INDIGENA";
+
+    /// <summary>As cores ou raças que, com a autodeclaração, dão acesso à cota de pretos, pardos e indígenas.</summary>
+    private static IReadOnlyList<string> CoresPretaOuParda { get; } = ["PRETA", "PARDA"];
+
+    /// <summary>A opção pelas cotas da lei, que toda pergunta delas exige.</summary>
+    private static CondicaoDnf Optou => Condicao(OpcaoPelasCotasDaLei.Fato, Operador.Igual, true);
 
     /// <summary>As formas de conclusão de quem cursou o ensino médio, e não o concluiu por certificação.</summary>
     private static IReadOnlyList<string> ConclusoesPorCurso { get; } = [OrigemEscolar.Regular, OrigemEscolar.Eja];

@@ -70,26 +70,18 @@ internal static class EscritaDoModelo
 
     /// <summary>
     /// O conteúdo do modelo como o formulário do processo o terá depois de aplicado: no de inscrição, com o
-    /// conjunto básico na seção reservada, mesclado como a gravação e a aplicação o mesclam. O modelo
-    /// gravado sem o básico — o da semente, montado direto pelo domínio — o ganha ao ser aplicado, e a
-    /// simulação do modelo tem de mostrar o que o candidato verá.
+    /// conjunto básico na seção reservada (<see cref="ConjuntoBasicoDoModelo"/>). A simulação do modelo
+    /// tem de mostrar o que o candidato verá.
     /// </summary>
     public static ConteudoDoModelo ComoAplicado(ModeloFormulario modelo, IReadOnlyList<FatoCandidato> fatos)
     {
         ArgumentNullException.ThrowIfNull(modelo);
-        if (modelo.Finalidade != FinalidadeFormulario.Inscricao)
-        {
-            return modelo.Conteudo;
-        }
-
-        // O gravado é a própria referência do básico: o item básico que ele já traz fica como está, e a
-        // mescla não tem com o que divergir.
-        ConteudoDoModeloInput gravado = modelo.ToView().Conteudo;
-        (ConteudoDoModeloInput? mesclado, _) = ComASecaoDosDadosBasicos(gravado, modelo.Finalidade, gravado);
-        return ConteudoLido.Ler(mesclado, CatalogoDoModelo.De(fatos).Formatos).ParaConteudo();
+        return modelo.Finalidade == FinalidadeFormulario.Inscricao
+            ? ConjuntoBasicoDoModelo.Mesclar(modelo.Conteudo, CatalogoDoModelo.De(fatos).Formatos)
+            : modelo.Conteudo;
     }
 
-    private static (ConteudoDoModeloInput? Entrada, List<FieldError> Erros) ComASecaoDosDadosBasicos(
+    internal static (ConteudoDoModeloInput? Entrada, List<FieldError> Erros) ComASecaoDosDadosBasicos(
         ConteudoDoModeloInput? entrada, FinalidadeFormulario finalidade, ConteudoDoModeloInput? gravado)
     {
         if (entrada is null || finalidade != FinalidadeFormulario.Inscricao)
