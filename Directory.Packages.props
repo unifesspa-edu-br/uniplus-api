@@ -26,8 +26,8 @@
     <PackageVersion Include="WolverineFx.Postgresql" Version="5.41.0" />
     <PackageVersion Include="WolverineFx.Kafka" Version="5.41.0" />
     <PackageVersion Include="WolverineFx.FluentValidation" Version="5.41.0" />
-    <PackageVersion Include="FluentValidation" Version="12.1.1" />
-    <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+    <PackageVersion Include="FluentValidation" Version="12.2.0" />
+    <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.2.0" />
 
     <!-- Persistence -->
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
