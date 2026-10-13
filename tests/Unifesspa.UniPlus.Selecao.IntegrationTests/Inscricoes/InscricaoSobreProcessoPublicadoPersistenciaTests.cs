@@ -20,8 +20,8 @@ using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Inscricoes;
-using Unifesspa.UniPlus.Selecao.Application.Queries.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.Queries.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -355,8 +355,16 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             .OrderBy(static f => f.Ordem)
             .Select(static f => new
             {
-                f.FatoCodigo, f.Ordem, f.EtapaCodigo, f.Rotulo, f.TipoRenderizacao, f.Formato, f.ClassificacaoProtecao, f.OrigemValores,
-                Obrigatoriedade = f.Obrigatoriedade.Tipo, f.Restricoes,
+                f.FatoCodigo,
+                f.Ordem,
+                f.EtapaCodigo,
+                f.Rotulo,
+                f.TipoRenderizacao,
+                f.Formato,
+                f.ClassificacaoProtecao,
+                f.OrigemValores,
+                Obrigatoriedade = f.Obrigatoriedade.Tipo,
+                f.Restricoes,
                 Precondicoes = f.Precondicoes.Select(static c => (c.Clausula, c.Fato, c.Operador, JsonSerializer.Serialize(c.Valor))).ToList(),
             });
     }
