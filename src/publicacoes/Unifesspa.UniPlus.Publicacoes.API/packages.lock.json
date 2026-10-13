@@ -656,7 +656,7 @@
       "unifesspa.uniplus.application.abstractions": {
         "type": "Project",
         "dependencies": {
-          "FluentValidation": "[12.1.1, )",
+          "FluentValidation": "[12.2.0, )",
           "Unifesspa.UniPlus.Governance.Contracts": "[1.0.0, )",
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
         }
@@ -682,7 +682,7 @@
           "Confluent.SchemaRegistry": "[2.15.1, )",
           "Confluent.SchemaRegistry.Serdes.Avro": "[2.15.1, )",
           "EFCore.NamingConventions": "[10.0.1, )",
-          "FluentValidation": "[12.1.1, )",
+          "FluentValidation": "[12.2.0, )",
           "MR.EntityFrameworkCore.KeysetPagination": "[1.6.0, )",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.12, )",
           "Microsoft.AspNetCore.OpenApi": "[10.0.12, )",
@@ -721,7 +721,7 @@
       "unifesspa.uniplus.publicacoes.application": {
         "type": "Project",
         "dependencies": {
-          "FluentValidation": "[12.1.1, )",
+          "FluentValidation": "[12.2.0, )",
           "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
           "Unifesspa.UniPlus.Application.Abstractions": "[1.0.0, )",
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
@@ -814,9 +814,9 @@
       },
       "FluentValidation": {
         "type": "CentralTransitive",
-        "requested": "[12.1.1, )",
-        "resolved": "12.1.1",
-        "contentHash": "EPpkIe1yh1a0OXyC100oOA8WMbZvqUu5plwhvYcb7oSELfyUZzfxV48BLhvs3kKo4NwG7MGLNgy1RJiYtT8Dpw=="
+        "requested": "[12.2.0, )",
+        "resolved": "12.2.0",
+        "contentHash": "DR3lFbdnKucaaj1/8zMNOACMz/64igzox1yVZSFVsLxYB5mxAB+wFP1WZ8fjwrZnbU1KA1DoMzHKYKxUfuZ4wQ=="
       },
       "FluentValidation.DependencyInjectionExtensions": {
         "type": "CentralTransitive",
