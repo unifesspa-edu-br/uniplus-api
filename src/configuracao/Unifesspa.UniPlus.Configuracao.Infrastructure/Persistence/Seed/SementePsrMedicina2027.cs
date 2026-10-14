@@ -392,13 +392,14 @@ public static class SementePsrMedicina2027
                     exibicao: Se(OrigemEscolar.FatoEgresso, Operador.Igual, true)),
                 // As perguntas das cotas da lei só se fazem a quem optou por elas (UNI-REQ-0073), e a
                 // elegibilidade vem antes da opção por concorrer: o pertencimento indígena, de quem se
-                // declarou indígena na cor ou raça, e a autodeclaração quilombola vêm antes da PPI e da
-                // cota de quilombolas.
+                // declarou indígena na cor ou raça, e a autodeclaração quilombola, de quem tem qualquer
+                // outra cor ou raça, vêm antes da PPI e da cota de quilombolas.
                 Campo(indigena, 111, cotas, "Você pertence a um povo indígena?", TipoRenderizacao.Booleano,
                     "O pertencimento é comprovado na habilitação, conforme o edital.",
                     exibicao: SeAlguma([Optou, Condicao(CorRaca, Operador.Igual, CorIndigena)])),
-                Campo(quilombola, 112, cotas, "Você se autodeclara quilombola?", TipoRenderizacao.Booleano, null,
-                    exibicao: SeAlguma([Optou])),
+                Campo(quilombola, 112, cotas, "Você se autodeclara quilombola?", TipoRenderizacao.Booleano,
+                    "Quem é quilombola pode ter qualquer cor ou raça, exceto a raça indígena. As vagas para pretos e pardos são para quem informou essa cor ou raça em Dados do candidato.",
+                    exibicao: SeAlguma([Optou, Condicao(CorRaca, Operador.Diferente, CorIndigena)])),
                 // Concorre à PPI quem se declarou preto ou pardo, ou indígena com o pertencimento.
                 Campo("CONCORRER_PPI", 113, cotas, "Deseja concorrer às vagas para pretos, pardos e indígenas?", TipoRenderizacao.Booleano,
                     "Para quem se autodeclara preto, pardo ou indígena.",
