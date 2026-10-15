@@ -112,7 +112,13 @@ public static class SalvarInscricaoCommandHandler
 
         EnvioDasRespostas envio = new(instante, fuso.Value!);
         Dictionary<string, JsonElement> respostas = Services.InscricaoRequestMapper.ParaRespostas(command.Request.Respostas);
-        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = Services.InscricaoRequestMapper.ParaGrupos(command.Request.Grupos);
+        Result<Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>> gruposLidos = Services.InscricaoRequestMapper.ParaGrupos(command.Request.Grupos);
+        if (gruposLidos.IsFailure)
+        {
+            return Result<InscricaoDto>.ValidationFailure(gruposLidos.Errors);
+        }
+
+        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = gruposLidos.Value!;
 
         // A mesma avaliação do envio e da consulta (ADR-0143), sem etapa concluída: o rascunho ainda
         // está sendo preenchido, e só o que o corpo traz é conferido.

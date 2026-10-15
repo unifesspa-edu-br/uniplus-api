@@ -52,6 +52,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
 
     private static readonly RespostasAdmitidas Admitidas = new(
         DefinicoesDasRespostas,
+        new HashSet<string>(StringComparer.Ordinal) { "NOME_SOCIAL", "DESEJA_NOME_SOCIAL", "DATA_NASCIMENTO", "MODALIDADES", "ENDERECO_RESIDENCIAL", "RG_NUMERO" },
         new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal)
         {
             ["COMPOSICAO_FAMILIAR"] = new HashSet<string>(StringComparer.Ordinal) { "RG_NUMERO", "PARENTESCO" },

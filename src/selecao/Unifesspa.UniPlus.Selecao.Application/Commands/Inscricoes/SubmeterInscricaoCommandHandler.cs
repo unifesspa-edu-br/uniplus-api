@@ -103,7 +103,13 @@ public static class SubmeterInscricaoCommandHandler
         }
 
         Dictionary<string, JsonElement> respostasDoCorpo = Services.InscricaoRequestMapper.ParaRespostas(command.Request.Respostas);
-        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = Services.InscricaoRequestMapper.ParaGrupos(command.Request.Grupos);
+        Result<Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>> gruposLidos = Services.InscricaoRequestMapper.ParaGrupos(command.Request.Grupos);
+        if (gruposLidos.IsFailure)
+        {
+            return Result<ComprovanteInscricaoDto>.ValidationFailure(gruposLidos.Errors);
+        }
+
+        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = gruposLidos.Value!;
         List<AceiteDeTermo> aceites = Services.InscricaoRequestMapper.ParaAceites(command.Request.Aceites);
 
         // O veredito avalia o estado que SERÁ persistido — um campo respondido numa chamada

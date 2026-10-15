@@ -84,6 +84,7 @@ public static class ContextoDaVersaoFixadaResolver
 
         return new RespostasAdmitidas(
             DefinicoesDasRespostasDaInscricao(grafo),
+            FatosDeNivelSuperiorDaInscricao(grafo),
             SubitensDosGruposDaInscricao(grafo),
             grafo.DistribuicaoVagas.Select(static d => d.OfertaCursoOrigemId).ToHashSet());
     }
@@ -103,6 +104,12 @@ public static class ContextoDaVersaoFixadaResolver
 
         return definicoes;
     }
+
+    private static HashSet<string> FatosDeNivelSuperiorDaInscricao(GrafoConfiguracao grafo) =>
+        grafo.FatosColetados
+            .Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao)
+            .Select(static f => f.FatoCodigo)
+            .ToHashSet(StringComparer.Ordinal);
 
     private static Dictionary<string, IReadOnlySet<string>> SubitensDosGruposDaInscricao(GrafoConfiguracao grafo)
     {

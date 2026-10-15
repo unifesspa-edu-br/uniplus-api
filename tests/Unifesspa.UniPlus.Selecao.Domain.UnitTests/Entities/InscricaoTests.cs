@@ -38,6 +38,7 @@ public sealed class InscricaoTests
 
     private static readonly RespostasAdmitidas Admitidas = new(
         DefinicoesDasRespostas,
+        new HashSet<string>(StringComparer.Ordinal) { "NOME_SOCIAL", "CPF", "DESEJA_NOME_SOCIAL", "RG_NUMERO", "TELEFONE" },
         new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal)
         {
             ["COMPOSICAO_FAMILIAR"] = new HashSet<string>(StringComparer.Ordinal) { "PARENTESCO", "TELEFONE", "RG_NUMERO" },
@@ -408,6 +409,63 @@ public sealed class InscricaoTests
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.FatoForaDoGrupo);
         inscricao.Revisao.Should().Be(1);
         inscricao.Grupos.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Salvar recusa no nível superior o fato que só existe como subitem de grupo, sem mutar nada")]
+    public void Salvar_SubitemDeGrupoNoNivelSuperior_RecusaSemMutar()
+    {
+        Inscricao inscricao = NovaInscricao();
+        Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal)
+        {
+            ["RENDA_MENSAL"] = JsonSerializer.SerializeToElement("1500"),
+        };
+
+        Result resultado = inscricao.Salvar(null, respostas, SemGrupos(), SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("RENDA_MENSAL");
+        resultado.Error!.Code.Should().Be(InscricaoErrorCodes.FatoSoDeGrupo);
+        inscricao.Revisao.Should().Be(1);
+        inscricao.Respostas.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Salvar admite no nível superior e na ocorrência o fato que o formulário coleta nos dois lugares")]
+    public void Salvar_FatoNosDoisNiveis_Admite()
+    {
+        Inscricao inscricao = NovaInscricao();
+        Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal)
+        {
+            ["RG_NUMERO"] = JsonSerializer.SerializeToElement("123456"),
+        };
+        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = new(StringComparer.Ordinal)
+        {
+            ["COMPOSICAO_FAMILIAR"] =
+            [
+                new OcorrenciaDeGrupoInscricao("membro-1", new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+                {
+                    ["RG_NUMERO"] = JsonSerializer.SerializeToElement("654321"),
+                }),
+            ],
+        };
+
+        inscricao.Salvar(null, respostas, grupos, SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]))
+            .IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Submeter recusa no nível superior o fato que só existe como subitem de grupo")]
+    public void Submeter_SubitemDeGrupoNoNivelSuperior_Recusa()
+    {
+        Inscricao inscricao = NovaInscricao();
+        Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal)
+        {
+            ["RENDA_MENSAL"] = JsonSerializer.SerializeToElement("1500"),
+        };
+
+        Result<ComprovanteInscricao> resultado = inscricao.Submeter(
+            "000123", OfertaDoProcesso, respostas, SemGrupos(), SemAceites(), Admitidas, FormularioDeTeste.AvaliacaoSemOcultos, SemDerivados(), DefinicoesDosDerivados,
+            PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
+
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("RENDA_MENSAL");
+        resultado.Error!.Code.Should().Be(InscricaoErrorCodes.FatoSoDeGrupo);
     }
 
     [Fact(DisplayName = "Salvar com nulo apaga a resposta que o candidato limpou")]
