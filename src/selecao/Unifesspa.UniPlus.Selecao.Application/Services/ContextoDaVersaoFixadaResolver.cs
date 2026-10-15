@@ -27,11 +27,17 @@ public sealed record ContextoDaVersaoFixada(
 
 public static class ContextoDaVersaoFixadaResolver
 {
+    /// <param name="ofertaCursoId">
+    /// A oferta de curso que a inscrição escolhe — a gravada, ou a que o corpo da requisição grava. A
+    /// avaliação lê só as modalidades e as derivações da distribuição dessa oferta; nula, vale a união
+    /// de todas (<see cref="ConfiguracaoAvaliavelDoProcesso"/>).
+    /// </param>
     public static async Task<Result<ContextoDaVersaoFixada>> ResolverAsync(
         Guid versaoFormularioId,
         Guid processoSeletivoId,
         Domain.Interfaces.IProcessoSeletivoRepository processoSeletivoRepository,
         IRegistroCodecsEnvelope registroCodecs,
+        Guid? ofertaCursoId,
         CancellationToken cancellationToken)
     {
         Result<VersaoConfiguracao> resolvida = await VersaoFixadaDaInscricaoResolver
@@ -57,7 +63,7 @@ public static class ContextoDaVersaoFixadaResolver
             return Result<ContextoDaVersaoFixada>.Failure(reidratado.Error!);
         }
 
-        Result<DefinicaoAvaliavel> avaliavel = DefinicaoAvaliavelDoProcesso.DoCongelado(reidratado.Value!);
+        Result<DefinicaoAvaliavel> avaliavel = DefinicaoAvaliavelDoProcesso.DoCongelado(reidratado.Value!, ofertaCursoId);
         if (avaliavel.IsFailure)
         {
             return Result<ContextoDaVersaoFixada>.Failure(avaliavel.Error!);
@@ -74,7 +80,7 @@ public static class ContextoDaVersaoFixadaResolver
 
         return Result<ContextoDaVersaoFixada>.Success(new ContextoDaVersaoFixada(
             termos, dataReferencia.Value, avaliavel.Value!.Ofertas, Admitidas(reidratado.Value!.Grafo),
-            ConfiguracaoAvaliavelDoProcesso.DoCongelado(reidratado.Value!.Grafo, avaliavel.Value!),
+            ConfiguracaoAvaliavelDoProcesso.DoCongelado(reidratado.Value!.Grafo, avaliavel.Value!, ofertaCursoId),
             versao.AtoCriadorId));
     }
 

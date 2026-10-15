@@ -49,7 +49,8 @@ public static class PreparacaoDaAvaliacaoDaInscricao
         }
 
         Result<ContextoDaVersaoFixada> contexto = await ContextoDaVersaoFixadaResolver.ResolverAsync(
-            inscricao.VersaoFormularioId, inscricao.ProcessoSeletivoId, processoSeletivoRepository, registroCodecs, cancellationToken)
+            inscricao.VersaoFormularioId, inscricao.ProcessoSeletivoId, processoSeletivoRepository, registroCodecs,
+            inscricao.OfertaCursoId, cancellationToken)
             .ConfigureAwait(false);
         if (contexto.IsFailure)
         {
