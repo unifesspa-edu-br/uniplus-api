@@ -133,8 +133,15 @@ public static class IniciarInscricaoCommandHandler
 
         return await ComAvaliacaoAsync(inscricao).ConfigureAwait(false);
 
+        // A inscrição existente, ou a relida depois da corrida no índice único, só volta ao dono: outro
+        // sub com o mesmo CPF não a recebe, como em toda leitura e escrita da inscrição.
         async Task<Result<InscricaoDto>> ComAvaliacaoAsync(Inscricao lida)
         {
+            if (lida.ConferirDono(userContext.UserId ?? string.Empty) is { } erroDono)
+            {
+                return Result<InscricaoDto>.Failure(erroDono);
+            }
+
             Result<AvaliacaoDaInscricaoDto> avaliacao = await Services.PreparacaoDaAvaliacaoDaInscricao
                 .ProjetarGravadaAsync(
                     lida, processoSeletivoRepository, registroCodecs, resolvedorFuso, conferenciaEnderecoGeo, enderecoNoAcervo,
