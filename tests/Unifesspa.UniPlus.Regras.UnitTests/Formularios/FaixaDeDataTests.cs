@@ -109,6 +109,8 @@ public sealed class FaixaDeDataTests
     [InlineData("ENVIO", "2000-01-01", null, null)]
     [InlineData("ENVIO", null, 151, 0)]
     [InlineData("ENVIO", null, 0, -54901)]
+    [InlineData("ENVIO", null, int.MinValue, 0)]
+    [InlineData("ENVIO", null, 0, int.MinValue)]
     [InlineData("HOJE", null, null, null)]
     public void Limite_FormaInvalida_Recusa(string ancora, string? data, int? anos, int? dias)
     {
