@@ -97,6 +97,17 @@ public sealed class InscricaoTests
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.EmissorObrigatorio);
     }
 
+    [Theory(DisplayName = "ConferirDono sem sub no token recusa com SubObrigatorio, sem exceção")]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void ConferirDono_SemSub_RecusaComSubObrigatorio(string? sub)
+    {
+        Inscricao inscricao = NovaInscricao();
+
+        inscricao.ConferirDono(sub)!.Code.Should().Be(InscricaoErrorCodes.SubObrigatorio);
+    }
+
     [Fact(DisplayName = "ConferirDono recusa sub diferente do gravado")]
     public void ConferirDono_SubDiferente_RetornaFalha()
     {

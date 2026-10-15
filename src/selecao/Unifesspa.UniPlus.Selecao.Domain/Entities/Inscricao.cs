@@ -242,11 +242,15 @@ public sealed class Inscricao : EntityBase
 
     /// <summary>
     /// O token tem de pertencer a quem abriu a inscrição — <c>sub</c> diferente do gravado para o
-    /// mesmo CPF nunca é "outra inscrição", é identidade trocada.
+    /// mesmo CPF nunca é "outra inscrição", é identidade trocada. Sem <c>sub</c>, não há dono a
+    /// conferir: a recusa é a mesma do iniciar.
     /// </summary>
-    public DomainError? ConferirDono(string sub)
+    public DomainError? ConferirDono(string? sub)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(sub);
+        if (string.IsNullOrWhiteSpace(sub))
+        {
+            return new DomainError(InscricaoErrorCodes.SubObrigatorio, "O token precisa trazer o claim sub para acessar a inscrição.");
+        }
 
         return string.Equals(Sub, sub, StringComparison.Ordinal)
             ? null
