@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using JasperFx.CodeGeneration.Model;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -12,6 +13,7 @@ using Microsoft.Extensions.Options;
 using Unifesspa.UniPlus.Discentes.API;
 using Unifesspa.UniPlus.Discentes.Domain.Entities;
 using Unifesspa.UniPlus.Discentes.Domain.Enums;
+using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Sigaa;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Sincronizacao;
 using Unifesspa.UniPlus.Discentes.UnitTests.Sigaa;
@@ -91,6 +93,8 @@ public sealed class PipelineWolverineDaSincronizacaoTests
             .UseWolverine(opts =>
             {
                 opts.Discovery.IncludeType(typeof(SincronizarVinculosDiscentesHandler));
+                opts.Discovery.IncludeType(typeof(InicializarGatilhoDiarioDiscentesHandler));
+                opts.Discovery.IncludeType(typeof(GatilhoDiarioDiscentesHandler));
 
                 // Mesma política do host: o gerador não pode recorrer ao contêiner por
                 // conta própria. Sem isto, o teste passaria mesmo faltando a declaração
@@ -102,8 +106,15 @@ public sealed class PipelineWolverineDaSincronizacaoTests
             .ConfigureServices(services =>
             {
                 services.AddLogging(b => b.SetMinimumLevel(LogLevel.Warning));
+                services.AddDbContext<DiscentesDbContext>(options =>
+                    options.UseNpgsql("Host=localhost;Database=uniplus;Username=uniplus;Password=local"));
                 services.AddSingleton<TimeProvider>(
                     new RelogioControlado(new DateTimeOffset(2026, 9, 2, 3, 0, 0, TimeSpan.Zero)));
+                services.AddSingleton(Options.Create(new GatilhoDiarioOptions
+                {
+                    Horario = "03:00",
+                    FusoHorarioId = "America/Belem",
+                }));
                 // Registradas por fábrica, como no host: a unidade de trabalho encaminha
                 // para a mesma instância que os repositórios usam, e o gerador não tem
                 // como enxergar o tipo concreto por trás disso.

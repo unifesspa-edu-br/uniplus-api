@@ -158,8 +158,14 @@ builder.Host.UseWolverineOutboxCascading(
 
         // fila PG durável dos atos (mesmo transporte de domain-events).
         PublicacoesMessagingRegistration.ConfigurarRouting(opts);
+
+        // As policies são fixas no host, inclusive em ApplyAndExit: o Job de
+        // migrations precisa provisionar o mesmo armazenamento usado pelo pod em Skip,
+        // mesmo que a configuração SIGAA do processo de deploy seja diferente.
+        DiscentesMessagingRegistration.ConfigurarRouting(opts, builder.Configuration);
     });
 builder.Services.AddWolverineMessaging();
+builder.Services.AddGatilhoDiarioDiscentes(builder.Configuration);
 
 // Papel deste processo quanto às migrations (ADR-0127). Sem a chave, o
 // comportamento é o de sempre: aplicar no boot. O Job de deploy sobe a mesma

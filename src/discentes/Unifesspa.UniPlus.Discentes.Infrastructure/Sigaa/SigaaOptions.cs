@@ -42,6 +42,12 @@ public sealed class SigaaOptions
     public string Senha { get; init; } = string.Empty;
 
     /// <summary>
+    /// Permite consultar um mock local sem token. Só é aceito no ambiente Development e
+    /// para endereço loopback; nunca habilite fora desse cenário.
+    /// </summary>
+    public bool IgnorarAutenticacao { get; init; }
+
+    /// <summary>
     /// Quantos vínculos pedir por página, limitado a <see cref="MaximoItensPorPagina"/>.
     /// </summary>
     public int ItensPorPagina { get; init; } = MaximoItensPorPagina;
