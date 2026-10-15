@@ -4,33 +4,33 @@
     "net10.0": {
       "Confluent.Kafka": {
         "type": "Direct",
-        "requested": "[2.15.1, )",
-        "resolved": "2.15.1",
-        "contentHash": "II/gcWsptqKp3UJ4f7zFug7S4xfND1IdYsrNlIJSRRG8WHmP/NfSXiiLWhKGzTUlZwfkL1mcdU71eo1eKf04pA==",
+        "requested": "[2.16.0, )",
+        "resolved": "2.16.0",
+        "contentHash": "BREXaSYr9BrXpaJ7S4TTSIhI6q5amIjxoxJGbvKLQjAG/08hs223UDt60j42JdCgtD+aFYuduG/oP/tHqNJt8w==",
         "dependencies": {
-          "librdkafka.redist": "2.15.1"
+          "librdkafka.redist": "2.16.0"
         }
       },
       "Confluent.SchemaRegistry": {
         "type": "Direct",
-        "requested": "[2.15.1, )",
-        "resolved": "2.15.1",
-        "contentHash": "4PUmXNrVJfzkih8XRlGkHhRQ3MwSj0/1H/D3ohgiRKfFYt7RarlPF771/arLvx/DI3eHbyvujYj2cJkFYrUoCQ==",
+        "requested": "[2.16.0, )",
+        "resolved": "2.16.0",
+        "contentHash": "6UVDFqvC5ucdbPh365Nxbvzm4RPAV4nNDRaK9gHFSpuptIUHHOjqOhiTnolH8eSaSjx0CQlL1wEWijEg4XYm5Q==",
         "dependencies": {
-          "Confluent.Kafka": "2.15.1",
+          "Confluent.Kafka": "2.16.0",
           "Microsoft.Extensions.Caching.Memory": "8.0.1",
           "Newtonsoft.Json": "13.0.1"
         }
       },
       "Confluent.SchemaRegistry.Serdes.Avro": {
         "type": "Direct",
-        "requested": "[2.15.1, )",
-        "resolved": "2.15.1",
-        "contentHash": "oxb3+3GMizlv1bhHxiJM04KMjypCDGQTkE8+0wa+Luc4wQdNhXJ6z+WviFOUQWzPAnx+8X0fiTl2Dq6FA7tWyw==",
+        "requested": "[2.16.0, )",
+        "resolved": "2.16.0",
+        "contentHash": "WNoT24nJ+fl5c24M1CjJNCMK9WjxEnQ81yIczf7v2IhWKjFQk4HpyQzf3SPtYf4+RDTKvUR5U+D3zq0AuU8qTg==",
         "dependencies": {
-          "Apache.Avro": "1.12.1",
-          "Confluent.Kafka": "2.15.1",
-          "Confluent.SchemaRegistry": "2.15.1"
+          "Apache.Avro": "1.12.2",
+          "Confluent.Kafka": "2.16.0",
+          "Confluent.SchemaRegistry": "2.16.0"
         }
       },
       "Microsoft.EntityFrameworkCore": {
@@ -326,8 +326,8 @@
       },
       "librdkafka.redist": {
         "type": "Transitive",
-        "resolved": "2.15.1",
-        "contentHash": "fhRs/2fY80isR9zqrCkDdEhrp5Vi4Lxetg6yjhBl2uNiQs9Z2StA/Q8WqkJmj5OqmG8BQaP6OXvzbGngqXid+w=="
+        "resolved": "2.16.0",
+        "contentHash": "cr/wX7+G/rqOwN88Imxxco+OMGG6XslgSFh9xMb3utHY7/iWfssD2AY9MF7rsGdGm+mGuRw+1IQ+Zslris9IoQ=="
       },
       "Microsoft.Bcl.AsyncInterfaces": {
         "type": "Transitive",
@@ -1207,9 +1207,9 @@
         "type": "Project",
         "dependencies": {
           "Apache.Avro": "[1.12.2, )",
-          "Confluent.Kafka": "[2.15.1, )",
-          "Confluent.SchemaRegistry": "[2.15.1, )",
-          "Confluent.SchemaRegistry.Serdes.Avro": "[2.15.1, )",
+          "Confluent.Kafka": "[2.16.0, )",
+          "Confluent.SchemaRegistry": "[2.16.0, )",
+          "Confluent.SchemaRegistry.Serdes.Avro": "[2.16.0, )",
           "EFCore.NamingConventions": "[10.0.1, )",
           "FluentValidation": "[12.1.1, )",
           "MR.EntityFrameworkCore.KeysetPagination": "[1.6.0, )",
