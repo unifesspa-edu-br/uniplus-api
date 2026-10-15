@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 /// <see cref="DbContext"/> do módulo Discentes — banco/schema <c>discentes</c>, naming
 /// snake_case (ADR-0054). Hospeda a réplica de <see cref="VinculoDiscente"/> (mapeada via
 /// <see cref="VinculoDiscenteRecord"/>, ADR-0121) e o controle de execução de sincronização
-/// (<see cref="SyncRun"/>).
+/// (<see cref="SyncRun"/>) e a reserva idempotente do gatilho diário.
 /// </summary>
 public sealed class DiscentesDbContext : DbContext, IDiscentesUnitOfWork
 {
@@ -32,6 +32,9 @@ public sealed class DiscentesDbContext : DbContext, IDiscentesUnitOfWork
     public DbSet<VinculoDiscenteRecord> VinculosDiscentes => Set<VinculoDiscenteRecord>();
 
     public DbSet<SyncRun> SyncRuns => Set<SyncRun>();
+
+    internal DbSet<ReservaDeSincronizacaoDiaria> ReservasDeSincronizacaoDiaria =>
+        Set<ReservaDeSincronizacaoDiaria>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
