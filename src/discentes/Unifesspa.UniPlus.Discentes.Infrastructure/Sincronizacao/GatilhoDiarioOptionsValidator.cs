@@ -42,13 +42,7 @@ public sealed class GatilhoDiarioOptionsValidator : IValidateOptions<GatilhoDiar
             }
         }
 
-        bool configuracaoOperacionalInformada = !string.IsNullOrWhiteSpace(options.HorarioLimiteAlerta)
-            || !string.IsNullOrWhiteSpace(options.FusoHorarioAlertaId)
-            || !string.IsNullOrWhiteSpace(options.CanalAlerta)
-            || options.RetryAposSegundos.Length > 0
-            || options.PrazoReatribuicaoSegundos > 0;
-
-        if (configuracaoOperacionalInformada && !TimeOnly.TryParseExact(
+        if (!TimeOnly.TryParseExact(
                 options.HorarioLimiteAlerta,
                 "HH:mm",
                 CultureInfo.InvariantCulture,
@@ -58,24 +52,21 @@ public sealed class GatilhoDiarioOptionsValidator : IValidateOptions<GatilhoDiar
             failures.Add($"{nameof(options.HorarioLimiteAlerta)} deve usar o formato HH:mm.");
         }
 
-        if (configuracaoOperacionalInformada)
+        ValidarFuso(options.FusoHorarioAlertaId, nameof(options.FusoHorarioAlertaId), failures);
+
+        if (string.IsNullOrWhiteSpace(options.CanalAlerta))
         {
-            ValidarFuso(options.FusoHorarioAlertaId, nameof(options.FusoHorarioAlertaId), failures);
+            failures.Add($"{nameof(options.CanalAlerta)} é obrigatório.");
+        }
 
-            if (string.IsNullOrWhiteSpace(options.CanalAlerta))
-            {
-                failures.Add($"{nameof(options.CanalAlerta)} é obrigatório.");
-            }
+        if (options.RetryAposSegundos.Length == 0 || options.RetryAposSegundos.Any(intervalo => intervalo <= 0))
+        {
+            failures.Add($"{nameof(options.RetryAposSegundos)} deve conter intervalos positivos em segundos.");
+        }
 
-            if (options.RetryAposSegundos.Length == 0 || options.RetryAposSegundos.Any(intervalo => intervalo <= 0))
-            {
-                failures.Add($"{nameof(options.RetryAposSegundos)} deve conter intervalos positivos em segundos.");
-            }
-
-            if (options.PrazoReatribuicaoSegundos <= 0)
-            {
-                failures.Add($"{nameof(options.PrazoReatribuicaoSegundos)} deve ser maior que zero.");
-            }
+        if (options.PrazoReatribuicaoSegundos <= 0)
+        {
+            failures.Add($"{nameof(options.PrazoReatribuicaoSegundos)} deve ser maior que zero.");
         }
 
         return failures.Count > 0

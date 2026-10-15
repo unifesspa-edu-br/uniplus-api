@@ -82,8 +82,11 @@ reconciliacaoDaVerificacao:
 # Configuração operacional inicial do gatilho diário de discentes. Horários usam
 # HH:mm; fusos devem existir na base tzdata da imagem. O canal é registrado como
 # propriedade estruturada nos logs e deve ser roteado pelo coletor de logs.
+# A URL fica vazia neste chart base para manter a integração desligada. Cada
+# ambiente deve defini-la em seu values de deploy (HTTPS) somente após
+# Sigaa__Usuario e Sigaa__Senha estarem provisionados no Secret correspondente.
 sigaa:
-  baseUrl: "http://api-sigaa-v2.unifesspa.edu.br/"
+  baseUrl: ""
 
 discentes:
   gatilhoDiario:

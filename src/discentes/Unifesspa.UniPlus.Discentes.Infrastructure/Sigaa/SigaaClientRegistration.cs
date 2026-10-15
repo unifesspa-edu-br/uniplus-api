@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Options;
 
@@ -41,10 +42,12 @@ public static class SigaaClientRegistration
     /// </remarks>
     public static IServiceCollection AddSigaaVinculoDiscenteClient(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IHostEnvironment environment)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
+        ArgumentNullException.ThrowIfNull(environment);
 
         IConfigurationSection secao = configuration.GetSection(SigaaOptions.SectionName);
 
@@ -64,8 +67,7 @@ public static class SigaaClientRegistration
 
         SigaaOptions opcoes = secao.Get<SigaaOptions>() ?? new SigaaOptions();
         bool ignorarAutenticacao = opcoes.IgnorarAutenticacao;
-        bool desenvolvimento = string.Equals(
-            configuration["ASPNETCORE_ENVIRONMENT"], "Development", StringComparison.OrdinalIgnoreCase);
+        bool desenvolvimento = environment.IsDevelopment();
         bool enderecoLocal = Uri.TryCreate(opcoes.BaseUrl, UriKind.Absolute, out Uri? uri)
             && uri.IsLoopback;
 

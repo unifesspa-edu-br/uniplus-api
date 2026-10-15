@@ -63,17 +63,6 @@ public static class DiscentesMessagingRegistration
 
         if (sigaaConfigurado)
         {
-            if (string.IsNullOrWhiteSpace(opcoes.HorarioLimiteAlerta)
-                || string.IsNullOrWhiteSpace(opcoes.FusoHorarioAlertaId)
-                || string.IsNullOrWhiteSpace(opcoes.CanalAlerta)
-                || opcoes.RetryAposSegundos.Length == 0
-                || opcoes.PrazoReatribuicaoSegundos <= 0)
-            {
-                throw new InvalidOperationException(
-                    "Com SIGAA habilitado, configure horário-limite, fuso e canal do alerta, "
-                    + "intervalos de retry e prazo de reatribuição em Discentes:GatilhoDiario.");
-            }
-
             ValidateOptionsResult validacao = new GatilhoDiarioOptionsValidator().Validate(name: null, opcoes);
             if (validacao.Failed)
             {
@@ -91,8 +80,8 @@ public static class DiscentesMessagingRegistration
             cooldowns = [TimeSpan.FromMilliseconds(200), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5)];
         }
 
-        opts.Policies.AlwaysMakeScheduledMessagesDurable();
-        opts.Policies.UseDurableLocalQueues();
+        opts.LocalQueueFor<GatilhoDiarioDiscentes>().UseDurableInbox();
+        opts.LocalQueueFor<SincronizarVinculosDiscentes>().UseDurableInbox();
         opts.Policies.Add(new RetryDoGatilhoDiarioDiscentes(cooldowns));
         opts.Policies.Add<FalhaDaSincronizacaoVaiParaDeadLetter>();
     }
