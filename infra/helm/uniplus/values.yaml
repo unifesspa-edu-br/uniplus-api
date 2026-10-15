@@ -50,9 +50,25 @@ acervoPublico:
 reverseProxy:
   trustedNetworks: []
 
+# Configuração operacional inicial do gatilho diário de discentes. Horários usam
+# HH:mm; fusos devem existir na base tzdata da imagem. O canal é registrado como
+# propriedade estruturada nos logs e deve ser roteado pelo coletor de logs.
+sigaa:
+  baseUrl: "http://api-sigaa-v2.unifesspa.edu.br/"
+
+discentes:
+  gatilhoDiario:
+    horario: "02:00"
+    fusoHorarioId: "America/Belem"
+    horarioLimiteAlerta: "03:00"
+    fusoHorarioAlertaId: "America/Belem"
+    canalAlerta: "discentes-sync"
+    retryAposSegundos: [30, 120, 300]
+    prazoReatribuicaoSegundos: 300
+
 # Chaves esperadas no Secret externo `{{ .Release.Name }}-uniplus-secrets`
 # (provisionado pelo RUNBOOK do uniplus-infra — NÃO renderizado por este chart).
-# O monólito usa as 6 connection strings apontando para o MESMO banco `uniplus`
+# O monólito usa as 7 connection strings apontando para o MESMO banco `uniplus`
 # (schema-por-módulo). Documentadas aqui para rastreabilidade:
 secrets:
   uniPlusDbConnection: ""        # ConnectionStrings__UniPlusDb (outbox Wolverine + health)
@@ -61,6 +77,7 @@ secrets:
   selecaoDbConnection: ""        # ConnectionStrings__SelecaoDb
   ingressoDbConnection: ""       # ConnectionStrings__IngressoDb
   publicacoesDbConnection: ""    # ConnectionStrings__PublicacoesDb
+  discentesDbConnection: ""      # ConnectionStrings__DiscentesDb
   redisConnection: ""            # Redis__ConnectionString
   kafkaBootstrapServers: ""      # Kafka__BootstrapServers
   storageEndpoint: ""            # Storage__Endpoint (cluster-local, ex.: minio.uniplus.svc.cluster.local:9000)
@@ -73,6 +90,8 @@ secrets:
   storagePublicEndpoint: ""      # Storage__PublicEndpoint
   storagePublicUseSsl: ""        # Storage__PublicUseSSL ("true"/"false" — opcional, cai para o mesmo de Storage__UseSSL)
   authAuthority: ""              # Auth__Authority
+  sigaaUsuario: ""                # Sigaa__Usuario
+  sigaaSenha: ""                  # Sigaa__Senha
   # Criptografia de PII (LGPD): AddUniPlusEncryption valida no startup
   # (ValidateOnStart) — SEM estas chaves o host crasha no boot antes de servir.
   # Provider "local" exige LocalKey; "vault" exige os campos Vault

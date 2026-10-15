@@ -4,19 +4,22 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Discentes.Application.Abstractions;
 using Unifesspa.UniPlus.Discentes.Domain.Entities;
 using Unifesspa.UniPlus.Discentes.Domain.Enums;
 using Unifesspa.UniPlus.Discentes.Domain.Interfaces;
+using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Records;
 
 /// <summary>
 /// Anota o início e o desfecho de cada execução da sincronização.
 /// </summary>
 public interface IRegistroDeExecucoes
 {
-    Task<Guid> IniciarAsync(DateOnly dataDeReferencia, CancellationToken cancellationToken = default);
+    Task<Guid?> IniciarAsync(DateOnly dataDeReferencia, CancellationToken cancellationToken = default);
 
     Task ConcluirAsync(
         Guid execucaoId,
@@ -48,15 +51,48 @@ internal sealed class RegistroDeExecucoes : IRegistroDeExecucoes
         _relogio = relogio;
     }
 
-    public async Task<Guid> IniciarAsync(
+    public async Task<Guid?> IniciarAsync(
         DateOnly dataDeReferencia,
         CancellationToken cancellationToken = default)
     {
         await using AsyncServiceScope escopo = _escopos.CreateAsyncScope();
+        DiscentesDbContext db = escopo.ServiceProvider.GetRequiredService<DiscentesDbContext>();
 
-        SyncRun execucao = SyncRun.Iniciar(dataDeReferencia, _relogio);
+        ReservaDeSincronizacaoDiaria? reserva = await db.ReservasDeSincronizacaoDiaria
+            .SingleOrDefaultAsync(
+                item => item.DataDeReferencia == dataDeReferencia,
+                cancellationToken)
+            .ConfigureAwait(false);
 
-        await Repositorio(escopo).AdicionarSyncRunAsync(execucao, cancellationToken).ConfigureAwait(false);
+        if (reserva is not null && reserva.Estado is
+            EstadoDaSincronizacaoDiaria.Concluida
+            or EstadoDaSincronizacaoDiaria.Parcial
+            or EstadoDaSincronizacaoDiaria.Falhou)
+        {
+            return null;
+        }
+
+        SyncRun? execucao = reserva is null
+            ? null
+            : await db.SyncRuns
+                .Where(item => item.DataDeReferencia == dataDeReferencia
+                    && item.Status == SyncRunStatus.Running)
+                .OrderByDescending(item => item.StartedAt)
+                .FirstOrDefaultAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+        bool criarNovaExecucao = execucao is null;
+        execucao ??= SyncRun.Iniciar(dataDeReferencia, _relogio);
+        if (reserva is not null)
+        {
+            reserva.MarcarComoExecutando(_relogio.GetUtcNow());
+        }
+
+        if (criarNovaExecucao)
+        {
+            await Repositorio(escopo).AdicionarSyncRunAsync(execucao, cancellationToken).ConfigureAwait(false);
+        }
+
         await UnidadeDeTrabalho(escopo).SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
         return execucao.Id;
@@ -70,10 +106,28 @@ internal sealed class RegistroDeExecucoes : IRegistroDeExecucoes
     {
         await using AsyncServiceScope escopo = _escopos.CreateAsyncScope();
 
+        DiscentesDbContext db = escopo.ServiceProvider.GetRequiredService<DiscentesDbContext>();
         SyncRun execucao = await Repositorio(escopo).ObterSyncRunAsync(execucaoId, cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException($"Execução {execucaoId} não encontrada para conclusão.");
 
         execucao.Concluir(contagens, situacao, _relogio);
+
+        ReservaDeSincronizacaoDiaria? reserva = await db.ReservasDeSincronizacaoDiaria
+            .SingleOrDefaultAsync(
+                item => item.DataDeReferencia == execucao.DataDeReferencia,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        if (reserva is not null)
+        {
+            reserva.Concluir(situacao switch
+            {
+                SyncRunStatus.Completed => EstadoDaSincronizacaoDiaria.Concluida,
+                SyncRunStatus.Partial => EstadoDaSincronizacaoDiaria.Parcial,
+                SyncRunStatus.Failed => EstadoDaSincronizacaoDiaria.Falhou,
+                _ => throw new ArgumentOutOfRangeException(nameof(situacao), situacao, null),
+            }, _relogio.GetUtcNow());
+        }
 
         await UnidadeDeTrabalho(escopo).SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
     }

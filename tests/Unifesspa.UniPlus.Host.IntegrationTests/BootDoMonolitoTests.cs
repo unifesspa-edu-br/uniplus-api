@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
@@ -14,7 +15,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 /// <summary>
 /// Prova de boot do monólito modular (P4 em runtime): o composition root sobe
 /// como um processo único e, no <c>StartAsync</c>, as migrations on startup dos
-/// 5 módulos criam seus schemas no banco <c>uniplus</c> e o Wolverine provisiona
+/// 6 módulos criam seus schemas no banco <c>uniplus</c> e o Wolverine provisiona
 /// o outbox no schema <c>wolverine</c> — tudo sobre a MESMA connection.
 /// </summary>
 /// <remarks>
@@ -38,12 +39,13 @@ public sealed class BootDoMonolitoTests
         _fixture = fixture;
     }
 
-    [Theory(DisplayName = "Boot do monólito cria os 5 schemas de módulo + wolverine no banco único")]
+    [Theory(DisplayName = "Boot do monólito cria os 6 schemas de módulo + wolverine no banco único")]
     [InlineData("configuracao")]
     [InlineData("organizacao")]
     [InlineData("selecao")]
     [InlineData("ingresso")]
     [InlineData("publicacoes")]
+    [InlineData("discentes")]
     [InlineData("wolverine")]
     public async Task Boot_CriaSchemaEsperado(string schema)
     {
@@ -60,8 +62,24 @@ public sealed class BootDoMonolitoTests
     {
         IReadOnlyCollection<string> schemas = await ListarSchemasAsync();
 
-        schemas.Should().Contain(["configuracao", "organizacao", "selecao", "ingresso", "publicacoes"],
-            "os 5 módulos compartilham o banco `uniplus`, isolados por schema (não por banco)");
+        schemas.Should().Contain(
+            ["configuracao", "organizacao", "selecao", "ingresso", "publicacoes", "discentes"],
+            "os 6 módulos compartilham o banco `uniplus`, isolados por schema (não por banco)");
+    }
+
+    [Fact(DisplayName = "Migration cria a reserva persistente do gatilho diário de discentes")]
+    public async Task Boot_CriaTabelaDaReservaDoGatilhoDiario()
+    {
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        DiscentesDbContext dbContext = scope.ServiceProvider.GetRequiredService<DiscentesDbContext>();
+
+        IReadOnlyCollection<string> tabelas = await dbContext.Database
+            .SqlQueryRaw<string>(
+                "SELECT table_name AS \"Value\" FROM information_schema.tables "
+                + "WHERE table_schema = 'discentes'")
+            .ToListAsync(CancellationToken.None);
+
+        tabelas.Should().Contain("sincronizacao_diaria");
     }
 
     private async Task<IReadOnlyCollection<string>> ListarSchemasAsync()
