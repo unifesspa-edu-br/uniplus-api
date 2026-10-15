@@ -32,6 +32,50 @@ public sealed class ConferenciaEnderecoGeoTests
         return new(resposta, conteudo!, new RefitSettings());
     }
 
+    [Fact(DisplayName = "A conferência descarta a resposta do Geo, no CEP e no município")]
+    public async Task Conferir_DescartaAResposta()
+    {
+        ConteudoRastreado conteudoDoCep = new();
+        ConteudoRastreado conteudoDoMunicipio = new();
+        IGeoApi geo = Substitute.For<IGeoApi>();
+        geo.ResolverCepAsync("68500000", Arg.Any<CancellationToken>())
+            .Returns(RespostaCom(conteudoDoCep, new CepResolvidoResponse("Marabá", "1504208", "PA")));
+        geo.ObterCidadeAsync("1504208", Arg.Any<CancellationToken>())
+            .Returns(RespostaCom(conteudoDoMunicipio, new CidadeDetalheResponse("1504208", "Marabá", "PA")));
+        ConferenciaEnderecoGeo conferencia = new(geo, NullLogger<ConferenciaEnderecoGeo>.Instance);
+
+        await conferencia.ConferirCepAsync("68500000", "1504208", "PA");
+        await conferencia.ConferirMunicipioAsync("1504208", "PA");
+
+        conteudoDoCep.Descartado.Should().BeTrue();
+        conteudoDoMunicipio.Descartado.Should().BeTrue();
+    }
+
+    private static ApiResponse<T> RespostaCom<T>(HttpContent conteudo, T corpo)
+    {
+        HttpResponseMessage resposta = new(HttpStatusCode.OK) { RequestMessage = new HttpRequestMessage(), Content = conteudo };
+        return new(resposta, corpo, new RefitSettings());
+    }
+
+    private sealed class ConteudoRastreado : HttpContent
+    {
+        public bool Descartado { get; private set; }
+
+        protected override Task SerializeToStreamAsync(Stream stream, System.Net.TransportContext? context) => Task.CompletedTask;
+
+        protected override bool TryComputeLength(out long length)
+        {
+            length = 0;
+            return true;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            Descartado = true;
+            base.Dispose(disposing);
+        }
+    }
+
     [Fact(DisplayName = "CEP que resolve para a cidade e UF declaradas confere")]
     public async Task ConferirCep_ResolveParaDeclarado_Confere()
     {

@@ -56,32 +56,37 @@ internal sealed partial class ConferenciaEnderecoGeo : IConferenciaEnderecoGeo
             return Result.Failure(ErroIndisponivel());
         }
 
-        if (resposta.StatusCode == HttpStatusCode.NotFound)
+        // A resposta do Refit carrega a HttpResponseMessage: descartá-la libera a conexão e o
+        // conteúdo assim que a conferência termina, em vez de esperar o coletor.
+        using (resposta)
         {
-            return Result.Failure(new DomainError(
-                ConferenciaEnderecoGeoErrorCodes.CepNaoResolve, "O CEP informado não tem cobertura no Geo."));
+            if (resposta.StatusCode == HttpStatusCode.NotFound)
+            {
+                return Result.Failure(new DomainError(
+                    ConferenciaEnderecoGeoErrorCodes.CepNaoResolve, "O CEP informado não tem cobertura no Geo."));
+            }
+
+            if (!resposta.IsSuccessStatusCode)
+            {
+                LogRespostaInesperada(_logger, "cep", (int)(resposta.StatusCode ?? default));
+                return Result.Failure(ErroIndisponivel());
+            }
+
+            if (resposta.Content is not { } corpo)
+            {
+                LogRespostaSemCorpo(_logger, "cep", (int)resposta.StatusCode);
+                return Result.Failure(ErroIndisponivel());
+            }
+
+            bool bate = string.Equals(corpo.CodigoIbge, cidadeCodigoIbgeDeclarada, StringComparison.Ordinal)
+                && string.Equals(corpo.Uf, ufDeclarada, StringComparison.OrdinalIgnoreCase);
+
+            return bate
+                ? Result.Success()
+                : Result.Failure(new DomainError(
+                    ConferenciaEnderecoGeoErrorCodes.CidadeDivergente,
+                    "O CEP informado resolve para uma cidade diferente da declarada."));
         }
-
-        if (!resposta.IsSuccessStatusCode)
-        {
-            LogRespostaInesperada(_logger, "cep", (int)(resposta.StatusCode ?? default));
-            return Result.Failure(ErroIndisponivel());
-        }
-
-        if (resposta.Content is not { } corpo)
-        {
-            LogRespostaSemCorpo(_logger, "cep", (int)resposta.StatusCode);
-            return Result.Failure(ErroIndisponivel());
-        }
-
-        bool bate = string.Equals(corpo.CodigoIbge, cidadeCodigoIbgeDeclarada, StringComparison.Ordinal)
-            && string.Equals(corpo.Uf, ufDeclarada, StringComparison.OrdinalIgnoreCase);
-
-        return bate
-            ? Result.Success()
-            : Result.Failure(new DomainError(
-                ConferenciaEnderecoGeoErrorCodes.CidadeDivergente,
-                "O CEP informado resolve para uma cidade diferente da declarada."));
     }
 
     public async Task<Result> ConferirMunicipioAsync(
@@ -102,29 +107,32 @@ internal sealed partial class ConferenciaEnderecoGeo : IConferenciaEnderecoGeo
             return Result.Failure(ErroIndisponivel());
         }
 
-        if (resposta.StatusCode == HttpStatusCode.NotFound)
+        using (resposta)
         {
-            return Result.Failure(new DomainError(
-                ConferenciaEnderecoGeoErrorCodes.MunicipioNaoEncontrado, "O município informado não existe no Geo."));
-        }
+            if (resposta.StatusCode == HttpStatusCode.NotFound)
+            {
+                return Result.Failure(new DomainError(
+                    ConferenciaEnderecoGeoErrorCodes.MunicipioNaoEncontrado, "O município informado não existe no Geo."));
+            }
 
-        if (!resposta.IsSuccessStatusCode)
-        {
-            LogRespostaInesperada(_logger, "cidade", (int)(resposta.StatusCode ?? default));
-            return Result.Failure(ErroIndisponivel());
-        }
+            if (!resposta.IsSuccessStatusCode)
+            {
+                LogRespostaInesperada(_logger, "cidade", (int)(resposta.StatusCode ?? default));
+                return Result.Failure(ErroIndisponivel());
+            }
 
-        if (resposta.Content is not { } corpo)
-        {
-            LogRespostaSemCorpo(_logger, "cidade", (int)resposta.StatusCode);
-            return Result.Failure(ErroIndisponivel());
-        }
+            if (resposta.Content is not { } corpo)
+            {
+                LogRespostaSemCorpo(_logger, "cidade", (int)resposta.StatusCode);
+                return Result.Failure(ErroIndisponivel());
+            }
 
-        return string.Equals(corpo.Uf, ufDeclarada, StringComparison.OrdinalIgnoreCase)
-            ? Result.Success()
-            : Result.Failure(new DomainError(
-                ConferenciaEnderecoGeoErrorCodes.MunicipioDivergente,
-                "O município informado não pertence à UF declarada."));
+            return string.Equals(corpo.Uf, ufDeclarada, StringComparison.OrdinalIgnoreCase)
+                ? Result.Success()
+                : Result.Failure(new DomainError(
+                    ConferenciaEnderecoGeoErrorCodes.MunicipioDivergente,
+                    "O município informado não pertence à UF declarada."));
+        }
     }
 
     private static DomainError ErroIndisponivel() => new(
