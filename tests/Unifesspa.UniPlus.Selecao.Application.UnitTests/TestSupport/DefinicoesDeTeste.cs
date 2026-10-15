@@ -16,6 +16,7 @@ internal static class DefinicoesDeTeste
                 Multivalorado: false,
                 Identificador: false),
             StringComparer.Ordinal),
+        new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
         new HashSet<Guid>());
 
     public static Dictionary<string, DefinicaoDaResposta> Nenhuma() => new(StringComparer.Ordinal);

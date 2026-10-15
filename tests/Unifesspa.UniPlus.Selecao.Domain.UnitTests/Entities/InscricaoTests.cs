@@ -31,11 +31,19 @@ public sealed class InscricaoTests
         ["RG_NUMERO"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: true),
         ["PARENTESCO"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false),
         ["TELEFONE"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: false, Formato: "TELEFONE"),
+        ["RENDA_MENSAL"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: false),
     };
 
     private static readonly Guid OfertaDoProcesso = Guid.CreateVersion7();
 
-    private static readonly RespostasAdmitidas Admitidas = new(DefinicoesDasRespostas, new HashSet<Guid> { OfertaDoProcesso });
+    private static readonly RespostasAdmitidas Admitidas = new(
+        DefinicoesDasRespostas,
+        new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal)
+        {
+            ["COMPOSICAO_FAMILIAR"] = new HashSet<string>(StringComparer.Ordinal) { "PARENTESCO", "TELEFONE", "RG_NUMERO" },
+            ["FONTES_DE_RENDA"] = new HashSet<string>(StringComparer.Ordinal) { "RENDA_MENSAL" },
+        },
+        new HashSet<Guid> { OfertaDoProcesso });
 
     private static readonly Dictionary<string, DefinicaoDaResposta> DefinicoesDosDerivados = new(StringComparer.Ordinal)
     {
@@ -358,6 +366,48 @@ public sealed class InscricaoTests
         Result resultado = inscricao.Salvar(null, Respostas(), grupos, SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
 
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.GrupoIdDuplicado);
+    }
+
+    [Fact(DisplayName = "Salvar recusa o grupo que o formulário não tem, sem mutar nada")]
+    public void Salvar_GrupoForaDoFormulario_RecusaSemMutar()
+    {
+        Inscricao inscricao = NovaInscricao();
+        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = new(StringComparer.Ordinal)
+        {
+            ["GRUPO_INVENTADO"] = [new OcorrenciaDeGrupoInscricao("1", new Dictionary<string, JsonElement>(StringComparer.Ordinal))],
+        };
+
+        Result resultado = inscricao.Salvar(null, Respostas(), grupos, SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("GRUPO_INVENTADO");
+        resultado.Error!.Code.Should().Be(InscricaoErrorCodes.GrupoForaDoFormulario);
+        inscricao.Revisao.Should().Be(1);
+        inscricao.Grupos.Should().BeEmpty();
+    }
+
+    [Theory(DisplayName = "Salvar recusa na ocorrência a resposta de fato que não é subitem do grupo")]
+    [InlineData("RENDA_MENSAL", "subitem de outro grupo")]
+    [InlineData("NOME_SOCIAL", "fato de nível superior")]
+    public void Salvar_FatoForaDoGrupo_RecusaSemMutar(string fato, string origem)
+    {
+        Inscricao inscricao = NovaInscricao();
+        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = new(StringComparer.Ordinal)
+        {
+            ["COMPOSICAO_FAMILIAR"] =
+            [
+                new OcorrenciaDeGrupoInscricao("membro-1", new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+                {
+                    [fato] = JsonSerializer.SerializeToElement("valor"),
+                }),
+            ],
+        };
+
+        Result resultado = inscricao.Salvar(null, Respostas(), grupos, SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+
+        resultado.Errors.Should().ContainSingle(origem).Which.Field.Should().Be($"COMPOSICAO_FAMILIAR.membro-1.{fato}");
+        resultado.Error!.Code.Should().Be(InscricaoErrorCodes.FatoForaDoGrupo);
+        inscricao.Revisao.Should().Be(1);
+        inscricao.Grupos.Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Salvar com nulo apaga a resposta que o candidato limpou")]
