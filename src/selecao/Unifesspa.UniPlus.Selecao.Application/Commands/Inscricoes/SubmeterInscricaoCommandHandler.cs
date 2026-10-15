@@ -110,7 +110,13 @@ public static class SubmeterInscricaoCommandHandler
         }
 
         Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = gruposLidos.Value!;
-        List<AceiteDeTermo> aceites = Services.InscricaoRequestMapper.ParaAceites(command.Request.Aceites);
+        Result<List<AceiteDeTermo>> aceitesLidos = Services.InscricaoRequestMapper.ParaAceites(command.Request.Aceites);
+        if (aceitesLidos.IsFailure)
+        {
+            return Result<ComprovanteInscricaoDto>.ValidationFailure(aceitesLidos.Errors);
+        }
+
+        List<AceiteDeTermo> aceites = aceitesLidos.Value!;
 
         // O veredito avalia o estado que SERÁ persistido — um campo respondido numa chamada
         // anterior de Salvar e não reenviado aqui continua preenchido, nunca indeterminado; o mesmo

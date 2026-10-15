@@ -63,4 +63,42 @@ public sealed class InscricaoRequestMapperTests
         ocorrencia.Id.Should().Be("a");
         ocorrencia.Respostas.Should().BeEmpty();
     }
+
+    [Fact(DisplayName = "ParaAceites recusa o aceite nulo no caminho do aceite e segue lendo os demais")]
+    public void ParaAceites_AceiteNulo_RecusaNoCaminhoDoAceite()
+    {
+        Result<List<AceiteDeTermo>> resultado = InscricaoRequestMapper.ParaAceites(
+        [
+            new AceiteDeTermoInput("LGPD", Guid.NewGuid(), "hash"),
+            null!,
+        ]);
+
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("aceites[1]");
+        resultado.Error!.Code.Should().Be(InscricaoErrorCodes.AceiteMalFormado);
+    }
+
+    [Fact(DisplayName = "ParaAceites recusa o aceite sem código ou sem hash no caminho do campo, porque a gravação exige os dois")]
+    public void ParaAceites_AceiteSemCodigoOuSemHash_RecusaNoCaminhoDoCampo()
+    {
+        Result<List<AceiteDeTermo>> resultado = InscricaoRequestMapper.ParaAceites(
+        [
+            new AceiteDeTermoInput(null!, Guid.NewGuid(), "hash"),
+            new AceiteDeTermoInput("LGPD", Guid.NewGuid(), null!),
+        ]);
+
+        resultado.Errors.Select(static e => e.Field).Should().BeEquivalentTo("aceites[0].codigo", "aceites[1].hashVersao");
+        resultado.Errors.Should().OnlyContain(static e => e.Error.Code == InscricaoErrorCodes.AceiteMalFormado);
+    }
+
+    [Fact(DisplayName = "ParaAceites lê o aceite bem formado e trata a lista ausente como vazia")]
+    public void ParaAceites_AceiteBemFormado_Le()
+    {
+        Guid versao = Guid.NewGuid();
+
+        Result<List<AceiteDeTermo>> lido = InscricaoRequestMapper.ParaAceites([new AceiteDeTermoInput("LGPD", versao, "hash")]);
+        Result<List<AceiteDeTermo>> ausente = InscricaoRequestMapper.ParaAceites(null);
+
+        lido.Value.Should().ContainSingle().Which.Should().Be(new AceiteDeTermo("LGPD", versao, "hash"));
+        ausente.Value.Should().BeEmpty();
+    }
 }

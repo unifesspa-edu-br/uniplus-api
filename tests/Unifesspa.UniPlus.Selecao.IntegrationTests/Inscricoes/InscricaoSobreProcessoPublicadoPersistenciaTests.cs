@@ -1190,6 +1190,33 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             .Should().OnlyContain(static e => e!.Code == InscricaoErrorCodes.GrupoMalFormado);
     }
 
+    [Fact(DisplayName = "Salvar e enviar recusam o aceite nulo e o aceite sem código ou sem hash com o caminho do campo, sem lançar")]
+    public async Task Aceite_NuloOuSemCodigoOuSemHash_ERecusado()
+    {
+        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        ProcessoSeletivo processo = ProcessoComAMatrizNormativa(nameof(Aceite_NuloOuSemCodigoOuSemHash_ERecusado));
+        (Guid processoId, _) = await PublicarEDivulgarAsync(db, processo, OpcoesDaOrigemEscolar());
+        string etag = await IniciarAsync(db, processoId);
+        InscricaoRequest pedido = PedidoDeEnvio(processo, RespostasDaOrigemEDasCotas(OrigemEscolar.SomentePublica, ep: true, ppi: true, renda: true));
+        InscricaoRequest aceiteNulo = pedido with { Aceites = [null!] };
+        InscricaoRequest semCodigoNemHash = pedido with
+        {
+            Aceites = [new AceiteDeTermoInput(null!, Guid.NewGuid(), "hash"), new AceiteDeTermoInput("LGPD", Guid.NewGuid(), null!)],
+        };
+
+        Result<InscricaoDto> salvarNulo = await SalvarAsync(db, processoId, aceiteNulo, etag);
+        Result<InscricaoDto> salvarIncompleto = await SalvarAsync(db, processoId, semCodigoNemHash, etag);
+        Result<ComprovanteInscricaoDto> enviarNulo = await EnviarAsync(db, processoId, aceiteNulo, etag, "00000106");
+        Result<ComprovanteInscricaoDto> enviarIncompleto = await EnviarAsync(db, processoId, semCodigoNemHash, etag, "00000107");
+
+        salvarNulo.Errors.Should().ContainSingle().Which.Field.Should().Be("aceites[0]");
+        enviarNulo.Errors.Should().ContainSingle().Which.Field.Should().Be("aceites[0]");
+        salvarIncompleto.Errors.Select(static e => e.Field).Should().BeEquivalentTo("aceites[0].codigo", "aceites[1].hashVersao");
+        enviarIncompleto.Errors.Select(static e => e.Field).Should().BeEquivalentTo("aceites[0].codigo", "aceites[1].hashVersao");
+        new[] { salvarNulo.Error, salvarIncompleto.Error, enviarNulo.Error, enviarIncompleto.Error }
+            .Should().OnlyContain(static e => e!.Code == InscricaoErrorCodes.AceiteMalFormado);
+    }
+
     [Fact(DisplayName = "O envio sobre a versão publicada grava as modalidades em que o candidato concorre e o comprovante relido as traz com o nome congelado")]
     public async Task Envio_SobreAVersaoPublicada_GravaAsModalidadesEComprova()
     {
