@@ -376,6 +376,36 @@ public sealed class InscricaoTests
         inscricao.Respostas.Should().NotContainKey("NOME_SOCIAL");
     }
 
+    [Fact(DisplayName = "Salvar preserva o grupo omitido do corpo e substitui o grupo enviado, mesmo vazio")]
+    public void Salvar_GrupoOmitido_PreservaOGravado()
+    {
+        Inscricao inscricao = NovaInscricao();
+        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> comMembro = new(StringComparer.Ordinal)
+        {
+            ["COMPOSICAO_FAMILIAR"] =
+            [
+                new OcorrenciaDeGrupoInscricao("membro-1", new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+                {
+                    ["PARENTESCO"] = JsonSerializer.SerializeToElement("PAI_OU_MAE"),
+                }),
+            ],
+        };
+        inscricao.Salvar(null, Respostas(), comMembro, SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+
+        inscricao.Salvar(null, Respostas(), SemGrupos(), SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]))
+            .IsSuccess.Should().BeTrue();
+        inscricao.Grupos["COMPOSICAO_FAMILIAR"].Should().ContainSingle(static o => o.Id == "membro-1",
+            "o grupo ausente do corpo vale o que já está gravado");
+
+        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupoVazio = new(StringComparer.Ordinal)
+        {
+            ["COMPOSICAO_FAMILIAR"] = [],
+        };
+        inscricao.Salvar(null, Respostas(), grupoVazio, SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]))
+            .IsSuccess.Should().BeTrue();
+        inscricao.Grupos["COMPOSICAO_FAMILIAR"].Should().BeEmpty("o grupo enviado substitui o gravado, mesmo sem ocorrências");
+    }
+
     [Fact(DisplayName = "Submeter recusa o fato derivado informado pelo candidato")]
     public void Submeter_FatoDerivadoInformadoPeloCandidato_Recusa()
     {

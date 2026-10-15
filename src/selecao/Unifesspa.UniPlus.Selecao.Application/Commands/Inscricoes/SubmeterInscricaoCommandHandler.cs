@@ -107,8 +107,10 @@ public static class SubmeterInscricaoCommandHandler
         List<AceiteDeTermo> aceites = Services.InscricaoRequestMapper.ParaAceites(command.Request.Aceites);
 
         // O veredito avalia o estado que SERÁ persistido — um campo respondido numa chamada
-        // anterior de Salvar e não reenviado aqui continua preenchido, nunca indeterminado.
+        // anterior de Salvar e não reenviado aqui continua preenchido, nunca indeterminado; o mesmo
+        // vale para o grupo repetível omitido do corpo.
         IReadOnlyDictionary<string, JsonElement> respostasMescladas = inscricao.RespostasAposMesclar(respostasDoCorpo);
+        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> gruposMesclados = inscricao.GruposAposMesclar(grupos);
 
         Result<IReadOnlyDictionary<string, JsonElement>> derivados = await Services.DerivadosDoSistemaInscricao
             .CalcularAsync(respostasMescladas, contexto.Value!.DataReferenciaFatos, conferenciaEnderecoGeo, cancellationToken)
@@ -131,7 +133,7 @@ public static class SubmeterInscricaoCommandHandler
         ConfiguracaoAvaliavel configuracao = contexto.Value!.Configuracao;
         Result<ResultadoDaAvaliacaoDaInscricao> avaliacao = AvaliacaoDaInscricao.Avaliar(configuracao, new EntradaDaAvaliacaoDaInscricao(
             respostasMescladas,
-            Services.InscricaoRequestMapper.ParaAvaliacao(grupos),
+            Services.InscricaoRequestMapper.ParaAvaliacao(gruposMesclados),
             derivados.Value!.ToDictionary(static d => d.Key, static d => FatoResolvido.Resolvido(d.Value), StringComparer.Ordinal),
             AvaliacaoDaInscricao.CodigosDasEtapasDaInscricao(configuracao.Definicao),
             envio,
@@ -152,7 +154,7 @@ public static class SubmeterInscricaoCommandHandler
         // fora da oferta num campo opcional passaria sem recusa.
         IReadOnlyList<FieldError> recusas =
         [
-            .. Services.VeredictoDeSubmissao.RecusasDeOpcaoForaDaOferta(respostasFinais, grupos, contexto.Value!.Ofertas),
+            .. Services.VeredictoDeSubmissao.RecusasDeOpcaoForaDaOferta(respostasFinais, gruposMesclados, contexto.Value!.Ofertas),
             .. Services.VeredictoDeSubmissao.Avaliar(
                 AvaliacaoDaInscricao.DaInscricao(avaliacao.Value!.Formulario), [.. contexto.Value!.TermosExigidos], aceites, envio.Dia),
         ];

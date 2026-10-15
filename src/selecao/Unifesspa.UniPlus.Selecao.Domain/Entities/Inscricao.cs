@@ -267,6 +267,25 @@ public sealed class Inscricao : EntityBase
     }
 
     /// <summary>
+    /// Os grupos repetíveis após o mesmo merge que <see cref="Salvar"/> e <see cref="Submeter"/>
+    /// aplicam internamente: o grupo ausente do corpo recebido preserva as ocorrências gravadas, e o
+    /// grupo enviado, mesmo com a lista vazia, substitui as dele. O veredito de submissão avalia
+    /// sobre este resultado, como avalia as respostas de <see cref="RespostasAposMesclar"/>.
+    /// </summary>
+    public IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> GruposAposMesclar(
+        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> recebidos)
+    {
+        ArgumentNullException.ThrowIfNull(recebidos);
+        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> mesclado = new(Grupos, StringComparer.Ordinal);
+        foreach ((string codigo, IReadOnlyList<OcorrenciaDeGrupoInscricao> ocorrencias) in recebidos)
+        {
+            mesclado[codigo] = ocorrencias;
+        }
+
+        return mesclado;
+    }
+
+    /// <summary>
     /// Salva o rascunho: validação estrutural, sem exigir obrigatórios — a validação completa é da
     /// submissão (issue #1859). Preserva um número de documento ausente do corpo: ausência nunca
     /// apaga, só um valor enviado substitui. Depois do envio, a inscrição que vale é a enviada
@@ -308,7 +327,7 @@ public sealed class Inscricao : EntityBase
 
         OfertaCursoId = ofertaCursoId;
         Respostas = NaFormaCanonica(MesclarPreservandoAusentes(Respostas, respostas), admitidas.Definicoes);
-        Grupos = NaFormaCanonicaNosGrupos(SemValoresNulos(grupos), admitidas.Definicoes);
+        Grupos = NaFormaCanonicaNosGrupos(SemValoresNulos(GruposAposMesclar(grupos)), admitidas.Definicoes);
         Aceites = aceites;
         DefinicoesDasRespostas = admitidas.Definicoes;
         Revisao++;
@@ -396,7 +415,7 @@ public sealed class Inscricao : EntityBase
         Respostas = SoAsQueSeAplicam(NaFormaCanonica(MesclarPreservandoAusentes(Respostas, respostas), admitidas.Definicoes), avaliacao.Formulario.Fatos)
             .Where(r => !Derivados.ContainsKey(r.Key))
             .ToDictionary(static r => r.Key, static r => r.Value, StringComparer.Ordinal);
-        Grupos = GruposQueSeAplicam(NaFormaCanonicaNosGrupos(SemValoresNulos(grupos), admitidas.Definicoes), avaliacao.Formulario.Grupos);
+        Grupos = GruposQueSeAplicam(NaFormaCanonicaNosGrupos(SemValoresNulos(GruposAposMesclar(grupos)), admitidas.Definicoes), avaliacao.Formulario.Grupos);
         Aceites = aceites;
         DefinicoesDasRespostas = admitidas.Definicoes.Concat(definicoesDoEnvio)
             .GroupBy(static f => f.Key, StringComparer.Ordinal)
