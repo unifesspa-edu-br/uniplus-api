@@ -82,10 +82,11 @@ public static class GeoClientRegistration
         cliente.Timeout = TimeSpan.FromSeconds(opcoes.TimeoutTotalEmSegundos * 2);
     }
 
+    // Sem BaseAddress de propósito: GeoTokenProvider posta numa URI absoluta, e o endpoint OAuth é
+    // opcional na configuração — atribuí-lo aqui lançaria UriFormatException na criação do cliente.
     private static void ConfigurarTimeoutDoClienteDeAutenticacao(IServiceProvider provedor, HttpClient cliente)
     {
         GeoOptions opcoes = provedor.GetRequiredService<IOptions<GeoOptions>>().Value;
-        cliente.BaseAddress = new Uri(opcoes.OAuth.TokenEndpoint, UriKind.Absolute);
         cliente.Timeout = TimeSpan.FromSeconds(opcoes.TimeoutTotalEmSegundos);
     }
 

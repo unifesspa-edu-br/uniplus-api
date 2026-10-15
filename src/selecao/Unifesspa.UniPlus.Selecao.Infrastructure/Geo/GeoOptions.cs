@@ -40,7 +40,8 @@ public sealed class GeoOptions
 /// Deliberadamente SEM <c>[Required]</c>: diferente de <see cref="GeoOptions.BaseUrl"/>,
 /// ausência aqui não derruba o startup do monólito inteiro (o secret vem de Vault/env var em todo
 /// ambiente real, nunca committed) — vira falha fechada só QUANDO alguém de fato chama o Geo
-/// (<c>GeoTokenProvider.AutenticarAsync</c> falha, <c>ConferenciaEnderecoGeo</c> traduz em
+/// (<c>GeoTokenProvider.AutenticarAsync</c> lança <c>GeoAutenticacaoException</c> sem endpoint absoluto
+/// válido ou sem credencial, e <c>ConferenciaEnderecoGeo</c> traduz em
 /// <see cref="Application.Abstractions.ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel"/>), não
 /// quando qualquer teste de integração não relacionado ao Geo sobe o host.
 /// </remarks>

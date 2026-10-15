@@ -115,6 +115,34 @@ public sealed class ConferenciaEnderecoGeoTests
         resultado.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
     }
 
+    [Fact(DisplayName = "CEP com sucesso (2xx) mas sem corpo utilizável é falha fechada, não exceção")]
+    public async Task ConferirCep_SucessoSemCorpo_FalhaFechada()
+    {
+        IGeoApi geo = Substitute.For<IGeoApi>();
+        geo.ResolverCepAsync("68500000", Arg.Any<CancellationToken>())
+            .Returns(Resposta<CepResolvidoResponse>(HttpStatusCode.OK, null));
+
+        ConferenciaEnderecoGeo conferencia = new(geo, NullLogger<ConferenciaEnderecoGeo>.Instance);
+        Result resultado = await conferencia.ConferirCepAsync("68500000", "1504208", "PA");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
+    }
+
+    [Fact(DisplayName = "Município com sucesso (2xx) mas sem corpo utilizável é falha fechada, não exceção")]
+    public async Task ConferirMunicipio_SucessoSemCorpo_FalhaFechada()
+    {
+        IGeoApi geo = Substitute.For<IGeoApi>();
+        geo.ObterCidadeAsync("1504208", Arg.Any<CancellationToken>())
+            .Returns(Resposta<CidadeDetalheResponse>(HttpStatusCode.OK, null));
+
+        ConferenciaEnderecoGeo conferencia = new(geo, NullLogger<ConferenciaEnderecoGeo>.Instance);
+        Result resultado = await conferencia.ConferirMunicipioAsync("1504208", "PA");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
+    }
+
     [Fact(DisplayName = "Município cuja UF bate a declarada confere")]
     public async Task ConferirMunicipio_UfBate_Confere()
     {
