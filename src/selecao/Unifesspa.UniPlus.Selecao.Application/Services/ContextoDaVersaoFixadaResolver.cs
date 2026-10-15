@@ -84,6 +84,7 @@ public static class ContextoDaVersaoFixadaResolver
 
         return new RespostasAdmitidas(
             DefinicoesDasRespostasDaInscricao(grafo),
+            SubitensDosGruposDaInscricao(grafo),
             grafo.DistribuicaoVagas.Select(static d => d.OfertaCursoOrigemId).ToHashSet());
     }
 
@@ -101,5 +102,16 @@ public static class ContextoDaVersaoFixadaResolver
         }
 
         return definicoes;
+    }
+
+    private static Dictionary<string, IReadOnlySet<string>> SubitensDosGruposDaInscricao(GrafoConfiguracao grafo)
+    {
+        Dictionary<string, IReadOnlySet<string>> subitens = new(StringComparer.Ordinal);
+        foreach (GrupoColetado grupo in grafo.GruposColetados.Where(static g => g.Finalidade == FinalidadeFormulario.Inscricao))
+        {
+            subitens.TryAdd(grupo.Codigo, grupo.Subitens.Select(static s => s.FatoCodigo).ToHashSet(StringComparer.Ordinal));
+        }
+
+        return subitens;
     }
 }

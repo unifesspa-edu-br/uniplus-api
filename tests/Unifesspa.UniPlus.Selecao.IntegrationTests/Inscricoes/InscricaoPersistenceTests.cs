@@ -50,7 +50,13 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
 
     private static readonly Guid OfertaDoProcesso = Guid.CreateVersion7();
 
-    private static readonly RespostasAdmitidas Admitidas = new(DefinicoesDasRespostas, new HashSet<Guid> { OfertaDoProcesso });
+    private static readonly RespostasAdmitidas Admitidas = new(
+        DefinicoesDasRespostas,
+        new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal)
+        {
+            ["COMPOSICAO_FAMILIAR"] = new HashSet<string>(StringComparer.Ordinal) { "RG_NUMERO", "PARENTESCO" },
+        },
+        new HashSet<Guid> { OfertaDoProcesso });
 
     private static readonly Dictionary<string, DefinicaoDaResposta> DefinicoesDosDerivados = new(StringComparer.Ordinal)
     {

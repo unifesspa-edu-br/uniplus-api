@@ -322,7 +322,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
         Dictionary<string, JsonElement> semRespostas = new(StringComparer.Ordinal);
         existente.Submeter(
             "000001", null, semRespostas, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [],
-            new RespostasAdmitidas(new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal), new HashSet<Guid>()), FormularioDeTeste.AvaliacaoSemOcultos,
+            new RespostasAdmitidas(new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal), new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal), new HashSet<Guid>()), FormularioDeTeste.AvaliacaoSemOcultos,
             semRespostas, new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal),
             PrecondicaoIfMatch.DeTags([existente.ETag]), DateTimeOffset.UnixEpoch).IsSuccess.Should().BeTrue();
 
@@ -361,7 +361,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
         Dictionary<string, JsonElement> semRespostas = new(StringComparer.Ordinal);
         existente.Submeter(
             "000001", null, semRespostas, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [],
-            new RespostasAdmitidas(new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal), new HashSet<Guid>()), FormularioDeTeste.AvaliacaoSemOcultos,
+            new RespostasAdmitidas(new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal), new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal), new HashSet<Guid>()), FormularioDeTeste.AvaliacaoSemOcultos,
             semRespostas, new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal),
             PrecondicaoIfMatch.DeTags([existente.ETag]), DateTimeOffset.UnixEpoch).IsSuccess.Should().BeTrue();
 

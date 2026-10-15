@@ -316,7 +316,7 @@ public sealed class Inscricao : EntityBase
 
         List<FieldError> recusas =
         [
-            .. ConferirValores(respostas, grupos, admitidas.Definicoes),
+            .. ConferirValores(respostas, grupos, admitidas.Definicoes, admitidas.SubitensPorGrupo),
             .. RecusasDoCpf(respostas),
             .. RecusasDaOferta(ofertaCursoId, admitidas.OfertasDeCurso, exigida: false),
         ];
@@ -387,8 +387,8 @@ public sealed class Inscricao : EntityBase
 
         IReadOnlyList<FieldError> recusas =
         [
-            .. ConferirValores(respostas, grupos, admitidas.Definicoes),
-            .. ConferirValores(derivados, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), definicoesDosDerivados),
+            .. ConferirValores(respostas, grupos, admitidas.Definicoes, admitidas.SubitensPorGrupo),
+            .. ConferirValores(derivados, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), definicoesDosDerivados, new Dictionary<string, IReadOnlySet<string>>()),
             .. RecusasDoCpf(respostas),
             .. RecusasDaOferta(ofertaCursoId, admitidas.OfertasDeCurso, exigida: admitidas.OfertasDeCurso.Count > 0),
             .. RecusasDaModalidade(avaliacao.Modalidades),
@@ -528,18 +528,28 @@ public sealed class Inscricao : EntityBase
             StringComparer.Ordinal);
 
     /// <summary>
-    /// Todo valor tem de ter definição e caber no tipo dela; a ocorrência de grupo, um id único dentro
-    /// do grupo, porque é por ele que a ocorrência é gravada.
+    /// Todo valor tem de ter definição e caber no tipo dela. A ocorrência de grupo tem de ser de um grupo
+    /// do formulário, com um id único dentro do grupo, porque é por ele que a ocorrência é gravada, e só
+    /// responde os subitens desse grupo.
     /// </summary>
     private static List<FieldError> ConferirValores(
         IReadOnlyDictionary<string, JsonElement> respostas,
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
-        IReadOnlyDictionary<string, DefinicaoDaResposta> definicoes)
+        IReadOnlyDictionary<string, DefinicaoDaResposta> definicoes,
+        IReadOnlyDictionary<string, IReadOnlySet<string>> subitensPorGrupo)
     {
         List<FieldError> recusas = [.. RecusasDeValor(respostas, definicoes, prefixo: string.Empty)];
 
         foreach ((string grupoCodigo, IReadOnlyList<OcorrenciaDeGrupoInscricao> ocorrencias) in grupos)
         {
+            if (!subitensPorGrupo.TryGetValue(grupoCodigo, out IReadOnlySet<string>? subitens))
+            {
+                recusas.Add(new FieldError(grupoCodigo, new DomainError(
+                    InscricaoErrorCodes.GrupoForaDoFormulario,
+                    $"'{grupoCodigo}' não é um grupo do formulário desta inscrição. Remova-o das respostas.")));
+                continue;
+            }
+
             HashSet<string> ids = new(StringComparer.Ordinal);
             foreach (OcorrenciaDeGrupoInscricao ocorrencia in ocorrencias)
             {
@@ -551,7 +561,16 @@ public sealed class Inscricao : EntityBase
                     continue;
                 }
 
-                recusas.AddRange(RecusasDeValor(ocorrencia.Respostas, definicoes, prefixo: $"{grupoCodigo}.{ocorrencia.Id}."));
+                string prefixo = $"{grupoCodigo}.{ocorrencia.Id}.";
+                recusas.AddRange(ocorrencia.Respostas.Keys
+                    .Where(fato => !subitens.Contains(fato))
+                    .Select(fato => new FieldError(prefixo + fato, new DomainError(
+                        InscricaoErrorCodes.FatoForaDoGrupo,
+                        $"'{fato}' não é um campo do grupo '{grupoCodigo}'. Remova-o desta ocorrência e responda-o fora do grupo, se o formulário o pedir."))));
+                recusas.AddRange(RecusasDeValor(
+                    ocorrencia.Respostas.Where(r => subitens.Contains(r.Key)).ToDictionary(static r => r.Key, static r => r.Value, StringComparer.Ordinal),
+                    definicoes,
+                    prefixo));
             }
         }
 
