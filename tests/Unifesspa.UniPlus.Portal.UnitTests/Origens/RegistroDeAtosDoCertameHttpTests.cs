@@ -115,6 +115,21 @@ public sealed class RegistroDeAtosDoCertameHttpTests
     }
 
     [Fact]
+    public async Task Ato_nulo_na_pagina_e_ato_fora_do_contrato_e_nao_excecao()
+    {
+        Guid primeiro = Guid.NewGuid();
+
+        RedeSimulada rede = new((_, numero) => numero == 1
+            ? PaginaCom([Ato(primeiro)], proximoCursor: "c2")
+            : RedeSimulada.Json("[null]", MediaType));
+
+        LeituraDosAtos leitura = await Ler(rede);
+
+        leitura.Falha.Should().Be(FalhaNaLeituraDosAtos.FalhaNaPaginacao);
+        leitura.Atos.Select(a => a.Id).Should().Equal(primeiro);
+    }
+
+    [Fact]
     public async Task Le_os_campos_do_ato_e_ignora_o_assinante()
     {
         Guid id = Guid.NewGuid();

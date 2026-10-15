@@ -73,9 +73,11 @@ internal sealed partial class RegistroDeAtosDoCertameHttp : IRegistroDeAtosDoCer
                     return new LeituraDosAtos(atos, falhaDestaPagina);
                 }
 
+                // A anotação de nulidade não alcança os elementos da lista desserializada: um ato
+                // nulo na página é ato fora do contrato, como o ato sem id ou sem tipo.
                 foreach (AtoNormativoPayload ato in pagina)
                 {
-                    if (ato.Id == Guid.Empty || string.IsNullOrWhiteSpace(ato.TipoCodigo))
+                    if (ato is null || ato.Id == Guid.Empty || string.IsNullOrWhiteSpace(ato.TipoCodigo))
                     {
                         LogAtoForaDoContrato(_logger, paginasLidas + 1);
                         return new LeituraDosAtos(atos, falhaDestaPagina);

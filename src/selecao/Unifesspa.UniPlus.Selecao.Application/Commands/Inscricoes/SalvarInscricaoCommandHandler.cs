@@ -120,6 +120,14 @@ public static class SalvarInscricaoCommandHandler
 
         Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = gruposLidos.Value!;
 
+        Result<List<AceiteDeTermo>> aceitesLidos = Services.InscricaoRequestMapper.ParaAceites(command.Request.Aceites);
+        if (aceitesLidos.IsFailure)
+        {
+            return Result<InscricaoDto>.ValidationFailure(aceitesLidos.Errors);
+        }
+
+        List<AceiteDeTermo> aceites = aceitesLidos.Value!;
+
         // A mesma avaliação do envio e da consulta (ADR-0143), sem etapa concluída: o rascunho ainda
         // está sendo preenchido, e só o que o corpo traz é conferido.
         Result<ResultadoDaAvaliacaoDaInscricao> avaliacao = AvaliacaoDaInscricao.Avaliar(contexto.Value!.Configuracao, new EntradaDaAvaliacaoDaInscricao(
@@ -139,8 +147,6 @@ public static class SalvarInscricaoCommandHandler
         {
             return Result<InscricaoDto>.ValidationFailure(recusas);
         }
-
-        List<AceiteDeTermo> aceites = Services.InscricaoRequestMapper.ParaAceites(command.Request.Aceites);
 
         Result salvar = inscricao.Salvar(
             command.Request.OfertaCursoId, respostas, grupos, aceites, contexto.Value!.Admitidas, command.Precondicao);
