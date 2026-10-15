@@ -16,6 +16,7 @@ internal static class DefinicoesDeTeste
                 Multivalorado: false,
                 Identificador: false),
             StringComparer.Ordinal),
+        respostas.Keys.ToHashSet(StringComparer.Ordinal),
         new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
         new HashSet<Guid>());
 

@@ -316,7 +316,7 @@ public sealed class Inscricao : EntityBase
 
         List<FieldError> recusas =
         [
-            .. ConferirValores(respostas, grupos, admitidas.Definicoes, admitidas.SubitensPorGrupo),
+            .. ConferirRespostas(respostas, grupos, admitidas),
             .. RecusasDoCpf(respostas),
             .. RecusasDaOferta(ofertaCursoId, admitidas.OfertasDeCurso, exigida: false),
         ];
@@ -387,7 +387,7 @@ public sealed class Inscricao : EntityBase
 
         IReadOnlyList<FieldError> recusas =
         [
-            .. ConferirValores(respostas, grupos, admitidas.Definicoes, admitidas.SubitensPorGrupo),
+            .. ConferirRespostas(respostas, grupos, admitidas),
             .. ConferirValores(derivados, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), definicoesDosDerivados, new Dictionary<string, IReadOnlySet<string>>()),
             .. RecusasDoCpf(respostas),
             .. RecusasDaOferta(ofertaCursoId, admitidas.OfertasDeCurso, exigida: admitidas.OfertasDeCurso.Count > 0),
@@ -526,6 +526,34 @@ public sealed class Inscricao : EntityBase
             static g => (IReadOnlyList<OcorrenciaDeGrupoInscricao>)
                 [.. g.Value.Select(static o => o with { Respostas = MesclarPreservandoAusentes(new Dictionary<string, JsonElement>(StringComparer.Ordinal), o.Respostas) })],
             StringComparer.Ordinal);
+
+    /// <summary>
+    /// As respostas do candidato: as de nível superior só podem ser de fato que a inscrição coleta fora
+    /// de grupo, e as de grupo, de subitem do grupo. O fato que existe só como subitem de grupo não é
+    /// admitido no nível superior, porque ali nenhuma ocorrência o reclama e ele seria gravado, e
+    /// entraria no comprovante, fora do escopo a que pertence. O que o formulário não conhece segue
+    /// recusado por <see cref="ConferirValores"/>.
+    /// </summary>
+    private static List<FieldError> ConferirRespostas(
+        IReadOnlyDictionary<string, JsonElement> respostas,
+        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
+        RespostasAdmitidas admitidas)
+    {
+        bool SoDeGrupo(string fato) => admitidas.Definicoes.ContainsKey(fato) && !admitidas.DoNivelSuperior.Contains(fato);
+
+        List<FieldError> recusas = [.. respostas.Keys
+            .Where(SoDeGrupo)
+            .Select(fato => new FieldError(fato, new DomainError(
+                InscricaoErrorCodes.FatoSoDeGrupo,
+                $"'{fato}' é um campo de grupo e só se responde dentro de uma ocorrência do grupo. Remova-o das respostas de nível superior e informe-o na ocorrência.")))];
+
+        recusas.AddRange(ConferirValores(
+            respostas.Where(r => !SoDeGrupo(r.Key)).ToDictionary(static r => r.Key, static r => r.Value, StringComparer.Ordinal),
+            grupos,
+            admitidas.Definicoes,
+            admitidas.SubitensPorGrupo));
+        return recusas;
+    }
 
     /// <summary>
     /// Todo valor tem de ter definição e caber no tipo dela. A ocorrência de grupo tem de ser de um grupo

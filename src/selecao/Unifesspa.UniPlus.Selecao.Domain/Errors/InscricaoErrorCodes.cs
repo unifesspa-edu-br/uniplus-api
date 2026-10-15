@@ -14,6 +14,8 @@ public static class InscricaoErrorCodes
     public const string FatoForaDoFormulario = "Inscricao.FatoForaDoFormulario";
     public const string GrupoForaDoFormulario = "Inscricao.GrupoForaDoFormulario";
     public const string FatoForaDoGrupo = "Inscricao.FatoForaDoGrupo";
+    public const string FatoSoDeGrupo = "Inscricao.FatoSoDeGrupo";
+    public const string GrupoMalFormado = "Inscricao.GrupoMalFormado";
     public const string ValorForaDoTipo = "Inscricao.ValorForaDoTipo";
     public const string CpfDiferenteDoDono = "Inscricao.CpfDiferenteDoDono";
     public const string OfertaForaDoProcesso = "Inscricao.OfertaForaDoProcesso";

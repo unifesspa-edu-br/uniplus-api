@@ -1130,6 +1130,66 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         return linhas;
     }
 
+    private async Task<Result<InscricaoDto>> SalvarAsync(SelecaoDbContext db, Guid processoId, InscricaoRequest pedido, string etag) =>
+        await SalvarInscricaoCommandHandler.Handle(
+            new SalvarInscricaoCommand(processoId, pedido, PrecondicaoIfMatch.DeTags([etag])),
+            new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
+            new ProcessoSeletivoRepository(db, TimeProvider.System), new CertameDivulgadoRepository(db), RegistroCodecs, Fuso(), GeoQueConfirma(),
+            Substitute.For<IEnderecoNoAcervoPublico>(), db, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), DentroDoPeriodo, CancellationToken.None);
+
+    [Fact(DisplayName = "Salvar e enviar sobre a versão publicada recusam, no nível superior, o fato que a versão só coleta dentro de um grupo")]
+    public async Task Resposta_DeSubitemDeGrupoNoNivelSuperior_ERecusada()
+    {
+        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        ProcessoSeletivo processo = ProcessoComAMatrizNormativa(nameof(Resposta_DeSubitemDeGrupoNoNivelSuperior_ERecusada));
+        (Guid processoId, _) = await PublicarEDivulgarAsync(db, processo, OpcoesDaOrigemEscolar());
+        string etag = await IniciarAsync(db, processoId);
+        InscricaoRequest pedido = PedidoDeEnvio(processo, RespostasDaOrigemEDasCotas(OrigemEscolar.SomentePublica, ep: true, ppi: true, renda: true));
+        Dictionary<string, JsonElement> comSubitemSolto = new(pedido.Respostas!, StringComparer.Ordinal)
+        {
+            ["PARENTESCO"] = JsonSerializer.SerializeToElement("Mãe"),
+        };
+        pedido = pedido with { Respostas = comSubitemSolto };
+
+        Result<InscricaoDto> salvar = await SalvarAsync(db, processoId, pedido, etag);
+        Result<ComprovanteInscricaoDto> envio = await EnviarAsync(db, processoId, pedido, etag, "00000103");
+
+        salvar.Errors.Should().ContainSingle().Which.Field.Should().Be("PARENTESCO");
+        salvar.Errors[0].Error.Code.Should().Be(InscricaoErrorCodes.FatoSoDeGrupo);
+        envio.Errors.Should().ContainSingle().Which.Field.Should().Be("PARENTESCO");
+        envio.Errors[0].Error.Code.Should().Be(InscricaoErrorCodes.FatoSoDeGrupo);
+    }
+
+    [Fact(DisplayName = "Salvar e enviar recusam a lista de grupo nula e a ocorrência nula com o caminho do campo, sem lançar")]
+    public async Task Grupo_ComListaOuOcorrenciaNula_ERecusado()
+    {
+        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        ProcessoSeletivo processo = ProcessoComAMatrizNormativa(nameof(Grupo_ComListaOuOcorrenciaNula_ERecusado));
+        (Guid processoId, _) = await PublicarEDivulgarAsync(db, processo, OpcoesDaOrigemEscolar());
+        string etag = await IniciarAsync(db, processoId);
+        InscricaoRequest pedido = PedidoDeEnvio(processo, RespostasDaOrigemEDasCotas(OrigemEscolar.SomentePublica, ep: true, ppi: true, renda: true));
+        InscricaoRequest listaNula = pedido with
+        {
+            Grupos = new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>(StringComparer.Ordinal) { ["COMPOSICAO_FAMILIAR"] = null! },
+        };
+        InscricaoRequest ocorrenciaNula = pedido with
+        {
+            Grupos = new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>(StringComparer.Ordinal) { ["COMPOSICAO_FAMILIAR"] = [null!] },
+        };
+
+        Result<InscricaoDto> salvarListaNula = await SalvarAsync(db, processoId, listaNula, etag);
+        Result<InscricaoDto> salvarOcorrenciaNula = await SalvarAsync(db, processoId, ocorrenciaNula, etag);
+        Result<ComprovanteInscricaoDto> enviarListaNula = await EnviarAsync(db, processoId, listaNula, etag, "00000104");
+        Result<ComprovanteInscricaoDto> enviarOcorrenciaNula = await EnviarAsync(db, processoId, ocorrenciaNula, etag, "00000105");
+
+        salvarListaNula.Errors.Should().ContainSingle().Which.Field.Should().Be("COMPOSICAO_FAMILIAR");
+        enviarListaNula.Errors.Should().ContainSingle().Which.Field.Should().Be("COMPOSICAO_FAMILIAR");
+        salvarOcorrenciaNula.Errors.Should().ContainSingle().Which.Field.Should().Be("COMPOSICAO_FAMILIAR[0]");
+        enviarOcorrenciaNula.Errors.Should().ContainSingle().Which.Field.Should().Be("COMPOSICAO_FAMILIAR[0]");
+        new[] { salvarListaNula.Error, salvarOcorrenciaNula.Error, enviarListaNula.Error, enviarOcorrenciaNula.Error }
+            .Should().OnlyContain(static e => e!.Code == InscricaoErrorCodes.GrupoMalFormado);
+    }
+
     [Fact(DisplayName = "O envio sobre a versão publicada grava as modalidades em que o candidato concorre e o comprovante relido as traz com o nome congelado")]
     public async Task Envio_SobreAVersaoPublicada_GravaAsModalidadesEComprova()
     {
