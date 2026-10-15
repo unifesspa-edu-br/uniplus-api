@@ -15,7 +15,8 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 /// <summary>
 /// Implementação de <see cref="IConferenciaEnderecoGeo"/> contra a API real do Geo (issue #1865).
 /// Qualquer falha de rede, timeout ou status 5xx — depois de a política de resiliência já ter
-/// esgotado as retentativas — é FALHA FECHADA: <see cref="ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel"/>,
+/// esgotado as retentativas —, resposta de sucesso sem corpo utilizável e autenticação impossível
+/// (inclusive endpoint OAuth não configurado) são FALHA FECHADA: <see cref="ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel"/>,
 /// nunca "aceito".
 /// </summary>
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
@@ -67,7 +68,12 @@ internal sealed partial class ConferenciaEnderecoGeo : IConferenciaEnderecoGeo
             return Result.Failure(ErroIndisponivel());
         }
 
-        CepResolvidoResponse corpo = resposta.Content!;
+        if (resposta.Content is not { } corpo)
+        {
+            LogRespostaSemCorpo(_logger, "cep", (int)resposta.StatusCode);
+            return Result.Failure(ErroIndisponivel());
+        }
+
         bool bate = string.Equals(corpo.CodigoIbge, cidadeCodigoIbgeDeclarada, StringComparison.Ordinal)
             && string.Equals(corpo.Uf, ufDeclarada, StringComparison.OrdinalIgnoreCase);
 
@@ -108,7 +114,12 @@ internal sealed partial class ConferenciaEnderecoGeo : IConferenciaEnderecoGeo
             return Result.Failure(ErroIndisponivel());
         }
 
-        CidadeDetalheResponse corpo = resposta.Content!;
+        if (resposta.Content is not { } corpo)
+        {
+            LogRespostaSemCorpo(_logger, "cidade", (int)resposta.StatusCode);
+            return Result.Failure(ErroIndisponivel());
+        }
+
         return string.Equals(corpo.Uf, ufDeclarada, StringComparison.OrdinalIgnoreCase)
             ? Result.Success()
             : Result.Failure(new DomainError(
@@ -122,6 +133,9 @@ internal sealed partial class ConferenciaEnderecoGeo : IConferenciaEnderecoGeo
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "O Geo não respondeu à conferência de {Recurso}.")]
     private static partial void LogGeoIndisponivel(ILogger logger, string recurso, Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "O Geo respondeu à conferência de {Recurso} com sucesso ({Status}), mas sem corpo utilizável.")]
+    private static partial void LogRespostaSemCorpo(ILogger logger, string recurso, int status);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "O Geo respondeu à conferência de {Recurso} com status inesperado {Status}.")]
     private static partial void LogRespostaInesperada(ILogger logger, string recurso, int status);

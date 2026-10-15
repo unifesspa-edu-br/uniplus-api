@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Geo;
 
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Json;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 using Microsoft.Extensions.Logging;
@@ -112,6 +113,8 @@ internal sealed partial class GeoTokenProvider : IDisposable
 
     private async Task<TokenEndpointResponse> AutenticarAsync(CancellationToken cancellationToken)
     {
+        Uri endpoint = ValidarConfiguracao();
+
         using HttpClient cliente = _clientes.CreateClient(NomeDoClienteHttp);
 
         List<KeyValuePair<string, string>> formulario =
@@ -127,7 +130,7 @@ internal sealed partial class GeoTokenProvider : IDisposable
 
         using FormUrlEncodedContent corpo = new(formulario);
         using HttpResponseMessage resposta = await cliente
-            .PostAsync(new Uri(_opcoes.OAuth.TokenEndpoint, UriKind.Absolute), corpo, cancellationToken)
+            .PostAsync(endpoint, corpo, cancellationToken)
             .ConfigureAwait(false);
 
         if (!resposta.IsSuccessStatusCode)
@@ -139,9 +142,18 @@ internal sealed partial class GeoTokenProvider : IDisposable
                 $"O Keycloak recusou a autenticação client_credentials do cliente do Geo com status {status}.");
         }
 
-        TokenEndpointResponse? conteudo = await resposta.Content
-            .ReadFromJsonAsync<TokenEndpointResponse>(cancellationToken)
-            .ConfigureAwait(false);
+        TokenEndpointResponse? conteudo;
+        try
+        {
+            conteudo = await resposta.Content
+                .ReadFromJsonAsync<TokenEndpointResponse>(cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (Exception excecao) when (excecao is JsonException or NotSupportedException)
+        {
+            throw new GeoAutenticacaoException(
+                "O Keycloak respondeu à autenticação do cliente do Geo com um corpo fora do contrato.", excecao);
+        }
 
         if (conteudo is null || string.IsNullOrWhiteSpace(conteudo.AccessToken) || conteudo.ExpiresInSeconds <= 0)
         {
@@ -149,6 +161,30 @@ internal sealed partial class GeoTokenProvider : IDisposable
         }
 
         return conteudo;
+    }
+
+    /// <summary>
+    /// A seção <c>Geo:OAuth</c> é opcional na configuração (ver <see cref="GeoOAuthOptions"/>): a
+    /// ausência de endpoint ou de credencial só aparece aqui, quando alguém chama o Geo, e vira
+    /// <see cref="GeoAutenticacaoException"/> — que a conferência traduz em falha fechada.
+    /// </summary>
+    private Uri ValidarConfiguracao()
+    {
+        GeoOAuthOptions oauth = _opcoes.OAuth;
+
+        if (!Uri.TryCreate(oauth.TokenEndpoint, UriKind.Absolute, out Uri? endpoint)
+            || (endpoint.Scheme != Uri.UriSchemeHttp && endpoint.Scheme != Uri.UriSchemeHttps))
+        {
+            throw new GeoAutenticacaoException(
+                "Geo:OAuth:TokenEndpoint não está configurado com uma URL HTTP/HTTPS absoluta válida.");
+        }
+
+        if (string.IsNullOrWhiteSpace(oauth.ClientId) || string.IsNullOrWhiteSpace(oauth.ClientSecret))
+        {
+            throw new GeoAutenticacaoException("Geo:OAuth:ClientId e Geo:OAuth:ClientSecret são obrigatórios para autenticar no Geo.");
+        }
+
+        return endpoint;
     }
 
     public void Dispose()
