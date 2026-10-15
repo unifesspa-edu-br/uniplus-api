@@ -7,6 +7,7 @@ using AwesomeAssertions;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Http;
 using Microsoft.Extensions.Logging;
 
@@ -22,6 +23,25 @@ public sealed class SigaaClientCadeiaDeEnvioTests : IDisposable
     private const string Endereco = "https://sigaa.exemplo.test";
 
     private readonly List<IDisposable> _descartaveis = [];
+
+    [Fact]
+    public void Ignorar_autenticacao_usa_o_ambiente_do_host_e_nao_uma_variavel_de_configuracao()
+    {
+        IConfiguration configuracao = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                [$"{SigaaOptions.SectionName}:{nameof(SigaaOptions.BaseUrl)}"] = "http://localhost:49173",
+                [$"{SigaaOptions.SectionName}:{nameof(SigaaOptions.IgnorarAutenticacao)}"] = "true",
+            })
+            .Build();
+        ServiceCollection servicos = new();
+
+        Action registrar = () => servicos.AddSigaaVinculoDiscenteClient(
+            configuracao,
+            new AmbienteDeTeste());
+
+        registrar.Should().NotThrow();
+    }
 
     public void Dispose()
     {
@@ -243,6 +263,18 @@ public sealed class SigaaClientCadeiaDeEnvioTests : IDisposable
     private static bool EhAutenticacao(HttpRequestMessage requisicao) =>
         requisicao.RequestUri?.AbsolutePath.Contains("authentication_token", StringComparison.Ordinal) == true;
 
+    private sealed class AmbienteDeTeste : IHostEnvironment
+    {
+        public string EnvironmentName { get; set; } = Environments.Development;
+
+        public string ApplicationName { get; set; } = "Testes";
+
+        public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
+
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } =
+            new Microsoft.Extensions.FileProviders.NullFileProvider();
+    }
+
     private ISigaaVinculoDiscenteClient Montar(
         RedeSimulada rede,
         out ServiceProvider provedor,
@@ -285,7 +317,7 @@ public sealed class SigaaClientCadeiaDeEnvioTests : IDisposable
         });
 
         IConfiguration configuracao = servicos.BuildServiceProvider().GetRequiredService<IConfiguration>();
-        servicos.AddSigaaVinculoDiscenteClient(configuracao);
+        servicos.AddSigaaVinculoDiscenteClient(configuracao, new AmbienteDeTeste());
 
         // Substitui só a rede: resiliência e autenticação continuam sendo as reais.
         servicos.ConfigureAll<HttpClientFactoryOptions>(opcoes =>

@@ -101,7 +101,7 @@ builder.Services.AddPublicacoesModule(builder.Configuration);
 // Discentes ainda é só réplica de dados (sem endpoints públicos) — traz apenas
 // Infrastructure + migrations on startup; OpenAPI/HATEOAS/idempotência/Application
 // entram quando o módulo ganhar endpoints/handlers.
-builder.Services.AddDiscentesModule(builder.Configuration);
+builder.Services.AddDiscentesModule(builder.Configuration, builder.Environment);
 
 // Health checks: os 6 módulos compartilham o banco `uniplus`, então um
 // único check de banco + infra (Redis/MinIO/Kafka/OIDC) cobre o processo.

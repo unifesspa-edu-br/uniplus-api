@@ -33,6 +33,9 @@ public sealed class DiscentesDbContext : DbContext, IDiscentesUnitOfWork
 
     public DbSet<SyncRun> SyncRuns => Set<SyncRun>();
 
+    internal DbSet<AlertaSincronizacaoDiaria> AlertasDeSincronizacaoDiaria =>
+        Set<AlertaSincronizacaoDiaria>();
+
     internal DbSet<ReservaDeSincronizacaoDiaria> ReservasDeSincronizacaoDiaria =>
         Set<ReservaDeSincronizacaoDiaria>();
 

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Discentes.API;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 using Unifesspa.UniPlus.Discentes.API.Errors;
 using Unifesspa.UniPlus.Discentes.Infrastructure;
@@ -25,10 +26,12 @@ public static class DiscentesModuleRegistration
 {
     public static IServiceCollection AddDiscentesModule(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IHostEnvironment environment)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
+        ArgumentNullException.ThrowIfNull(environment);
 
         // Sem este registro, um erro de domínio do módulo que alcance uma resposta HTTP
         // sai como falha genérica, sem identificar a causa.
@@ -38,7 +41,7 @@ public static class DiscentesModuleRegistration
 
         // Leitura dos vínculos na origem. Só se registra com endereço configurado; sem
         // ele, o módulo continua subindo com a réplica e sem a integração.
-        services.AddSigaaVinculoDiscenteClient(configuration);
+        services.AddSigaaVinculoDiscenteClient(configuration, environment);
 
         // Migrations EF Core aplicadas no host StartAsync via IHostedService, ANTES
         // do runtime Wolverine (invariante #419 — MigrationBeforeWolverineRuntimeOrder).

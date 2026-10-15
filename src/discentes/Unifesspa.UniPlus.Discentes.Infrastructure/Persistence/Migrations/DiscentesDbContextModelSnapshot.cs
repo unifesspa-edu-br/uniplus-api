@@ -96,6 +96,27 @@ namespace Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Records.AlertaSincronizacaoDiaria", b =>
+                {
+                    b.Property<DateOnly>("DataDeReferencia")
+                        .HasColumnType("date")
+                        .HasColumnName("data_de_referencia")
+                        .HasComment("Dia em que a sincronização não foi iniciada até o horário-limite.");
+
+                    b.Property<DateTimeOffset>("EmitidaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("emitida_em")
+                        .HasComment("Instante UTC em que o alerta foi registrado.");
+
+                    b.HasKey("DataDeReferencia")
+                        .HasName("pk_alerta_sincronizacao_diaria");
+
+                    b.ToTable("alerta_sincronizacao_diaria", "discentes", t =>
+                        {
+                            t.HasComment("Deduplicação persistente dos alertas de dia sem início de sincronização.");
+                        });
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Records.ReservaDeSincronizacaoDiaria", b =>
                 {
                     b.Property<DateOnly>("DataDeReferencia")
