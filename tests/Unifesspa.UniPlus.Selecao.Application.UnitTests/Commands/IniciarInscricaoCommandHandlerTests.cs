@@ -92,6 +92,34 @@ public sealed class IniciarInscricaoCommandHandlerTests
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Inscrição existente de outro sub com o mesmo CPF: recusa como dono divergente, sem devolvê-la")]
+    public async Task Handle_InscricaoDeOutroSub_RecusaComoDonoDivergente()
+    {
+        Cpf cpf = PersonasDeTeste.FernandaDrumond;
+        Cenario cenario = MontarCriacao(cpf);
+        Inscricao existente = Inscricao.Iniciar(
+            ProcessoId, cpf, "sub-original", "https://issuer", cenario.Versao.Id).Value!;
+
+        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
+        inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
+
+        Result<InscricaoDto> resultado = await IniciarInscricaoCommandHandler.Handle(
+            new IniciarInscricaoCommand(ProcessoId),
+            inscricaoRepository,
+            Substitute.For<ICertameDivulgadoRepository>(),
+            cenario.Processos,
+            cenario.Codecs,
+            Fuso(),
+            Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
+            new RelogioFixo(DentroDoPeriodo),
+            Substitute.For<ISelecaoUnitOfWork>(),
+            UsuarioComCpf(cpf, sub: "sub-outro"),
+            CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("Inscricao.DonoDivergente");
+    }
+
     [Fact(DisplayName = "Processo sem divulgação: não encontrado, sem tentar gravar")]
     public async Task Handle_ProcessoSemDivulgacao_RetornaNaoEncontrado()
     {
@@ -233,11 +261,11 @@ public sealed class IniciarInscricaoCommandHandlerTests
         return fuso;
     }
 
-    private static IUserContext UsuarioComCpf(Cpf cpf)
+    private static IUserContext UsuarioComCpf(Cpf cpf, string sub = "sub-1")
     {
         IUserContext contexto = Substitute.For<IUserContext>();
         contexto.Cpf.Returns(cpf.Valor);
-        contexto.UserId.Returns("sub-1");
+        contexto.UserId.Returns(sub);
         contexto.Issuer.Returns("https://issuer");
         return contexto;
     }
