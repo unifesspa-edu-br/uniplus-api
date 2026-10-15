@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -57,6 +58,21 @@ public sealed class MinhasInscricoesQueryHandlerTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.CpfAusenteNoToken");
         await inscricaoRepository.DidNotReceive().ObterTodasPorCpfAsync(Arg.Any<Cpf>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Sem o claim sub no token, recusa com SubObrigatorio em vez de listar vazio")]
+    public async Task Handle_SemSubNoToken_Recusa()
+    {
+        Cpf cpf = PersonasDeTeste.FernandaDrumond;
+        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
+        inscricaoRepository.ObterTodasPorCpfAsync(cpf, Arg.Any<CancellationToken>())
+            .Returns((IReadOnlyList<Inscricao>)[Inscricao.Iniciar(Guid.CreateVersion7(), cpf, "sub-1", "https://issuer", Guid.CreateVersion7()).Value!]);
+
+        Result<IReadOnlyList<MinhaInscricaoDto>> resultado = await MinhasInscricoesQueryHandler.Handle(
+            new MinhasInscricoesQuery(), inscricaoRepository, CertamesDivulgados(), UsuarioComCpf(cpf, sub: ""), CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(InscricaoErrorCodes.SubObrigatorio);
     }
 
     [Fact(DisplayName = "Nenhuma inscrição do CPF devolve lista vazia, não falha")]

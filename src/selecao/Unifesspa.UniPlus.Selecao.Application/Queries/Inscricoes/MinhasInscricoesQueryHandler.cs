@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.Inscricoes;
 
 using Domain.Entities;
+using Domain.Errors;
 using Domain.Interfaces;
 
 using DTOs;
@@ -43,6 +44,14 @@ public static class MinhasInscricoesQueryHandler
                 "Inscricao.CpfAusenteNoToken", "O claim cpf do token não é um CPF válido."));
         }
 
+        // Sem sub não há dono a conferir: a recusa é a mesma das demais rotas da inscrição, e não a
+        // lista vazia, que diria ao candidato que ele não tem inscrição.
+        if (string.IsNullOrWhiteSpace(userContext.UserId))
+        {
+            return Result<IReadOnlyList<MinhaInscricaoDto>>.Failure(new DomainError(
+                InscricaoErrorCodes.SubObrigatorio, "O token precisa trazer o claim sub para listar as inscrições."));
+        }
+
         IReadOnlyList<Inscricao> inscricoes = await inscricaoRepository
             .ObterTodasPorCpfAsync(cpfResult.Value!, cancellationToken)
             .ConfigureAwait(false);
@@ -50,7 +59,7 @@ public static class MinhasInscricoesQueryHandler
         // O mesmo CPF cifrado pode pertencer a um sub diferente do gravado (engano de emissor,
         // ver Inscricao.ConferirDono) — uma inscrição assim não é do dono do token, e listá-la
         // vazaria estado de outro candidato.
-        string sub = userContext.UserId ?? string.Empty;
+        string sub = userContext.UserId;
         List<Inscricao> doDono = [.. inscricoes.Where(i => i.ConferirDono(sub) is null)];
 
         ILookup<Guid, ComprovanteInscricao> comprovantes = (await inscricaoRepository
