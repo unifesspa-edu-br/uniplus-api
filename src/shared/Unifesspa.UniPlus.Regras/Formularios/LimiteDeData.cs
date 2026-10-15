@@ -90,7 +90,7 @@ public sealed record LimiteDeData
         data == default ? "A data fixa do limite não pode ser 01/01/0001, a forma de uma data omitida." : null;
 
     internal static string? ViolacaoDoDeslocamento(int anos, int dias) =>
-        Math.Abs(anos) > TetoDeAnos || Math.Abs(dias) > TetoDeDias
+        anos is < -TetoDeAnos or > TetoDeAnos || dias is < -TetoDeDias or > TetoDeDias
             ? $"O deslocamento do dia do envio vai até {TetoDeAnos} anos ou {TetoDeDias} dias, para mais ou para menos."
             : null;
 }
