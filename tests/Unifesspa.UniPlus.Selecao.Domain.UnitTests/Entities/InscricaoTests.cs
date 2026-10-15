@@ -36,6 +36,13 @@ public sealed class InscricaoTests
 
     private static readonly Guid OfertaDoProcesso = Guid.CreateVersion7();
 
+    private const string TermoLgpd = "TERMO_LGPD";
+    private const string TermoVeracidade = "TERMO_VERACIDADE";
+    private const string HashDoTermoLgpd = "hash-lgpd-v2";
+    private const string HashDoTermoVeracidade = "hash-veracidade-v1";
+    private static readonly Guid VersaoDoTermoLgpd = Guid.CreateVersion7();
+    private static readonly Guid VersaoDoTermoVeracidade = Guid.CreateVersion7();
+
     private static readonly RespostasAdmitidas Admitidas = new(
         DefinicoesDasRespostas,
         new HashSet<string>(StringComparer.Ordinal) { "NOME_SOCIAL", "CPF", "DESEJA_NOME_SOCIAL", "RG_NUMERO", "TELEFONE" },
@@ -44,7 +51,12 @@ public sealed class InscricaoTests
             ["COMPOSICAO_FAMILIAR"] = new HashSet<string>(StringComparer.Ordinal) { "PARENTESCO", "TELEFONE", "RG_NUMERO" },
             ["FONTES_DE_RENDA"] = new HashSet<string>(StringComparer.Ordinal) { "RENDA_MENSAL" },
         },
-        new HashSet<Guid> { OfertaDoProcesso });
+        new HashSet<Guid> { OfertaDoProcesso },
+        new Dictionary<string, TermoAdmitido>(StringComparer.Ordinal)
+        {
+            [TermoLgpd] = new(VersaoDoTermoLgpd, HashDoTermoLgpd),
+            [TermoVeracidade] = new(VersaoDoTermoVeracidade, HashDoTermoVeracidade),
+        });
 
     private static readonly Dictionary<string, DefinicaoDaResposta> DefinicoesDosDerivados = new(StringComparer.Ordinal)
     {
@@ -596,6 +608,117 @@ public sealed class InscricaoTests
             PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
 
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.OfertaObrigatoria);
+    }
+
+    [Fact(DisplayName = "Salvar grava o aceite do termo na versão e no hash do formulário, e aceita a lista incompleta")]
+    public void Salvar_AceiteConferido_GravaEAceitaListaIncompleta()
+    {
+        Inscricao inscricao = NovaInscricao();
+        AceiteDeTermo lgpd = new(TermoLgpd, VersaoDoTermoLgpd, HashDoTermoLgpd);
+
+        Result resultado = inscricao.Salvar(null, Respostas(), SemGrupos(), [lgpd], Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+
+        resultado.IsSuccess.Should().BeTrue("o rascunho não exige todos os termos; isso é do veredito de submissão");
+        inscricao.Aceites.Should().ContainSingle().Which.Should().Be(lgpd);
+    }
+
+    [Fact(DisplayName = "Salvar recusa o aceite de código repetido no caminho do repetido, sem mutar nada")]
+    public void Salvar_AceiteRepetido_RecusaSemMutar()
+    {
+        Inscricao inscricao = NovaInscricao();
+        List<AceiteDeTermo> aceites =
+        [
+            new(TermoLgpd, VersaoDoTermoLgpd, HashDoTermoLgpd),
+            new(TermoLgpd, Guid.CreateVersion7(), "hash-forjado"),
+        ];
+
+        Result resultado = inscricao.Salvar(null, Respostas(), SemGrupos(), aceites, Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("aceites[1]");
+        resultado.Error!.Code.Should().Be(InscricaoErrorCodes.AceiteRepetido);
+        inscricao.Revisao.Should().Be(1);
+        inscricao.Aceites.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Salvar recusa o aceite de termo que a versão fixada não exige, sem mutar nada")]
+    public void Salvar_AceiteForaDoFormulario_RecusaSemMutar()
+    {
+        Inscricao inscricao = NovaInscricao();
+        List<AceiteDeTermo> aceites =
+        [
+            new(TermoLgpd, VersaoDoTermoLgpd, HashDoTermoLgpd),
+            new("TERMO_INEXISTENTE", Guid.CreateVersion7(), "hash-qualquer"),
+        ];
+
+        Result resultado = inscricao.Salvar(null, Respostas(), SemGrupos(), aceites, Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("aceites[1]");
+        resultado.Error!.Code.Should().Be(InscricaoErrorCodes.AceiteForaDoFormulario);
+        inscricao.Revisao.Should().Be(1);
+        inscricao.Aceites.Should().BeEmpty();
+    }
+
+    [Theory(DisplayName = "Salvar recusa o aceite cuja versão ou hash não confere com o do termo exigido, sem mutar nada")]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public void Salvar_AceiteDeOutraVersao_RecusaSemMutar(bool versaoDiferente, bool hashDiferente)
+    {
+        Inscricao inscricao = NovaInscricao();
+        AceiteDeTermo aceite = new(
+            TermoLgpd,
+            versaoDiferente ? Guid.CreateVersion7() : VersaoDoTermoLgpd,
+            hashDiferente ? "hash-forjado" : HashDoTermoLgpd);
+
+        Result resultado = inscricao.Salvar(null, Respostas(), SemGrupos(), [aceite], Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("aceites[0]");
+        resultado.Error!.Code.Should().Be(InscricaoErrorCodes.AceiteDeOutraVersao);
+        inscricao.Revisao.Should().Be(1);
+        inscricao.Aceites.Should().BeEmpty();
+    }
+
+    [Theory(DisplayName = "Submeter recusa o aceite repetido, fora do formulário ou de outra versão, sem mudar a inscrição nem emitir comprovante")]
+    [InlineData(InscricaoErrorCodes.AceiteRepetido)]
+    [InlineData(InscricaoErrorCodes.AceiteForaDoFormulario)]
+    [InlineData(InscricaoErrorCodes.AceiteDeOutraVersao)]
+    public void Submeter_AceiteInvalido_RecusaSemMutar(string codigoEsperado)
+    {
+        Inscricao inscricao = NovaInscricao();
+        AceiteDeTermo valido = new(TermoLgpd, VersaoDoTermoLgpd, HashDoTermoLgpd);
+        List<AceiteDeTermo> aceites = codigoEsperado switch
+        {
+            InscricaoErrorCodes.AceiteRepetido => [valido, valido with { HashVersao = "hash-forjado" }],
+            InscricaoErrorCodes.AceiteForaDoFormulario => [valido, new("TERMO_INEXISTENTE", Guid.CreateVersion7(), "hash-qualquer")],
+            _ => [valido, new(TermoVeracidade, VersaoDoTermoVeracidade, "hash-forjado")],
+        };
+
+        Result<ComprovanteInscricao> resultado = inscricao.Submeter(
+            "000123", OfertaDoProcesso, Respostas(), SemGrupos(), aceites, Admitidas, FormularioDeTeste.AvaliacaoSemOcultos, SemDerivados(), DefinicoesDosDerivados,
+            PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
+
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("aceites[1]");
+        resultado.Error!.Code.Should().Be(codigoEsperado);
+        inscricao.Situacao.Should().Be(SituacaoInscricao.Rascunho);
+        inscricao.Comprovantes.Should().BeEmpty();
+        inscricao.Aceites.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Submeter grava no comprovante os aceites conferidos com a versão e o hash do formulário")]
+    public void Submeter_AceitesConferidos_ComprovanteRegistraOsAceites()
+    {
+        Inscricao inscricao = NovaInscricao();
+        List<AceiteDeTermo> aceites =
+        [
+            new(TermoLgpd, VersaoDoTermoLgpd, HashDoTermoLgpd),
+            new(TermoVeracidade, VersaoDoTermoVeracidade, HashDoTermoVeracidade),
+        ];
+
+        Result<ComprovanteInscricao> resultado = inscricao.Submeter(
+            "000123", OfertaDoProcesso, Respostas(), SemGrupos(), aceites, Admitidas, FormularioDeTeste.AvaliacaoSemOcultos, SemDerivados(), DefinicoesDosDerivados,
+            PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
+
+        resultado.IsSuccess.Should().BeTrue();
+        inscricao.Aceites.Should().Equal(aceites);
     }
 
     private static ResultadoDaAvaliacaoDaInscricao ComModalidades(SituacaoDasModalidades situacao, params ModalidadeDeConcorrencia[] itens) =>

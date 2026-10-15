@@ -92,7 +92,19 @@ public static class ContextoDaVersaoFixadaResolver
             DefinicoesDasRespostasDaInscricao(grafo),
             FatosDeNivelSuperiorDaInscricao(grafo),
             SubitensDosGruposDaInscricao(grafo),
-            grafo.DistribuicaoVagas.Select(static d => d.OfertaCursoOrigemId).ToHashSet());
+            grafo.DistribuicaoVagas.Select(static d => d.OfertaCursoOrigemId).ToHashSet(),
+            TermosDaInscricao(grafo));
+    }
+
+    private static Dictionary<string, TermoAdmitido> TermosDaInscricao(GrafoConfiguracao grafo)
+    {
+        Dictionary<string, TermoAdmitido> termos = new(StringComparer.Ordinal);
+        foreach (TermoExigidoFormulario termo in grafo.TermosExigidos.Where(static t => t.Finalidade == FinalidadeFormulario.Inscricao))
+        {
+            termos.TryAdd(termo.Codigo, new TermoAdmitido(termo.VersaoId, termo.HashVersao));
+        }
+
+        return termos;
     }
 
     private static Dictionary<string, DefinicaoDaResposta> DefinicoesDasRespostasDaInscricao(GrafoConfiguracao grafo)
