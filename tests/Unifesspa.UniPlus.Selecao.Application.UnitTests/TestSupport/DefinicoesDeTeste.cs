@@ -18,7 +18,8 @@ internal static class DefinicoesDeTeste
             StringComparer.Ordinal),
         respostas.Keys.ToHashSet(StringComparer.Ordinal),
         new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
-        new HashSet<Guid>());
+        new HashSet<Guid>(),
+        new Dictionary<string, TermoAdmitido>(StringComparer.Ordinal));
 
     public static Dictionary<string, DefinicaoDaResposta> Nenhuma() => new(StringComparer.Ordinal);
 }

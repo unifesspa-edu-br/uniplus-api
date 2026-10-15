@@ -1217,6 +1217,36 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             .Should().OnlyContain(static e => e!.Code == InscricaoErrorCodes.AceiteMalFormado);
     }
 
+    [Fact(DisplayName = "Salvar e enviar recusam o aceite repetido, o de termo fora do formulário e o de outra versão, conferidos contra o termo congelado")]
+    public async Task Aceite_RepetidoForaDoFormularioOuDeOutraVersao_ERecusado()
+    {
+        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        ProcessoSeletivo processo = ProcessoComAMatrizNormativa(nameof(Aceite_RepetidoForaDoFormularioOuDeOutraVersao_ERecusado));
+        (Guid processoId, _) = await PublicarEDivulgarAsync(db, processo, OpcoesDaOrigemEscolar());
+        string etag = await IniciarAsync(db, processoId);
+        InscricaoRequest pedido = PedidoDeEnvio(processo, RespostasDaOrigemEDasCotas(OrigemEscolar.SomentePublica, ep: true, ppi: true, renda: true));
+        AceiteDeTermoInput valido = pedido.Aceites![0];
+        InscricaoRequest repetido = pedido with { Aceites = [valido, valido with { HashVersao = "hash-forjado" }] };
+        InscricaoRequest foraDoFormulario = pedido with { Aceites = [valido, new AceiteDeTermoInput("TERMO_INEXISTENTE", Guid.NewGuid(), "hash")] };
+        InscricaoRequest outraVersao = pedido with { Aceites = [valido with { VersaoId = Guid.NewGuid() }] };
+
+        Result<InscricaoDto> salvarRepetido = await SalvarAsync(db, processoId, repetido, etag);
+        Result<InscricaoDto> salvarForaDoFormulario = await SalvarAsync(db, processoId, foraDoFormulario, etag);
+        Result<InscricaoDto> salvarOutraVersao = await SalvarAsync(db, processoId, outraVersao, etag);
+        Result<ComprovanteInscricaoDto> enviarRepetido = await EnviarAsync(db, processoId, repetido, etag, "00000108");
+        Result<ComprovanteInscricaoDto> enviarForaDoFormulario = await EnviarAsync(db, processoId, foraDoFormulario, etag, "00000109");
+
+        salvarRepetido.Errors.Should().ContainSingle().Which.Field.Should().Be("aceites[1]");
+        salvarRepetido.Error!.Code.Should().Be(InscricaoErrorCodes.AceiteRepetido);
+        enviarRepetido.Errors.Should().ContainSingle().Which.Field.Should().Be("aceites[1]");
+        enviarRepetido.Error!.Code.Should().Be(InscricaoErrorCodes.AceiteRepetido);
+        salvarForaDoFormulario.Errors.Should().ContainSingle().Which.Field.Should().Be("aceites[1]");
+        salvarForaDoFormulario.Error!.Code.Should().Be(InscricaoErrorCodes.AceiteForaDoFormulario);
+        enviarForaDoFormulario.Error!.Code.Should().Be(InscricaoErrorCodes.AceiteForaDoFormulario);
+        salvarOutraVersao.Errors.Should().ContainSingle().Which.Field.Should().Be("aceites[0]");
+        salvarOutraVersao.Error!.Code.Should().Be(InscricaoErrorCodes.AceiteDeOutraVersao);
+    }
+
     [Fact(DisplayName = "O envio sobre a versão publicada grava as modalidades em que o candidato concorre e o comprovante relido as traz com o nome congelado")]
     public async Task Envio_SobreAVersaoPublicada_GravaAsModalidadesEComprova()
     {

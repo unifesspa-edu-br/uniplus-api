@@ -115,7 +115,7 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
             []);
         ContextoDaVersaoFixada contexto = new(
             [], null, new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
-            new RespostasAdmitidas(new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal), new HashSet<string>(StringComparer.Ordinal), new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal), new HashSet<Guid>()),
+            new RespostasAdmitidas(new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal), new HashSet<string>(StringComparer.Ordinal), new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal), new HashSet<Guid>(), new Dictionary<string, TermoAdmitido>(StringComparer.Ordinal)),
             configuracao, AtoId);
         IEnderecoNoAcervoPublico acervo = Substitute.For<IEnderecoNoAcervoPublico>();
         acervo.De(Arg.Any<string>()).Returns(static chamada => new Uri($"https://acervo.teste/{chamada.Arg<string>()}"));

@@ -319,6 +319,7 @@ public sealed class Inscricao : EntityBase
             .. ConferirRespostas(respostas, grupos, admitidas),
             .. RecusasDoCpf(respostas),
             .. RecusasDaOferta(ofertaCursoId, admitidas.OfertasDeCurso, exigida: false),
+            .. RecusasDosAceites(aceites, admitidas.Termos),
         ];
         if (recusas.Count > 0)
         {
@@ -392,6 +393,7 @@ public sealed class Inscricao : EntityBase
             .. RecusasDoCpf(respostas),
             .. RecusasDaOferta(ofertaCursoId, admitidas.OfertasDeCurso, exigida: admitidas.OfertasDeCurso.Count > 0),
             .. RecusasDaModalidade(avaliacao.Modalidades),
+            .. RecusasDosAceites(aceites, admitidas.Termos),
         ];
         if (recusas.Count > 0)
         {
@@ -667,6 +669,42 @@ public sealed class Inscricao : EntityBase
         {
             yield return new FieldError(CampoDaOferta, new DomainError(
                 InscricaoErrorCodes.OfertaObrigatoria, "Escolha a oferta de curso para enviar a inscrição."));
+        }
+    }
+
+    /// <summary>
+    /// O comprovante registra os aceites como chegam, então cada um tem de ser de um termo que o
+    /// formulário exige, na versão e no hash dele, e aparecer uma vez só. A lista pode ficar
+    /// incompleta no rascunho; quem decide se um termo obrigatório foi aceito é o veredito de
+    /// submissão, não este método.
+    /// </summary>
+    private static IEnumerable<FieldError> RecusasDosAceites(
+        IReadOnlyList<AceiteDeTermo> aceites, IReadOnlyDictionary<string, TermoAdmitido> termos)
+    {
+        HashSet<string> vistos = new(StringComparer.Ordinal);
+        for (int i = 0; i < aceites.Count; i++)
+        {
+            AceiteDeTermo aceite = aceites[i];
+            string campo = $"aceites[{i}]";
+
+            if (!vistos.Add(aceite.Codigo))
+            {
+                yield return new FieldError(campo, new DomainError(
+                    InscricaoErrorCodes.AceiteRepetido,
+                    $"O termo '{aceite.Codigo}' foi aceito mais de uma vez. Envie um único aceite para cada termo."));
+            }
+            else if (!termos.TryGetValue(aceite.Codigo, out TermoAdmitido? termo))
+            {
+                yield return new FieldError(campo, new DomainError(
+                    InscricaoErrorCodes.AceiteForaDoFormulario,
+                    $"O termo '{aceite.Codigo}' não faz parte do formulário. Recarregue a página e aceite os termos exibidos."));
+            }
+            else if (aceite.VersaoId != termo.VersaoId || !string.Equals(aceite.HashVersao, termo.HashVersao, StringComparison.Ordinal))
+            {
+                yield return new FieldError(campo, new DomainError(
+                    InscricaoErrorCodes.AceiteDeOutraVersao,
+                    $"O aceite do termo '{aceite.Codigo}' não é da versão que o formulário apresenta. Recarregue a página e aceite o termo exibido."));
+            }
         }
     }
 

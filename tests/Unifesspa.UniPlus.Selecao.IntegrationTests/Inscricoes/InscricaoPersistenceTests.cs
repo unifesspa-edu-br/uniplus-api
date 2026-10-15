@@ -49,6 +49,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
     };
 
     private static readonly Guid OfertaDoProcesso = Guid.CreateVersion7();
+    private static readonly Guid VersaoDoTermoVeracidade = Guid.CreateVersion7();
 
     private static readonly RespostasAdmitidas Admitidas = new(
         DefinicoesDasRespostas,
@@ -57,7 +58,8 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         {
             ["COMPOSICAO_FAMILIAR"] = new HashSet<string>(StringComparer.Ordinal) { "RG_NUMERO", "PARENTESCO" },
         },
-        new HashSet<Guid> { OfertaDoProcesso });
+        new HashSet<Guid> { OfertaDoProcesso },
+        new Dictionary<string, TermoAdmitido>(StringComparer.Ordinal) { ["TERMO_VERACIDADE"] = new(VersaoDoTermoVeracidade, "sha256-abc") });
 
     private static readonly Dictionary<string, DefinicaoDaResposta> DefinicoesDosDerivados = new(StringComparer.Ordinal)
     {
@@ -109,7 +111,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
                     }),
                 ],
             },
-            [new AceiteDeTermo("TERMO_VERACIDADE", Guid.NewGuid(), "sha256-abc")],
+            [new AceiteDeTermo("TERMO_VERACIDADE", VersaoDoTermoVeracidade, "sha256-abc")],
             Admitidas,
             PrecondicaoIfMatch.DeTags([original.ETag]));
 
