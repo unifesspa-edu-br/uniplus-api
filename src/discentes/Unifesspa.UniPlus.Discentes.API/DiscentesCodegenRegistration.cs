@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Discentes.API;
 
 using System.Diagnostics.CodeAnalysis;
 
+using Unifesspa.UniPlus.Discentes.Infrastructure.Sigaa;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Sincronizacao;
 
 using Wolverine;
@@ -12,8 +13,10 @@ using Wolverine;
 /// </summary>
 /// <remarks>
 /// O registro de execuções é resolvido por fábrica, opaca ao gerador, porque abre escopo
-/// próprio para cada marco que grava. Sem esta declaração a montagem do pipeline falha na
-/// subida — que é onde se quer descobrir isso.
+/// próprio para cada marco que grava. O cliente SIGAA e o gravador também são resolvidos
+/// pelo contêiner: suas implementações concretas são internas ao assembly de infraestrutura.
+/// Sem estas declarações, a geração do handler de sincronização falha quando a primeira
+/// mensagem chega.
 /// </remarks>
 [SuppressMessage(
     "Design",
@@ -26,5 +29,7 @@ public static class DiscentesCodegenRegistration
         ArgumentNullException.ThrowIfNull(opts);
 
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IRegistroDeExecucoes>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<ISigaaVinculoDiscenteClient>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IGravadorDeVinculos>();
     }
 }

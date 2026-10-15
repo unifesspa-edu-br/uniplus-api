@@ -18,7 +18,7 @@ namespace Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("discentes")
-                .HasAnnotation("ProductVersion", "10.0.11")
+                .HasAnnotation("ProductVersion", "10.0.12")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -93,6 +93,47 @@ namespace Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Migrations
                     b.ToTable("sync_run", "discentes", t =>
                         {
                             t.HasComment("Controle de execução das rotinas de sincronização de dados discentes com o SIGAA — uma linha por execução.");
+                        });
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Records.ReservaDeSincronizacaoDiaria", b =>
+                {
+                    b.Property<DateOnly>("DataDeReferencia")
+                        .HasColumnType("date")
+                        .HasColumnName("data_de_referencia")
+                        .HasComment("Dia único reservado para a sincronização.");
+
+                    b.Property<DateTimeOffset>("AgendadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("agendada_em")
+                        .HasComment("Instante UTC em que o disparo foi agendado.");
+
+                    b.Property<DateTimeOffset?>("ConcluidaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("concluida_em")
+                        .HasComment("Instante UTC em que a sincronização alcançou um estado terminal.");
+
+                    b.Property<DateTimeOffset?>("DespachadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("despachada_em")
+                        .HasComment("Instante UTC em que o disparo publicou a mensagem de trabalho.");
+
+                    b.Property<short>("Estado")
+                        .HasColumnType("smallint")
+                        .HasColumnName("estado")
+                        .HasComment("Estado do ciclo: pendente, despachado, executando ou terminal.");
+
+                    b.Property<DateTimeOffset?>("IniciadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("iniciada_em")
+                        .HasComment("Instante UTC em que a sincronização começou ou foi retomada.");
+
+                    b.HasKey("DataDeReferencia")
+                        .HasName("pk_sincronizacao_diaria");
+
+                    b.ToTable("sincronizacao_diaria", "discentes", t =>
+                        {
+                            t.HasComment("Reserva idempotente do gatilho diário da sincronização de vínculos discentes.");
                         });
                 });
 

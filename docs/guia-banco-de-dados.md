@@ -36,6 +36,7 @@ Uni+ usa um **banco único `uniplus`** com **schema por módulo** ([ADR-0097](ad
 | `configuracao` | `ConfiguracaoDbContext` | Catálogos cross-cutting: Modalidade, NecessidadeEspecial, TipoDocumento, Endereco |
 | `organizacao` | `OrganizacaoInstitucionalDbContext` | Unidade, Instituição |
 | `publicacoes` | `PublicacoesDbContext` | Registro central dos atos normativos ([ADR-0105](adrs/0105-modulo-publicacoes-registro-central-dos-atos.md)). Nasce vazio |
+| `discentes` | `DiscentesDbContext` | Réplica de vínculos SIGAA e reserva idempotente do gatilho diário ([ADR-0140](adrs/0140-gatilho-diario-duravel-de-sincronizacao.md)) |
 | `wolverine` | — | Outbox/envelopes/dead-letters, uma única instância ([ADR-0039](adrs/0039-provisioning-schema-wolverine-via-deploy.md)) |
 
 **Geo** (repositório dedicado, `uniplus_geo` com PostGIS) e **Portal** (`uniplus_portal`) permanecem deployables autônomos, com banco próprio.
@@ -48,6 +49,28 @@ Extensões habilitadas:
 - `btree_gist` — pré-requisito das exclusion constraints GIST sobre intervalos temporais ([ADR-0060](adrs/0060-junction-tables-por-entidade-com-view-unificada.md)). Provisionada em dev pelo `init-db.sql` e, nos demais ambientes, pela migration do `DbContext` que a exige (idempotente, `CREATE EXTENSION IF NOT EXISTS`) — os containers efêmeros dos testes de integração não executam o `init-db`, então a migration é a única fonte. A aplicação original (junction de áreas de interesse) foi removida no KILL do eixo de Área (Epic #600); a aplicação viva hoje é a constraint `ex_tipo_ato_publicado_codigo_vigencia`, no schema `publicacoes`, que impede duas versões vivas do mesmo tipo de ato de valerem no mesmo dia. Como a constraint vive em SQL cru e não entra no `ModelSnapshot`, um squash de migrations a descartaria em silêncio: `TipoAtoPublicadoPersistenceTests` consulta o `pg_constraint` para impedi-lo.
 
 Migrations EF Core são **por DbContext** — cada módulo tem o seu `__EFMigrationsHistory` **no próprio schema**, sem coordenação cross-módulo. As migrations on startup rodam antes do runtime Wolverine (invariante travada por `MigrationBeforeWolverineRuntimeOrderTests`).
+
+Quando `Sigaa:BaseUrl` habilita o gatilho diário, a role de runtime precisa de `USAGE` em `discentes`, `SELECT`, `INSERT` e `UPDATE` em `discentes.sincronizacao_diaria`, `SELECT` na tabela `discentes.sync_run` para verificar a execução diária e `INSERT` em `discentes.alerta_sincronizacao_diaria`. A sincronização já precisa de `SELECT`, `INSERT` e `UPDATE` em `sync_run`. No schema `wolverine`, precisa de `USAGE`, DML (`SELECT`, `INSERT`, `UPDATE` e `DELETE`) nas tabelas de persistência e `USAGE` nas sequências usadas pelo armazenamento durável. A role usada pelos pods não deve receber permissão para criar ou alterar schemas e tabelas.
+
+O gatilho ativo também exige `Discentes:GatilhoDiario:HorarioLimiteAlerta`, `FusoHorarioAlertaId`, `CanalAlerta`, `RetryAposSegundos` e `PrazoReatribuicaoSegundos`. O monitor independente registra ausência de execução como log de erro estruturado, uma vez por data; `CanalAlerta` é a propriedade de roteamento do evento no coletor de logs. O ambiente precisa encaminhar essa propriedade ao destino operacional acordado. Falhas encaminhadas à dead letter também precisam de regra de alerta no monitoramento do armazenamento Wolverine.
+
+Depois que o Job de deploy aplicar as migrations EF e provisionar o armazenamento Wolverine, conceda os privilégios de runtime à role efetivamente usada pelo host (substitua `role_runtime` pelo nome real da role):
+
+```sql
+GRANT USAGE ON SCHEMA discentes, wolverine TO role_runtime;
+GRANT SELECT, INSERT, UPDATE
+    ON TABLE discentes.sincronizacao_diaria TO role_runtime;
+GRANT SELECT, INSERT, UPDATE
+    ON TABLE discentes.sync_run TO role_runtime;
+GRANT INSERT
+    ON TABLE discentes.alerta_sincronizacao_diaria TO role_runtime;
+GRANT SELECT, INSERT, UPDATE, DELETE
+    ON ALL TABLES IN SCHEMA wolverine TO role_runtime;
+GRANT USAGE
+    ON ALL SEQUENCES IN SCHEMA wolverine TO role_runtime;
+```
+
+O proprietário do schema `wolverine` também deve configurar privilégios padrão para as tabelas e sequências que o Wolverine criar em provisionamentos futuros. A migration `AdicionaGatilhoDiarioDuravel` cria a tabela de reserva; sua execução pertence ao Job de deploy definido pela [ADR-0127](adrs/0127-migrations-aplicadas-por-job-de-deploy.md), antes do rollout dos pods.
 
 ## 2. Naming convention
 
