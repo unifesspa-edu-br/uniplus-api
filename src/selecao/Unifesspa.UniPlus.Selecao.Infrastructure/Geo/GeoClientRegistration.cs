@@ -32,6 +32,9 @@ public static class GeoClientRegistration
         services.AddOptions<GeoOptions>()
             .BindConfiguration(GeoOptions.SectionName)
             .ValidateDataAnnotations()
+            .Validate(
+                static opcoes => EnderecoHttpAbsoluto(opcoes.BaseUrl),
+                "Geo:BaseUrl precisa ser uma URI absoluta http ou https (ex.: http://geo-api:8080).")
             .ValidateOnStart();
 
         services.TryAddSingleton(TimeProvider.System);
@@ -71,6 +74,12 @@ public static class GeoClientRegistration
         cliente.AddResilienceHandler(PoliticaDeConsulta, ConfigurarResilienciaDaConsulta);
         cliente.AddHttpMessageHandler<GeoAuthenticationHandler>();
     }
+
+    // O endereço mal formado precisa barrar o startup: aceito aqui, ele só estouraria na criação do
+    // cliente, fora da tradução de falha da conferência.
+    private static bool EnderecoHttpAbsoluto(string? endereco) =>
+        Uri.TryCreate(endereco, UriKind.Absolute, out Uri? uri)
+        && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
 
     private static System.Net.Http.HttpMessageHandler SemSeguirRedirecionamento() =>
         new System.Net.Http.HttpClientHandler { AllowAutoRedirect = false };
