@@ -97,7 +97,8 @@ public static class SalvarInscricaoCommandHandler
         }
 
         Result<Services.ContextoDaVersaoFixada> contexto = await Services.ContextoDaVersaoFixadaResolver.ResolverAsync(
-            inscricao.VersaoFormularioId, command.ProcessoSeletivoId, processoSeletivoRepository, registroCodecs, cancellationToken)
+            inscricao.VersaoFormularioId, command.ProcessoSeletivoId, processoSeletivoRepository, registroCodecs,
+            command.Request.OfertaCursoId, cancellationToken)
             .ConfigureAwait(false);
         if (contexto.IsFailure)
         {

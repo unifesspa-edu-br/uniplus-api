@@ -83,15 +83,18 @@ public static class DefinicaoAvaliavelDoProcesso
     /// <summary>
     /// A definição da versão congelada, sem o catálogo vivo (ADR-0070): a oferta e os agregados são
     /// os congelados na versão, e cada derivação é conferida contra o que ela própria contribui — a
-    /// publicação já conferiu cada contribuição contra o domínio do fato.
+    /// publicação já conferiu cada contribuição contra o domínio do fato. Com <paramref name="ofertaCursoId"/>,
+    /// as derivações que a oferta de vagas define — a modalidade do candidato — saem só da distribuição
+    /// dessa oferta; sem ela, da união de todas, que é o que a apresentação do formulário e a publicação
+    /// leem.
     /// </summary>
-    public static Result<DefinicaoAvaliavel> DoCongelado(EnvelopeReidratado envelope)
+    public static Result<DefinicaoAvaliavel> DoCongelado(EnvelopeReidratado envelope, Guid? ofertaCursoId = null)
     {
         ArgumentNullException.ThrowIfNull(envelope);
 
         GrafoConfiguracao grafo = envelope.Grafo;
         List<RegrasDerivacaoFato> derivacoes = [];
-        foreach (ConfiguracaoDerivacaoFato configuracao in grafo.DerivacoesEfetivas().OrderBy(static c => c.CodigoFato, StringComparer.Ordinal))
+        foreach (ConfiguracaoDerivacaoFato configuracao in grafo.DerivacoesEfetivas(ofertaCursoId).OrderBy(static c => c.CodigoFato, StringComparer.Ordinal))
         {
             Result<RegrasDerivacaoFato> regras = configuracao.ParaRegrasDerivacao(Contribuicoes(configuracao));
             if (regras.IsFailure)

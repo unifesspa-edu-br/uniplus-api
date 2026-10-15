@@ -19,6 +19,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -300,6 +301,60 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     }
 
     private static Guid OfertaDo(GrafoConfiguracao grafo) => grafo.DistribuicaoVagas[0].OfertaCursoOrigemId;
+
+    [Fact(DisplayName = "O envio com a oferta A concorre só às modalidades da oferta A, mesmo com o rascunho gravado na oferta B")]
+    public async Task Handle_OfertaDoCorpo_ConcorreSoAsModalidadesDaOfertaEnviada()
+    {
+        Cpf cpf = PersonasDeTeste.FernandaDrumond;
+        (VersaoConfiguracao versao, GrafoConfiguracao grafoBase, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
+        Guid ofertaA = Guid.CreateVersion7();
+        Guid ofertaB = Guid.CreateVersion7();
+        GrafoConfiguracao grafo = OfertasDeTeste.ComDistribuicao(
+            grafoBase, OfertasDeTeste.Distribuicao(ofertaA, "AC"), OfertasDeTeste.Distribuicao(ofertaB, "AC", "AC_FEM"));
+        Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+        existente.Salvar(
+            ofertaB, new Dictionary<string, JsonElement>(), new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), [],
+            Unifesspa.UniPlus.Selecao.Application.Services.ContextoDaVersaoFixadaResolver.Admitidas(grafo), PrecondicaoIfMatch.DeTags([existente.ETag])).IsSuccess.Should().BeTrue();
+
+        Result<ComprovanteInscricaoDto> daOfertaA = await SubmeterNaOfertaAsync(cpf, versao, grafo, termo, existente, ofertaA);
+
+        daOfertaA.IsSuccess.Should().BeTrue(daOfertaA.Error?.Message);
+        daOfertaA.Value!.OfertaCursoId.Should().Be(ofertaA);
+        daOfertaA.Value!.Modalidades!.Select(static m => m.Codigo).Should().Equal(
+            ["AC"], "a modalidade que só a oferta B tem não vale para quem enviou na oferta A");
+    }
+
+    [Fact(DisplayName = "O envio com a oferta B concorre também à modalidade que só a oferta B tem")]
+    public async Task Handle_OfertaDoCorpo_ConcorreAsModalidadesDaPropriaOferta()
+    {
+        Cpf cpf = PersonasDeTeste.FernandaDrumond;
+        (VersaoConfiguracao versao, GrafoConfiguracao grafoBase, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
+        Guid ofertaA = Guid.CreateVersion7();
+        Guid ofertaB = Guid.CreateVersion7();
+        GrafoConfiguracao grafo = OfertasDeTeste.ComDistribuicao(
+            grafoBase, OfertasDeTeste.Distribuicao(ofertaA, "AC"), OfertasDeTeste.Distribuicao(ofertaB, "AC", "AC_FEM"));
+
+        Result<ComprovanteInscricaoDto> daOfertaB = await SubmeterNaOfertaAsync(cpf, versao, grafo, termo, NovaInscricao(cpf, "sub-1", versao.Id), ofertaB);
+
+        daOfertaB.IsSuccess.Should().BeTrue(daOfertaB.Error?.Message);
+        daOfertaB.Value!.Modalidades!.Select(static m => m.Codigo).Should().Equal("AC", "AC_FEM");
+    }
+
+    private static async Task<Result<ComprovanteInscricaoDto>> SubmeterNaOfertaAsync(
+        Cpf cpf, VersaoConfiguracao versao, GrafoConfiguracao grafo, VersaoTermoEscolhida termo, Inscricao inscricao, Guid ofertaEnviada)
+    {
+        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
+        inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(inscricao);
+        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
+        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
+
+        // A candidata responde o que faz valer a modalidade de ação afirmativa da oferta B.
+        InscricaoRequest request = RequestComApelidoETermoAceito(cpf, termo, grafo) with { OfertaCursoId = ofertaEnviada };
+        return await SubmeterAsync(
+            new SubmeterInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([inscricao.ETag])),
+            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf));
+    }
 
     [Fact(DisplayName = "Item obrigatório respondido e termo obrigatório aceito na versão fixada: submete, gera número e grava o comprovante")]
     public async Task Handle_ItemRespondidoETermoAceito_Submete()

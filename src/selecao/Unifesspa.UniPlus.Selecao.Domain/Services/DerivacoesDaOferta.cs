@@ -45,6 +45,27 @@ public static class DerivacoesDaOferta
         $"O fato '{codigoFato}' é derivado das modalidades que o processo oferta, e não se configura no processo.");
 
     /// <summary>
+    /// A distribuição de vagas que vale para quem escolheu a oferta de curso: a dela, com as modalidades,
+    /// a regra e as derivações dela. Sem oferta escolhida, ou com uma que a distribuição não conhece,
+    /// valem todas as distribuições: o candidato ainda não escolheu, e o que se mostra é o que pode vir
+    /// a valer — o envio exige a oferta. Num processo de uma oferta só, a escolha não muda nada.
+    /// </summary>
+    public static IReadOnlyList<ConfiguracaoDistribuicaoVagas> DistribuicaoDaOferta(
+        IEnumerable<ConfiguracaoDistribuicaoVagas> distribuicao, Guid? ofertaCursoId)
+    {
+        ArgumentNullException.ThrowIfNull(distribuicao);
+
+        List<ConfiguracaoDistribuicaoVagas> todas = [.. distribuicao];
+        if (ofertaCursoId is not { } escolhida)
+        {
+            return todas;
+        }
+
+        List<ConfiguracaoDistribuicaoVagas> daOferta = [.. todas.Where(d => d.OfertaCursoOrigemId == escolhida)];
+        return daOferta.Count > 0 ? daOferta : todas;
+    }
+
+    /// <summary>
     /// As derivações efetivas: as que o processo configura e, havendo modalidade ofertada, as da
     /// oferta.
     /// </summary>

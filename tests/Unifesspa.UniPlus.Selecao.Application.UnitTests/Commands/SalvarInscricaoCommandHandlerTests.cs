@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -243,6 +244,48 @@ public sealed class SalvarInscricaoCommandHandlerTests
         resultado.Value!.Respostas.Should().ContainKey("APELIDO").WhoseValue.GetString().Should().Be("Nanda");
         await inscricaoRepository.Received(1).AtualizarAsync(existente, Arg.Any<CancellationToken>());
         await unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Salvar com a oferta A avalia só as modalidades da oferta A, mesmo com o rascunho gravado na oferta B")]
+    public async Task Handle_OfertaDoCorpo_AvaliaSoAsModalidadesDaOfertaSalva()
+    {
+        Cpf cpf = PersonasDeTeste.FernandaDrumond;
+        (VersaoConfiguracao versao, GrafoConfiguracao grafoBase) = MontarVersaoComItem(FatoColetado.Criar(
+            "APELIDO", 0, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null,
+            classificacaoProtecao: "PESSOAL", formato: "LIVRE").Value!);
+        Guid ofertaA = Guid.CreateVersion7();
+        Guid ofertaB = Guid.CreateVersion7();
+        GrafoConfiguracao grafo = OfertasDeTeste.ComDistribuicao(
+            grafoBase, OfertasDeTeste.Distribuicao(ofertaA, "AC"), OfertasDeTeste.Distribuicao(ofertaB, "AC", "AC_FEM"));
+        Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+        existente.Salvar(
+            ofertaB, new Dictionary<string, JsonElement>(), new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), [],
+            Unifesspa.UniPlus.Selecao.Application.Services.ContextoDaVersaoFixadaResolver.Admitidas(grafo),
+            PrecondicaoIfMatch.DeTags([existente.ETag])).IsSuccess.Should().BeTrue();
+
+        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
+        inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
+        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
+        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
+
+        InscricaoRequest request = new(
+            ofertaA,
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+            {
+                [OfertasDeTeste.FatoDaAcaoAfirmativa] = JsonSerializer.SerializeToElement(OfertasDeTeste.ValorDaAcaoAfirmativa),
+            },
+            null, null);
+
+        Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
+            new SalvarInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
+            inscricaoRepository, processoRepository, DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
+            Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf), DivulgacaoDeTeste.Relogio, CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.OfertaCursoId.Should().Be(ofertaA);
+        resultado.Value!.Avaliacao.Modalidades.Itens.Select(static m => m.Codigo).Should().Equal(
+            ["AC"], "a modalidade que só a oferta B tem não vale para quem salvou na oferta A");
     }
 
     [Fact(DisplayName = "Resposta que viola uma restrição do formulário é recusada por campo, sem gravar nada — obrigatoriedade sem resposta não é recusada")]
