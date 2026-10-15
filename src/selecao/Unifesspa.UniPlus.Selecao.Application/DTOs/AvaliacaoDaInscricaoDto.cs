@@ -12,9 +12,10 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// O que o candidato consulta enquanto preenche, sem gravar nada (ADR-0143): as respostas como estão
 /// na tela e as ocorrências dos grupos. O campo ou grupo ausente vale o que a inscrição já gravou.
 /// <see cref="OfertaCursoId"/> é a oferta de curso que o candidato tem no seletor, ainda sem salvar: a
-/// avaliação lê as modalidades e as regras dessa oferta. Ausente, vale a oferta gravada na inscrição;
-/// uma oferta que o processo não conhece não é recusada aqui — o envio e o rascunho a recusam — e a
-/// avaliação trata como se nenhuma tivesse sido escolhida.
+/// avaliação lê as modalidades e as regras dessa oferta. Nula ou ausente, nenhuma oferta está escolhida
+/// — a mesma leitura do salvar, que grava a oferta nula —, nunca a gravada na inscrição; uma oferta que
+/// o processo não conhece não é recusada aqui — o envio e o rascunho a recusam — e a avaliação trata
+/// como se nenhuma tivesse sido escolhida.
 /// </summary>
 public sealed record AvaliacaoDaInscricaoRequest(
     IReadOnlyDictionary<string, JsonElement>? Respostas,

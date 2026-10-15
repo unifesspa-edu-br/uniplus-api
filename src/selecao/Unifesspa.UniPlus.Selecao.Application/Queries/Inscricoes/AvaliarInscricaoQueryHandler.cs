@@ -85,10 +85,10 @@ public static class AvaliarInscricaoQueryHandler
             return Result<AvaliacaoDaInscricaoDto>.ValidationFailure(erros);
         }
 
-        // A oferta que a tela mostra, ainda sem salvar, vale mais do que a gravada.
+        // A oferta do corpo é o seletor da tela, ainda sem salvar: nula, nenhuma está escolhida, como no salvar.
         Result<ContextoDaVersaoFixada> contexto = await ContextoDaVersaoFixadaResolver.ResolverAsync(
             inscricao.VersaoFormularioId, query.ProcessoSeletivoId, processoSeletivoRepository, registroCodecs,
-            query.Request?.OfertaCursoId ?? inscricao.OfertaCursoId, cancellationToken)
+            query.Request?.OfertaCursoId, cancellationToken)
             .ConfigureAwait(false);
         if (contexto.IsFailure)
         {

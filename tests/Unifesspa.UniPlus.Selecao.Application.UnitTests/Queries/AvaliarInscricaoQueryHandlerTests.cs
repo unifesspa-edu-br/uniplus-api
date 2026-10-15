@@ -23,7 +23,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A consulta prévia do candidato (ADR-0143) avalia a oferta que ele tem no seletor, ainda sem salvar:
-/// ela vale mais do que a gravada na inscrição, e, ausente do corpo, vale a gravada.
+/// ela vale mais do que a gravada na inscrição, e, nula, é o seletor sem oferta — nunca a gravada.
 /// </summary>
 public sealed class AvaliarInscricaoQueryHandlerTests
 {
@@ -39,12 +39,12 @@ public sealed class AvaliarInscricaoQueryHandlerTests
         naTela.Modalidades.Itens.Select(static m => m.Codigo).Should().Equal("AC");
     }
 
-    [Fact(DisplayName = "Sem oferta no corpo, vale a oferta gravada na inscrição, e não a união das ofertas")]
-    public async Task Handle_SemOfertaNoCorpo_UsaAGravada()
+    [Fact(DisplayName = "Oferta nula no corpo é o seletor desmarcado: a avaliação não volta para a oferta gravada")]
+    public async Task Handle_OfertaNulaNoCorpo_NaoUsaAGravada()
     {
-        AvaliacaoDaInscricaoDto gravada = await AvaliarAsync(gravada: OfertaA, noCorpo: null);
+        AvaliacaoDaInscricaoDto semOferta = await AvaliarAsync(gravada: OfertaA, noCorpo: null);
 
-        gravada.Modalidades.Itens.Select(static m => m.Codigo).Should().Equal("AC");
+        semOferta.Modalidades.Itens.Select(static m => m.Codigo).Should().Equal("AC", "AC_FEM");
     }
 
     private static async Task<AvaliacaoDaInscricaoDto> AvaliarAsync(Guid? gravada, Guid? noCorpo)
