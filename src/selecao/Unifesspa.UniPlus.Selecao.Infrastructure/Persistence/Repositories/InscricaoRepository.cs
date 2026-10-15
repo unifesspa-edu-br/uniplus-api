@@ -129,7 +129,10 @@ public sealed class InscricaoRepository : IInscricaoRepository
         return await _dbContext.ComprovantesInscricao
             .AsNoTracking()
             .Where(c => inscricoes.Contains(c.InscricaoId))
+            // O número público do comprovante é a posição nesta lista: o Id (UUIDv7, gerado na
+            // emissão) desempata dois comprovantes do mesmo instante, e a ordem fica estável.
             .OrderBy(static c => c.Instante)
+            .ThenBy(static c => c.Id)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
     }
