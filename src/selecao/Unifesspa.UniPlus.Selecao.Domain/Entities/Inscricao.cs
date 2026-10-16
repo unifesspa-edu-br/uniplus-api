@@ -396,7 +396,7 @@ public sealed class Inscricao : EntityBase
             .. ConferirRespostas(respostas, grupos, admitidas),
             .. ConferirValores(derivados, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), definicoesDosDerivados, new Dictionary<string, IReadOnlySet<string>>()),
             .. RecusasDoCpf(respostas),
-            .. RecusasDoNome(respostas, admitidas),
+            .. RecusasDoNome(MesclarPreservandoAusentes(Respostas, respostas), admitidas),
             .. RecusasDaOferta(ofertaCursoId, admitidas.OfertasDeCurso, exigida: admitidas.OfertasDeCurso.Count > 0),
             .. RecusasDaModalidade(avaliacao.Modalidades),
             .. RecusasDosAceites(aceites, admitidas.Termos),
@@ -666,7 +666,7 @@ public sealed class Inscricao : EntityBase
     }
 
     /// <summary>
-    /// O nome civil vem do login: a resposta NOME, quando enviada, tem de ser o nome completo do token.
+    /// O nome civil vem do login: a resposta NOME conferida (a recebida, ao salvar; a mesclada com o rascunho, ao enviar) tem de ser o nome completo do token.
     /// Compara sem os espaços das pontas e sem repetição de espaço no meio, mas distingue maiúsculas e
     /// acentos — o nome é o da conta, não um texto livre. O nome social segue livre. Só vale quando o
     /// formulário coleta NOME; a ausência da resposta nunca é recusada aqui (a obrigatoriedade é do formulário).

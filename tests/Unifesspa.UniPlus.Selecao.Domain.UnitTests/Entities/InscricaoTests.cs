@@ -661,6 +661,22 @@ public sealed class InscricaoTests
             e => e.Field == "NOME" && e.Error.Code == InscricaoErrorCodes.NomeDiferenteDoLogin);
     }
 
+    [Fact(DisplayName = "Um rascunho com NOME divergente do login, enviado sem NOME, é recusado no campo NOME")]
+    public void Submeter_RascunhoComNomeDivergente_SemNomeNoEnvio_Recusa()
+    {
+        Inscricao inscricao = NovaInscricao();
+        inscricao.Salvar(null, Respostas(("NOME", "Outra Pessoa")), SemGrupos(), SemAceites(), AdmitidasComNome("Outra Pessoa"), PrecondicaoIfMatch.DeTags([inscricao.ETag]))
+            .IsSuccess.Should().BeTrue();
+
+        Result<ComprovanteInscricao> resultado = inscricao.Submeter(
+            "000123", OfertaDoProcesso, Respostas(), SemGrupos(), SemAceites(), AdmitidasComNome(PersonasDeTeste.NomeFernandaDrumond),
+            FormularioDeTeste.AvaliacaoSemOcultos, SemDerivados(), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(
+            e => e.Field == "NOME" && e.Error.Code == InscricaoErrorCodes.NomeDiferenteDoLogin);
+    }
+
     [Theory(DisplayName = "O NOME igual ao do login é aceito, ignorando espaços nas pontas e repetidos; maiúsculas e acentos contam")]
     [InlineData("Fernanda Laura Nicole Drumond", true)]
     [InlineData("  Fernanda  Laura Nicole   Drumond ", true)]
