@@ -27,6 +27,9 @@ public static class ConjuntoBasicoDaInscricao
     /// <summary>O CPF do candidato, que tem de ser o do dono da inscrição.</summary>
     public const string Cpf = "CPF";
 
+    /// <summary>O nome civil do candidato, que tem de ser o do login.</summary>
+    public const string Nome = "NOME";
+
     private const string Nacionalidade = "NACIONALIDADE";
     private const string Estrangeiro = "ESTRANGEIRO";
     private const string DesejaNomeSocial = "DESEJA_NOME_SOCIAL";
@@ -257,7 +260,7 @@ public static class ConjuntoBasicoDaInscricao
 
         List<FatoColetadoInput> itens =
         [
-            new("NOME", 0, "Nome completo", texto, sempre, null),
+            new(Nome, 0, "Nome completo", texto, sempre, null),
             new(DesejaNomeSocial, 0, "Deseja usar nome social?", TipoRenderizacaoCodigo.Booleano, sempre, null),
             new("NOME_SOCIAL", 0, "Nome social", texto, sempre, Quando(DesejaNomeSocial, OperadorCodigo.Igual, true)),
             new(Nacionalidade, 0, "Nacionalidade", selecao, sempre, null),

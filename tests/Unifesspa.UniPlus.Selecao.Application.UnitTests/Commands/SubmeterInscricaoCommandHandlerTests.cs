@@ -44,6 +44,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     {
         IUserContext contexto = Substitute.For<IUserContext>();
         contexto.Cpf.Returns(cpf.Valor);
+        contexto.NomeCompleto.Returns(PersonasDeTeste.NomeFernandaDrumond);
         contexto.UserId.Returns(sub);
         contexto.Issuer.Returns("https://issuer");
         return contexto;
@@ -91,7 +92,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     /// </summary>
     private static Dictionary<string, JsonElement> RespostasDoConjuntoBasico(Cpf cpf) => new(StringComparer.Ordinal)
     {
-        ["NOME"] = JsonSerializer.SerializeToElement("Fernanda Drumond"),
+        ["NOME"] = JsonSerializer.SerializeToElement(PersonasDeTeste.NomeFernandaDrumond),
         ["DESEJA_NOME_SOCIAL"] = JsonSerializer.SerializeToElement(false),
         ["NACIONALIDADE"] = JsonSerializer.SerializeToElement("NATO"),
         ["CPF"] = JsonSerializer.SerializeToElement(cpf.Valor),
@@ -317,7 +318,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
         existente.Salvar(
             ofertaB, new Dictionary<string, JsonElement>(), new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), [],
-            Unifesspa.UniPlus.Selecao.Application.Services.ContextoDaVersaoFixadaResolver.Admitidas(grafo), PrecondicaoIfMatch.DeTags([existente.ETag])).IsSuccess.Should().BeTrue();
+            Unifesspa.UniPlus.Selecao.Application.Services.ContextoDaVersaoFixadaResolver.Admitidas(grafo) with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond }, PrecondicaoIfMatch.DeTags([existente.ETag])).IsSuccess.Should().BeTrue();
 
         Result<ComprovanteInscricaoDto> daOfertaA = await SubmeterNaOfertaAsync(cpf, versao, grafo, termo, existente, ofertaA);
 
@@ -512,7 +513,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         Result salvo = existente.Salvar(
             null, respostasDoRascunho,
             new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [],
-            Unifesspa.UniPlus.Selecao.Application.Services.ContextoDaVersaoFixadaResolver.Admitidas(grafo), PrecondicaoIfMatch.DeTags([existente.ETag]));
+            Unifesspa.UniPlus.Selecao.Application.Services.ContextoDaVersaoFixadaResolver.Admitidas(grafo) with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond }, PrecondicaoIfMatch.DeTags([existente.ETag]));
         salvo.IsSuccess.Should().BeTrue(salvo.Error?.Message);
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();

@@ -229,6 +229,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     {
         IUserContext contexto = Substitute.For<IUserContext>();
         contexto.Cpf.Returns(cpf.Valor);
+        contexto.NomeCompleto.Returns(PersonasDeTeste.NomeFernandaDrumond);
         contexto.UserId.Returns("sub-fernanda-drumond");
         contexto.Issuer.Returns("https://idp.unifesspa.edu.br/realms/unifesspa");
         return contexto;
@@ -433,7 +434,8 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         inscricao.Should().NotBeNull();
         RespostasAdmitidas admitidas = (await ContextoDaVersaoFixadaResolver.ResolverAsync(
             inscricao!.VersaoFormularioId, processoId, new ProcessoSeletivoRepository(writeContext, TimeProvider.System), RegistroCodecs, ofertaCursoId: null, CancellationToken.None))
-            .Value!.Admitidas;
+            .Value!.Admitidas with
+        { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond };
 
         inscricao!.Salvar(
             null,
@@ -584,7 +586,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             null,
             new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["TELEFONE"] = JsonSerializer.SerializeToElement("(94) 3322-1234") },
             new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal),
-            [], contexto.Value!.Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
+            [], contexto.Value!.Admitidas with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond }, PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
 
         inscricao.Respostas["TELEFONE"].GetString().Should().Be("9433221234",
             "o formato do telefone congelado na versão chega à definição da resposta, que grava a forma canônica");
@@ -625,7 +627,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
                 ["PRECISA_ATENDIMENTO"] = JsonSerializer.SerializeToElement(false),
                 ["CONDICAO_DESCRITA"] = JsonSerializer.SerializeToElement("Lactante"),
             },
-            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [], contexto.Admitidas,
+            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [], contexto.Admitidas with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond },
             PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
         await inscricaoRepository.AtualizarAsync(inscricao, CancellationToken.None);
         await writeContext.SaveChangesAsync(CancellationToken.None);
@@ -643,7 +645,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             Envio: null)).Value!;
         ComprovanteInscricao comprovante = rascunho.Submeter(
             "000901", contexto.Admitidas.OfertasDeCurso.Single(), new Dictionary<string, JsonElement>(StringComparer.Ordinal),
-            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [], contexto.Admitidas, avaliacao,
+            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [], contexto.Admitidas with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond }, avaliacao,
             new Dictionary<string, JsonElement>(StringComparer.Ordinal), DerivadosDoSistemaInscricao.DefinicoesDasRespostas,
             PrecondicaoIfMatch.DeTags([rascunho.ETag]), DentroDoPeriodo.GetUtcNow()).Value!;
         await envioRepository.AtualizarAsync(rascunho, CancellationToken.None);
@@ -1032,7 +1034,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     {
         Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal)
         {
-            ["NOME"] = JsonSerializer.SerializeToElement("Fernanda Drumond"),
+            ["NOME"] = JsonSerializer.SerializeToElement(PersonasDeTeste.NomeFernandaDrumond),
             ["DESEJA_NOME_SOCIAL"] = JsonSerializer.SerializeToElement(false),
             ["NACIONALIDADE"] = JsonSerializer.SerializeToElement("BRASILEIRA"),
             ["CPF"] = JsonSerializer.SerializeToElement(PersonasDeTeste.FernandaDrumond.Valor),

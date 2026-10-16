@@ -37,7 +37,7 @@ public sealed class MinhasInscricoesQueryHandlerTests
             processoId, cpf, sub, "https://issuer", Guid.CreateVersion7()).Value!;
         inscricao.Salvar(
             null, respostas, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [],
-            TestSupport.DefinicoesDeTeste.Das(respostas),
+            TestSupport.DefinicoesDeTeste.Das(respostas) with { NomeCivilDoLogin = cpf.Valor == PersonasDeTeste.KevinCarvalho.Valor ? PersonasDeTeste.NomeKevinCarvalho : PersonasDeTeste.NomeFernandaDrumond },
             Unifesspa.UniPlus.Selecao.Domain.ValueObjects.PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
         return inscricao;
     }
@@ -112,7 +112,7 @@ public sealed class MinhasInscricoesQueryHandlerTests
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         Inscricao inscricao = ComRespostas(cpf, "sub-1", Guid.CreateVersion7(), new Dictionary<string, JsonElement>(StringComparer.Ordinal)
         {
-            ["NOME"] = JsonSerializer.SerializeToElement("Fernanda Drumond"),
+            ["NOME"] = JsonSerializer.SerializeToElement(PersonasDeTeste.NomeFernandaDrumond),
             ["DESEJA_NOME_SOCIAL"] = JsonSerializer.SerializeToElement(false),
         });
 
@@ -122,7 +122,7 @@ public sealed class MinhasInscricoesQueryHandlerTests
         Result<IReadOnlyList<MinhaInscricaoDto>> resultado = await MinhasInscricoesQueryHandler.Handle(
             new MinhasInscricoesQuery(), inscricaoRepository, CertamesDivulgados(), UsuarioComCpf(cpf), CancellationToken.None);
 
-        resultado.Value!.Should().ContainSingle(i => i.NomePreferido == "Fernanda Drumond" && i.CpfMascarado == cpf.Mascarado);
+        resultado.Value!.Should().ContainSingle(i => i.NomePreferido == PersonasDeTeste.NomeFernandaDrumond && i.CpfMascarado == cpf.Mascarado);
     }
 
     [Fact(DisplayName = "Cada inscrição vem com o nome divulgado do processo e os comprovantes numerados na ordem de emissão")]
@@ -133,7 +133,7 @@ public sealed class MinhasInscricoesQueryHandlerTests
         DateTimeOffset instante = new(2026, 12, 10, 9, 0, 0, TimeSpan.Zero);
         Inscricao inscricao = ComRespostas(cpf, "sub-1", processoId, new Dictionary<string, JsonElement>(StringComparer.Ordinal)
         {
-            ["NOME"] = JsonSerializer.SerializeToElement("Fernanda Drumond"),
+            ["NOME"] = JsonSerializer.SerializeToElement(PersonasDeTeste.NomeFernandaDrumond),
         });
         IReadOnlyList<ComprovanteInscricao> comprovantes =
         [
@@ -168,7 +168,7 @@ public sealed class MinhasInscricoesQueryHandlerTests
         Cpf cpf = PersonasDeTeste.KevinCarvalho;
         Inscricao inscricao = ComRespostas(cpf, "sub-1", Guid.CreateVersion7(), new Dictionary<string, JsonElement>(StringComparer.Ordinal)
         {
-            ["NOME"] = JsonSerializer.SerializeToElement("Kevin Carvalho"),
+            ["NOME"] = JsonSerializer.SerializeToElement(PersonasDeTeste.NomeKevinCarvalho),
             ["DESEJA_NOME_SOCIAL"] = JsonSerializer.SerializeToElement(true),
             ["NOME_SOCIAL"] = JsonSerializer.SerializeToElement("Kéfera"),
         });
@@ -188,7 +188,7 @@ public sealed class MinhasInscricoesQueryHandlerTests
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         Inscricao inscricao = ComRespostas(cpf, "sub-1", Guid.CreateVersion7(), new Dictionary<string, JsonElement>(StringComparer.Ordinal)
         {
-            ["NOME"] = JsonSerializer.SerializeToElement("Fernanda Drumond"),
+            ["NOME"] = JsonSerializer.SerializeToElement(PersonasDeTeste.NomeFernandaDrumond),
             ["DESEJA_NOME_SOCIAL"] = JsonSerializer.SerializeToElement(true),
         });
 
@@ -198,6 +198,6 @@ public sealed class MinhasInscricoesQueryHandlerTests
         Result<IReadOnlyList<MinhaInscricaoDto>> resultado = await MinhasInscricoesQueryHandler.Handle(
             new MinhasInscricoesQuery(), inscricaoRepository, CertamesDivulgados(), UsuarioComCpf(cpf), CancellationToken.None);
 
-        resultado.Value!.Should().ContainSingle(i => i.NomePreferido == "Fernanda Drumond");
+        resultado.Value!.Should().ContainSingle(i => i.NomePreferido == PersonasDeTeste.NomeFernandaDrumond);
     }
 }

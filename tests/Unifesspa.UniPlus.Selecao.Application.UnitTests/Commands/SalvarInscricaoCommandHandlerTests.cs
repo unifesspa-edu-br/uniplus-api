@@ -40,6 +40,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
     {
         IUserContext contexto = Substitute.For<IUserContext>();
         contexto.Cpf.Returns(cpf.Valor);
+        contexto.NomeCompleto.Returns(PersonasDeTeste.NomeFernandaDrumond);
         contexto.UserId.Returns(sub);
         contexto.Issuer.Returns("https://issuer");
         return contexto;
@@ -260,7 +261,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
         Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
         existente.Salvar(
             ofertaB, new Dictionary<string, JsonElement>(), new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), [],
-            Unifesspa.UniPlus.Selecao.Application.Services.ContextoDaVersaoFixadaResolver.Admitidas(grafo),
+            Unifesspa.UniPlus.Selecao.Application.Services.ContextoDaVersaoFixadaResolver.Admitidas(grafo) with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond },
             PrecondicaoIfMatch.DeTags([existente.ETag])).IsSuccess.Should().BeTrue();
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();

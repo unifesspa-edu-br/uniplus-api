@@ -70,6 +70,36 @@ public sealed class HttpUserContextTests
     }
 
     [Fact]
+    public void NomeCompleto_Should_ReadNameClaim()
+    {
+        HttpUserContext context = CreateContext(
+            new Claim("preferred_username", "usuario.teste"),
+            new Claim("name", "Fernanda Laura Nicole Drumond"));
+
+        context.NomeCompleto.Should().Be("Fernanda Laura Nicole Drumond");
+    }
+
+    [Fact]
+    public void NomeCompleto_Should_ComposeGivenAndFamilyName_WhenNameClaimAbsent()
+    {
+        HttpUserContext context = CreateContext(
+            new Claim("preferred_username", "usuario.teste"),
+            new Claim("given_name", "Fernanda"),
+            new Claim("family_name", "Drumond "));
+
+        context.NomeCompleto.Should().Be("Fernanda Drumond");
+    }
+
+    [Fact]
+    public void NomeCompleto_Should_NotFallBackToPreferredUsername()
+    {
+        HttpUserContext context = CreateContext(
+            new Claim("preferred_username", "usuario.teste"));
+
+        context.NomeCompleto.Should().BeNull();
+    }
+
+    [Fact]
     public void Name_Should_FallBackToPreferredUsername_WhenClaimTypesNameAbsent()
     {
         HttpUserContext context = CreateContext(

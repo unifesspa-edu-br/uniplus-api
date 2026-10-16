@@ -50,6 +50,8 @@ public sealed partial class HttpUserContext : IUserContext
 
     public string? Name => GetFirstClaimValue(NameClaimCandidates);
 
+    public string? NomeCompleto => GetSingleClaimValue(OidcClaims.Name) ?? NomeDeGivenEFamilyName();
+
     public string? Email => GetFirstClaimValue(EmailClaimCandidates);
 
     public string? Cpf => GetSingleClaimValue(UniPlusClaims.Cpf);
@@ -99,6 +101,13 @@ public sealed partial class HttpUserContext : IUserContext
         }
 
         return null;
+    }
+
+    // Sem o claim name, compõe given_name + family_name, como o portal (auth.service.ts).
+    private string? NomeDeGivenEFamilyName()
+    {
+        string composto = $"{GetSingleClaimValue(OidcClaims.GivenName)} {GetSingleClaimValue(OidcClaims.FamilyName)}".Trim();
+        return composto.Length == 0 ? null : composto;
     }
 
     private string? GetSingleClaimValue(string claimType)
