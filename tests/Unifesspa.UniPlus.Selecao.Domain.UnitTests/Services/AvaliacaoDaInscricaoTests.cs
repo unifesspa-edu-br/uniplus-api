@@ -104,6 +104,46 @@ public sealed class AvaliacaoDaInscricaoTests
             .Should().Equal([BaixaRenda], "o campo de renda ainda não aparece: falta a resposta que decide se ele aparece");
     }
 
+    [Fact(DisplayName = "O Fator depende do fato que a configuração do bônus cita, e só dele, sem a matriz de modalidades")]
+    public void DependenciasDoFator_SaoOFatoDeElegibilidadeCitado()
+    {
+        ConfiguracaoAvaliavel configuracao = Configuracao(derivaModalidade: true);
+
+        DependenciasDaAvaliacao dependencias = AvaliacaoDaInscricao.DependenciasDoFator(configuracao, Bonus("CONCORRER_EP"));
+
+        dependencias.Fatos.Should().Equal(["CONCORRER_EP"]);
+        dependencias.Grupos.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "O fato de elegibilidade derivado traz os campos de que a derivação depende")]
+    public void DependenciasDoFator_FatoDerivadoTrazOsCamposDaDerivacao()
+    {
+        DependenciasDaAvaliacao dependencias = AvaliacaoDaInscricao.DependenciasDoFator(
+            Configuracao(derivaModalidade: false), Bonus(OrigemEscolar.FatoEgresso));
+
+        dependencias.Fatos.Should().Contain([OrigemEscolar.FatoOndeCursou, OrigemEscolar.FatoFormaDeConclusao]);
+        dependencias.Fatos.Should().NotContain(OrigemEscolar.FatoEgresso, "o derivado não é perguntado");
+    }
+
+    [Fact(DisplayName = "O campo com os municípios do bônus entra nas dependências do Fator, com o campo que decide se ele aparece")]
+    public void DependenciasDoFator_CampoDeMunicipioDoBonusEntraComOQueOExibe()
+    {
+        DependenciasDaAvaliacao dependencias = AvaliacaoDaInscricao.DependenciasDoFator(
+            Configuracao(derivaModalidade: false, municipioDoBonus: true), Bonus(fatoElegibilidade: null));
+
+        dependencias.Fatos.Should().BeEquivalentTo([MunicipioDoBonus, PedeOFator]);
+    }
+
+    [Fact(DisplayName = "Processo sem bônus regional não tem Fator: as dependências são vazias")]
+    public void DependenciasDoFator_SemBonus_Vazias()
+    {
+        DependenciasDaAvaliacao dependencias = AvaliacaoDaInscricao.DependenciasDoFator(
+            Configuracao(derivaModalidade: true, municipioDoBonus: true), bonus: null);
+
+        dependencias.Fatos.Should().BeEmpty();
+        dependencias.Grupos.Should().BeEmpty();
+    }
+
     private static ResultadoDaAvaliacaoDaInscricao Avaliar(ConfiguracaoAvaliavel configuracao, Dictionary<string, JsonElement> respostas)
     {
         Kernel.Results.Result<ResultadoDaAvaliacaoDaInscricao> resultado = AvaliacaoDaInscricao.Avaliar(
@@ -138,16 +178,26 @@ public sealed class AvaliacaoDaInscricaoTests
     }
 
     private const string BaixaRenda = "BAIXA_RENDA";
+    private const string PedeOFator = "PEDE_O_FATOR";
+    private const string MunicipioDoBonus = "MUNICIPIO_DO_BONUS";
 
-    private static ConfiguracaoAvaliavel Configuracao(bool derivaModalidade, bool rendaSoParaBaixaRenda = false)
+    private static ConfiguracaoBonusRegional Bonus(string? fatoElegibilidade) =>
+        ConfiguracaoBonusRegional.Criar(
+            ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", new string('e', 64)).Value!, 1.20m, null, fatoElegibilidade, Guid.CreateVersion7(),
+            "PORTARIA", "Portaria de teste", "Inclusão regional", [("1504208", "Marabá", "PA")]).Value!;
+
+    private static ConfiguracaoAvaliavel Configuracao(bool derivaModalidade, bool rendaSoParaBaixaRenda = false, bool municipioDoBonus = false)
     {
         PredicadoDnf soComBaixaRenda = PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(1, CondicaoDnf.Criar(BaixaRenda, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
-        string[] perguntas = rendaSoParaBaixaRenda ? [BaixaRenda, .. Perguntas] : Perguntas;
+        string[] perguntas = [.. rendaSoParaBaixaRenda ? [BaixaRenda, .. Perguntas] : Perguntas, .. municipioDoBonus ? new[] { PedeOFator, MunicipioDoBonus } : []];
+        PredicadoDnf soSePedeOFator = PredicadoDnf.CriarDeCondicoesAgrupadas(
+            [(1, CondicaoDnf.Criar(PedeOFator, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
         RegrasDerivacaoFato egresso = RegrasDerivacaoFato.CriarBooleana(
             OrigemEscolar.FatoEgresso, OrigemEscolar.RegrasDoEgresso, OrigemEscolar.DependenciasDoEgresso).Value!;
         FatoColetado[] campos = [.. perguntas.Select(static (f, ordem) => FatoColetado.Criar(
             f, ordem, $"Rótulo de {f}", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, "SENSIVEL",
+            f == MunicipioDoBonus ? OrigemValoresColeta.MunicipiosDoBonus : OrigemValoresColeta.Catalogo,
             etapaCodigo: Secao, finalidade: FinalidadeFormulario.Inscricao).Value!)];
         ModalidadeSelecionada[] ofertadas = [.. Ofertadas()];
         // Com a modalidade derivada, a oferta tem cota da lei e as derivações efetivas já trazem o
@@ -159,7 +209,7 @@ public sealed class AvaliacaoDaInscricaoTests
 
         DefinicaoFormulario definicao = new(
             [new DefinicaoEtapa(Etapa, null, [.. perguntas.Select(f => new DefinicaoItem(
-                f, rendaSoParaBaixaRenda && f == "CONCORRER_RENDA" ? soComBaixaRenda : null, Obrigatoriedade.Sempre, []))])],
+                f, rendaSoParaBaixaRenda && f == "CONCORRER_RENDA" ? soComBaixaRenda : f == MunicipioDoBonus ? soSePedeOFator : null, Obrigatoriedade.Sempre, []))])],
             [],
             derivacoes);
 

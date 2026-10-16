@@ -101,11 +101,19 @@ public static class ProjecaoDoFormularioDaVersao
             return VersaoSemApresentacao();
         }
 
-        DependenciasDaAvaliacaoDto? dependencias = finalidade == FinalidadeFormulario.Inscricao
-            && Domain.Services.AvaliacaoDaInscricao.Dependencias(ConfiguracaoAvaliavelDoProcesso.DoCongelado(grafo, avaliavel.Value!)) is { } daAvaliacao
-                ? new DependenciasDaAvaliacaoDto(daAvaliacao.Fatos, daAvaliacao.Grupos)
-                : null;
-        return Result<FormularioRenderizavelDto>.Success(FormularioRenderizavelDto.De(formulario, comprovacao, dependencias, doFormulario.FaseId));
+        DependenciasDaAvaliacaoDto? dependencias = null;
+        DependenciasDaAvaliacaoDto? dependenciasDoFator = null;
+        if (finalidade == FinalidadeFormulario.Inscricao)
+        {
+            ConfiguracaoAvaliavel configuracao = ConfiguracaoAvaliavelDoProcesso.DoCongelado(grafo, avaliavel.Value!);
+            DependenciasDaAvaliacao daAvaliacao = Domain.Services.AvaliacaoDaInscricao.Dependencias(configuracao);
+            DependenciasDaAvaliacao doFator = Domain.Services.AvaliacaoDaInscricao.DependenciasDoFator(configuracao, grafo.BonusRegional);
+            dependencias = new DependenciasDaAvaliacaoDto(daAvaliacao.Fatos, daAvaliacao.Grupos);
+            dependenciasDoFator = new DependenciasDaAvaliacaoDto(doFator.Fatos, doFator.Grupos);
+        }
+
+        return Result<FormularioRenderizavelDto>.Success(
+            FormularioRenderizavelDto.De(formulario, comprovacao, dependencias, dependenciasDoFator, doFormulario.FaseId));
     }
 
     /// <summary>

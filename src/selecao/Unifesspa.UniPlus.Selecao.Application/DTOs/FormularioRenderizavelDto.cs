@@ -18,6 +18,12 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// (ADR-0143), só pelo código: quando um deles muda, o front consulta a avaliação. Nulo nas demais
 /// finalidades e no rascunho.
 /// </param>
+/// <param name="DependenciasDoFator">
+/// No formulário de inscrição publicado, os campos e os grupos de que o Fator de Atenuação depende
+/// (ADR-0142), só pelo código, no desenho de <paramref name="DependenciasDaAvaliacao"/>: o fato que a
+/// configuração do bônus cita e os campos com os municípios do bônus. Vazio quando o processo não tem
+/// Fator; nulo nas demais finalidades e no rascunho.
+/// </param>
 /// <param name="FaseId">
 /// A fase do cronograma em que o formulário é respondido; nula quando o formulário ainda não tem fase.
 /// É ela que diz quais documentos da avaliação da inscrição são desta fase, porque o processo pode ter
@@ -36,6 +42,7 @@ public sealed record FormularioRenderizavelDto(
     string? FusoDoEnvio,
     IReadOnlyList<ExigenciaDocumentalCertameDto>? ComprovacaoDocumental,
     DependenciasDaAvaliacaoDto? DependenciasDaAvaliacao,
+    DependenciasDaAvaliacaoDto? DependenciasDoFator,
     Guid? FaseId)
     : FormularioRenderizavel(Finalidade, Titulo, Etapas, Termos, FatosColetados, Grupos, Regras, Pressupostos, DataReferenciaFatos, FusoDoEnvio)
 {
@@ -44,13 +51,14 @@ public sealed record FormularioRenderizavelDto(
         FormularioRenderizavel formulario,
         IReadOnlyList<ExigenciaDocumentalCertameDto>? comprovacaoDocumental,
         DependenciasDaAvaliacaoDto? dependenciasDaAvaliacao,
+        DependenciasDaAvaliacaoDto? dependenciasDoFator,
         Guid? faseId)
     {
         ArgumentNullException.ThrowIfNull(formulario);
         return new(
             formulario.Finalidade, formulario.Titulo, formulario.Etapas, formulario.Termos, formulario.FatosColetados, formulario.Grupos,
             formulario.Regras, formulario.Pressupostos, formulario.DataReferenciaFatos, formulario.FusoDoEnvio, comprovacaoDocumental,
-            dependenciasDaAvaliacao, faseId);
+            dependenciasDaAvaliacao, dependenciasDoFator, faseId);
     }
 }
 

@@ -64,7 +64,7 @@ public static class ObterFormularioRenderizavelDoRascunhoQueryHandler
                 query.Finalidade, avaliavel.Value!, processo.Formularios, processo.FatosColetados, processo.GruposColetados, processo.TermosExigidos,
                 processo.DataReferenciaFatosEmMontagem(fuso.Value!)) is { } formulario
             ? Result<FormularioRenderizavelDto>.Success(FormularioRenderizavelDto.De(
-                formulario, comprovacaoDocumental: null, dependenciasDaAvaliacao: null,
+                formulario, comprovacaoDocumental: null, dependenciasDaAvaliacao: null, dependenciasDoFator: null,
                 processo.Formularios.FirstOrDefault(f => f.Finalidade == query.Finalidade)?.FaseId))
             : NaoEncontrado(query.ProcessoSeletivoId);
     }
