@@ -91,6 +91,72 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     private static CondicaoPrecondicaoInput Condicao(string fato, string operador, object valor) =>
         new(fato, operador, JsonSerializer.SerializeToElement(valor));
 
+    [Fact(DisplayName = "O formulário de inscrição gravado antes dos dados de sexo e gênero recebe os três na gravação, sem colidir com a ordem dos itens")]
+    public async Task Handle_InscricaoGravadaSemOsTresDados_ReporOsItensSemColidirAOrdem()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        processo.DefinirItensComFaseDeInscricao([]).IsSuccess.Should().BeTrue();
+        FatoColetado baixaRenda = FatoColetado.Criar(
+            "BAIXA_RENDA", ConjuntoBasicoDaInscricao.Itens.Count - 3, "Baixa renda", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, "PESSOAL",
+            etapaCodigo: FormularioDeTeste.Secao).Value!;
+        GrupoColetado composicao = GrupoColetado.Criar(
+            "COMPOSICAO_FAMILIAR", baixaRenda.Ordem + 1, FormularioDeTeste.Secao, "Composição familiar", 0, 10, null, Obrigatoriedade.Nunca,
+            [FatoColetado.Criar("PARENTESCO", 0, "Parentesco", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, "PESSOAL").Value!],
+            FinalidadeFormulario.Inscricao).Value!;
+        processo.DefinirFatosColetados(
+                FinalidadeFormulario.Inscricao, [.. FormularioDeTeste.DadosBasicosDeAntesDosDadosDeGenero(), baixaRenda], PrecondicaoIfMatch.Ausente, [composicao])
+            .IsSuccess.Should().BeTrue();
+        processo.FatosColetados.Where(static f => f.FatoCodigo is "SEXO_CIVIL" or "IDENTIDADE_GENERO" or "ORIENTACAO_SEXUAL")
+            .Should().BeEmpty("pré-condição: o formulário foi gravado antes dos três dados");
+        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico);
+        Mocks mocks = NovosMocks(processo, processo.Id);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, new DefinirFatosColetadosCommand(
+            processo.Id, FinalidadeFormulario.Inscricao,
+            [new FatoColetadoInput("BAIXA_RENDA", baixaRenda.Ordem, "Baixa renda", "BOOLEANO", "NUNCA", null) { EtapaCodigo = FormularioDeTeste.Secao }],
+            PrecondicaoIfMatch.Ausente));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        List<FatoColetado> daInscricao = [.. processo.FatosColetados.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao)];
+        daInscricao.Select(static f => f.FatoCodigo).Should().Contain(ConjuntoBasicoDaInscricao.Fatos);
+        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)?.Code.Should().NotBe(
+            FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico, "a regravação repõe o conjunto básico que a publicação confere");
+        daInscricao.Select(static f => f.Ordem).Concat(processo.GruposColetados.Select(static g => g.Ordem)).Should().OnlyHaveUniqueItems();
+        processo.GruposColetados.Single().Ordem.Should().Be(baixaRenda.Ordem + 1 + 3, "o grupo omitido sobe com os itens, para a ordem seguir única");
+        daInscricao.Where(static f => ConjuntoBasicoDaInscricao.Fatos.Contains(f.FatoCodigo))
+            .Should().OnlyContain(static f => f.EtapaCodigo == ConjuntoBasicoDaInscricao.CodigoDaSecao);
+    }
+
+    [Fact(DisplayName = "Com um buraco depois da seção, regravar só os itens sobe item e grupo omitido juntos, sem repetir ordem")]
+    public async Task Handle_InscricaoGravadaComBuracoDepoisDaSecao_ItemEGrupoSobemJuntos()
+    {
+        ProcessoSeletivo processo = ProcessoEmRascunho();
+        processo.DefinirItensComFaseDeInscricao([]).IsSuccess.Should().BeTrue();
+        int fimDaSecao = ConjuntoBasicoDaInscricao.Itens.Count - 3;
+        FatoColetado baixaRenda = FatoColetado.Criar(
+            "BAIXA_RENDA", fimDaSecao + 3, "Baixa renda", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, "PESSOAL",
+            etapaCodigo: FormularioDeTeste.Secao).Value!;
+        GrupoColetado composicao = GrupoColetado.Criar(
+            "COMPOSICAO_FAMILIAR", fimDaSecao, FormularioDeTeste.Secao, "Composição familiar", 0, 10, null, Obrigatoriedade.Nunca,
+            [FatoColetado.Criar("PARENTESCO", 0, "Parentesco", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, "PESSOAL").Value!],
+            FinalidadeFormulario.Inscricao).Value!;
+        processo.DefinirFatosColetados(
+                FinalidadeFormulario.Inscricao, [.. FormularioDeTeste.DadosBasicosDeAntesDosDadosDeGenero(), baixaRenda], PrecondicaoIfMatch.Ausente, [composicao])
+            .IsSuccess.Should().BeTrue();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, new DefinirFatosColetadosCommand(
+            processo.Id, FinalidadeFormulario.Inscricao,
+            [new FatoColetadoInput("BAIXA_RENDA", baixaRenda.Ordem, "Baixa renda", "BOOLEANO", "NUNCA", null) { EtapaCodigo = FormularioDeTeste.Secao }],
+            PrecondicaoIfMatch.Ausente));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.FatosColetados.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao).Select(static f => f.Ordem)
+            .Concat(processo.GruposColetados.Select(static g => g.Ordem)).Should().OnlyHaveUniqueItems();
+        processo.GruposColetados.Single().Ordem.Should().Be(fimDaSecao + 3);
+        processo.FatosColetados.Single(static f => f.FatoCodigo == "BAIXA_RENDA").Ordem.Should().Be(baixaRenda.Ordem + 3);
+    }
+
     [Fact(DisplayName = "Processo inexistente retorna ProcessoSeletivo.NaoEncontrado sem tocar no reader")]
     public async Task Handle_ProcessoInexistente_RetornaNaoEncontrado()
     {

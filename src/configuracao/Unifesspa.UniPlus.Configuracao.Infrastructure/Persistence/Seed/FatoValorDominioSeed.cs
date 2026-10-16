@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Regras.Services;
 /// <summary>
 /// Fonte única do seed de <c>fato_valor_dominio</c> (ADR-0116): a descrição por
 /// valor dos fatos categóricos <b>estáticos</b> desta colheita —
-/// <c>COR_RACA</c> (6), <c>SEXO</c> (3), <c>NACIONALIDADE</c> (3), <c>PARENTESCO</c> (12),
+/// <c>COR_RACA</c> (6), <c>SEXO</c> (3), <c>SEXO_CIVIL</c> (2), <c>IDENTIDADE_GENERO</c> (6), <c>ORIENTACAO_SEXUAL</c> (6), <c>NACIONALIDADE</c> (3), <c>PARENTESCO</c> (12),
 /// <c>ESTADO_CIVIL</c> (6), <c>RG_ORGAO_EMISSOR</c> (12), <c>TIPO_ENDERECO</c> (7) e a origem
 /// escolar, <c>FORMA_CONCLUSAO_EM</c> (5) e <c>ONDE_CURSOU_EM</c> (12). Consumida pela
 /// configuração EF Core (<c>HasData</c> na migration) e pelos testes de
@@ -35,8 +35,16 @@ public static class FatoValorDominioSeed
 
     private static readonly Guid OrgaoEmissor = FatoCandidatoId("RG_ORGAO_EMISSOR");
 
+    private static readonly Guid SexoCivil = FatoCandidatoId("SEXO_CIVIL");
+
+    private static readonly Guid IdentidadeDeGenero = FatoCandidatoId("IDENTIDADE_GENERO");
+
+    private static readonly Guid OrientacaoSexual = FatoCandidatoId("ORIENTACAO_SEXUAL");
+
+    private const string PrefiroNaoInformar = "PREFIRO_NAO_INFORMAR";
+
     /// <summary>
-    /// As linhas do seed (6 COR_RACA + 3 SEXO + 3 NACIONALIDADE + 12 PARENTESCO + 6 ESTADO_CIVIL
+    /// As linhas do seed (6 COR_RACA + 3 SEXO + 2 SEXO_CIVIL + 6 IDENTIDADE_GENERO + 6 ORIENTACAO_SEXUAL + 3 NACIONALIDADE + 12 PARENTESCO + 6 ESTADO_CIVIL
     /// + 12 RG_ORGAO_EMISSOR + 7 TIPO_ENDERECO + 5 FORMA_CONCLUSAO_EM + 12 ONDE_CURSOU_EM).
     /// </summary>
     public static IReadOnlyList<FatoValorDominioSeedItem> Itens { get; } =
@@ -151,6 +159,26 @@ public static class FatoValorDominioSeed
             "Escola privada, Sistema S ou exterior, sem passar pela rede pública."),
         new(SeedId(56), OndeCursou, OrigemEscolar.ConcluiuPorCertificacao, "Concluí por certificação", 11, true,
             "Para quem concluiu pelo ENCCEJA, por exame de proficiência ou pelo ENEM sem frequentar o ensino médio."),
+
+        // ── SEXO_CIVIL ─────────────────────────────────────────────────────
+        new(SeedId(69), SexoCivil, "FEMININO", "Feminino", 0, true),
+        new(SeedId(70), SexoCivil, "MASCULINO", "Masculino", 1, true),
+
+        // ── IDENTIDADE_GENERO ──────────────────────────────────────────────
+        new(SeedId(71), IdentidadeDeGenero, "PESSOA_CIS", "Pessoa cisgênero", 0, true),
+        new(SeedId(72), IdentidadeDeGenero, "PESSOA_TRANSGENERO", "Pessoa transgênero", 1, true),
+        new(SeedId(73), IdentidadeDeGenero, "TRAVESTI", "Travesti", 2, true),
+        new(SeedId(74), IdentidadeDeGenero, "TRANSEXUAL", "Transexual", 3, true),
+        new(SeedId(75), IdentidadeDeGenero, "PESSOA_NAO_BINARIA", "Pessoa não binária", 4, true),
+        new(SeedId(76), IdentidadeDeGenero, PrefiroNaoInformar, "Prefiro não informar", 5, true),
+
+        // ── ORIENTACAO_SEXUAL ──────────────────────────────────────────────
+        new(SeedId(77), OrientacaoSexual, "HETEROSSEXUAL", "Heterossexual", 0, true),
+        new(SeedId(78), OrientacaoSexual, "HOMOSSEXUAL", "Homossexual", 1, true),
+        new(SeedId(79), OrientacaoSexual, "BISSEXUAL", "Bissexual", 2, true),
+        new(SeedId(80), OrientacaoSexual, "ASSEXUAL", "Assexual", 3, true),
+        new(SeedId(81), OrientacaoSexual, "PANSEXUAL", "Pansexual", 4, true),
+        new(SeedId(82), OrientacaoSexual, PrefiroNaoInformar, "Prefiro não informar", 5, true),
     ];
 }
 

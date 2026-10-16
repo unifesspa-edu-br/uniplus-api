@@ -20,8 +20,8 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
     private static readonly int Teto = ConjuntoBasicoDaInscricao.Itens.Count;
 
     [Theory(DisplayName = "Os itens do cliente sobem acima da seção só quando colidem com ela, e os básicos omitidos entram")]
-    [InlineData(0, 25)]
-    [InlineData(25, 25)]
+    [InlineData(0, 28)]
+    [InlineData(28, 28)]
     [InlineData(40, 40)]
     public void MesclarItens_ItemDoCliente_SobeSoQuandoColide(int ordemEnviada, int ordemGravada)
     {
@@ -32,6 +32,17 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
         itens.Should().HaveCount(Teto + 1);
         itens.Single(static i => i.FatoCodigo == "QUILOMBOLA").Ordem.Should().Be(ordemGravada);
         itens.Where(static i => ConjuntoBasicoDaInscricao.Fatos.Contains(i.FatoCodigo)).Should().Equal(ConjuntoBasicoDaInscricao.Itens);
+    }
+
+    [Fact(DisplayName = "O conjunto básico traz o sexo biológico, o sexo civil, a identidade de gênero e a orientação sexual, obrigatórios")]
+    public void Itens_TrazOsQuatroDadosDeSexoEGenero()
+    {
+        string[] codigos = ["SEXO", "SEXO_CIVIL", "IDENTIDADE_GENERO", "ORIENTACAO_SEXUAL"];
+
+        ConjuntoBasicoDaInscricao.Fatos.Should().Contain(codigos);
+        IReadOnlyList<FatoColetadoInput> itens = [.. codigos.Select(c => ConjuntoBasicoDaInscricao.Itens.Single(i => i.FatoCodigo == c))];
+        itens.Select(static i => i.Rotulo).Should().Equal("Sexo biológico", "Sexo civil", "Identidade de gênero", "Orientação sexual");
+        itens.Should().OnlyContain(static i => i.Obrigatoriedade == PredicadoDnfJson.ObrigatoriedadeSempre && i.EtapaCodigo == ConjuntoBasicoDaInscricao.CodigoDaSecao);
     }
 
     [Fact(DisplayName = "O grupo do cliente que colide com a seção sobe com os itens")]

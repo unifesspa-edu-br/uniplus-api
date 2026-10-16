@@ -65,6 +65,19 @@ internal static class FormularioDeTeste
         return [.. ConjuntoBasicoDaInscricao.Itens.Where(i => !declarados.Contains(i.FatoCodigo)).Select(Basico)];
     }
 
+    /// <summary>
+    /// Os dados básicos como um formulário gravado antes do sexo civil, da identidade de gênero e da
+    /// orientação sexual os tinha: sem os três, e na numeração contínua de então.
+    /// </summary>
+    public static IReadOnlyList<FatoColetado> DadosBasicosDeAntesDosDadosDeGenero() =>
+    [
+        .. DadosBasicos(["SEXO_CIVIL", "IDENTIDADE_GENERO", "ORIENTACAO_SEXUAL"]).Select(static (fato, ordem) => FatoColetado.Criar(
+            fato.FatoCodigo, ordem, fato.Rotulo, fato.TipoRenderizacao, fato.Obrigatoriedade,
+            [.. fato.Precondicoes.Select(static c => CondicaoPrecondicaoFato.Criar(c.Clausula, c.Fato, c.Operador, c.Valor).Value!)],
+            fato.ClassificacaoProtecao, fato.OrigemValores, ConjuntoBasicoDaInscricao.CodigoDaSecao, formato: fato.Formato,
+            ajuda: fato.Ajuda, pedirConfirmacao: fato.PedirConfirmacao, restricoes: fato.Restricoes, impedimento: fato.Impedimento).Value!),
+    ];
+
     /// <summary>Os itens que não são do conjunto básico, que o formulário de inscrição sempre coleta.</summary>
     public static IEnumerable<FatoColetado> ForaDoConjuntoBasico(this IEnumerable<FatoColetado> itens) =>
         itens.Where(static f => !ConjuntoBasicoDaInscricao.Fatos.Contains(f.FatoCodigo));
@@ -276,6 +289,8 @@ internal static class FormularioDeTeste
         ["RG_NUMERO"] = "IDENTIFICADOR",
         ["PASSAPORTE_NUMERO"] = "IDENTIFICADOR",
         ["RNM_NUMERO"] = "IDENTIFICADOR",
+        ["IDENTIDADE_GENERO"] = "SENSIVEL",
+        ["ORIENTACAO_SEXUAL"] = "SENSIVEL",
     };
 
     /// <summary>O item básico na forma do domínio, a partir da entrada do conjunto básico.</summary>

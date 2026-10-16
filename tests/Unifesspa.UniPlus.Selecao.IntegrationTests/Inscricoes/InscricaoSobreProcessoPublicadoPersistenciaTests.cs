@@ -158,8 +158,9 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
             new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
 
-        // O conjunto básico do candidato (sempre presente num formulário de inscrição) traz oito
-        // fatos de seleção (nacionalidade, órgão emissor e UF do RG, estado civil, sexo, cor/raça,
+        // O conjunto básico do candidato (sempre presente num formulário de inscrição) traz onze
+        // fatos de seleção (nacionalidade, órgão emissor e UF do RG, estado civil, sexo, sexo civil, identidade de
+        // gênero, orientação sexual, cor/raça,
         // tipo de localidade e UF de naturalidade) — o canonicalizador exige uma entrada não vazia para cada; os
         // valores em si não importam para o que este teste prova (a resolução da versão divulgada e
         // a cifra dos documentos).
@@ -168,6 +169,9 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             ["NACIONALIDADE"] = [new ValorDominioDeclaradoCongelado("BRASILEIRA", "Nacionalidade brasileira.", 0)],
             ["ESTADO_CIVIL"] = [new ValorDominioDeclaradoCongelado("SOLTEIRO", "Solteiro(a).", 0)],
             ["SEXO"] = [new ValorDominioDeclaradoCongelado("FEMININO", "Feminino.", 0)],
+            ["SEXO_CIVIL"] = [new ValorDominioDeclaradoCongelado("FEMININO", "Feminino.", 0)],
+            ["IDENTIDADE_GENERO"] = [new ValorDominioDeclaradoCongelado("PREFIRO_NAO_INFORMAR", "Prefiro não informar.", 0)],
+            ["ORIENTACAO_SEXUAL"] = [new ValorDominioDeclaradoCongelado("PREFIRO_NAO_INFORMAR", "Prefiro não informar.", 0)],
             ["COR_RACA"] = [new ValorDominioDeclaradoCongelado("NAO_DECLARADO", "Prefere não declarar.", 0)],
             ["TIPO_ENDERECO"] = [new ValorDominioDeclaradoCongelado("URBANO", "Endereço urbano.", 0)],
             ["RG_ORGAO_EMISSOR"] = [new ValorDominioDeclaradoCongelado("SSP", "Secretaria de Segurança Pública (SSP)", 0)],
@@ -1039,6 +1043,9 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             ["NOME_MAE"] = JsonSerializer.SerializeToElement("Maria Drumond"),
             ["ESTADO_CIVIL"] = JsonSerializer.SerializeToElement("SOLTEIRO"),
             ["SEXO"] = JsonSerializer.SerializeToElement("FEMININO"),
+            ["SEXO_CIVIL"] = JsonSerializer.SerializeToElement("FEMININO"),
+            ["IDENTIDADE_GENERO"] = JsonSerializer.SerializeToElement("PREFIRO_NAO_INFORMAR"),
+            ["ORIENTACAO_SEXUAL"] = JsonSerializer.SerializeToElement("PREFIRO_NAO_INFORMAR"),
             ["COR_RACA"] = JsonSerializer.SerializeToElement("NAO_DECLARADO"),
             ["EMAIL"] = JsonSerializer.SerializeToElement("fernanda.drumond@example.com"),
             ["TELEFONE"] = JsonSerializer.SerializeToElement("94999999999"),

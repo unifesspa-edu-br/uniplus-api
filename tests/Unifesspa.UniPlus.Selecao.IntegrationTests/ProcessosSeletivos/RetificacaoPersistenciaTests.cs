@@ -6,10 +6,15 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using NSubstitute;
+
+using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
+using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -482,6 +487,65 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         relido.TermosExigidos.Select(static t => t.Codigo).Should().Equal(
             termoPublicado is null ? [] : [termoPublicado],
             "o descarte restaurou os termos que a versão N congelou — não os editados na sessão abandonada");
+    }
+
+    [Fact(DisplayName = "A retificação de um processo cujo formulário de inscrição não tinha os dados de sexo e gênero repõe os três na regravação, sem colidir a ordem")]
+    public async Task Retificacao_FormularioSemOsDadosDeGenero_RegravacaoReporOsItens()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivoPublicacaoSeeder.NovoProcessoComOfertaFederalECascata(
+            $"{nameof(Retificacao_FormularioSemOsDadosDeGenero_RegravacaoReporOsItens)}-{Guid.CreateVersion7()}");
+        DocumentoEdital docAbertura = DocumentoConfirmado(processo.Id);
+        DadosEdital dadosAbertura = NovosDados(docAbertura.Id);
+        SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados()));
+        Result<VersaoConfiguracao> publicar = processo.Publicar(
+            dadosAbertura, canonicoAbertura.Bytes, canonicoAbertura.SchemaVersion, canonicoAbertura.AlgoritmoHash,
+            docAbertura.HashSha256!, "integration-test-user", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
+        publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
+        VersaoConfiguracao versaoAbertura = publicar.Value!;
+
+        Guid processoId = processo.Id;
+        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        {
+            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            await repository.AdicionarAsync(processo, CancellationToken.None);
+            await writeContext.DocumentosEdital.AddAsync(docAbertura, CancellationToken.None);
+            await repository.AdicionarVersaoConfiguracaoAsync(versaoAbertura, CancellationToken.None);
+            await writeContext.SaveChangesAsync(CancellationToken.None);
+        }
+
+        await using SelecaoDbContext sessao = _fixture.CreateDbContext();
+        ProcessoSeletivoRepository processos = new(sessao, TimeProvider.System);
+        ProcessoSeletivo tracked = (await processos.ObterParaMutacaoAsync(processoId, CancellationToken.None))!;
+        // A versão publicada é a de antes dos três dados: os fatos vigentes não os incluem.
+        FatosDasVersoesPublicadas publicadas = FatosDasVersoesPublicadas.De(
+        [
+            VersoesPublicadasDeTeste.Versao(
+                tracked.Formularios,
+                tracked.FatosColetados.Where(static f => f.FatoCodigo is not ("SEXO_CIVIL" or "IDENTIDADE_GENERO" or "ORIENTACAO_SEXUAL")),
+                tracked.GruposColetados),
+        ]);
+        tracked.AbrirRetificacao(
+            "Repor os dados de sexo e gênero", versaoAbertura, identificadorDaVersaoBase: null, publicadas,
+            "integration-test-user", TimeProvider.System.GetUtcNow()).IsSuccess.Should().BeTrue();
+
+        // O estado de um processo publicado antes dos três dados: a seção sem eles, na numeração de então.
+        Result legado = tracked.DefinirFatosColetados(
+            FinalidadeFormulario.Inscricao, FormularioDeTeste.DadosBasicosDeAntesDosDadosDeGenero(), PrecondicaoIfMatch.Curinga);
+        legado.IsSuccess.Should().BeTrue(legado.Error?.Message + string.Join(";", legado.Errors.Select(static e => e.Error.Message)));
+        tracked.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(
+            FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico, "pré-condição: a retificação não fecharia assim");
+
+        IFatoCandidatoReader catalogo = Substitute.For<IFatoCandidatoReader>();
+        catalogo.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com([]));
+        Result<MutacaoAceita> regravacao = await DefinirFatosColetadosCommandHandler.Handle(
+            new DefinirFatosColetadosCommand(processoId, FinalidadeFormulario.Inscricao, [], PrecondicaoIfMatch.Curinga),
+            processos, catalogo, sessao, CancellationToken.None);
+
+        regravacao.IsSuccess.Should().BeTrue(regravacao.Error?.Message);
+        tracked.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)?.Code.Should().NotBe(
+            FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico);
+        tracked.FatosColetados.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao).Select(static f => f.Ordem)
+            .Should().OnlyHaveUniqueItems();
     }
 
     // ── issue #563 — a regra de abreviação de nome é DERIVADA no congelamento, não uma

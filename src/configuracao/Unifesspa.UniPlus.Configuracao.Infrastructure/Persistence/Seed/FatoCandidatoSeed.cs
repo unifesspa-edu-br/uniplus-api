@@ -130,7 +130,7 @@ public static class FatoCandidatoSeed
             PontoResolucaoInscricao, "ATRIBUTO_CANDIDATO:FAIXA_ETARIA",
             ClassificacaoProtecaoDado.Pessoal, FinalidadeRequisitos),
 
-        new(SeedId(7), "SEXO", "Sexo", null,
+        new(SeedId(7), "SEXO", "Sexo biológico", null,
             DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Global,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:SEXO",
             ClassificacaoProtecaoDado.Pessoal, FinalidadeRequisitos),
@@ -272,6 +272,14 @@ public static class FatoCandidatoSeed
             formato: FormatoTexto.Livre, classificacao: ClassificacaoProtecaoDado.Identificador),
         DadoBasico(36, "NOME_MAE", "Nome da mãe", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.NomePessoa),
         DadoBasico(37, "NOME_PAI", "Nome do pai", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.NomePessoa),
+        // Sexo civil, identidade de gênero e orientação sexual (uniplus-developers#316): vocabulários
+        // normativos declarados pelo candidato. A identidade de gênero e a orientação sexual são
+        // dados pessoais sensíveis (LGPD, art. 5º, II) e se gravam com cifra individual.
+        DadoBasico(57, "SEXO_CIVIL", "Sexo civil", DominioFato.Categorico, FinalidadeIdentificacao, fonte: FonteValoresFato.Global),
+        DadoBasico(58, "IDENTIDADE_GENERO", "Identidade de gênero", DominioFato.Categorico, FinalidadeIdentificacao,
+            fonte: FonteValoresFato.Global, classificacao: ClassificacaoProtecaoDado.Sensivel),
+        DadoBasico(59, "ORIENTACAO_SEXUAL", "Orientação sexual", DominioFato.Categorico, FinalidadeIdentificacao,
+            fonte: FonteValoresFato.Global, classificacao: ClassificacaoProtecaoDado.Sensivel),
         DadoBasico(38, "ESTADO_CIVIL", "Estado civil", DominioFato.Categorico, FinalidadeIdentificacao, fonte: FonteValoresFato.Global),
         DadoBasico(39, "EMAIL", "E-mail", DominioFato.Texto, FinalidadeComunicacao, formato: FormatoTexto.Email),
         DadoBasico(40, "TELEFONE", "Telefone", DominioFato.Texto, FinalidadeComunicacao, formato: FormatoTexto.Telefone),
