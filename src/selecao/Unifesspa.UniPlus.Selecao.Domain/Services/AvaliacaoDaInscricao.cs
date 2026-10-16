@@ -116,7 +116,17 @@ public static class AvaliacaoDaInscricao
             .. bonus.FatoElegibilidadeCodigo is { } elegibilidade ? [elegibilidade] : Array.Empty<string>(),
             .. configuracao.Campos.Where(static c => c.OrigemValores == OrigemValoresColeta.MunicipiosDoBonus).Select(static c => c.FatoCodigo),
         ];
-        return DependenciasDe(configuracao.Definicao, new CitacoesDosGatilhos(doCandidato, [], []));
+        // O campo de município dentro de um grupo repetível é de membro: o fator o lê de cada ocorrência, e o
+        // grupo, com o que decide se ele aparece, entra como nas dependências da avaliação.
+        (string Grupo, string Fato)[] deMembro =
+        [
+            .. configuracao.Grupos.SelectMany(static g => g.Subitens
+                .Where(static s => s.OrigemValores == OrigemValoresColeta.MunicipiosDoBonus)
+                .Select(s => (Grupo: g.Codigo, Fato: s.FatoCodigo))),
+        ];
+        return DependenciasDe(
+            configuracao.Definicao,
+            new CitacoesDosGatilhos(doCandidato, deMembro, [.. deMembro.Select(static m => m.Grupo).Distinct(StringComparer.Ordinal)]));
     }
 
     /// <summary>

@@ -134,6 +134,16 @@ public sealed class AvaliacaoDaInscricaoTests
         dependencias.Fatos.Should().BeEquivalentTo([MunicipioDoBonus, PedeOFator]);
     }
 
+    [Fact(DisplayName = "O campo com os municípios do bônus dentro de um grupo repetível entra como GRUPO.FATO, com o grupo e o que o exibe")]
+    public void DependenciasDoFator_CampoDeMunicipioNoGrupoEntraComoMembro()
+    {
+        DependenciasDaAvaliacao dependencias = AvaliacaoDaInscricao.DependenciasDoFator(
+            Configuracao(derivaModalidade: false, municipioDoBonus: false, municipioNoGrupo: true), Bonus(fatoElegibilidade: null));
+
+        dependencias.Fatos.Should().BeEquivalentTo([$"{GrupoDeMunicipios}.{MunicipioDoBonus}", PedeOFator]);
+        dependencias.Grupos.Should().Equal([GrupoDeMunicipios]);
+    }
+
     [Fact(DisplayName = "Processo sem bônus regional não tem Fator: as dependências são vazias")]
     public void DependenciasDoFator_SemBonus_Vazias()
     {
@@ -180,17 +190,18 @@ public sealed class AvaliacaoDaInscricaoTests
     private const string BaixaRenda = "BAIXA_RENDA";
     private const string PedeOFator = "PEDE_O_FATOR";
     private const string MunicipioDoBonus = "MUNICIPIO_DO_BONUS";
+    private const string GrupoDeMunicipios = "GRUPO_MUNICIPIOS";
 
     private static ConfiguracaoBonusRegional Bonus(string? fatoElegibilidade) =>
         ConfiguracaoBonusRegional.Criar(
             ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", new string('e', 64)).Value!, 1.20m, null, fatoElegibilidade, Guid.CreateVersion7(),
             "PORTARIA", "Portaria de teste", "Inclusão regional", [("1504208", "Marabá", "PA")]).Value!;
 
-    private static ConfiguracaoAvaliavel Configuracao(bool derivaModalidade, bool rendaSoParaBaixaRenda = false, bool municipioDoBonus = false)
+    private static ConfiguracaoAvaliavel Configuracao(bool derivaModalidade, bool rendaSoParaBaixaRenda = false, bool municipioDoBonus = false, bool municipioNoGrupo = false)
     {
         PredicadoDnf soComBaixaRenda = PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(1, CondicaoDnf.Criar(BaixaRenda, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
-        string[] perguntas = [.. rendaSoParaBaixaRenda ? [BaixaRenda, .. Perguntas] : Perguntas, .. municipioDoBonus ? new[] { PedeOFator, MunicipioDoBonus } : []];
+        string[] perguntas = [.. rendaSoParaBaixaRenda ? [BaixaRenda, .. Perguntas] : Perguntas, .. municipioDoBonus ? new[] { PedeOFator, MunicipioDoBonus } : municipioNoGrupo ? new[] { PedeOFator } : []];
         PredicadoDnf soSePedeOFator = PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(1, CondicaoDnf.Criar(PedeOFator, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
         RegrasDerivacaoFato egresso = RegrasDerivacaoFato.CriarBooleana(
@@ -212,13 +223,27 @@ public sealed class AvaliacaoDaInscricaoTests
                 f, rendaSoParaBaixaRenda && f == "CONCORRER_RENDA" ? soComBaixaRenda : f == MunicipioDoBonus ? soSePedeOFator : null, Obrigatoriedade.Sempre, []))])],
             [],
             derivacoes);
+        GrupoColetado[] grupos = [];
+        if (municipioNoGrupo)
+        {
+            FatoColetado membro = FatoColetado.Criar(
+                MunicipioDoBonus, 0, "Município", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, "SENSIVEL",
+                OrigemValoresColeta.MunicipiosDoBonus).Value!;
+            grupos = [GrupoColetado.Criar(GrupoDeMunicipios, 1, Secao, "Municípios", 0, 3, null, Obrigatoriedade.Sempre, [membro], FinalidadeFormulario.Inscricao).Value!];
+            definicao = new DefinicaoFormulario(
+                [new DefinicaoEtapa(Etapa, null, [.. perguntas.Select(f => new DefinicaoItem(f, null, Obrigatoriedade.Sempre, []))],
+                    [new DefinicaoGrupo(GrupoDeMunicipios, soSePedeOFator, Obrigatoriedade.Sempre, 0, 3,
+                        [new DefinicaoItem(MunicipioDoBonus, null, Obrigatoriedade.Sempre, [])])])],
+                [],
+                derivacoes);
+        }
 
         return new ConfiguracaoAvaliavel(
             definicao,
             new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
             ArvoreExigenciasCongelada.DeGrafoReidratado([]),
             campos,
-            [],
+            grupos,
             ofertadas,
             [],
             []);
