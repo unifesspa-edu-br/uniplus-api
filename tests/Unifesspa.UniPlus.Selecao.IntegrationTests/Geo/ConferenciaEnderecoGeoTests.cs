@@ -72,13 +72,15 @@ public sealed class ConferenciaEnderecoGeoTests
         registro.Entradas.Should().HaveCount(2);
         registro.Entradas.Should().OnlyContain(e => e.Excecao != null && e.Mensagem.Contains("não respondeu", StringComparison.Ordinal));
         registro.Entradas.Select(e => e.Mensagem).Should().NotContain(m => m.Contains("68500000", StringComparison.Ordinal) || m.Contains("1504208", StringComparison.Ordinal));
+        // O envelope do Refit, que guarda a requisição com o CEP na URI e o token no header, não vai ao log.
+        registro.Entradas.Should().OnlyContain(e => ReferenceEquals(e.Excecao, causa));
     }
 
     private static ApiResponse<T> SemStatusComErro<T>(Exception causa)
     {
-        ApiException erro = ApiException.Create(
-            new HttpRequestMessage(), HttpMethod.Get, new HttpResponseMessage(HttpStatusCode.InternalServerError), new RefitSettings(), causa)
-            .GetAwaiter().GetResult();
+        HttpRequestMessage requisicao = new(HttpMethod.Get, "https://geo.exemplo.test/api/cep/68500000");
+        requisicao.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "token-de-teste");
+        ApiRequestException erro = new(requisicao, HttpMethod.Get, new RefitSettings(), causa);
         return new(new HttpRequestMessage(), null, default, new RefitSettings(), erro);
     }
 

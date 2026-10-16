@@ -136,11 +136,15 @@ internal sealed partial class ConferenciaEnderecoGeo : IConferenciaEnderecoGeo
     }
 
     // Sem StatusCode não houve resposta HTTP: o Refit guardou a causa (rede, timeout, autenticação)
-    // em Error. A exceção é registrada com o recurso apenas — nunca CEP, município nem credenciais.
+    // em Error. O envelope do Refit carrega a requisição — a URI com o CEP ou o município e o header
+    // do token —, então só a causa interna vai ao log, nunca o envelope.
     private void RegistrarRespostaSemSucesso(IApiResponse resposta, string recurso)
     {
-        if (resposta.StatusCode is null && resposta.Error is { } causa)
+        if (resposta.StatusCode is null && resposta.Error is { } erro)
         {
+            Exception causa = erro is ApiExceptionBase envelope
+                ? envelope.InnerException ?? new InvalidOperationException(envelope.Message)
+                : erro;
             LogGeoIndisponivel(_logger, recurso, causa);
             return;
         }
