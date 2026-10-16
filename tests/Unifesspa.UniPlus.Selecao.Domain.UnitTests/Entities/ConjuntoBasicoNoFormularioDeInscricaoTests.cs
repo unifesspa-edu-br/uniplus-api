@@ -23,6 +23,9 @@ public sealed class ConjuntoBasicoNoFormularioDeInscricaoTests
     [Theory(DisplayName = "O formulário de inscrição sem algum dado básico é recusado na publicação e no checklist")]
     [InlineData(null)]
     [InlineData("NOME_PAI")]
+    [InlineData("SEXO_CIVIL")]
+    [InlineData("IDENTIDADE_GENERO")]
+    [InlineData("ORIENTACAO_SEXUAL")]
     public void Publicacao_InscricaoSemDadoBasico_Recusa(string? semODado)
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();

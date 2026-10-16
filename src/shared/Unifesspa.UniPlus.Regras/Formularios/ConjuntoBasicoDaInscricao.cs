@@ -62,6 +62,11 @@ public static class ConjuntoBasicoDaInscricao
     /// modelo, e o do conjunto básico onde ele ainda não foi gravado. O item básico gravado fora da
     /// seção não é referência: o envio que o repete é recusado como alteração.
     /// </summary>
+    /// <remarks>
+    /// O item básico que falta numa seção já gravada — por ter entrado no conjunto depois — recebe a
+    /// ordem logo acima do último item da seção, para ficar nela: o que vem depois da seção desloca-se
+    /// em <see cref="MesclarItens"/>. Sem nenhum item básico gravado, o conjunto básico vale como é.
+    /// </remarks>
     public static IReadOnlyList<FatoColetadoInput> Referencia(IEnumerable<FatoColetadoInput> gravados)
     {
         ArgumentNullException.ThrowIfNull(gravados);
@@ -69,7 +74,8 @@ public static class ConjuntoBasicoDaInscricao
             .Where(static g => g is not null && Fatos.Contains(g.FatoCodigo) && EhDaSecao(g.EtapaCodigo))
             .DistinctBy(static g => g.FatoCodigo, StringComparer.Ordinal)
             .ToDictionary(static g => g.FatoCodigo, StringComparer.Ordinal);
-        return [.. Itens.Select(i => porCodigo.GetValueOrDefault(i.FatoCodigo) ?? i)];
+        int proxima = porCodigo.Count == 0 ? 0 : porCodigo.Values.Max(static g => g.Ordem) + 1;
+        return [.. Itens.Select(i => porCodigo.GetValueOrDefault(i.FatoCodigo) ?? (porCodigo.Count == 0 ? i : i with { Ordem = proxima++ }))];
     }
 
     /// <summary>A seção gravada num formulário ou num modelo, ou a do conjunto básico.</summary>
@@ -109,10 +115,13 @@ public static class ConjuntoBasicoDaInscricao
             }
         }
 
+        // O que vem depois da seção desloca-se só o bastante para abrir lugar ao último item dela: dos
+        // itens e grupos do cliente, o primeiro passa a ser o seguinte ao último básico.
         int teto = referencia.Count == 0 ? -1 : referencia.Max(static r => r.Ordem);
-        bool colide = enviados.Any(i => i is not null && !Fatos.Contains(i.FatoCodigo) && i.Ordem <= teto)
-            || grupos.Any(g => g is not null && g.Ordem <= teto);
-        int deslocamento = colide ? teto + 1 : 0;
+        int primeiro = enviados.Where(i => i is not null && !Fatos.Contains(i.FatoCodigo)).Select(static i => i.Ordem)
+            .Concat(grupos.Where(static g => g is not null).Select(static g => g.Ordem))
+            .DefaultIfEmpty(int.MaxValue).Min();
+        int deslocamento = primeiro <= teto ? teto + 1 - primeiro : 0;
 
         HashSet<string> enviadosBasicos = new(enviados.Where(static i => i is not null && Fatos.Contains(i.FatoCodigo)).Select(static i => i.FatoCodigo), StringComparer.Ordinal);
         IReadOnlyList<FatoColetadoInput> itens =
@@ -269,7 +278,10 @@ public static class ConjuntoBasicoDaInscricao
             new("NOME_MAE", 0, "Nome da mãe", texto, sempre, null),
             new("NOME_PAI", 0, "Nome do pai", texto, PredicadoDnfJson.ObrigatoriedadeNunca, null),
             new("ESTADO_CIVIL", 0, "Estado civil", selecao, sempre, null),
-            new("SEXO", 0, "Sexo", selecao, sempre, null),
+            new("SEXO", 0, "Sexo biológico", selecao, sempre, null),
+            new("SEXO_CIVIL", 0, "Sexo civil", selecao, sempre, null),
+            new("IDENTIDADE_GENERO", 0, "Identidade de gênero", selecao, sempre, null),
+            new("ORIENTACAO_SEXUAL", 0, "Orientação sexual", selecao, sempre, null),
             new("COR_RACA", 0, "Cor ou raça", selecao, sempre, null),
             new("EMAIL", 0, "E-mail", texto, sempre, null),
             new("TELEFONE", 0, "Telefone", texto, sempre, null),

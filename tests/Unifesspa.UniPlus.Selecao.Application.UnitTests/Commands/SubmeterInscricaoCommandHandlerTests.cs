@@ -105,6 +105,9 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         ["NOME_MAE"] = JsonSerializer.SerializeToElement("Maria Drumond"),
         ["ESTADO_CIVIL"] = JsonSerializer.SerializeToElement("SOLTEIRO"),
         ["SEXO"] = JsonSerializer.SerializeToElement("FEMININO"),
+        ["SEXO_CIVIL"] = JsonSerializer.SerializeToElement("FEMININO"),
+        ["IDENTIDADE_GENERO"] = JsonSerializer.SerializeToElement("PREFIRO_NAO_INFORMAR"),
+        ["ORIENTACAO_SEXUAL"] = JsonSerializer.SerializeToElement("PREFIRO_NAO_INFORMAR"),
         ["COR_RACA"] = JsonSerializer.SerializeToElement("PARDA"),
         ["EMAIL"] = JsonSerializer.SerializeToElement("fernanda.drumond@example.com"),
         ["TELEFONE"] = JsonSerializer.SerializeToElement("91999999999"),
@@ -356,7 +359,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf));
     }
 
-    [Fact(DisplayName = "Item obrigatório respondido e termo obrigatório aceito na versão fixada: submete, gera número e grava o comprovante")]
+    [Fact(DisplayName = "Item obrigatório respondido e termo obrigatório aceito na versão fixada: submete, gera número e grava o comprovante, com 'Prefiro não informar' em identidade de gênero e orientação sexual")]
     public async Task Handle_ItemRespondidoETermoAceito_Submete()
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
@@ -382,6 +385,8 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         resultado.Value!.NumeroInscricao.Should().Be("00000042");
         resultado.Value!.CpfMascarado.Should().Be(cpf.Mascarado);
         resultado.Value!.Respostas.Should().ContainKey("APELIDO").WhoseValue.GetString().Should().Be("Nanda");
+        resultado.Value!.Respostas["IDENTIDADE_GENERO"].GetString().Should().Be("PREFIRO_NAO_INFORMAR", "'Prefiro não informar' é resposta válida e volta ao titular no comprovante");
+        resultado.Value!.Respostas["ORIENTACAO_SEXUAL"].GetString().Should().Be("PREFIRO_NAO_INFORMAR");
         HashCanonicalComputer.IsValidHashShape(resultado.Value!.HashIntegridade).Should().BeTrue();
         await inscricaoRepository.Received(1).AtualizarAsync(existente, Arg.Any<CancellationToken>());
         await inscricaoRepository.Received(1).AdicionarComprovanteAsync(Arg.Any<ComprovanteInscricao>(), Arg.Any<CancellationToken>());

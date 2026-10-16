@@ -174,7 +174,7 @@ public sealed class FatoCandidatoPersistenceTests
 
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
 
-        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(54);
+        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(57);
         fatos.Select(f => f.Codigo).Should().OnlyHaveUniqueItems();
 
         foreach (FatoCandidatoSeedItem item in FatoCandidatoSeed.Itens)
@@ -196,6 +196,56 @@ public sealed class FatoCandidatoPersistenceTests
         }
     }
 
+    [Fact(DisplayName = "Sexo civil, identidade de gênero e orientação sexual são fatos de sistema com as opções fixas da issue, e o sexo passa a biológico")]
+    public async Task Seed_SexoCivilIdentidadeDeGeneroEOrientacaoSexual_TemAsOpcoesFixas()
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        FatoCandidatoReader reader = new(ctx);
+
+        Dictionary<string, string[]> esperado = new(StringComparer.Ordinal)
+        {
+            ["SEXO_CIVIL"] = ["FEMININO", "MASCULINO"],
+            ["IDENTIDADE_GENERO"] = ["PESSOA_CIS", "PESSOA_TRANSGENERO", "TRAVESTI", "TRANSEXUAL", "PESSOA_NAO_BINARIA", "PREFIRO_NAO_INFORMAR"],
+            ["ORIENTACAO_SEXUAL"] = ["HETEROSSEXUAL", "HOMOSSEXUAL", "BISSEXUAL", "ASSEXUAL", "PANSEXUAL", "PREFIRO_NAO_INFORMAR"],
+        };
+
+        foreach ((string codigo, string[] opcoes) in esperado)
+        {
+            FatoCandidato fato = await ctx.FatosCandidato.AsNoTracking().Include(f => f.ValoresDominioDeclarados).SingleAsync(f => f.Codigo == codigo);
+            fato.Sistema.Should().BeTrue($"{codigo} é fato de sistema: o administrador não acrescenta nem desativa opção");
+            fato.ValoresDominioDeclarados.OrderBy(v => v.Ordem).Select(v => v.Codigo).Should().Equal(opcoes);
+            fato.ValoresDominioDeclarados.Should().OnlyContain(v => v.Ativo);
+
+            Result acrescimo = fato.AdicionarValorDominio("OUTRA", "Outra opção", 9, true);
+            acrescimo.IsFailure.Should().BeTrue($"o vocabulário de {codigo} é normativo");
+        }
+
+        FatoCandidatoView genero = (await reader.ObterPorCodigoAsync("IDENTIDADE_GENERO"))!;
+        genero.ValoresDominioDeclarados!.Single(v => v.Codigo == "PESSOA_NAO_BINARIA").Descricao.Should().Be("Pessoa não binária");
+        genero.ValoresDominioDeclarados!.Single(v => v.Codigo == "PREFIRO_NAO_INFORMAR").Descricao.Should().Be("Prefiro não informar");
+
+        FatoCandidato sexo = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "SEXO");
+        sexo.Nome.Should().Be("Sexo biológico");
+    }
+
+    [Fact(DisplayName = "O sexo civil é pessoal; a identidade de gênero e a orientação sexual são sensíveis")]
+    public async Task Seed_SexoCivilIdentidadeDeGeneroEOrientacaoSexual_TemAClassificacaoDaIssue()
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        Dictionary<string, ClassificacaoProtecaoDado> classificacoes = await ctx.FatosCandidato.AsNoTracking()
+            .Where(f => f.Codigo == "SEXO" || f.Codigo == "SEXO_CIVIL" || f.Codigo == "IDENTIDADE_GENERO" || f.Codigo == "ORIENTACAO_SEXUAL")
+            .ToDictionaryAsync(f => f.Codigo, f => f.ClassificacaoProtecao);
+
+        classificacoes.Should().BeEquivalentTo(new Dictionary<string, ClassificacaoProtecaoDado>
+        {
+            ["SEXO"] = ClassificacaoProtecaoDado.Pessoal,
+            ["SEXO_CIVIL"] = ClassificacaoProtecaoDado.Pessoal,
+            ["IDENTIDADE_GENERO"] = ClassificacaoProtecaoDado.Sensivel,
+            ["ORIENTACAO_SEXUAL"] = ClassificacaoProtecaoDado.Sensivel,
+        });
+    }
+
     [Fact(DisplayName = "Cor ou raça, deficiência, tipo de deficiência e o que os revela são sensíveis; o nome social é público; CPF, RG e documento do estrangeiro são identificador; os demais, pessoais")]
     public async Task Seed_ClassificacaoDeProtecao()
     {
@@ -206,7 +256,8 @@ public sealed class FatoCandidatoPersistenceTests
         fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoProtecaoDado.Sensivel)
             .Select(f => f.Codigo).Order(StringComparer.Ordinal).Should().Equal(
                 "CONCORRER_PCD", "CONCORRER_PPI", "CONCORRER_Q", "CONCORRER_VAGA_POR_ACRESCIMO", "CONDICAO_ATENDIMENTO", "COR_RACA",
-                "INDIGENA", "MODALIDADE", "MODALIDADE_CONVOCACAO", "PCD", "QUILOMBOLA", "RECURSO_ACESSIBILIDADE", "TIPO_DEFICIENCIA");
+                "IDENTIDADE_GENERO", "INDIGENA", "MODALIDADE", "MODALIDADE_CONVOCACAO", "ORIENTACAO_SEXUAL", "PCD", "QUILOMBOLA", "RECURSO_ACESSIBILIDADE",
+                "TIPO_DEFICIENCIA");
         fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoProtecaoDado.Publico)
             .Select(f => f.Codigo).Should().Equal("NOME_SOCIAL");
         fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoProtecaoDado.Identificador)
@@ -426,7 +477,7 @@ public sealed class FatoCandidatoPersistenceTests
         List<FatoValorDominio> valores = await ctx.FatosValorDominio.AsNoTracking()
             .Where(v => ctx.FatosCandidato.Any(f => f.Id == v.FatoCandidatoId && f.Sistema))
             .ToListAsync();
-        valores.Should().HaveCount(FatoValorDominioSeed.Itens.Count).And.HaveCount(66);
+        valores.Should().HaveCount(FatoValorDominioSeed.Itens.Count).And.HaveCount(80);
 
         FatoCandidato corRaca = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "COR_RACA");
         string[] codigosCorRaca = [.. valores
@@ -513,7 +564,7 @@ public sealed class FatoCandidatoPersistenceTests
         IReadOnlyList<FatoCandidatoView> views =
             [.. (await reader.ListarAsync()).Where(static v => FatoCandidatoSeed.Itens.Any(i => i.Codigo == v.Codigo))];
 
-        views.Should().HaveCount(54);
+        views.Should().HaveCount(57);
         views.Select(v => v.Codigo).Should().BeInAscendingOrder(StringComparer.Ordinal);
 
         FatoCandidatoView corRaca = views.Single(v => v.Codigo == "COR_RACA");
@@ -667,6 +718,9 @@ public sealed class FatoCandidatoPersistenceTests
             ("OPTOU_PELAS_COTAS_DA_LEI", "054", DominioFato.Booleano, OrigemFato.Derivado, CardinalidadeFato.Escalar, "REGRA_DERIVACAO:OPTOU_PELAS_COTAS_DA_LEI", "INSCRICAO"),
             ("CONCORRER_VAGA_POR_ACRESCIMO", "055", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:CONCORRER_VAGA_POR_ACRESCIMO", "INSCRICAO"),
             ("RG_ORGAO_EMISSOR_OUTRO", "056", DominioFato.Texto, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:RG_ORGAO_EMISSOR_OUTRO", "INSCRICAO"),
+            ("SEXO_CIVIL", "057", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:SEXO_CIVIL", "INSCRICAO"),
+            ("IDENTIDADE_GENERO", "058", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:IDENTIDADE_GENERO", "INSCRICAO"),
+            ("ORIENTACAO_SEXUAL", "059", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:ORIENTACAO_SEXUAL", "INSCRICAO"),
         ];
 
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);

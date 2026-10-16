@@ -59,6 +59,9 @@ internal static class CatalogoDoConjuntoBasico
         Texto("NOME_PAI", "NOME_PESSOA"),
         Categorico("ESTADO_CIVIL", "SOLTEIRO", "CASADO", "UNIAO_ESTAVEL", "SEPARADO", "DIVORCIADO", "VIUVO"),
         Categorico("SEXO", "FEMININO", "MASCULINO", "INTERSEXO"),
+        Categorico("SEXO_CIVIL", "FEMININO", "MASCULINO"),
+        Sensivel("IDENTIDADE_GENERO", "PESSOA_CIS", "PESSOA_TRANSGENERO", "TRAVESTI", "TRANSEXUAL", "PESSOA_NAO_BINARIA", "PREFIRO_NAO_INFORMAR"),
+        Sensivel("ORIENTACAO_SEXUAL", "HETEROSSEXUAL", "HOMOSSEXUAL", "BISSEXUAL", "ASSEXUAL", "PANSEXUAL", "PREFIRO_NAO_INFORMAR"),
         Categorico("COR_RACA", "BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA", "NAO_INFORMADO"),
         Texto("EMAIL", "EMAIL"),
         Texto("TELEFONE", "TELEFONE"),
@@ -79,5 +82,9 @@ internal static class CatalogoDoConjuntoBasico
 
     private static FatoCandidatoView Geo(string codigo, string fonte) => Declarado(codigo, "CATEGORICO", fonte: fonte);
 
-    private static FatoCandidatoView Categorico(string codigo, params string[] valores) => Declarado(codigo, "CATEGORICO", fonte: "GLOBAL", valores: valores);
+    private static FatoCandidatoView Categorico(string codigo, params string[] valores) =>
+        Declarado(codigo, "CATEGORICO", fonte: "GLOBAL", valores: valores);
+
+    private static FatoCandidatoView Sensivel(string codigo, params string[] valores) =>
+        Declarado(codigo, "CATEGORICO", fonte: "GLOBAL", valores: valores, classificacao: "SENSIVEL");
 }

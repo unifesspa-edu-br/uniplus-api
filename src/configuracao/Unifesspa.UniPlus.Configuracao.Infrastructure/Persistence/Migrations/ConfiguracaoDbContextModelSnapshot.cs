@@ -1324,7 +1324,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             FinalidadeTratamento = "Verificação dos requisitos de participação e das exigências documentais do processo seletivo.",
                             FonteValores = "GLOBAL",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
-                            Nome = "Sexo",
+                            Nome = "Sexo biológico",
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
@@ -1964,6 +1964,69 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             Formato = "NOME_PESSOA",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Nome do pai",
+                            Origem = "DECLARADO",
+                            PontoResolucao = "INSCRICAO",
+                            RegrasPadrao = "[]",
+                            Sistema = true
+                        },
+                        new
+                        {
+                            Id = new Guid("fa700000-0000-7000-8000-000000000057"),
+                            Ativo = true,
+                            Binding = "CAMPO_FORMULARIO:SEXO_CIVIL",
+                            Cardinalidade = "ESCALAR",
+                            ClassificacaoProtecao = "PESSOAL",
+                            Codigo = "SEXO_CIVIL",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Dependencias = new string[0],
+                            Dominio = "CATEGORICO",
+                            Escopo = "CANDIDATO",
+                            FinalidadeTratamento = "Identificação do candidato no processo seletivo.",
+                            FonteValores = "GLOBAL",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            Nome = "Sexo civil",
+                            Origem = "DECLARADO",
+                            PontoResolucao = "INSCRICAO",
+                            RegrasPadrao = "[]",
+                            Sistema = true
+                        },
+                        new
+                        {
+                            Id = new Guid("fa700000-0000-7000-8000-000000000058"),
+                            Ativo = true,
+                            Binding = "CAMPO_FORMULARIO:IDENTIDADE_GENERO",
+                            Cardinalidade = "ESCALAR",
+                            ClassificacaoProtecao = "SENSIVEL",
+                            Codigo = "IDENTIDADE_GENERO",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Dependencias = new string[0],
+                            Dominio = "CATEGORICO",
+                            Escopo = "CANDIDATO",
+                            FinalidadeTratamento = "Identificação do candidato no processo seletivo.",
+                            FonteValores = "GLOBAL",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            Nome = "Identidade de gênero",
+                            Origem = "DECLARADO",
+                            PontoResolucao = "INSCRICAO",
+                            RegrasPadrao = "[]",
+                            Sistema = true
+                        },
+                        new
+                        {
+                            Id = new Guid("fa700000-0000-7000-8000-000000000059"),
+                            Ativo = true,
+                            Binding = "CAMPO_FORMULARIO:ORIENTACAO_SEXUAL",
+                            Cardinalidade = "ESCALAR",
+                            ClassificacaoProtecao = "SENSIVEL",
+                            Codigo = "ORIENTACAO_SEXUAL",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Dependencias = new string[0],
+                            Dominio = "CATEGORICO",
+                            Escopo = "CANDIDATO",
+                            FinalidadeTratamento = "Identificação do candidato no processo seletivo.",
+                            FonteValores = "GLOBAL",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            Nome = "Orientação sexual",
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
@@ -3033,6 +3096,146 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000047"),
                             Ordem = 11,
                             Orientacao = "Para quem concluiu pelo ENCCEJA, por exame de proficiência ou pelo ENEM sem frequentar o ensino médio."
+                        },
+                        new
+                        {
+                            Id = new Guid("fa70d000-0000-7000-8000-000000000069"),
+                            Ativo = true,
+                            Codigo = "FEMININO",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Descricao = "Feminino",
+                            FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000057"),
+                            Ordem = 0
+                        },
+                        new
+                        {
+                            Id = new Guid("fa70d000-0000-7000-8000-000000000070"),
+                            Ativo = true,
+                            Codigo = "MASCULINO",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Descricao = "Masculino",
+                            FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000057"),
+                            Ordem = 1
+                        },
+                        new
+                        {
+                            Id = new Guid("fa70d000-0000-7000-8000-000000000071"),
+                            Ativo = true,
+                            Codigo = "PESSOA_CIS",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Descricao = "Pessoa cisgênero",
+                            FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000058"),
+                            Ordem = 0
+                        },
+                        new
+                        {
+                            Id = new Guid("fa70d000-0000-7000-8000-000000000072"),
+                            Ativo = true,
+                            Codigo = "PESSOA_TRANSGENERO",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Descricao = "Pessoa transgênero",
+                            FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000058"),
+                            Ordem = 1
+                        },
+                        new
+                        {
+                            Id = new Guid("fa70d000-0000-7000-8000-000000000073"),
+                            Ativo = true,
+                            Codigo = "TRAVESTI",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Descricao = "Travesti",
+                            FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000058"),
+                            Ordem = 2
+                        },
+                        new
+                        {
+                            Id = new Guid("fa70d000-0000-7000-8000-000000000074"),
+                            Ativo = true,
+                            Codigo = "TRANSEXUAL",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Descricao = "Transexual",
+                            FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000058"),
+                            Ordem = 3
+                        },
+                        new
+                        {
+                            Id = new Guid("fa70d000-0000-7000-8000-000000000075"),
+                            Ativo = true,
+                            Codigo = "PESSOA_NAO_BINARIA",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Descricao = "Pessoa não binária",
+                            FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000058"),
+                            Ordem = 4
+                        },
+                        new
+                        {
+                            Id = new Guid("fa70d000-0000-7000-8000-000000000076"),
+                            Ativo = true,
+                            Codigo = "PREFIRO_NAO_INFORMAR",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Descricao = "Prefiro não informar",
+                            FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000058"),
+                            Ordem = 5
+                        },
+                        new
+                        {
+                            Id = new Guid("fa70d000-0000-7000-8000-000000000077"),
+                            Ativo = true,
+                            Codigo = "HETEROSSEXUAL",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Descricao = "Heterossexual",
+                            FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000059"),
+                            Ordem = 0
+                        },
+                        new
+                        {
+                            Id = new Guid("fa70d000-0000-7000-8000-000000000078"),
+                            Ativo = true,
+                            Codigo = "HOMOSSEXUAL",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Descricao = "Homossexual",
+                            FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000059"),
+                            Ordem = 1
+                        },
+                        new
+                        {
+                            Id = new Guid("fa70d000-0000-7000-8000-000000000079"),
+                            Ativo = true,
+                            Codigo = "BISSEXUAL",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Descricao = "Bissexual",
+                            FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000059"),
+                            Ordem = 2
+                        },
+                        new
+                        {
+                            Id = new Guid("fa70d000-0000-7000-8000-000000000080"),
+                            Ativo = true,
+                            Codigo = "ASSEXUAL",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Descricao = "Assexual",
+                            FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000059"),
+                            Ordem = 3
+                        },
+                        new
+                        {
+                            Id = new Guid("fa70d000-0000-7000-8000-000000000081"),
+                            Ativo = true,
+                            Codigo = "PANSEXUAL",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Descricao = "Pansexual",
+                            FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000059"),
+                            Ordem = 4
+                        },
+                        new
+                        {
+                            Id = new Guid("fa70d000-0000-7000-8000-000000000082"),
+                            Ativo = true,
+                            Codigo = "PREFIRO_NAO_INFORMAR",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Descricao = "Prefiro não informar",
+                            FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000059"),
+                            Ordem = 5
                         });
                 });
 

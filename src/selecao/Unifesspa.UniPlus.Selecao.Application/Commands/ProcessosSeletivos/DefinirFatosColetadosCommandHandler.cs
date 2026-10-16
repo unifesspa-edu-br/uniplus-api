@@ -77,9 +77,21 @@ public static class DefinirFatosColetadosCommandHandler
         // estão gravados, na ordem do formulário, e não sobem com os itens enviados.
         IReadOnlyList<FatoColetadoInput> itens = command.Itens;
         List<FieldError> daSecao = [];
+        bool gruposDeslocadosAGravar = false;
         if (command.Finalidade == FinalidadeFormulario.Inscricao)
         {
-            (itens, grupos, daSecao) = ConjuntoBasicoDaInscricao.MesclarItens(command.Itens, grupos, SecaoDadosBasicosDoProcesso.Itens(processo));
+            IReadOnlyList<FatoColetadoInput> referencia = SecaoDadosBasicosDoProcesso.Itens(processo);
+
+            // O item básico que falta no formulário gravado entra na seção e desloca o que vem depois dela. Os
+            // grupos omitidos ficam como estão gravados, mas então entram na mescla e são regravados, para o
+            // deslocamento ter uma fonte só e a ordem seguir única.
+            if (command.Grupos is null && SecaoDadosBasicosDoProcesso.SecaoGanhaBasicos(processo))
+            {
+                grupos = SecaoDadosBasicosDoProcesso.Grupos(processo);
+                gruposDeslocadosAGravar = true;
+            }
+
+            (itens, grupos, daSecao) = ConjuntoBasicoDaInscricao.MesclarItens(command.Itens, grupos, referencia);
         }
 
         // A forma vem antes da leitura do catálogo, sem I/O; o item de forma inválida só não segue
@@ -112,7 +124,7 @@ public static class DefinirFatosColetadosCommandHandler
 
         // Grupos omitidos ficam como estão no formulário; a lista vazia os remove.
         Result result = processo.DefinirFatosColetados(
-            command.Finalidade, fatos, command.Precondicao, command.Grupos is null ? null : gruposResolvidos);
+            command.Finalidade, fatos, command.Precondicao, command.Grupos is null && !gruposDeslocadosAGravar ? null : gruposResolvidos);
         if (result.IsFailure)
         {
             return Result<MutacaoAceita>.ValidationFailure(result.Errors);

@@ -31,6 +31,33 @@ internal static class SecaoDadosBasicosDoProcesso
                 gravada.Titulo, gravada.Descricao, gravada.Aviso, EntradaDeRegras.ParaEntrada(gravada.Exibicao))));
     }
 
+    /// <summary>Os grupos gravados no formulário de inscrição, na forma de entrada.</summary>
+    public static IReadOnlyList<GrupoColetadoInput> Grupos(ProcessoSeletivo processo)
+    {
+        ArgumentNullException.ThrowIfNull(processo);
+        return [.. processo.GruposColetados
+            .Where(static g => g.Finalidade == FinalidadeFormulario.Inscricao)
+            .Select(static g => new GrupoColetadoInput(
+                g.Codigo, g.Ordem, g.Rotulo, g.EtapaCodigo, g.Minimo, g.Maximo, EntradaDeRegras.ParaEntrada(g.Exibicao),
+                EntradaDeRegras.ParaEntrada(g.Obrigatoriedade), EntradaDeRegras.ParaEntrada(g.Obrigatoriedade.Predicado),
+                [.. g.Subitens.Select(Entrada)], g.IncluiCandidato))];
+    }
+
+    /// <summary>
+    /// A seção gravada ganha itens básicos na próxima gravação: ela já tem algum, mas não todos. O
+    /// deslocamento do que vem depois dela é de <see cref="ConjuntoBasicoDaInscricao.MesclarItens"/>.
+    /// </summary>
+    public static bool SecaoGanhaBasicos(ProcessoSeletivo processo)
+    {
+        ArgumentNullException.ThrowIfNull(processo);
+        int naSecao = processo.FatosColetados
+            .Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao
+                && string.Equals(f.EtapaCodigo, ConjuntoBasicoDaInscricao.CodigoDaSecao, StringComparison.Ordinal)
+                && ConjuntoBasicoDaInscricao.Fatos.Contains(f.FatoCodigo))
+            .Select(static f => f.FatoCodigo).Distinct(StringComparer.Ordinal).Count();
+        return naSecao > 0 && naSecao < ConjuntoBasicoDaInscricao.Fatos.Count;
+    }
+
     /// <summary>O item gravado na forma de entrada.</summary>
     private static FatoColetadoInput Entrada(FatoColetado fato) =>
         new(
