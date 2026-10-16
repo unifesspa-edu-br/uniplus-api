@@ -68,7 +68,7 @@ internal sealed partial class ConferenciaEnderecoGeo : IConferenciaEnderecoGeo
 
             if (!resposta.IsSuccessStatusCode)
             {
-                LogRespostaInesperada(_logger, "cep", (int)(resposta.StatusCode ?? default));
+                RegistrarRespostaSemSucesso(resposta, "cep");
                 return Result.Failure(ErroIndisponivel());
             }
 
@@ -117,7 +117,7 @@ internal sealed partial class ConferenciaEnderecoGeo : IConferenciaEnderecoGeo
 
             if (!resposta.IsSuccessStatusCode)
             {
-                LogRespostaInesperada(_logger, "cidade", (int)(resposta.StatusCode ?? default));
+                RegistrarRespostaSemSucesso(resposta, "cidade");
                 return Result.Failure(ErroIndisponivel());
             }
 
@@ -133,6 +133,19 @@ internal sealed partial class ConferenciaEnderecoGeo : IConferenciaEnderecoGeo
                     ConferenciaEnderecoGeoErrorCodes.MunicipioDivergente,
                     "O município informado não pertence à UF declarada."));
         }
+    }
+
+    // Sem StatusCode não houve resposta HTTP: o Refit guardou a causa (rede, timeout, autenticação)
+    // em Error. A exceção é registrada com o recurso apenas — nunca CEP, município nem credenciais.
+    private void RegistrarRespostaSemSucesso(IApiResponse resposta, string recurso)
+    {
+        if (resposta.StatusCode is null && resposta.Error is { } causa)
+        {
+            LogGeoIndisponivel(_logger, recurso, causa);
+            return;
+        }
+
+        LogRespostaInesperada(_logger, recurso, (int)(resposta.StatusCode ?? default));
     }
 
     private static DomainError ErroIndisponivel() => new(
