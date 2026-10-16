@@ -117,7 +117,7 @@ public static class ContextoDaVersaoFixadaResolver
                 .SelectMany(static g => g.Subitens));
         foreach (FatoColetado fato in coletados)
         {
-            definicoes.TryAdd(fato.FatoCodigo, DefinicaoDaResposta.De(fato.TipoRenderizacao, fato.ClassificacaoProtecao, fato.Formato));
+            definicoes.TryAdd(fato.FatoCodigo, DefinicaoDaResposta.De(fato.TipoRenderizacao, fato.ClassificacaoProtecao, fato.Formato, fato.FatoCodigo));
         }
 
         return definicoes;

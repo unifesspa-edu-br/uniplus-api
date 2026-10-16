@@ -21,6 +21,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Cryptography;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -46,6 +47,9 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         ["ENDERECO_RESIDENCIAL"] = new(TipoDoValorDeResposta.Endereco, Multivalorado: false, Identificador: false),
         ["RG_NUMERO"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: true),
         ["PARENTESCO"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false),
+        ["SEXO_CIVIL"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false),
+        ["IDENTIDADE_GENERO"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false, CifraIndividual: true),
+        ["ORIENTACAO_SEXUAL"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false, CifraIndividual: true),
     };
 
     private static readonly Guid OfertaDoProcesso = Guid.CreateVersion7();
@@ -53,7 +57,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
 
     private static readonly RespostasAdmitidas Admitidas = new(
         DefinicoesDasRespostas,
-        new HashSet<string>(StringComparer.Ordinal) { "NOME_SOCIAL", "DESEJA_NOME_SOCIAL", "DATA_NASCIMENTO", "MODALIDADES", "ENDERECO_RESIDENCIAL", "RG_NUMERO" },
+        new HashSet<string>(StringComparer.Ordinal) { "NOME_SOCIAL", "DESEJA_NOME_SOCIAL", "DATA_NASCIMENTO", "MODALIDADES", "ENDERECO_RESIDENCIAL", "RG_NUMERO", "SEXO_CIVIL", "IDENTIDADE_GENERO", "ORIENTACAO_SEXUAL" },
         new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal)
         {
             ["COMPOSICAO_FAMILIAR"] = new HashSet<string>(StringComparer.Ordinal) { "RG_NUMERO", "PARENTESCO" },
@@ -184,6 +188,174 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         Encoding.UTF8.GetString((byte[])reader["cpf_ciphertext"]).Should().NotContain(PersonasDeTeste.FernandaDrumond.Valor);
         reader["valor_texto"].Should().Be(DBNull.Value, "o número de documento nunca fica na coluna de texto em claro");
         Encoding.UTF8.GetString((byte[])reader["valor_cifrado"]).Should().NotContain("12.868.927-4");
+    }
+
+    [Fact(DisplayName = "A identidade de gênero e a orientação sexual ficam cifradas na resposta e no comprovante, o sexo civil em claro, e o titular lê os valores de volta")]
+    public async Task DadoSensivel_FicaCifradoEmRepousoEVoltaAoTitular()
+    {
+        Guid processo = Guid.CreateVersion7();
+        Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, processo);
+
+        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        {
+            InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+            ComprovanteInscricao comprovante = original.Submeter(
+                "000555", OfertaDoProcesso,
+                Respostas(("SEXO_CIVIL", "FEMININO"), ("IDENTIDADE_GENERO", "PESSOA_NAO_BINARIA"), ("ORIENTACAO_SEXUAL", "BISSEXUAL")),
+                SemGrupos(), [], Admitidas, FormularioDeTeste.AvaliacaoSemOcultos,
+                Respostas(), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), DateTimeOffset.UtcNow).Value!;
+            await repositorio.AdicionarAsync(original);
+            await repositorio.AdicionarComprovanteAsync(comprovante);
+            await context.SaveChangesAsync();
+        }
+
+        await using NpgsqlConnection connection = new(_fixture.ConnectionString);
+        await connection.OpenAsync();
+        await using (NpgsqlCommand respostas = connection.CreateCommand())
+        {
+            respostas.CommandText = "SELECT fato_codigo, valor_codigo, valor_cifrado FROM selecao.respostas_da_inscricao WHERE inscricao_id = @id";
+            respostas.Parameters.AddWithValue("id", original.Id);
+            Dictionary<string, (object? Codigo, byte[]? Cifrado)> linhas = [];
+            await using (NpgsqlDataReader reader = await respostas.ExecuteReaderAsync())
+            {
+                while (await reader.ReadAsync())
+                {
+                    linhas[(string)reader["fato_codigo"]] = (reader["valor_codigo"] is DBNull ? null : reader["valor_codigo"], reader["valor_cifrado"] as byte[]);
+                }
+            }
+
+            linhas["SEXO_CIVIL"].Should().Be(("FEMININO", (byte[]?)null), "o sexo civil não é dado sensível: fica em claro");
+            foreach ((string fato, string valor) in new[] { ("IDENTIDADE_GENERO", "PESSOA_NAO_BINARIA"), ("ORIENTACAO_SEXUAL", "BISSEXUAL") })
+            {
+                linhas[fato].Codigo.Should().BeNull($"{fato} nunca fica na coluna em claro");
+                Encoding.UTF8.GetString(linhas[fato].Cifrado!).Should().NotContain(valor);
+                Encoding.UTF8.GetString(await _fixture.Encryption.DecryptAsync(SelecaoEncryptionKeys.SensiveisAesGcm, linhas[fato].Cifrado!))
+                    .Should().Contain(valor, "a chave da categoria dos sensíveis decifra o valor");
+                Func<Task> comChaveDeDocumento = async () => await _fixture.Encryption.DecryptAsync(SelecaoEncryptionKeys.IdentificadoresAesGcm, linhas[fato].Cifrado!);
+                await comChaveDeDocumento.Should().ThrowAsync<Exception>($"{fato} não usa a chave dos números de documento");
+            }
+        }
+
+        await using (NpgsqlCommand comprovanteCru = connection.CreateCommand())
+        {
+            comprovanteCru.CommandText = "SELECT respostas::text, sensiveis_cifrados FROM selecao.comprovantes_inscricao WHERE inscricao_id = @id";
+            comprovanteCru.Parameters.AddWithValue("id", original.Id);
+            await using NpgsqlDataReader reader = await comprovanteCru.ExecuteReaderAsync();
+            (await reader.ReadAsync()).Should().BeTrue();
+            string emClaro = (string)reader["respostas"];
+            emClaro.Should().Contain("FEMININO").And.NotContain("PESSOA_NAO_BINARIA").And.NotContain("BISSEXUAL");
+            Encoding.UTF8.GetString((byte[])reader["sensiveis_cifrados"]).Should().NotContain("PESSOA_NAO_BINARIA").And.NotContain("BISSEXUAL");
+        }
+
+        IUserContext dono = Substitute.For<IUserContext>();
+        dono.Cpf.Returns(PersonasDeTeste.FernandaDrumond.Valor);
+        dono.UserId.Returns("sub-1");
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        InscricaoRepository leitura = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+
+        Result<ComprovanteInscricaoDto> lido = await ObterComprovanteQueryHandler.Handle(
+            new ObterComprovanteQuery(processo, 1), leitura, dono, CancellationToken.None);
+        Inscricao relida = (await leitura.ObterPorIdAsync(original.Id))!;
+
+        lido.IsSuccess.Should().BeTrue(lido.Error?.Message);
+        lido.Value!.Respostas["IDENTIDADE_GENERO"].GetString().Should().Be("PESSOA_NAO_BINARIA");
+        lido.Value.Respostas["ORIENTACAO_SEXUAL"].GetString().Should().Be("BISSEXUAL");
+        lido.Value.Respostas["SEXO_CIVIL"].GetString().Should().Be("FEMININO");
+        relida.Respostas["ORIENTACAO_SEXUAL"].GetString().Should().Be("BISSEXUAL");
+        relida.DefinicoesDasRespostas["ORIENTACAO_SEXUAL"].Should().Match<DefinicaoDaResposta>(static d => d.CifraIndividual && !d.Identificador);
+    }
+
+    [Fact(DisplayName = "O envelope dos dados sensíveis copiado de outro comprovante é detectado na leitura")]
+    public async Task DadoSensivel_EnvelopeTrocadoEntreComprovantes_ELidoComoAdulterado()
+    {
+        Guid processo = Guid.CreateVersion7();
+        Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, processo);
+        DateTimeOffset instante = new(2026, 10, 10, 12, 0, 0, TimeSpan.Zero);
+
+        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        {
+            InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+            ComprovanteInscricao envio = original.Submeter(
+                "000556", OfertaDoProcesso, Respostas(("IDENTIDADE_GENERO", "PESSOA_CIS")), SemGrupos(), [], Admitidas,
+                FormularioDeTeste.AvaliacaoSemOcultos, Respostas(), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), instante).Value!;
+            ComprovanteInscricao correcao = original.Submeter(
+                "000556", OfertaDoProcesso, Respostas(("IDENTIDADE_GENERO", "PESSOA_NAO_BINARIA")), SemGrupos(), [], Admitidas,
+                FormularioDeTeste.AvaliacaoSemOcultos, Respostas(), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), instante.AddMinutes(5)).Value!;
+            await repositorio.AdicionarAsync(original);
+            await repositorio.AdicionarComprovanteAsync(envio);
+            await repositorio.AdicionarComprovanteAsync(correcao);
+            await context.SaveChangesAsync();
+        }
+
+        await using SelecaoDbContext leituraLimpa = _fixture.CreateDbContext();
+        InscricaoRepository antes = new(leituraLimpa, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+        (await antes.ObterComprovantesAsync([original.Id])).Select(static c => c.RespostasSensiveis["IDENTIDADE_GENERO"].GetString())
+            .Should().Equal("PESSOA_CIS", "PESSOA_NAO_BINARIA");
+
+        // Copia o envelope do primeiro comprovante para o segundo: é um envelope autêntico, de outro comprovante.
+        await using (NpgsqlConnection connection = new(_fixture.ConnectionString))
+        {
+            await connection.OpenAsync();
+            await using NpgsqlCommand troca = connection.CreateCommand();
+            troca.CommandText = """
+                UPDATE selecao.comprovantes_inscricao c
+                SET sensiveis_cifrados = o.sensiveis_cifrados
+                FROM selecao.comprovantes_inscricao o
+                WHERE c.inscricao_id = @id AND o.inscricao_id = @id AND o.numero_inscricao = c.numero_inscricao AND o.instante < c.instante
+                """;
+            troca.Parameters.AddWithValue("id", original.Id);
+            (await troca.ExecuteNonQueryAsync()).Should().Be(1);
+        }
+
+        await using SelecaoDbContext depoisContext = _fixture.CreateDbContext();
+        InscricaoRepository depois = new(depoisContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+        Func<Task> ler = async () => await depois.ObterComprovantesAsync([original.Id]);
+
+        (await ler.Should().ThrowAsync<InvalidOperationException>()).Which.Message.Should().Contain("não pertencem");
+    }
+
+    [Theory(DisplayName = "Apagar as colunas dos dados sensíveis do comprovante é detectado: uma só falha a leitura, as duas fazem a integridade acusar")]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public async Task DadoSensivel_ColunasApagadas_SaoDetectadas(bool apagaOCifrado, bool apagaOHmac)
+    {
+        Guid processo = Guid.CreateVersion7();
+        Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, processo);
+
+        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        {
+            InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+            ComprovanteInscricao envio = original.Submeter(
+                "000557", OfertaDoProcesso, Respostas(("IDENTIDADE_GENERO", "PESSOA_CIS")), SemGrupos(), [], Admitidas,
+                FormularioDeTeste.AvaliacaoSemOcultos, Respostas(), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), DateTimeOffset.UtcNow).Value!;
+            await repositorio.AdicionarAsync(original);
+            await repositorio.AdicionarComprovanteAsync(envio);
+            await context.SaveChangesAsync();
+        }
+
+        await using (NpgsqlConnection connection = new(_fixture.ConnectionString))
+        {
+            await connection.OpenAsync();
+            await using NpgsqlCommand apaga = connection.CreateCommand();
+            apaga.CommandText = $"UPDATE selecao.comprovantes_inscricao SET {(apagaOCifrado ? "sensiveis_cifrados = NULL" : "sensiveis_cifrados = sensiveis_cifrados")}, "
+                + $"{(apagaOHmac ? "sensiveis_hmac = NULL" : "sensiveis_hmac = sensiveis_hmac")} WHERE inscricao_id = @id";
+            apaga.Parameters.AddWithValue("id", original.Id);
+            await apaga.ExecuteNonQueryAsync();
+        }
+
+        await using SelecaoDbContext leitura = _fixture.CreateDbContext();
+        InscricaoRepository repositorioDeLeitura = new(leitura, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+        if (apagaOCifrado && apagaOHmac)
+        {
+            (await repositorioDeLeitura.ObterComprovantesAsync([original.Id])).Should().ContainSingle()
+                .Which.IntegridadeConfere().Should().BeFalse("o hash cobre o código do fato sensível que sumiu");
+        }
+        else
+        {
+            Func<Task> ler = async () => await repositorioDeLeitura.ObterComprovantesAsync([original.Id]);
+            await ler.Should().ThrowAsync<InvalidOperationException>();
+        }
     }
 
     [Fact(DisplayName = "Cada valor fica na coluna do tipo, com a origem: informado pelo candidato ou derivado")]

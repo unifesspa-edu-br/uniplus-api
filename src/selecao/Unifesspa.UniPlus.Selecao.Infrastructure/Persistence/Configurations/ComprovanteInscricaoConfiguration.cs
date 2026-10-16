@@ -14,8 +14,8 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 /// <summary>
 /// Configuração EF Core de <see cref="ComprovanteInscricao"/> (issue #1858) — <c>IForensicEntity</c>
 /// append-only, mapeada direto (sem record de tradução): nenhuma propriedade carrega número de
-/// documento, então não há cifra na fronteira a fazer aqui — diferente de
-/// <see cref="InscricaoRecordConfiguration"/>.
+/// documento, e as respostas de cifra individual vão cifradas em <c>SensiveisCifrados</c> pelo
+/// repositório — o EF não cifra, porque a cifra é assíncrona.
 /// </summary>
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",
@@ -53,6 +53,17 @@ internal sealed class ComprovanteInscricaoConfiguration : IEntityTypeConfigurati
             .HasConversion(RespostasConverter, RespostasComparer)
             .HasColumnType("jsonb")
             .IsRequired();
+
+        // Em claro só em memória: o repositório as grava cifradas em SensiveisCifrados.
+        builder.Ignore(c => c.RespostasSensiveis);
+
+        builder.Property(c => c.SensiveisCifrados)
+            .HasColumnType("bytea")
+            .HasComment("Respostas de dado pessoal sensível com cifra individual (identidade de gênero, orientação sexual), cifradas (AES-GCM, ADR-0121, chave dos sensíveis) — nunca texto claro.");
+
+        builder.Property(c => c.SensiveisHmac)
+            .HasColumnType("bytea")
+            .HasComment("HMAC do id do comprovante e das respostas sensíveis, que prende o envelope cifrado a este comprovante.");
 
         builder.Property(c => c.Derivados)
             .HasConversion(RespostasConverter, RespostasComparer)

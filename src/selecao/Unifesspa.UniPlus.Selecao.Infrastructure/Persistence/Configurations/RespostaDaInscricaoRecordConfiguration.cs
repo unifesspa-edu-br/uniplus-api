@@ -41,7 +41,7 @@ internal sealed class RespostaDaInscricaoRecordConfiguration : IEntityTypeConfig
         builder.Property(r => r.ValorCodigo).HasMaxLength(OpcaoDeclaradaFato.CodigoMaxLength);
         builder.Property(r => r.ValorCifrado)
             .HasColumnType("bytea")
-            .HasComment("Número de documento cifrado (AES-GCM, ADR-0121) — nunca texto claro.");
+            .HasComment("Resposta cifrada (AES-GCM, ADR-0121) — nunca texto claro: o número de documento, com a chave dos identificadores, ou o dado sensível de cifra individual, com a chave dos sensíveis.");
 
         builder.HasOne<InscricaoRecord>()
             .WithMany()

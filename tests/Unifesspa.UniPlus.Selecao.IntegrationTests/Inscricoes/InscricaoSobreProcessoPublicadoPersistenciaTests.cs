@@ -267,6 +267,9 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             ["CPF", "RG_NUMERO", "PASSAPORTE_NUMERO", "RNM_NUMERO", "RG_NUMERO_MEMBRO"],
             "o conjunto junta os fatos Identificador do conjunto básico do candidato (CPF, RG, passaporte e RNM) " +
             "com o do campo de grupo declarado por este teste — da classificação CONGELADA na publicação, não do catálogo vivo");
+        contexto.Value!.Admitidas.Definicoes.Where(static f => f.Value.CifraIndividual).Select(static f => f.Key).Should().BeEquivalentTo(
+            ["IDENTIDADE_GENERO", "ORIENTACAO_SEXUAL"],
+            "só a identidade de gênero e a orientação sexual têm cifra individual: o sexo, o sexo civil e a cor ou raça ficam em claro");
     }
 
     [Fact(DisplayName = "A migração regrava o formulário gravado antes da faixa: as datas do conjunto básico passam a declará-la")]

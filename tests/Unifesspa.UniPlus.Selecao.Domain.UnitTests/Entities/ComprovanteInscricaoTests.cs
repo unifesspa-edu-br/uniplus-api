@@ -73,4 +73,39 @@ public sealed class ComprovanteInscricaoTests
 
         Hash(mudar(Base())).Should().NotBe(Hash(Base()), $"o hash cobre {campo}");
     }
+
+    [Fact(DisplayName = "O comprovante sem dado sensível tem o hash de sempre, com ou sem a lista vazia de sensíveis")]
+    public void Hash_SemSensiveis_ContinuaIgual()
+    {
+        Conteudo c = Base() with { Oferta = Guid.Parse("01a12693-0000-7000-8000-0000000000aa") };
+
+        ComprovanteInscricao.Emitir(Inscricao, c.Numero, c.Instante, c.Oferta, c.Respostas, c.Derivados, c.Grupos, c.Aceites, c.Modalidades, new Dictionary<string, JsonElement>())
+            .HashIntegridade.Should().Be(Hash(c)).And.Be("8b6439933cd74d633d0f17b210e2d5ceefd85d5d317c3d9d27d88a9e14f89c58", "o hash dos comprovantes já emitidos não muda");
+    }
+
+    [Fact(DisplayName = "O hash cobre os códigos dos fatos sensíveis e nunca os valores")]
+    public void Hash_Sensiveis_CobreOsCodigosENaoOsValores()
+    {
+        Conteudo c = Base();
+        string Emitir(string genero) => ComprovanteInscricao.Emitir(
+            Inscricao, c.Numero, c.Instante, c.Oferta, c.Respostas, c.Derivados, c.Grupos, c.Aceites, c.Modalidades,
+            Valores(("IDENTIDADE_GENERO", genero))).HashIntegridade;
+
+        Emitir("PESSOA_CIS").Should().Be(Emitir("PESSOA_NAO_BINARIA"), "o valor fica fora do hash: de poucas opções, seria recuperável por tentativa");
+        Emitir("PESSOA_CIS").Should().NotBe(Hash(c), "o código do fato sensível está no hash");
+    }
+
+    [Fact(DisplayName = "Apagar os fatos sensíveis do comprovante emitido com eles faz a integridade acusar")]
+    public void IntegridadeConfere_SensiveisApagados_Acusa()
+    {
+        Conteudo c = Base();
+        ComprovanteInscricao comprovante = ComprovanteInscricao.Emitir(
+            Inscricao, c.Numero, c.Instante, c.Oferta, c.Respostas, c.Derivados, c.Grupos, c.Aceites, c.Modalidades,
+            Valores(("IDENTIDADE_GENERO", "PESSOA_CIS")));
+        comprovante.IntegridadeConfere().Should().BeTrue();
+
+        comprovante.RestaurarSensiveis(new Dictionary<string, JsonElement>());
+
+        comprovante.IntegridadeConfere().Should().BeFalse();
+    }
 }
