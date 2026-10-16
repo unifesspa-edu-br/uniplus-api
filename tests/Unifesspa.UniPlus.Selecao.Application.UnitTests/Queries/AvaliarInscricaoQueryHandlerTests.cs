@@ -58,7 +58,7 @@ public sealed class AvaliarInscricaoQueryHandlerTests
         {
             inscricao.Salvar(
                 oferta, new Dictionary<string, JsonElement>(), new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), [],
-                ContextoDaVersaoFixadaResolver.Admitidas(grafo), PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
+                ContextoDaVersaoFixadaResolver.Admitidas(grafo) with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond }, PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
         }
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();

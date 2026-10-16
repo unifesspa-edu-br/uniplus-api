@@ -36,6 +36,12 @@ public interface IUserContext
     string? Name { get; }
 
     /// <summary>
+    /// Gets the authenticated user's full civil name, from the <c>name</c> claim, or <c>given_name</c> + <c>family_name</c> when absent. Unlike
+    /// <see cref="Name"/>, never falls back to <c>preferred_username</c> (a login handle, not a name).
+    /// </summary>
+    string? NomeCompleto { get; }
+
+    /// <summary>
     /// Gets the authenticated user's email address.
     /// </summary>
     string? Email { get; }

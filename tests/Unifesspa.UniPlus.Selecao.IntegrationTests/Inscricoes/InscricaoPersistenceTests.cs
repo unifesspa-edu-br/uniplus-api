@@ -249,6 +249,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
 
         IUserContext dono = Substitute.For<IUserContext>();
         dono.Cpf.Returns(PersonasDeTeste.FernandaDrumond.Valor);
+        dono.NomeCompleto.Returns(PersonasDeTeste.NomeFernandaDrumond);
         dono.UserId.Returns("sub-1");
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
         InscricaoRepository leitura = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
@@ -505,6 +506,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
 
         IUserContext dono = Substitute.For<IUserContext>();
         dono.Cpf.Returns(PersonasDeTeste.FernandaDrumond.Valor);
+        dono.NomeCompleto.Returns(PersonasDeTeste.NomeFernandaDrumond);
         dono.UserId.Returns("sub-1");
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();

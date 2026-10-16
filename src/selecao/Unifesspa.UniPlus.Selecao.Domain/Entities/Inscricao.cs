@@ -322,6 +322,7 @@ public sealed class Inscricao : EntityBase
         [
             .. ConferirRespostas(respostas, grupos, admitidas),
             .. RecusasDoCpf(respostas),
+            .. RecusasDoNome(respostas, admitidas),
             .. RecusasDaOferta(ofertaCursoId, admitidas.OfertasDeCurso, exigida: false),
             .. RecusasDosAceites(aceites, admitidas.Termos),
         ];
@@ -395,6 +396,7 @@ public sealed class Inscricao : EntityBase
             .. ConferirRespostas(respostas, grupos, admitidas),
             .. ConferirValores(derivados, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), definicoesDosDerivados, new Dictionary<string, IReadOnlySet<string>>()),
             .. RecusasDoCpf(respostas),
+            .. RecusasDoNome(respostas, admitidas),
             .. RecusasDaOferta(ofertaCursoId, admitidas.OfertasDeCurso, exigida: admitidas.OfertasDeCurso.Count > 0),
             .. RecusasDaModalidade(avaliacao.Modalidades),
             .. RecusasDosAceites(aceites, admitidas.Termos),
@@ -662,6 +664,46 @@ public sealed class Inscricao : EntityBase
                 InscricaoErrorCodes.CpfDiferenteDoDono, "O CPF informado tem de ser o do titular da conta."));
         }
     }
+
+    /// <summary>
+    /// O nome civil vem do login: a resposta NOME, quando enviada, tem de ser o nome completo do token.
+    /// Compara sem os espaços das pontas e sem repetição de espaço no meio, mas distingue maiúsculas e
+    /// acentos — o nome é o da conta, não um texto livre. O nome social segue livre. Só vale quando o
+    /// formulário coleta NOME; a ausência da resposta nunca é recusada aqui (a obrigatoriedade é do formulário).
+    /// </summary>
+    private static IEnumerable<FieldError> RecusasDoNome(IReadOnlyDictionary<string, JsonElement> respostas, RespostasAdmitidas admitidas)
+    {
+        if (!admitidas.Definicoes.ContainsKey(ConjuntoBasicoDaInscricao.Nome))
+        {
+            yield break;
+        }
+
+        if (string.IsNullOrWhiteSpace(admitidas.NomeCivilDoLogin))
+        {
+            yield return new FieldError(ConjuntoBasicoDaInscricao.Nome, new DomainError(
+                InscricaoErrorCodes.NomeAusenteNoLogin,
+                "O login não traz o seu nome completo. Entre de novo ou procure o suporte para corrigir o cadastro da conta."));
+            yield break;
+        }
+
+        if (!respostas.TryGetValue(ConjuntoBasicoDaInscricao.Nome, out JsonElement valor) || valor.ValueKind == JsonValueKind.Null)
+        {
+            yield break;
+        }
+
+        bool doLogin = valor.ValueKind == JsonValueKind.String
+            && NomeNormalizado(valor.GetString()) == NomeNormalizado(admitidas.NomeCivilDoLogin);
+        if (!doLogin)
+        {
+            yield return new FieldError(ConjuntoBasicoDaInscricao.Nome, new DomainError(
+                InscricaoErrorCodes.NomeDiferenteDoLogin,
+                "O nome informado tem de ser o da sua conta. Para alterá-lo, corrija o cadastro da conta."));
+        }
+    }
+
+    private static string NomeNormalizado(string? nome) =>
+        string.Join(' ', (nome ?? string.Empty).Normalize(System.Text.NormalizationForm.FormC)
+            .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 
     private static IEnumerable<FieldError> RecusasDaOferta(Guid? oferta, IReadOnlySet<Guid> ofertasDeCurso, bool exigida)
     {

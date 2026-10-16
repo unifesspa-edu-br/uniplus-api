@@ -179,7 +179,7 @@ public static class SubmeterInscricaoCommandHandler
         string numeroGerado = await geradorDeNumeroInscricao.ProximoAsync(cancellationToken).ConfigureAwait(false);
 
         Result<ComprovanteInscricao> submetido = inscricao.Submeter(
-            numeroGerado, command.Request.OfertaCursoId, respostasDoCorpo, grupos, aceites, contexto.Value!.Admitidas,
+            numeroGerado, command.Request.OfertaCursoId, respostasDoCorpo, grupos, aceites, contexto.Value!.Admitidas with { NomeCivilDoLogin = userContext.NomeCompleto },
             avaliacao.Value!, derivados.Value!, Services.DerivadosDoSistemaInscricao.DefinicoesDasRespostas,
             command.Precondicao, instante);
         if (submetido.IsFailure)

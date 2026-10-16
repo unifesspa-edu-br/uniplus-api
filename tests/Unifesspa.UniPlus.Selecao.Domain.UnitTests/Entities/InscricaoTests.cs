@@ -620,6 +620,82 @@ public sealed class InscricaoTests
         }
     }
 
+    private static RespostasAdmitidas AdmitidasComNome(string? nomeDoLogin) =>
+        Admitidas with
+        {
+            Definicoes = new Dictionary<string, DefinicaoDaResposta>(DefinicoesDasRespostas, StringComparer.Ordinal)
+            {
+                ["NOME"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: false),
+            },
+            DoNivelSuperior = new HashSet<string>(Admitidas.DoNivelSuperior, StringComparer.Ordinal) { "NOME" },
+            NomeCivilDoLogin = nomeDoLogin,
+        };
+
+    private static Result SalvarComNome(string? nomeDoLogin, params (string Codigo, string Valor)[] respostas)
+    {
+        Inscricao inscricao = NovaInscricao();
+        return inscricao.Salvar(null, Respostas(respostas), SemGrupos(), SemAceites(), AdmitidasComNome(nomeDoLogin), PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+    }
+
+    [Fact(DisplayName = "Um NOME diferente do nome do login é recusado ao salvar, no campo NOME")]
+    public void Salvar_NomeDiferenteDoLogin_Recusa()
+    {
+        Result resultado = SalvarComNome(PersonasDeTeste.NomeFernandaDrumond, ("NOME", "Outra Pessoa"));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(
+            e => e.Field == "NOME" && e.Error.Code == InscricaoErrorCodes.NomeDiferenteDoLogin);
+    }
+
+    [Fact(DisplayName = "Um NOME diferente do nome do login é recusado ao enviar, no campo NOME")]
+    public void Submeter_NomeDiferenteDoLogin_Recusa()
+    {
+        Inscricao inscricao = NovaInscricao();
+
+        Result<ComprovanteInscricao> resultado = inscricao.Submeter(
+            "000123", OfertaDoProcesso, Respostas(("NOME", "Outra Pessoa")), SemGrupos(), SemAceites(), AdmitidasComNome(PersonasDeTeste.NomeFernandaDrumond),
+            FormularioDeTeste.AvaliacaoSemOcultos, SemDerivados(), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(
+            e => e.Field == "NOME" && e.Error.Code == InscricaoErrorCodes.NomeDiferenteDoLogin);
+    }
+
+    [Theory(DisplayName = "O NOME igual ao do login é aceito, ignorando espaços nas pontas e repetidos; maiúsculas e acentos contam")]
+    [InlineData("Fernanda Laura Nicole Drumond", true)]
+    [InlineData("  Fernanda  Laura Nicole   Drumond ", true)]
+    [InlineData("FERNANDA LAURA NICOLE DRUMOND", false)]
+    [InlineData("Fernánda Laura Nicole Drumond", false)]
+    public void Salvar_NomeDoLogin_ComparaSemEspacosSobrando(string nomeEnviado, bool aceito)
+    {
+        Result resultado = SalvarComNome(PersonasDeTeste.NomeFernandaDrumond, ("NOME", nomeEnviado));
+
+        resultado.IsSuccess.Should().Be(aceito);
+    }
+
+    [Fact(DisplayName = "Sem nome no token, o formulário que coleta NOME recusa no campo NOME")]
+    public void Salvar_TokenSemNome_FormularioColetaNome_Recusa()
+    {
+        Result resultado = SalvarComNome(null, ("NOME", "Fernanda Laura Nicole Drumond"));
+
+        resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(
+            e => e.Field == "NOME" && e.Error.Code == InscricaoErrorCodes.NomeAusenteNoLogin);
+    }
+
+    [Fact(DisplayName = "Sem nome no token, o formulário que não coleta NOME segue como antes")]
+    public void Salvar_TokenSemNome_FormularioNaoColetaNome_Aceita()
+    {
+        Inscricao inscricao = NovaInscricao();
+
+        inscricao.Salvar(null, Respostas(), SemGrupos(), SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Omitir o NOME não é recusado, e o nome social segue livre")]
+    public void Salvar_NomeOmitido_NomeSocialLivre_Aceita()
+    {
+        SalvarComNome(PersonasDeTeste.NomeFernandaDrumond, ("NOME_SOCIAL", "Ariel Drumond")).IsSuccess.Should().BeTrue();
+    }
+
     [Fact(DisplayName = "Uma oferta de curso que não é do processo é recusada já no rascunho")]
     public void Salvar_OfertaForaDoProcesso_Recusa()
     {
@@ -853,6 +929,9 @@ public sealed class InscricaoTests
     {
         ["NOME_SOCIAL"] = JsonSerializer.SerializeToElement("Ariel Drumond"),
     };
+
+    private static Dictionary<string, JsonElement> Respostas(params (string Codigo, string Valor)[] itens) =>
+        itens.ToDictionary(static i => i.Codigo, static i => JsonSerializer.SerializeToElement(i.Valor), StringComparer.Ordinal);
 
     private static Dictionary<string, JsonElement> ComTelefone(string telefone) => new(StringComparer.Ordinal)
     {
