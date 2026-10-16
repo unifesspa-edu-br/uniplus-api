@@ -96,6 +96,30 @@ public static class AvaliacaoDaInscricao
     }
 
     /// <summary>
+    /// De que campos e grupos do formulário da inscrição depende o Fator de Atenuação (ADR-0142), só pelo
+    /// código: o fato de elegibilidade que o bônus regional cita — ou, sendo derivado, os campos de que a
+    /// derivação depende — e os campos cujos valores são os municípios do bônus, com o que decide se eles
+    /// aparecem e são exigidos. O fato é do administrador: nada aqui nomeia código. Sem bônus regional,
+    /// o processo não tem Fator e a lista é vazia.
+    /// </summary>
+    public static DependenciasDaAvaliacao DependenciasDoFator(ConfiguracaoAvaliavel configuracao, ConfiguracaoBonusRegional? bonus)
+    {
+        ArgumentNullException.ThrowIfNull(configuracao);
+
+        if (bonus is null)
+        {
+            return new DependenciasDaAvaliacao([], []);
+        }
+
+        string[] doCandidato =
+        [
+            .. bonus.FatoElegibilidadeCodigo is { } elegibilidade ? [elegibilidade] : Array.Empty<string>(),
+            .. configuracao.Campos.Where(static c => c.OrigemValores == OrigemValoresColeta.MunicipiosDoBonus).Select(static c => c.FatoCodigo),
+        ];
+        return DependenciasDe(configuracao.Definicao, new CitacoesDosGatilhos(doCandidato, [], []));
+    }
+
+    /// <summary>
     /// Os derivados do sistema de que a avaliação depende — os únicos que vale apurar antes dela,
     /// porque apurar o resto não muda a conta e pode depender de consulta externa.
     /// </summary>

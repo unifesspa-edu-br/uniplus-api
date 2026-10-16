@@ -22,6 +22,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.Inscricoes;
+using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -66,7 +67,9 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         string nome,
         OfertaAtendimentoEspecializado? oferta = null,
         IReadOnlyList<FatoColetado>? camposAdicionais = null,
-        IReadOnlyList<ModalidadeSelecionada>? modalidades = null)
+        IReadOnlyList<ModalidadeSelecionada>? modalidades = null,
+        string? fatoDoFator = null,
+        bool comIsencao = false)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             nome, TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
@@ -100,21 +103,42 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             1, [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.DefinirCronogramaFases(
-            [FaseCronograma.Criar(
-                ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "RESULTADO_FINAL", donoInstitucional: "CEPS",
-                origemData: OrigemDataFase.Propria, agrupaEtapas: true, permiteComplementacao: false,
-                coletaInscricao: true, coletaSolicitacaoIsencao: false,
+        FaseCronograma faseDaInscricao = FaseCronograma.Criar(
+            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "RESULTADO_FINAL", donoInstitucional: "CEPS",
+            origemData: OrigemDataFase.Propria, agrupaEtapas: true, permiteComplementacao: false,
+            coletaInscricao: true, coletaSolicitacaoIsencao: false,
+            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+            produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)],
+            faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!;
+        List<FaseCronograma> fases = [faseDaInscricao];
+        if (comIsencao)
+        {
+            // A janela de isenção abre com a inscrição e fecha antes dela: é fase à parte.
+            fases.Add(FaseCronograma.Criar(
+                ordem: 2, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "ISENCAO_DA_TAXA", donoInstitucional: "CEPS",
+                origemData: OrigemDataFase.Propria, agrupaEtapas: false, permiteComplementacao: false,
+                coletaInscricao: false, coletaSolicitacaoIsencao: true,
                 inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-                produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)],
-                faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!],
-            [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+                fim: new DateTimeOffset(2026, 1, 15, 0, 0, 0, TimeSpan.Zero),
+                produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!);
+        }
+
+        processo.DefinirCronogramaFases(fases, [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
+            (comIsencao
+                ? ConfiguracaoTaxaInscricao.Criar(cobra: true, valor: 100m, fundamentosCodigos: [FundamentoIsencaoCodigo.CarenciaSocioeconomica])
+                : ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null)).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
+        if (fatoDoFator is not null)
+        {
+            ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(
+                ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", new string('d', 64)).Value!, 1.20m, null, fatoDoFator,
+                Guid.CreateVersion7(), "PORTARIA", "Portaria de teste", "Inclusão regional", [("1504208", "Marabá", "PA")]).Value!;
+            processo.DefinirBonusRegional(aplica: true, bonus, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        }
 
         GrupoColetado composicaoFamiliar = GrupoColetado.Criar(
             "COMPOSICAO_FAMILIAR", 0, etapaCodigo: FormularioDeTeste.Secao, "Composição familiar", minimo: 0, maximo: null, exibicao: null,
@@ -136,6 +160,21 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             [rg, .. camposAdicionais ?? []],
             PrecondicaoIfMatch.Ausente,
             grupos: [composicaoFamiliar]).IsSuccess.Should().BeTrue();
+
+        if (comIsencao)
+        {
+            processo.DefinirFormulario(
+                    FinalidadeFormulario.IsencaoTaxa, processo.CronogramaFases.Single(f => f.ColetaSolicitacaoIsencao).Id, null,
+                    FormularioDeTeste.Etapas(FinalidadeFormulario.IsencaoTaxa), PrecondicaoIfMatch.Ausente)
+                .IsSuccess.Should().BeTrue();
+            processo.DefinirFatosColetados(
+                    FinalidadeFormulario.IsencaoTaxa,
+                    [FatoColetado.Criar(
+                        "BOLSISTA", 0, "Bolsista", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null,
+                        etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL").Value!],
+                    PrecondicaoIfMatch.Ausente)
+                .IsSuccess.Should().BeTrue();
+        }
 
         processo.DefinirTitulo("Formulário de Inscrição").IsSuccess.Should().BeTrue();
         processo.DefinirTermos([CorpusEnvelope.Termo("DECLARACAO_VERACIDADE", 0)]).IsSuccess.Should().BeTrue();
@@ -785,6 +824,69 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         JsonSerializer.Serialize(formulario.Value!.DependenciasDaAvaliacao).Should().NotContain("AC", "a matriz e o que ela contribui não saem");
         formulario.Value!.Regras.Derivacoes.Should().NotContain(d => d.FatoCodigo == AvaliacaoDaInscricao.FatoDaModalidade,
             "a derivação da modalidade não vai ao navegador");
+    }
+
+    private static ProcessoSeletivo ProcessoComFator(string nome, bool comIsencao = false)
+    {
+        FatoColetado pedeOFator = FatoColetado.Criar(
+            "PEDE_O_FATOR", 1, "Você solicita o Fator de Atenuação?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null,
+            classificacaoProtecao: "PESSOAL", etapaCodigo: FormularioDeTeste.Secao, finalidade: FinalidadeFormulario.Inscricao).Value!;
+        return NovoProcessoDeInscricao(nome, camposAdicionais: [pedeOFator], fatoDoFator: "PEDE_O_FATOR", comIsencao: comIsencao);
+    }
+
+    private async Task<FormularioRenderizavelDto> FormularioDaInscricaoDeFernandaAsync(SelecaoDbContext db, ProcessoSeletivo processo)
+    {
+        (Guid processoId, _) = await PublicarEDivulgarAsync(db, processo);
+        IUserContext fernanda = UsuarioComCpf(PersonasDeTeste.FernandaDrumond);
+        (await IniciarInscricaoCommandHandler.Handle(
+            new IniciarInscricaoCommand(processoId),
+            new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System), new CertameDivulgadoRepository(db),
+            new ProcessoSeletivoRepository(db, TimeProvider.System), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
+            DentroDoPeriodo, db, fernanda, CancellationToken.None)).IsSuccess.Should().BeTrue();
+
+        Result<FormularioRenderizavelDto> formulario = await ObterFormularioDaInscricaoQueryHandler.Handle(
+            new ObterFormularioDaInscricaoQuery(processoId),
+            new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
+            new ProcessoSeletivoRepository(db, TimeProvider.System), RegistroCodecs, Substitute.For<IEnderecoNoAcervoPublico>(), fernanda,
+            CancellationToken.None);
+        formulario.IsSuccess.Should().BeTrue(formulario.Error?.Message);
+        return formulario.Value!;
+    }
+
+    [Fact(DisplayName = "O formulário da inscrição publicado traz, só pelo código, o fato que o bônus regional cita como dependência do Fator")]
+    public async Task FormularioDaInscricao_TrazAsDependenciasDoFatorPeloFatoQueOBonusCita()
+    {
+        await using SelecaoDbContext db = _fixture.CreateDbContext();
+
+        FormularioRenderizavelDto formulario = await FormularioDaInscricaoDeFernandaAsync(
+            db, ProcessoComFator(nameof(FormularioDaInscricao_TrazAsDependenciasDoFatorPeloFatoQueOBonusCita)));
+
+        formulario.DependenciasDoFator.Should().BeEquivalentTo(new DependenciasDaAvaliacaoDto(["PEDE_O_FATOR"], []));
+    }
+
+    [Fact(DisplayName = "O formulário da inscrição publicado de processo sem Fator traz as dependências do Fator vazias, não nulas")]
+    public async Task FormularioDaInscricao_SemFator_TrazAsDependenciasDoFatorVazias()
+    {
+        await using SelecaoDbContext db = _fixture.CreateDbContext();
+
+        FormularioRenderizavelDto formulario = await FormularioDaInscricaoDeFernandaAsync(
+            db, ProcessoQueDerivaAModalidade(nameof(FormularioDaInscricao_SemFator_TrazAsDependenciasDoFatorVazias)));
+
+        formulario.DependenciasDoFator.Should().BeEquivalentTo(new DependenciasDaAvaliacaoDto([], []));
+    }
+
+    [Fact(DisplayName = "O formulário da isenção publicado não traz as dependências do Fator: elas são só da inscrição")]
+    public async Task FormularioDaIsencao_NaoTrazAsDependenciasDoFator()
+    {
+        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        (Guid processoId, _) = await PublicarEDivulgarAsync(db, ProcessoComFator(nameof(FormularioDaIsencao_NaoTrazAsDependenciasDoFator), comIsencao: true));
+
+        Result<FormularioRenderizavelDto> formulario = await ObterFormularioRenderizavelQueryHandler.Handle(
+            new ObterFormularioRenderizavelQuery(processoId, FinalidadeFormulario.IsencaoTaxa), new ProcessoSeletivoRepository(db, TimeProvider.System),
+            new CertameDivulgadoRepository(db), RegistroCodecs, Substitute.For<IEnderecoNoAcervoPublico>(), CancellationToken.None);
+
+        formulario.IsSuccess.Should().BeTrue(formulario.Error?.Message);
+        formulario.Value!.DependenciasDoFator.Should().BeNull();
     }
 
     [Fact(DisplayName = "Sobre o processo publicado, a consulta diz por fase os documentos do candidato: o geral, o do gatilho, um por membro e o que depende da convocação")]
