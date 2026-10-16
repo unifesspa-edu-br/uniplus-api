@@ -5,6 +5,7 @@ using System.Net.Http;
 
 using AwesomeAssertions;
 
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 using NSubstitute;
@@ -49,6 +50,49 @@ public sealed class ConferenciaEnderecoGeoTests
 
         conteudoDoCep.Descartado.Should().BeTrue();
         conteudoDoMunicipio.Descartado.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Resposta do Refit sem status e com erro registra a causa e é falha fechada, no CEP e no município")]
+    public async Task Conferir_RespostaSemStatusComErro_RegistraACausa()
+    {
+        InvalidOperationException causa = new("OAuth do Geo não configurado");
+        ApiResponse<CepResolvidoResponse> respostaCep = SemStatusComErro<CepResolvidoResponse>(causa);
+        ApiResponse<CidadeDetalheResponse> respostaCidade = SemStatusComErro<CidadeDetalheResponse>(causa);
+        IGeoApi geo = Substitute.For<IGeoApi>();
+        geo.ResolverCepAsync("68500000", Arg.Any<CancellationToken>()).Returns(respostaCep);
+        geo.ObterCidadeAsync("1504208", Arg.Any<CancellationToken>()).Returns(respostaCidade);
+        RegistroDeLog registro = new();
+        ConferenciaEnderecoGeo conferencia = new(geo, registro);
+
+        Result cep = await conferencia.ConferirCepAsync("68500000", "1504208", "PA");
+        Result municipio = await conferencia.ConferirMunicipioAsync("1504208", "PA");
+
+        cep.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
+        municipio.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
+        registro.Entradas.Should().HaveCount(2);
+        registro.Entradas.Should().OnlyContain(e => e.Excecao != null && e.Mensagem.Contains("não respondeu", StringComparison.Ordinal));
+        registro.Entradas.Select(e => e.Mensagem).Should().NotContain(m => m.Contains("68500000", StringComparison.Ordinal) || m.Contains("1504208", StringComparison.Ordinal));
+    }
+
+    private static ApiResponse<T> SemStatusComErro<T>(Exception causa)
+    {
+        ApiException erro = ApiException.Create(
+            new HttpRequestMessage(), HttpMethod.Get, new HttpResponseMessage(HttpStatusCode.InternalServerError), new RefitSettings(), causa)
+            .GetAwaiter().GetResult();
+        return new(new HttpRequestMessage(), null, default, new RefitSettings(), erro);
+    }
+
+    private sealed class RegistroDeLog : ILogger<ConferenciaEnderecoGeo>
+    {
+        public List<(string Mensagem, Exception? Excecao)> Entradas { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) =>
+            Entradas.Add((formatter(state, exception), exception));
     }
 
     private static ApiResponse<T> RespostaCom<T>(HttpContent conteudo, T corpo)
