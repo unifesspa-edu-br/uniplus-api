@@ -438,6 +438,16 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("respostas");
 
+                    b.Property<byte[]>("SensiveisCifrados")
+                        .HasColumnType("bytea")
+                        .HasColumnName("sensiveis_cifrados")
+                        .HasComment("Respostas de dado pessoal sensível com cifra individual (identidade de gênero, orientação sexual), cifradas (AES-GCM, ADR-0121, chave dos sensíveis) — nunca texto claro.");
+
+                    b.Property<byte[]>("SensiveisHmac")
+                        .HasColumnType("bytea")
+                        .HasColumnName("sensiveis_hmac")
+                        .HasComment("HMAC do id do comprovante e das respostas sensíveis, que prende o envelope cifrado a este comprovante.");
+
                     b.HasKey("Id")
                         .HasName("pk_comprovantes_inscricao");
 
@@ -3838,7 +3848,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.Property<byte[]>("ValorCifrado")
                         .HasColumnType("bytea")
                         .HasColumnName("valor_cifrado")
-                        .HasComment("Número de documento cifrado (AES-GCM, ADR-0121) — nunca texto claro.");
+                        .HasComment("Resposta cifrada (AES-GCM, ADR-0121) — nunca texto claro: o número de documento, com a chave dos identificadores, ou o dado sensível de cifra individual, com a chave dos sensíveis.");
 
                     b.Property<string>("ValorCodigo")
                         .HasMaxLength(60)

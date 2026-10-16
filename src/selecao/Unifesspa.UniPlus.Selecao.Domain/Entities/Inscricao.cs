@@ -432,11 +432,12 @@ public sealed class Inscricao : EntityBase
         // A modalidade vai ao comprovante na seção própria, com o nome; nos derivados, ficaria só o código.
         ComprovanteInscricao comprovante = ComprovanteInscricao.Emitir(
             Id, NumeroInscricao, instante, OfertaCursoId,
-            SemNumerosDeDocumento(Respostas),
+            SemCifraIndividual(SemNumerosDeDocumento(Respostas)),
             SemNumerosDeDocumento(Derivados).Where(static d => d.Key != AvaliacaoDaInscricao.FatoDaModalidade)
                 .ToDictionary(static d => d.Key, static d => d.Value, StringComparer.Ordinal),
             SemNumerosDeDocumentoNosGrupos(Grupos), Aceites,
-            modalidades.Derivada ? modalidades.Itens : null);
+            modalidades.Derivada ? modalidades.Itens : null,
+            ApenasCifraIndividual(SemNumerosDeDocumento(Respostas)));
         _comprovantes.Add(comprovante);
 
         AddDomainEvent(primeiraSubmissao
@@ -740,6 +741,23 @@ public sealed class Inscricao : EntityBase
             .ToDictionary(static r => r.Key, static r => r.Value, StringComparer.Ordinal);
 
     /// <summary>
+    /// As respostas sem as de cifra individual: o comprovante não as guarda em claro junto das demais,
+    /// e as leva à parte, para o repositório cifrá-las.
+    /// </summary>
+    private Dictionary<string, JsonElement> SemCifraIndividual(IReadOnlyDictionary<string, JsonElement> respostas) =>
+        respostas
+            .Where(r => !TemCifraIndividual(r.Key))
+            .ToDictionary(static r => r.Key, static r => r.Value, StringComparer.Ordinal);
+
+    private Dictionary<string, JsonElement> ApenasCifraIndividual(IReadOnlyDictionary<string, JsonElement> respostas) =>
+        respostas
+            .Where(r => TemCifraIndividual(r.Key))
+            .ToDictionary(static r => r.Key, static r => r.Value, StringComparer.Ordinal);
+
+    private bool TemCifraIndividual(string fatoCodigo) =>
+        DefinicoesDasRespostas.TryGetValue(fatoCodigo, out DefinicaoDaResposta? definicao) && definicao.CifraIndividual;
+
+    /// <summary>
     /// A mesma exclusão de <see cref="SemNumerosDeDocumento"/>, aplicada às respostas de cada
     /// ocorrência dentro de cada grupo — um grupo repetível também pode coletar um fato
     /// <c>Identificador</c> por membro (ex.: documento de um dependente).
@@ -749,7 +767,7 @@ public sealed class Inscricao : EntityBase
         grupos.ToDictionary(
             static g => g.Key,
             g => (IReadOnlyList<OcorrenciaDeGrupoInscricao>)
-                [.. g.Value.Select(o => new OcorrenciaDeGrupoInscricao(o.Id, SemNumerosDeDocumento(o.Respostas)))],
+                [.. g.Value.Select(o => new OcorrenciaDeGrupoInscricao(o.Id, SemCifraIndividual(SemNumerosDeDocumento(o.Respostas))))],
             StringComparer.Ordinal);
 }
 

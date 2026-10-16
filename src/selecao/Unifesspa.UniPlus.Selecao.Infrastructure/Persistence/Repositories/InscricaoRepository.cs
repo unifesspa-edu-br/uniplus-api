@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
@@ -126,7 +127,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
     {
         ArgumentNullException.ThrowIfNull(inscricoes);
 
-        return await _dbContext.ComprovantesInscricao
+        List<ComprovanteInscricao> comprovantes = await _dbContext.ComprovantesInscricao
             .AsNoTracking()
             .Where(c => inscricoes.Contains(c.InscricaoId))
             // O número público do comprovante é a posição nesta lista: o Id (UUIDv7, gerado na
@@ -135,15 +136,67 @@ public sealed class InscricaoRepository : IInscricaoRepository
             .ThenBy(static c => c.Id)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+
+        foreach (ComprovanteInscricao comprovante in comprovantes.Where(static c => c.SensiveisCifrados is not null || c.SensiveisHmac is not null))
+        {
+            if (comprovante.SensiveisCifrados is null || comprovante.SensiveisHmac is null)
+            {
+                throw new InvalidOperationException($"O comprovante {comprovante.Id} tem só uma das colunas dos dados sensíveis: o envelope cifrado e o HMAC andam juntos.");
+            }
+
+            byte[] plano = await _encryption
+                .DecryptAsync(SelecaoEncryptionKeys.SensiveisAesGcm, comprovante.SensiveisCifrados!, cancellationToken)
+                .ConfigureAwait(false);
+
+            // O envelope cifrado é autêntico, mas nada o prende a este comprovante: o HMAC de id e valores,
+            // gravado ao lado, acusa o envelope copiado de outro comprovante (falha alto, como o CPF corrompido).
+            byte[] esperado = await HmacDosSensiveisAsync(comprovante.Id, plano, cancellationToken).ConfigureAwait(false);
+            if (comprovante.SensiveisHmac is not { } gravado || !CryptographicOperations.FixedTimeEquals(gravado, esperado))
+            {
+                throw new InvalidOperationException($"As respostas sensíveis do comprovante {comprovante.Id} não pertencem a ele: o vínculo não confere.");
+            }
+
+            comprovante.RestaurarSensiveis(
+                JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(plano)
+                ?? throw new InvalidOperationException($"As respostas sensíveis do comprovante {comprovante.Id} decifradas não são um objeto JSON."));
+
+            // Os fatos restaurados têm de ser os que o hash do comprovante cobre.
+            if (!comprovante.IntegridadeConfere())
+            {
+                throw new InvalidOperationException($"Os fatos sensíveis restaurados do comprovante {comprovante.Id} não são os que o hash dele cobre.");
+            }
+        }
+
+        return comprovantes;
     }
 
-    public Task AdicionarComprovanteAsync(ComprovanteInscricao comprovante, CancellationToken cancellationToken = default)
+    public async Task AdicionarComprovanteAsync(ComprovanteInscricao comprovante, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(comprovante);
 
+        if (comprovante.RespostasSensiveis.Count > 0)
+        {
+            byte[] plano = JsonSerializer.SerializeToUtf8Bytes(comprovante.RespostasSensiveis);
+            byte[] cifrados = await _encryption
+                .EncryptAsync(SelecaoEncryptionKeys.SensiveisAesGcm, plano, cancellationToken)
+                .ConfigureAwait(false);
+            comprovante.GuardarSensiveisCifrados(
+                cifrados, await HmacDosSensiveisAsync(comprovante.Id, plano, cancellationToken).ConfigureAwait(false));
+        }
+
         _dbContext.ComprovantesInscricao.Add(comprovante);
-        return Task.CompletedTask;
     }
+
+    /// <summary>O HMAC do id do comprovante e dos valores sensíveis, exatamente como foram cifrados.</summary>
+    private Task<byte[]> HmacDosSensiveisAsync(Guid comprovanteId, byte[] valores, CancellationToken cancellationToken) =>
+        _blindIndex.ComputarAsync(
+            SelecaoEncryptionKeys.SensiveisHmac,
+            (byte[])[.. Encoding.UTF8.GetBytes($"comprovante:{comprovanteId:D}:"), .. valores],
+            cancellationToken);
+
+    /// <summary>A chave da categoria da resposta cifrada: documento ou dado sensível de cifra individual.</summary>
+    private static string ChaveDaResposta(string fatoCodigo) =>
+        DefinicaoDaResposta.EhFatoComCifraIndividual(fatoCodigo) ? SelecaoEncryptionKeys.SensiveisAesGcm : SelecaoEncryptionKeys.IdentificadoresAesGcm;
 
     private async Task<List<Inscricao>> ParaDominioAsync(List<InscricaoRecord> records, CancellationToken cancellationToken)
     {
@@ -188,7 +241,9 @@ public sealed class InscricaoRepository : IInscricaoRepository
 
             Destino(fato.Key.OcorrenciaId, primeira.Origem)[fato.Key.FatoCodigo] =
                 multivalorado ? JsonSerializer.SerializeToElement(valores) : valores[0];
-            definicoes.TryAdd(fato.Key.FatoCodigo, new DefinicaoDaResposta(primeira.Tipo, multivalorado, primeira.ValorCifrado is not null));
+            bool cifrada = primeira.ValorCifrado is not null;
+            bool cifraIndividual = cifrada && DefinicaoDaResposta.EhFatoComCifraIndividual(fato.Key.FatoCodigo);
+            definicoes.TryAdd(fato.Key.FatoCodigo, new DefinicaoDaResposta(primeira.Tipo, multivalorado, cifrada && !cifraIndividual, null, cifraIndividual));
         }
 
         foreach (EnderecoDaInscricaoRecord endereco in linhas.Enderecos)
@@ -223,7 +278,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
         if (linha.ValorCifrado is { } cifrado)
         {
             byte[] plano = await _encryption
-                .DecryptAsync(SelecaoEncryptionKeys.IdentificadoresAesGcm, cifrado, cancellationToken)
+                .DecryptAsync(ChaveDaResposta(linha.FatoCodigo), cifrado, cancellationToken)
                 .ConfigureAwait(false);
             return JsonSerializer.Deserialize<JsonElement>(plano);
         }
@@ -353,10 +408,10 @@ public sealed class InscricaoRepository : IInscricaoRepository
 
     private async Task PreencherValorAsync(RespostaDaInscricaoRecord linha, JsonElement valor, DefinicaoDaResposta definicao, CancellationToken cancellationToken)
     {
-        if (definicao.Identificador)
+        if (definicao.Cifrada)
         {
             linha.ValorCifrado = await _encryption
-                .EncryptAsync(SelecaoEncryptionKeys.IdentificadoresAesGcm, Encoding.UTF8.GetBytes(valor.GetRawText()), cancellationToken)
+                .EncryptAsync(ChaveDaResposta(linha.FatoCodigo), Encoding.UTF8.GetBytes(valor.GetRawText()), cancellationToken)
                 .ConfigureAwait(false);
             return;
         }

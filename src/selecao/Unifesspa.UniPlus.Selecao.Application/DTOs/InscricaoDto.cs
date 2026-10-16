@@ -124,7 +124,7 @@ public sealed record ComprovanteInscricaoDto(
             FusoHorarioDto.Institucional,
             comprovante.HashIntegridade,
             comprovante.OfertaCursoId,
-            comprovante.Respostas,
+            comprovante.Respostas.Concat(comprovante.RespostasSensiveis).ToDictionary(static r => r.Key, static r => r.Value, StringComparer.Ordinal),
             comprovante.Derivados,
             comprovante.Grupos.ToDictionary(
                 static g => g.Key,

@@ -32,6 +32,8 @@ public sealed class InscricaoTests
         ["PARENTESCO"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false),
         ["TELEFONE"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: false, Formato: "TELEFONE"),
         ["RENDA_MENSAL"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: false),
+        ["SEXO_CIVIL"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false),
+        ["IDENTIDADE_GENERO"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false, CifraIndividual: true),
     };
 
     private static readonly Guid OfertaDoProcesso = Guid.CreateVersion7();
@@ -45,7 +47,7 @@ public sealed class InscricaoTests
 
     private static readonly RespostasAdmitidas Admitidas = new(
         DefinicoesDasRespostas,
-        new HashSet<string>(StringComparer.Ordinal) { "NOME_SOCIAL", "CPF", "DESEJA_NOME_SOCIAL", "RG_NUMERO", "TELEFONE" },
+        new HashSet<string>(StringComparer.Ordinal) { "NOME_SOCIAL", "CPF", "DESEJA_NOME_SOCIAL", "RG_NUMERO", "TELEFONE", "SEXO_CIVIL", "IDENTIDADE_GENERO" },
         new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal)
         {
             ["COMPOSICAO_FAMILIAR"] = new HashSet<string>(StringComparer.Ordinal) { "PARENTESCO", "TELEFONE", "RG_NUMERO" },
@@ -287,6 +289,29 @@ public sealed class InscricaoTests
 
         resultado.Value!.Respostas.Should().NotContainKey("RG_NUMERO");
         resultado.Value!.Respostas.Should().ContainKey("NOME_SOCIAL");
+    }
+
+    [Fact(DisplayName = "O comprovante leva o dado de cifra individual à parte, fora do JSON em claro e do hash, e o sexo civil segue em claro")]
+    public void Submeter_Comprovante_LevaOCifradoIndividualAParte()
+    {
+        Inscricao inscricao = NovaInscricao();
+        Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal)
+        {
+            ["NOME_SOCIAL"] = JsonSerializer.SerializeToElement("Ariel Drumond"),
+            ["SEXO_CIVIL"] = JsonSerializer.SerializeToElement("FEMININO"),
+            ["IDENTIDADE_GENERO"] = JsonSerializer.SerializeToElement("PESSOA_NAO_BINARIA"),
+        };
+
+        Result<ComprovanteInscricao> resultado = inscricao.Submeter(
+            "000123", OfertaDoProcesso, respostas, SemGrupos(), SemAceites(), Admitidas, FormularioDeTeste.AvaliacaoSemOcultos, SemDerivados(), DefinicoesDosDerivados,
+            PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
+
+        ComprovanteInscricao comprovante = resultado.Value!;
+        comprovante.Respostas.Should().NotContainKey("IDENTIDADE_GENERO");
+        comprovante.Respostas["SEXO_CIVIL"].GetString().Should().Be("FEMININO");
+        comprovante.RespostasSensiveis["IDENTIDADE_GENERO"].GetString().Should().Be("PESSOA_NAO_BINARIA");
+        comprovante.IntegridadeConfere().Should().BeTrue();
+        inscricao.Respostas["IDENTIDADE_GENERO"].GetString().Should().Be("PESSOA_NAO_BINARIA", "a inscrição guarda o valor; a cifra é da gravação");
     }
 
     [Fact(DisplayName = "O comprovante carrega os grupos declarados, sem o documento de uma ocorrência")]

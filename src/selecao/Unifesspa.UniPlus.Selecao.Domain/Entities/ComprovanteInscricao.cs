@@ -15,9 +15,19 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// recalcula, e não é um código de autenticação.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Implementa <see cref="IForensicEntity"/> per ADR-0063: append-only, NÃO herda
 /// <see cref="Kernel.Domain.Entities.EntityBase"/> e não carrega soft-delete. Uma correção gera um
 /// comprovante NOVO; o anterior nunca muda.
+/// </para>
+/// <para>
+/// As respostas de cifra individual (identidade de gênero e orientação sexual) ficam fora do hash e
+/// do JSON em claro: um valor de poucas opções, hasheado junto do conteúdo, seria recuperável por
+/// tentativa. Vão à parte em <see cref="RespostasSensiveis"/>, cifradas pelo repositório. O AES-GCM
+/// garante que o envelope não foi alterado, mas não a que comprovante ele pertence: o HMAC de id e
+/// valores, em <see cref="SensiveisHmac"/>, prende um ao outro. O hash cobre os códigos dos fatos
+/// sensíveis, nunca os valores, para que apagar as colunas deles seja detectado.
+/// </para>
 /// </remarks>
 public sealed class ComprovanteInscricao : IForensicEntity
 {
@@ -48,6 +58,22 @@ public sealed class ComprovanteInscricao : IForensicEntity
     public IReadOnlyList<AceiteDeTermo> Aceites { get; private init; } = [];
 
     /// <summary>
+    /// As respostas de cifra individual desta submissão, em claro só em memória: o repositório as cifra
+    /// ao gravar (<see cref="SensiveisCifrados"/>) e as devolve ao ler. Fora do hash.
+    /// </summary>
+    public IReadOnlyDictionary<string, JsonElement> RespostasSensiveis { get; private set; } =
+        new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+
+    /// <summary>As respostas de cifra individual como o banco as guarda: cifradas, nulo quando não há.</summary>
+    public byte[]? SensiveisCifrados { get; private set; }
+
+    /// <summary>
+    /// O HMAC do id deste comprovante e dos valores sensíveis, que prende o envelope cifrado a ele: o
+    /// envelope copiado de outro comprovante não confere.
+    /// </summary>
+    public byte[]? SensiveisHmac { get; private set; }
+
+    /// <summary>
     /// As modalidades em que o candidato concorre nesta submissão, com o nome congelado na publicação e
     /// a ordem das ofertadas (UNI-REQ-0076); nulo quando a versão fixada não deriva a modalidade.
     /// </summary>
@@ -65,7 +91,8 @@ public sealed class ComprovanteInscricao : IForensicEntity
         IReadOnlyDictionary<string, JsonElement> derivados,
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
         IReadOnlyList<AceiteDeTermo> aceites,
-        IReadOnlyList<ModalidadeDeConcorrencia>? modalidades = null)
+        IReadOnlyList<ModalidadeDeConcorrencia>? modalidades = null,
+        IReadOnlyDictionary<string, JsonElement>? respostasSensiveis = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(numeroInscricao);
         ArgumentNullException.ThrowIfNull(respostas);
@@ -87,21 +114,37 @@ public sealed class ComprovanteInscricao : IForensicEntity
             NumeroInscricao = numeroInscricao,
             Instante = instante,
             HashIntegridade = HashDoConteudo(
-                numeroInscricao, instante, ofertaCursoId, respostasGravadas, derivadosGravados, gruposGravados, aceites, modalidades),
+                numeroInscricao, instante, ofertaCursoId, respostasGravadas, derivadosGravados, gruposGravados, aceites, modalidades,
+                (respostasSensiveis ?? new Dictionary<string, JsonElement>()).Keys),
             Grupos = gruposGravados,
             OfertaCursoId = ofertaCursoId,
             Respostas = respostasGravadas,
             Derivados = derivadosGravados,
             Aceites = aceites,
             Modalidades = modalidades,
+            RespostasSensiveis = NaFormaGravada(respostasSensiveis),
         };
+    }
+
+    /// <summary>Guarda as respostas de cifra individual cifradas; só o repositório, ao gravar, chama.</summary>
+    public void GuardarSensiveisCifrados(byte[]? cifrados, byte[]? hmac)
+    {
+        SensiveisCifrados = cifrados;
+        SensiveisHmac = hmac;
+    }
+
+    /// <summary>Devolve as respostas de cifra individual decifradas; só o repositório, ao ler, chama.</summary>
+    public void RestaurarSensiveis(IReadOnlyDictionary<string, JsonElement> decifradas)
+    {
+        ArgumentNullException.ThrowIfNull(decifradas);
+        RespostasSensiveis = decifradas;
     }
 
     /// <summary>Recalcula o hash a partir do conteúdo, como faria quem audita o comprovante.</summary>
     public bool IntegridadeConfere() =>
         string.Equals(
             HashIntegridade,
-            HashDoConteudo(NumeroInscricao, Instante, OfertaCursoId, Respostas, Derivados, Grupos, Aceites, Modalidades),
+            HashDoConteudo(NumeroInscricao, Instante, OfertaCursoId, Respostas, Derivados, Grupos, Aceites, Modalidades, RespostasSensiveis.Keys),
             StringComparison.Ordinal);
 
     /// <summary>
@@ -164,7 +207,8 @@ public sealed class ComprovanteInscricao : IForensicEntity
         IReadOnlyDictionary<string, JsonElement> derivados,
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
         IReadOnlyList<AceiteDeTermo> aceites,
-        IReadOnlyList<ModalidadeDeConcorrencia>? modalidades)
+        IReadOnlyList<ModalidadeDeConcorrencia>? modalidades,
+        IEnumerable<string> codigosSensiveis)
     {
         JsonObject conteudo = new()
         {
@@ -180,6 +224,14 @@ public sealed class ComprovanteInscricao : IForensicEntity
         if (modalidades is not null)
         {
             conteudo["modalidades"] = Nodo(modalidades);
+        }
+
+        // Só os códigos, nunca os valores: apagar as colunas dos sensíveis muda o hash, e o comprovante
+        // sem sensíveis segue com o hash que sempre teve.
+        string[] codigos = [.. codigosSensiveis.Order(StringComparer.Ordinal)];
+        if (codigos.Length > 0)
+        {
+            conteudo["sensiveis"] = Nodo(codigos);
         }
 
         return HashCanonicalComputer.ComputeSha256Hex(HashCanonicalComputer.ComputeSnapshotBytes(conteudo));
