@@ -144,8 +144,8 @@ public static class DerivadosDoSistemaInscricao
 
         // O envio recusa o endereço sem CEP antes de chegar aqui; o ramo por município serve à apuração
         // fora do envio (ApurarAsync), que confere pela cidade e nunca recusa por falta de CEP.
-        Result conferido = endereco.Cep is { Length: > 0 }
-            ? await conferencia.ConferirCepAsync(endereco.Cep, codigoIbge, uf, cancellationToken).ConfigureAwait(false)
+        Result conferido = endereco.CepSomenteDigitos is { } cep
+            ? await conferencia.ConferirCepAsync(cep, codigoIbge, uf, cancellationToken).ConfigureAwait(false)
             : await conferencia.ConferirMunicipioAsync(codigoIbge, uf, cancellationToken).ConfigureAwait(false);
 
         // O pressuposto de elegibilidade é o que o Geo confirmou, nunca o que o candidato mandou.

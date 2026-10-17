@@ -106,6 +106,19 @@ public sealed class DerivadosDoSistemaInscricaoTests
         resultado.Value!["MUNICIPIO_RESIDENCIA"].GetString().Should().Be("1504208");
     }
 
+    [Fact(DisplayName = "CEP com máscara é apurado no Geo pelo CEP só com os dígitos")]
+    public async Task CalcularAsync_CepComMascara_ConsultaOGeoSemMascara()
+    {
+        IConferenciaEnderecoGeo conferencia = Substitute.For<IConferenciaEnderecoGeo>();
+        conferencia.ConferirCepAsync("68500000", "1504208", "PA", Arg.Any<CancellationToken>()).Returns(Result.Success());
+
+        Result<IReadOnlyDictionary<string, JsonElement>> resultado = await DerivadosDoSistemaInscricao.CalcularAsync(
+            Respostas(("ENDERECO_RESIDENCIAL", Endereco("68500-000", "1504208", "PA"))), new DateOnly(2026, 12, 10), conferencia);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!["UF_RESIDENCIA"].GetString().Should().Be("PA");
+    }
+
     [Fact(DisplayName = "Geo indisponível ou endereço divergente recusa a derivação, nunca aceita o que o candidato declarou")]
     public async Task CalcularAsync_GeoRecusaOEndereco_Recusa()
     {
