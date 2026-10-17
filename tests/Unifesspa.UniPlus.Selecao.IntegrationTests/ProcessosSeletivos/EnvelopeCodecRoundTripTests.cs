@@ -595,7 +595,7 @@ public sealed class EnvelopeCodecRoundTripTests
     [InlineData("bonusRegional.teto", "42.5000")]
     [InlineData("bonusRegional.identificacao", "Portaria Unifesspa nº 999/2026")]
     [InlineData("bonusRegional.descricao", "Descrição alterada")]
-    [InlineData("classificacao.nOpcoesAlocacao", "1")]
+    [InlineData("opcoesDeCurso.numero", "1")]
     [InlineData("classificacao.casasArredondamento", "4")]
     [InlineData("classificacao.regraCalculo.hash", "9999999999999999999999999999999999999999999999999999999999999999")]
     [InlineData("atendimento.condicoes.0.condicaoNome", "Outra condição")]
@@ -896,7 +896,7 @@ public sealed class EnvelopeCodecRoundTripTests
             MetadadosFatosCongelados: metadadosFatos,
             ValoresSelecionaveisCongelados: valoresSelecionaveis);
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.28", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.29", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             entrada.Dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -985,7 +985,6 @@ public sealed class EnvelopeCodecRoundTripTests
             regraArredondamento: null,
             casasArredondamento: null,
             regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-            nOpcoesAlocacao: 1,
             regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         FaseCronograma fase = FaseCronograma.Criar(
@@ -1056,7 +1055,7 @@ public sealed class EnvelopeCodecRoundTripTests
 
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(
             new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados()));
-        congelado.SchemaVersion.Should().Be("0.0.28", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.29", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -1177,7 +1176,6 @@ public sealed class EnvelopeCodecRoundTripTests
             regraArredondamento: null,
             casasArredondamento: null,
             regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-            nOpcoesAlocacao: 1,
             regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         FaseCronograma fase = FaseCronograma.Criar(
@@ -1274,7 +1272,7 @@ public sealed class EnvelopeCodecRoundTripTests
             processo, dados, hashDocumento, FusoInstitucional.ZoneId, Conformidade: conformidade, MetadadosFatosCongelados: metadadosFatos,
             ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados());
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.28", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.29", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -1462,7 +1460,6 @@ public sealed class EnvelopeCodecRoundTripTests
             regraArredondamento: CorpusEnvelope.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, '3'),
             casasArredondamento: 2,
             regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '4'),
-            nOpcoesAlocacao: 1,
             regrasEliminacao: [],
             baseadoEmEnem: true,
             resolucaoPesoAreaEnem: enviada,
@@ -1496,7 +1493,6 @@ public sealed class EnvelopeCodecRoundTripTests
             regraArredondamento: CorpusEnvelope.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, '3'),
             casasArredondamento: 2,
             regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '4'),
-            nOpcoesAlocacao: 1,
             regrasEliminacao: [],
             baseadoEmEnem: true,
             resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,
@@ -1619,7 +1615,6 @@ public sealed class EnvelopeCodecRoundTripTests
             regraArredondamento: null,
             casasArredondamento: null,
             regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '4'),
-            nOpcoesAlocacao: 1,
             regrasEliminacao: [],
             baseadoEmEnem: baseadoEmEnem,
             resolucaoPesoAreaEnem: null,

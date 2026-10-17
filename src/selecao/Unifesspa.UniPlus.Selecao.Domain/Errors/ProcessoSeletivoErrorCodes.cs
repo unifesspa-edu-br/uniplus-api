@@ -15,6 +15,9 @@ public static class ProcessoSeletivoErrorCodes
     public const string IdentificadorLegivelImutavel = "ProcessoSeletivo.IdentificadorLegivelImutavel";
     public const string BonusRegionalAplicaSemConfiguracao = "ProcessoSeletivo.BonusRegionalAplicaSemConfiguracao";
     public const string BonusRegionalNaoAplicaComConfiguracao = "ProcessoSeletivo.BonusRegionalNaoAplicaComConfiguracao";
+    public const string OpcoesDeCursoInvalido = "ProcessoSeletivo.OpcoesDeCursoInvalido";
+    public const string ConflitoDeConcorrencia = "ProcessoSeletivo.ConflitoDeConcorrencia";
+    public const string OpcoesDeCursoAcimaDasOfertas = "ProcessoSeletivo.OpcoesDeCursoAcimaDasOfertas";
     public const string FatoElegibilidadeAusente = "ProcessoSeletivo.FatoElegibilidadeAusente";
     public const string FatoElegibilidadeForaDoProcesso = "ProcessoSeletivo.FatoElegibilidadeForaDoProcesso";
     public const string FatoElegibilidadeDeMembroDeGrupo = "ProcessoSeletivo.FatoElegibilidadeDeMembroDeGrupo";

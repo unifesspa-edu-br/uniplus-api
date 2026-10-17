@@ -12,10 +12,7 @@ using Kernel.Results;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 
 /// <summary>
-/// Handler do <see cref="DefinirClassificacaoCommand"/> (Story #775), em duas passadas. A
-/// primeira confirma o número de opções de alocação
-/// (<see cref="ConfiguracaoClassificacao.ValidarNOpcoesAlocacao"/>) sem tocar o catálogo,
-/// acumulando (ADR-0125). Só então a segunda resolve cada regra no catálogo
+/// Handler do <see cref="DefinirClassificacaoCommand"/> (Story #775): resolve cada regra no catálogo
 /// <c>rol_de_regras</c> (<see cref="IRegraCatalogoReader"/>, Story #772), monta os args
 /// tipados de cada regra de eliminação conforme o código, repassa <c>BaseadoEmEnem</c> e
 /// congela as referências — a invariante ENEM×eliminação e a coerência de arredondamento são
@@ -74,16 +71,6 @@ public static class DefinirClassificacaoCommandHandler
         if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
         {
             return Result<MutacaoAceita>.Failure(bloqueio);
-        }
-
-        // Acumula (ADR-0125) o número de opções de alocação — a única checagem de
-        // ConfiguracaoClassificacao.Criar que não depende de a regra de cálculo já ter sido
-        // resolvida no catálogo — e recusa antes de consultar o rol_de_regras: a forma errada
-        // não depende do catálogo e não precisa esperar por ele.
-        List<FieldError> formaErros = ConfiguracaoClassificacao.ValidarNOpcoesAlocacao(command.NOpcoesAlocacao);
-        if (formaErros.Count > 0)
-        {
-            return Result<MutacaoAceita>.ValidationFailure(formaErros);
         }
 
         Result<ReferenciaRegra> regraCalculoResult = await ResolverRegraAsync(
@@ -169,7 +156,6 @@ public static class DefinirClassificacaoCommandHandler
             regraArredondamento,
             command.CasasArredondamento,
             regraOrdemAlocacaoResult.Value!,
-            command.NOpcoesAlocacao,
             regrasEliminacao,
             command.BaseadoEmEnem,
             resolucaoPesoAreaEnem,

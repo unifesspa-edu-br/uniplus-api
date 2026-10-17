@@ -33,10 +33,16 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         // espelha no banco a invariante já provada por
         // UnidadeAdministradoraSnapshot.ValidarReferenciaCidade — mesmo padrão de
         // InstituicaoConfiguration/UnidadeConfiguration.
-        builder.ToTable("processos_seletivos", t => t.HasCheckConstraint(
-            "ck_processos_seletivos_unidade_administradora_cidade_completa",
-            "(unidade_administradora_cidade_codigo_ibge IS NULL AND unidade_administradora_cidade_nome IS NULL AND unidade_administradora_cidade_uf IS NULL) "
-            + "OR (unidade_administradora_cidade_codigo_ibge IS NOT NULL AND unidade_administradora_cidade_nome IS NOT NULL AND unidade_administradora_cidade_uf IS NOT NULL)"));
+        builder.ToTable("processos_seletivos", t =>
+        {
+            t.HasCheckConstraint(
+                "ck_processos_seletivos_unidade_administradora_cidade_completa",
+                "(unidade_administradora_cidade_codigo_ibge IS NULL AND unidade_administradora_cidade_nome IS NULL AND unidade_administradora_cidade_uf IS NULL) "
+                + "OR (unidade_administradora_cidade_codigo_ibge IS NOT NULL AND unidade_administradora_cidade_nome IS NOT NULL AND unidade_administradora_cidade_uf IS NOT NULL)");
+            t.HasCheckConstraint(
+                "ck_processos_seletivos_numero_de_opcoes_de_curso",
+                "numero_de_opcoes_de_curso IS NULL OR numero_de_opcoes_de_curso IN (1, 2)");
+        });
         builder.HasKey(p => p.Id);
         // Chave Guid v7 gerada no domínio (EntityBase): ValueGeneratedNever
         // força o EF a tratar a chave como fornecida pela aplicação. Sem isso,
@@ -58,6 +64,10 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         // o que bloqueia a publicação.
         builder.Property(p => p.AplicaBonusRegional)
             .HasComment("Declaração de que o processo aplica (true) ou não aplica (false) o bônus regional. Nulo = ainda não declarado.");
+        // Quantos cursos o candidato escolhe na inscrição: nulo = ainda não declarado, o que bloqueia
+        // a publicação. O intervalo é invariante do domínio e fica espelhado no banco.
+        builder.Property(p => p.NumeroDeOpcoesDeCurso)
+            .HasComment("Quantos cursos o candidato escolhe na inscrição (1 ou 2). Nulo = ainda não declarado.");
         builder.HasIndex(p => p.IdentificadorLegivel)
             .IsUnique()
             .HasFilter("identificador_legivel IS NOT NULL")

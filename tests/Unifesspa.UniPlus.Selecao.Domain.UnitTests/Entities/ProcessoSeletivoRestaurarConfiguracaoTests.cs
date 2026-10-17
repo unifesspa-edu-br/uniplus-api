@@ -125,6 +125,31 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemNaoCompoeNota");
     }
 
+    [Fact(DisplayName = "Restaurar grafo com mais opções de curso que ofertas é recusado, como na gravação, e não altera o agregado")]
+    public void Restaurar_MaisOpcoesQueOfertas_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.PSIQ);
+        Estado antes = Estado.De(processo);
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(VersaoDo(processo), Grafo(numeroDeOpcoesDeCurso: 2));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.OpcoesDeCursoAcimaDasOfertas);
+        Estado.De(processo).Should().BeEquivalentTo(antes);
+    }
+
+    [Fact(DisplayName = "Restaurar repõe o número de opções congelado, sobrepondo o que a sessão de retificação declarou")]
+    public void Restaurar_ReponhaONumeroCongelado()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.PSIQ);
+        // Estado que a sessão deixou: o número vivo difere do congelado.
+        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.NumeroDeOpcoesDeCurso))!.SetValue(processo, 2);
+
+        processo.RestaurarConfiguracaoCongelada(VersaoDo(processo), Grafo(numeroDeOpcoesDeCurso: 1)).IsSuccess.Should().BeTrue();
+
+        processo.NumeroDeOpcoesDeCurso.Should().Be(1);
+    }
+
     [Fact(DisplayName = "Restaurar deriva a declaração do bônus da versão publicada: com bônus, aplica; sem, não aplica")]
     public void Restaurar_DerivaADeclaracaoDoBonus()
     {
@@ -306,7 +331,6 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             regraArredondamento: Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'c'),
             casasArredondamento: 2,
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'd'),
-            nOpcoesAlocacao: 1,
             regrasEliminacao: [EliminacaoEnem()],
             baseadoEmEnem: true,
             resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,
@@ -1382,7 +1406,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         IReadOnlyList<FaseCronograma>? cronogramaFases = null,
         ConfiguracaoDivulgacao? configuracaoDivulgacao = null,
         ConfiguracaoClassificacao? classificacao = null,
-        IReadOnlyList<FatoColetado>? fatosColetados = null) => new(
+        IReadOnlyList<FatoColetado>? fatosColetados = null,
+        int? numeroDeOpcoesDeCurso = null) => new(
             etapas: etapas ?? [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 1m, null, 1)],
             ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
             distribuicaoVagas: [Distribuicao()],
@@ -1394,7 +1419,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             nosExigencia: [],
             referenciaTemporalFatos: null,
             configuracaoDivulgacao: configuracaoDivulgacao,
-            fatosColetados: fatosColetados);
+            fatosColetados: fatosColetados,
+            numeroDeOpcoesDeCurso: numeroDeOpcoesDeCurso);
 
     /// <summary>
     /// Mesmo grafo de <see cref="Grafo"/>, com <c>documentosExigidos</c>/<c>nosExigencia</c>
@@ -1459,7 +1485,6 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             regraArredondamento: Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'c'),
             casasArredondamento: 2,
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'd'),
-            nOpcoesAlocacao: 1,
             regrasEliminacao: eliminacoes,
             baseadoEmEnem: false,
             resolucaoPesoAreaEnem: null,
@@ -1471,7 +1496,6 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             regraArredondamento: Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'c'),
             casasArredondamento: 2,
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'd'),
-            nOpcoesAlocacao: 1,
             regrasEliminacao: [],
             baseadoEmEnem: true,
             resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,

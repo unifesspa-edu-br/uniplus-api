@@ -57,6 +57,7 @@ public static class ClassificacaoDosBlocosDoCertame
     public static readonly IReadOnlySet<string> Internos = new HashSet<string>(StringComparer.Ordinal)
     {
         "classificacao",
+        "opcoesDeCurso",
         "criteriosDesempate",
         "bonusRegional",
         "cascataRemanejamento",

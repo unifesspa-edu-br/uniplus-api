@@ -347,7 +347,6 @@ internal static class CorpusEnvelope
             regraArredondamento: Regra(RegraArredondamentoCodigo.PrecisaoArredondarCima, '2'),
             casasArredondamento: 3,
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '3'),
-            nOpcoesAlocacao: 2,
             regrasEliminacao: [
                 // DUAS do mesmo código, args distintos — o PS Convênios exige exatamente isso.
                 RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, '4'), new ArgsElimNotaMinimaEtapa(objetiva, 45.0000m)).Value!,
@@ -469,6 +468,8 @@ internal static class CorpusEnvelope
                 valor: 150.00m,
                 fundamentosCodigos: Ordem([FundamentoIsencaoCodigo.CadastroUnico, FundamentoIsencaoCodigo.DoacaoMedulaOssea], permutar)).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        // O corpus rico oferta dois cursos e admite a segunda opção.
+        processo.DefinirOpcoesDeCurso(2, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         return processo;
@@ -1057,7 +1058,6 @@ internal static class CorpusEnvelope
                 regraArredondamento: null,
                 casasArredondamento: null,
                 regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '3'),
-                nOpcoesAlocacao: 1,
                 regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!,
             cronogramaFases: [FaseCronogramaConforme(variante)],
             documentosExigidos: [],
@@ -1079,14 +1079,14 @@ internal static class CorpusEnvelope
             regraArredondamento: null,
             casasArredondamento: null,
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '3'),
-            nOpcoesAlocacao: 1,
             regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!,
         cronogramaFases: [FaseCronogramaConforme(variante)],
         documentosExigidos: [],
         nosExigencia: [],
         referenciaTemporalFatos: null,
         fatosColetados: [],
-        regrasDerivacao: []);
+        regrasDerivacao: [],
+        numeroDeOpcoesDeCurso: 1);
 
     /// <summary>Fase mínima que satisfaz o bicondicional fase×etapa (uma etapa acompanha os dois grafos acima).</summary>
     private static FaseCronograma FaseCronogramaConforme(int variante) => FaseCronograma.Criar(

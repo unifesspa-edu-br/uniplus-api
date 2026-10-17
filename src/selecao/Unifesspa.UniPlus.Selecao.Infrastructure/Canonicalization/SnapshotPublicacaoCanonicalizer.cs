@@ -304,8 +304,12 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// trazer a modalidade do candidato e a opção pelas cotas da lei: as duas saem das modalidades
     /// ofertadas, e o grafo de dependência as projeta delas. Sem novo bloco de topo. Sem produção em ambiente nenhum: fixture nova, <c>0.0.27</c> deixa de
     /// ser reconhecida.
+    /// O bump para <c>0.0.29</c> move o número de opções de curso para um bloco de topo próprio,
+    /// <c>opcoesDeCurso</c>, e o retira de <c>classificacao</c> (<c>nOpcoesAlocacao</c>): ele deixou
+    /// de ser parâmetro da classificação e passou a ser dimensão do processo. Sem produção em
+    /// ambiente nenhum: <c>0.0.28</c> deixa de ser reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.28";
+    internal const string SchemaVersionAtual = "0.0.29";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -363,14 +367,15 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["modalidadesOfertadas"] = SerializarModalidadesOfertadas(processo.DistribuicaoVagas),
             ["taxaInscricao"] = SerializarTaxaInscricao(processo),
             ["localidade"] = SerializarLocalidade(processo, entrada.FusoHorario),
+            ["opcoesDeCurso"] = SerializarOpcoesDeCurso(processo),
             ["algoritmoContagemPrazo"] = SerializarAlgoritmoContagemPrazo(processo),
             ["calendarioDiasUteis"] = SerializarCalendarioDiasUteis(entrada.CalendarioDiasUteis),
             ["identificadorLegivel"] = processo.IdentificadorLegivel?.Valor,
             ["apresentacaoDosPressupostos"] = SerializarApresentacaoDosPressupostos(entrada.ApresentacaoDosPressupostos),
         };
 
-        // ADR-0101: a retificação ACRESCENTA um 32º bloco preservando os 31
-        // anteriores (a issue #1112 elevou de 24 para 25, a localidade de 25 para 26, a
+        // ADR-0101: a retificação ACRESCENTA um 33º bloco preservando os 32
+        // anteriores (as opções de curso elevaram de 31 para 32; a issue #1112 elevou de 24 para 25, a localidade de 25 para 26, a
         // convenção de contagem de 26 para 27, o calendário de 27 para 28, o identificador
         // legível de 28 para 29, os grupos repetíveis de 29 para 30 e a apresentação dos
         // pressupostos de 30 para 31). A
@@ -1001,12 +1006,17 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     }
 
     /// <summary>
-    /// Taxa de inscrição e isenção (issue #1112) — mesmo toggle <c>"presente"</c> de
-    /// <see cref="SerializarBonusRegional"/>. Na prática a publicação já recusa processo sem
-    /// declaração (CA-01, <c>ItensEstruturaisDeConformidade</c>), então um envelope legítimo
-    /// nunca tem <c>"presente": false</c> aqui — o encoder trata o caso defensivamente pela
-    /// mesma disciplina do resto do arquivo, não porque seja alcançável em produção.
+    /// Número de opções de curso que a inscrição admite. A declaração é obrigatória para publicar,
+    /// então a ausência aqui é erro de programação — o gate de conformidade a teria recusado.
     /// </summary>
+    private static JsonObject SerializarOpcoesDeCurso(ProcessoSeletivo processo) =>
+        new()
+        {
+            ["numero"] = processo.NumeroDeOpcoesDeCurso
+                ?? throw new InvalidOperationException(
+                    "Canonicalização de processo sem número de opções de curso — o gate de conformidade deveria ter recusado a transição antes deste ponto."),
+        };
+
     /// <summary>
     /// Localidade regente e fuso aplicado, no mesmo bloco (UNI-REQ-0111): os dois formam um
     /// contexto civil único e têm o mesmo ciclo de publicação, e um bloco fechado impede a
@@ -1099,6 +1109,13 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         };
     }
 
+    /// <summary>
+    /// Taxa de inscrição e isenção (issue #1112) — mesmo toggle <c>"presente"</c> de
+    /// <see cref="SerializarBonusRegional"/>. Na prática a publicação já recusa processo sem
+    /// declaração (CA-01, <c>ItensEstruturaisDeConformidade</c>), então um envelope legítimo
+    /// nunca tem <c>"presente": false</c> aqui — o encoder trata o caso defensivamente pela
+    /// mesma disciplina do resto do arquivo, não porque seja alcançável em produção.
+    /// </summary>
     private static JsonObject SerializarTaxaInscricao(ProcessoSeletivo processo)
     {
         if (processo.ConfiguracaoTaxaInscricao is not { } taxa)
@@ -1196,7 +1213,6 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 : null,
             ["casasArredondamento"] = classificacao.CasasArredondamento,
             ["regraOrdemAlocacao"] = SerializarReferenciaRegra(classificacao.RegraOrdemAlocacao),
-            ["nOpcoesAlocacao"] = classificacao.NOpcoesAlocacao,
             ["baseadoEmEnem"] = classificacao.BaseadoEmEnem,
             // RegrasEliminacao não tem chave de negócio única (cardinalidade
             // múltipla: duas ELIM-NOTA-MINIMA-ETAPA distintas são válidas, ex. PS

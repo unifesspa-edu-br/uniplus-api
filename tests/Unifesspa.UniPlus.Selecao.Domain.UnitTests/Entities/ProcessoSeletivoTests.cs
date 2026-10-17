@@ -505,7 +505,6 @@ public sealed class ProcessoSeletivoTests
             ReferenciaRegra.Criar(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64)).Value!,
             2,
             ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)).Value!,
-            1,
             regrasEliminacao ?? [],
             baseadoEmEnem,
             baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,

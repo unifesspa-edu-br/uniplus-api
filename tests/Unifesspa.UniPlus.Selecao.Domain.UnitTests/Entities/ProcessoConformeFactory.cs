@@ -25,14 +25,46 @@ internal static class ProcessoConformeFactory
     internal static ReferenciaRegra Regra(string codigo, string hashSeed) =>
         ReferenciaRegra.Criar(codigo, "v1", new string(hashSeed[0], 64)).Value!;
 
+    /// <summary>
+    /// Uma oferta de curso da distribuição: ampla concorrência única, com as vagas todas nela.
+    /// Duas chamadas com ids distintos dão ao processo os dois cursos que a segunda opção exige.
+    /// </summary>
+    internal static ConfiguracaoDistribuicaoVagas Oferta(Guid? ofertaCursoOrigemId = null) =>
+        ConfiguracaoDistribuicaoVagas.Criar(
+            ofertaCursoOrigemId: ofertaCursoOrigemId ?? Guid.CreateVersion7(),
+            voBase: 40,
+            pr: 1m,
+            regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Institucional, "a"),
+            regraAjuste: null,
+            referenciaDemografica: null,
+            modalidades: [
+                ModalidadeSelecionada.Criar(
+                    modalidadeOrigemId: Guid.CreateVersion7(),
+                    codigo: "AC",
+                    descricao: null,
+                    naturezaLegal: NaturezaLegalModalidade.Ampla,
+                    composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
+                    composicaoOrigemCodigo: null,
+                    regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
+                    remanejamentoDestino: null,
+                    remanejamentoPar: null,
+                    remanejamentoFallback: null,
+                    regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
+                    acaoQuandoIndeferido: null,
+                    baseLegal: "Res. Unifesspa 532/2021",
+                    quantidadeDeclarada: 40).Value!,
+            ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+
     /// <param name="declararTaxa">
     /// Falso deixa a taxa por declarar, único jeito de exercitar a recusa correspondente.
     /// </param>
     /// <param name="declararBonus">Falso deixa o bônus regional por declarar.</param>
     /// <param name="comDesempate">Falso deixa a inscrição própria sem critério de desempate.</param>
+    /// <param name="declararOpcoesDeCurso">Falso deixa o número de opções de curso por declarar.</param>
     /// <param name="fase">Fase do cronograma; a omissão usa a mínima e conforme, sem recurso.</param>
     internal static ProcessoSeletivo Criar(
-        bool declararTaxa = true, FaseCronograma? fase = null, bool declararBonus = true, bool comDesempate = true)
+        bool declararTaxa = true, FaseCronograma? fase = null, bool declararBonus = true, bool comDesempate = true,
+        bool declararOpcoesDeCurso = true)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS Gate", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
@@ -46,39 +78,13 @@ internal static class ProcessoConformeFactory
         processo.DefinirOfertaAtendimento(
             OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.DefinirDistribuicaoVagas([
-            ConfiguracaoDistribuicaoVagas.Criar(
-                ofertaCursoOrigemId: Guid.CreateVersion7(),
-                voBase: 40,
-                pr: 1m,
-                regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Institucional, "a"),
-                regraAjuste: null,
-                referenciaDemografica: null,
-                modalidades: [
-                    ModalidadeSelecionada.Criar(
-                        modalidadeOrigemId: Guid.CreateVersion7(),
-                        codigo: "AC",
-                        descricao: null,
-                        naturezaLegal: NaturezaLegalModalidade.Ampla,
-                        composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
-                        composicaoOrigemCodigo: null,
-                        regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-                        remanejamentoDestino: null,
-                        remanejamentoPar: null,
-                        remanejamentoFallback: null,
-                        regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
-                        acaoQuandoIndeferido: null,
-                        baseLegal: "Res. Unifesspa 532/2021",
-                        quantidadeDeclarada: 40).Value!,
-                ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!,
-        ], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([Oferta()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, "b"),
             regraArredondamento: null,
             casasArredondamento: null,
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
-            nOpcoesAlocacao: 1,
             regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirCronogramaFases([fase ?? FaseConforme()], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -90,7 +96,7 @@ internal static class ProcessoConformeFactory
                 PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         }
 
-        DeclaracoesObrigatoriasDeTeste.Declarar(processo, bonus: declararBonus, desempate: comDesempate);
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo, bonus: declararBonus, desempate: comDesempate, opcoesDeCurso: declararOpcoesDeCurso);
 
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;

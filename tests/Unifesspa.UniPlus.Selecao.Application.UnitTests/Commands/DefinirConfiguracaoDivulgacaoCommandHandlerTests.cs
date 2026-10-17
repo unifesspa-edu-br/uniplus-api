@@ -165,7 +165,6 @@ public sealed class DefinirConfiguracaoDivulgacaoCommandHandlerTests
             regraArredondamento: null,
             casasArredondamento: null,
             regraOrdemAlocacao: regraOrdemAlocacao,
-            nOpcoesAlocacao: 1,
             regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!;
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 

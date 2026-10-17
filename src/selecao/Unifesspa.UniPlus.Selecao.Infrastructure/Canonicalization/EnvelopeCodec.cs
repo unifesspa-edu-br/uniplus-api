@@ -60,6 +60,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
         "modalidadesOfertadas",
         "taxaInscricao",
         "localidade",
+        "opcoesDeCurso",
         "algoritmoContagemPrazo",
         "calendarioDiasUteis",
         "identificadorLegivel",
@@ -79,7 +80,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
 
     private readonly SnapshotPublicacaoCanonicalizer _encoder = new();
 
-    public string SchemaVersion => "0.0.28";
+    public string SchemaVersion => "0.0.29";
 
     public IPerfilCanonico Perfil => PerfilCanonicoV1.Instancia;
 
@@ -215,6 +216,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
         ConfiguracaoDivulgacao? configuracaoDivulgacao = LerDivulgacao(leitor, payload);
         ConfiguracaoTaxaInscricao? configuracaoTaxaInscricao = LerTaxaInscricao(leitor, payload);
         (LocalidadeRegente? localidade, string? fusoHorario) = LerLocalidade(leitor, payload);
+        int? numeroDeOpcoesDeCurso = LerOpcoesDeCurso(leitor, payload);
         ReferenciaRegra? algoritmoContagemPrazo = LerAlgoritmoContagemPrazo(leitor, payload);
         CalendarioDiasUteisCongelado? calendarioDiasUteis = LerCalendarioDiasUteis(leitor, payload, cronogramaFases);
         IdentificadorLegivel? identificadorLegivel = LerIdentificadorLegivel(leitor, payload);
@@ -325,6 +327,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
             configuracaoDivulgacao: configuracaoDivulgacao,
             configuracaoTaxaInscricao: configuracaoTaxaInscricao,
             localidade: localidade,
+            numeroDeOpcoesDeCurso: numeroDeOpcoesDeCurso,
             algoritmoContagemPrazo: algoritmoContagemPrazo,
             identificadorLegivel: identificadorLegivel,
             opcoesDeclaradas: opcoesDeclaradas.Value,

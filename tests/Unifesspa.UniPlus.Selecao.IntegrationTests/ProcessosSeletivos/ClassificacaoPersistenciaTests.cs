@@ -75,7 +75,6 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "e"),
             2,
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "f"),
-            1,
             [notaMinima, corteRedacao, zeroEmArea, faltaEmDiaDeProva],
             baseadoEmEnem: true,
             QuadroPesoAreaEnemDeTeste.Resolucao,
@@ -101,7 +100,6 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
         classificacao.RegraArredondamento!.Codigo.Should().Be(RegraArredondamentoCodigo.PrecisaoTruncar);
         classificacao.CasasArredondamento.Should().Be(2);
         classificacao.RegraOrdemAlocacao.Codigo.Should().Be(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria);
-        classificacao.NOpcoesAlocacao.Should().Be(1);
         classificacao.RegrasEliminacao.Should().HaveCount(4);
 
         ArgsElimNotaMinimaEtapa argsNotaMinima = (ArgsElimNotaMinimaEtapa)classificacao.RegrasEliminacao
@@ -137,7 +135,6 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             regraArredondamento: null,
             casasArredondamento: null,
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "2"),
-            2,
             [],
             baseadoEmEnem: false,
             resolucaoPesoAreaEnem: null,
@@ -162,7 +159,6 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
         classificacao.RegraCalculo.Codigo.Should().Be(RegraCalculoCodigo.ClassificacaoImportada);
         classificacao.RegraArredondamento.Should().BeNull();
         classificacao.CasasArredondamento.Should().BeNull();
-        classificacao.NOpcoesAlocacao.Should().Be(2);
         classificacao.RegrasEliminacao.Should().BeEmpty();
     }
 
@@ -178,7 +174,6 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "b"),
             2,
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
-            1,
             [],
             baseadoEmEnem: false,
             resolucaoPesoAreaEnem: null,
@@ -205,7 +200,6 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
                 Regra(RegraArredondamentoCodigo.PrecisaoArredondarCima, "e"),
                 4,
                 Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
-                2,
                 [eliminacao],
                 baseadoEmEnem: true,
                 QuadroPesoAreaEnemDeTeste.Resolucao,
@@ -225,7 +219,6 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
         recarregado.Should().NotBeNull();
         ConfiguracaoClassificacao classificacao = recarregado!.Classificacao!;
         classificacao.CasasArredondamento.Should().Be(4);
-        classificacao.NOpcoesAlocacao.Should().Be(2);
         classificacao.RegrasEliminacao.Should().ContainSingle();
     }
 
@@ -290,7 +283,6 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
                 Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "b"),
                 2,
                 Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
-                1,
                 [],
                 baseadoEmEnem: false,
                 resolucaoPesoAreaEnem: null,
@@ -361,7 +353,6 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "b"),
             2,
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
-            1,
             [],
             baseadoEmEnem: true,
             QuadroPesoAreaEnemDeTeste.Resolucao,
@@ -407,7 +398,6 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "c"),
             2,
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "d"),
-            1,
             [eliminacao],
             baseadoEmEnem: false,
             resolucaoPesoAreaEnem: null,
@@ -468,7 +458,6 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "2"),
             2,
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "3"),
-            1,
             [],
             baseadoEmEnem: baseadoEmEnem,
             baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,

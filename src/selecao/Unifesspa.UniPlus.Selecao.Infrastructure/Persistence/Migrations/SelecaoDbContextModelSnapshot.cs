@@ -775,10 +775,6 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<int>("NOpcoesAlocacao")
-                        .HasColumnType("integer")
-                        .HasColumnName("n_opcoes_alocacao");
-
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
                         .HasColumnName("processo_seletivo_id");
@@ -2564,6 +2560,11 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(300)")
                         .HasColumnName("nome");
 
+                    b.Property<int?>("NumeroDeOpcoesDeCurso")
+                        .HasColumnType("integer")
+                        .HasColumnName("numero_de_opcoes_de_curso")
+                        .HasComment("Quantos cursos o candidato escolhe na inscrição (1 ou 2). Nulo = ainda não declarado.");
+
                     b.Property<int>("OrigemCandidatos")
                         .HasColumnType("integer")
                         .HasColumnName("origem_candidatos");
@@ -2591,6 +2592,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
                     b.ToTable("processos_seletivos", "selecao", t =>
                         {
+                            t.HasCheckConstraint("ck_processos_seletivos_numero_de_opcoes_de_curso", "numero_de_opcoes_de_curso IS NULL OR numero_de_opcoes_de_curso IN (1, 2)");
+
                             t.HasCheckConstraint("ck_processos_seletivos_unidade_administradora_cidade_completa", "(unidade_administradora_cidade_codigo_ibge IS NULL AND unidade_administradora_cidade_nome IS NULL AND unidade_administradora_cidade_uf IS NULL) OR (unidade_administradora_cidade_codigo_ibge IS NOT NULL AND unidade_administradora_cidade_nome IS NOT NULL AND unidade_administradora_cidade_uf IS NOT NULL)");
                         });
                 });
@@ -3067,8 +3070,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                             BaseLegal = "UNI-REQ-0045 — processamento da 1ª opção antes da 2ª",
                             Codigo = "ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"n_opcoes\":\"integer\"}",
-                            Hash = "3c3b381dbe84380b1954fdd25512cd34e3881bddccf8e733530ca0593aa8e12f",
+                            EsquemaArgs = "{}",
+                            Hash = "2b70a91223c2d03b6e89ce77ae88699dbfa3ed6c9c3e84fae88b8dc3b4c9444b",
                             Invariantes = "[\"processam-se todas as 1ªs opções de cada curso\",\"a vaga de modalidade não preenchida é remanejada dentro do curso, entre candidatos de 1ª opção\",\"só a vaga que sobra depois do remanejamento vai à 2ª opção, em ordem de nota, sem deslocar aprovado de 1ª opção\",\"quem não é classificado em nenhuma opção vai para a lista de espera\"]",
                             Tipo = "regra_ordem_alocacao",
                             Versao = "v1"
