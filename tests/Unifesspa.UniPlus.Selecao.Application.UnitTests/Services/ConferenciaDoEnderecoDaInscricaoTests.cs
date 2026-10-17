@@ -67,12 +67,14 @@ public sealed class ConferenciaDoEnderecoDaInscricaoTests
                 && e.Error.Message == "CEP não encontrado. Confira o seu CEP na busca dos Correios; se o seu bairro não tem CEP próprio, use o CEP geral da sua cidade e descreva o endereço real no complemento.");
     }
 
-    [Fact(DisplayName = "CEP que resolve a outra cidade que a declarada é recusado")]
-    public async Task CepDeOutraCidade_Recusa()
+    [Theory(DisplayName = "CEP que resolve a outra cidade que a declarada é recusado, ao salvar e ao enviar")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CepDeOutraCidade_Recusa(bool aoEnviar)
     {
         FakeConferenciaEnderecoGeo geo = new FakeConferenciaEnderecoGeo().ComCep("68627476", "1501402", "PA");
 
-        Result<IReadOnlyList<FieldError>> resultado = await ConferirAsync(Endereco(), geo, aoEnviar: true);
+        Result<IReadOnlyList<FieldError>> resultado = await ConferirAsync(Endereco(), geo, aoEnviar);
 
         resultado.Value!.Should().ContainSingle(e => e.Field == Campo && e.Error.Code == InscricaoErrorCodes.EnderecoCepDeOutraCidade);
     }
@@ -124,6 +126,16 @@ public sealed class ConferenciaDoEnderecoDaInscricaoTests
         Result<IReadOnlyList<FieldError>> resultado = await ConferirAsync(Endereco(confirmado: true), geo, aoEnviar: true);
 
         resultado.Value!.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "CEP de faixa sem confirmação e sem logradouro recusa só a confirmação: logradouro e bairro vêm depois")]
+    public async Task CepPorFaixa_SemConfirmacaoESemLogradouro_RecusaSoAConfirmacao()
+    {
+        FakeConferenciaEnderecoGeo geo = new FakeConferenciaEnderecoGeo().ComCep("68627476", Paragominas, "PA", "faixa-cidade");
+
+        Result<IReadOnlyList<FieldError>> resultado = await ConferirAsync(Endereco(logradouro: null, bairro: null), geo, aoEnviar: true);
+
+        resultado.Value!.Should().ContainSingle().Which.Error.Code.Should().Be(InscricaoErrorCodes.EnderecoCepNaoConfirmado);
     }
 
     [Fact(DisplayName = "CEP resolvido só por faixa e confirmado, mas sem logradouro nem bairro, é recusado")]

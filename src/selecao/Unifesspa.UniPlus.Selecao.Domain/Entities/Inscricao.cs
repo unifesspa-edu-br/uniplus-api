@@ -651,7 +651,11 @@ public sealed class Inscricao : EntityBase
     private static IReadOnlyList<string> CamposOuAModalidade(IReadOnlyList<string> campos) =>
         campos.Count > 0 ? campos : [AvaliacaoDaInscricao.FatoDaModalidade];
 
-    /// <summary>A inscrição é do CPF do token; a resposta do CPF não pode ser de outra pessoa.</summary>
+    /// <summary>
+    /// O endereço só vale com CEP (UNI-REQ do endereço da inscrição): sem ele, o candidato digitaria qualquer
+    /// endereço. Aqui ficam as regras que não precisam do Geo; as que precisam estão em
+    /// <c>ConferenciaDoEnderecoDaInscricao</c>. O endereço em branco é a resposta ainda não dada.
+    /// </summary>
     private static IEnumerable<FieldError> RecusasDoEndereco(IReadOnlyDictionary<string, JsonElement> respostas, RespostasAdmitidas admitidas)
     {
         foreach ((string codigo, DefinicaoDaResposta definicao) in admitidas.Definicoes)
@@ -680,6 +684,7 @@ public sealed class Inscricao : EntityBase
         }
     }
 
+    /// <summary>A inscrição é do CPF do token; a resposta do CPF não pode ser de outra pessoa.</summary>
     private IEnumerable<FieldError> RecusasDoCpf(IReadOnlyDictionary<string, JsonElement> respostas)
     {
         if (!respostas.TryGetValue(ConjuntoBasicoDaInscricao.Cpf, out JsonElement valor) || valor.ValueKind == JsonValueKind.Null)
