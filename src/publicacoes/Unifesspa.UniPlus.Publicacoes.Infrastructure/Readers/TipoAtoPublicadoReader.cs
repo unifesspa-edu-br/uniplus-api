@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Publicacoes.Infrastructure.Readers;
 
+using System.Linq.Expressions;
+
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Publicacoes.Contracts;
@@ -33,23 +35,31 @@ internal sealed class TipoAtoPublicadoReader(PublicacoesDbContext db) : ITipoAto
 {
     private readonly PublicacoesDbContext _db = db ?? throw new ArgumentNullException(nameof(db));
 
+    // A vigência e a projeção são as mesmas nas duas leituras: se divergissem, o lote veria um
+    // tipo que a leitura individual não vê, ou o contrário.
+    private static readonly Expression<Func<TipoAtoPublicado, TipoAtoPublicadoView>> Projecao = t =>
+        new TipoAtoPublicadoView(
+            t.Codigo,
+            t.Nome,
+            t.CongelaConfiguracao,
+            t.UnicoPorObjeto,
+            t.EfeitoIrreversivel,
+            t.EhResultado);
+
+    private IQueryable<TipoAtoPublicado> Vigentes(DateOnly dataPublicacao) =>
+        _db.Set<TipoAtoPublicado>()
+            .AsNoTracking()
+            .Where(t => t.VigenciaInicio <= dataPublicacao
+                && (t.VigenciaFim == null || t.VigenciaFim > dataPublicacao));
+
     public async Task<TipoAtoPublicadoView?> ObterVigenteAsync(
         string codigo,
         DateOnly dataPublicacao,
         CancellationToken cancellationToken = default)
     {
-        return await _db.Set<TipoAtoPublicado>()
-            .AsNoTracking()
-            .Where(t => t.Codigo == codigo
-                && t.VigenciaInicio <= dataPublicacao
-                && (t.VigenciaFim == null || t.VigenciaFim > dataPublicacao))
-            .Select(t => new TipoAtoPublicadoView(
-                t.Codigo,
-                t.Nome,
-                t.CongelaConfiguracao,
-                t.UnicoPorObjeto,
-                t.EfeitoIrreversivel,
-                t.EhResultado))
+        return await Vigentes(dataPublicacao)
+            .Where(t => t.Codigo == codigo)
+            .Select(Projecao)
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
     }
@@ -61,18 +71,11 @@ internal sealed class TipoAtoPublicadoReader(PublicacoesDbContext db) : ITipoAto
     {
         ArgumentNullException.ThrowIfNull(codigos);
 
-        return await _db.Set<TipoAtoPublicado>()
-            .AsNoTracking()
-            .Where(t => codigos.Contains(t.Codigo)
-                && t.VigenciaInicio <= dataPublicacao
-                && (t.VigenciaFim == null || t.VigenciaFim > dataPublicacao))
-            .Select(t => new TipoAtoPublicadoView(
-                t.Codigo,
-                t.Nome,
-                t.CongelaConfiguracao,
-                t.UnicoPorObjeto,
-                t.EfeitoIrreversivel,
-                t.EhResultado))
+        string[] codigosDoLote = [.. codigos];
+
+        return await Vigentes(dataPublicacao)
+            .Where(t => codigosDoLote.Contains(t.Codigo))
+            .Select(Projecao)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
     }
