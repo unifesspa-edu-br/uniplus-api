@@ -51,7 +51,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
 
     private static ConfiguracaoClassificacao ClassificacaoImportada() => ConfiguracaoClassificacao.Criar(
         Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'), null, null,
-        Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), 1, [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!;
+        Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!;
 
     private static ModalidadeSelecionada Modalidade(
         string codigo,
@@ -1016,7 +1016,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         ProcessoSeletivo processo = ProcessoConformeComEtapaQueCompoeNota();
         typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Classificacao))!.SetValue(processo, ConfiguracaoClassificacao.Criar(
             Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'), Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'), 2,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), 1, [], baseadoEmEnem: true,
+            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: true,
             resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao, quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo()).Value!);
         processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
@@ -1084,7 +1084,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         ProcessoSeletivo processo = ProcessoConformeComEtapaQueCompoeNota();
         typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Classificacao))!.SetValue(processo, ConfiguracaoClassificacao.Criar(
             Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'), Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'), 2,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), 1, [], baseadoEmEnem: true,
+            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: true,
             resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao, quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo()).Value!);
         processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
@@ -1115,7 +1115,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         propriedadeClassificacao.SetValue(processo, ConfiguracaoClassificacao.Criar(
             Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'), Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'), 2,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), 1, [], baseadoEmEnem: true,
+            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: true,
             resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao, quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo()).Value!);
         processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
@@ -1406,7 +1406,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     private static ConfiguracaoClassificacao ClassificacaoEnemLocal(IReadOnlyList<GrupoPesoAreaEnemCongelado> quadro) =>
         ConfiguracaoClassificacao.Criar(
             Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'), Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'), 2,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), 1, [], baseadoEmEnem: true,
+            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: true,
             resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao, quadroPesoAreaEnem: quadro).Value!;
 
     private static ProcessoSeletivo ProcessoEnemLocal(
@@ -1675,7 +1675,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirClassificacao(
             ConfiguracaoClassificacao.Criar(
                 Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'), Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'), 2,
-                Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), 1, [], baseadoEmEnem: false,
+                Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: false,
                 resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!,
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
@@ -1694,7 +1694,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirClassificacao(
             ConfiguracaoClassificacao.Criar(
                 Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'), null, null,
-                Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), 1, [], baseadoEmEnem: true,
+                Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: true,
                 resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!,
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Curinga)

@@ -48,7 +48,6 @@ internal static class ProcessoSeletivoConformeBuilder
                 regraArredondamento: null,
                 casasArredondamento: null,
                 regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo).Value!,
-                nOpcoesAlocacao: 1,
                 regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 

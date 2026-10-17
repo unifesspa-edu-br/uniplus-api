@@ -10,9 +10,8 @@ using FluentValidation;
 /// ordem de alocação, cada regra de eliminação) nunca chegam crus a
 /// <c>ConfiguracaoClassificacao.Criar</c> — só alimentam a leitura do <c>rol_de_regras</c>
 /// (<c>IRegraCatalogoReader</c>); a lista de regras de eliminação e cada item não podem ser
-/// nulos — o handler desreferencia sem checagem defensiva. <c>NOpcoesAlocacao</c> (via
-/// <c>ConfiguracaoClassificacao.ValidarNOpcoesAlocacao</c>) e a coerência de arredondamento
-/// (via <c>Criar</c>) já têm equivalente completo no domínio e ficaram fora daqui.
+/// nulos — o handler desreferencia sem checagem defensiva. A coerência de arredondamento
+/// (via <c>Criar</c>) já tem equivalente completo no domínio e ficou fora daqui.
 /// </summary>
 public sealed class DefinirClassificacaoCommandValidator : AbstractValidator<DefinirClassificacaoCommand>
 {

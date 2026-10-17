@@ -76,7 +76,11 @@ public sealed class GrafoConfiguracao
         // valores selecionáveis congelados dos fatos coletados de fonte do processo.
         IReadOnlyList<OpcaoDeclaradaFato>? opcoesDeclaradas = null,
         // Grupos repetíveis dos formulários (UNI-REQ-0146), com os seus campos; ausência = nenhum.
-        IReadOnlyList<GrupoColetado>? gruposColetados = null)
+        IReadOnlyList<GrupoColetado>? gruposColetados = null,
+        // Número de opções de curso (1 ou 2) — dimensão da raiz, congelada em bloco próprio. Opcional
+        // na assinatura só porque os grafos de teste anteriores a ela não a constroem; o decoder
+        // sempre a passa, e AplicarGrafo repõe o que veio.
+        int? numeroDeOpcoesDeCurso = null)
     {
         ArgumentNullException.ThrowIfNull(etapas);
         ArgumentNullException.ThrowIfNull(ofertaAtendimento);
@@ -92,6 +96,7 @@ public sealed class GrafoConfiguracao
         // mutá-la, depois da validação e antes da reposição, reporia configuração
         // que nunca foi validada.
         Localidade = localidade;
+        NumeroDeOpcoesDeCurso = numeroDeOpcoesDeCurso;
         AlgoritmoContagemPrazo = algoritmoContagemPrazo;
         IdentificadorLegivel = identificadorLegivel;
         Etapas = [.. etapas];
@@ -116,6 +121,9 @@ public sealed class GrafoConfiguracao
     }
 
     public IReadOnlyList<EtapaProcesso> Etapas { get; }
+
+    /// <summary>Quantos cursos o candidato escolhe na inscrição; ausência = não declarado.</summary>
+    public int? NumeroDeOpcoesDeCurso { get; }
 
     public OfertaAtendimentoEspecializado OfertaAtendimento { get; }
 

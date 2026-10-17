@@ -113,7 +113,6 @@ public sealed class RenomeiaAlocacaoParaPrimeiraOpcaoPrioritariaTests : IClassFi
             regraArredondamento: null,
             casasArredondamento: null,
             Regra(codigoAlocacao),
-            nOpcoesAlocacao: 1,
             [],
             baseadoEmEnem: false,
             resolucaoPesoAreaEnem: null,

@@ -423,6 +423,37 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
+    /// Declara quantos cursos o candidato escolhe na inscrição (1 ou 2). A declaração é obrigatória
+    /// para publicar, e o número não pode superar o de ofertas da distribuição de vagas.
+    /// </summary>
+    [HttpPut("{id:guid}/opcoes-de-curso")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
+    [EmiteETag]
+    public async Task<IActionResult> DefinirOpcoesDeCurso(
+        Guid id,
+        [FromBody] DefinirOpcoesDeCursoRequest request,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+            return malformada!;
+
+        Result<MutacaoAceita> resultado = await _commandBus.Send(
+            new DefinirOpcoesDeCursoCommand(id, request.Numero, precondicao),
+            cancellationToken);
+        return ResponderMutacao(resultado);
+    }
+
+    /// <summary>
     /// Define (ou remove) a taxa de inscrição e os fundamentos de isenção do processo (issue
     /// #1112). <c>Cobra</c> nulo remove a declaração — o processo volta a "ainda não
     /// declarado", que BLOQUEIA a publicação (CA-01).
@@ -551,7 +582,6 @@ public sealed class ProcessoSeletivoController : ControllerBase
                 request.CasasArredondamento,
                 request.RegraOrdemAlocacaoCodigo,
                 request.RegraOrdemAlocacaoVersao,
-                request.NOpcoesAlocacao,
                 request.RegrasEliminacao,
                 request.BaseadoEmEnem,
                 request.ResolucaoPesoAreaEnem,

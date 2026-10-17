@@ -286,7 +286,6 @@ public sealed partial class EnvelopeCodec
             "regraArredondamento",
             "casasArredondamento",
             "regraOrdemAlocacao",
-            "nOpcoesAlocacao",
             "regrasEliminacao",
             "baseadoEmEnem",
             "resolucaoPesoAreaEnem",
@@ -310,7 +309,6 @@ public sealed partial class EnvelopeCodec
             "regraOrdemAlocacao",
             "classificacao",
             RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria);
-        int nOpcoes = leitor.Inteiro(bloco, "nOpcoesAlocacao", "classificacao");
         bool baseadoEmEnem = leitor.Booleano(bloco, "baseadoEmEnem", "classificacao");
 
         JsonArray array = leitor.Array(bloco, "regrasEliminacao", "classificacao");
@@ -364,7 +362,7 @@ public sealed partial class EnvelopeCodec
         }
 
         Result<ConfiguracaoClassificacao> classificacao = ConfiguracaoClassificacao.Criar(
-            regraCalculo, regraArredondamento, casas, regraOrdem, nOpcoes, eliminacoes, baseadoEmEnem,
+            regraCalculo, regraArredondamento, casas, regraOrdem, eliminacoes, baseadoEmEnem,
             resolucaoPesoAreaEnem, quadro!);
 
         return classificacao.IsFailure

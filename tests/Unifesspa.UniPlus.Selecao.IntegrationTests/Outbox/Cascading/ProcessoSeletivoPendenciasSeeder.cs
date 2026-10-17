@@ -193,8 +193,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
             regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", HashFixo).Value!,
             regraArredondamento: ReferenciaRegra.Criar(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", HashFixo).Value!,
             casasArredondamento: 2,
-            regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo).Value!,
-            nOpcoesAlocacao: 1, regrasEliminacao: [], baseadoEmEnem: true,
+            regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo).Value!, regrasEliminacao: [], baseadoEmEnem: true,
             resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao, quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo());
         classificacaoResult.IsSuccess.Should().BeTrue(classificacaoResult.Error?.Message);
         Result classificacaoDefinirResult = processo.DefinirClassificacao(classificacaoResult.Value!, PrecondicaoIfMatch.Curinga);
@@ -265,7 +264,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
             RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo).Value!;
         Result<ConfiguracaoClassificacao> classificacaoResult = ConfiguracaoClassificacao.Criar(
             regraCalculo: regraCalculo, regraArredondamento: null, casasArredondamento: null,
-            regraOrdemAlocacao: regraOrdemAlocacao, nOpcoesAlocacao: 1, regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
+            regraOrdemAlocacao: regraOrdemAlocacao, regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
         classificacaoResult.IsSuccess.Should().BeTrue(classificacaoResult.Error?.Message);
         Result classificacaoDefinirResult = processo.DefinirClassificacao(classificacaoResult.Value!, PrecondicaoIfMatch.Ausente);
         classificacaoDefinirResult.IsSuccess.Should().BeTrue(classificacaoDefinirResult.Error?.Message);

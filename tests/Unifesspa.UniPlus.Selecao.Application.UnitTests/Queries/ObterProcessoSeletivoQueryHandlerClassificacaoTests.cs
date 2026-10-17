@@ -80,7 +80,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerClassificacaoTests
         ReferenciaRegra regraOrdemAlocacao = ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)).Value!;
 
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
-            regraCalculo, regraArredondamento, casasArredondamento: 2, regraOrdemAlocacao, nOpcoesAlocacao: 1, [],
+            regraCalculo, regraArredondamento, casasArredondamento: 2, regraOrdemAlocacao, [],
             baseadoEmEnem,
             baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
             baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : []).Value!;
