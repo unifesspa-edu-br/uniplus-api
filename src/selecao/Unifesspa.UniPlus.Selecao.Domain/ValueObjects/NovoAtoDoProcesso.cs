@@ -1,8 +1,8 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// O que o comando de publicação declara ao registrar um ato do processo que não cria versão de
-/// configuração.
+/// O que o comando de publicação declara ao registrar um ato do processo, crie ele versão de
+/// configuração ou não.
 /// </summary>
 /// <param name="AtoId">Identificador do ato, decidido pela Seleção — o mesmo que viaja na requisição de registro.</param>
 /// <param name="ProcessoSeletivoId">O processo a que o ato pertence.</param>
@@ -17,7 +17,9 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <param name="IdentificadorLegivelDoProcesso">
 /// Identificador legível do processo na versão vigente divulgada — segmento da chave do documento no acervo.
 /// </param>
-/// <param name="DocumentoPrincipalId">O documento a publicar confirmado que é o principal do ato.</param>
+/// <param name="DocumentoPrincipalId">
+/// O documento a publicar confirmado que é o principal do ato — o do edital, no ato que cria versão.
+/// </param>
 /// <param name="Anexos">Anexos do ato, na ordem declarada.</param>
 /// <param name="ProdutoDoEditalId">
 /// Referência ao <c>Id</c> congelado do produto de fase ou de etapa que o ato cumpre, quando é um
@@ -25,9 +27,9 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </param>
 /// <param name="AtoCorrigidoId">O ato que este corrige, quando é errata ou retificação.</param>
 /// <param name="MotivoDaCorrecao">Motivo da correção; obrigatório com <paramref name="AtoCorrigidoId"/>.</param>
-/// <param name="PoliticaDeDivulgacaoConfirmada">
-/// O administrador confirmou que o documento segue a política de divulgação do certame — pedida na
-/// publicação de resultado.
+/// <param name="PoliticaDeDivulgacaoConfirmadaPorSub">
+/// Sub do usuário que confirmou que o documento segue a política de divulgação do certame — pedida
+/// na publicação de resultado. Nulo quando a confirmação não foi pedida.
 /// </param>
 public sealed record NovoAtoDoProcesso(
     Guid AtoId,
@@ -44,4 +46,4 @@ public sealed record NovoAtoDoProcesso(
     Guid? ProdutoDoEditalId = null,
     Guid? AtoCorrigidoId = null,
     string? MotivoDaCorrecao = null,
-    bool PoliticaDeDivulgacaoConfirmada = false);
+    string? PoliticaDeDivulgacaoConfirmadaPorSub = null);

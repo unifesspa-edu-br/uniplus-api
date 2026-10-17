@@ -23,6 +23,7 @@ public sealed class AtoDoProcessoConfiguration : IEntityTypeConfiguration<AtoDoP
         builder.Property(a => a.UnidadeAdministradora).HasMaxLength(AtoDoProcesso.UnidadeAdministradoraMaxLength).IsRequired();
         builder.Property(a => a.IdentificadorLegivelDoProcesso).HasMaxLength(AtoDoProcesso.IdentificadorLegivelMaxLength).IsRequired();
         builder.Property(a => a.MotivoDaCorrecao).HasMaxLength(AtoDoProcesso.MotivoDaCorrecaoMaxLength);
+        builder.Property(a => a.PoliticaDeDivulgacaoConfirmadaPorSub).HasMaxLength(AtoDoProcesso.SubMaxLength);
         builder.Property(a => a.Situacao).HasConversion<int>().IsRequired();
 
         // Vínculo por FK ao processo, sem navegação inversa: o registro não é filho do agregado. O
@@ -34,15 +35,12 @@ public sealed class AtoDoProcessoConfiguration : IEntityTypeConfiguration<AtoDoP
             .OnDelete(DeleteBehavior.Restrict);
 
         // O principal é um documento a publicar confirmado, imutável e nunca removido pela rotina de
-        // pendentes; a FK impede que o registro aponte para um documento que não existe. Cada
-        // documento serve a um só ato.
+        // pendentes; a FK impede que o registro aponte para um documento que não existe. Sem unicidade:
+        // a retificação do edital pode reaproveitar o documento do ato anterior.
         builder.HasOne<DocumentoAPublicar>()
             .WithMany()
             .HasForeignKey(a => a.DocumentoPrincipalId)
             .OnDelete(DeleteBehavior.Restrict);
-        builder.HasIndex(a => a.DocumentoPrincipalId)
-            .IsUnique()
-            .HasDatabaseName("ux_atos_do_processo_documento_principal");
 
         // Sem FK: o ato corrigido pode ser o que criou uma versão ou outro registro, e ele é do
         // Publicações (ADR-0061).

@@ -253,6 +253,11 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("politica_de_divulgacao_confirmada_em");
 
+                    b.Property<string>("PoliticaDeDivulgacaoConfirmadaPorSub")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("politica_de_divulgacao_confirmada_por_sub");
+
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
                         .HasColumnName("processo_seletivo_id");
@@ -298,8 +303,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_atos_do_processo_ato_corrigido");
 
                     b.HasIndex("DocumentoPrincipalId")
-                        .IsUnique()
-                        .HasDatabaseName("ux_atos_do_processo_documento_principal");
+                        .HasDatabaseName("ix_atos_do_processo_documento_principal_id");
 
                     b.HasIndex("ProcessoSeletivoId", "CreatedAt", "Id")
                         .IsDescending(false, true, true)
