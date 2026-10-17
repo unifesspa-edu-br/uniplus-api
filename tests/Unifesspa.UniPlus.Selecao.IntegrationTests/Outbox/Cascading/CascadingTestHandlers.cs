@@ -10,6 +10,8 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
+using Unifesspa.UniPlus.Publicacoes.Contracts;
+using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -86,5 +88,65 @@ public sealed class ProcessoPublicadoSubscriberHandler
         ArgumentNullException.ThrowIfNull(collector);
 
         collector.Record(@event);
+    }
+}
+
+// Registra o ato do processo e envia a requisição de registro na mesma transação — o arranjo que o
+// comando de publicação do ato avulso usa. O processamento é o do handler produtivo de
+// AtoNormativoRegistrado, que devolve o ato registrado a este registro.
+[SuppressMessage(
+    "Performance",
+    "CA1515:Consider making public types internal",
+    Justification = "Handlers convencionais do Wolverine devem ser públicos.")]
+public sealed class RegistrarAtoDoProcessoDeTesteHandler
+{
+    public const string MensagemErro = "Falha forçada depois de gravar o registro do ato do processo";
+
+    public static async Task<IEnumerable<object>> Handle(
+        RegistrarAtoDoProcessoDeTesteCommand command,
+        IAtoDoProcessoRepository atoDoProcessoRepository,
+        ISelecaoUnitOfWork unitOfWork,
+        TimeProvider timeProvider,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
+        ArgumentNullException.ThrowIfNull(unitOfWork);
+        ArgumentNullException.ThrowIfNull(timeProvider);
+
+        DateOnly data = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+        AtoDoProcesso ato = AtoDoProcesso.Registrar(
+            new NovoAtoDoProcesso(
+                command.AtoId, command.ProcessoSeletivoId, DadosDoAtoDeTeste.TipoAviso, "Aviso", "3/2026", data,
+                "Diretor do CEPS", "ceps", "psm-medicina-2027", command.DocumentoPrincipalId, []),
+            timeProvider);
+
+        await atoDoProcessoRepository.AdicionarAsync(ato, cancellationToken).ConfigureAwait(false);
+        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+
+        if (command.FalharDepoisDeGravar)
+        {
+            throw new InvalidOperationException(MensagemErro);
+        }
+
+        return
+        [
+            new RegistrarAtoNormativoRequisicao(
+                AtoId: ato.Id,
+                Orgao: "CEPS",
+                Serie: "AVISO",
+                Ano: 2026,
+                Numero: ato.Numero,
+                TipoCodigo: ato.TipoCodigo,
+                DataPublicacao: data,
+                DocumentoHash: new string('a', 64),
+                Assinante: ato.Assinante,
+                VersaoInvocadaId: null,
+                VersaoInvocadaHash: null,
+                AtoRetificadoId: null,
+                MotivoRetificacao: null,
+                Vinculos: [new VinculoEntidadeRequisicao("PROCESSO_SELETIVO", ato.ProcessoSeletivoId)],
+                AtributosDoTipo: new AtributosDoTipoAto(false, false, false, ato.TipoNome)),
+        ];
     }
 }
