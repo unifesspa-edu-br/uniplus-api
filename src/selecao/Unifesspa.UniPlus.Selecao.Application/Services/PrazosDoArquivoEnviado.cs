@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services;
 
 /// <summary>
 /// Prazos das URLs pré-assinadas dos arquivos que o administrador envia ao processo — o documento
-/// do Edital e o modelo de documento de uma exigência.
+/// a publicar e o modelo de documento de uma exigência.
 /// </summary>
 public static class PrazosDoArquivoEnviado
 {

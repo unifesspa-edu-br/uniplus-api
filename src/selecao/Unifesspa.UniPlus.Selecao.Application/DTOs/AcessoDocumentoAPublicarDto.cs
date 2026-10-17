@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 /// <summary>
-/// Acesso de leitura a um documento do Edital confirmado — emitido a cada
+/// Acesso de leitura a um documento a publicar confirmado — emitido a cada
 /// pedido, e não guardado em lugar algum.
 /// <para>
 /// A URL é credencial de acesso ao objeto: quem a tem lê o arquivo, sem
@@ -17,6 +17,6 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 /// Fim da validade da assinatura. Serve para o cliente saber que o link
 /// envelhece — não para ele guardar a URL até lá.
 /// </param>
-public sealed record AcessoDocumentoEditalDto(
+public sealed record AcessoDocumentoAPublicarDto(
     Uri Url,
     DateTimeOffset ExpiraEm);

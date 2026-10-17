@@ -225,7 +225,7 @@ public static class PublicarProcessoSeletivoCommandHandler
     public static async Task<(Result Resposta, IEnumerable<object> Eventos)> Handle(
         PublicarProcessoSeletivoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
-        IDocumentoEditalRepository documentoEditalRepository,
+        IDocumentoAPublicarRepository documentoAPublicarRepository,
         ISnapshotPublicacaoCanonicalizer canonicalizer,
         ISelecaoUnitOfWork unitOfWork,
         IUserContext userContext,
@@ -475,7 +475,7 @@ public async Task Deve_falhar_quando_processo_nao_encontrado()
     var (resposta, eventos) = await PublicarProcessoSeletivoCommandHandler.Handle(
         new PublicarProcessoSeletivoCommand(Guid.NewGuid(), null, DateOnly.MinValue, DateOnly.MaxValue, Guid.NewGuid()),
         repository,
-        documentoEditalRepository,
+        documentoAPublicarRepository,
         canonicalizer,
         unitOfWork,
         userContext,

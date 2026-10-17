@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Abstractions;
 
 /// <summary>
 /// Port de storage de objeto para os arquivos que o administrador envia ao processo — o
-/// documento do Edital e o modelo de documento de uma exigência. Não expõe conceitos de vendor
+/// documento a publicar e o modelo de documento de uma exigência. Não expõe conceitos de vendor
 /// (bucket, cliente MinIO) — só operações por <c>objectKey</c>, resolvido pela implementação em
 /// <c>Selecao.Infrastructure</c> (que é quem conhece o bucket via <c>StorageOptions</c> e envolve
 /// o <c>IStorageService</c> compartilhado de <c>Infrastructure.Core</c>). Application não

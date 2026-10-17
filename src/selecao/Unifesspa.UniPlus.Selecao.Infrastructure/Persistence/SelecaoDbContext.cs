@@ -121,13 +121,13 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
         Set<ObrigatoriedadeLegalHistorico>();
 
     /// <summary>
-    /// Documento (PDF) do Edital, vinculado ao processo por FK — não é
-    /// entidade filha do agregado <see cref="ProcessoSeletivo"/> (Story
-    /// #759, T3 #784; ver comentário de <see cref="DocumentoEdital"/>).
+    /// Documentos que o processo envia para publicar (PDF, DOCX ou ODT), vinculados ao
+    /// processo por FK — não são filhos do agregado <see cref="ProcessoSeletivo"/> (ver
+    /// comentário de <see cref="DocumentoAPublicar"/>).
     /// </summary>
-    public DbSet<DocumentoEdital> DocumentosEdital => Set<DocumentoEdital>();
+    public DbSet<DocumentoAPublicar> DocumentosAPublicar => Set<DocumentoAPublicar>();
 
-    /// <summary>Modelos de documento que as exigências oferecem ao candidato — fora do agregado, como o documento do Edital.</summary>
+    /// <summary>Modelos de documento que as exigências oferecem ao candidato — fora do agregado, como o documento a publicar.</summary>
     public DbSet<ModeloDeDocumento> ModelosDeDocumento => Set<ModeloDeDocumento>();
 
     /// <summary>

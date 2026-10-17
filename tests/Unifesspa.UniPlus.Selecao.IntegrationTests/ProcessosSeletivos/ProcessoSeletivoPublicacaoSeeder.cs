@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -261,8 +262,8 @@ internal static class ProcessoSeletivoPublicacaoSeeder
 
         ProcessoSeletivo processo = NovoProcessoConforme(nome);
 
-        DocumentoEdital documento = DocumentoEdital.IniciarPendente(
-            processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
+            processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(1024, HashDocumento, TimeProvider.System).IsSuccess.Should().BeTrue();
 
         DadosEdital dados = DadosEdital.Criar(
@@ -286,7 +287,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         await using SelecaoDbContext context = fixture.CreateDbContext();
         ProcessoSeletivoRepository repository = new(context, TimeProvider.System);
         await repository.AdicionarAsync(processo, CancellationToken.None);
-        await context.DocumentosEdital.AddAsync(documento, CancellationToken.None);
+        await context.DocumentosAPublicar.AddAsync(documento, CancellationToken.None);
         await repository.AdicionarVersaoConfiguracaoAsync(publicarResult.Value!, CancellationToken.None);
         await context.SaveChangesAsync(CancellationToken.None);
 

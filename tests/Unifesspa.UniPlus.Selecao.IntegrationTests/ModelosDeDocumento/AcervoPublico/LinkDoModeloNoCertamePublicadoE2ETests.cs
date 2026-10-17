@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
@@ -77,7 +78,7 @@ public sealed class LinkDoModeloNoCertamePublicadoE2ETests(AcervoPublicoE2EFixtu
         SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
         ModeloDeDocumento? modelo = null;
 
-        (ProcessoSeletivo processo, DocumentoEdital documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
             db,
             $"PS com modelo no acervo {Guid.CreateVersion7()}",
             complementar: processo =>
@@ -110,7 +111,7 @@ public sealed class LinkDoModeloNoCertamePublicadoE2ETests(AcervoPublicoE2EFixtu
 
         IArquivoArmazenadoStorage storage = scope.ServiceProvider.GetRequiredService<IArquivoArmazenadoStorage>();
         await storage.SalvarConteudoSeladoAsync(modelo!.ObjectKeyConfirmado!, conteudo, modelo.ContentType);
-        await storage.SalvarConteudoSeladoAsync(documento.ObjectKeyConfirmado!, PdfDoEdital, DocumentoEdital.ContentTypeEsperado);
+        await storage.SalvarConteudoSeladoAsync(documento.ObjectKeyConfirmado!, PdfDoEdital, TiposDeMidiaDeDocumento.Pdf);
 
         return (processo.Id, documento.Id);
     }

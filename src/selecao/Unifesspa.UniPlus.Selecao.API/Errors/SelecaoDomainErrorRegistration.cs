@@ -362,19 +362,21 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("RegraEliminacao.AreaEMinimoObrigatorios", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_eliminacao.area_e_minimo_obrigatorios", "AreaCodigo e Minimo são obrigatórios para a regra ELIM-CORTE-EM-AREA")),
         new("ProcessoSeletivo.EtapaRefEliminacaoInexistente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.etapa_ref_eliminacao_inexistente", "A regra de eliminação referencia uma etapa que não existe neste processo")),
         new("ProcessoSeletivo.EliminacaoEnemForaDeProcessoEnem", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.eliminacao_enem_fora_de_processo_enem", "A regra de eliminação só se aplica quando a classificação está configurada como baseada em ENEM")),
-        // Documento do Edital — upload direto via URL pre-assinada (Story #759, T3
-        // #784). ObjetoNaoEncontrado/TamanhoExcedido/ContentTypeInvalido/AssinaturaInvalida
-        // são recusas de validação da confirmação (422); NaoEncontrado é 404
-        // (registro inexistente ou de outro processo).
-        new("DocumentoEdital.NaoEncontrado", new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.documento_edital.nao_encontrado", "Documento do Edital não encontrado")),
-        new("DocumentoEdital.NaoConfirmado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_edital.nao_confirmado", "Documento do Edital ainda não confirmado")),
-        new("DocumentoEdital.StatusInvalidoParaConfirmacao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_edital.status_invalido_para_confirmacao", "Somente um documento pendente pode ser confirmado")),
-        new("DocumentoEdital.ObjetoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_edital.objeto_nao_encontrado", "Objeto ainda não enviado ao storage ou expirado")),
-        new("DocumentoEdital.TamanhoExcedido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_edital.tamanho_excedido", "Documento excede o tamanho máximo permitido")),
-        new("DocumentoEdital.ContentTypeInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_edital.content_type_invalido", "Documento do Edital deve ser do tipo application/pdf")),
-        new("DocumentoEdital.AssinaturaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_edital.assinatura_invalida", "Conteúdo do arquivo não corresponde a um PDF válido")),
-        // Modelo de documento da exigência — envio direto por URL pré-assinada, como o documento
-        // do Edital. NaoEncontrado é 404 (inexistente ou de outro processo); as demais são recusas
+        // Documento que o processo envia para publicar (PDF, DOCX ou ODT) — envio direto por URL
+        // pré-assinada. NaoEncontrado é 404 (inexistente ou de outro processo); as demais são
+        // recusas de validação (422).
+        new(DocumentoAPublicarErrorCodes.NaoEncontrado, new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.documento_a_publicar.nao_encontrado", "Documento não encontrado")),
+        new(DocumentoAPublicarErrorCodes.NaoConfirmado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_a_publicar.nao_confirmado", "Documento ainda não confirmado")),
+        new(DocumentoAPublicarErrorCodes.StatusInvalidoParaConfirmacao, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_a_publicar.status_invalido_para_confirmacao", "Somente um documento pendente pode ser confirmado")),
+        new(DocumentoAPublicarErrorCodes.ObjetoNaoEncontrado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_a_publicar.objeto_nao_encontrado", "Arquivo ainda não enviado ao armazenamento ou expirado")),
+        new(DocumentoAPublicarErrorCodes.TamanhoExcedido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_a_publicar.tamanho_excedido", "Documento excede o tamanho máximo permitido")),
+        new(DocumentoAPublicarErrorCodes.ArquivoVazio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_a_publicar.arquivo_vazio", "O arquivo enviado está vazio")),
+        new(DocumentoAPublicarErrorCodes.TipoDeMidiaNaoAceito, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_a_publicar.tipo_de_midia_nao_aceito", "O tipo de mídia deve ser PDF, DOCX ou ODT")),
+        new(DocumentoAPublicarErrorCodes.ConteudoDivergeDoFormato, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_a_publicar.conteudo_diverge_do_formato", "O conteúdo do arquivo não corresponde ao tipo de mídia declarado")),
+        new(DocumentoAPublicarErrorCodes.ContemMacro, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_a_publicar.contem_macro", "O documento não pode conter macro")),
+        new(DocumentoAPublicarErrorCodes.NomeArquivoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_a_publicar.nome_arquivo_invalido", "Nome do arquivo do documento inválido")),
+        // Modelo de documento da exigência — envio direto por URL pré-assinada, como o documento a
+        // publicar. NaoEncontrado é 404 (inexistente ou de outro processo); as demais são recusas
         // de validação (422).
         new(ModeloDeDocumentoErrorCodes.NaoEncontrado, new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.modelo_de_documento.nao_encontrado", "Modelo de documento não encontrado")),
         new(ModeloDeDocumentoErrorCodes.NaoConfirmado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.modelo_de_documento.nao_confirmado", "Modelo de documento ainda não confirmado")),
@@ -501,6 +503,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // Grafo de dependência conjunto (Story #928, §6): ciclo pelas quatro classes de aresta juntas.
         new("GrafoDependenciaConjunta.GrafoConjuntoComCiclo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.grafo_dependencia_conjunta.grafo_conjunto_com_ciclo", "O grafo de dependência conjunto (produção, pré-condição, derivação e gatilho) forma um ciclo")),
         new("ProcessoSeletivo.DocumentoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_nao_encontrado", "Documento do Edital não encontrado ou não pertence a este processo")),
+        new("ProcessoSeletivo.DocumentoDoEditalNaoEPdf", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_do_edital_nao_e_pdf", "O documento do edital deve ser um PDF")),
         new("ProcessoSeletivo.DocumentoNaoConfirmado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_nao_confirmado", "Somente um documento confirmado pode ser referenciado na publicação")),
         // Story #919 (RN08): defesa em profundidade — o vocabulário de fatos é fechado e
         // append-only (ADR-0111), então este código não deveria ocorrer em produção, mas

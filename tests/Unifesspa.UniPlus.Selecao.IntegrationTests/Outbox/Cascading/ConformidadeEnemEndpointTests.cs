@@ -14,6 +14,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 /// <summary>
@@ -40,7 +41,7 @@ public sealed class ConformidadeEnemEndpointTests
         CascadingApiFactory api = _fixture.Factory;
         await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient client = api.CreateClient();
-        (ProcessoSeletivo processo, DocumentoEdital documento) = await SemearAsync(api, nameof(Publicar_OfertaSemGrupo_Retorna422ComOItem), ofertaComGrupo: false);
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await SemearAsync(api, nameof(Publicar_OfertaSemGrupo_Retorna422ComOItem), ofertaComGrupo: false);
         Guid oferta = processo.DistribuicaoVagas.Single().OfertaCursoOrigemId;
 
         HttpResponseMessage response = await PostAsync(client, $"{processo.Id}/publicacao", NovoCorpoPublicacao(documento.Id));
@@ -59,7 +60,7 @@ public sealed class ConformidadeEnemEndpointTests
         CascadingApiFactory api = _fixture.Factory;
         await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient client = api.CreateClient();
-        (ProcessoSeletivo processo, DocumentoEdital documento) = await SemearAsync(api, nameof(Retificar_OfertaSemGrupo_Retorna422ComOItem), ofertaComGrupo: true);
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await SemearAsync(api, nameof(Retificar_OfertaSemGrupo_Retorna422ComOItem), ofertaComGrupo: true);
         Guid oferta = processo.DistribuicaoVagas.Single().OfertaCursoOrigemId;
 
         (await PostAsync(client, $"{processo.Id}/publicacao", NovoCorpoPublicacao(documento.Id)))
@@ -73,10 +74,10 @@ public sealed class ConformidadeEnemEndpointTests
             // devolve a oferta sem grupo.
             await db.Database.ExecuteSqlAsync(
                 $"UPDATE selecao.configuracoes_distribuicao_vagas SET grupo_area_enem_codigo = NULL WHERE processo_seletivo_id = {processo.Id}");
-            DocumentoEdital retificacao = DocumentoEdital.IniciarPendente(processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));
+            DocumentoAPublicar retificacao = DocumentoAPublicar.IniciarPendente(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
             retificacao.Confirmar(2048, string.Concat(Enumerable.Repeat("cd45670189", 7))[..64], TimeProvider.System)
                 .IsSuccess.Should().BeTrue();
-            await db.DocumentosEdital.AddAsync(retificacao);
+            await db.DocumentosAPublicar.AddAsync(retificacao);
             await db.SaveChangesAsync();
             documentoRetificacao = retificacao.Id;
         }
@@ -90,7 +91,7 @@ public sealed class ConformidadeEnemEndpointTests
         doc.RootElement.GetProperty("detail").GetString().Should().Contain(oferta.ToString());
     }
 
-    private static async Task<(ProcessoSeletivo Processo, DocumentoEdital Documento)> SemearAsync(
+    private static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearAsync(
         CascadingApiFactory api, string nome, bool ofertaComGrupo)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();

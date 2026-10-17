@@ -212,7 +212,7 @@ public sealed class DefinirFatosColetadosEndpointTests
         await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
         {
             SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
-            (ProcessoSeletivo processo, DocumentoEdital documento) = await ProcessoSeletivoPublicavelSeeder
+            (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
                 .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
             processoId = processo.Id;
             documentoId = documento.Id;

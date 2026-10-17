@@ -10,6 +10,7 @@ using Kernel.Results;
 
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
@@ -34,7 +35,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     /// <c>Publicar</c> recusa com <c>ProcessoSeletivo.InscricaoPropriaSemFaseDeColeta</c> — o
     /// cenário Gherkin da issue #1096.
     /// </summary>
-    public static async Task<(ProcessoSeletivo Processo, DocumentoEdital Documento)> SemearComCronogramaNaoConformeAsync(
+    public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearComCronogramaNaoConformeAsync(
         SelecaoDbContext db, string nome)
     {
         ProcessoSeletivo processo = ProcessoBaseConforme(nome, out FaseCronogramaBuilder faseBuilder);
@@ -53,7 +54,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     /// distribuição federal"; <c>Publicar</c> recusa com
     /// <c>ProcessoSeletivo.CascataForaDoRegimeFederal</c>.
     /// </summary>
-    public static async Task<(ProcessoSeletivo Processo, DocumentoEdital Documento)> SemearComCascataNaoConformeAsync(
+    public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearComCascataNaoConformeAsync(
         SelecaoDbContext db, string nome)
     {
         ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(
@@ -91,7 +92,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     /// resultado"; <c>Publicar</c> recusa com
     /// <c>DocumentoExigido.CondicionalVaziaDeterminaResultado</c>.
     /// </summary>
-    public static async Task<(ProcessoSeletivo Processo, DocumentoEdital Documento)> SemearComPreCanonicalizacaoNaoConformeAsync(
+    public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearComPreCanonicalizacaoNaoConformeAsync(
         SelecaoDbContext db, string nome)
     {
         ProcessoSeletivo processo = ProcessoBaseConforme(nome, out FaseCronogramaBuilder faseBuilder);
@@ -127,7 +128,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     /// conformidade. Usado para provar que <c>pendencias</c> aparece mesmo quando o 422 não
     /// tem nada a ver com o item vermelho (CA-06).
     /// </param>
-    public static async Task<(ProcessoSeletivo Processo, DocumentoEdital Documento)> SemearComCadastroProprioNaoConformeAsync(
+    public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearComCadastroProprioNaoConformeAsync(
         SelecaoDbContext db, string nome, bool documentoConfirmado = true)
     {
         ProcessoSeletivo processo = ProcessoBaseConforme(nome, out FaseCronogramaBuilder faseBuilder, definirOfertaAtendimento: false);
@@ -182,7 +183,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     /// ele, fica vermelho só "Grupo de área do ENEM congelado em toda oferta", e
     /// <c>Publicar</c> recusa com <c>ProcessoSeletivo.ConformidadeInsuficiente</c>.
     /// </summary>
-    public static async Task<(ProcessoSeletivo Processo, DocumentoEdital Documento)> SemearEnemComCalculoLocalAsync(
+    public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearEnemComCalculoLocalAsync(
         SelecaoDbContext db, string nome, bool ofertaComGrupo)
     {
         ProcessoSeletivo processo = ProcessoBaseConforme(
@@ -292,16 +293,16 @@ internal static class ProcessoSeletivoPendenciasSeeder
         return processo;
     }
 
-    private static async Task<(ProcessoSeletivo Processo, DocumentoEdital Documento)> PersistirComDocumentoConfirmadoAsync(
+    private static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> PersistirComDocumentoConfirmadoAsync(
         SelecaoDbContext db, ProcessoSeletivo processo)
     {
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         await db.ProcessosSeletivos.AddAsync(processo);
 
-        DocumentoEdital documento = DocumentoEdital.IniciarPendente(processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         Result confirmarResult = documento.Confirmar(1024, HashFixo, TimeProvider.System);
         confirmarResult.IsSuccess.Should().BeTrue(confirmarResult.Error?.Message);
-        await db.DocumentosEdital.AddAsync(documento);
+        await db.DocumentosAPublicar.AddAsync(documento);
 
         await db.SaveChangesAsync();
         processo.DequeueDomainEvents();
@@ -309,14 +310,14 @@ internal static class ProcessoSeletivoPendenciasSeeder
         return (processo, documento);
     }
 
-    private static async Task<(ProcessoSeletivo Processo, DocumentoEdital Documento)> PersistirComDocumentoPendenteAsync(
+    private static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> PersistirComDocumentoPendenteAsync(
         SelecaoDbContext db, ProcessoSeletivo processo)
     {
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         await db.ProcessosSeletivos.AddAsync(processo);
 
-        DocumentoEdital documento = DocumentoEdital.IniciarPendente(processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));
-        await db.DocumentosEdital.AddAsync(documento);
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        await db.DocumentosAPublicar.AddAsync(documento);
 
         await db.SaveChangesAsync();
         processo.DequeueDomainEvents();

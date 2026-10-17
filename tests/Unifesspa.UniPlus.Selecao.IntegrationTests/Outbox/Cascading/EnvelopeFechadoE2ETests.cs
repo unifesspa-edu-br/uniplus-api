@@ -30,6 +30,7 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -1198,9 +1199,9 @@ public sealed class EnvelopeFechadoE2ETests
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
         string hash = string.Concat(Enumerable.Repeat("cd45670189", 7))[..64];
-        DocumentoEdital documento = DocumentoEdital.IniciarPendente(processoId, TimeProvider.System, TimeSpan.FromMinutes(15));
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(2048, hash, TimeProvider.System).IsSuccess.Should().BeTrue();
-        await db.DocumentosEdital.AddAsync(documento).ConfigureAwait(false);
+        await db.DocumentosAPublicar.AddAsync(documento).ConfigureAwait(false);
         await db.SaveChangesAsync().ConfigureAwait(false);
         return documento.Id;
     }

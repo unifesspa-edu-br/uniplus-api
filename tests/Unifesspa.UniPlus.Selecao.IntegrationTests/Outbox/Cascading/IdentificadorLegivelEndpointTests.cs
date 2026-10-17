@@ -113,7 +113,7 @@ public sealed class IdentificadorLegivelEndpointTests
 
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
-        (ProcessoSeletivo processo, DocumentoEdital documento) = await ProcessoSeletivoPublicavelSeeder
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
             .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
         return (api.CreateClient(), processo.Id, documento.Id);
     }

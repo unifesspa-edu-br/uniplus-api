@@ -14,6 +14,7 @@ using Kernel.Results;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
@@ -53,7 +54,7 @@ public sealed class PublicacaoConcorrenciaTests
         await using (AsyncServiceScope seedScope = api.Services.CreateAsyncScope())
         {
             SelecaoDbContext seedDb = seedScope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
-            (ProcessoSeletivo processo, DocumentoEdital documento) = await ProcessoSeletivoPublicavelSeeder
+            (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
                 .SemearAsync(seedDb, $"Concorrência {Guid.CreateVersion7()}");
             processoId = processo.Id;
             documentoId = documento.Id;
@@ -281,7 +282,7 @@ public sealed class PublicacaoConcorrenciaTests
     /// <summary>
     /// A oferta federal completa (Lei 12.711), SEM a cascata que ela exige —
     /// <c>ProcessoSeletivoPublicacaoSeeder.NovoProcessoComOfertaFederalECascata(nome,
-    /// comCascata: false)</c> — mais um <see cref="DocumentoEdital"/> já confirmado, no
+    /// comCascata: false)</c> — mais um <see cref="DocumentoAPublicar"/> já confirmado, no
     /// mesmo padrão de <see cref="ProcessoSeletivoPublicavelSeeder.SemearAsync"/>.
     /// </summary>
     private static async Task<(Guid ProcessoId, Guid DocumentoId)> SemearProcessoFederalSemCascataAsync(
@@ -292,9 +293,9 @@ public sealed class PublicacaoConcorrenciaTests
         await db.ProcessosSeletivos.AddAsync(processo);
 
         string hashFixo = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
-        DocumentoEdital documento = DocumentoEdital.IniciarPendente(processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(1024, hashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();
-        await db.DocumentosEdital.AddAsync(documento);
+        await db.DocumentosAPublicar.AddAsync(documento);
 
         await db.SaveChangesAsync();
         processo.DequeueDomainEvents();

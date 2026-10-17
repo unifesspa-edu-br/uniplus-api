@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -315,11 +316,11 @@ public sealed class ConferenciaDosEixosNosHandlersTests
             return canonicalizer;
         }
 
-        private static IDocumentoEditalRepository RepositorioDeDocumento(Guid processoSeletivoId)
+        private static IDocumentoAPublicarRepository RepositorioDeDocumento(Guid processoSeletivoId)
         {
-            DocumentoEdital documento = DocumentoEdital.IniciarPendente(processoSeletivoId, TimeProvider.System, TimeSpan.FromMinutes(15));
+            DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoSeletivoId, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
             documento.Confirmar(1024, HashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();
-            IDocumentoEditalRepository repositorio = Substitute.For<IDocumentoEditalRepository>();
+            IDocumentoAPublicarRepository repositorio = Substitute.For<IDocumentoAPublicarRepository>();
             repositorio.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(documento);
             return repositorio;
         }

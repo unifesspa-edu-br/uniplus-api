@@ -9,103 +9,105 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
-using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosEdital;
+using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosAPublicar;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
-public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
+public sealed class ConfirmarEnvioDoDocumentoAPublicarCommandHandlerTests
 {
     private static readonly byte[] ConteudoPdfValido = [.. "%PDF-1.7 conteúdo qualquer"u8];
 
-    private static (DocumentoEdital Documento, Guid ProcessoSeletivoId) NovoDocumentoPendente()
+    private static (DocumentoAPublicar Documento, Guid ProcessoSeletivoId) NovoDocumentoPendente()
     {
         Guid processoSeletivoId = Guid.CreateVersion7();
-        DocumentoEdital documento = DocumentoEdital.IniciarPendente(processoSeletivoId, TimeProvider.System, TimeSpan.FromMinutes(15));
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoSeletivoId, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         return (documento, processoSeletivoId);
     }
 
     [Fact(DisplayName = "Handle com documento inexistente recusa (404)")]
     public async Task Handle_DocumentoInexistente_Recusa()
     {
-        IDocumentoEditalRepository repository = Substitute.For<IDocumentoEditalRepository>();
+        IDocumentoAPublicarRepository repository = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
-        repository.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((DocumentoEdital?)null);
+        repository.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((DocumentoAPublicar?)null);
 
-        Result<DocumentoEditalDto> resultado = await ConfirmarUploadDocumentoEditalCommandHandler.Handle(
-            new ConfirmarUploadDocumentoEditalCommand(Guid.CreateVersion7(), Guid.CreateVersion7()),
+        Result<DocumentoAPublicarDto> resultado = await ConfirmarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new ConfirmarEnvioDoDocumentoAPublicarCommand(Guid.CreateVersion7(), Guid.CreateVersion7()),
             repository, storage, unitOfWork, TimeProvider.System, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("DocumentoEdital.NaoEncontrado");
+        resultado.Error!.Code.Should().Be("DocumentoAPublicar.NaoEncontrado");
     }
 
     [Fact(DisplayName = "Handle com documento de outro processo recusa (404)")]
     public async Task Handle_DocumentoDeOutroProcesso_Recusa()
     {
-        (DocumentoEdital documento, _) = NovoDocumentoPendente();
-        IDocumentoEditalRepository repository = Substitute.For<IDocumentoEditalRepository>();
+        (DocumentoAPublicar documento, _) = NovoDocumentoPendente();
+        IDocumentoAPublicarRepository repository = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
 
-        Result<DocumentoEditalDto> resultado = await ConfirmarUploadDocumentoEditalCommandHandler.Handle(
-            new ConfirmarUploadDocumentoEditalCommand(Guid.CreateVersion7(), documento.Id),
+        Result<DocumentoAPublicarDto> resultado = await ConfirmarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new ConfirmarEnvioDoDocumentoAPublicarCommand(Guid.CreateVersion7(), documento.Id),
             repository, storage, unitOfWork, TimeProvider.System, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("DocumentoEdital.NaoEncontrado");
+        resultado.Error!.Code.Should().Be("DocumentoAPublicar.NaoEncontrado");
     }
 
     [Fact(DisplayName = "Handle com objeto ausente no storage recusa (422 ObjetoNaoEncontrado)")]
     public async Task Handle_ObjetoAusente_Recusa()
     {
-        (DocumentoEdital documento, Guid processoId) = NovoDocumentoPendente();
-        IDocumentoEditalRepository repository = Substitute.For<IDocumentoEditalRepository>();
+        (DocumentoAPublicar documento, Guid processoId) = NovoDocumentoPendente();
+        IDocumentoAPublicarRepository repository = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
         storage.ObterInfoAsync(documento.ObjectKey, Arg.Any<CancellationToken>()).Returns((InfoObjetoArmazenado?)null);
 
-        Result<DocumentoEditalDto> resultado = await ConfirmarUploadDocumentoEditalCommandHandler.Handle(
-            new ConfirmarUploadDocumentoEditalCommand(processoId, documento.Id),
+        Result<DocumentoAPublicarDto> resultado = await ConfirmarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new ConfirmarEnvioDoDocumentoAPublicarCommand(processoId, documento.Id),
             repository, storage, unitOfWork, TimeProvider.System, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("DocumentoEdital.ObjetoNaoEncontrado");
+        resultado.Error!.Code.Should().Be("DocumentoAPublicar.ObjetoNaoEncontrado");
     }
 
     [Fact(DisplayName = "Handle recusa por tamanho sem baixar o conteúdo (422 TamanhoExcedido)")]
     public async Task Handle_TamanhoExcedido_RecusaSemBaixarConteudo()
     {
-        (DocumentoEdital documento, Guid processoId) = NovoDocumentoPendente();
-        IDocumentoEditalRepository repository = Substitute.For<IDocumentoEditalRepository>();
+        (DocumentoAPublicar documento, Guid processoId) = NovoDocumentoPendente();
+        IDocumentoAPublicarRepository repository = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
         storage.ObterInfoAsync(documento.ObjectKey, Arg.Any<CancellationToken>())
-            .Returns(new InfoObjetoArmazenado(DocumentoEdital.TamanhoMaximoBytes + 1, "application/pdf"));
+            .Returns(new InfoObjetoArmazenado(DocumentoAPublicar.TamanhoMaximoBytes + 1, "application/pdf"));
 
-        Result<DocumentoEditalDto> resultado = await ConfirmarUploadDocumentoEditalCommandHandler.Handle(
-            new ConfirmarUploadDocumentoEditalCommand(processoId, documento.Id),
+        Result<DocumentoAPublicarDto> resultado = await ConfirmarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new ConfirmarEnvioDoDocumentoAPublicarCommand(processoId, documento.Id),
             repository, storage, unitOfWork, TimeProvider.System, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("DocumentoEdital.TamanhoExcedido");
+        resultado.Error!.Code.Should().Be("DocumentoAPublicar.TamanhoExcedido");
         await storage.DidNotReceive().AbrirLeituraAsync(Arg.Any<string>(), Arg.Any<long>(), Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Handle recusa conteúdo sem assinatura PDV válida (422 AssinaturaInvalida)")]
+    [Fact(DisplayName = "Handle recusa conteúdo sem assinatura PDF válida (422 ConteudoDivergeDoFormato)")]
     [SuppressMessage(
         "Reliability",
         "CA2025:Object MemoryStream can be disposed of before operation completes",
         Justification = "O stream é consumido de forma síncrona dentro do await Handle(...) — a leitura pelo handler termina antes do using declarado sair de escopo no fim do método.")]
     public async Task Handle_AssinaturaInvalida_Recusa()
     {
-        (DocumentoEdital documento, Guid processoId) = NovoDocumentoPendente();
+        (DocumentoAPublicar documento, Guid processoId) = NovoDocumentoPendente();
         byte[] conteudoFalso = [.. "não é um pdf de verdade"u8];
-        IDocumentoEditalRepository repository = Substitute.For<IDocumentoEditalRepository>();
+        IDocumentoAPublicarRepository repository = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
@@ -115,13 +117,13 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
         storage.AbrirLeituraAsync(documento.ObjectKey, Arg.Any<long>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<Stream>(streamConteudoFalso));
 
-        Result<DocumentoEditalDto> resultado = await ConfirmarUploadDocumentoEditalCommandHandler.Handle(
-            new ConfirmarUploadDocumentoEditalCommand(processoId, documento.Id),
+        Result<DocumentoAPublicarDto> resultado = await ConfirmarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new ConfirmarEnvioDoDocumentoAPublicarCommand(processoId, documento.Id),
             repository, storage, unitOfWork, TimeProvider.System, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("DocumentoEdital.AssinaturaInvalida");
-        repository.DidNotReceive().Atualizar(Arg.Any<DocumentoEdital>());
+        resultado.Error!.Code.Should().Be("DocumentoAPublicar.ConteudoDivergeDoFormato");
+        repository.DidNotReceive().Atualizar(Arg.Any<DocumentoAPublicar>());
         await storage.DidNotReceive().SalvarConteudoSeladoAsync(Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
         // Conteúdo inválido nunca chega a reivindicar a confirmação — senão o
         // registro travaria como Confirmado sem hash caso a validação recuse.
@@ -135,8 +137,8 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
         Justification = "O stream é consumido de forma síncrona dentro do await Handle(...) — a leitura pelo handler termina antes do using declarado sair de escopo no fim do método.")]
     public async Task Handle_PdfValido_ConfirmaEPersiste()
     {
-        (DocumentoEdital documento, Guid processoId) = NovoDocumentoPendente();
-        IDocumentoEditalRepository repository = Substitute.For<IDocumentoEditalRepository>();
+        (DocumentoAPublicar documento, Guid processoId) = NovoDocumentoPendente();
+        IDocumentoAPublicarRepository repository = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
@@ -148,8 +150,8 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
             .Returns(Task.FromResult<Stream>(streamConteudoValido));
         string hashEsperado = Convert.ToHexStringLower(SHA256.HashData(ConteudoPdfValido));
 
-        Result<DocumentoEditalDto> resultado = await ConfirmarUploadDocumentoEditalCommandHandler.Handle(
-            new ConfirmarUploadDocumentoEditalCommand(processoId, documento.Id),
+        Result<DocumentoAPublicarDto> resultado = await ConfirmarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new ConfirmarEnvioDoDocumentoAPublicarCommand(processoId, documento.Id),
             repository, storage, unitOfWork, TimeProvider.System, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
@@ -162,7 +164,7 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
         // URL de upload original ainda aponta para ObjectKey, sobrescrevível
         // até o TTL expirar.
         await storage.Received(1).SalvarConteudoSeladoAsync(
-            documento.ObjectKeyConfirmado!, Arg.Is<byte[]>(b => b.SequenceEqual(ConteudoPdfValido)), DocumentoEdital.ContentTypeEsperado, Arg.Any<CancellationToken>());
+            documento.ObjectKeyConfirmado!, Arg.Is<byte[]>(b => b.SequenceEqual(ConteudoPdfValido)), TiposDeMidiaDeDocumento.Pdf, Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Handle recusa quando perde a reivindicação atômica sem escrever no storage")]
@@ -172,8 +174,8 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
         Justification = "O stream é consumido de forma síncrona dentro do await Handle(...) — a leitura pelo handler termina antes do using declarado sair de escopo no fim do método.")]
     public async Task Handle_PerdeuReivindicacao_RecusaSemEscreverStorage()
     {
-        (DocumentoEdital documento, Guid processoId) = NovoDocumentoPendente();
-        IDocumentoEditalRepository repository = Substitute.For<IDocumentoEditalRepository>();
+        (DocumentoAPublicar documento, Guid processoId) = NovoDocumentoPendente();
+        IDocumentoAPublicarRepository repository = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
@@ -185,14 +187,14 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
         storage.AbrirLeituraAsync(documento.ObjectKey, Arg.Any<long>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<Stream>(streamConteudoValido));
 
-        Result<DocumentoEditalDto> resultado = await ConfirmarUploadDocumentoEditalCommandHandler.Handle(
-            new ConfirmarUploadDocumentoEditalCommand(processoId, documento.Id),
+        Result<DocumentoAPublicarDto> resultado = await ConfirmarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new ConfirmarEnvioDoDocumentoAPublicarCommand(processoId, documento.Id),
             repository, storage, unitOfWork, TimeProvider.System, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("DocumentoEdital.StatusInvalidoParaConfirmacao");
+        resultado.Error!.Code.Should().Be("DocumentoAPublicar.StatusInvalidoParaConfirmacao");
         await storage.DidNotReceive().SalvarConteudoSeladoAsync(Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
-        repository.DidNotReceive().Atualizar(Arg.Any<DocumentoEdital>());
+        repository.DidNotReceive().Atualizar(Arg.Any<DocumentoAPublicar>());
     }
 
     [Fact(DisplayName = "Handle lança se a entidade já não estiver pendente após reivindicação")]
@@ -202,8 +204,8 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
         Justification = "O stream é consumido de forma síncrona dentro do await Handle(...) — a leitura pelo handler termina antes do using declarado sair de escopo no fim do método.")]
     public async Task Handle_EntidadeSincronizadaAposReivindicacao_LancaParaForcarRollback()
     {
-        (DocumentoEdital documento, Guid processoId) = NovoDocumentoPendente();
-        IDocumentoEditalRepository repository = Substitute.For<IDocumentoEditalRepository>();
+        (DocumentoAPublicar documento, Guid processoId) = NovoDocumentoPendente();
+        IDocumentoAPublicarRepository repository = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
@@ -222,15 +224,15 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
         storage.AbrirLeituraAsync(documento.ObjectKey, Arg.Any<long>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<Stream>(streamConteudoValido));
 
-        Func<Task> act = () => ConfirmarUploadDocumentoEditalCommandHandler.Handle(
-            new ConfirmarUploadDocumentoEditalCommand(processoId, documento.Id),
+        Func<Task> act = () => ConfirmarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new ConfirmarEnvioDoDocumentoAPublicarCommand(processoId, documento.Id),
             repository, storage, unitOfWork, TimeProvider.System, CancellationToken.None);
 
         await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage($"*{documento.Id}*DocumentoEdital.StatusInvalidoParaConfirmacao*");
+            .WithMessage($"*{documento.Id}*DocumentoAPublicar.StatusInvalidoParaConfirmacao*");
         await storage.DidNotReceive()
             .SalvarConteudoSeladoAsync(Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
-        repository.DidNotReceive().Atualizar(Arg.Any<DocumentoEdital>());
+        repository.DidNotReceive().Atualizar(Arg.Any<DocumentoAPublicar>());
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -241,8 +243,8 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
         Justification = "O stream é consumido de forma síncrona dentro do await Handle(...) — a leitura pelo handler termina antes do using declarado sair de escopo no fim do método.")]
     public async Task Handle_ConteudoRealExcedeLimiteApesarDoStatMenor_Recusa()
     {
-        (DocumentoEdital documento, Guid processoId) = NovoDocumentoPendente();
-        IDocumentoEditalRepository repository = Substitute.For<IDocumentoEditalRepository>();
+        (DocumentoAPublicar documento, Guid processoId) = NovoDocumentoPendente();
+        IDocumentoAPublicarRepository repository = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
@@ -251,37 +253,70 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
         // original segue sobrescrevível até o TTL expirar).
         storage.ObterInfoAsync(documento.ObjectKey, Arg.Any<CancellationToken>())
             .Returns(new InfoObjetoArmazenado(10, "application/pdf"));
-        byte[] conteudoReal = new byte[DocumentoEdital.TamanhoMaximoBytes + 1024];
+        byte[] conteudoReal = new byte[DocumentoAPublicar.TamanhoMaximoBytes + 1024];
         using MemoryStream streamReal = new(conteudoReal);
         storage.AbrirLeituraAsync(documento.ObjectKey, Arg.Any<long>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<Stream>(streamReal));
 
-        Result<DocumentoEditalDto> resultado = await ConfirmarUploadDocumentoEditalCommandHandler.Handle(
-            new ConfirmarUploadDocumentoEditalCommand(processoId, documento.Id),
+        Result<DocumentoAPublicarDto> resultado = await ConfirmarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new ConfirmarEnvioDoDocumentoAPublicarCommand(processoId, documento.Id),
             repository, storage, unitOfWork, TimeProvider.System, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("DocumentoEdital.TamanhoExcedido");
+        resultado.Error!.Code.Should().Be("DocumentoAPublicar.TamanhoExcedido");
         await repository.DidNotReceive().TentarReivindicarConfirmacaoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Handle confirma um DOCX válido e sela a cópia com o tipo de mídia do formato")]
+    [SuppressMessage(
+        "Reliability",
+        "CA2025:Object MemoryStream can be disposed of before operation completes",
+        Justification = "O stream é consumido de forma síncrona dentro do await Handle(...) — a leitura pelo handler termina antes do using declarado sair de escopo no fim do método.")]
+    public async Task Handle_DocxValido_ConfirmaESelaComOTipoDeMidiaDoFormato()
+    {
+        Guid processoId = Guid.CreateVersion7();
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
+            processoId, "Anexo I", TiposDeMidiaDeDocumento.Docx, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        byte[] docx = ArquivosDeModeloDeTeste.Docx();
+        IDocumentoAPublicarRepository repository = Substitute.For<IDocumentoAPublicarRepository>();
+        IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
+        repository.TentarReivindicarConfirmacaoAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(true);
+        storage.ObterInfoAsync(documento.ObjectKey, Arg.Any<CancellationToken>())
+            .Returns(new InfoObjetoArmazenado(docx.Length, TiposDeMidiaDeDocumento.Docx));
+        using MemoryStream stream = new(docx);
+        storage.AbrirLeituraAsync(documento.ObjectKey, Arg.Any<long>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<Stream>(stream));
+
+        Result<DocumentoAPublicarDto> resultado = await ConfirmarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new ConfirmarEnvioDoDocumentoAPublicarCommand(processoId, documento.Id),
+            repository, storage, unitOfWork, TimeProvider.System, CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.HashSha256.Should().Be(Convert.ToHexStringLower(SHA256.HashData(docx)));
+        resultado.Value.TipoDeMidia.Should().Be(TiposDeMidiaDeDocumento.Docx);
+        await storage.Received(1).SalvarConteudoSeladoAsync(
+            documento.ObjectKeyConfirmado!, Arg.Any<byte[]>(), TiposDeMidiaDeDocumento.Docx, Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Handle recusa objeto de 0 bytes sem tentar ler (Range GET não é satisfazível sobre objeto vazio)")]
     public async Task Handle_ObjetoVazio_RecusaSemTentarLer()
     {
-        (DocumentoEdital documento, Guid processoId) = NovoDocumentoPendente();
-        IDocumentoEditalRepository repository = Substitute.For<IDocumentoEditalRepository>();
+        (DocumentoAPublicar documento, Guid processoId) = NovoDocumentoPendente();
+        IDocumentoAPublicarRepository repository = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
         storage.ObterInfoAsync(documento.ObjectKey, Arg.Any<CancellationToken>())
             .Returns(new InfoObjetoArmazenado(0, "application/pdf"));
 
-        Result<DocumentoEditalDto> resultado = await ConfirmarUploadDocumentoEditalCommandHandler.Handle(
-            new ConfirmarUploadDocumentoEditalCommand(processoId, documento.Id),
+        Result<DocumentoAPublicarDto> resultado = await ConfirmarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new ConfirmarEnvioDoDocumentoAPublicarCommand(processoId, documento.Id),
             repository, storage, unitOfWork, TimeProvider.System, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("DocumentoEdital.AssinaturaInvalida");
+        resultado.Error!.Code.Should().Be("DocumentoAPublicar.ArquivoVazio");
         // Um Range GET (byte 0 a N) não é satisfazível sobre um objeto vazio —
         // o servidor recusaria com 416. Não há o que ler, então nem tenta.
         await storage.DidNotReceive().AbrirLeituraAsync(Arg.Any<string>(), Arg.Any<long>(), Arg.Any<CancellationToken>());

@@ -42,7 +42,7 @@ public sealed class FalharAposPublicarCascadingHandler
         ArgumentNullException.ThrowIfNull(canonicalizer);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        (ProcessoSeletivo processo, DocumentoEdital documento) = await ProcessoSeletivoPublicavelSeeder
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
             .SemearAsync(db, command.NomeProcesso)
             .ConfigureAwait(false);
 

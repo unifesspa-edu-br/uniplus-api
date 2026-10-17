@@ -73,7 +73,7 @@ public static class SelecaoInfrastructureRegistration
         services.AddScoped<IRestauradorDeConfiguracao, RestauradorDeConfiguracao>();
         services.AddScoped<IObrigatoriedadeLegalRepository, ObrigatoriedadeLegalRepository>();
         services.AddScoped<IMotivoDecisaoIsencaoRepository, MotivoDecisaoIsencaoRepository>();
-        services.AddScoped<IDocumentoEditalRepository, DocumentoEditalRepository>();
+        services.AddScoped<IDocumentoAPublicarRepository, DocumentoAPublicarRepository>();
         services.AddScoped<IModeloDeDocumentoRepository, ModeloDeDocumentoRepository>();
         services.AddScoped<IRascunhoDePublicacaoRepository, RascunhoDePublicacaoRepository>();
         services.AddScoped<IInscricaoRepository, InscricaoRepository>();
@@ -83,7 +83,7 @@ public static class SelecaoInfrastructureRegistration
         services.AddScoped<IRetificacaoEmCursoReader, RetificacaoEmCursoReader>();
         services.AddScoped<IGovBrAuthService, GovBrAuthService>();
 
-        // Storage de documento do Edital (Story #759, T3 #784) — envolve o
+        // Storage dos arquivos enviados ao processo — envolve o
         // IStorageService compartilhado (registrado uma vez no host via
         // AddUniPlusStorage). Não registra AddUniPlusStorage aqui: é
         // cross-cutting compartilhado entre módulos, já ligado no host.

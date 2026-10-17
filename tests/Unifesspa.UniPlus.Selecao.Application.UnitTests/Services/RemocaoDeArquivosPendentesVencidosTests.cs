@@ -18,7 +18,7 @@ public sealed class RemocaoDeArquivosPendentesVencidosTests
     /// <summary>O instante até o qual o pendente conta como vencido: a tolerância antes de agora.</summary>
     private static readonly DateTimeOffset Corte = Agora - RemocaoDeArquivosPendentesVencidos.Tolerancia;
 
-    private readonly IDocumentoEditalRepository _documentos = Substitute.For<IDocumentoEditalRepository>();
+    private readonly IDocumentoAPublicarRepository _documentos = Substitute.For<IDocumentoAPublicarRepository>();
     private readonly IModeloDeDocumentoRepository _modelos = Substitute.For<IModeloDeDocumentoRepository>();
     private readonly IArquivoArmazenadoStorage _storage = Substitute.For<IArquivoArmazenadoStorage>();
 
@@ -37,7 +37,7 @@ public sealed class RemocaoDeArquivosPendentesVencidosTests
     [Fact(DisplayName = "O pendente vencido do documento do Edital e do modelo sai com o objeto, e o objeto sai antes do registro")]
     public async Task PendenteVencido_RemoveObjetoEDepoisORegistro()
     {
-        ArquivoPendenteVencido documento = Pendente("documentos-edital");
+        ArquivoPendenteVencido documento = Pendente("documentos-a-publicar");
         ArquivoPendenteVencido modelo = Pendente("modelos-de-documento");
         _documentos.ListarPendentesVencidosAsync(Corte, Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns([documento]);
         _modelos.ListarPendentesVencidosAsync(Corte, Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns([modelo]);
@@ -66,7 +66,7 @@ public sealed class RemocaoDeArquivosPendentesVencidosTests
     [Fact(DisplayName = "Falha ao remover o objeto mantém o registro para a próxima execução")]
     public async Task FalhaAoRemoverObjeto_MantemORegistro()
     {
-        ArquivoPendenteVencido documento = Pendente("documentos-edital");
+        ArquivoPendenteVencido documento = Pendente("documentos-a-publicar");
         _documentos.ListarPendentesVencidosAsync(Corte, Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns([documento]);
         _storage.RemoverAsync(documento.ObjectKey, Arg.Any<CancellationToken>())
             .ThrowsAsync(new HttpRequestException("armazenamento indisponível"));
@@ -82,8 +82,8 @@ public sealed class RemocaoDeArquivosPendentesVencidosTests
     public async Task LoteCheio_ConsultaOLoteSeguinte()
     {
         ArquivoPendenteVencido[] primeiro = [.. Enumerable.Range(0, RemocaoDeArquivosPendentesVencidos.TamanhoDoLote)
-            .Select(_ => Pendente("documentos-edital"))];
-        ArquivoPendenteVencido ultimo = Pendente("documentos-edital");
+            .Select(_ => Pendente("documentos-a-publicar"))];
+        ArquivoPendenteVencido ultimo = Pendente("documentos-a-publicar");
         _documentos.ListarPendentesVencidosAsync(Corte, RemocaoDeArquivosPendentesVencidos.TamanhoDoLote, Arg.Any<CancellationToken>())
             .Returns(primeiro, [ultimo]);
 
@@ -97,7 +97,7 @@ public sealed class RemocaoDeArquivosPendentesVencidosTests
     public async Task LoteComFalha_EncerraAExecucao()
     {
         ArquivoPendenteVencido[] lote = [.. Enumerable.Range(0, RemocaoDeArquivosPendentesVencidos.TamanhoDoLote)
-            .Select(_ => Pendente("documentos-edital"))];
+            .Select(_ => Pendente("documentos-a-publicar"))];
         // A segunda consulta devolveria o mesmo lote — o que falhou continua vencido.
         _documentos.ListarPendentesVencidosAsync(Corte, Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(lote, lote, []);
         _storage.RemoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())

@@ -5,12 +5,12 @@ using Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 
 /// <summary>
-/// Repositório de <see cref="DocumentoEdital"/> — independente de
+/// Repositório de <see cref="DocumentoAPublicar"/> — independente de
 /// <see cref="IProcessoSeletivoRepository"/> porque o documento não é
 /// entidade filha do agregado <see cref="ProcessoSeletivo"/> (ver comentário
 /// da entidade).
 /// </summary>
-public interface IDocumentoEditalRepository : IRepository<DocumentoEdital>, IArquivoEnviadoRepository
+public interface IDocumentoAPublicarRepository : IRepository<DocumentoAPublicar>, IArquivoEnviadoRepository
 {
     /// <summary>
     /// Reivindica atomicamente a confirmação do documento — <c>UPDATE ...
@@ -41,7 +41,7 @@ public interface IDocumentoEditalRepository : IRepository<DocumentoEdital>, IArq
     /// concorrentes aparecem trocados. O desempate por <c>Id</c> cobre o
     /// carimbo idêntico, que a resolução do relógio torna possível.
     /// </remarks>
-    Task<IReadOnlyList<DocumentoEdital>> ListarPorProcessoAsync(
+    Task<IReadOnlyList<DocumentoAPublicar>> ListarPorProcessoAsync(
         Guid processoSeletivoId,
         CancellationToken cancellationToken = default);
 

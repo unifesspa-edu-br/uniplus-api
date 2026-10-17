@@ -90,9 +90,9 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         bancasRequeridas: [],
         regraRecurso: null).Value!;
 
-    private static DocumentoEdital DocumentoConfirmado(Guid processoId)
+    private static DocumentoAPublicar DocumentoConfirmado(Guid processoId)
     {
-        DocumentoEdital documento = DocumentoEdital.IniciarPendente(processoId, TimeProvider.System, TimeSpan.FromMinutes(15));
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(1024, HashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();
         return documento;
     }
@@ -112,7 +112,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         RelogioManual clock = new(new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero));
 
         ProcessoSeletivo processo = NovoProcessoConforme(nome);
-        DocumentoEdital docAbertura = DocumentoConfirmado(processo.Id);
+        DocumentoAPublicar docAbertura = DocumentoConfirmado(processo.Id);
         DadosEdital dadosAbertura = NovosDados(docAbertura.Id);
         SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados()));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
@@ -124,7 +124,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
-            await writeContext.DocumentosEdital.AddAsync(docAbertura, CancellationToken.None);
+            await writeContext.DocumentosAPublicar.AddAsync(docAbertura, CancellationToken.None);
             await repository.AdicionarVersaoConfiguracaoAsync(publicar.Value!, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
@@ -132,7 +132,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         clock.Avancar(TimeSpan.FromDays(1));
 
         // Recarrega o agregado tracked — como o handler faz.
-        DocumentoEdital docRetificacao = DocumentoConfirmado(processo.Id);
+        DocumentoAPublicar docRetificacao = DocumentoConfirmado(processo.Id);
         VersaoConfiguracao versaoRetificacao;
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -151,7 +151,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             retificar.IsSuccess.Should().BeTrue(retificar.Error?.Message);
             versaoRetificacao = retificar.Value!;
 
-            await writeContext.DocumentosEdital.AddAsync(docRetificacao, CancellationToken.None);
+            await writeContext.DocumentosAPublicar.AddAsync(docRetificacao, CancellationToken.None);
             await repository.AdicionarVersaoConfiguracaoAsync(versaoRetificacao, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
@@ -274,7 +274,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         string nome = nameof(Retificacao_ComEdicaoDeCascataDuranteASessao_FechamentoGeraVersaoComCascataNova);
         ProcessoSeletivo processo = ProcessoSeletivoPublicacaoSeeder.NovoProcessoComOfertaFederalECascata(nome);
 
-        DocumentoEdital docAbertura = DocumentoConfirmado(processo.Id);
+        DocumentoAPublicar docAbertura = DocumentoConfirmado(processo.Id);
         DadosEdital dadosAbertura = NovosDados(docAbertura.Id);
         SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados()));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
@@ -288,7 +288,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
-            await writeContext.DocumentosEdital.AddAsync(docAbertura, CancellationToken.None);
+            await writeContext.DocumentosAPublicar.AddAsync(docAbertura, CancellationToken.None);
             await repository.AdicionarVersaoConfiguracaoAsync(versaoAbertura, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
@@ -308,8 +308,8 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             carregado.DefinirCascataRemanejamento(CascataDeUmDestinoPorOrigem(), PrecondicaoIfMatch.Curinga)
                 .IsSuccess.Should().BeTrue("mutar a configuração viva durante a sessão é permitido");
 
-            DocumentoEdital docRetificacao = DocumentoConfirmado(processoId);
-            await sessao.DocumentosEdital.AddAsync(docRetificacao, CancellationToken.None);
+            DocumentoAPublicar docRetificacao = DocumentoConfirmado(processoId);
+            await sessao.DocumentosAPublicar.AddAsync(docRetificacao, CancellationToken.None);
             DadosEdital dadosRetificacao = NovosDados(docRetificacao.Id);
             SnapshotCanonico canonicoRetificacao = Canonicalizer.Canonicalizar(
                 new EntradaCanonicalizacao(carregado, dadosRetificacao, docRetificacao.HashSha256!, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados()));
@@ -353,7 +353,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         string nome = nameof(Retificacao_DescartadaAposEditarCascata_RestauraCascataDaVersaoAnterior);
         ProcessoSeletivo processo = ProcessoSeletivoPublicacaoSeeder.NovoProcessoComOfertaFederalECascata(nome);
 
-        DocumentoEdital docAbertura = DocumentoConfirmado(processo.Id);
+        DocumentoAPublicar docAbertura = DocumentoConfirmado(processo.Id);
         DadosEdital dadosAbertura = NovosDados(docAbertura.Id);
         SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados()));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
@@ -367,7 +367,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
-            await writeContext.DocumentosEdital.AddAsync(docAbertura, CancellationToken.None);
+            await writeContext.DocumentosAPublicar.AddAsync(docAbertura, CancellationToken.None);
             await repository.AdicionarVersaoConfiguracaoAsync(versaoAbertura, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
@@ -427,7 +427,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         processo.DefinirTermos(
             termoPublicado is null ? [] : [CorpusEnvelope.Termo(termoPublicado, 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        DocumentoEdital docAbertura = DocumentoConfirmado(processo.Id);
+        DocumentoAPublicar docAbertura = DocumentoConfirmado(processo.Id);
         DadosEdital dadosAbertura = NovosDados(docAbertura.Id);
         SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados()));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
@@ -441,7 +441,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
-            await writeContext.DocumentosEdital.AddAsync(docAbertura, CancellationToken.None);
+            await writeContext.DocumentosAPublicar.AddAsync(docAbertura, CancellationToken.None);
             await repository.AdicionarVersaoConfiguracaoAsync(versaoAbertura, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
@@ -494,7 +494,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
     {
         ProcessoSeletivo processo = ProcessoSeletivoPublicacaoSeeder.NovoProcessoComOfertaFederalECascata(
             $"{nameof(Retificacao_FormularioSemOsDadosDeGenero_RegravacaoReporOsItens)}-{Guid.CreateVersion7()}");
-        DocumentoEdital docAbertura = DocumentoConfirmado(processo.Id);
+        DocumentoAPublicar docAbertura = DocumentoConfirmado(processo.Id);
         DadosEdital dadosAbertura = NovosDados(docAbertura.Id);
         SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados()));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
@@ -508,7 +508,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
-            await writeContext.DocumentosEdital.AddAsync(docAbertura, CancellationToken.None);
+            await writeContext.DocumentosAPublicar.AddAsync(docAbertura, CancellationToken.None);
             await repository.AdicionarVersaoConfiguracaoAsync(versaoAbertura, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
@@ -562,7 +562,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome_abreviado"], null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        DocumentoEdital docAbertura = DocumentoConfirmado(processo.Id);
+        DocumentoAPublicar docAbertura = DocumentoConfirmado(processo.Id);
         DadosEdital dadosAbertura = NovosDados(docAbertura.Id);
         SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados()));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
@@ -580,7 +580,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
-            await writeContext.DocumentosEdital.AddAsync(docAbertura, CancellationToken.None);
+            await writeContext.DocumentosAPublicar.AddAsync(docAbertura, CancellationToken.None);
             await repository.AdicionarVersaoConfiguracaoAsync(versaoAbertura, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
@@ -600,8 +600,8 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
                 ConfiguracaoDivulgacao.Criar(["numero_inscricao"], null).Value!, PrecondicaoIfMatch.Curinga)
                 .IsSuccess.Should().BeTrue();
 
-            DocumentoEdital docRetificacao = DocumentoConfirmado(processoId);
-            await sessao.DocumentosEdital.AddAsync(docRetificacao, CancellationToken.None);
+            DocumentoAPublicar docRetificacao = DocumentoConfirmado(processoId);
+            await sessao.DocumentosAPublicar.AddAsync(docRetificacao, CancellationToken.None);
             DadosEdital dadosRetificacao = NovosDados(docRetificacao.Id);
             SnapshotCanonico canonicoRetificacao = Canonicalizer.Canonicalizar(
                 new EntradaCanonicalizacao(carregado, dadosRetificacao, docRetificacao.HashSha256!, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados()));
@@ -644,7 +644,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome_abreviado"], null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        DocumentoEdital docAbertura = DocumentoConfirmado(processo.Id);
+        DocumentoAPublicar docAbertura = DocumentoConfirmado(processo.Id);
         DadosEdital dadosAbertura = NovosDados(docAbertura.Id);
         SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados()));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
@@ -658,7 +658,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
-            await writeContext.DocumentosEdital.AddAsync(docAbertura, CancellationToken.None);
+            await writeContext.DocumentosAPublicar.AddAsync(docAbertura, CancellationToken.None);
             await repository.AdicionarVersaoConfiguracaoAsync(versaoAbertura, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }

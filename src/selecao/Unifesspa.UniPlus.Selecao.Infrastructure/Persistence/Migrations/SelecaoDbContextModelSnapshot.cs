@@ -1074,7 +1074,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.DocumentoEdital", b =>
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.DocumentoAPublicar", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
@@ -1092,10 +1092,20 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expira_em");
 
+                    b.Property<int>("Formato")
+                        .HasColumnType("integer")
+                        .HasColumnName("formato");
+
                     b.Property<string>("HashSha256")
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
                         .HasColumnName("hash_sha256");
+
+                    b.Property<string>("NomeArquivo")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("nome_arquivo");
 
                     b.Property<string>("ObjectKey")
                         .IsRequired()
@@ -1125,13 +1135,13 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnName("updated_at");
 
                     b.HasKey("Id")
-                        .HasName("pk_documentos_edital");
+                        .HasName("pk_documentos_a_publicar");
 
                     b.HasIndex("ProcessoSeletivoId", "CreatedAt", "Id")
                         .IsDescending(false, true, true)
-                        .HasDatabaseName("ix_documentos_edital_processo_recentes");
+                        .HasDatabaseName("ix_documentos_a_publicar_processo_recentes");
 
-                    b.ToTable("documentos_edital", "selecao");
+                    b.ToTable("documentos_a_publicar", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.DocumentoExigido", b =>
@@ -4518,14 +4528,14 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_destinos_remanejamento_configuracoes_cascata_remanejamento_");
                 });
 
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.DocumentoEdital", b =>
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.DocumentoAPublicar", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
                         .WithMany()
                         .HasForeignKey("ProcessoSeletivoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_documentos_edital_processos_seletivos_processo_seletivo_id");
+                        .HasConstraintName("fk_documentos_a_publicar_processos_seletivos_processo_seletivo");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.DocumentoExigido", b =>

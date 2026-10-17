@@ -11,6 +11,7 @@ using Kernel.Results;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 using Wolverine;
@@ -199,7 +200,7 @@ public sealed class RetificacaoConcorrenciaTests
     {
         await using AsyncServiceScope seedScope = api.Services.CreateAsyncScope();
         SelecaoDbContext seedDb = seedScope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
-        (ProcessoSeletivo processo, DocumentoEdital documento) = await ProcessoSeletivoPublicavelSeeder
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
             .SemearAsync(seedDb, $"Concorrência {Guid.CreateVersion7()}");
         return (processo.Id, documento.Id);
     }
@@ -207,9 +208,9 @@ public sealed class RetificacaoConcorrenciaTests
     private static async Task<Guid> SemearDocumentoConfirmadoAsync(SelecaoDbContext db, Guid processoId)
     {
         string hashFixo = string.Concat(Enumerable.Repeat("ef67012345", 7))[..64];
-        DocumentoEdital documento = DocumentoEdital.IniciarPendente(processoId, TimeProvider.System, TimeSpan.FromMinutes(15));
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(2048, hashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();
-        await db.DocumentosEdital.AddAsync(documento);
+        await db.DocumentosAPublicar.AddAsync(documento);
         await db.SaveChangesAsync();
         return documento.Id;
     }

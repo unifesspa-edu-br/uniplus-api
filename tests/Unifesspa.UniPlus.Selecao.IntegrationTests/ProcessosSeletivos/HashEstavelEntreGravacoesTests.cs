@@ -29,7 +29,7 @@ public sealed class HashEstavelEntreGravacoesTests
     private static readonly Guid TipoEtapaOrigem = Guid.CreateVersion7();
     private static readonly Guid TipoBancaOrigem = Guid.CreateVersion7();
     private static readonly Guid UnidadeOrigem = Guid.CreateVersion7();
-    private static readonly Guid DocumentoEdital = Guid.CreateVersion7();
+    private static readonly Guid DocumentoAPublicar = Guid.CreateVersion7();
     private static readonly Guid DistribuicaoOrigem = Guid.CreateVersion7();
     private static readonly Guid ModalidadeOrigem = Guid.CreateVersion7();
     private static readonly Guid FaseOrigem = Guid.CreateVersion7();
@@ -215,5 +215,5 @@ public sealed class HashEstavelEntreGravacoesTests
         "001/2026",
         new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
         new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
-        DocumentoEdital).Value!;
+        DocumentoAPublicar).Value!;
 }

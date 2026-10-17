@@ -113,7 +113,7 @@ public sealed class GrupoRepetivelEndpointTests
         string agregado = $"CATEGORIAS_FAMILIA_{sufixo}";
         Guid tipoDocumentoId = await SemearCatalogoDoAgregadoAsync(membro, agregado, sufixo);
         await TiposDeAtoSeeder.SemearAsync(_fixture.Factory.Services);
-        (ProcessoSeletivo processo, DocumentoEdital documento) = await SemearProcessoPublicavelAsync();
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await SemearProcessoPublicavelAsync();
         Guid faseId = processo.CronogramaFases.Single().Id;
         using HttpClient client = _fixture.Factory.CreateClient();
 
@@ -168,7 +168,7 @@ public sealed class GrupoRepetivelEndpointTests
             HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
         Guid tipoDocumentoId = await SemearNoCatalogoAsync(campoDeMembro, $"CERT_GUARDA_{sufixo}", "Certidão de guarda");
         await TiposDeAtoSeeder.SemearAsync(_fixture.Factory.Services);
-        (ProcessoSeletivo processo, DocumentoEdital documento) = await SemearProcessoPublicavelAsync();
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await SemearProcessoPublicavelAsync();
         using HttpClient client = _fixture.Factory.CreateClient();
 
         await EnviarAsync(client, HttpMethod.Put, $"/api/selecao/admin/processos-seletivos/{processo.Id}/formularios/INSCRICAO/itens", new
@@ -249,7 +249,7 @@ public sealed class GrupoRepetivelEndpointTests
         return await SemearNoCatalogoAsync(fatoDeMembro, $"DECL_RURAL_{sufixo}", "Declaração de trabalhador rural", fatoAgregado);
     }
 
-    private async Task<(ProcessoSeletivo Processo, DocumentoEdital Documento)> SemearProcessoPublicavelAsync()
+    private async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearProcessoPublicavelAsync()
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();

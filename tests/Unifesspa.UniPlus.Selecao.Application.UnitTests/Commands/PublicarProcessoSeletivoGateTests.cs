@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -57,15 +58,15 @@ public sealed class PublicarProcessoSeletivoGateTests
         // Processo em rascunho, SEM nenhuma dimensão configurada — não conforme.
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Vazio", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
-        DocumentoEdital documento = DocumentoEdital.IniciarPendente(
-            processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
+            processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(1024, new string('a', 64), TimeProvider.System).IsSuccess.Should().BeTrue();
 
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         processoRepository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>())
             .Returns(processo);
 
-        IDocumentoEditalRepository documentoRepository = Substitute.For<IDocumentoEditalRepository>();
+        IDocumentoAPublicarRepository documentoRepository = Substitute.For<IDocumentoAPublicarRepository>();
         documentoRepository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>())
             .Returns(documento);
 
@@ -188,15 +189,15 @@ public sealed class PublicarProcessoSeletivoGateTests
     {
         ProcessoSeletivo processo = NovoProcessoConformeComGatilhoPorFaixaEtariaSemReferencia(out _);
 
-        DocumentoEdital documento = DocumentoEdital.IniciarPendente(
-            processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
+            processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(1024, new string('a', 64), TimeProvider.System).IsSuccess.Should().BeTrue();
 
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         processoRepository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>())
             .Returns(processo);
 
-        IDocumentoEditalRepository documentoRepository = Substitute.For<IDocumentoEditalRepository>();
+        IDocumentoAPublicarRepository documentoRepository = Substitute.For<IDocumentoAPublicarRepository>();
         documentoRepository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>())
             .Returns(documento);
 

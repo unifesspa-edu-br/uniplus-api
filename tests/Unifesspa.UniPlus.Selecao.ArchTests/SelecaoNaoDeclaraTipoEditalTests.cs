@@ -11,7 +11,7 @@ using AwesomeAssertions;
 /// Fitness test da issue #850: o vocabulário <c>Edital</c> que a #804 eliminou do módulo
 /// Seleção não pode reaparecer como identificador de código C#. Detecção por identificador
 /// EXATO (<c>\bEdital\b</c> e o resto da lista negra), nunca por substring — o que faz
-/// <c>DocumentoEdital</c>/<c>DocumentoEditalId</c> ficarem de fora sem precisar de allowlist: não há fronteira de palavra entre "Documento" e "Edital"
+/// <c>DocumentoAPublicar</c>/<c>DocumentoEditalId</c> ficarem de fora sem precisar de allowlist: não há fronteira de palavra entre "Documento" e "Edital"
 /// (os dois são caracteres \w), então o regex já os ignora pela própria definição de
 /// <c>\b</c>.
 /// </summary>
@@ -90,10 +90,10 @@ public sealed class SelecaoNaoDeclaraTipoEditalTests
     }
 
     [Theory(DisplayName = "O detector não acusa identificador legítimo, string literal nem raw string")]
-    [InlineData("class DocumentoEdital : EntityBase { }")]
+    [InlineData("class DocumentoAPublicar : EntityBase { }")]
     [InlineData("Guid DocumentoEditalId { get; }")]
     [InlineData("record DadosEdital(string Numero);")]
-    [InlineData("class DocumentosEditalController : ControllerBase { }")]
+    [InlineData("class DocumentosAPublicarController : ControllerBase { }")]
     [InlineData(@"return Result.Failure(new DomainError(Codes.X, ""Referência ao documento do Edital é obrigatória.""));")]
     [InlineData("\"\"\"Edital\"\"\"")]
     [InlineData(@"$""{{EditalId}}""")]
