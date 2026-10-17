@@ -89,19 +89,61 @@ public sealed class AnexoDoAtoPersistenceTests
         erro.SqlState.Should().Be(RestrictViolation);
     }
 
-    [Fact(DisplayName = "INSERT cru de dois anexos com o mesmo nome no ato colide no índice único")]
-    public async Task Insert_NomeRepetido_Colide()
+    [Fact(DisplayName = "INSERT cru de anexo em ato gravado em transação anterior é recusado")]
+    public async Task Insert_AnexoEmAtoDeTransacaoAnterior_Recusado()
     {
-        AtoNormativo ato = Novo(("Anexo I.pdf", "application/pdf", HashValido));
+        AtoNormativo ato = Novo();
         await Gravar(ato);
 
         PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarCruAsync(
             $"""
             INSERT INTO publicacoes.anexo_do_ato (id, ato_id, ordem, nome, tipo_midia, hash)
-            VALUES ('{Guid.CreateVersion7()}', '{ato.Id}', 1, 'Anexo I.pdf', 'application/pdf', '{OutroHash}')
+            VALUES ('{Guid.CreateVersion7()}', '{ato.Id}', 0, 'Tardio.pdf', 'application/pdf', '{OutroHash}')
             """));
 
-        erro.SqlState.Should().Be(UniqueViolation);
+        erro.SqlState.Should().Be(RestrictViolation);
+    }
+
+    [Fact(DisplayName = "INSERT cru de anexo na mesma transação que inseriu o ato passa")]
+    public async Task Insert_AnexoNaTransacaoDoAto_Passa()
+    {
+        AtoNormativo ato = Novo();
+
+        await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
+        await conexao.OpenAsync();
+        await using NpgsqlTransaction transacao = await conexao.BeginTransactionAsync();
+        await using NpgsqlCommand comando = conexao.CreateCommand();
+        comando.Transaction = transacao;
+        comando.CommandText =
+            $"""
+            INSERT INTO publicacoes.ato_normativo
+                (id, orgao, serie, ano, numero, tipo_codigo, congela_configuracao, efeito_irreversivel,
+                 unico_por_objeto, data_publicacao, documento_hash, assinante, registrado_em)
+            VALUES ('{ato.Id}', 'CEPS', 'EDITAL', 2026, NULL, 'EDITAL_ABERTURA', false, false, false,
+                    DATE '2026-03-13', '{HashValido}', 'Jairo Belchior', now());
+            INSERT INTO publicacoes.anexo_do_ato (id, ato_id, ordem, nome, tipo_midia, hash)
+            VALUES ('{Guid.CreateVersion7()}', '{ato.Id}', 0, 'Anexo I.pdf', 'application/pdf', '{OutroHash}');
+            """;
+        await comando.ExecuteNonQueryAsync();
+        await transacao.CommitAsync();
+
+        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        (await ctx.AnexosDoAto.CountAsync(a => a.AtoId == ato.Id)).Should().Be(1);
+    }
+
+    [Fact(DisplayName = "Dois anexos com o mesmo nome no mesmo ato colidem no índice único")]
+    public async Task Insert_NomeRepetido_Colide()
+    {
+        AtoNormativo ato = Novo(("Anexo I.pdf", "application/pdf", HashValido));
+        AnexoDoAto repetido = AnexoDoAto.Criar(ato, 1, "Anexo I.pdf", "application/pdf", OutroHash);
+
+        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        ctx.AtosNormativos.Add(ato);
+        ctx.AnexosDoAto.Add(repetido);
+
+        DbUpdateException erro = await Assert.ThrowsAsync<DbUpdateException>(() => ctx.SaveChangesAsync());
+
+        ((PostgresException)erro.InnerException!).SqlState.Should().Be(UniqueViolation);
     }
 
     private async Task Gravar(AtoNormativo ato)
