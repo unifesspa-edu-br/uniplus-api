@@ -39,8 +39,7 @@ public sealed class ContratoPublicoDoCertameHttpTests
 
         consulta.Should().BeEquivalentTo(new ConsultaDoCertame.Encontrado(
             new CertameDaOrigem(
-                ProcessoId, Criador, "Medicina 2027", "012/2026", new Uri("https://acervo.example/editais/abc.pdf"), new Dictionary<Guid, Uri>(), SituacaoDaInscricao.InscricoesAbertas,
-                new Dictionary<Guid, IReadOnlyList<DocumentoDoEvento>>())));
+                ProcessoId, Criador, "Medicina 2027", "012/2026", new Uri("https://acervo.example/editais/abc.pdf"), new Dictionary<Guid, IReadOnlyList<DocumentoDoEvento>>(), SituacaoDaInscricao.InscricoesAbertas)));
 
         HttpRequestMessage requisicao = rede.Requisicoes.Single();
         requisicao.RequestUri!.ToString().Should().Be($"{OrigensMontagem.EnderecoSelecao}/api/selecao/certames/medicina-2027");
@@ -63,42 +62,12 @@ public sealed class ContratoPublicoDoCertameHttpTests
     }
 
     [Fact]
-    public async Task Editais_das_versoes_viram_mapa_por_ato_e_item_invalido_e_ignorado()
-    {
-        Guid abertura = Guid.Parse("0192a000-0000-7000-8000-0000000000b1");
-        Guid semUrl = Guid.Parse("0192a000-0000-7000-8000-0000000000b2");
-        Guid urlForaDoPadrao = Guid.Parse("0192a000-0000-7000-8000-0000000000b3");
-        string editais = $$"""
-            "editaisPublicados": [
-              { "atoId": "{{abertura}}", "urlDownload": "https://acervo.example/editais/abertura.pdf" },
-              { "atoId": "{{Criador}}", "urlDownload": "https://acervo.example/editais/abc.pdf" },
-              { "atoId": "{{semUrl}}" },
-              { "atoId": "{{urlForaDoPadrao}}", "urlDownload": "ftp://acervo.example/editais/x.pdf" },
-              { "atoId": "{{Guid.Empty}}", "urlDownload": "https://acervo.example/editais/vazio.pdf" },
-              null
-            ]
-            """;
-        string corpo = CorpoDoCertame.Replace("\"situacao\"", editais + ", \"situacao\"", StringComparison.Ordinal);
-        RedeSimulada rede = new((_, _) => RedeSimulada.Json(corpo, MediaType));
-
-        ConsultaDoCertame consulta = await Consultar(rede, c => c.ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None));
-
-        consulta.Should().BeOfType<ConsultaDoCertame.Encontrado>().Which.Certame.EditaisPorAto.Should().BeEquivalentTo(
-            new Dictionary<Guid, Uri>
-            {
-                [abertura] = new("https://acervo.example/editais/abertura.pdf"),
-                [Criador] = new("https://acervo.example/editais/abc.pdf"),
-            });
-    }
-
-    [Fact]
     public async Task Documentos_do_edital_viram_lista_por_ato_e_documento_invalido_e_ignorado()
     {
         string editais = $$"""
             "editaisPublicados": [
               {
                 "atoId": "{{Criador}}",
-                "urlDownload": "https://acervo.example/editais/abc.pdf",
                 "documentos": [
                   { "papel": "principal", "nome": "edital.pdf", "tipoDeMidia": "application/pdf", "tamanhoBytes": 1200, "urlDownload": "https://acervo.example/editais/abc.pdf" },
                   { "papel": "anexo", "nome": "Quadro de vagas.docx", "tipoDeMidia": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "tamanhoBytes": 800, "urlDownload": "https://acervo.example/anexos/quadro.docx" },
@@ -116,7 +85,7 @@ public sealed class ContratoPublicoDoCertameHttpTests
         ConsultaDoCertame consulta = await Consultar(rede, c => c.ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None));
 
         IReadOnlyList<DocumentoDoEvento> documentos = consulta.Should().BeOfType<ConsultaDoCertame.Encontrado>()
-            .Which.Certame.DocumentosPorAto![Criador];
+            .Which.Certame.DocumentosPorAto[Criador];
         documentos.Select(d => (d.Papel, d.Nome, d.TamanhoBytes, d.Url.ToString())).Should().Equal(
             (PapelDoDocumento.Principal, "edital.pdf", 1200L, "https://acervo.example/editais/abc.pdf"),
             (PapelDoDocumento.Anexo, "Quadro de vagas.docx", 800L, "https://acervo.example/anexos/quadro.docx"));
