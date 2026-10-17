@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Domain.Entities;
+using Domain.Interfaces;
 using Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Publicacoes.Contracts;
@@ -17,7 +18,27 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// </remarks>
 internal static class RegistroDoAtoDaVersao
 {
-    public static AtoDoProcesso Criar(
+    public static async Task RegistrarAsync(
+        IAtoDoProcessoRepository atoDoProcessoRepository,
+        ProcessoSeletivo processo,
+        VersaoConfiguracao versao,
+        DadosDoAto ato,
+        TipoAtoPublicadoView tipoConferido,
+        string? numeroDeclarado,
+        Guid documentoEditalId,
+        Guid? atoRetificadoId,
+        string? motivoRetificacao,
+        TimeProvider timeProvider,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
+
+        AtoDoProcesso registro = Criar(
+            processo, versao, ato, tipoConferido, numeroDeclarado, documentoEditalId, atoRetificadoId, motivoRetificacao, timeProvider);
+        await atoDoProcessoRepository.AdicionarAsync(registro, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static AtoDoProcesso Criar(
         ProcessoSeletivo processo,
         VersaoConfiguracao versao,
         DadosDoAto ato,
