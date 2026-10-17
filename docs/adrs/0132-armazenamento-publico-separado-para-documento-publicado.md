@@ -167,6 +167,7 @@ A porta de dados do armazenamento segue caminho próprio e já tem destino defin
 - **Endereço imutável:** o mesmo endereço serve sempre o mesmo conteúdo; um edital retificado produz endereço distinto e não invalida o anterior.
 - **Sem leitura anônima fora do acervo:** a interface que serve o armazenamento privado não devolve objeto a chamador anônimo, e o acervo público não permite listagem.
 - **Leitura do acervo só pela borda:** o mesmo objeto é legível pelo nome que a borda publica e **recusado** quando buscado anonimamente pela porta de dados do armazenamento. Os dois ensaios andam em par: sem o segundo, uma instalação satisfaz todos os demais e ainda aceita a leitura direta, contornando o cache e o controle de taxa que esta decisão atribui à borda.
+- **Ato que não cria versão:** nenhum anexo nem documento de ato avulso chega ao acervo antes de o ato estar registrado, e todos os documentos do ato chegam depois.
 - **Pendência não se eterniza:** uma cópia que esgote as retentativas é sinalizada e reprocessável; um ato vigente não fica indefinidamente sem documento acessível.
 
 ## Mais informações
@@ -184,17 +185,17 @@ A porta de dados do armazenamento segue caminho próprio e já tem destino defin
 
 A decisão original cobre um documento por ato, copiado ao acervo quando o ato cria uma versão do edital. A publicação de documentos do processo pelo administrador (épico #1952) estende isso a anexos e a atos que não criam versão.
 
-**Trechos substituídos.** Nenhum. A emenda acrescenta casos; o bucket dedicado, o encadeamento da cópia ao registro do ato e a imutabilidade do endereço seguem como decididos.
+**Trecho substituído.** A extensão `.pdf` da chave (seção "O endereço é derivado do conteúdo") passa a seguir o tipo de mídia, conforme 1.4. O restante segue como decidido: o bucket dedicado, o encadeamento da cópia ao registro do ato e a imutabilidade do endereço.
 
 ### 1.1 — Anexos do edital fazem parte da configuração congelada
 
-O edital de abertura e o de retificação podem ter anexos. Eles são congelados com a configuração, como os modelos de documento, e o hash da configuração cobre a integridade deles. Na retificação, a nova versão traz os anexos da anterior e permite trocá-los; a versão anterior conserva os seus.
+O edital de abertura e o de retificação podem ter anexos. Eles são congelados com a configuração, como os modelos de documento, e o hash da configuração cobre a integridade deles. Os anexos entram no envelope canônico; a forma segue o regime de versão do envelope da [ADR-0109](0109-envelope-canonico-v2-do-congelamento.md). Na retificação, a nova versão traz os anexos da anterior e permite trocá-los; a versão anterior conserva os seus. O anexo herdado sem mudança mantém o seu id; o anexo trocado ou renomeado ganha id novo, e o nome de exibição vai gravado no objeto, como já ocorre com o modelo de documento.
 
 ### 1.2 — Ato avulso do processo com documento
 
 Aviso, errata e demais atos que não criam versão de configuração podem ter documento principal e anexos.
 
-- A Seleção é dona da publicação ([ADR-0108](0108-registro-do-ato-por-mensagem-duravel.md)). Na mesma transação do outbox, grava o registro do ato do processo com os documentos. Esse registro é a fonte da divulgação, porque `AtoNormativoRegistrado` só leva o id do ato.
+- A Seleção é dona da publicação ([ADR-0108](0108-registro-do-ato-por-mensagem-duravel.md)). Na mesma transação do outbox, grava o registro do ato do processo com os documentos. Esse registro é a fonte da divulgação, porque `AtoNormativoRegistrado` não leva o processo nem os arquivos.
 - O ato em Publicações passa a guardar a lista de anexos (nome, tipo de mídia e hash). Sem hash de configuração, é o hash de cada anexo que garante a integridade.
 
 ### 1.3 — A divulgação alcança o ato que não cria versão
@@ -205,7 +206,7 @@ A divulgação ([ADR-0133](0133-divulgacao-do-certame-materializada-no-registro-
 
 A chave é parte do endereço público e não muda depois de publicada, por isso é decidida aqui.
 
-- **Documento principal de qualquer ato do processo:** a forma já decidida, `editais/<ano>/<unidade>/<tipo>/<identificador>/<atoId>/<hash>.<ext>`. O prefixo `editais/` nomeia o acervo do certame, não o tipo do ato.
+- **Documento principal de qualquer ato do processo:** a forma já decidida, `editais/<ano>/<unidade>/<tipo>/<identificador>/<atoId>/<hash>.<ext>`. O prefixo `editais/` nomeia o acervo do certame, não o tipo do ato. No ato avulso, ano e tipo vêm do ato; unidade e identificador do processo vêm da versão vigente, congelada no momento da publicação.
 - **Anexo, do edital ou do ato avulso:** `selecao/processos-seletivos/<id>/atos/<atoId>/anexos/<anexoId>/<hash>.<ext>`, no mesmo padrão dos modelos de documento.
 - A extensão segue o tipo de mídia (`.pdf`, `.docx`, `.odt`).
 
