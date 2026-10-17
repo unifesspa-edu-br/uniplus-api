@@ -18,6 +18,15 @@ public static class AnexoDoAtoErrorCodes
     /// </summary>
     public const string NomeDuplicado = "AnexoDoAto.NomeDuplicado";
 
+    /// <summary>O ato excede o número máximo de anexos.</summary>
+    public const string QuantidadeExcedida = "AnexoDoAto.QuantidadeExcedida";
+
+    /// <summary>
+    /// A lista traz um elemento nulo. Descartá-lo mudaria a quantidade e a ordem dos anexos
+    /// sem que ninguém soubesse, então a lista inteira é recusada.
+    /// </summary>
+    public const string Nulo = "AnexoDoAto.Nulo";
+
     /// <summary>O tipo de mídia do anexo está vazio ou não tem a forma <c>tipo/subtipo</c>.</summary>
     public const string TipoMidiaInvalido = "AnexoDoAto.TipoMidiaInvalido";
 }

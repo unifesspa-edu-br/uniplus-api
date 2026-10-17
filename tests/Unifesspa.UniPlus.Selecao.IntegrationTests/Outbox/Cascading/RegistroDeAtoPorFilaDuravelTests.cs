@@ -417,6 +417,14 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
 
             // Requisição emitida antes de o campo existir: chega sem a lista.
             await bus.InvokeAsync(RequisicaoDeAnexos(semCampo, processoId, anexos: null));
+
+            // Elemento nulo na lista: recusado, e o ato não é registrado com a lista encurtada.
+            Guid comNulo = Guid.CreateVersion7();
+            Func<Task> entrega = () => bus.InvokeAsync(RequisicaoDeAnexos(comNulo, processoId, [null!]));
+            await entrega.Should().ThrowAsync<Exception>();
+            await using AsyncServiceScope outro = api.Services.CreateAsyncScope();
+            (await outro.ServiceProvider.GetRequiredService<PublicacoesDbContext>()
+                .Set<AtoNormativo>().AsNoTracking().AnyAsync(a => a.Id == comNulo)).Should().BeFalse();
         }
 
         await using AsyncServiceScope conferencia = api.Services.CreateAsyncScope();

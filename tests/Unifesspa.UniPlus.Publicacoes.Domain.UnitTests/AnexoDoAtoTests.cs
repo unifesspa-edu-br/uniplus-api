@@ -24,6 +24,7 @@ public sealed class AnexoDoAtoTests
     [Theory(DisplayName = "Hash que não é SHA-256 em hexadecimal minúsculo é recusado")]
     [InlineData("")]
     [InlineData("abc")]
+    [InlineData("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\n")]
     [InlineData("0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF")]
     public void Conferir_HashForaDoFormato_Recusa(string hash)
     {
@@ -72,6 +73,16 @@ public sealed class AnexoDoAtoTests
         ]);
 
         erro!.Code.Should().Be(AnexoDoAtoErrorCodes.NomeDuplicado);
+    }
+
+    [Fact(DisplayName = "Mais de 50 anexos no mesmo ato são recusados")]
+    public void Conferir_AcimaDoLimite_Recusa()
+    {
+        (string, string, string)[] anexos =
+            [.. Enumerable.Range(0, AnexoDoAto.QuantidadeMaxima + 1).Select(i => ($"Anexo {i}.pdf", "application/pdf", HashValido))];
+
+        AnexoDoAto.Conferir(anexos)!.Code.Should().Be(AnexoDoAtoErrorCodes.QuantidadeExcedida);
+        AnexoDoAto.Conferir(anexos[..AnexoDoAto.QuantidadeMaxima]).Should().BeNull();
     }
 
     [Fact(DisplayName = "Registrar guarda os anexos na ordem recebida, com o tipo de mídia em minúsculas")]

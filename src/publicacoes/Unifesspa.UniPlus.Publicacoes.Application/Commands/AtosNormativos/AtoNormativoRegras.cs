@@ -15,8 +15,11 @@ internal static class AtoNormativoRegras
     public const int MotivoRetificacaoMaxLength = 1000;
     public const int EntidadeTipoMaxLength = 60;
 
-    /// <summary>SHA-256 em hexadecimal minúsculo, 64 caracteres.</summary>
-    public const string HashPattern = "^[0-9a-f]{64}$";
+    /// <summary>
+    /// SHA-256 em hexadecimal minúsculo, 64 caracteres. <c>\z</c> e não <c>$</c>: em .NET o
+    /// <c>$</c> aceita um <c>\n</c> final, e um hash com quebra de linha não é um SHA-256.
+    /// </summary>
+    public const string HashPattern = @"^[0-9a-f]{64}\z";
 
     /// <summary>
     /// Forma canônica do rótulo da entidade vinculada. Verifica a <b>forma</b>, jamais o
@@ -51,7 +54,6 @@ internal static class AtoNormativoRegras
     public const string EntidadeIdObrigatorio = "Identificador da entidade vinculada não pode ser vazio.";
     public const string VinculoDuplicado = "A mesma entidade não pode ser vinculada duas vezes ao mesmo ato.";
     public const string VinculoNulo = "A lista de vínculos não admite elemento nulo.";
-    public const string AnexoNulo = "A lista de anexos não admite elemento nulo.";
 
     /// <summary>Código do aviso de número duplicado (AC4).</summary>
     public const string AvisoNumeroDuplicado = "NumeroDuplicado";

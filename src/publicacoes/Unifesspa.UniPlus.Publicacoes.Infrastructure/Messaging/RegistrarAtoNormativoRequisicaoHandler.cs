@@ -152,7 +152,8 @@ public static class RegistrarAtoNormativoRequisicaoHandler
             MotivoRetificacao: requisicao.MotivoRetificacao,
             Vinculos: [.. requisicao.Vinculos.Select(v => new VinculoEntidadeInput(v.EntidadeTipo, v.EntidadeId))],
             // Mensagem emitida antes de o campo existir chega sem anexos: lista vazia.
-            Anexos: [.. (requisicao.Anexos ?? []).Select(a => new AnexoDoAtoInput(a.Nome, a.TipoMidia, a.Hash))],
+            // Elemento nulo segue como nulo: o handler o recusa com erro nomeado.
+            Anexos: [.. (requisicao.Anexos ?? []).Select(a => a is null ? null! : new AnexoDoAtoInput(a.Nome, a.TipoMidia, a.Hash))],
             AtoId: requisicao.AtoId,
             // Os atributos que o domínio conferiu ao publicar. Sem repassá-los, o registro
             // releria o catálogo — que é editável — e a decisão tomada no 204 valeria outra

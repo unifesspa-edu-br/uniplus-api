@@ -347,6 +347,19 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
         await _atos.DidNotReceive().AdicionarAsync(Arg.Any<AtoNormativo>(), Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Elemento nulo na lista de anexos é recusado, sem descartá-lo")]
+    public async Task Handle_AnexoNulo_RecusaSemDescartar()
+    {
+        Result<RegistrarAtoNormativoResult> resultado = await Executar(Comando() with
+        {
+            Anexos = [new AnexoDoAtoInput("Anexo I.pdf", "application/pdf", HashValido), null!],
+        });
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(AnexoDoAtoErrorCodes.Nulo);
+        await _atos.DidNotReceive().AdicionarAsync(Arg.Any<AtoNormativo>(), Arg.Any<CancellationToken>());
+    }
+
     private Task<Result<RegistrarAtoNormativoResult>> Executar(RegistrarAtoNormativoCommand comando) =>
         RegistrarAtoNormativoCommandHandler.Handle(
             comando, _tipos, _atos, _unitOfWork, _relogio, CancellationToken.None);

@@ -47,8 +47,14 @@ public static class RegistrarAtoNormativoCommandHandler
         // Os anexos são conferidos antes de qualquer ida ao banco: a recusa não depende de
         // estado gravado, e o registro por mensagem durável (que não passa pelo validator)
         // recebe a mesma recusa nomeada.
+        if ((command.Anexos ?? []).Any(a => a is null))
+        {
+            return Result<RegistrarAtoNormativoResult>.Failure(new DomainError(
+                AnexoDoAtoErrorCodes.Nulo, "A lista de anexos não admite elemento nulo."));
+        }
+
         (string Nome, string TipoMidia, string Hash)[] anexos =
-            [.. (command.Anexos ?? []).Where(a => a is not null).Select(a => (a.Nome, a.TipoMidia, a.Hash))];
+            [.. (command.Anexos ?? []).Select(a => (a.Nome, a.TipoMidia, a.Hash))];
         if (AnexoDoAto.Conferir(anexos) is { } anexoRecusado)
         {
             return Result<RegistrarAtoNormativoResult>.Failure(anexoRecusado);

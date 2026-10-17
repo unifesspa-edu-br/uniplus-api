@@ -33,6 +33,9 @@ public sealed partial class AnexoDoAto : IForensicEntity
     public const int NomeMaxLength = 255;
     public const int TipoMidiaMaxLength = 255;
 
+    /// <summary>Máximo de anexos por ato.</summary>
+    public const int QuantidadeMaxima = 50;
+
     public Guid Id { get; private init; } = Guid.CreateVersion7();
 
     /// <summary>Ato a que o anexo pertence. Única chave estrangeira da entidade.</summary>
@@ -60,9 +63,16 @@ public sealed partial class AnexoDoAto : IForensicEntity
     /// são aceitáveis. É a regra única do que um anexo precisa ter: o handler a aplica para
     /// devolver o erro nomeado, e <see cref="Criar"/> a reaplica como última linha.
     /// </summary>
-    public static DomainError? Conferir(IEnumerable<(string Nome, string TipoMidia, string Hash)> anexos)
+    public static DomainError? Conferir(IReadOnlyCollection<(string Nome, string TipoMidia, string Hash)> anexos)
     {
         ArgumentNullException.ThrowIfNull(anexos);
+
+        if (anexos.Count > QuantidadeMaxima)
+        {
+            return new DomainError(
+                AnexoDoAtoErrorCodes.QuantidadeExcedida,
+                $"O ato admite no máximo {QuantidadeMaxima} anexos; foram enviados {anexos.Count}.");
+        }
 
         HashSet<string> nomes = new(StringComparer.Ordinal);
 

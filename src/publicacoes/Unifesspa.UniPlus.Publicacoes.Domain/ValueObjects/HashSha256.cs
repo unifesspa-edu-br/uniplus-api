@@ -16,6 +16,6 @@ public static partial class HashSha256
     public static bool TemFormatoValido(string? valor) =>
         valor is not null && Formato().IsMatch(valor);
 
-    [GeneratedRegex(@"^[0-9a-f]{64}$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"^[0-9a-f]{64}\z", RegexOptions.CultureInvariant)]
     private static partial Regex Formato();
 }
