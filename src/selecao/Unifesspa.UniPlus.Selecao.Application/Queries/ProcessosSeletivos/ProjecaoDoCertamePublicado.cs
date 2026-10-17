@@ -408,22 +408,39 @@ internal static class ProjecaoDoCertamePublicado
     }
 
     /// <summary>
-    /// Os anexos que a versão congelou, para a versão seguinte herdá-los. A versão publicada já foi
-    /// lida pelo codec, então um envelope que não se deixa ler aqui é defeito, e não estado do
-    /// processo.
+    /// Os anexos que a versão congelou, para a versão seguinte. Quando o pedido não traz a lista
+    /// (<paramref name="herdaOsDaVersao"/>), são eles que a versão nova herda, e um envelope que não se
+    /// deixa ler é defeito — a versão publicada já foi lida pelo codec —, não estado do processo.
+    /// Quando o pedido traz a própria lista, os da versão servem só para manter a identidade do
+    /// anexo que continua o mesmo, e a leitura que falha apenas deixa de manter a identidade.
     /// </summary>
-    internal static IReadOnlyList<AnexoDoEdital> AnexosDaVersao(VersaoConfiguracao versao)
+    internal static IReadOnlyList<AnexoDoEdital> AnexosDaVersao(VersaoConfiguracao versao, bool herdaOsDaVersao)
     {
         ArgumentNullException.ThrowIfNull(versao);
 
-        if (JsonNode.Parse(versao.ConfiguracaoCongelada) is not JsonObject envelope
-            || !TentarAnexosCongelados(envelope, out List<AnexoDoEdital>? anexos))
+        if (TentarAnexosDaVersao(versao, out List<AnexoDoEdital>? anexos))
         {
-            throw new InvalidOperationException(
-                $"Configuração congelada do processo {versao.ProcessoSeletivoId} não tem a forma esperada nos anexos do edital.");
+            return anexos;
         }
 
-        return anexos;
+        return herdaOsDaVersao
+            ? throw new InvalidOperationException(
+                $"Configuração congelada do processo {versao.ProcessoSeletivoId} não tem a forma esperada nos anexos do edital.")
+            : [];
+    }
+
+    private static bool TentarAnexosDaVersao(VersaoConfiguracao versao, [NotNullWhen(true)] out List<AnexoDoEdital>? anexos)
+    {
+        anexos = null;
+        try
+        {
+            return JsonNode.Parse(versao.ConfiguracaoCongelada) is JsonObject envelope
+                && TentarAnexosCongelados(envelope, out anexos);
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
     }
 
     private static bool TentarUnidadeAdministradora(

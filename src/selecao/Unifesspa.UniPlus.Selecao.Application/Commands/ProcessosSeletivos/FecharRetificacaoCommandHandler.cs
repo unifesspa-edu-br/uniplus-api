@@ -256,7 +256,7 @@ public static class FecharRetificacaoCommandHandler
         }
 
         Result<IReadOnlyList<AnexoDoEdital>> conferenciaDosAnexos = await ConferenciaDosAnexosDoEdital
-            .ConferirAsync(documentoAPublicarRepository, command.ProcessoSeletivoId, command.Anexos, ProjecaoDoCertamePublicado.AnexosDaVersao(versaoAtual), cancellationToken)
+            .ConferirAsync(documentoAPublicarRepository, command.ProcessoSeletivoId, command.Anexos, ProjecaoDoCertamePublicado.AnexosDaVersao(versaoAtual, herdaOsDaVersao: command.Anexos is null), cancellationToken)
             .ConfigureAwait(false);
         if (conferenciaDosAnexos.IsFailure)
         {
