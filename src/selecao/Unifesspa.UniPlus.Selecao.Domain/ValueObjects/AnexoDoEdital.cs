@@ -16,9 +16,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// imutável, e é o hash que o edital atesta.
 /// </summary>
 /// <remarks>
-/// O <see cref="Id"/> é a identidade do anexo no endereço público: o anexo que a retificação herda
-/// sem mudança mantém o seu, e o trocado ou renomeado ganha outro — o endereço publicado antes não
-/// passa a servir conteúdo nem nome diferente.
+/// O <see cref="Id"/> é a identidade do anexo no edital: o anexo que a retificação herda sem mudança
+/// mantém o seu, e o trocado ou renomeado ganha outro. O endereço no acervo inclui também o ato, então
+/// cada versão publica o anexo no próprio endereço, e a versão anterior conserva o que divulgou.
 /// </remarks>
 /// <param name="Id">Identidade do anexo no edital, parte da chave no acervo público.</param>
 /// <param name="DocumentoId">O documento a publicar confirmado que o anexo congela.</param>

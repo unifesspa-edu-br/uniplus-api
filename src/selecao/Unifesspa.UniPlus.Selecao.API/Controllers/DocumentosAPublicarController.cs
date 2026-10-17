@@ -54,7 +54,7 @@ public sealed class DocumentosAPublicarController : ControllerBase
     /// rascunho depois de um refresh, em vez de reenviar o arquivo que já subiu.
     /// Devolve apenas metadados: nenhum endereço de storage e nenhuma URL
     /// assinada atravessa o contrato. O filtro <c>finalidade</c> restringe aos documentos enviados
-    /// para ela — quem escolhe o edital lista só os de finalidade <c>edital</c>.
+    /// para ela — quem escolhe o edital lista só os de finalidade <c>documentoDoEdital</c>.
     /// </summary>
     [HttpGet]
     [VendorMediaType(Resource = "documento-a-publicar", Versions = [1])]

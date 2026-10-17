@@ -9,7 +9,10 @@ using Controllers;
 /// servidor (a retificação endereça o agregado, não uma entidade interna).
 /// </summary>
 /// <param name="Anexos">
-/// Os anexos da nova versão. Ausente mantém os da versão vigente; uma lista substitui o conjunto inteiro — o anexo que continua o mesmo (mesmo documento e mesmo nome) mantém o endereço público, o trocado ou renomeado ganha outro —, e a lista vazia retira todos.
+/// Os anexos da nova versão. Ausente mantém os da versão vigente; uma lista substitui o conjunto
+/// inteiro, e a lista vazia retira todos. O anexo que continua o mesmo (mesmo documento e mesmo
+/// nome) mantém a identidade; o trocado ou renomeado ganha outra. Cada versão publica os anexos nos
+/// seus próprios endereços, e a versão anterior conserva os dela.
 /// </param>
 public sealed record RetificarProcessoSeletivoRequest(
     string Motivo,

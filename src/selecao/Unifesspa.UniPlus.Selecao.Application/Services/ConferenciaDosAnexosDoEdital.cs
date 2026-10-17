@@ -28,9 +28,9 @@ public static class ConferenciaDosAnexosDoEdital
     /// <param name="vigentes">Os anexos da versão em vigor, vazios na primeira publicação.</param>
     /// <param name="cancellationToken">Token de cancelamento.</param>
     /// <remarks>
-    /// O anexo que continua o mesmo — mesmo documento, mesmo nome — mantém a identidade, e com ela o
-    /// endereço público já divulgado. Documento diferente ou nome diferente é outro anexo, com
-    /// identidade nova: o endereço antigo nunca passa a servir o que não serviu.
+    /// O anexo que continua o mesmo — mesmo documento, mesmo nome — mantém a identidade. Documento diferente ou nome diferente é outro anexo, com
+    /// identidade nova. Mesmo o anexo que continua tem endereço novo na versão nova, porque a chave
+    /// inclui o ato; os endereços da versão anterior seguem servindo o que serviam.
     /// </remarks>
     public static async Task<Result<IReadOnlyList<AnexoDoEdital>>> ConferirAsync(
         IDocumentoAPublicarRepository repositorio,
