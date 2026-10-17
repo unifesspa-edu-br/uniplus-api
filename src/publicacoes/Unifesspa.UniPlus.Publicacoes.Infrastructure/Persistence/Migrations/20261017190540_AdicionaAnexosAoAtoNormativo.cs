@@ -76,6 +76,45 @@ namespace Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.Migrations
                     EXECUTE FUNCTION publicacoes.fn_anexo_do_ato_somente_insercao();
                 """);
 
+            // A lista de anexos fecha com o ato: só se insere anexo na MESMA transação que
+            // inseriu o ato. Sem isto, um INSERT em transação posterior acrescentaria um
+            // arquivo a um ato já publicado, mudando o que o registro prova.
+            //
+            // Comparar o xmin do ato com pg_current_xact_id() não serve: o EF cria
+            // savepoints quando a transação é externa, e a linha inserida dentro de um
+            // savepoint tem como xmin o xid da subtransação, não o da transação de nível
+            // superior. Em vez disso, o ato é visível a esta sessão; se a transação que o
+            // inseriu ainda está em andamento, só pode ser a própria (a de outra sessão não
+            // é visível), subtransações incluídas. O xmin tem 32 bits, e a época do xid8 é a
+            // da transação corrente, que é a de toda transação em andamento.
+            migrationBuilder.Sql("""
+                CREATE OR REPLACE FUNCTION publicacoes.fn_anexo_do_ato_na_transacao_do_ato()
+                RETURNS trigger
+                LANGUAGE plpgsql
+                AS $$
+                BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1 FROM publicacoes.ato_normativo
+                        WHERE id = NEW.ato_id
+                          AND pg_xact_status(
+                                (((pg_current_xact_id()::text::bigint >> 32) << 32)
+                                 | xmin::text::bigint)::text::xid8) = 'in progress') THEN
+                        RAISE EXCEPTION
+                            'anexo_do_ato: o anexo só entra na transação que registrou o ato % (ADR-0063); o ato publicado não ganha anexo depois.', NEW.ato_id
+                            USING ERRCODE = 'restrict_violation';
+                    END IF;
+                    RETURN NEW;
+                END;
+                $$;
+                """);
+
+            migrationBuilder.Sql("""
+                CREATE TRIGGER trg_anexo_do_ato_na_transacao_do_ato
+                    BEFORE INSERT ON publicacoes.anexo_do_ato
+                    FOR EACH ROW
+                    EXECUTE FUNCTION publicacoes.fn_anexo_do_ato_na_transacao_do_ato();
+                """);
+
             // TRUNCATE não dispara trigger de linha; a função é a mesma das demais tabelas.
             migrationBuilder.Sql("""
                 CREATE TRIGGER trg_anexo_do_ato_bloqueia_truncate
@@ -88,6 +127,8 @@ namespace Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.Sql("DROP TRIGGER IF EXISTS trg_anexo_do_ato_na_transacao_do_ato ON publicacoes.anexo_do_ato;");
+            migrationBuilder.Sql("DROP FUNCTION IF EXISTS publicacoes.fn_anexo_do_ato_na_transacao_do_ato();");
             migrationBuilder.Sql("DROP TRIGGER IF EXISTS trg_anexo_do_ato_bloqueia_truncate ON publicacoes.anexo_do_ato;");
             migrationBuilder.Sql("DROP TRIGGER IF EXISTS trg_anexo_do_ato_somente_insercao ON publicacoes.anexo_do_ato;");
             migrationBuilder.Sql("DROP FUNCTION IF EXISTS publicacoes.fn_anexo_do_ato_somente_insercao();");
