@@ -80,11 +80,23 @@ public sealed class EnvelopeCodecTiposTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
+    [Theory(DisplayName = "Número de opções de curso fora de 1 e 2 é recusado, como o agregado o recusa ao declarar")]
+    [InlineData(0)]
+    [InlineData(3)]
+    public void NumeroDeOpcoesDeCursoForaDeUmEDois_Recusa(int numero)
+    {
+        Result<EnvelopeReidratado> resultado = Reidratar(envelope =>
+            envelope["opcoesDeCurso"]!["numero"] = numero);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
     [Fact(DisplayName = "Número fracionário onde deveria haver inteiro é recusado")]
     public void FracionarioNoLugarDeInteiro_Recusa()
     {
         Result<EnvelopeReidratado> resultado = Reidratar(envelope =>
-            envelope["classificacao"]!["nOpcoesAlocacao"] = 1.5);
+            envelope["opcoesDeCurso"]!["numero"] = 1.5);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);

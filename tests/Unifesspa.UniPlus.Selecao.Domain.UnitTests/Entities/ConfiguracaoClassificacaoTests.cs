@@ -26,7 +26,7 @@ public sealed class ConfiguracaoClassificacaoTests
     public void Criar_MediaPonderadaComArredondamento_Sucesso()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1, [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.RegraArredondamento.Should().NotBeNull();
@@ -36,7 +36,7 @@ public sealed class ConfiguracaoClassificacaoTests
     public void Criar_Importada_SemArredondamento_Sucesso()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoImportada(), regraArredondamento: null, casasArredondamento: null, RegraOrdemAlocacao(), 2, [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
+            RegraCalculoImportada(), regraArredondamento: null, casasArredondamento: null, RegraOrdemAlocacao(), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.RegraArredondamento.Should().BeNull();
@@ -46,7 +46,7 @@ public sealed class ConfiguracaoClassificacaoTests
     public void Criar_Importada_ComArredondamento_Falha()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoImportada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1, [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
+            RegraCalculoImportada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoClassificacao.ArredondamentoIndevido");
@@ -56,7 +56,7 @@ public sealed class ConfiguracaoClassificacaoTests
     public void Criar_MediaPonderada_SemArredondamento_Falha()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoMediaPonderada(), regraArredondamento: null, casasArredondamento: null, RegraOrdemAlocacao(), 1, [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
+            RegraCalculoMediaPonderada(), regraArredondamento: null, casasArredondamento: null, RegraOrdemAlocacao(), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
@@ -70,24 +70,12 @@ public sealed class ConfiguracaoClassificacaoTests
     public void Criar_MediaPonderada_ComRegraArredondamentoECasasInvalidas_RecusaSoCasas()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoMediaPonderada(), RegraArredondamento(), 0, RegraOrdemAlocacao(), 1, [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 0, RegraOrdemAlocacao(), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle();
         resultado.Errors[0].Field.Should().Be("casasArredondamento");
         resultado.Errors[0].Error.Code.Should().Be("ConfiguracaoClassificacao.CasasArredondamentoObrigatorio");
-    }
-
-    [Theory(DisplayName = "Criar com NOpcoesAlocacao fora de {1,2} falha")]
-    [InlineData(0)]
-    [InlineData(3)]
-    public void Criar_NOpcoesInvalido_Falha(int nOpcoes)
-    {
-        Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), nOpcoes, [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ConfiguracaoClassificacao.NOpcoesInvalido");
     }
 
     [Fact(DisplayName = "Criar com CLASSIFICACAO-IMPORTADA e regra de eliminação informada falha (INV-B8)")]
@@ -96,7 +84,7 @@ public sealed class ConfiguracaoClassificacaoTests
         RegraEliminacao eliminacao = Eliminacao(RegraEliminacaoCodigo.ElimZeroEmArea);
 
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoImportada(), regraArredondamento: null, casasArredondamento: null, RegraOrdemAlocacao(), 1, [eliminacao], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
+            RegraCalculoImportada(), regraArredondamento: null, casasArredondamento: null, RegraOrdemAlocacao(), [eliminacao], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoClassificacao.EliminacaoIndevida");
@@ -111,7 +99,7 @@ public sealed class ConfiguracaoClassificacaoTests
         RegraEliminacao eliminacao = Eliminacao(RegraEliminacaoCodigo.ElimCorteEmArea);
 
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoImportada(), regraArredondamento: null, casasArredondamento: null, RegraOrdemAlocacao(), 1, [eliminacao], baseadoEmEnem: true, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
+            RegraCalculoImportada(), regraArredondamento: null, casasArredondamento: null, RegraOrdemAlocacao(), [eliminacao], baseadoEmEnem: true, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoClassificacao.EliminacaoIndevida");
@@ -123,7 +111,7 @@ public sealed class ConfiguracaoClassificacaoTests
         RegraEliminacao eliminacao = Eliminacao(RegraEliminacaoCodigo.ElimZeroEmArea);
 
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1, [eliminacao], baseadoEmEnem: true,
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), [eliminacao], baseadoEmEnem: true,
             QuadroPesoAreaEnemDeTeste.Resolucao, QuadroPesoAreaEnemDeTeste.Completo());
 
         resultado.IsSuccess.Should().BeTrue();
@@ -137,7 +125,7 @@ public sealed class ConfiguracaoClassificacaoTests
     public void Criar_SetaBaseadoEmEnem()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1, [], baseadoEmEnem: true,
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), [], baseadoEmEnem: true,
             QuadroPesoAreaEnemDeTeste.Resolucao, QuadroPesoAreaEnemDeTeste.Completo());
 
         resultado.IsSuccess.Should().BeTrue();
@@ -153,7 +141,7 @@ public sealed class ConfiguracaoClassificacaoTests
         RegraEliminacao eliminacao = Eliminacao(codigoRegra);
 
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1, [eliminacao], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), [eliminacao], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.EliminacaoEnemForaDeProcessoEnem");
@@ -168,7 +156,7 @@ public sealed class ConfiguracaoClassificacaoTests
         RegraEliminacao eliminacao = Eliminacao(codigoRegra);
 
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1, [eliminacao], baseadoEmEnem: true,
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), [eliminacao], baseadoEmEnem: true,
             QuadroPesoAreaEnemDeTeste.Resolucao, QuadroPesoAreaEnemDeTeste.Completo());
 
         resultado.IsSuccess.Should().BeTrue();
@@ -187,11 +175,11 @@ public sealed class ConfiguracaoClassificacaoTests
         _ => throw new ArgumentOutOfRangeException(nameof(codigoRegra), codigoRegra, "Código de regra ENEM desconhecido no teste."),
     };
 
-    [Fact(DisplayName = "Cada repetição da falta em dia de prova do ENEM é recusada no próprio item, acumulando com as demais violações")]
+    [Fact(DisplayName = "Cada repetição da falta em dia de prova do ENEM é recusada no próprio item")]
     public void Criar_FaltaEmDiaDeProvaEnemRepetida_Recusa()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 3,
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(),
             [
                 Eliminacao(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem),
                 Eliminacao(RegraEliminacaoCodigo.ElimZeroEmArea),
@@ -205,14 +193,13 @@ public sealed class ConfiguracaoClassificacaoTests
             .Where(e => e.Error.Code == "ConfiguracaoClassificacao.FaltaEmDiaDeProvaEnemRepetida")
             .Select(e => e.Field)
             .Should().Equal(["regrasEliminacao[2]", "regrasEliminacao[3]"], "a primeira declaração vale; cada repetição é recusada no próprio item");
-        resultado.Errors.Select(e => e.Error.Code).Should().Contain("ConfiguracaoClassificacao.NOpcoesInvalido");
     }
 
     [Fact(DisplayName = "Na classificação importada, a falta em dia de prova repetida só leva a recusa da lista inteira")]
     public void Criar_ImportadaComFaltaEmDiaDeProvaEnemRepetida_RecusaSoAListaInteira()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoImportada(), regraArredondamento: null, casasArredondamento: null, RegraOrdemAlocacao(), 1,
+            RegraCalculoImportada(), regraArredondamento: null, casasArredondamento: null, RegraOrdemAlocacao(),
             [
                 Eliminacao(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem),
                 Eliminacao(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem),
@@ -228,7 +215,7 @@ public sealed class ConfiguracaoClassificacaoTests
     public void Criar_SemEnemComFaltaEmDiaDeProvaEnemRepetida_AcumulaAsDuas()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1,
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(),
             [
                 Eliminacao(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem),
                 Eliminacao(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem),
@@ -247,7 +234,7 @@ public sealed class ConfiguracaoClassificacaoTests
     public void Criar_FaltaEmDiaDeProvaEnemUnicaComZeroEmArea_Sucesso()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1,
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(),
             [
                 Eliminacao(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem),
                 Eliminacao(RegraEliminacaoCodigo.ElimZeroEmArea),
@@ -257,16 +244,15 @@ public sealed class ConfiguracaoClassificacaoTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
-    [Fact(DisplayName = "ADR-0125: NOpcoesInvalido, ArredondamentoObrigatorio e CasasArredondamentoObrigatorio acumulam no mesmo lote")]
-    public void Criar_NOpcoesInvalidoESemArredondamento_AcumulaAsTresViolacoes()
+    [Fact(DisplayName = "ADR-0125: ArredondamentoObrigatorio e CasasArredondamentoObrigatorio acumulam no mesmo lote")]
+    public void Criar_SemArredondamento_AcumulaAsDuasViolacoes()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoMediaPonderada(), regraArredondamento: null, casasArredondamento: null, RegraOrdemAlocacao(), 3, [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
+            RegraCalculoMediaPonderada(), regraArredondamento: null, casasArredondamento: null, RegraOrdemAlocacao(), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
         [
-            "ConfiguracaoClassificacao.NOpcoesInvalido",
             "ConfiguracaoClassificacao.ArredondamentoObrigatorio",
             "ConfiguracaoClassificacao.CasasArredondamentoObrigatorio",
         ]);
@@ -278,7 +264,7 @@ public sealed class ConfiguracaoClassificacaoTests
         RegraEliminacao eliminacao = Eliminacao(RegraEliminacaoCodigo.ElimZeroEmArea);
 
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoImportada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1, [eliminacao], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
+            RegraCalculoImportada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), [eliminacao], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
@@ -294,20 +280,12 @@ public sealed class ConfiguracaoClassificacaoTests
     public void Criar_ImportadaComSoCasasInformadas_RecusaSoCasas()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoImportada(), regraArredondamento: null, casasArredondamento: 2, RegraOrdemAlocacao(), 1, [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
+            RegraCalculoImportada(), regraArredondamento: null, casasArredondamento: 2, RegraOrdemAlocacao(), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle();
         resultado.Errors[0].Field.Should().Be("casasArredondamento");
         resultado.Errors[0].Error.Code.Should().Be("ConfiguracaoClassificacao.CasasArredondamentoIndevido");
-    }
-
-    [Fact(DisplayName = "ValidarNOpcoesAlocacao sem violação retorna lote vazio")]
-    public void ValidarNOpcoesAlocacao_SemViolacao_Vazio()
-    {
-        List<FieldError> erros = ConfiguracaoClassificacao.ValidarNOpcoesAlocacao(1);
-
-        erros.Should().BeEmpty();
     }
 
     // ── Resolução de Pesos por Área e quadro congelado ──
@@ -318,7 +296,7 @@ public sealed class ConfiguracaoClassificacaoTests
         IReadOnlyList<GrupoPesoAreaEnemCongelado> quadro = QuadroPesoAreaEnemDeTeste.Completo();
 
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1, [], baseadoEmEnem: true,
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), [], baseadoEmEnem: true,
             $"  {QuadroPesoAreaEnemDeTeste.Resolucao} ", quadro);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -334,7 +312,7 @@ public sealed class ConfiguracaoClassificacaoTests
     public void Criar_EnemLocalSemResolucao_Recusa(string? resolucao)
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1, [], baseadoEmEnem: true,
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), [], baseadoEmEnem: true,
             resolucao, QuadroPesoAreaEnemDeTeste.Completo());
 
         resultado.IsFailure.Should().BeTrue();
@@ -342,15 +320,14 @@ public sealed class ConfiguracaoClassificacaoTests
             e.Field == "resolucaoPesoAreaEnem" && e.Error.Code == "ConfiguracaoClassificacao.ResolucaoPesoAreaEnemObrigatoria");
     }
 
-    [Fact(DisplayName = "ADR-0125: resolução ausente acumula com as demais violações da classificação")]
-    public void Criar_EnemLocalSemResolucaoENOpcoesInvalido_AcumulaAsDuas()
+    [Fact(DisplayName = "ADR-0125: resolução ausente é recusada no campo da resolução")]
+    public void Criar_EnemLocalSemResolucao_RecusaAResolucao()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 3, [], baseadoEmEnem: true, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), [], baseadoEmEnem: true, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
 
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
         [
-            "ConfiguracaoClassificacao.NOpcoesInvalido",
             "ConfiguracaoClassificacao.ResolucaoPesoAreaEnemObrigatoria",
         ]);
     }
@@ -359,7 +336,7 @@ public sealed class ConfiguracaoClassificacaoTests
     public void Criar_ResolucaoSemEnem_RecusaComoIndevida()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1, [], baseadoEmEnem: false,
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), [], baseadoEmEnem: false,
             QuadroPesoAreaEnemDeTeste.Resolucao, QuadroPesoAreaEnemDeTeste.Completo());
 
         resultado.IsFailure.Should().BeTrue();
@@ -371,7 +348,7 @@ public sealed class ConfiguracaoClassificacaoTests
     public void Criar_ResolucaoEmImportada_RecusaComoIndevida()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoImportada(), regraArredondamento: null, casasArredondamento: null, RegraOrdemAlocacao(), 1, [], baseadoEmEnem: true,
+            RegraCalculoImportada(), regraArredondamento: null, casasArredondamento: null, RegraOrdemAlocacao(), [], baseadoEmEnem: true,
             QuadroPesoAreaEnemDeTeste.Resolucao, QuadroPesoAreaEnemDeTeste.Completo());
 
         resultado.IsFailure.Should().BeTrue();
@@ -382,7 +359,7 @@ public sealed class ConfiguracaoClassificacaoTests
     public void Criar_QuadroSemResolucaoForaDeEnem_RecusaComoIndevido()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1, [], baseadoEmEnem: false,
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), [], baseadoEmEnem: false,
             resolucaoPesoAreaEnem: null, QuadroPesoAreaEnemDeTeste.Completo());
 
         resultado.Errors.Should().ContainSingle(e => e.Error.Code == "ConfiguracaoClassificacao.ResolucaoPesoAreaEnemIndevida");
@@ -392,7 +369,7 @@ public sealed class ConfiguracaoClassificacaoTests
     public void Criar_ResolucaoComQuadroVazio_Recusa()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1, [], baseadoEmEnem: true,
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), [], baseadoEmEnem: true,
             QuadroPesoAreaEnemDeTeste.Resolucao, []);
 
         resultado.Errors.Should().ContainSingle(e => e.Error.Code == "ConfiguracaoClassificacao.QuadroPesoAreaEnemVazio");
@@ -402,7 +379,7 @@ public sealed class ConfiguracaoClassificacaoTests
     public void Criar_QuadroComGrupoRepetido_Recusa()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1, [], baseadoEmEnem: true,
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), [], baseadoEmEnem: true,
             QuadroPesoAreaEnemDeTeste.Resolucao,
             [QuadroPesoAreaEnemDeTeste.Grupo("TECNOLOGICA", "Tecnológica"), QuadroPesoAreaEnemDeTeste.Grupo("TECNOLOGICA", "Tecnológica")]);
 
@@ -415,7 +392,7 @@ public sealed class ConfiguracaoClassificacaoTests
     public void Criar_ResolucaoLongaDemais_Recusa()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1, [], baseadoEmEnem: true,
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), [], baseadoEmEnem: true,
             new string('R', ConfiguracaoClassificacao.ResolucaoPesoAreaEnemMaxLength + 1), QuadroPesoAreaEnemDeTeste.Completo());
 
         resultado.Errors.Should().ContainSingle(e => e.Error.Code == "ConfiguracaoClassificacao.ResolucaoPesoAreaEnemInvalida");
@@ -477,7 +454,7 @@ public sealed class ConfiguracaoClassificacaoTests
         string decomposta = "Resolução 805/2024".Normalize(System.Text.NormalizationForm.FormD);
 
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1, [], baseadoEmEnem: true,
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), [], baseadoEmEnem: true,
             $" {decomposta} ", QuadroPesoAreaEnemDeTeste.Completo());
 
         resultado.Value!.ResolucaoPesoAreaEnem.Should().Be(
@@ -489,7 +466,7 @@ public sealed class ConfiguracaoClassificacaoTests
     public void Criar_ResolucaoComSurrogateSemPar_Recusa()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1, [], baseadoEmEnem: true,
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), [], baseadoEmEnem: true,
             "Res." + (char)0xD800, QuadroPesoAreaEnemDeTeste.Completo());
 
         resultado.Errors.Should().ContainSingle(e => e.Error.Code == "ConfiguracaoClassificacao.ResolucaoPesoAreaEnemInvalida");
@@ -516,7 +493,7 @@ public sealed class ConfiguracaoClassificacaoTests
     public void Criar_QuadroComGrupoRepetido_EcoaORotuloSaneado()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1, [], baseadoEmEnem: true,
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), [], baseadoEmEnem: true,
             QuadroPesoAreaEnemDeTeste.Resolucao,
             [QuadroPesoAreaEnemDeTeste.Grupo("TECNOLOGICA", "Tecno\u202Elógica"), QuadroPesoAreaEnemDeTeste.Grupo("TECNOLOGICA", "Tecno\u202Elógica")]);
 
@@ -533,7 +510,7 @@ public sealed class ConfiguracaoClassificacaoTests
 
     private static Result<ConfiguracaoClassificacao> CriarEnemLocal(params RegraEliminacao[] eliminacoes) =>
         ConfiguracaoClassificacao.Criar(
-            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1, eliminacoes, baseadoEmEnem: true,
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), eliminacoes, baseadoEmEnem: true,
             QuadroPesoAreaEnemDeTeste.Resolucao, QuadroPesoAreaEnemDeTeste.Completo());
 
     [Fact(DisplayName = "Cortes em áreas diferentes são aceitos")]
@@ -577,7 +554,7 @@ public sealed class ConfiguracaoClassificacaoTests
             [("REDACAO", "Redação", 2.00m, 400m), ("LINGUAGENS", "Linguagens e suas Tecnologias", 1.00m, null)]).Value!;
 
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), 1, [CorteEm("MATEMATICA")], baseadoEmEnem: true,
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(), [CorteEm("MATEMATICA")], baseadoEmEnem: true,
             QuadroPesoAreaEnemDeTeste.Resolucao, [QuadroPesoAreaEnemDeTeste.Grupo("HUMANISTICA_I", "Humanística I"), semMatematica]);
 
         resultado.Errors.Single().Error.Code.Should().Be("ConfiguracaoClassificacao.CorteEmAreaForaDoQuadro");
@@ -587,7 +564,7 @@ public sealed class ConfiguracaoClassificacaoTests
     public void Criar_ImportadaComCorteRepetido_RecusaSoAListaInteira()
     {
         Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
-            RegraCalculoImportada(), regraArredondamento: null, casasArredondamento: null, RegraOrdemAlocacao(), 1,
+            RegraCalculoImportada(), regraArredondamento: null, casasArredondamento: null, RegraOrdemAlocacao(),
             [CorteEm("REDACAO"), CorteEm("REDACAO")], baseadoEmEnem: true, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
 
         resultado.Errors.Select(static e => e.Error.Code).Should().Equal("ConfiguracaoClassificacao.EliminacaoIndevida");

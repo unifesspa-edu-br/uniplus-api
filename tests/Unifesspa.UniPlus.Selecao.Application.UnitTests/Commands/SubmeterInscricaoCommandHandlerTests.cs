@@ -288,7 +288,8 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             fatosColetados: [.. processoBase.FatosColetados],
             formularios: [.. processoBase.Formularios],
             termosExigidos: [.. processoBase.TermosExigidos],
-            gruposColetados: [.. processoBase.GruposColetados]);
+            gruposColetados: [.. processoBase.GruposColetados],
+            numeroDeOpcoesDeCurso: 1);
 
         // documentosExigidos.dataReferenciaFatos congelada: o conjunto básico traz DATA_NASCIMENTO,
         // que FAIXA_ETARIA apura contra esta data, nunca a de hoje.

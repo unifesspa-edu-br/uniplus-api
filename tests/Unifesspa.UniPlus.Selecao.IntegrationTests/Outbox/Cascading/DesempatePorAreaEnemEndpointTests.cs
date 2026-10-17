@@ -164,7 +164,6 @@ public sealed class DesempatePorAreaEnemEndpointTests
         casasArredondamento = 2,
         regraOrdemAlocacaoCodigo = RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria,
         regraOrdemAlocacaoVersao = "v1",
-        nOpcoesAlocacao = 1,
         regrasEliminacao = Array.Empty<object>(),
         baseadoEmEnem = true,
         resolucaoPesoAreaEnem = resolucao,
@@ -179,7 +178,6 @@ public sealed class DesempatePorAreaEnemEndpointTests
         casasArredondamento = (int?)null,
         regraOrdemAlocacaoCodigo = RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria,
         regraOrdemAlocacaoVersao = "v1",
-        nOpcoesAlocacao = 1,
         regrasEliminacao = Array.Empty<object>(),
         baseadoEmEnem = false,
     };

@@ -65,7 +65,8 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
             new GrafoConfiguracao(
                 [.. processoBase.Etapas], processoBase.OfertaAtendimento!, [.. processoBase.DistribuicaoVagas],
                 processoBase.BonusRegional, [.. processoBase.CriteriosDesempate], processoBase.Classificacao!,
-                [.. processoBase.CronogramaFases], [.. processoBase.DocumentosExigidos], [], null, formularios: [formulario]),
+                [.. processoBase.CronogramaFases], [.. processoBase.DocumentosExigidos], [], null, formularios: [formulario],
+            numeroDeOpcoesDeCurso: 1),
             DadosEdital.Criar(
                 "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), Guid.CreateVersion7()).Value!,
             new string('a', 64), "America/Belem", retificacao: null, conformidade: null);

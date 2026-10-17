@@ -338,6 +338,18 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public bool? AplicaBonusRegional { get; private set; }
 
     /// <summary>
+    /// Quantos cursos o candidato escolhe na inscrição (1 ou 2). <see langword="null"/> é "ainda
+    /// não declarado" e BLOQUEIA a publicação, como <see cref="AplicaBonusRegional"/>: não há
+    /// valor padrão silencioso. Depende das ofertas da distribuição de vagas — nunca pode ser
+    /// maior que o número de ofertas da distribuição gravada, que a conformidade e as
+    /// gravações das duas dimensões conferem.
+    /// </summary>
+    public int? NumeroDeOpcoesDeCurso { get; private set; }
+
+    /// <summary>O maior número de opções de curso que a inscrição admite.</summary>
+    public const int MaximoDeOpcoesDeCurso = 2;
+
+    /// <summary>
     /// A cascata de remanejamento das cotas reservadas (Story #575, RN-CASCATA-1..5) —
     /// ausência = nenhuma cascata configurada (toggle por presença). Uma só por processo, nunca por oferta de curso
     /// (§2.2 da story) — a cobertura por oferta é validada em <see cref="PendenciaDaCascata"/>.
@@ -700,6 +712,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "Existe condição de gatilho documental referenciando um código de modalidade que deixaria de ser ofertado — ajuste ou remova a condição antes de redefinir a distribuição de vagas."));
         }
 
+        // A distribuição nova não pode deixar o processo com menos cursos que opções declaradas:
+        // sem campo, porque o corpo desta operação é só a lista de ofertas e o campo que se
+        // corrige é o número, em outra operação.
+        if (OpcoesDeCursoAcimaDasOfertas(NumeroDeOpcoesDeCurso, distribuicaoVagas.Count))
+        {
+            return Result.Failure(ErroDeOpcoesDeCursoAcimaDasOfertas());
+        }
+
         _distribuicaoVagas.Clear();
         foreach (ConfiguracaoDistribuicaoVagas configuracao in distribuicaoVagas)
         {
@@ -710,6 +730,45 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         Rascunho?.IncrementarRevisao();
         return Result.Success();
     }
+
+    /// <summary>
+    /// Declara quantos cursos o candidato escolhe na inscrição (1 ou 2). Com a distribuição já
+    /// gravada, o número não pode superar o de ofertas. Sem distribuição gravada a declaração é
+    /// aceita, e a pendência é a de distribuição ausente: o mínimo de cursos só é cobrado quando
+    /// há distribuição.
+    /// </summary>
+    public Result DefinirOpcoesDeCurso(int numero, PrecondicaoIfMatch precondicao)
+    {
+        if (MutacaoBloqueada(precondicao) is { } bloqueio)
+        {
+            return Result.Failure(bloqueio);
+        }
+
+        if (numero is < 1 or > MaximoDeOpcoesDeCurso)
+        {
+            return Result.ValidationFailure([new FieldError("numero", new DomainError(
+                ProcessoSeletivoErrorCodes.OpcoesDeCursoInvalido,
+                "O número de opções de curso deve ser 1 ou 2."))]);
+        }
+
+        if (OpcoesDeCursoAcimaDasOfertas(numero, _distribuicaoVagas.Count))
+        {
+            return Result.ValidationFailure([new FieldError("numero", ErroDeOpcoesDeCursoAcimaDasOfertas())]);
+        }
+
+        NumeroDeOpcoesDeCurso = numero;
+        Rascunho?.IncrementarRevisao();
+        return Result.Success();
+    }
+
+    // Só vale com distribuição gravada: sem ela a pendência é a da distribuição ausente, e com
+    // ao menos uma oferta o único número que a supera é 2.
+    private static bool OpcoesDeCursoAcimaDasOfertas(int? numeroDeOpcoes, int ofertas) =>
+        numeroDeOpcoes is { } numero && ofertas > 0 && ofertas < numero;
+
+    private static DomainError ErroDeOpcoesDeCursoAcimaDasOfertas() => new(
+        ProcessoSeletivoErrorCodes.OpcoesDeCursoAcimaDasOfertas,
+        "Com 2 opções de curso, cadastre pelo menos dois cursos.");
 
     /// <summary>
     /// Declara se o processo aplica o bônus regional (RN05). Aplicar exige a configuração, e não
@@ -967,7 +1026,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// OUTRA dimensão do agregado: INV-B4 (todo <c>etapa_ref</c> de uma
     /// <c>ELIM-NOTA-MINIMA-ETAPA</c> deve existir entre as etapas do
     /// processo). As invariantes internas da própria configuração (INV-B8,
-    /// limites de <c>NOpcoesAlocacao</c>, a exigência de
+    /// a exigência de
     /// <see cref="ConfiguracaoClassificacao.BaseadoEmEnem"/> pelas eliminações do ENEM e a
     /// falta em dia de prova do ENEM declarada no máximo uma vez) já foram validadas em
     /// <see cref="ConfiguracaoClassificacao.Criar"/>. Valem também na restauração, porque o
@@ -3385,6 +3444,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "Nome de cada oferta congelado na distribuição de vagas",
                 [.. _distribuicaoVagas.Where(static oferta => oferta.OfertaCurso is null)],
                 static oferta => $"{oferta.OfertaCursoOrigemId}"),
+            // O número de opções de curso é declaração obrigatória (a ausência nunca vale "1 opção") e
+            // depende da distribuição: com mais opções que cursos o candidato não teria a 2ª para escolher.
+            new ItemConformidade("opcoes_de_curso_nao_declaradas", DimensaoConformidade.DistribuicaoVagas, "Número de opções de curso", NumeroDeOpcoesDeCurso is not null),
+            new ItemConformidade("opcoes_de_curso_acima_das_ofertas", DimensaoConformidade.DistribuicaoVagas, "Opções de curso: a distribuição de vagas tem ao menos tantos cursos quanto o número de opções", !OpcoesDeCursoAcimaDasOfertas(NumeroDeOpcoesDeCurso, _distribuicaoVagas.Count)),
             new ItemConformidade("classificacao_ausente", DimensaoConformidade.Classificacao, "Classificação", Classificacao is not null),
             new ItemConformidade("cronograma_fases_ausente", DimensaoConformidade.Cronograma, "Cronograma de fases", _cronogramaFases.Count > 0),
             // Issue #1112: publicar sem declarar cobrança de taxa é recusado — a ausência nunca
@@ -6576,6 +6639,22 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "Cada oferta de curso só pode ter uma distribuição de vagas no processo.");
         }
 
+        // Mesma invariante de DefinirDistribuicaoVagas e DefinirOpcoesDeCurso: a restauração repõe
+        // as duas dimensões sem passar por elas.
+        // Versão publicada sempre declarou o número, na mesma faixa que DefinirOpcoesDeCurso aceita:
+        // ausência ou valor fora de 1 e 2 é envelope que o domínio não produziria.
+        if (grafo.NumeroDeOpcoesDeCurso is not (>= 1 and <= MaximoDeOpcoesDeCurso))
+        {
+            return new DomainError(
+                ProcessoSeletivoErrorCodes.OpcoesDeCursoInvalido,
+                "O número de opções de curso da configuração restaurada deve ser 1 ou 2.");
+        }
+
+        if (OpcoesDeCursoAcimaDasOfertas(grafo.NumeroDeOpcoesDeCurso, grafo.DistribuicaoVagas.Count))
+        {
+            return ErroDeOpcoesDeCursoAcimaDasOfertas();
+        }
+
         // issue #848/ADR-0115 §3.7 — mesma checagem de DefinirDistribuicaoVagas: a
         // restauração aplica o grafo diretamente via AplicarGrafo, sem passar por
         // aquele método, então precisa repetir a validação de consistência.
@@ -7062,6 +7141,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         BonusRegional = grafo.BonusRegional;
         // Versão publicada só existe se passou pelo gate: ter ou não o bônus era uma declaração.
         AplicaBonusRegional = grafo.BonusRegional is not null;
+
+        // Reposição incondicional: declarar o número durante a sessão de retificação e descartar
+        // não pode deixar o valor editado sobreviver.
+        NumeroDeOpcoesDeCurso = grafo.NumeroDeOpcoesDeCurso;
 
         grafo.CascataRemanejamento?.VincularProcesso(Id);
         Cascata = grafo.CascataRemanejamento;

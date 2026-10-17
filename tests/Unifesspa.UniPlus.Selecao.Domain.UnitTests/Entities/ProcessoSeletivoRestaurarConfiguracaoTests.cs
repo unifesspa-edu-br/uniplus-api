@@ -125,6 +125,46 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemNaoCompoeNota");
     }
 
+    [Fact(DisplayName = "Restaurar grafo com mais opções de curso que ofertas é recusado, como na gravação, e não altera o agregado")]
+    public void Restaurar_MaisOpcoesQueOfertas_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.PSIQ);
+        Estado antes = Estado.De(processo);
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(VersaoDo(processo), Grafo(numeroDeOpcoesDeCurso: 2));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.OpcoesDeCursoAcimaDasOfertas);
+        Estado.De(processo).Should().BeEquivalentTo(antes);
+    }
+
+    [Theory(DisplayName = "Restaurar grafo sem número de opções, ou fora de 1 e 2, é recusado, como na declaração")]
+    [InlineData(null)]
+    [InlineData(0)]
+    [InlineData(3)]
+    public void Restaurar_NumeroDeOpcoesForaDaFaixa_Recusa(int? numero)
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.PSIQ);
+        Estado antes = Estado.De(processo);
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(VersaoDo(processo), Grafo(numeroDeOpcoesDeCurso: numero));
+
+        resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.OpcoesDeCursoInvalido);
+        Estado.De(processo).Should().BeEquivalentTo(antes);
+    }
+
+    [Fact(DisplayName = "Restaurar repõe o número de opções congelado, sobrepondo o que a sessão de retificação declarou")]
+    public void Restaurar_ReponhaONumeroCongelado()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.PSIQ);
+        // Estado que a sessão deixou: o número vivo difere do congelado.
+        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.NumeroDeOpcoesDeCurso))!.SetValue(processo, 2);
+
+        processo.RestaurarConfiguracaoCongelada(VersaoDo(processo), Grafo(numeroDeOpcoesDeCurso: 1)).IsSuccess.Should().BeTrue();
+
+        processo.NumeroDeOpcoesDeCurso.Should().Be(1);
+    }
+
     [Fact(DisplayName = "Restaurar deriva a declaração do bônus da versão publicada: com bônus, aplica; sem, não aplica")]
     public void Restaurar_DerivaADeclaracaoDoBonus()
     {
@@ -306,7 +346,6 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             regraArredondamento: Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'c'),
             casasArredondamento: 2,
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'd'),
-            nOpcoesAlocacao: 1,
             regrasEliminacao: [EliminacaoEnem()],
             baseadoEmEnem: true,
             resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,
@@ -322,7 +361,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             cronogramaFases: [FaseConforme()],
             documentosExigidos: [],
             nosExigencia: [],
-            referenciaTemporalFatos: null);
+            referenciaTemporalFatos: null,
+            numeroDeOpcoesDeCurso: 1);
 
         Result resultadoPsiq = psiq.RestaurarConfiguracaoCongelada(versaoPsiq, GrafoComClassificacaoEnem());
         Result resultadoSisu = sisu.RestaurarConfiguracaoCongelada(versaoSisu, GrafoComClassificacaoEnem());
@@ -688,7 +728,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             cronogramaFases: [FaseConforme()],
             documentosExigidos: [],
             nosExigencia: [],
-            referenciaTemporalFatos: null);
+            referenciaTemporalFatos: null,
+            numeroDeOpcoesDeCurso: 1);
 
         Result resultado = processo.RestaurarConfiguracaoCongelada(versao, invalido);
 
@@ -727,7 +768,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             cronogramaFases: [FaseConforme()],
             documentosExigidos: [],
             nosExigencia: [],
-            referenciaTemporalFatos: null);
+            referenciaTemporalFatos: null,
+            numeroDeOpcoesDeCurso: 1);
 
         Result resultado = processo.RestaurarConfiguracaoCongelada(versao, invalido);
 
@@ -766,7 +808,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             cronogramaFases: [FaseConforme()],
             documentosExigidos: [],
             nosExigencia: [],
-            referenciaTemporalFatos: null);
+            referenciaTemporalFatos: null,
+            numeroDeOpcoesDeCurso: 1);
 
         Result resultado = processo.RestaurarConfiguracaoCongelada(versao, invalido);
 
@@ -1282,7 +1325,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             cronogramaFases: [faseCongelada],
             documentosExigidos: [documentoCongelado],
             nosExigencia: [],
-            referenciaTemporalFatos: referenciaCongelada);
+            referenciaTemporalFatos: referenciaCongelada,
+            numeroDeOpcoesDeCurso: 1);
 
         Result resultado = processo.RestaurarConfiguracaoCongelada(versao, grafoCongelado);
 
@@ -1373,7 +1417,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         cronogramaFases: [FaseConforme()],
         documentosExigidos: [],
         nosExigencia: [],
-        referenciaTemporalFatos: null);
+        referenciaTemporalFatos: null,
+        numeroDeOpcoesDeCurso: 1);
 
     private static GrafoConfiguracao Grafo(
         IReadOnlyList<EtapaProcesso>? etapas = null,
@@ -1382,7 +1427,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         IReadOnlyList<FaseCronograma>? cronogramaFases = null,
         ConfiguracaoDivulgacao? configuracaoDivulgacao = null,
         ConfiguracaoClassificacao? classificacao = null,
-        IReadOnlyList<FatoColetado>? fatosColetados = null) => new(
+        IReadOnlyList<FatoColetado>? fatosColetados = null,
+        int? numeroDeOpcoesDeCurso = 1) => new(
             etapas: etapas ?? [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 1m, null, 1)],
             ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
             distribuicaoVagas: [Distribuicao()],
@@ -1394,7 +1440,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             nosExigencia: [],
             referenciaTemporalFatos: null,
             configuracaoDivulgacao: configuracaoDivulgacao,
-            fatosColetados: fatosColetados);
+            fatosColetados: fatosColetados,
+            numeroDeOpcoesDeCurso: numeroDeOpcoesDeCurso);
 
     /// <summary>
     /// Mesmo grafo de <see cref="Grafo"/>, com <c>documentosExigidos</c>/<c>nosExigencia</c>
@@ -1412,7 +1459,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             cronogramaFases: [fase],
             documentosExigidos: documentosExigidos,
             nosExigencia: nosExigencia,
-            referenciaTemporalFatos: null);
+            referenciaTemporalFatos: null,
+            numeroDeOpcoesDeCurso: 1);
 
     private static DocumentoExigido DocumentoQualquer(Guid faseId) => DocumentoExigido.Criar(
         faseId, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL",
@@ -1459,7 +1507,6 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             regraArredondamento: Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'c'),
             casasArredondamento: 2,
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'd'),
-            nOpcoesAlocacao: 1,
             regrasEliminacao: eliminacoes,
             baseadoEmEnem: false,
             resolucaoPesoAreaEnem: null,
@@ -1471,7 +1518,6 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             regraArredondamento: Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'c'),
             casasArredondamento: 2,
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'd'),
-            nOpcoesAlocacao: 1,
             regrasEliminacao: [],
             baseadoEmEnem: true,
             resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,

@@ -111,7 +111,6 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
             regraArredondamento: null,
             casasArredondamento: null,
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-            nOpcoesAlocacao: 1,
             regrasEliminacao: [],
             baseadoEmEnem: false,
             resolucaoPesoAreaEnem: null,

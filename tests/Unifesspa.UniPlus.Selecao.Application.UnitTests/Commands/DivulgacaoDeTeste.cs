@@ -59,7 +59,8 @@ internal static class DivulgacaoDeTeste
             [.. processo.CronogramaFases], [.. processo.DocumentosExigidos], [], null,
             fatosColetados: [.. processo.FatosColetados],
             formularios: [.. processo.Formularios],
-            gruposColetados: [.. processo.GruposColetados]);
+            gruposColetados: [.. processo.GruposColetados],
+            numeroDeOpcoesDeCurso: 1);
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
             processoId, Encoding.UTF8.GetBytes("""{"documentosExigidos":{"dataReferenciaFatos":null}}"""), "0.0.22", "canonical-json/sha256@v1",
             Guid.CreateVersion7(), new string('a', 64), "user-sub-1", new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero));

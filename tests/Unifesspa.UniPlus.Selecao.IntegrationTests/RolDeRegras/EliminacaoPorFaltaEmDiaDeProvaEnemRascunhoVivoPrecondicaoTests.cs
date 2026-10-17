@@ -123,7 +123,6 @@ public sealed class EliminacaoPorFaltaEmDiaDeProvaEnemRascunhoVivoPrecondicaoTes
             Regra(RegraArredondamentoCodigo.PrecisaoTruncar),
             casasArredondamento: 2,
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria),
-            nOpcoesAlocacao: 1,
             [eliminacao],
             baseadoEmEnem: true,
             QuadroPesoAreaEnemDeTeste.Resolucao,

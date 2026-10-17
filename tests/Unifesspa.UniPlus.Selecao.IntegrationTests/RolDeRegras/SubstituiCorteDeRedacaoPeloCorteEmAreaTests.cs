@@ -122,7 +122,6 @@ public sealed class SubstituiCorteDeRedacaoPeloCorteEmAreaTests : IClassFixture<
             Regra(RegraArredondamentoCodigo.PrecisaoTruncar),
             casasArredondamento: 2,
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria),
-            nOpcoesAlocacao: 1,
             [eliminacao],
             baseadoEmEnem: true,
             QuadroPesoAreaEnemDeTeste.Resolucao,

@@ -206,7 +206,8 @@ public sealed class IniciarInscricaoCommandHandlerTests
                 FatoColetado.Criar("NOME_SOCIAL", 1, "Nome social", TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", formato: "LIVRE").Value!,
             ],
             formularios: [.. processoBase.Formularios],
-            gruposColetados: [grupoComDocumento]);
+            gruposColetados: [grupoComDocumento],
+            numeroDeOpcoesDeCurso: 1);
 
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
             ProcessoId, Encoding.UTF8.GetBytes("""{"documentosExigidos":{"dataReferenciaFatos":null}}"""), "0.0.22", "canonical-json/sha256@v1",

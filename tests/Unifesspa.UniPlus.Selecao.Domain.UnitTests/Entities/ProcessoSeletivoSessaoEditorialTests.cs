@@ -566,7 +566,8 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         [.. processo.CronogramaFases],
         [.. processo.DocumentosExigidos],
         [.. processo.NosExigencia],
-        processo.ReferenciaTemporalFatos);
+        processo.ReferenciaTemporalFatos,
+            numeroDeOpcoesDeCurso: 1);
 
     /// <summary>Uma versão qualquer DESTE processo — o teste que a usa lança antes de tocá-la.</summary>
     private static VersaoConfiguracao VersaoQualquerDoProcesso(ProcessoSeletivo processo) =>
@@ -652,7 +653,6 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
             regraArredondamento: null,
             casasArredondamento: null,
             regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo).Value!,
-            nOpcoesAlocacao: 1,
             regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!;
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();

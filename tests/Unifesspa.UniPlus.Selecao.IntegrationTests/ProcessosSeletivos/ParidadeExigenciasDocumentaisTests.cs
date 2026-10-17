@@ -83,8 +83,8 @@ public sealed class ParidadeExigenciasDocumentaisTests
             regraArredondamento: null,
             casasArredondamento: null,
             regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo).Value!,
-            nOpcoesAlocacao: 1,
             regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeCurso(1, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         FaseCronograma fase = FaseCronograma.Criar(
             ordem: 1,

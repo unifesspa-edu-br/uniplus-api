@@ -323,8 +323,7 @@ public sealed class ProcessoSeletivoCascataTests
             ConfiguracaoClassificacao.Criar(
                 regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo).Value!,
                 regraArredondamento: null, casasArredondamento: null,
-                regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo).Value!,
-                nOpcoesAlocacao: 1, regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!,
+                regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo).Value!, regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirCronogramaFases(
             [FaseCronograma.Criar(

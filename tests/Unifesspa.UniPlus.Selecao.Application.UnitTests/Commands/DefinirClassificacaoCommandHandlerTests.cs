@@ -56,7 +56,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
     {
         Mocks mocks = NovosMocks(null, Guid.CreateVersion7());
         DefinirClassificacaoCommand command = new(
-            Guid.CreateVersion7(), "X", "v1", null, null, null, "Y", "v1", 1, [], false, null, PrecondicaoIfMatch.Ausente);
+            Guid.CreateVersion7(), "X", "v1", null, null, null, "Y", "v1", [], false, null, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
             command, mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
@@ -76,7 +76,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
             processo.Id,
             RegraCalculoCodigo.FormulaMediaPonderada, "v1",
             RegraArredondamentoCodigo.PrecisaoTruncar, "v1", 2,
-            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", 1,
+            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1",
             [], false, null, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
@@ -106,7 +106,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
             processo.Id,
             RegraCalculoCodigo.FormulaMediaPonderada, "v1",
             RegraArredondamentoCodigo.PrecisaoTruncar, "v1", 2,
-            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", 1,
+            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1",
             [], baseadoEmEnem, resolucao, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
@@ -131,7 +131,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
             processo.Id,
             RegraCalculoCodigo.ClassificacaoImportada, "v1",
             null, null, null,
-            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", 2,
+            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1",
             [], false, null, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
@@ -157,7 +157,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
             processo.Id,
             RegraCalculoCodigo.FormulaMediaPonderada, "v1",
             RegraArredondamentoCodigo.PrecisaoTruncar, "v1", 2,
-            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", 1,
+            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1",
             [new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", etapa.Id, 4m, null, null)], false, null, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
@@ -181,7 +181,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
             processo.Id,
             RegraCalculoCodigo.FormulaMediaPonderada, "v1",
             RegraArredondamentoCodigo.PrecisaoTruncar, "v1", 2,
-            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", 1,
+            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1",
             [new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", null, null, null, null)], false, null, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
@@ -204,7 +204,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
             processo.Id,
             RegraCalculoCodigo.FormulaMediaPonderada, "v1",
             RegraArredondamentoCodigo.PrecisaoTruncar, "v1", 2,
-            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", 1,
+            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1",
             [new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimZeroEmArea, "v1", null, null, 400m, null)], false, null, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
@@ -349,7 +349,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
             .Returns((RegraCatalogo?)null);
 
         DefinirClassificacaoCommand command = new(
-            processo.Id, "INEXISTENTE", "v1", null, null, null, RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", 1, [], false, null, PrecondicaoIfMatch.Ausente);
+            processo.Id, "INEXISTENTE", "v1", null, null, null, RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", [], false, null, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
             command, mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
@@ -368,7 +368,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
 
         DefinirClassificacaoCommand command = new(
             processo.Id, RegraCalculoCodigo.FormulaMediaPonderada, "v1", null, null, null,
-            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", 1, [], false, null, PrecondicaoIfMatch.Ausente);
+            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", [], false, null, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
             command, mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
@@ -413,9 +413,9 @@ public sealed class DefinirClassificacaoCommandHandlerTests
         Guid processoId, string? resolucao, bool baseadoEmEnem = true, string regraCalculo = RegraCalculoCodigo.FormulaMediaPonderada) =>
         regraCalculo == RegraCalculoCodigo.ClassificacaoImportada
             ? new(processoId, regraCalculo, "v1", null, null, null,
-                RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", 1, [], baseadoEmEnem, resolucao, PrecondicaoIfMatch.Ausente)
+                RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", [], baseadoEmEnem, resolucao, PrecondicaoIfMatch.Ausente)
             : new(processoId, regraCalculo, "v1", RegraArredondamentoCodigo.PrecisaoTruncar, "v1", 2,
-                RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", 1, [], baseadoEmEnem, resolucao, PrecondicaoIfMatch.Ausente);
+                RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", [], baseadoEmEnem, resolucao, PrecondicaoIfMatch.Ausente);
 
     private static ProcessoSeletivo NovoProcessoEnem() =>
         ProcessoSeletivo.Criar("PS Medicina 2027", TipoProcesso.PSVR, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());

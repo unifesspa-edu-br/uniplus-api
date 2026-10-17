@@ -101,7 +101,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'), null, null,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), 1, [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!,
+            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirCronogramaFases(
@@ -238,7 +238,8 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
                 [.. processo.Etapas], processo.OfertaAtendimento!, [.. processo.DistribuicaoVagas], processo.BonusRegional,
                 [.. processo.CriteriosDesempate], processo.Classificacao!, [.. processo.CronogramaFases], [.. processo.DocumentosExigidos], [], null,
                 fatosColetados: [.. processo.FatosColetados], regrasDerivacao: [.. processo.RegrasDerivacao], formularios: [.. processo.Formularios],
-                termosExigidos: [.. processo.TermosExigidos], gruposColetados: [.. processo.GruposColetados]),
+                termosExigidos: [.. processo.TermosExigidos], gruposColetados: [.. processo.GruposColetados],
+            numeroDeOpcoesDeCurso: 1),
             entrada.Dados, entrada.HashDocumento, entrada.FusoHorario, retificacao: null, conformidade: null,
             valoresSelecionaveisCongelados: entrada.ValoresSelecionaveisCongelados, agregadosDosGrupos: entrada.AgregadosDosGrupos, apresentacaoDosPressupostos: entrada.ApresentacaoDosPressupostos);
         DefinicaoAvaliavel daConfiguracao = DefinicaoAvaliavelDoProcesso.DoCongelado(vivo).Value!;

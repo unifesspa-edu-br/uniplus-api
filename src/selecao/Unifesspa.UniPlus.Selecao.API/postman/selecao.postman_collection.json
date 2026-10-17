@@ -1613,6 +1613,68 @@
           ]
         },
         {
+          "name": "Definir Opções de Curso",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/opcoes-de-curso",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "opcoes-de-curso"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numero\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Definir Classificação",
           "request": {
             "method": "PUT",
@@ -1653,7 +1715,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"nOpcoesAlocacao\": 1,\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
+              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4893,7 +4955,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"nOpcoesAlocacao\": 1,\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
+              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5422,7 +5484,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"nOpcoesAlocacao\": 1,\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
+              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6040,7 +6102,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"nOpcoesAlocacao\": 1,\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
+              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6651,7 +6713,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"nOpcoesAlocacao\": 1,\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
+              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -7266,7 +7328,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"nOpcoesAlocacao\": 1,\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
+              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
               "options": {
                 "raw": {
                   "language": "json"

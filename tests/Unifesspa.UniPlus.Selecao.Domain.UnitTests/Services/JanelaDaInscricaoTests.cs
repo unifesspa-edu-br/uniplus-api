@@ -49,7 +49,8 @@ public sealed class JanelaDaInscricaoTests
         [], OfertaAtendimentoEspecializado.Criar([], [], []).Value!, [], null, [],
         VersoesPublicadasDeTeste.DoProcesso(processo).Classificacao, [.. processo.CronogramaFases], [], [], null,
         formularios: [.. processo.Formularios],
-        localidade: processo.Localidade);
+        localidade: processo.Localidade,
+            numeroDeOpcoesDeCurso: 1);
 
     [Theory(DisplayName = "No início, no fim e entre os dois, a inscrição está no período")]
     [InlineData(0)]

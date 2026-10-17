@@ -32,7 +32,6 @@ public sealed record DefinirClassificacaoRequest(
     int? CasasArredondamento,
     string RegraOrdemAlocacaoCodigo,
     string RegraOrdemAlocacaoVersao,
-    int NOpcoesAlocacao,
     IReadOnlyList<RegraEliminacaoInput> RegrasEliminacao,
     [property: JsonRequired] bool BaseadoEmEnem,
     string? ResolucaoPesoAreaEnem = null);

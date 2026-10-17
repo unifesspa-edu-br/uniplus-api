@@ -54,7 +54,6 @@ public sealed class DefinirClassificacaoEndpointTests
               "casasArredondamento": null,
               "regraOrdemAlocacaoCodigo": "ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA",
               "regraOrdemAlocacaoVersao": "v1",
-              "nOpcoesAlocacao": 1,
               "regrasEliminacao": []
             }
             """;
@@ -255,7 +254,6 @@ public sealed class DefinirClassificacaoEndpointTests
         casasArredondamento = 2,
         regraOrdemAlocacaoCodigo = RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria,
         regraOrdemAlocacaoVersao = "v1",
-        nOpcoesAlocacao = 1,
         regrasEliminacao = Array.Empty<object>(),
         baseadoEmEnem = true,
         resolucaoPesoAreaEnem = resolucao,
@@ -270,7 +268,6 @@ public sealed class DefinirClassificacaoEndpointTests
         casasArredondamento = (int?)null,
         regraOrdemAlocacaoCodigo = "ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA",
         regraOrdemAlocacaoVersao = "v1",
-        nOpcoesAlocacao = 1,
         regrasEliminacao = Array.Empty<object>(),
         baseadoEmEnem,
     };

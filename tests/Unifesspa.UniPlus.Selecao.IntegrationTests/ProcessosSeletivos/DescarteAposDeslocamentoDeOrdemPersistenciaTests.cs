@@ -330,7 +330,8 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
         nosExigencia: [],
         referenciaTemporalFatos: null,
         configuracaoTaxaInscricao: ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-        localidade: LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        localidade: LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!,
+        numeroDeOpcoesDeCurso: 1);
 
     private static Guid AncoraDaFase(ProcessoSeletivo processo, string codigo) =>
         processo.CronogramaFases.Single(f => f.Codigo == codigo).RegraRecurso!.ProdutoAncoraId;
@@ -365,7 +366,8 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
         nosExigencia: [],
         referenciaTemporalFatos: null,
         configuracaoTaxaInscricao: ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-        localidade: LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        localidade: LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!,
+        numeroDeOpcoesDeCurso: 1);
 
     private static ProcessoSeletivo NovoProcesso(string nome)
     {
@@ -399,7 +401,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
 
     private static ConfiguracaoClassificacao Classificacao() => ConfiguracaoClassificacao.Criar(
         Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'), null, null,
-        Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), 1, [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!;
+        Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!;
 
     /// <summary>
     /// Calendário vigente mínimo — um feriado nacional basta. Só o cenário do prazo de recurso

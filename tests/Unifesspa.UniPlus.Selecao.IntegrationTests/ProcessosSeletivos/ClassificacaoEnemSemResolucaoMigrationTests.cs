@@ -126,7 +126,6 @@ public sealed class ClassificacaoEnemSemResolucaoMigrationTests : IAsyncLifetime
             importada ? null : Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'),
             importada ? null : 2,
             Regra(AlocacaoForaDoRol, 'c'),
-            1,
             regrasEliminacao,
             baseadoEmEnem,
             exigeQuadro ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
