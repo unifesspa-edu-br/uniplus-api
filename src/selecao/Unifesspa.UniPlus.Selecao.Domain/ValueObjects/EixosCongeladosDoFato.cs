@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Os eixos que a versão publicada congela no item que coleta um fato: como o campo é desenhado,
@@ -13,7 +14,7 @@ public sealed record EixosDoItemCongelado(string TipoRenderizacao, string Origem
     public static EixosDoItemCongelado De(FatoColetado item)
     {
         ArgumentNullException.ThrowIfNull(item);
-        return new(item.TipoRenderizacao.ToCodigo(), item.OrigemValores.ToString(), item.Formato, item.ClassificacaoProtecao);
+        return new(item.TipoRenderizacao.ToCodigo(), item.OrigemValores.ToCodigo(), item.Formato, item.ClassificacaoProtecao);
     }
 
     internal IEnumerable<(string Eixo, string? Valor)> Eixos() =>
@@ -48,16 +49,22 @@ public sealed record EixosDeVersaoPublicada(
 
 /// <summary>
 /// Um eixo que a sessão de retificação congelaria diferente do que a versão publicada congelou, num
-/// fato que o candidato já pode ter respondido (UNI-REQ-0144).
+/// fato que o candidato já pode ter respondido (UNI-REQ-0144), ou na operação de um agregado de
+/// grupo, que o fato de membro já coletado alimenta.
 /// </summary>
-public sealed record TrocaDeEixo(string Fato, string Eixo, string? Publicado, string? Novo)
+public sealed record TrocaDeEixo(string Fato, string Eixo, string? Publicado, string? Novo, bool DeAgregado = false)
 {
     public const string Codigo = "RascunhoRetificacao.EixoDoFatoJaColetadoAlterado";
 
-    public DomainError ParaErro() => new(
-        Codigo,
+    public DomainError ParaErro() => new(Codigo, DeAgregado ? MensagemDoAgregado() : MensagemDoFato());
+
+    private string MensagemDoFato() =>
         $"O fato '{Fato}' já foi coletado por versão publicada do edital e o eixo '{Eixo}' dele mudou de '{Publicado ?? "(vazio)"}' para '{Novo ?? "(vazio)"}'. "
-        + "O fato já coletado mantém a definição da versão publicada: a retificação não a troca, e a mudança vale para processo novo.");
+        + "O fato já coletado mantém a definição da versão publicada: a retificação não a troca, e a mudança vale para processo novo.";
+
+    private string MensagemDoAgregado() =>
+        $"O resumo de grupo '{Fato}' já foi usado por versão publicada do edital e a operação dele mudou de '{Publicado ?? "(vazio)"}' para '{Novo ?? "(vazio)"}'. "
+        + "O resumo de grupo já usado mantém a definição da versão publicada: a retificação não a troca, e a mudança vale para processo novo.";
 
     internal static TrocaDeEixo? Primeira(string fato, IEnumerable<(string Eixo, string? Valor)> publicado, IEnumerable<(string Eixo, string? Valor)> novo) =>
         publicado.Zip(novo)

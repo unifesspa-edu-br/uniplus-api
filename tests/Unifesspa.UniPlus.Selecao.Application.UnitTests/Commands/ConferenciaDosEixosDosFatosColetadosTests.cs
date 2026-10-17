@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -34,6 +35,28 @@ public sealed class ConferenciaDosEixosDosFatosColetadosTests
     public void TrocaDeDescricaoDeValor_Passa()
     {
         ConferenciaDosEixosDosFatosColetados.Conferir(Publicadas, Metadado("CATEGORICO", "Descrição nova"), []).Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Troca da operação do agregado recusa falando do resumo de grupo, não de fato")]
+    public void TrocaDeOperacaoDoAgregado_RecusaNomeandoOResumoDeGrupo()
+    {
+        FatosDasVersoesPublicadas publicadas = FatosDasVersoesPublicadas.De(
+            [Testes.Compartilhado.VersoesPublicadasDeTeste.Versao([], [Item("SEXO")])],
+            [new EixosDeVersaoPublicada(new Dictionary<string, EixosDoMetadadoCongelado>(), new Dictionary<string, string> { ["RENDA_FAMILIAR"] = "EXISTE" })]);
+
+        DomainError? erro = ConferenciaDosEixosDosFatosColetados.Conferir(
+            publicadas, null, [new DefinicaoAgregado("RENDA_FAMILIAR", "G", "M", OperacaoAgregado.ValoresPresentes)]);
+
+        erro!.Message.Should().StartWith("O resumo de grupo 'RENDA_FAMILIAR'").And.Contain("'EXISTE' para 'VALORES_PRESENTES'").And.NotContain("O fato");
+    }
+
+    [Fact(DisplayName = "A origem dos valores congelada no item é o token canônico da fonte, não o nome do enum")]
+    public void OrigemDosValores_GravaOTokenCanonico()
+    {
+        EixosDoItemCongelado.De(Item("SEXO")).OrigemValores.Should().Be("CATALOGO");
+        Domain.Enums.OrigemValoresColeta.OpcoesDoProcesso.ToCodigo().Should().Be("PROCESSO");
+        Domain.Enums.OrigemValoresColeta.MunicipiosDoBonus.ToCodigo().Should().Be("MUNICIPIOS_BONUS");
+        Domain.Enums.OrigemValoresColeta.UnidadesFederativas.ToCodigo().Should().Be("GEO_UF");
     }
 
     private static Dictionary<string, MetadadoFatoCongelado> Metadado(string dominio, string descricao) =>

@@ -304,6 +304,12 @@ public static class FecharRetificacaoCommandHandler
             return (Result.Failure(eixoTrocado), []);
         }
 
+        // Defesa para o item que chegou à configuração sem passar pela escrita, que já o conferiu.
+        if (processo.Rascunho.FatosDasVersoesPublicadas.PrimeiroItemComEixoTrocado(processo.FatosColetados, processo.GruposColetados) is { } itemTrocado)
+        {
+            return (Result.Failure(itemTrocado.ParaErro()), []);
+        }
+
         // Os fatos que as regras citam e nenhum formulário pergunta saem com o rótulo e o tipo do
         // catálogo, congelados na versão; o fato citado sem cadastro recusa aqui, antes de canonicalizar.
         Result<DefinicaoAvaliavel> avaliavel = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(processo, catalogoDeFatos);

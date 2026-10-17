@@ -26,7 +26,7 @@ public sealed class FatosDasVersoesPublicadasTests
     [Fact(DisplayName = "Fato coletado em todas as versões é garantido; o que só a versão base coleta, não")]
     public void Garante_SoOQueTodasAsVersoesColetaram()
     {
-        FatosDasVersoesPublicadas fatos = FatosDasVersoesPublicadas.De(
+        FatosDasVersoesPublicadas fatos = VersoesPublicadasDeTeste.SemEixosCongelados(
         [
             VersoesPublicadasDeTeste.Versao([Inscricao], [Item("TEM_RENDA")]),
             VersoesPublicadasDeTeste.Versao([Inscricao], [Item("TEM_RENDA"), Item("NOVO")]),
@@ -39,7 +39,7 @@ public sealed class FatosDasVersoesPublicadasTests
     [Fact(DisplayName = "A versão em que a finalidade não tinha formulário não entra no que ela garante")]
     public void Garante_IgnoraVersaoSemOFormularioDaFinalidade()
     {
-        FatosDasVersoesPublicadas fatos = FatosDasVersoesPublicadas.De(
+        FatosDasVersoesPublicadas fatos = VersoesPublicadasDeTeste.SemEixosCongelados(
         [
             VersoesPublicadasDeTeste.Versao([Inscricao], [Item("TEM_RENDA")]),
             VersoesPublicadasDeTeste.Versao([Inscricao, Habilitacao], [Item("TEM_RENDA"), Item("COMPROVANTE", FinalidadeFormulario.Habilitacao)]),
@@ -51,7 +51,7 @@ public sealed class FatosDasVersoesPublicadasTests
     [Fact(DisplayName = "Finalidade sem formulário em nenhuma versão garante o que produz: o formulário nasce na retificação")]
     public void Garante_FinalidadeSemFormularioPublicado()
     {
-        FatosDasVersoesPublicadas fatos = FatosDasVersoesPublicadas.De([VersoesPublicadasDeTeste.Versao([Inscricao], [Item("TEM_RENDA")])]);
+        FatosDasVersoesPublicadas fatos = VersoesPublicadasDeTeste.SemEixosCongelados([VersoesPublicadasDeTeste.Versao([Inscricao], [Item("TEM_RENDA")])]);
 
         fatos.Garante(FinalidadeFormulario.Habilitacao, "COMPROVANTE").Should().BeTrue();
     }
@@ -64,7 +64,7 @@ public sealed class FatosDasVersoesPublicadasTests
             [FatoColetado.Criar("MEMBRO_RENDA", 0, "Renda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!],
             FinalidadeFormulario.Inscricao).Value!;
 
-        FatosDasVersoesPublicadas fatos = FatosDasVersoesPublicadas.De([VersoesPublicadasDeTeste.Versao([Inscricao], [Item("TEM_RENDA")], [grupo])]);
+        FatosDasVersoesPublicadas fatos = VersoesPublicadasDeTeste.SemEixosCongelados([VersoesPublicadasDeTeste.Versao([Inscricao], [Item("TEM_RENDA")], [grupo])]);
 
         fatos.Garante(FinalidadeFormulario.Inscricao, "FAMILIA").Should().BeTrue();
         fatos.Garante(FinalidadeFormulario.Inscricao, "MEMBRO_RENDA").Should().BeTrue();
