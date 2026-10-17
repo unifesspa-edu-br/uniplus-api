@@ -48,6 +48,24 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
         formulario.Regras.Etapas.Select(static e => e.Codigo).Should().Contain(formulario.Etapas[0].CodigoNasRegras);
     }
 
+    [Fact(DisplayName = "O NOME congelado com formato é publicado sem formato; o nome da mãe segue com o formato")]
+    public void Projetar_NomeCivilComFormatoCongelado_PublicaSemFormato()
+    {
+        Configuracao configuracao = new(
+            [Formulario(FinalidadeFormulario.Inscricao)],
+            [
+                Campo("NOME", 0, TipoRenderizacao.Texto, FinalidadeFormulario.Inscricao, formato: "NOME_PESSOA"),
+                Campo("NOME_MAE", 1, TipoRenderizacao.Texto, FinalidadeFormulario.Inscricao, formato: "NOME_PESSOA"),
+            ],
+            [],
+            []);
+
+        FormularioRenderizavel formulario = configuracao.Projetar(FinalidadeFormulario.Inscricao)!;
+
+        formulario.FatosColetados.Single(static f => f.FatoCodigo == "NOME").Formato.Should().BeNull();
+        formulario.FatosColetados.Single(static f => f.FatoCodigo == "NOME_MAE").Formato.Should().Be("NOME_PESSOA");
+    }
+
     [Fact(DisplayName = "O campo de seleção traz os valores na ordem de apresentação, com a orientação congelada; o de texto, o formato e nenhum valor")]
     public void Projetar_Campos_TrazemValoresEFormato()
     {
