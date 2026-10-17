@@ -369,6 +369,7 @@ public sealed class ConformidadeLegalGateTests
             CadastrosVivos.RegrasDesempate(),
             CadastrosVivos.CatalogoDeFatos(),
             Substitute.For<ICalendarioVigenteReader>(),
+            Substitute.For<IRegistroCodecsEnvelope>(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 

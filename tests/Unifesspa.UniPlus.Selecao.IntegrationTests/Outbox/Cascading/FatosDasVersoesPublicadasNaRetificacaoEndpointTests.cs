@@ -10,6 +10,7 @@ using AwesomeAssertions;
 
 using Domain.Entities;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
@@ -59,6 +60,21 @@ public sealed class FatosDasVersoesPublicadasNaRetificacaoEndpointTests
         HttpResponseMessage resposta = await ctx.PutItensAsync("INSCRICAO", [ItemDaInscricao("QUILOMBOLA", 0)], etag);
 
         await DeveRecusarAsync(resposta, "uniplus.selecao.retificacao.fato_ja_coletado_removido");
+    }
+
+    [Fact(DisplayName = "O rascunho persiste os eixos que as versões publicadas congelaram em cada fato coletado")]
+    public async Task Abertura_PersisteOsEixosCongeladosDosItens()
+    {
+        Contexto ctx = await DuasVersoesPublicadasAsync(nameof(Abertura_PersisteOsEixosCongeladosDosItens));
+        await ctx.AbrirAsync();
+
+        await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
+        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        RascunhoRetificacao rascunho = await db.RascunhosRetificacao.AsNoTracking().SingleAsync(r => r.ProcessoSeletivoId == ctx.ProcessoId);
+
+        rascunho.FatosDasVersoesPublicadas.EixosDosItens["QUILOMBOLA"].Should().ContainSingle()
+            .Which.TipoRenderizacao.Should().Be("BOOLEANO");
+        rascunho.FatosDasVersoesPublicadas.EixosDosItens.Should().ContainKey("BAIXA_RENDA");
     }
 
     private static object ItemDaInscricao(string codigo, int posicao) => new

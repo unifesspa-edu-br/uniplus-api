@@ -29,16 +29,40 @@ public sealed class FatosDasVersoesPublicadas
 {
     private readonly SortedDictionary<FinalidadeFormulario, SortedSet<string>> _garantidos;
     private readonly SortedDictionary<string, SortedSet<string>> _gruposDaInscricaoNaBase;
+    private readonly Dictionary<string, HashSet<EixosDoItemCongelado>> _eixosDosItens;
+    private readonly Dictionary<string, HashSet<EixosDoMetadadoCongelado>> _eixosDosMetadados;
+    private readonly Dictionary<string, HashSet<string>> _operacoesDosAgregados;
 
     private FatosDasVersoesPublicadas(
         SortedDictionary<FinalidadeFormulario, SortedSet<string>> garantidos,
         SortedSet<string> itensDaInscricaoNaBase,
-        SortedDictionary<string, SortedSet<string>> gruposDaInscricaoNaBase)
+        SortedDictionary<string, SortedSet<string>> gruposDaInscricaoNaBase,
+        Dictionary<string, HashSet<EixosDoItemCongelado>> eixosDosItens,
+        Dictionary<string, HashSet<EixosDoMetadadoCongelado>> eixosDosMetadados,
+        Dictionary<string, HashSet<string>> operacoesDosAgregados)
     {
         _garantidos = garantidos;
         ItensDaInscricaoNaBase = itensDaInscricaoNaBase;
         _gruposDaInscricaoNaBase = gruposDaInscricaoNaBase;
+        _eixosDosItens = eixosDosItens;
+        _eixosDosMetadados = eixosDosMetadados;
+        _operacoesDosAgregados = operacoesDosAgregados;
     }
+
+    /// <summary>
+    /// Por fato coletado em alguma versão publicada, os eixos que cada versão congelou no item,
+    /// sem repetição: o item do fato num grupo repetível entra como o de qualquer outro.
+    /// </summary>
+    public IReadOnlyDictionary<string, IReadOnlyCollection<EixosDoItemCongelado>> EixosDosItens =>
+        _eixosDosItens.ToDictionary(static par => par.Key, static par => (IReadOnlyCollection<EixosDoItemCongelado>)par.Value, StringComparer.Ordinal);
+
+    /// <summary>Por fato citado por condição de documento exigido, os eixos que as versões congelaram dele.</summary>
+    public IReadOnlyDictionary<string, IReadOnlyCollection<EixosDoMetadadoCongelado>> EixosDosMetadados =>
+        _eixosDosMetadados.ToDictionary(static par => par.Key, static par => (IReadOnlyCollection<EixosDoMetadadoCongelado>)par.Value, StringComparer.Ordinal);
+
+    /// <summary>Por agregado, as operações que as versões congelaram.</summary>
+    public IReadOnlyDictionary<string, IReadOnlyCollection<string>> OperacoesDosAgregados =>
+        _operacoesDosAgregados.ToDictionary(static par => par.Key, static par => (IReadOnlyCollection<string>)par.Value, StringComparer.Ordinal);
 
     /// <summary>
     /// Por finalidade que teve formulário em alguma versão, os fatos que ele coletou em todas as
@@ -54,8 +78,13 @@ public sealed class FatosDasVersoesPublicadas
     public IReadOnlyDictionary<string, IReadOnlySet<string>> GruposDaInscricaoNaBase =>
         _gruposDaInscricaoNaBase.ToDictionary(static par => par.Key, static par => (IReadOnlySet<string>)par.Value, StringComparer.Ordinal);
 
-    /// <summary>Lê as versões publicadas, da primeira à base, que é a última.</summary>
-    public static FatosDasVersoesPublicadas De(IReadOnlyList<GrafoConfiguracao> versoes)
+    /// <summary>
+    /// Lê as versões publicadas, da primeira à base, que é a última. <paramref name="congeladoPorVersao"/>
+    /// traz, na mesma ordem, o que cada uma congelou além dos itens; sem ele, a guarda de eixo só
+    /// alcança os itens.
+    /// </summary>
+    public static FatosDasVersoesPublicadas De(
+        IReadOnlyList<GrafoConfiguracao> versoes, IReadOnlyList<EixosDeVersaoPublicada>? congeladoPorVersao = null)
     {
         ArgumentNullException.ThrowIfNull(versoes);
         if (versoes.Count == 0)
@@ -80,6 +109,30 @@ public sealed class FatosDasVersoesPublicadas
             }
         }
 
+        Dictionary<string, HashSet<EixosDoItemCongelado>> eixosDosItens = new(StringComparer.Ordinal);
+        foreach (GrafoConfiguracao versao in versoes)
+        {
+            foreach (FatoColetado item in versao.FatosColetados.Concat(versao.GruposColetados.SelectMany(static g => g.Subitens)))
+            {
+                Acrescentar(eixosDosItens, item.FatoCodigo, EixosDoItemCongelado.De(item));
+            }
+        }
+
+        Dictionary<string, HashSet<EixosDoMetadadoCongelado>> eixosDosMetadados = new(StringComparer.Ordinal);
+        Dictionary<string, HashSet<string>> operacoes = new(StringComparer.Ordinal);
+        foreach (EixosDeVersaoPublicada congelado in congeladoPorVersao ?? [])
+        {
+            foreach ((string fato, EixosDoMetadadoCongelado eixos) in congelado.Metadados)
+            {
+                Acrescentar(eixosDosMetadados, fato, eixos);
+            }
+
+            foreach ((string agregado, string operacao) in congelado.OperacaoDosAgregados)
+            {
+                Acrescentar(operacoes, agregado, operacao);
+            }
+        }
+
         GrafoConfiguracao versaoBase = versoes[^1];
         return new FatosDasVersoesPublicadas(
             garantidos,
@@ -90,14 +143,20 @@ public sealed class FatosDasVersoesPublicadas
                 versaoBase.GruposColetados
                     .Where(static g => g.Finalidade == FinalidadeFormulario.Inscricao)
                     .ToDictionary(static g => g.Codigo, static g => new SortedSet<string>(g.Subitens.Select(static s => s.FatoCodigo), StringComparer.Ordinal)),
-                StringComparer.Ordinal));
+                StringComparer.Ordinal),
+            eixosDosItens,
+            eixosDosMetadados,
+            operacoes);
     }
 
     /// <summary>Repõe o que foi lido na abertura, como a persistência o guardou.</summary>
     public static FatosDasVersoesPublicadas Reconstituir(
         IReadOnlyDictionary<FinalidadeFormulario, IReadOnlyCollection<string>> garantidos,
         IReadOnlyCollection<string> itensDaInscricaoNaBase,
-        IReadOnlyDictionary<string, IReadOnlyCollection<string>> gruposDaInscricaoNaBase)
+        IReadOnlyDictionary<string, IReadOnlyCollection<string>> gruposDaInscricaoNaBase,
+        IReadOnlyDictionary<string, IReadOnlyCollection<EixosDoItemCongelado>>? eixosDosItens = null,
+        IReadOnlyDictionary<string, IReadOnlyCollection<EixosDoMetadadoCongelado>>? eixosDosMetadados = null,
+        IReadOnlyDictionary<string, IReadOnlyCollection<string>>? operacoesDosAgregados = null)
     {
         ArgumentNullException.ThrowIfNull(garantidos);
         ArgumentNullException.ThrowIfNull(itensDaInscricaoNaBase);
@@ -109,7 +168,20 @@ public sealed class FatosDasVersoesPublicadas
             new SortedSet<string>(itensDaInscricaoNaBase, StringComparer.Ordinal),
             new SortedDictionary<string, SortedSet<string>>(
                 gruposDaInscricaoNaBase.ToDictionary(static par => par.Key, static par => new SortedSet<string>(par.Value, StringComparer.Ordinal), StringComparer.Ordinal),
-                StringComparer.Ordinal));
+                StringComparer.Ordinal),
+            (eixosDosItens ?? new Dictionary<string, IReadOnlyCollection<EixosDoItemCongelado>>()).ToDictionary(static par => par.Key, static par => par.Value.ToHashSet(), StringComparer.Ordinal),
+            (eixosDosMetadados ?? new Dictionary<string, IReadOnlyCollection<EixosDoMetadadoCongelado>>()).ToDictionary(static par => par.Key, static par => par.Value.ToHashSet(), StringComparer.Ordinal),
+            (operacoesDosAgregados ?? new Dictionary<string, IReadOnlyCollection<string>>()).ToDictionary(static par => par.Key, static par => par.Value.ToHashSet(StringComparer.Ordinal), StringComparer.Ordinal));
+    }
+
+    private static void Acrescentar<T>(Dictionary<string, HashSet<T>> destino, string chave, T valor)
+    {
+        if (!destino.TryGetValue(chave, out HashSet<T>? existentes))
+        {
+            destino[chave] = existentes = [];
+        }
+
+        existentes.Add(valor);
     }
 
     /// <summary>
@@ -149,6 +221,76 @@ public sealed class FatosDasVersoesPublicadas
             if (campos.FirstOrDefault(campo => !enviados.Contains(campo)) is { } campo)
             {
                 return campo;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// O primeiro item ou campo de grupo dado que um candidato pode já ter respondido e cujo eixo
+    /// difere do que alguma versão publicada congelou. O que o item guarda é a cópia tirada do
+    /// catálogo quando ele foi definido, então só o item regravado pode trocar de eixo; a
+    /// descrição, a orientação e a ordem de um valor não são eixo.
+    /// </summary>
+    public TrocaDeEixo? PrimeiroItemComEixoTrocado(IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado> grupos)
+    {
+        ArgumentNullException.ThrowIfNull(itens);
+        ArgumentNullException.ThrowIfNull(grupos);
+
+        foreach (FatoColetado item in itens.Concat(grupos.SelectMany(static g => g.Subitens)))
+        {
+            if (!_eixosDosItens.TryGetValue(item.FatoCodigo, out HashSet<EixosDoItemCongelado>? publicados))
+            {
+                continue;
+            }
+
+            EixosDoItemCongelado novo = EixosDoItemCongelado.De(item);
+            foreach (EixosDoItemCongelado publicado in publicados)
+            {
+                if (TrocaDeEixo.Primeira(item.FatoCodigo, publicado.Eixos(), novo.Eixos()) is { } troca)
+                {
+                    return troca;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// O primeiro fato já coletado cujo metadado, ou o agregado cuja operação, a sessão congelaria
+    /// diferente do que alguma versão publicada congelou. Recebe o que a versão nova vai congelar,
+    /// nunca o catálogo vivo: o fato que a versão nova não cita numa condição não é comparado.
+    /// </summary>
+    public TrocaDeEixo? PrimeiroEixoCongeladoTrocado(
+        IReadOnlyDictionary<string, EixosDoMetadadoCongelado> metadados, IReadOnlyDictionary<string, string> operacaoDosAgregados)
+    {
+        ArgumentNullException.ThrowIfNull(metadados);
+        ArgumentNullException.ThrowIfNull(operacaoDosAgregados);
+
+        foreach ((string fato, EixosDoMetadadoCongelado novo) in metadados.OrderBy(static par => par.Key, StringComparer.Ordinal))
+        {
+            if (!_eixosDosItens.ContainsKey(fato) || !_eixosDosMetadados.TryGetValue(fato, out HashSet<EixosDoMetadadoCongelado>? publicados))
+            {
+                continue;
+            }
+
+            foreach (EixosDoMetadadoCongelado publicado in publicados)
+            {
+                if (TrocaDeEixo.Primeira(fato, publicado.Eixos(), novo.Eixos()) is { } troca)
+                {
+                    return troca;
+                }
+            }
+        }
+
+        foreach ((string agregado, string novo) in operacaoDosAgregados.OrderBy(static par => par.Key, StringComparer.Ordinal))
+        {
+            if (_operacoesDosAgregados.TryGetValue(agregado, out HashSet<string>? publicadas)
+                && publicadas.FirstOrDefault(p => !string.Equals(p, novo, StringComparison.Ordinal)) is { } diferente)
+            {
+                return new TrocaDeEixo(agregado, "operação do agregado", diferente, novo);
             }
         }
 

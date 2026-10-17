@@ -703,6 +703,9 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // coletado em todas elas, e não retira da inscrição o fato que ela já coletava.
         new("RascunhoRetificacao.FatoAusenteDeVersaoPublicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.retificacao.fato_ausente_de_versao_publicada", "Fato de outra finalidade não coletado em todas as versões publicadas")),
         new("RascunhoRetificacao.FatoJaColetadoRemovido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.retificacao.fato_ja_coletado_removido", "A retificação não retira da inscrição fato que ela já coleta")),
+        // O candidato pode ter respondido o fato em qualquer versão publicada: a retificação não troca
+        // o eixo que a versão publicada congelou, e a mudança vale para processo novo.
+        new("RascunhoRetificacao.EixoDoFatoJaColetadoAlterado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.retificacao.eixo_do_fato_ja_coletado_alterado", "A retificação não troca o eixo de fato já coletado por versão publicada")),
         // A base do rascunho deixou de ser o topo da cadeia. Hoje é inalcançável por
         // invariante (o atalho recusa com sessão aberta; o fechamento encerra a sessão na
         // mesma transação; o FOR UPDATE serializa) — é guard rail contra o dia em que um

@@ -73,6 +73,7 @@ public static class AbrirRetificacaoCommandHandler
         // porque sem lê-las não há como saber que fatos cada formulário coletou em todas as versões
         // publicadas — e a sessão aceitaria fato que um candidato não informou.
         List<GrafoConfiguracao> grafos = new(versoes.Count);
+        List<EixosDeVersaoPublicada> congelado = new(versoes.Count);
         foreach (VersaoConfiguracao versao in versoes)
         {
             if (PendenciaDeReidratacao(registroCodecs, versao, ehBase: versao.Id == versaoAtual.Id) is { } pendencia)
@@ -87,6 +88,7 @@ public static class AbrirRetificacaoCommandHandler
             }
 
             grafos.Add(reidratada.Value!.Grafo);
+            congelado.Add(ConferenciaDosEixosDosFatosColetados.DaVersao(reidratada.Value!));
         }
 
         string abertoPorSub = userContext.UserId ?? "system";
@@ -97,7 +99,7 @@ public static class AbrirRetificacaoCommandHandler
             command.Motivo,
             versaoAtual,
             grafos[^1].IdentificadorLegivel,
-            FatosDasVersoesPublicadas.De(grafos),
+            FatosDasVersoesPublicadas.De(grafos, congelado),
             abertoPorSub,
             timeProvider.GetUtcNow());
         if (abertura.IsFailure)
