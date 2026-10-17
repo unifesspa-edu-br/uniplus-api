@@ -101,6 +101,14 @@ public sealed class AtoDoProcesso : EntityBase
         GuardarTexto(novo.Assinante, AssinanteMaxLength, nameof(novo.Assinante));
         GuardarTexto(novo.UnidadeAdministradora, UnidadeAdministradoraMaxLength, nameof(novo.UnidadeAdministradora));
         GuardarTexto(novo.IdentificadorLegivelDoProcesso, IdentificadorLegivelMaxLength, nameof(novo.IdentificadorLegivelDoProcesso));
+
+        // Texto opcional em branco é ausência, não erro: quem declara pode mandar o campo vazio.
+        novo = novo with
+        {
+            Numero = EmBrancoViraNulo(novo.Numero),
+            PoliticaDeDivulgacaoConfirmadaPorSub = EmBrancoViraNulo(novo.PoliticaDeDivulgacaoConfirmadaPorSub),
+            MotivoDaCorrecao = EmBrancoViraNulo(novo.MotivoDaCorrecao),
+        };
         GuardarTextoOpcional(novo.Numero, NumeroMaxLength, nameof(novo.Numero));
         GuardarTextoOpcional(novo.PoliticaDeDivulgacaoConfirmadaPorSub, SubMaxLength, nameof(novo.PoliticaDeDivulgacaoConfirmadaPorSub));
         GuardarCorrecao(novo);
@@ -169,7 +177,7 @@ public sealed class AtoDoProcesso : EntityBase
     private static void GuardarCorrecao(NovoAtoDoProcesso novo)
     {
         // Relação entre atos (ADR-0103): quem corrige diz o que corrige e por quê; quem não corrige não tem motivo.
-        if ((novo.AtoCorrigidoId is null) != string.IsNullOrWhiteSpace(novo.MotivoDaCorrecao))
+        if ((novo.AtoCorrigidoId is null) != (novo.MotivoDaCorrecao is null))
         {
             throw new ArgumentException("O ato corrigido e o motivo da correção vêm juntos.", nameof(novo));
         }
@@ -197,6 +205,9 @@ public sealed class AtoDoProcesso : EntityBase
             throw new ArgumentException("Um documento não pode ser o principal e anexo, nem anexo duas vezes.", nameof(novo));
         }
     }
+
+    private static string? EmBrancoViraNulo(string? valor) =>
+        string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
 
     private static void GuardarTexto(string valor, int tamanhoMaximo, string nome)
     {
