@@ -13,6 +13,7 @@ using Services;
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
+using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Fecha a sessão editorial (Story #862, ADR-0110): congela a versão N+1 <b>com a
@@ -294,6 +295,15 @@ public static class FecharRetificacaoCommandHandler
             return (Result.Failure(valoresSelecionaveisResult.Error!), []);
         }
 
+        // O metadado dos fatos dos gatilhos e a operação dos agregados vêm do catálogo na hora de
+        // congelar: o fato já coletado por versão publicada não os troca (UNI-REQ-0144).
+        IReadOnlyList<DefinicaoAgregado> agregadosDosGrupos =
+            DefinicaoAvaliavelDoProcesso.AgregadosDosGrupos(processo.GruposColetados, catalogoPorCodigo);
+        if (ConferenciaDosEixosDosFatosColetados.Conferir(processo.Rascunho.FatosDasVersoesPublicadas, metadadosFatosResult.Value, agregadosDosGrupos) is { } eixoTrocado)
+        {
+            return (Result.Failure(eixoTrocado), []);
+        }
+
         // Os fatos que as regras citam e nenhum formulário pergunta saem com o rótulo e o tipo do
         // catálogo, congelados na versão; o fato citado sem cadastro recusa aqui, antes de canonicalizar.
         Result<DefinicaoAvaliavel> avaliavel = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(processo, catalogoDeFatos);
@@ -333,7 +343,7 @@ public static class FecharRetificacaoCommandHandler
                 metadadosFatosResult.Value,
                 valoresSelecionaveisResult.Value,
                 contexto.CalendarioVigente,
-                DefinicaoAvaliavelDoProcesso.AgregadosDosGrupos(processo.GruposColetados, catalogoPorCodigo),
+                agregadosDosGrupos,
                 ApresentacaoDosPressupostos: avaliavel.Value!.ApresentacaoDosPressupostos));
 
         string atorUsuarioSub = userContext.UserId ?? "system";

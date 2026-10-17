@@ -81,8 +81,19 @@ public sealed class RascunhoRetificacaoConfiguration : IEntityTypeConfiguration<
                 new FatosDasVersoesPublicadasJson(
                     fatos.Garantidos.ToDictionary(static par => EstruturaFormulario.ParaToken(par.Key), static par => par.Value.ToArray(), StringComparer.Ordinal),
                     [.. fatos.ItensDaInscricaoNaBase],
-                    fatos.GruposDaInscricaoNaBase.ToDictionary(static par => par.Key, static par => par.Value.ToArray(), StringComparer.Ordinal)),
+                    fatos.GruposDaInscricaoNaBase.ToDictionary(static par => par.Key, static par => par.Value.ToArray(), StringComparer.Ordinal),
+                    OrdenadoPorFato(fatos.EixosDosItens, static eixos => eixos.OrderBy(static e => e.TipoRenderizacao, StringComparer.Ordinal)
+                        .ThenBy(static e => e.OrigemValores, StringComparer.Ordinal).ThenBy(static e => e.Formato, StringComparer.Ordinal)
+                        .ThenBy(static e => e.ClassificacaoProtecao, StringComparer.Ordinal)),
+                    OrdenadoPorFato(fatos.EixosDosMetadados, static eixos => eixos.OrderBy(static e => e.Dominio, StringComparer.Ordinal)
+                        .ThenBy(static e => e.Cardinalidade, StringComparer.Ordinal).ThenBy(static e => e.PontoResolucao, StringComparer.Ordinal)),
+                    OrdenadoPorFato(fatos.OperacoesDosAgregados, static operacoes => operacoes.Order(StringComparer.Ordinal))),
                 JsonOptions);
+
+    /// <summary>Ordem estável, para que a comparação pelo JSON não dependa da ordem de inserção.</summary>
+    private static SortedDictionary<string, T[]> OrdenadoPorFato<T>(
+        IReadOnlyDictionary<string, IReadOnlyCollection<T>> porFato, Func<IReadOnlyCollection<T>, IEnumerable<T>> ordenar) =>
+        new(porFato.ToDictionary(static par => par.Key, par => ordenar(par.Value).ToArray(), StringComparer.Ordinal), StringComparer.Ordinal);
 
     private static FatosDasVersoesPublicadas Desserializar(string json)
     {
@@ -91,7 +102,10 @@ public sealed class RascunhoRetificacaoConfiguration : IEntityTypeConfiguration<
         return FatosDasVersoesPublicadas.Reconstituir(
             lido.Garantidos.ToDictionary(static par => FinalidadeDoToken(par.Key), static par => (IReadOnlyCollection<string>)par.Value),
             lido.ItensDaInscricaoNaBase,
-            lido.GruposDaInscricaoNaBase.ToDictionary(static par => par.Key, static par => (IReadOnlyCollection<string>)par.Value, StringComparer.Ordinal));
+            lido.GruposDaInscricaoNaBase.ToDictionary(static par => par.Key, static par => (IReadOnlyCollection<string>)par.Value, StringComparer.Ordinal),
+            lido.EixosDosItens?.ToDictionary(static par => par.Key, static par => (IReadOnlyCollection<EixosDoItemCongelado>)par.Value, StringComparer.Ordinal),
+            lido.EixosDosMetadados?.ToDictionary(static par => par.Key, static par => (IReadOnlyCollection<EixosDoMetadadoCongelado>)par.Value, StringComparer.Ordinal),
+            lido.OperacoesDosAgregados?.ToDictionary(static par => par.Key, static par => (IReadOnlyCollection<string>)par.Value, StringComparer.Ordinal));
     }
 
     /// <summary>Token fora do vocabulário estoura na carga, alto e cedo, em vez de virar finalidade nenhuma.</summary>
@@ -103,5 +117,8 @@ public sealed class RascunhoRetificacaoConfiguration : IEntityTypeConfiguration<
     private sealed record FatosDasVersoesPublicadasJson(
         Dictionary<string, string[]> Garantidos,
         string[] ItensDaInscricaoNaBase,
-        Dictionary<string, string[]> GruposDaInscricaoNaBase);
+        Dictionary<string, string[]> GruposDaInscricaoNaBase,
+        IDictionary<string, EixosDoItemCongelado[]>? EixosDosItens = null,
+        IDictionary<string, EixosDoMetadadoCongelado[]>? EixosDosMetadados = null,
+        IDictionary<string, string[]>? OperacoesDosAgregados = null);
 }

@@ -2483,6 +2483,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 $"O fato '{retirado}' já é coletado pelo formulário de inscrição do edital publicado: a retificação não o retira do formulário nem o passa de item para campo de grupo, ou de um grupo para outro."));
         }
 
+        // O candidato pode ter respondido o fato em qualquer versão publicada, e a classificação e a
+        // elegibilidade leem as respostas juntas: o item regravado não troca o eixo que a versão
+        // publicada congelou (UNI-REQ-0144).
+        if (Rascunho?.FatosDasVersoesPublicadas.PrimeiroItemComEixoTrocado(fatosColetados, grupos) is { } troca)
+        {
+            return Result.Failure(troca.ParaErro());
+        }
+
         // A inscrição só cita os próprios campos; as outras finalidades citam também os dela.
         HashSet<string> daInscricao = finalidade == FinalidadeFormulario.Inscricao
             ? new(StringComparer.Ordinal)

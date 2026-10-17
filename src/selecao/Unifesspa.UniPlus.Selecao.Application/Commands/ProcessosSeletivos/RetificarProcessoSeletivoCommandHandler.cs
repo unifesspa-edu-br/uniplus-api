@@ -13,6 +13,7 @@ using Services;
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
+using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Handler convention-based do <see cref="RetificarProcessoSeletivoCommand"/>
@@ -44,6 +45,7 @@ public static class RetificarProcessoSeletivoCommandHandler
         IRegraCatalogoReader regraCatalogoReader,
         IFatoCandidatoReader fatoCandidatoReader,
         ICalendarioVigenteReader calendarioVigenteReader,
+        IRegistroCodecsEnvelope registroCodecs,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
@@ -63,6 +65,7 @@ public static class RetificarProcessoSeletivoCommandHandler
         ArgumentNullException.ThrowIfNull(tipoEtapaReader);
         ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
         ArgumentNullException.ThrowIfNull(calendarioVigenteReader);
+        ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
@@ -278,6 +281,17 @@ public static class RetificarProcessoSeletivoCommandHandler
             return (Result.Failure(valoresSelecionaveisResult.Error!), []);
         }
 
+        // O metadado dos fatos dos gatilhos e a operação dos agregados vêm do catálogo na hora de
+        // congelar: o fato já coletado por versão publicada não os troca (UNI-REQ-0144).
+        IReadOnlyList<DefinicaoAgregado> agregadosDosGrupos =
+            DefinicaoAvaliavelDoProcesso.AgregadosDosGrupos(processo.GruposColetados, catalogoPorCodigo);
+        if (await ConferenciaDosEixosDosFatosColetados
+            .ConferirContraAsVersoesAsync(processoSeletivoRepository, registroCodecs, command.ProcessoSeletivoId, metadadosFatosResult.Value, agregadosDosGrupos, cancellationToken)
+            .ConfigureAwait(false) is { } eixoTrocado)
+        {
+            return (Result.Failure(eixoTrocado), []);
+        }
+
         // Os fatos que as regras citam e nenhum formulário pergunta saem com o rótulo e o tipo do
         // catálogo, congelados na versão; o fato citado sem cadastro recusa aqui, antes de canonicalizar.
         Result<DefinicaoAvaliavel> avaliavel = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(processo, catalogoDeFatos);
@@ -317,7 +331,7 @@ public static class RetificarProcessoSeletivoCommandHandler
                 metadadosFatosResult.Value,
                 valoresSelecionaveisResult.Value,
                 contexto.CalendarioVigente,
-                DefinicaoAvaliavelDoProcesso.AgregadosDosGrupos(processo.GruposColetados, catalogoPorCodigo),
+                agregadosDosGrupos,
                 ApresentacaoDosPressupostos: avaliavel.Value!.ApresentacaoDosPressupostos));
 
         string atorUsuarioSub = userContext.UserId ?? "system";

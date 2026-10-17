@@ -94,6 +94,7 @@ public sealed class FatoDeElegibilidadeGateTests
             CadastrosVivos.RegrasDesempate(),
             CatalogoQueResolveNaHabilitacao(),
             CalendarioVigenteReaderDeTeste.SemVigente(),
+            Substitute.For<IRegistroCodecsEnvelope>(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 
