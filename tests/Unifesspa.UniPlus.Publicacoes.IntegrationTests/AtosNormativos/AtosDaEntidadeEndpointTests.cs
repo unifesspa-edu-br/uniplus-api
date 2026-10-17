@@ -9,6 +9,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Publicacoes.IntegrationTests.Infrastructure;
 
 /// <summary>
@@ -27,7 +28,7 @@ public sealed class AtosDaEntidadeEndpointTests
     private const string AdminAtos = "/api/publicacoes/admin/atos";
     private const string AdminTipos = "/api/publicacoes/admin/tipos-ato";
     private const string HashValido = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
-    private const string ProcessoSeletivo = "PROCESSO_SELETIVO";
+    private const string ObjetoA = "OBJETO_A";
 
     private readonly PublicacoesEndpointFixture _fixture;
 
@@ -52,7 +53,7 @@ public sealed class AtosDaEntidadeEndpointTests
         Guid retificacao = await PostAtoIdAsync(
             client, PayloadRetificacao(tipo, "10", "2026-03-05", convocacao, "corrige o horário", []));
 
-        JsonElement[] itens = await ListarDaEntidadeAsync(client, ProcessoSeletivo, chamada);
+        JsonElement[] itens = await ListarDaEntidadeAsync(client, ObjetoA, chamada);
 
         itens.Select(i => i.GetProperty("id").GetGuid())
             .Should().Equal(convocacao, retificacao, homologacao);
@@ -70,7 +71,7 @@ public sealed class AtosDaEntidadeEndpointTests
         Guid retificacao = await PostAtoIdAsync(
             client, PayloadRetificacao(tipo, "13", "2026-03-14", raiz, "corrige o anexo", []));
 
-        JsonElement[] itens = await ListarDaEntidadeAsync(client, ProcessoSeletivo, processo);
+        JsonElement[] itens = await ListarDaEntidadeAsync(client, ObjetoA, processo);
 
         itens.Select(i => i.GetProperty("id").GetGuid()).Should().Contain(retificacao);
         itens.Should().HaveCount(2);
@@ -81,7 +82,7 @@ public sealed class AtosDaEntidadeEndpointTests
     {
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        JsonElement[] itens = await ListarDaEntidadeAsync(client, ProcessoSeletivo, Guid.CreateVersion7());
+        JsonElement[] itens = await ListarDaEntidadeAsync(client, ObjetoA, Guid.CreateVersion7());
 
         itens.Should().BeEmpty();
     }
@@ -109,7 +110,7 @@ public sealed class AtosDaEntidadeEndpointTests
             client,
             PayloadAto(tipo, "13", "2026-03-13", [Vinculo(processo), Vinculo(chamada, "CHAMADA")]));
 
-        (await ListarDaEntidadeAsync(client, ProcessoSeletivo, processo))
+        (await ListarDaEntidadeAsync(client, ObjetoA, processo))
             .Select(i => i.GetProperty("id").GetGuid()).Should().Equal(ato);
         (await ListarDaEntidadeAsync(client, "CHAMADA", chamada))
             .Select(i => i.GetProperty("id").GetGuid()).Should().Equal(ato);
@@ -129,12 +130,12 @@ public sealed class AtosDaEntidadeEndpointTests
         // Página de tamanho 1 na coleção do primeiro processo: o link "next" carrega um
         // cursor escopado àquela entidade.
         HttpResponseMessage primeira = await client.GetAsync(
-            new Uri($"/api/publicacoes/entidades/{ProcessoSeletivo}/{processo}/atos?limit=1", UriKind.Relative));
+            new Uri($"/api/publicacoes/entidades/{ObjetoA}/{processo}/atos?limit=1", UriKind.Relative));
         primeira.StatusCode.Should().Be(HttpStatusCode.OK);
         string cursor = ExtrairCursorDoLinkNext(primeira);
 
         HttpResponseMessage naOutraColecao = await client.GetAsync(new Uri(
-            $"/api/publicacoes/entidades/{ProcessoSeletivo}/{outroProcesso}/atos?cursor={Uri.EscapeDataString(cursor)}&direction=next",
+            $"/api/publicacoes/entidades/{ObjetoA}/{outroProcesso}/atos?cursor={Uri.EscapeDataString(cursor)}&direction=next",
             UriKind.Relative));
 
         naOutraColecao.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -146,7 +147,7 @@ public sealed class AtosDaEntidadeEndpointTests
         using HttpClient client = _fixture.Factory.CreateClient();
 
         HttpResponseMessage resposta = await client.GetAsync(new Uri(
-            $"/api/publicacoes/entidades/{ProcessoSeletivo}/{Guid.CreateVersion7()}/atos?cursor=nao-e-um-cursor",
+            $"/api/publicacoes/entidades/{ObjetoA}/{Guid.CreateVersion7()}/atos?cursor=nao-e-um-cursor",
             UriKind.Relative));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -164,7 +165,7 @@ public sealed class AtosDaEntidadeEndpointTests
         Guid c = await PostAtoIdAsync(client, PayloadAto(tipo, "3", "2026-03-03", [Vinculo(processo)]));
 
         List<Guid> percorridos = [];
-        string url = $"/api/publicacoes/entidades/{ProcessoSeletivo}/{processo}/atos?limit=2";
+        string url = $"/api/publicacoes/entidades/{ObjetoA}/{processo}/atos?limit=2";
 
         while (true)
         {
@@ -287,7 +288,7 @@ public sealed class AtosDaEntidadeEndpointTests
         retificacao.StatusCode.Should().Be(HttpStatusCode.Created);
 
         // Os dois atos tratam do mesmo processo: o aviso herdou o vínculo do edital.
-        (await ListarDaEntidadeAsync(client, ProcessoSeletivo, processo)).Should().HaveCount(2);
+        (await ListarDaEntidadeAsync(client, ObjetoA, processo)).Should().HaveCount(2);
     }
 
     [Fact(DisplayName = "Tipo único por objeto sem vínculo algum é registrável — sem objeto, não há vaga")]
@@ -366,9 +367,31 @@ public sealed class AtosDaEntidadeEndpointTests
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
+    [Fact(DisplayName = "O endpoint administrativo recusa ato vinculado a processo seletivo, mesmo entre outros vínculos")]
+    public async Task Registrar_VinculoProcessoSeletivo_Retorna422NomeadoESemRegistrar()
+    {
+        string tipo = await CriarTipoAsync(unicoPorObjeto: false);
+        Guid processo = Guid.CreateVersion7();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage resposta = await PostAtoAsync(
+            client,
+            PayloadAto(
+                tipo,
+                "13",
+                "2026-03-13",
+                [Vinculo(Guid.CreateVersion7(), ObjetoA), Vinculo(processo, EntidadesDeRegistroPeloDominio.ProcessoSeletivo)]));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await resposta.Content.ReadAsStringAsync())
+            .Should().Contain("uniplus.publicacoes.ato_normativo.vinculo_exige_registro_pelo_dominio");
+        (await ListarDaEntidadeAsync(
+            client, EntidadesDeRegistroPeloDominio.ProcessoSeletivo, processo)).Should().BeEmpty();
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    private static object Vinculo(Guid entidadeId, string entidadeTipo = ProcessoSeletivo) =>
+    private static object Vinculo(Guid entidadeId, string entidadeTipo = ObjetoA) =>
         new { entidadeTipo, entidadeId };
 
     private static async Task<JsonElement[]> ListarDaEntidadeAsync(HttpClient client, string tipo, Guid id)
