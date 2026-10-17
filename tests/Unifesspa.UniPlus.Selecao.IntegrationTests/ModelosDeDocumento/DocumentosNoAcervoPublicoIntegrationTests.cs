@@ -218,6 +218,12 @@ public sealed class DocumentosNoAcervoPublicoIntegrationTests : IClassFixture<Pr
         JsonNode.Parse(divulgado.Certame)!["documentoEdital"]!["urlDownload"]!.GetValue<string>().Should().Be(
             AcervoDeTeste.Endereco.De(ChaveNoAcervoPublico.DoEdital(AnoDoAto, UnidadeDoEnvelope, TipoDoAto, identificador, ato, edital.HashSha256!)).ToString(),
             "o contrato divulga o endereço da mesma chave para a qual a divulgação copiou");
+        divulgado.EditaisDivulgados.Should().ContainSingle().Which.Should().Be(
+            new EditalDivulgado(
+                ato,
+                NumeroVersao: 1,
+                AcervoDeTeste.Endereco.De(ChaveNoAcervoPublico.DoEdital(AnoDoAto, UnidadeDoEnvelope, TipoDoAto, identificador, ato, edital.HashSha256!)).OriginalString),
+            "o endereço registrado para o ato é o da chave para a qual a cópia foi feita");
     }
 
     [Fact(DisplayName = "Edital confirmado de processo ainda sem ato não tem objeto no acervo")]
@@ -292,6 +298,71 @@ public sealed class DocumentosNoAcervoPublicoIntegrationTests : IClassFixture<Pr
 
         (await anonimo.GetByteArrayAsync(EnderecoDoEdital(identificador, abertura, edital))).Should().Equal(pdf,
             "o ato retificado continua existindo, e o endereço que ele divulgou não some");
+
+        IReadOnlyList<EditalDivulgado> registrados = await EditaisDivulgadosAsync(processo.Id);
+        registrados.Select(static e => e.AtoId).Should().Equal(abertura, primeiraRetificacao, segundaRetificacao);
+        registrados.Select(static e => e.UrlDownload).Should().OnlyHaveUniqueItems(
+            "o documento é o mesmo e o hash coincide: só o ato separa o endereço de cada versão");
+        registrados[2].UrlDownload.Should().Be(
+            AcervoDeTeste.Endereco.De(ChaveNoAcervoPublico.DoEdital(AnoDoAto, UnidadeDoEnvelope, Retificacao, identificador, segundaRetificacao, edital.HashSha256!)).OriginalString);
+    }
+
+    [Fact(DisplayName = "Ato atrasado de uma versão anterior registra o próprio edital sem recuar a divulgação")]
+    public async Task AtoAtrasado_RegistraOEdital_SemRecuarAVersao()
+    {
+        await _minio.ProvisionarAcervoPublicoAsync();
+        (ProcessoSeletivo processo, ModeloDeDocumento modelo) = await SemearProcessoComModeloAsync(ArquivosDeModeloDeTeste.Odt());
+        DocumentoEdital edital = await SemearEditalAsync(processo.Id, ArquivoDeEdital());
+        string identificador = IdentificadoresDeTeste.NovoValor();
+        Guid abertura = Guid.CreateVersion7();
+        Guid retificacao = Guid.CreateVersion7();
+        VersaoConfiguracao v1 = await SemearVersaoAsync(processo, modelo, abertura, identificador, edital);
+        await SemearRetificacaoAsync(v1, modelo, retificacao, identificador, edital);
+
+        // A retificação é entregue antes do ato que ela retifica: a linha nasce já na versão 2.
+        await DivulgarAsync(retificacao, Acervo(), Retificacao);
+        await DivulgarAsync(abertura, Acervo());
+
+        await using SelecaoDbContext leitura = _dbFixture.CreateDbContext();
+        CertameDivulgado divulgado = await leitura.CertamesDivulgados.AsNoTracking().SingleAsync(c => c.Id == processo.Id);
+        divulgado.NumeroVersao.Should().Be(2, "o ato atrasado não desfaz a retificação já divulgada");
+        divulgado.AtoCriadorId.Should().Be(retificacao);
+        divulgado.EditaisDivulgados.Select(static e => e.AtoId).Should().BeEquivalentTo([abertura, retificacao]);
+    }
+
+    [Fact(DisplayName = "Reentrega do mesmo ato não duplica o edital registrado")]
+    public async Task Reentrega_DoMesmoAto_NaoDuplicaOEdital()
+    {
+        await _minio.ProvisionarAcervoPublicoAsync();
+        (ProcessoSeletivo processo, ModeloDeDocumento modelo) = await SemearProcessoComModeloAsync(ArquivosDeModeloDeTeste.Odt());
+        DocumentoEdital edital = await SemearEditalAsync(processo.Id, ArquivoDeEdital());
+        Guid ato = Guid.CreateVersion7();
+        await SemearVersaoAsync(processo, modelo, ato, edital: edital);
+        await DivulgarAsync(ato, Acervo());
+
+        await DivulgarAsync(ato, Acervo());
+
+        (await EditaisDivulgadosAsync(processo.Id)).Should().ContainSingle();
+    }
+
+    [Fact(DisplayName = "Falha na cópia do edital de uma retificação não registra o edital dela")]
+    public async Task FalhaNaCopiaDoEdital_NaoRegistraOEdital()
+    {
+        await _minio.ProvisionarAcervoPublicoAsync();
+        (ProcessoSeletivo processo, ModeloDeDocumento modelo) = await SemearProcessoComModeloAsync(ArquivosDeModeloDeTeste.Odt());
+        DocumentoEdital edital = await SemearEditalAsync(processo.Id, ArquivoDeEdital());
+        string identificador = IdentificadoresDeTeste.NovoValor();
+        Guid abertura = Guid.CreateVersion7();
+        Guid retificacao = Guid.CreateVersion7();
+        VersaoConfiguracao v1 = await SemearVersaoAsync(processo, modelo, abertura, identificador, edital);
+        await DivulgarAsync(abertura, Acervo());
+        await SemearRetificacaoAsync(v1, modelo, retificacao, identificador, edital);
+
+        Func<Task> divulgar = () => DivulgarAsync(retificacao, Acervo(bucket: $"acervo-ausente-{Guid.NewGuid():N}"), Retificacao);
+
+        await divulgar.Should().ThrowAsync<AcervoPublicoIndisponivelException>();
+        (await EditaisDivulgadosAsync(processo.Id)).Select(static e => e.AtoId).Should().Equal(
+            [abertura], "o link só aparece depois de o arquivo estar no acervo");
     }
 
     [Fact(DisplayName = "Edital sem cópia selada com o conteúdo congelado não é publicado, e a divulgação não avança")]
@@ -327,6 +398,13 @@ public sealed class DocumentosNoAcervoPublicoIntegrationTests : IClassFixture<Pr
             context,
             TimeProvider.System,
             CancellationToken.None);
+    }
+
+    private async Task<IReadOnlyList<EditalDivulgado>> EditaisDivulgadosAsync(Guid processoId)
+    {
+        await using SelecaoDbContext leitura = _dbFixture.CreateDbContext();
+        CertameDivulgado divulgado = await leitura.CertamesDivulgados.AsNoTracking().SingleAsync(c => c.Id == processoId);
+        return divulgado.EditaisDivulgados;
     }
 
     private async Task<(ProcessoSeletivo Processo, ModeloDeDocumento Modelo)> SemearProcessoComModeloAsync(byte[] conteudo)

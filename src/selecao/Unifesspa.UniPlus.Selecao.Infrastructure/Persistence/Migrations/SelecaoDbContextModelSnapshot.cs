@@ -291,6 +291,14 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("divulgado_em");
 
+                    b.Property<string>("EditaisDivulgados")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("editais_divulgados")
+                        .HasDefaultValueSql("'[]'::jsonb")
+                        .HasComment("O edital de cada versão divulgada, com o ato que a criou e o endereço no acervo público.");
+
                     b.Property<string>("HashConfiguracao")
                         .IsRequired()
                         .HasMaxLength(64)

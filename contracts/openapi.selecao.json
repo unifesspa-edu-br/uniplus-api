@@ -309,7 +309,7 @@
             "description": "OK",
             "headers": {
               "ETag": {
-                "description": "Selo da representa\u00E7\u00E3o servida, no formato \u0022{versaoDaProjecao}:{hashDaConfiguracao}:{situacao}\u0022. Devolva-o no If-None-Match da pr\u00F3xima leitura: a resposta \u00E9 de revalida\u00E7\u00E3o obrigat\u00F3ria (Cache-Control: no-cache), e o selo \u00E9 o que permite receber 304 em vez do documento inteiro. Esta rota \u00E9 somente leitura e n\u00E3o aceita If-Match.",
+                "description": "Selo da representa\u00E7\u00E3o servida, no formato \u0022{versaoDaProjecao}:{hashDaConfiguracao}:{situacao}:{resumoDosEditais}\u0022. Devolva-o no If-None-Match da pr\u00F3xima leitura: a resposta \u00E9 de revalida\u00E7\u00E3o obrigat\u00F3ria (Cache-Control: no-cache), e o selo \u00E9 o que permite receber 304 em vez do documento inteiro. Esta rota \u00E9 somente leitura e n\u00E3o aceita If-Match.",
                 "schema": {
                   "type": "string"
                 }
@@ -327,7 +327,7 @@
             "description": "Not Modified",
             "headers": {
               "ETag": {
-                "description": "Selo da representa\u00E7\u00E3o servida, no formato \u0022{versaoDaProjecao}:{hashDaConfiguracao}:{situacao}\u0022. Devolva-o no If-None-Match da pr\u00F3xima leitura: a resposta \u00E9 de revalida\u00E7\u00E3o obrigat\u00F3ria (Cache-Control: no-cache), e o selo \u00E9 o que permite receber 304 em vez do documento inteiro. Esta rota \u00E9 somente leitura e n\u00E3o aceita If-Match.",
+                "description": "Selo da representa\u00E7\u00E3o servida, no formato \u0022{versaoDaProjecao}:{hashDaConfiguracao}:{situacao}:{resumoDosEditais}\u0022. Devolva-o no If-None-Match da pr\u00F3xima leitura: a resposta \u00E9 de revalida\u00E7\u00E3o obrigat\u00F3ria (Cache-Control: no-cache), e o selo \u00E9 o que permite receber 304 em vez do documento inteiro. Esta rota \u00E9 somente leitura e n\u00E3o aceita If-Match.",
                 "schema": {
                   "type": "string"
                 }
@@ -10336,6 +10336,15 @@
                 "$ref": "#/components/schemas/SituacaoDoCertame"
               }
             ]
+          },
+          "editaisPublicados": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/EditalPublicadoCertameDto"
+            }
           }
         }
       },
@@ -12344,6 +12353,23 @@
             "items": {
               "$ref": "#/components/schemas/AlternativasSimuladasDto"
             }
+          }
+        }
+      },
+      "EditalPublicadoCertameDto": {
+        "required": [
+          "atoId",
+          "urlDownload"
+        ],
+        "type": "object",
+        "properties": {
+          "atoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "urlDownload": {
+            "type": "string",
+            "format": "uri"
           }
         }
       },

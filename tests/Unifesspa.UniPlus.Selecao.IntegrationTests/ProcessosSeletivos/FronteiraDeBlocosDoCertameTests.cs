@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 
 using AwesomeAssertions;
 using AwesomeAssertions.Execution;
@@ -292,6 +293,13 @@ public sealed class FronteiraDeBlocosDoCertameTests
 
             foreach (PropertyInfo propriedade in tipo.GetProperties(BindingFlags.Public | BindingFlags.Instance))
             {
+                // O que a leitura acrescenta (omitido quando nulo) não está no documento guardado,
+                // e portanto não há o que corromper nele.
+                if (propriedade.GetCustomAttribute<JsonIgnoreAttribute>() is not null)
+                {
+                    continue;
+                }
+
                 Type declarado = Nullable.GetUnderlyingType(propriedade.PropertyType) ?? propriedade.PropertyType;
                 string caminho = prefixo.Length == 0 ? NomeJson(propriedade) : $"{prefixo}.{NomeJson(propriedade)}";
 

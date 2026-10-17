@@ -1,10 +1,15 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
+using System.Text.Json;
+
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 internal sealed class CertameDivulgadoConfiguration : IEntityTypeConfiguration<CertameDivulgado>
@@ -33,6 +38,16 @@ internal sealed class CertameDivulgadoConfiguration : IEntityTypeConfiguration<C
     /// aplicação aplica ao termo pesquisado, para que a comparação entre os dois seja possível.
     /// </summary>
     private static readonly string NomeOrdenacaoSql = NormalizacaoTextual.ExpressaoSql("nome");
+
+    private static readonly ValueConverter<IReadOnlyList<EditalDivulgado>, string> EditaisConverter =
+        new(valor => JsonSerializer.Serialize(valor, (JsonSerializerOptions?)null),
+            json => JsonSerializer.Deserialize<List<EditalDivulgado>>(json, (JsonSerializerOptions?)null)!);
+
+    private static readonly ValueComparer<IReadOnlyList<EditalDivulgado>> EditaisComparer =
+        new(
+            (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
+            v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null).GetHashCode(StringComparison.Ordinal),
+            v => JsonSerializer.Deserialize<List<EditalDivulgado>>(JsonSerializer.Serialize(v, (JsonSerializerOptions?)null), (JsonSerializerOptions?)null)!);
 
     public void Configure(EntityTypeBuilder<CertameDivulgado> builder)
     {
@@ -67,6 +82,16 @@ internal sealed class CertameDivulgadoConfiguration : IEntityTypeConfiguration<C
 
         // jsonb, e não texto: buscar dentro do documento é necessidade previsível da vitrine.
         builder.Property(c => c.Certame).HasColumnType("jsonb").IsRequired();
+
+        // Fora do documento abaixo: ele descreve só a versão vigente e é substituído a cada avanço,
+        // e o endereço dos editais anteriores não se recalcula depois — a chave no acervo depende
+        // do ano e do tipo do ato, que só existem na entrega do registro do ato.
+        builder.Property(c => c.EditaisDivulgados)
+            .HasConversion(EditaisConverter, EditaisComparer)
+            .HasColumnType("jsonb")
+            .HasDefaultValueSql("'[]'::jsonb")
+            .IsRequired()
+            .HasComment("O edital de cada versão divulgada, com o ato que a criou e o endereço no acervo público.");
 
         // Concorrência otimista pela coluna de sistema `xmin` (ADR-0119): avançar a divulgação é
         // check-then-act, e a guarda de monotonia é de memória, não do banco. Duas entregas

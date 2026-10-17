@@ -42,6 +42,14 @@ public sealed record TaxaInscricaoCertameDto(bool Cobra, string? Valor, IReadOnl
 public sealed record DocumentoEditalCertameDto(Guid DocumentoEditalId, string HashSha256, Uri UrlDownload);
 
 /// <summary>
+/// O edital de uma versão já divulgada do certame: o ato que a criou e o endereço do arquivo no
+/// acervo público.
+/// </summary>
+/// <param name="AtoId">O ato normativo que criou a versão — a chave que a linha do tempo de publicações já tem.</param>
+/// <param name="UrlDownload">Endereço permanente e de leitura anônima, como o de <see cref="DocumentoEditalCertameDto"/>.</param>
+public sealed record EditalPublicadoCertameDto(Guid AtoId, Uri UrlDownload);
+
+/// <summary>
 /// Presente só quando o edital foi emendado: informa ao candidato que houve retificação e por quê.
 /// </summary>
 public sealed record RetificacaoCertameDto(Guid AtoRetificadoId, string Motivo);
@@ -194,6 +202,10 @@ public sealed record AtendimentoCertameDto(
 /// <see cref="Situacao"/> é a única parte da resposta que não vem da projeção: depende do instante
 /// da leitura, e por isso é calculada a cada consulta e nunca guardada no documento divulgado.
 /// </para>
+/// <para>
+/// <see cref="EditaisPublicados"/> é a outra parte que a leitura acrescenta: o edital de cada versão
+/// divulgada, que cresce a cada retificação e por isso não pertence ao documento da versão vigente.
+/// </para>
 /// </remarks>
 public sealed record CertamePublicadoDto(
     Guid ProcessoSeletivoId,
@@ -227,4 +239,16 @@ public sealed record CertamePublicadoDto(
     /// </remarks>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public SituacaoDoCertame? Situacao { get; init; }
+
+    /// <summary>
+    /// O edital de cada versão divulgada do certame, da mais antiga à mais recente. O de
+    /// <see cref="DocumentoEdital"/> é o da versão vigente e também consta aqui.
+    /// </summary>
+    /// <remarks>
+    /// Mesma forma de <see cref="Situacao"/>: fora do construtor e omitida quando nula, para que o
+    /// documento já divulgado, gravado sem ela, continue legível. Na resposta da consulta ela está
+    /// sempre presente — vazia quando nenhum edital foi registrado ainda.
+    /// </remarks>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<EditalPublicadoCertameDto>? EditaisPublicados { get; init; }
 }
