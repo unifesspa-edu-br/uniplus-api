@@ -10,6 +10,7 @@ internal static class DadosDoAtoDeTeste
 {
     public const string TipoAbertura = "EDITAL_ABERTURA";
     public const string TipoRetificacao = "EDITAL_RETIFICACAO";
+    public const string TipoAviso = "AVISO";
 
     public static DadosDoAto Padrao => new(
         "CEPS", "EDITAL", 2026, DateOnly.FromDateTime(DateTime.UtcNow), "Diretor do CEPS", TipoAbertura);

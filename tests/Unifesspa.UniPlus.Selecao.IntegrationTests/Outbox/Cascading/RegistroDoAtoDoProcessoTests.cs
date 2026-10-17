@@ -1,0 +1,159 @@
+namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
+
+using System.Net;
+using System.Net.Http.Headers;
+using System.Text.Json;
+
+using AwesomeAssertions;
+
+using Domain.Entities;
+using Domain.Enums;
+
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Publicacoes.Contracts;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+
+using Wolverine;
+
+/// <summary>
+/// O registro do ato do processo contra o host real (Wolverine + PG queue durável + Postgres): é
+/// gravado junto da requisição de registro, passa a registrado quando o Publicações confirma o ato,
+/// e aparece na consulta administrativa.
+/// </summary>
+[Collection(CascadingCollection.Name)]
+public sealed class RegistroDoAtoDoProcessoTests
+{
+    private readonly CascadingFixture _fixture;
+
+    public RegistroDoAtoDoProcessoTests(CascadingFixture fixture)
+    {
+        _fixture = fixture;
+    }
+
+    [Fact(DisplayName = "O registro nasce pendente com a requisição e passa a registrado quando o Publicações confirma o ato; a repetição não muda nada")]
+    public async Task Registro_PassaARegistradoQuandoOAtoEConfirmado()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
+        (Guid processoId, Guid documentoId) = await SemearAsync(api);
+        Guid atoId = Guid.CreateVersion7();
+
+        await using (AsyncServiceScope escopo = api.Services.CreateAsyncScope())
+        {
+            await escopo.ServiceProvider.GetRequiredService<IMessageBus>()
+                .InvokeAsync(new RegistrarAtoDoProcessoDeTesteCommand(atoId, processoId, documentoId, FalharDepoisDeGravar: false));
+        }
+
+        // O Publicações registra o ato e devolve a confirmação pela fila durável.
+        await EsperaDeAtoRegistrado.AguardarAsync(api, atoId, "ato do registro do processo", processoId);
+        AtoDoProcesso registrado = await AguardarSituacaoAsync(api, atoId, SituacaoDoRegistroDoAto.Registrado);
+        registrado.RegistradoEm.Should().NotBeNull();
+
+        await using AsyncServiceScope repeticao = api.Services.CreateAsyncScope();
+        await repeticao.ServiceProvider.GetRequiredService<IMessageBus>()
+            .InvokeAsync(new AtoNormativoRegistrado(atoId, 2026, DadosDoAtoDeTeste.TipoAviso));
+
+        AtoDoProcesso depois = await LerAsync(api, atoId);
+        depois.RegistradoEm.Should().Be(registrado.RegistradoEm, "a entrega repetida da confirmação não muda o registro");
+    }
+
+    [Fact(DisplayName = "Falha depois de gravar o registro não deixa registro nem envio: os dois andam na mesma transação")]
+    public async Task FalhaDepoisDeGravar_NaoDeixaRegistro()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
+        (Guid processoId, Guid documentoId) = await SemearAsync(api);
+        Guid atoId = Guid.CreateVersion7();
+
+        await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
+        Func<Task> falhar = () => escopo.ServiceProvider.GetRequiredService<IMessageBus>()
+            .InvokeAsync(new RegistrarAtoDoProcessoDeTesteCommand(atoId, processoId, documentoId, FalharDepoisDeGravar: true));
+
+        await falhar.Should().ThrowAsync<InvalidOperationException>().WithMessage(RegistrarAtoDoProcessoDeTesteHandler.MensagemErro);
+
+        await using AsyncServiceScope leitura = api.Services.CreateAsyncScope();
+        SelecaoDbContext db = leitura.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        (await db.AtosDoProcesso.AsNoTracking().AnyAsync(a => a.Id == atoId)).Should().BeFalse(
+            "a transação inteira volta: o registro some junto da requisição que não chegou a sair");
+    }
+
+    [Fact(DisplayName = "Confirmação de ato que não é do processo é ignorada")]
+    public async Task ConfirmacaoDeAtoDeOutroDominio_EIgnorada()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
+
+        Func<Task> entregar = () => escopo.ServiceProvider.GetRequiredService<IMessageBus>()
+            .InvokeAsync(new AtoNormativoRegistrado(Guid.CreateVersion7(), 2026, "CONVOCACAO"));
+
+        await entregar.Should().NotThrowAsync();
+    }
+
+    [Fact(DisplayName = "A consulta administrativa devolve o ato do processo com situação e documento")]
+    public async Task Consulta_DevolveOAtoComSituacaoEDocumento()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        using HttpClient client = api.CreateClient();
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
+        (Guid processoId, Guid documentoId) = await SemearAsync(api);
+        Guid atoId = Guid.CreateVersion7();
+        await using (AsyncServiceScope escopo = api.Services.CreateAsyncScope())
+        {
+            await escopo.ServiceProvider.GetRequiredService<IMessageBus>()
+                .InvokeAsync(new RegistrarAtoDoProcessoDeTesteCommand(atoId, processoId, documentoId, FalharDepoisDeGravar: false));
+        }
+
+        await AguardarSituacaoAsync(api, atoId, SituacaoDoRegistroDoAto.Registrado);
+
+        using HttpRequestMessage pedido = new(HttpMethod.Get, new Uri($"/api/selecao/processos-seletivos/{processoId}/atos", UriKind.Relative));
+        pedido.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
+        pedido.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
+        pedido.Headers.TryAddWithoutValidation("Accept", "application/vnd.uniplus.ato-do-processo.v1+json");
+        using HttpResponseMessage resposta = await client.SendAsync(pedido);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+        using JsonDocument corpo = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        JsonElement ato = corpo.RootElement.EnumerateArray().Single();
+        ato.GetProperty("id").GetGuid().Should().Be(atoId);
+        ato.GetProperty("criaVersao").GetBoolean().Should().BeFalse();
+        ato.GetProperty("tipoCodigo").GetString().Should().Be(DadosDoAtoDeTeste.TipoAviso);
+        ato.GetProperty("situacao").GetString().Should().Be("registrado");
+        ato.GetProperty("pendenciaAcimaDoLimiar").GetBoolean().Should().BeFalse();
+        ato.GetProperty("documentoPrincipal").GetProperty("documentoAPublicarId").GetGuid().Should().Be(documentoId);
+    }
+
+    private static async Task<(Guid ProcessoId, Guid DocumentoId)> SemearAsync(CascadingApiFactory api)
+    {
+        await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
+        SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
+            .SemearAsync(db, $"Atos do processo {Guid.CreateVersion7()}");
+        return (processo.Id, documento.Id);
+    }
+
+    private static async Task<AtoDoProcesso> LerAsync(CascadingApiFactory api, Guid atoId)
+    {
+        await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
+        SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        return await db.AtosDoProcesso.AsNoTracking().SingleAsync(a => a.Id == atoId);
+    }
+
+    private static async Task<AtoDoProcesso> AguardarSituacaoAsync(CascadingApiFactory api, Guid atoId, SituacaoDoRegistroDoAto esperada)
+    {
+        DateTimeOffset limite = DateTimeOffset.UtcNow.AddSeconds(30);
+        while (true)
+        {
+            AtoDoProcesso ato = await LerAsync(api, atoId);
+            if (ato.Situacao == esperada || DateTimeOffset.UtcNow >= limite)
+            {
+                ato.Situacao.Should().Be(esperada, "a confirmação do Publicações chega pela fila durável");
+                return ato;
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(300));
+        }
+    }
+}
