@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.DocumentosAPublicar;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 
@@ -23,7 +24,7 @@ public sealed class ListarDocumentosAPublicarQueryHandlerTests
     private const string HashFixo = "9f2c1e0b7a4d5c6e8f0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60";
 
     private static DocumentoAPublicar NovoPendente(Guid processoSeletivoId) =>
-        DocumentoAPublicar.IniciarPendente(processoSeletivoId, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        DocumentoAPublicar.IniciarPendente(processoSeletivoId, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
 
     private static DocumentoAPublicar NovoConfirmado(Guid processoSeletivoId, long tamanhoBytes)
     {
@@ -41,7 +42,7 @@ public sealed class ListarDocumentosAPublicarQueryHandlerTests
 
         IDocumentoAPublicarRepository documentos = Substitute.For<IDocumentoAPublicarRepository>();
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
-        documentos.ListarPorProcessoAsync(processoSeletivoId, Arg.Any<CancellationToken>())
+        documentos.ListarPorProcessoAsync(processoSeletivoId, Arg.Any<FinalidadeDoDocumento?>(), Arg.Any<CancellationToken>())
             .Returns([pendente, confirmado]);
         processos.ExisteAsync(processoSeletivoId, Arg.Any<CancellationToken>()).Returns(true);
 
@@ -79,7 +80,7 @@ public sealed class ListarDocumentosAPublicarQueryHandlerTests
         Guid processoSeletivoId = Guid.CreateVersion7();
         IDocumentoAPublicarRepository documentos = Substitute.For<IDocumentoAPublicarRepository>();
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
-        documentos.ListarPorProcessoAsync(processoSeletivoId, Arg.Any<CancellationToken>()).Returns([]);
+        documentos.ListarPorProcessoAsync(processoSeletivoId, Arg.Any<FinalidadeDoDocumento?>(), Arg.Any<CancellationToken>()).Returns([]);
         processos.ExisteAsync(processoSeletivoId, Arg.Any<CancellationToken>()).Returns(true);
 
         Result<ListarDocumentosAPublicarResult> resultado = await ListarDocumentosAPublicarQueryHandler.Handle(
@@ -98,7 +99,7 @@ public sealed class ListarDocumentosAPublicarQueryHandlerTests
         Guid processoSeletivoId = Guid.CreateVersion7();
         IDocumentoAPublicarRepository documentos = Substitute.For<IDocumentoAPublicarRepository>();
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
-        documentos.ListarPorProcessoAsync(processoSeletivoId, Arg.Any<CancellationToken>()).Returns([]);
+        documentos.ListarPorProcessoAsync(processoSeletivoId, Arg.Any<FinalidadeDoDocumento?>(), Arg.Any<CancellationToken>()).Returns([]);
         processos.ExisteAsync(processoSeletivoId, Arg.Any<CancellationToken>()).Returns(false);
 
         Result<ListarDocumentosAPublicarResult> resultado = await ListarDocumentosAPublicarQueryHandler.Handle(
@@ -122,7 +123,7 @@ public sealed class ListarDocumentosAPublicarQueryHandlerTests
         // chaves estrangeiras seguem íntegras e os documentos continuam
         // apontando para ele — só o filtro global tira o processo de alcance.
         // Ter documento, portanto, não prova que o processo é visível.
-        documentos.ListarPorProcessoAsync(processoSeletivoId, Arg.Any<CancellationToken>())
+        documentos.ListarPorProcessoAsync(processoSeletivoId, Arg.Any<FinalidadeDoDocumento?>(), Arg.Any<CancellationToken>())
             .Returns([NovoPendente(processoSeletivoId)]);
         processos.ExisteAsync(processoSeletivoId, Arg.Any<CancellationToken>()).Returns(false);
 

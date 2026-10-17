@@ -46,7 +46,7 @@ public static class ListarDocumentosAPublicarQueryHandler
         }
 
         IReadOnlyList<DocumentoAPublicar> documentos = await documentoAPublicarRepository
-            .ListarPorProcessoAsync(query.ProcessoSeletivoId, cancellationToken)
+            .ListarPorProcessoAsync(query.ProcessoSeletivoId, query.Finalidade, cancellationToken)
             .ConfigureAwait(false);
 
         DocumentoAPublicarDto[] items = [.. documentos.Select(DocumentoAPublicarMapping.ToDto)];

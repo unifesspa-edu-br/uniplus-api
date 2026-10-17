@@ -36,6 +36,13 @@ public sealed class DocumentoAPublicar : EntityBase, IArquivoEnviado
     private static readonly byte[] AssinaturaPdf = "%PDF-"u8.ToArray();
 
     public Guid ProcessoSeletivoId { get; private set; }
+
+    /// <summary>
+    /// Para que o documento foi enviado. Declarada no início do envio e imutável: é o que separa o
+    /// PDF do edital do anexo que também é PDF.
+    /// </summary>
+    public FinalidadeDoDocumento Finalidade { get; private set; }
+
     public string NomeArquivo { get; private set; } = string.Empty;
     public FormatoDeDocumento Formato { get; private set; }
     public string ObjectKey { get; private set; } = string.Empty;
@@ -73,7 +80,8 @@ public sealed class DocumentoAPublicar : EntityBase, IArquivoEnviado
 
     /// <summary>
     /// Cria o registro pendente que acompanha a URL de envio devolvida ao cliente (passo 1 do
-    /// fluxo). O formato vem do tipo de mídia declarado; o nome é o que a pessoa recebe no download,
+    /// fluxo). A finalidade é obrigatória e define o formato aceito (<see cref="FinalidadesDeDocumento"/>).
+    /// O formato vem do tipo de mídia declarado; o nome é o que a pessoa recebe no download,
     /// e a extensão é a do formato. As recusas do tipo de mídia e do nome acumulam. A
     /// <see cref="ObjectKey"/> é composta aqui a partir do <see cref="EntityBase.Id"/> gerado
     /// (Guid v7): a entidade é dona da convenção de caminho, e o chamador não decide o layout do
@@ -81,7 +89,12 @@ public sealed class DocumentoAPublicar : EntityBase, IArquivoEnviado
     /// registrar quando o pendente vencido passa a ser removido pela rotina periódica.
     /// </summary>
     public static Result<DocumentoAPublicar> IniciarPendente(
-        Guid processoSeletivoId, string? nomeArquivo, string? tipoDeMidia, TimeProvider clock, TimeSpan ttl)
+        Guid processoSeletivoId,
+        FinalidadeDoDocumento? finalidade,
+        string? nomeArquivo,
+        string? tipoDeMidia,
+        TimeProvider clock,
+        TimeSpan ttl)
     {
         ArgumentNullException.ThrowIfNull(clock);
 
@@ -92,6 +105,21 @@ public sealed class DocumentoAPublicar : EntityBase, IArquivoEnviado
             erros.Add(new FieldError("tipoDeMidia", new DomainError(
                 DocumentoAPublicarErrorCodes.TipoDeMidiaNaoAceito,
                 $"O tipo de mídia deve ser {TiposDeMidiaDeDocumento.Pdf}, {TiposDeMidiaDeDocumento.Docx} ou {TiposDeMidiaDeDocumento.Odt}.")));
+        }
+
+        if (finalidade is not { } finalidadeDeclarada || !FinalidadesDeDocumento.Conhecida(finalidadeDeclarada))
+        {
+            erros.Add(new FieldError("finalidade", new DomainError(
+                DocumentoAPublicarErrorCodes.FinalidadeInvalida,
+                "A finalidade do documento é obrigatória: edital, anexo do edital ou documento de ato.")));
+        }
+        else if (formato is { } formatoDeclarado && !FinalidadesDeDocumento.AceitaFormato(finalidadeDeclarada, formatoDeclarado))
+        {
+            erros.Add(new FieldError("tipoDeMidia", new DomainError(
+                DocumentoAPublicarErrorCodes.FormatoNaoAceitoParaAFinalidade,
+                finalidadeDeclarada == FinalidadeDoDocumento.DocumentoDoEdital
+                    ? $"O documento do edital deve ser um PDF ({TiposDeMidiaDeDocumento.Pdf})."
+                    : "O formato do documento não é aceito para a finalidade declarada.")));
         }
 
         string? nome = NomeDeArquivoEnviado.Normalizar(nomeArquivo, formato is { } f ? FormatosDeDocumento.Extensao(f) : string.Empty);
@@ -110,6 +138,7 @@ public sealed class DocumentoAPublicar : EntityBase, IArquivoEnviado
         DocumentoAPublicar documento = new()
         {
             ProcessoSeletivoId = processoSeletivoId,
+            Finalidade = finalidade!.Value,
             NomeArquivo = nome!,
             Formato = formato!.Value,
             Status = StatusArquivoEnviado.Pendente,

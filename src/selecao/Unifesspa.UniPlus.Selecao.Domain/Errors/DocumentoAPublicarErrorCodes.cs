@@ -13,4 +13,6 @@ public static class DocumentoAPublicarErrorCodes
     public const string ConteudoDivergeDoFormato = "DocumentoAPublicar.ConteudoDivergeDoFormato";
     public const string ContemMacro = "DocumentoAPublicar.ContemMacro";
     public const string NomeArquivoInvalido = "DocumentoAPublicar.NomeArquivoInvalido";
+    public const string FinalidadeInvalida = "DocumentoAPublicar.FinalidadeInvalida";
+    public const string FormatoNaoAceitoParaAFinalidade = "DocumentoAPublicar.FormatoNaoAceitoParaAFinalidade";
 }

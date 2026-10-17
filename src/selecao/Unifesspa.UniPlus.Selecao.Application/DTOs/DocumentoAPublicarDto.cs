@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
+using Domain.Enums;
+
 /// <summary>
 /// Resposta do passo 1 (iniciar o envio). <paramref name="ContentTypeExigido"/> é o valor exato do
 /// header <c>Content-Type</c> que o PUT direto ao <see cref="UrlUpload"/> precisa enviar — a
@@ -26,6 +28,7 @@ public sealed record IniciarEnvioDoDocumentoAPublicarDto(
 /// pode sobrescrever o objeto que o documento pendente aponta.
 /// </para>
 /// </summary>
+/// <param name="Finalidade">Para que o documento foi enviado; imutável.</param>
 /// <param name="NomeArquivo">O nome com que a pessoa recebe o arquivo no download.</param>
 /// <param name="TipoDeMidia"><c>application/pdf</c>, DOCX ou ODT.</param>
 /// <param name="CriadoEm">Instante em que o envio foi iniciado.</param>
@@ -40,6 +43,7 @@ public sealed record IniciarEnvioDoDocumentoAPublicarDto(
 public sealed record DocumentoAPublicarDto(
     Guid Id,
     Guid ProcessoSeletivoId,
+    FinalidadeDoDocumento Finalidade,
     string NomeArquivo,
     string TipoDeMidia,
     string Status,

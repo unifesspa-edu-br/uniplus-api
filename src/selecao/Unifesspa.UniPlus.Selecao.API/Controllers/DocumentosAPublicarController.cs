@@ -9,6 +9,8 @@ using Application.Services;
 
 using Contracts.Requests;
 
+using Domain.Enums;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -51,24 +53,26 @@ public sealed class DocumentosAPublicarController : ControllerBase
     /// o pendente e o confirmado lado a lado — é por aqui que o editor retoma um
     /// rascunho depois de um refresh, em vez de reenviar o arquivo que já subiu.
     /// Devolve apenas metadados: nenhum endereço de storage e nenhuma URL
-    /// assinada atravessa o contrato.
+    /// assinada atravessa o contrato. O filtro <c>finalidade</c> restringe aos documentos enviados
+    /// para ela — quem escolhe o edital lista só os de finalidade <c>edital</c>.
     /// </summary>
     [HttpGet]
     [VendorMediaType(Resource = "documento-a-publicar", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<DocumentoAPublicarDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
-    public async Task<IActionResult> Listar(Guid processoSeletivoId, CancellationToken cancellationToken)
+    public async Task<IActionResult> Listar(
+        Guid processoSeletivoId, [FromQuery] FinalidadeDoDocumento? finalidade, CancellationToken cancellationToken)
     {
         Result<ListarDocumentosAPublicarResult> resultado = await _queryBus
-            .Send(new ListarDocumentosAPublicarQuery(processoSeletivoId), cancellationToken)
+            .Send(new ListarDocumentosAPublicarQuery(processoSeletivoId, finalidade), cancellationToken)
             .ConfigureAwait(false);
 
         return resultado.IsSuccess ? Ok(resultado.Value!.Items) : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
-    /// Passo 1: cria o registro pendente com o nome e o tipo de mídia e devolve a URL pré-assinada
+    /// Passo 1: cria o registro pendente com a finalidade, o nome e o tipo de mídia e devolve a URL pré-assinada
     /// de PUT (validade curta), o <c>Content-Type</c> que o PUT envia e o id do documento.
     /// </summary>
     [HttpPost]
@@ -85,7 +89,7 @@ public sealed class DocumentosAPublicarController : ControllerBase
         ArgumentNullException.ThrowIfNull(request);
 
         Result<IniciarEnvioDoDocumentoAPublicarDto> resultado = await _commandBus.Send(
-            new IniciarEnvioDoDocumentoAPublicarCommand(processoSeletivoId, request.NomeArquivo, request.TipoDeMidia), cancellationToken);
+            new IniciarEnvioDoDocumentoAPublicarCommand(processoSeletivoId, request.Finalidade, request.NomeArquivo, request.TipoDeMidia), cancellationToken);
         return resultado.IsSuccess ? StatusCode(StatusCodes.Status201Created, resultado.Value) : resultado.ToActionResult(_mapper);
     }
 

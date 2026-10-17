@@ -16,6 +16,7 @@ public sealed class DocumentoAPublicarConfiguration : IEntityTypeConfiguration<D
         // Guid v7 gerado no domínio (EntityBase) — mesma convenção de ProcessoSeletivoConfiguration.
         builder.Property(d => d.Id).ValueGeneratedNever();
 
+        builder.Property(d => d.Finalidade).HasConversion<int>().IsRequired();
         builder.Property(d => d.NomeArquivo).HasMaxLength(DocumentoAPublicar.NomeArquivoMaxLength).IsRequired();
         builder.Property(d => d.Formato).HasConversion<int>().IsRequired();
         builder.Property(d => d.ObjectKey).HasMaxLength(500).IsRequired();

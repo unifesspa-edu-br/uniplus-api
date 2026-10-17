@@ -293,7 +293,7 @@ public sealed class PublicacaoConcorrenciaTests
         await db.ProcessosSeletivos.AddAsync(processo);
 
         string hashFixo = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
-        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(1024, hashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();
         await db.DocumentosAPublicar.AddAsync(documento);
 

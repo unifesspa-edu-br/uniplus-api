@@ -613,7 +613,7 @@ public sealed class DocumentosNoAcervoPublicoIntegrationTests : IClassFixture<Pr
     /// <summary>Um documento do edital confirmado, com a cópia selada no bucket privado.</summary>
     private async Task<DocumentoAPublicar> SemearEditalAsync(Guid processoId, byte[] conteudo)
     {
-        DocumentoAPublicar edital = DocumentoAPublicar.IniciarPendente(processoId, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        DocumentoAPublicar edital = DocumentoAPublicar.IniciarPendente(processoId, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         edital.Confirmar(conteudo.LongLength, Convert.ToHexStringLower(SHA256.HashData(conteudo)), TimeProvider.System)
             .IsSuccess.Should().BeTrue();
         await Storage().SalvarConteudoSeladoAsync(edital.ObjectKeyConfirmado!, conteudo, TiposDeMidiaDeDocumento.Pdf);
@@ -627,7 +627,7 @@ public sealed class DocumentosNoAcervoPublicoIntegrationTests : IClassFixture<Pr
     /// <summary>Um anexo do edital: o documento confirmado, com a cópia selada no bucket privado, e o anexo congelado dele.</summary>
     private async Task<(AnexoDoEdital Anexo, byte[] Conteudo)> SemearAnexoAsync(Guid processoId, string nome, string tipoDeMidia, byte[] conteudo)
     {
-        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, nome, tipoDeMidia, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, FinalidadeDoDocumento.AnexoDoEdital, nome, tipoDeMidia, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(conteudo.LongLength, Convert.ToHexStringLower(SHA256.HashData(conteudo)), TimeProvider.System)
             .IsSuccess.Should().BeTrue();
         await Storage().SalvarConteudoSeladoAsync(documento.ObjectKeyConfirmado!, conteudo, tipoDeMidia);

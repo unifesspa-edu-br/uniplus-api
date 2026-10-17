@@ -7,12 +7,14 @@ using NSubstitute;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 
 /// <summary>
 /// O documento que o ato do edital referencia — na publicação, na retificação e no fechamento da
-/// retificação — passa pela mesma conferência: existe, é do processo, está confirmado e é PDF.
+/// retificação — passa pela mesma conferência: existe, é do processo, está confirmado e foi enviado
+/// como edital.
 /// </summary>
 public sealed class ConferenciaDoDocumentoDoEditalTests
 {
@@ -47,20 +49,21 @@ public sealed class ConferenciaDoDocumentoDoEditalTests
         resultado.Error.Message.Should().Contain("na retificação");
     }
 
-    [Theory(DisplayName = "Documento do edital que não é PDF é recusado")]
-    [InlineData(TiposDeMidiaDeDocumento.Docx)]
-    [InlineData(TiposDeMidiaDeDocumento.Odt)]
-    public async Task Confere_NaoPdf_Recusa(string tipoDeMidia)
+    [Theory(DisplayName = "Documento enviado para outra finalidade é recusado como edital, mesmo sendo PDF")]
+    [InlineData(FinalidadeDoDocumento.AnexoDoEdital)]
+    [InlineData(FinalidadeDoDocumento.DocumentoDeAto)]
+    public async Task Confere_OutraFinalidade_Recusa(FinalidadeDoDocumento finalidade)
     {
-        Result<DocumentoAPublicar> resultado = await ConferirAsync(Documento(tipoDeMidia, confirmado: true), ProcessoId);
+        Result<DocumentoAPublicar> resultado = await ConferirAsync(
+            Documento(TiposDeMidiaDeDocumento.Pdf, confirmado: true, finalidade), ProcessoId);
 
-        resultado.Error!.Code.Should().Be(ConferenciaDoDocumentoDoEdital.NaoEPdf);
+        resultado.Error!.Code.Should().Be(ConferenciaDoDocumentoDoEdital.FinalidadeIncompativel);
     }
 
-    private static DocumentoAPublicar Documento(string tipoDeMidia, bool confirmado)
+    private static DocumentoAPublicar Documento(string tipoDeMidia, bool confirmado, FinalidadeDoDocumento finalidade = FinalidadeDoDocumento.DocumentoDoEdital)
     {
         DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
-            ProcessoId, "edital", tipoDeMidia, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+            ProcessoId, finalidade, "edital", tipoDeMidia, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         if (confirmado)
         {
             documento.Confirmar(1024, new string('a', 64), TimeProvider.System).IsSuccess.Should().BeTrue();

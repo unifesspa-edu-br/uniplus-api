@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 using Entities;
 
+using Enums;
+
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 
 /// <summary>
@@ -16,7 +18,9 @@ public interface IDocumentoAPublicarRepository : IRepository<DocumentoAPublicar>
     /// Lista os documentos de um único Processo Seletivo, do mais recente para
     /// o mais antigo. O filtro é da consulta, não de um <c>Where</c> aplicado
     /// depois de <see cref="Unifesspa.UniPlus.Kernel.Domain.Interfaces.IRepository{T}.ObterTodosAsync"/>:
-    /// a leitura de um processo nunca carrega os documentos de todos os outros.
+    /// a leitura de um processo nunca carrega os documentos de todos os outros. Com
+    /// <paramref name="finalidade"/>, só os documentos enviados para ela; <see langword="null"/> não
+    /// filtra.
     /// </summary>
     /// <remarks>
     /// A ordem é <c>CreatedAt</c> decrescente com <c>Id</c> como desempate, e é
@@ -30,6 +34,7 @@ public interface IDocumentoAPublicarRepository : IRepository<DocumentoAPublicar>
     /// </remarks>
     Task<IReadOnlyList<DocumentoAPublicar>> ListarPorProcessoAsync(
         Guid processoSeletivoId,
+        FinalidadeDoDocumento? finalidade,
         CancellationToken cancellationToken = default);
 
     /// <summary>Os documentos do processo entre os ids dados, numa consulta só, sem rastreamento.</summary>

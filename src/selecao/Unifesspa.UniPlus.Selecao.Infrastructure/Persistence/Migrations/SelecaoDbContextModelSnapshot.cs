@@ -1092,6 +1092,10 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expira_em");
 
+                    b.Property<int>("Finalidade")
+                        .HasColumnType("integer")
+                        .HasColumnName("finalidade");
+
                     b.Property<int>("Formato")
                         .HasColumnType("integer")
                         .HasColumnName("formato");

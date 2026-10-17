@@ -75,7 +75,7 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
     public async Task PendenteVencido_SaiDoBancoEDoArmazenamento()
     {
         Guid processoId = await NovoProcessoAsync();
-        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, Vencido).Value!;
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, Vencido).Value!;
         ModeloDeDocumento modelo = Modelo(processoId, Vencido);
         await PersistirComObjetoAsync(documento, documento.ObjectKey, modelo, modelo.ObjectKey);
 
@@ -91,7 +91,7 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
     public async Task PendenteNoPrazo_Permanece()
     {
         Guid processoId = await NovoProcessoAsync();
-        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, NoPrazo).Value!;
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, NoPrazo).Value!;
         ModeloDeDocumento modelo = Modelo(processoId, NoPrazo);
         await PersistirComObjetoAsync(documento, documento.ObjectKey, modelo, modelo.ObjectKey);
 
@@ -107,7 +107,7 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
     public async Task Confirmado_Permanece()
     {
         Guid processoId = await NovoProcessoAsync();
-        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, Vencido).Value!;
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, Vencido).Value!;
         documento.Confirmar(Conteudo.Length, new string('a', 64), TimeProvider.System).IsSuccess.Should().BeTrue();
         ModeloDeDocumento modelo = Modelo(processoId, Vencido);
         modelo.Confirmar(Conteudo.Length, new string('b', 64), TimeProvider.System).IsSuccess.Should().BeTrue();
@@ -127,7 +127,7 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
         Guid processoId = await NovoProcessoAsync();
         // O bucket existe — o que falta é só o objeto do pendente.
         await _storage.SalvarConteudoSeladoAsync($"selecao/outro/{Guid.CreateVersion7():D}.pdf", Conteudo, TiposDeMidiaDeDocumento.Pdf);
-        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, Vencido).Value!;
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, Vencido).Value!;
         await using (SelecaoDbContext context = _dbFixture.CreateDbContext())
         {
             context.DocumentosAPublicar.Add(documento);
@@ -143,7 +143,7 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
     public async Task RemocaoCondicionada_DocumentoReivindicadoPelaConfirmacao_Permanece()
     {
         Guid processoId = await NovoProcessoAsync();
-        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, Vencido).Value!;
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, Vencido).Value!;
         await using (SelecaoDbContext context = _dbFixture.CreateDbContext())
         {
             context.DocumentosAPublicar.Add(documento);

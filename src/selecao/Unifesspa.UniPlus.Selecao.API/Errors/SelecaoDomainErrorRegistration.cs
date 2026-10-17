@@ -375,6 +375,8 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new(DocumentoAPublicarErrorCodes.ConteudoDivergeDoFormato, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_a_publicar.conteudo_diverge_do_formato", "O conteúdo do arquivo não corresponde ao tipo de mídia declarado")),
         new(DocumentoAPublicarErrorCodes.ContemMacro, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_a_publicar.contem_macro", "O documento não pode conter macro")),
         new(DocumentoAPublicarErrorCodes.NomeArquivoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_a_publicar.nome_arquivo_invalido", "Nome do arquivo do documento inválido")),
+        new(DocumentoAPublicarErrorCodes.FinalidadeInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_a_publicar.finalidade_invalida", "A finalidade do documento é obrigatória")),
+        new(DocumentoAPublicarErrorCodes.FormatoNaoAceitoParaAFinalidade, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_a_publicar.formato_nao_aceito_para_a_finalidade", "O formato do documento não é aceito para a finalidade declarada")),
         // Modelo de documento da exigência — envio direto por URL pré-assinada, como o documento a
         // publicar. NaoEncontrado é 404 (inexistente ou de outro processo); as demais são recusas
         // de validação (422).
@@ -391,6 +393,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new(AnexoDoEditalErrorCodes.NaoEncontrado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.anexo_do_edital.nao_encontrado", "Documento do anexo não encontrado ou não pertence a este processo")),
         new(AnexoDoEditalErrorCodes.NaoConfirmado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.anexo_do_edital.nao_confirmado", "Somente um documento confirmado pode ser anexado ao edital")),
         new(AnexoDoEditalErrorCodes.Repetido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.anexo_do_edital.repetido", "O mesmo documento não pode constar duas vezes no edital")),
+        new(AnexoDoEditalErrorCodes.FinalidadeIncompativel, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.anexo_do_edital.finalidade_incompativel", "Somente um documento enviado como anexo do edital pode ser anexado ao edital")),
         new(AnexoDoEditalErrorCodes.NomeInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.anexo_do_edital.nome_invalido", "Nome do anexo inválido")),
         new(AnexoDoEditalErrorCodes.QuantidadeExcedida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.anexo_do_edital.quantidade_excedida", "O edital aceita no máximo 20 anexos")),
         // Publicação do Processo Seletivo — RN08 (Story #759, T4 #785). Todo
@@ -509,7 +512,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // Grafo de dependência conjunto (Story #928, §6): ciclo pelas quatro classes de aresta juntas.
         new("GrafoDependenciaConjunta.GrafoConjuntoComCiclo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.grafo_dependencia_conjunta.grafo_conjunto_com_ciclo", "O grafo de dependência conjunto (produção, pré-condição, derivação e gatilho) forma um ciclo")),
         new("ProcessoSeletivo.DocumentoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_nao_encontrado", "Documento do Edital não encontrado ou não pertence a este processo")),
-        new("ProcessoSeletivo.DocumentoDoEditalNaoEPdf", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_do_edital_nao_e_pdf", "O documento do edital deve ser um PDF")),
+        new("ProcessoSeletivo.DocumentoNaoEnviadoComoEdital", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_nao_enviado_como_edital", "Somente um documento enviado como edital pode ser o documento do edital")),
         new("ProcessoSeletivo.DocumentoNaoConfirmado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_nao_confirmado", "Somente um documento confirmado pode ser referenciado na publicação")),
         // Story #919 (RN08): defesa em profundidade — o vocabulário de fatos é fechado e
         // append-only (ADR-0111), então este código não deveria ocorrer em produção, mas

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.DocumentosAPublicar;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Lê os documentos oficiais vinculados a um Processo Seletivo. É o que
@@ -15,5 +16,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// publica — escolher aqui, em silêncio, faria a lista parecer inofensiva
 /// enquanto decidia por quem a consulta.
 /// </remarks>
+/// <param name="ProcessoSeletivoId">O processo.</param>
+/// <param name="Finalidade">Só os documentos enviados para esta finalidade; nulo lista todos.</param>
 public sealed record ListarDocumentosAPublicarQuery(
-    Guid ProcessoSeletivoId) : IQuery<Result<ListarDocumentosAPublicarResult>>;
+    Guid ProcessoSeletivoId,
+    FinalidadeDoDocumento? Finalidade = null) : IQuery<Result<ListarDocumentosAPublicarResult>>;

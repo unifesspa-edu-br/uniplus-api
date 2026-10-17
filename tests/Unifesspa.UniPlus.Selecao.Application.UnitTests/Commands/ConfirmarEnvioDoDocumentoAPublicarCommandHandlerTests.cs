@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosAPublicar;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -23,7 +24,7 @@ public sealed class ConfirmarEnvioDoDocumentoAPublicarCommandHandlerTests
     private static (DocumentoAPublicar Documento, Guid ProcessoSeletivoId) NovoDocumentoPendente()
     {
         Guid processoSeletivoId = Guid.CreateVersion7();
-        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoSeletivoId, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoSeletivoId, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         return (documento, processoSeletivoId);
     }
 
@@ -276,7 +277,7 @@ public sealed class ConfirmarEnvioDoDocumentoAPublicarCommandHandlerTests
     {
         Guid processoId = Guid.CreateVersion7();
         DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
-            processoId, "Anexo I", TiposDeMidiaDeDocumento.Docx, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+            processoId, FinalidadeDoDocumento.AnexoDoEdital, "Anexo I", TiposDeMidiaDeDocumento.Docx, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         byte[] docx = ArquivosDeModeloDeTeste.Docx();
         IDocumentoAPublicarRepository repository = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();

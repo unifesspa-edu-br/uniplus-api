@@ -153,7 +153,7 @@ public sealed class FatoColetavelDeEscopoGateTests
     private static IDocumentoAPublicarRepository RepositorioDeDocumento(Guid processoSeletivoId)
     {
         DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
-            processoSeletivoId, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+            processoSeletivoId, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(1024, HashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();
 
         IDocumentoAPublicarRepository repositorio = Substitute.For<IDocumentoAPublicarRepository>();

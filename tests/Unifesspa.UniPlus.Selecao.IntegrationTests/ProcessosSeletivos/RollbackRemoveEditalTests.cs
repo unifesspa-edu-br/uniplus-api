@@ -174,8 +174,8 @@ public sealed class RollbackRemoveEditalTests : IAsyncLifetime
                 now(), false);
 
             INSERT INTO selecao.documentos_a_publicar (
-                id, processo_seletivo_id, nome_arquivo, formato, object_key, status, expira_em, hash_sha256, confirmado_em, created_at)
-            VALUES ('{{DocumentoId}}', '{{ProcessoId}}', 'ato.pdf', 1, 'editais/ato.pdf', 1, now() + interval '1 day',
+                id, processo_seletivo_id, finalidade, nome_arquivo, formato, object_key, status, expira_em, hash_sha256, confirmado_em, created_at)
+            VALUES ('{{DocumentoId}}', '{{ProcessoId}}', 1, 'ato.pdf', 1, 'editais/ato.pdf', 1, now() + interval '1 day',
                     repeat('b', 64), now(), now());
 
             INSERT INTO selecao.versoes_configuracao (

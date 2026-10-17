@@ -95,7 +95,7 @@ public sealed class DocumentoAPublicarEnvioIntegrationTests : IClassFixture<Proc
         ProcessoSeletivoRepository processoRepository = new(context, TimeProvider.System);
 
         Result<IniciarEnvioDoDocumentoAPublicarDto> iniciarResultado = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
-            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
+            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
             processoRepository, documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
         iniciarResultado.IsSuccess.Should().BeTrue();
 
@@ -126,7 +126,7 @@ public sealed class DocumentoAPublicarEnvioIntegrationTests : IClassFixture<Proc
         byte[] arquivo = tipoDeMidia == TiposDeMidiaDeDocumento.Docx ? ArquivosDeModeloDeTeste.Docx() : ArquivosDeModeloDeTeste.Odt();
 
         Result<IniciarEnvioDoDocumentoAPublicarDto> iniciar = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
-            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, "Anexo I", tipoDeMidia),
+            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, FinalidadeDoDocumento.AnexoDoEdital, "Anexo I", tipoDeMidia),
             processoRepository, documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
         iniciar.IsSuccess.Should().BeTrue();
         iniciar.Value!.ContentTypeExigido.Should().Be(tipoDeMidia);
@@ -163,7 +163,7 @@ public sealed class DocumentoAPublicarEnvioIntegrationTests : IClassFixture<Proc
         ProcessoSeletivoRepository processoRepository = new(context, TimeProvider.System);
 
         Result<IniciarEnvioDoDocumentoAPublicarDto> iniciar = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
-            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
+            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
             processoRepository, documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
         iniciar.IsSuccess.Should().BeTrue();
 
@@ -197,7 +197,7 @@ public sealed class DocumentoAPublicarEnvioIntegrationTests : IClassFixture<Proc
         ProcessoSeletivoRepository processoRepository = new(context, TimeProvider.System);
 
         Result<IniciarEnvioDoDocumentoAPublicarDto> iniciar = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
-            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
+            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
             processoRepository, documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
         iniciar.IsSuccess.Should().BeTrue();
 
@@ -217,7 +217,7 @@ public sealed class DocumentoAPublicarEnvioIntegrationTests : IClassFixture<Proc
         ProcessoSeletivoRepository processoRepository = new(context, TimeProvider.System);
 
         Result<IniciarEnvioDoDocumentoAPublicarDto> iniciarResultado = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
-            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
+            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
             processoRepository, documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
 
         using HttpClient http = new();
@@ -259,7 +259,7 @@ public sealed class DocumentoAPublicarEnvioIntegrationTests : IClassFixture<Proc
         ProcessoSeletivoRepository processoRepository = new(context, TimeProvider.System);
 
         Result<IniciarEnvioDoDocumentoAPublicarDto> iniciarResultado = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
-            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
+            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
             processoRepository, documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
         iniciarResultado.IsSuccess.Should().BeTrue();
 
@@ -280,7 +280,7 @@ public sealed class DocumentoAPublicarEnvioIntegrationTests : IClassFixture<Proc
         ProcessoSeletivoRepository processoRepository = new(context, TimeProvider.System);
 
         Result<IniciarEnvioDoDocumentoAPublicarDto> iniciarResultado = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
-            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
+            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
             processoRepository, documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
         iniciarResultado.IsSuccess.Should().BeTrue();
 
@@ -307,7 +307,7 @@ public sealed class DocumentoAPublicarEnvioIntegrationTests : IClassFixture<Proc
         ProcessoSeletivoRepository processoRepository = new(context, TimeProvider.System);
 
         Result<IniciarEnvioDoDocumentoAPublicarDto> iniciarResultado = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
-            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
+            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
             processoRepository, documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
         iniciarResultado.IsSuccess.Should().BeTrue();
 
@@ -333,7 +333,7 @@ public sealed class DocumentoAPublicarEnvioIntegrationTests : IClassFixture<Proc
         ProcessoSeletivoRepository processoRepository = new(context, TimeProvider.System);
 
         Result<IniciarEnvioDoDocumentoAPublicarDto> iniciarResultado = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
-            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
+            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
             processoRepository, documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
 
         using HttpClient http = new();
@@ -363,10 +363,10 @@ public sealed class DocumentoAPublicarEnvioIntegrationTests : IClassFixture<Proc
         ProcessoSeletivoRepository processoRepository = new(context, TimeProvider.System);
 
         Result<IniciarEnvioDoDocumentoAPublicarDto> primeiro = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
-            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
+            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
             processoRepository, documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
         Result<IniciarEnvioDoDocumentoAPublicarDto> segundo = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
-            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
+            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
             processoRepository, documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
 
         primeiro.Value!.DocumentoAPublicarId.Should().NotBe(segundo.Value!.DocumentoAPublicarId);
@@ -381,7 +381,7 @@ public sealed class DocumentoAPublicarEnvioIntegrationTests : IClassFixture<Proc
     {
         (SelecaoDbContext context, ProcessoSeletivo processo) = await NovoProcessoAsync();
         DocumentoAPublicarRepository documentoRepository = new(context);
-        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         context.DocumentosAPublicar.Add(documento);
         await context.SaveChangesAsync();
 
@@ -392,12 +392,34 @@ public sealed class DocumentoAPublicarEnvioIntegrationTests : IClassFixture<Proc
         segunda.Should().BeFalse();
     }
 
+    [Fact(DisplayName = "A finalidade fica gravada e a listagem filtra por ela, sem misturar o anexo PDF com o edital")]
+    public async Task Listar_FiltraPelaFinalidadeGravada()
+    {
+        (SelecaoDbContext context, ProcessoSeletivo processo) = await NovoProcessoAsync();
+        DocumentoAPublicar edital = DocumentoAPublicar.IniciarPendente(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        DocumentoAPublicar anexoPdf = DocumentoAPublicar.IniciarPendente(processo.Id, FinalidadeDoDocumento.AnexoDoEdital, "quadro.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        DocumentoAPublicar anexoDocx = DocumentoAPublicar.IniciarPendente(processo.Id, FinalidadeDoDocumento.AnexoDoEdital, "formulario.docx", TiposDeMidiaDeDocumento.Docx, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        context.DocumentosAPublicar.AddRange(edital, anexoPdf, anexoDocx);
+        await context.SaveChangesAsync();
+        await using SelecaoDbContext leitura = _dbFixture.CreateDbContext();
+        DocumentoAPublicarRepository repositorio = new(leitura);
+
+        IReadOnlyList<DocumentoAPublicar> editais = await repositorio.ListarPorProcessoAsync(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital);
+        IReadOnlyList<DocumentoAPublicar> anexos = await repositorio.ListarPorProcessoAsync(processo.Id, FinalidadeDoDocumento.AnexoDoEdital);
+        IReadOnlyList<DocumentoAPublicar> todos = await repositorio.ListarPorProcessoAsync(processo.Id, null);
+
+        editais.Select(static d => d.Id).Should().Equal(edital.Id);
+        anexos.Select(static d => d.Id).Should().BeEquivalentTo([anexoPdf.Id, anexoDocx.Id]);
+        todos.Should().HaveCount(3);
+        (await repositorio.ListarPorProcessoAsync(processo.Id, FinalidadeDoDocumento.DocumentoDeAto)).Should().BeEmpty();
+    }
+
     [Fact(DisplayName = "TentarReivindicarConfirmacaoAsync participa da transação ambiente: reverte em rollback")]
     public async Task TentarReivindicarConfirmacaoAsync_RevertNoRollbackDaTransacaoAmbiente()
     {
         (SelecaoDbContext context, ProcessoSeletivo processo) = await NovoProcessoAsync();
         DocumentoAPublicarRepository documentoRepository = new(context);
-        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         context.DocumentosAPublicar.Add(documento);
         await context.SaveChangesAsync();
 
@@ -427,7 +449,7 @@ public sealed class DocumentoAPublicarEnvioIntegrationTests : IClassFixture<Proc
         ProcessoSeletivoRepository processoRepository = new(contextoInicial, TimeProvider.System);
 
         Result<IniciarEnvioDoDocumentoAPublicarDto> iniciar = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
-            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
+            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
             processoRepository, repositorioInicial, _storage, contextoInicial, TimeProvider.System, CancellationToken.None);
         iniciar.IsSuccess.Should().BeTrue();
 

@@ -8,14 +8,14 @@ using Kernel.Results;
 
 /// <summary>
 /// A conferência do documento que o ato do edital referencia — na publicação, na retificação e no
-/// fechamento da retificação: existe, é do processo, está confirmado e é um PDF. É a mesma recusa
-/// nos três, antes de qualquer escrita; o edital é divulgado como PDF.
+/// fechamento da retificação: existe, é do processo, está confirmado e foi enviado como edital — o
+/// que, pela finalidade, já o faz PDF. É a mesma recusa nos três, antes de qualquer escrita.
 /// </summary>
 public static class ConferenciaDoDocumentoDoEdital
 {
     public const string NaoEncontrado = "ProcessoSeletivo.DocumentoNaoEncontrado";
     public const string NaoConfirmado = "ProcessoSeletivo.DocumentoNaoConfirmado";
-    public const string NaoEPdf = "ProcessoSeletivo.DocumentoDoEditalNaoEPdf";
+    public const string FinalidadeIncompativel = "ProcessoSeletivo.DocumentoNaoEnviadoComoEdital";
 
     /// <param name="usoDoDocumento">Onde o documento é referenciado, para a mensagem: "na publicação", "na retificação"...</param>
     public static async Task<Result<DocumentoAPublicar>> ConferirAsync(
@@ -41,8 +41,9 @@ public static class ConferenciaDoDocumentoDoEdital
                 NaoConfirmado, $"Somente um documento confirmado pode ser referenciado {usoDoDocumento}."));
         }
 
-        return documento.Formato == FormatoDeDocumento.Pdf
+        return documento.Finalidade == FinalidadeDoDocumento.DocumentoDoEdital
             ? Result<DocumentoAPublicar>.Success(documento)
-            : Result<DocumentoAPublicar>.Failure(new DomainError(NaoEPdf, "O documento do edital deve ser um PDF."));
+            : Result<DocumentoAPublicar>.Failure(new DomainError(
+                FinalidadeIncompativel, "Somente um documento enviado como edital pode ser o documento do edital."));
     }
 }
