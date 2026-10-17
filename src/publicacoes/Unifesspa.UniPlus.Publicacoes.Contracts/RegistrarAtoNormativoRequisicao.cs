@@ -19,6 +19,11 @@ namespace Unifesspa.UniPlus.Publicacoes.Contracts;
 /// fisicamente: <c>VersaoConfiguracao.AtoCriadorId</c> é referência por valor, sem
 /// chave estrangeira (ADR-0061) — o modelo já previa que o ato viveria noutro módulo.
 /// </para>
+/// <para>
+/// Os <see cref="Anexos"/> são os arquivos que acompanham o documento principal, cada um com
+/// o hash do seu conteúdo. Anulável porque uma requisição emitida antes de o campo existir
+/// chega sem ele — e é lida como lista vazia, como o <c>Nome</c> de <see cref="AtributosDoTipoAto"/>.
+/// </para>
 /// </remarks>
 public sealed record RegistrarAtoNormativoRequisicao(
     Guid AtoId,
@@ -35,7 +40,15 @@ public sealed record RegistrarAtoNormativoRequisicao(
     Guid? AtoRetificadoId,
     string? MotivoRetificacao,
     IReadOnlyList<VinculoEntidadeRequisicao> Vinculos,
-    AtributosDoTipoAto AtributosDoTipo);
+    AtributosDoTipoAto AtributosDoTipo,
+    IReadOnlyList<AnexoDoAtoRequisicao>? Anexos = null);
+
+/// <summary>
+/// Arquivo anexo ao documento principal do ato: o nome com que foi publicado, o tipo de mídia
+/// e o hash SHA-256 (hexadecimal minúsculo) do conteúdo. Publicações guarda o trio e não
+/// conhece o arquivo nem o domínio que o produziu (ADR-0105).
+/// </summary>
+public sealed record AnexoDoAtoRequisicao(string Nome, string TipoMidia, string Hash);
 
 /// <summary>
 /// O que o catálogo dizia sobre o tipo do ato NO MOMENTO em que o domínio publicou —

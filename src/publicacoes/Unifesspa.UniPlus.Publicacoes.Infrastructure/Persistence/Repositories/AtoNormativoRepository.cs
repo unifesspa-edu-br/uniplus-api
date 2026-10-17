@@ -34,6 +34,7 @@ public sealed class AtoNormativoRepository : IAtoNormativoRepository
     {
         return _dbContext.AtosNormativos
             .AsNoTracking()
+            .Include(a => a.Anexos)
             .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
     }
 
@@ -121,7 +122,7 @@ public sealed class AtoNormativoRepository : IAtoNormativoRepository
     {
         // Sem OrderBy aqui: o helper keyset (ADR-0089) ordena por Id (Guid v7) e
         // fatia, devolvendo as âncoras de prev/next.
-        IQueryable<AtoNormativo> query = _dbContext.AtosNormativos.AsNoTracking();
+        IQueryable<AtoNormativo> query = _dbContext.AtosNormativos.AsNoTracking().Include(a => a.Anexos);
 
         CursorKeysetPage<AtoNormativo> page = await CursorKeyset
             .ApplyAsync(query, afterId, limit, direction, cancellationToken)
@@ -245,6 +246,7 @@ public sealed class AtoNormativoRepository : IAtoNormativoRepository
         // JOIN, que duplicaria o ato vinculado à mesma entidade por mais de um caminho.
         IQueryable<AtoNormativo> query = _dbContext.AtosNormativos
             .AsNoTracking()
+            .Include(a => a.Anexos)
             .Where(a => _dbContext.VinculosAtoEntidade
                 .Any(v => v.AtoId == a.Id && v.EntidadeTipo == tipoNorm && v.EntidadeId == entidadeId));
 

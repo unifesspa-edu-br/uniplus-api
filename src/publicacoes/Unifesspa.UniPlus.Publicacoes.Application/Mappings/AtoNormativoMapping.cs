@@ -31,6 +31,9 @@ public static class AtoNormativoMapping
             ato.VersaoInvocada?.Id,
             ato.VersaoInvocada?.Hash,
             ato.AtoRetificadoId,
-            ato.MotivoRetificacao);
+            ato.MotivoRetificacao,
+            [.. ato.Anexos
+                .OrderBy(a => a.Ordem)
+                .Select(a => new AnexoDoAtoDto(a.Nome, a.TipoMidia, a.Hash))]);
     }
 }

@@ -100,6 +100,14 @@ public sealed class RegistrarAtoNormativoCommandValidator
             })
             .When(x => x.Vinculos is not null && x.Vinculos.All(v => v is not null));
 
+        // O elemento nulo de anexos é recusado pelo mesmo motivo dos vínculos. As regras do
+        // anexo em si (nome, tipo de mídia, hash, duplicidade) são do agregado, que as
+        // aplica também ao registro por mensagem — onde este validator não passa — e
+        // devolve a recusa nomeada.
+        RuleForEach(x => x.Anexos)
+            .NotNull().WithMessage(AtoNormativoRegras.AnexoNulo)
+            .When(x => x.Anexos is not null);
+
         // O vínculo é único por trio (ato, tipo, id): repetir a mesma entidade no mesmo
         // ato não acrescenta vínculo nenhum, e o payload está internamente incoerente.
         RuleFor(x => x.Vinculos)

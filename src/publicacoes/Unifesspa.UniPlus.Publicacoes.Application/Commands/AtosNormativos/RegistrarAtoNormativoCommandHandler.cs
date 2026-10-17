@@ -44,6 +44,16 @@ public static class RegistrarAtoNormativoCommandHandler
             return Result<RegistrarAtoNormativoResult>.Failure(RegistroPeloDominioExigido(declarado));
         }
 
+        // Os anexos são conferidos antes de qualquer ida ao banco: a recusa não depende de
+        // estado gravado, e o registro por mensagem durável (que não passa pelo validator)
+        // recebe a mesma recusa nomeada.
+        (string Nome, string TipoMidia, string Hash)[] anexos =
+            [.. (command.Anexos ?? []).Where(a => a is not null).Select(a => (a.Nome, a.TipoMidia, a.Hash))];
+        if (AnexoDoAto.Conferir(anexos) is { } anexoRecusado)
+        {
+            return Result<RegistrarAtoNormativoResult>.Failure(anexoRecusado);
+        }
+
         // Os atributos de consequência do tipo: ou vêm CONFERIDOS pelo domínio que publicou
         // (registro por mensagem durável — ADR-0108/0061), ou se resolvem agora no catálogo
         // (registro pelo endpoint, em que quem publica está aqui, neste instante).
@@ -138,7 +148,8 @@ public static class RegistrarAtoNormativoCommandHandler
             command.AtoRetificadoId,
             command.MotivoRetificacao,
             vinculos,
-            atributos.Nome);
+            atributos.Nome,
+            anexos);
 
         Guid raizDaLinhagem = command.AtoRetificadoId is { } paraRaiz
             ? await atosRepository.ObterRaizDaCadeiaAsync(paraRaiz, cancellationToken).ConfigureAwait(false)

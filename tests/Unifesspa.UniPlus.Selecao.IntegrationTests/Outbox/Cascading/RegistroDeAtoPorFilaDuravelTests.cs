@@ -397,6 +397,38 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
             "o ato foi publicado sob as regras que valiam então — mudança posterior no cadastro não reescreve o passado");
     }
 
+    [Fact(DisplayName = "os anexos da requisição são gravados na ordem enviada; a requisição sem o campo registra o ato sem anexos")]
+    public async Task Anexos_SaoGravadosNaOrdemEnviada_RequisicaoAntigaSemAnexos()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        await SemearTipoDeAtoAsync(api, "TIPO_COM_ANEXOS", unicoPorObjeto: false, congela: false);
+
+        Guid processoId = (await SemearProcessoAsync(api, nameof(Anexos_SaoGravadosNaOrdemEnviada_RequisicaoAntigaSemAnexos))).ProcessoId;
+        Guid comAnexos = Guid.CreateVersion7();
+        Guid semCampo = Guid.CreateVersion7();
+
+        await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
+        {
+            Wolverine.IMessageBus bus = scope.ServiceProvider.GetRequiredService<Wolverine.IMessageBus>();
+            await bus.InvokeAsync(RequisicaoDeAnexos(comAnexos, processoId, [
+                new Unifesspa.UniPlus.Publicacoes.Contracts.AnexoDoAtoRequisicao("Anexo II.pdf", "application/pdf", new string('b', 64)),
+                new Unifesspa.UniPlus.Publicacoes.Contracts.AnexoDoAtoRequisicao("Anexo I.pdf", "application/pdf", new string('a', 64)),
+            ]));
+
+            // Requisição emitida antes de o campo existir: chega sem a lista.
+            await bus.InvokeAsync(RequisicaoDeAnexos(semCampo, processoId, anexos: null));
+        }
+
+        await using AsyncServiceScope conferencia = api.Services.CreateAsyncScope();
+        PublicacoesDbContext db = conferencia.ServiceProvider.GetRequiredService<PublicacoesDbContext>();
+
+        AtoNormativo ato = await db.Set<AtoNormativo>().AsNoTracking().Include(a => a.Anexos).SingleAsync(a => a.Id == comAnexos);
+        ato.Anexos.OrderBy(a => a.Ordem).Select(a => a.Nome).Should().Equal("Anexo II.pdf", "Anexo I.pdf");
+
+        (await db.Set<AtoNormativo>().AsNoTracking().Include(a => a.Anexos).SingleAsync(a => a.Id == semCampo))
+            .Anexos.Should().BeEmpty();
+    }
+
     [Fact(DisplayName = "vaga do certame já ocupada por OUTRA linhagem recusa a publicação com 422 — antes de escrever")]
     public async Task VagaOcupadaPorOutraLinhagem_RecusaPublicacao()
     {
@@ -849,6 +881,29 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
             .Select(v => v.AtoCriadorId)
             .SingleAsync();
     }
+
+    private static Unifesspa.UniPlus.Publicacoes.Contracts.RegistrarAtoNormativoRequisicao RequisicaoDeAnexos(
+        Guid atoId,
+        Guid processoId,
+        IReadOnlyList<Unifesspa.UniPlus.Publicacoes.Contracts.AnexoDoAtoRequisicao>? anexos) =>
+        new(
+            AtoId: atoId,
+            Orgao: "CEPS",
+            Serie: "EDITAL",
+            Ano: 2026,
+            Numero: "888/2026",
+            TipoCodigo: "TIPO_COM_ANEXOS",
+            DataPublicacao: DateOnly.FromDateTime(DateTime.UtcNow),
+            DocumentoHash: new string('c', 64),
+            Assinante: "Diretor do CEPS",
+            VersaoInvocadaId: null,
+            VersaoInvocadaHash: null,
+            AtoRetificadoId: null,
+            MotivoRetificacao: null,
+            Vinculos: [new Unifesspa.UniPlus.Publicacoes.Contracts.VinculoEntidadeRequisicao("PROCESSO_SELETIVO", processoId)],
+            AtributosDoTipo: new Unifesspa.UniPlus.Publicacoes.Contracts.AtributosDoTipoAto(
+                CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, Nome: null),
+            Anexos: anexos);
 
     private static async Task<Unifesspa.UniPlus.Publicacoes.Contracts.RegistrarAtoNormativoRequisicao> MontarRequisicaoDoAtoAsync(
         CascadingApiFactory api, Guid atoId, Guid processoId)

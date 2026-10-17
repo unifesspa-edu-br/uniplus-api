@@ -53,6 +53,11 @@ using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 /// opacos para o módulo. Um ato sem vínculo algum é válido: há atos que não
 /// pertencem a certame nenhum. Ver <see cref="VinculoAtoEntidade"/>.
 /// </para>
+/// <para>
+/// <b>Anexos com o hash de cada um.</b> O hash do documento principal não prova os
+/// arquivos anexos; por isso o ato guarda também a lista deles — nome, tipo de mídia e
+/// hash —, na ordem em que foram enviados. Ver <see cref="AnexoDoAto"/>.
+/// </para>
 /// </remarks>
 public sealed class AtoNormativo : IForensicEntity
 {
@@ -144,6 +149,14 @@ public sealed class AtoNormativo : IForensicEntity
 
     private readonly List<VinculoAtoEntidade> _vinculos = [];
 
+    /// <summary>
+    /// Arquivos anexos ao documento principal, com o hash de cada um. Vazio num ato sem
+    /// anexos. Ordenados por <see cref="AnexoDoAto.Ordem"/> na leitura.
+    /// </summary>
+    public IReadOnlyCollection<AnexoDoAto> Anexos => _anexos.AsReadOnly();
+
+    private readonly List<AnexoDoAto> _anexos = [];
+
     // EF Core materialization
     private AtoNormativo()
     {
@@ -165,6 +178,9 @@ public sealed class AtoNormativo : IForensicEntity
     /// modo que nenhum deles possa apontar para outro ato. A unicidade da linhagem por
     /// objeto (tipos <c>unico_por_objeto</c>) depende do estado já gravado e é do
     /// handler, não daqui.
+    ///
+    /// Os <paramref name="anexos"/> são guardados na ordem recebida; a regra do que um anexo
+    /// precisa ter é de <see cref="AnexoDoAto.Conferir"/>.
     /// </summary>
     public static AtoNormativo Registrar(
         Guid id,
@@ -184,7 +200,8 @@ public sealed class AtoNormativo : IForensicEntity
         Guid? atoRetificadoId = null,
         string? motivoRetificacao = null,
         IEnumerable<(string EntidadeTipo, Guid EntidadeId)>? vinculos = null,
-        string? tipoNome = null)
+        string? tipoNome = null,
+        IEnumerable<(string Nome, string TipoMidia, string Hash)>? anexos = null)
     {
         string orgaoNorm = ExigirTexto(orgao, OrgaoMaxLength, nameof(orgao));
         string serieNorm = ExigirTexto(serie, SerieMaxLength, nameof(serie));
@@ -264,6 +281,18 @@ public sealed class AtoNormativo : IForensicEntity
             }
 
             ato._vinculos.Add(vinculo);
+        }
+
+        (string Nome, string TipoMidia, string Hash)[] anexosRecebidos = [.. anexos ?? []];
+        if (AnexoDoAto.Conferir(anexosRecebidos) is { } recusa)
+        {
+            throw new ArgumentException(recusa.Message, nameof(anexos));
+        }
+
+        for (int ordem = 0; ordem < anexosRecebidos.Length; ordem++)
+        {
+            (string nome, string tipoMidia, string hash) = anexosRecebidos[ordem];
+            ato._anexos.Add(AnexoDoAto.Criar(ato, ordem, nome, tipoMidia, hash));
         }
 
         return ato;

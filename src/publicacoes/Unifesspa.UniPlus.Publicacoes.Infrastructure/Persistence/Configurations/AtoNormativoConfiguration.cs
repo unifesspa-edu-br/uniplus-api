@@ -134,6 +134,7 @@ internal sealed class AtoNormativoConfiguration : IEntityTypeConfiguration<AtoNo
         // O agregado expõe os vínculos como coleção só-leitura; o EF materializa no
         // campo de apoio, sem passar pela propriedade.
         builder.Navigation(a => a.Vinculos).UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.Navigation(a => a.Anexos).UsePropertyAccessMode(PropertyAccessMode.Field);
 
         // Suporte ao seek do keyset ordenado da consulta por entidade (ADR-0094): a
         // ordenação é (data_publicacao, id), e o índice casa a mesma expressão.
