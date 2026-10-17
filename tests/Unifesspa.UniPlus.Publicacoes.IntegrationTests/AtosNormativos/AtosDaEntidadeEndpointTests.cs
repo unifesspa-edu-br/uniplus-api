@@ -9,7 +9,13 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Microsoft.Extensions.DependencyInjection;
+
+using Unifesspa.UniPlus.Publicacoes.Application.Abstractions;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
+using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
+using Unifesspa.UniPlus.Publicacoes.Infrastructure.Messaging;
+using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Publicacoes.IntegrationTests.Infrastructure;
 
 /// <summary>
@@ -389,7 +395,63 @@ public sealed class AtosDaEntidadeEndpointTests
             client, EntidadesDeRegistroPeloDominio.ProcessoSeletivo, processo)).Should().BeEmpty();
     }
 
+    [Fact(DisplayName = "A retificação pelo endpoint de ato de processo seletivo é recusada, mesmo sem repetir o vínculo")]
+    public async Task Registrar_RetificacaoHerdaProcessoSeletivo_Retorna422()
+    {
+        string tipo = await CriarTipoAsync(unicoPorObjeto: false);
+        Guid processo = Guid.CreateVersion7();
+        Guid raiz = await RegistrarPeloDominioAsync(tipo, "13", processo);
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage resposta = await PostAtoAsync(
+            client, PayloadRetificacao(tipo, "13", "2026-03-14", raiz, "corrige o anexo", []));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await resposta.Content.ReadAsStringAsync())
+            .Should().Contain("uniplus.publicacoes.ato_normativo.vinculo_exige_registro_pelo_dominio");
+        (await ListarDaEntidadeAsync(client, EntidadesDeRegistroPeloDominio.ProcessoSeletivo, processo))
+            .Select(i => i.GetProperty("id").GetGuid()).Should().Equal(raiz);
+    }
+
+    [Fact(DisplayName = "A consulta do certame, que o Portal consome, devolve o ato registrado pelo domínio")]
+    public async Task Listar_ProcessoSeletivoRegistradoPeloDominio_DevolveOAto()
+    {
+        string tipo = await CriarTipoAsync(unicoPorObjeto: false);
+        Guid processo = Guid.CreateVersion7();
+        Guid ato = await RegistrarPeloDominioAsync(tipo, "13", processo);
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        (await ListarDaEntidadeAsync(client, EntidadesDeRegistroPeloDominio.ProcessoSeletivo, processo))
+            .Select(i => i.GetProperty("id").GetGuid()).Should().Equal(ato);
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Registra o ato como o domínio dono do objeto faz: pelo handler da requisição durável,
+    /// que é o único caminho que admite o vínculo com o processo seletivo.
+    /// </summary>
+    private async Task<Guid> RegistrarPeloDominioAsync(string tipoCodigo, string numero, Guid processo)
+    {
+        Guid atoId = Guid.CreateVersion7();
+        await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
+        IServiceProvider sp = escopo.ServiceProvider;
+
+        await RegistrarAtoNormativoRequisicaoHandler.Handle(
+            new RegistrarAtoNormativoRequisicao(
+                atoId, "CEPS", "EDITAL", 2026, numero, tipoCodigo, new DateOnly(2026, 3, 13), HashValido,
+                "Jairo Belchior", null, null, null, null,
+                [new VinculoEntidadeRequisicao(EntidadesDeRegistroPeloDominio.ProcessoSeletivo, processo)],
+                new AtributosDoTipoAto(true, false, false, "Tipo de teste")),
+            sp.GetRequiredService<PublicacoesDbContext>(),
+            sp.GetRequiredService<ITipoAtoPublicadoRepository>(),
+            sp.GetRequiredService<IAtoNormativoRepository>(),
+            sp.GetRequiredService<IPublicacoesUnitOfWork>(),
+            sp.GetRequiredService<TimeProvider>(),
+            CancellationToken.None);
+
+        return atoId;
+    }
 
     private static object Vinculo(Guid entidadeId, string entidadeTipo = ObjetoA) =>
         new { entidadeTipo, entidadeId };
