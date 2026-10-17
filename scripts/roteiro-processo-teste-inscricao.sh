@@ -711,8 +711,8 @@ definir_documentos_exigidos() {
 documento_do_edital() {
     log "Documento do Edital — iniciar upload"
     local resp url_upload content_type
-    resp=$(api POST "/api/selecao/processos-seletivos/$PROCESSO_ID/documentos-edital" "")
-    DOCUMENTO_EDITAL_ID=$(jq -r '.documentoEditalId' <<< "$resp")
+    resp=$(api POST "/api/selecao/processos-seletivos/$PROCESSO_ID/documentos-a-publicar" '{"nomeArquivo":"edital.pdf","tipoDeMidia":"application/pdf"}')
+    DOCUMENTO_EDITAL_ID=$(jq -r '.documentoAPublicarId' <<< "$resp")
     url_upload=$(jq -r '.urlUpload' <<< "$resp")
     content_type=$(jq -r '.contentTypeExigido' <<< "$resp")
     [ -n "$DOCUMENTO_EDITAL_ID" ] && [ "$DOCUMENTO_EDITAL_ID" != "null" ] || fail "Iniciar upload do edital falhou: $resp"
@@ -724,7 +724,7 @@ documento_do_edital() {
     [ "$upload_http_code" = "200" ] || fail "PUT no MinIO falhou (http=$upload_http_code) — url presumivelmente expirada ou host interno (minio:9000) não resolvido pelo cliente"
 
     log "Documento do Edital — confirmar upload"
-    api POST "/api/selecao/processos-seletivos/$PROCESSO_ID/documentos-edital/$DOCUMENTO_EDITAL_ID/confirmacao" "" >/dev/null
+    api POST "/api/selecao/processos-seletivos/$PROCESSO_ID/documentos-a-publicar/$DOCUMENTO_EDITAL_ID/confirmacao" "" >/dev/null
     ok "documento do edital confirmado ($DOCUMENTO_EDITAL_ID)"
 }
 

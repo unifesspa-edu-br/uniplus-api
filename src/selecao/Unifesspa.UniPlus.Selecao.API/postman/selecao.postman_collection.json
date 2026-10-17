@@ -3308,8 +3308,17 @@
                 "type": "text"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomeArquivo\": \"edital.pdf\",\n  \"tipoDeMidia\": \"application/pdf\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
-              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/documentos-edital",
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/documentos-a-publicar",
               "host": [
                 "{{base_url}}"
               ],
@@ -3318,7 +3327,7 @@
                 "selecao",
                 "processos-seletivos",
                 "{{processo_id}}",
-                "documentos-edital"
+                "documentos-a-publicar"
               ]
             },
             "auth": {
@@ -3342,7 +3351,7 @@
                   "pm.test('201 Created com URL pre-assinada', () => {",
                   "  pm.response.to.have.status(201);",
                   "  const j = pm.response.json();",
-                  "  pm.environment.set('documento_edital_id', j.documentoEditalId);",
+                  "  pm.environment.set('documento_edital_id', j.documentoAPublicarId);",
                   "  pm.environment.set('url_upload', j.urlUpload);",
                   "  pm.environment.set('content_type_exigido', j.contentTypeExigido);",
                   "});"
@@ -3400,7 +3409,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/documentos-edital/{{documento_edital_id}}/confirmacao",
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/documentos-a-publicar/{{documento_edital_id}}/confirmacao",
               "host": [
                 "{{base_url}}"
               ],
@@ -3409,7 +3418,7 @@
                 "selecao",
                 "processos-seletivos",
                 "{{processo_id}}",
-                "documentos-edital",
+                "documentos-a-publicar",
                 "{{documento_edital_id}}",
                 "confirmacao"
               ]
@@ -3792,8 +3801,17 @@
                 "type": "text"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomeArquivo\": \"edital.pdf\",\n  \"tipoDeMidia\": \"application/pdf\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
-              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/documentos-edital",
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/documentos-a-publicar",
               "host": [
                 "{{base_url}}"
               ],
@@ -3802,7 +3820,7 @@
                 "selecao",
                 "processos-seletivos",
                 "{{processo_id}}",
-                "documentos-edital"
+                "documentos-a-publicar"
               ]
             },
             "auth": {
@@ -3826,7 +3844,7 @@
                   "pm.test('201 Created com URL pre-assinada', () => {",
                   "  pm.response.to.have.status(201);",
                   "  const j = pm.response.json();",
-                  "  pm.environment.set('documento_edital_id_ret', j.documentoEditalId);",
+                  "  pm.environment.set('documento_edital_id_ret', j.documentoAPublicarId);",
                   "  pm.environment.set('url_upload_ret', j.urlUpload);",
                   "  pm.environment.set('content_type_exigido_ret', j.contentTypeExigido);",
                   "});"
@@ -3884,7 +3902,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/documentos-edital/{{documento_edital_id_ret}}/confirmacao",
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/documentos-a-publicar/{{documento_edital_id_ret}}/confirmacao",
               "host": [
                 "{{base_url}}"
               ],
@@ -3893,7 +3911,7 @@
                 "selecao",
                 "processos-seletivos",
                 "{{processo_id}}",
-                "documentos-edital",
+                "documentos-a-publicar",
                 "{{documento_edital_id_ret}}",
                 "confirmacao"
               ]
@@ -4338,8 +4356,17 @@
                 "type": "text"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomeArquivo\": \"edital.pdf\",\n  \"tipoDeMidia\": \"application/pdf\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
-              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/documentos-edital",
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/documentos-a-publicar",
               "host": [
                 "{{base_url}}"
               ],
@@ -4348,7 +4375,7 @@
                 "selecao",
                 "processos-seletivos",
                 "{{processo_id}}",
-                "documentos-edital"
+                "documentos-a-publicar"
               ]
             },
             "auth": {
@@ -4372,7 +4399,7 @@
                   "pm.test('201 Created com URL pre-assinada', () => {",
                   "  pm.response.to.have.status(201);",
                   "  const j = pm.response.json();",
-                  "  pm.environment.set('documento_edital_id_fecha', j.documentoEditalId);",
+                  "  pm.environment.set('documento_edital_id_fecha', j.documentoAPublicarId);",
                   "  pm.environment.set('url_upload_fecha', j.urlUpload);",
                   "  pm.environment.set('content_type_exigido_fecha', j.contentTypeExigido);",
                   "});"
@@ -4430,7 +4457,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/documentos-edital/{{documento_edital_id_fecha}}/confirmacao",
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/documentos-a-publicar/{{documento_edital_id_fecha}}/confirmacao",
               "host": [
                 "{{base_url}}"
               ],
@@ -4439,7 +4466,7 @@
                 "selecao",
                 "processos-seletivos",
                 "{{processo_id}}",
-                "documentos-edital",
+                "documentos-a-publicar",
                 "{{documento_edital_id_fecha}}",
                 "confirmacao"
               ]
