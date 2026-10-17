@@ -65,11 +65,21 @@ public sealed record DefinicaoDaResposta(
             : AceitaEscalar(valor);
 
     /// <summary>
-    /// O valor como é gravado: o texto na forma canônica do formato, como o telefone só com os dígitos.
+    /// O valor como é gravado: o texto na forma canônica do formato, como o telefone só com os dígitos, e o
+    /// endereço com o CEP só com os dígitos.
     /// O texto fora do formato fica como veio, para o rascunho guardá-lo e a submissão recusá-lo.
     /// </summary>
     public JsonElement NaFormaCanonica(JsonElement valor)
     {
+        if (Tipo == TipoDoValorDeResposta.Endereco)
+        {
+            // O CEP é gravado só com os dígitos, para que nenhum consumidor tenha de tirar a máscara.
+            return EnderecoDeclarado.TentarLer(valor, out EnderecoDeclarado endereco)
+                && endereco.CepSomenteDigitos is { } cep && !string.Equals(cep, endereco.Cep, StringComparison.Ordinal)
+                    ? (endereco with { Cep = cep }).ParaJson()
+                    : valor;
+        }
+
         if (Formato is null || valor.ValueKind != JsonValueKind.String)
         {
             return valor;

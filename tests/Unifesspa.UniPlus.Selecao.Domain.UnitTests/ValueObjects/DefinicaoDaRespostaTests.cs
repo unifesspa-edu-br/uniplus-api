@@ -27,6 +27,20 @@ public sealed class DefinicaoDaRespostaTests
         definicao.Aceita(JsonSerializer.Deserialize<JsonElement>(json)).Should().Be(aceito);
     }
 
+    [Fact(DisplayName = "O endereço é gravado com o CEP só com os dígitos; o restante fica como veio")]
+    public void NaFormaCanonica_Endereco_GravaOCepSemMascara()
+    {
+        DefinicaoDaResposta definicao = new(TipoDoValorDeResposta.Endereco, Multivalorado: false, Identificador: false);
+        JsonElement mascarado = JsonSerializer.Deserialize<JsonElement>(
+            "{\"cep\":\"68500-000\",\"logradouro\":\"Rua Teste\",\"cidade\":{\"codigoIbge\":\"1504208\",\"nome\":\"Marabá\",\"uf\":\"PA\"}}");
+
+        JsonElement canonico = definicao.NaFormaCanonica(mascarado);
+
+        canonico.GetProperty("cep").GetString().Should().Be("68500000");
+        canonico.GetProperty("logradouro").GetString().Should().Be("Rua Teste");
+        canonico.GetProperty("cidade").GetProperty("codigoIbge").GetString().Should().Be("1504208");
+    }
+
     [Fact(DisplayName = "Código acima do tamanho de uma opção é recusado; texto livre longo, não")]
     public void Codigo_AcimaDoTamanhoDeUmaOpcao_Recusado()
     {
