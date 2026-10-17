@@ -175,6 +175,21 @@ public class AvaliadorFormularioTests : TestesDeAvaliacao
             atende ? [] : [TipoRestricaoValor.FormatoTexto]);
     }
 
+    [Theory(DisplayName = "O NOME de um formulário congelado em NOME_PESSOA não é conferido pelo formato; o nome da mãe segue conferido")]
+    [InlineData("NOME", "Maria S. Silva", true)]
+    [InlineData("NOME", "Madonna", true)]
+    [InlineData("NOME_MAE", "Maria S. Silva", false)]
+    public void CampoDeNome_FormatoCongelado_SoConfereForaDoNomeCivil(string fato, string resposta, bool atende)
+    {
+        DefinicaoFormulario formulario = Formulario(
+            new DefinicaoItem(fato, null, Obrigatoriedade.Sempre, [], formato: "NOME_PESSOA"));
+
+        AvaliacaoFormulario avaliacao = AvaliarDefinicao(formulario, Entrada(etapaConcluida: true, (fato, resposta)));
+
+        avaliacao.Itens[0].RestricoesVioladas.Select(static r => r.Tipo).Should().Equal(
+            atende ? [] : [TipoRestricaoValor.FormatoTexto]);
+    }
+
     [Fact]
     public void MunicipioDaUf_ComUfIndeterminada_FicaIndeterminado()
     {

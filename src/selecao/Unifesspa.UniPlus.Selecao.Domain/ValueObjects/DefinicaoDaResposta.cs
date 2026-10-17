@@ -42,6 +42,7 @@ public sealed record DefinicaoDaResposta(
 
     public static DefinicaoDaResposta De(TipoRenderizacao renderizacao, string classificacaoProtecao, string? formato = null, string? fatoCodigo = null)
     {
+        formato = fatoCodigo is null ? formato : ConjuntoBasicoDaInscricao.FormatoDaResposta(fatoCodigo, formato);
         bool identificador = string.Equals(classificacaoProtecao, ClassificacaoIdentificador, StringComparison.Ordinal);
         bool cifra = TemCifraIndividual(fatoCodigo, classificacaoProtecao);
         return renderizacao switch

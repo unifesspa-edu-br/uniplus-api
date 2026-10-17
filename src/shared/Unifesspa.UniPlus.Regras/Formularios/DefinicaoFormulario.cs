@@ -193,6 +193,8 @@ public sealed record DefinicaoItem
         Obrigatoriedade = obrigatoriedade;
         Restricoes = [.. restricoes];
         Impedimento = impedimento;
+
+        formato = ConjuntoBasicoDaInscricao.FormatoDaResposta(fatoCodigo, formato);
         Formato = formato;
         RestricoesDaResposta = formato is null ? Restricoes : [.. Restricoes, new FormatoDeTexto(formato)];
     }
