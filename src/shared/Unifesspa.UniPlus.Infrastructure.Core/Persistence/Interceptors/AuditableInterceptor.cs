@@ -101,6 +101,8 @@ public sealed class AuditableInterceptor : SaveChangesInterceptor
     /// Editar só uma coleção owned (<c>OwnsMany</c>) muda apenas as linhas filhas, e o dono
     /// continuaria <see cref="EntityState.Unchanged"/>: a trilha não registraria quem mudou nem
     /// quando. O dono de cada entrada owned alterada passa a <see cref="EntityState.Modified"/>.
+    /// O mesmo vale para o filho próprio de um agregado (<see cref="IFilhoDeAgregado"/>), que não
+    /// é owned mas também só altera as próprias linhas.
     /// </summary>
     /// <remarks>
     /// O dono é achado pela chave da posse, e não pela navegação: o item removido da coleção
@@ -112,7 +114,8 @@ public sealed class AuditableInterceptor : SaveChangesInterceptor
     private static void MarcarDonosDeOwnedAlterado(DbContext context)
     {
         List<EntityEntry> alteradas = [.. context.ChangeTracker.Entries()
-            .Where(static e => e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted && e.Metadata.IsOwned())];
+            .Where(static e => e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted
+                && (e.Metadata.IsOwned() || e.Entity is IFilhoDeAgregado))];
         if (alteradas.Count == 0)
         {
             return;
@@ -139,6 +142,13 @@ public sealed class AuditableInterceptor : SaveChangesInterceptor
         foreach (EntityEntry owned in alteradas)
         {
             EntityEntry? dono = owned;
+            if (owned.Entity is IFilhoDeAgregado filho)
+            {
+                dono = context.Model.FindEntityType(filho.TipoDoDono) is { } tipoDoDono
+                    ? porChave.GetValueOrDefault((tipoDoDono, Chave([filho.DonoId])))
+                    : null;
+            }
+
             while (dono?.Metadata.FindOwnership() is { } posse)
             {
                 string chaveDoDono = Chave(posse.Properties.Select(p => dono.Property(p.Name).CurrentValue));

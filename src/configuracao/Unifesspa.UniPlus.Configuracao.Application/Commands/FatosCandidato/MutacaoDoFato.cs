@@ -16,33 +16,6 @@ internal static class MutacaoDoFato
 {
     private const string IndiceUnicoDoValor = "ux_fato_valor_dominio_fato_codigo";
 
-    /// <summary>
-    /// Mutação que só muda linhas de valor: a linha do fato não muda, então o token de concorrência
-    /// dele não avançaria e duas correções simultâneas passariam sem se ver. O fato é marcado como
-    /// alterado para o token entrar na gravação.
-    /// </summary>
-    public static Task<Result> AplicarNosValoresAsync(
-        Guid id,
-        Func<FatoCandidato, Result> mutacao,
-        IFatoCandidatoRepository repository,
-        IConfiguracaoUnitOfWork unitOfWork,
-        CancellationToken cancellationToken) =>
-        AplicarAsync(
-            id,
-            fato =>
-            {
-                Result resultado = mutacao(fato);
-                if (resultado.IsSuccess)
-                {
-                    repository.RegistrarAlteracaoDeValor(fato);
-                }
-
-                return resultado;
-            },
-            repository,
-            unitOfWork,
-            cancellationToken);
-
     public static async Task<Result> AplicarAsync(
         Guid id,
         Func<FatoCandidato, Result> mutacao,
@@ -68,9 +41,9 @@ internal static class MutacaoDoFato
         }
         catch (Exception ex) when (UniqueConstraintViolation.EhConflito(ex, IndiceUnicoDoValor))
         {
-            // Dois acréscimos simultâneos do mesmo código de valor: a linha nova do valor não toca
-            // o fato, então o token de concorrência não os separa, e quem chega por último bate no
-            // índice único.
+            // Dois acréscimos simultâneos do mesmo código de valor que o token do fato não separou
+            // (o interceptor o avança em toda mudança de valor, mas a linha nova pode chegar ao
+            // índice único antes da checagem do token).
             unitOfWork.DescartarAlteracoesNaoSalvas();
             return Result.Failure(new DomainError(
                 FatoValorDominioErrorCodes.CodigoDuplicado,

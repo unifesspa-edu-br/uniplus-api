@@ -528,11 +528,9 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
             return Result.Failure(recusa);
         }
 
-        FatoValorDominio? valor = _valoresDominioDeclarados.FirstOrDefault(v =>
-            string.Equals(v.Codigo, codigo?.Trim(), StringComparison.Ordinal));
-        if (valor is null)
+        if (ValorPorCodigo(codigo) is not { } valor)
         {
-            return Result.Failure(new DomainError(FatoValorDominioErrorCodes.NaoEncontrado, "Valor de domínio não encontrado neste fato."));
+            return Result.Failure(ValorNaoEncontrado);
         }
 
         if (valor.Ativo == ativo)
@@ -665,11 +663,9 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
             return Result.Failure(recusa);
         }
 
-        FatoValorDominio? valor = _valoresDominioDeclarados.FirstOrDefault(v =>
-            string.Equals(v.Codigo, codigo?.Trim(), StringComparison.Ordinal));
-        if (valor is null)
+        if (ValorPorCodigo(codigo) is not { } valor)
         {
-            return Result.Failure(new DomainError(FatoValorDominioErrorCodes.NaoEncontrado, "Valor de domínio não encontrado neste fato."));
+            return Result.Failure(ValorNaoEncontrado);
         }
 
         List<FieldError> erros = [];
@@ -698,10 +694,18 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         }
 
         string[] informados = [.. codigosEmOrdem.Select(static c => c?.Trim() ?? string.Empty)];
-        HashSet<string> conhecidos = [.. _valoresDominioDeclarados.Select(static v => v.Codigo)];
+        Dictionary<string, FatoValorDominio> porCodigo = _valoresDominioDeclarados.ToDictionary(static v => v.Codigo, StringComparer.Ordinal);
+        HashSet<string> informadosSet = new(informados, StringComparer.Ordinal);
         List<FieldError> erros = [];
 
-        string[] estranhos = [.. informados.Where(c => !conhecidos.Contains(c)).Distinct()];
+        if (informados.Any(static c => c.Length == 0))
+        {
+            erros.Add(new("codigos", new DomainError(
+                FatoValorDominioErrorCodes.OrdemComCodigoDesconhecido,
+                "A ordem tem um código em branco; informe o código de cada valor do fato.")));
+        }
+
+        string[] estranhos = [.. informados.Where(c => c.Length > 0 && !porCodigo.ContainsKey(c)).Distinct(StringComparer.Ordinal)];
         if (estranhos.Length > 0)
         {
             erros.Add(new("codigos", new DomainError(
@@ -709,7 +713,8 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
                 $"O fato não tem os valores: {string.Join(", ", estranhos)}.")));
         }
 
-        string[] repetidos = [.. informados.GroupBy(static c => c).Where(static g => g.Count() > 1).Select(static g => g.Key)];
+        string[] repetidos = [.. informados.Where(static c => c.Length > 0).GroupBy(static c => c, StringComparer.Ordinal)
+            .Where(static g => g.Count() > 1).Select(static g => g.Key)];
         if (repetidos.Length > 0)
         {
             erros.Add(new("codigos", new DomainError(
@@ -717,7 +722,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
                 $"Valores repetidos na ordem: {string.Join(", ", repetidos)}.")));
         }
 
-        string[] ausentes = [.. conhecidos.Where(c => !informados.Contains(c, StringComparer.Ordinal)).Order(StringComparer.Ordinal)];
+        string[] ausentes = [.. porCodigo.Keys.Where(c => !informadosSet.Contains(c)).Order(StringComparer.Ordinal)];
         if (ausentes.Length > 0)
         {
             erros.Add(new("codigos", new DomainError(
@@ -730,9 +735,11 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
             return Result.ValidationFailure(erros);
         }
 
+        // Valor na posição em que já está não é regravado: sem mudança, o EF não marca a linha e a
+        // versão do fato não avança.
         for (int posicao = 0; posicao < informados.Length; posicao++)
         {
-            _valoresDominioDeclarados.Single(v => string.Equals(v.Codigo, informados[posicao], StringComparison.Ordinal)).DefinirOrdem(posicao);
+            porCodigo[informados[posicao]].DefinirOrdem(posicao);
         }
 
         return Result.Success();
@@ -753,14 +760,14 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         {
             return new DomainError(
                 FatoValorDominioErrorCodes.NaoPermitidoForaDeCategorico,
-                "Valores de domínio só podem ser adicionados a um fato categórico.");
+                "Só fato categórico tem valores de domínio próprios.");
         }
 
         if (FatoDeMembroAgregado is { } membro)
         {
             return new DomainError(
                 FatoCandidatoErrorCodes.AgregadoNaoTemValoresProprios,
-                $"Os valores do agregado são os do fato de membro '{membro}'; acrescente-os nele.");
+                $"Os valores do agregado são os do fato de membro '{membro}'; mantenha-os nele.");
         }
 
         if (FonteValores != FonteValoresFato.Global)
@@ -798,6 +805,12 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
 
         return (descricaoNormalizada, orientacaoNormalizada);
     }
+
+    private static readonly DomainError ValorNaoEncontrado =
+        new(FatoValorDominioErrorCodes.NaoEncontrado, "Valor de domínio não encontrado neste fato.");
+
+    private FatoValorDominio? ValorPorCodigo(string codigo) =>
+        _valoresDominioDeclarados.FirstOrDefault(v => string.Equals(v.Codigo, codigo?.Trim(), StringComparison.Ordinal));
 
     private DomainError? RecusaSeSistema() =>
         Sistema

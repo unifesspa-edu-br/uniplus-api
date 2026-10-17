@@ -43,8 +43,25 @@ public sealed class AuditableInterceptorTests
         public string? UpdatedBy { get; private set; }
     }
 
+    private sealed class DonoTeste : EntityBase
+    {
+        public string Nome { get; set; } = string.Empty;
+    }
+
+    private sealed class FilhoTeste : EntityBase, IFilhoDeAgregado
+    {
+        public Guid DonoId { get; set; }
+        public string Texto { get; set; } = string.Empty;
+
+        Type IFilhoDeAgregado.TipoDoDono => typeof(DonoTeste);
+
+        Guid IFilhoDeAgregado.DonoId => DonoId;
+    }
+
     private sealed class ContextoTeste(DbContextOptions<ContextoTeste> options) : DbContext(options)
     {
+        public DbSet<DonoTeste> Donos { get; set; } = null!;
+        public DbSet<FilhoTeste> Filhos { get; set; } = null!;
         public DbSet<EntidadeTeste> Entidades { get; set; } = null!;
         public DbSet<EntidadeAuditavel> EntidadesAuditaveis { get; set; } = null!;
     }
@@ -121,6 +138,23 @@ public sealed class AuditableInterceptorTests
         await contexto.SaveChangesAsync();
 
         entidade.UpdatedAt.Should().Be(Instante, "UpdatedAt vem do TimeProvider injetado no interceptor");
+    }
+
+    [Fact(DisplayName = "Mudar só um filho de agregado marca o dono como alterado")]
+    public void SavingChanges_FilhoDeAgregadoAlterado_MarcaODono()
+    {
+        using ContextoTeste contexto = CriarContexto();
+        DonoTeste dono = new() { Nome = "dono" };
+        FilhoTeste filho = new() { DonoId = dono.Id, Texto = "antes" };
+        contexto.Donos.Add(dono);
+        contexto.Filhos.Add(filho);
+        contexto.SaveChanges();
+        dono.UpdatedAt.Should().BeNull();
+
+        filho.Texto = "depois";
+        contexto.SaveChanges();
+
+        dono.UpdatedAt.Should().Be(Instante, "a mudança do filho é mudança do agregado, e o token do dono avança");
     }
 
     // ───── #390: ramos IAuditableEntity (opt-in) ──────────────────────────

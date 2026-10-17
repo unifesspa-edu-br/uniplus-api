@@ -16,7 +16,7 @@ public static class CorrigirValorDominioCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        return MutacaoDoFato.AplicarNosValoresAsync(
+        return MutacaoDoFato.AplicarAsync(
             command.FatoId, fato => fato.CorrigirValor(command.Codigo, command.Descricao, command.Orientacao), repository, unitOfWork, cancellationToken);
     }
 }

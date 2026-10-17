@@ -16,7 +16,7 @@ public static class ReordenarValoresDominioCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        return MutacaoDoFato.AplicarNosValoresAsync(
+        return MutacaoDoFato.AplicarAsync(
             command.FatoId, fato => fato.ReordenarValores(command.Codigos), repository, unitOfWork, cancellationToken);
     }
 }
