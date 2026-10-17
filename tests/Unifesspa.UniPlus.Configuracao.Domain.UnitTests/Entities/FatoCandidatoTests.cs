@@ -175,6 +175,87 @@ public sealed class FatoCandidatoTests
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.FatoDeSistemaSoEditaNomeEDescricao);
     }
 
+    [Fact(DisplayName = "Corrigir valor troca a descrição e a orientação, inclusive de valor desativado, e preserva o código")]
+    public void CorrigirValor_TrocaOsTextosEPreservaOCodigo()
+    {
+        FatoCandidato fato = Criar().Value!;
+        fato.AdicionarValorDominio("EJA", "Educação de jovens", 3, ativo: true, "Texto antigo").IsSuccess.Should().BeTrue();
+        fato.DesativarValor("EJA").IsSuccess.Should().BeTrue();
+
+        Result resultado = fato.CorrigirValor(" EJA ", "  Educação de jovens e adultos ", "  Cursou o supletivo. ");
+
+        resultado.IsSuccess.Should().BeTrue();
+        FatoValorDominio valor = fato.ValoresDominioDeclarados.Single();
+        (valor.Codigo, valor.Descricao, valor.Orientacao, valor.Ordem, valor.Ativo)
+            .Should().Be(("EJA", "Educação de jovens e adultos", "Cursou o supletivo.", 3, false));
+    }
+
+    [Fact(DisplayName = "Corrigir valor acumula a descrição obrigatória e o tamanho da orientação")]
+    public void CorrigirValor_AcumulaViolacoes()
+    {
+        FatoCandidato fato = Criar().Value!;
+        fato.AdicionarValorDominio("EJA", "Educação de jovens", 0, ativo: true).IsSuccess.Should().BeTrue();
+
+        Result resultado = fato.CorrigirValor("EJA", " ", new string('x', FatoValorDominio.OrientacaoMaxLength + 1));
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
+        [
+            ("descricao", FatoValorDominioErrorCodes.DescricaoObrigatoria),
+            ("orientacao", FatoValorDominioErrorCodes.OrientacaoTamanho),
+        ]);
+        fato.ValoresDominioDeclarados.Single().Descricao.Should().Be("Educação de jovens");
+    }
+
+    [Fact(DisplayName = "Corrigir valor inexistente é recusado, e o fato de sistema não tem valor corrigido")]
+    public void CorrigirValor_InexistenteESistema_Recusa()
+    {
+        FatoCandidato fato = Criar().Value!;
+
+        fato.CorrigirValor("NAO_EXISTE", "Descrição", null).Error!.Code.Should().Be(FatoValorDominioErrorCodes.NaoEncontrado);
+        Criar(sistema: true).Value!.CorrigirValor("PRETA", "Descrição", null)
+            .Error!.Code.Should().Be(FatoCandidatoErrorCodes.FatoDeSistemaSoEditaNomeEDescricao);
+    }
+
+    [Fact(DisplayName = "Reordenar valores põe ativos e desativados na ordem da lista")]
+    public void ReordenarValores_AplicaAListaInteira()
+    {
+        FatoCandidato fato = Criar().Value!;
+        foreach ((string codigo, int ordem) in new[] { ("A", 0), ("B", 1), ("C", 2) })
+        {
+            fato.AdicionarValorDominio(codigo, codigo, ordem, ativo: true).IsSuccess.Should().BeTrue();
+        }
+
+        fato.DesativarValor("B").IsSuccess.Should().BeTrue();
+
+        fato.ReordenarValores(["C", " B ", "A"]).IsSuccess.Should().BeTrue();
+
+        fato.ValoresDominioDeclarados.OrderBy(static v => v.Ordem).Select(static v => v.Codigo).Should().Equal("C", "B", "A");
+        fato.ValoresDominioDeclarados.Single(static v => v.Codigo == "B").Ativo.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Reordenar com código ausente, repetido e estranho acumula as três recusas e não muda a ordem")]
+    public void ReordenarValores_ListaIncompleta_AcumulaERecusaInteira()
+    {
+        FatoCandidato fato = Criar().Value!;
+        fato.AdicionarValorDominio("A", "A", 0, ativo: true).IsSuccess.Should().BeTrue();
+        fato.AdicionarValorDominio("B", "B", 1, ativo: true).IsSuccess.Should().BeTrue();
+
+        Result resultado = fato.ReordenarValores(["A", "A", "Z"]);
+
+        resultado.Errors.Select(static e => e.Error.Code).Should().BeEquivalentTo(
+        [
+            FatoValorDominioErrorCodes.OrdemComCodigoDesconhecido,
+            FatoValorDominioErrorCodes.OrdemComCodigoRepetido,
+            FatoValorDominioErrorCodes.OrdemSemTodosOsValores,
+        ]);
+        fato.ValoresDominioDeclarados.OrderBy(static v => v.Ordem).Select(static v => v.Codigo).Should().Equal("A", "B");
+    }
+
+    [Fact(DisplayName = "Reordenar valores do fato de sistema é recusado")]
+    public void ReordenarValores_FatoDeSistema_Recusa() =>
+        Criar(sistema: true).Value!.ReordenarValores([])
+            .Error!.Code.Should().Be(FatoCandidatoErrorCodes.FatoDeSistemaSoEditaNomeEDescricao);
+
     [Theory(DisplayName = "Proteção de dados incompleta é recusada")]
     [InlineData(ClassificacaoProtecaoDado.Nenhuma, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal, FatoCandidatoErrorCodes.ClassificacaoProtecaoObrigatoria)]
     [InlineData(ClassificacaoProtecaoDado.Pessoal, "  ", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, FatoCandidatoErrorCodes.FinalidadeTratamentoObrigatoria)]

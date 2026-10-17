@@ -265,6 +265,46 @@ public sealed class FatosCandidatoController : ControllerBase
         return Enviar(new AdicionarValorDominioCommand(id, request.Codigo, request.Descricao, request.Ordem, request.Orientacao), cancellationToken);
     }
 
+    /// <summary>
+    /// Corrige a descrição e a orientação de um valor do fato do administrador. O código do valor
+    /// não muda: mudar o sentido de uma opção é acrescentar outro valor e desativar o antigo.
+    /// </summary>
+    [HttpPut("admin/fatos-candidato/{id:guid}/valores/{codigo}")]
+    [Authorize(Roles = "plataforma-admin")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public Task<IActionResult> CorrigirValor(Guid id, string codigo, [FromBody] CorrecaoDeValorDominioInput request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return Enviar(new CorrigirValorDominioCommand(id, codigo, request.Descricao, request.Orientacao), cancellationToken);
+    }
+
+    /// <summary>
+    /// Reordena os valores do fato do administrador pela lista completa de códigos, ativos e
+    /// desativados. Fica fora de <c>valores/</c> porque colidiria com um valor de código ORDEM.
+    /// </summary>
+    [HttpPut("admin/fatos-candidato/{id:guid}/ordem-dos-valores")]
+    [Authorize(Roles = "plataforma-admin")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public Task<IActionResult> ReordenarValores(Guid id, [FromBody] OrdemDosValoresInput request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return Enviar(new ReordenarValoresDominioCommand(id, request.Codigos), cancellationToken);
+    }
+
     /// <summary>Reativa um valor do fato do administrador.</summary>
     [HttpPost("admin/fatos-candidato/{id:guid}/valores/{codigo}/ativacao")]
     [Authorize(Roles = "plataforma-admin")]

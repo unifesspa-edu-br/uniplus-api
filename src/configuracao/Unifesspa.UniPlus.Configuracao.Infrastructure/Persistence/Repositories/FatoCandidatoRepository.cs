@@ -45,6 +45,15 @@ public sealed class FatoCandidatoRepository : IFatoCandidatoRepository
         return (page.Items, page.PrevAfterId, page.NextAfterId);
     }
 
+    public void RegistrarAlteracaoDeValor(FatoCandidato fato)
+    {
+        ArgumentNullException.ThrowIfNull(fato);
+
+        // Só o carimbo é marcado: a entrada inteira regravaria as demais colunas do fato e desfaria
+        // uma edição concorrente que o token ainda não pegou.
+        _dbContext.Entry(fato).Property(nameof(FatoCandidato.UpdatedAt)).IsModified = true;
+    }
+
     public async Task AdicionarAsync(FatoCandidato fato, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(fato);

@@ -77,4 +77,14 @@ public sealed class FatoValorDominio : EntityBase
 
     /// <summary>Muda o estado do valor; a decisão (e a recusa) é do agregado pai.</summary>
     internal void DefinirAtivo(bool ativo) => Ativo = ativo;
+
+    /// <summary>Corrige os textos do valor; o <see cref="Codigo"/> não muda e a validação é do agregado pai.</summary>
+    internal void CorrigirTextos(string? descricao, string? orientacao)
+    {
+        Descricao = descricao;
+        Orientacao = orientacao;
+    }
+
+    /// <summary>Move o valor para a posição que o agregado pai decidiu para a lista inteira.</summary>
+    internal void DefinirOrdem(int ordem) => Ordem = ordem;
 }
