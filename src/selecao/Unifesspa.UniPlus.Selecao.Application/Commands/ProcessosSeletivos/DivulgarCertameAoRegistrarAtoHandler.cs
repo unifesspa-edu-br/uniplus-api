@@ -121,8 +121,9 @@ public static class DivulgarCertameAoRegistrarAtoHandler
 
         // Antes de ler a linha de divulgação para mutação: a reentrega que a cópia falhada provoca
         // começa sem nada rastreado, e a cópia já feita é encontrada no acervo e não se repete.
+        CertamePublicadoDto certame = projecao.Value!;
         DocumentoDivulgado principal = await PublicarEditalNoAcervoAsync(
-            versao, ato, envelope, documentoAPublicarRepository, acervoPublico, enderecoNoAcervo, cancellationToken)
+            versao, ato, envelope, documentoAPublicarRepository, acervoPublico, certame.DocumentoEdital.UrlDownload, cancellationToken)
             .ConfigureAwait(false);
         IReadOnlyList<DocumentoDivulgado> anexos = await PublicarAnexosNoAcervoAsync(
             versao, envelope, documentoAPublicarRepository, acervoPublico, enderecoNoAcervo, cancellationToken)
@@ -130,12 +131,10 @@ public static class DivulgarCertameAoRegistrarAtoHandler
         await PublicarModelosNoAcervoAsync(versao, envelope, modeloDeDocumentoRepository, acervoPublico, cancellationToken)
             .ConfigureAwait(false);
 
-        CertamePublicadoDto certame = projecao.Value!;
-
         // Registrado só depois da cópia: o endereço divulgado nunca aponta para arquivo ausente.
         // É o endereço que a projeção desta versão já calculou para o edital, sem segunda derivação.
         EditalDivulgado editalDivulgado = new(
-            versao.AtoCriadorId, versao.NumeroVersao, certame.DocumentoEdital.UrlDownload.OriginalString, [principal, .. anexos]);
+            versao.AtoCriadorId, versao.NumeroVersao, principal.UrlDownload, [principal, .. anexos]);
         string documento = JsonSerializer.Serialize(certame, ProjecaoDoCertamePublicado.OpcoesDoDocumento);
         DateTimeOffset agora = timeProvider.GetUtcNow();
 
@@ -228,7 +227,7 @@ public static class DivulgarCertameAoRegistrarAtoHandler
         JsonObject envelope,
         IDocumentoAPublicarRepository documentoAPublicarRepository,
         IAcervoPublico acervoPublico,
-        IEnderecoNoAcervoPublico enderecoNoAcervo,
+        Uri enderecoDoEdital,
         CancellationToken cancellationToken)
     {
         if (!ProjecaoDoCertamePublicado.TentarEditalNoAcervo(envelope, ato, out EditalNoAcervo? edital))
@@ -249,6 +248,9 @@ public static class DivulgarCertameAoRegistrarAtoHandler
                 $"O documento do edital {edital.DocumentoEditalId}, congelado na versão {versao.NumeroVersao} do processo {versao.ProcessoSeletivoId}, não tem cópia selada com o conteúdo congelado.");
         }
 
+        long tamanhoBytes = documento.TamanhoBytes ?? throw new InvalidOperationException(
+            $"O documento do edital {edital.DocumentoEditalId} está confirmado e sem tamanho gravado.");
+
         await acervoPublico
             .CopiarAsync(
                 chavePrivada,
@@ -266,9 +268,9 @@ public static class DivulgarCertameAoRegistrarAtoHandler
             PapelDoDocumentoDivulgado.Principal,
             edital.NomeDeApresentacao,
             documento.TipoDeMidia,
-            documento.TamanhoBytes ?? 0,
+            tamanhoBytes,
             edital.HashSha256,
-            enderecoNoAcervo.De(edital.Chave).OriginalString);
+            enderecoDoEdital.OriginalString);
     }
 
     /// <summary>

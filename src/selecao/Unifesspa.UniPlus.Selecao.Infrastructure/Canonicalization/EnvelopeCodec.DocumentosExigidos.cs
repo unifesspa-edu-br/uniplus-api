@@ -196,6 +196,13 @@ public sealed partial class EnvelopeCodec
     }
 
     /// <summary>
+    /// O hash é SHA-256 em hexadecimal minúsculo — a forma que o encoder emite a partir de um arquivo
+    /// confirmado. Vale para o modelo de documento e para o anexo do edital.
+    /// </summary>
+    private static bool EhSha256Hexadecimal(string hash) =>
+        hash.Length == 64 && hash.All(static c => c is (>= '0' and <= '9') or (>= 'a' and <= 'f'));
+
+    /// <summary>
     /// O modelo que a exigência oferece ao candidato; nulo quando ela não tem. O hash é o do
     /// arquivo confirmado — SHA-256 em hexadecimal minúsculo —, e o formato, um dos editáveis.
     /// </summary>
@@ -219,7 +226,7 @@ public sealed partial class EnvelopeCodec
         }
 
         FormatoDeDocumento? formatoDoModelo = ModeloDeDocumento.FormatoDoToken(formato);
-        bool hashValido = hash.Length == 64 && hash.All(static c => c is (>= '0' and <= '9') or (>= 'a' and <= 'f'));
+        bool hashValido = EhSha256Hexadecimal(hash);
         return formatoDoModelo is { } formatoValido && hashValido
             ? new ModeloDaExigencia(modeloId, nomeArquivo, formatoValido, hash)
             : leitor.Propagar<ModeloDaExigencia>(new DomainError(
