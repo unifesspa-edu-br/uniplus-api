@@ -213,7 +213,7 @@ public sealed class ConformidadeCronogramaTests
             ? TiposDeAtoUnicosPorObjeto.ParaChecklist(new Dictionary<string, string> { [codigo] = nome })
             : TiposDeAtoUnicosPorObjeto.ParaOperacao(
                 new Dictionary<string, string> { [codigo] = nome },
-                vagaOcupada ? new Dictionary<string, string> { [codigo] = nome } : new Dictionary<string, string>(),
+                vagaOcupada ? [codigo] : [],
                 atoDaOperacao);
 
     private static Result<VersaoConfiguracao> PublicarComUnicos(ProcessoSeletivo processo, TiposDeAtoUnicosPorObjeto unicos) =>
@@ -381,5 +381,16 @@ public sealed class ConformidadeCronogramaTests
         processo.PendenciaDoTipoDeAtoUnico(
             Unicos("EDITAL_ABERTURA", "Edital de abertura", atoDaOperacao: "EDITAL_ABERTURA", vagaOcupada: true))
             .Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Só o catálogo vigente decide a unicidade: tipo ocupado por ato registrado que o catálogo não declara único não reprova")]
+    public void TipoOcupadoQueOCatalogoNaoDeclaraUnico_NaoReprova()
+    {
+        ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
+            FaseQuePublica(1, "ABERTURA", ProdutoDaFase.Criar("EDITAL_ABERTURA", PapelProdutoFase.Definitivo)));
+        TiposDeAtoUnicosPorObjeto ocupadoMasNaoUnico = TiposDeAtoUnicosPorObjeto.ParaOperacao(
+            new Dictionary<string, string>(), ["EDITAL_ABERTURA"], "RETIFICACAO_EDITAL");
+
+        processo.PendenciaDoTipoDeAtoUnico(ocupadoMasNaoUnico).Should().BeNull();
     }
 }

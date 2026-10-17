@@ -59,7 +59,7 @@ internal sealed class VagaDeLinhagemReader(PublicacoesDbContext db) : IVagaDeLin
             .ConfigureAwait(false);
     }
 
-    public async Task<IReadOnlyList<TipoDeAtoUnicoRegistrado>> ListarTiposUnicosRegistradosAsync(
+    public async Task<IReadOnlyList<string>> ListarTiposDosAtosAsync(
         IReadOnlyCollection<Guid> atoIds,
         CancellationToken cancellationToken = default)
     {
@@ -67,14 +67,12 @@ internal sealed class VagaDeLinhagemReader(PublicacoesDbContext db) : IVagaDeLin
 
         Guid[] ids = [.. atoIds];
 
-        var registrados = await _db.Set<AtoNormativo>()
+        return await _db.Set<AtoNormativo>()
             .AsNoTracking()
-            .Where(a => ids.Contains(a.Id) && a.UnicoPorObjeto)
-            .Select(a => new { a.TipoCodigo, a.TipoNome })
+            .Where(a => ids.Contains(a.Id))
+            .Select(a => a.TipoCodigo)
             .Distinct()
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
-
-        return [.. registrados.Select(a => new TipoDeAtoUnicoRegistrado(a.TipoCodigo, a.TipoNome ?? a.TipoCodigo))];
     }
 }

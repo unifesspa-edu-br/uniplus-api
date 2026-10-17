@@ -202,17 +202,8 @@ public static class PublicarProcessoSeletivoCommandHandler
             return (Result.Failure(pendenciaCronograma), []);
         }
 
-        // Os tipos únicos e a pendência de duplicidade saem de um ponto só, logo depois do
-        // cronograma e antes de canonicalizar, na ordem da raiz.
         Result<TiposDeAtoUnicosPorObjeto> tiposUnicos = await ResolucaoDosTiposDeAtoUnicos
-            .ConferirAsync(
-                tipoDeAtoReader,
-                vagaDeLinhagemReader,
-                processo,
-                tipoConferido,
-                atosDaLinhagem,
-                ResolucaoDosTiposDeAtoUnicos.Hoje(timeProvider, fusoInstitucional),
-                cancellationToken)
+            .ConferirAsync(tipoDeAtoReader, vagaDeLinhagemReader, processo, tipoConferido, atosDaLinhagem, timeProvider, fusoInstitucional, cancellationToken)
             .ConfigureAwait(false);
         if (tiposUnicos.IsFailure)
         {
