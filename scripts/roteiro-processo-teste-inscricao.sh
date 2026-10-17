@@ -470,6 +470,14 @@ definir_distribuicao_vagas() {
     ok "distribuição de vagas definida"
 }
 
+definir_opcoes_de_curso() {
+    log "Definir o Número de Opções de Curso (1)"
+    # O processo tem um só curso (Medicina), então o candidato escolhe uma opção:
+    # a segunda exigiria ao menos dois cursos na distribuição de vagas.
+    api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/opcoes-de-curso" '{ "numero": 1 }' >/dev/null
+    ok "número de opções de curso definido"
+}
+
 definir_cascata_remanejamento() {
     log "Definir Cascata de Remanejamento (REMANEJ-CASCATA-LEI-12711)"
     # A matriz tem de bater exatamente com o esquema_args congelado da regra
@@ -545,7 +553,7 @@ definir_classificacao() {
         "regraArredondamentoCodigo": null, "regraArredondamentoVersao": null,
         "casasArredondamento": null,
         "regraOrdemAlocacaoCodigo": "ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA", "regraOrdemAlocacaoVersao": "v1",
-        "nOpcoesAlocacao": 1, "regrasEliminacao": [], "baseadoEmEnem": true
+        "regrasEliminacao": [], "baseadoEmEnem": true
     }' >/dev/null
     ok "classificação definida"
 }
@@ -793,6 +801,7 @@ main() {
     definir_algoritmo_contagem_prazo
     definir_oferta_atendimento
     definir_distribuicao_vagas
+    definir_opcoes_de_curso
     definir_cascata_remanejamento
     definir_bonus_regional
     definir_criterios_desempate

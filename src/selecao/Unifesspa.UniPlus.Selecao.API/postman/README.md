@@ -2,7 +2,7 @@
 
 Smoke test HTTP completo do agregado **ProcessoSeletivo** (Story #758/#851/#554),
 versionado junto da própria API (convenção: uma coleção por API, não compartilhada
-— mesmo padrão de `organizacao.postman_collection.json`). Exercita **todos os 22
+— mesmo padrão de `organizacao.postman_collection.json`). Exercita **todos os 23
 endpoints** de `ProcessoSeletivoController` + os 2 de `DocumentosEditalController`,
 incluindo a configuração de catálogo pré-requisito (Publicações/Organização/
 Configuração) e o fluxo de documentos exigidos por gatilho e fase (Story #554,
