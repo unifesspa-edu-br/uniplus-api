@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Selecao.API.Hateoas;
 using Unifesspa.UniPlus.Selecao.API.Rotinas;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Mappings;
+using Unifesspa.UniPlus.Selecao.Application.Queries.AtosDoProcesso;
 using Unifesspa.UniPlus.Selecao.Infrastructure;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
@@ -96,6 +97,13 @@ public static class SelecaoModuleRegistration
                 $"{RemocaoDeArquivosPendentesOptions.SectionName}:Intervalo deve ficar entre {RemocaoDeArquivosPendentesOptions.IntervaloMinimo} e {RemocaoDeArquivosPendentesOptions.IntervaloMaximo}.")
             .ValidateOnStart();
         services.AddHostedService<RemocaoDeArquivosPendentesVencidosHostedService>();
+
+        services.AddOptions<AtosDoProcessoOptions>()
+            .Bind(configuration.GetSection(AtosDoProcessoOptions.SectionName))
+            .Validate(
+                static options => options.LimiarDePendencia >= AtosDoProcessoOptions.LimiarMinimo,
+                $"{AtosDoProcessoOptions.SectionName}:LimiarDePendencia deve ser de pelo menos {AtosDoProcessoOptions.LimiarMinimo}.")
+            .ValidateOnStart();
 
         return services;
     }
