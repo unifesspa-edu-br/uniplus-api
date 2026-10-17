@@ -114,7 +114,7 @@ public sealed record DadosEdital
         }
 
         return Result<DadosEdital>.Success(new DadosEdital(
-            numero?.Trim(),
+            string.IsNullOrWhiteSpace(numero) ? null : numero.Trim(),
             periodoInscricaoInicio.ToUniversalTime(),
             periodoInscricaoFim.ToUniversalTime(),
             documentoEditalId,

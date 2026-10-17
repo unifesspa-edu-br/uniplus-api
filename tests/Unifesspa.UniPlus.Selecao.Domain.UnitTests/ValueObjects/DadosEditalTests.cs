@@ -84,6 +84,16 @@ public sealed class DadosEditalTests
         dados.DiaDeReferenciaLegal(belem).Should().Be(new DateOnly(2026, 3, 10));
     }
 
+    [Theory(DisplayName = "O número do edital em branco é ausência de número")]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void DadosEdital_NumeroEmBranco_ViraNulo(string numero)
+    {
+        DadosEdital dados = DadosEdital.Criar(numero, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), Guid.CreateVersion7()).Value!;
+
+        dados.Numero.Should().BeNull();
+    }
+
     [Fact(DisplayName = "O mesmo documento duas vezes, ou como principal e como anexo, é recusado")]
     public void AnexoRepetido_Recusado()
     {

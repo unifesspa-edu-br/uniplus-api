@@ -89,4 +89,26 @@ public sealed class AtoDoProcessoTests
         principalComoAnexo.Should().Throw<ArgumentException>();
         anexoDuasVezes.Should().Throw<ArgumentException>();
     }
+
+    [Fact(DisplayName = "Texto opcional em branco é ausência: vira nulo, sem exceção")]
+    public void Registrar_TextoOpcionalEmBranco_ViraNulo()
+    {
+        NovoAtoDoProcesso novo = Novo(politicaConfirmadaPor: "  ") with { Numero = "   " };
+
+        AtoDoProcesso ato = AtoDoProcesso.Registrar(novo, new RelogioFixo(Agora));
+
+        ato.Numero.Should().BeNull();
+        ato.PoliticaDeDivulgacaoConfirmadaPorSub.Should().BeNull();
+        ato.PoliticaDeDivulgacaoConfirmadaEm.Should().BeNull();
+        ato.MotivoDaCorrecao.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "O motivo em branco com ato corrigido continua sendo violação: os dois vêm juntos")]
+    public void Registrar_AtoCorrigidoComMotivoEmBranco_Lanca()
+    {
+        Func<AtoDoProcesso> registrar = () => AtoDoProcesso.Registrar(
+            Novo(atoCorrigidoId: Guid.CreateVersion7(), motivo: "   "), TimeProvider.System);
+
+        registrar.Should().Throw<ArgumentException>();
+    }
 }
