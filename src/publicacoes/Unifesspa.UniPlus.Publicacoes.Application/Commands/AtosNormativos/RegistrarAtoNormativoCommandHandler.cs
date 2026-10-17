@@ -37,7 +37,7 @@ public static class RegistrarAtoNormativoCommandHandler
         // O ato que trata de objeto cujos atos pertencem ao seu domínio não nasce aqui: este
         // registro não recebe o arquivo, e o ato ficaria sem documento. A recusa do vínculo
         // declarado vem antes de qualquer ida ao banco e da validação da cadeia.
-        if (command.RegistroPeloEndpoint
+        if (!command.RegistroPeloDominio
             && VinculoDeRegistroPeloDominio((command.Vinculos ?? []).Where(v => v is not null).Select(v => v.EntidadeTipo))
                 is { } declarado)
         {
@@ -111,7 +111,7 @@ public static class RegistrarAtoNormativoCommandHandler
 
         // Os herdados só se conhecem depois da resolução: uma retificação que não repete o
         // vínculo o herda do ato retificado, e nasceria sem documento do mesmo jeito.
-        if (command.RegistroPeloEndpoint
+        if (!command.RegistroPeloDominio
             && VinculoDeRegistroPeloDominio(vinculos.Select(v => v.EntidadeTipo)) is { } herdado)
         {
             return Result<RegistrarAtoNormativoResult>.Failure(RegistroPeloDominioExigido(herdado));
