@@ -1731,7 +1731,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             Dominio = "TEXTO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Identificação do candidato no processo seletivo.",
-                            Formato = "NOME_PESSOA",
+                            Formato = "LIVRE",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Nome",
                             Origem = "DECLARADO",

@@ -12,7 +12,7 @@ public sealed class ConjuntoBasicoDoModeloTests
 {
     private static readonly Dictionary<string, string> Formatos = new(StringComparer.Ordinal)
     {
-        ["NOME"] = "NOME_PESSOA",
+        ["NOME"] = "LIVRE",
         ["NOME_SOCIAL"] = "NOME_PESSOA",
         ["CPF"] = "CPF",
         ["RG_NUMERO"] = "LIVRE",

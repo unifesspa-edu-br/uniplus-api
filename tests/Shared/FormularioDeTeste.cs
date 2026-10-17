@@ -267,7 +267,7 @@ internal static class FormularioDeTeste
     /// <summary>O formato que o catálogo dá a cada texto do conjunto básico.</summary>
     private static readonly Dictionary<string, string> FormatoDosTextos = new(StringComparer.Ordinal)
     {
-        ["NOME"] = "NOME_PESSOA",
+        ["NOME"] = "LIVRE",
         ["NOME_SOCIAL"] = "NOME_PESSOA",
         ["NOME_MAE"] = "NOME_PESSOA",
         ["NOME_PAI"] = "NOME_PESSOA",

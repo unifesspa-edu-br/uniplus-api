@@ -254,7 +254,8 @@ public static class FatoCandidatoSeed
         // como opções; o órgão emissor do RG, uma lista fechada, e o nome do órgão que falta nela. O
         // nome social é público, porque é a identificação que o titular escolhe para aparecer
         // (ADR-0082); os demais são pessoais.
-        DadoBasico(27, "NOME", "Nome", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.NomePessoa),
+        // O nome civil vem do login (gov.br) e é igual ao do token: não passa por regra de formato.
+        DadoBasico(27, "NOME", "Nome", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.Livre),
         DadoBasico(28, "DESEJA_NOME_SOCIAL", "Deseja usar nome social", DominioFato.Booleano, FinalidadeIdentificacao),
         DadoBasico(29, FatoCandidato.CodigoDoNomeSocial, "Nome social", DominioFato.Texto, FinalidadeIdentificacao,
             formato: FormatoTexto.NomePessoa, classificacao: ClassificacaoProtecaoDado.Publico),

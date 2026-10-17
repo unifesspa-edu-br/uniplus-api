@@ -40,7 +40,7 @@ internal static class CatalogoDoConjuntoBasico
     /// <summary>Os fatos do conjunto básico.</summary>
     public static IReadOnlyList<FatoCandidatoView> Fatos { get; } =
     [
-        Texto("NOME", "NOME_PESSOA"),
+        Texto("NOME", "LIVRE"),
         Declarado("DESEJA_NOME_SOCIAL", "BOOLEANO"),
         Texto("NOME_SOCIAL", "NOME_PESSOA", classificacao: "PUBLICO"),
         Categorico("NACIONALIDADE", "NATO", "NATURALIZADO", "ESTRANGEIRO"),
