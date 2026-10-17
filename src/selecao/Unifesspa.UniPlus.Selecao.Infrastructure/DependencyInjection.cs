@@ -74,6 +74,7 @@ public static class SelecaoInfrastructureRegistration
         services.AddScoped<IObrigatoriedadeLegalRepository, ObrigatoriedadeLegalRepository>();
         services.AddScoped<IMotivoDecisaoIsencaoRepository, MotivoDecisaoIsencaoRepository>();
         services.AddScoped<IDocumentoAPublicarRepository, DocumentoAPublicarRepository>();
+        services.AddScoped<IAtoDoProcessoRepository, AtoDoProcessoRepository>();
         services.AddScoped<IModeloDeDocumentoRepository, ModeloDeDocumentoRepository>();
         services.AddScoped<IRascunhoDePublicacaoRepository, RascunhoDePublicacaoRepository>();
         services.AddScoped<IInscricaoRepository, InscricaoRepository>();
