@@ -259,7 +259,7 @@ public sealed class CertamePublicoEndpointTests : IClassFixture<PortalComOrigens
 
     private void ServirCertame() =>
         _factory.Contrato.Resposta = new ConsultaDoCertame.Encontrado(
-            new CertameDaOrigem(ProcessoId, CriadorId, "Medicina 2027", "012/2026", EditalNoAcervo, SituacaoDaInscricao.UltimosDias));
+            new CertameDaOrigem(ProcessoId, CriadorId, "Medicina 2027", "012/2026", EditalNoAcervo, new Dictionary<Guid, Uri>(), SituacaoDaInscricao.UltimosDias));
 
     /// <summary>Ordem da origem: do mais antigo para o mais recente.</summary>
     private static AtoDaOrigem[] AtosEmOrdemDaOrigem() =>

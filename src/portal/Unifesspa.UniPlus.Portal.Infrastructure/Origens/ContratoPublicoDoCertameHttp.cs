@@ -81,8 +81,30 @@ internal sealed partial class ContratoPublicoDoCertameHttp : IContratoPublicoDoC
                 certame.Nome,
                 string.IsNullOrWhiteSpace(certame.Periodo?.Numero) ? null : certame.Periodo.Numero,
                 DocumentoPublico(certame.DocumentoEdital?.UrlDownload),
+                EditaisPorAto(certame.EditaisPublicados),
                 situacao));
         }
+    }
+
+    /// <summary>
+    /// O edital de cada versão divulgada, pelo ato que a criou. Item sem ato ou com endereço fora do
+    /// padrão aceito é ignorado, como o documento da versão vigente: o evento daquele ato fica sem
+    /// link, e o resto da linha do tempo não é afetado.
+    /// </summary>
+    private static Dictionary<Guid, Uri> EditaisPorAto(IReadOnlyList<EditalPublicadoDoCertamePayload?>? editais)
+    {
+        Dictionary<Guid, Uri> porAto = [];
+        foreach (EditalPublicadoDoCertamePayload? edital in editais ?? [])
+        {
+            if (edital is not null
+                && edital.AtoId != Guid.Empty
+                && DocumentoPublico(edital.UrlDownload) is { } url)
+            {
+                porAto[edital.AtoId] = url;
+            }
+        }
+
+        return porAto;
     }
 
     /// <summary>

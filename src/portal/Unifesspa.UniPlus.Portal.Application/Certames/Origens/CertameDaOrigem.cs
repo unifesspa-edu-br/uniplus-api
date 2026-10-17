@@ -19,6 +19,10 @@ namespace Unifesspa.UniPlus.Portal.Application.Certames.Origens;
 /// Endereço público, no acervo, do edital da versão servida — o documento do ato criador. Nulo
 /// quando a versão não tem documento publicado.
 /// </param>
+/// <param name="EditaisPorAto">
+/// Endereço público, no acervo, do edital de cada versão já divulgada, pelo ato que a criou. Inclui
+/// as versões anteriores à servida; vazio quando a origem não informa nenhuma.
+/// </param>
 /// <param name="Situacao">Situação da janela de inscrição no instante da leitura.</param>
 public sealed record CertameDaOrigem(
     Guid ProcessoSeletivoId,
@@ -26,4 +30,5 @@ public sealed record CertameDaOrigem(
     string Nome,
     string? NumeroEdital,
     Uri? DocumentoEditalUrl,
+    IReadOnlyDictionary<Guid, Uri> EditaisPorAto,
     SituacaoDaInscricao Situacao);

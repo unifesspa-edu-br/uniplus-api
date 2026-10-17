@@ -156,11 +156,22 @@ public sealed class ComposicaoDaPaginaDoCertame
     }
 
     /// <summary>
-    /// O documento do ato no acervo. O edital que Seleção publica é o do ato que criou a versão
-    /// servida; os demais atos ainda não têm documento no acervo.
+    /// O documento do ato no acervo: o edital da versão que o ato criou, quando Seleção o divulgou.
+    /// Ato que não criou versão de Seleção não tem documento aqui.
     /// </summary>
-    private static Uri? DocumentoDo(AtoDaOrigem ato, CertameDaOrigem certame) =>
-        ato.Id == certame.AtoCriadorId ? certame.DocumentoEditalUrl : null;
+    /// <remarks>
+    /// O ato criador da versão servida cai no endereço do detalhe quando a origem ainda não o lista
+    /// entre os editais divulgados.
+    /// </remarks>
+    private static Uri? DocumentoDo(AtoDaOrigem ato, CertameDaOrigem certame)
+    {
+        if (certame.EditaisPorAto.TryGetValue(ato.Id, out Uri? edital))
+        {
+            return edital;
+        }
+
+        return ato.Id == certame.AtoCriadorId ? certame.DocumentoEditalUrl : null;
+    }
 
     private static EventoDaLinhaDoTempo ParaEvento(AtoDaOrigem ato, Uri? documentoUrl)
     {

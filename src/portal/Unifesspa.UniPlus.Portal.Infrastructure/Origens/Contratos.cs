@@ -12,13 +12,20 @@ internal sealed record CertamePublicadoPayload(
     string? Nome,
     PeriodoDoCertamePayload? Periodo,
     DocumentoEditalDoCertamePayload? DocumentoEdital,
-    SituacaoDaInscricao? Situacao);
+    SituacaoDaInscricao? Situacao,
+    IReadOnlyList<EditalPublicadoDoCertamePayload?>? EditaisPublicados = null);
 
 /// <summary>A parte do período de inscrição que a Portal usa: o número do edital.</summary>
 internal sealed record PeriodoDoCertamePayload(string? Numero);
 
 /// <summary>A parte do documento do edital que a Portal usa: o endereço público no acervo.</summary>
 internal sealed record DocumentoEditalDoCertamePayload(Uri? UrlDownload);
+
+/// <summary>
+/// O edital de uma versão divulgada: o ato que a criou e o endereço público no acervo. Origem
+/// anterior ao campo não o envia, e item nulo ou incompleto é descartado na leitura.
+/// </summary>
+internal sealed record EditalPublicadoDoCertamePayload(Guid AtoId, Uri? UrlDownload);
 
 /// <summary>
 /// Os campos de um ato da consulta unificada (Publicações) que a Portal lê. O assinante não é
