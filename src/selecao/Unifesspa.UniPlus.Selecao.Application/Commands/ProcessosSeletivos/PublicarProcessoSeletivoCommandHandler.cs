@@ -202,12 +202,21 @@ public static class PublicarProcessoSeletivoCommandHandler
             return (Result.Failure(pendenciaCronograma), []);
         }
 
+        Result<IReadOnlyList<AnexoDoEdital>> conferenciaDosAnexos = await ConferenciaDosAnexosDoEdital
+            .ConferirAsync(documentoAPublicarRepository, command.ProcessoSeletivoId, command.Anexos, [], cancellationToken)
+            .ConfigureAwait(false);
+        if (conferenciaDosAnexos.IsFailure)
+        {
+            return (Result.Failure(conferenciaDosAnexos.Error!), []);
+        }
+
         Result<DadosEdital> dadosResult = ResolucaoDoPeriodoDeInscricao.Resolver(
             processo,
             command.Numero,
             command.PeriodoInscricaoInicio,
             command.PeriodoInscricaoFim,
-            command.DocumentoEditalId);
+            command.DocumentoEditalId,
+            conferenciaDosAnexos.Value!);
         if (dadosResult.IsFailure)
         {
             return (Result.Failure(dadosResult.Error!), []);

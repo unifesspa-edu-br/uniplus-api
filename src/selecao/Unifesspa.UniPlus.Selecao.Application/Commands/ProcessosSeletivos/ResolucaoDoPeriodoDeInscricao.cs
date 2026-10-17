@@ -21,7 +21,8 @@ internal static class ResolucaoDoPeriodoDeInscricao
         string? numero,
         DateTimeOffset? periodoInscricaoInicioInformado,
         DateTimeOffset? periodoInscricaoFimInformado,
-        Guid documentoEditalId)
+        Guid documentoEditalId,
+        IReadOnlyList<AnexoDoEdital> anexos)
     {
         ArgumentNullException.ThrowIfNull(processo);
 
@@ -39,7 +40,7 @@ internal static class ResolucaoDoPeriodoDeInscricao
                     "O processo não tem fase do cronograma que colete inscrição, então o período de inscrição precisa ser informado na publicação."));
             }
 
-            return DadosEdital.Criar(numero, inicioInformado, fimInformado, documentoEditalId);
+            return DadosEdital.Criar(numero, inicioInformado, fimInformado, documentoEditalId, anexos);
         }
 
         if (periodoInscricaoInicioInformado is not null || periodoInscricaoFimInformado is not null)
@@ -55,6 +56,6 @@ internal static class ResolucaoDoPeriodoDeInscricao
                 $"A fase '{ancora.Codigo}' coleta inscrição e está sem janela — PendenciaDoCronograma deveria ter recusado a transição antes deste ponto.");
         }
 
-        return DadosEdital.Criar(numero, inicio, fim, documentoEditalId);
+        return DadosEdital.Criar(numero, inicio, fim, documentoEditalId, anexos);
     }
 }

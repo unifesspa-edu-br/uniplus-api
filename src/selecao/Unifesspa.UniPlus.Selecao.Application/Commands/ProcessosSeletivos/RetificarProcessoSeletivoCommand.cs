@@ -15,6 +15,10 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// <c>ProcessoSeletivo</c> e a cadeia é linear, o cliente endereça apenas a
 /// raiz (o <c>ProcessoSeletivoId</c>), nunca um id de Edital interno.
 /// </summary>
+/// <param name="Anexos">
+/// Os anexos da nova versão. Nulo mantém os da vigente; uma lista substitui o conjunto inteiro, e a
+/// lista vazia os retira todos.
+/// </param>
 public sealed record RetificarProcessoSeletivoCommand(
     Guid ProcessoSeletivoId,
     string Motivo,
@@ -22,4 +26,5 @@ public sealed record RetificarProcessoSeletivoCommand(
     DateTimeOffset? PeriodoInscricaoInicio,
     DateTimeOffset? PeriodoInscricaoFim,
     Guid DocumentoEditalId,
-    DadosDoAto Ato) : ICommand<Result>;
+    DadosDoAto Ato,
+    IReadOnlyList<AnexoSolicitadoDoEdital>? Anexos = null) : ICommand<Result>;

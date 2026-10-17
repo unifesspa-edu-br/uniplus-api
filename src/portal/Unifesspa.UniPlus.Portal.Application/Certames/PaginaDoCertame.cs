@@ -39,8 +39,13 @@ public sealed record PaginaDoCertame(
 /// <param name="Tipo">Tipo do ato.</param>
 /// <param name="Descricao">Motivo da retificação, quando o ato retifica outro.</param>
 /// <param name="DocumentoUrl">
-/// Endereço público do documento do ato, quando o acervo o tem. Hoje só o ato que criou a versão
-/// servida tem: é o edital que Seleção publica no acervo.
+/// Endereço público do documento principal do ato, quando o acervo o tem. Hoje só o ato que criou a
+/// versão servida tem: é o edital que Seleção publica no acervo. É o mesmo endereço do documento de
+/// papel principal em <paramref name="Documentos"/>.
+/// </param>
+/// <param name="Documentos">
+/// Os documentos do ato no acervo — o principal primeiro e os anexos em seguida. Vazia quando o
+/// acervo não tem documento do ato.
 /// </param>
 public sealed record EventoDaLinhaDoTempo(
     Guid Id,
@@ -50,7 +55,34 @@ public sealed record EventoDaLinhaDoTempo(
     int Ano,
     TipoDoEvento Tipo,
     string? Descricao,
-    Uri? DocumentoUrl);
+    Uri? DocumentoUrl,
+    IReadOnlyList<DocumentoDoEvento> Documentos);
+
+/// <summary>Papel de um documento no ato que o publica.</summary>
+public enum PapelDoDocumento
+{
+    /// <summary>O documento que é o próprio ato — o edital.</summary>
+    Principal,
+
+    /// <summary>O documento que acompanha o ato.</summary>
+    Anexo,
+}
+
+/// <summary>
+/// Um documento de um ato no acervo público. É o formato único de documento de ato da página,
+/// do edital e dos anexos dele aos atos avulsos.
+/// </summary>
+/// <param name="Papel">Se o documento é o próprio ato ou o acompanha.</param>
+/// <param name="Nome">Nome com que o arquivo é salvo por quem o baixa.</param>
+/// <param name="TipoDeMidia">Tipo de mídia do arquivo.</param>
+/// <param name="TamanhoBytes">Tamanho do arquivo, em bytes.</param>
+/// <param name="Url">Endereço público do arquivo no acervo.</param>
+public sealed record DocumentoDoEvento(
+    PapelDoDocumento Papel,
+    string Nome,
+    string TipoDeMidia,
+    long TamanhoBytes,
+    Uri Url);
 
 /// <summary>
 /// Tipo de um ato da linha do tempo.

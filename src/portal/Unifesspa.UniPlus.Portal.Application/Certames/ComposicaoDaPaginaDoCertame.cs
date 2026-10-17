@@ -94,7 +94,7 @@ public sealed class ComposicaoDaPaginaDoCertame
         // A origem devolve do mais antigo para o mais recente, com o identificador de desempate;
         // a página mostra o inverso, e inverter preserva o mesmo desempate.
         EventoDaLinhaDoTempo[] linhaDoTempo =
-            [.. leitura.Atos.Reverse().Select(ato => ParaEvento(ato, DocumentoDo(ato, certame)))];
+            [.. leitura.Atos.Reverse().Select(ato => ParaEvento(ato, DocumentoDo(ato, certame), DocumentosDo(ato, certame)))];
 
         AtoDaOrigem? criador = leitura.Atos.FirstOrDefault(ato => ato.Id == certame.AtoCriadorId);
 
@@ -173,7 +173,16 @@ public sealed class ComposicaoDaPaginaDoCertame
         return ato.Id == certame.AtoCriadorId ? certame.DocumentoEditalUrl : null;
     }
 
-    private static EventoDaLinhaDoTempo ParaEvento(AtoDaOrigem ato, Uri? documentoUrl)
+    /// <summary>
+    /// Os documentos do ato no acervo, o principal e os anexos. Ato sem registro de documentos na
+    /// origem — o que não criou versão de Seleção — sai com lista vazia.
+    /// </summary>
+    private static IReadOnlyList<DocumentoDoEvento> DocumentosDo(AtoDaOrigem ato, CertameDaOrigem certame) =>
+        certame.DocumentosPorAto is { } porAto && porAto.TryGetValue(ato.Id, out IReadOnlyList<DocumentoDoEvento>? documentos)
+            ? documentos
+            : [];
+
+    private static EventoDaLinhaDoTempo ParaEvento(AtoDaOrigem ato, Uri? documentoUrl, IReadOnlyList<DocumentoDoEvento> documentos)
     {
         string nomeDoTipo = string.IsNullOrWhiteSpace(ato.TipoNome) ? ato.TipoCodigo : ato.TipoNome;
         string? numero = string.IsNullOrWhiteSpace(ato.Numero) ? null : ato.Numero.Trim();
@@ -186,7 +195,8 @@ public sealed class ComposicaoDaPaginaDoCertame
             ato.Ano,
             new TipoDoEvento(ato.TipoCodigo, nomeDoTipo),
             ato.MotivoRetificacao,
-            documentoUrl);
+            documentoUrl,
+            documentos);
     }
 
     /// <summary>

@@ -37,8 +37,8 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// pretendido — a linha não avança, e o certame permanece no ar com o conteúdo da versão anterior.
 /// </para>
 /// <para>
-/// <b>É também o único caminho de escrita no acervo público (ADR-0132).</b> O documento do edital e
-/// os modelos de documento que ele congelou são copiados para lá antes de a divulgação ser gravada,
+/// <b>É também o único caminho de escrita no acervo público (ADR-0132).</b> O documento do edital, os
+/// anexos e os modelos de documento que ele congelou são copiados para lá antes de a divulgação ser gravada,
 /// porque é aqui que o registro do ato está confirmado: nada fica público antes do ato, e o link só é
 /// divulgado depois de o arquivo estar no acervo. Falha na cópia lança, a divulgação não avança, e a reentrega repete —
 /// encontrando no acervo o que já tinha sido copiado.
@@ -121,7 +121,11 @@ public static class DivulgarCertameAoRegistrarAtoHandler
 
         // Antes de ler a linha de divulgação para mutação: a reentrega que a cópia falhada provoca
         // começa sem nada rastreado, e a cópia já feita é encontrada no acervo e não se repete.
-        await PublicarEditalNoAcervoAsync(versao, ato, envelope, documentoAPublicarRepository, acervoPublico, cancellationToken)
+        DocumentoDivulgado principal = await PublicarEditalNoAcervoAsync(
+            versao, ato, envelope, documentoAPublicarRepository, acervoPublico, enderecoNoAcervo, cancellationToken)
+            .ConfigureAwait(false);
+        IReadOnlyList<DocumentoDivulgado> anexos = await PublicarAnexosNoAcervoAsync(
+            versao, envelope, documentoAPublicarRepository, acervoPublico, enderecoNoAcervo, cancellationToken)
             .ConfigureAwait(false);
         await PublicarModelosNoAcervoAsync(versao, envelope, modeloDeDocumentoRepository, acervoPublico, cancellationToken)
             .ConfigureAwait(false);
@@ -131,7 +135,7 @@ public static class DivulgarCertameAoRegistrarAtoHandler
         // Registrado só depois da cópia: o endereço divulgado nunca aponta para arquivo ausente.
         // É o endereço que a projeção desta versão já calculou para o edital, sem segunda derivação.
         EditalDivulgado editalDivulgado = new(
-            versao.AtoCriadorId, versao.NumeroVersao, certame.DocumentoEdital.UrlDownload.OriginalString);
+            versao.AtoCriadorId, versao.NumeroVersao, certame.DocumentoEdital.UrlDownload.OriginalString, [principal, .. anexos]);
         string documento = JsonSerializer.Serialize(certame, ProjecaoDoCertamePublicado.OpcoesDoDocumento);
         DateTimeOffset agora = timeProvider.GetUtcNow();
 
@@ -218,12 +222,13 @@ public static class DivulgarCertameAoRegistrarAtoHandler
     /// documento sem cópia selada ou com outro conteúdo não é publicado — o endereço divulgado
     /// apontaria para um arquivo que não é o que o ato oficializou.
     /// </remarks>
-    private static async Task PublicarEditalNoAcervoAsync(
+    private static async Task<DocumentoDivulgado> PublicarEditalNoAcervoAsync(
         VersaoConfiguracao versao,
         AtoDaDivulgacao ato,
         JsonObject envelope,
         IDocumentoAPublicarRepository documentoAPublicarRepository,
         IAcervoPublico acervoPublico,
+        IEnderecoNoAcervoPublico enderecoNoAcervo,
         CancellationToken cancellationToken)
     {
         if (!ProjecaoDoCertamePublicado.TentarEditalNoAcervo(envelope, ato, out EditalNoAcervo? edital))
@@ -256,6 +261,84 @@ public static class DivulgarCertameAoRegistrarAtoHandler
                     edital.HashSha256),
                 cancellationToken)
             .ConfigureAwait(false);
+
+        return new DocumentoDivulgado(
+            PapelDoDocumentoDivulgado.Principal,
+            edital.NomeDeApresentacao,
+            documento.TipoDeMidia,
+            documento.TamanhoBytes ?? 0,
+            edital.HashSha256,
+            enderecoNoAcervo.De(edital.Chave).OriginalString);
+    }
+
+    /// <summary>
+    /// Copia para o acervo público cada anexo que a versão congelou, na chave do ato que a criou, e
+    /// devolve os documentos como o acervo passa a servi-los.
+    /// </summary>
+    /// <remarks>
+    /// Mesma conferência do edital e dos modelos: nome, formato, tamanho e hash são os do envelope, e
+    /// do cadastro só se lê onde está a cópia selada privada. O anexo sem cópia selada, ou com outro
+    /// conteúdo, é dado inconsistente — divulgar o endereço de um arquivo que não é o congelado seria
+    /// pior que não divulgar.
+    /// </remarks>
+    private static async Task<IReadOnlyList<DocumentoDivulgado>> PublicarAnexosNoAcervoAsync(
+        VersaoConfiguracao versao,
+        JsonObject envelope,
+        IDocumentoAPublicarRepository documentoAPublicarRepository,
+        IAcervoPublico acervoPublico,
+        IEnderecoNoAcervoPublico enderecoNoAcervo,
+        CancellationToken cancellationToken)
+    {
+        if (!ProjecaoDoCertamePublicado.TentarAnexosCongelados(envelope, out List<AnexoDoEdital>? anexos))
+        {
+            throw new InvalidOperationException(
+                $"Configuração congelada do processo {versao.ProcessoSeletivoId} não tem a forma esperada nos anexos do edital.");
+        }
+
+        if (anexos.Count == 0)
+        {
+            return [];
+        }
+
+        IReadOnlyList<DocumentoAPublicar> cadastrados = await documentoAPublicarRepository
+            .ListarDoProcessoAsync(versao.ProcessoSeletivoId, [.. anexos.Select(static a => a.DocumentoId)], cancellationToken)
+            .ConfigureAwait(false);
+
+        List<DocumentoDivulgado> divulgados = [];
+        foreach (AnexoDoEdital anexo in anexos)
+        {
+            DocumentoAPublicar? cadastrado = cadastrados.FirstOrDefault(d => d.Id == anexo.DocumentoId);
+            if (cadastrado?.ObjectKeyConfirmado is not { } chavePrivada
+                || !string.Equals(cadastrado.HashSha256, anexo.HashSha256, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    $"O anexo {anexo.Id} do edital, congelado na versão {versao.NumeroVersao} do processo {versao.ProcessoSeletivoId}, não tem cópia selada com o conteúdo congelado.");
+            }
+
+            string chave = ChaveNoAcervoPublico.DoAnexo(versao.ProcessoSeletivoId, versao.AtoCriadorId, anexo);
+            await acervoPublico
+                .CopiarAsync(
+                    chavePrivada,
+                    chave,
+                    new DocumentoNoAcervo(
+                        anexo.TipoDeMidia,
+                        anexo.NomeArquivo,
+                        versao.AtoCriadorId,
+                        versao.ProcessoSeletivoId,
+                        anexo.HashSha256),
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+            divulgados.Add(new DocumentoDivulgado(
+                PapelDoDocumentoDivulgado.Anexo,
+                anexo.NomeArquivo,
+                anexo.TipoDeMidia,
+                anexo.TamanhoBytes,
+                anexo.HashSha256,
+                enderecoNoAcervo.De(chave).OriginalString));
+        }
+
+        return divulgados;
     }
 
     /// <summary>

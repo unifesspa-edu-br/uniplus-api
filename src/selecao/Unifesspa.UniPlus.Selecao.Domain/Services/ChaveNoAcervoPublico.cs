@@ -35,6 +35,18 @@ public static class ChaveNoAcervoPublico
     }
 
     /// <summary>
+    /// A chave do anexo do edital, no ato que o publicou. O anexo entra pela identidade e pelo hash:
+    /// o anexo trocado ganha outra identidade e o renomeado também, então o objeto já gravado nunca
+    /// prende um conteúdo ou um nome que não é o do anexo.
+    /// </summary>
+    public static string DoAnexo(Guid processoSeletivoId, Guid atoId, AnexoDoEdital anexo)
+    {
+        ArgumentNullException.ThrowIfNull(anexo);
+
+        return $"selecao/processos-seletivos/{processoSeletivoId:D}/atos/{atoId:D}/anexos/{anexo.Id:D}/{anexo.HashSha256}.{FormatosDeDocumento.Extensao(anexo.Formato)}";
+    }
+
+    /// <summary>
     /// A chave do documento do edital, na forma que a ADR-0132 fixa para o acervo de editais: ano,
     /// unidade, tipo do ato, processo pelo identificador legível, ato e hash do documento.
     /// </summary>

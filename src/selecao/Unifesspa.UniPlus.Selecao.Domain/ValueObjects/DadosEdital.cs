@@ -1,12 +1,14 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
+using Errors;
+
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Dados de entrada do ato de publicação (Story #759, T4 #785): número do
 /// Edital, período de inscrição e a referência ao documento (PDF) confirmado
 /// da T3 (#784) — cujo <c>HashSha256</c> vira o <c>ato_criador_hash</c> da
-/// <see cref="Entities.VersaoConfiguracao"/>. Não é persistido isoladamente —
+/// <see cref="Entities.VersaoConfiguracao"/> — e os anexos do edital. Não é persistido isoladamente —
 /// só existe como entrada de <see cref="Entities.ProcessoSeletivo.Publicar"/>.
 /// </summary>
 public sealed record DadosEdital
@@ -15,12 +17,14 @@ public sealed record DadosEdital
         string? numero,
         DateTimeOffset periodoInscricaoInicio,
         DateTimeOffset periodoInscricaoFim,
-        Guid documentoEditalId)
+        Guid documentoEditalId,
+        IReadOnlyList<AnexoDoEdital> anexos)
     {
         Numero = numero;
         PeriodoInscricaoInicio = periodoInscricaoInicio;
         PeriodoInscricaoFim = periodoInscricaoFim;
         DocumentoEditalId = documentoEditalId;
+        Anexos = anexos;
     }
 
     public string? Numero { get; }
@@ -32,6 +36,12 @@ public sealed record DadosEdital
     public DateTimeOffset PeriodoInscricaoFim { get; }
 
     public Guid DocumentoEditalId { get; }
+
+    /// <summary>
+    /// Os anexos do edital, na ordem em que o edital os apresenta. Congelam com a configuração, como
+    /// os modelos de documento, e o hash dela os cobre.
+    /// </summary>
+    public IReadOnlyList<AnexoDoEdital> Anexos { get; }
 
     /// <summary>
     /// O dia civil que responde <i>quais obrigatoriedades legais estavam em vigor</i> para este
@@ -73,7 +83,8 @@ public sealed record DadosEdital
         string? numero,
         DateTimeOffset periodoInscricaoInicio,
         DateTimeOffset periodoInscricaoFim,
-        Guid documentoEditalId)
+        Guid documentoEditalId,
+        IReadOnlyList<AnexoDoEdital>? anexos = null)
     {
         if (documentoEditalId == Guid.Empty)
         {
@@ -96,10 +107,41 @@ public sealed record DadosEdital
                 "O fim do período de inscrição não pode anteceder o início."));
         }
 
+        IReadOnlyList<AnexoDoEdital> anexosDoEdital = anexos ?? [];
+        if (RecusaDosAnexos(anexosDoEdital, documentoEditalId) is { } recusa)
+        {
+            return Result<DadosEdital>.Failure(recusa);
+        }
+
         return Result<DadosEdital>.Success(new DadosEdital(
             numero?.Trim(),
             periodoInscricaoInicio.ToUniversalTime(),
             periodoInscricaoFim.ToUniversalTime(),
-            documentoEditalId));
+            documentoEditalId,
+            anexosDoEdital));
+    }
+
+    /// <summary>
+    /// A regra dos anexos mora aqui, e não só no handler, porque este value object é o ponto por
+    /// onde passam a publicação e a decodificação do envelope: um envelope com anexo repetido não
+    /// sai do encoder, então achá-lo é sinal de bytes que não vieram desse caminho.
+    /// </summary>
+    private static DomainError? RecusaDosAnexos(IReadOnlyList<AnexoDoEdital> anexos, Guid documentoEditalId)
+    {
+        if (anexos.Count > AnexoDoEdital.QuantidadeMaxima)
+        {
+            return new DomainError(
+                AnexoDoEditalErrorCodes.QuantidadeExcedida,
+                $"O edital aceita no máximo {AnexoDoEdital.QuantidadeMaxima} anexos.");
+        }
+
+        bool repetido = anexos.Select(static a => a.Id).Distinct().Count() != anexos.Count
+            || anexos.Select(static a => a.DocumentoId).Distinct().Count() != anexos.Count
+            || anexos.Any(a => a.DocumentoId == documentoEditalId);
+        return repetido
+            ? new DomainError(
+                AnexoDoEditalErrorCodes.Repetido,
+                "O mesmo documento não pode constar duas vezes no edital, nem como anexo e como documento principal.")
+            : null;
     }
 }

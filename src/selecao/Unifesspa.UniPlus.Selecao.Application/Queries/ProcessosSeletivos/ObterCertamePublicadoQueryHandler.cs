@@ -85,11 +85,30 @@ public static class ObterCertamePublicadoQueryHandler
         {
             if (Uri.TryCreate(edital.UrlDownload, UriKind.Absolute, out Uri? url))
             {
-                editais.Add(new EditalPublicadoCertameDto(edital.AtoId, url));
+                editais.Add(new EditalPublicadoCertameDto(edital.AtoId, url, DocumentosLegiveis(edital)));
             }
         }
 
         return Result<CertamePublicadoDto>.Success(certame with { Situacao = situacao, EditaisPublicados = editais });
+    }
+
+    /// <summary>
+    /// Os documentos do edital com endereço legível; o que não tem fica de fora, como o edital sem
+    /// endereço, para um documento ruim não derrubar os demais.
+    /// </summary>
+    private static List<DocumentoDoAtoCertameDto> DocumentosLegiveis(EditalDivulgado edital)
+    {
+        List<DocumentoDoAtoCertameDto> documentos = [];
+        foreach (DocumentoDivulgado documento in edital.Documentos ?? [])
+        {
+            if (Uri.TryCreate(documento.UrlDownload, UriKind.Absolute, out Uri? url))
+            {
+                documentos.Add(new DocumentoDoAtoCertameDto(
+                    documento.Papel, documento.Nome, documento.TipoDeMidia, documento.TamanhoBytes, documento.HashSha256, url));
+            }
+        }
+
+        return documentos;
     }
 
     private static Result<CertamePublicadoDto> NaoEncontrado() =>

@@ -46,6 +46,18 @@ public sealed class DocumentoAPublicarRepository : IDocumentoAPublicarRepository
             .ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyList<DocumentoAPublicar>> ListarDoProcessoAsync(
+        Guid processoSeletivoId,
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.DocumentosAPublicar
+            .AsNoTracking()
+            .Where(d => d.ProcessoSeletivoId == processoSeletivoId && ids.Contains(d.Id))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task AdicionarAsync(DocumentoAPublicar entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);

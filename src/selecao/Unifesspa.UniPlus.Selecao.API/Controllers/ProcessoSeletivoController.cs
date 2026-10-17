@@ -849,7 +849,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
         Result resultado = await _commandBus.Send(
             new PublicarProcessoSeletivoCommand(
                 id, request.Numero, request.PeriodoInscricaoInicio, request.PeriodoInscricaoFim, request.DocumentoEditalId,
-                MapearAto(request.Ato)),
+                MapearAto(request.Ato), MapearAnexos(request.Anexos)),
             cancellationToken);
         if (resultado.IsSuccess)
         {
@@ -978,7 +978,8 @@ public sealed class ProcessoSeletivoController : ControllerBase
                 request.PeriodoInscricaoInicio,
                 request.PeriodoInscricaoFim,
                 request.DocumentoEditalId,
-                MapearAto(request.Ato)),
+                MapearAto(request.Ato),
+                Anexos: MapearAnexos(request.Anexos)),
             cancellationToken);
 
         if (resultado.IsSuccess)
@@ -1166,7 +1167,8 @@ public sealed class ProcessoSeletivoController : ControllerBase
                 request.PeriodoInscricaoFim,
                 request.DocumentoEditalId,
                 MapearAto(request.Ato),
-                precondicao),
+                precondicao,
+                MapearAnexos(request.Anexos)),
             cancellationToken);
 
         if (resultado.IsSuccess)
@@ -1248,6 +1250,9 @@ public sealed class ProcessoSeletivoController : ControllerBase
             ? conformidade.ToActionResult(_mapper)
             : Ok(conformidade.Value!);
     }
+
+    private static List<AnexoSolicitadoDoEdital>? MapearAnexos(IReadOnlyList<AnexoDoEditalRequest>? anexos) =>
+        anexos?.Select(static a => new AnexoSolicitadoDoEdital(a.DocumentoId, a.Nome)).ToList();
 
     /// <summary>
     /// Resolve o snapshot congelado vigente do processo num instante (RN08,

@@ -39,7 +39,8 @@ public sealed class ContratoPublicoDoCertameHttpTests
 
         consulta.Should().BeEquivalentTo(new ConsultaDoCertame.Encontrado(
             new CertameDaOrigem(
-                ProcessoId, Criador, "Medicina 2027", "012/2026", new Uri("https://acervo.example/editais/abc.pdf"), new Dictionary<Guid, Uri>(), SituacaoDaInscricao.InscricoesAbertas)));
+                ProcessoId, Criador, "Medicina 2027", "012/2026", new Uri("https://acervo.example/editais/abc.pdf"), new Dictionary<Guid, Uri>(), SituacaoDaInscricao.InscricoesAbertas,
+                new Dictionary<Guid, IReadOnlyList<DocumentoDoEvento>>())));
 
         HttpRequestMessage requisicao = rede.Requisicoes.Single();
         requisicao.RequestUri!.ToString().Should().Be($"{OrigensMontagem.EnderecoSelecao}/api/selecao/certames/medicina-2027");
@@ -88,6 +89,37 @@ public sealed class ContratoPublicoDoCertameHttpTests
                 [abertura] = new("https://acervo.example/editais/abertura.pdf"),
                 [Criador] = new("https://acervo.example/editais/abc.pdf"),
             });
+    }
+
+    [Fact]
+    public async Task Documentos_do_edital_viram_lista_por_ato_e_documento_invalido_e_ignorado()
+    {
+        string editais = $$"""
+            "editaisPublicados": [
+              {
+                "atoId": "{{Criador}}",
+                "urlDownload": "https://acervo.example/editais/abc.pdf",
+                "documentos": [
+                  { "papel": "principal", "nome": "edital.pdf", "tipoDeMidia": "application/pdf", "tamanhoBytes": 1200, "urlDownload": "https://acervo.example/editais/abc.pdf" },
+                  { "papel": "anexo", "nome": "Quadro de vagas.docx", "tipoDeMidia": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "tamanhoBytes": 800, "urlDownload": "https://acervo.example/anexos/quadro.docx" },
+                  { "papel": "outro", "nome": "papel desconhecido.pdf", "tipoDeMidia": "application/pdf", "tamanhoBytes": 1, "urlDownload": "https://acervo.example/x.pdf" },
+                  { "papel": "anexo", "nome": "sem endereço.pdf", "tipoDeMidia": "application/pdf", "tamanhoBytes": 1, "urlDownload": "ftp://acervo.example/y.pdf" },
+                  { "papel": "anexo", "tipoDeMidia": "application/pdf", "tamanhoBytes": 1, "urlDownload": "https://acervo.example/z.pdf" },
+                  null
+                ]
+              }
+            ]
+            """;
+        string corpo = CorpoDoCertame.Replace("\"situacao\"", editais + ", \"situacao\"", StringComparison.Ordinal);
+        RedeSimulada rede = new((_, _) => RedeSimulada.Json(corpo, MediaType));
+
+        ConsultaDoCertame consulta = await Consultar(rede, c => c.ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None));
+
+        IReadOnlyList<DocumentoDoEvento> documentos = consulta.Should().BeOfType<ConsultaDoCertame.Encontrado>()
+            .Which.Certame.DocumentosPorAto![Criador];
+        documentos.Select(d => (d.Papel, d.Nome, d.TamanhoBytes, d.Url.ToString())).Should().Equal(
+            (PapelDoDocumento.Principal, "edital.pdf", 1200L, "https://acervo.example/editais/abc.pdf"),
+            (PapelDoDocumento.Anexo, "Quadro de vagas.docx", 800L, "https://acervo.example/anexos/quadro.docx"));
     }
 
     [Fact]

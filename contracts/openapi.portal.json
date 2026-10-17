@@ -321,6 +321,39 @@
           }
         }
       },
+      "DocumentoDoEventoResponse": {
+        "required": [
+          "papel",
+          "nome",
+          "tipoDeMidia",
+          "tamanhoBytes",
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "papel": {
+            "$ref": "#/components/schemas/PapelDoDocumento"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "tipoDeMidia": {
+            "type": "string"
+          },
+          "tamanhoBytes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
       "EventoDaLinhaDoTempoResponse": {
         "required": [
           "id",
@@ -330,7 +363,8 @@
           "ano",
           "tipo",
           "descricao",
-          "documentoUrl"
+          "documentoUrl",
+          "documentos"
         ],
         "type": "object",
         "properties": {
@@ -374,8 +408,21 @@
               "string"
             ],
             "format": "uri"
+          },
+          "documentos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDoEventoResponse"
+            }
           }
         }
+      },
+      "PapelDoDocumento": {
+        "enum": [
+          "principal",
+          "anexo"
+        ],
+        "type": "string"
       },
       "PingResponse": {
         "required": [

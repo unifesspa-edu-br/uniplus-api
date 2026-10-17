@@ -67,8 +67,13 @@ internal sealed record CertamePublicoResponse(
 /// <param name="Tipo">Tipo do ato.</param>
 /// <param name="Descricao">Motivo da retificação, quando o ato retifica outro.</param>
 /// <param name="DocumentoUrl">
-/// Endereço público do documento do ato no acervo. Ausente quando o acervo não tem o documento do
-/// ato — hoje só o ato que criou a versão vigente o tem.
+/// Endereço público do documento principal do ato no acervo. Ausente quando o acervo não tem o
+/// documento do ato — hoje só o ato que criou a versão vigente o tem. Repete o endereço do documento
+/// de papel <c>principal</c> em <paramref name="Documentos"/> e fica para quem ainda não lê a lista.
+/// </param>
+/// <param name="Documentos">
+/// Os documentos do ato no acervo, o principal primeiro e os anexos em seguida, na ordem em que o
+/// ato os apresenta. Lista vazia quando o acervo não tem documento do ato.
 /// </param>
 internal sealed record EventoDaLinhaDoTempoResponse(
     Guid Id,
@@ -78,7 +83,8 @@ internal sealed record EventoDaLinhaDoTempoResponse(
     int Ano,
     TipoDoEventoResponse Tipo,
     string? Descricao,
-    Uri? DocumentoUrl)
+    Uri? DocumentoUrl,
+    IReadOnlyList<DocumentoDoEventoResponse> Documentos)
 {
     internal static EventoDaLinhaDoTempoResponse De(EventoDaLinhaDoTempo evento) =>
         new(
@@ -89,7 +95,27 @@ internal sealed record EventoDaLinhaDoTempoResponse(
             evento.Ano,
             new TipoDoEventoResponse(evento.Tipo.Codigo, evento.Tipo.Nome),
             evento.Descricao,
-            evento.DocumentoUrl);
+            evento.DocumentoUrl,
+            [.. evento.Documentos.Select(DocumentoDoEventoResponse.De)]);
+}
+
+/// <summary>
+/// Um documento de um ato no acervo público: o edital ou um anexo dele.
+/// </summary>
+/// <param name="Papel"><c>principal</c> para o documento que é o próprio ato, <c>anexo</c> para o que o acompanha.</param>
+/// <param name="Nome">Nome com que o arquivo é salvo por quem o baixa.</param>
+/// <param name="TipoDeMidia">Tipo de mídia do arquivo.</param>
+/// <param name="TamanhoBytes">Tamanho do arquivo, em bytes.</param>
+/// <param name="Url">Endereço público do arquivo no acervo. O documento não trafega pela Portal.</param>
+internal sealed record DocumentoDoEventoResponse(
+    PapelDoDocumento Papel,
+    string Nome,
+    string TipoDeMidia,
+    long TamanhoBytes,
+    Uri Url)
+{
+    internal static DocumentoDoEventoResponse De(DocumentoDoEvento documento) =>
+        new(documento.Papel, documento.Nome, documento.TipoDeMidia, documento.TamanhoBytes, documento.Url);
 }
 
 /// <summary>

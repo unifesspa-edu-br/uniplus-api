@@ -835,7 +835,30 @@ internal static class CorpusEnvelope
         numero: "042/2026",
         periodoInscricaoInicio: new DateTimeOffset(2026, 3, 2, 0, 0, 0, TimeSpan.Zero),
         periodoInscricaoFim: new DateTimeOffset(2026, 3, 20, 23, 59, 59, TimeSpan.Zero),
-        documentoEditalId: Documento).Value!;
+        documentoEditalId: Documento,
+        anexos: AnexosRicos).Value!;
+
+    /// <summary>
+    /// Os anexos do edital rico: um PDF e um DOCX, de formatos e tamanhos diferentes, para a fixture
+    /// provar a ordem em que o edital os apresenta e o tipo de mídia de cada um.
+    /// </summary>
+    private static readonly AnexoDoEdital[] AnexosRicos =
+    [
+        new(
+            new Guid("0192a000-0000-7000-8000-0000000000e1"),
+            new Guid("0192a000-0000-7000-8000-0000000000f1"),
+            "Cronograma detalhado.pdf",
+            FormatoDeDocumento.Pdf,
+            48_213,
+            new string('b', 64)),
+        new(
+            new Guid("0192a000-0000-7000-8000-0000000000e2"),
+            new Guid("0192a000-0000-7000-8000-0000000000f2"),
+            "Quadro de vagas.docx",
+            FormatoDeDocumento.Docx,
+            19_877,
+            new string('c', 64)),
+    ];
 
     /// <summary>
     /// Os valores selecionáveis dos dois fatos coletados de <see cref="ProcessoRico"/>

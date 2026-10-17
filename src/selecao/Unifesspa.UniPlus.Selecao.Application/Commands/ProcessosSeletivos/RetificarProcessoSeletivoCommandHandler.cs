@@ -8,6 +8,8 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
+using Queries.ProcessosSeletivos;
+
 using Services;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
@@ -249,12 +251,21 @@ public static class RetificarProcessoSeletivoCommandHandler
             return (Result.Failure(pendenciaCronograma), []);
         }
 
+        Result<IReadOnlyList<AnexoDoEdital>> conferenciaDosAnexos = await ConferenciaDosAnexosDoEdital
+            .ConferirAsync(documentoAPublicarRepository, command.ProcessoSeletivoId, command.Anexos, ProjecaoDoCertamePublicado.AnexosDaVersao(versaoAtual), cancellationToken)
+            .ConfigureAwait(false);
+        if (conferenciaDosAnexos.IsFailure)
+        {
+            return (Result.Failure(conferenciaDosAnexos.Error!), []);
+        }
+
         Result<DadosEdital> dadosResult = ResolucaoDoPeriodoDeInscricao.Resolver(
             processo,
             command.Numero,
             command.PeriodoInscricaoInicio,
             command.PeriodoInscricaoFim,
-            command.DocumentoEditalId);
+            command.DocumentoEditalId,
+            conferenciaDosAnexos.Value!);
         if (dadosResult.IsFailure)
         {
             return (Result.Failure(dadosResult.Error!), []);

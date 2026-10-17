@@ -32,4 +32,9 @@ public interface IDocumentoAPublicarRepository : IRepository<DocumentoAPublicar>
         Guid processoSeletivoId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Os documentos do processo entre os ids dados, numa consulta só, sem rastreamento.</summary>
+    Task<IReadOnlyList<DocumentoAPublicar>> ListarDoProcessoAsync(
+        Guid processoSeletivoId,
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken cancellationToken = default);
 }

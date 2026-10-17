@@ -70,9 +70,10 @@ public sealed partial class EnvelopeCodec
         DateTimeOffset fim = leitor.Instante(periodo, "fim", "periodo");
 
         JsonObject hashes = leitor.Objeto(payload, "hashesEdital", "$");
-        leitor.ExigirChaves(hashes, "hashesEdital", "documentoEditalId", "hashSha256");
+        leitor.ExigirChaves(hashes, "hashesEdital", "documentoEditalId", "hashSha256", "anexos");
         Guid documentoId = leitor.Identificador(hashes, "documentoEditalId", "hashesEdital");
         string hash = leitor.Texto(hashes, "hashSha256", "hashesEdital");
+        IReadOnlyList<AnexoDoEdital> anexos = LerAnexosDoEdital(leitor, hashes);
 
         if (leitor.Falhou)
         {
@@ -81,8 +82,59 @@ public sealed partial class EnvelopeCodec
 
         hashDocumento = hash;
 
-        Result<DadosEdital> dados = DadosEdital.Criar(numero, inicio, fim, documentoId);
+        Result<DadosEdital> dados = DadosEdital.Criar(numero, inicio, fim, documentoId, anexos);
         return dados.IsFailure ? leitor.Propagar<DadosEdital>(dados.Error!) : dados.Value;
+    }
+
+    /// <summary>
+    /// Os anexos do edital, na ordem em que o envelope os traz. O tipo de mídia é um dos aceitos para
+    /// o documento a publicar e o hash é SHA-256 em hexadecimal minúsculo: o que o encoder emite a
+    /// partir de um documento confirmado nunca sai disso.
+    /// </summary>
+    private static List<AnexoDoEdital> LerAnexosDoEdital(LeitorEnvelope leitor, JsonObject hashes)
+    {
+        List<AnexoDoEdital> anexos = [];
+        JsonArray array = leitor.Array(hashes, "anexos", "hashesEdital");
+        if (leitor.Falhou)
+        {
+            return anexos;
+        }
+
+        for (int i = 0; i < array.Count; i++)
+        {
+            string path = $"hashesEdital.anexos[{i}]";
+            JsonObject item = leitor.ItemObjeto(array, i, path);
+            if (leitor.Falhou)
+            {
+                return anexos;
+            }
+
+            leitor.ExigirChaves(item, path, "anexoId", "documentoId", "nomeArquivo", "tipoDeMidia", "tamanhoBytes", "hashSha256");
+            Guid anexoId = leitor.Identificador(item, "anexoId", path);
+            Guid documentoId = leitor.Identificador(item, "documentoId", path);
+            string nome = leitor.TextoNaoVazio(item, "nomeArquivo", path, AnexoDoEdital.NomeArquivoMaxLength);
+            string tipoDeMidia = leitor.Texto(item, "tipoDeMidia", path);
+            int tamanho = leitor.Inteiro(item, "tamanhoBytes", path);
+            string hash = leitor.Texto(item, "hashSha256", path);
+            if (leitor.Falhou)
+            {
+                return anexos;
+            }
+
+            FormatoDeDocumento? formato = FormatosDeDocumento.DoTipoDeMidia(tipoDeMidia);
+            bool hashValido = hash.Length == 64 && hash.All(static c => c is (>= '0' and <= '9') or (>= 'a' and <= 'f'));
+            if (formato is not { } formatoValido || !hashValido || tamanho <= 0)
+            {
+                leitor.Propagar<AnexoDoEdital>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado,
+                    $"'{path}' com tipo de mídia fora dos aceitos, tamanho que não é positivo ou hash que não é SHA-256 em hexadecimal minúsculo."));
+                return anexos;
+            }
+
+            anexos.Add(new AnexoDoEdital(anexoId, documentoId, nome, formatoValido, tamanho, hash));
+        }
+
+        return anexos;
     }
 
     /// <summary>

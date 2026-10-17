@@ -9652,6 +9652,25 @@
         ],
         "type": "string"
       },
+      "AnexoDoEditalRequest": {
+        "required": [
+          "documentoId",
+          "nome"
+        ],
+        "type": "object",
+        "properties": {
+          "documentoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "AplicacaoDeModeloDto": {
         "required": [
           "finalidade",
@@ -12337,6 +12356,43 @@
           }
         }
       },
+      "DocumentoDoAtoCertameDto": {
+        "required": [
+          "papel",
+          "nome",
+          "tipoDeMidia",
+          "tamanhoBytes",
+          "hashSha256",
+          "urlDownload"
+        ],
+        "type": "object",
+        "properties": {
+          "papel": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "tipoDeMidia": {
+            "type": "string"
+          },
+          "tamanhoBytes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "hashSha256": {
+            "type": "string"
+          },
+          "urlDownload": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
       "DocumentoEditalCertameDto": {
         "required": [
           "documentoEditalId",
@@ -12551,7 +12607,8 @@
       "EditalPublicadoCertameDto": {
         "required": [
           "atoId",
-          "urlDownload"
+          "urlDownload",
+          "documentos"
         ],
         "type": "object",
         "properties": {
@@ -12562,6 +12619,12 @@
           "urlDownload": {
             "type": "string",
             "format": "uri"
+          },
+          "documentos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDoAtoCertameDto"
+            }
           }
         }
       },
@@ -13548,6 +13611,15 @@
           },
           "ato": {
             "$ref": "#/components/schemas/DadosDoAtoRequest"
+          },
+          "anexos": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/AnexoDoEditalRequest"
+            }
           }
         }
       },
@@ -16731,6 +16803,15 @@
           },
           "ato": {
             "$ref": "#/components/schemas/DadosDoAtoRequest"
+          },
+          "anexos": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/AnexoDoEditalRequest"
+            }
           }
         }
       },
@@ -17699,6 +17780,15 @@
           },
           "ato": {
             "$ref": "#/components/schemas/DadosDoAtoRequest"
+          },
+          "anexos": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/AnexoDoEditalRequest"
+            }
           }
         }
       },
