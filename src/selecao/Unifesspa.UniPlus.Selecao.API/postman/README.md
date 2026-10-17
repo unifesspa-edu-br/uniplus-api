@@ -203,6 +203,21 @@ distintas por sub-caso — o objetivo da 7.3 é provar a resolução correta do
 gatilho DNF e o congelamento do bloco, não a segregação por fase (já coberta
 pelos guards de fase da PR-d).
 
+### Finalidade e anexos do documento a publicar
+
+`POST {id}/documentos-a-publicar` exige `finalidade` no corpo: `documentoDoEdital` (só PDF),
+`anexoDoEdital` (PDF, DOCX ou ODT) ou `documentoDeAto`. A coleção envia sempre o PDF do edital com
+`documentoDoEdital`. O `GET` da mesma rota aceita `?finalidade=documentoDoEdital` para listar só os
+candidatos a edital oficial.
+
+`POST {id}/publicacao`, `POST {id}/retificacoes` e `POST {id}/retificacao-em-curso/fechamento` aceitam
+`anexos: [{ "documentoId": "...", "nome": "Quadro de vagas" }]`, na ordem em que o edital os
+apresenta. Cada `documentoId` é de um documento enviado com `finalidade: anexoDoEdital` e já
+confirmado. A coleção manda `anexos: []` (publicação sem anexo). Na retificação, omitir `anexos`
+mantém os da versão vigente, uma lista substitui o conjunto e `[]` retira todos. Para exercitar um
+anexo no smoke, repita o ciclo iniciar-envio → PUT → confirmação com `finalidade: anexoDoEdital` e
+use o id devolvido em `anexos`.
+
 ### Bug real corrigido — DI keyed/não-keyed do mesmo tipo (issue #904)
 
 `POST {id}/documentos-a-publicar` (`IniciarEnvio`, antes `POST {id}/documentos-edital`) respondia **500** de forma
