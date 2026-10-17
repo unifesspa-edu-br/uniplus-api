@@ -324,6 +324,7 @@ public sealed class Inscricao : EntityBase
             .. RecusasDoCpf(respostas),
             .. RecusasDoNome(respostas, admitidas),
             .. RecusasDoNomeSocial(respostas, admitidas, aoEnviar: false),
+            .. RecusasDoEndereco(respostas, admitidas),
             .. RecusasDaOferta(ofertaCursoId, admitidas.OfertasDeCurso, exigida: false),
             .. RecusasDosAceites(aceites, admitidas.Termos),
         ];
@@ -399,6 +400,7 @@ public sealed class Inscricao : EntityBase
             .. RecusasDoCpf(respostas),
             .. RecusasDoNome(MesclarPreservandoAusentes(Respostas, respostas), admitidas),
             .. RecusasDoNomeSocial(MesclarPreservandoAusentes(Respostas, respostas), admitidas, aoEnviar: true),
+            .. RecusasDoEndereco(MesclarPreservandoAusentes(Respostas, respostas), admitidas),
             .. RecusasDaOferta(ofertaCursoId, admitidas.OfertasDeCurso, exigida: admitidas.OfertasDeCurso.Count > 0),
             .. RecusasDaModalidade(avaliacao.Modalidades),
             .. RecusasDosAceites(aceites, admitidas.Termos),
@@ -650,6 +652,34 @@ public sealed class Inscricao : EntityBase
         campos.Count > 0 ? campos : [AvaliacaoDaInscricao.FatoDaModalidade];
 
     /// <summary>A inscrição é do CPF do token; a resposta do CPF não pode ser de outra pessoa.</summary>
+    private static IEnumerable<FieldError> RecusasDoEndereco(IReadOnlyDictionary<string, JsonElement> respostas, RespostasAdmitidas admitidas)
+    {
+        foreach ((string codigo, DefinicaoDaResposta definicao) in admitidas.Definicoes)
+        {
+            if (definicao.Tipo != TipoDoValorDeResposta.Endereco
+                || !respostas.TryGetValue(codigo, out JsonElement valor)
+                || !EnderecoDeclarado.TentarLer(valor, out EnderecoDeclarado endereco)
+                || endereco.EmBranco)
+            {
+                continue;
+            }
+
+            if (endereco.CepSomenteDigitos is null)
+            {
+                yield return new FieldError(codigo, new DomainError(
+                    InscricaoErrorCodes.EnderecoSemCep,
+                    "Informe o CEP do seu endereço, com 8 dígitos. Se você não sabe o CEP, consulte a busca dos Correios; se o seu bairro não tem CEP próprio, use o CEP geral da sua cidade e descreva o endereço real no complemento."));
+            }
+
+            if (endereco.Complemento is { Length: > EnderecoDeclarado.ComplementoMaxLength })
+            {
+                yield return new FieldError(codigo, new DomainError(
+                    InscricaoErrorCodes.EnderecoComplementoLongo,
+                    $"O complemento aceita até {EnderecoDeclarado.ComplementoMaxLength} caracteres. Resuma a descrição do seu endereço."));
+            }
+        }
+    }
+
     private IEnumerable<FieldError> RecusasDoCpf(IReadOnlyDictionary<string, JsonElement> respostas)
     {
         if (!respostas.TryGetValue(ConjuntoBasicoDaInscricao.Cpf, out JsonElement valor) || valor.ValueKind == JsonValueKind.Null)

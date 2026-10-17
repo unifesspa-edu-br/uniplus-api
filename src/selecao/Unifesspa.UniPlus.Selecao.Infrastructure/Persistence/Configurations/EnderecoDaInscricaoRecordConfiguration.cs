@@ -30,6 +30,9 @@ internal sealed class EnderecoDaInscricaoRecordConfiguration : IEntityTypeConfig
         builder.Property(e => e.Procedencia)
             .HasComment("Como o endereço foi preenchido no formulário: pela busca do CEP no Geo ou à mão.");
 
+        builder.Property(e => e.CepConfirmado)
+            .HasComment("O candidato confirmou que o CEP é o geral da cidade ou do bairro, quando o Geo só o resolveu por faixa.");
+
         builder.HasOne<InscricaoRecord>()
             .WithMany()
             .HasForeignKey(e => e.InscricaoId)

@@ -453,6 +453,55 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         gravada!.Respostas.Should().NotContainKey("DATA_NASCIMENTO", "a resposta recusada não é gravada no rascunho");
     }
 
+    [Fact(DisplayName = "A confirmação do CEP de faixa fica gravada no endereço da inscrição e volta na leitura")]
+    public async Task Salvar_EnderecoComCepConfirmado_GravaEReleAConfirmacao()
+    {
+        ProcessoSeletivo processo = NovoProcessoDeInscricao(nameof(Salvar_EnderecoComCepConfirmado_GravaEReleAConfirmacao));
+
+        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+        (Guid processoId, _) = await PublicarEDivulgarAsync(writeContext, processo);
+
+        InscricaoRepository inscricaoRepository = new(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+        Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
+            new IniciarInscricaoCommand(processoId),
+            inscricaoRepository, new CertameDivulgadoRepository(writeContext), new ProcessoSeletivoRepository(writeContext, TimeProvider.System),
+            RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), DentroDoPeriodo, writeContext, UsuarioComCpf(PersonasDeTeste.KevinCarvalho), CancellationToken.None);
+        iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
+
+        Inscricao inscricao = (await inscricaoRepository.ObterPorIdAsync(iniciar.Value!.Id))!;
+        RespostasAdmitidas admitidas = (await ContextoDaVersaoFixadaResolver.ResolverAsync(
+            inscricao.VersaoFormularioId, processoId, new ProcessoSeletivoRepository(writeContext, TimeProvider.System), RegistroCodecs, ofertaCursoId: null, CancellationToken.None))
+            .Value!.Admitidas with
+        { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond };
+
+        Result salvar = inscricao.Salvar(
+            null,
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+            {
+                ["ENDERECO_RESIDENCIAL"] = JsonSerializer.SerializeToElement(new
+                {
+                    cep = "68627476",
+                    logradouro = "Rua Brigadeiro Eduardo Gomes",
+                    bairro = "Laércio Cabeline",
+                    cidade = new { codigoIbge = "1505502", nome = "Paragominas", uf = "PA" },
+                    cepConfirmado = true,
+                }),
+            },
+            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal),
+            [],
+            admitidas,
+            PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+        salvar.IsSuccess.Should().BeTrue(salvar.Error?.Message);
+
+        await inscricaoRepository.AtualizarAsync(inscricao, CancellationToken.None);
+        await writeContext.SaveChangesAsync(CancellationToken.None);
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        InscricaoRepository readRepository = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+        Inscricao lida = (await readRepository.ObterPorIdAsync(inscricao.Id))!;
+        lida.Respostas["ENDERECO_RESIDENCIAL"].GetProperty("cepConfirmado").GetBoolean().Should().BeTrue();
+    }
+
     [Fact(DisplayName = "Salvar um rascunho sobre a versão fixada cifra o RG e o RG do membro do grupo, sem expor nada em texto claro na linha crua")]
     public async Task Salvar_SobreVersaoFixadaReal_CifraDocumentosDeNivelSuperiorEDeGrupo()
     {
@@ -1157,7 +1206,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             ["EMAIL"] = JsonSerializer.SerializeToElement("fernanda.drumond@example.com"),
             ["TELEFONE"] = JsonSerializer.SerializeToElement("94999999999"),
             ["TIPO_ENDERECO"] = JsonSerializer.SerializeToElement("URBANO"),
-            ["ENDERECO_RESIDENCIAL"] = JsonSerializer.SerializeToElement(new { cep = (string?)null, cidade = new { codigoIbge = "1504208", uf = "PA" } }),
+            ["ENDERECO_RESIDENCIAL"] = JsonSerializer.SerializeToElement(new { cep = "68500000", cidade = new { codigoIbge = "1504208", uf = "PA" } }),
         };
         foreach ((string fato, JsonElement valor) in doProcesso)
         {
@@ -1187,6 +1236,8 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         IConferenciaEnderecoGeo geo = Substitute.For<IConferenciaEnderecoGeo>();
         geo.ConferirMunicipioAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Result.Success());
         geo.ConferirCepAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Result.Success());
+        geo.ResolverCepAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Result<CepResolvido>.Success(new CepResolvido("1504208", "PA", "logradouro")));
         return geo;
     }
 

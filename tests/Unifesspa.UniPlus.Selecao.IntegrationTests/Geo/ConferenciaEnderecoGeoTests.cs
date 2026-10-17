@@ -40,7 +40,7 @@ public sealed class ConferenciaEnderecoGeoTests
         ConteudoRastreado conteudoDoMunicipio = new();
         IGeoApi geo = Substitute.For<IGeoApi>();
         geo.ResolverCepAsync("68500000", Arg.Any<CancellationToken>())
-            .Returns(RespostaCom(conteudoDoCep, new CepResolvidoResponse("Marabá", "1504208", "PA")));
+            .Returns(RespostaCom(conteudoDoCep, new CepResolvidoResponse("Marabá", "1504208", "PA", "logradouro")));
         geo.ObterCidadeAsync("1504208", Arg.Any<CancellationToken>())
             .Returns(RespostaCom(conteudoDoMunicipio, new CidadeDetalheResponse("1504208", "Marabá", "PA")));
         ConferenciaEnderecoGeo conferencia = new(geo, NullLogger<ConferenciaEnderecoGeo>.Instance);
@@ -127,7 +127,7 @@ public sealed class ConferenciaEnderecoGeoTests
     {
         IGeoApi geo = Substitute.For<IGeoApi>();
         geo.ResolverCepAsync("68500000", Arg.Any<CancellationToken>())
-            .Returns(Resposta(HttpStatusCode.OK, new CepResolvidoResponse("Marabá", "1504208", "PA")));
+            .Returns(Resposta(HttpStatusCode.OK, new CepResolvidoResponse("Marabá", "1504208", "PA", "logradouro")));
 
         ConferenciaEnderecoGeo conferencia = new(geo, NullLogger<ConferenciaEnderecoGeo>.Instance);
         Result resultado = await conferencia.ConferirCepAsync("68500000", "1504208", "PA");
@@ -135,12 +135,42 @@ public sealed class ConferenciaEnderecoGeoTests
         resultado.IsSuccess.Should().BeTrue();
     }
 
+    [Fact(DisplayName = "Resolver o CEP devolve a origem que o Geo declarou, para distinguir o CEP só de faixa")]
+    public async Task ResolverCep_DevolveAOrigemDoGeo()
+    {
+        IGeoApi geo = Substitute.For<IGeoApi>();
+        geo.ResolverCepAsync("68627476", Arg.Any<CancellationToken>())
+            .Returns(Resposta(HttpStatusCode.OK, new CepResolvidoResponse("Paragominas", "1505502", "PA", "faixa-cidade")));
+
+        ConferenciaEnderecoGeo conferencia = new(geo, NullLogger<ConferenciaEnderecoGeo>.Instance);
+        Result<CepResolvido> resultado = await conferencia.ResolverCepAsync("68627476");
+
+        resultado.Value.Should().Be(new CepResolvido("1505502", "PA", "faixa-cidade"));
+        resultado.Value!.ExigeConfirmacao.Should().BeTrue();
+    }
+
+    [Theory(DisplayName = "Origem ausente ou desconhecida chega como não exata: exige a confirmação, nunca é presumida exata")]
+    [InlineData(null)]
+    [InlineData("origem-nova")]
+    public async Task ResolverCep_OrigemAusenteOuDesconhecida_NaoEhExata(string? origem)
+    {
+        IGeoApi geo = Substitute.For<IGeoApi>();
+        geo.ResolverCepAsync("68627476", Arg.Any<CancellationToken>())
+            .Returns(Resposta(HttpStatusCode.OK, new CepResolvidoResponse("Paragominas", "1505502", "PA", origem)));
+
+        ConferenciaEnderecoGeo conferencia = new(geo, NullLogger<ConferenciaEnderecoGeo>.Instance);
+        Result<CepResolvido> resultado = await conferencia.ResolverCepAsync("68627476");
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.ExigeConfirmacao.Should().BeTrue();
+    }
+
     [Fact(DisplayName = "CEP que resolve para OUTRA cidade é divergência, não indisponibilidade")]
     public async Task ConferirCep_ResolveParaOutraCidade_Diverge()
     {
         IGeoApi geo = Substitute.For<IGeoApi>();
         geo.ResolverCepAsync("68500000", Arg.Any<CancellationToken>())
-            .Returns(Resposta(HttpStatusCode.OK, new CepResolvidoResponse("Belém", "1501402", "PA")));
+            .Returns(Resposta(HttpStatusCode.OK, new CepResolvidoResponse("Belém", "1501402", "PA", "logradouro")));
 
         ConferenciaEnderecoGeo conferencia = new(geo, NullLogger<ConferenciaEnderecoGeo>.Instance);
         Result resultado = await conferencia.ConferirCepAsync("68500000", "1504208", "PA");

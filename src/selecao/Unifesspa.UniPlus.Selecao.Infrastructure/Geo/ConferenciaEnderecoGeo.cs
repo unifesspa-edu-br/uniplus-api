@@ -40,9 +40,28 @@ internal sealed partial class ConferenciaEnderecoGeo : IConferenciaEnderecoGeo
     public async Task<Result> ConferirCepAsync(
         string cep, string cidadeCodigoIbgeDeclarada, string ufDeclarada, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(cep);
         ArgumentException.ThrowIfNullOrWhiteSpace(cidadeCodigoIbgeDeclarada);
         ArgumentException.ThrowIfNullOrWhiteSpace(ufDeclarada);
+
+        Result<CepResolvido> resolvido = await ResolverCepAsync(cep, cancellationToken).ConfigureAwait(false);
+        if (resolvido.IsFailure)
+        {
+            return Result.Failure(resolvido.Error!);
+        }
+
+        bool bate = string.Equals(resolvido.Value!.CodigoIbge, cidadeCodigoIbgeDeclarada, StringComparison.Ordinal)
+            && string.Equals(resolvido.Value.Uf, ufDeclarada, StringComparison.OrdinalIgnoreCase);
+
+        return bate
+            ? Result.Success()
+            : Result.Failure(new DomainError(
+                ConferenciaEnderecoGeoErrorCodes.CidadeDivergente,
+                "O CEP informado resolve para uma cidade diferente da declarada."));
+    }
+
+    public async Task<Result<CepResolvido>> ResolverCepAsync(string cep, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(cep);
 
         ApiResponse<CepResolvidoResponse> resposta;
         try
@@ -53,7 +72,7 @@ internal sealed partial class ConferenciaEnderecoGeo : IConferenciaEnderecoGeo
             or TimeoutRejectedException or BrokenCircuitException or GeoAutenticacaoException)
         {
             LogGeoIndisponivel(_logger, "cep", excecao);
-            return Result.Failure(ErroIndisponivel());
+            return Result<CepResolvido>.Failure(ErroIndisponivel());
         }
 
         // A resposta do Refit carrega a HttpResponseMessage: descartá-la libera a conexão e o
@@ -62,30 +81,24 @@ internal sealed partial class ConferenciaEnderecoGeo : IConferenciaEnderecoGeo
         {
             if (resposta.StatusCode == HttpStatusCode.NotFound)
             {
-                return Result.Failure(new DomainError(
+                return Result<CepResolvido>.Failure(new DomainError(
                     ConferenciaEnderecoGeoErrorCodes.CepNaoResolve, "O CEP informado não tem cobertura no Geo."));
             }
 
             if (!resposta.IsSuccessStatusCode)
             {
                 RegistrarRespostaSemSucesso(resposta, "cep");
-                return Result.Failure(ErroIndisponivel());
+                return Result<CepResolvido>.Failure(ErroIndisponivel());
             }
 
             if (resposta.Content is not { } corpo)
             {
                 LogRespostaSemCorpo(_logger, "cep", (int)resposta.StatusCode);
-                return Result.Failure(ErroIndisponivel());
+                return Result<CepResolvido>.Failure(ErroIndisponivel());
             }
 
-            bool bate = string.Equals(corpo.CodigoIbge, cidadeCodigoIbgeDeclarada, StringComparison.Ordinal)
-                && string.Equals(corpo.Uf, ufDeclarada, StringComparison.OrdinalIgnoreCase);
-
-            return bate
-                ? Result.Success()
-                : Result.Failure(new DomainError(
-                    ConferenciaEnderecoGeoErrorCodes.CidadeDivergente,
-                    "O CEP informado resolve para uma cidade diferente da declarada."));
+            // Origem ausente ou desconhecida nunca é "exata": o candidato terá de confirmar o CEP.
+            return Result<CepResolvido>.Success(new CepResolvido(corpo.CodigoIbge, corpo.Uf, corpo.Origem ?? string.Empty));
         }
     }
 

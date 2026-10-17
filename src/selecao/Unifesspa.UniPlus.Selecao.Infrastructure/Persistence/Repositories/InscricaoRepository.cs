@@ -296,7 +296,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
 
     private static EnderecoDeclarado ParaEndereco(EnderecoDaInscricaoRecord e) => new(
         e.Cep, e.Logradouro, e.Numero, e.Complemento, e.Bairro, e.Distrito,
-        e.MunicipioCodigoIbge, e.MunicipioNome, e.Uf, e.Latitude, e.Longitude, e.NivelResolucao, e.Procedencia);
+        e.MunicipioCodigoIbge, e.MunicipioNome, e.Uf, e.Latitude, e.Longitude, e.NivelResolucao, e.Procedencia, e.CepConfirmado);
 
     /// <summary>
     /// As linhas que a inscrição deve ter. Cifra antes de qualquer mutação do que o ChangeTracker
@@ -383,6 +383,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
                     Longitude = endereco.Longitude,
                     NivelResolucao = endereco.NivelResolucao,
                     Procedencia = endereco.Procedencia,
+                    CepConfirmado = endereco.CepConfirmado,
                 });
                 continue;
             }
@@ -519,6 +520,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
                 para.Longitude = de.Longitude;
                 para.NivelResolucao = de.NivelResolucao;
                 para.Procedencia = de.Procedencia;
+                para.CepConfirmado = de.CepConfirmado;
             });
 
         SincronizarPorChave(

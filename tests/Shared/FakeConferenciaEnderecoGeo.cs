@@ -11,14 +11,14 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 /// </summary>
 public sealed class FakeConferenciaEnderecoGeo : IConferenciaEnderecoGeo
 {
-    private readonly Dictionary<string, (string CodigoIbge, string Uf)> _cepsConhecidos = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, (string CodigoIbge, string Uf, string Origem)> _cepsConhecidos = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _municipiosConhecidos = new(StringComparer.Ordinal);
     private bool _indisponivel;
 
     /// <summary>Registra que <paramref name="cep"/> resolve para a cidade/UF dadas — é o que o Geo real devolveria.</summary>
-    public FakeConferenciaEnderecoGeo ComCep(string cep, string codigoIbge, string uf)
+    public FakeConferenciaEnderecoGeo ComCep(string cep, string codigoIbge, string uf, string origem = "logradouro")
     {
-        _cepsConhecidos[cep] = (codigoIbge, uf);
+        _cepsConhecidos[cep] = (codigoIbge, uf, origem);
         return this;
     }
 
@@ -45,7 +45,7 @@ public sealed class FakeConferenciaEnderecoGeo : IConferenciaEnderecoGeo
                 ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel, "Geo indisponível (dublê de teste).")));
         }
 
-        if (!_cepsConhecidos.TryGetValue(cep, out (string CodigoIbge, string Uf) resolvido))
+        if (!_cepsConhecidos.TryGetValue(cep, out (string CodigoIbge, string Uf, string Origem) resolvido))
         {
             return Task.FromResult(Result.Failure(new DomainError(
                 ConferenciaEnderecoGeoErrorCodes.CepNaoResolve, "CEP sem cobertura (dublê de teste).")));
@@ -57,6 +57,20 @@ public sealed class FakeConferenciaEnderecoGeo : IConferenciaEnderecoGeo
         return Task.FromResult(bate
             ? Result.Success()
             : Result.Failure(new DomainError(ConferenciaEnderecoGeoErrorCodes.CidadeDivergente, "Cidade divergente (dublê de teste).")));
+    }
+
+    public Task<Result<CepResolvido>> ResolverCepAsync(string cep, CancellationToken cancellationToken = default)
+    {
+        if (_indisponivel)
+        {
+            return Task.FromResult(Result<CepResolvido>.Failure(new DomainError(
+                ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel, "Geo indisponível (dublê de teste).")));
+        }
+
+        return Task.FromResult(_cepsConhecidos.TryGetValue(cep, out (string CodigoIbge, string Uf, string Origem) resolvido)
+            ? Result<CepResolvido>.Success(new CepResolvido(resolvido.CodigoIbge, resolvido.Uf, resolvido.Origem))
+            : Result<CepResolvido>.Failure(new DomainError(
+                ConferenciaEnderecoGeoErrorCodes.CepNaoResolve, "CEP sem cobertura (dublê de teste).")));
     }
 
     public Task<Result> ConferirMunicipioAsync(

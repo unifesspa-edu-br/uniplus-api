@@ -8,6 +8,10 @@ using System.Text.Json.Nodes;
 /// componentes de texto e a cidade escolhida pelo código IBGE.
 /// </summary>
 /// <param name="Procedencia">Como o endereço foi preenchido no formulário: pela busca do CEP no Geo ou à mão.</param>
+/// <param name="CepConfirmado">
+/// O candidato confirmou, de forma explícita, que o CEP é o geral da cidade ou do bairro: o Geo só o
+/// resolveu por faixa, e o número pode ser erro de digitação.
+/// </param>
 public sealed record EnderecoDeclarado(
     string? Cep,
     string? Logradouro,
@@ -21,12 +25,44 @@ public sealed record EnderecoDeclarado(
     string? Latitude,
     string? Longitude,
     string? NivelResolucao,
-    string? Procedencia)
+    string? Procedencia,
+    bool? CepConfirmado = null)
 {
+    /// <summary>
+    /// O complemento é onde o candidato descreve o endereço real quando o CEP é o geral da cidade:
+    /// cabe uma descrição, não um texto sem fim.
+    /// </summary>
+    public const int ComplementoMaxLength = 300;
+
+    private const int CepDigitos = 8;
+
     private static readonly string[] Componentes =
         ["cep", "logradouro", "numero", "complemento", "bairro", "distrito", "latitude", "longitude", "nivelResolucao", "origem"];
 
+    /// <summary>O nome do componente de confirmação do CEP no JSON do endereço.</summary>
+    public const string ComponenteCepConfirmado = "cepConfirmado";
+
     private static readonly string[] ComponentesDaCidade = ["codigoIbge", "nome", "uf"];
+
+    /// <summary>O CEP só com os 8 dígitos, aceitando o hífen e os pontos da máscara; nulo quando não for um CEP.</summary>
+    public string? CepSomenteDigitos
+    {
+        get
+        {
+            if (Cep is null)
+            {
+                return null;
+            }
+
+            string digitos = new([.. Cep.Where(static c => c is not ('-' or '.' or ' '))]);
+            return digitos.Length == CepDigitos && digitos.All(char.IsAsciiDigit) ? digitos : null;
+        }
+    }
+
+    /// <summary>Nenhum componente foi preenchido: o endereço é uma resposta em branco, não um endereço sem CEP.</summary>
+    public bool EmBranco =>
+        new[] { Cep, Logradouro, Numero, Complemento, Bairro, Distrito, CidadeCodigoIbge, CidadeNome, CidadeUf }
+            .All(string.IsNullOrWhiteSpace);
 
     /// <summary>Recusa o que não for objeto com esses componentes, todos texto ou nulos.</summary>
     public static bool TentarLer(JsonElement valor, out EnderecoDeclarado endereco)
@@ -49,7 +85,10 @@ public sealed record EnderecoDeclarado(
             cidade is { } ci ? Texto(ci, "codigoIbge") : null,
             cidade is { } cn ? Texto(cn, "nome") : null,
             cidade is { } cu ? Texto(cu, "uf") : null,
-            Texto(valor, "latitude"), Texto(valor, "longitude"), Texto(valor, "nivelResolucao"), Texto(valor, "origem"));
+            Texto(valor, "latitude"), Texto(valor, "longitude"), Texto(valor, "nivelResolucao"), Texto(valor, "origem"),
+            valor.TryGetProperty(ComponenteCepConfirmado, out JsonElement confirmado) && confirmado.ValueKind is JsonValueKind.True or JsonValueKind.False
+                ? confirmado.GetBoolean()
+                : null);
         return true;
     }
 
@@ -70,6 +109,7 @@ public sealed record EnderecoDeclarado(
             ["longitude"] = Longitude,
             ["nivelResolucao"] = NivelResolucao,
             ["origem"] = Procedencia,
+            [ComponenteCepConfirmado] = CepConfirmado,
         };
 
         return JsonSerializer.SerializeToElement(objeto);
@@ -79,6 +119,7 @@ public sealed record EnderecoDeclarado(
         objeto.ValueKind == JsonValueKind.Object
         && objeto.EnumerateObject().All(p =>
             (permiteCidade && p.NameEquals("cidade"))
+            || (permiteCidade && p.NameEquals(ComponenteCepConfirmado) && p.Value.ValueKind is JsonValueKind.True or JsonValueKind.False or JsonValueKind.Null)
             || (componentes.Contains(p.Name, StringComparer.Ordinal) && p.Value.ValueKind is JsonValueKind.String or JsonValueKind.Null));
 
     private static string? Texto(JsonElement objeto, string componente) =>

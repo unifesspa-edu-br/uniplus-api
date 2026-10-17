@@ -80,6 +80,8 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         IConferenciaEnderecoGeo conferencia = Substitute.For<IConferenciaEnderecoGeo>();
         conferencia.ConferirCepAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Result.Success());
         conferencia.ConferirMunicipioAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Result.Success());
+        conferencia.ResolverCepAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Result<CepResolvido>.Success(new CepResolvido("1501402", "PA", "logradouro")));
         return conferencia;
     }
 
@@ -116,7 +118,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         ["TIPO_ENDERECO"] = JsonSerializer.SerializeToElement("URBANO"),
         ["ENDERECO_RESIDENCIAL"] = JsonSerializer.SerializeToElement(new
         {
-            cep = (string?)null,
+            cep = "66010000",
             cidade = new { codigoIbge = "1501402", uf = "PA" },
         }),
     };
@@ -459,6 +461,68 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         resultado.Errors.Should().ContainSingle(e => e.Field == "TERMO_VERACIDADE" && e.Error.Code == "Inscricao.TermoNaoAceito",
             "a recusa sai no código do aceite que o candidato envia");
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "CEP que o Geo não encontra recusa o envio no campo do endereço, sem gravar")]
+    public async Task Handle_CepNaoEncontrado_RecusaNoCampoDoEndereco()
+    {
+        IConferenciaEnderecoGeo geo = ConferenciaQueAceitaTudo();
+        geo.ResolverCepAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Result<CepResolvido>.Failure(new DomainError(ConferenciaEnderecoGeoErrorCodes.CepNaoResolve, "sem cobertura")));
+
+        (Result<ComprovanteInscricaoDto> resultado, ISelecaoUnitOfWork unitOfWork) = await SubmeterComEnderecoAsync(geo);
+
+        resultado.Errors.Should().ContainSingle(e => e.Field == "ENDERECO_RESIDENCIAL" && e.Error.Code == InscricaoErrorCodes.EnderecoCepNaoEncontrado);
+        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "CEP geral oficial sem logradouro e bairro recusa o envio no campo do endereço")]
+    public async Task Handle_CepGeralSemLogradouro_Recusa()
+    {
+        IConferenciaEnderecoGeo geo = ConferenciaQueAceitaTudo();
+        geo.ResolverCepAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Result<CepResolvido>.Success(new CepResolvido("1501402", "PA", "cep-geral")));
+
+        (Result<ComprovanteInscricaoDto> resultado, _) = await SubmeterComEnderecoAsync(geo);
+
+        resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
+            [InscricaoErrorCodes.EnderecoLogradouroObrigatorio, InscricaoErrorCodes.EnderecoBairroObrigatorio]);
+    }
+
+    [Fact(DisplayName = "Geo fora do ar recusa o envio como indisponível, e não como CEP não encontrado")]
+    public async Task Handle_GeoIndisponivel_RecusaComoIndisponivel()
+    {
+        IConferenciaEnderecoGeo geo = ConferenciaQueAceitaTudo();
+        geo.ResolverCepAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Result<CepResolvido>.Failure(new DomainError(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel, "fora do ar")));
+
+        (Result<ComprovanteInscricaoDto> resultado, _) = await SubmeterComEnderecoAsync(geo);
+
+        resultado.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
+    }
+
+    private static async Task<(Result<ComprovanteInscricaoDto> Resultado, ISelecaoUnitOfWork UnitOfWork)> SubmeterComEnderecoAsync(IConferenciaEnderecoGeo geo)
+    {
+        Cpf cpf = PersonasDeTeste.FernandaDrumond;
+        (VersaoConfiguracao versao, GrafoConfiguracao grafo, _) = MontarVersaoComItemObrigatorioETermo();
+        Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+
+        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
+        inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
+
+        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
+        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+
+        Dictionary<string, JsonElement> respostas = RespostasDoConjuntoBasico(cpf);
+        respostas["APELIDO"] = JsonSerializer.SerializeToElement("Nanda");
+        InscricaoRequest request = new(null, respostas, null, null);
+
+        Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
+            new SubmeterInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
+            inscricaoRepository, processoRepository, registroCodecs, unitOfWork, UsuarioComCpf(cpf), geo);
+        return (resultado, unitOfWork);
     }
 
     [Theory(DisplayName = "Estrangeiro que informa só um dos documentos, passaporte ou RNM, é recusado pela falta do outro")]
