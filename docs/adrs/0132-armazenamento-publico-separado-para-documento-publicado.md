@@ -167,7 +167,7 @@ A porta de dados do armazenamento segue caminho próprio e já tem destino defin
 - **Endereço imutável:** o mesmo endereço serve sempre o mesmo conteúdo; um edital retificado produz endereço distinto e não invalida o anterior.
 - **Sem leitura anônima fora do acervo:** a interface que serve o armazenamento privado não devolve objeto a chamador anônimo, e o acervo público não permite listagem.
 - **Leitura do acervo só pela borda:** o mesmo objeto é legível pelo nome que a borda publica e **recusado** quando buscado anonimamente pela porta de dados do armazenamento. Os dois ensaios andam em par: sem o segundo, uma instalação satisfaz todos os demais e ainda aceita a leitura direta, contornando o cache e o controle de taxa que esta decisão atribui à borda.
-- **Ato que não cria versão:** nenhum anexo nem documento de ato avulso chega ao acervo antes de o ato estar registrado, e todos os documentos do ato chegam depois.
+- **Ato que não cria versão:** nenhum anexo nem documento de ato avulso chega ao acervo antes de o ato estar registrado, e todos os documentos do ato chegam depois do registro ou ficam pendentes e reprocessáveis, como os demais.
 - **Pendência não se eterniza:** uma cópia que esgote as retentativas é sinalizada e reprocessável; um ato vigente não fica indefinidamente sem documento acessível.
 
 ## Mais informações
@@ -206,7 +206,7 @@ A divulgação ([ADR-0133](0133-divulgacao-do-certame-materializada-no-registro-
 
 A chave é parte do endereço público e não muda depois de publicada, por isso é decidida aqui.
 
-- **Documento principal de qualquer ato do processo:** a forma já decidida, `editais/<ano>/<unidade>/<tipo>/<identificador>/<atoId>/<hash>.<ext>`. O prefixo `editais/` nomeia o acervo do certame, não o tipo do ato. No ato avulso, ano e tipo vêm do ato; unidade e identificador do processo vêm da versão vigente, congelada no momento da publicação.
+- **Documento principal de qualquer ato do processo:** a forma já decidida, `editais/<ano>/<unidade>/<tipo>/<identificador>/<atoId>/<hash>.<ext>`. O prefixo `editais/` nomeia o acervo do certame, não o tipo do ato. No ato avulso, ano e tipo vêm do ato; unidade e identificador do processo vêm da versão vigente divulgada (a última cujo ato foi confirmado) e ficam gravados no registro do ato do processo no momento da publicação.
 - **Anexo, do edital ou do ato avulso:** `selecao/processos-seletivos/<id>/atos/<atoId>/anexos/<anexoId>/<hash>.<ext>`, no mesmo padrão dos modelos de documento.
 - A extensão segue o tipo de mídia (`.pdf`, `.docx`, `.odt`).
 
