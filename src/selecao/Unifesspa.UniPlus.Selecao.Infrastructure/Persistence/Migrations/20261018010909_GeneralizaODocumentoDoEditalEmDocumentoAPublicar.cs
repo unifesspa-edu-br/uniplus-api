@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -19,7 +19,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
     /// </remarks>
     public partial class GeneralizaODocumentoDoEditalEmDocumentoAPublicar : Migration
     {
-        private const string FormatoPdf = "1";
+        private const string FormatoPdf = "3";
 
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

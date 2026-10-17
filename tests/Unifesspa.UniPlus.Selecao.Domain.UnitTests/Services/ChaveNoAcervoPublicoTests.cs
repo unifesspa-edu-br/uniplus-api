@@ -15,7 +15,7 @@ public sealed class ChaveNoAcervoPublicoTests
         ModeloDaExigencia modelo = new(
             new Guid("0199a000-0000-7000-8000-0000000000aa"),
             "Autodeclaração.odt",
-            FormatoDeModelo.Odt,
+            FormatoDeDocumento.Odt,
             new string('d', 64));
 
         string chave = ChaveNoAcervoPublico.DoModelo(

@@ -31,7 +31,7 @@ public static class ChaveNoAcervoPublico
     {
         ArgumentNullException.ThrowIfNull(modelo);
 
-        return $"selecao/processos-seletivos/{processoSeletivoId:D}/atos/{atoId:D}/modelos-de-documento/{modelo.ModeloId:D}/{modelo.HashSha256}.{ModeloDeDocumento.ExtensaoDe(modelo.Formato)}";
+        return $"selecao/processos-seletivos/{processoSeletivoId:D}/atos/{atoId:D}/modelos-de-documento/{modelo.ModeloId:D}/{modelo.HashSha256}.{FormatosDeDocumento.Extensao(modelo.Formato)}";
     }
 
     /// <summary>

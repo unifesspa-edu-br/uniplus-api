@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// confirmado (ADR-0061): o id, o nome que o candidato recebe no download, o formato e o hash do
 /// arquivo. O modelo confirmado é imutável, e é o hash que congela no edital.
 /// </summary>
-public sealed record ModeloDaExigencia(Guid ModeloId, string NomeArquivo, FormatoDeModelo Formato, string HashSha256)
+public sealed record ModeloDaExigencia(Guid ModeloId, string NomeArquivo, FormatoDeDocumento Formato, string HashSha256)
 {
     /// <summary>A cópia do modelo; recusa o que ainda não foi confirmado.</summary>
     public static Result<ModeloDaExigencia> Do(ModeloDeDocumento modelo)

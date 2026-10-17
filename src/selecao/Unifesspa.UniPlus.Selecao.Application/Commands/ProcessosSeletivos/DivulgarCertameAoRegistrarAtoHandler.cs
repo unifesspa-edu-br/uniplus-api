@@ -304,7 +304,7 @@ public static class DivulgarCertameAoRegistrarAtoHandler
                     chavePrivada,
                     ChaveNoAcervoPublico.DoModelo(versao.ProcessoSeletivoId, versao.AtoCriadorId, modelo),
                     new DocumentoNoAcervo(
-                        ModeloDeDocumento.ContentTypeDe(modelo.Formato),
+                        FormatosDeDocumento.TipoDeMidia(modelo.Formato),
                         modelo.NomeArquivo,
                         versao.AtoCriadorId,
                         versao.ProcessoSeletivoId,

@@ -156,7 +156,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         if (recusa is null)
         {
             processo.DocumentosExigidos.Should().ContainSingle().Which.Modelo
-                .Should().Be(new ModeloDaExigencia(modelo.Id, "Autodeclaração.odt", FormatoDeModelo.Odt, new string('a', 64)));
+                .Should().Be(new ModeloDaExigencia(modelo.Id, "Autodeclaração.odt", FormatoDeDocumento.Odt, new string('a', 64)));
         }
     }
 
