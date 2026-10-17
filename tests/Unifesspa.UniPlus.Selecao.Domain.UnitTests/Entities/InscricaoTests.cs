@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -710,6 +711,119 @@ public sealed class InscricaoTests
     public void Salvar_NomeOmitido_NomeSocialLivre_Aceita()
     {
         SalvarComNome(PersonasDeTeste.NomeFernandaDrumond, ("NOME_SOCIAL", "Ariel Drumond")).IsSuccess.Should().BeTrue();
+    }
+
+    private static RespostasAdmitidas AdmitidasComNomeSocialDaConta(string? nomeSocialDaConta) =>
+        Admitidas with { NomeSocialDoLogin = nomeSocialDaConta };
+
+    private static Dictionary<string, JsonElement> RespostasDeNomeSocial(bool deseja, string? nomeSocial = null)
+    {
+        Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal)
+        {
+            ["DESEJA_NOME_SOCIAL"] = JsonSerializer.SerializeToElement(deseja),
+        };
+        if (nomeSocial is not null)
+        {
+            respostas["NOME_SOCIAL"] = JsonSerializer.SerializeToElement(nomeSocial);
+        }
+
+        return respostas;
+    }
+
+    private static Result SalvarComNomeSocial(string? nomeSocialDaConta, Dictionary<string, JsonElement> respostas)
+    {
+        Inscricao inscricao = NovaInscricao();
+        return inscricao.Salvar(null, respostas, SemGrupos(), SemAceites(), AdmitidasComNomeSocialDaConta(nomeSocialDaConta), PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+    }
+
+    private static Result<ComprovanteInscricao> SubmeterComNomeSocial(
+        string? nomeSocialDaConta, Dictionary<string, JsonElement> respostas, ResultadoDaAvaliacaoDaInscricao? avaliacao = null)
+    {
+        Inscricao inscricao = NovaInscricao();
+        return inscricao.Submeter(
+            "000123", OfertaDoProcesso, respostas, SemGrupos(), SemAceites(), AdmitidasComNomeSocialDaConta(nomeSocialDaConta),
+            avaliacao ?? FormularioDeTeste.AvaliacaoSemOcultos, SemDerivados(), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
+    }
+
+    [Fact(DisplayName = "Um NOME_SOCIAL diferente do nome social da conta é recusado ao salvar, no campo NOME_SOCIAL")]
+    public void Salvar_NomeSocialDiferenteDaConta_Recusa()
+    {
+        Result resultado = SalvarComNomeSocial(PersonasDeTeste.NomeSocialFernandaDrumond, RespostasDeNomeSocial(true, "Outro Nome"));
+
+        resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(
+            e => e.Field == "NOME_SOCIAL" && e.Error.Code == InscricaoErrorCodes.NomeSocialDiferenteDaConta);
+    }
+
+    [Fact(DisplayName = "Um NOME_SOCIAL diferente do nome social da conta é recusado ao enviar, no campo NOME_SOCIAL")]
+    public void Submeter_NomeSocialDiferenteDaConta_Recusa()
+    {
+        Result<ComprovanteInscricao> resultado = SubmeterComNomeSocial(PersonasDeTeste.NomeSocialFernandaDrumond, RespostasDeNomeSocial(true, "Outro Nome"));
+
+        resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(
+            e => e.Field == "NOME_SOCIAL" && e.Error.Code == InscricaoErrorCodes.NomeSocialDiferenteDaConta);
+    }
+
+    [Fact(DisplayName = "Ao enviar, o NOME_SOCIAL do rascunho que não é mais o da conta é recusado ainda que o corpo não o repita")]
+    public void Submeter_NomeSocialGravadoDivergente_Recusa()
+    {
+        Inscricao inscricao = NovaInscricao();
+        inscricao.Salvar(null, RespostasDeNomeSocial(true, "Nome Antigo"), SemGrupos(), SemAceites(), AdmitidasComNomeSocialDaConta("Nome Antigo"), PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+
+        Result<ComprovanteInscricao> resultado = inscricao.Submeter(
+            "000123", OfertaDoProcesso, new Dictionary<string, JsonElement>(), SemGrupos(), SemAceites(), AdmitidasComNomeSocialDaConta(PersonasDeTeste.NomeSocialFernandaDrumond),
+            FormularioDeTeste.AvaliacaoSemOcultos, SemDerivados(), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante());
+
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(InscricaoErrorCodes.NomeSocialDiferenteDaConta);
+    }
+
+    [Fact(DisplayName = "Ao enviar com sim e a conta sem nome social, a recusa orienta cadastrar em Meu perfil ou desmarcar a opção")]
+    public void Submeter_SimSemNomeSocialNaConta_RecusaComOrientacao()
+    {
+        Result<ComprovanteInscricao> resultado = SubmeterComNomeSocial(null, RespostasDeNomeSocial(true));
+
+        resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(
+            e => e.Field == "NOME_SOCIAL" && e.Error.Code == InscricaoErrorCodes.NomeSocialAusenteNaConta
+                && e.Error.Message == "Você marcou que deseja usar nome social, mas sua conta não tem nome social cadastrado. Cadastre o nome social em Meu perfil ou desmarque a opção.");
+    }
+
+    [Theory(DisplayName = "Ao salvar com sim e a conta sem nome social, o campo vazio ou ausente não é recusado")]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Salvar_SimSemNomeSocialNaConta_CampoVazio_Aceita(string? nomeSocial)
+    {
+        SalvarComNomeSocial(null, RespostasDeNomeSocial(true, nomeSocial)).IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Ao salvar com sim e a conta sem nome social, um NOME_SOCIAL preenchido é recusado com a orientação")]
+    public void Salvar_SimSemNomeSocialNaConta_CampoPreenchido_Recusa()
+    {
+        Result resultado = SalvarComNomeSocial(null, RespostasDeNomeSocial(true, "Outro Nome"));
+
+        resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(
+            e => e.Field == "NOME_SOCIAL" && e.Error.Code == InscricaoErrorCodes.NomeSocialAusenteNaConta);
+    }
+
+    [Theory(DisplayName = "O NOME_SOCIAL igual ao da conta é aceito, ignorando espaços nas pontas e repetidos")]
+    [InlineData("Ariel Drumond")]
+    [InlineData("  Ariel   Drumond ")]
+    public void NomeSocialDaConta_ComparaSemEspacosSobrando(string nomeSocial)
+    {
+        SalvarComNomeSocial(PersonasDeTeste.NomeSocialFernandaDrumond, RespostasDeNomeSocial(true, nomeSocial)).IsSuccess.Should().BeTrue();
+        SubmeterComNomeSocial(PersonasDeTeste.NomeSocialFernandaDrumond, RespostasDeNomeSocial(true, nomeSocial)).IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Com não, a conta com nome social não deixa nome social gravado na inscrição enviada")]
+    public void Submeter_NaoDesejaNomeSocial_NaoGravaNomeSocial()
+    {
+        ResultadoDaAvaliacaoDaInscricao semNomeSocial = FormularioDeTeste.AvaliacaoDoEnvio(new(
+            new Dictionary<string, FatoResolvido>(StringComparer.Ordinal) { ["NOME_SOCIAL"] = FatoResolvido.NaoAplicavel() }, [], [], [], []));
+
+        Result<ComprovanteInscricao> resultado = SubmeterComNomeSocial(
+            PersonasDeTeste.NomeSocialFernandaDrumond, RespostasDeNomeSocial(false, "Outro Nome"), semNomeSocial);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Respostas.Should().NotContainKey("NOME_SOCIAL");
     }
 
     [Fact(DisplayName = "Uma oferta de curso que não é do processo é recusada já no rascunho")]

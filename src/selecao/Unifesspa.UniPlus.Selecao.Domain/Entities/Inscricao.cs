@@ -323,6 +323,7 @@ public sealed class Inscricao : EntityBase
             .. ConferirRespostas(respostas, grupos, admitidas),
             .. RecusasDoCpf(respostas),
             .. RecusasDoNome(respostas, admitidas),
+            .. RecusasDoNomeSocial(respostas, admitidas, aoEnviar: false),
             .. RecusasDaOferta(ofertaCursoId, admitidas.OfertasDeCurso, exigida: false),
             .. RecusasDosAceites(aceites, admitidas.Termos),
         ];
@@ -397,6 +398,7 @@ public sealed class Inscricao : EntityBase
             .. ConferirValores(derivados, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), definicoesDosDerivados, new Dictionary<string, IReadOnlySet<string>>()),
             .. RecusasDoCpf(respostas),
             .. RecusasDoNome(MesclarPreservandoAusentes(Respostas, respostas), admitidas),
+            .. RecusasDoNomeSocial(MesclarPreservandoAusentes(Respostas, respostas), admitidas, aoEnviar: true),
             .. RecusasDaOferta(ofertaCursoId, admitidas.OfertasDeCurso, exigida: admitidas.OfertasDeCurso.Count > 0),
             .. RecusasDaModalidade(avaliacao.Modalidades),
             .. RecusasDosAceites(aceites, admitidas.Termos),
@@ -668,8 +670,8 @@ public sealed class Inscricao : EntityBase
     /// <summary>
     /// O nome civil vem do login: a resposta NOME conferida (a recebida, ao salvar; a mesclada com o rascunho, ao enviar) tem de ser o nome completo do token.
     /// Compara sem os espaços das pontas e sem repetição de espaço no meio, mas distingue maiúsculas e
-    /// acentos — o nome é o da conta, não um texto livre. O nome social segue livre. Só vale quando o
-    /// formulário coleta NOME; a ausência da resposta nunca é recusada aqui (a obrigatoriedade é do formulário).
+    /// acentos — o nome é o da conta, não um texto livre. Só vale quando o formulário coleta NOME; a
+    /// ausência da resposta nunca é recusada aqui (a obrigatoriedade é do formulário).
     /// </summary>
     private static IEnumerable<FieldError> RecusasDoNome(IReadOnlyDictionary<string, JsonElement> respostas, RespostasAdmitidas admitidas)
     {
@@ -698,6 +700,58 @@ public sealed class Inscricao : EntityBase
             yield return new FieldError(ConjuntoBasicoDaInscricao.Nome, new DomainError(
                 InscricaoErrorCodes.NomeDiferenteDoLogin,
                 "O nome informado tem de ser o da sua conta. Para alterá-lo, corrija o cadastro da conta."));
+        }
+    }
+
+    /// <summary>
+    /// O nome social vem da conta, não de texto livre: quem marca que deseja usá-lo tem de ter o da conta, e a
+    /// resposta NOME_SOCIAL, quando enviada, tem de ser igual a ele (mesma comparação do nome civil). Com
+    /// DESEJA_NOME_SOCIAL diferente de sim, não há o que conferir: o motor descarta a resposta que não se aplica.
+    /// Só vale quando o formulário coleta NOME_SOCIAL. A conta sem nome social é recusada ao enviar sempre; ao
+    /// salvar, só quando o corpo traz um NOME_SOCIAL preenchido, para o rascunho ficar com "sim" e o campo vazio
+    /// enquanto o candidato cadastra o nome social em Meu perfil. É público porque o envio precisa dar a recusa
+    /// que orienta antes da obrigatoriedade genérica do campo: a recusa que orienta é a que resolve.
+    /// </summary>
+    public static IEnumerable<FieldError> RecusasDoNomeSocial(IReadOnlyDictionary<string, JsonElement> respostas, RespostasAdmitidas admitidas, bool aoEnviar)
+    {
+        ArgumentNullException.ThrowIfNull(respostas);
+        ArgumentNullException.ThrowIfNull(admitidas);
+
+        if (!admitidas.Definicoes.ContainsKey(ConjuntoBasicoDaInscricao.NomeSocial)
+            || !respostas.TryGetValue(ConjuntoBasicoDaInscricao.DesejaNomeSocial, out JsonElement deseja)
+            || deseja.ValueKind != JsonValueKind.True)
+        {
+            yield break;
+        }
+
+        bool temNomeSocialNaResposta = respostas.TryGetValue(ConjuntoBasicoDaInscricao.NomeSocial, out JsonElement valor)
+            && valor.ValueKind != JsonValueKind.Null
+            && !(valor.ValueKind == JsonValueKind.String && string.IsNullOrWhiteSpace(valor.GetString()));
+
+        if (string.IsNullOrWhiteSpace(admitidas.NomeSocialDoLogin))
+        {
+            if (aoEnviar || temNomeSocialNaResposta)
+            {
+                yield return new FieldError(ConjuntoBasicoDaInscricao.NomeSocial, new DomainError(
+                    InscricaoErrorCodes.NomeSocialAusenteNaConta,
+                    "Você marcou que deseja usar nome social, mas sua conta não tem nome social cadastrado. Cadastre o nome social em Meu perfil ou desmarque a opção."));
+            }
+
+            yield break;
+        }
+
+        if (!temNomeSocialNaResposta)
+        {
+            yield break;
+        }
+
+        bool daConta = valor.ValueKind == JsonValueKind.String
+            && NomeNormalizado(valor.GetString()) == NomeNormalizado(admitidas.NomeSocialDoLogin);
+        if (!daConta)
+        {
+            yield return new FieldError(ConjuntoBasicoDaInscricao.NomeSocial, new DomainError(
+                InscricaoErrorCodes.NomeSocialDiferenteDaConta,
+                "O nome social informado tem de ser o da sua conta. Para cadastrar ou alterar, use Meu perfil."));
         }
     }
 

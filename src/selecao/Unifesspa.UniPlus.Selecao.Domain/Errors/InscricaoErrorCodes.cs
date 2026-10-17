@@ -24,6 +24,8 @@ public static class InscricaoErrorCodes
     public const string CpfDiferenteDoDono = "Inscricao.CpfDiferenteDoDono";
     public const string NomeDiferenteDoLogin = "Inscricao.NomeDiferenteDoLogin";
     public const string NomeAusenteNoLogin = "Inscricao.NomeAusenteNoLogin";
+    public const string NomeSocialDiferenteDaConta = "Inscricao.NomeSocialDiferenteDaConta";
+    public const string NomeSocialAusenteNaConta = "Inscricao.NomeSocialAusenteNaConta";
     public const string OfertaForaDoProcesso = "Inscricao.OfertaForaDoProcesso";
     public const string OfertaObrigatoria = "Inscricao.OfertaObrigatoria";
     public const string RascunhoSoAntesDoEnvio = "Inscricao.RascunhoSoAntesDoEnvio";

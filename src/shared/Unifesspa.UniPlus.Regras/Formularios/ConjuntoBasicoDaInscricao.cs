@@ -30,6 +30,12 @@ public static class ConjuntoBasicoDaInscricao
     /// <summary>O nome civil do candidato, que tem de ser o do login.</summary>
     public const string Nome = "NOME";
 
+    /// <summary>Se o candidato deseja usar nome social.</summary>
+    public const string DesejaNomeSocial = "DESEJA_NOME_SOCIAL";
+
+    /// <summary>O nome social do candidato, que tem de ser o da conta.</summary>
+    public const string NomeSocial = "NOME_SOCIAL";
+
     /// <summary>
     /// O formato com que a resposta do fato é conferida. O nome civil vem do login e se confere pela
     /// igualdade com ele, não por formato: o formato congelado num formulário publicado não o alcança.
@@ -39,7 +45,6 @@ public static class ConjuntoBasicoDaInscricao
 
     private const string Nacionalidade = "NACIONALIDADE";
     private const string Estrangeiro = "ESTRANGEIRO";
-    private const string DesejaNomeSocial = "DESEJA_NOME_SOCIAL";
     private const string TipoDeLocalidade = "TIPO_ENDERECO";
     private const string OrgaoEmissor = "RG_ORGAO_EMISSOR";
 
@@ -269,7 +274,7 @@ public static class ConjuntoBasicoDaInscricao
         [
             new(Nome, 0, "Nome completo", texto, sempre, null),
             new(DesejaNomeSocial, 0, "Deseja usar nome social?", TipoRenderizacaoCodigo.Booleano, sempre, null),
-            new("NOME_SOCIAL", 0, "Nome social", texto, sempre, Quando(DesejaNomeSocial, OperadorCodigo.Igual, true)),
+            new(NomeSocial, 0, "Nome social", texto, sempre, Quando(DesejaNomeSocial, OperadorCodigo.Igual, true)),
             new(Nacionalidade, 0, "Nacionalidade", selecao, sempre, null),
             new(Cpf, 0, "CPF", texto, PredicadoDnfJson.ObrigatoriedadeQuando, null, PredicadoObrigatoriedade: naoEstrangeiro),
             new("RG_NUMERO", 0, "Número do RG", texto, sempre, naoEstrangeiro),

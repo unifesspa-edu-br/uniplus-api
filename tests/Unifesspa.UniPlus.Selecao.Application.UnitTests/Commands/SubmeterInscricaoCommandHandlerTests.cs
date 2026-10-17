@@ -40,11 +40,12 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     private static Inscricao NovaInscricao(Cpf cpf, string sub, Guid versaoFormularioId) =>
         Inscricao.Iniciar(ProcessoId, cpf, sub, "https://issuer", versaoFormularioId).Value!;
 
-    private static IUserContext UsuarioComCpf(Cpf cpf, string sub = "sub-1")
+    private static IUserContext UsuarioComCpf(Cpf cpf, string sub = "sub-1", string? nomeSocial = null)
     {
         IUserContext contexto = Substitute.For<IUserContext>();
         contexto.Cpf.Returns(cpf.Valor);
         contexto.NomeCompleto.Returns(PersonasDeTeste.NomeFernandaDrumond);
+        contexto.NomeSocial.Returns(nomeSocial);
         contexto.UserId.Returns(sub);
         contexto.Issuer.Returns("https://issuer");
         return contexto;
@@ -554,7 +555,8 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         IReadOnlyList<GrupoColetado>? grupos,
         IReadOnlyDictionary<string, JsonElement> respostas,
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>? respostasDosGrupos = null,
-        Action<ProcessoSeletivo>? ajustar = null)
+        Action<ProcessoSeletivo>? ajustar = null,
+        string? nomeSocialDaConta = null)
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo(itens, grupos, ajustar);
@@ -575,7 +577,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
 
         Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, comApelido with { Respostas = todas, Grupos = respostasDosGrupos }, PrecondicaoIfMatch.DeTags([existente.ETag])),
-            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf));
+            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf, nomeSocial: nomeSocialDaConta));
         return (resultado, existente);
     }
 
@@ -672,6 +674,51 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Respostas.Should().ContainKey("PRECISA_ATENDIMENTO").And.NotContainKey("CONDICAO_DESCRITA");
         inscricao.Respostas.Should().NotContainKey("CONDICAO_DESCRITA", "a inscrição enviada guarda só o que se aplica");
+    }
+
+    [Fact(DisplayName = "Com sim e a conta sem nome social, o envio recusa o campo só com a orientação do Meu perfil, no lugar da obrigatoriedade genérica")]
+    public async Task Handle_SimSemNomeSocialNaConta_RecusaComOrientacaoAntesDaObrigatoriedade()
+    {
+        (Result<ComprovanteInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
+            [], grupos: null,
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["DESEJA_NOME_SOCIAL"] = JsonSerializer.SerializeToElement(true) });
+
+        resultado.Errors.Where(e => e.Field == "NOME_SOCIAL").Select(static e => e.Error.Code)
+            .Should().Equal(InscricaoErrorCodes.NomeSocialAusenteNaConta);
+        inscricao.Comprovantes.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Com sim e o nome social da conta, o envio passa e grava o nome social")]
+    public async Task Handle_SimComNomeSocialDaConta_Aceita()
+    {
+        (Result<ComprovanteInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
+            [], grupos: null,
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+            {
+                ["DESEJA_NOME_SOCIAL"] = JsonSerializer.SerializeToElement(true),
+                ["NOME_SOCIAL"] = JsonSerializer.SerializeToElement(PersonasDeTeste.NomeSocialFernandaDrumond),
+            },
+            nomeSocialDaConta: PersonasDeTeste.NomeSocialFernandaDrumond);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        inscricao.Respostas.Should().ContainKey("NOME_SOCIAL");
+    }
+
+    [Fact(DisplayName = "Com não, o envio passa e não grava o nome social, ainda que a conta tenha um")]
+    public async Task Handle_NaoDesejaNomeSocial_NaoGravaNomeSocial()
+    {
+        (Result<ComprovanteInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
+            [], grupos: null,
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+            {
+                ["DESEJA_NOME_SOCIAL"] = JsonSerializer.SerializeToElement(false),
+                ["NOME_SOCIAL"] = JsonSerializer.SerializeToElement(PersonasDeTeste.NomeSocialFernandaDrumond),
+            },
+            nomeSocialDaConta: PersonasDeTeste.NomeSocialFernandaDrumond);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        inscricao.Respostas.Should().NotContainKey("NOME_SOCIAL");
+        resultado.Value!.Respostas.Should().NotContainKey("NOME_SOCIAL");
     }
 
     [Fact(DisplayName = "O grupo que outra resposta esconde é descartado inteiro no envio")]
