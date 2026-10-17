@@ -127,6 +127,12 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     /// </summary>
     public DbSet<DocumentoAPublicar> DocumentosAPublicar => Set<DocumentoAPublicar>();
 
+    /// <summary>
+    /// Registro dos atos do processo que não criam versão de configuração, gravado na mesma transação
+    /// do envio ao outbox — ver <see cref="AtoDoProcesso"/>.
+    /// </summary>
+    public DbSet<AtoDoProcesso> AtosDoProcesso => Set<AtoDoProcesso>();
+
     /// <summary>Modelos de documento que as exigências oferecem ao candidato — fora do agregado, como o documento a publicar.</summary>
     public DbSet<ModeloDeDocumento> ModelosDeDocumento => Set<ModeloDeDocumento>();
 

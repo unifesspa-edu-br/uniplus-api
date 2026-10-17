@@ -94,6 +94,52 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.ToTable("idempotency_cache", "selecao");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.AnexoDoAtoDoProcesso", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AtoDoProcessoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ato_do_processo_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("DocumentoAPublicarId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("documento_a_publicar_id");
+
+                    b.Property<string>("NomeDeExibicao")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("nome_de_exibicao");
+
+                    b.Property<int>("Ordem")
+                        .HasColumnType("integer")
+                        .HasColumnName("ordem");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_anexos_do_ato_do_processo");
+
+                    b.HasIndex("DocumentoAPublicarId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_anexos_do_ato_do_processo_documento");
+
+                    b.HasIndex("AtoDoProcessoId", "Ordem")
+                        .IsUnique()
+                        .HasDatabaseName("ux_anexos_do_ato_do_processo_ordem");
+
+                    b.ToTable("anexos_do_ato_do_processo", "selecao");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.AreaPesoAreaEnemCongelada", b =>
                 {
                     b.Property<Guid>("Id")
@@ -157,6 +203,109 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_areas_peso_area_enem_congeladas_peso", "peso >= 0");
                         });
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.AtoDoProcesso", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Assinante")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("assinante");
+
+                    b.Property<Guid?>("AtoCorrigidoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ato_corrigido_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateOnly>("DataDoAto")
+                        .HasColumnType("date")
+                        .HasColumnName("data_do_ato");
+
+                    b.Property<Guid>("DocumentoPrincipalId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("documento_principal_id");
+
+                    b.Property<string>("IdentificadorLegivelDoProcesso")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("identificador_legivel_do_processo");
+
+                    b.Property<string>("MotivoDaCorrecao")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("motivo_da_correcao");
+
+                    b.Property<string>("Numero")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("numero");
+
+                    b.Property<DateTimeOffset?>("PoliticaDeDivulgacaoConfirmadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("politica_de_divulgacao_confirmada_em");
+
+                    b.Property<Guid>("ProcessoSeletivoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("processo_seletivo_id");
+
+                    b.Property<Guid?>("ProdutoDoEditalId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("produto_do_edital_id");
+
+                    b.Property<DateTimeOffset?>("RegistradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("registrado_em");
+
+                    b.Property<int>("Situacao")
+                        .HasColumnType("integer")
+                        .HasColumnName("situacao");
+
+                    b.Property<string>("TipoCodigo")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("tipo_codigo");
+
+                    b.Property<string>("TipoNome")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("tipo_nome");
+
+                    b.Property<string>("UnidadeAdministradora")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("unidade_administradora");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_atos_do_processo");
+
+                    b.HasIndex("AtoCorrigidoId")
+                        .HasDatabaseName("ix_atos_do_processo_ato_corrigido");
+
+                    b.HasIndex("DocumentoPrincipalId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_atos_do_processo_documento_principal");
+
+                    b.HasIndex("ProcessoSeletivoId", "CreatedAt", "Id")
+                        .IsDescending(false, true, true)
+                        .HasDatabaseName("ix_atos_do_processo_processo_recentes");
+
+                    b.ToTable("atos_do_processo", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.BancaDaEtapa", b =>
@@ -3935,6 +4084,23 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.AnexoDoAtoDoProcesso", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.AtoDoProcesso", null)
+                        .WithMany("Anexos")
+                        .HasForeignKey("AtoDoProcessoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_anexos_do_ato_do_processo_atos_do_processo_ato_do_processo_");
+
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.DocumentoAPublicar", null)
+                        .WithMany()
+                        .HasForeignKey("DocumentoAPublicarId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_anexos_do_ato_do_processo_documentos_a_publicar_documento_a");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.AreaPesoAreaEnemCongelada", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.GrupoPesoAreaEnemCongelado", null)
@@ -3943,6 +4109,23 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_areas_peso_area_enem_congeladas_grupos_peso_area_enem_conge");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.AtoDoProcesso", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.DocumentoAPublicar", null)
+                        .WithMany()
+                        .HasForeignKey("DocumentoPrincipalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_atos_do_processo_documentos_a_publicar_documento_principal_");
+
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
+                        .WithMany()
+                        .HasForeignKey("ProcessoSeletivoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_atos_do_processo_processos_seletivos_processo_seletivo_id");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.BancaDaEtapa", b =>
@@ -5525,6 +5708,11 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasForeignKey("OcorrenciaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .HasConstraintName("fk_respostas_da_inscricao_ocorrencias_de_grupo_da_inscricao_oc");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.AtoDoProcesso", b =>
+                {
+                    b.Navigation("Anexos");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.BancaRequerida", b =>
