@@ -446,7 +446,7 @@ public static class FecharRetificacaoCommandHandler
                     dados.Numero,
                     documento.Id,
                     atoRetificadoId: versaoAtual.AtoCriadorId,
-            motivoRetificacao: motivo,
+                    motivoRetificacao: motivo,
                     timeProvider),
                 cancellationToken)
             .ConfigureAwait(false);

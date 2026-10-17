@@ -436,7 +436,7 @@ public static class RetificarProcessoSeletivoCommandHandler
                     dados.Numero,
                     documento.Id,
                     atoRetificadoId: versaoAtual.AtoCriadorId,
-            motivoRetificacao: motivo,
+                    motivoRetificacao: motivo,
                     timeProvider),
                 cancellationToken)
             .ConfigureAwait(false);

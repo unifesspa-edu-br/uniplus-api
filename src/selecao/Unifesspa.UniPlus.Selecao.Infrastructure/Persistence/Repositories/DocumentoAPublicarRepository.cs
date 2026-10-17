@@ -53,6 +53,8 @@ public sealed class DocumentoAPublicarRepository : IDocumentoAPublicarRepository
         IReadOnlyCollection<Guid> ids,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(ids);
+
         return await _context.DocumentosAPublicar
             .AsNoTracking()
             .Where(d => d.ProcessoSeletivoId == processoSeletivoId && ids.Contains(d.Id))

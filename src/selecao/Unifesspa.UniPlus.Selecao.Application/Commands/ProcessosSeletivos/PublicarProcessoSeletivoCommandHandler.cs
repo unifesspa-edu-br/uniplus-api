@@ -370,7 +370,7 @@ public static class PublicarProcessoSeletivoCommandHandler
                     dados.Numero,
                     documento.Id,
                     atoRetificadoId: null,
-            motivoRetificacao: null,
+                    motivoRetificacao: null,
                     timeProvider),
                 cancellationToken)
             .ConfigureAwait(false);

@@ -49,8 +49,15 @@ public static class ListarAtosDoProcessoQueryHandler
         IReadOnlyList<AtoDoProcesso> atos = await atoDoProcessoRepository
             .ListarDoProcessoAsync(query.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
+
+        // Só os documentos que os atos listados referenciam: o histórico de envios do processo inclui
+        // pendentes e documentos que nenhum ato usou.
+        Guid[] idsDosDocumentos =
+        [
+            .. atos.SelectMany(static a => a.Anexos.Select(static x => x.DocumentoAPublicarId).Append(a.DocumentoPrincipalId)).Distinct(),
+        ];
         IReadOnlyList<DocumentoAPublicar> documentos = await documentoAPublicarRepository
-            .ListarPorProcessoAsync(query.ProcessoSeletivoId, finalidade: null, cancellationToken)
+            .ListarDoProcessoAsync(query.ProcessoSeletivoId, idsDosDocumentos, cancellationToken)
             .ConfigureAwait(false);
 
         DateTimeOffset limite = timeProvider.GetUtcNow() - opcoes.Value.LimiarDePendencia;
