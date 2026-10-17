@@ -9,6 +9,7 @@ using NSubstitute;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Application.Abstractions;
 using Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
+using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
@@ -26,7 +27,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
 {
     private const string HashValido = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
     private const string Tipo = "EDITAL_ABERTURA";
-    private const string ProcessoSeletivo = "PROCESSO_SELETIVO";
+    private const string Objeto = "OBJETO_A";
     private static readonly DateOnly Publicacao = new(2026, 3, 13);
     private static readonly DateTimeOffset Agora = new(2026, 3, 13, 19, 0, 0, TimeSpan.Zero);
     private static readonly Guid Processo = Guid.CreateVersion7();
@@ -45,7 +46,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
         AtoNormativo? registrado = null;
         await _atos.AdicionarAsync(Arg.Do<AtoNormativo>(a => registrado = a), Arg.Any<CancellationToken>());
 
-        Result<RegistrarAtoNormativoResult> resultado = await Executar(Comando(vinculos: [new(ProcessoSeletivo, Processo)]));
+        Result<RegistrarAtoNormativoResult> resultado = await Executar(Comando(vinculos: [new(Objeto, Processo)]));
 
         resultado.IsSuccess.Should().BeTrue();
         registrado!.Vinculos.Should().ContainSingle()
@@ -58,7 +59,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
         Vigente(unico: false);
         SemConflitoDeNumero();
 
-        await Executar(Comando(vinculos: [new(ProcessoSeletivo, Processo)]));
+        await Executar(Comando(vinculos: [new(Objeto, Processo)]));
 
         await _atos.DidNotReceive().AdicionarLinhagemAsync(
             Arg.Any<LinhagemUnicaPorObjeto>(), Arg.Any<CancellationToken>());
@@ -80,7 +81,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
             Arg.Do<LinhagemUnicaPorObjeto>(l => vaga = l), Arg.Any<CancellationToken>());
 
         Result<RegistrarAtoNormativoResult> resultado = await Executar(
-            Comando(vinculos: [new(ProcessoSeletivo, Processo)]));
+            Comando(vinculos: [new(Objeto, Processo)]));
 
         resultado.IsSuccess.Should().BeTrue();
         vaga.Should().NotBeNull();
@@ -111,11 +112,11 @@ public sealed class RegistrarAtoNormativoVinculosTests
 
         AtoNormativo deOutraLinhagem = AtoDeOutraLinhagem();
         _atos.ObterAtoConflitanteNoObjetoAsync(
-                ProcessoSeletivo, Processo, Tipo, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+                Objeto, Processo, Tipo, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(deOutraLinhagem);
 
         Result<RegistrarAtoNormativoResult> resultado = await Executar(
-            Comando(vinculos: [new(ProcessoSeletivo, Processo)]));
+            Comando(vinculos: [new(Objeto, Processo)]));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(AtoNormativoErrorCodes.ObjetoJaTemAtoVivoDoTipo);
@@ -134,7 +135,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
         _atos.ObterRetificadorAsync(retificado.Id, Arg.Any<CancellationToken>()).Returns((AtoNormativo?)null);
         _atos.ListarIdsDaCadeiaAsync(retificado.Id, Arg.Any<CancellationToken>()).Returns([retificado.Id]);
         _atos.ListarVinculosDoAtoAsync(retificado.Id, Arg.Any<CancellationToken>())
-            .Returns([(ProcessoSeletivo, Processo)]);
+            .Returns([(Objeto, Processo)]);
 
         AtoNormativo? registrado = null;
         await _atos.AdicionarAsync(Arg.Do<AtoNormativo>(a => registrado = a), Arg.Any<CancellationToken>());
@@ -164,7 +165,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
         _atos.ListarIdsDaCadeiaAsync(retificado.Id, Arg.Any<CancellationToken>()).Returns([raiz, retificado.Id]);
         _atos.ObterRaizDaCadeiaAsync(retificado.Id, Arg.Any<CancellationToken>()).Returns(raiz);
         _atos.ListarVinculosDoAtoAsync(retificado.Id, Arg.Any<CancellationToken>())
-            .Returns([(ProcessoSeletivo, Processo)]);
+            .Returns([(Objeto, Processo)]);
 
         LinhagemUnicaPorObjeto? vaga = null;
         await _atos.AdicionarLinhagemAsync(
@@ -191,11 +192,11 @@ public sealed class RegistrarAtoNormativoVinculosTests
         _atos.ListarIdsDaCadeiaAsync(retificado.Id, Arg.Any<CancellationToken>()).Returns([raiz]);
         _atos.ObterRaizDaCadeiaAsync(retificado.Id, Arg.Any<CancellationToken>()).Returns(raiz);
         _atos.ListarVinculosDoAtoAsync(retificado.Id, Arg.Any<CancellationToken>())
-            .Returns([(ProcessoSeletivo, Processo)]);
+            .Returns([(Objeto, Processo)]);
 
         AtoNormativo raizDaVaga = AtoRetificado();
         VinculoAtoEntidade vinculoDaRaiz = raizDaVaga.Vinculos.First();
-        _atos.ObterLinhagemDoObjetoAsync(ProcessoSeletivo, Processo, Tipo, Arg.Any<CancellationToken>())
+        _atos.ObterLinhagemDoObjetoAsync(Objeto, Processo, Tipo, Arg.Any<CancellationToken>())
             .Returns(LinhagemUnicaPorObjeto.Criar(raizDaVaga, vinculoDaRaiz, raiz));
 
         Result<RegistrarAtoNormativoResult> resultado = await Executar(
@@ -204,6 +205,41 @@ public sealed class RegistrarAtoNormativoVinculosTests
         resultado.IsSuccess.Should().BeTrue();
         await _atos.DidNotReceive().AdicionarLinhagemAsync(
             Arg.Any<LinhagemUnicaPorObjeto>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "A retificação pelo endpoint de um ato de processo seletivo é recusada, mesmo sem declarar o vínculo")]
+    public async Task Handle_RetificacaoHerdaProcessoSeletivoPeloEndpoint_Falha()
+    {
+        Vigente(unico: false);
+        SemConflitoDeNumero();
+
+        AtoNormativo retificado = AtoRetificado();
+        _atos.ObterPorIdParaLeituraAsync(retificado.Id, Arg.Any<CancellationToken>()).Returns(retificado);
+        _atos.ObterRetificadorAsync(retificado.Id, Arg.Any<CancellationToken>()).Returns((AtoNormativo?)null);
+        _atos.ListarIdsDaCadeiaAsync(retificado.Id, Arg.Any<CancellationToken>()).Returns([retificado.Id]);
+        _atos.ListarVinculosDoAtoAsync(retificado.Id, Arg.Any<CancellationToken>())
+            .Returns([(EntidadesDeRegistroPeloDominio.ProcessoSeletivo, Processo)]);
+
+        Result<RegistrarAtoNormativoResult> resultado = await Executar(
+            Comando(vinculos: null, atoRetificadoId: retificado.Id, motivo: "corrige o anexo"));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(AtoNormativoErrorCodes.VinculoExigeRegistroPeloDominio);
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "O registro por mensagem do domínio continua aceitando o vínculo com processo seletivo")]
+    public async Task Handle_RegistroPeloDominio_AceitaProcessoSeletivo()
+    {
+        SemConflitoDeNumero();
+
+        Result<RegistrarAtoNormativoResult> resultado = await Executar(
+            Comando(vinculos: [new(EntidadesDeRegistroPeloDominio.ProcessoSeletivo, Processo)]) with
+            {
+                AtributosDoTipo = new AtributosDoTipoAto(true, false, false, "Edital de abertura"),
+            });
+
+        resultado.IsSuccess.Should().BeTrue();
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -244,7 +280,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
             congelaConfiguracao: true, efeitoIrreversivel: false, unicoPorObjeto: true,
             dataPublicacao: Publicacao, documentoHash: HashValido, assinante: "Jairo Belchior",
             registradoEm: Agora, versaoInvocada: null,
-            vinculos: [(ProcessoSeletivo, Processo)]);
+            vinculos: [(Objeto, Processo)]);
 
     private static AtoNormativo AtoRetificado() =>
         AtoNormativo.Registrar(
@@ -253,7 +289,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
             congelaConfiguracao: true, efeitoIrreversivel: false, unicoPorObjeto: true,
             dataPublicacao: Publicacao, documentoHash: HashValido, assinante: "Jairo Belchior",
             registradoEm: Agora, versaoInvocada: null,
-            vinculos: [(ProcessoSeletivo, Processo)]);
+            vinculos: [(Objeto, Processo)]);
 
     private static RegistrarAtoNormativoCommand Comando(
         IReadOnlyList<VinculoEntidadeInput>? vinculos,

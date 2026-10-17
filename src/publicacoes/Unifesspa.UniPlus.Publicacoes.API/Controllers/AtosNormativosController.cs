@@ -17,8 +17,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
 using Unifesspa.UniPlus.Publicacoes.Application.DTOs;
 using Unifesspa.UniPlus.Publicacoes.Application.Queries.AtosNormativos;
-using Unifesspa.UniPlus.Publicacoes.Contracts;
-using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 
 /// <summary>
 /// Endpoints públicos de leitura (<c>GET /api/publicacoes/atos</c>) e o endpoint
@@ -202,7 +200,7 @@ public sealed partial class AtosNormativosController : ControllerBase
     /// obrigatório (ADR-0027). A resposta traz o Id, o instante forense de registro
     /// e eventuais avisos de numeração (AC4). Uma retificação que quebra a cadeia
     /// linear (o ato-alvo já foi retificado) responde 409. Um vínculo com processo
-    /// seletivo é recusado com 422: o endpoint não recebe o arquivo, e o ato desse
+    /// seletivo, declarado ou herdado do ato retificado, é recusado com 422: o endpoint não recebe o arquivo, e o ato desse
     /// objeto é publicado pela Seleção.
     /// </summary>
     [HttpPost("admin/atos")]
@@ -219,20 +217,6 @@ public sealed partial class AtosNormativosController : ControllerBase
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-
-        // A recusa é deste endpoint, e não do comando: o registro por mensagem do domínio
-        // dono do objeto usa o mesmo comando e precisa continuar aceitando o vínculo.
-        if (command.Vinculos?.Any(v => v is not null
-            && EntidadesDeRegistroPeloDominio.Contem(v.EntidadeTipo?.Trim())) == true)
-        {
-            return Result<RegistrarAtoNormativoResult>
-                .Failure(new DomainError(
-                    AtoNormativoErrorCodes.VinculoExigeRegistroPeloDominio,
-                    "Este endpoint não registra ato vinculado a um processo seletivo: ele não recebe o "
-                    + "arquivo do documento, e o ato ficaria sem documento. Publique o ato pela Seleção, "
-                    + "que guarda o arquivo e o publica no acervo."))
-                .ToActionResult(_mapper);
-        }
 
         Result<RegistrarAtoNormativoResult> resultado = await _commandBus
             .Send(command, cancellationToken)
