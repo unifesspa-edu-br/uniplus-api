@@ -36,7 +36,8 @@ public static class DefinirOpcoesDeCursoCommandHandler
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
         }
 
-        // Precondição primeiro (ADR-0110 D9): 412/428 não se embrulha como erro de campo.
+        // A precondição é conferida antes da regra de negócio (ADR-0110), e a recusa dela
+        // (412/428) não se embrulha como erro de campo.
         if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
         {
             return Result<MutacaoAceita>.Failure(bloqueio);
