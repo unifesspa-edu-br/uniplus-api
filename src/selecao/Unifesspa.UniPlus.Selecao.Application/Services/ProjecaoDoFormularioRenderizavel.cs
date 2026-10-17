@@ -101,7 +101,7 @@ public static class ProjecaoDoFormularioRenderizavel
                 .Select(static v => new ValorSelecionavel(v.Codigo, v.Descricao, v.Ordem, v.Orientacao))]
             : null,
         fato.EtapaCodigo,
-        fato.Formato,
+        ConjuntoBasicoDaInscricao.FormatoDaResposta(fato.FatoCodigo, fato.Formato),
         fato.Ajuda,
         fato.PedirConfirmacao);
 }
