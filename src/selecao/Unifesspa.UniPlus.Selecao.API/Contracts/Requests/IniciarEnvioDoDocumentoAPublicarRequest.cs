@@ -6,7 +6,7 @@ using Domain.Enums;
 
 /// <summary>
 /// Corpo de <see cref="DocumentosAPublicarController.IniciarEnvio"/>: para que o documento é
-/// enviado (<c>edital</c>, que só admite PDF, <c>anexoDoEdital</c> ou <c>documentoDeAto</c>), o nome
+/// enviado (<c>documentoDoEdital</c>, que só admite PDF, <c>anexoDoEdital</c> ou <c>documentoDeAto</c>), o nome
 /// com que a pessoa recebe o arquivo no download e o tipo de mídia dele — <c>application/pdf</c>,
 /// <c>application/vnd.openxmlformats-officedocument.wordprocessingml.document</c> (DOCX) ou
 /// <c>application/vnd.oasis.opendocument.text</c> (ODT).
