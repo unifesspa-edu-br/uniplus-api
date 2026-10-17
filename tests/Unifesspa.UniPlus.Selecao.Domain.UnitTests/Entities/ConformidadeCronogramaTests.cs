@@ -203,4 +203,119 @@ public sealed class ConformidadeCronogramaTests
             "prova que o guard estrutural do domínio intercepta o divisor zero antes mesmo do gate de publicação");
         definirEtapas.Error!.Code.Should().Be("ProcessoSeletivo.NenhumaEtapaComponeNota");
     }
+
+    // ── Tipo de ato único por objeto declarado mais de uma vez ──
+
+    private const string CodigoItemTipoUnico = "cronograma_tipo_de_ato_unico_declarado_uma_vez";
+
+    private static ContextoDeContagemDePrazos ContextoComUnico(string codigo, string nome) =>
+        ContextoDeContagemDePrazos.SemCalendario with
+        {
+            TiposDeAtoUnicos = new TiposDeAtoUnicosPorObjeto(new Dictionary<string, string> { [codigo] = nome }),
+        };
+
+    private static FaseCronograma FaseQuePublica(int ordem, string codigo, params ProdutoDaFase[] produtos) =>
+        FaseCronograma.Criar(
+            ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.Delegada,
+            agrupaEtapas: false, permiteComplementacao: false,
+            coletaInscricao: false, coletaSolicitacaoIsencao: false,
+            inicio: null, fim: null,
+            produtos: produtos,
+            faseConcluinteCodigo: null, emiteParecerIndividual: false,
+            bancasRequeridas: [], regraRecurso: null).Value!;
+
+    private static ProcessoSeletivo ProcessoPublicavelComCronograma(params FaseCronograma[] fases)
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
+        processo.DefinirDistribuicaoVagas([Distribuicao(40)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
+        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
+            Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'), null, null,
+            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!, PrecondicaoIfMatch.Ausente);
+        processo.DefinirCronogramaFases(fases, [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DeclararNaoCobra(processo);
+        return processo;
+    }
+
+    [Fact(DisplayName = "Tipo único declarado em duas fases reprova a publicação e a mensagem nomeia o tipo e as duas fases")]
+    public void TipoUnico_EmDuasFases_ReprovaNomeandoOTipoEAsFases()
+    {
+        ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
+            FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)),
+            FaseQuePublica(2, "HABILITACAO", ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)));
+
+        Result<VersaoConfiguracao> resultado = processo.Publicar(
+            Dados(), "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo, "teste", TimeProvider.System,
+            ContextoComUnico("RESULTADO_FINAL", "Resultado final"), FatosDeModalidadeDeTeste.DoCatalogo);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.TipoDeAtoUnicoDeclaradoMaisDeUmaVez");
+        resultado.Error.Message.Should().Be(
+            "O tipo de ato 'Resultado final' só pode ser publicado uma vez por processo e está declarado na fase 'CLASSIFICACAO' e na fase 'HABILITACAO'.");
+    }
+
+    [Fact(DisplayName = "Tipo único declarado como preliminar e como definitivo na mesma fase reprova")]
+    public void TipoUnico_NaMesmaFaseComDoisPapeis_Reprova()
+    {
+        ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
+            FaseQuePublica(1, "HOMOLOGACAO",
+                ProdutoDaFase.Criar("HOMOLOGACAO_INSCRICOES", PapelProdutoFase.Preliminar),
+                ProdutoDaFase.Criar("HOMOLOGACAO_INSCRICOES", PapelProdutoFase.Definitivo)));
+
+        DomainError? pendencia = processo.PendenciaDoTipoDeAtoUnico(
+            ContextoComUnico("HOMOLOGACAO_INSCRICOES", "Homologação das inscrições").TiposUnicos);
+
+        pendencia.Should().NotBeNull();
+        pendencia!.Message.Should().Contain("Homologação das inscrições").And.Contain("mais de uma vez na fase 'HOMOLOGACAO'");
+    }
+
+    [Fact(DisplayName = "Tipo único declarado numa fase e numa etapa reprova: o produto da etapa também conta")]
+    public void TipoUnico_NaFaseENaEtapa_Reprova()
+    {
+        ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
+            FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)));
+        EtapaProcesso etapa = EtapaProcesso.Criar(
+            "Prova Objetiva", CaraterEtapa.Classificatoria,
+            TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
+            peso: 3m, ordem: 1).Value!;
+        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)]).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        DomainError? pendencia = processo.PendenciaDoTipoDeAtoUnico(
+            ContextoComUnico("RESULTADO_FINAL", "Resultado final").TiposUnicos);
+
+        pendencia.Should().NotBeNull();
+        pendencia!.Message.Should().Contain("na fase 'CLASSIFICACAO' e na etapa 'Prova Objetiva'");
+    }
+
+    [Fact(DisplayName = "Tipo não único declarado como preliminar e como definitivo é aceito e publica")]
+    public void TipoNaoUnico_PreliminarEDefinitivo_Publica()
+    {
+        ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
+            FaseQuePublica(1, "HOMOLOGACAO",
+                ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Preliminar),
+                ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo)));
+
+        Result<VersaoConfiguracao> resultado = processo.Publicar(
+            Dados(), "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo, "teste", TimeProvider.System,
+            ContextoComUnico("RESULTADO_FINAL", "Resultado final"), FatosDeModalidadeDeTeste.DoCatalogo);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "O checklist projeta o item do tipo único: vermelho com a duplicidade, verde sem ela")]
+    public void Checklist_ProjetaOItemDoTipoUnico()
+    {
+        ProcessoSeletivo duplicado = ProcessoPublicavelComCronograma(
+            FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)),
+            FaseQuePublica(2, "HABILITACAO", ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)));
+        ProcessoSeletivo unico = ProcessoPublicavelComCronograma(
+            FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)));
+        ContextoDeContagemDePrazos contexto = ContextoComUnico("RESULTADO_FINAL", "Resultado final");
+
+        duplicado.AvaliarConformidade(contexto, FatosDeModalidadeDeTeste.DoCatalogo)
+            .Should().Contain(item => item.Codigo == CodigoItemTipoUnico && !item.Ok);
+        unico.AvaliarConformidade(contexto, FatosDeModalidadeDeTeste.DoCatalogo)
+            .Should().Contain(item => item.Codigo == CodigoItemTipoUnico && item.Ok);
+    }
 }

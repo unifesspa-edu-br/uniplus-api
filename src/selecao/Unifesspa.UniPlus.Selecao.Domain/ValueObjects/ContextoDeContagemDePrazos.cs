@@ -4,8 +4,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// O que a raiz precisa saber, e não consegue saber sozinha, para decidir sobre as contagens de
-/// prazo do certame (UNI-REQ-0116). Chega pronto da Application: o Domain não lê reader nem
-/// serviço.
+/// prazo do certame (UNI-REQ-0116) e sobre os tipos de ato que o cronograma declara. Chega pronto
+/// da Application: o Domain não lê reader nem serviço.
 /// </summary>
 /// <param name="CalendarioVigente">
 /// O calendário de dias úteis vigente no momento da operação, já copiado por valor, ou
@@ -30,6 +30,11 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// só — o gate da raiz —, e é o que preserva a bicondicionalidade entre o preflight e a recusa.
 /// </para>
 /// </param>
+/// <param name="TiposDeAtoUnicos">
+/// Os tipos de ato únicos por objeto entre os que o cronograma declara, lidos do catálogo vigente.
+/// Ausente, nenhum tipo é tratado como único — quem monta o contexto para publicar ou avaliar a
+/// conformidade o preenche.
+/// </param>
 /// <remarks>
 /// <para>
 /// <b>Por que o fuso não vira gate da raiz.</b> Zona irresolvível é defeito de instalação, não
@@ -43,8 +48,12 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed record ContextoDeContagemDePrazos(
     CalendarioDiasUteisCongelado? CalendarioVigente,
     DomainError? FalhaDoCalendarioVigente = null,
-    TimeZoneInfo? FusoInstitucional = null)
+    TimeZoneInfo? FusoInstitucional = null,
+    TiposDeAtoUnicosPorObjeto? TiposDeAtoUnicos = null)
 {
+    /// <summary>Os tipos únicos declarados, nunca nulo.</summary>
+    public TiposDeAtoUnicosPorObjeto TiposUnicos => TiposDeAtoUnicos ?? TiposDeAtoUnicosPorObjeto.Nenhum;
+
     /// <summary>
     /// Zona reconhecida é a zona presente. Enquanto isto era um booleano à parte, um contexto podia
     /// afirmar que o fuso fora reconhecido sem carregá-lo — e nesse estado o checklist projetava

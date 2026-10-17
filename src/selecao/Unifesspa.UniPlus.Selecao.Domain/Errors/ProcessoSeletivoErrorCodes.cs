@@ -32,5 +32,6 @@ public static class ProcessoSeletivoErrorCodes
     public const string CotasDaLeiDiferentesEntreOfertas = "ProcessoSeletivo.CotasDaLeiDiferentesEntreOfertas";
     public const string ReservaPcdSemCotaPcdDaLei = "ProcessoSeletivo.ReservaPcdSemCotaPcdDaLei";
     public const string RegraIncoerenteComANatureza = "ProcessoSeletivo.RegraIncoerenteComANatureza";
+    public const string TipoDeAtoUnicoDeclaradoMaisDeUmaVez = "ProcessoSeletivo.TipoDeAtoUnicoDeclaradoMaisDeUmaVez";
     public const string RemanejamentoIncoerenteComANatureza = "ProcessoSeletivo.RemanejamentoIncoerenteComANatureza";
 }
