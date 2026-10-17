@@ -142,10 +142,8 @@ public static class DerivadosDoSistemaInscricao
                 "Inscricao.EnderecoResidencialInvalido", "O endereço residencial não tem a cidade que a conferência no Geo exige."));
         }
 
-        // Salvar e Submeter já recusam o endereço sem CEP (ConferenciaDoEnderecoDaInscricao); o ramo
-        // por município fica para a consulta fora do envio (ApurarAsync) e para o endereço gravado
-        // antes dessa regra, que ainda pode estar sem CEP. Nesses casos confere pela cidade e nunca
-        // recusa por falta de CEP, porque quem recusa é o envio.
+        // O envio recusa o endereço sem CEP antes de chegar aqui; o ramo por município serve à apuração
+        // fora do envio (ApurarAsync), que confere pela cidade e nunca recusa por falta de CEP.
         Result conferido = endereco.Cep is { Length: > 0 }
             ? await conferencia.ConferirCepAsync(endereco.Cep, codigoIbge, uf, cancellationToken).ConfigureAwait(false)
             : await conferencia.ConferirMunicipioAsync(codigoIbge, uf, cancellationToken).ConfigureAwait(false);

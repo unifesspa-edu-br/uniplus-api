@@ -125,6 +125,14 @@ public static class SubmeterInscricaoCommandHandler
         IReadOnlyDictionary<string, JsonElement> respostasMescladas = inscricao.RespostasAposMesclar(respostasDoCorpo);
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> gruposMesclados = inscricao.GruposAposMesclar(grupos);
 
+        // O endereço sem CEP (ou com complemento longo) é recusado antes de qualquer consulta ao Geo: a
+        // recusa que orienta é a que sai primeiro, e não uma divergência de município ou um 503.
+        IReadOnlyList<FieldError> doEnderecoSemGeo = [.. Inscricao.RecusasDoEndereco(respostasMescladas, contexto.Value!.Admitidas)];
+        if (doEnderecoSemGeo.Count > 0)
+        {
+            return Result<ComprovanteInscricaoDto>.ValidationFailure(doEnderecoSemGeo);
+        }
+
         // O CEP existir no Geo, ser da cidade declarada e, sendo o geral da cidade, vir com logradouro e
         // bairro: o Geo fora do ar recusa o envio como indisponível, nunca como "CEP não encontrado".
         Result<IReadOnlyList<FieldError>> doEndereco = await Services.ConferenciaDoEnderecoDaInscricao
