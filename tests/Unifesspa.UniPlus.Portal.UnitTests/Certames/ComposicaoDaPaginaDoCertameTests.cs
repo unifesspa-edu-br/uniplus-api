@@ -220,7 +220,7 @@ public sealed class ComposicaoDaPaginaDoCertameTests
         AtoDaOrigem aviso = Ato(Guid.NewGuid(), "AVISO", "Aviso", null, new(2026, 4, 1));
 
         ComposicaoDaPaginaDoCertame composicao = Montar(
-            Encontrado(),
+            Encontrado(new Dictionary<Guid, IReadOnlyList<DocumentoDoEvento>> { [Criador] = [Principal(EditalNoAcervo)] }),
             new LeituraDosAtos([abertura, retificacao, aviso], null));
 
         PaginaDoCertame pagina = (await composicao.ComporPorIdentificadorAsync(Identificador, CancellationToken.None)).Value!;
@@ -244,11 +244,11 @@ public sealed class ComposicaoDaPaginaDoCertameTests
         Uri daVigente = new("https://acervo.example/editais/vigente.pdf");
 
         ComposicaoDaPaginaDoCertame composicao = Montar(
-            Encontrado(new Dictionary<Guid, Uri>
+            Encontrado(new Dictionary<Guid, IReadOnlyList<DocumentoDoEvento>>
             {
-                [abertura.Id] = daAbertura,
-                [primeiraRetificacao.Id] = daPrimeira,
-                [Criador] = daVigente,
+                [abertura.Id] = [Principal(daAbertura)],
+                [primeiraRetificacao.Id] = [Principal(daPrimeira)],
+                [Criador] = [Principal(daVigente)],
             }),
             new LeituraDosAtos([abertura, primeiraRetificacao, retificacao, aviso], null));
 
@@ -272,13 +272,15 @@ public sealed class ComposicaoDaPaginaDoCertameTests
 
         ComposicaoDaPaginaDoCertame composicao = Montar(
             new ConsultaDoCertame.Encontrado(new CertameDaOrigem(
-                ProcessoId, Criador, "Medicina 2027", "012/2026", EditalNoAcervo, new Dictionary<Guid, Uri>(), SituacaoDaInscricao.InscricoesAbertas,
-                new Dictionary<Guid, IReadOnlyList<DocumentoDoEvento>> { [Criador] = [principal, anexo] })),
+                ProcessoId, Criador, "Medicina 2027", "012/2026", EditalNoAcervo,
+                new Dictionary<Guid, IReadOnlyList<DocumentoDoEvento>> { [Criador] = [principal, anexo] }, SituacaoDaInscricao.InscricoesAbertas)),
             new LeituraDosAtos([abertura, retificacao, aviso], null));
 
         PaginaDoCertame pagina = (await composicao.ComporPorIdentificadorAsync(Identificador, CancellationToken.None)).Value!;
 
         pagina.LinhaDoTempo.Single(e => e.Id == Criador).Documentos.Should().Equal(principal, anexo);
+        pagina.LinhaDoTempo.Single(e => e.Id == Criador).DocumentoUrl.Should().Be(principal.Url,
+            "o documentoUrl repete sempre o documento de papel principal");
         pagina.LinhaDoTempo.Single(e => e.Id == abertura.Id).Documentos.Should().BeEmpty();
         pagina.LinhaDoTempo.Single(e => e.Id == aviso.Id).Documentos.Should().BeEmpty("o ato avulso só ganha documentos com a sua própria publicação");
     }
@@ -305,9 +307,11 @@ public sealed class ComposicaoDaPaginaDoCertameTests
             .Should().NotContain(nome => nome.Contains("Assinante", StringComparison.OrdinalIgnoreCase));
     }
 
-    private static ConsultaDoCertame.Encontrado Encontrado(IReadOnlyDictionary<Guid, Uri>? editaisPorAto = null) =>
+    private static ConsultaDoCertame.Encontrado Encontrado(IReadOnlyDictionary<Guid, IReadOnlyList<DocumentoDoEvento>>? documentosPorAto = null) =>
         new ConsultaDoCertame.Encontrado(new CertameDaOrigem(
-            ProcessoId, Criador, "Medicina 2027", "012/2026", EditalNoAcervo, editaisPorAto ?? new Dictionary<Guid, Uri>(), SituacaoDaInscricao.InscricoesAbertas));
+            ProcessoId, Criador, "Medicina 2027", "012/2026", EditalNoAcervo, documentosPorAto ?? new Dictionary<Guid, IReadOnlyList<DocumentoDoEvento>>(), SituacaoDaInscricao.InscricoesAbertas));
+
+    private static DocumentoDoEvento Principal(Uri url) => new(PapelDoDocumento.Principal, "edital.pdf", "application/pdf", 1200, url);
 
     private static AtoDaOrigem Ato(
         Guid id,

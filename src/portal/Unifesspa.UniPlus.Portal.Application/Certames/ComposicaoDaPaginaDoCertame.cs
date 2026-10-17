@@ -94,7 +94,7 @@ public sealed class ComposicaoDaPaginaDoCertame
         // A origem devolve do mais antigo para o mais recente, com o identificador de desempate;
         // a página mostra o inverso, e inverter preserva o mesmo desempate.
         EventoDaLinhaDoTempo[] linhaDoTempo =
-            [.. leitura.Atos.Reverse().Select(ato => ParaEvento(ato, DocumentoDo(ato, certame), DocumentosDo(ato, certame)))];
+            [.. leitura.Atos.Reverse().Select(ato => ParaEvento(ato, DocumentosDo(ato, certame)))];
 
         AtoDaOrigem? criador = leitura.Atos.FirstOrDefault(ato => ato.Id == certame.AtoCriadorId);
 
@@ -156,33 +156,16 @@ public sealed class ComposicaoDaPaginaDoCertame
     }
 
     /// <summary>
-    /// O documento do ato no acervo: o edital da versão que o ato criou, quando Seleção o divulgou.
-    /// Ato que não criou versão de Seleção não tem documento aqui.
-    /// </summary>
-    /// <remarks>
-    /// O ato criador da versão servida cai no endereço do detalhe quando a origem ainda não o lista
-    /// entre os editais divulgados.
-    /// </remarks>
-    private static Uri? DocumentoDo(AtoDaOrigem ato, CertameDaOrigem certame)
-    {
-        if (certame.EditaisPorAto.TryGetValue(ato.Id, out Uri? edital))
-        {
-            return edital;
-        }
-
-        return ato.Id == certame.AtoCriadorId ? certame.DocumentoEditalUrl : null;
-    }
-
-    /// <summary>
     /// Os documentos do ato no acervo, o principal e os anexos. Ato sem registro de documentos na
-    /// origem — o que não criou versão de Seleção — sai com lista vazia.
+    /// origem — o que não criou versão de Seleção — sai com lista vazia. O <c>documentoUrl</c> do
+    /// evento sai desta mesma lista, para nunca divergir do documento de papel principal.
     /// </summary>
     private static IReadOnlyList<DocumentoDoEvento> DocumentosDo(AtoDaOrigem ato, CertameDaOrigem certame) =>
-        certame.DocumentosPorAto is { } porAto && porAto.TryGetValue(ato.Id, out IReadOnlyList<DocumentoDoEvento>? documentos)
+        certame.DocumentosPorAto.TryGetValue(ato.Id, out IReadOnlyList<DocumentoDoEvento>? documentos)
             ? documentos
             : [];
 
-    private static EventoDaLinhaDoTempo ParaEvento(AtoDaOrigem ato, Uri? documentoUrl, IReadOnlyList<DocumentoDoEvento> documentos)
+    private static EventoDaLinhaDoTempo ParaEvento(AtoDaOrigem ato, IReadOnlyList<DocumentoDoEvento> documentos)
     {
         string nomeDoTipo = string.IsNullOrWhiteSpace(ato.TipoNome) ? ato.TipoCodigo : ato.TipoNome;
         string? numero = string.IsNullOrWhiteSpace(ato.Numero) ? null : ato.Numero.Trim();
@@ -195,7 +178,7 @@ public sealed class ComposicaoDaPaginaDoCertame
             ato.Ano,
             new TipoDoEvento(ato.TipoCodigo, nomeDoTipo),
             ato.MotivoRetificacao,
-            documentoUrl,
+            documentos.FirstOrDefault(static d => d.Papel == PapelDoDocumento.Principal)?.Url,
             documentos);
     }
 

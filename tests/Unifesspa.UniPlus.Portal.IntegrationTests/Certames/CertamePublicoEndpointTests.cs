@@ -75,6 +75,7 @@ public sealed class CertamePublicoEndpointTests : IClassFixture<PortalComOrigens
         edital.GetProperty("tipo").GetProperty("nome").GetString().Should().Be("Edital de abertura");
         edital.GetProperty("descricao").ValueKind.Should().Be(JsonValueKind.Null);
         edital.GetProperty("documentoUrl").GetString().Should().Be(EditalNoAcervo.ToString());
+        edital.GetProperty("documentos").EnumerateArray().Single().GetProperty("papel").GetString().Should().Be("principal");
         linha[0].GetProperty("documentoUrl").ValueKind.Should().Be(JsonValueKind.Null, "só o ato criador tem documento no acervo");
 
         // Ato sem nome do tipo copiado cai para o código, no título e no tipo.
@@ -259,7 +260,12 @@ public sealed class CertamePublicoEndpointTests : IClassFixture<PortalComOrigens
 
     private void ServirCertame() =>
         _factory.Contrato.Resposta = new ConsultaDoCertame.Encontrado(
-            new CertameDaOrigem(ProcessoId, CriadorId, "Medicina 2027", "012/2026", EditalNoAcervo, new Dictionary<Guid, Uri>(), SituacaoDaInscricao.UltimosDias));
+            new CertameDaOrigem(ProcessoId, CriadorId, "Medicina 2027", "012/2026", EditalNoAcervo,
+                new Dictionary<Guid, IReadOnlyList<DocumentoDoEvento>>
+                {
+                    [CriadorId] = [new DocumentoDoEvento(PapelDoDocumento.Principal, "edital.pdf", "application/pdf", 1200, EditalNoAcervo)],
+                },
+                SituacaoDaInscricao.UltimosDias));
 
     /// <summary>Ordem da origem: do mais antigo para o mais recente.</summary>
     private static AtoDaOrigem[] AtosEmOrdemDaOrigem() =>

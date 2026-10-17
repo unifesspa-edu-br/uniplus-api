@@ -22,13 +22,11 @@ internal sealed record PeriodoDoCertamePayload(string? Numero);
 internal sealed record DocumentoEditalDoCertamePayload(Uri? UrlDownload);
 
 /// <summary>
-/// O edital de uma versão divulgada: o ato que a criou, o endereço público no acervo e os
-/// documentos dele. Origem anterior ao campo não o envia, e item nulo ou incompleto é descartado na
-/// leitura.
+/// O edital de uma versão divulgada: o ato que a criou e os documentos dele no acervo. Origem
+/// anterior ao campo não o envia, e item nulo ou incompleto é descartado na leitura.
 /// </summary>
 internal sealed record EditalPublicadoDoCertamePayload(
     Guid AtoId,
-    Uri? UrlDownload,
     IReadOnlyList<DocumentoDoAtoPayload?>? Documentos = null);
 
 /// <summary>
