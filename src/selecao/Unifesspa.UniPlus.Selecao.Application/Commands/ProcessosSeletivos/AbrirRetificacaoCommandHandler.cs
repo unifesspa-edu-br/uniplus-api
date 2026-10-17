@@ -72,23 +72,10 @@ public static class AbrirRetificacaoCommandHandler
         // ADR-0109 D8 tornou obrigatórios) é uma sessão IMPOSSÍVEL DE DESCARTAR. As anteriores,
         // porque sem lê-las não há como saber que fatos cada formulário coletou em todas as versões
         // publicadas — e a sessão aceitaria fato que um candidato não informou.
-        List<GrafoConfiguracao> grafos = new(versoes.Count);
-        List<EixosDeVersaoPublicada> congelado = new(versoes.Count);
-        foreach (VersaoConfiguracao versao in versoes)
+        Result<VersoesPublicadasLidas> lidas = VersoesPublicadasLidas.Ler(registroCodecs, versoes, abrindoSessao: true);
+        if (lidas.IsFailure)
         {
-            if (PendenciaDeReidratacao(registroCodecs, versao, ehBase: versao.Id == versaoAtual.Id) is { } pendencia)
-            {
-                return Result<RetificacaoEmCursoDto>.Failure(pendencia);
-            }
-
-            Result<EnvelopeReidratado> reidratada = registroCodecs.Reidratar(versao);
-            if (reidratada.IsFailure)
-            {
-                return Result<RetificacaoEmCursoDto>.Failure(reidratada.Error!);
-            }
-
-            grafos.Add(reidratada.Value!.Grafo);
-            congelado.Add(ConferenciaDosEixosDosFatosColetados.DaVersao(reidratada.Value!));
+            return Result<RetificacaoEmCursoDto>.Failure(lidas.Error!);
         }
 
         string abertoPorSub = userContext.UserId ?? "system";
@@ -98,8 +85,8 @@ public static class AbrirRetificacaoCommandHandler
         Result<RascunhoRetificacao> abertura = processo.AbrirRetificacao(
             command.Motivo,
             versaoAtual,
-            grafos[^1].IdentificadorLegivel,
-            FatosDasVersoesPublicadas.De(grafos, congelado),
+            lidas.Value!.IdentificadorLegivelDaBase,
+            lidas.Value!.Fatos,
             abertoPorSub,
             timeProvider.GetUtcNow());
         if (abertura.IsFailure)
@@ -122,37 +109,5 @@ public static class AbrirRetificacaoCommandHandler
         }
 
         return Result<RetificacaoEmCursoDto>.Success(RetificacaoEmCursoDto.De(abertura.Value!));
-    }
-
-    /// <summary>
-    /// A versão do envelope é conhecida <b>e</b> reidratável? A recusa é <b>nomeada</b>: quem abre
-    /// precisa distinguir uma versão que o sistema não conhece de uma que ele conhece e não sabe
-    /// reconstruir; e a mensagem diz por que aquela versão precisa ser lida.
-    /// </summary>
-    private static DomainError? PendenciaDeReidratacao(IRegistroCodecsEnvelope registroCodecs, VersaoConfiguracao versao, bool ehBase)
-    {
-        string schemaVersion = versao.SchemaVersion;
-        CapacidadeCodec? capacidade = registroCodecs.Capacidades
-            .FirstOrDefault(c => string.Equals(c.SchemaVersion, schemaVersion, StringComparison.Ordinal));
-
-        string consequencia = ehBase
-            ? "a retificação não poderia ser descartada"
-            : $"sem ler a versão {versao.NumeroVersao}, não há como saber que fatos cada formulário coletou em todas as versões publicadas";
-
-        if (capacidade is null)
-        {
-            return new DomainError(
-                "EnvelopeCodec.VersaoDesconhecida",
-                $"A versão {schemaVersion} do envelope congelado não está no registro de codecs — não há como reconstruir esta configuração, e {consequencia}.");
-        }
-
-        if (!capacidade.Reidratavel)
-        {
-            return new DomainError(
-                "EnvelopeCodec.VersaoNaoReidratavel",
-                $"A versão {schemaVersion} do envelope é conhecida, mas não pode ser reidratada ({capacidade.MotivoDaRecusa}) — {consequencia}.");
-        }
-
-        return null;
     }
 }

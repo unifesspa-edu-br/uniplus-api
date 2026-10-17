@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// Compara o que a versão nova vai congelar de um fato já coletado com o que as versões publicadas
 /// congelaram (UNI-REQ-0144): o metadado dos fatos citados por condição de documento exigido e a
 /// operação de cada agregado, que o handler resolve do catálogo na hora de congelar. Os itens são
-/// conferidos no agregado, ao serem regravados. A comparação é sempre contra o que a versão nova
+/// conferidos no agregado, ao serem regravados, e de novo no fechamento da sessão. A comparação é sempre contra o que a versão nova
 /// congelaria, nunca contra o catálogo vivo: edição do catálogo que a versão nova não congela não
 /// recusa a retificação.
 /// </summary>
@@ -29,8 +29,7 @@ internal static class ConferenciaDosEixosDosFatosColetados
 
     /// <summary>
     /// Lê as versões publicadas do processo e confere contra elas o que a retificação sem sessão vai
-    /// congelar. A versão que o sistema não sabe reidratar não é lida: ela não congelou fato algum
-    /// que se possa comparar.
+    /// congelar. A versão que o sistema não sabe reidratar recusa, como a abertura da sessão.
     /// </summary>
     public static async Task<DomainError?> ConferirContraAsVersoesAsync(
         IProcessoSeletivoRepository processoSeletivoRepository,
@@ -43,22 +42,13 @@ internal static class ConferenciaDosEixosDosFatosColetados
         IReadOnlyList<VersaoConfiguracao> versoes = await processoSeletivoRepository
             .ObterVersoesAsync(processoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
-
-        List<GrafoConfiguracao> grafos = new(versoes.Count);
-        List<EixosDeVersaoPublicada> congelado = new(versoes.Count);
-        foreach (VersaoConfiguracao versao in versoes)
+        if (versoes.Count == 0)
         {
-            Result<EnvelopeReidratado> reidratada = registroCodecs.Reidratar(versao);
-            if (reidratada.IsFailure)
-            {
-                continue;
-            }
-
-            grafos.Add(reidratada.Value!.Grafo);
-            congelado.Add(DaVersao(reidratada.Value!));
+            return null;
         }
 
-        return grafos.Count == 0 ? null : Conferir(FatosDasVersoesPublicadas.De(grafos, congelado), metadados, agregados);
+        Result<VersoesPublicadasLidas> lidas = VersoesPublicadasLidas.Ler(registroCodecs, versoes, abrindoSessao: false);
+        return lidas.IsFailure ? lidas.Error : Conferir(lidas.Value!.Fatos, metadados, agregados);
     }
 
     public static DomainError? Conferir(

@@ -80,13 +80,19 @@ public sealed class FatosDasVersoesPublicadas
 
     /// <summary>
     /// Lê as versões publicadas, da primeira à base, que é a última. <paramref name="congeladoPorVersao"/>
-    /// traz, na mesma ordem, o que cada uma congelou além dos itens; sem ele, a guarda de eixo só
-    /// alcança os itens.
+    /// traz, na mesma ordem, o que cada uma congelou além dos itens: é obrigatório para que a guarda
+    /// de eixo do metadado e da operação do agregado nunca fique sem ser alimentada em silêncio.
     /// </summary>
     public static FatosDasVersoesPublicadas De(
-        IReadOnlyList<GrafoConfiguracao> versoes, IReadOnlyList<EixosDeVersaoPublicada>? congeladoPorVersao = null)
+        IReadOnlyList<GrafoConfiguracao> versoes, IReadOnlyList<EixosDeVersaoPublicada> congeladoPorVersao)
     {
         ArgumentNullException.ThrowIfNull(versoes);
+        ArgumentNullException.ThrowIfNull(congeladoPorVersao);
+        if (congeladoPorVersao.Count != versoes.Count)
+        {
+            throw new ArgumentException("O congelado de cada versão publicada é informado, na mesma ordem das versões.", nameof(congeladoPorVersao));
+        }
+
         if (versoes.Count == 0)
         {
             throw new ArgumentException("A retificação é aberta sobre ao menos uma versão publicada.", nameof(versoes));
@@ -120,7 +126,7 @@ public sealed class FatosDasVersoesPublicadas
 
         Dictionary<string, HashSet<EixosDoMetadadoCongelado>> eixosDosMetadados = new(StringComparer.Ordinal);
         Dictionary<string, HashSet<string>> operacoes = new(StringComparer.Ordinal);
-        foreach (EixosDeVersaoPublicada congelado in congeladoPorVersao ?? [])
+        foreach (EixosDeVersaoPublicada congelado in congeladoPorVersao)
         {
             foreach ((string fato, EixosDoMetadadoCongelado eixos) in congelado.Metadados)
             {
@@ -290,7 +296,7 @@ public sealed class FatosDasVersoesPublicadas
             if (_operacoesDosAgregados.TryGetValue(agregado, out HashSet<string>? publicadas)
                 && publicadas.FirstOrDefault(p => !string.Equals(p, novo, StringComparison.Ordinal)) is { } diferente)
             {
-                return new TrocaDeEixo(agregado, "operação do agregado", diferente, novo);
+                return new TrocaDeEixo(agregado, "operação do agregado", diferente, novo, DeAgregado: true);
             }
         }
 

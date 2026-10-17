@@ -517,7 +517,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         ProcessoSeletivoRepository processos = new(sessao, TimeProvider.System);
         ProcessoSeletivo tracked = (await processos.ObterParaMutacaoAsync(processoId, CancellationToken.None))!;
         // A versão publicada é a de antes dos três dados: os fatos vigentes não os incluem.
-        FatosDasVersoesPublicadas publicadas = FatosDasVersoesPublicadas.De(
+        FatosDasVersoesPublicadas publicadas = VersoesPublicadasDeTeste.SemEixosCongelados(
         [
             VersoesPublicadasDeTeste.Versao(
                 tracked.Formularios,

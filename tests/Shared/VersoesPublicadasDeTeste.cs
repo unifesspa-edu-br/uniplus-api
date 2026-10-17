@@ -33,7 +33,13 @@ internal static class VersoesPublicadasDeTeste
 
     /// <summary>O processo publicado uma vez só, com o que ele tem agora.</summary>
     public static FatosDasVersoesPublicadas SoAVigente(ProcessoSeletivo processo) =>
-        FatosDasVersoesPublicadas.De([DoProcesso(processo)]);
+        SemEixosCongelados([DoProcesso(processo)]);
+
+    /// <summary>As versões lidas sem o que cada uma congelou além dos itens: a guarda de metadado e de agregado não tem o que comparar.</summary>
+    public static FatosDasVersoesPublicadas SemEixosCongelados(IReadOnlyList<GrafoConfiguracao> versoes) =>
+        FatosDasVersoesPublicadas.De(
+            versoes,
+            [.. versoes.Select(static _ => new EixosDeVersaoPublicada(new Dictionary<string, EixosDoMetadadoCongelado>(), new Dictionary<string, string>()))]);
 
     private static ReferenciaRegra Regra(string codigo, char semente) =>
         ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
