@@ -174,7 +174,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
             canonico.AlgoritmoHash,
             documento.HashSha256!,
             atorUsuarioSub: "integration-test-user",
-            TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
+            TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         publicarResult.IsSuccess.Should().BeTrue(publicarResult.Error?.Message);
 
         await using SelecaoDbContext writeContext = _fixture.CreateDbContext();

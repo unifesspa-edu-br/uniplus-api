@@ -47,7 +47,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
 
     private static Result<VersaoConfiguracao> Publicar(
         ProcessoSeletivo processo, ContextoDeContagemDePrazos contexto) => processo.Publicar(
-        Dados(), "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo, "teste", TimeProvider.System, contexto, FatosDeModalidadeDeTeste.DoCatalogo);
+        Dados(), "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo, "teste", TimeProvider.System, contexto, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
     private static ConfiguracaoClassificacao ClassificacaoImportada() => ConfiguracaoClassificacao.Criar(
         Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'), null, null,
@@ -85,7 +85,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     /// isola.
     /// </summary>
     private static IEnumerable<ItemConformidade> VermelhosForaDoFormulario(ProcessoSeletivo processo) =>
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo)
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Where(static i => !i.Ok && !i.Codigo.StartsWith("formulario_", StringComparison.Ordinal));
 
     /// <summary>Fase mínima e coerente: não agrupa etapas (dispensável sem prova), produz resultado, não coleta inscrição.</summary>
@@ -165,7 +165,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().ContainSingle(i => !i.Ok)
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().ContainSingle(i => !i.Ok)
             .Which.Codigo.Should().Be("cronograma_fase_agrupadora_sem_etapa_pontuada");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -182,7 +182,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             .IsSuccess.Should().BeTrue();
         // Fase permanece sem agrupar etapas (herdada de ProcessoConforme).
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().ContainSingle(i => !i.Ok)
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().ContainSingle(i => !i.Ok)
             .Which.Codigo.Should().Be("cronograma_etapa_pontuada_sem_fase_agrupadora");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -255,7 +255,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
                 bancasRequeridas: [], regraRecurso: null).Value!],
             [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().ContainSingle(i => !i.Ok)
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().ContainSingle(i => !i.Ok)
             .Which.Codigo.Should().Be("cronograma_vagas_sem_fase_que_produz_resultado");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -323,7 +323,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
 
     private static void SoEstesItensVermelhos(
         ProcessoSeletivo processo, ContextoDeContagemDePrazos contexto, params string[] itensVermelhos) =>
-        processo.AvaliarConformidade(contexto, FatosDeModalidadeDeTeste.DoCatalogo).Where(static i => !i.Ok).Select(static i => i.Codigo)
+        processo.AvaliarConformidade(contexto, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Where(static i => !i.Ok).Select(static i => i.Codigo)
             .Should().BeEquivalentTo(itensVermelhos);
 
     [Fact(DisplayName = "Cascata: modalidade SegueCascata fora do regime federal — item vermelho e Publicar recusa com CascataForaDoRegimeFederal")]
@@ -447,7 +447,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().ContainSingle(i => !i.Ok)
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().ContainSingle(i => !i.Ok)
             .Which.Codigo.Should().Be("exigencia_condicional_vazia_determina_resultado");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -493,7 +493,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             .IsSuccess.Should().BeTrue();
         // Sem DefinirBonusRegional — nenhuma vantagem viva para remover.
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().ContainSingle(i => !i.Ok)
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().ContainSingle(i => !i.Ok)
             .Which.Codigo.Should().Be("exigencia_remove_vantagem_sem_vantagem_viva");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -515,7 +515,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().ContainSingle(i => !i.Ok)
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().ContainSingle(i => !i.Ok)
             .Which.Codigo.Should().Be("exigencia_consequencia_incoerente_com_acao_da_vaga");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -538,7 +538,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             TipoNo.GrupoOu, 0, 1, "REMOVE_VANTAGEM", [BaseLegalDoGrupo(StatusBaseLegal.Resolvido)], [folha]).Value!;
         processo.DefinirDocumentosExigidos([grupo], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().ContainSingle(i => !i.Ok)
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().ContainSingle(i => !i.Ok)
             .Which.Codigo.Should().Be("grupo_remove_vantagem_sem_vantagem_viva");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -562,7 +562,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             TipoNo.GrupoOu, 0, 1, "ELIMINA", [BaseLegalDoGrupo(StatusBaseLegal.Resolvido)], [folha]).Value!;
         processo.DefinirDocumentosExigidos([grupo], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().ContainSingle(i => !i.Ok)
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().ContainSingle(i => !i.Ok)
             .Which.Codigo.Should().Be("grupo_consequencia_incoerente_com_acao_da_vaga");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -587,7 +587,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             .IsSuccess.Should().BeTrue();
         // Nenhuma ReferenciaTemporalFatos configurada.
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().ContainSingle(i => !i.Ok)
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().ContainSingle(i => !i.Ok)
             .Which.Codigo.Should().Be("referencia_temporal_ausente_com_gatilho_etario");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -628,7 +628,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirCronogramaFases([faseComExigencia], [], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().ContainSingle(i => !i.Ok)
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().ContainSingle(i => !i.Ok)
             .Which.Codigo.Should().Be("referencia_temporal_fase_fora_do_cronograma");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -660,7 +660,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseSemExtremo.Id).Value!, PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().ContainSingle(i => !i.Ok)
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().ContainSingle(i => !i.Ok)
             .Which.Codigo.Should().Be("referencia_temporal_extremo_da_fase_ausente");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -685,7 +685,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimInscricao, null, null).Value!, PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().ContainSingle(i => !i.Ok)
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().ContainSingle(i => !i.Ok)
             .Which.Codigo.Should().Be("referencia_temporal_fim_inscricao_indisponivel");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -704,7 +704,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirRegrasDerivacao([configuracao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue(
             "a definição isolada só valida forma e unicidade — não conhece o universo de fatos do processo");
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().ContainSingle(i => !i.Ok)
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().ContainSingle(i => !i.Ok)
             .Which.Codigo.Should().Be("derivacao_fatos_citados_inexistentes");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -824,7 +824,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
         ProcessoSeletivo processo = ProcessoConforme([oferta]);
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo)
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Single(static i => i.Codigo == "modalidade_reserva_pcd_sem_cota_pcd_da_lei").Ok.Should().Be(esperadoOk);
     }
 
@@ -870,7 +870,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     }
 
     private static bool ItemDaExclusividadeOk(ProcessoSeletivo processo) =>
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo)
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Single(i => i.Codigo == "derivacao_cota_e_acao_afirmativa_juntas").Ok;
 
     private static ProcessoSeletivo CotaEAcaoAfirmativaPor(string fato, object valorDaCota, object valorDaAcaoAfirmativa) =>
@@ -934,7 +934,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirRegrasDerivacao([d1, d2], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue(
             "a definição isolada só barra código duplicado — o ciclo cruza duas configurações e passa aqui");
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().ContainSingle(i => !i.Ok)
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().ContainSingle(i => !i.Ok)
             .Which.Codigo.Should().Be("grafo_dependencia_com_ciclo");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -1066,7 +1066,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!,
             CriterioDesempate.Criar(2, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(["MATEMATICA", "REDACAO"])).Value!);
 
-        string[] vermelhos = [.. processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Where(static i => !i.Ok).Select(static i => i.Codigo)];
+        string[] vermelhos = [.. processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Where(static i => !i.Ok).Select(static i => i.Codigo)];
 
         // Equal, não BeEquivalentTo: aqui a ORDEM é o que está sendo provado.
         vermelhos.Should().Equal(
@@ -1145,7 +1145,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         // Fase sem coleta de inscrição, com InscricaoPropria — Gate 2 (cronograma) TAMBÉM pendente.
         processo.DefinirCronogramaFases([FaseBase(coletaInscricao: false)], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        IReadOnlyList<ItemConformidade> checklist = processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
+        IReadOnlyList<ItemConformidade> checklist = processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         checklist.Should().Contain(i => i.Codigo == "atendimento_especializado_ausente" && !i.Ok,
             "Gate 1 também está pendente — o checklist projeta TODOS os vereditos, não só o primeiro");
         checklist.Should().Contain(i => i.Codigo == "cronograma_inscricao_propria_sem_fase_de_coleta" && !i.Ok);
@@ -1167,7 +1167,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     {
         ProcessoSeletivo processo = ProcessoConforme();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().OnlyContain(i => i.Ok);
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().OnlyContain(i => i.Ok);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -1181,9 +1181,9 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         // publica sem prova local. Esta contraprova torna essa premissa EXPLÍCITA.
         processo.Etapas.Should().BeEmpty("pré-condição da contraprova: sem etapa, sob CLASSIFICACAO-IMPORTADA");
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().Contain(
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().Contain(
             i => i.Codigo == "cronograma_fase_agrupadora_sem_etapa_pontuada" && i.Ok);
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().Contain(
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().Contain(
             i => i.Codigo == "cronograma_etapa_pontuada_sem_fase_agrupadora" && i.Ok);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -1203,7 +1203,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             "cascata_origem_nao_segue_cascata",
             "cascata_destino_desconhecido",
         ];
-        IReadOnlyList<ItemConformidade> checklist = processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
+        IReadOnlyList<ItemConformidade> checklist = processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         foreach (string item in itensDeCascata)
         {
             checklist.Should().Contain(i => i.Codigo == item && i.Ok, $"cascata não se aplica — \"{item}\" não pode ficar vermelho");
@@ -1220,7 +1220,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, precondicoes: null, classificacaoProtecao: "PESSOAL").Value!;
         processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().Contain(
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().Contain(
             i => i.Codigo == "fato_coletavel_sem_valores_ofertados" && i.Ok);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -1238,7 +1238,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, precondicoes: null, classificacaoProtecao: "PESSOAL").Value!;
         processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().Contain(
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().Contain(
             i => i.Codigo == "fato_coletavel_sem_valores_ofertados" && i.Ok);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -1266,7 +1266,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             "referencia_temporal_extremo_da_fase_ausente",
             "referencia_temporal_fim_inscricao_indisponivel",
         ];
-        IReadOnlyList<ItemConformidade> checklist = processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
+        IReadOnlyList<ItemConformidade> checklist = processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         foreach (string item in itensDeReferenciaTemporal)
         {
             checklist.Should().Contain(i => i.Codigo == item && i.Ok, $"sem gatilho por FAIXA_ETARIA — \"{item}\" não pode ficar vermelho");
@@ -1372,7 +1372,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirTaxaInscricao(null!, PrecondicaoIfMatch.Curinga);
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
-        string[] vermelhos = [.. processo.AvaliarConformidade(ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo).Where(static i => !i.Ok).Select(static i => i.Codigo)];
+        string[] vermelhos = [.. processo.AvaliarConformidade(ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Where(static i => !i.Ok).Select(static i => i.Codigo)];
 
         // Equal, não BeEquivalentTo: aqui a ORDEM é o que está sendo provado.
         vermelhos.Should().Equal(
@@ -1432,14 +1432,14 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             .GetField("_quadroPesoAreaEnem", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(classificacao)!).Clear();
 
     private static ItemConformidade Item(ProcessoSeletivo processo, string codigo) =>
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Single(i => i.Codigo == codigo);
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Single(i => i.Codigo == codigo);
 
     [Fact(DisplayName = "ENEM com cálculo local: resolução, quadro e grupo do quadro em toda oferta — os itens existem, nenhum vermelho, e Publicar conclui")]
     public void Enem_ProcessoCompletoPublica()
     {
         ProcessoSeletivo processo = ProcessoEnemLocal([OfertaAmpla(10, GrupoTecnologica), OfertaAmpla(5, GrupoHumanisticaI)]);
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Select(static i => i.Codigo).Should().Contain(
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Select(static i => i.Codigo).Should().Contain(
             ["classificacao_resolucao_peso_area_enem_ausente", "distribuicao_vagas_oferta_sem_grupo_area_enem", "classificacao_grupo_area_enem_da_oferta_fora_do_quadro", "desempate_area_enem_sem_quadro"],
             "a exigência existe, e o item existe com ela; o do desempate sem quadro some só quando a resolução está pendente");
         SoEstesItensVermelhos(processo);
@@ -1479,7 +1479,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
 
         SoEstesItensVermelhos(processo, "classificacao_resolucao_peso_area_enem_ausente");
         Item(processo, "classificacao_resolucao_peso_area_enem_ausente").Dimensao.Should().Be(DimensaoConformidade.Classificacao);
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Any(static i => i.Codigo == "desempate_area_enem_sem_quadro")
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Any(static i => i.Codigo == "desempate_area_enem_sem_quadro")
             .Should().Be(falta != FaltaNaResolucao.QuadroVazio, "o item do desempate sem quadro só sai do checklist quando é o quadro que falta");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -1545,7 +1545,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
 
         Result<VersaoConfiguracao> fechar = processo.FecharRetificacao(
             Dados(), publicada.Value!, "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo, "teste",
-            PrecondicaoIfMatch.Curinga, TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
+            PrecondicaoIfMatch.Curinga, TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         fechar.IsFailure.Should().BeTrue();
         fechar.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
@@ -1650,7 +1650,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         EsvaziarQuadro(processo.Classificacao!);
 
         SoEstesItensVermelhos(processo, "classificacao_resolucao_peso_area_enem_ausente");
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Select(static i => i.Codigo).Should().NotContain(
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Select(static i => i.Codigo).Should().NotContain(
             "desempate_area_enem_sem_quadro", "sairia verde com a descrição de que há quadro, justamente quando ele falta");
         processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo).Should().BeNull(
             "o gate diz o mesmo que o checklist: a falta do quadro é só pendência da resolução");
@@ -1679,7 +1679,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
                 resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!,
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Select(static i => i.Codigo).Should().NotContain(
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Select(static i => i.Codigo).Should().NotContain(
             ["classificacao_resolucao_peso_area_enem_ausente", "distribuicao_vagas_oferta_sem_grupo_area_enem", "classificacao_grupo_area_enem_da_oferta_fora_do_quadro"]);
         SoEstesItensVermelhos(processo);
 
@@ -1700,7 +1700,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Select(static i => i.Codigo).Should().NotContain(
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Select(static i => i.Codigo).Should().NotContain(
             ["classificacao_resolucao_peso_area_enem_ausente", "distribuicao_vagas_oferta_sem_grupo_area_enem", "classificacao_grupo_area_enem_da_oferta_fora_do_quadro"]);
         SoEstesItensVermelhos(processo);
 

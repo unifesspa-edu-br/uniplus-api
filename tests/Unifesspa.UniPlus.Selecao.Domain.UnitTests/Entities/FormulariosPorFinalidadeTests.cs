@@ -478,7 +478,7 @@ public sealed class FormulariosPorFinalidadeTests
         processo.RemoverFormulario(FinalidadeFormulario.Inscricao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemFormulario);
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().Contain(static i => i.Codigo == "formulario_inscricao_ausente" && !i.Ok);
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().Contain(static i => i.Codigo == "formulario_inscricao_ausente" && !i.Ok);
     }
 
     [Fact(DisplayName = "Formulário sem fase é aceito no rascunho e recusado na publicação")]
@@ -487,7 +487,7 @@ public sealed class FormulariosPorFinalidadeTests
         ProcessoSeletivo processo = ComHabilitacao();
 
         processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(FormularioProcessoErrorCodes.SemFase);
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().Contain(static i => i.Codigo == "formulario_fase_incoerente" && !i.Ok);
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().Contain(static i => i.Codigo == "formulario_fase_incoerente" && !i.Ok);
     }
 
     [Fact(DisplayName = "Formulário de isenção só em processo que cobra taxa")]
@@ -497,7 +497,7 @@ public sealed class FormulariosPorFinalidadeTests
         processo.DefinirFormulario(FinalidadeFormulario.IsencaoTaxa, null, null, FormularioDeTeste.Etapas(), PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().Contain(static i => i.Codigo == "formulario_isencao_sem_taxa" && !i.Ok);
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().Contain(static i => i.Codigo == "formulario_isencao_sem_taxa" && !i.Ok);
     }
 
     [Fact(DisplayName = "Item sem seção é aceito no rascunho e recusado na publicação")]
@@ -512,7 +512,7 @@ public sealed class FormulariosPorFinalidadeTests
             .IsSuccess.Should().BeTrue();
 
         processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(FormularioProcessoErrorCodes.ItemForaDeSecao);
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().Contain(static i => i.Codigo == "formulario_item_fora_de_secao" && !i.Ok);
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().Contain(static i => i.Codigo == "formulario_item_fora_de_secao" && !i.Ok);
     }
 
     [Fact(DisplayName = "Remover o formulário em rascunho remove os itens e os termos dele")]

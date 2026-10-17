@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed class BonusEDesempateObrigatoriosTests
 {
     private static IEnumerable<string> Vermelhos(ProcessoSeletivo processo) => processo
-        .AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo)
+        .AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
         .Where(static i => !i.Ok)
         .Select(static i => i.Codigo);
 
@@ -79,7 +79,7 @@ public sealed class BonusEDesempateObrigatoriosTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         VersaoConfiguracao versao = processo.Publicar(
             ProcessoConformeFactory.Dados(), bytes, "1.1", "canonical-json/sha256@v1", hash, "user-sub-1",
-            new RelogioFixo(agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Value!;
+            new RelogioFixo(agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Value!;
         // O estado de quem foi publicado antes de a declaração existir: a coluna volta nula.
         typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.AplicaBonusRegional))!.SetValue(processo, null);
         processo.AbrirRetificacao(
@@ -99,7 +99,7 @@ public sealed class BonusEDesempateObrigatoriosTests
         processo.FecharRetificacao(
             ProcessoConformeFactory.Dados(), versao, bytes, "1.1", "canonical-json/sha256@v1", hash, "user-sub-1",
             PrecondicaoIfMatch.Curinga, new RelogioFixo(agora.AddMinutes(1)),
-            ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
+            ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
     private sealed class RelogioFixo(DateTimeOffset instante) : TimeProvider
     {

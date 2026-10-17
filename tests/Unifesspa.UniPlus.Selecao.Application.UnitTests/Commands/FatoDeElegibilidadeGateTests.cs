@@ -186,7 +186,7 @@ public sealed class FatoDeElegibilidadeGateTests
             new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
         Result<VersaoConfiguracao> versao = processo.Publicar(
             dados, EnvelopeCongeladoDeTeste.SemAnexos(), "1.1", "canonical-json/sha256@v1", HashFixo, "user-sub-1",
-            new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
+            new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         versao.IsSuccess.Should().BeTrue(versao.Error?.Message);
         processo.DequeueDomainEvents();
         return (processo, versao.Value!);

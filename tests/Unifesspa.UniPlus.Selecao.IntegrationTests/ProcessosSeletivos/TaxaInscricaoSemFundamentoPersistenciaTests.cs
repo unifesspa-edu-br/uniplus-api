@@ -53,7 +53,7 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
         processo.ConfiguracaoTaxaInscricao!.Cobra.Should().BeTrue(
             "a adulteração mexe só nos fundamentos — a cobrança continua declarada");
 
-        IReadOnlyList<ItemConformidade> checklist = processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
+        IReadOnlyList<ItemConformidade> checklist = processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         checklist.Should().ContainSingle(i => i.Codigo == "taxa_inscricao_sem_fundamento_de_isencao")
             .Which.Ok.Should().BeFalse(
@@ -96,7 +96,7 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
         await using SelecaoDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo)
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Should().ContainSingle(i => i.Codigo == "taxa_inscricao_sem_fundamento_de_isencao")
             .Which.Ok.Should().BeTrue();
 
@@ -113,7 +113,7 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
         HashFixo,
         "integration-test-user",
         TimeProvider.System,
-        ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
+        ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
     /// <summary>
     /// Processo estruturalmente publicável cuja taxa é declarada pelo caminho legítimo — com

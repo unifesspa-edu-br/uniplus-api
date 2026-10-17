@@ -88,7 +88,7 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
     private static bool ItemVermelho(ProcessoSeletivo processo) =>
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo)
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Single(static i => i.Codigo == "bonus_regional_fato_de_elegibilidade").Ok is false;
 
     [Fact(DisplayName = "Com inscrição própria, o acréscimo sem o fato de elegibilidade fica pendente no checklist")]

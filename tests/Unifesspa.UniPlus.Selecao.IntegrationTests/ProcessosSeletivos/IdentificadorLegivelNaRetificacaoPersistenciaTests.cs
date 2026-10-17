@@ -70,7 +70,7 @@ public sealed class IdentificadorLegivelNaRetificacaoPersistenciaTests(ProcessoS
             Result<VersaoConfiguracao> fechar = tracked.FecharRetificacao(
                 CorpusEnvelope.DadosRicos(), versao, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
                 CorpusEnvelope.HashDocumento, CorpusEnvelope.Ator, PrecondicaoIfMatch.Curinga, TimeProvider.System,
-                CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
+                CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
             fechar.IsSuccess.Should().BeTrue(fechar.Error?.Message);
             nova = fechar.Value!;
             fechamento.Add(nova);

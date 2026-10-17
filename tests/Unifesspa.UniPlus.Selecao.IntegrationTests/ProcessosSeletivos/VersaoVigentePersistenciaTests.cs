@@ -124,7 +124,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
         SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados()));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dadosAbertura, canonicoAbertura.Bytes, canonicoAbertura.SchemaVersion, canonicoAbertura.AlgoritmoHash,
-            docAbertura.HashSha256!, "integration-test-user", clock, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
+            docAbertura.HashSha256!, "integration-test-user", clock, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
@@ -152,7 +152,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
             Result<VersaoConfiguracao> retificar = carregado.Retificar(
                 dadosRetificacao, versaoAtual, canonicoRetificacao.Bytes, canonicoRetificacao.SchemaVersion,
                 canonicoRetificacao.AlgoritmoHash, docRetificacao.HashSha256!, "integration-test-user",
-                "Correção do prazo de inscrição", clock, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
+                "Correção do prazo de inscrição", clock, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
             retificar.IsSuccess.Should().BeTrue(retificar.Error?.Message);
             v2 = retificar.Value!;
 
@@ -265,7 +265,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
 
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dados, canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash,
-            documento.HashSha256!, "integration-test-user", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
+            documento.HashSha256!, "integration-test-user", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
 
         VersaoConfiguracao versao = publicar.Value!;
@@ -473,7 +473,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
         SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados()));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dadosAbertura, canonicoAbertura.Bytes, canonicoAbertura.SchemaVersion, canonicoAbertura.AlgoritmoHash,
-            docAbertura.HashSha256!, "integration-test-user", clock, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
+            docAbertura.HashSha256!, "integration-test-user", clock, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
 
         Guid processoId = processo.Id;
@@ -515,7 +515,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
             Result<VersaoConfiguracao> fechar = carregado.FecharRetificacao(
                 dadosRetificacao, versaoAtual, canonicoRetificacao.Bytes, canonicoRetificacao.SchemaVersion,
                 canonicoRetificacao.AlgoritmoHash, docRetificacao.HashSha256!, "integration-test-user",
-                PrecondicaoIfMatch.Curinga, clock, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
+                PrecondicaoIfMatch.Curinga, clock, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
             fechar.IsSuccess.Should().BeTrue(fechar.Error?.Message);
 
             await writeContext.DocumentosAPublicar.AddAsync(docRetificacao, CancellationToken.None);

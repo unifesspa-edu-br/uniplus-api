@@ -75,7 +75,7 @@ public sealed class GateDoAlgoritmoDeContagemTests
         algoritmoHash: "canonical-json/sha256@v1",
         hashDocumento: HashFixo,
         atorUsuarioSub: "teste",
-        TimeProvider.System, ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo);
+        TimeProvider.System, ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
     /// <summary>
     /// Leva o processo ao estado publicado sem passar pelo gate — a publicação é assunto de
@@ -126,7 +126,7 @@ public sealed class GateDoAlgoritmoDeContagemTests
             hashDocumento: HashFixo,
             atorUsuarioSub: "teste",
             motivo: "Correção do prazo",
-            TimeProvider.System, ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo);
+            TimeProvider.System, ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         retificar.IsFailure.Should().BeTrue();
         retificar.Error!.Code.Should().Be(CodigoDaRecusa);
@@ -152,7 +152,7 @@ public sealed class GateDoAlgoritmoDeContagemTests
             hashDocumento: HashFixo,
             atorUsuarioSub: "teste",
             PrecondicaoIfMatch.Curinga,
-            TimeProvider.System, ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo);
+            TimeProvider.System, ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         fechar.IsFailure.Should().BeTrue();
         fechar.Error!.Code.Should().Be(CodigoDaRecusa);

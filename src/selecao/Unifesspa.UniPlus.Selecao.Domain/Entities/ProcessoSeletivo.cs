@@ -3665,9 +3665,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// pendência que vai bloquear a publicação antes das que só apareceriam depois dela.
     /// </para>
     /// </remarks>
-    public IReadOnlyList<ItemConformidade> AvaliarConformidade(ContextoDeContagemDePrazos contexto, FatosDeModalidade fatosDeModalidade)
+    public IReadOnlyList<ItemConformidade> AvaliarConformidade(ContextoDeContagemDePrazos contexto, FatosDeModalidade fatosDeModalidade, TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos)
     {
         ArgumentNullException.ThrowIfNull(contexto);
+        ArgumentNullException.ThrowIfNull(tiposDeAtoUnicos);
         ArgumentNullException.ThrowIfNull(fatosDeModalidade);
 
         List<ViolacaoDoDesempatePorArea> desempate = ViolacoesDoDesempatePorAreaDoEnem();
@@ -3702,7 +3703,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("cronograma_ancora_do_recurso", DimensaoConformidade.Cronograma, "Cronograma: a regra de recurso ancora num produto preliminar da própria fase", PendenciaDaAncoraDoRecurso() is null),
             new ItemConformidade("cronograma_recorte_de_competencia_das_bancas", DimensaoConformidade.Cronograma, "Cronograma: bancas do mesmo tipo na mesma fase declaram recortes de competência distintos", PendenciaDoRecorteDeCompetencia() is null),
             new ItemConformidade("cronograma_etapa_fora_da_janela_da_fase", DimensaoConformidade.Cronograma, "Cronograma: a etapa acontece dentro da janela da fase que a abriga", PendenciaDaJanelaDaEtapaNaFase() is null),
-        new ItemConformidade("cronograma_tipo_de_ato_unico_declarado_uma_vez", DimensaoConformidade.Cronograma, "Cronograma: o tipo de ato que só sai uma vez por processo é declarado em um único produto", PendenciaDoTipoDeAtoUnico(contexto.TiposUnicos) is null),
+        new ItemConformidade("cronograma_tipo_de_ato_unico_declarado_uma_vez", DimensaoConformidade.Cronograma, "Cronograma: o tipo de ato que só sai uma vez por processo é declarado em um único produto", PendenciaDoTipoDeAtoUnico(tiposDeAtoUnicos) is null),
 
         // ── PendenciaDaCascata: o agregado e o detalhamento por razão (RN-CASCATA-1/2/2b/3, Story #575) ──
         new ItemConformidade("cascata_pendente", DimensaoConformidade.CascataRemanejamento, "Cascata de remanejamento", PendenciaDaCascata() is null),
@@ -4189,25 +4190,30 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         ViolacaoDaJanelaDaEtapaNaFase(_etapas, FasesPorCodigo(_cronogramaFases));
 
     /// <summary>
-    /// A primeira pendência de um tipo de ato único por objeto declarado em mais de um produto
-    /// do processo, somando os das fases e os das etapas, ou <see langword="null"/> quando cada
-    /// um deles é declarado uma só vez.
+    /// A primeira pendência de um tipo de ato único por objeto declarado mais de uma vez no
+    /// processo — nos produtos das fases e das etapas e, quando há, no ato da própria
+    /// operação —, ou <see langword="null"/> quando cada um deles é declarado uma só vez.
     /// </summary>
     /// <remarks>
     /// O tipo único só admite um ato por processo (ADR-0107): declará-lo duas vezes faz o
     /// edital sair publicado, o primeiro ato ser registrado e o segundo ser recusado na fila
-    /// semanas depois, com o edital já congelado. Declarar o mesmo tipo como preliminar e como
-    /// definitivo conta como duas declarações; o tipo não único da mesma matéria é o que cabe
-    /// aos dois papéis. Quais tipos são únicos é dado do catálogo, que chega em
-    /// <paramref name="tiposUnicos"/> — o agregado não o conhece (ADR-0042).
+    /// semanas depois, com o edital já congelado. O ato da publicação ou da retificação ocupa
+    /// a mesma vaga, então um produto do cronograma do mesmo tipo é declaração repetida. Declarar
+    /// o mesmo tipo como preliminar e como definitivo conta como duas declarações; o tipo não
+    /// único da mesma matéria é o que cabe aos dois papéis. Quais tipos são únicos é dado do
+    /// catálogo, que chega em <paramref name="tiposUnicos"/> — o agregado não o conhece (ADR-0042).
     /// </remarks>
     public DomainError? PendenciaDoTipoDeAtoUnico(TiposDeAtoUnicosPorObjeto tiposUnicos)
     {
         ArgumentNullException.ThrowIfNull(tiposUnicos);
 
-        IGrouping<string, string>? repetido = DeclaracoesPorAto()
+        IEnumerable<DeclaracaoDeAto> declaracoes = tiposUnicos.AtoDaOperacaoCodigo is { } atoDaOperacao
+            ? [.. DeclaracoesDeAtos(), new DeclaracaoDeAto(atoDaOperacao, "no ato que está sendo registrado")]
+            : DeclaracoesDeAtos();
+
+        IGrouping<string, DeclaracaoDeAto>? repetido = declaracoes
             .Where(declaracao => tiposUnicos.EhUnico(declaracao.AtoCodigo))
-            .GroupBy(static declaracao => declaracao.AtoCodigo, static declaracao => declaracao.Onde, StringComparer.Ordinal)
+            .GroupBy(static declaracao => declaracao.AtoCodigo, StringComparer.Ordinal)
             .FirstOrDefault(static grupo => grupo.Count() > 1);
 
         if (repetido is null)
@@ -4215,22 +4221,31 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return null;
         }
 
-        string[] lugares = [.. repetido.Distinct(StringComparer.Ordinal)];
-        string onde = lugares.Length == 1
-            ? $"mais de uma vez {lugares[0]}"
-            : string.Join(" e ", lugares);
+        string onde = string.Join(" e ", repetido
+            .GroupBy(static declaracao => declaracao.Lugar, StringComparer.Ordinal)
+            .Select(static lugar => lugar.Count() > 1 ? $"{lugar.Key} ({lugar.Count()} vezes)" : lugar.Key));
 
         return new DomainError(
             ProcessoSeletivoErrorCodes.TipoDeAtoUnicoDeclaradoMaisDeUmaVez,
             $"O tipo de ato '{tiposUnicos.NomeDe(repetido.Key)}' só pode ser publicado uma vez por processo e está declarado {onde}.");
     }
 
-    /// <summary>Cada produto declarado no cronograma, o das fases e o das etapas, com o lugar que o declara.</summary>
-    private IEnumerable<(string AtoCodigo, string Onde)> DeclaracoesPorAto() =>
-        _cronogramaFases
-            .SelectMany(static fase => fase.Produtos.Select(produto => (produto.AtoCodigo, Onde: $"na fase '{fase.Codigo}'")))
-            .Concat(_etapas
-                .SelectMany(static etapa => etapa.Produtos.Select(produto => (produto.AtoCodigo, Onde: $"na etapa '{etapa.Nome}'"))));
+    /// <summary>
+    /// Cada produto que o cronograma declara, o das fases e o das etapas, com o lugar que o
+    /// declara. É a fonte única dos atos declarados: quem precisa saber quais tipos de ato o
+    /// processo cita lê daqui.
+    /// </summary>
+    /// <remarks>
+    /// A etapa é identificada pela ordem além do nome, porque o nome não é único: duas etapas
+    /// de mesmo nome em lugares distintos seriam contadas como uma.
+    /// </remarks>
+    public IReadOnlyList<DeclaracaoDeAto> DeclaracoesDeAtos() =>
+    [
+        .. _cronogramaFases.SelectMany(static fase => fase.Produtos
+            .Select(produto => new DeclaracaoDeAto(produto.AtoCodigo, $"na fase '{fase.Codigo}'"))),
+        .. _etapas.SelectMany(static etapa => etapa.Produtos
+            .Select(produto => new DeclaracaoDeAto(produto.AtoCodigo, $"na etapa '{etapa.Nome}' (ordem {etapa.Ordem?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "não definida"})"))),
+    ];
 
     /// <summary>
     /// A primeira violação do recorte de competência no cronograma corrente, ou
@@ -5756,12 +5771,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         string atorUsuarioSub,
         TimeProvider clock,
         ContextoDeContagemDePrazos contexto,
-        FatosDeModalidade fatosDeModalidade)
+        FatosDeModalidade fatosDeModalidade,
+        TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos)
     {
         ArgumentNullException.ThrowIfNull(dados);
         ArgumentNullException.ThrowIfNull(configuracaoCongeladaCanonica);
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentNullException.ThrowIfNull(contexto);
+        ArgumentNullException.ThrowIfNull(tiposDeAtoUnicos);
 
         if (Status != StatusProcesso.Rascunho)
         {
@@ -5812,7 +5829,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result<VersaoConfiguracao>.Failure(pendenciaCronograma);
         }
 
-        if (PendenciaDoTipoDeAtoUnico(contexto.TiposUnicos) is { } pendenciaDoTipoUnico)
+        if (PendenciaDoTipoDeAtoUnico(tiposDeAtoUnicos) is { } pendenciaDoTipoUnico)
         {
             return Result<VersaoConfiguracao>.Failure(pendenciaDoTipoUnico);
         }
@@ -5900,7 +5917,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         string motivo,
         TimeProvider clock,
         ContextoDeContagemDePrazos contexto,
-        FatosDeModalidade fatosDeModalidade)
+        FatosDeModalidade fatosDeModalidade,
+        TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos)
     {
         // A ordem é a de sempre, e ela importa: os contratos do método (argumentos não nulos)
         // e o estado do certame são conferidos ANTES da sessão editorial. Antepor a recusa por
@@ -5931,7 +5949,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         return SucederVersao(
             dados, versaoAtual, configuracaoCongeladaCanonica, schemaVersion, algoritmoHash,
-            hashDocumento, atorUsuarioSub, motivo, clock, contexto, fatosDeModalidade);
+            hashDocumento, atorUsuarioSub, motivo, clock, contexto, fatosDeModalidade, tiposDeAtoUnicos);
     }
 
     /// <summary>
@@ -5967,7 +5985,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         PrecondicaoIfMatch precondicao,
         TimeProvider clock,
         ContextoDeContagemDePrazos contexto,
-        FatosDeModalidade fatosDeModalidade)
+        FatosDeModalidade fatosDeModalidade,
+        TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos)
     {
         ArgumentNullException.ThrowIfNull(precondicao);
 
@@ -5978,7 +5997,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         Result<VersaoConfiguracao> versao = SucederVersao(
             dados, versaoAtual, configuracaoCongeladaCanonica, schemaVersion, algoritmoHash,
-            hashDocumento, atorUsuarioSub, Rascunho!.Motivo, clock, contexto, fatosDeModalidade);
+            hashDocumento, atorUsuarioSub, Rascunho!.Motivo, clock, contexto, fatosDeModalidade, tiposDeAtoUnicos);
         if (versao.IsFailure)
         {
             return versao;
@@ -6103,13 +6122,15 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         string motivo,
         TimeProvider clock,
         ContextoDeContagemDePrazos contexto,
-        FatosDeModalidade fatosDeModalidade)
+        FatosDeModalidade fatosDeModalidade,
+        TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos)
     {
         ArgumentNullException.ThrowIfNull(dados);
         ArgumentNullException.ThrowIfNull(versaoAtual);
         ArgumentNullException.ThrowIfNull(contexto);
         ArgumentNullException.ThrowIfNull(configuracaoCongeladaCanonica);
         ArgumentNullException.ThrowIfNull(clock);
+        ArgumentNullException.ThrowIfNull(tiposDeAtoUnicos);
 
         if (Status != StatusProcesso.Publicado)
         {
@@ -6181,7 +6202,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result<VersaoConfiguracao>.Failure(pendenciaCronograma);
         }
 
-        if (PendenciaDoTipoDeAtoUnico(contexto.TiposUnicos) is { } pendenciaDoTipoUnico)
+        if (PendenciaDoTipoDeAtoUnico(tiposDeAtoUnicos) is { } pendenciaDoTipoUnico)
         {
             return Result<VersaoConfiguracao>.Failure(pendenciaDoTipoUnico);
         }

@@ -22,7 +22,7 @@ public sealed class OpcoesDeCursoTests
     private const string MensagemAcimaDasOfertas = "Com 2 opções de curso, cadastre pelo menos dois cursos.";
 
     private static IEnumerable<string> Vermelhos(ProcessoSeletivo processo) => processo
-        .AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo)
+        .AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
         .Where(static i => !i.Ok)
         .Select(static i => i.Codigo);
 
@@ -174,7 +174,7 @@ public sealed class OpcoesDeCursoTests
         Result<VersaoConfiguracao> fechamento = processo.FecharRetificacao(
             DadosEdital.Criar("001/2026", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), Guid.CreateVersion7()).Value!,
             versaoAbertura, Encoding.UTF8.GetBytes("{}"), "1.0", "canonical-json/sha256@v1", new string('a', 64), "user-sub-123",
-            PrecondicaoIfMatch.Curinga, TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
+            PrecondicaoIfMatch.Curinga, TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         fechamento.IsFailure.Should().BeTrue();
         fechamento.Error!.Message.Should().Contain("Opções de curso");
@@ -189,7 +189,7 @@ public sealed class OpcoesDeCursoTests
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             DadosEdital.Criar("001/2026", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), Guid.CreateVersion7()).Value!,
             Encoding.UTF8.GetBytes("{}"), "1.0", "canonical-json/sha256@v1", new string('a', 64), "user-sub-123",
-            TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
+            TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         versaoAbertura = publicacao.Value!;
         processo.ClearDomainEvents();

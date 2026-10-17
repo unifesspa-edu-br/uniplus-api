@@ -292,7 +292,7 @@ public sealed class ProcessoSeletivoCascataTests
         ProcessoSeletivo processo = NovoProcessoComOferta(oferta);
 
         processo.PendenciaDaCascata().Should().BeNull();
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().Contain(item => item.Codigo == "cascata_pendente" && item.Ok);
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().Contain(item => item.Codigo == "cascata_pendente" && item.Ok);
     }
 
     [Fact(DisplayName = "AvaliarConformidade com oferta federal sem cascata tem o item Cascata de remanejamento não-Ok")]
@@ -300,7 +300,7 @@ public sealed class ProcessoSeletivoCascataTests
     {
         ProcessoSeletivo processo = NovoProcessoComOferta(OfertaFederalCompleta());
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().Contain(item => item.Codigo == "cascata_pendente" && !item.Ok);
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().Contain(item => item.Codigo == "cascata_pendente" && !item.Ok);
     }
 
     [Fact(DisplayName = "PendenciaDeConformidade (agregador genérico) fica Ok mesmo com a cascata pendente — só PendenciaDaCascata recusa")]
@@ -341,6 +341,6 @@ public sealed class ProcessoSeletivoCascataTests
 
         processo.PendenciaDeConformidade().Should().BeNull("os itens estruturais estão todos completos — a cascata não é um deles");
         processo.PendenciaDaCascata().Should().NotBeNull("a oferta federal tem SegueCascata sem cascata configurada");
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Should().Contain(item => item.Codigo == "cascata_pendente" && !item.Ok);
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().Contain(item => item.Codigo == "cascata_pendente" && !item.Ok);
     }
 }
