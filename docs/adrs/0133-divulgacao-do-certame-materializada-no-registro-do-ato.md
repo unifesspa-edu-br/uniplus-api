@@ -109,4 +109,4 @@ Permanece intacto o que aquela decisão fixou sobre o Portal ser um BFF por expe
 
 ## Emenda 1 (2026-10-17) — a projeção também deriva do registro do ato do processo
 
-A projeção pública passa a derivar também do registro do ato do processo na Seleção, para o ato que não cria versão de configuração ([ADR-0132](0132-armazenamento-publico-separado-para-documento-publicado.md), emenda 1). Essa fonte é da Seleção e a projeção continua reconstruível a partir dela. Nenhum outro trecho desta ADR muda.
+A projeção pública passa a derivar também do registro do ato do processo na Seleção, para o ato que não cria versão de configuração ([ADR-0132](0132-armazenamento-publico-separado-para-documento-publicado.md), emenda 1). Essa fonte é da Seleção e a projeção continua reconstruível a partir dela. O ato avulso só acrescenta documentos à linha do tempo: título e conteúdo da configuração da projeção continuam avançando só com o ato que cria versão. Nenhum outro trecho desta ADR muda.
