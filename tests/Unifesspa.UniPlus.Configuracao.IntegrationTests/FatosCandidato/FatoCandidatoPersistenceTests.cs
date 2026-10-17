@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Integração ponta-a-ponta do catálogo <c>rol_de_fatos_candidato</c> contra Postgres real
@@ -244,6 +245,33 @@ public sealed class FatoCandidatoPersistenceTests
             ["IDENTIDADE_GENERO"] = ClassificacaoProtecaoDado.Sensivel,
             ["ORIENTACAO_SEXUAL"] = ClassificacaoProtecaoDado.Sensivel,
         });
+    }
+
+    [Fact(DisplayName = "O NOME, que vem do login, não tem formato: abreviatura com ponto, uma palavra só e dígito passam")]
+    public async Task Seed_NomeDoLogin_NaoPassaPorRegraDeFormato()
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        FatoCandidato nome = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "NOME");
+
+        nome.Formato.Should().Be(FormatoTexto.Livre);
+        string token = FormatosTexto.ParaTokenCanonico(nome.Formato!.Value);
+        foreach (string civil in new[] { "Maria S. Silva", "Madonna", "Helena Souza Barros 2º" })
+        {
+            new FormatoDeTexto(token).FormaCanonica(civil).Should().Be(civil);
+        }
+    }
+
+    [Fact(DisplayName = "O nome social, o da mãe e o do pai, digitados pelo candidato, seguem com o formato de nome de pessoa")]
+    public async Task Seed_NomesDigitados_SeguemComFormatoDeNomeDePessoa()
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        Dictionary<string, FormatoTexto?> formatos = await ctx.FatosCandidato.AsNoTracking()
+            .Where(f => f.Codigo == "NOME_SOCIAL" || f.Codigo == "NOME_MAE" || f.Codigo == "NOME_PAI")
+            .ToDictionaryAsync(f => f.Codigo, f => f.Formato);
+
+        formatos.Values.Should().OnlyContain(f => f == FormatoTexto.NomePessoa).And.HaveCount(3);
     }
 
     [Fact(DisplayName = "Cor ou raça, deficiência, tipo de deficiência e o que os revela são sensíveis; o nome social é público; CPF, RG e documento do estrangeiro são identificador; os demais, pessoais")]
