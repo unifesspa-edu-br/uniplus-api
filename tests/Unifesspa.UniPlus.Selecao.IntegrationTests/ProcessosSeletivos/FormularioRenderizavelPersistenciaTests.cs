@@ -4,6 +4,8 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore;
+
 using NSubstitute;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
@@ -61,7 +63,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
     // O registro de PRODUÇÃO (não um substituto de teste): a leitura pública real, com
     // Postgres real, tem de passar pelo mesmo gate de versão que o handler usa fora dos
     // testes — reconhecendo hoje somente o codec vivo (ADR-0110 Emenda 2).
-    private static readonly IRegistroCodecsEnvelope RegistroCodecs = new RegistroCodecsEnvelope();
+    private static readonly RegistroCodecsEnvelope RegistroCodecs = new RegistroCodecsEnvelope();
 
     private readonly ProcessoSeletivoDbFixture _fixture;
 
@@ -306,6 +308,119 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         rascunho.IsSuccess.Should().BeTrue(rascunho.Error?.Message);
         Municipio(rascunho.Value!).Rotulo.Should().Be("Cidade onde mora", "o rascunho lê o catálogo vivo");
         Municipio(await LerPublicadoAsync(processo.Id)).Rotulo.Should().Be("Município de residência", "o publicado lê o rótulo congelado na versão");
+    }
+
+    private static IReadOnlyList<FatoCandidatoView> CatalogoComCorRaca(params FatoValorDominioViewItem[] valores) => CatalogoDoConjuntoBasico.Com(
+    [
+        new FatoCandidatoView(
+            Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", null, "CATEGORICO", "DECLARADO", "ESCALAR",
+            [.. valores.Select(static v => v.Codigo)], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", [.. valores], "GLOBAL",
+            Ativo: true, ClassificacaoProtecao: "PESSOAL"),
+    ]);
+
+    private static IReadOnlyList<FatoValorDominioViewItem> CorRacaComoCadastrada() =>
+    [
+        new("BRANCA", "Branca.", 0, true),
+        new("PRETA", "Preta.", 1, true),
+    ];
+
+    private static IReadOnlyList<FatoValorDominioViewItem> CorRacaCorrigida() =>
+    [
+        new("PRETA", "Preta ou negra.", 0, true, "Escolha conforme a sua autodeclaração."),
+        new("BRANCA", "Branca (corrigida).", 1, true),
+    ];
+
+    private static (string Codigo, string? Descricao, int Ordem, string? Orientacao)[] Projetados(IEnumerable<ValorDominioDeclaradoCongelado> valores) =>
+        [.. valores.OrderBy(static v => v.Ordem).Select(static v => (v.Codigo, v.Descricao, v.Ordem, v.Orientacao))];
+
+    private async Task<(ProcessoSeletivo Processo, VersaoConfiguracao Versao, DadosEdital Dados)> PublicarComCorRacaAsync(string nome)
+    {
+        ProcessoSeletivo processo = NovoProcessoComFatoDeSelecao(nome);
+        const string hashDocumento = "4444444444444444444444444444444444444444444444444444444444444444";
+        DadosEdital dados = DadosEdital.Criar(
+            "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
+        DefinicaoAvaliavel naPublicacao = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(processo, CatalogoComCorRaca([.. CorRacaComoCadastrada()])).Value!;
+        SnapshotCanonico congelado = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
+            processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: naPublicacao.ValoresSelecionaveis));
+        Result<VersaoConfiguracao> publicar = processo.Publicar(
+            dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
+            hashDocumento, "integration-test-user", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
+        publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
+        await PersistirDivulgadoAsync(processo, publicar.Value!, dados);
+        return (processo, publicar.Value!, dados);
+    }
+
+    [Fact(DisplayName = "Corrigir o texto de um valor no catálogo muda o rascunho, e a versão publicada mantém o texto congelado")]
+    public async Task Handle_ValorCorrigidoNoCatalogo_RascunhoLeOVivoEPublicadoOCongelado()
+    {
+        (ProcessoSeletivo processo, _, _) = await PublicarComCorRacaAsync(nameof(Handle_ValorCorrigidoNoCatalogo_RascunhoLeOVivoEPublicadoOCongelado));
+
+        IFatoCandidatoReader catalogoVivo = Substitute.For<IFatoCandidatoReader>();
+        catalogoVivo.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoComCorRaca([.. CorRacaCorrigida()]));
+        IResolvedorFusoInstitucional fuso = Substitute.For<IResolvedorFusoInstitucional>();
+        fuso.Resolver().Returns(Result<TimeZoneInfo>.Success(TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId)));
+        await using SelecaoDbContext rascunhoContext = _fixture.CreateDbContext();
+        Result<FormularioRenderizavelDto> rascunho = await ObterFormularioRenderizavelDoRascunhoQueryHandler.Handle(
+            new ObterFormularioRenderizavelDoRascunhoQuery(processo.Id, FinalidadeFormulario.Inscricao),
+            new ProcessoSeletivoRepository(rascunhoContext, TimeProvider.System), catalogoVivo, fuso, CancellationToken.None);
+
+        rascunho.IsSuccess.Should().BeTrue(rascunho.Error?.Message);
+        rascunho.Value!.FatosColetados.Single(static f => f.FatoCodigo == "COR_RACA").ValoresSelecionaveis!
+            .Select(static v => (v.Codigo, v.Descricao, v.Ordem, v.Orientacao)).Should().Equal(
+                ("PRETA", "Preta ou negra.", 0, "Escolha conforme a sua autodeclaração."),
+                ("BRANCA", "Branca (corrigida).", 1, null));
+
+        FormularioRenderizavelDto publicado = await LerPublicadoAsync(processo.Id);
+        publicado.FatosColetados.Single(static f => f.FatoCodigo == "COR_RACA").ValoresSelecionaveis!
+            .Select(static v => (v.Codigo, v.Descricao, v.Ordem, v.Orientacao)).Should().Equal(
+                ("BRANCA", "Branca.", 0, null),
+                ("PRETA", "Preta.", 1, null));
+    }
+
+    [Fact(DisplayName = "A retificação congela a descrição, a orientação e a ordem que o catálogo tem na hora; a versão anterior não muda")]
+    public async Task Retificar_ValorCorrigidoNoCatalogo_VersaoNovaCongelaOTextoEAOrdemNovos()
+    {
+        (ProcessoSeletivo processo, VersaoConfiguracao abertura, _) =
+            await PublicarComCorRacaAsync(nameof(Retificar_ValorCorrigidoNoCatalogo_VersaoNovaCongelaOTextoEAOrdemNovos));
+
+        VersaoConfiguracao retificacao;
+        DocumentoEdital documento = DocumentoEdital.IniciarPendente(processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));
+        documento.Confirmar(1024, string.Concat(Enumerable.Repeat("ab01234567", 7))[..64], TimeProvider.System).IsSuccess.Should().BeTrue();
+        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        {
+            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
+            VersaoConfiguracao versaoAtual = (await repository.ObterVersaoAtualAsync(processo.Id, CancellationToken.None))!;
+            DadosEdital dados = DadosEdital.Criar(
+                "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), documento.Id).Value!;
+
+            // O catálogo já traz a correção quando a retificação congela.
+            DefinicaoAvaliavel naRetificacao = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(carregado, CatalogoComCorRaca([.. CorRacaCorrigida()])).Value!;
+            SnapshotCanonico congelado = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
+                carregado, dados, documento.HashSha256!, FusoInstitucional.ZoneId,
+                new RetificacaoInfo(versaoAtual.AtoCriadorId, "Correção do texto das opções"),
+                ValoresSelecionaveisCongelados: naRetificacao.ValoresSelecionaveis));
+            Result<VersaoConfiguracao> retificar = carregado.Retificar(
+                dados, versaoAtual, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
+                documento.HashSha256!, "integration-test-user", "Correção do texto das opções", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
+            retificar.IsSuccess.Should().BeTrue(retificar.Error?.Message);
+            retificacao = retificar.Value!;
+
+            await writeContext.DocumentosEdital.AddAsync(documento, CancellationToken.None);
+            await repository.AdicionarVersaoConfiguracaoAsync(retificacao, CancellationToken.None);
+            await writeContext.SaveChangesAsync(CancellationToken.None);
+        }
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        VersaoConfiguracao aberturaLida = await readContext.VersoesConfiguracao.AsNoTracking().SingleAsync(v => v.Id == abertura.Id, CancellationToken.None);
+        VersaoConfiguracao retificacaoLida = await readContext.VersoesConfiguracao.AsNoTracking().SingleAsync(v => v.Id == retificacao.Id, CancellationToken.None);
+
+        Projetados(RegistroCodecs.Reidratar(retificacaoLida).Value!.ValoresSelecionaveisCongelados!["COR_RACA"]!).Should().Equal(
+            ("PRETA", "Preta ou negra.", 0, "Escolha conforme a sua autodeclaração."),
+            ("BRANCA", "Branca (corrigida).", 1, null));
+        Projetados(RegistroCodecs.Reidratar(aberturaLida).Value!.ValoresSelecionaveisCongelados!["COR_RACA"]!).Should().Equal(
+            ("BRANCA", "Branca.", 0, null),
+            ("PRETA", "Preta.", 1, null));
     }
 
     private static PressupostoRenderizavel Municipio(FormularioRenderizavelDto formulario) =>
