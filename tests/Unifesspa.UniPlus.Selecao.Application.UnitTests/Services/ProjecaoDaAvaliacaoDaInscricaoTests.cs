@@ -67,7 +67,7 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
     [Fact(DisplayName = "O modelo da exigência vem com o endereço no acervo do ato que publicou a versão")]
     public void Modelo_ComEnderecoDoAtoDaVersao()
     {
-        ModeloDaExigencia modelo = new(Guid.CreateVersion7(), "Autodeclaração.odt", FormatoDeModelo.Odt, new string('a', 64));
+        ModeloDaExigencia modelo = new(Guid.CreateVersion7(), "Autodeclaração.odt", FormatoDeDocumento.Odt, new string('a', 64));
 
         DocumentoDaInscricaoDto documento = Projetar(
             [(Documento(FaseDaInscricao, FinalidadeFormulario.Inscricao, modelo), SituacaoDoDocumento.Exigido)], faseId: null)

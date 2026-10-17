@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// O modelo de documento que uma exigência oferece ao candidato — a autodeclaração ou a declaração
 /// de pertencimento que ele baixa, preenche, assina e devolve (UNI-REQ-0016). Arquivo editável
-/// (<see cref="FormatoDeModelo"/>) guardado no MinIO por envio direto do cliente (URL pré-assinada
+/// (DOCX ou ODT) guardado no MinIO por envio direto do cliente (URL pré-assinada
 /// de PUT); a API nunca recebe os bytes. Vinculado ao processo, mas não é filho do agregado: nasce
 /// <see cref="StatusArquivoEnviado.Pendente"/> e só vira dado de negócio ao ser
 /// <see cref="StatusArquivoEnviado.Confirmado"/> — conteúdo lido, validado e hasheado no servidor.
@@ -28,7 +28,7 @@ public sealed class ModeloDeDocumento : EntityBase
 
     public Guid ProcessoSeletivoId { get; private set; }
     public string NomeArquivo { get; private set; } = string.Empty;
-    public FormatoDeModelo Formato { get; private set; }
+    public FormatoDeDocumento Formato { get; private set; }
     public string ObjectKey { get; private set; } = string.Empty;
     public StatusArquivoEnviado Status { get; private set; }
     public DateTimeOffset ExpiraEm { get; private set; }
@@ -49,10 +49,10 @@ public sealed class ModeloDeDocumento : EntityBase
         $"O modelo excede o tamanho máximo permitido de {TamanhoMaximoBytes / (1024 * 1024)} MB.");
 
     /// <summary>A extensão do arquivo no formato, sem o ponto.</summary>
-    public string Extensao => ExtensaoDe(Formato);
+    public string Extensao => FormatosDeDocumento.Extensao(Formato);
 
     /// <summary>O content-type do arquivo no formato.</summary>
-    public string ContentType => ContentTypeDe(Formato);
+    public string ContentType => FormatosDeDocumento.TipoDeMidia(Formato);
 
     private ModeloDeDocumento() { }
 
@@ -66,9 +66,9 @@ public sealed class ModeloDeDocumento : EntityBase
     {
         ArgumentNullException.ThrowIfNull(clock);
 
-        FormatoDeModelo formatoDoModelo = FormatoDoToken(formato);
+        FormatoDeDocumento? formatoDoModelo = FormatoDoToken(formato);
         List<FieldError> erros = [];
-        if (formatoDoModelo == FormatoDeModelo.Nenhum)
+        if (formatoDoModelo is null)
         {
             erros.Add(new FieldError("formato", new DomainError(
                 ModeloDeDocumentoErrorCodes.FormatoNaoEditavel,
@@ -76,7 +76,7 @@ public sealed class ModeloDeDocumento : EntityBase
         }
 
         string? nome = NomeDeArquivoEnviado.Normalizar(
-            nomeArquivo, formatoDoModelo == FormatoDeModelo.Nenhum ? string.Empty : ExtensaoDe(formatoDoModelo));
+            nomeArquivo, formatoDoModelo is { } f ? FormatosDeDocumento.Extensao(f) : string.Empty);
         if (nome is null)
         {
             erros.Add(new FieldError("nomeArquivo", new DomainError(
@@ -93,7 +93,7 @@ public sealed class ModeloDeDocumento : EntityBase
         {
             ProcessoSeletivoId = processoSeletivoId,
             NomeArquivo = nome!,
-            Formato = formatoDoModelo,
+            Formato = formatoDoModelo!.Value,
             Status = StatusArquivoEnviado.Pendente,
             ExpiraEm = clock.GetUtcNow().Add(ttl),
         };
@@ -145,7 +145,7 @@ public sealed class ModeloDeDocumento : EntityBase
             return ConteudoDiverge();
         }
 
-        return (Formato == FormatoDeModelo.Docx
+        return (Formato == FormatoDeDocumento.Docx
             ? PacoteDeDocumentoDeTexto.ValidarDocx(conteudo)
             : PacoteDeDocumentoDeTexto.ValidarOdt(conteudo)) switch
         {
@@ -155,36 +155,20 @@ public sealed class ModeloDeDocumento : EntityBase
         };
     }
 
-    /// <summary>O formato do token do contrato; <see cref="FormatoDeModelo.Nenhum"/> quando não é editável.</summary>
-    public static FormatoDeModelo FormatoDoToken(string? token) => token switch
+    /// <summary>O formato do token do contrato; nulo quando não é editável (DOCX ou ODT).</summary>
+    public static FormatoDeDocumento? FormatoDoToken(string? token) => token switch
     {
-        "DOCX" => FormatoDeModelo.Docx,
-        "ODT" => FormatoDeModelo.Odt,
-        _ => FormatoDeModelo.Nenhum,
+        "DOCX" => FormatoDeDocumento.Docx,
+        "ODT" => FormatoDeDocumento.Odt,
+        _ => null,
     };
 
     /// <summary>O token do formato no contrato.</summary>
-    public static string TokenDe(FormatoDeModelo formato) => formato switch
+    public static string TokenDe(FormatoDeDocumento formato) => formato switch
     {
-        FormatoDeModelo.Docx => "DOCX",
-        FormatoDeModelo.Odt => "ODT",
+        FormatoDeDocumento.Docx => "DOCX",
+        FormatoDeDocumento.Odt => "ODT",
         _ => throw new ArgumentOutOfRangeException(nameof(formato), formato, "Formato de modelo sem token."),
-    };
-
-    /// <summary>A extensão do arquivo no formato, sem o ponto.</summary>
-    public static string ExtensaoDe(FormatoDeModelo formato) => formato switch
-    {
-        FormatoDeModelo.Docx => "docx",
-        FormatoDeModelo.Odt => "odt",
-        _ => throw new ArgumentOutOfRangeException(nameof(formato), formato, "Formato de modelo sem extensão."),
-    };
-
-    /// <summary>O content-type do arquivo no formato.</summary>
-    public static string ContentTypeDe(FormatoDeModelo formato) => formato switch
-    {
-        FormatoDeModelo.Docx => TiposDeMidiaDeDocumento.Docx,
-        FormatoDeModelo.Odt => TiposDeMidiaDeDocumento.Odt,
-        _ => throw new ArgumentOutOfRangeException(nameof(formato), formato, "Formato de modelo sem content-type."),
     };
 
     private Result ConteudoDiverge() => Result.Failure(new DomainError(

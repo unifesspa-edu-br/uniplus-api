@@ -665,8 +665,7 @@ internal static class ProjecaoDoCertamePublicado
             return false;
         }
 
-        FormatoDeModelo formato = ModeloDeDocumento.FormatoDoToken(token);
-        if (formato == FormatoDeModelo.Nenhum)
+        if (ModeloDeDocumento.FormatoDoToken(token) is not { } formato)
         {
             return false;
         }

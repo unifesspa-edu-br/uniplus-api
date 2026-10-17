@@ -62,10 +62,10 @@ public sealed class DocumentoAPublicar : EntityBase
         DocumentoAPublicarErrorCodes.ArquivoVazio, "O arquivo enviado está vazio.");
 
     /// <summary>A extensão do arquivo no formato, sem o ponto.</summary>
-    public string Extensao => ExtensaoDe(Formato);
+    public string Extensao => FormatosDeDocumento.Extensao(Formato);
 
     /// <summary>O tipo de mídia do arquivo no formato.</summary>
-    public string TipoDeMidia => TipoDeMidiaDe(Formato);
+    public string TipoDeMidia => FormatosDeDocumento.TipoDeMidia(Formato);
 
     private DocumentoAPublicar() { }
 
@@ -83,7 +83,7 @@ public sealed class DocumentoAPublicar : EntityBase
     {
         ArgumentNullException.ThrowIfNull(clock);
 
-        FormatoDeDocumento? formato = FormatoDoTipoDeMidia(tipoDeMidia);
+        FormatoDeDocumento? formato = FormatosDeDocumento.DoTipoDeMidia(tipoDeMidia);
         List<FieldError> erros = [];
         if (formato is null)
         {
@@ -92,7 +92,7 @@ public sealed class DocumentoAPublicar : EntityBase
                 $"O tipo de mídia deve ser {TiposDeMidiaDeDocumento.Pdf}, {TiposDeMidiaDeDocumento.Docx} ou {TiposDeMidiaDeDocumento.Odt}.")));
         }
 
-        string? nome = NomeDeArquivoEnviado.Normalizar(nomeArquivo, formato is { } f ? ExtensaoDe(f) : string.Empty);
+        string? nome = NomeDeArquivoEnviado.Normalizar(nomeArquivo, formato is { } f ? FormatosDeDocumento.Extensao(f) : string.Empty);
         if (nome is null)
         {
             erros.Add(new FieldError("nomeArquivo", new DomainError(
@@ -185,37 +185,6 @@ public sealed class DocumentoAPublicar : EntityBase
             _ => ConteudoDiverge(),
         };
     }
-
-    /// <summary>O formato do tipo de mídia; nulo quando o tipo não é um dos aceitos.</summary>
-    public static FormatoDeDocumento? FormatoDoTipoDeMidia(string? tipoDeMidia)
-    {
-        string tipo = (tipoDeMidia ?? string.Empty).Trim();
-        return tipo switch
-        {
-            _ when string.Equals(tipo, TiposDeMidiaDeDocumento.Pdf, StringComparison.OrdinalIgnoreCase) => FormatoDeDocumento.Pdf,
-            _ when string.Equals(tipo, TiposDeMidiaDeDocumento.Docx, StringComparison.OrdinalIgnoreCase) => FormatoDeDocumento.Docx,
-            _ when string.Equals(tipo, TiposDeMidiaDeDocumento.Odt, StringComparison.OrdinalIgnoreCase) => FormatoDeDocumento.Odt,
-            _ => null,
-        };
-    }
-
-    /// <summary>O tipo de mídia do arquivo no formato.</summary>
-    public static string TipoDeMidiaDe(FormatoDeDocumento formato) => formato switch
-    {
-        FormatoDeDocumento.Pdf => TiposDeMidiaDeDocumento.Pdf,
-        FormatoDeDocumento.Docx => TiposDeMidiaDeDocumento.Docx,
-        FormatoDeDocumento.Odt => TiposDeMidiaDeDocumento.Odt,
-        _ => throw new ArgumentOutOfRangeException(nameof(formato), formato, "Formato de documento sem tipo de mídia."),
-    };
-
-    /// <summary>A extensão do arquivo no formato, sem o ponto.</summary>
-    public static string ExtensaoDe(FormatoDeDocumento formato) => formato switch
-    {
-        FormatoDeDocumento.Pdf => "pdf",
-        FormatoDeDocumento.Docx => "docx",
-        FormatoDeDocumento.Odt => "odt",
-        _ => throw new ArgumentOutOfRangeException(nameof(formato), formato, "Formato de documento sem extensão."),
-    };
 
     private Result ConteudoDiverge() => Result.Failure(new DomainError(
         DocumentoAPublicarErrorCodes.ConteudoDivergeDoFormato,

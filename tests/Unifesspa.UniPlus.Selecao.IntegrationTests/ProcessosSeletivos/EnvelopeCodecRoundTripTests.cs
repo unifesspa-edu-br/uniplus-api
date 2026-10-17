@@ -1027,7 +1027,7 @@ public sealed class EnvelopeCodecRoundTripTests
         DocumentoExigido comprovanteRenda = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "COMPROVANTE_RENDA", "Comprovante de renda", "SOCIOECONOMICO",
             Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, [], [], null, qualquer, null,
-            modelo: new ModeloDaExigencia(Guid.CreateVersion7(), "Declaração de renda.docx", FormatoDeModelo.Docx, new string('e', 64)), finalidade: FinalidadeFormulario.Inscricao).Value!;
+            modelo: new ModeloDaExigencia(Guid.CreateVersion7(), "Declaração de renda.docx", FormatoDeDocumento.Docx, new string('e', 64)), finalidade: FinalidadeFormulario.Inscricao).Value!;
 
         NoExigencia folhaRg = NoExigencia.CriarFolha(
             rg, 0, quantidadeMinima: 3, chaveDistincao: ChaveDistincao.CompetenciaMensal,

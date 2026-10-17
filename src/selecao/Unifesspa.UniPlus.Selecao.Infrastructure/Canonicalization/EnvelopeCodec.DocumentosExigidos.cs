@@ -218,10 +218,10 @@ public sealed partial class EnvelopeCodec
             return null;
         }
 
-        FormatoDeModelo formatoDoModelo = ModeloDeDocumento.FormatoDoToken(formato);
+        FormatoDeDocumento? formatoDoModelo = ModeloDeDocumento.FormatoDoToken(formato);
         bool hashValido = hash.Length == 64 && hash.All(static c => c is (>= '0' and <= '9') or (>= 'a' and <= 'f'));
-        return formatoDoModelo != FormatoDeModelo.Nenhum && hashValido
-            ? new ModeloDaExigencia(modeloId, nomeArquivo, formatoDoModelo, hash)
+        return formatoDoModelo is { } formatoValido && hashValido
+            ? new ModeloDaExigencia(modeloId, nomeArquivo, formatoValido, hash)
             : leitor.Propagar<ModeloDaExigencia>(new DomainError(
                 ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}' com formato fora dos editáveis ou hash que não é SHA-256 em hexadecimal minúsculo."));
     }
