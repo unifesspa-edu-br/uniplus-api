@@ -4,6 +4,8 @@ using Enums;
 
 using Errors;
 
+using Interfaces;
+
 using Services;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
@@ -18,7 +20,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <see cref="StatusArquivoEnviado.Confirmado"/> — conteúdo lido, validado e hasheado no servidor.
 /// O confirmado é imutável; um novo envio cria outro registro.
 /// </summary>
-public sealed class ModeloDeDocumento : EntityBase
+public sealed class ModeloDeDocumento : EntityBase, IArquivoEnviado
 {
     /// <summary>Tamanho máximo do arquivo do modelo.</summary>
     public const long TamanhoMaximoBytes = 10 * 1024 * 1024;
@@ -53,6 +55,8 @@ public sealed class ModeloDeDocumento : EntityBase
 
     /// <summary>O content-type do arquivo no formato.</summary>
     public string ContentType => FormatosDeDocumento.TipoDeMidia(Formato);
+
+    string IArquivoEnviado.TipoDeMidia => ContentType;
 
     private ModeloDeDocumento() { }
 

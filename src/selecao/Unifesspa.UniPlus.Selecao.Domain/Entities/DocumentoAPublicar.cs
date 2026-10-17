@@ -4,6 +4,8 @@ using Enums;
 
 using Errors;
 
+using Interfaces;
+
 using Services;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
@@ -23,7 +25,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// O documento não sabe a que ele serve. Quem o referencia — o edital, o anexo, o ato — decide o
 /// que exige dele (o PDF do edital, por exemplo, tem de ser <see cref="FormatoDeDocumento.Pdf"/>).
 /// </remarks>
-public sealed class DocumentoAPublicar : EntityBase
+public sealed class DocumentoAPublicar : EntityBase, IArquivoEnviado
 {
     /// <summary>Tamanho máximo do arquivo. Valor fixo — sem critério de aceite pedindo configurabilidade.</summary>
     public const long TamanhoMaximoBytes = 20 * 1024 * 1024;
