@@ -27,8 +27,8 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 public sealed class ConformidadeLegalGateTests
 {
-    private static readonly string HashFixo = ProcessoSeletivoConformeBuilder.HashFixo;
-    private static readonly DateTimeOffset Agora = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
+    internal static readonly string HashFixo = ProcessoSeletivoConformeBuilder.HashFixo;
+    internal static readonly DateTimeOffset Agora = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
 
     private static ObrigatoriedadeLegal NovaRegra(string regraCodigo, PredicadoObrigatoriedade predicado) =>
         ObrigatoriedadeLegal.Criar(
@@ -48,7 +48,7 @@ public sealed class ConformidadeLegalGateTests
     private static ObrigatoriedadeLegal RegraQueReprova() =>
         NovaRegra("GATE-REPROVA", new EtapaObrigatoria("ETAPA_NAO_OFERTADA"));
 
-    private static ObrigatoriedadeLegal RegraQueAprova() =>
+    internal static ObrigatoriedadeLegal RegraQueAprova() =>
         NovaRegra("GATE-APROVA", new EtapaObrigatoria("PROVA_OBJETIVA"));
 
     [Fact(DisplayName = "Processo sem regra vigente não consulta catálogo algum")]
@@ -429,7 +429,7 @@ public sealed class ConformidadeLegalGateTests
 
     // ══════════════════════════════════════════════════════════════════════════════
 
-    private static IObrigatoriedadeLegalRepository RepositorioCom(params ObrigatoriedadeLegal[] regras)
+    internal static IObrigatoriedadeLegalRepository RepositorioCom(params ObrigatoriedadeLegal[] regras)
     {
         IObrigatoriedadeLegalRepository repositorio = Substitute.For<IObrigatoriedadeLegalRepository>();
         repositorio.ObterVigentesParaTipoProcessoAsync(
@@ -438,7 +438,7 @@ public sealed class ConformidadeLegalGateTests
         return repositorio;
     }
 
-    private static ISnapshotPublicacaoCanonicalizer CanonicalizerSubstituto(Action<EntradaCanonicalizacao>? captura = null)
+    internal static ISnapshotPublicacaoCanonicalizer CanonicalizerSubstituto(Action<EntradaCanonicalizacao>? captura = null)
     {
         ISnapshotPublicacaoCanonicalizer canonicalizer = Substitute.For<ISnapshotPublicacaoCanonicalizer>();
         canonicalizer.Canonicalizar(Arg.Do<EntradaCanonicalizacao>(e => captura?.Invoke(e)))
@@ -446,14 +446,14 @@ public sealed class ConformidadeLegalGateTests
         return canonicalizer;
     }
 
-    private static IProcessoSeletivoRepository RepositorioDoProcesso(ProcessoSeletivo processo)
+    internal static IProcessoSeletivoRepository RepositorioDoProcesso(ProcessoSeletivo processo)
     {
         IProcessoSeletivoRepository repositorio = Substitute.For<IProcessoSeletivoRepository>();
         repositorio.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
         return repositorio;
     }
 
-    private static IDocumentoAPublicarRepository RepositorioDeDocumento(Guid processoSeletivoId)
+    internal static IDocumentoAPublicarRepository RepositorioDeDocumento(Guid processoSeletivoId, params DocumentoAPublicar[] anexos)
     {
         DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
             processoSeletivoId, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
@@ -461,10 +461,12 @@ public sealed class ConformidadeLegalGateTests
 
         IDocumentoAPublicarRepository repositorio = Substitute.For<IDocumentoAPublicarRepository>();
         repositorio.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(documento);
+        repositorio.ListarDoProcessoAsync(processoSeletivoId, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(anexos);
         return repositorio;
     }
 
-    private static ITipoAtoPublicadoReader TipoDeAtoReader()
+    internal static ITipoAtoPublicadoReader TipoDeAtoReader()
     {
         ITipoAtoPublicadoReader reader = Substitute.For<ITipoAtoPublicadoReader>();
         reader.ObterVigenteAsync("EDITAL_ABERTURA", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
@@ -478,14 +480,14 @@ public sealed class ConformidadeLegalGateTests
         return reader;
     }
 
-    private static IUserContext UsuarioAutenticado()
+    internal static IUserContext UsuarioAutenticado()
     {
         IUserContext contexto = Substitute.For<IUserContext>();
         contexto.UserId.Returns("user-sub-1");
         return contexto;
     }
 
-    private static DadosDoAto NovoAto() => new(
+    internal static DadosDoAto NovoAto() => new(
         Orgao: "CEPS",
         Serie: "EDITAL",
         Ano: 2026,
@@ -494,24 +496,24 @@ public sealed class ConformidadeLegalGateTests
         TipoAtoCodigo: "EDITAL_ABERTURA");
 
     /// <summary>Processo publicado (para os cenários de Retificar/FecharRetificacao), com a mesma configuração conforme.</summary>
-    private static (ProcessoSeletivo Processo, VersaoConfiguracao VersaoAtual) ProcessoPublicado()
+    internal static (ProcessoSeletivo Processo, VersaoConfiguracao VersaoAtual) ProcessoPublicado(byte[]? envelopeCongelado = null)
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         DadosEdital dados = DadosEdital.Criar(
             "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
 
         VersaoConfiguracao versao = processo.Publicar(
-            dados, EnvelopeCongeladoDeTeste.SemAnexos(), "1.1", "canonical-json/sha256@v1", HashFixo, "user-sub-1",
+            dados, envelopeCongelado ?? EnvelopeCongeladoDeTeste.SemAnexos(), "1.1", "canonical-json/sha256@v1", HashFixo, "user-sub-1",
             new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Value!;
         processo.DequeueDomainEvents();
 
         return (processo, versao);
     }
 
-    private static ProcessoSeletivo NovoProcessoConforme() =>
+    internal static ProcessoSeletivo NovoProcessoConforme() =>
         ProcessoSeletivoConformeBuilder.Criar("PS 2026 — SiSU");
 
-    private sealed class RelogioFixo(DateTimeOffset instante) : TimeProvider
+    internal sealed class RelogioFixo(DateTimeOffset instante) : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => instante;
     }
