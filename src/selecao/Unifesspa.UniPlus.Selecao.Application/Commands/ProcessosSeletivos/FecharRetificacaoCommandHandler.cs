@@ -145,29 +145,15 @@ public static class FecharRetificacaoCommandHandler
             return (Result.Failure(bloqueio), []);
         }
 
-        DocumentoAPublicar? documento = await documentoAPublicarRepository
-            .ObterPorIdAsync(command.DocumentoEditalId, cancellationToken)
+        Result<DocumentoAPublicar> conferenciaDoDocumento = await ConferenciaDoDocumentoDoEdital
+            .ConferirAsync(documentoAPublicarRepository, command.ProcessoSeletivoId, command.DocumentoEditalId, "no fechamento da retificação", cancellationToken)
             .ConfigureAwait(false);
-        if (documento is null || documento.ProcessoSeletivoId != command.ProcessoSeletivoId)
+        if (conferenciaDoDocumento.IsFailure)
         {
-            return (Result.Failure(new DomainError(
-                "ProcessoSeletivo.DocumentoNaoEncontrado",
-                $"Documento {command.DocumentoEditalId} não encontrado ou não pertence a este processo.")), []);
+            return (Result.Failure(conferenciaDoDocumento.Error!), []);
         }
 
-        if (documento.Status != Domain.Enums.StatusArquivoEnviado.Confirmado)
-        {
-            return (Result.Failure(new DomainError(
-                "ProcessoSeletivo.DocumentoNaoConfirmado",
-                "Somente um documento confirmado pode ser referenciado no fechamento da retificação.")), []);
-        }
-
-        if (documento.Formato != Domain.Enums.FormatoDeDocumento.Pdf)
-        {
-            return (Result.Failure(new DomainError(
-                "ProcessoSeletivo.DocumentoDoEditalNaoEPdf",
-                "O documento do edital deve ser um PDF.")), []);
-        }
+        DocumentoAPublicar documento = conferenciaDoDocumento.Value!;
 
         Result<TipoAtoPublicadoView> conferenciaDoAto = await ConferenciaDoTipoDeAto
             .CongelaConfiguracaoAsync(tipoDeAtoReader, command.Ato, cancellationToken)

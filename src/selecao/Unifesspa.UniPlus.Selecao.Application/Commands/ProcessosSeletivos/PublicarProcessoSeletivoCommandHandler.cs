@@ -106,29 +106,15 @@ public static class PublicarProcessoSeletivoCommandHandler
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado.")), []);
         }
 
-        DocumentoAPublicar? documento = await documentoAPublicarRepository
-            .ObterPorIdAsync(command.DocumentoEditalId, cancellationToken)
+        Result<DocumentoAPublicar> conferenciaDoDocumento = await ConferenciaDoDocumentoDoEdital
+            .ConferirAsync(documentoAPublicarRepository, command.ProcessoSeletivoId, command.DocumentoEditalId, "na publicação", cancellationToken)
             .ConfigureAwait(false);
-        if (documento is null || documento.ProcessoSeletivoId != command.ProcessoSeletivoId)
+        if (conferenciaDoDocumento.IsFailure)
         {
-            return (Result.Failure(new DomainError(
-                "ProcessoSeletivo.DocumentoNaoEncontrado",
-                $"Documento {command.DocumentoEditalId} não encontrado ou não pertence a este processo.")), []);
+            return (Result.Failure(conferenciaDoDocumento.Error!), []);
         }
 
-        if (documento.Status != Domain.Enums.StatusArquivoEnviado.Confirmado)
-        {
-            return (Result.Failure(new DomainError(
-                "ProcessoSeletivo.DocumentoNaoConfirmado",
-                "Somente um documento confirmado pode ser referenciado na publicação.")), []);
-        }
-
-        if (documento.Formato != Domain.Enums.FormatoDeDocumento.Pdf)
-        {
-            return (Result.Failure(new DomainError(
-                "ProcessoSeletivo.DocumentoDoEditalNaoEPdf",
-                "O documento do edital deve ser um PDF.")), []);
-        }
+        DocumentoAPublicar documento = conferenciaDoDocumento.Value!;
 
         // O ato é registrado depois, por mensagem durável (ADR-0108). O que o catálogo de
         // Publicações recusaria tem de ser recusado AQUI, com 422, antes de qualquer escrita
