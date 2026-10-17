@@ -20,4 +20,10 @@
     <ProjectReference Include="..\Unifesspa.UniPlus.Publicacoes.Contracts\Unifesspa.UniPlus.Publicacoes.Contracts.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- A suíte de integração exercita os leitores cross-módulo (internos por causa do codegen
+         do Wolverine) contra Postgres real. -->
+    <InternalsVisibleTo Include="Unifesspa.UniPlus.Publicacoes.IntegrationTests" />
+  </ItemGroup>
+
 </Project>
