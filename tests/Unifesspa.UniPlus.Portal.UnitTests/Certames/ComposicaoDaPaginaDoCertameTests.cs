@@ -233,6 +233,35 @@ public sealed class ComposicaoDaPaginaDoCertameTests
     }
 
     [Fact]
+    public async Task Cada_evento_de_ato_que_criou_versao_traz_o_edital_daquela_versao()
+    {
+        AtoDaOrigem abertura = Ato(Guid.NewGuid(), "EDITAL", "Edital de abertura", "012/2026", new(2026, 3, 10), congela: true);
+        AtoDaOrigem primeiraRetificacao = Ato(Guid.NewGuid(), "RETIFICACAO", "Retificação", "013/2026", new(2026, 3, 15), congela: true);
+        AtoDaOrigem retificacao = Ato(Criador, "RETIFICACAO", "Retificação", "014/2026", new(2026, 3, 20), congela: true);
+        AtoDaOrigem aviso = Ato(Guid.NewGuid(), "AVISO", "Aviso", null, new(2026, 4, 1));
+        Uri daAbertura = new("https://acervo.example/editais/abertura.pdf");
+        Uri daPrimeira = new("https://acervo.example/editais/primeira.pdf");
+        Uri daVigente = new("https://acervo.example/editais/vigente.pdf");
+
+        ComposicaoDaPaginaDoCertame composicao = Montar(
+            Encontrado(new Dictionary<Guid, Uri>
+            {
+                [abertura.Id] = daAbertura,
+                [primeiraRetificacao.Id] = daPrimeira,
+                [Criador] = daVigente,
+            }),
+            new LeituraDosAtos([abertura, primeiraRetificacao, retificacao, aviso], null));
+
+        PaginaDoCertame pagina = (await composicao.ComporPorIdentificadorAsync(Identificador, CancellationToken.None)).Value!;
+
+        pagina.LinhaDoTempo.Single(e => e.Id == abertura.Id).DocumentoUrl.Should().Be(daAbertura);
+        pagina.LinhaDoTempo.Single(e => e.Id == primeiraRetificacao.Id).DocumentoUrl.Should().Be(daPrimeira);
+        pagina.LinhaDoTempo.Single(e => e.Id == Criador).DocumentoUrl.Should().Be(daVigente);
+        pagina.LinhaDoTempo.Single(e => e.Id == aviso.Id).DocumentoUrl.Should().BeNull(
+            "ato que não criou versão de Seleção não tem edital no acervo");
+    }
+
+    [Fact]
     public async Task Linha_do_tempo_sem_o_ato_criador_fica_sem_data_de_publicacao()
     {
         AtoDaOrigem outro = Ato(Guid.NewGuid(), "AVISO", "Aviso", null, new(2026, 3, 10));
@@ -254,8 +283,9 @@ public sealed class ComposicaoDaPaginaDoCertameTests
             .Should().NotContain(nome => nome.Contains("Assinante", StringComparison.OrdinalIgnoreCase));
     }
 
-    private static ConsultaDoCertame.Encontrado Encontrado() =>
-        new ConsultaDoCertame.Encontrado(new CertameDaOrigem(ProcessoId, Criador, "Medicina 2027", "012/2026", EditalNoAcervo, SituacaoDaInscricao.InscricoesAbertas));
+    private static ConsultaDoCertame.Encontrado Encontrado(IReadOnlyDictionary<Guid, Uri>? editaisPorAto = null) =>
+        new ConsultaDoCertame.Encontrado(new CertameDaOrigem(
+            ProcessoId, Criador, "Medicina 2027", "012/2026", EditalNoAcervo, editaisPorAto ?? new Dictionary<Guid, Uri>(), SituacaoDaInscricao.InscricoesAbertas));
 
     private static AtoDaOrigem Ato(
         Guid id,

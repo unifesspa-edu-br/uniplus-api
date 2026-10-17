@@ -39,7 +39,7 @@ public sealed class ContratoPublicoDoCertameHttpTests
 
         consulta.Should().BeEquivalentTo(new ConsultaDoCertame.Encontrado(
             new CertameDaOrigem(
-                ProcessoId, Criador, "Medicina 2027", "012/2026", new Uri("https://acervo.example/editais/abc.pdf"), SituacaoDaInscricao.InscricoesAbertas)));
+                ProcessoId, Criador, "Medicina 2027", "012/2026", new Uri("https://acervo.example/editais/abc.pdf"), new Dictionary<Guid, Uri>(), SituacaoDaInscricao.InscricoesAbertas)));
 
         HttpRequestMessage requisicao = rede.Requisicoes.Single();
         requisicao.RequestUri!.ToString().Should().Be($"{OrigensMontagem.EnderecoSelecao}/api/selecao/certames/medicina-2027");
@@ -59,6 +59,35 @@ public sealed class ContratoPublicoDoCertameHttpTests
 
         consulta.Should().BeOfType<ConsultaDoCertame.Encontrado>()
             .Which.Certame.DocumentoEditalUrl.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Editais_das_versoes_viram_mapa_por_ato_e_item_invalido_e_ignorado()
+    {
+        Guid abertura = Guid.Parse("0192a000-0000-7000-8000-0000000000b1");
+        Guid semUrl = Guid.Parse("0192a000-0000-7000-8000-0000000000b2");
+        Guid urlForaDoPadrao = Guid.Parse("0192a000-0000-7000-8000-0000000000b3");
+        string editais = $$"""
+            "editaisPublicados": [
+              { "atoId": "{{abertura}}", "urlDownload": "https://acervo.example/editais/abertura.pdf" },
+              { "atoId": "{{Criador}}", "urlDownload": "https://acervo.example/editais/abc.pdf" },
+              { "atoId": "{{semUrl}}" },
+              { "atoId": "{{urlForaDoPadrao}}", "urlDownload": "ftp://acervo.example/editais/x.pdf" },
+              { "atoId": "{{Guid.Empty}}", "urlDownload": "https://acervo.example/editais/vazio.pdf" },
+              null
+            ]
+            """;
+        string corpo = CorpoDoCertame.Replace("\"situacao\"", editais + ", \"situacao\"", StringComparison.Ordinal);
+        RedeSimulada rede = new((_, _) => RedeSimulada.Json(corpo, MediaType));
+
+        ConsultaDoCertame consulta = await Consultar(rede, c => c.ObterPorIdentificadorAsync("medicina-2027", CancellationToken.None));
+
+        consulta.Should().BeOfType<ConsultaDoCertame.Encontrado>().Which.Certame.EditaisPorAto.Should().BeEquivalentTo(
+            new Dictionary<Guid, Uri>
+            {
+                [abertura] = new("https://acervo.example/editais/abertura.pdf"),
+                [Criador] = new("https://acervo.example/editais/abc.pdf"),
+            });
     }
 
     [Fact]
