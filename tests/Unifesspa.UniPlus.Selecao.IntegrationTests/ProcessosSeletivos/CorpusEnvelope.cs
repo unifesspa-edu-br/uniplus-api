@@ -1048,7 +1048,7 @@ internal static class CorpusEnvelope
             snapshot.AlgoritmoHash,
             HashDocumento,
             Ator,
-            TimeProvider.System, ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
+            TimeProvider.System, ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).IsSuccess.Should().BeTrue();
         processo.ClearDomainEvents();
     }
 

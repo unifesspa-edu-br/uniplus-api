@@ -343,7 +343,7 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
         byte[] bytesCanonicos = System.Text.Encoding.UTF8.GetBytes(
             new JsonObject { ["status"] = "ok" }.ToJsonString());
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
-        processo.Publicar(dados, bytesCanonicos, "1.0", "canonical-json/sha256@v1", hashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo)
+        processo.Publicar(dados, bytesCanonicos, "1.0", "canonical-json/sha256@v1", hashFixo, "user-sub-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .IsSuccess.Should().BeTrue();
 
         return processo;

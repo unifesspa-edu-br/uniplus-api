@@ -53,4 +53,27 @@ internal sealed class TipoAtoPublicadoReader(PublicacoesDbContext db) : ITipoAto
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
     }
+
+    public async Task<IReadOnlyList<TipoAtoPublicadoView>> ListarVigentesAsync(
+        IReadOnlyCollection<string> codigos,
+        DateOnly dataPublicacao,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(codigos);
+
+        return await _db.Set<TipoAtoPublicado>()
+            .AsNoTracking()
+            .Where(t => codigos.Contains(t.Codigo)
+                && t.VigenciaInicio <= dataPublicacao
+                && (t.VigenciaFim == null || t.VigenciaFim > dataPublicacao))
+            .Select(t => new TipoAtoPublicadoView(
+                t.Codigo,
+                t.Nome,
+                t.CongelaConfiguracao,
+                t.UnicoPorObjeto,
+                t.EfeitoIrreversivel,
+                t.EhResultado))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
 }

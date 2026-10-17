@@ -61,7 +61,7 @@ public sealed class FalharAposPublicarCascadingHandler
             canonico.AlgoritmoHash,
             documento.HashSha256!,
             atorUsuarioSub: "cascading-v9-test",
-            timeProvider, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
+            timeProvider, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         db.VersoesConfiguracao.Add(publicarResult.Value!);
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

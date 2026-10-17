@@ -81,15 +81,16 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
         var contexto = new ContextoDeContagemDePrazos(
             calendario.IsSuccess ? calendario.Value : null,
             FalhaDoCalendarioVigente: calendario.IsFailure ? calendario.Error : null,
-            FusoInstitucional: fuso.IsSuccess ? fuso.Value : null,
-            TiposDeAtoUnicos: await ResolucaoDosTiposDeAtoUnicos
-                .ResolverAsync(tipoAtoPublicadoReader, processo, DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime), cancellationToken)
-                .ConfigureAwait(false));
+            FusoInstitucional: fuso.IsSuccess ? fuso.Value : null);
+
+        TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos = await ResolucaoDosTiposDeAtoUnicos
+            .ParaChecklistAsync(tipoAtoPublicadoReader, processo, DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime), cancellationToken)
+            .ConfigureAwait(false);
 
         FatosDeModalidade fatosDeModalidade = VocabularioDeFatos.ComValoresDeModalidade(
             await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false));
 
-        ItemConformidadeDto[] itens = [.. processo.AvaliarConformidade(contexto, fatosDeModalidade)
+        ItemConformidadeDto[] itens = [.. processo.AvaliarConformidade(contexto, fatosDeModalidade, tiposDeAtoUnicos)
             .Select(static item => new ItemConformidadeDto(item.Codigo, item.Dimensao, item.Mensagem, item.Ok))];
 
         return new ConformidadeProcessoSeletivoDto(processo.Id, itens);

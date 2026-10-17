@@ -200,7 +200,7 @@ public sealed class FatoColetavelDeEscopoGateTests
 
         VersaoConfiguracao versao = processo.Publicar(
             dados, EnvelopeCongeladoDeTeste.SemAnexos(), "1.1", "canonical-json/sha256@v1", HashFixo, "user-sub-1",
-            new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Value!;
+            new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Value!;
         processo.DequeueDomainEvents();
 
         return (processo, versao);

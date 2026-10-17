@@ -48,7 +48,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
             obrigatoriedade ?? Obrigatoriedade.Sempre, exibicao, "PESSOAL", OrigemValoresColeta.OpcoesDoProcesso, etapaCodigo: secao).Value!;
 
     private static bool ItemOk(ProcessoSeletivo processo, string codigo) =>
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo)
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Single(i => i.Codigo == codigo).Ok;
 
     private static PredicadoDnf SeCasado() =>
@@ -118,7 +118,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
         processo.DefinirClassificacao(ClassificacaoImportadaDoEnem(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         IReadOnlyList<ItemConformidade> itens =
-            processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
+            processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         itens.Should().NotContain(i => i.Codigo == ItemDasEdicoes);
         itens.Single(i => i.Codigo == ItemDoCampo).Ok.Should().BeTrue();
@@ -196,7 +196,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
         processo.DefinirTermos([termoSemForma], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(ClassificacaoImportadaSemEnem(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
-        List<string> vermelhos = [.. processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo)
+        List<string> vermelhos = [.. processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Where(static i => !i.Ok).Select(static i => i.Codigo)];
 
         processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code

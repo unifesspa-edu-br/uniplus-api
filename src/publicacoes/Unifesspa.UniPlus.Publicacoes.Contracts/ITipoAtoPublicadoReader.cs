@@ -22,6 +22,16 @@ public interface ITipoAtoPublicadoReader
         string codigo,
         DateOnly dataPublicacao,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// As versões vigentes na <paramref name="dataPublicacao"/> dos tipos de
+    /// <paramref name="codigos"/>, numa só leitura. O código sem versão vigente não aparece no
+    /// resultado; a resolução é a mesma de <see cref="ObterVigenteAsync"/>.
+    /// </summary>
+    Task<IReadOnlyList<TipoAtoPublicadoView>> ListarVigentesAsync(
+        IReadOnlyCollection<string> codigos,
+        DateOnly dataPublicacao,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>

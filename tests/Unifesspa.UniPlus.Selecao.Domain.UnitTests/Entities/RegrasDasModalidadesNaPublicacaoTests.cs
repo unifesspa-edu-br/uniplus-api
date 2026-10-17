@@ -122,7 +122,7 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
             recusa.Message.Should().NotContain(AgregadoDoGrupo, "o agregado não é campo que o operador ponha no formulário");
         }
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, ComOAgregado)
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, ComOAgregado, TiposDeAtoUnicosDeTeste.Nenhum)
             .Single(i => i.Codigo == ItemFatoNaoColetado).Ok.Should().Be(esperadoAceito);
     }
 
@@ -222,7 +222,7 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
             finalidade).Value!;
 
     private static ItemConformidade Item(ProcessoSeletivo processo, string codigo) =>
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).Single(i => i.Codigo == codigo);
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Single(i => i.Codigo == codigo);
 
     private static void Ofertar(ProcessoSeletivo processo, params ModalidadeSelecionada[] modalidades) =>
         processo.DefinirDistribuicaoVagas(

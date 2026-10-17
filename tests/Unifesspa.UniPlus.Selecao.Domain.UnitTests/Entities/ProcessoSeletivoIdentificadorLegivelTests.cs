@@ -71,7 +71,7 @@ public sealed class ProcessoSeletivoIdentificadorLegivelTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         IdentificadoresDeTeste.Retirar(processo);
 
-        IReadOnlyList<ItemConformidade> itens = processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
+        IReadOnlyList<ItemConformidade> itens = processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         itens.Where(static i => !i.Ok).Select(static i => i.Codigo)
             .Should().Equal("identificador_legivel_nao_declarado");
@@ -132,7 +132,7 @@ public sealed class ProcessoSeletivoIdentificadorLegivelTests
         Result<VersaoConfiguracao> resultado = processo.FecharRetificacao(
             ProcessoConformeFactory.Dados(), versao, BytesCanonicos, "1.1", "canonical-json/sha256@v1", HashFixo,
             "user-sub-1", PrecondicaoIfMatch.Curinga, new RelogioFixo(Agora.AddMinutes(1)),
-            ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
+            ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         resultado.IsFailure.Should().BeTrue("nenhuma versão nova é aberta");
         resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelAusente);
@@ -149,7 +149,7 @@ public sealed class ProcessoSeletivoIdentificadorLegivelTests
         Result<VersaoConfiguracao> resultado = processo.Retificar(
             ProcessoConformeFactory.Dados(), versao, BytesCanonicos, "1.1", "canonical-json/sha256@v1", HashFixo,
             "user-sub-1", motivo: "Correção", clock: new RelogioFixo(Agora.AddMinutes(1)),
-            ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
+            ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         resultado.IsFailure.Should().BeTrue("nenhuma versão nova é aberta");
         resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelAusente);
@@ -206,7 +206,7 @@ public sealed class ProcessoSeletivoIdentificadorLegivelTests
         Result<VersaoConfiguracao> fechamento = processo.FecharRetificacao(
             ProcessoConformeFactory.Dados(), versao, BytesCanonicos, "1.1", "canonical-json/sha256@v1", HashFixo,
             "user-sub-1", PrecondicaoIfMatch.Curinga, new RelogioFixo(Agora.AddMinutes(1)),
-            ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
+            ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         fechamento.IsSuccess.Should().BeTrue(fechamento.Error?.Message);
 
         processo.AbrirRetificacao("Nova correção", fechamento.Value!, identificadorDaVersaoBase: Identificador("medicina-2027"), VersoesPublicadasDeTeste.SoAVigente(processo), "user-sub-1", Agora.AddMinutes(2))
@@ -223,7 +223,7 @@ public sealed class ProcessoSeletivoIdentificadorLegivelTests
 
     private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) => processo.Publicar(
         ProcessoConformeFactory.Dados(), BytesCanonicos, "1.1", "canonical-json/sha256@v1", HashFixo, "user-sub-1",
-        new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
+        new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
     private sealed class RelogioFixo(DateTimeOffset instante) : TimeProvider
     {

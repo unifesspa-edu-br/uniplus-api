@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed class IdentidadeDosItensDeConformidadeTests
 {
     private static IReadOnlyList<ItemConformidade> Checklist() =>
-        ProcessoConformeFactory.Criar().AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
+        ProcessoConformeFactory.Criar().AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
     private static IReadOnlyList<string> DimensoesDeclaradas() =>
     [

@@ -429,7 +429,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
         HashFixo,
         "teste",
         TimeProvider.System,
-        contexto ?? ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
+        contexto ?? ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
     private static ProdutoDaFase ProdutoDe(ProcessoSeletivo processo, string atoCodigo) =>
         processo.CronogramaFases.SelectMany(f => f.Produtos).Single(p => p.AtoCodigo == atoCodigo);

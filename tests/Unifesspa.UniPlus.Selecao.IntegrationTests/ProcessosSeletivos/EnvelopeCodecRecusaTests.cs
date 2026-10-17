@@ -1049,7 +1049,7 @@ public sealed class EnvelopeCodecRecusaTests
         adulterados.Should().NotEqual(congelado.Bytes, "pré-condição: a adulteração tem de mudar os bytes");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
-            dados, adulterados, congelado.SchemaVersion, congelado.AlgoritmoHash, hashDocumento, "testes", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
+            dados, adulterados, congelado.SchemaVersion, congelado.AlgoritmoHash, hashDocumento, "testes", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
 
         Result<EnvelopeReidratado> resultado = new RegistroCodecsEnvelope().Reidratar(publicacao.Value!);
@@ -2411,7 +2411,7 @@ public sealed class EnvelopeCodecRecusaTests
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, adulterados, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            EnvelopeCanonicoGoldenTests.HashFixo, CorpusEnvelope.Ator, TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo);
+            EnvelopeCanonicoGoldenTests.HashFixo, CorpusEnvelope.Ator, TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         processo.ClearDomainEvents();
 

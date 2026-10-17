@@ -202,6 +202,21 @@ public static class PublicarProcessoSeletivoCommandHandler
             return (Result.Failure(pendenciaCronograma), []);
         }
 
+        // O tipo único é lido do catálogo vigente (uma só leitura, para a recusa e para o gate da
+        // raiz) e recusado antes de canonicalizar, logo depois do cronograma, como a raiz faz.
+        TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos = await ResolucaoDosTiposDeAtoUnicos
+            .ParaOperacaoAsync(
+                tipoDeAtoReader,
+                processo,
+                command.Ato.TipoAtoCodigo,
+                DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime),
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (processo.PendenciaDoTipoDeAtoUnico(tiposDeAtoUnicos) is { } pendenciaDoTipoUnico)
+        {
+            return (Result.Failure(pendenciaDoTipoUnico), []);
+        }
+
         Result<IReadOnlyList<AnexoDoEdital>> conferenciaDosAnexos = await ConferenciaDosAnexosDoEdital
             .ConferirAsync(documentoAPublicarRepository, command.ProcessoSeletivoId, command.Anexos, [], cancellationToken)
             .ConfigureAwait(false);
@@ -309,10 +324,7 @@ public static class PublicarProcessoSeletivoCommandHandler
             calendarioResult.IsSuccess ? calendarioResult.Value : null,
 
             FalhaDoCalendarioVigente: calendarioResult.IsFailure ? calendarioResult.Error : null,
-            FusoInstitucional: fusoInstitucional,
-            TiposDeAtoUnicos: await ResolucaoDosTiposDeAtoUnicos
-                .ResolverAsync(tipoDeAtoReader, processo, DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime), cancellationToken)
-                .ConfigureAwait(false));
+            FusoInstitucional: fusoInstitucional);
 
         SnapshotCanonico canonico = canonicalizer.Canonicalizar(
             new EntradaCanonicalizacao(
@@ -335,7 +347,8 @@ public static class PublicarProcessoSeletivoCommandHandler
             atorUsuarioSub,
             timeProvider,
             contexto,
-            fatosDeModalidade);
+            fatosDeModalidade,
+            tiposDeAtoUnicos);
         if (publicarResult.IsFailure)
         {
             return (Result.Failure(publicarResult.Error!), []);

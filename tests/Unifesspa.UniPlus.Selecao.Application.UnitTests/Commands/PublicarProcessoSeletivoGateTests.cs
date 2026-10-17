@@ -184,6 +184,76 @@ public sealed class PublicarProcessoSeletivoGateTests
         return processo;
     }
 
+    [Fact(DisplayName = "Publicar_AtoDaPublicacaoDeTipoUnicoDeclaradoNoCronograma_RecusaAntesDeCanonicalizar")]
+    public async Task Publicar_AtoDaPublicacaoDeTipoUnicoDeclaradoNoCronograma_RecusaAntesDeCanonicalizar()
+    {
+        // O cronograma do builder declara RESULTADO_FINAL como produto; o ato desta publicação é do
+        // mesmo tipo, que o catálogo declara único: duas declarações para uma única vaga.
+        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Tipo único");
+
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
+            processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        documento.Confirmar(1024, new string('a', 64), TimeProvider.System).IsSuccess.Should().BeTrue();
+
+        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        processoRepository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        IDocumentoAPublicarRepository documentoRepository = Substitute.For<IDocumentoAPublicarRepository>();
+        documentoRepository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
+
+        CanonicalizerEspiao canonicalizer = new();
+        IUserContext userContext = Substitute.For<IUserContext>();
+        userContext.UserId.Returns("teste");
+
+        TipoAtoPublicadoView tipo = new("RESULTADO_FINAL", "Resultado final", CongelaConfiguracao: true, UnicoPorObjeto: true, EfeitoIrreversivel: false, EhResultado: true);
+        ITipoAtoPublicadoReader tipoDeAtoReader = Substitute.For<ITipoAtoPublicadoReader>();
+        tipoDeAtoReader.ObterVigenteAsync("RESULTADO_FINAL", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>()).Returns(tipo);
+        tipoDeAtoReader.ListarVigentesAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns([tipo]);
+
+        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = Substitute.For<IObrigatoriedadeLegalRepository>();
+        obrigatoriedadeLegalRepository.ObterVigentesParaTipoProcessoAsync(
+                Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+
+        (Result resposta, IEnumerable<object> eventos) = await PublicarProcessoSeletivoCommandHandler.Handle(
+            new PublicarProcessoSeletivoCommand(
+                ProcessoSeletivoId: processo.Id,
+                Numero: "001/2026",
+                PeriodoInscricaoInicio: null,
+                PeriodoInscricaoFim: null,
+                DocumentoEditalId: documento.Id,
+                Ato: new DadosDoAto(
+                    Orgao: "CEPS",
+                    Serie: "EDITAL",
+                    Ano: 2026,
+                    DataPublicacao: new DateOnly(2026, 1, 1),
+                    Assinante: "Diretor do CEPS",
+                    TipoAtoCodigo: "RESULTADO_FINAL")),
+            processoRepository,
+            documentoRepository,
+            Substitute.For<IRascunhoDePublicacaoRepository>(),
+            canonicalizer, new ResolvedorFusoDeTeste(),
+            Substitute.For<ISelecaoUnitOfWork>(),
+            userContext,
+            tipoDeAtoReader,
+            Substitute.For<IVagaDeLinhagemReader>(),
+            obrigatoriedadeLegalRepository,
+            CadastrosVivos.Modalidades(),
+            CadastrosVivos.TiposDocumento(),
+            CadastrosVivos.TiposEtapa(),
+            CadastrosVivos.TiposDeficiencia(),
+            CadastrosVivos.RegrasDesempate(),
+            Substitute.For<IFatoCandidatoReader>(),
+            Substitute.For<ICalendarioVigenteReader>(),
+            TimeProvider.System,
+            CancellationToken.None);
+
+        resposta.IsFailure.Should().BeTrue();
+        resposta.Error!.Code.Should().Be("ProcessoSeletivo.TipoDeAtoUnicoDeclaradoMaisDeUmaVez");
+        canonicalizer.FoiInvocado.Should().BeFalse("a recusa sai antes da canonicalização, como as demais pendências do cronograma");
+        eventos.Should().BeEmpty();
+    }
+
     [Fact(DisplayName = "Publicar_ExigenciaComGatilhoPorFaixaEtariaSemReferenciaTemporal_NaoCanonicalizaAntesDoGuard — o gate B-03 também precede a canonicalização (ADR-0109 D5)")]
     public async Task Publicar_ExigenciaComGatilhoPorFaixaEtariaSemReferenciaTemporal_NaoCanonicalizaAntesDoGuard()
     {

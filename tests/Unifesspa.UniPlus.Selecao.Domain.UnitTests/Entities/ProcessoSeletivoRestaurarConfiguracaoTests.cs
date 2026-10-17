@@ -1386,7 +1386,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             algoritmoHash: "canonical-json/sha256@v1",
             hashDocumento: new string('a', 64),
             atorUsuarioSub: "testes",
-            clock: TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
+            clock: TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).IsSuccess.Should().BeTrue();
 
         processo.ClearDomainEvents();
         return processo;

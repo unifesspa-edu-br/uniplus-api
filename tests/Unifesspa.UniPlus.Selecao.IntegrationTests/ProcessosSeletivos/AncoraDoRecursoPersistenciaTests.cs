@@ -63,7 +63,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
             fase.Produtos.Single(p => p.AtoCodigo == "RESULTADO_FINAL").Id,
             "pré-condição: o EF hidratou a âncora incoerente sem passar por fábrica nenhuma");
 
-        IReadOnlyList<ItemConformidade> checklist = processo.AvaliarConformidade(ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo);
+        IReadOnlyList<ItemConformidade> checklist = processo.AvaliarConformidade(ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         checklist.Should().ContainSingle(i => i.Codigo == "cronograma_ancora_do_recurso")
             .Which.Ok.Should().BeFalse(
@@ -89,7 +89,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
         await using SelecaoDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
-        processo.AvaliarConformidade(ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo)
+        processo.AvaliarConformidade(ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Should().ContainSingle(i => i.Codigo == "cronograma_ancora_do_recurso")
             .Which.Ok.Should().BeFalse();
 
@@ -105,7 +105,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
         await using SelecaoDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
-        processo.AvaliarConformidade(ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo)
+        processo.AvaliarConformidade(ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Should().ContainSingle(i => i.Codigo == "cronograma_ancora_do_recurso")
             .Which.Ok.Should().BeTrue();
 
@@ -137,7 +137,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
         HashFixo,
         "teste",
         TimeProvider.System,
-        ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo);
+        ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
     /// <summary>
     /// Processo estruturalmente publicável cuja única fase publica o preliminar e o definitivo
