@@ -158,20 +158,8 @@ internal static class EscritaDosItens
             }
 
             int recusasAntes = erros.Count;
-            foreach ((string regra, PredicadoDnf? predicado) in new[] { ("exibicao", regras.Exibicao), ("predicadoObrigatoriedade", regras.Obrigatoriedade.Predicado) })
-            {
-                if (predicado is not null
-                    && PredicadoDnfValidador.Validar(predicado, contexto.Vocabulario, null, contexto.DominiosDinamicos) is { IsFailure: true } semantica)
-                {
-                    erros.Add(new($"{caminho}.{regra}", semantica.Error!));
-                }
-            }
-
-            if (VocabularioDeFatos.CitacaoDeAtributoDoCandidato(
-                    (regras.Exibicao?.FatosCitados ?? []).Concat(regras.Obrigatoriedade.FatosCitados), contexto.Fatos) is { } atributo)
-            {
-                erros.Add(new(caminho, atributo));
-            }
+            erros.AddRange(ConferenciaDoItemNoCatalogo.DoGrupo(regras.Exibicao, regras.Obrigatoriedade, contexto)
+                .Select(erro => erro with { Field = string.IsNullOrEmpty(erro.Field) ? caminho : $"{caminho}.{erro.Field}" }));
 
             if (erros.Count > recusasAntes || !lidos.FormaValida[indice] || dosCampos.Count > 0 || lidos.Campos[indice].Erros.Count > 0)
             {
@@ -272,63 +260,40 @@ internal static class EscritaDosItens
 
     private static Result<FatoColetado> ResolverFato(FatoColetadoInput input, RegrasDoItem regras, ContextoDoCatalogo contexto, bool campoDeGrupo)
     {
-        IReadOnlyDictionary<string, FatoCandidatoView> catalogo = contexto.Fatos;
-        IReadOnlyDictionary<string, FatoDoCatalogo> catalogoDasRegras = contexto.FatosDasRegras;
-        IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario = contexto.Vocabulario;
-        IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos = contexto.DominiosDinamicos;
         // O item coleta fato declarado do próprio candidato; o campo de grupo, fato declarado de
         // membro. Derivados e calculados não se respondem.
         if ((campoDeGrupo
-                ? ConferenciaNoCatalogo.FatoDoSubitem(input.FatoCodigo, catalogoDasRegras)
-                : ConferenciaNoCatalogo.FatoDoItem(input.FatoCodigo, catalogoDasRegras)) is { } naoColetavel)
+                ? ConferenciaNoCatalogo.FatoDoSubitem(input.FatoCodigo, contexto.FatosDasRegras)
+                : ConferenciaNoCatalogo.FatoDoItem(input.FatoCodigo, contexto.FatosDasRegras)) is { } naoColetavel)
         {
             return Result<FatoColetado>.ValidationFailure([new("fatoCodigo", naoColetavel)]);
         }
 
-        FatoCandidatoView view = catalogo[input.FatoCodigo];
+        FatoCandidatoView view = contexto.Fatos[input.FatoCodigo];
         TipoRenderizacao tipoRenderizacao = TipoRenderizacaoCodigo.FromCodigo(input.TipoRenderizacao);
-        if (CoerenciaDoCampo.Validar(view.Codigo, tipoRenderizacao, view.Dominio, view.Cardinalidade, view.FonteValores) is { } incoerencia)
+        if (ConferenciaDoItemNoCatalogo.Coerencia(view, tipoRenderizacao) is { } incoerencia)
         {
             return Result<FatoColetado>.ValidationFailure([new("tipoRenderizacao", incoerencia)]);
         }
 
         List<FieldError> erros = [];
-        Result<IReadOnlyList<CondicaoPrecondicaoFato>?> precondicoesResult =
-            ResolverPrecondicao(input.Precondicao, vocabulario, dominiosDinamicos);
-        if (precondicoesResult.IsFailure)
+        Result<PrecondicaoLida?> precondicao = LerPrecondicao(input.Precondicao);
+        if (precondicao.IsFailure)
         {
-            erros.Add(new("precondicao", precondicoesResult.Error!));
+            erros.Add(new("precondicao", precondicao.Error!));
         }
 
-        if (regras.Obrigatoriedade.Predicado is { } predicado
-            && PredicadoDnfValidador.Validar(predicado, vocabulario, null, dominiosDinamicos) is { IsFailure: true } semantica)
-        {
-            erros.Add(new("predicadoObrigatoriedade", semantica.Error!));
-        }
-
-        erros.AddRange(ConferenciaNoCatalogo.SemanticaDasRestricoes(
-            catalogoDasRegras[view.Codigo], tipoRenderizacao, regras.Restricoes, catalogoDasRegras, vocabulario, dominiosDinamicos));
-
-        if (regras.Impedimento is { } impedimento
-            && PredicadoDnfValidador.Validar(impedimento.Quando, vocabulario, null, dominiosDinamicos) is { IsFailure: true } semanticaDoImpedimento)
-        {
-            erros.Add(new("impedimento.quando", semanticaDoImpedimento.Error!));
-        }
-
-        IEnumerable<string> citados = (input.Precondicao ?? []).SelectMany(static c => c).Where(static c => c is not null).Select(static c => c.Fato)
-            .Concat(regras.Obrigatoriedade.FatosCitados)
-            .Concat(regras.Restricoes.SelectMany(static r => r.FatosCitados))
-            .Concat(regras.Impedimento?.FatosCitados ?? []);
-        if (VocabularioDeFatos.CitacaoDeAtributoDoCandidato(citados, catalogo) is { } atributo)
-        {
-            erros.Add(new(string.Empty, atributo));
-        }
+        erros.AddRange(ConferenciaDoItemNoCatalogo.Semantica(
+            view, tipoRenderizacao, precondicao.IsSuccess ? precondicao.Value?.Predicado : null,
+            (input.Precondicao ?? []).SelectMany(static c => c).Where(static c => c is not null).Select(static c => c.Fato),
+            regras.Obrigatoriedade, regras.Restricoes, regras.Impedimento, contexto));
+        bool precondicaoRecusada = erros.Any(static e => e.Field == "precondicao");
 
         // As recusas do próprio item (coerência das restrições com o campo, autorreferência, ajuda)
         // saem junto das semânticas, no mesmo lote.
         Result<FatoColetado> fato = FatoColetado.Criar(
             input.FatoCodigo, input.Ordem, input.Rotulo, tipoRenderizacao, regras.Obrigatoriedade,
-            precondicoesResult.IsSuccess ? precondicoesResult.Value : null,
+            precondicaoRecusada ? null : precondicao.Value?.Condicoes,
             origemValores: VocabularioDeFatos.OrigemValores(view), etapaCodigo: input.EtapaCodigo, formato: view.Formato,
             ajuda: input.Ajuda, pedirConfirmacao: input.PedirConfirmacao, restricoes: regras.Restricoes, impedimento: regras.Impedimento,
             classificacaoProtecao: view.ClassificacaoProtecao);
@@ -337,21 +302,21 @@ internal static class EscritaDosItens
             : Result<FatoColetado>.ValidationFailure([.. erros, .. fato.IsFailure ? fato.Errors : []]);
     }
 
+    /// <summary>A pré-condição de um item na forma: as condições do item e o predicado que elas formam.</summary>
+    private sealed record PrecondicaoLida(IReadOnlyList<CondicaoPrecondicaoFato> Condicoes, PredicadoDnf Predicado);
+
     /// <summary>
-    /// Monta e valida a pré-condição de um fato. Primeiro a <b>forma</b> de cada condição
-    /// (<see cref="CondicaoDnf.Criar"/>), depois a <b>semântica</b> do predicado inteiro
-    /// (<see cref="PredicadoDnfValidador"/>) — fato citado no vocabulário, operador × domínio,
-    /// valor × domínio (estático ou dinâmico). A estrutura do grafo (o fato citado é coletado e
-    /// anterior) é do agregado, em <see cref="ProcessoSeletivo.DefinirFatosColetados"/>.
+    /// Monta a pré-condição de um fato pela <b>forma</b> de cada condição
+    /// (<see cref="CondicaoDnf.Criar"/>). A semântica do predicado — fato citado no vocabulário,
+    /// operador × domínio, valor × domínio — é de <see cref="ConferenciaDoItemNoCatalogo"/>, e a
+    /// estrutura do grafo (o fato citado é coletado e anterior) é do agregado, em
+    /// <see cref="ProcessoSeletivo.DefinirFatosColetados"/>.
     /// </summary>
-    private static Result<IReadOnlyList<CondicaoPrecondicaoFato>?> ResolverPrecondicao(
-        IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? precondicao,
-        IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario,
-        IReadOnlyDictionary<string, DominioDeValores> dominiosDinamicos)
+    private static Result<PrecondicaoLida?> LerPrecondicao(IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? precondicao)
     {
         if (precondicao is null)
         {
-            return Result<IReadOnlyList<CondicaoPrecondicaoFato>?>.Success(null);
+            return Result<PrecondicaoLida?>.Success(null);
         }
 
         List<(int Clausula, CondicaoDnf Condicao)> linhas = [];
@@ -364,7 +329,7 @@ internal static class EscritaDosItens
                 // validator (400), mas nunca deve virar NullReferenceException/500 aqui.
                 if (condicaoInput is null)
                 {
-                    return Result<IReadOnlyList<CondicaoPrecondicaoFato>?>.Failure(new DomainError(
+                    return Result<PrecondicaoLida?>.Failure(new DomainError(
                         CondicaoPrecondicaoFatoErrorCodes.ClausulaInvalida,
                         "A pré-condição contém uma condição nula."));
                 }
@@ -375,7 +340,7 @@ internal static class EscritaDosItens
                     CondicaoPrecondicaoFato.Criar(clausula, condicaoInput.Fato, operador, condicaoInput.Valor);
                 if (condicaoResult.IsFailure)
                 {
-                    return Result<IReadOnlyList<CondicaoPrecondicaoFato>?>.Failure(condicaoResult.Error!);
+                    return Result<PrecondicaoLida?>.Failure(condicaoResult.Error!);
                 }
 
                 condicoes.Add(condicaoResult.Value!);
@@ -386,12 +351,9 @@ internal static class EscritaDosItens
         Result<PredicadoDnf> predicadoResult = PredicadoDnf.CriarDeCondicoesAgrupadas(linhas);
         if (predicadoResult.IsFailure)
         {
-            return Result<IReadOnlyList<CondicaoPrecondicaoFato>?>.Failure(predicadoResult.Error!);
+            return Result<PrecondicaoLida?>.Failure(predicadoResult.Error!);
         }
 
-        Result validacao = PredicadoDnfValidador.Validar(predicadoResult.Value!, vocabulario, null, dominiosDinamicos);
-        return validacao.IsFailure
-            ? Result<IReadOnlyList<CondicaoPrecondicaoFato>?>.Failure(validacao.Error!)
-            : Result<IReadOnlyList<CondicaoPrecondicaoFato>?>.Success(condicoes);
+        return Result<PrecondicaoLida?>.Success(new PrecondicaoLida(condicoes, predicadoResult.Value!));
     }
 }

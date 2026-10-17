@@ -2456,6 +2456,61 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
+    /// Confere, sem mudar o processo, a cópia que cada item e cada campo de grupo tirou do catálogo
+    /// — formato e classificação de proteção — e devolve a recusa de cada um com o item de origem,
+    /// para quem chama dizer onde ele está. O fato que alguma versão publicada já coletou não é
+    /// conferido: a retificação não troca os eixos dele. Acumula todas as recusas (ADR-0125).
+    /// </summary>
+    /// <param name="catalogo">A cópia que o catálogo de hoje tem de cada fato, por código.</param>
+    /// <param name="fatosJaColetados">Os fatos que alguma versão publicada coletou, por código ordinal.</param>
+    public IReadOnlyList<RecusaDaCopiaDoItem> ConferirCopiasDoCatalogo(
+        IReadOnlyDictionary<string, CopiaDoItemNoCatalogo> catalogo, IReadOnlySet<string> fatosJaColetados)
+    {
+        ArgumentNullException.ThrowIfNull(catalogo);
+        ArgumentNullException.ThrowIfNull(fatosJaColetados);
+
+        List<RecusaDaCopiaDoItem> recusas = [];
+        foreach (FatoColetado item in _campos)
+        {
+            if (fatosJaColetados.Contains(item.FatoCodigo) || !catalogo.TryGetValue(item.FatoCodigo, out CopiaDoItemNoCatalogo? copia))
+            {
+                continue;
+            }
+
+            recusas.AddRange(item.ConferirCopiaDoCatalogo(copia).Errors.Select(erro => new RecusaDaCopiaDoItem(item, erro)));
+        }
+
+        return recusas;
+    }
+
+    /// <summary>
+    /// Refaz nos itens e nos campos de grupo as cópias que eles tiraram do catálogo — origem dos
+    /// valores, formato e classificação de proteção — ao congelar uma versão, porque o catálogo é
+    /// editável depois que a coleta foi definida. O fato que alguma versão publicada já coletou
+    /// não é recopiado. Só muda o processo se <see cref="ConferirCopiasDoCatalogo"/> não recusar
+    /// nenhum item; do contrário devolve as recusas, sem caminho, e nada muda.
+    /// </summary>
+    public Result RecopiarItensDoCatalogo(
+        IReadOnlyDictionary<string, CopiaDoItemNoCatalogo> catalogo, IReadOnlySet<string> fatosJaColetados)
+    {
+        IReadOnlyList<RecusaDaCopiaDoItem> recusas = ConferirCopiasDoCatalogo(catalogo, fatosJaColetados);
+        if (recusas.Count > 0)
+        {
+            return Result.ValidationFailure([.. recusas.Select(static r => r.Erro)]);
+        }
+
+        foreach (FatoColetado item in _campos)
+        {
+            if (!fatosJaColetados.Contains(item.FatoCodigo) && catalogo.TryGetValue(item.FatoCodigo, out CopiaDoItemNoCatalogo? copia))
+            {
+                item.RecopiarDoCatalogo(copia);
+            }
+        }
+
+        return Result.Success();
+    }
+
+    /// <summary>
     /// Confere os itens e os grupos que o formulário passa a coletar, sem mutar o processo: o teto,
     /// o grafo, as citações, o código e o produtor únicos e as seções.
     /// </summary>

@@ -143,7 +143,8 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
 
     private static Task<(Result Resposta, IEnumerable<object> Eventos)> HandleAsync(
         Mocks mocks, ProcessoSeletivo processo, DocumentoEdital documento,
-        ICalendarioVigenteReader? calendarioReader = null)
+        ICalendarioVigenteReader? calendarioReader = null,
+        ISelecaoUnitOfWork? unitOfWork = null)
     {
         IUserContext userContext = Substitute.For<IUserContext>();
         userContext.UserId.Returns("user-sub-1");
@@ -159,7 +160,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
             mocks.DocumentoRepository,
             Substitute.For<IRascunhoDePublicacaoRepository>(),
             mocks.Canonicalizer, new ResolvedorFusoDeTeste(),
-            Substitute.For<ISelecaoUnitOfWork>(),
+            unitOfWork ?? Substitute.For<ISelecaoUnitOfWork>(),
             userContext,
             mocks.TipoDeAtoReader,
             mocks.VagaDeLinhagemReader,
@@ -173,6 +174,82 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
             calendarioReader ?? CalendarioVigenteReaderDeTeste.SemVigente(),
             TimeProvider.System,
             CancellationToken.None);
+    }
+
+    [Fact(DisplayName = "Fato reclassificado de PESSOAL para IDENTIFICADOR no catálogo publica como IDENTIFICADOR e a resposta é cifrada")]
+    public async Task Handle_FatoReclassificadoNoCatalogo_PublicaComAClassificacaoViva()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme(out _);
+        FatoColetado cpfDoCatalogoAntigo = processo.FatosColetados.Single(static f => f.FatoCodigo == "CPF");
+        FatoColetado cpf = FatoColetado.Criar(
+            "CPF", cpfDoCatalogoAntigo.Ordem, cpfDoCatalogoAntigo.Rotulo, cpfDoCatalogoAntigo.TipoRenderizacao, cpfDoCatalogoAntigo.Obrigatoriedade, null, "PESSOAL",
+            cpfDoCatalogoAntigo.OrigemValores, cpfDoCatalogoAntigo.EtapaCodigo, formato: cpfDoCatalogoAntigo.Formato).Value!;
+        processo.DefinirItens([.. processo.FatosColetados.Select(f => f.FatoCodigo == "CPF" ? cpf : f)]).IsSuccess.Should().BeTrue();
+        DefinicaoDaResposta.De(cpf.TipoRenderizacao, cpf.ClassificacaoProtecao, fatoCodigo: "CPF").Cifrada.Should().BeFalse("a cópia velha não cifra");
+
+        (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo);
+
+        (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento);
+
+        resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
+        cpf.ClassificacaoProtecao.Should().Be("IDENTIFICADOR");
+        DefinicaoDaResposta.De(cpf.TipoRenderizacao, cpf.ClassificacaoProtecao, fatoCodigo: "CPF").Cifrada.Should().BeTrue();
+    }
+
+    private static void CatalogoComCorRacaDoProcesso(Mocks mocks) =>
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns([
+            .. CatalogoDoConjuntoBasico.Fatos.Where(static f => f.Codigo != "COR_RACA"),
+            CatalogoDoConjuntoBasico.Fatos.Single(static f => f.Codigo == "COR_RACA") with { FonteValores = "PROCESSO" },
+        ]);
+
+    [Fact(DisplayName = "A cópia recopiada do catálogo é a que os gates avaliam: fonte passada a PROCESSO recusa pelo gate de oferta")]
+    public async Task Handle_FonteDeValoresMudaNoCatalogo_OsGatesAvaliamACopiaNova()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme(out _);
+        (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo);
+        CatalogoComCorRacaDoProcesso(mocks);
+
+        (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento);
+
+        resposta.IsFailure.Should().BeTrue();
+        resposta.Error!.Code.Should().Be("ProcessoSeletivo.FatoColetadoSemValoresOfertados");
+        resposta.Error.Message.Should().Contain("não declara nenhuma opção");
+        mocks.Canonicalizer.DidNotReceiveWithAnyArgs().Canonicalizar(default!);
+    }
+
+    [Fact(DisplayName = "A publicação recusada por gate posterior à recópia descarta o que a recópia mudou")]
+    public async Task Handle_RecusaPosteriorARecopia_DescartaAsAlteracoes()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme(out _);
+        (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo);
+        CatalogoComCorRacaDoProcesso(mocks);
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+
+        (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento, unitOfWork: unitOfWork);
+
+        resposta.IsFailure.Should().BeTrue();
+        unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+        await unitOfWork.DidNotReceiveWithAnyArgs().SalvarAlteracoesAsync(default);
+    }
+
+    [Fact(DisplayName = "Booleano que vira categórico no catálogo recusa a publicação do item booleano, nomeando o campo")]
+    public async Task Handle_BooleanoQueViraCategorico_RecusaOItem()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme(out _);
+        FatoColetado item = processo.FatosColetados.Single(static f => f.FatoCodigo == "DESEJA_NOME_SOCIAL");
+        item.TipoRenderizacao.Should().Be(TipoRenderizacao.Booleano);
+        (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo);
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns([
+            .. CatalogoDoConjuntoBasico.Fatos.Where(static f => f.Codigo != "DESEJA_NOME_SOCIAL"),
+            CatalogoDoConjuntoBasico.Fatos.Single(static f => f.Codigo == "DESEJA_NOME_SOCIAL") with { Dominio = "CATEGORICO" },
+        ]);
+
+        (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento);
+
+        resposta.IsFailure.Should().BeTrue();
+        resposta.Error!.Code.Should().Be("ItemFormulario.TipoRenderizacaoIncoerenteComDominio");
+        resposta.Error.Message.Should().Contain(item.Rotulo).And.Contain("Regrave o item");
+        mocks.Canonicalizer.DidNotReceiveWithAnyArgs().Canonicalizar(default!);
     }
 
     [Fact(DisplayName = "Sem condição de gatilho, MetadadosFatosCongelados é null mesmo com o catálogo consultado")]

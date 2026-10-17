@@ -40,7 +40,38 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// </remarks>
 public static class FecharRetificacaoCommandHandler
 {
-    public static async Task<(Result Resposta, IEnumerable<object> Eventos)> Handle(
+    public static Task<(Result Resposta, IEnumerable<object> Eventos)> Handle(
+        FecharRetificacaoCommand command,
+        IProcessoSeletivoRepository processoSeletivoRepository,
+        IDocumentoEditalRepository documentoEditalRepository,
+        IRascunhoDePublicacaoRepository rascunhoDePublicacaoRepository,
+        ISnapshotPublicacaoCanonicalizer canonicalizer,
+        IResolvedorFusoInstitucional resolvedorFuso,
+        ISelecaoUnitOfWork unitOfWork,
+        IUserContext userContext,
+        ITipoAtoPublicadoReader tipoDeAtoReader,
+        IVagaDeLinhagemReader vagaDeLinhagemReader,
+        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository,
+        IModalidadeReader modalidadeReader,
+        ITipoDocumentoReader tipoDocumentoReader,
+        ITipoEtapaReader tipoEtapaReader,
+        ITipoDeficienciaReader tipoDeficienciaReader,
+        IRegraCatalogoReader regraCatalogoReader,
+        IFatoCandidatoReader fatoCandidatoReader,
+        ICalendarioVigenteReader calendarioVigenteReader,
+        TimeProvider timeProvider,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(unitOfWork);
+
+        // A recópia das cópias do item altera o agregado rastreado antes dos gates seguintes; a
+        // recusa não devolve exceção, então o que ela mudou não pode ir para o banco.
+        return ReconferenciaDasCopiasDoItem.SemPersistirEmRecusaAsync(
+            unitOfWork,
+            () => Executar(command, processoSeletivoRepository, documentoEditalRepository, rascunhoDePublicacaoRepository, canonicalizer, resolvedorFuso, unitOfWork, userContext, tipoDeAtoReader, vagaDeLinhagemReader, obrigatoriedadeLegalRepository, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, fatoCandidatoReader, calendarioVigenteReader, timeProvider, cancellationToken));
+    }
+
+    private static async Task<(Result Resposta, IEnumerable<object> Eventos)> Executar(
         FecharRetificacaoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IDocumentoEditalRepository documentoEditalRepository,
@@ -179,6 +210,25 @@ public static class FecharRetificacaoCommandHandler
         // Publicações; lê-lo de outra fonte faria os dois divergirem.
         string motivo = processo.Rascunho.Motivo;
 
+        // Uma leitura só do catálogo (D4-bis), compartilhada pelos gates que dependem dos fatos
+        // cujos valores são modalidades, pela reconferência de coletabilidade e pelos resolvedores
+        // que congelam vocabulário de fato — duas leituras abririam janela para uma conferência
+        // aprovar sobre um catálogo e um resolvedor congelar sobre outro.
+        IReadOnlyList<FatoCandidatoView> catalogoDeFatos = await fatoCandidatoReader
+            .ListarAsync(cancellationToken)
+            .ConfigureAwait(false);
+        IReadOnlyDictionary<string, FatoCandidatoView> catalogoPorCodigo =
+            catalogoDeFatos.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
+        FatosDeModalidade fatosDeModalidade = VocabularioDeFatos.ComValoresDeModalidade(catalogoDeFatos);
+
+        // O catálogo é editável depois que o item copiou dele a origem dos valores, o formato e a
+        // proteção, e os gates abaixo avaliam a cópia: ela é reconferida e recopiada antes deles.
+        Result copiasDoItem = ReconferenciaDasCopiasDoItem.Aplicar(processo, catalogoDeFatos, processo.Rascunho.FatosDasVersoesPublicadas.FatosJaColetados);
+        if (copiasDoItem.IsFailure)
+        {
+            return (copiasDoItem, []);
+        }
+
         // O gate de conformidade precede a canonicalização (ADR-0109 D5) — a retificação
         // também congela uma versão append-only e vinculante.
         if (processo.PendenciaDeConformidade() is { } pendencia)
@@ -223,17 +273,6 @@ public static class FecharRetificacaoCommandHandler
 
         DadosEdital dados = dadosResult.Value!;
 
-        // Uma leitura só do catálogo (D4-bis), compartilhada pelos gates que dependem dos fatos
-        // cujos valores são modalidades, pela reconferência de coletabilidade e pelos resolvedores
-        // que congelam vocabulário de fato — duas leituras abririam janela para uma conferência
-        // aprovar sobre um catálogo e um resolvedor congelar sobre outro.
-        IReadOnlyList<FatoCandidatoView> catalogoDeFatos = await fatoCandidatoReader
-            .ListarAsync(cancellationToken)
-            .ConfigureAwait(false);
-        IReadOnlyDictionary<string, FatoCandidatoView> catalogoPorCodigo =
-            catalogoDeFatos.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
-        FatosDeModalidade fatosDeModalidade = VocabularioDeFatos.ComValoresDeModalidade(catalogoDeFatos);
-
         Result<ResultadoConformidade> conformidadeLegal = await ConferenciaDeConformidadeLegal
             .AvaliarAsync(obrigatoriedadeLegalRepository, processo, dados.DiaDeReferenciaLegal(fusoInstitucional), modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, fatosDeModalidade, cancellationToken)
             .ConfigureAwait(false);
@@ -255,8 +294,8 @@ public static class FecharRetificacaoCommandHandler
 
         // O catálogo pode reclassificar a Origem de um fato depois que ele já virou
         // FatoColetado (ex.: a migration que reclassificou MODALIDADE de DECLARADO para
-        // DERIVADO) — a configuração EDITADA pela sessão pode conter um vínculo (novo ou
-        // preexistente) que deixou de ser coletável.
+        // DERIVADO) — sem esta reconferência, um vínculo morto seria congelado numa versão
+        // append-only e, pela doutrina do agregado, irreparável depois.
         Result coletabilidadeDosFatos = ConferenciaDeColetabilidadeDeFatos.Conferir(processo, catalogoPorCodigo);
         if (coletabilidadeDosFatos.IsFailure)
         {
@@ -384,12 +423,8 @@ public static class FecharRetificacaoCommandHandler
         catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint
             && VersaoConfiguracaoConstraintViolation.Traduzir(constraint) is { } erroVersao)
         {
-            // Descarta o rastreamento antes de devolver a recusa. O Wolverine chama
-            // SaveChangesAsync de novo ao término normal do handler, e sem a limpeza a mesma
-            // violação estoura fora deste catch: o erro que acabou de ser traduzido chegaria
-            // ao cliente como 500 em vez da recusa que ele descreve. A captura local é
-            // obrigatória porque o endpoint exige chave de idempotência (ADR-0119).
-            unitOfWork.DescartarAlteracoesNaoSalvas();
+            // A recusa não devolve exceção: o envoltório de Handle descarta o rastreamento antes de o
+            // Wolverine salvar de novo (ADR-0119).
             return (Result.Failure(erroVersao), []);
         }
 

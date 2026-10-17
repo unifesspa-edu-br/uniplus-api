@@ -169,9 +169,9 @@ internal static class ResolvedorValoresSelecionaveisCongelados
     {
         string fatoCodigo = fato.FatoCodigo;
 
-        // A origem é a copiada para o campo quando a coleta foi definida, a mesma que o agregado
-        // confere na publicação — nunca a do catálogo lido agora. O catálogo só responde pelo
-        // campo cuja origem é ele.
+        // A origem é a copiada para o campo, a mesma que o agregado confere na publicação: o
+        // rascunho a recopia do catálogo ao publicar, e depois de congelada ela não muda mais. O
+        // catálogo só responde pelo campo cuja origem é ele.
         switch (ProcessoSeletivo.OrigemDasOpcoes(fato))
         {
             case OrigemValoresColeta.OpcoesDoProcesso:

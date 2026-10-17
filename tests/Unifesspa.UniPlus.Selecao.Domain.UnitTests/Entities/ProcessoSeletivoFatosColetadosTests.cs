@@ -33,6 +33,52 @@ public sealed class ProcessoSeletivoFatosColetadosTests
     private static FatoColetado Fato(string codigo, int ordem, params string[] cita) =>
         FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [.. cita.Select(Cond)], classificacaoProtecao: "PESSOAL").Value!;
 
+    private static FatoColetado Texto(string codigo, int ordem, string? formato) =>
+        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", formato: formato).Value!;
+
+    [Fact(DisplayName = "A recópia do catálogo refaz a cópia do item novo e deixa o já coletado como está")]
+    public void RecopiarItensDoCatalogo_RecopiaSoOQueNaoFoiColetado()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        processo.DefinirItens([Texto("CPF", 0, "CPF"), Texto("RG", 1, "LIVRE")], PrecondicaoIfMatch.Ausente, finalidade: FinalidadeFormulario.Habilitacao)
+            .IsSuccess.Should().BeTrue();
+        CopiaDoItemNoCatalogo copia(string formato) => new(OrigemValoresColeta.Catalogo, formato, "IDENTIFICADOR");
+
+        Result recopia = processo.RecopiarItensDoCatalogo(
+            new Dictionary<string, CopiaDoItemNoCatalogo> { ["CPF"] = copia("CPF"), ["RG"] = copia("LIVRE") },
+            new HashSet<string>(["RG"], StringComparer.Ordinal));
+
+        recopia.IsSuccess.Should().BeTrue();
+        processo.FatosColetados.Single(f => f.FatoCodigo == "CPF").ClassificacaoProtecao.Should().Be("IDENTIFICADOR");
+        processo.FatosColetados.Single(f => f.FatoCodigo == "RG").ClassificacaoProtecao.Should().Be("PESSOAL");
+    }
+
+    [Fact(DisplayName = "A recópia do catálogo recusa todo item de forma incoerente no lote e não muda nenhum")]
+    public void ConferirCopiasDoCatalogo_FormatoIncoerente_AcumulaERecusaSemAlterar()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        processo.DefinirItens(
+            [Texto("CPF", 0, "CPF"), Texto("RG", 1, "LIVRE"), Texto("NIS", 2, "LIVRE")], PrecondicaoIfMatch.Ausente, finalidade: FinalidadeFormulario.Habilitacao)
+            .IsSuccess.Should().BeTrue();
+
+        Dictionary<string, CopiaDoItemNoCatalogo> catalogo = new()
+        {
+            ["CPF"] = new(OrigemValoresColeta.Catalogo, null, "IDENTIFICADOR"),
+            ["RG"] = new(OrigemValoresColeta.Catalogo, "LIVRE", "IDENTIFICADOR"),
+            ["NIS"] = new(OrigemValoresColeta.Catalogo, null, "IDENTIFICADOR"),
+        };
+        HashSet<string> nenhum = new(StringComparer.Ordinal);
+
+        IReadOnlyList<RecusaDaCopiaDoItem> recusas = processo.ConferirCopiasDoCatalogo(catalogo, nenhum);
+        Result recopia = processo.RecopiarItensDoCatalogo(catalogo, nenhum);
+
+        recusas.Select(static r => r.Item.FatoCodigo).Should().BeEquivalentTo("CPF", "NIS");
+        recusas.Should().OnlyContain(static r => r.Erro.Field == "formato");
+        recusas[0].Erro.Error.Code.Should().Be(ItemFormularioErrorCodes.FormatoIncoerente);
+        recopia.IsFailure.Should().BeTrue();
+        processo.FatosColetados.Should().OnlyContain(static f => f.ClassificacaoProtecao == "PESSOAL", "a recusa não muda item nenhum, nem o que está conforme");
+    }
+
     [Fact(DisplayName = "Grafo válido é aceito: cada pré-condição cita apenas fatos anteriores")]
     public void GrafoValido_Aceito()
     {

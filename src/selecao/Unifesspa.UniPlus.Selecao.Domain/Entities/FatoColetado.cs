@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Um fato do vocabulário que <b>este</b> processo seletivo coleta do candidato, com a sua
@@ -90,8 +91,9 @@ public sealed class FatoColetado : EntityBase
 
     /// <summary>
     /// De onde vêm as opções do campo no processo (ADR-0136). Copiada da fonte dos valores do
-    /// fato no catálogo quando a coleta é definida — a Seleção congela por cópia e não lê o
-    /// catálogo ao publicar.
+    /// fato no catálogo quando a coleta é definida e recopiada ao publicar, enquanto nenhuma versão
+    /// publicada coletou o fato (<see cref="RecopiarDoCatalogo"/>); depois de congelada, a cópia não
+    /// muda mais.
     /// </summary>
     public OrigemValoresColeta OrigemValores { get; private set; }
 
@@ -103,9 +105,9 @@ public sealed class FatoColetado : EntityBase
 
     /// <summary>
     /// Classificação de proteção de dados do fato (token canônico: PUBLICO, INTERNO, PESSOAL,
-    /// IDENTIFICADOR, SENSIVEL), copiada do catálogo quando a coleta é definida e congelada na
-    /// publicação — reclassificar o fato no catálogo depois não muda o que já foi congelado
-    /// (ADR-0136, emenda de #1857).
+    /// IDENTIFICADOR, SENSIVEL), copiada do catálogo quando a coleta é definida e recopiada ao
+    /// publicar, enquanto nenhuma versão publicada coletou o fato; reclassificar o fato no catálogo
+    /// depois não muda o que já foi congelado (ADR-0136, emenda de #1857).
     /// </summary>
     public string ClassificacaoProtecao { get; private set; } = string.Empty;
 
@@ -151,19 +153,9 @@ public sealed class FatoColetado : EntityBase
         IReadOnlyList<RestricaoValor> restricoesDoItem = restricoes ?? [];
 
         IReadOnlyList<CondicaoPrecondicaoFato> condicoes = precondicoes ?? [];
-        List<FieldError> erros = FormaDoItem.Conferir(
+        List<FieldError> erros = ConferirFormaEClassificacao(
             fatoCodigo, ordem, rotulo, tipoRenderizacao, formato, ajuda, condicoes.Select(static c => c.Fato), obrigatoriedade, restricoesDoItem,
-            impedimento);
-
-        if (!TokensDeClassificacaoProtecao.Contains(classificacaoProtecao))
-        {
-            // O vocabulário fechado é o mesmo token canônico de ClassificacoesProtecaoDado
-            // (Configuração), espelhado aqui porque o Domain da Seleção não alcança o Domain de
-            // outro módulo (ADR-0097) — a Seleção só copia o valor já validado pelo catálogo.
-            erros.Add(new("classificacaoProtecao", new DomainError(
-                FatoColetadoErrorCodes.ClassificacaoProtecaoInvalida,
-                "Classificação de proteção de dados fora do vocabulário fechado.")));
-        }
+            impedimento, classificacaoProtecao);
 
         if (erros.Count > 0)
         {
@@ -196,6 +188,63 @@ public sealed class FatoColetado : EntityBase
         }
 
         return Result<FatoColetado>.Success(fato);
+    }
+
+    /// <summary>
+    /// Confere a cópia do catálogo contra a forma do item — o formato existe se, e só se, o campo é
+    /// de texto, e cabe na coluna — e o vocabulário fechado da classificação, sem mudar o item.
+    /// </summary>
+    internal Result ConferirCopiaDoCatalogo(CopiaDoItemNoCatalogo copia)
+    {
+        // A mesma forma e o mesmo vocabulário que Criar confere.
+        List<FieldError> erros = ConferirFormaEClassificacao(
+            FatoCodigo, Ordem, Rotulo, TipoRenderizacao, copia.Formato, Ajuda, _precondicoes.Select(static c => c.Fato), Obrigatoriedade, Restricoes,
+            Impedimento, copia.ClassificacaoProtecao);
+        return erros.Count > 0 ? Result.ValidationFailure(erros) : Result.Success();
+    }
+
+    /// <summary>
+    /// A forma do item e o vocabulário fechado da classificação de proteção, uma só para a criação
+    /// e para a cópia refeita do catálogo.
+    /// </summary>
+    private static List<FieldError> ConferirFormaEClassificacao(
+        string fatoCodigo,
+        int ordem,
+        string rotulo,
+        TipoRenderizacao tipoRenderizacao,
+        string? formato,
+        string? ajuda,
+        IEnumerable<string> fatosDaPrecondicao,
+        Obrigatoriedade obrigatoriedade,
+        IReadOnlyList<RestricaoValor> restricoes,
+        Impedimento? impedimento,
+        string classificacaoProtecao)
+    {
+        List<FieldError> erros = FormaDoItem.Conferir(
+            fatoCodigo, ordem, rotulo, tipoRenderizacao, formato, ajuda, fatosDaPrecondicao, obrigatoriedade, restricoes, impedimento);
+        if (!TokensDeClassificacaoProtecao.Contains(classificacaoProtecao))
+        {
+            // O vocabulário fechado é o mesmo token canônico de ClassificacoesProtecaoDado
+            // (Configuração), espelhado aqui porque o Domain da Seleção não alcança o Domain de
+            // outro módulo (ADR-0097) — a Seleção só copia o valor já validado pelo catálogo.
+            erros.Add(new("classificacaoProtecao", new DomainError(
+                FatoColetadoErrorCodes.ClassificacaoProtecaoInvalida,
+                "Classificação de proteção de dados fora do vocabulário fechado.")));
+        }
+
+        return erros;
+    }
+
+    /// <summary>
+    /// Refaz as cópias do item tiradas do catálogo — origem dos valores, formato e classificação de
+    /// proteção. O rótulo, o tipo de campo e as regras do item são do processo e não mudam aqui; a
+    /// cópia já foi conferida por <see cref="ConferirCopiaDoCatalogo"/>.
+    /// </summary>
+    internal void RecopiarDoCatalogo(CopiaDoItemNoCatalogo copia)
+    {
+        OrigemValores = copia.OrigemValores;
+        Formato = FormaDoItem.TextoOpcional(copia.Formato);
+        ClassificacaoProtecao = copia.ClassificacaoProtecao;
     }
 
     /// <summary>O item no que o grafo do formulário confere.</summary>
