@@ -30,6 +30,9 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// É o domínio quem os informa — <c>Selecao</c> ao publicar um edital, <c>Ingresso</c>
 /// ao convocar uma chamada —, e Publicações os guarda sem interpretar. Ausente ou vazio
 /// num ato que não trata de objeto algum, o que é legítimo.</para>
+/// <para><see cref="Anexos"/> são os arquivos que acompanham o documento principal, cada um
+/// com o hash do seu conteúdo — o hash do principal não prova os anexos. A ordem enviada é
+/// a ordem devolvida na leitura. Ausente ou vazio num ato sem anexos.</para>
 /// <para>Uma retificação <b>herda</b> os vínculos do ato que emenda, e não precisa
 /// repeti-los: quem emenda um ato trata do mesmo objeto que ele, e uma retificação que
 /// não os herdasse sumiria da consulta do certame — que passaria a exibir a versão
@@ -55,6 +58,7 @@ public sealed record RegistrarAtoNormativoCommand(
     Guid? AtoRetificadoId = null,
     string? MotivoRetificacao = null,
     IReadOnlyList<VinculoEntidadeInput>? Vinculos = null,
+    IReadOnlyList<AnexoDoAtoInput>? Anexos = null,
     [property: JsonIgnore] Guid? AtoId = null,
     [property: JsonIgnore] AtributosDoTipoAto? AtributosDoTipo = null,
     [property: JsonIgnore] bool RegistroPeloDominio = false) : ICommand<Result<RegistrarAtoNormativoResult>>;
@@ -66,3 +70,9 @@ public sealed record RegistrarAtoNormativoCommand(
 /// estrangeira — o módulo não conhece, e não deve conhecer, o que há do outro lado.
 /// </summary>
 public sealed record VinculoEntidadeInput(string EntidadeTipo, Guid EntidadeId);
+
+/// <summary>
+/// Arquivo anexo ao documento principal do ato: nome, tipo de mídia e hash SHA-256
+/// (hexadecimal minúsculo) do conteúdo.
+/// </summary>
+public sealed record AnexoDoAtoInput(string Nome, string TipoMidia, string Hash);

@@ -92,6 +92,63 @@ namespace Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.Migrations
                     b.ToTable("idempotency_cache", "publicacoes");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Publicacoes.Domain.Entities.AnexoDoAto", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AtoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ato_id");
+
+                    b.Property<string>("Hash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character(64)")
+                        .HasColumnName("hash")
+                        .IsFixedLength();
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("nome");
+
+                    b.Property<int>("Ordem")
+                        .HasColumnType("integer")
+                        .HasColumnName("ordem");
+
+                    b.Property<string>("TipoMidia")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("tipo_midia");
+
+                    b.HasKey("Id")
+                        .HasName("pk_anexo_do_ato");
+
+                    b.HasIndex("AtoId", "Nome")
+                        .IsUnique()
+                        .HasDatabaseName("ux_anexo_do_ato_nome");
+
+                    b.HasIndex("AtoId", "Ordem")
+                        .IsUnique()
+                        .HasDatabaseName("ux_anexo_do_ato_ordem");
+
+                    b.ToTable("anexo_do_ato", "publicacoes", t =>
+                        {
+                            t.HasCheckConstraint("ck_anexo_do_ato_hash", "hash ~ '^[0-9a-f]{64}$'");
+
+                            t.HasCheckConstraint("ck_anexo_do_ato_nome", "btrim(nome) <> ''");
+
+                            t.HasCheckConstraint("ck_anexo_do_ato_ordem", "ordem >= 0");
+
+                            t.HasCheckConstraint("ck_anexo_do_ato_tipo_midia", "tipo_midia ~ '^[a-z0-9][a-z0-9.+_-]*/[a-z0-9][a-z0-9.+_-]*$'");
+                        });
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Publicacoes.Domain.Entities.AtoNormativo", b =>
                 {
                     b.Property<Guid>("Id")
@@ -391,6 +448,16 @@ namespace Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Publicacoes.Domain.Entities.AnexoDoAto", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Publicacoes.Domain.Entities.AtoNormativo", null)
+                        .WithMany("Anexos")
+                        .HasForeignKey("AtoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_anexo_do_ato_ato");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Publicacoes.Domain.Entities.AtoNormativo", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Publicacoes.Domain.Entities.AtoNormativo", null)
@@ -457,6 +524,8 @@ namespace Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Unifesspa.UniPlus.Publicacoes.Domain.Entities.AtoNormativo", b =>
                 {
+                    b.Navigation("Anexos");
+
                     b.Navigation("Vinculos");
                 });
 #pragma warning restore 612, 618

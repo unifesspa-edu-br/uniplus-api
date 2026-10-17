@@ -21,6 +21,7 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
 public sealed class RegistrarAtoNormativoCommandHandlerTests
 {
     private const string HashValido = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    private const string OutroHash = "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210";
     private static readonly DateOnly Publicacao = new(2026, 3, 13);
     private static readonly DateTimeOffset Agora = new(2026, 3, 13, 19, 0, 0, TimeSpan.Zero);
 
@@ -290,6 +291,60 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Avisos.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Grava os anexos na ordem enviada")]
+    public async Task Handle_ComAnexos_GravaNaOrdemEnviada()
+    {
+        VigenteComConsequencia(congela: false, efeito: false);
+        SemConflitoDeNumero();
+        AtoNormativo? capturado = null;
+        await _atos.AdicionarAsync(Arg.Do<AtoNormativo>(a => capturado = a), Arg.Any<CancellationToken>());
+
+        Result<RegistrarAtoNormativoResult> resultado = await Executar(Comando() with
+        {
+            Anexos =
+            [
+                new AnexoDoAtoInput("Anexo II.pdf", "application/pdf", OutroHash),
+                new AnexoDoAtoInput("Anexo I.pdf", "application/pdf", HashValido),
+            ],
+        });
+
+        resultado.IsSuccess.Should().BeTrue();
+        capturado!.Anexos.OrderBy(a => a.Ordem).Select(a => a.Nome)
+            .Should().Equal("Anexo II.pdf", "Anexo I.pdf");
+    }
+
+    [Fact(DisplayName = "Sem a lista de anexos (mensagem antiga), registra o ato com lista vazia")]
+    public async Task Handle_SemAnexos_RegistraComListaVazia()
+    {
+        VigenteComConsequencia(congela: false, efeito: false);
+        SemConflitoDeNumero();
+        AtoNormativo? capturado = null;
+        await _atos.AdicionarAsync(Arg.Do<AtoNormativo>(a => capturado = a), Arg.Any<CancellationToken>());
+
+        Result<RegistrarAtoNormativoResult> resultado = await Executar(Comando() with { Anexos = null });
+
+        resultado.IsSuccess.Should().BeTrue();
+        capturado!.Anexos.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Anexo com nome repetido é recusado antes de qualquer ida ao banco")]
+    public async Task Handle_AnexoComNomeDuplicado_RecusaSemTocarOBanco()
+    {
+        Result<RegistrarAtoNormativoResult> resultado = await Executar(Comando() with
+        {
+            Anexos =
+            [
+                new AnexoDoAtoInput("Anexo I.pdf", "application/pdf", HashValido),
+                new AnexoDoAtoInput("Anexo I.pdf", "application/pdf", OutroHash),
+            ],
+        });
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(AnexoDoAtoErrorCodes.NomeDuplicado);
+        await _tipos.DidNotReceiveWithAnyArgs().ObterVigenteAsync(default!, default, default);
+        await _atos.DidNotReceive().AdicionarAsync(Arg.Any<AtoNormativo>(), Arg.Any<CancellationToken>());
     }
 
     private Task<Result<RegistrarAtoNormativoResult>> Executar(RegistrarAtoNormativoCommand comando) =>

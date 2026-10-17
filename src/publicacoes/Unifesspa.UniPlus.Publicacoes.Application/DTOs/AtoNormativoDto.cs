@@ -18,6 +18,8 @@ using System.Text.Json.Serialization;
 /// <para><c>AtoRetificadoId</c>/<c>MotivoRetificacao</c> são o par simétrico da
 /// retificação (ADR-0103): ambos presentes num ato que emenda outro, ambos nulos
 /// no ato que não emenda ninguém.</para>
+/// <para><c>Anexos</c> traz os arquivos anexos ao documento principal, cada um com o hash do
+/// seu conteúdo, na ordem em que foram enviados; vazio num ato sem anexos.</para>
 /// <para><c>Avisos</c> é nulo (omitido) na listagem, para evitar N+1; no detalhe
 /// (GET por id) é recomputado — lista vazia significa "sem colisão de número".</para>
 /// <para>Suporta HATEOAS Level 1 via <c>_links</c> (ADR-0029).</para>
@@ -40,7 +42,8 @@ public sealed record AtoNormativoDto(
     Guid? VersaoInvocadaId,
     string? VersaoInvocadaHash,
     Guid? AtoRetificadoId,
-    string? MotivoRetificacao)
+    string? MotivoRetificacao,
+    IReadOnlyList<AnexoDoAtoDto> Anexos)
 {
     /// <summary>
     /// Avisos de numeração recomputados na leitura. Nulo quando não computados
@@ -53,3 +56,6 @@ public sealed record AtoNormativoDto(
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public IReadOnlyDictionary<string, string>? Links { get; init; }
 }
+
+/// <summary>Anexo de um ato: nome, tipo de mídia e hash SHA-256 do conteúdo.</summary>
+public sealed record AnexoDoAtoDto(string Nome, string TipoMidia, string Hash);

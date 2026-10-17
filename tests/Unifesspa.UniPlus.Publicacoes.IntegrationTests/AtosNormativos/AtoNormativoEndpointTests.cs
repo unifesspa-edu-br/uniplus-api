@@ -9,6 +9,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
@@ -32,6 +33,7 @@ public sealed class AtoNormativoEndpointTests
     private const string AdminAtos = "/api/publicacoes/admin/atos";
     private const string AdminTipos = "/api/publicacoes/admin/tipos-ato";
     private const string HashValido = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    private const string OutroHash = "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210";
     private const string Publicacao = "2026-03-13";
 
     private readonly PublicacoesEndpointFixture _fixture;
@@ -485,6 +487,98 @@ public sealed class AtoNormativoEndpointTests
         detalhe.RootElement.GetProperty("avisos").GetArrayLength().Should().Be(0);
     }
 
+    // ── Anexos ───────────────────────────────────────────────────────────────
+
+    [Fact(DisplayName = "POST com dois anexos os grava, e a leitura devolve nome, tipo de mídia e hash na ordem enviada")]
+    public async Task Registrar_ComAnexos_LeituraDevolveNaOrdemEnviada()
+    {
+        string tipo = await CriarTipoVigenteAsync();
+        Guid entidade = Guid.CreateVersion7();
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        Guid atoId = await PostAtoIdAsync(client, PayloadComAnexos(
+            tipo,
+            new[]
+            {
+                new { nome = "Anexo II.pdf", tipoMidia = "application/pdf", hash = OutroHash },
+                new { nome = "Anexo I.pdf", tipoMidia = "application/pdf", hash = HashValido },
+            },
+            vinculos: new[] { new { entidadeTipo = "CHAMADA", entidadeId = entidade } }));
+
+        JsonElement esperado = (await LerAtoAsync(client, atoId)).GetProperty("anexos");
+        esperado.EnumerateArray().Select(a => a.GetProperty("nome").GetString())
+            .Should().Equal("Anexo II.pdf", "Anexo I.pdf");
+        esperado[0].GetProperty("tipoMidia").GetString().Should().Be("application/pdf");
+        esperado[0].GetProperty("hash").GetString().Should().Be(OutroHash);
+        esperado[1].GetProperty("hash").GetString().Should().Be(HashValido);
+
+        // A listagem geral e a da entidade trazem os mesmos anexos.
+        using JsonDocument lista = JsonDocument.Parse(await client.GetStringAsync(
+            new Uri($"/api/publicacoes/entidades/CHAMADA/{entidade}/atos", UriKind.Relative)));
+        lista.RootElement.EnumerateArray().Single().GetProperty("anexos").EnumerateArray()
+            .Select(a => a.GetProperty("nome").GetString())
+            .Should().Equal("Anexo II.pdf", "Anexo I.pdf");
+
+        JsonElement naListagem = await ProcurarNaListagemAsync(client, atoId);
+        naListagem.GetProperty("anexos").EnumerateArray().Select(a => a.GetProperty("nome").GetString())
+            .Should().Equal("Anexo II.pdf", "Anexo I.pdf");
+    }
+
+    [Fact(DisplayName = "POST sem anexos devolve a lista de anexos vazia")]
+    public async Task Registrar_SemAnexos_DevolveListaVazia()
+    {
+        string tipo = await CriarTipoVigenteAsync();
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        Guid atoId = await PostAtoIdAsync(client, PayloadAto(tipo, SerieUnica(), "1"));
+
+        (await LerAtoAsync(client, atoId)).GetProperty("anexos").GetArrayLength().Should().Be(0);
+    }
+
+    [Theory(DisplayName = "POST com anexo inválido retorna 422 com o erro nomeado")]
+    [InlineData("Anexo.pdf", "application/pdf", "ABC", "hash_invalido")]
+    [InlineData("   ", "application/pdf", HashValido, "nome_invalido")]
+    [InlineData("Anexo.pdf", "pdf", HashValido, "tipo_midia_invalido")]
+    public async Task Registrar_AnexoInvalido_Retorna422(string nome, string tipoMidia, string hash, string erro)
+    {
+        string tipo = await CriarTipoVigenteAsync();
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await PostAtoAsync(
+            client, PayloadComAnexos(tipo, new[] { new { nome, tipoMidia, hash } }));
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await response.Content.ReadAsStringAsync())
+            .Should().Contain($"uniplus.publicacoes.anexo_do_ato.{erro}");
+    }
+
+    [Fact(DisplayName = "POST com dois anexos de mesmo nome retorna 422 e nada é gravado")]
+    public async Task Registrar_AnexosComNomeDuplicado_Retorna422()
+    {
+        string tipo = await CriarTipoVigenteAsync();
+        string serie = SerieUnica();
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await PostAtoAsync(
+            client,
+            PayloadComAnexos(
+                tipo,
+                new[]
+                {
+                    new { nome = "Anexo I.pdf", tipoMidia = "application/pdf", hash = HashValido },
+                    new { nome = "Anexo I.pdf", tipoMidia = "application/pdf", hash = OutroHash },
+                },
+                serie));
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await response.Content.ReadAsStringAsync())
+            .Should().Contain("uniplus.publicacoes.anexo_do_ato.nome_duplicado");
+
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        PublicacoesDbContext ctx = scope.ServiceProvider.GetRequiredService<PublicacoesDbContext>();
+        (await ctx.AtosNormativos.AnyAsync(a => a.Serie == serie)).Should().BeFalse();
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private static void Autenticar(HttpRequestMessage request, string role = "plataforma-admin")
@@ -504,6 +598,59 @@ public sealed class AtoNormativoEndpointTests
             dataPublicacao = Publicacao,
             documentoHash = HashValido,
             assinante = "Jairo Belchior",
+        };
+
+    /// <summary>Percorre a listagem geral, página a página, até achar o ato.</summary>
+    private static async Task<JsonElement> ProcurarNaListagemAsync(HttpClient client, Guid atoId)
+    {
+        string? url = $"{BaseAtos}?limit=100";
+        while (url is not null)
+        {
+            using HttpResponseMessage resposta = await client.GetAsync(new Uri(url, UriKind.RelativeOrAbsolute));
+            resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+
+            using JsonDocument pagina = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+            foreach (JsonElement ato in pagina.RootElement.EnumerateArray())
+            {
+                if (ato.GetProperty("id").GetGuid() == atoId)
+                {
+                    return ato.Clone();
+                }
+            }
+
+            url = ProximaPagina(resposta);
+        }
+
+        throw new InvalidOperationException($"O ato {atoId} não apareceu na listagem.");
+    }
+
+    private static string? ProximaPagina(HttpResponseMessage resposta)
+    {
+        if (!resposta.Headers.TryGetValues("Link", out IEnumerable<string>? valores))
+        {
+            return null;
+        }
+
+        string? next = string.Join(',', valores).Split(',')
+            .FirstOrDefault(p => p.Contains("rel=\"next\"", StringComparison.Ordinal));
+
+        return next is null ? null : next[(next.IndexOf('<', StringComparison.Ordinal) + 1)..next.IndexOf('>', StringComparison.Ordinal)];
+    }
+
+    private static object PayloadComAnexos(
+        string tipoCodigo, object anexos, string? serie = null, object? vinculos = null) =>
+        new
+        {
+            orgao = "CEPS",
+            serie = serie ?? SerieUnica(),
+            ano = 2026,
+            numero = "1",
+            tipoCodigo,
+            dataPublicacao = Publicacao,
+            documentoHash = HashValido,
+            assinante = "Jairo Belchior",
+            anexos,
+            vinculos,
         };
 
     private static object PayloadRetificacao(

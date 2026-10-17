@@ -156,5 +156,30 @@ internal sealed class PublicacoesDomainErrorRegistration : IDomainErrorRegistrat
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.publicacoes.ato_normativo.vinculo_exige_registro_pelo_dominio",
                 "Ato vinculado a esta entidade só pode ser registrado pelo módulo dono do objeto")),
+
+        // Anexos: 422, é o próprio payload que não permite identificar ou provar o anexo.
+        new(AnexoDoAtoErrorCodes.HashInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.publicacoes.anexo_do_ato.hash_invalido",
+                "O hash do anexo deve ser um SHA-256 em hexadecimal minúsculo")),
+
+        new(AnexoDoAtoErrorCodes.NomeInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.publicacoes.anexo_do_ato.nome_invalido",
+                "O nome do anexo é obrigatório e tem tamanho máximo")),
+
+        new(AnexoDoAtoErrorCodes.NomeDuplicado,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.publicacoes.anexo_do_ato.nome_duplicado",
+                "Há mais de um anexo com o mesmo nome no ato")),
+
+        new(AnexoDoAtoErrorCodes.TipoMidiaInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.publicacoes.anexo_do_ato.tipo_midia_invalido",
+                "O tipo de mídia do anexo deve ter a forma tipo/subtipo")),
     ];
 }

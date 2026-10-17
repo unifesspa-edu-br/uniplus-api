@@ -44,6 +44,11 @@ public sealed class PublicacoesDbContext : DbContext, IPublicacoesUnitOfWork
     public DbSet<VinculoAtoEntidade> VinculosAtoEntidade => Set<VinculoAtoEntidade>();
 
     /// <summary>
+    /// Anexos dos atos, com o hash de cada um — append-only como o ato que os carrega.
+    /// </summary>
+    public DbSet<AnexoDoAto> AnexosDoAto => Set<AnexoDoAto>();
+
+    /// <summary>
     /// Vagas de linhagem única por objeto (ADR-0107) — a chave que o banco trava para
     /// que um objeto não seja tratado por duas linhagens de atos do mesmo tipo único.
     /// </summary>

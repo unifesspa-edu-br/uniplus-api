@@ -51,6 +51,7 @@ internal static class AtoNormativoRegras
     public const string EntidadeIdObrigatorio = "Identificador da entidade vinculada não pode ser vazio.";
     public const string VinculoDuplicado = "A mesma entidade não pode ser vinculada duas vezes ao mesmo ato.";
     public const string VinculoNulo = "A lista de vínculos não admite elemento nulo.";
+    public const string AnexoNulo = "A lista de anexos não admite elemento nulo.";
 
     /// <summary>Código do aviso de número duplicado (AC4).</summary>
     public const string AvisoNumeroDuplicado = "NumeroDuplicado";

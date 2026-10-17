@@ -1052,6 +1052,44 @@
   },
   "components": {
     "schemas": {
+      "AnexoDoAtoDto": {
+        "required": [
+          "nome",
+          "tipoMidia",
+          "hash"
+        ],
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string"
+          },
+          "tipoMidia": {
+            "type": "string"
+          },
+          "hash": {
+            "type": "string"
+          }
+        }
+      },
+      "AnexoDoAtoInput": {
+        "required": [
+          "nome",
+          "tipoMidia",
+          "hash"
+        ],
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string"
+          },
+          "tipoMidia": {
+            "type": "string"
+          },
+          "hash": {
+            "type": "string"
+          }
+        }
+      },
       "AtoNormativoDto": {
         "required": [
           "id",
@@ -1071,7 +1109,8 @@
           "versaoInvocadaId",
           "versaoInvocadaHash",
           "atoRetificadoId",
-          "motivoRetificacao"
+          "motivoRetificacao",
+          "anexos"
         ],
         "type": "object",
         "properties": {
@@ -1156,6 +1195,12 @@
               "null",
               "string"
             ]
+          },
+          "anexos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnexoDoAtoDto"
+            }
           },
           "avisos": {
             "type": [
@@ -1476,6 +1521,15 @@
             ],
             "items": {
               "$ref": "#/components/schemas/VinculoEntidadeInput"
+            }
+          },
+          "anexos": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/AnexoDoAtoInput"
             }
           }
         }
