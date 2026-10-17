@@ -34,6 +34,16 @@ public static class RegistrarAtoNormativoCommandHandler
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
+        // O ato que trata de objeto cujos atos pertencem ao seu domínio não nasce aqui: este
+        // registro não recebe o arquivo, e o ato ficaria sem documento. A recusa do vínculo
+        // declarado vem antes de qualquer ida ao banco e da validação da cadeia.
+        if (command.RegistroPeloEndpoint
+            && VinculoDeRegistroPeloDominio((command.Vinculos ?? []).Where(v => v is not null).Select(v => v.EntidadeTipo))
+                is { } declarado)
+        {
+            return Result<RegistrarAtoNormativoResult>.Failure(RegistroPeloDominioExigido(declarado));
+        }
+
         // Os atributos de consequência do tipo: ou vêm CONFERIDOS pelo domínio que publicou
         // (registro por mensagem durável — ADR-0108/0061), ou se resolvem agora no catálogo
         // (registro pelo endpoint, em que quem publica está aqui, neste instante).
@@ -99,19 +109,12 @@ public static class RegistrarAtoNormativoCommandHandler
         IReadOnlyList<(string EntidadeTipo, Guid EntidadeId)> vinculos = await ResolverVinculosAsync(
             command, atosRepository, cancellationToken).ConfigureAwait(false);
 
-        // Só o registro pelo endpoint é recusado: ele não recebe o arquivo, e o ato desse
-        // objeto nasceria sem documento. A conferência olha os vínculos EFETIVOS — os
-        // declarados e os herdados do ato retificado —, porque uma retificação que não
-        // repete o vínculo o herda do retificado. O registro por mensagem (que traz os
-        // atributos conferidos) vem do domínio dono do objeto, com o arquivo guardado.
-        if (command.AtributosDoTipo is null
-            && vinculos.Any(v => EntidadesDeRegistroPeloDominio.Contem(v.EntidadeTipo)))
+        // Os herdados só se conhecem depois da resolução: uma retificação que não repete o
+        // vínculo o herda do ato retificado, e nasceria sem documento do mesmo jeito.
+        if (command.RegistroPeloEndpoint
+            && VinculoDeRegistroPeloDominio(vinculos.Select(v => v.EntidadeTipo)) is { } herdado)
         {
-            return Result<RegistrarAtoNormativoResult>.Failure(new DomainError(
-                AtoNormativoErrorCodes.VinculoExigeRegistroPeloDominio,
-                "Este endpoint não registra ato vinculado a um processo seletivo, nem retificação de um "
-                + "ato que o seja: ele não recebe o arquivo do documento, e o ato ficaria sem documento. "
-                + "Publique o ato pela Seleção, que guarda o arquivo e o publica no acervo."));
+            return Result<RegistrarAtoNormativoResult>.Failure(RegistroPeloDominioExigido(herdado));
         }
 
         AtoNormativo ato = AtoNormativo.Registrar(
@@ -231,6 +234,19 @@ public static class RegistrarAtoNormativoCommandHandler
 
         return Ordenados(declarados);
     }
+
+    private static string? VinculoDeRegistroPeloDominio(IEnumerable<string> entidadesTipo) =>
+        entidadesTipo
+            .Select(t => t.Trim())
+            .FirstOrDefault(EntidadesDeRegistroPeloDominio.Contem);
+
+    private static DomainError RegistroPeloDominioExigido(string entidadeTipo) =>
+        new(
+            AtoNormativoErrorCodes.VinculoExigeRegistroPeloDominio,
+            $"Os atos do objeto vinculado ('{entidadeTipo}') são registrados pelo seu próprio domínio, "
+            + "inclusive a retificação de um ato desse objeto: este endpoint não recebe o arquivo do "
+            + "documento, e o ato ficaria sem documento. Publique o ato pelo módulo dono do objeto "
+            + "(a Seleção, no caso do processo seletivo).");
 
     /// <summary>
     /// Ordem determinística das entidades, e não estética: as vagas do objeto são

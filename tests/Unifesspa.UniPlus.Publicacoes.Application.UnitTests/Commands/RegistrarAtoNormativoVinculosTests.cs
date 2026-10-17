@@ -221,11 +221,32 @@ public sealed class RegistrarAtoNormativoVinculosTests
             .Returns([(EntidadesDeRegistroPeloDominio.ProcessoSeletivo, Processo)]);
 
         Result<RegistrarAtoNormativoResult> resultado = await Executar(
-            Comando(vinculos: null, atoRetificadoId: retificado.Id, motivo: "corrige o anexo"));
+            Comando(vinculos: null, atoRetificadoId: retificado.Id, motivo: "corrige o anexo") with
+            {
+                RegistroPeloEndpoint = true,
+            });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(AtoNormativoErrorCodes.VinculoExigeRegistroPeloDominio);
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "O vínculo proibido declarado é recusado antes de qualquer consulta ao banco")]
+    public async Task Handle_VinculoProibidoDeclarado_RecusaAntesDeConsultar()
+    {
+        Result<RegistrarAtoNormativoResult> resultado = await Executar(
+            Comando(
+                vinculos: [new(EntidadesDeRegistroPeloDominio.ProcessoSeletivo, Processo)],
+                atoRetificadoId: Guid.CreateVersion7(),
+                motivo: "corrige o anexo") with
+            {
+                RegistroPeloEndpoint = true,
+            });
+
+        resultado.Error!.Code.Should().Be(AtoNormativoErrorCodes.VinculoExigeRegistroPeloDominio);
+        resultado.Error.Message.Should().Contain(EntidadesDeRegistroPeloDominio.ProcessoSeletivo);
+        await _tipos.DidNotReceiveWithAnyArgs().ObterVigenteAsync(default!, default, default);
+        await _atos.DidNotReceiveWithAnyArgs().ObterPorIdParaLeituraAsync(default, default);
     }
 
     [Fact(DisplayName = "O registro por mensagem do domínio continua aceitando o vínculo com processo seletivo")]

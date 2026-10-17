@@ -199,9 +199,10 @@ public sealed partial class AtosNormativosController : ControllerBase
     /// (ADR-0103). Restrito a <c>plataforma-admin</c>. <c>Idempotency-Key</c>
     /// obrigatório (ADR-0027). A resposta traz o Id, o instante forense de registro
     /// e eventuais avisos de numeração (AC4). Uma retificação que quebra a cadeia
-    /// linear (o ato-alvo já foi retificado) responde 409. Um vínculo com processo
-    /// seletivo, declarado ou herdado do ato retificado, é recusado com 422: o endpoint não recebe o arquivo, e o ato desse
-    /// objeto é publicado pela Seleção.
+    /// linear (o ato-alvo já foi retificado) responde 409. Um vínculo com objeto cujos
+    /// atos pertencem ao seu domínio (o processo seletivo), declarado ou herdado do ato
+    /// retificado, é recusado com 422: o endpoint não recebe o arquivo, e o ato desse
+    /// objeto é publicado pelo domínio dono.
     /// </summary>
     [HttpPost("admin/atos")]
     [Authorize(Roles = "plataforma-admin")]
@@ -219,7 +220,7 @@ public sealed partial class AtosNormativosController : ControllerBase
         ArgumentNullException.ThrowIfNull(command);
 
         Result<RegistrarAtoNormativoResult> resultado = await _commandBus
-            .Send(command, cancellationToken)
+            .Send(command with { RegistroPeloEndpoint = true }, cancellationToken)
             .ConfigureAwait(false);
 
         if (resultado.IsSuccess)
