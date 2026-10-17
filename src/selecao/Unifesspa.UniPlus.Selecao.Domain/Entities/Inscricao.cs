@@ -654,10 +654,14 @@ public sealed class Inscricao : EntityBase
     /// <summary>
     /// O endereço só vale com CEP (UNI-REQ do endereço da inscrição): sem ele, o candidato digitaria qualquer
     /// endereço. Aqui ficam as regras que não precisam do Geo; as que precisam estão em
-    /// <c>ConferenciaDoEnderecoDaInscricao</c>. O endereço em branco é a resposta ainda não dada.
+    /// <c>ConferenciaDoEnderecoDaInscricao</c>. O endereço em branco é a resposta ainda não dada. É pública para o handler de envio recusar o
+    /// endereço sem CEP antes de qualquer consulta ao Geo: a recusa que orienta sai primeiro.
     /// </summary>
-    private static IEnumerable<FieldError> RecusasDoEndereco(IReadOnlyDictionary<string, JsonElement> respostas, RespostasAdmitidas admitidas)
+    public static IEnumerable<FieldError> RecusasDoEndereco(IReadOnlyDictionary<string, JsonElement> respostas, RespostasAdmitidas admitidas)
     {
+        ArgumentNullException.ThrowIfNull(respostas);
+        ArgumentNullException.ThrowIfNull(admitidas);
+
         foreach ((string codigo, DefinicaoDaResposta definicao) in admitidas.Definicoes)
         {
             if (definicao.Tipo != TipoDoValorDeResposta.Endereco

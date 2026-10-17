@@ -501,7 +501,20 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         resultado.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
     }
 
-    private static async Task<(Result<ComprovanteInscricaoDto> Resultado, ISelecaoUnitOfWork UnitOfWork)> SubmeterComEnderecoAsync(IConferenciaEnderecoGeo geo)
+    [Fact(DisplayName = "Envio sem CEP e com UF divergente recebe a orientação do CEP, e não a divergência de município")]
+    public async Task Handle_EnderecoSemCepComUfDivergente_RecusaPorFaltaDeCep()
+    {
+        IConferenciaEnderecoGeo geo = ConferenciaQueAceitaTudo();
+        geo.ConferirMunicipioAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Result.Failure(new DomainError(ConferenciaEnderecoGeoErrorCodes.MunicipioDivergente, "UF divergente")));
+
+        (Result<ComprovanteInscricaoDto> resultado, _) = await SubmeterComEnderecoAsync(geo, cep: null);
+
+        resultado.Errors.Should().ContainSingle(e => e.Field == "ENDERECO_RESIDENCIAL" && e.Error.Code == InscricaoErrorCodes.EnderecoSemCep);
+        resultado.Errors.Should().NotContain(e => e.Error.Code == ConferenciaEnderecoGeoErrorCodes.MunicipioDivergente);
+    }
+
+    private static async Task<(Result<ComprovanteInscricaoDto> Resultado, ISelecaoUnitOfWork UnitOfWork)> SubmeterComEnderecoAsync(IConferenciaEnderecoGeo geo, string? cep = "66010000")
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo, _) = MontarVersaoComItemObrigatorioETermo();
@@ -517,6 +530,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
 
         Dictionary<string, JsonElement> respostas = RespostasDoConjuntoBasico(cpf);
         respostas["APELIDO"] = JsonSerializer.SerializeToElement("Nanda");
+        respostas["ENDERECO_RESIDENCIAL"] = JsonSerializer.SerializeToElement(new { cep, cidade = new { codigoIbge = "1501402", uf = "PA" } });
         InscricaoRequest request = new(null, respostas, null, null);
 
         Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
