@@ -51,8 +51,8 @@ O argumento do fato inoperante continua certo para um tipo de fato e errado para
 
 - O **código** do fato é imutável desde o cadastro, em todo fato, e único, inclusive entre os desativados. O código de um valor de domínio nunca é renomeado nem removido, só desativado. Um predicado publicado cita o fato e o valor por código, e mudar a semântica de um código reinterpretaria o edital congelado (ADR-0111).
 - **Colisão de código:** o cadastro recusa, num fato do administrador, código reservado a fato de sistema, isto é, os já semeados e os que o sistema declara como reservados antes de semeá-los. Um fato de sistema novo nunca assume um código ocupado por fato do administrador: a migration que o semeia confere a colisão e falha sem gravar, e o fato de sistema recebe outro código, o que é livre porque nada o cita ainda.
-- **Eixos do fato** são tudo o que define o significado, a validação ou a proteção do valor: domínio, origem, cardinalidade, escopo, fonte dos valores, formato do texto, ponto de resolução, vínculo, e classificação de proteção de dados com a finalidade e a hipótese legal de tratamento. Mudança num eixo, depois do marco, é um fato novo.
-- No fato do administrador, o marco é o **cadastro**: os eixos não se editam. Continuam editáveis o nome, a descrição, os valores (acrescentar, desativar e reativar, com a descrição e a ordem de cada um) e as regras padrão do derivado. O marco é o cadastro, e não a publicação, porque a troca feita por tela não passa por revisão de PR, e um fato já citado por um processo em rascunho ou por um modelo de formulário seria reinterpretado sem aviso.
+- **Eixos do fato** são tudo o que define o significado, a validação ou a proteção do valor: domínio, origem, cardinalidade, escopo, fonte dos valores, formato do texto, ponto de resolução, vínculo, e classificação de proteção de dados com a finalidade e a hipótese legal de tratamento. No fato de sistema, mudança num eixo, depois do marco, é um fato novo.
+- No fato do administrador, os eixos são **editáveis no próprio fato**, com o código, a origem e o vínculo fixos (emenda de 17/10/2026). O fato é o mesmo, e o que muda são os dados dele; no agregado, o fato de membro não muda, e o domínio, a cardinalidade e a fonte seguem os inferidos dele. A troca por tela não passa por revisão de PR, e o que a protege é: a execução ler só a versão congelada, e o modelo ser copiado para o processo; a edição conferir, na Configuração, as citações ao fato (regras padrão de outros derivados, agregados, modelos de formulário e regra de aplicabilidade da modalidade) e recusar a que deixaria alguma sem valer; a publicação reconferir as cópias do item do rascunho contra o catálogo; e a retificação recusar a troca de eixo de fato já coletado por versão publicada. Também são editáveis o nome, a descrição, os valores (acrescentar, desativar e reativar, com a descrição e a ordem de cada um) e as regras padrão do derivado.
 - No fato de sistema, o marco é o da emenda 1.1 da ADR-0116, estendido a todos os eixos: eles se tornam imutáveis a partir da primeira publicação de um processo seletivo que cite o fato. Até lá, a reclassificação é feita por código, em PR, mantendo o código, e a migration que a aplica confere as citações ao fato nas regras padrão e nos modelos do catálogo e falha sem gravar se alguma deixar de ser válida. Quando a reclassificação invalidaria uma regra do administrador, que não se edita, a saída é um fato de sistema novo, com código novo. Nos processos, que vivem em outro módulo, a conferência é refeita pela Seleção na configuração e na publicação.
 
 ### Identidade por código, como a ADR-0129 admite
@@ -121,11 +121,11 @@ Pelo marco acima, sem publicação que os cite. Como não há produção, os pro
   - a restrição a três domínios deixa de valer: entram texto, data e endereço, com a restrição de citação acima;
   - a distinção entre fato categórico estático e de escopo-processo passa a ser a fonte dos valores;
   - o derivado categórico por regra é multivalorado mesmo com fonte `GLOBAL`; o categórico estático declarado continua podendo ser escalar;
-  - a imutabilidade dos eixos segue os marcos acima: cadastro para os fatos do administrador, primeira publicação que cite o fato para os de sistema.
+  - o marco de imutabilidade dos eixos vale só nos fatos de sistema (primeira publicação que cite o fato); nos fatos do administrador os eixos são editáveis, com as guardas acima.
   - O resto continua valendo: a matriz operador × domínio, a imutabilidade do código, a proibição de renomear ou remover valor citado e o congelamento por valor.
 - **ADR-0116:**
   - a governança somente por seed passa a valer só para os fatos de sistema;
-  - o marco da emenda 1.1 continua valendo nos fatos de sistema, estendido a todos os eixos; o código é imutável desde o cadastro em todo fato, e nos fatos do administrador o marco dos eixos é o cadastro;
+  - o marco da emenda 1.1 continua valendo nos fatos de sistema, estendido a todos os eixos; o código é imutável desde o cadastro em todo fato, e os eixos do fato do administrador são editáveis;
   - o mapa de prefixos e a emenda 1.5 são os desta ADR.
 
 ## Consequências
@@ -151,7 +151,7 @@ Pelo marco acima, sem publicação que os cite. Como não há produção, os pro
 
 - Teste de domínio do fato de sistema: recusa edição fora de nome e descrição, desativação e valor novo ou desativado, em todo fato de sistema, e não só nos normativos.
 - Teste de domínio do fato do administrador:
-  - recusa troca de qualquer eixo;
+  - recusa a alteração dos eixos de fato de sistema; no fato do administrador, a alteração confere as validações do cadastro, a coerência com os valores e as dependências do próprio fato e as citações na Configuração, e não muda código, origem nem vínculo;
   - recusa código reservado a fato de sistema e código repetido, inclusive de fato desativado;
   - recusa origem `Integracao` e vínculo diferente de `REGRA_DERIVACAO:` no derivado (o agregado sobre grupo repetível fica pendente da ADR do grupo);
   - recusa regra configurada de fato de escopo `CANDIDATO` que cite fato de escopo `MEMBRO_GRUPO`;
@@ -163,6 +163,7 @@ Pelo marco acima, sem publicação que os cite. Como não há produção, os pro
 - Teste da publicação: sobre a regra copiada para o processo, recusa ordem, ciclo, classificação ou código contribuído inválidos; a cópia deixa de fora, e lista, a regra padrão de código fora dos valores do processo ou que cite fato ou valor desativado; alterar o padrão do catálogo depois da cópia não altera o processo; valor desativado depois de citado continua no vocabulário congelado.
 - Teste de integração: escrita no catálogo sem o papel `plataforma-admin` é recusada com 403, e o seed dá classificação, finalidade e hipótese legal a todo fato semeado, com a justificativa legal da classificação de cada derivado de sistema.
 - Teste das migrations: a que semeia fato de sistema novo falha sem gravar com o código já ocupado, e a que reclassifica fato de sistema falha sem gravar se alguma citação no catálogo deixar de ser válida.
+- Teste da Seleção: a publicação reconfere as cópias do item do rascunho contra o catálogo, a retificação recusa a troca de eixo de fato já coletado, e a execução da inscrição não lê o catálogo vivo.
 - Teste de log: os componentes que recebem, validam, derivam ou publicam valores de fato registram o código do fato e nunca o valor.
 
 ## Prós e contras das opções
@@ -184,6 +185,7 @@ Pelo marco acima, sem publicação que os cite. Como não há produção, os pro
 
 ## Mais informações
 
+- **Emenda (2026-10-17, #1969):** decisão do líder técnico: os eixos do fato do administrador deixam de ser imutáveis desde o cadastro e passam a ser editáveis no próprio fato, mantidos o código, a origem e o vínculo. O fato fica o mesmo, sem duplicação, e a proteção é a da governança acima. Fato de sistema inalterado, e a ADR-0129 também: o código continua sendo a identidade.
 - **Emenda (03/10/2026, #1726):** as fontes `GEO_UF` e `GEO_MUNICIPIO` servem também ao fato declarado, como a UF do RG e a naturalidade. A UF é enumerada pelo Kernel e congelada; o município é referência fraca ao Geo, listado no cliente entre os da UF respondida antes e conferido no servidor por forma e prefixo do código IBGE — município criado pelo IBGE depois da publicação muda só a listagem. Quando um município declarado decidir elegibilidade, vale a regra do endereço do candidato: conferência contra o Geo no servidor, na execução.
 - **Emendada pela ADR-0138:** o agregado sobre grupo repetível é declarado pelo administrador com o vínculo `AGREGACAO_GRUPO:`, o que fecha a exceção em aberto na governança.
 - **Emenda (2026-10-10, #1856):** a escala de classificação de proteção de dados citada em "Forma do
