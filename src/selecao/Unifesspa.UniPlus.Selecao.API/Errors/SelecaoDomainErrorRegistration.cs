@@ -614,6 +614,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("DocumentoExigido.EtapaNaoPertenceAFase", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.etapa_nao_pertence_a_fase", "A etapa que coleta o documento não acontece na fase em que ele é exigido")),
         new("ProcessoSeletivo.InscricaoPropriaSemFaseDeColeta", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.inscricao_propria_sem_fase_de_coleta", "A origem dos candidatos é inscrição própria, e nenhuma fase coleta inscrição")),
         new("ProcessoSeletivo.VagasSemFaseQueProduzResultado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.vagas_sem_fase_que_produz_resultado", "Há vagas ofertadas, e nenhuma fase do cronograma produz resultado")),
+        new(ProcessoSeletivoErrorCodes.TipoDeAtoUnicoDeclaradoMaisDeUmaVez, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.tipo_de_ato_unico_declarado_mais_de_uma_vez", "O tipo de ato que só pode ser publicado uma vez por processo está declarado em mais de um produto do cronograma")),
         // A conclusão do ciclo recursal por matéria. Cada estado tem código próprio porque a
         // remediação difere: declarar a fase que conclui, remover a declaração que não cabe,
         // ou mover a concluinte para depois da fase que ela encerra.

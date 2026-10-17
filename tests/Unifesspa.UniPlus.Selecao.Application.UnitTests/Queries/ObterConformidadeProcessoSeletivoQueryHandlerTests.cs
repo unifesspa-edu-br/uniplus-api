@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
@@ -26,7 +27,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
             .Returns((ProcessoSeletivo?)null);
 
         ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeProcessoSeletivoQuery(Guid.CreateVersion7()), repository, CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), CancellationToken.None);
+            new ObterConformidadeProcessoSeletivoQuery(Guid.CreateVersion7()), repository, CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), TimeProvider.System, CancellationToken.None);
 
         result.Should().BeNull();
     }
@@ -41,7 +42,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
         ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), CancellationToken.None);
+            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), TimeProvider.System, CancellationToken.None);
 
         result.Should().NotBeNull();
         // Etapa deixou de ser item do checklist (Story #851 §3.5): um processo sem prova
@@ -101,7 +102,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
         ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), CancellationToken.None);
+            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), TimeProvider.System, CancellationToken.None);
 
         result.Should().NotBeNull();
         result!.Itens.Should().Contain(
@@ -175,7 +176,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
         ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), CancellationToken.None);
+            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), TimeProvider.System, CancellationToken.None);
 
         result.Should().NotBeNull();
         result!.Itens.Should().OnlyContain(i => i.Ok);

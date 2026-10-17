@@ -10,6 +10,7 @@ using DTOs;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 /// <summary>
@@ -46,6 +47,8 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
         ICalendarioVigenteReader calendarioVigenteReader,
         IResolvedorFusoInstitucional resolvedorFuso,
         IFatoCandidatoReader fatoCandidatoReader,
+        ITipoAtoPublicadoReader tipoAtoPublicadoReader,
+        TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
@@ -53,6 +56,8 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
         ArgumentNullException.ThrowIfNull(calendarioVigenteReader);
         ArgumentNullException.ThrowIfNull(resolvedorFuso);
         ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
+        ArgumentNullException.ThrowIfNull(tipoAtoPublicadoReader);
+        ArgumentNullException.ThrowIfNull(timeProvider);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
             .ObterComConfiguracaoAsync(query.ProcessoSeletivoId, cancellationToken)
@@ -75,8 +80,11 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
         Result<TimeZoneInfo> fuso = resolvedorFuso.Resolver();
         var contexto = new ContextoDeContagemDePrazos(
             calendario.IsSuccess ? calendario.Value : null,
-                        FalhaDoCalendarioVigente: calendario.IsFailure ? calendario.Error : null,
-            FusoInstitucional: fuso.IsSuccess ? fuso.Value : null);
+            FalhaDoCalendarioVigente: calendario.IsFailure ? calendario.Error : null,
+            FusoInstitucional: fuso.IsSuccess ? fuso.Value : null,
+            TiposDeAtoUnicos: await ResolucaoDosTiposDeAtoUnicos
+                .ResolverAsync(tipoAtoPublicadoReader, processo, DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime), cancellationToken)
+                .ConfigureAwait(false));
 
         FatosDeModalidade fatosDeModalidade = VocabularioDeFatos.ComValoresDeModalidade(
             await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false));

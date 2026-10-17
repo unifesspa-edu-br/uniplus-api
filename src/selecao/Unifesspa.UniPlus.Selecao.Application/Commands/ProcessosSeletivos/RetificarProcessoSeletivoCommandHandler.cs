@@ -369,7 +369,10 @@ public static class RetificarProcessoSeletivoCommandHandler
             calendarioResult.IsSuccess ? calendarioResult.Value : null,
 
             FalhaDoCalendarioVigente: calendarioResult.IsFailure ? calendarioResult.Error : null,
-            FusoInstitucional: fusoInstitucional);
+            FusoInstitucional: fusoInstitucional,
+            TiposDeAtoUnicos: await ResolucaoDosTiposDeAtoUnicos
+                .ResolverAsync(tipoDeAtoReader, processo, DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime), cancellationToken)
+                .ConfigureAwait(false));
 
         SnapshotCanonico canonico = canonicalizer.Canonicalizar(
             new EntradaCanonicalizacao(
