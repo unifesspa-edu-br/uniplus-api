@@ -183,7 +183,8 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
                 new GrafoConfiguracao(
                     [.. estrutura.Etapas], estrutura.OfertaAtendimento!, [.. estrutura.DistribuicaoVagas], estrutura.BonusRegional,
                     [.. estrutura.CriteriosDesempate], estrutura.Classificacao!, [.. estrutura.CronogramaFases], [.. estrutura.DocumentosExigidos], [], null,
-                    fatosColetados: Fatos, formularios: Formularios, termosExigidos: Termos, gruposColetados: Grupos),
+                    fatosColetados: Fatos, formularios: Formularios, termosExigidos: Termos, gruposColetados: Grupos,
+            numeroDeOpcoesDeCurso: 1),
                 DadosEdital.Criar(
                     "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), Guid.CreateVersion7()).Value!,
                 new string('a', 64), "America/Sao_Paulo", retificacao: null, conformidade: null,

@@ -6641,6 +6641,15 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         // Mesma invariante de DefinirDistribuicaoVagas e DefinirOpcoesDeCurso: a restauração repõe
         // as duas dimensões sem passar por elas.
+        // Versão publicada sempre declarou o número, na mesma faixa que DefinirOpcoesDeCurso aceita:
+        // ausência ou valor fora de 1 e 2 é envelope que o domínio não produziria.
+        if (grafo.NumeroDeOpcoesDeCurso is not (>= 1 and <= MaximoDeOpcoesDeCurso))
+        {
+            return new DomainError(
+                ProcessoSeletivoErrorCodes.OpcoesDeCursoInvalido,
+                "O número de opções de curso da configuração restaurada deve ser 1 ou 2.");
+        }
+
         if (OpcoesDeCursoAcimaDasOfertas(grafo.NumeroDeOpcoesDeCurso, grafo.DistribuicaoVagas.Count))
         {
             return ErroDeOpcoesDeCursoAcimaDasOfertas();

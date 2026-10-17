@@ -330,7 +330,8 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
         nosExigencia: [],
         referenciaTemporalFatos: null,
         configuracaoTaxaInscricao: ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-        localidade: LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        localidade: LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!,
+        numeroDeOpcoesDeCurso: 1);
 
     private static Guid AncoraDaFase(ProcessoSeletivo processo, string codigo) =>
         processo.CronogramaFases.Single(f => f.Codigo == codigo).RegraRecurso!.ProdutoAncoraId;
@@ -365,7 +366,8 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
         nosExigencia: [],
         referenciaTemporalFatos: null,
         configuracaoTaxaInscricao: ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-        localidade: LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        localidade: LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!,
+        numeroDeOpcoesDeCurso: 1);
 
     private static ProcessoSeletivo NovoProcesso(string nome)
     {
