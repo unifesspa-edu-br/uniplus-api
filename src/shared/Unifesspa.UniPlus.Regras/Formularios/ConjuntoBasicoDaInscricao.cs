@@ -30,6 +30,13 @@ public static class ConjuntoBasicoDaInscricao
     /// <summary>O nome civil do candidato, que tem de ser o do login.</summary>
     public const string Nome = "NOME";
 
+    /// <summary>
+    /// O formato com que a resposta do fato é conferida. O nome civil vem do login e se confere pela
+    /// igualdade com ele, não por formato: o formato congelado num formulário publicado não o alcança.
+    /// </summary>
+    public static string? FormatoDaResposta(string fatoCodigo, string? formato) =>
+        string.Equals(fatoCodigo, Nome, StringComparison.Ordinal) ? null : formato;
+
     private const string Nacionalidade = "NACIONALIDADE";
     private const string Estrangeiro = "ESTRANGEIRO";
     private const string DesejaNomeSocial = "DESEJA_NOME_SOCIAL";
