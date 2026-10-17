@@ -114,18 +114,6 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// O que identifica cada versão de configuração do processo — sem o documento congelado —, da
-    /// primeira à corrente. Leitura <c>AsNoTracking</c>.
-    /// </summary>
-    /// <remarks>
-    /// Para quem lista os atos do processo: a versão carrega o configurado inteiro, e trazê-lo para
-    /// ler quatro campos de cada uma custaria o documento congelado de todas as versões.
-    /// </remarks>
-    Task<IReadOnlyList<ResumoDaVersao>> ListarResumoDasVersoesAsync(
-        Guid processoSeletivoId,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
     /// Resolve a <see cref="VersaoConfiguracao"/> vigente num instante (RN08,
     /// ADR-0075/0076/0104): a de maior
     /// <see cref="VersaoConfiguracao.VigenteAPartirDe"/> ≤

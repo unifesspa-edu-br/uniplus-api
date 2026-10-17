@@ -14,8 +14,8 @@ using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Atos do processo seletivo na visão administrativa: os que criaram versão do edital e os registros
-/// dos que não criam, com a situação do registro e os documentos de cada um.
+/// Atos do processo seletivo na visão administrativa: o edital, as retificações e os demais atos
+/// publicados, com a situação do registro e os documentos de cada um.
 /// </summary>
 [ApiController]
 [Route("processos-seletivos/{processoSeletivoId:guid}/atos")]

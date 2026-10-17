@@ -263,6 +263,7 @@ public sealed class ValoresSelecionaveisResolverTests
             mocks.ProcessoRepository,
             mocks.DocumentoRepository,
             Substitute.For<IRascunhoDePublicacaoRepository>(),
+            Substitute.For<IAtoDoProcessoRepository>(),
             mocks.Canonicalizer, new ResolvedorFusoDeTeste(),
             Substitute.For<ISelecaoUnitOfWork>(),
             userContext,

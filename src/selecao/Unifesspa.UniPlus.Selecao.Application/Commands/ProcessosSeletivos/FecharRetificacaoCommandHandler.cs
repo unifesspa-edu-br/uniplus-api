@@ -47,6 +47,7 @@ public static class FecharRetificacaoCommandHandler
         IProcessoSeletivoRepository processoSeletivoRepository,
         IDocumentoAPublicarRepository documentoAPublicarRepository,
         IRascunhoDePublicacaoRepository rascunhoDePublicacaoRepository,
+        IAtoDoProcessoRepository atoDoProcessoRepository,
         ISnapshotPublicacaoCanonicalizer canonicalizer,
         IResolvedorFusoInstitucional resolvedorFuso,
         ISelecaoUnitOfWork unitOfWork,
@@ -70,7 +71,7 @@ public static class FecharRetificacaoCommandHandler
         // recusa não devolve exceção, então o que ela mudou não pode ir para o banco.
         return ReconferenciaDasCopiasDoItem.SemPersistirEmRecusaAsync(
             unitOfWork,
-            () => Executar(command, processoSeletivoRepository, documentoAPublicarRepository, rascunhoDePublicacaoRepository, canonicalizer, resolvedorFuso, unitOfWork, userContext, tipoDeAtoReader, vagaDeLinhagemReader, obrigatoriedadeLegalRepository, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, fatoCandidatoReader, calendarioVigenteReader, timeProvider, cancellationToken));
+            () => Executar(command, processoSeletivoRepository, documentoAPublicarRepository, rascunhoDePublicacaoRepository, atoDoProcessoRepository, canonicalizer, resolvedorFuso, unitOfWork, userContext, tipoDeAtoReader, vagaDeLinhagemReader, obrigatoriedadeLegalRepository, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, fatoCandidatoReader, calendarioVigenteReader, timeProvider, cancellationToken));
     }
 
     private static async Task<(Result Resposta, IEnumerable<object> Eventos)> Executar(
@@ -78,6 +79,7 @@ public static class FecharRetificacaoCommandHandler
         IProcessoSeletivoRepository processoSeletivoRepository,
         IDocumentoAPublicarRepository documentoAPublicarRepository,
         IRascunhoDePublicacaoRepository rascunhoDePublicacaoRepository,
+        IAtoDoProcessoRepository atoDoProcessoRepository,
         ISnapshotPublicacaoCanonicalizer canonicalizer,
         IResolvedorFusoInstitucional resolvedorFuso,
         ISelecaoUnitOfWork unitOfWork,
@@ -111,6 +113,7 @@ public static class FecharRetificacaoCommandHandler
         ArgumentNullException.ThrowIfNull(tipoEtapaReader);
         ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
         ArgumentNullException.ThrowIfNull(calendarioVigenteReader);
+        ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
@@ -429,6 +432,23 @@ public static class FecharRetificacaoCommandHandler
 
         await processoSeletivoRepository
             .AdicionarVersaoConfiguracaoAsync(versao, cancellationToken)
+            .ConfigureAwait(false);
+
+        // O registro do ato vai na mesma gravação da versão e do envio ao outbox: a consulta dos atos
+        // do processo lê só ele, e a confirmação do Publicações o encontra pelo id do ato.
+        await atoDoProcessoRepository
+            .AdicionarAsync(
+                RegistroDoAtoDaVersao.Criar(
+                    processo,
+                    versao,
+                    command.Ato,
+                    tipoConferido,
+                    dados.Numero,
+                    documento.Id,
+                    atoRetificadoId: versaoAtual.AtoCriadorId,
+            motivoRetificacao: motivo,
+                    timeProvider),
+                cancellationToken)
             .ConfigureAwait(false);
 
         try
