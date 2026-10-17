@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
 using Domain.Entities;
 using Domain.Interfaces;
+using Domain.ValueObjects;
 
 using DTOs;
 
@@ -77,7 +78,18 @@ public static class ObterCertamePublicadoQueryHandler
         SituacaoDoCertame situacao = SituacaoDaVitrine.Classificar(
             divulgado.InscricoesDe, divulgado.InscricoesAte, instante, SituacaoDaVitrine.LimiarDosUltimosDias);
 
-        return Result<CertamePublicadoDto>.Success(certame with { Situacao = situacao });
+        // Entrada com endereço ilegível fica de fora em vez de derrubar a página inteira: o evento
+        // correspondente só perde o link, e o resto do certame continua servido.
+        List<EditalPublicadoCertameDto> editais = [];
+        foreach (EditalDivulgado edital in divulgado.EditaisDivulgados.OrderBy(static e => e.NumeroVersao))
+        {
+            if (Uri.TryCreate(edital.UrlDownload, UriKind.Absolute, out Uri? url))
+            {
+                editais.Add(new EditalPublicadoCertameDto(edital.AtoId, url));
+            }
+        }
+
+        return Result<CertamePublicadoDto>.Success(certame with { Situacao = situacao, EditaisPublicados = editais });
     }
 
     private static Result<CertamePublicadoDto> NaoEncontrado() =>

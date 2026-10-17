@@ -78,7 +78,7 @@ public sealed class CertamePublicadoController : ControllerBase
         + "recomeçar.";
 
     private const string DescricaoDoSeloDoCertame =
-        "Selo da representação servida, no formato \"{versaoDaProjecao}:{hashDaConfiguracao}:{situacao}\". "
+        "Selo da representação servida, no formato \"{versaoDaProjecao}:{hashDaConfiguracao}:{situacao}:{resumoDosEditais}\". "
         + "Devolva-o no If-None-Match da próxima leitura: a resposta é de revalidação obrigatória "
         + "(Cache-Control: no-cache), e o selo é o que permite receber 304 em vez do documento "
         + "inteiro. Esta rota é somente leitura e não aceita If-Match.";

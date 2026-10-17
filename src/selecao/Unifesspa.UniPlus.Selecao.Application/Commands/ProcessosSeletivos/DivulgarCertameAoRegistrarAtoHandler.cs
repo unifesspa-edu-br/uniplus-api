@@ -29,7 +29,8 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// </para>
 /// <para>
 /// <b>Idempotente por desenho.</b> A reentrega é esperada, e uma entrega atrasada pode trazer o ato
-/// de uma versão anterior à divulgada: a linha recusa retroceder.
+/// de uma versão anterior à divulgada: a linha recusa retroceder, mas registra o edital que o ato
+/// atrasado divulgou — a cópia dele já está no acervo, e a linha do tempo pública precisa do endereço.
 /// </para>
 /// <para>
 /// A recusa de mérito não chega aqui: ela é terminal e fica na fila morta. O efeito é exatamente o
@@ -126,6 +127,11 @@ public static class DivulgarCertameAoRegistrarAtoHandler
             .ConfigureAwait(false);
 
         CertamePublicadoDto certame = projecao.Value!;
+
+        // Registrado só depois da cópia: o endereço divulgado nunca aponta para arquivo ausente.
+        // É o endereço que a projeção desta versão já calculou para o edital, sem segunda derivação.
+        EditalDivulgado editalDivulgado = new(
+            versao.AtoCriadorId, versao.NumeroVersao, certame.DocumentoEdital.UrlDownload.OriginalString);
         string documento = JsonSerializer.Serialize(certame, ProjecaoDoCertamePublicado.OpcoesDoDocumento);
         DateTimeOffset agora = timeProvider.GetUtcNow();
 
@@ -144,31 +150,39 @@ public static class DivulgarCertameAoRegistrarAtoHandler
 
         if (divulgado is null)
         {
-            await certameDivulgadoRepository
-                .AdicionarAsync(
-                    CertameDivulgado.Criar(
-                        versao.ProcessoSeletivoId,
-                        versao.NumeroVersao,
-                        versao.AtoCriadorId,
-                        versao.HashConfiguracao,
-                        ProjecaoDoCertamePublicado.Versao,
-                        facetas,
-                        documento,
-                        agora),
-                    cancellationToken)
-                .ConfigureAwait(false);
+            CertameDivulgado nova = CertameDivulgado.Criar(
+                versao.ProcessoSeletivoId,
+                versao.NumeroVersao,
+                versao.AtoCriadorId,
+                versao.HashConfiguracao,
+                ProjecaoDoCertamePublicado.Versao,
+                facetas,
+                documento,
+                agora);
+            nova.RegistrarEdital(editalDivulgado);
+
+            await certameDivulgadoRepository.AdicionarAsync(nova, cancellationToken).ConfigureAwait(false);
         }
-        else if (!divulgado.TentarAvancar(
-            versao.NumeroVersao,
-            versao.AtoCriadorId,
-            versao.HashConfiguracao,
-            ProjecaoDoCertamePublicado.Versao,
-            facetas,
-            documento,
-            agora))
+        else
         {
-            // Reentrega, ou entrega atrasada do ato de uma versão anterior: nada a fazer.
-            return;
+            bool avancou = divulgado.TentarAvancar(
+                versao.NumeroVersao,
+                versao.AtoCriadorId,
+                versao.HashConfiguracao,
+                ProjecaoDoCertamePublicado.Versao,
+                facetas,
+                documento,
+                agora);
+
+            // O edital registra-se também quando a versão não avança: o ato atrasado de uma versão
+            // anterior não desfaz a vigente, mas o seu edital já está no acervo e a linha do tempo
+            // precisa dele. Reentrega do que já está registrado não muda nada.
+            bool registrou = divulgado.RegistrarEdital(editalDivulgado);
+
+            if (!avancou && !registrou)
+            {
+                return;
+            }
         }
 
         try

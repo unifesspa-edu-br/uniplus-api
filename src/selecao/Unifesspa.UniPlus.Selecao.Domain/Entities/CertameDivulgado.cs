@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// O certame como o público o vê, materializado no instante em que ele passa a ser divulgável.
@@ -81,6 +82,13 @@ public sealed class CertameDivulgado : IIdentificavel
     /// </summary>
     public string Certame { get; private set; } = null!;
 
+    /// <summary>
+    /// O edital de cada versão divulgada, identificado pelo ato que a criou. Fica fora do documento
+    /// <see cref="Certame"/> — que descreve só a versão vigente — e cresce a cada divulgação, inclusive
+    /// a de um ato que chega depois de uma versão mais nova.
+    /// </summary>
+    public IReadOnlyList<EditalDivulgado> EditaisDivulgados { get; private set; } = [];
+
     /// <summary>Instante em que esta divulgação foi materializada.</summary>
     public DateTimeOffset DivulgadoEm { get; private set; }
 
@@ -150,6 +158,27 @@ public sealed class CertameDivulgado : IIdentificavel
         InscricoesAte = facetas.InscricoesAte;
         Certame = certame;
         DivulgadoEm = divulgadoEm;
+        return true;
+    }
+
+    /// <summary>
+    /// Registra o edital que um ato divulgou, sem tocar na versão vigente. Idempotente por ato: a
+    /// reentrega da mensagem de registro não duplica a entrada, e o ato atrasado de uma versão
+    /// anterior — que <see cref="TentarAvancar"/> recusa — ainda deixa o seu edital registrado.
+    /// </summary>
+    /// <returns><see langword="true"/> quando a lista mudou.</returns>
+    public bool RegistrarEdital(EditalDivulgado edital)
+    {
+        ArgumentNullException.ThrowIfNull(edital);
+
+        if (EditaisDivulgados.Any(e => e.AtoId == edital.AtoId))
+        {
+            return false;
+        }
+
+        // Lista nova, e não mutação da atual: o rastreador detecta a mudança por comparação do
+        // valor, e a instância antiga pode estar compartilhada com quem a leu.
+        EditaisDivulgados = [.. EditaisDivulgados, edital];
         return true;
     }
 }
