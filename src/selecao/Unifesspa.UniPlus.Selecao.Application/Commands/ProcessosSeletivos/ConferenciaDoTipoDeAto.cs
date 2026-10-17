@@ -97,7 +97,7 @@ internal static class ConferenciaDoTipoDeAto
 
         bool ocupadaPorOutro = await reader
             .ObjetoJaTemAtoDeOutraLinhagemAsync(
-                MensagensDaPublicacao.EntidadeProcessoSeletivo,
+                EntidadesDeRegistroPeloDominio.ProcessoSeletivo,
                 processoSeletivoId,
                 tipo.Codigo,
                 atosDaPropriaLinhagem,

@@ -16,9 +16,6 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// </remarks>
 internal static class MensagensDaPublicacao
 {
-    /// <summary>Rótulo do objeto no vínculo genérico de Publicações (ADR-0105).</summary>
-    public const string EntidadeProcessoSeletivo = EntidadesDeRegistroPeloDominio.ProcessoSeletivo;
-
     public static object[] Montar(
         ProcessoSeletivo processo,
         VersaoConfiguracao versao,
@@ -59,7 +56,7 @@ internal static class MensagensDaPublicacao
                 VersaoInvocadaHash: versao.HashConfiguracao,
                 AtoRetificadoId: atoRetificadoId,
                 MotivoRetificacao: motivoRetificacao,
-                Vinculos: [new VinculoEntidadeRequisicao(EntidadeProcessoSeletivo, processo.Id)],
+                Vinculos: [new VinculoEntidadeRequisicao(EntidadesDeRegistroPeloDominio.ProcessoSeletivo, processo.Id)],
                 // Os atributos como o catálogo os declarava AGORA — copiados por valor
                 // (ADR-0061). O registro do ato acontece depois, e o cadastro é editável:
                 // relê-lo no consumo faria a decisão que devolveu 204 valer outra coisa.
