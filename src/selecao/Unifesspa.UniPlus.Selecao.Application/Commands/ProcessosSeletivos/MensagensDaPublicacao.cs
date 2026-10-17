@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 internal static class MensagensDaPublicacao
 {
     /// <summary>Rótulo do objeto no vínculo genérico de Publicações (ADR-0105).</summary>
-    public const string EntidadeProcessoSeletivo = "PROCESSO_SELETIVO";
+    public const string EntidadeProcessoSeletivo = EntidadesDeRegistroPeloDominio.ProcessoSeletivo;
 
     public static object[] Montar(
         ProcessoSeletivo processo,

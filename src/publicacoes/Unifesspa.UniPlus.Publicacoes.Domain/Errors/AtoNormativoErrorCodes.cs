@@ -47,4 +47,11 @@ public static class AtoNormativoErrorCodes
     /// própria linhagem (ADR-0103), não um ato novo.
     /// </summary>
     public const string ObjetoJaTemAtoVivoDoTipo = "AtoNormativo.ObjetoJaTemAtoVivoDoTipo";
+
+    /// <summary>
+    /// O endpoint administrativo recebeu um vínculo com entidade cujos atos só entram
+    /// pelo domínio dono do objeto. O endpoint não recebe o arquivo, então o ato nasceria
+    /// sem documento e fora das regras do domínio sobre o que pode publicar.
+    /// </summary>
+    public const string VinculoExigeRegistroPeloDominio = "AtoNormativo.VinculoExigeRegistroPeloDominio";
 }

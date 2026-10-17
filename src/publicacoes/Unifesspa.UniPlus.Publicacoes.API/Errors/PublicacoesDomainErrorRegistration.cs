@@ -147,5 +147,13 @@ internal sealed class PublicacoesDomainErrorRegistration : IDomainErrorRegistrat
                 StatusCodes.Status409Conflict,
                 "uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo",
                 "O tipo admite um único ato vivo por objeto, e a entidade vinculada já é tratada por outra linhagem")),
+
+        // 422: é o próprio payload que pede o que este endpoint não pode fazer — não há
+        // estado gravado em disputa.
+        new(AtoNormativoErrorCodes.VinculoExigeRegistroPeloDominio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.publicacoes.ato_normativo.vinculo_exige_registro_pelo_dominio",
+                "Ato vinculado a esta entidade só pode ser registrado pelo módulo dono do objeto")),
     ];
 }
