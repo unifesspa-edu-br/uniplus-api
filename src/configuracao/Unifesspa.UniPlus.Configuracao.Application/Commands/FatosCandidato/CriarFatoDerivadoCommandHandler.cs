@@ -18,15 +18,15 @@ public static class CriarFatoDerivadoCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        // Token desconhecido vira o sentinela do enum, que o agregado recusa com o erro do campo.
-        _ = DominiosFato.TryAnalisar(command.Dominio, out DominioFato dominio);
-        _ = EscoposFato.TryAnalisar(command.Escopo, out EscopoFato escopo);
-        _ = ClassificacoesProtecaoDado.TryAnalisar(command.ClassificacaoProtecao, out ClassificacaoProtecaoDado classificacao);
-        _ = HipotesesLegaisTratamento.TryAnalisar(command.HipoteseLegal, out HipoteseLegalTratamento hipotese);
-
+        // Ausente é "não informado" e token desconhecido é "fora do vocabulário": o agregado recusa cada um no campo.
         Result<FatoCandidato> criar = FatoCandidato.CriarDerivadoDoAdministrador(
-            command.Codigo, command.Nome, command.Descricao, dominio, command.PontoResolucao, escopo, classificacao,
-            command.FinalidadeTratamento, hipotese);
+            command.Codigo, command.Nome, command.Descricao,
+            TokensDoFato.Dominio(command.Dominio) ?? DominioFato.Nenhum,
+            command.PontoResolucao,
+            TokensDoFato.Escopo(command.Escopo) ?? EscopoFato.Nenhum,
+            TokensDoFato.Classificacao(command.ClassificacaoProtecao) ?? ClassificacaoProtecaoDado.Nenhuma,
+            command.FinalidadeTratamento,
+            TokensDoFato.HipoteseLegal(command.HipoteseLegal) ?? HipoteseLegalTratamento.Nenhuma);
         if (criar.IsFailure)
         {
             return Result<Guid>.ValidationFailure(criar.Errors);

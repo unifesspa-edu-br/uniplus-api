@@ -27,6 +27,9 @@ public interface IModalidadeRepository
         PaginationDirection direction,
         CancellationToken cancellationToken);
 
+    /// <summary>As modalidades vivas, sem rastreamento: o que a alteração da definição de um fato pode deixar sem valer.</summary>
+    Task<IReadOnlyList<Modalidade>> ListarVivasAsync(CancellationToken cancellationToken);
+
     Task AdicionarAsync(Modalidade modalidade, CancellationToken cancellationToken);
 
     /// <summary>

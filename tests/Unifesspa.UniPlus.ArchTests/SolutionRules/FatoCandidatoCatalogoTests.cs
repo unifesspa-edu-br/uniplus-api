@@ -81,6 +81,35 @@ public sealed class FatoCandidatoCatalogoTests
             + $"Migrations com FK para rol_de_fatos_candidato: {string.Join(", ", infratoras)}");
     }
 
+    [Fact(DisplayName = "A execução da inscrição lê só a versão congelada: nenhum código dela consulta o catálogo vivo de fatos")]
+    public void ExecucaoDaInscricao_NaoLeOCatalogoVivo()
+    {
+        // A definição do fato do administrador é editável (ADR-0136, emenda de 17/10/2026) porque a
+        // execução lê o que a versão publicada congelou, inclusive a decisão de cifrar. Um leitor do
+        // catálogo vivo nesses arquivos reabriria a execução à edição.
+        string selecao = Path.Join(RaizSrc(), "selecao", "Unifesspa.UniPlus.Selecao.Application");
+        IEnumerable<string> arquivos = new[]
+            {
+                Path.Join(selecao, "Commands", "Inscricoes"),
+                Path.Join(selecao, "Queries", "Inscricoes"),
+                Path.Join(RaizSrc(), "ingresso"),
+                Path.Join(RaizSrc(), "portal"),
+            }
+            .Where(Directory.Exists)
+            .SelectMany(static d => Directory.EnumerateFiles(d, "*.cs", SearchOption.AllDirectories))
+            .Where(static f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .Concat([
+                Path.Join(selecao, "Services", "ContextoDaVersaoFixadaResolver.cs"),
+                Path.Join(selecao, "Services", "VersaoDivulgadaResolver.cs"),
+            ]);
+
+        string[] lidos = [.. arquivos];
+        lidos.Should().Contain(static f => f.EndsWith("ContextoDaVersaoFixadaResolver.cs", StringComparison.Ordinal));
+        lidos.Where(static f => SemComentarios(f).Contains("IFatoCandidatoReader", StringComparison.Ordinal))
+            .Should().BeEmpty("a execução da inscrição lê só a versão congelada");
+    }
+
     [Theory(DisplayName = "O detector de verbo de escrita reconhece as formas de atributo")]
     [InlineData("[HttpPost(\"admin/x\")]")]
     [InlineData("[HttpPut(\"admin/x/{id}\")]")]

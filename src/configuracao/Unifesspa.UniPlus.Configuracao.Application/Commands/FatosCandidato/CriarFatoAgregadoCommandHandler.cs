@@ -21,15 +21,14 @@ public static class CriarFatoAgregadoCommandHandler
         ArgumentNullException.ThrowIfNull(precedenciaRepository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        // Token desconhecido vira o sentinela do enum, que o agregado recusa com o erro do campo.
-        _ = ClassificacoesProtecaoDado.TryAnalisar(command.ClassificacaoProtecao, out ClassificacaoProtecaoDado classificacao);
-        _ = HipotesesLegaisTratamento.TryAnalisar(command.HipoteseLegal, out HipoteseLegalTratamento hipotese);
-
         IReadOnlyList<FatoCandidato> fatos = await repository.ListarTodosAsync(cancellationToken).ConfigureAwait(false);
         IReadOnlyList<PrecedenciaFase> precedencias = await precedenciaRepository.ListarVivasAsync(cancellationToken).ConfigureAwait(false);
         Result<FatoCandidato> criar = FatoCandidato.CriarAgregadoDoAdministrador(
             command.Codigo, command.Nome, command.Descricao, command.FatoDeMembro, new CatalogoDeFatos(fatos, precedencias),
-            command.PontoResolucao, classificacao, command.FinalidadeTratamento, hipotese);
+            command.PontoResolucao,
+            TokensDoFato.Classificacao(command.ClassificacaoProtecao) ?? ClassificacaoProtecaoDado.Nenhuma,
+            command.FinalidadeTratamento,
+            TokensDoFato.HipoteseLegal(command.HipoteseLegal) ?? HipoteseLegalTratamento.Nenhuma);
         if (criar.IsFailure)
         {
             return Result<Guid>.ValidationFailure(criar.Errors);

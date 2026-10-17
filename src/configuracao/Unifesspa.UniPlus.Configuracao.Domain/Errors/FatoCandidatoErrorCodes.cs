@@ -34,9 +34,11 @@ public static class FatoCandidatoErrorCodes
     /// </summary>
     public const string ClassificacaoAbaixoDoMinimoDoDominio = "FatoCandidato.ClassificacaoAbaixoDoMinimoDoDominio";
     public const string ClassificacaoProtecaoObrigatoria = "FatoCandidato.ClassificacaoProtecaoObrigatoria";
+    public const string ClassificacaoProtecaoInvalida = "FatoCandidato.ClassificacaoProtecaoInvalida";
     public const string FinalidadeTratamentoObrigatoria = "FatoCandidato.FinalidadeTratamentoObrigatoria";
     public const string FinalidadeTratamentoTamanho = "FatoCandidato.FinalidadeTratamentoTamanho";
     public const string HipoteseLegalObrigatoria = "FatoCandidato.HipoteseLegalObrigatoria";
+    public const string HipoteseLegalInvalida = "FatoCandidato.HipoteseLegalInvalida";
 
     /// <summary>Hipótese do art. 7º em fato sensível, ou do art. 11 em fato não sensível.</summary>
     public const string HipoteseLegalIncompativelComClassificacao = "FatoCandidato.HipoteseLegalIncompativelComClassificacao";
@@ -114,4 +116,25 @@ public static class FatoCandidatoErrorCodes
 
     /// <summary>Lista de regras padrão, regra ou condição nula na entrada.</summary>
     public const string RegraPadraoMalformada = "FatoCandidato.RegraPadraoMalformada";
+
+    /// <summary>Eixo informado na alteração da definição de um tipo de fato que não o aceita.</summary>
+    public const string EixoNaoEditavelNoTipoDoFato = "FatoCandidato.EixoNaoEditavelNoTipoDoFato";
+
+    /// <summary>Domínio novo que não comporta os valores já cadastrados no fato.</summary>
+    public const string DominioNaoComportaOsValores = "FatoCandidato.DominioNaoComportaOsValores";
+
+    /// <summary>Fonte nova que não comporta os valores já cadastrados no fato (só a global os tem no catálogo).</summary>
+    public const string FonteNaoComportaOsValores = "FatoCandidato.FonteNaoComportaOsValores";
+
+    /// <summary>A alteração da definição deixaria de valer a regra padrão de outro derivado.</summary>
+    public const string AlteracaoQuebraRegraPadraoDeOutroFato = "FatoCandidato.AlteracaoQuebraRegraPadraoDeOutroFato";
+
+    /// <summary>A alteração da definição deixaria de valer o agregado que aponta o fato como membro.</summary>
+    public const string AlteracaoQuebraAgregadoDoFato = "FatoCandidato.AlteracaoQuebraAgregadoDoFato";
+
+    /// <summary>A alteração da definição deixaria de valer item ou regra de um modelo de formulário.</summary>
+    public const string AlteracaoQuebraModeloDeFormulario = "FatoCandidato.AlteracaoQuebraModeloDeFormulario";
+
+    /// <summary>A alteração da definição deixaria de valer a regra de aplicabilidade de uma modalidade.</summary>
+    public const string AlteracaoQuebraRegraDeAplicabilidade = "FatoCandidato.AlteracaoQuebraRegraDeAplicabilidade";
 }

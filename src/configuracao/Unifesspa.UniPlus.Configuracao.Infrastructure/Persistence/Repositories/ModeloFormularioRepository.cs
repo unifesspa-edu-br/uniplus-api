@@ -55,6 +55,9 @@ public sealed class ModeloFormularioRepository : IModeloFormularioRepository
         return (page.Items, page.PrevAfterId, page.NextAfterId);
     }
 
+    public async Task<IReadOnlyList<ModeloFormulario>> ListarTodosAsync(CancellationToken cancellationToken) =>
+        await _dbContext.ModelosFormulario.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
+
     public async Task AdicionarAsync(ModeloFormulario modelo, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(modelo);

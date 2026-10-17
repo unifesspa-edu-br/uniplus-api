@@ -16,9 +16,18 @@ internal static class MutacaoDoFato
 {
     private const string IndiceUnicoDoValor = "ux_fato_valor_dominio_fato_codigo";
 
-    public static async Task<Result> AplicarAsync(
+    public static Task<Result> AplicarAsync(
         Guid id,
         Func<FatoCandidato, Result> mutacao,
+        IFatoCandidatoRepository repository,
+        IConfiguracaoUnitOfWork unitOfWork,
+        CancellationToken cancellationToken) =>
+        AplicarAsync(id, fato => Task.FromResult(mutacao(fato)), repository, unitOfWork, cancellationToken);
+
+    /// <summary>A mutação assíncrona carrega o que precisa só depois de o fato existir.</summary>
+    public static async Task<Result> AplicarAsync(
+        Guid id,
+        Func<FatoCandidato, Task<Result>> mutacao,
         IFatoCandidatoRepository repository,
         IConfiguracaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
@@ -29,7 +38,7 @@ internal static class MutacaoDoFato
             return Result.Failure(new DomainError(FatoCandidatoErrorCodes.NaoEncontrado, "Fato do candidato não encontrado."));
         }
 
-        Result resultado = mutacao(fato);
+        Result resultado = await mutacao(fato).ConfigureAwait(false);
         if (resultado.IsFailure)
         {
             return resultado;
