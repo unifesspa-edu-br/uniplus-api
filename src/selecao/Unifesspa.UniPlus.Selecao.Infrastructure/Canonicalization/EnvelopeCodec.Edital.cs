@@ -122,7 +122,7 @@ public sealed partial class EnvelopeCodec
             }
 
             FormatoDeDocumento? formato = FormatosDeDocumento.DoTipoDeMidia(tipoDeMidia);
-            bool hashValido = hash.Length == 64 && hash.All(static c => c is (>= '0' and <= '9') or (>= 'a' and <= 'f'));
+            bool hashValido = EhSha256Hexadecimal(hash);
             if (formato is not { } formatoValido || !hashValido || tamanho <= 0)
             {
                 leitor.Propagar<AnexoDoEdital>(new DomainError(
