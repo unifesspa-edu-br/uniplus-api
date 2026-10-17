@@ -181,6 +181,13 @@ public sealed class AtoNormativoTests
         ato.TipoCodigo.Should().Be("EDITAL_ABERTURA");
     }
 
+    [Fact(DisplayName = "Hash do documento com quebra de linha no fim não é um SHA-256")]
+    public void Registrar_HashDoDocumentoComQuebraDeLinhaFinal_Lanca()
+    {
+        Action acao = () => Registrar(documentoHash: HashValido + "\n");
+        acao.Should().Throw<ArgumentException>();
+    }
+
     [Fact(DisplayName = "Nome do tipo acima do limite do catálogo (200) é recusado")]
     public void Registrar_ComNomeDoTipoLongoDemais_Lanca()
     {

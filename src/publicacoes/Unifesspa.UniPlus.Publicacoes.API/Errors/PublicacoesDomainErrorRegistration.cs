@@ -176,6 +176,18 @@ internal sealed class PublicacoesDomainErrorRegistration : IDomainErrorRegistrat
                 "uniplus.publicacoes.anexo_do_ato.nome_duplicado",
                 "Há mais de um anexo com o mesmo nome no ato")),
 
+        new(AnexoDoAtoErrorCodes.QuantidadeExcedida,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.publicacoes.anexo_do_ato.quantidade_excedida",
+                "O ato excede o número máximo de anexos")),
+
+        new(AnexoDoAtoErrorCodes.Nulo,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.publicacoes.anexo_do_ato.nulo",
+                "A lista de anexos não admite elemento nulo")),
+
         new(AnexoDoAtoErrorCodes.TipoMidiaInvalido,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
