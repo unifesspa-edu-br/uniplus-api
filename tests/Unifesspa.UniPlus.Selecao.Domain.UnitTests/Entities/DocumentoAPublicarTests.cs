@@ -143,13 +143,22 @@ public sealed class DocumentoAPublicarTests
         Pendente(tipoDeMidia).ValidarConteudo(conteudo.Length, tipoDeMidia, conteudo).IsSuccess.Should().BeTrue();
     }
 
+    [Fact(DisplayName = "O DOCX montado para os casos de XML malformado, com os dois XMLs válidos, é aceito")]
+    public void ValidarConteudo_DocxMontadoComXmlsValidos_Aceita()
+    {
+        byte[] conteudo = Docx(ContentTypesValido, RelsValido);
+
+        Pendente(TiposDeMidiaDeDocumento.Docx).ValidarConteudo(conteudo.Length, TiposDeMidiaDeDocumento.Docx, conteudo).IsSuccess.Should().BeTrue();
+    }
+
     public static TheoryData<string, string, byte[], string> Recusados => new()
     {
         { TiposDeMidiaDeDocumento.Pdf, TiposDeMidiaDeDocumento.Pdf, [.. "não é um pdf de verdade"u8], DocumentoAPublicarErrorCodes.ConteudoDivergeDoFormato },
         { TiposDeMidiaDeDocumento.Pdf, "image/png", ConteudoPdfValido, DocumentoAPublicarErrorCodes.ConteudoDivergeDoFormato },
         { TiposDeMidiaDeDocumento.Docx, TiposDeMidiaDeDocumento.Docx, ArquivosDeModeloDeTeste.Pdf(), DocumentoAPublicarErrorCodes.ConteudoDivergeDoFormato },
         { TiposDeMidiaDeDocumento.Docx, TiposDeMidiaDeDocumento.Docx, ArquivosDeModeloDeTeste.PlanilhaComoDocx(), DocumentoAPublicarErrorCodes.ConteudoDivergeDoFormato },
-        { TiposDeMidiaDeDocumento.Docx, TiposDeMidiaDeDocumento.Docx, DocxComXmlMalFormado(), DocumentoAPublicarErrorCodes.ConteudoDivergeDoFormato },
+        { TiposDeMidiaDeDocumento.Docx, TiposDeMidiaDeDocumento.Docx, DocxComContentTypesMalFormado(), DocumentoAPublicarErrorCodes.ConteudoDivergeDoFormato },
+        { TiposDeMidiaDeDocumento.Docx, TiposDeMidiaDeDocumento.Docx, DocxComRelsMalFormado(), DocumentoAPublicarErrorCodes.ConteudoDivergeDoFormato },
         { TiposDeMidiaDeDocumento.Docx, TiposDeMidiaDeDocumento.Docx, ArquivosDeModeloDeTeste.DocxComMacro(), DocumentoAPublicarErrorCodes.ContemMacro },
         { TiposDeMidiaDeDocumento.Odt, TiposDeMidiaDeDocumento.Odt, ArquivosDeModeloDeTeste.Docx(), DocumentoAPublicarErrorCodes.ConteudoDivergeDoFormato },
         { TiposDeMidiaDeDocumento.Odt, TiposDeMidiaDeDocumento.Odt, ArquivosDeModeloDeTeste.Odt("application/vnd.oasis.opendocument.spreadsheet"), DocumentoAPublicarErrorCodes.ConteudoDivergeDoFormato },
@@ -196,14 +205,32 @@ public sealed class DocumentoAPublicarTests
         _ => ConteudoPdfValido,
     };
 
-    /// <summary>Um pacote ZIP cujo <c>[Content_Types].xml</c> não é XML bem formado.</summary>
-    private static byte[] DocxComXmlMalFormado()
+    /// <summary>
+    /// Um DOCX completo — <c>_rels/.rels</c> aponta para <c>word/document.xml</c>, que existe — em
+    /// que só o <c>[Content_Types].xml</c> não é XML bem formado: a recusa só pode vir da leitura
+    /// do XML, e não da falta de uma parte.
+    /// </summary>
+    private static byte[] DocxComContentTypesMalFormado() => Docx(contentTypes: "<Types><Override", rels: RelsValido);
+
+    /// <summary>O caso simétrico: o <c>[Content_Types].xml</c> é válido e o <c>_rels/.rels</c> não.</summary>
+    private static byte[] DocxComRelsMalFormado() => Docx(contentTypes: ContentTypesValido, rels: "<Relationships><Relationship");
+
+    private const string RelsValido =
+        """<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>""";
+
+    private const string ContentTypesValido =
+        """<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>""";
+
+    private static byte[] Docx(string contentTypes, string rels)
     {
         using MemoryStream saida = new();
         using (ZipArchive pacote = new(saida, ZipArchiveMode.Create, leaveOpen: true))
         {
-            using StreamWriter escritor = new(pacote.CreateEntry("[Content_Types].xml").Open(), Encoding.UTF8);
-            escritor.Write("<Types><Override");
+            foreach ((string nome, string conteudo) in new[] { ("[Content_Types].xml", contentTypes), ("_rels/.rels", rels), ("word/document.xml", "<document/>") })
+            {
+                using StreamWriter escritor = new(pacote.CreateEntry(nome).Open(), Encoding.UTF8);
+                escritor.Write(conteudo);
+            }
         }
 
         return saida.ToArray();
