@@ -146,6 +146,17 @@ public sealed class AnexoDoAtoPersistenceTests
         ((PostgresException)erro.InnerException!).SqlState.Should().Be(UniqueViolation);
     }
 
+    [Fact(DisplayName = "xmin de época anterior (que reconstruído cairia no futuro) não é transação em andamento, e não lança")]
+    public async Task XidEmAndamento_XminNoFuturo_DevolveFalso()
+    {
+        await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
+        await conexao.OpenAsync();
+        await using NpgsqlCommand comando = conexao.CreateCommand();
+        comando.CommandText = "SELECT publicacoes.fn_xid_em_andamento('4294967290'::xid)";
+
+        ((bool)(await comando.ExecuteScalarAsync())!).Should().BeFalse();
+    }
+
     private async Task Gravar(AtoNormativo ato)
     {
         await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
