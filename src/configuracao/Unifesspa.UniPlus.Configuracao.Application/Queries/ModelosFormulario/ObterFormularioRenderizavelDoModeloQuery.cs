@@ -92,10 +92,10 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
                 e.Descricao,
                 e.Aviso))],
             termos,
-            [.. conteudo.Itens.OrderBy(static i => i.Ordem).Select(i => Campo(i, opcoes))],
+            [.. conteudo.Itens.OrderBy(static i => i.Ordem).Select(i => Campo(modelo.Finalidade, i, opcoes))],
             [.. conteudo.Grupos.OrderBy(static g => g.Ordem).Select(g => new GrupoRenderizavel(
                 g.Codigo, g.Ordem, g.EtapaCodigo, g.Rotulo, g.Minimo, g.Maximo, g.IncluiCandidato,
-                [.. g.Subitens.OrderBy(static s => s.Ordem).Select(s => Campo(s, opcoes))]))],
+                [.. g.Subitens.OrderBy(static s => s.Ordem).Select(s => Campo(modelo.Finalidade, s, opcoes))]))],
             recorte,
             camposDosOutrosFormularios: [],
             VocabularioDoCatalogo.ApresentacaoDos(fatos, recorte.Pressupostos),
@@ -104,7 +104,8 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
             fusoDoEnvio: null);
     }
 
-    private static CampoRenderizavel Campo(ItemDoModelo item, Dictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes) => new(
+    private static CampoRenderizavel Campo(
+        FinalidadeFormulario finalidade, ItemDoModelo item, Dictionary<string, IReadOnlyList<ValorSelecionavel>?> opcoes) => new(
         item.FatoCodigo,
         item.Ordem,
         item.Rotulo,
@@ -112,6 +113,6 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
         opcoes.GetValueOrDefault(item.FatoCodigo),
         item.EtapaCodigo,
         item.Formato,
-        item.Ajuda,
+        ConjuntoBasicoDaInscricao.AjudaDoCampo(finalidade, item.FatoCodigo, item.Ajuda),
         item.PedirConfirmacao);
 }

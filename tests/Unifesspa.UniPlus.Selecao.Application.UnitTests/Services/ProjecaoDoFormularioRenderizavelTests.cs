@@ -66,6 +66,39 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
         formulario.FatosColetados.Single(static f => f.FatoCodigo == "NOME_MAE").Formato.Should().Be("NOME_PESSOA");
     }
 
+    [Fact(DisplayName = "O NOME_SOCIAL congelado sem a orientação é publicado com ela; os demais campos seguem com a ajuda congelada")]
+    public void Projetar_NomeSocialSemAjudaCongelada_PublicaAOrientacaoDaConta()
+    {
+        Configuracao configuracao = new(
+            [Formulario(FinalidadeFormulario.Inscricao)],
+            [
+                Campo("NOME_SOCIAL", 0, TipoRenderizacao.Texto, FinalidadeFormulario.Inscricao, formato: "NOME_PESSOA"),
+                Campo("NOME_MAE", 1, TipoRenderizacao.Texto, FinalidadeFormulario.Inscricao, formato: "NOME_PESSOA"),
+            ],
+            [],
+            []);
+
+        FormularioRenderizavel formulario = configuracao.Projetar(FinalidadeFormulario.Inscricao)!;
+
+        formulario.FatosColetados.Single(static f => f.FatoCodigo == "NOME_SOCIAL").Ajuda
+            .Should().Be(ConjuntoBasicoDaInscricao.Itens.Single(static i => i.FatoCodigo == "NOME_SOCIAL").Ajuda);
+        formulario.FatosColetados.Single(static f => f.FatoCodigo == "NOME_MAE").Ajuda.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Fora da inscrição, o NOME_SOCIAL segue com a ajuda congelada: a conferência com a conta é da inscrição")]
+    public void Projetar_NomeSocialForaDaInscricao_SegueComAAjudaCongelada()
+    {
+        Configuracao configuracao = new(
+            [Formulario(FinalidadeFormulario.Habilitacao)],
+            [Campo("NOME_SOCIAL", 0, TipoRenderizacao.Texto, FinalidadeFormulario.Habilitacao, formato: "NOME_PESSOA")],
+            [],
+            []);
+
+        FormularioRenderizavel formulario = configuracao.Projetar(FinalidadeFormulario.Habilitacao)!;
+
+        formulario.FatosColetados.Single(static f => f.FatoCodigo == "NOME_SOCIAL").Ajuda.Should().BeNull();
+    }
+
     [Fact(DisplayName = "O campo de seleção traz os valores na ordem de apresentação, com a orientação congelada; o de texto, o formato e nenhum valor")]
     public void Projetar_Campos_TrazemValoresEFormato()
     {
