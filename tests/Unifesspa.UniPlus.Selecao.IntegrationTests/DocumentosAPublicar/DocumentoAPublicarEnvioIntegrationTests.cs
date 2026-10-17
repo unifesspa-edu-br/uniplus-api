@@ -414,6 +414,25 @@ public sealed class DocumentoAPublicarEnvioIntegrationTests : IClassFixture<Proc
         (await repositorio.ListarPorProcessoAsync(processo.Id, FinalidadeDoDocumento.DocumentoDeAto)).Should().BeEmpty();
     }
 
+    [Fact(DisplayName = "ListarDoProcessoAsync só devolve documento do processo pedido, mesmo com o id de outro processo")]
+    public async Task ListarDoProcesso_NaoDevolveDocumentoDeOutroProcesso()
+    {
+        (SelecaoDbContext contextoA, ProcessoSeletivo processoA) = await NovoProcessoAsync();
+        (SelecaoDbContext contextoB, ProcessoSeletivo processoB) = await NovoProcessoAsync();
+        DocumentoAPublicar doA = DocumentoAPublicar.IniciarPendente(processoA.Id, FinalidadeDoDocumento.AnexoDoEdital, "a.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        DocumentoAPublicar doB = DocumentoAPublicar.IniciarPendente(processoB.Id, FinalidadeDoDocumento.AnexoDoEdital, "b.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        contextoA.DocumentosAPublicar.Add(doA);
+        contextoB.DocumentosAPublicar.Add(doB);
+        await contextoA.SaveChangesAsync();
+        await contextoB.SaveChangesAsync();
+        await using SelecaoDbContext leitura = _dbFixture.CreateDbContext();
+        DocumentoAPublicarRepository repositorio = new(leitura);
+
+        (await repositorio.ListarDoProcessoAsync(processoA.Id, [doB.Id])).Should().BeEmpty(
+            "o id de um documento de outro processo não pode atravessar a fronteira do processo");
+        (await repositorio.ListarDoProcessoAsync(processoA.Id, [doA.Id, doB.Id])).Select(static d => d.Id).Should().Equal(doA.Id);
+    }
+
     [Fact(DisplayName = "TentarReivindicarConfirmacaoAsync participa da transação ambiente: reverte em rollback")]
     public async Task TentarReivindicarConfirmacaoAsync_RevertNoRollbackDaTransacaoAmbiente()
     {
