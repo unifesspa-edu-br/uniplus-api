@@ -1,13 +1,10 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
-using System.Buffers.Binary;
-using System.IO.Compression;
-using System.Text;
-using System.Xml;
-
 using Enums;
 
 using Errors;
+
+using Services;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -26,24 +23,8 @@ public sealed class ModeloDeDocumento : EntityBase
     /// <summary>Tamanho máximo do arquivo do modelo.</summary>
     public const long TamanhoMaximoBytes = 10 * 1024 * 1024;
 
-    /// <summary>
-    /// Tamanho máximo do nome do arquivo, com a extensão. Cabe no <c>Content-Disposition</c> do
-    /// download mesmo com os caracteres acentuados codificados.
-    /// </summary>
-    public const int NomeArquivoMaxLength = 120;
-
-    /// <summary>Teto de entradas no pacote: um documento de texto não chega perto disso.</summary>
-    private const int MaximoDeEntradas = 5_000;
-
-    /// <summary>Teto de cada XML lido do DOCX (<c>[Content_Types].xml</c> e <c>_rels/.rels</c>).</summary>
-    private const int TamanhoMaximoDoXmlLido = 1024 * 1024;
-
-    private const string ContentTypeDocx = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-    private const string ContentTypeOdt = "application/vnd.oasis.opendocument.text";
-    private const string ContentTypeDoDocumentoPrincipalDocx = "application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml";
-    private const string CaracteresProibidosNoNome = "/\\<>:\"|?*;";
-
-    private static readonly byte[] CabecalhoZip = [0x50, 0x4B, 0x03, 0x04];
+    /// <summary>Tamanho máximo do nome do arquivo, com a extensão.</summary>
+    public const int NomeArquivoMaxLength = NomeDeArquivoEnviado.TamanhoMaximo;
 
     public Guid ProcessoSeletivoId { get; private set; }
     public string NomeArquivo { get; private set; } = string.Empty;
@@ -94,12 +75,13 @@ public sealed class ModeloDeDocumento : EntityBase
                 "O modelo é um documento editável: DOCX ou ODT. PDF e imagem não são editáveis.")));
         }
 
-        string? nome = NomeNormalizado(nomeArquivo, formatoDoModelo);
+        string? nome = NomeDeArquivoEnviado.Normalizar(
+            nomeArquivo, formatoDoModelo == FormatoDeModelo.Nenhum ? string.Empty : ExtensaoDe(formatoDoModelo));
         if (nome is null)
         {
             erros.Add(new FieldError("nomeArquivo", new DomainError(
                 ModeloDeDocumentoErrorCodes.NomeArquivoInvalido,
-                $"O nome do arquivo é obrigatório, tem até {NomeArquivoMaxLength} caracteres com a extensão e não tem separador de caminho, caractere de controle nem {CaracteresProibidosNoNome}.")));
+                $"O nome do arquivo é obrigatório, tem até {NomeArquivoMaxLength} caracteres com a extensão e não tem separador de caminho, caractere de controle nem {NomeDeArquivoEnviado.CaracteresProibidos}.")));
         }
 
         if (erros.Count > 0)
@@ -146,10 +128,8 @@ public sealed class ModeloDeDocumento : EntityBase
     /// <summary>
     /// Valida o conteúdo lido na confirmação contra o formato declarado no início. O content-type
     /// que o objeto declara é só uma triagem — o cliente o escolhe no envio —; o que decide é a
-    /// estrutura do pacote: no DOCX, o documento principal de texto declarado em
-    /// <c>[Content_Types].xml</c>; no ODT, a entrada <c>mimetype</c> gravada sem compressão no
-    /// início do pacote. Planilha ou apresentação renomeadas são recusadas, e o pacote com macro
-    /// também — o modelo vai a público com a chancela da instituição. Regra pura, sem I/O.
+    /// estrutura do pacote (<see cref="PacoteDeDocumentoDeTexto"/>). O pacote com macro é recusado:
+    /// o modelo vai a público com a chancela da instituição. Regra pura, sem I/O.
     /// </summary>
     public Result ValidarConteudo(long tamanhoBytes, string contentType, byte[] conteudo)
     {
@@ -160,31 +140,19 @@ public sealed class ModeloDeDocumento : EntityBase
             return Result.Failure(TamanhoExcedido);
         }
 
-        if (!string.Equals(contentType, ContentType, StringComparison.OrdinalIgnoreCase)
-            || conteudo.Length < CabecalhoZip.Length
-            || !conteudo.AsSpan(0, CabecalhoZip.Length).SequenceEqual(CabecalhoZip))
+        if (!string.Equals(contentType, ContentType, StringComparison.OrdinalIgnoreCase))
         {
             return ConteudoDiverge();
         }
 
-        try
+        return (Formato == FormatoDeModelo.Docx
+            ? PacoteDeDocumentoDeTexto.ValidarDocx(conteudo)
+            : PacoteDeDocumentoDeTexto.ValidarOdt(conteudo)) switch
         {
-            using ZipArchive pacote = new(new MemoryStream(conteudo, writable: false), ZipArchiveMode.Read);
-            if (pacote.Entries.Count > MaximoDeEntradas)
-            {
-                return ConteudoDiverge();
-            }
-
-            return Formato == FormatoDeModelo.Docx ? ValidarDocx(pacote) : ValidarOdt(pacote, conteudo);
-        }
-        catch (InvalidDataException)
-        {
-            return ConteudoDiverge();
-        }
-        catch (XmlException)
-        {
-            return ConteudoDiverge();
-        }
+            VeredictoDoPacote.Valido => Result.Success(),
+            VeredictoDoPacote.ContemMacro => ComMacro(),
+            _ => ConteudoDiverge(),
+        };
     }
 
     /// <summary>O formato do token do contrato; <see cref="FormatoDeModelo.Nenhum"/> quando não é editável.</summary>
@@ -214,153 +182,10 @@ public sealed class ModeloDeDocumento : EntityBase
     /// <summary>O content-type do arquivo no formato.</summary>
     public static string ContentTypeDe(FormatoDeModelo formato) => formato switch
     {
-        FormatoDeModelo.Docx => ContentTypeDocx,
-        FormatoDeModelo.Odt => ContentTypeOdt,
+        FormatoDeModelo.Docx => TiposDeMidiaDeDocumento.Docx,
+        FormatoDeModelo.Odt => TiposDeMidiaDeDocumento.Odt,
         _ => throw new ArgumentOutOfRangeException(nameof(formato), formato, "Formato de modelo sem content-type."),
     };
-
-    /// <summary>
-    /// O nome aparado e normalizado em NFC — a forma que o envelope canônico emite —, com a
-    /// extensão do formato; nulo quando vazio, longo ou com caractere proibido. Sem formato válido,
-    /// o nome ainda é conferido, sem extensão, para a recusa dele acumular com a do formato.
-    /// </summary>
-    private static string? NomeNormalizado(string? nomeArquivo, FormatoDeModelo formato)
-    {
-        string extensao = formato == FormatoDeModelo.Nenhum ? string.Empty : "." + ExtensaoDe(formato);
-        string nome = (nomeArquivo ?? string.Empty).Trim().Normalize(NormalizationForm.FormC);
-        if (extensao.Length > 0 && nome.EndsWith(extensao, StringComparison.OrdinalIgnoreCase))
-        {
-            nome = nome[..^extensao.Length].TrimEnd();
-        }
-
-        if (nome.Length == 0 || nome.Any(static c => char.IsControl(c) || CaracteresProibidosNoNome.Contains(c, StringComparison.Ordinal)))
-        {
-            return null;
-        }
-
-        string comExtensao = nome + extensao;
-        return comExtensao.Length <= NomeArquivoMaxLength ? comExtensao : null;
-    }
-
-    /// <summary>
-    /// O documento principal do pacote é a parte que <c>_rels/.rels</c> aponta como
-    /// <c>officeDocument</c> — o nome dela varia (<c>/word/document.xml</c>,
-    /// <c>/word/document2.xml</c>) e não diferencia caixa —, e é de texto quando o
-    /// <c>[Content_Types].xml</c> a declara com o tipo do documento principal do Word.
-    /// </summary>
-    private Result ValidarDocx(ZipArchive pacote)
-    {
-        if (pacote.Entries.Any(static e => e.FullName.EndsWith("vbaProject.bin", StringComparison.OrdinalIgnoreCase)))
-        {
-            return ComMacro();
-        }
-
-        string? principal = ParteDoDocumentoPrincipal(pacote);
-        ZipArchiveEntry? manifesto = pacote.GetEntry("[Content_Types].xml");
-        if (manifesto is null || manifesto.Length > TamanhoMaximoDoXmlLido || !TemEntrada(pacote, principal?.TrimStart('/')))
-        {
-            return ConteudoDiverge();
-        }
-
-        bool principalEhTexto = false;
-        using Stream stream = manifesto.Open();
-        using XmlReader leitor = LeitorSeguro(stream);
-        while (leitor.Read())
-        {
-            if (leitor.NodeType != XmlNodeType.Element)
-            {
-                continue;
-            }
-
-            string? tipo = leitor.GetAttribute("ContentType");
-            if (tipo is not null && tipo.Contains("macroEnabled", StringComparison.OrdinalIgnoreCase))
-            {
-                return ComMacro();
-            }
-
-            principalEhTexto |= leitor.LocalName == "Override"
-                && string.Equals(leitor.GetAttribute("PartName"), principal, StringComparison.OrdinalIgnoreCase)
-                && string.Equals(tipo, ContentTypeDoDocumentoPrincipalDocx, StringComparison.Ordinal);
-        }
-
-        return principalEhTexto ? Result.Success() : ConteudoDiverge();
-    }
-
-    /// <summary>O nome da parte que a relação <c>officeDocument</c> do pacote aponta, com a barra inicial; nulo sem ela.</summary>
-    private static string? ParteDoDocumentoPrincipal(ZipArchive pacote)
-    {
-        ZipArchiveEntry? relacoes = pacote.GetEntry("_rels/.rels");
-        if (relacoes is null || relacoes.Length > TamanhoMaximoDoXmlLido)
-        {
-            return null;
-        }
-
-        using Stream stream = relacoes.Open();
-        using XmlReader leitor = LeitorSeguro(stream);
-        while (leitor.Read())
-        {
-            if (leitor.NodeType == XmlNodeType.Element
-                && leitor.LocalName == "Relationship"
-                && (leitor.GetAttribute("Type")?.EndsWith("/officeDocument", StringComparison.Ordinal) ?? false)
-                && leitor.GetAttribute("Target") is { Length: > 0 } alvo)
-            {
-                return "/" + alvo.TrimStart('/');
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// Se o pacote tem a entrada — as partes obrigatórias têm de existir, senão o pacote truncado
-    /// ou montado só com os metadados passaria. O conteúdo delas não é lido inteiro: descomprimido,
-    /// ele pode ser muito maior que o arquivo enviado.
-    /// </summary>
-    private static bool TemEntrada(ZipArchive pacote, string? nome) =>
-        nome is not null && pacote.Entries.Any(e => string.Equals(e.FullName, nome, StringComparison.OrdinalIgnoreCase));
-
-    private static XmlReader LeitorSeguro(Stream stream) =>
-        XmlReader.Create(stream, new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null });
-
-    /// <summary>
-    /// A especificação OpenDocument exige a entrada <c>mimetype</c> como a primeira do pacote, sem
-    /// compressão, com o tipo do documento — é ela que distingue o texto da planilha —, e as
-    /// entradas <c>content.xml</c> e <c>META-INF/manifest.xml</c>. Macros vivem nos diretórios
-    /// <c>Basic/</c> e <c>Scripts/</c>.
-    /// </summary>
-    private Result ValidarOdt(ZipArchive pacote, byte[] conteudo)
-    {
-        if (pacote.Entries.Any(static e => e.FullName.StartsWith("Basic/", StringComparison.Ordinal) || e.FullName.StartsWith("Scripts/", StringComparison.Ordinal)))
-        {
-            return ComMacro();
-        }
-
-        if (!TemEntrada(pacote, "content.xml") || !TemEntrada(pacote, "META-INF/manifest.xml"))
-        {
-            return ConteudoDiverge();
-        }
-
-        // Cabeçalho local da primeira entrada: tamanho gravado em 18, tamanho do nome em 26, do
-        // campo extra em 28, e o nome a partir de 30. Comparar os bytes gravados com o tipo já
-        // exige a entrada sem compressão: comprimida, ela não teria o texto do tipo.
-        const int InicioDoNome = 30;
-        byte[] nomeEsperado = "mimetype"u8.ToArray();
-        byte[] tipoEsperado = Encoding.ASCII.GetBytes(ContentTypeOdt);
-        if (conteudo.Length < InicioDoNome)
-        {
-            return ConteudoDiverge();
-        }
-
-        uint tamanho = BinaryPrimitives.ReadUInt32LittleEndian(conteudo.AsSpan(18));
-        int tamanhoDoNome = BinaryPrimitives.ReadUInt16LittleEndian(conteudo.AsSpan(26));
-        int tamanhoDoExtra = BinaryPrimitives.ReadUInt16LittleEndian(conteudo.AsSpan(28));
-        int inicioDosDados = InicioDoNome + tamanhoDoNome + tamanhoDoExtra;
-        bool primeiraEhOMimetype = tamanho == tipoEsperado.Length
-            && conteudo.Length >= inicioDosDados + tipoEsperado.Length
-            && conteudo.AsSpan(InicioDoNome, tamanhoDoNome).SequenceEqual(nomeEsperado)
-            && conteudo.AsSpan(inicioDosDados, tipoEsperado.Length).SequenceEqual(tipoEsperado);
-        return primeiraEhOMimetype ? Result.Success() : ConteudoDiverge();
-    }
 
     private Result ConteudoDiverge() => Result.Failure(new DomainError(
         ModeloDeDocumentoErrorCodes.ConteudoDivergeDoFormato,
