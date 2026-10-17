@@ -13,7 +13,8 @@ using Wolverine.Runtime.Handlers;
 
 /// <summary>
 /// Política de falha da mensagem que materializa a divulgação pública do certame — e de mais
-/// nenhuma.
+/// nenhuma. A mesma mensagem também confirma o registro do ato do processo, na mesma chain, e por
+/// isso a confirmação segue estas tentativas: ela só fica pendente quando a divulgação desiste.
 /// </summary>
 /// <remarks>
 /// <para>
