@@ -89,11 +89,13 @@ public static class ConferenciaDoEnderecoDaInscricao
         }
 
         // O número que o Geo não resolve de forma exata pode ser erro de digitação: o endereço só vale com a confirmação explícita.
+        // Sem a confirmação só ela é cobrada: logradouro e bairro só valem a pena depois que o candidato confirma o CEP.
         if (resolvido.ExigeConfirmacao && endereco.CepConfirmado is not true)
         {
             yield return new FieldError(codigo, new DomainError(
                 InscricaoErrorCodes.EnderecoCepNaoConfirmado,
                 "O CEP informado não corresponde a uma rua cadastrada nos Correios. Confira o número; se o seu endereço usa o CEP geral da cidade ou do bairro, confirme no formulário."));
+            yield break;
         }
 
         if (!resolvido.ExigeLogradouroEBairro)
