@@ -99,6 +99,21 @@ public static class RegistrarAtoNormativoCommandHandler
         IReadOnlyList<(string EntidadeTipo, Guid EntidadeId)> vinculos = await ResolverVinculosAsync(
             command, atosRepository, cancellationToken).ConfigureAwait(false);
 
+        // Só o registro pelo endpoint é recusado: ele não recebe o arquivo, e o ato desse
+        // objeto nasceria sem documento. A conferência olha os vínculos EFETIVOS — os
+        // declarados e os herdados do ato retificado —, porque uma retificação que não
+        // repete o vínculo o herda do retificado. O registro por mensagem (que traz os
+        // atributos conferidos) vem do domínio dono do objeto, com o arquivo guardado.
+        if (command.AtributosDoTipo is null
+            && vinculos.Any(v => EntidadesDeRegistroPeloDominio.Contem(v.EntidadeTipo)))
+        {
+            return Result<RegistrarAtoNormativoResult>.Failure(new DomainError(
+                AtoNormativoErrorCodes.VinculoExigeRegistroPeloDominio,
+                "Este endpoint não registra ato vinculado a um processo seletivo, nem retificação de um "
+                + "ato que o seja: ele não recebe o arquivo do documento, e o ato ficaria sem documento. "
+                + "Publique o ato pela Seleção, que guarda o arquivo e o publica no acervo."));
+        }
+
         AtoNormativo ato = AtoNormativo.Registrar(
             // O id vem do domínio que publicou, quando o registro chega por mensagem
             // durável (ADR-0108). No caminho HTTP não há domínio remoto a quem ele
