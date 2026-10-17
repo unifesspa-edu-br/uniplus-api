@@ -16,6 +16,9 @@ internal static class PersonasDeTeste
     /// <summary>O nome completo da Fernanda, como o login o traz (claim name).</summary>
     public const string NomeFernandaDrumond = "Fernanda Laura Nicole Drumond";
 
+    /// <summary>O nome social da Fernanda, como a conta o traz (claim nomeSocial).</summary>
+    public const string NomeSocialFernandaDrumond = "Ariel Drumond";
+
     /// <summary>O nome completo do Kevin, como o login o traz (claim name).</summary>
     public const string NomeKevinCarvalho = "Kevin Anderson Carvalho";
 

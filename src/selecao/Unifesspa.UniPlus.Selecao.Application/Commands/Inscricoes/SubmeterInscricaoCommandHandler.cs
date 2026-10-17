@@ -162,14 +162,21 @@ public static class SubmeterInscricaoCommandHandler
             respostasFinais[codigo] = valor;
         }
 
+        // O nome social que não confere com a conta substitui a obrigatoriedade genérica do campo: a recusa
+        // que orienta é a que resolve, e a genérica não diz ao candidato onde cadastrar.
+        RespostasAdmitidas admitidas = contexto.Value!.Admitidas with { NomeCivilDoLogin = userContext.NomeCompleto, NomeSocialDoLogin = userContext.NomeSocial };
+        IReadOnlyList<FieldError> doNomeSocial = [.. Inscricao.RecusasDoNomeSocial(respostasMescladas, admitidas, aoEnviar: true)];
+
         // O avaliador descarta em silêncio a resposta cujo código não pertence à oferta vigente
         // (RespostaDeCampo.DentroDaOferta) — sem esta checagem sobre as respostas BRUTAS, uma opção
         // fora da oferta num campo opcional passaria sem recusa.
         IReadOnlyList<FieldError> recusas =
         [
+            .. doNomeSocial,
             .. Services.VeredictoDeSubmissao.RecusasDeOpcaoForaDaOferta(respostasFinais, gruposMesclados, contexto.Value!.Ofertas),
             .. Services.VeredictoDeSubmissao.Avaliar(
-                AvaliacaoDaInscricao.DaInscricao(avaliacao.Value!.Formulario), [.. contexto.Value!.TermosExigidos], aceites, envio.Dia),
+                AvaliacaoDaInscricao.DaInscricao(avaliacao.Value!.Formulario), [.. contexto.Value!.TermosExigidos], aceites, envio.Dia)
+                .Where(e => doNomeSocial.Count == 0 || !string.Equals(e.Field, ConjuntoBasicoDaInscricao.NomeSocial, StringComparison.Ordinal)),
         ];
         if (recusas.Count > 0)
         {
@@ -179,7 +186,7 @@ public static class SubmeterInscricaoCommandHandler
         string numeroGerado = await geradorDeNumeroInscricao.ProximoAsync(cancellationToken).ConfigureAwait(false);
 
         Result<ComprovanteInscricao> submetido = inscricao.Submeter(
-            numeroGerado, command.Request.OfertaCursoId, respostasDoCorpo, grupos, aceites, contexto.Value!.Admitidas with { NomeCivilDoLogin = userContext.NomeCompleto },
+            numeroGerado, command.Request.OfertaCursoId, respostasDoCorpo, grupos, aceites, admitidas,
             avaliacao.Value!, derivados.Value!, Services.DerivadosDoSistemaInscricao.DefinicoesDasRespostas,
             command.Precondicao, instante);
         if (submetido.IsFailure)
