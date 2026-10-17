@@ -41,6 +41,18 @@ public static class PredicadoDnfValidador
         PredicadoDnf predicado,
         IReadOnlyDictionary<string, DescritorFatoCandidato> vocabularioFechado,
         IReadOnlySet<string>? fatosColetadosPeloProcesso = null,
+        IReadOnlyDictionary<string, DominioDeValores>? dominiosDinamicos = null) =>
+        ValidarComCausa(predicado, vocabularioFechado, fatosColetadosPeloProcesso, dominiosDinamicos).Resultado;
+
+    /// <summary>
+    /// Como <see cref="Validar"/>, e diz também o que causa a recusa: o fato da condição recusada e,
+    /// quando a recusa é do valor, o valor. Serve a quem precisa distinguir recusas de causas
+    /// diferentes que têm o mesmo código; <see langword="null"/> quando o predicado vale.
+    /// </summary>
+    public static (Result Resultado, string? Causa) ValidarComCausa(
+        PredicadoDnf predicado,
+        IReadOnlyDictionary<string, DescritorFatoCandidato> vocabularioFechado,
+        IReadOnlySet<string>? fatosColetadosPeloProcesso = null,
         IReadOnlyDictionary<string, DominioDeValores>? dominiosDinamicos = null)
     {
         ArgumentNullException.ThrowIfNull(predicado);
@@ -53,13 +65,18 @@ public static class PredicadoDnfValidador
                 Result condicaoResult = ValidarCondicao(condicao, vocabularioFechado, fatosColetadosPeloProcesso, dominiosDinamicos);
                 if (condicaoResult.IsFailure)
                 {
-                    return condicaoResult;
+                    return (condicaoResult, CausaDaRecusa(condicao, condicaoResult.Error!.Code));
                 }
             }
         }
 
-        return Result.Success();
+        return (Result.Success(), null);
     }
+
+    private static string CausaDaRecusa(CondicaoDnf condicao, string codigo) =>
+        codigo is PredicadoDnfErrorCodes.ValorForaDoDominio or PredicadoDnfErrorCodes.ValorIncompativelComTipo
+            ? $"{condicao.Fato}={condicao.Valor.GetRawText()}"
+            : condicao.Fato;
 
     private static Result ValidarCondicao(
         CondicaoDnf condicao,

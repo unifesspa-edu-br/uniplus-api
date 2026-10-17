@@ -22,20 +22,18 @@ public static class CriarFatoCandidatoCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        // Token desconhecido vira o sentinela do enum, que o agregado recusa com o erro do campo.
-        _ = DominiosFato.TryAnalisar(command.Dominio, out DominioFato dominio);
-        _ = CardinalidadesFato.TryAnalisar(command.Cardinalidade, out CardinalidadeFato cardinalidade);
-        _ = EscoposFato.TryAnalisar(command.Escopo, out EscopoFato escopo);
-        _ = ClassificacoesProtecaoDado.TryAnalisar(command.ClassificacaoProtecao, out ClassificacaoProtecaoDado classificacao);
-        _ = HipotesesLegaisTratamento.TryAnalisar(command.HipoteseLegal, out HipoteseLegalTratamento hipotese);
-        FonteValoresFato? fonte = command.FonteValores is null ? null
-            : FontesValoresFato.TryAnalisar(command.FonteValores, out FonteValoresFato f) ? f : FonteValoresFato.Nenhuma;
-        FormatoTexto? formato = command.Formato is null ? null
-            : FormatosTexto.TryAnalisar(command.Formato, out FormatoTexto fmt) ? fmt : FormatoTexto.Nenhum;
-
+        // Ausente é "não informado" e token desconhecido é "fora do vocabulário": o agregado recusa cada um no campo.
         Result<FatoCandidato> criar = FatoCandidato.CriarDoAdministrador(
-            command.Codigo, command.Nome, command.Descricao, dominio, cardinalidade, fonte, formato,
-            command.PontoResolucao, escopo, classificacao, command.FinalidadeTratamento, hipotese);
+            command.Codigo, command.Nome, command.Descricao,
+            TokensDoFato.Dominio(command.Dominio) ?? DominioFato.Nenhum,
+            TokensDoFato.Cardinalidade(command.Cardinalidade) ?? CardinalidadeFato.Nenhuma,
+            TokensDoFato.Fonte(command.FonteValores),
+            TokensDoFato.Formato(command.Formato),
+            command.PontoResolucao,
+            TokensDoFato.Escopo(command.Escopo) ?? EscopoFato.Nenhum,
+            TokensDoFato.Classificacao(command.ClassificacaoProtecao) ?? ClassificacaoProtecaoDado.Nenhuma,
+            command.FinalidadeTratamento,
+            TokensDoFato.HipoteseLegal(command.HipoteseLegal) ?? HipoteseLegalTratamento.Nenhuma);
         if (criar.IsFailure)
         {
             return Result<Guid>.ValidationFailure(criar.Errors);

@@ -672,6 +672,12 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.fato_candidato.classificacao_protecao_obrigatoria",
                 "Classificação de proteção de dados do fato é obrigatória")),
 
+        new(FatoCandidatoErrorCodes.ClassificacaoProtecaoInvalida,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.classificacao_protecao_invalida",
+                "Classificação de proteção de dados do fato fora do vocabulário fechado")),
+
         new(FatoCandidatoErrorCodes.FinalidadeTratamentoObrigatoria,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
@@ -689,6 +695,12 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.fato_candidato.hipotese_legal_obrigatoria",
                 "Hipótese legal de tratamento do fato é obrigatória")),
+
+        new(FatoCandidatoErrorCodes.HipoteseLegalInvalida,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.hipotese_legal_invalida",
+                "Hipótese legal de tratamento do fato fora do vocabulário fechado")),
 
         new(FatoCandidatoErrorCodes.HipoteseLegalIncompativelComClassificacao,
             new DomainErrorMapping(
@@ -827,6 +839,48 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.fato_candidato.ciclo_entre_derivados",
                 "As regras fecham ciclo entre derivados")),
+
+        new(FatoCandidatoErrorCodes.EixoNaoEditavelNoTipoDoFato,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.eixo_nao_editavel_no_tipo_do_fato",
+                "Eixo que o tipo do fato não permite alterar")),
+
+        new(FatoCandidatoErrorCodes.DominioNaoComportaOsValores,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.dominio_nao_comporta_os_valores",
+                "O domínio novo não comporta os valores do fato")),
+
+        new(FatoCandidatoErrorCodes.FonteNaoComportaOsValores,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.fonte_nao_comporta_os_valores",
+                "A fonte nova não comporta os valores do fato")),
+
+        new(FatoCandidatoErrorCodes.AlteracaoQuebraRegraPadraoDeOutroFato,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.alteracao_quebra_regra_padrao_de_outro_fato",
+                "A alteração deixaria de valer a regra padrão de outro fato")),
+
+        new(FatoCandidatoErrorCodes.AlteracaoQuebraAgregadoDoFato,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.alteracao_quebra_agregado_do_fato",
+                "A alteração deixaria de valer o agregado do fato")),
+
+        new(FatoCandidatoErrorCodes.AlteracaoQuebraModeloDeFormulario,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.alteracao_quebra_modelo_de_formulario",
+                "A alteração deixaria de valer um modelo de formulário")),
+
+        new(FatoCandidatoErrorCodes.AlteracaoQuebraRegraDeAplicabilidade,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.alteracao_quebra_regra_de_aplicabilidade",
+                "A alteração deixaria de valer a regra de aplicabilidade de uma modalidade")),
 
         new(FatoCandidatoErrorCodes.RegraPadraoMalformada,
             new DomainErrorMapping(

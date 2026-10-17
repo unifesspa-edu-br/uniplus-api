@@ -25,6 +25,12 @@ public interface IModeloFormularioRepository
         bool? ativo,
         CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Todos os modelos, ativos e inativos, sem rastreamento: o que a alteração da definição de um fato
+    /// pode deixar sem valer, inclusive o modelo inativo que uma reativação traria de volta.
+    /// </summary>
+    Task<IReadOnlyList<ModeloFormulario>> ListarTodosAsync(CancellationToken cancellationToken);
+
     Task AdicionarAsync(ModeloFormulario modelo, CancellationToken cancellationToken);
 
     Task<bool> CodigoExisteAsync(string codigo, CancellationToken cancellationToken);

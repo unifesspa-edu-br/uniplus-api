@@ -71,14 +71,14 @@ internal static class ConferenciaDoModelo
 
         foreach ((int indice, GrupoDoModelo grupo) in conteudo.Grupos)
         {
-            if (ConferirPredicado(grupo.Exibicao, catalogo) is { } exibicao)
+            if (ConferirPredicado($"grupos[{indice}].exibicao", grupo.Exibicao, catalogo) is { } exibicao)
             {
-                erros.Add(new($"grupos[{indice}].exibicao", exibicao));
+                erros.Add(exibicao);
             }
 
-            if (ConferirPredicado(grupo.Obrigatoriedade.Predicado, catalogo) is { } obrigatoriedade)
+            if (ConferirPredicado($"grupos[{indice}].predicadoObrigatoriedade", grupo.Obrigatoriedade.Predicado, catalogo) is { } obrigatoriedade)
             {
-                erros.Add(new($"grupos[{indice}].predicadoObrigatoriedade", obrigatoriedade));
+                erros.Add(obrigatoriedade);
             }
 
             for (int j = 0; j < grupo.Subitens.Count; j++)
@@ -90,9 +90,9 @@ internal static class ConferenciaDoModelo
 
         foreach ((int indice, EtapaDoModelo etapa) in conteudo.Etapas)
         {
-            if (ConferirPredicado(etapa.Exibicao, catalogo) is { } recusa)
+            if (ConferirPredicado($"etapas[{indice}].exibicao", etapa.Exibicao, catalogo) is { } recusa)
             {
-                erros.Add(new($"etapas[{indice}].exibicao", recusa));
+                erros.Add(recusa);
             }
         }
 
@@ -103,10 +103,11 @@ internal static class ConferenciaDoModelo
 
         for (int i = 0; i < conteudo.Pressupostos.Count; i++)
         {
+            string pressuposto = ModeloFormulario.CodigoNaFormaGravada(conteudo.Pressupostos[i]);
             if (!string.IsNullOrWhiteSpace(conteudo.Pressupostos[i])
-                && ConferenciaNoCatalogo.FatoDoItem(ModeloFormulario.CodigoNaFormaGravada(conteudo.Pressupostos[i]), catalogo.Fatos) is { } recusa)
+                && ConferenciaNoCatalogo.FatoDoItem(pressuposto, catalogo.Fatos) is { } recusa)
             {
-                erros.Add(new($"pressupostos[{i}]", recusa));
+                erros.Add(new($"pressupostos[{i}]", recusa, pressuposto));
             }
         }
 
@@ -169,29 +170,29 @@ internal static class ConferenciaDoModelo
         string codigo = ModeloFormulario.CodigoNaFormaGravada(item.FatoCodigo);
         if (recusaDeColetavel(codigo, catalogo.Fatos) is { } naoColetavel)
         {
-            yield return new("fatoCodigo", naoColetavel);
+            yield return new("fatoCodigo", naoColetavel, codigo);
             yield break;
         }
 
         FatoDoCatalogo fato = catalogo.Fatos[codigo];
         if (CoerenciaDoCampo.Validar(codigo, item.TipoRenderizacao, fato.Dominio, fato.Cardinalidade, fato.FonteValores) is { } incoerencia)
         {
-            yield return new("tipoRenderizacao", incoerencia);
+            yield return new("tipoRenderizacao", incoerencia, codigo);
         }
 
-        if (ConferirPredicado(item.Exibicao, catalogo) is { } exibicao)
+        if (ConferirPredicado("precondicao", item.Exibicao, catalogo) is { } exibicao)
         {
-            yield return new("precondicao", exibicao);
+            yield return exibicao;
         }
 
-        if (ConferirPredicado(item.Obrigatoriedade.Predicado, catalogo) is { } obrigatoriedade)
+        if (ConferirPredicado("predicadoObrigatoriedade", item.Obrigatoriedade.Predicado, catalogo) is { } obrigatoriedade)
         {
-            yield return new("predicadoObrigatoriedade", obrigatoriedade);
+            yield return obrigatoriedade;
         }
 
-        if (ConferirPredicado(item.Impedimento?.Quando, catalogo) is { } impedimento)
+        if (ConferirPredicado("impedimento.quando", item.Impedimento?.Quando, catalogo) is { } impedimento)
         {
-            yield return new("impedimento.quando", impedimento);
+            yield return impedimento;
         }
 
         foreach (FieldError restricao in ConferenciaNoCatalogo.SemanticaDasRestricoes(
@@ -207,14 +208,14 @@ internal static class ConferenciaDoModelo
         IReadOnlyDictionary<Guid, VersaoTermoConsentimentoView> versoes,
         IReadOnlySet<(Guid TermoId, Guid VersaoId)> termosExistentes)
     {
-        if (ConferirPredicado(termo.Exibicao, catalogo) is { } exibicao)
+        if (ConferirPredicado("exibicao", termo.Exibicao, catalogo) is { } exibicao)
         {
-            yield return new("exibicao", exibicao);
+            yield return exibicao;
         }
 
-        if (ConferirPredicado(termo.Obrigatoriedade.Predicado, catalogo) is { } obrigatoriedade)
+        if (ConferirPredicado("predicadoObrigatoriedade", termo.Obrigatoriedade.Predicado, catalogo) is { } obrigatoriedade)
         {
-            yield return new("predicadoObrigatoriedade", obrigatoriedade);
+            yield return obrigatoriedade;
         }
 
         // A versão já escolhida pelo modelo continua com ele, mesmo que o catálogo tenha excluído o
@@ -224,21 +225,33 @@ internal static class ConferenciaDoModelo
         {
             yield return new("versaoId", new DomainError(
                 ModeloFormularioErrorCodes.TermoVersaoNaoEncontrada,
-                "A versão informada não existe no catálogo de termos, ou pertence a outro termo."));
+                "A versão informada não existe no catálogo de termos, ou pertence a outro termo."),
+                $"{termo.TermoId}/{termo.VersaoId}");
         }
     }
 
     /// <summary>
     /// A regra que cita fato calculado de atributos do candidato é recusada antes da semântica; a
-    /// citação de fato fora do formulário é do grafo do modelo.
+    /// citação de fato fora do formulário é do grafo do modelo. A recusa leva o fato (e o valor, quando
+    /// é do valor) que a causa.
     /// </summary>
-    private static DomainError? ConferirPredicado(PredicadoDnf? predicado, CatalogoDoModelo catalogo) =>
-        predicado is null
-            ? null
-            : ConferenciaNoCatalogo.CitacaoDeAtributoDoCandidato(predicado.FatosCitados, catalogo.Fatos)
-                ?? (PredicadoDnfValidador.Validar(predicado, catalogo.Vocabulario, null, catalogo.DominiosDinamicos) is { IsFailure: true } recusa
-                    ? recusa.Error
-                    : null);
+    private static FieldError? ConferirPredicado(string campo, PredicadoDnf? predicado, CatalogoDoModelo catalogo)
+    {
+        if (predicado is null)
+        {
+            return null;
+        }
+
+        if (ConferenciaNoCatalogo.AtributoCitado(predicado.FatosCitados, catalogo.Fatos) is { } atributo)
+        {
+            return new(campo, ConferenciaNoCatalogo.CitacaoDeAtributoDoCandidato([atributo], catalogo.Fatos)!, atributo);
+        }
+
+        return PredicadoDnfValidador.ValidarComCausa(predicado, catalogo.Vocabulario, null, catalogo.DominiosDinamicos)
+            is ({ IsFailure: true } recusa, { } causa)
+            ? new(campo, recusa.Error!, causa)
+            : null;
+    }
 
     private static string Prefixar(string prefixo, string? campo) => string.IsNullOrEmpty(campo) ? prefixo : $"{prefixo}.{campo}";
 }

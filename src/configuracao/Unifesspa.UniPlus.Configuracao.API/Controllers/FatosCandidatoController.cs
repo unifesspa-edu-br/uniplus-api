@@ -203,7 +203,30 @@ public sealed class FatosCandidatoController : ControllerBase
         return Enviar(new DefinirRegrasPadraoCommand(id, request.Regras), cancellationToken);
     }
 
-    /// <summary>Edita o nome e a descrição; os eixos do fato não se editam depois do cadastro.</summary>
+    /// <summary>
+    /// Altera os eixos do fato que o administrador cadastrou — domínio, cardinalidade, fonte dos
+    /// valores, formato, escopo, ponto de resolução e proteção de dados —, no subconjunto que o tipo
+    /// dele aceita. Código, origem e vínculo não mudam. A alteração que deixaria de valer uma regra
+    /// padrão, um agregado, um modelo de formulário ou a regra de uma modalidade é recusada, com a
+    /// lista do que deixaria de valer. A versão publicada de um processo não muda.
+    /// </summary>
+    [HttpPut("admin/fatos-candidato/{id:guid}/definicao")]
+    [Authorize(Roles = "plataforma-admin")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public Task<IActionResult> AlterarDefinicao(Guid id, [FromBody] DefinicaoDoFatoInput request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return Enviar(new AlterarDefinicaoDoFatoCandidatoCommand(id, request), cancellationToken);
+    }
+
+    /// <summary>Edita o nome e a descrição; os eixos têm a alteração própria, em <c>/definicao</c>.</summary>
     [HttpPut("admin/fatos-candidato/{id:guid}")]
     [Authorize(Roles = "plataforma-admin")]
     [RequiresIdempotencyKey]

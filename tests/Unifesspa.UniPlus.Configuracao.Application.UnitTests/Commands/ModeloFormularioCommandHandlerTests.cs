@@ -141,7 +141,7 @@ public sealed class ModeloFormularioCommandHandlerTests
 
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(
             new FieldError("conteudo.itens[0].fatoCodigo", new DomainError(ItemFormularioErrorCodes.FatoNaoColetavel, string.Empty)),
-            static o => o.Excluding(static e => e.Error.Message));
+            static o => o.Excluding(static e => e.Error.Message).Excluding(static e => e.Origem));
     }
 
     [Fact(DisplayName = "Regra que cita valor fora do tipo do fato é recusada pela semântica do predicado")]
@@ -174,7 +174,7 @@ public sealed class ModeloFormularioCommandHandlerTests
 
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(
             new FieldError("conteudo.termos[0].versaoId", new DomainError(ModeloFormularioErrorCodes.TermoVersaoNaoEncontrada, string.Empty)),
-            static o => o.Excluding(static e => e.Error.Message));
+            static o => o.Excluding(static e => e.Error.Message).Excluding(static e => e.Origem));
     }
 
     [Fact(DisplayName = "Termo que o catálogo já não traz continua no modelo que o escolheu; o termo novo é recusado")]
@@ -193,7 +193,7 @@ public sealed class ModeloFormularioCommandHandlerTests
 
         editar.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(
             new FieldError("conteudo.termos[1].versaoId", new DomainError(ModeloFormularioErrorCodes.TermoVersaoNaoEncontrada, string.Empty)),
-            static o => o.Excluding(static e => e.Error.Message));
+            static o => o.Excluding(static e => e.Error.Message).Excluding(static e => e.Origem));
     }
 
     [Fact(DisplayName = "Tipo de processo inexistente ou desativado é recusado; o que o modelo já usava continua na edição")]
