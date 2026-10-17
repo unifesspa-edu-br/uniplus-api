@@ -101,17 +101,21 @@ public static class ConferenciaNoCatalogo
     /// capita: o formulário não tem como saber em que ponto ele fica conhecido. O que declara as
     /// dependências é conferido pelo grafo do formulário, como o derivado por regra.
     /// </summary>
-    public static DomainError? CitacaoDeAtributoDoCandidato(IEnumerable<string> citados, IReadOnlyDictionary<string, FatoDoCatalogo> catalogo)
-    {
-        ArgumentNullException.ThrowIfNull(citados);
-        ArgumentNullException.ThrowIfNull(catalogo);
-        return citados.FirstOrDefault(c => c is not null && catalogo.TryGetValue(c, out FatoDoCatalogo? fato)
-                && VinculoDeFato.Usa(fato.Binding, VinculoDeFato.AtributoDoCandidato)
-                && !DerivadosDoSistema.Dependencias.ContainsKey(c)) is { } atributo
+    public static DomainError? CitacaoDeAtributoDoCandidato(IEnumerable<string> citados, IReadOnlyDictionary<string, FatoDoCatalogo> catalogo) =>
+        AtributoCitado(citados, catalogo) is { } atributo
             ? new DomainError(
                 GrafoFormularioErrorCodes.CitaAtributoDoCandidato,
                 $"O fato '{atributo}' é calculado pelo sistema a partir de atributos do candidato sem dependências declaradas e não pode ser citado em regra do formulário.")
             : null;
+
+    /// <summary>O primeiro fato citado que é atributo do candidato sem dependências declaradas.</summary>
+    public static string? AtributoCitado(IEnumerable<string> citados, IReadOnlyDictionary<string, FatoDoCatalogo> catalogo)
+    {
+        ArgumentNullException.ThrowIfNull(citados);
+        ArgumentNullException.ThrowIfNull(catalogo);
+        return citados.FirstOrDefault(c => c is not null && catalogo.TryGetValue(c, out FatoDoCatalogo? fato)
+            && VinculoDeFato.Usa(fato.Binding, VinculoDeFato.AtributoDoCandidato)
+            && !DerivadosDoSistema.Dependencias.ContainsKey(c));
     }
 
     /// <summary>
@@ -153,14 +157,14 @@ public static class ConferenciaNoCatalogo
             .Where(fato => !existentes.Fatos.Contains(fato) && catalogo.TryGetValue(fato, out FatoDoCatalogo? doCatalogo) && !doCatalogo.Ativo)
             .Order(StringComparer.Ordinal)
             .Select(static fato => new FieldError(string.Empty, new DomainError(
-                VinculoCatalogoErrorCodes.FatoDesativado, $"O fato '{fato}' está desativado no catálogo e não aceita vínculo novo.")))];
+                VinculoCatalogoErrorCodes.FatoDesativado, $"O fato '{fato}' está desativado no catálogo e não aceita vínculo novo."), fato))];
         erros.AddRange(propostos.Valores
             .Where(valor => !existentes.Valores.Contains(valor)
                 && catalogo.TryGetValue(valor.Fato, out FatoDoCatalogo? doCatalogo) && doCatalogo.Valores.Any(v => v.Codigo == valor.Valor && !v.Ativo))
             .OrderBy(static v => v.Fato, StringComparer.Ordinal)
             .ThenBy(static v => v.Valor, StringComparer.Ordinal)
             .Select(static v => new FieldError(string.Empty, new DomainError(
-                VinculoCatalogoErrorCodes.ValorDesativado, $"O valor '{v.Valor}' do fato '{v.Fato}' está desativado no catálogo e não aceita vínculo novo."))));
+                VinculoCatalogoErrorCodes.ValorDesativado, $"O valor '{v.Valor}' do fato '{v.Fato}' está desativado no catálogo e não aceita vínculo novo."), $"{v.Fato}.{v.Valor}")));
         return erros.Count > 0 ? Result.ValidationFailure(erros) : Result.Success();
     }
 
@@ -187,16 +191,16 @@ public static class ConferenciaNoCatalogo
                     {
                         OpcoesCondicionadas grupo = opcoes.Entradas[entrada];
                         if (grupo.Quando is { } quando
-                            && PredicadoDnfValidador.Validar(quando, vocabulario, null, dominiosDinamicos) is { IsFailure: true } condicao)
+                            && PredicadoDnfValidador.ValidarComCausa(quando, vocabulario, null, dominiosDinamicos) is ({ IsFailure: true } condicao, { } causaDaCondicao))
                         {
-                            yield return new($"{campo}.entradas[{entrada}].quando", condicao.Error!);
+                            yield return new($"{campo}.entradas[{entrada}].quando", condicao.Error!, causaDaCondicao);
                         }
 
                         PredicadoDnf pertinencia = PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(
                             alvo.Codigo, Operador.Em, JsonSerializer.SerializeToElement(grupo.Valores.Order(StringComparer.Ordinal))).Value!)]).Value!;
-                        if (PredicadoDnfValidador.Validar(pertinencia, vocabulario, null, dominiosDinamicos) is { IsFailure: true } valores)
+                        if (PredicadoDnfValidador.ValidarComCausa(pertinencia, vocabulario, null, dominiosDinamicos) is ({ IsFailure: true } valores, { } causaDosValores))
                         {
-                            yield return new($"{campo}.entradas[{entrada}].valores", valores.Error!);
+                            yield return new($"{campo}.entradas[{entrada}].valores", valores.Error!, causaDosValores);
                         }
                     }
 
@@ -205,7 +209,8 @@ public static class ConferenciaNoCatalogo
                     when respostas.Fatos.Any(f => !catalogo.TryGetValue(f, out FatoDoCatalogo? fonte) || !OpcoesDaFonteCabemNoAlvo(alvo, fonte, dominiosDinamicos)):
                     yield return new($"{campo}.fatos", new DomainError(
                         ItemFormularioErrorCodes.OpcoesDeOutroDominio,
-                        "As opções formadas pelas respostas vêm de campos de seleção cujas opções são todas opções do campo."));
+                        "As opções formadas pelas respostas vêm de campos de seleção cujas opções são todas opções do campo."),
+                        string.Join(',', respostas.Fatos.Where(f => !catalogo.TryGetValue(f, out FatoDoCatalogo? fonte) || !OpcoesDaFonteCabemNoAlvo(alvo, fonte, dominiosDinamicos)).Order(StringComparer.Ordinal)));
                     break;
                 case MunicipiosDaUf daUf
                     when !catalogo.TryGetValue(daUf.FatoUf, out FatoDoCatalogo? uf)
@@ -213,7 +218,8 @@ public static class ConferenciaNoCatalogo
                         || !string.Equals(uf.Cardinalidade, DominioDoCatalogo.Escalar, StringComparison.Ordinal):
                     yield return new($"{campo}.fatos", new DomainError(
                         ItemFormularioErrorCodes.UfDoMunicipioInvalida,
-                        "Os municípios da UF citam um campo de UF de resposta única, com as UFs do Geo."));
+                        "Os municípios da UF citam um campo de UF de resposta única, com as UFs do Geo."),
+                        daUf.FatoUf);
                     break;
                 default:
                     break;

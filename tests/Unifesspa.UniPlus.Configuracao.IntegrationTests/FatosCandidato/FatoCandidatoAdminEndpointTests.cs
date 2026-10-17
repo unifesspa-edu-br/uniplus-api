@@ -7,9 +7,12 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
@@ -329,6 +332,109 @@ public sealed class FatoCandidatoAdminEndpointTests
         listado.ValoresDominio.Should().Equal("RURAL");
         obtido!.ValoresDominio.Should().Equal("RURAL");
     }
+
+    [Fact(DisplayName = "A definição do fato declarado é alterada pelo PUT /definicao; código, origem e vínculo ficam")]
+    public async Task AlterarDefinicao_FatoDeclarado_Retorna204()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        string codigo = CodigoUnico();
+        Guid id = await (await EnviarAsync(client, HttpMethod.Post, Base, FatoBooleano(codigo))).Content.ReadFromJsonAsync<Guid>();
+
+        (await EnviarAsync(client, HttpMethod.Put, $"{Base}/{id}/definicao", DefinicaoCategorica())).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        using JsonDocument fato = await ObterAsync(client, id);
+        fato.RootElement.GetProperty("dominio").GetString().Should().Be("CATEGORICO");
+        fato.RootElement.GetProperty("fonteValores").GetString().Should().Be("GLOBAL");
+        fato.RootElement.GetProperty("pontoResolucao").GetString().Should().Be("INSCRICAO");
+        fato.RootElement.GetProperty("codigo").GetString().Should().Be(codigo);
+        fato.RootElement.GetProperty("binding").GetString().Should().Be($"CAMPO_FORMULARIO:{codigo}");
+    }
+
+    [Fact(DisplayName = "Eixo recusado pela definição volta como 422 no campo do eixo, e o fato não muda")]
+    public async Task AlterarDefinicao_EixoIncoerente_Retorna422NoCampo()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        Guid id = await (await EnviarAsync(client, HttpMethod.Post, Base, FatoBooleano(CodigoUnico()))).Content.ReadFromJsonAsync<Guid>();
+
+        HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Put, $"{Base}/{id}/definicao", new
+        {
+            dominio = "BOOLEANO",
+            cardinalidade = "ESCALAR",
+            fonteValores = "GLOBAL",
+            pontoResolucao = "INSCRICAO",
+            escopo = "CANDIDATO",
+            classificacaoProtecao = "PESSOAL",
+            finalidadeTratamento = "Verificação dos requisitos de matrícula do processo seletivo.",
+            hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+        });
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        problema.RootElement.GetProperty("errors").EnumerateArray().Should().ContainSingle()
+            .Which.GetProperty("field").GetString().Should().Be("fonteValores");
+        using JsonDocument fato = await ObterAsync(client, id);
+        fato.RootElement.GetProperty("dominio").GetString().Should().Be("BOOLEANO");
+    }
+
+    [Fact(DisplayName = "Alterar a definição de fato de sistema é recusado e fato inexistente é 404")]
+    public async Task AlterarDefinicao_SistemaEInexistente()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        (await EnviarAsync(client, HttpMethod.Put, $"{Base}/{IdDeCorRaca}/definicao", DefinicaoCategorica()))
+            .StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await EnviarAsync(client, HttpMethod.Put, $"{Base}/{Guid.NewGuid()}/definicao", DefinicaoCategorica()))
+            .StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact(DisplayName = "Alterar a definição sem o papel plataforma-admin é proibido")]
+    public async Task AlterarDefinicao_SemPapel_Retorna403()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        using HttpRequestMessage request = new(HttpMethod.Put, new Uri($"{Base}/{IdDeCorRaca}/definicao", UriKind.Relative));
+        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
+        request.Headers.Add(TestAuthHandler.RolesHeader, "candidato");
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        request.Content = JsonContent.Create(DefinicaoCategorica());
+
+        (await client.SendAsync(request)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact(DisplayName = "Alteração da definição colidindo com outra escrita do mesmo fato responde 409 e não grava")]
+    public async Task AlterarDefinicao_EscritaConcorrente_Retorna409()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        Guid id = await (await EnviarAsync(client, HttpMethod.Post, Base, FatoBooleano(CodigoUnico()))).Content.ReadFromJsonAsync<Guid>();
+
+        await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
+        ConfiguracaoDbContext concorrente = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        await using IDbContextTransaction transacao = await concorrente.Database.BeginTransactionAsync();
+        // A escrita concorrente segura a linha do fato sem commitar; a alteração lê o xmin antigo e
+        // bloqueia ao gravar, e o commit torna o xmin que ela leu obsoleto.
+        await concorrente.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE configuracao.rol_de_fatos_candidato SET updated_at = now() WHERE id = {id}");
+        int pid = await ConcorrenciaTestHelpers.GetConnectionPidAsync(concorrente);
+
+        Task<HttpResponseMessage> alteracao = EnviarAsync(client, HttpMethod.Put, $"{Base}/{id}/definicao", DefinicaoCategorica());
+        await ConcorrenciaTestHelpers.WaitForBlockedBackendAsync(_fixture.Factory, alteracao, [pid]);
+        await transacao.CommitAsync();
+
+        (await alteracao).StatusCode.Should().Be(HttpStatusCode.Conflict);
+        using JsonDocument fato = await ObterAsync(client, id);
+        fato.RootElement.GetProperty("dominio").GetString().Should().Be("BOOLEANO");
+    }
+
+    private static object DefinicaoCategorica() => new
+    {
+        dominio = "CATEGORICO",
+        cardinalidade = "ESCALAR",
+        fonteValores = "GLOBAL",
+        pontoResolucao = "INSCRICAO",
+        escopo = "CANDIDATO",
+        classificacaoProtecao = "PESSOAL",
+        finalidadeTratamento = "Verificação dos requisitos de matrícula do processo seletivo.",
+        hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+    };
 
     private static object FatoBooleano(string codigo) => new
     {

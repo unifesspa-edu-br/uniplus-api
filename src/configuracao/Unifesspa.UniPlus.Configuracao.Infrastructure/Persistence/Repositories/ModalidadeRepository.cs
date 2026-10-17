@@ -50,6 +50,9 @@ public sealed class ModalidadeRepository : IModalidadeRepository
         return (page.Items, page.PrevAfterId, page.NextAfterId);
     }
 
+    public async Task<IReadOnlyList<Modalidade>> ListarVivasAsync(CancellationToken cancellationToken) =>
+        await _dbContext.Modalidades.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
+
     public async Task AdicionarAsync(Modalidade modalidade, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(modalidade);

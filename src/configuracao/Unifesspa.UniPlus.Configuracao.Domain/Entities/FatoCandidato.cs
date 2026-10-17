@@ -219,15 +219,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         Result<(string Nome, string? Descricao)> descritivo = ValidarDescritivo(nome, descricao);
         erros.AddRange(descritivo.Errors);
 
-        bool dominioValido = dominio != DominioFato.Nenhum && Enum.IsDefined(dominio);
-        if (dominio == DominioFato.Nenhum)
-        {
-            Recusar("dominio", FatoCandidatoErrorCodes.DominioObrigatorio, "Domínio do fato é obrigatório.");
-        }
-        else if (!dominioValido)
-        {
-            Recusar("dominio", FatoCandidatoErrorCodes.DominioInvalido, "Domínio do fato fora do vocabulário fechado.");
-        }
+        ConferirEixosDeValor(erros, dominio, cardinalidade, fonteValores, formato);
 
         bool origemValida = origem != OrigemFato.Nenhuma && Enum.IsDefined(origem);
         if (origem == OrigemFato.Nenhuma)
@@ -237,6 +229,90 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         else if (!origemValida)
         {
             Recusar("origem", FatoCandidatoErrorCodes.OrigemInvalida, "Origem do fato fora do vocabulário fechado.");
+        }
+
+        Result<string> pontoResolucaoResult = ValidarPontoResolucao(pontoResolucao);
+        if (pontoResolucaoResult.IsFailure)
+        {
+            erros.Add(new("pontoResolucao", pontoResolucaoResult.Error!));
+        }
+
+        string? bindingValidado = null;
+        if (codigoResult.IsSuccess && origemValida)
+        {
+            Result<string> bindingResult = ValidarBinding(binding, origem, codigoResult.Value!.Valor);
+            bindingValidado = bindingResult.Value;
+            if (bindingResult.IsFailure)
+            {
+                erros.Add(new("binding", bindingResult.Error!));
+            }
+            else if (!sistema && (origem == OrigemFato.Integracao
+                || bindingResult.Value!.StartsWith(PrefixoBindingDerivadoAtributo + ":", StringComparison.Ordinal)
+                || bindingResult.Value!.StartsWith(PrefixoBindingDerivadoClassificacao + ":", StringComparison.Ordinal)))
+            {
+                // O fato do administrador não tem código que calcule ou traga o valor: é declarado,
+                // ou derivado pela regra que ele mesmo cadastra. Atributo do candidato, classificação
+                // e integração só existem em fato de sistema.
+                Recusar(
+                    "origem",
+                    FatoCandidatoErrorCodes.VinculoExclusivoDeFatoDeSistema,
+                    "Fato do administrador é declarado ou derivado por regra; atributo do candidato, classificação e integração só existem em fato de sistema.");
+            }
+        }
+
+        ConferirEscopo(erros, escopo);
+
+        Result<ProtecaoValidada> protecao = ValidarProtecao(
+            dominio, classificacaoProtecao, finalidadeTratamento, hipoteseLegal,
+            nomeSocialPublico: sistema
+                && string.Equals(codigo?.Trim(), CodigoDoNomeSocial, StringComparison.Ordinal)
+                && dominio == DominioFato.Texto
+                && classificacaoProtecao == ClassificacaoProtecaoDado.Publico);
+        erros.AddRange(protecao.Errors);
+
+        if (erros.Count > 0)
+        {
+            return Result<FatoCandidato>.ValidationFailure(erros);
+        }
+
+        return Result<FatoCandidato>.Success(new FatoCandidato(
+            codigoResult.Value!.Valor,
+            descritivo.Value.Nome,
+            descritivo.Value.Descricao,
+            dominio,
+            origem,
+            cardinalidade,
+            fonteValores,
+            formato,
+            pontoResolucaoResult.Value!,
+            bindingValidado!,
+            escopo,
+            protecao.Value,
+            sistema));
+    }
+
+    /// <summary>
+    /// O domínio, a cardinalidade, a fonte dos valores e o formato, que o cadastro e a alteração da
+    /// definição conferem do mesmo jeito (ADR-0125): as violações acumulam, e a que depende do
+    /// domínio só é conferida com o domínio válido.
+    /// </summary>
+    private static void ConferirEixosDeValor(
+        List<FieldError> erros,
+        DominioFato dominio,
+        CardinalidadeFato cardinalidade,
+        FonteValoresFato? fonteValores,
+        FormatoTexto? formato)
+    {
+        void Recusar(string campo, string codigoErro, string mensagem) => erros.Add(new(campo, new DomainError(codigoErro, mensagem)));
+
+        bool dominioValido = dominio != DominioFato.Nenhum && Enum.IsDefined(dominio);
+        if (dominio == DominioFato.Nenhum)
+        {
+            Recusar("dominio", FatoCandidatoErrorCodes.DominioObrigatorio, "Domínio do fato é obrigatório.");
+        }
+        else if (!dominioValido)
+        {
+            Recusar("dominio", FatoCandidatoErrorCodes.DominioInvalido, "Domínio do fato fora do vocabulário fechado.");
         }
 
         if (cardinalidade == CardinalidadeFato.Nenhuma)
@@ -270,68 +346,14 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
                 Recusar("formato", FatoCandidatoErrorCodes.FormatoForaDeTexto, "Só fato de domínio texto declara formato.");
             }
         }
+    }
 
-        Result<string> pontoResolucaoResult = ValidarPontoResolucao(pontoResolucao);
-        if (pontoResolucaoResult.IsFailure)
-        {
-            erros.Add(new("pontoResolucao", pontoResolucaoResult.Error!));
-        }
-
-        string? bindingValidado = null;
-        if (codigoResult.IsSuccess && origemValida)
-        {
-            Result<string> bindingResult = ValidarBinding(binding, origem, codigoResult.Value!.Valor);
-            bindingValidado = bindingResult.Value;
-            if (bindingResult.IsFailure)
-            {
-                erros.Add(new("binding", bindingResult.Error!));
-            }
-            else if (!sistema && (origem == OrigemFato.Integracao
-                || bindingResult.Value!.StartsWith(PrefixoBindingDerivadoAtributo + ":", StringComparison.Ordinal)
-                || bindingResult.Value!.StartsWith(PrefixoBindingDerivadoClassificacao + ":", StringComparison.Ordinal)))
-            {
-                // O fato do administrador não tem código que calcule ou traga o valor: é declarado,
-                // ou derivado pela regra que ele mesmo cadastra. Atributo do candidato, classificação
-                // e integração só existem em fato de sistema.
-                Recusar(
-                    "origem",
-                    FatoCandidatoErrorCodes.VinculoExclusivoDeFatoDeSistema,
-                    "Fato do administrador é declarado ou derivado por regra; atributo do candidato, classificação e integração só existem em fato de sistema.");
-            }
-        }
-
+    private static void ConferirEscopo(List<FieldError> erros, EscopoFato escopo)
+    {
         if (escopo == EscopoFato.Nenhum || !Enum.IsDefined(escopo))
         {
-            Recusar("escopo", FatoCandidatoErrorCodes.EscopoObrigatorio, "Escopo do fato é obrigatório.");
+            erros.Add(new("escopo", new DomainError(FatoCandidatoErrorCodes.EscopoObrigatorio, "Escopo do fato é obrigatório.")));
         }
-
-        Result<ProtecaoValidada> protecao = ValidarProtecao(
-            dominio, classificacaoProtecao, finalidadeTratamento, hipoteseLegal,
-            nomeSocialPublico: sistema
-                && string.Equals(codigo?.Trim(), CodigoDoNomeSocial, StringComparison.Ordinal)
-                && dominio == DominioFato.Texto
-                && classificacaoProtecao == ClassificacaoProtecaoDado.Publico);
-        erros.AddRange(protecao.Errors);
-
-        if (erros.Count > 0)
-        {
-            return Result<FatoCandidato>.ValidationFailure(erros);
-        }
-
-        return Result<FatoCandidato>.Success(new FatoCandidato(
-            codigoResult.Value!.Valor,
-            descritivo.Value.Nome,
-            descritivo.Value.Descricao,
-            dominio,
-            origem,
-            cardinalidade,
-            fonteValores,
-            formato,
-            pontoResolucaoResult.Value!,
-            bindingValidado!,
-            escopo,
-            protecao.Value,
-            sistema));
     }
 
     /// <summary>
@@ -373,24 +395,22 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         string finalidadeTratamento,
         HipoteseLegalTratamento hipoteseLegal)
     {
-        bool categorico = dominio == DominioFato.Categorico;
+        (CardinalidadeFato cardinalidade, FonteValoresFato? fonteValores) = EixosInferidosDoDerivado(dominio);
         Result<FatoCandidato> criado = Criar(
             codigo, nome, descricao, dominio, OrigemFato.Derivado,
-            categorico ? CardinalidadeFato.Multivalorado : CardinalidadeFato.Escalar,
-            categorico ? FonteValoresFato.Global : null,
+            cardinalidade,
+            fonteValores,
             formato: null, pontoResolucao, $"{PrefixoBindingDerivadoRegra}:{codigo?.Trim()}", escopo,
             classificacaoProtecao, finalidadeTratamento, hipoteseLegal, sistema: false);
-        if (dominio is DominioFato.Booleano or DominioFato.Categorico)
+        List<FieldError> recusasDoDominio = [];
+        if (ConferirDominioDoDerivado(recusasDoDominio, dominio))
         {
             return criado;
         }
 
         // Com o domínio recusado, o que depende dele (formato, fonte) não é conferido.
-        FieldError recusa = new("dominio", new DomainError(
-            FatoCandidatoErrorCodes.DerivadoPorRegraSoBooleanoOuCategorico,
-            "Fato derivado por regra é booleano ou categórico."));
         return Result<FatoCandidato>.ValidationFailure(
-            [recusa, .. criado.Errors.Where(static e => e.Field is not ("dominio" or "formato" or "fonteValores"))]);
+            [.. recusasDoDominio, .. criado.Errors.Where(static e => e.Field is not ("dominio" or "formato" or "fonteValores"))]);
     }
 
     /// <summary>
@@ -446,13 +466,14 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         }
 
         bool membroValido = campoDeGrupo && operacao != OperacaoAgregado.Nenhuma;
-        bool categorico = operacao == OperacaoAgregado.ValoresPresentes;
+        (DominioFato dominioInferido, CardinalidadeFato cardinalidadeInferida, FonteValoresFato? fonteInferida) =
+            EixosInferidosDoAgregado(operacao, membro?.FonteValores);
         Result<FatoCandidato> criado = Criar(
             codigo, nome, descricao,
-            categorico ? DominioFato.Categorico : DominioFato.Booleano,
+            dominioInferido,
             OrigemFato.Derivado,
-            categorico ? CardinalidadeFato.Multivalorado : CardinalidadeFato.Escalar,
-            categorico ? membro!.FonteValores : null,
+            cardinalidadeInferida,
+            fonteInferida,
             formato: null, pontoResolucao, $"{PrefixoBindingAgregacao}:{membroCodigo}", EscopoFato.Candidato,
             classificacaoProtecao, finalidadeTratamento, hipoteseLegal, sistema: false);
 
@@ -463,22 +484,54 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         // é válido, independentemente das recusas dos outros campos.
         if (membroValido)
         {
-            if (classificacaoProtecao != ClassificacaoProtecaoDado.Nenhuma && Enum.IsDefined(classificacaoProtecao)
-                && classificacaoProtecao < membro!.ClassificacaoProtecao)
-            {
-                Recusar("classificacaoProtecao", FatoCandidatoErrorCodes.ClassificacaoAbaixoDaDependencia,
-                    $"O agregado revela o que se sabe de '{membroCodigo}' e não pode ter proteção de dados mais fraca que a dele.");
-            }
-
-            string ponto = pontoResolucao?.Trim() ?? string.Empty;
-            if (FaseCanonicaCatalogo.EhCanonico(ponto) && ValidadorRegrasPadrao.Precede(ponto, membro!.PontoResolucao, catalogo.Precedencias))
-            {
-                Recusar("pontoResolucao", FatoCandidatoErrorCodes.PontoResolucaoAnteriorADependencia,
-                    $"O agregado resolve em {ponto}, antes de '{membroCodigo}', que só é conhecido em {membro.PontoResolucao}.");
-            }
+            ConferirContraOMembro(erros, membro!, pontoResolucao, classificacaoProtecao, catalogo);
         }
 
         return erros.Count > 0 ? Result<FatoCandidato>.ValidationFailure(erros) : criado;
+    }
+
+    /// <summary>A cardinalidade e a fonte que o derivado por regra infere do próprio domínio.</summary>
+    private static (CardinalidadeFato Cardinalidade, FonteValoresFato? FonteValores) EixosInferidosDoDerivado(DominioFato dominio) =>
+        dominio == DominioFato.Categorico
+            ? (CardinalidadeFato.Multivalorado, FonteValoresFato.Global)
+            : (CardinalidadeFato.Escalar, null);
+
+    /// <summary>
+    /// O domínio, a cardinalidade e a fonte que o agregado infere da operação sobre o fato de membro:
+    /// valores presentes dá categórico multivalorado com a fonte do membro, e o restante dá booleano.
+    /// </summary>
+    private static (DominioFato Dominio, CardinalidadeFato Cardinalidade, FonteValoresFato? FonteValores) EixosInferidosDoAgregado(
+        OperacaoAgregado operacao, FonteValoresFato? fonteDoMembro) =>
+        operacao == OperacaoAgregado.ValoresPresentes
+            ? (DominioFato.Categorico, CardinalidadeFato.Multivalorado, fonteDoMembro)
+            : (DominioFato.Booleano, CardinalidadeFato.Escalar, null);
+
+    /// <summary>
+    /// O agregado não protege menos nem resolve antes do fato de membro: a recusa vai no campo do
+    /// eixo, e só quando o eixo informado é válido.
+    /// </summary>
+    private static void ConferirContraOMembro(
+        List<FieldError> erros,
+        FatoCandidato membro,
+        string pontoResolucao,
+        ClassificacaoProtecaoDado classificacaoProtecao,
+        CatalogoDeFatos catalogo)
+    {
+        if (classificacaoProtecao != ClassificacaoProtecaoDado.Nenhuma && Enum.IsDefined(classificacaoProtecao)
+            && classificacaoProtecao < membro.ClassificacaoProtecao)
+        {
+            erros.Add(new("classificacaoProtecao", new DomainError(
+                FatoCandidatoErrorCodes.ClassificacaoAbaixoDaDependencia,
+                $"O agregado revela o que se sabe de '{membro.Codigo}' e não pode ter proteção de dados mais fraca que a dele.")));
+        }
+
+        string ponto = pontoResolucao?.Trim() ?? string.Empty;
+        if (FaseCanonicaCatalogo.EhCanonico(ponto) && ValidadorRegrasPadrao.Precede(ponto, membro.PontoResolucao, catalogo.Precedencias))
+        {
+            erros.Add(new("pontoResolucao", new DomainError(
+                FatoCandidatoErrorCodes.PontoResolucaoAnteriorADependencia,
+                $"O agregado resolve em {ponto}, antes de '{membro.Codigo}', que só é conhecido em {membro.PontoResolucao}.")));
+        }
     }
 
     /// <summary>
@@ -545,9 +598,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     }
 
     /// <summary>
-    /// Altera o nome e a descrição. Os eixos do fato — domínio, origem, cardinalidade, escopo,
-    /// fonte, ponto de resolução, vínculo e proteção de dados — não se editam depois do cadastro:
-    /// mudança num eixo é um fato novo (ADR-0136).
+    /// Altera o nome e a descrição. Os eixos têm a alteração própria, <see cref="AlterarDefinicao"/>.
     /// </summary>
     public Result AlterarDescritivo(string nome, string? descricao)
     {
@@ -560,6 +611,259 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         (Nome, Descricao) = descritivo.Value;
         return Result.Success();
     }
+
+    /// <summary>
+    /// Altera os eixos do fato do administrador — domínio, cardinalidade, fonte dos valores, formato,
+    /// escopo, ponto de resolução e proteção de dados — no subconjunto que o cadastro do tipo dele
+    /// aceita: o declarado, todos; o derivado por regra, domínio (booleano ou categórico), escopo,
+    /// ponto de resolução e proteção; o agregado, só ponto de resolução e proteção. Código, origem e
+    /// vínculo não mudam (ADR-0136). As validações são as do cadastro (ADR-0125), mais a coerência do
+    /// fato com os valores e as dependências que já tem. O fato não muda quando há recusa.
+    /// </summary>
+    public Result AlterarDefinicao(DefinicaoDoFato definicao, CatalogoDeFatos catalogo)
+    {
+        ArgumentNullException.ThrowIfNull(definicao);
+        ArgumentNullException.ThrowIfNull(catalogo);
+
+        if (RecusaSeSistema() is { } recusa)
+        {
+            return Result.Failure(recusa);
+        }
+
+        bool agregado = FatoDeMembroAgregado is not null;
+        bool derivado = DerivadoPorRegra;
+        List<FieldError> erros = [];
+        void Recusar(string campo, string codigoErro, string mensagem) => erros.Add(new(campo, new DomainError(codigoErro, mensagem)));
+        void RecusarSeInformado(string campo, bool informado)
+        {
+            if (informado)
+            {
+                Recusar(campo, FatoCandidatoErrorCodes.EixoNaoEditavelNoTipoDoFato,
+                    agregado
+                        ? "O agregado infere este eixo do fato de membro; só o ponto de resolução e a proteção de dados se alteram."
+                        : "O fato derivado por regra infere este eixo do domínio; não o informe.");
+            }
+        }
+
+        DominioFato dominio = Dominio;
+        CardinalidadeFato cardinalidade = Cardinalidade;
+        FonteValoresFato? fonteValores = FonteValores;
+        FormatoTexto? formato = Formato;
+        EscopoFato escopo = Escopo;
+        bool eixosDeValorValidos = true;
+        // Só o domínio aplicável confere a proteção mínima: o recusado (fora do vocabulário, ou texto
+        // num derivado) nunca será gravado, e a recusa dele já foi dada.
+        bool dominioAplicavel = true;
+
+        if (agregado)
+        {
+            RecusarSeInformado("dominio", definicao.Dominio is not null);
+            RecusarSeInformado("cardinalidade", definicao.Cardinalidade is not null);
+            RecusarSeInformado("fonteValores", definicao.FonteValores is not null);
+            RecusarSeInformado("formato", definicao.Formato is not null);
+            RecusarSeInformado("escopo", definicao.Escopo is not null);
+        }
+        else
+        {
+            dominio = definicao.Dominio ?? DominioFato.Nenhum;
+            escopo = definicao.Escopo ?? EscopoFato.Nenhum;
+            ConferirEscopo(erros, escopo);
+            if (derivado)
+            {
+                RecusarSeInformado("cardinalidade", definicao.Cardinalidade is not null);
+                RecusarSeInformado("fonteValores", definicao.FonteValores is not null);
+                RecusarSeInformado("formato", definicao.Formato is not null);
+                (cardinalidade, fonteValores) = EixosInferidosDoDerivado(dominio);
+                formato = null;
+                if (!ConferirDominioDoDerivado(erros, dominio))
+                {
+                    eixosDeValorValidos = false;
+                    dominioAplicavel = false;
+                }
+            }
+            else
+            {
+                cardinalidade = definicao.Cardinalidade ?? CardinalidadeFato.Nenhuma;
+                fonteValores = definicao.FonteValores;
+                formato = definicao.Formato;
+                int antes = erros.Count;
+                ConferirEixosDeValor(erros, dominio, cardinalidade, fonteValores, formato);
+                eixosDeValorValidos = erros.Count == antes;
+                dominioAplicavel = dominio != DominioFato.Nenhum && Enum.IsDefined(dominio);
+            }
+
+            if (eixosDeValorValidos && _valoresDominioDeclarados.Count > 0)
+            {
+                // Os valores do catálogo só existem no categórico de fonte global: o eixo novo que
+                // não os comporta é recusado, e o valor não é descartado em silêncio.
+                if (dominio != DominioFato.Categorico)
+                {
+                    eixosDeValorValidos = false;
+                    Recusar("dominio", FatoCandidatoErrorCodes.DominioNaoComportaOsValores,
+                        "O fato já tem valores cadastrados e só o categórico os tem; desativar os valores não basta, porque o código de um valor nunca é removido.");
+                }
+                else if (fonteValores != FonteValoresFato.Global)
+                {
+                    eixosDeValorValidos = false;
+                    Recusar("fonteValores", FatoCandidatoErrorCodes.FonteNaoComportaOsValores,
+                        "O fato já tem valores cadastrados no catálogo e só a fonte global os tem.");
+                }
+            }
+        }
+
+        Result<string> ponto = ValidarPontoResolucao(definicao.PontoResolucao);
+        if (ponto.IsFailure)
+        {
+            erros.Add(new("pontoResolucao", ponto.Error!));
+        }
+
+        Result<ProtecaoValidada> protecao = ValidarProtecao(
+            dominioAplicavel ? dominio : null, definicao.ClassificacaoProtecao, definicao.FinalidadeTratamento, definicao.HipoteseLegal,
+            nomeSocialPublico: false);
+        erros.AddRange(protecao.Errors);
+
+        // A coerência com as dependências do próprio fato é conferida com o que há de válido na
+        // entrada; o eixo recusado acima fica como está, e a recusa dele já foi dada.
+        EixosDaDefinicao anteriores = new(
+            Dominio, Cardinalidade, FonteValores, Formato, PontoResolucao, Escopo,
+            ClassificacaoProtecao, FinalidadeTratamento, HipoteseLegal);
+        EixosDaDefinicao propostos = new(
+            eixosDeValorValidos ? dominio : Dominio,
+            eixosDeValorValidos ? cardinalidade : Cardinalidade,
+            eixosDeValorValidos ? fonteValores : FonteValores,
+            eixosDeValorValidos ? formato : Formato,
+            ponto.IsSuccess ? ponto.Value! : PontoResolucao,
+            erros.Any(static e => e.Field == "escopo") ? null : escopo,
+            protecao.IsSuccess ? protecao.Value.Classificacao : ClassificacaoProtecao,
+            protecao.IsSuccess ? protecao.Value.Finalidade : FinalidadeTratamento,
+            protecao.IsSuccess ? protecao.Value.Hipotese : HipoteseLegal);
+        // Só a recusa que a alteração causa conta: a que já existia antes dela não a trava.
+        List<FieldError> dependenciasAntes = [];
+        ConferirComAsDependencias(dependenciasAntes, catalogo, agregado, derivado, true, true);
+        Aplicar(propostos);
+        List<FieldError> dependenciasDepois = [];
+        ConferirComAsDependencias(dependenciasDepois, catalogo, agregado, derivado, ponto.IsSuccess, protecao.IsSuccess);
+        erros.AddRange(DiferencaDeRecusas.Novas(dependenciasDepois, dependenciasAntes));
+
+        if (erros.Count > 0)
+        {
+            Aplicar(anteriores);
+            return Result.ValidationFailure(erros);
+        }
+
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// O que o agregado deixa de ser quando o fato de membro passa a ser <paramref name="membro"/>:
+    /// o domínio, a cardinalidade e a fonte que ele gravou são os inferidos do membro, e ele não
+    /// protege menos nem resolve antes dele. Vazio quando o agregado continua valendo.
+    /// </summary>
+    public IReadOnlyList<FieldError> MotivosPelosQuaisDeixaDeAgregar(FatoCandidato membro, CatalogoDeFatos catalogo)
+    {
+        ArgumentNullException.ThrowIfNull(membro);
+        ArgumentNullException.ThrowIfNull(catalogo);
+
+        List<FieldError> motivos = [];
+        static FieldError Motivo(string motivo, string mensagem) =>
+            new($"agregado.{motivo}", new DomainError(FatoCandidatoErrorCodes.AlteracaoQuebraAgregadoDoFato, mensagem));
+        OperacaoAgregado operacao = AgregadoDeGrupo.OperacaoDoDominio(DominiosFato.ParaTokenCanonico(membro.Dominio));
+        if (membro is not { Escopo: EscopoFato.MembroGrupo, Origem: OrigemFato.Declarado })
+        {
+            motivos.Add(Motivo("membro", $"'{membro.Codigo}' deixa de ser fato declarado de membro de grupo, e o agregado resume o que cada membro respondeu."));
+            return motivos;
+        }
+
+        if (operacao == OperacaoAgregado.Nenhuma)
+        {
+            motivos.Add(Motivo("dominioSemResumo", $"'{membro.Codigo}' passa a um domínio que o agregado não resume (só booleano e categórico)."));
+            return motivos;
+        }
+
+        if (!membro.Ativo)
+        {
+            motivos.Add(Motivo("membroInativo", $"'{membro.Codigo}' está desativado no catálogo, e o agregado resume um fato de membro ativo."));
+        }
+
+        (DominioFato dominioEsperado, CardinalidadeFato cardinalidadeEsperada, FonteValoresFato? fonteEsperada) =
+            EixosInferidosDoAgregado(operacao, membro.FonteValores);
+        if (Dominio != dominioEsperado)
+        {
+            motivos.Add(Motivo("dominio", $"o domínio de '{membro.Codigo}' mudou, e o agregado gravou o domínio {DominiosFato.ParaTokenCanonico(Dominio)} inferido dele."));
+        }
+        else if (Cardinalidade != cardinalidadeEsperada)
+        {
+            motivos.Add(Motivo("cardinalidade", $"a cardinalidade do agregado não acompanha a inferida de '{membro.Codigo}': o agregado gravou {CardinalidadesFato.ParaTokenCanonico(Cardinalidade)}."));
+        }
+        else if (FonteValores != fonteEsperada)
+        {
+            motivos.Add(Motivo("fonte", $"a fonte dos valores de '{membro.Codigo}' mudou, e o agregado gravou a fonte inferida dela."));
+        }
+
+        List<FieldError> erros = [];
+        ConferirContraOMembro(erros, membro, PontoResolucao, ClassificacaoProtecao, catalogo);
+        motivos.AddRange(erros);
+        return motivos;
+    }
+
+    private void ConferirComAsDependencias(
+        List<FieldError> erros, CatalogoDeFatos catalogo, bool agregado, bool derivado, bool pontoValido, bool protecaoValida)
+    {
+        if (agregado)
+        {
+            FatoCandidato? membro = catalogo.Fatos.FirstOrDefault(f => string.Equals(f.Codigo, FatoDeMembroAgregado, StringComparison.Ordinal));
+            if (membro is not null && (pontoValido || protecaoValida))
+            {
+                List<FieldError> contraOMembro = [];
+                ConferirContraOMembro(contraOMembro, membro, PontoResolucao, ClassificacaoProtecao, catalogo);
+                erros.AddRange(contraOMembro.Where(e => e.Field == "pontoResolucao" ? pontoValido : protecaoValida));
+            }
+
+            return;
+        }
+
+        if (derivado && RegrasPadrao.Count > 0)
+        {
+            // As regras padrão são as do fato, e a mudança de domínio, de ponto de resolução ou de
+            // proteção pode deixá-las sem valer. A recusa vai no eixo que a causou, não na regra.
+            Result regras = ValidadorRegrasPadrao.Validar(this, RegrasPadrao, catalogo);
+            erros.AddRange(regras.Errors.Select(static e => e.Error.Code switch
+            {
+                FatoCandidatoErrorCodes.ClassificacaoAbaixoDaDependencia => e with { Field = "classificacaoProtecao" },
+                FatoCandidatoErrorCodes.PontoResolucaoAnteriorADependencia => e with { Field = "pontoResolucao" },
+                _ => e with { Field = "dominio" },
+            }).Where(e => e.Field switch
+            {
+                "classificacaoProtecao" => protecaoValida,
+                "pontoResolucao" => pontoValido,
+                _ => true,
+            }));
+        }
+    }
+
+    private void Aplicar(EixosDaDefinicao eixos)
+    {
+        Dominio = eixos.Dominio;
+        Cardinalidade = eixos.Cardinalidade;
+        FonteValores = eixos.FonteValores;
+        Formato = eixos.Formato;
+        PontoResolucao = eixos.PontoResolucao;
+        Escopo = eixos.Escopo ?? Escopo;
+        ClassificacaoProtecao = eixos.Classificacao;
+        FinalidadeTratamento = eixos.Finalidade;
+        HipoteseLegal = eixos.Hipotese;
+    }
+
+    private readonly record struct EixosDaDefinicao(
+        DominioFato Dominio,
+        CardinalidadeFato Cardinalidade,
+        FonteValoresFato? FonteValores,
+        FormatoTexto? Formato,
+        string PontoResolucao,
+        EscopoFato? Escopo,
+        ClassificacaoProtecaoDado Classificacao,
+        string Finalidade,
+        HipoteseLegalTratamento Hipotese);
 
     /// <summary>Reativa o fato do administrador, que volta a aceitar vínculos novos.</summary>
     public Result Ativar()
@@ -845,19 +1149,45 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
             : Result<(string, string?)>.Success((nomeNormalizado, descricaoNormalizada));
     }
 
+    /// <summary>
+    /// O domínio que o derivado por regra aceita, no cadastro e na alteração: ausente é obrigatório,
+    /// fora do vocabulário é inválido e o válido que não é booleano nem categórico não tem regra.
+    /// </summary>
+    private static bool ConferirDominioDoDerivado(List<FieldError> erros, DominioFato dominio)
+    {
+        (string Codigo, string Mensagem)? recusa = dominio switch
+        {
+            DominioFato.Booleano or DominioFato.Categorico => null,
+            DominioFato.Nenhum => (FatoCandidatoErrorCodes.DominioObrigatorio, "Domínio do fato é obrigatório."),
+            _ when !Enum.IsDefined(dominio) => (FatoCandidatoErrorCodes.DominioInvalido, "Domínio do fato fora do vocabulário fechado."),
+            _ => (FatoCandidatoErrorCodes.DerivadoPorRegraSoBooleanoOuCategorico, "Fato derivado por regra é booleano ou categórico."),
+        };
+        if (recusa is { } r)
+        {
+            erros.Add(new("dominio", new DomainError(r.Codigo, r.Mensagem)));
+        }
+
+        return recusa is null;
+    }
+
     private static Result<ProtecaoValidada> ValidarProtecao(
-        DominioFato dominio, ClassificacaoProtecaoDado classificacao, string finalidade, HipoteseLegalTratamento hipotese, bool nomeSocialPublico)
+        DominioFato? dominio, ClassificacaoProtecaoDado classificacao, string finalidade, HipoteseLegalTratamento hipotese, bool nomeSocialPublico)
     {
         List<FieldError> erros = [];
         void Recusar(string campo, string codigo, string mensagem) => erros.Add(new(campo, new DomainError(codigo, mensagem)));
 
         bool classificacaoValida = classificacao != ClassificacaoProtecaoDado.Nenhuma && Enum.IsDefined(classificacao);
-        if (!classificacaoValida)
+        if (classificacao == ClassificacaoProtecaoDado.Nenhuma)
         {
             Recusar("classificacaoProtecao", FatoCandidatoErrorCodes.ClassificacaoProtecaoObrigatoria,
                 "Classificação de proteção de dados do fato é obrigatória.");
         }
-        else if (!nomeSocialPublico && !AtendeClassificacaoMinimaDoDominio(dominio, classificacao))
+        else if (!classificacaoValida)
+        {
+            Recusar("classificacaoProtecao", FatoCandidatoErrorCodes.ClassificacaoProtecaoInvalida,
+                "Classificação de proteção de dados do fato fora do vocabulário fechado.");
+        }
+        else if (!nomeSocialPublico && dominio is { } dominioConferido && !AtendeClassificacaoMinimaDoDominio(dominioConferido, classificacao))
         {
             // Texto (em todo formato, inclusive o livre, que pode conter qualquer coisa), data e
             // endereço identificam ou localizam a pessoa: nunca são menos que dado pessoal. Texto
@@ -880,9 +1210,15 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
                 $"Finalidade do tratamento deve ter no máximo {FinalidadeTratamentoMaxLength} caracteres.");
         }
 
-        if (hipotese == HipoteseLegalTratamento.Nenhuma || !Enum.IsDefined(hipotese))
+        if (hipotese == HipoteseLegalTratamento.Nenhuma)
         {
-            Recusar("hipoteseLegal", FatoCandidatoErrorCodes.HipoteseLegalObrigatoria, "Hipótese legal de tratamento do fato é obrigatória.");
+            Recusar("hipoteseLegal", FatoCandidatoErrorCodes.HipoteseLegalObrigatoria,
+                "Hipótese legal de tratamento do fato é obrigatória.");
+        }
+        else if (!Enum.IsDefined(hipotese))
+        {
+            Recusar("hipoteseLegal", FatoCandidatoErrorCodes.HipoteseLegalInvalida,
+                "Hipótese legal de tratamento do fato fora do vocabulário fechado.");
         }
         else if (classificacaoValida && !HipotesesLegaisTratamento.AdmiteClassificacao(hipotese, classificacao))
         {

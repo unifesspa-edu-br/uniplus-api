@@ -47,6 +47,15 @@ public sealed class RegrasPadraoTests
             .Errors.Should().ContainSingle()
             .Which.Error.Code.Should().Be(FatoCandidatoErrorCodes.DerivadoPorRegraSoBooleanoOuCategorico);
 
+    [Theory(DisplayName = "Domínio do derivado no cadastro: ausente é obrigatório, fora do vocabulário é inválido")]
+    [InlineData(DominioFato.Nenhum, FatoCandidatoErrorCodes.DominioObrigatorio)]
+    [InlineData((DominioFato)(-1), FatoCandidatoErrorCodes.DominioInvalido)]
+    public void CriarDerivado_DominioAusenteOuInvalido_RecusaComOCodigoDoDominio(DominioFato dominio, string codigo) =>
+        FatoCandidato.CriarDerivadoDoAdministrador(
+                "DERIVADO", "Derivado", null, dominio, "INSCRICAO", EscopoFato.Candidato,
+                ClassificacaoProtecaoDado.Pessoal, Finalidade, Hipotese)
+            .Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("dominio", codigo));
+
     [Fact(DisplayName = "Fato declarado não tem regras padrão")]
     public void Definir_FatoDeclarado_Recusa()
     {

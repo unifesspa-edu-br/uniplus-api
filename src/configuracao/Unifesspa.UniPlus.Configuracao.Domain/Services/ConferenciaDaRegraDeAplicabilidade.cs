@@ -28,7 +28,8 @@ public static class ConferenciaDaRegraDeAplicabilidade
         VinculosDeFatos existentes = Vinculos(vigente);
 
         List<FieldError> erros = [];
-        void Recusar(string codigo, string mensagem) => erros.Add(new(Campo, new DomainError(codigo, mensagem)));
+        void Recusar(string codigo, string mensagem, string? citado = null) =>
+            erros.Add(new(Campo, new DomainError(codigo, mensagem), citado ?? Campo));
 
         bool citaForaDoVocabulario = false;
         foreach (string citado in regra.FatosCitados)
@@ -43,27 +44,27 @@ public static class ConferenciaDaRegraDeAplicabilidade
             {
                 citaForaDoVocabulario = true;
                 Recusar(ModalidadeErrorCodes.RegraCitaFatoNaoCitavel,
-                    $"O fato '{citado}' não pode ser citado em regra: texto, data, endereço, fato de membro de grupo e categórico sem valores não entram em predicado.");
+                    $"O fato '{citado}' não pode ser citado em regra: texto, data, endereço, fato de membro de grupo e categórico sem valores não entram em predicado.", citado);
             }
 
             if (!fato.Ativo && !existentes.Fatos.Contains(citado))
             {
-                Recusar(ModalidadeErrorCodes.RegraCitaFatoDesativado, $"O fato '{citado}' está desativado e não aceita citação nova.");
+                Recusar(ModalidadeErrorCodes.RegraCitaFatoDesativado, $"O fato '{citado}' está desativado e não aceita citação nova.", citado);
             }
 
             // Fecha por padrão: a fase sem precedência declarada até a inscrição não conta como anterior.
             if (!ConhecidoAteAInscricao(fato.PontoResolucao, catalogo.Precedencias))
             {
                 Recusar(ModalidadeErrorCodes.RegraCitaFatoPosteriorAInscricao,
-                    $"O fato '{citado}' só é conhecido em {fato.PontoResolucao}, que não antecede a inscrição, em que a modalidade se decide.");
+                    $"O fato '{citado}' só é conhecido em {fato.PontoResolucao}, que não antecede a inscrição, em que a modalidade se decide.", citado);
             }
         }
 
         if (!citaForaDoVocabulario
-            && PredicadoDnfValidador.Validar(regra, vocabulario, dominiosDinamicos: VocabularioDoCatalogo.DominiosDinamicos(fatos.Values))
-                is { IsFailure: true } predicado)
+            && PredicadoDnfValidador.ValidarComCausa(regra, vocabulario, dominiosDinamicos: VocabularioDoCatalogo.DominiosDinamicos(fatos.Values))
+                is ({ IsFailure: true } predicado, { } causa))
         {
-            erros.Add(new(Campo, predicado.Error!));
+            erros.Add(new(Campo, predicado.Error!, causa));
         }
 
         IEnumerable<(string Fato, string Valor)> valoresDesativados = Vinculos(regra).Valores
@@ -71,7 +72,7 @@ public static class ConferenciaDaRegraDeAplicabilidade
             .OrderBy(static v => v.Fato, StringComparer.Ordinal).ThenBy(static v => v.Valor, StringComparer.Ordinal);
         foreach ((string fato, string valor) in valoresDesativados)
         {
-            Recusar(ModalidadeErrorCodes.RegraCitaValorDesativado, $"O valor '{valor}' do fato '{fato}' está desativado e não aceita citação nova.");
+            Recusar(ModalidadeErrorCodes.RegraCitaValorDesativado, $"O valor '{valor}' do fato '{fato}' está desativado e não aceita citação nova.", $"{fato}.{valor}");
         }
 
         if (CicloComAModalidade(regra, fatos.Values) is { } ciclo)
