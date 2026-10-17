@@ -251,6 +251,18 @@ public sealed class FatoCandidatoTests
         fato.ValoresDominioDeclarados.OrderBy(static v => v.Ordem).Select(static v => v.Codigo).Should().Equal("A", "B");
     }
 
+    [Fact(DisplayName = "Reordenar com código nulo ou em branco recusa com mensagem própria")]
+    public void ReordenarValores_CodigoEmBranco_RecusaComMensagemClara()
+    {
+        FatoCandidato fato = Criar().Value!;
+        fato.AdicionarValorDominio("A", "A", 0, ativo: true).IsSuccess.Should().BeTrue();
+
+        Result resultado = fato.ReordenarValores(["A", null!, "  "]);
+
+        resultado.Errors.Select(static e => e.Error.Message).Should().Contain(static m => m.Contains("em branco", StringComparison.Ordinal));
+        resultado.Errors.Select(static e => e.Error.Message).Should().NotContain(static m => m.Contains("não tem os valores", StringComparison.Ordinal));
+    }
+
     [Fact(DisplayName = "Reordenar valores do fato de sistema é recusado")]
     public void ReordenarValores_FatoDeSistema_Recusa() =>
         Criar(sistema: true).Value!.ReordenarValores([])

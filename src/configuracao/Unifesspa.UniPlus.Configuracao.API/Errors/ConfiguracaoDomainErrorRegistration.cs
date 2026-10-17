@@ -875,7 +875,7 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.fato_valor_dominio.nao_permitido_fora_de_categorico",
-                "Valores de domínio só podem ser adicionados a um fato categórico")),
+                "Só fato categórico tem valores de domínio próprios")),
 
         new(FatoValorDominioErrorCodes.NaoPermitidoForaDeFonteGlobal,
             new DomainErrorMapping(

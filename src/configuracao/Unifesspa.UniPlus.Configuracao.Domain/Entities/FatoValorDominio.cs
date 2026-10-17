@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 
 /// <summary>
 /// Um valor do conjunto fechado de um <see cref="FatoCandidato"/> categórico
@@ -21,7 +22,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Entities;
 /// contexto de negócio tornaria válido (Guid vazio, código em branco).
 /// </para>
 /// </remarks>
-public sealed class FatoValorDominio : EntityBase
+public sealed class FatoValorDominio : EntityBase, IFilhoDeAgregado
 {
     /// <summary>Tamanho máximo do <see cref="Codigo"/> — mesmo teto de <c>CodigoFatoCandidato</c>.</summary>
     public const int CodigoMaxLength = 50;
@@ -43,6 +44,10 @@ public sealed class FatoValorDominio : EntityBase
     public string? Orientacao { get; private set; }
     public int Ordem { get; private set; }
     public bool Ativo { get; private set; }
+
+    Type IFilhoDeAgregado.TipoDoDono => typeof(FatoCandidato);
+
+    Guid IFilhoDeAgregado.DonoId => FatoCandidatoId;
 
     private FatoValorDominio()
     {

@@ -16,12 +16,6 @@ public interface IFatoCandidatoRepository
     Task<(IReadOnlyList<FatoCandidato> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
         Guid? afterId, int limit, PaginationDirection direction, OrigemFato? origem, bool? ativo, CancellationToken cancellationToken);
 
-    /// <summary>
-    /// Marca o fato como alterado quando só mudaram linhas dos seus valores, para que o token de
-    /// concorrência dele entre na gravação e a edição concorrente do mesmo fato seja detectada.
-    /// </summary>
-    void RegistrarAlteracaoDeValor(FatoCandidato fato);
-
     Task AdicionarAsync(FatoCandidato fato, CancellationToken cancellationToken);
 
     /// <summary>Se o código já é usado por algum fato, ativo ou não: o código nunca é reutilizado.</summary>

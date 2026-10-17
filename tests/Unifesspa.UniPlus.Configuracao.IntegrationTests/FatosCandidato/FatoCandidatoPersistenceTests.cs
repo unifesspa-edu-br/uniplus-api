@@ -408,10 +408,8 @@ public sealed class FatoCandidatoPersistenceTests
             FatoCandidato noSegundo = (await repositorioDoSegundo.ObterPorIdAsync(fato.Id, CancellationToken.None))!;
 
             noPrimeiro.CorrigirValor("A", "A corrigido", null).IsSuccess.Should().BeTrue();
-            repositorioDoPrimeiro.RegistrarAlteracaoDeValor(noPrimeiro);
             await primeiro.SaveChangesAsync();
             noSegundo.ReordenarValores(["B", "A"]).IsSuccess.Should().BeTrue();
-            repositorioDoSegundo.RegistrarAlteracaoDeValor(noSegundo);
 
             Func<Task> act = () => segundo.SaveChangesAsync();
             await act.Should().ThrowAsync<DbUpdateConcurrencyException>();
@@ -420,6 +418,81 @@ public sealed class FatoCandidatoPersistenceTests
         {
             await RemoverAsync(fato.Id);
         }
+    }
+
+    [Fact(DisplayName = "Acréscimo e reordenação concorrentes dos valores: a segunda gravação é recusada pela concorrência otimista")]
+    public async Task AcrescimoEReordenacaoConcorrentes_SegundaRecusada()
+    {
+        FatoCandidato fato = NovoFatoCategoricoComDoisValores();
+        try
+        {
+            await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: "admin-1"))
+            {
+                ctx.FatosCandidato.Add(fato);
+                await ctx.SaveChangesAsync();
+            }
+
+            await using ConfiguracaoDbContext primeiro = _fixture.CreateDbContext(userId: "admin-1");
+            await using ConfiguracaoDbContext segundo = _fixture.CreateDbContext(userId: "admin-2");
+            FatoCandidato noPrimeiro = (await new FatoCandidatoRepository(primeiro).ObterPorIdAsync(fato.Id, CancellationToken.None))!;
+            FatoCandidato noSegundo = (await new FatoCandidatoRepository(segundo).ObterPorIdAsync(fato.Id, CancellationToken.None))!;
+
+            noPrimeiro.AdicionarValorDominio("C", "C", 2, ativo: true).IsSuccess.Should().BeTrue();
+            await primeiro.SaveChangesAsync();
+            noSegundo.ReordenarValores(["B", "A"]).IsSuccess.Should().BeTrue();
+
+            Func<Task> act = () => segundo.SaveChangesAsync();
+            await act.Should().ThrowAsync<DbUpdateConcurrencyException>();
+        }
+        finally
+        {
+            await RemoverAsync(fato.Id);
+        }
+    }
+
+    [Fact(DisplayName = "Correção com os mesmos textos e reordenação na ordem atual não gravam nada no fato")]
+    public async Task CorrecaoEReordenacaoSemMudanca_NaoAvancamAVersaoNemOCarimbo()
+    {
+        FatoCandidato fato = NovoFatoCategoricoComDoisValores();
+        try
+        {
+            await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: "admin-1"))
+            {
+                ctx.FatosCandidato.Add(fato);
+                await ctx.SaveChangesAsync();
+            }
+
+            await using ConfiguracaoDbContext ctx2 = _fixture.CreateDbContext(userId: "admin-2");
+            FatoCandidato rastreado = (await new FatoCandidatoRepository(ctx2).ObterPorIdAsync(fato.Id, CancellationToken.None))!;
+            DateTimeOffset? carimboAntes = rastreado.UpdatedAt;
+            string? autorAntes = rastreado.UpdatedBy;
+
+            rastreado.CorrigirValor("A", "A", null).IsSuccess.Should().BeTrue();
+            rastreado.ReordenarValores(["A", "B"]).IsSuccess.Should().BeTrue();
+            ctx2.ChangeTracker.HasChanges().Should().BeFalse();
+            await ctx2.SaveChangesAsync();
+
+            await using ConfiguracaoDbContext leitura = _fixture.CreateDbContext(userId: null);
+            FatoCandidato persistido = await leitura.FatosCandidato.AsNoTracking().SingleAsync(f => f.Id == fato.Id);
+            persistido.UpdatedAt.Should().Be(carimboAntes);
+            persistido.UpdatedBy.Should().Be(autorAntes);
+        }
+        finally
+        {
+            await RemoverAsync(fato.Id);
+        }
+    }
+
+    private static FatoCandidato NovoFatoCategoricoComDoisValores()
+    {
+        string codigo = CodigoUnico();
+        FatoCandidato fato = FatoCandidato.Criar(
+            codigo, "Fato com valores", null, DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar,
+            FonteValoresFato.Global, formato: null, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}", EscopoFato.Candidato,
+            ClassificacaoProtecaoDado.Pessoal, "Teste", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: false).Value!;
+        fato.AdicionarValorDominio("A", "A", 0, ativo: true).IsSuccess.Should().BeTrue();
+        fato.AdicionarValorDominio("B", "B", 1, ativo: true).IsSuccess.Should().BeTrue();
+        return fato;
     }
 
     [Fact(DisplayName = "Cadastro e edição do fato registram quem criou e quem alterou")]
