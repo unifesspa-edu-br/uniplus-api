@@ -31,6 +31,9 @@ public sealed record ProcessoSeletivoDto(
     IReadOnlyList<ConfiguracaoDistribuicaoVagasDto> DistribuicaoVagas,
     ConfiguracaoBonusRegionalDto? BonusRegional,
     bool? AplicaBonusRegional,
+    // Quantos cursos o candidato escolhe na inscrição: read-back administrativo. null = ainda não
+    // declarado, o que bloqueia a publicação.
+    OpcoesDeCursoDto? OpcoesDeCurso,
     ConfiguracaoCascataRemanejamentoDto? Cascata,
     IReadOnlyList<CriterioDesempateDto> CriteriosDesempate,
     ConfiguracaoClassificacaoDto? Classificacao,
@@ -79,6 +82,12 @@ public sealed record ProcessoSeletivoDto(
 /// <see langword="null"/> é o estado válido "nenhuma política configurada".
 /// </summary>
 public sealed record ReferenciaTemporalFatosDto(string Tipo, DateOnly? Data, Guid? FaseId);
+
+/// <summary>
+/// DTO de leitura do número de opções de curso do processo (1 ou 2). Mesmo formato do corpo de
+/// <c>PUT /opcoes-de-curso</c> — round-trip GET→PUT direto.
+/// </summary>
+public sealed record OpcoesDeCursoDto(int Numero);
 
 /// <summary>
 /// DTO de leitura de <see cref="Domain.ValueObjects.UnidadeAdministradoraSnapshot"/>

@@ -16,7 +16,6 @@ internal static class VersoesPublicadasDeTeste
         regraArredondamento: null,
         casasArredondamento: null,
         regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-        nOpcoesAlocacao: 1,
         regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!;
 
     /// <summary>Uma versão publicada com estes formulários, itens e grupos.</summary>

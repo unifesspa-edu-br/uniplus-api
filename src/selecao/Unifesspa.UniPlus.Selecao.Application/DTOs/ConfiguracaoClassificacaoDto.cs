@@ -42,7 +42,6 @@ public sealed record ConfiguracaoClassificacaoDto(
     ReferenciaRegraDto? RegraArredondamento,
     int? CasasArredondamento,
     ReferenciaRegraDto RegraOrdemAlocacao,
-    int NOpcoesAlocacao,
     IReadOnlyList<RegraEliminacaoDto> RegrasEliminacao,
     bool ConcorrenciaDuplaAplicavel,
     bool BaseadoEmEnem,

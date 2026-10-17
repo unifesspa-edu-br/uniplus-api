@@ -40,8 +40,6 @@ internal sealed class ConfiguracaoClassificacaoConfiguration : IEntityTypeConfig
         builder.OwnsOne(c => c.RegraOrdemAlocacao, regra => regra.ConfigurarReferenciaRegra("regra_ordem_alocacao"));
         builder.Navigation(c => c.RegraOrdemAlocacao).IsRequired();
 
-        builder.Property(c => c.NOpcoesAlocacao).IsRequired();
-
         builder.Property(c => c.BaseadoEmEnem)
             .HasColumnName("baseado_em_enem")
             .IsRequired()

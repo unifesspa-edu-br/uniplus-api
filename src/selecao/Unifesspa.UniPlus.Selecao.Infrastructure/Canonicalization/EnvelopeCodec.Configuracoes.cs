@@ -806,6 +806,36 @@ public sealed partial class EnvelopeCodec
         return (localidade.Value!, fusoHorario);
     }
 
+    /// <summary>
+    /// Lê o bloco do número de opções de curso. O intervalo é o mesmo que o agregado exige ao
+    /// declará-lo: um envelope adulterado com outro valor é malformado, e não reidratado como se o
+    /// domínio o aceitasse.
+    /// </summary>
+    private static int? LerOpcoesDeCurso(LeitorEnvelope leitor, JsonObject payload)
+    {
+        JsonObject bloco = leitor.Objeto(payload, "opcoesDeCurso", "$");
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        leitor.ExigirChaves(bloco, "opcoesDeCurso", "numero");
+        int numero = leitor.Inteiro(bloco, "numero", "opcoesDeCurso");
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        if (numero is < 1 or > ProcessoSeletivo.MaximoDeOpcoesDeCurso)
+        {
+            return leitor.Propagar<int?>(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado,
+                $"'opcoesDeCurso.numero' congelado deve ser 1 ou {ProcessoSeletivo.MaximoDeOpcoesDeCurso}."));
+        }
+
+        return numero;
+    }
+
     private static ConfiguracaoTaxaInscricao? LerTaxaInscricao(LeitorEnvelope leitor, JsonObject payload)
     {
         JsonObject bloco = leitor.Objeto(payload, "taxaInscricao", "$");

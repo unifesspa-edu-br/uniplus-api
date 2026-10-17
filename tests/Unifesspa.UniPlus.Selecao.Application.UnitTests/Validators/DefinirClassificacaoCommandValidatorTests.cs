@@ -12,7 +12,7 @@ public sealed class DefinirClassificacaoCommandValidatorTests
 {
     private static DefinirClassificacaoCommand ComandoValido(IReadOnlyList<RegraEliminacaoInput> regrasEliminacao) => new(
         Guid.CreateVersion7(), "FORMULA-MEDIA-PONDERADA", "v1", "PRECISAO-TRUNCAR", "v1", 2,
-        "ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA", "v1", 1, regrasEliminacao, false, null, PrecondicaoIfMatch.Ausente);
+        "ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA", "v1", regrasEliminacao, false, null, PrecondicaoIfMatch.Ausente);
 
     [Fact(DisplayName = "Validator passa com comando válido e lista de eliminação vazia")]
     public void Aceita_ComandoValido()
@@ -29,16 +29,6 @@ public sealed class DefinirClassificacaoCommandValidatorTests
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "RegrasEliminacao");
-    }
-
-    [Fact(DisplayName = "Validator passa com NOpcoesAlocacao fora de {1,2} — a rejeição é do agregado (ConfiguracaoClassificacao.Criar)")]
-    public void Aceita_NOpcoesForaDeIntervaloNoValidator()
-    {
-        DefinirClassificacaoCommand comando = ComandoValido([]) with { NOpcoesAlocacao = 3 };
-
-        ValidationResult result = new DefinirClassificacaoCommandValidator().Validate(comando);
-
-        result.IsValid.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Validator falha quando código de arredondamento é informado sem versão")]

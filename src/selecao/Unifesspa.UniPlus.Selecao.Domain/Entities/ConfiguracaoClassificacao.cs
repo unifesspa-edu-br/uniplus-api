@@ -70,9 +70,6 @@ public sealed class ConfiguracaoClassificacao : EntityBase
     /// </summary>
     public ReferenciaRegra RegraOrdemAlocacao { get; private set; } = null!;
 
-    /// <summary>Quantas opções de curso o processo aceita (1 ou 2).</summary>
-    public int NOpcoesAlocacao { get; private set; }
-
     /// <summary>
     /// A classificação usa a estrutura de pontuação por área do ENEM — o
     /// sinal explícito (Story #850) do qual as eliminações do ENEM (<c>ELIM-CORTE-EM-AREA</c>,
@@ -113,7 +110,7 @@ public sealed class ConfiguracaoClassificacao : EntityBase
     /// <summary>
     /// Cria a configuração de classificação, validando INV-B8 (coerência
     /// entre <see cref="RegraCalculo"/> e <see cref="RegraArredondamento"/>),
-    /// os limites de <see cref="NOpcoesAlocacao"/>, que as eliminações que só têm sentido
+    /// que as eliminações que só têm sentido
     /// sobre os dados do ENEM do candidato (<see cref="ArgsRegraEliminacao.ExigeEnem"/>) só
     /// entrem quando <paramref name="baseadoEmEnem"/> é <see langword="true"/>, que a falta em
     /// dia de prova do ENEM seja declarada no máximo uma vez e o corte no máximo uma vez por
@@ -136,7 +133,6 @@ public sealed class ConfiguracaoClassificacao : EntityBase
         ReferenciaRegra? regraArredondamento,
         int? casasArredondamento,
         ReferenciaRegra regraOrdemAlocacao,
-        int nOpcoesAlocacao,
         IReadOnlyList<RegraEliminacao> regrasEliminacao,
         bool baseadoEmEnem,
         string? resolucaoPesoAreaEnem,
@@ -147,7 +143,7 @@ public sealed class ConfiguracaoClassificacao : EntityBase
         ArgumentNullException.ThrowIfNull(regrasEliminacao);
         ArgumentNullException.ThrowIfNull(quadroPesoAreaEnem);
 
-        List<FieldError> erros = ValidarNOpcoesAlocacao(nOpcoesAlocacao);
+        List<FieldError> erros = [];
 
         bool ehImportada = regraCalculo.Codigo == RegraCalculoCodigo.ClassificacaoImportada;
 
@@ -260,7 +256,6 @@ public sealed class ConfiguracaoClassificacao : EntityBase
             RegraArredondamento = regraArredondamento,
             CasasArredondamento = casasArredondamento,
             RegraOrdemAlocacao = regraOrdemAlocacao,
-            NOpcoesAlocacao = nOpcoesAlocacao,
             BaseadoEmEnem = baseadoEmEnem,
             // NFC, como o cadastro de Pesos por Área a grava e o envelope canônico a emite: o
             // vínculo com o cadastro é pelo valor, e a forma não muda num ciclo de retificação.
@@ -281,26 +276,6 @@ public sealed class ConfiguracaoClassificacao : EntityBase
         }
 
         return Result<ConfiguracaoClassificacao>.Success(configuracao);
-    }
-
-    /// <summary>
-    /// O número de opções de curso não depende do catálogo de regras — ao contrário das
-    /// demais checagens de <see cref="Criar"/>, que só fazem sentido depois de a regra de
-    /// cálculo já ter sido resolvida (é ela que distingue classificação local de importada,
-    /// INV-B8). Existe separada para o handler poder confirmá-la ANTES de consultar o
-    /// <c>rol_de_regras</c>.
-    /// </summary>
-    public static List<FieldError> ValidarNOpcoesAlocacao(int nOpcoesAlocacao)
-    {
-        List<FieldError> erros = [];
-
-        if (nOpcoesAlocacao is not (1 or 2))
-        {
-            erros.Add(new("nOpcoesAlocacao", new DomainError(
-                "ConfiguracaoClassificacao.NOpcoesInvalido", "O número de opções de curso deve ser 1 ou 2.")));
-        }
-
-        return erros;
     }
 
     /// <summary>

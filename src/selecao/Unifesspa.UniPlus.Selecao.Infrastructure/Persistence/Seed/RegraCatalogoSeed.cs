@@ -147,7 +147,7 @@ public static class RegraCatalogoSeed
 
         // regra_ordem_alocacao — a 1ª opção tem prioridade; a 2ª só recebe a vaga que sobra
         new(SeedId(13), RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, VersaoV1, TipoRegra.RegraOrdemAlocacao,
-            """{"n_opcoes":"integer"}""",
+            "{}",
             """["processam-se todas as 1ªs opções de cada curso","a vaga de modalidade não preenchida é remanejada dentro do curso, entre candidatos de 1ª opção","só a vaga que sobra depois do remanejamento vai à 2ª opção, em ordem de nota, sem deslocar aprovado de 1ª opção","quem não é classificado em nenhuma opção vai para a lista de espera"]""",
             "UNI-REQ-0045 — processamento da 1ª opção antes da 2ª"),
 

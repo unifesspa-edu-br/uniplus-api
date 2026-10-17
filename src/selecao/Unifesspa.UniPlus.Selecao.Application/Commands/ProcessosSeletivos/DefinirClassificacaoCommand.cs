@@ -46,7 +46,6 @@ public sealed record DefinirClassificacaoCommand(
     int? CasasArredondamento,
     string RegraOrdemAlocacaoCodigo,
     string RegraOrdemAlocacaoVersao,
-    int NOpcoesAlocacao,
     IReadOnlyList<RegraEliminacaoInput> RegrasEliminacao,
     bool BaseadoEmEnem,
     string? ResolucaoPesoAreaEnem,

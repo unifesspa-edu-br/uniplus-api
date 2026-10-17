@@ -172,7 +172,6 @@ public sealed class EnvelopeCanonicoGoldenTests
             regraArredondamento: null,
             casasArredondamento: null,
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
-            nOpcoesAlocacao: 1,
             regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         FaseCronograma fase = FaseCronograma.Criar(
@@ -816,13 +815,13 @@ public sealed class EnvelopeCanonicoGoldenTests
             regraArredondamento: Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "d"),
             casasArredondamento: 2,
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
-            nOpcoesAlocacao: 1,
             regrasEliminacao: eliminacoes, baseadoEmEnem: true,
             resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,
             quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo(inverterOrdem: !corteRedacaoPrimeiro));
         classificacao.IsSuccess.Should().BeTrue(classificacao.Error?.Message);
 
         processo.DefinirClassificacao(classificacao.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeCurso(1, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         return Canonicalizer.Canonicalizar(
             new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados())).Bytes;

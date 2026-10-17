@@ -155,6 +155,15 @@ public sealed class EnvelopeFechadoE2ETests
         distribuicaoVagasPersistida.Single().Quadro.Should().NotBeEmpty("o quadro é calculado pela Lei 12.711 na mesma operação que persiste (issue #848/#1283)");
 
         // ══════════════════════════════════════════════════════════════════════════════
+        // Passo 4b — número de opções de curso: declaração obrigatória, conferida contra as
+        // ofertas da distribuição acima (uma só, então uma opção)
+        // ══════════════════════════════════════════════════════════════════════════════
+
+        await ExecutarPassoAsync(
+            () => ctx.PutOpcoesDeCursoAsync(),
+            HttpStatusCode.NoContent, "PUT opcoes-de-curso", "/opcoes-de-curso");
+
+        // ══════════════════════════════════════════════════════════════════════════════
         // Passo 5 — bônus regional
         // ══════════════════════════════════════════════════════════════════════════════
 
@@ -281,6 +290,8 @@ public sealed class EnvelopeFechadoE2ETests
                 "atendimento_especializado_ausente",
                 "distribuicao_vagas_ausente",
                 "distribuicao_vagas_oferta_sem_nome",
+                "opcoes_de_curso_nao_declaradas",
+                "opcoes_de_curso_acima_das_ofertas",
                 "classificacao_ausente",
                 "cronograma_fases_ausente",
                 "taxa_inscricao_nao_declarada",
@@ -606,6 +617,9 @@ public sealed class EnvelopeFechadoE2ETests
             return EnviarAsync(HttpMethod.Put, $"{Rota}/{ProcessoId}/distribuicao-vagas", distribuicao, ifMatch: null);
         }
 
+        public Task<HttpResponseMessage> PutOpcoesDeCursoAsync() => EnviarAsync(
+            HttpMethod.Put, $"{Rota}/{ProcessoId}/opcoes-de-curso", new { numero = 1 }, ifMatch: null);
+
         public Task<HttpResponseMessage> PutBonusRegionalAsync(Guid baseLegalBonusRegionalId) => EnviarAsync(
             HttpMethod.Put, $"{Rota}/{ProcessoId}/bonus-regional",
             new
@@ -665,7 +679,6 @@ public sealed class EnvelopeFechadoE2ETests
                     casasArredondamento = 3,
                     regraOrdemAlocacaoCodigo = RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria,
                     regraOrdemAlocacaoVersao = "v1",
-                    nOpcoesAlocacao = 2,
                     regrasEliminacao,
                     baseadoEmEnem = true,
                     resolucaoPesoAreaEnem,
