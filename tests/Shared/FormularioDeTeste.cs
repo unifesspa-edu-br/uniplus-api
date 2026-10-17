@@ -304,7 +304,7 @@ internal static class FormularioDeTeste
             entrada.FatoCodigo, entrada.Ordem, entrada.Rotulo, TipoRenderizacaoCodigo.FromCodigo(entrada.TipoRenderizacao), obrigatoriedade, precondicoes,
             ClassificacaoDosFatos.GetValueOrDefault(entrada.FatoCodigo, "PESSOAL"),
             entrada.FatoCodigo.EndsWith("_UF", StringComparison.Ordinal) ? Unifesspa.UniPlus.Selecao.Domain.Enums.OrigemValoresColeta.UnidadesFederativas : default,
-            entrada.EtapaCodigo, formato: FormatoDosTextos.GetValueOrDefault(entrada.FatoCodigo),
+            entrada.EtapaCodigo, formato: FormatoDosTextos.GetValueOrDefault(entrada.FatoCodigo), ajuda: entrada.Ajuda,
             restricoes: [.. (entrada.Restricoes ?? []).Select(static r => EntradaDeRegras.Restricao(r).Value!)]).Value!;
     }
 }

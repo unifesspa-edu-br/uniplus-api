@@ -43,6 +43,16 @@ public static class ConjuntoBasicoDaInscricao
     public static string? FormatoDaResposta(string fatoCodigo, string? formato) =>
         string.Equals(fatoCodigo, Nome, StringComparison.Ordinal) ? null : formato;
 
+    /// <summary>
+    /// A ajuda com que o campo é publicado. O nome social vem da conta em toda inscrição, inclusive na
+    /// de formulário já gravado ou publicado sem essa orientação: a ajuda acompanha a regra, não a
+    /// versão do formulário. A regra é da inscrição; fora dela, vale a ajuda gravada.
+    /// </summary>
+    public static string? AjudaDoCampo(FinalidadeFormulario finalidade, string fatoCodigo, string? ajuda) =>
+        finalidade == FinalidadeFormulario.Inscricao && string.Equals(fatoCodigo, NomeSocial, StringComparison.Ordinal)
+            ? AjudaDoNomeSocial
+            : ajuda;
+
     private const string Nacionalidade = "NACIONALIDADE";
     private const string Estrangeiro = "ESTRANGEIRO";
     private const string TipoDeLocalidade = "TIPO_ENDERECO";
@@ -50,6 +60,9 @@ public static class ConjuntoBasicoDaInscricao
 
     /// <summary>O órgão emissor fora da lista, cujo nome o candidato escreve.</summary>
     private const string OutroOrgaoEmissor = "OUTRO";
+
+    private const string AjudaDoNomeSocial =
+        "Vem da sua conta e não pode ser alterado aqui. Para cadastrar ou alterar, salve a inscrição, acesse Meu perfil no menu da sua conta e depois volte para concluir.";
 
     private const int TamanhoMaximoDoNomeDoOrgaoEmissor = 60;
 
@@ -274,7 +287,7 @@ public static class ConjuntoBasicoDaInscricao
         [
             new(Nome, 0, "Nome completo", texto, sempre, null),
             new(DesejaNomeSocial, 0, "Deseja usar nome social?", TipoRenderizacaoCodigo.Booleano, sempre, null),
-            new(NomeSocial, 0, "Nome social", texto, sempre, Quando(DesejaNomeSocial, OperadorCodigo.Igual, true)),
+            new(NomeSocial, 0, "Nome social", texto, sempre, Quando(DesejaNomeSocial, OperadorCodigo.Igual, true), Ajuda: AjudaDoNomeSocial),
             new(Nacionalidade, 0, "Nacionalidade", selecao, sempre, null),
             new(Cpf, 0, "CPF", texto, PredicadoDnfJson.ObrigatoriedadeQuando, null, PredicadoObrigatoriedade: naoEstrangeiro),
             new("RG_NUMERO", 0, "Número do RG", texto, sempre, naoEstrangeiro),

@@ -102,6 +102,6 @@ public static class ProjecaoDoFormularioRenderizavel
             : null,
         fato.EtapaCodigo,
         ConjuntoBasicoDaInscricao.FormatoDaResposta(fato.FatoCodigo, fato.Formato),
-        fato.Ajuda,
+        ConjuntoBasicoDaInscricao.AjudaDoCampo(fato.Finalidade, fato.FatoCodigo, fato.Ajuda),
         fato.PedirConfirmacao);
 }
