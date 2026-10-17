@@ -179,3 +179,36 @@ A porta de dados do armazenamento segue caminho próprio e já tem destino defin
 - [ADR-0081](0081-lgpd-by-design-dto-por-permissao.md) — o princípio de que o controle vive no formato, e não num filtro de saída; esta ADR o aplica a objetos em vez de respostas.
 - [ADR-0121](0121-criptografia-de-dados-sensiveis-em-repouso.md) — cifragem de dado sensível em repouso decidida para persistência relacional; o tratamento equivalente para documento de candidato no armazenamento privado é frente própria, e esta ADR não a antecipa nem a dispensa.
 - [ADR-0093](0093-rate-limiting-na-borda-para-reference-data-publico.md) — a borda que passa a servir também o acervo público.
+
+## Emenda 1 (2026-10-17) — anexos, ato avulso do processo e chave de cada arquivo no acervo
+
+A decisão original cobre um documento por ato, copiado ao acervo quando o ato cria uma versão do edital. A publicação de documentos do processo pelo administrador (épico #1952) estende isso a anexos e a atos que não criam versão.
+
+**Trechos substituídos.** Nenhum. A emenda acrescenta casos; o bucket dedicado, o encadeamento da cópia ao registro do ato e a imutabilidade do endereço seguem como decididos.
+
+### 1.1 — Anexos do edital fazem parte da configuração congelada
+
+O edital de abertura e o de retificação podem ter anexos. Eles são congelados com a configuração, como os modelos de documento, e o hash da configuração cobre a integridade deles. Na retificação, a nova versão traz os anexos da anterior e permite trocá-los; a versão anterior conserva os seus.
+
+### 1.2 — Ato avulso do processo com documento
+
+Aviso, errata e demais atos que não criam versão de configuração podem ter documento principal e anexos.
+
+- A Seleção é dona da publicação ([ADR-0108](0108-registro-do-ato-por-mensagem-duravel.md)). Na mesma transação do outbox, grava o registro do ato do processo com os documentos. Esse registro é a fonte da divulgação, porque `AtoNormativoRegistrado` só leva o id do ato.
+- O ato em Publicações passa a guardar a lista de anexos (nome, tipo de mídia e hash). Sem hash de configuração, é o hash de cada anexo que garante a integridade.
+
+### 1.3 — A divulgação alcança o ato que não cria versão
+
+A divulgação ([ADR-0133](0133-divulgacao-do-certame-materializada-no-registro-do-ato.md)) copia o principal e os anexos ao acervo e registra os documentos do ato na projeção pública. A regra da cópia encadeada ao registro bem-sucedido do ato vale igualmente para esse caso.
+
+### 1.4 — Chave de cada arquivo no acervo
+
+A chave é parte do endereço público e não muda depois de publicada, por isso é decidida aqui.
+
+- **Documento principal de qualquer ato do processo:** a forma já decidida, `editais/<ano>/<unidade>/<tipo>/<identificador>/<atoId>/<hash>.<ext>`. O prefixo `editais/` nomeia o acervo do certame, não o tipo do ato.
+- **Anexo, do edital ou do ato avulso:** `selecao/processos-seletivos/<id>/atos/<atoId>/anexos/<anexoId>/<hash>.<ext>`, no mesmo padrão dos modelos de documento.
+- A extensão segue o tipo de mídia (`.pdf`, `.docx`, `.odt`).
+
+### 1.5 — Fora da emenda
+
+Controle de assinatura digital. A cópia preserva o arquivo byte a byte, o que mantém válida a assinatura feita fora do sistema; o Uni+ não assina nem verifica.

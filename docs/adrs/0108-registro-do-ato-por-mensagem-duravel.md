@@ -159,3 +159,7 @@ Medido no spike, contra o host real, e replicado na implementação:
 - registro recusado **não** reserva a vaga do certame, e a versão de configuração permanece publicada;
 - reentrega da mesma requisição não duplica o ato;
 - a falha do handler chega à **dead letter** (verificado em `wolverine.wolverine_dead_letters`).
+
+## Emenda 1 (2026-10-17) — o produto publicado também tem registro na Seleção
+
+Para o ato de processo que não cria versão de configuração (aviso, errata e semelhantes), o fato "produto publicado" passa a ter também um registro na Seleção, gravado na mesma transação do outbox, e não só o ato em Publicações. Detalhes na emenda 1 da [ADR-0132](0132-armazenamento-publico-separado-para-documento-publicado.md). Nenhum outro trecho desta ADR muda.
