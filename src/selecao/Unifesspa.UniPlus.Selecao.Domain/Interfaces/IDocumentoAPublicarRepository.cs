@@ -37,7 +37,10 @@ public interface IDocumentoAPublicarRepository : IRepository<DocumentoAPublicar>
         FinalidadeDoDocumento? finalidade,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Os documentos do processo entre os ids dados, numa consulta só, sem rastreamento.</summary>
+    /// <summary>
+    /// Os documentos de um processo com os ids dados, sem rastreamento. Id que não existe ou que é de
+    /// outro processo não volta: quem pede decide o que fazer com a ausência.
+    /// </summary>
     Task<IReadOnlyList<DocumentoAPublicar>> ListarDoProcessoAsync(
         Guid processoSeletivoId,
         IReadOnlyCollection<Guid> ids,

@@ -37,7 +37,7 @@ public sealed class ListarAtosDoProcessoQueryHandlerTests
     {
         _processos.ExisteAsync(_processoId, Arg.Any<CancellationToken>()).Returns(true);
         _atos.ListarDoProcessoAsync(_processoId, Arg.Any<CancellationToken>()).Returns([]);
-        _documentos.ListarPorProcessoAsync(_processoId, null, Arg.Any<CancellationToken>()).Returns([]);
+        _documentos.ListarDoProcessoAsync(_processoId, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([]);
     }
 
     private Task<Result<ListarAtosDoProcessoResult>> Consultar() => ListarAtosDoProcessoQueryHandler.Handle(
@@ -84,7 +84,7 @@ public sealed class ListarAtosDoProcessoQueryHandlerTests
         AtoDoProcesso maisNovo = Registro(principalDoMaisNovo, Agora.AddMinutes(-1), registrado: true, anexos: [new AnexoDeclarado(anexo.Id, "Anexo I")]);
         AtoDoProcesso maisAntigo = Registro(principalDoMaisAntigo, Agora.AddDays(-2), registrado: true);
         _atos.ListarDoProcessoAsync(_processoId, Arg.Any<CancellationToken>()).Returns([maisNovo, maisAntigo]);
-        _documentos.ListarPorProcessoAsync(_processoId, null, Arg.Any<CancellationToken>())
+        _documentos.ListarDoProcessoAsync(_processoId, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns([principalDoMaisNovo, anexo, principalDoMaisAntigo]);
 
         Result<ListarAtosDoProcessoResult> resultado = await Consultar();
@@ -106,7 +106,7 @@ public sealed class ListarAtosDoProcessoQueryHandlerTests
         AtoDoProcesso pendenteRecente = Registro(recente, Agora - Limiar + TimeSpan.FromMinutes(1));
         AtoDoProcesso registrado = Registro(registradoHaMuito, Agora.AddDays(-3), registrado: true);
         _atos.ListarDoProcessoAsync(_processoId, Arg.Any<CancellationToken>()).Returns([pendenteRecente, pendenteAntigo, registrado]);
-        _documentos.ListarPorProcessoAsync(_processoId, null, Arg.Any<CancellationToken>()).Returns([antigo, recente, registradoHaMuito]);
+        _documentos.ListarDoProcessoAsync(_processoId, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([antigo, recente, registradoHaMuito]);
 
         Result<ListarAtosDoProcessoResult> resultado = await Consultar();
 
@@ -117,6 +117,17 @@ public sealed class ListarAtosDoProcessoQueryHandlerTests
                 [pendenteAntigo.Id] = true,
                 [registrado.Id] = false,
             });
+    }
+
+    [Fact(DisplayName = "Ato que referencia documento ausente é inconsistência de dado e não é escondido")]
+    public async Task Handle_DocumentoReferenciadoAusente_Lanca()
+    {
+        AtoDoProcesso ato = Registro(Confirmado(), Agora.AddMinutes(-1), registrado: true);
+        _atos.ListarDoProcessoAsync(_processoId, Arg.Any<CancellationToken>()).Returns([ato]);
+
+        Func<Task> consultar = Consultar;
+
+        await consultar.Should().ThrowAsync<InvalidOperationException>().WithMessage($"*{ato.Id}*");
     }
 
     [Fact(DisplayName = "Processo inexistente devolve não encontrado, e não lista vazia")]

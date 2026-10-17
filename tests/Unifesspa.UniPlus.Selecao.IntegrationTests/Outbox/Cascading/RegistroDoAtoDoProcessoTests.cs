@@ -124,8 +124,11 @@ public sealed class RegistroDoAtoDoProcessoTests
         ato.GetProperty("documentoPrincipal").GetProperty("documentoAPublicarId").GetGuid().Should().Be(documentoId);
     }
 
-    [Fact(DisplayName = "Publicar o edital registra o ato do processo com o edital como principal e o confirma quando o Publicações registra o ato")]
-    public async Task Publicar_RegistraOAtoDoEditalComOEditalComoPrincipal()
+    [Theory(DisplayName = "Publicar o edital registra o ato do processo com o edital como principal e o confirma quando o Publicações registra o ato")]
+    [InlineData("001/2026", "001/2026")]
+    [InlineData("", null)]
+    [InlineData("   ", null)]
+    public async Task Publicar_RegistraOAtoDoEditalComOEditalComoPrincipal(string numeroDeclarado, string? numeroGravado)
     {
         CascadingApiFactory api = _fixture.Factory;
         using HttpClient client = api.CreateClient();
@@ -136,7 +139,7 @@ public sealed class RegistroDoAtoDoProcessoTests
         {
             Content = System.Net.Http.Json.JsonContent.Create(new
             {
-                numero = "001/2026",
+                numero = numeroDeclarado,
                 documentoEditalId = documentoId,
                 ato = new
                 {
@@ -152,7 +155,7 @@ public sealed class RegistroDoAtoDoProcessoTests
         pedido.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
         pedido.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
         pedido.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
-        (await client.SendAsync(pedido)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await client.SendAsync(pedido)).StatusCode.Should().Be(HttpStatusCode.NoContent, "o número em branco é ausência de número, não erro");
 
         await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
         SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
@@ -164,9 +167,52 @@ public sealed class RegistroDoAtoDoProcessoTests
         AtoDoProcesso registrado = await AguardarSituacaoAsync(api, atoId, SituacaoDoRegistroDoAto.Registrado);
         registrado.DocumentoPrincipalId.Should().Be(documentoId);
         registrado.TipoCodigo.Should().Be(DadosDoAtoDeTeste.TipoAbertura);
-        registrado.Numero.Should().Be("001/2026");
+        registrado.Numero.Should().Be(numeroGravado);
         registrado.Assinante.Should().Be("Diretor do CEPS");
         registrado.AtoCorrigidoId.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "A consulta devolve do ato registrado mais recentemente para o mais antigo")]
+    public async Task Consulta_OrdenaDoMaisRecenteParaOMaisAntigo()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        using HttpClient client = api.CreateClient();
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
+        (Guid processoId, Guid primeiroDocumento) = await SemearAsync(api);
+        Guid segundoDocumento = await SemearDocumentoAsync(api, processoId);
+        Guid primeiro = Guid.CreateVersion7();
+        Guid segundo = Guid.CreateVersion7();
+
+        foreach ((Guid ato, Guid documento) in new[] { (primeiro, primeiroDocumento), (segundo, segundoDocumento) })
+        {
+            await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
+            await escopo.ServiceProvider.GetRequiredService<IMessageBus>()
+                .InvokeAsync(new RegistrarAtoDoProcessoDeTesteCommand(ato, processoId, documento, FalharDepoisDeGravar: false));
+            // Instantes de gravação distintos: o relógio do carimbo tem resolução finita.
+            await Task.Delay(TimeSpan.FromMilliseconds(50));
+        }
+
+        using HttpRequestMessage pedido = new(HttpMethod.Get, new Uri($"/api/selecao/processos-seletivos/{processoId}/atos", UriKind.Relative));
+        pedido.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
+        pedido.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
+        pedido.Headers.TryAddWithoutValidation("Accept", "application/vnd.uniplus.ato-do-processo.v1+json");
+        using HttpResponseMessage resposta = await client.SendAsync(pedido);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+        using JsonDocument corpo = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        corpo.RootElement.EnumerateArray().Select(a => a.GetProperty("id").GetGuid()).Should().Equal(segundo, primeiro);
+    }
+
+    private static async Task<Guid> SemearDocumentoAsync(CascadingApiFactory api, Guid processoId)
+    {
+        await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
+        SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
+            processoId, Domain.Enums.FinalidadeDoDocumento.DocumentoDeAto, "aviso.pdf", Domain.Services.TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        documento.Confirmar(1024, new string('d', 64), TimeProvider.System).IsSuccess.Should().BeTrue();
+        db.DocumentosAPublicar.Add(documento);
+        await db.SaveChangesAsync();
+        return documento.Id;
     }
 
     private static async Task<(Guid ProcessoId, Guid DocumentoId)> SemearAsync(CascadingApiFactory api)
