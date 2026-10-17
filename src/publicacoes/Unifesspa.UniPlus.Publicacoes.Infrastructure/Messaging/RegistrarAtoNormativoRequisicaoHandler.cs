@@ -155,7 +155,10 @@ public static class RegistrarAtoNormativoRequisicaoHandler
             // Os atributos que o domínio conferiu ao publicar. Sem repassá-los, o registro
             // releria o catálogo — que é editável — e a decisão tomada no 204 valeria outra
             // coisa (ADR-0061).
-            AtributosDoTipo: requisicao.AtributosDoTipo);
+            AtributosDoTipo: requisicao.AtributosDoTipo,
+            // Quem publica é o domínio dono do objeto, que já guardou o arquivo: só este
+            // caminho pode registrar ato de objeto cujos atos pertencem ao seu domínio.
+            RegistroPeloDominio: true);
 
         Result<RegistrarAtoNormativoResult> resultado;
         try

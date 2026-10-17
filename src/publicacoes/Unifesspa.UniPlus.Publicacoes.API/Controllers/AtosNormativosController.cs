@@ -220,7 +220,7 @@ public sealed partial class AtosNormativosController : ControllerBase
         ArgumentNullException.ThrowIfNull(command);
 
         Result<RegistrarAtoNormativoResult> resultado = await _commandBus
-            .Send(command with { RegistroPeloEndpoint = true }, cancellationToken)
+            .Send(command, cancellationToken)
             .ConfigureAwait(false);
 
         if (resultado.IsSuccess)

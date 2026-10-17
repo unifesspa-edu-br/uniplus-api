@@ -35,10 +35,10 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// não os herdasse sumiria da consulta do certame — que passaria a exibir a versão
 /// superada, escondendo a que a emenda. Declarar entidades novas continua permitido: o
 /// ato retificador pode passar a tratar de objeto que o retificado não declarava.</para>
-/// <para><see cref="RegistroPeloEndpoint"/> marca o registro que vem do endpoint
-/// administrativo, o único que não traz o arquivo do documento. Fica FORA do wire
-/// (<c>JsonIgnore</c>): quem o preenche é o controller, e o cliente não pode desligá-lo.
-/// Só esse registro é recusado quando o ato trata de objeto cujos atos pertencem ao seu
+/// <para><see cref="RegistroPeloDominio"/> marca o registro que chega pela requisição durável
+/// do domínio dono do objeto, o único que traz o arquivo do documento guardado. Fica FORA do
+/// wire (<c>JsonIgnore</c>) e vale <c>false</c> por padrão: todo outro chamador, o endpoint e
+/// qualquer um futuro, cai na recusa do ato que trata de objeto cujos atos pertencem ao seu
 /// domínio.</para>
 /// </remarks>
 public sealed record RegistrarAtoNormativoCommand(
@@ -57,7 +57,7 @@ public sealed record RegistrarAtoNormativoCommand(
     IReadOnlyList<VinculoEntidadeInput>? Vinculos = null,
     [property: JsonIgnore] Guid? AtoId = null,
     [property: JsonIgnore] AtributosDoTipoAto? AtributosDoTipo = null,
-    [property: JsonIgnore] bool RegistroPeloEndpoint = false) : ICommand<Result<RegistrarAtoNormativoResult>>;
+    [property: JsonIgnore] bool RegistroPeloDominio = false) : ICommand<Result<RegistrarAtoNormativoResult>>;
 
 /// <summary>
 /// Entidade de outro domínio a que o ato se liga. O par é <b>opaco</b> para

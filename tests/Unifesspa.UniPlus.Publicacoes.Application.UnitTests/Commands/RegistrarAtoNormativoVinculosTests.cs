@@ -221,10 +221,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
             .Returns([(EntidadesDeRegistroPeloDominio.ProcessoSeletivo, Processo)]);
 
         Result<RegistrarAtoNormativoResult> resultado = await Executar(
-            Comando(vinculos: null, atoRetificadoId: retificado.Id, motivo: "corrige o anexo") with
-            {
-                RegistroPeloEndpoint = true,
-            });
+            Comando(vinculos: null, atoRetificadoId: retificado.Id, motivo: "corrige o anexo"));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(AtoNormativoErrorCodes.VinculoExigeRegistroPeloDominio);
@@ -238,10 +235,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
             Comando(
                 vinculos: [new(EntidadesDeRegistroPeloDominio.ProcessoSeletivo, Processo)],
                 atoRetificadoId: Guid.CreateVersion7(),
-                motivo: "corrige o anexo") with
-            {
-                RegistroPeloEndpoint = true,
-            });
+                motivo: "corrige o anexo"));
 
         resultado.Error!.Code.Should().Be(AtoNormativoErrorCodes.VinculoExigeRegistroPeloDominio);
         resultado.Error.Message.Should().Contain(EntidadesDeRegistroPeloDominio.ProcessoSeletivo);
@@ -258,6 +252,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
             Comando(vinculos: [new(EntidadesDeRegistroPeloDominio.ProcessoSeletivo, Processo)]) with
             {
                 AtributosDoTipo = new AtributosDoTipoAto(true, false, false, "Edital de abertura"),
+                RegistroPeloDominio = true,
             });
 
         resultado.IsSuccess.Should().BeTrue();

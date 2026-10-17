@@ -8,9 +8,9 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Publicacoes.Application.Abstractions;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
