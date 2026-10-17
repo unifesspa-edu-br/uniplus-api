@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.IntegrationTests.DocumentosEdital;
+namespace Unifesspa.UniPlus.Selecao.IntegrationTests.DocumentosAPublicar;
 
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
@@ -19,11 +19,12 @@ using Unifesspa.UniPlus.Infrastructure.Core.Storage;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
-using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosEdital;
+using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosAPublicar;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
-using Unifesspa.UniPlus.Selecao.Application.Queries.DocumentosEdital;
+using Unifesspa.UniPlus.Selecao.Application.Queries.DocumentosAPublicar;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.ExternalServices;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -33,12 +34,12 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Integração real (Testcontainers Postgres + MinIO) do fluxo completo do
-/// upload direto do documento do Edital (Story #759, T3 #784): iniciar → PUT
-/// pre-assinado direto ao MinIO → confirmar → hash. Sem passar pelo HTTP
+/// envio direto do documento a publicar: iniciar → PUT pre-assinado direto ao
+/// MinIO → confirmar → hash. Sem passar pelo HTTP
 /// pipeline (controllers/auth/idempotência) — exercita Application +
 /// Infrastructure reais, que é onde a integração com Postgres/MinIO importa.
 /// </summary>
-public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<ProcessoSeletivoDbFixture>, IClassFixture<MinioContainerFixture>
+public sealed class DocumentoAPublicarEnvioIntegrationTests : IClassFixture<ProcessoSeletivoDbFixture>, IClassFixture<MinioContainerFixture>
 {
     private const string TestBucket = "uniplus-documentos-test";
     private static readonly byte[] ConteudoPdfValido = [.. "%PDF-1.7 conteúdo de teste — Uni+ #784"u8];
@@ -51,7 +52,7 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
         Justification = "Intencional: o teste exercita o port da Application (IArquivoArmazenadoStorage), não o tipo concreto de Infrastructure — é o mesmo contrato que os handlers reais consomem.")]
     private readonly IArquivoArmazenadoStorage _storage;
 
-    public DocumentoEditalUploadIntegrationTests(ProcessoSeletivoDbFixture dbFixture, MinioContainerFixture minio)
+    public DocumentoAPublicarEnvioIntegrationTests(ProcessoSeletivoDbFixture dbFixture, MinioContainerFixture minio)
     {
         ArgumentNullException.ThrowIfNull(dbFixture);
         ArgumentNullException.ThrowIfNull(minio);
@@ -87,14 +88,14 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
     }
 
     [Fact(DisplayName = "Fluxo completo: iniciar → PUT pre-assinado → confirmar → hash bate com sha256 local")]
-    public async Task FluxoCompleto_IniciarUploadConfirmar_HashConfere()
+    public async Task FluxoCompleto_IniciarEnvioConfirmar_HashConfere()
     {
         (SelecaoDbContext context, ProcessoSeletivo processo) = await NovoProcessoAsync();
-        DocumentoEditalRepository documentoRepository = new(context);
+        DocumentoAPublicarRepository documentoRepository = new(context);
         ProcessoSeletivoRepository processoRepository = new(context, TimeProvider.System);
 
-        Result<IniciarUploadDocumentoEditalDto> iniciarResultado = await IniciarUploadDocumentoEditalCommandHandler.Handle(
-            new IniciarUploadDocumentoEditalCommand(processo.Id),
+        Result<IniciarEnvioDoDocumentoAPublicarDto> iniciarResultado = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
             processoRepository, documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
         iniciarResultado.IsSuccess.Should().BeTrue();
 
@@ -104,14 +105,48 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
         HttpResponseMessage putResponse = await http.PutAsync(iniciarResultado.Value!.UrlUpload, conteudo);
         putResponse.EnsureSuccessStatusCode();
 
-        Result<DocumentoEditalDto> confirmarResultado = await ConfirmarUploadDocumentoEditalCommandHandler.Handle(
-            new ConfirmarUploadDocumentoEditalCommand(processo.Id, iniciarResultado.Value.DocumentoEditalId),
+        Result<DocumentoAPublicarDto> confirmarResultado = await ConfirmarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new ConfirmarEnvioDoDocumentoAPublicarCommand(processo.Id, iniciarResultado.Value.DocumentoAPublicarId),
             documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
 
         confirmarResultado.IsSuccess.Should().BeTrue();
         confirmarResultado.Value!.Status.Should().Be("Confirmado");
         confirmarResultado.Value.TamanhoBytes.Should().Be(ConteudoPdfValido.Length);
         confirmarResultado.Value.HashSha256.Should().Be(Convert.ToHexStringLower(SHA256.HashData(ConteudoPdfValido)));
+    }
+
+    [Theory(DisplayName = "DOCX e ODT seguem o mesmo fluxo: o conteúdo selado tem o hash do arquivo e o tipo de mídia do formato")]
+    [InlineData(TiposDeMidiaDeDocumento.Docx)]
+    [InlineData(TiposDeMidiaDeDocumento.Odt)]
+    public async Task FluxoCompleto_DocumentoDeTexto_HashConfereESelaComOTipoDeMidia(string tipoDeMidia)
+    {
+        (SelecaoDbContext context, ProcessoSeletivo processo) = await NovoProcessoAsync();
+        DocumentoAPublicarRepository documentoRepository = new(context);
+        ProcessoSeletivoRepository processoRepository = new(context, TimeProvider.System);
+        byte[] arquivo = tipoDeMidia == TiposDeMidiaDeDocumento.Docx ? ArquivosDeModeloDeTeste.Docx() : ArquivosDeModeloDeTeste.Odt();
+
+        Result<IniciarEnvioDoDocumentoAPublicarDto> iniciar = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, "Anexo I", tipoDeMidia),
+            processoRepository, documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
+        iniciar.IsSuccess.Should().BeTrue();
+        iniciar.Value!.ContentTypeExigido.Should().Be(tipoDeMidia);
+
+        using HttpClient http = new();
+        using ByteArrayContent conteudo = new(arquivo);
+        conteudo.Headers.ContentType = new MediaTypeHeaderValue(tipoDeMidia);
+        (await http.PutAsync(iniciar.Value.UrlUpload, conteudo)).EnsureSuccessStatusCode();
+
+        Result<DocumentoAPublicarDto> confirmar = await ConfirmarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new ConfirmarEnvioDoDocumentoAPublicarCommand(processo.Id, iniciar.Value.DocumentoAPublicarId),
+            documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
+
+        confirmar.IsSuccess.Should().BeTrue();
+        confirmar.Value!.HashSha256.Should().Be(Convert.ToHexStringLower(SHA256.HashData(arquivo)));
+        confirmar.Value.TipoDeMidia.Should().Be(tipoDeMidia);
+        DocumentoAPublicar gravado = await context.DocumentosAPublicar.AsNoTracking().SingleAsync(d => d.Id == iniciar.Value.DocumentoAPublicarId);
+        InfoObjetoArmazenado? selado = await _storage.ObterInfoAsync(gravado.ObjectKeyConfirmado!);
+        selado.Should().NotBeNull();
+        selado!.ContentType.Should().Be(tipoDeMidia);
     }
 
     /// <summary>
@@ -124,11 +159,11 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
     public async Task Acesso_DocumentoConfirmado_UrlAbreConteudoSelado()
     {
         (SelecaoDbContext context, ProcessoSeletivo processo) = await NovoProcessoAsync();
-        DocumentoEditalRepository documentoRepository = new(context);
+        DocumentoAPublicarRepository documentoRepository = new(context);
         ProcessoSeletivoRepository processoRepository = new(context, TimeProvider.System);
 
-        Result<IniciarUploadDocumentoEditalDto> iniciar = await IniciarUploadDocumentoEditalCommandHandler.Handle(
-            new IniciarUploadDocumentoEditalCommand(processo.Id),
+        Result<IniciarEnvioDoDocumentoAPublicarDto> iniciar = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
             processoRepository, documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
         iniciar.IsSuccess.Should().BeTrue();
 
@@ -137,13 +172,13 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
         conteudo.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
         (await http.PutAsync(iniciar.Value!.UrlUpload, conteudo)).EnsureSuccessStatusCode();
 
-        Result<DocumentoEditalDto> confirmar = await ConfirmarUploadDocumentoEditalCommandHandler.Handle(
-            new ConfirmarUploadDocumentoEditalCommand(processo.Id, iniciar.Value.DocumentoEditalId),
+        Result<DocumentoAPublicarDto> confirmar = await ConfirmarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new ConfirmarEnvioDoDocumentoAPublicarCommand(processo.Id, iniciar.Value.DocumentoAPublicarId),
             documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
         confirmar.IsSuccess.Should().BeTrue();
 
-        Result<AcessoDocumentoEditalDto> acesso = await ObterAcessoDocumentoEditalQueryHandler.Handle(
-            new ObterAcessoDocumentoEditalQuery(processo.Id, iniciar.Value.DocumentoEditalId),
+        Result<AcessoDocumentoAPublicarDto> acesso = await ObterAcessoDocumentoAPublicarQueryHandler.Handle(
+            new ObterAcessoDocumentoAPublicarQuery(processo.Id, iniciar.Value.DocumentoAPublicarId),
             processoRepository, documentoRepository, _storage, TimeProvider.System, CancellationToken.None);
 
         acesso.IsSuccess.Should().BeTrue();
@@ -158,31 +193,31 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
     public async Task Acesso_DocumentoPendente_Recusa()
     {
         (SelecaoDbContext context, ProcessoSeletivo processo) = await NovoProcessoAsync();
-        DocumentoEditalRepository documentoRepository = new(context);
+        DocumentoAPublicarRepository documentoRepository = new(context);
         ProcessoSeletivoRepository processoRepository = new(context, TimeProvider.System);
 
-        Result<IniciarUploadDocumentoEditalDto> iniciar = await IniciarUploadDocumentoEditalCommandHandler.Handle(
-            new IniciarUploadDocumentoEditalCommand(processo.Id),
+        Result<IniciarEnvioDoDocumentoAPublicarDto> iniciar = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
             processoRepository, documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
         iniciar.IsSuccess.Should().BeTrue();
 
-        Result<AcessoDocumentoEditalDto> acesso = await ObterAcessoDocumentoEditalQueryHandler.Handle(
-            new ObterAcessoDocumentoEditalQuery(processo.Id, iniciar.Value!.DocumentoEditalId),
+        Result<AcessoDocumentoAPublicarDto> acesso = await ObterAcessoDocumentoAPublicarQueryHandler.Handle(
+            new ObterAcessoDocumentoAPublicarQuery(processo.Id, iniciar.Value!.DocumentoAPublicarId),
             processoRepository, documentoRepository, _storage, TimeProvider.System, CancellationToken.None);
 
         acesso.IsFailure.Should().BeTrue();
-        acesso.Error!.Code.Should().Be("DocumentoEdital.NaoConfirmado");
+        acesso.Error!.Code.Should().Be("DocumentoAPublicar.NaoConfirmado");
     }
 
     [Fact(DisplayName = "Sobrescrever a object key original após confirmação não afeta o conteúdo selado (P1)")]
     public async Task Confirmar_ObjectKeyOriginalSobrescritaDepois_ConteudoSeladoPermaneceIntacto()
     {
         (SelecaoDbContext context, ProcessoSeletivo processo) = await NovoProcessoAsync();
-        DocumentoEditalRepository documentoRepository = new(context);
+        DocumentoAPublicarRepository documentoRepository = new(context);
         ProcessoSeletivoRepository processoRepository = new(context, TimeProvider.System);
 
-        Result<IniciarUploadDocumentoEditalDto> iniciarResultado = await IniciarUploadDocumentoEditalCommandHandler.Handle(
-            new IniciarUploadDocumentoEditalCommand(processo.Id),
+        Result<IniciarEnvioDoDocumentoAPublicarDto> iniciarResultado = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
             processoRepository, documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
 
         using HttpClient http = new();
@@ -191,12 +226,12 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
         HttpResponseMessage putOriginal = await http.PutAsync(iniciarResultado.Value!.UrlUpload, conteudoOriginal);
         putOriginal.EnsureSuccessStatusCode();
 
-        Result<DocumentoEditalDto> confirmarResultado = await ConfirmarUploadDocumentoEditalCommandHandler.Handle(
-            new ConfirmarUploadDocumentoEditalCommand(processo.Id, iniciarResultado.Value.DocumentoEditalId),
+        Result<DocumentoAPublicarDto> confirmarResultado = await ConfirmarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new ConfirmarEnvioDoDocumentoAPublicarCommand(processo.Id, iniciarResultado.Value.DocumentoAPublicarId),
             documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
         confirmarResultado.IsSuccess.Should().BeTrue();
 
-        DocumentoEdital documentoConfirmado = (await documentoRepository.ObterPorIdAsync(iniciarResultado.Value.DocumentoEditalId, CancellationToken.None))!;
+        DocumentoAPublicar documentoConfirmado = (await documentoRepository.ObterPorIdAsync(iniciarResultado.Value.DocumentoAPublicarId, CancellationToken.None))!;
 
         // A URL de upload original ainda vale (TTL não expirou) — um titular
         // mal-intencionado ou um retry duplicado do cliente sobrescreve a
@@ -208,7 +243,7 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
         putSobrescrita.EnsureSuccessStatusCode();
 
         await using Stream streamSelado = await _storage.AbrirLeituraAsync(
-            documentoConfirmado.ObjectKeyConfirmado!, DocumentoEdital.TamanhoMaximoBytes + 1, CancellationToken.None);
+            documentoConfirmado.ObjectKeyConfirmado!, DocumentoAPublicar.TamanhoMaximoBytes + 1, CancellationToken.None);
         using MemoryStream buffer = new();
         await streamSelado.CopyToAsync(buffer, CancellationToken.None);
 
@@ -220,32 +255,32 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
     public async Task Confirmar_SemUploadPrevio_Recusa()
     {
         (SelecaoDbContext context, ProcessoSeletivo processo) = await NovoProcessoAsync();
-        DocumentoEditalRepository documentoRepository = new(context);
+        DocumentoAPublicarRepository documentoRepository = new(context);
         ProcessoSeletivoRepository processoRepository = new(context, TimeProvider.System);
 
-        Result<IniciarUploadDocumentoEditalDto> iniciarResultado = await IniciarUploadDocumentoEditalCommandHandler.Handle(
-            new IniciarUploadDocumentoEditalCommand(processo.Id),
+        Result<IniciarEnvioDoDocumentoAPublicarDto> iniciarResultado = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
             processoRepository, documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
         iniciarResultado.IsSuccess.Should().BeTrue();
 
         // Sem PUT ao MinIO — confirma direto, sem que o objeto exista.
-        Result<DocumentoEditalDto> confirmarResultado = await ConfirmarUploadDocumentoEditalCommandHandler.Handle(
-            new ConfirmarUploadDocumentoEditalCommand(processo.Id, iniciarResultado.Value!.DocumentoEditalId),
+        Result<DocumentoAPublicarDto> confirmarResultado = await ConfirmarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new ConfirmarEnvioDoDocumentoAPublicarCommand(processo.Id, iniciarResultado.Value!.DocumentoAPublicarId),
             documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
 
         confirmarResultado.IsFailure.Should().BeTrue();
-        confirmarResultado.Error!.Code.Should().Be("DocumentoEdital.ObjetoNaoEncontrado");
+        confirmarResultado.Error!.Code.Should().Be("DocumentoAPublicar.ObjetoNaoEncontrado");
     }
 
-    [Fact(DisplayName = "Confirmar objeto sem assinatura PDF válida recusa (422 AssinaturaInvalida)")]
+    [Fact(DisplayName = "Confirmar objeto sem assinatura PDF válida recusa (422 ConteudoDivergeDoFormato)")]
     public async Task Confirmar_ObjetoSemAssinaturaPdf_Recusa()
     {
         (SelecaoDbContext context, ProcessoSeletivo processo) = await NovoProcessoAsync();
-        DocumentoEditalRepository documentoRepository = new(context);
+        DocumentoAPublicarRepository documentoRepository = new(context);
         ProcessoSeletivoRepository processoRepository = new(context, TimeProvider.System);
 
-        Result<IniciarUploadDocumentoEditalDto> iniciarResultado = await IniciarUploadDocumentoEditalCommandHandler.Handle(
-            new IniciarUploadDocumentoEditalCommand(processo.Id),
+        Result<IniciarEnvioDoDocumentoAPublicarDto> iniciarResultado = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
             processoRepository, documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
         iniciarResultado.IsSuccess.Should().BeTrue();
 
@@ -256,23 +291,23 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
         HttpResponseMessage putResponse = await http.PutAsync(iniciarResultado.Value!.UrlUpload, conteudo);
         putResponse.EnsureSuccessStatusCode();
 
-        Result<DocumentoEditalDto> confirmarResultado = await ConfirmarUploadDocumentoEditalCommandHandler.Handle(
-            new ConfirmarUploadDocumentoEditalCommand(processo.Id, iniciarResultado.Value.DocumentoEditalId),
+        Result<DocumentoAPublicarDto> confirmarResultado = await ConfirmarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new ConfirmarEnvioDoDocumentoAPublicarCommand(processo.Id, iniciarResultado.Value.DocumentoAPublicarId),
             documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
 
         confirmarResultado.IsFailure.Should().BeTrue();
-        confirmarResultado.Error!.Code.Should().Be("DocumentoEdital.AssinaturaInvalida");
+        confirmarResultado.Error!.Code.Should().Be("DocumentoAPublicar.ConteudoDivergeDoFormato");
     }
 
-    [Fact(DisplayName = "Confirmar objeto de 0 bytes recusa (422 AssinaturaInvalida, não 500 — Range GET não é satisfazível sobre objeto vazio)")]
+    [Fact(DisplayName = "Confirmar objeto de 0 bytes recusa (422 ArquivoVazio, não 500 — Range GET não é satisfazível sobre objeto vazio)")]
     public async Task Confirmar_ObjetoVazio_Recusa()
     {
         (SelecaoDbContext context, ProcessoSeletivo processo) = await NovoProcessoAsync();
-        DocumentoEditalRepository documentoRepository = new(context);
+        DocumentoAPublicarRepository documentoRepository = new(context);
         ProcessoSeletivoRepository processoRepository = new(context, TimeProvider.System);
 
-        Result<IniciarUploadDocumentoEditalDto> iniciarResultado = await IniciarUploadDocumentoEditalCommandHandler.Handle(
-            new IniciarUploadDocumentoEditalCommand(processo.Id),
+        Result<IniciarEnvioDoDocumentoAPublicarDto> iniciarResultado = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
             processoRepository, documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
         iniciarResultado.IsSuccess.Should().BeTrue();
 
@@ -282,23 +317,23 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
         HttpResponseMessage putResponse = await http.PutAsync(iniciarResultado.Value!.UrlUpload, conteudoVazio);
         putResponse.EnsureSuccessStatusCode();
 
-        Result<DocumentoEditalDto> confirmarResultado = await ConfirmarUploadDocumentoEditalCommandHandler.Handle(
-            new ConfirmarUploadDocumentoEditalCommand(processo.Id, iniciarResultado.Value.DocumentoEditalId),
+        Result<DocumentoAPublicarDto> confirmarResultado = await ConfirmarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new ConfirmarEnvioDoDocumentoAPublicarCommand(processo.Id, iniciarResultado.Value.DocumentoAPublicarId),
             documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
 
         confirmarResultado.IsFailure.Should().BeTrue();
-        confirmarResultado.Error!.Code.Should().Be("DocumentoEdital.AssinaturaInvalida");
+        confirmarResultado.Error!.Code.Should().Be("DocumentoAPublicar.ArquivoVazio");
     }
 
     [Fact(DisplayName = "Confirmar um documento já confirmado recusa (imutabilidade — CA)")]
     public async Task Confirmar_DocumentoJaConfirmado_Recusa()
     {
         (SelecaoDbContext context, ProcessoSeletivo processo) = await NovoProcessoAsync();
-        DocumentoEditalRepository documentoRepository = new(context);
+        DocumentoAPublicarRepository documentoRepository = new(context);
         ProcessoSeletivoRepository processoRepository = new(context, TimeProvider.System);
 
-        Result<IniciarUploadDocumentoEditalDto> iniciarResultado = await IniciarUploadDocumentoEditalCommandHandler.Handle(
-            new IniciarUploadDocumentoEditalCommand(processo.Id),
+        Result<IniciarEnvioDoDocumentoAPublicarDto> iniciarResultado = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
             processoRepository, documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
 
         using HttpClient http = new();
@@ -307,37 +342,37 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
         HttpResponseMessage putResponse = await http.PutAsync(iniciarResultado.Value!.UrlUpload, conteudo);
         putResponse.EnsureSuccessStatusCode();
 
-        Result<DocumentoEditalDto> primeiraConfirmacao = await ConfirmarUploadDocumentoEditalCommandHandler.Handle(
-            new ConfirmarUploadDocumentoEditalCommand(processo.Id, iniciarResultado.Value.DocumentoEditalId),
+        Result<DocumentoAPublicarDto> primeiraConfirmacao = await ConfirmarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new ConfirmarEnvioDoDocumentoAPublicarCommand(processo.Id, iniciarResultado.Value.DocumentoAPublicarId),
             documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
         primeiraConfirmacao.IsSuccess.Should().BeTrue();
 
-        Result<DocumentoEditalDto> segundaConfirmacao = await ConfirmarUploadDocumentoEditalCommandHandler.Handle(
-            new ConfirmarUploadDocumentoEditalCommand(processo.Id, iniciarResultado.Value.DocumentoEditalId),
+        Result<DocumentoAPublicarDto> segundaConfirmacao = await ConfirmarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new ConfirmarEnvioDoDocumentoAPublicarCommand(processo.Id, iniciarResultado.Value.DocumentoAPublicarId),
             documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
 
         segundaConfirmacao.IsFailure.Should().BeTrue();
-        segundaConfirmacao.Error!.Code.Should().Be("DocumentoEdital.StatusInvalidoParaConfirmacao");
+        segundaConfirmacao.Error!.Code.Should().Be("DocumentoAPublicar.StatusInvalidoParaConfirmacao");
     }
 
     [Fact(DisplayName = "Iniciar upload duas vezes para o mesmo processo cria dois registros com object keys distintas (CA — nunca sobrescreve)")]
     public async Task IniciarUpload_DuasVezes_CriaRegistrosDistintos()
     {
         (SelecaoDbContext context, ProcessoSeletivo processo) = await NovoProcessoAsync();
-        DocumentoEditalRepository documentoRepository = new(context);
+        DocumentoAPublicarRepository documentoRepository = new(context);
         ProcessoSeletivoRepository processoRepository = new(context, TimeProvider.System);
 
-        Result<IniciarUploadDocumentoEditalDto> primeiro = await IniciarUploadDocumentoEditalCommandHandler.Handle(
-            new IniciarUploadDocumentoEditalCommand(processo.Id),
+        Result<IniciarEnvioDoDocumentoAPublicarDto> primeiro = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
             processoRepository, documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
-        Result<IniciarUploadDocumentoEditalDto> segundo = await IniciarUploadDocumentoEditalCommandHandler.Handle(
-            new IniciarUploadDocumentoEditalCommand(processo.Id),
+        Result<IniciarEnvioDoDocumentoAPublicarDto> segundo = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
             processoRepository, documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
 
-        primeiro.Value!.DocumentoEditalId.Should().NotBe(segundo.Value!.DocumentoEditalId);
+        primeiro.Value!.DocumentoAPublicarId.Should().NotBe(segundo.Value!.DocumentoAPublicarId);
 
-        DocumentoEdital? doc1 = await documentoRepository.ObterPorIdAsync(primeiro.Value.DocumentoEditalId, CancellationToken.None);
-        DocumentoEdital? doc2 = await documentoRepository.ObterPorIdAsync(segundo.Value.DocumentoEditalId, CancellationToken.None);
+        DocumentoAPublicar? doc1 = await documentoRepository.ObterPorIdAsync(primeiro.Value.DocumentoAPublicarId, CancellationToken.None);
+        DocumentoAPublicar? doc2 = await documentoRepository.ObterPorIdAsync(segundo.Value.DocumentoAPublicarId, CancellationToken.None);
         doc1!.ObjectKey.Should().NotBe(doc2!.ObjectKey);
     }
 
@@ -345,9 +380,9 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
     public async Task TentarReivindicarConfirmacaoAsync_SoAPrimeiraChamadaGanha()
     {
         (SelecaoDbContext context, ProcessoSeletivo processo) = await NovoProcessoAsync();
-        DocumentoEditalRepository documentoRepository = new(context);
-        DocumentoEdital documento = DocumentoEdital.IniciarPendente(processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));
-        context.DocumentosEdital.Add(documento);
+        DocumentoAPublicarRepository documentoRepository = new(context);
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        context.DocumentosAPublicar.Add(documento);
         await context.SaveChangesAsync();
 
         bool primeira = await documentoRepository.TentarReivindicarConfirmacaoAsync(documento.Id, CancellationToken.None);
@@ -361,9 +396,9 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
     public async Task TentarReivindicarConfirmacaoAsync_RevertNoRollbackDaTransacaoAmbiente()
     {
         (SelecaoDbContext context, ProcessoSeletivo processo) = await NovoProcessoAsync();
-        DocumentoEditalRepository documentoRepository = new(context);
-        DocumentoEdital documento = DocumentoEdital.IniciarPendente(processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));
-        context.DocumentosEdital.Add(documento);
+        DocumentoAPublicarRepository documentoRepository = new(context);
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        context.DocumentosAPublicar.Add(documento);
         await context.SaveChangesAsync();
 
         // Simula o mesmo cenário do handler sob Wolverine (ADR-0004,
@@ -379,7 +414,7 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
         }
 
         await using SelecaoDbContext contextoIndependente = _dbFixture.CreateDbContext();
-        DocumentoEdital documentoAposRollback = await contextoIndependente.DocumentosEdital
+        DocumentoAPublicar documentoAposRollback = await contextoIndependente.DocumentosAPublicar
             .FirstAsync(d => d.Id == documento.Id);
         documentoAposRollback.Status.Should().Be(StatusArquivoEnviado.Pendente);
     }
@@ -388,11 +423,11 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
     public async Task Confirmar_FalhaAoSalvarCopiaSelada_ReverteEPermiteRetrySemOrfaos()
     {
         (SelecaoDbContext contextoInicial, ProcessoSeletivo processo) = await NovoProcessoAsync();
-        DocumentoEditalRepository repositorioInicial = new(contextoInicial);
+        DocumentoAPublicarRepository repositorioInicial = new(contextoInicial);
         ProcessoSeletivoRepository processoRepository = new(contextoInicial, TimeProvider.System);
 
-        Result<IniciarUploadDocumentoEditalDto> iniciar = await IniciarUploadDocumentoEditalCommandHandler.Handle(
-            new IniciarUploadDocumentoEditalCommand(processo.Id),
+        Result<IniciarEnvioDoDocumentoAPublicarDto> iniciar = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new IniciarEnvioDoDocumentoAPublicarCommand(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
             processoRepository, repositorioInicial, _storage, contextoInicial, TimeProvider.System, CancellationToken.None);
         iniciar.IsSuccess.Should().BeTrue();
 
@@ -404,8 +439,8 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
         FailingSealedStorage storageFalho = new(_storage);
         await using (IDbContextTransaction transacao = await contextoInicial.Database.BeginTransactionAsync())
         {
-            Func<Task> act = () => ConfirmarUploadDocumentoEditalCommandHandler.Handle(
-                new ConfirmarUploadDocumentoEditalCommand(processo.Id, iniciar.Value.DocumentoEditalId),
+            Func<Task> act = () => ConfirmarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+                new ConfirmarEnvioDoDocumentoAPublicarCommand(processo.Id, iniciar.Value.DocumentoAPublicarId),
                 repositorioInicial, storageFalho, contextoInicial, TimeProvider.System, CancellationToken.None);
 
             await act.Should().ThrowAsync<InvalidOperationException>();
@@ -413,33 +448,33 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
         }
 
         await using SelecaoDbContext contextoAposFalha = _dbFixture.CreateDbContext();
-        DocumentoEdital documentoAposFalha = await contextoAposFalha.DocumentosEdital
-            .FirstAsync(d => d.Id == iniciar.Value.DocumentoEditalId);
+        DocumentoAPublicar documentoAposFalha = await contextoAposFalha.DocumentosAPublicar
+            .FirstAsync(d => d.Id == iniciar.Value.DocumentoAPublicarId);
         documentoAposFalha.Status.Should().Be(StatusArquivoEnviado.Pendente);
         documentoAposFalha.HashSha256.Should().BeNull();
         documentoAposFalha.ObjectKeyConfirmado.Should().BeNull();
 
         string objectKeySeladoEsperado =
-            $"selecao/documentos-edital/{processo.Id:D}/{documentoAposFalha.Id:D}/confirmado.pdf";
+            $"selecao/documentos-a-publicar/{processo.Id:D}/{documentoAposFalha.Id:D}/confirmado.pdf";
         (await _storage.ObterInfoAsync(objectKeySeladoEsperado, CancellationToken.None))
             .Should().NotBeNull();
 
-        DocumentoEditalRepository repositorioRetry = new(contextoAposFalha);
-        Result<DocumentoEditalDto> retry = await ConfirmarUploadDocumentoEditalCommandHandler.Handle(
-            new ConfirmarUploadDocumentoEditalCommand(processo.Id, iniciar.Value.DocumentoEditalId),
+        DocumentoAPublicarRepository repositorioRetry = new(contextoAposFalha);
+        Result<DocumentoAPublicarDto> retry = await ConfirmarEnvioDoDocumentoAPublicarCommandHandler.Handle(
+            new ConfirmarEnvioDoDocumentoAPublicarCommand(processo.Id, iniciar.Value.DocumentoAPublicarId),
             repositorioRetry, _storage, contextoAposFalha, TimeProvider.System, CancellationToken.None);
 
         retry.IsSuccess.Should().BeTrue();
         retry.Value!.Status.Should().Be("Confirmado");
         retry.Value.TamanhoBytes.Should().Be(ConteudoPdfValido.Length);
 
-        DocumentoEdital documentoConfirmado = await contextoAposFalha.DocumentosEdital
+        DocumentoAPublicar documentoConfirmado = await contextoAposFalha.DocumentosAPublicar
             .AsNoTracking()
-            .FirstAsync(d => d.Id == iniciar.Value.DocumentoEditalId);
+            .FirstAsync(d => d.Id == iniciar.Value.DocumentoAPublicarId);
         documentoConfirmado.ObjectKeyConfirmado.Should().Be(objectKeySeladoEsperado);
 
         await using Stream streamSelado = await _storage.AbrirLeituraAsync(
-            documentoConfirmado.ObjectKeyConfirmado!, DocumentoEdital.TamanhoMaximoBytes + 1, CancellationToken.None);
+            documentoConfirmado.ObjectKeyConfirmado!, DocumentoAPublicar.TamanhoMaximoBytes + 1, CancellationToken.None);
         using MemoryStream buffer = new();
         await streamSelado.CopyToAsync(buffer, CancellationToken.None);
         buffer.ToArray().Should().Equal(ConteudoPdfValido);

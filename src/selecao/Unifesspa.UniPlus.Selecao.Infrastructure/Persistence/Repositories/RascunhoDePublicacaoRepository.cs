@@ -6,7 +6,7 @@ using Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 /// <summary>
-/// Público de propósito, como <see cref="DocumentoEditalRepository"/>: o codegen do Wolverine
+/// Público de propósito, como <see cref="DocumentoAPublicarRepository"/>: o codegen do Wolverine
 /// não consegue instanciar um concreto <c>internal</c> sob <c>ServiceLocationPolicy.NotAllowed</c>
 /// e exigiria o opt-in da ADR-0098. Sendo público, o handler o recebe sem cerimônia nenhuma.
 /// </summary>

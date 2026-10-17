@@ -20,6 +20,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.ExternalServices;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -74,7 +75,7 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
     public async Task PendenteVencido_SaiDoBancoEDoArmazenamento()
     {
         Guid processoId = await NovoProcessoAsync();
-        DocumentoEdital documento = DocumentoEdital.IniciarPendente(processoId, TimeProvider.System, Vencido);
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, Vencido).Value!;
         ModeloDeDocumento modelo = Modelo(processoId, Vencido);
         await PersistirComObjetoAsync(documento, documento.ObjectKey, modelo, modelo.ObjectKey);
 
@@ -90,7 +91,7 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
     public async Task PendenteNoPrazo_Permanece()
     {
         Guid processoId = await NovoProcessoAsync();
-        DocumentoEdital documento = DocumentoEdital.IniciarPendente(processoId, TimeProvider.System, NoPrazo);
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, NoPrazo).Value!;
         ModeloDeDocumento modelo = Modelo(processoId, NoPrazo);
         await PersistirComObjetoAsync(documento, documento.ObjectKey, modelo, modelo.ObjectKey);
 
@@ -106,7 +107,7 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
     public async Task Confirmado_Permanece()
     {
         Guid processoId = await NovoProcessoAsync();
-        DocumentoEdital documento = DocumentoEdital.IniciarPendente(processoId, TimeProvider.System, Vencido);
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, Vencido).Value!;
         documento.Confirmar(Conteudo.Length, new string('a', 64), TimeProvider.System).IsSuccess.Should().BeTrue();
         ModeloDeDocumento modelo = Modelo(processoId, Vencido);
         modelo.Confirmar(Conteudo.Length, new string('b', 64), TimeProvider.System).IsSuccess.Should().BeTrue();
@@ -125,11 +126,11 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
     {
         Guid processoId = await NovoProcessoAsync();
         // O bucket existe — o que falta é só o objeto do pendente.
-        await _storage.SalvarConteudoSeladoAsync($"selecao/outro/{Guid.CreateVersion7():D}.pdf", Conteudo, DocumentoEdital.ContentTypeEsperado);
-        DocumentoEdital documento = DocumentoEdital.IniciarPendente(processoId, TimeProvider.System, Vencido);
+        await _storage.SalvarConteudoSeladoAsync($"selecao/outro/{Guid.CreateVersion7():D}.pdf", Conteudo, TiposDeMidiaDeDocumento.Pdf);
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, Vencido).Value!;
         await using (SelecaoDbContext context = _dbFixture.CreateDbContext())
         {
-            context.DocumentosEdital.Add(documento);
+            context.DocumentosAPublicar.Add(documento);
             await context.SaveChangesAsync();
         }
 
@@ -142,20 +143,20 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
     public async Task RemocaoCondicionada_DocumentoReivindicadoPelaConfirmacao_Permanece()
     {
         Guid processoId = await NovoProcessoAsync();
-        DocumentoEdital documento = DocumentoEdital.IniciarPendente(processoId, TimeProvider.System, Vencido);
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, Vencido).Value!;
         await using (SelecaoDbContext context = _dbFixture.CreateDbContext())
         {
-            context.DocumentosEdital.Add(documento);
+            context.DocumentosAPublicar.Add(documento);
             await context.SaveChangesAsync();
         }
 
         bool removeu = await RemoverDuranteAConfirmacaoAsync(
-            context => new DocumentoEditalRepository(context).TentarReivindicarConfirmacaoAsync(documento.Id),
-            context => new DocumentoEditalRepository(context).RemoverSePendenteVencidoAsync(documento.Id, TimeProvider.System.GetUtcNow()));
+            context => new DocumentoAPublicarRepository(context).TentarReivindicarConfirmacaoAsync(documento.Id),
+            context => new DocumentoAPublicarRepository(context).RemoverSePendenteVencidoAsync(documento.Id, TimeProvider.System.GetUtcNow()));
 
         removeu.Should().BeFalse();
         await using SelecaoDbContext leitura = _dbFixture.CreateDbContext();
-        (await leitura.DocumentosEdital.AsNoTracking().SingleAsync(d => d.Id == documento.Id))
+        (await leitura.DocumentosAPublicar.AsNoTracking().SingleAsync(d => d.Id == documento.Id))
             .Status.Should().Be(StatusArquivoEnviado.Confirmado);
     }
 
@@ -204,7 +205,7 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
     {
         await using SelecaoDbContext context = _dbFixture.CreateDbContext();
         RemocaoDeArquivosPendentesVencidos remocao = new(
-            new DocumentoEditalRepository(context),
+            new DocumentoAPublicarRepository(context),
             new ModeloDeDocumentoRepository(context),
             _storage,
             TimeProvider.System,
@@ -213,20 +214,20 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
     }
 
     private async Task PersistirComObjetoAsync(
-        DocumentoEdital documento, string chaveDoDocumento, ModeloDeDocumento modelo, string chaveDoModelo)
+        DocumentoAPublicar documento, string chaveDoDocumento, ModeloDeDocumento modelo, string chaveDoModelo)
     {
         await using SelecaoDbContext context = _dbFixture.CreateDbContext();
-        context.DocumentosEdital.Add(documento);
+        context.DocumentosAPublicar.Add(documento);
         context.ModelosDeDocumento.Add(modelo);
         await context.SaveChangesAsync();
-        await _storage.SalvarConteudoSeladoAsync(chaveDoDocumento, Conteudo, DocumentoEdital.ContentTypeEsperado);
+        await _storage.SalvarConteudoSeladoAsync(chaveDoDocumento, Conteudo, TiposDeMidiaDeDocumento.Pdf);
         await _storage.SalvarConteudoSeladoAsync(chaveDoModelo, Conteudo, modelo.ContentType);
     }
 
     private async Task<bool> ExisteDocumentoAsync(Guid id)
     {
         await using SelecaoDbContext context = _dbFixture.CreateDbContext();
-        return await context.DocumentosEdital.AsNoTracking().AnyAsync(d => d.Id == id);
+        return await context.DocumentosAPublicar.AsNoTracking().AnyAsync(d => d.Id == id);
     }
 
     private async Task<bool> ExisteModeloAsync(Guid id)

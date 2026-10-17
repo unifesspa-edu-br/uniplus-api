@@ -29,7 +29,7 @@ public static class RetificarProcessoSeletivoCommandHandler
     public static Task<(Result Resposta, IEnumerable<object> Eventos)> Handle(
         RetificarProcessoSeletivoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
-        IDocumentoEditalRepository documentoEditalRepository,
+        IDocumentoAPublicarRepository documentoAPublicarRepository,
         IRascunhoDePublicacaoRepository rascunhoDePublicacaoRepository,
         ISnapshotPublicacaoCanonicalizer canonicalizer,
         IResolvedorFusoInstitucional resolvedorFuso,
@@ -55,13 +55,13 @@ public static class RetificarProcessoSeletivoCommandHandler
         // recusa não devolve exceção, então o que ela mudou não pode ir para o banco.
         return ReconferenciaDasCopiasDoItem.SemPersistirEmRecusaAsync(
             unitOfWork,
-            () => Executar(command, processoSeletivoRepository, documentoEditalRepository, rascunhoDePublicacaoRepository, canonicalizer, resolvedorFuso, unitOfWork, userContext, tipoDeAtoReader, vagaDeLinhagemReader, obrigatoriedadeLegalRepository, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, fatoCandidatoReader, calendarioVigenteReader, registroCodecs, timeProvider, cancellationToken));
+            () => Executar(command, processoSeletivoRepository, documentoAPublicarRepository, rascunhoDePublicacaoRepository, canonicalizer, resolvedorFuso, unitOfWork, userContext, tipoDeAtoReader, vagaDeLinhagemReader, obrigatoriedadeLegalRepository, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, fatoCandidatoReader, calendarioVigenteReader, registroCodecs, timeProvider, cancellationToken));
     }
 
     private static async Task<(Result Resposta, IEnumerable<object> Eventos)> Executar(
         RetificarProcessoSeletivoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
-        IDocumentoEditalRepository documentoEditalRepository,
+        IDocumentoAPublicarRepository documentoAPublicarRepository,
         IRascunhoDePublicacaoRepository rascunhoDePublicacaoRepository,
         ISnapshotPublicacaoCanonicalizer canonicalizer,
         IResolvedorFusoInstitucional resolvedorFuso,
@@ -83,7 +83,7 @@ public static class RetificarProcessoSeletivoCommandHandler
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
-        ArgumentNullException.ThrowIfNull(documentoEditalRepository);
+        ArgumentNullException.ThrowIfNull(documentoAPublicarRepository);
         ArgumentNullException.ThrowIfNull(canonicalizer);
         ArgumentNullException.ThrowIfNull(resolvedorFuso);
         ArgumentNullException.ThrowIfNull(unitOfWork);
@@ -110,14 +110,14 @@ public static class RetificarProcessoSeletivoCommandHandler
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado.")), []);
         }
 
-        DocumentoEdital? documento = await documentoEditalRepository
+        DocumentoAPublicar? documento = await documentoAPublicarRepository
             .ObterPorIdAsync(command.DocumentoEditalId, cancellationToken)
             .ConfigureAwait(false);
         if (documento is null || documento.ProcessoSeletivoId != command.ProcessoSeletivoId)
         {
             return (Result.Failure(new DomainError(
                 "ProcessoSeletivo.DocumentoNaoEncontrado",
-                $"Documento do Edital {command.DocumentoEditalId} não encontrado ou não pertence a este processo.")), []);
+                $"Documento {command.DocumentoEditalId} não encontrado ou não pertence a este processo.")), []);
         }
 
         if (documento.Status != Domain.Enums.StatusArquivoEnviado.Confirmado)
@@ -125,6 +125,13 @@ public static class RetificarProcessoSeletivoCommandHandler
             return (Result.Failure(new DomainError(
                 "ProcessoSeletivo.DocumentoNaoConfirmado",
                 "Somente um documento confirmado pode ser referenciado na retificação.")), []);
+        }
+
+        if (documento.Formato != Domain.Enums.FormatoDeDocumento.Pdf)
+        {
+            return (Result.Failure(new DomainError(
+                "ProcessoSeletivo.DocumentoDoEditalNaoEPdf",
+                "O documento do edital deve ser um PDF.")), []);
         }
 
         // O ato é registrado depois, por mensagem durável (ADR-0108). O que o catálogo de

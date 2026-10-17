@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -29,11 +30,11 @@ public sealed class RelogioObrigatorioTests
         act.Should().Throw<ArgumentNullException>();
     }
 
-    [Fact(DisplayName = "DocumentoEdital.IniciarPendente exige TimeProvider não-nulo")]
-    public void DocumentoEditalIniciarPendente_ClockNulo_Lanca()
+    [Fact(DisplayName = "DocumentoAPublicar.IniciarPendente exige TimeProvider não-nulo")]
+    public void DocumentoAPublicarIniciarPendente_ClockNulo_Lanca()
     {
-        Action act = () => DocumentoEdital.IniciarPendente(
-            Guid.CreateVersion7(), clock: null!, TimeSpan.FromMinutes(15));
+        Action act = () => DocumentoAPublicar.IniciarPendente(
+            Guid.CreateVersion7(), "edital.pdf", TiposDeMidiaDeDocumento.Pdf, clock: null!, TimeSpan.FromMinutes(15));
 
         act.Should().Throw<ArgumentNullException>();
     }

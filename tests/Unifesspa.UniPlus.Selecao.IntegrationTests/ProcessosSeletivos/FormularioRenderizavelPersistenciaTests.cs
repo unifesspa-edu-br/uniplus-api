@@ -385,7 +385,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
             await PublicarComCorRacaAsync(nameof(Retificar_ValorCorrigidoNoCatalogo_VersaoNovaCongelaOTextoEAOrdemNovos));
 
         VersaoConfiguracao retificacao;
-        DocumentoEdital documento = DocumentoEdital.IniciarPendente(processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(1024, string.Concat(Enumerable.Repeat("ab01234567", 7))[..64], TimeProvider.System).IsSuccess.Should().BeTrue();
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -407,7 +407,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
             retificar.IsSuccess.Should().BeTrue(retificar.Error?.Message);
             retificacao = retificar.Value!;
 
-            await writeContext.DocumentosEdital.AddAsync(documento, CancellationToken.None);
+            await writeContext.DocumentosAPublicar.AddAsync(documento, CancellationToken.None);
             await repository.AdicionarVersaoConfiguracaoAsync(retificacao, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }

@@ -95,7 +95,7 @@ public sealed class FinalidadeDaExigenciaEndpointTests
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
-        (ProcessoSeletivo processo, DocumentoEdital _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
+        (ProcessoSeletivo processo, DocumentoAPublicar _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
             db,
             $"Inscrição e isenção na mesma fase {Guid.CreateVersion7()}",
             coletaSolicitacaoIsencao: true,

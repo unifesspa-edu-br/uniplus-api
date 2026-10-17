@@ -19,6 +19,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 // Cenário fim-a-fim da retificação (ADR-0101/0103/0108): publica via HTTP, depois
@@ -262,7 +263,7 @@ public sealed class RetificarProcessoSeletivoEndpointTests
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
-        (ProcessoSeletivo processo, DocumentoEdital documento) = await ProcessoSeletivoPublicavelSeeder
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
             .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
         return (processo.Id, documento.Id);
     }
@@ -272,9 +273,9 @@ public sealed class RetificarProcessoSeletivoEndpointTests
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
         string hashFixo = string.Concat(Enumerable.Repeat("cd45670189", 7))[..64];
-        DocumentoEdital documento = DocumentoEdital.IniciarPendente(processoId, TimeProvider.System, TimeSpan.FromMinutes(15));
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(2048, hashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();
-        await db.DocumentosEdital.AddAsync(documento);
+        await db.DocumentosAPublicar.AddAsync(documento);
         await db.SaveChangesAsync();
         return documento.Id;
     }

@@ -56,7 +56,7 @@ public sealed class CascadingScenariosTests
         await using (AsyncServiceScope seedScope = api.Services.CreateAsyncScope())
         {
             SelecaoDbContext seedDb = seedScope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
-            (ProcessoSeletivo processo, DocumentoEdital documento) = await ProcessoSeletivoPublicavelSeeder
+            (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
                 .SemearAsync(seedDb, $"V8 cascading {Guid.CreateVersion7()}");
             processoId = processo.Id;
             documentoId = documento.Id;

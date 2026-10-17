@@ -166,7 +166,7 @@ public sealed class PublicarProcessoSeletivoEndpointTests
 
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
-        (ProcessoSeletivo processo, DocumentoEdital documento) =
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) =
             await ProcessoSeletivoPendenciasSeeder.SemearComCronogramaNaoConformeAsync(
                 db, $"{nameof(Publicar_Recusado_PendenciasCasamComOChecklistDoPreview)} {Guid.CreateVersion7()}");
 
@@ -223,7 +223,7 @@ public sealed class PublicarProcessoSeletivoEndpointTests
     /// sem nada ter regredido.
     /// </remarks>
     private async Task AssertGateEstruturalNaoConformeAsync(
-        Func<SelecaoDbContext, string, Task<(ProcessoSeletivo Processo, DocumentoEdital Documento)>> semear,
+        Func<SelecaoDbContext, string, Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)>> semear,
         string codigoEsperado,
         string codigoDoItemVermelho,
         string nomeDoCenario)
@@ -236,7 +236,7 @@ public sealed class PublicarProcessoSeletivoEndpointTests
 
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
-        (ProcessoSeletivo processo, DocumentoEdital documento) = await semear(db, $"{nomeDoCenario} {Guid.CreateVersion7()}");
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await semear(db, $"{nomeDoCenario} {Guid.CreateVersion7()}");
 
         HttpResponseMessage response = await PostPublicarAsync(client, processo.Id, documento.Id, MakeIdempotencyKey());
 
@@ -263,7 +263,7 @@ public sealed class PublicarProcessoSeletivoEndpointTests
             db, $"TEST_GATE_{Guid.CreateVersion7():N}");
         try
         {
-            (ProcessoSeletivo processo, DocumentoEdital documento) = await ProcessoSeletivoPublicavelSeeder
+            (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
                 .SemearAsync(db, nameof(Publicar_QuandoSoObrigatoriedadeLegalReprovada_Retorna422SemPendencias));
 
             HttpResponseMessage response = await PostPublicarAsync(client, processo.Id, documento.Id, MakeIdempotencyKey());
@@ -296,7 +296,7 @@ public sealed class PublicarProcessoSeletivoEndpointTests
 
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
-        (ProcessoSeletivo processo, DocumentoEdital documento) = await ProcessoSeletivoPendenciasSeeder
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPendenciasSeeder
             .SemearComCadastroProprioNaoConformeAsync(
                 db,
                 nameof(Publicar_QuandoOutroErro422EChecklistAindaVermelho_IncluiPendencias),
@@ -495,7 +495,7 @@ public sealed class PublicarProcessoSeletivoEndpointTests
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
 
-        (ProcessoSeletivo processo, DocumentoEdital documento) = await ProcessoSeletivoPublicavelSeeder
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
             .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
 
         return (processo.Id, documento.Id);

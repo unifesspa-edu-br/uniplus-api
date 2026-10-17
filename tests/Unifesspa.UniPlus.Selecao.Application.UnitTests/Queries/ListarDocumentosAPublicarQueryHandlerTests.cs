@@ -8,25 +8,26 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
-using Unifesspa.UniPlus.Selecao.Application.Queries.DocumentosEdital;
+using Unifesspa.UniPlus.Selecao.Application.Queries.DocumentosAPublicar;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 
 /// <summary>
 /// Cobertura da leitura dos documentos do Edital: o pendente e o confirmado
 /// convivem na mesma resposta, o processo sem documento não se confunde com o
 /// processo inexistente, e nenhum endereço de storage atravessa a projeção.
 /// </summary>
-public sealed class ListarDocumentosEditalQueryHandlerTests
+public sealed class ListarDocumentosAPublicarQueryHandlerTests
 {
     private const string HashFixo = "9f2c1e0b7a4d5c6e8f0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60";
 
-    private static DocumentoEdital NovoPendente(Guid processoSeletivoId) =>
-        DocumentoEdital.IniciarPendente(processoSeletivoId, TimeProvider.System, TimeSpan.FromMinutes(15));
+    private static DocumentoAPublicar NovoPendente(Guid processoSeletivoId) =>
+        DocumentoAPublicar.IniciarPendente(processoSeletivoId, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
 
-    private static DocumentoEdital NovoConfirmado(Guid processoSeletivoId, long tamanhoBytes)
+    private static DocumentoAPublicar NovoConfirmado(Guid processoSeletivoId, long tamanhoBytes)
     {
-        DocumentoEdital documento = NovoPendente(processoSeletivoId);
+        DocumentoAPublicar documento = NovoPendente(processoSeletivoId);
         documento.Confirmar(tamanhoBytes, HashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();
         return documento;
     }
@@ -35,17 +36,17 @@ public sealed class ListarDocumentosEditalQueryHandlerTests
     public async Task Handle_PendenteEConfirmado_ProjetaCadaEstadoComOsMetadadosQueEleTem()
     {
         Guid processoSeletivoId = Guid.CreateVersion7();
-        DocumentoEdital confirmado = NovoConfirmado(processoSeletivoId, tamanhoBytes: 4096);
-        DocumentoEdital pendente = NovoPendente(processoSeletivoId);
+        DocumentoAPublicar confirmado = NovoConfirmado(processoSeletivoId, tamanhoBytes: 4096);
+        DocumentoAPublicar pendente = NovoPendente(processoSeletivoId);
 
-        IDocumentoEditalRepository documentos = Substitute.For<IDocumentoEditalRepository>();
+        IDocumentoAPublicarRepository documentos = Substitute.For<IDocumentoAPublicarRepository>();
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
         documentos.ListarPorProcessoAsync(processoSeletivoId, Arg.Any<CancellationToken>())
             .Returns([pendente, confirmado]);
         processos.ExisteAsync(processoSeletivoId, Arg.Any<CancellationToken>()).Returns(true);
 
-        Result<ListarDocumentosEditalResult> resultado = await ListarDocumentosEditalQueryHandler.Handle(
-            new ListarDocumentosEditalQuery(processoSeletivoId),
+        Result<ListarDocumentosAPublicarResult> resultado = await ListarDocumentosAPublicarQueryHandler.Handle(
+            new ListarDocumentosAPublicarQuery(processoSeletivoId),
             documentos,
             processos,
             CancellationToken.None);
@@ -54,10 +55,10 @@ public sealed class ListarDocumentosEditalQueryHandlerTests
 
         // A ordem é decidida pela consulta, no repositório; o handler apenas
         // projeta. Reordenar aqui desfaria a ordenação que o contrato promete.
-        DocumentoEditalDto[] items = [.. resultado.Value!.Items];
+        DocumentoAPublicarDto[] items = [.. resultado.Value!.Items];
         items.Select(i => i.Id).Should().Equal(pendente.Id, confirmado.Id);
 
-        DocumentoEditalDto itemPendente = items[0];
+        DocumentoAPublicarDto itemPendente = items[0];
         itemPendente.Status.Should().Be("Pendente");
         itemPendente.ProcessoSeletivoId.Should().Be(processoSeletivoId);
         itemPendente.ExpiraEm.Should().Be(pendente.ExpiraEm);
@@ -65,7 +66,7 @@ public sealed class ListarDocumentosEditalQueryHandlerTests
         itemPendente.HashSha256.Should().BeNull();
         itemPendente.ConfirmadoEm.Should().BeNull();
 
-        DocumentoEditalDto itemConfirmado = items[1];
+        DocumentoAPublicarDto itemConfirmado = items[1];
         itemConfirmado.Status.Should().Be("Confirmado");
         itemConfirmado.TamanhoBytes.Should().Be(4096);
         itemConfirmado.HashSha256.Should().Be(HashFixo);
@@ -76,13 +77,13 @@ public sealed class ListarDocumentosEditalQueryHandlerTests
     public async Task Handle_ProcessoExistenteSemDocumento_DevolveListaVazia()
     {
         Guid processoSeletivoId = Guid.CreateVersion7();
-        IDocumentoEditalRepository documentos = Substitute.For<IDocumentoEditalRepository>();
+        IDocumentoAPublicarRepository documentos = Substitute.For<IDocumentoAPublicarRepository>();
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
         documentos.ListarPorProcessoAsync(processoSeletivoId, Arg.Any<CancellationToken>()).Returns([]);
         processos.ExisteAsync(processoSeletivoId, Arg.Any<CancellationToken>()).Returns(true);
 
-        Result<ListarDocumentosEditalResult> resultado = await ListarDocumentosEditalQueryHandler.Handle(
-            new ListarDocumentosEditalQuery(processoSeletivoId),
+        Result<ListarDocumentosAPublicarResult> resultado = await ListarDocumentosAPublicarQueryHandler.Handle(
+            new ListarDocumentosAPublicarQuery(processoSeletivoId),
             documentos,
             processos,
             CancellationToken.None);
@@ -95,13 +96,13 @@ public sealed class ListarDocumentosEditalQueryHandlerTests
     public async Task Handle_ProcessoInexistente_Recusa()
     {
         Guid processoSeletivoId = Guid.CreateVersion7();
-        IDocumentoEditalRepository documentos = Substitute.For<IDocumentoEditalRepository>();
+        IDocumentoAPublicarRepository documentos = Substitute.For<IDocumentoAPublicarRepository>();
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
         documentos.ListarPorProcessoAsync(processoSeletivoId, Arg.Any<CancellationToken>()).Returns([]);
         processos.ExisteAsync(processoSeletivoId, Arg.Any<CancellationToken>()).Returns(false);
 
-        Result<ListarDocumentosEditalResult> resultado = await ListarDocumentosEditalQueryHandler.Handle(
-            new ListarDocumentosEditalQuery(processoSeletivoId),
+        Result<ListarDocumentosAPublicarResult> resultado = await ListarDocumentosAPublicarQueryHandler.Handle(
+            new ListarDocumentosAPublicarQuery(processoSeletivoId),
             documentos,
             processos,
             CancellationToken.None);
@@ -114,7 +115,7 @@ public sealed class ListarDocumentosEditalQueryHandlerTests
     public async Task Handle_ProcessoInvisivelComDocumento_Recusa()
     {
         Guid processoSeletivoId = Guid.CreateVersion7();
-        IDocumentoEditalRepository documentos = Substitute.For<IDocumentoEditalRepository>();
+        IDocumentoAPublicarRepository documentos = Substitute.For<IDocumentoAPublicarRepository>();
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
 
         // O processo é excluído logicamente: a linha continua no banco, as
@@ -125,8 +126,8 @@ public sealed class ListarDocumentosEditalQueryHandlerTests
             .Returns([NovoPendente(processoSeletivoId)]);
         processos.ExisteAsync(processoSeletivoId, Arg.Any<CancellationToken>()).Returns(false);
 
-        Result<ListarDocumentosEditalResult> resultado = await ListarDocumentosEditalQueryHandler.Handle(
-            new ListarDocumentosEditalQuery(processoSeletivoId),
+        Result<ListarDocumentosAPublicarResult> resultado = await ListarDocumentosAPublicarQueryHandler.Handle(
+            new ListarDocumentosAPublicarQuery(processoSeletivoId),
             documentos,
             processos,
             CancellationToken.None);
@@ -138,7 +139,7 @@ public sealed class ListarDocumentosEditalQueryHandlerTests
     [Fact(DisplayName = "O contrato do documento não tem onde carregar chave de objeto nem URL de storage")]
     public void DocumentoEditalDto_NaoExpoeEnderecoDeStorage()
     {
-        string[] membros = [.. typeof(DocumentoEditalDto)
+        string[] membros = [.. typeof(DocumentoAPublicarDto)
             .GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .Select(p => p.Name)];
 

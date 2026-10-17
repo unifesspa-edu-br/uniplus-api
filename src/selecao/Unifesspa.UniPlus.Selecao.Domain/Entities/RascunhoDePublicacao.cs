@@ -25,7 +25,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// configuração.
 /// </para>
 /// <para>
-/// <b>Vinculado ao processo, mas fora do agregado</b> — molde de <see cref="DocumentoEdital"/>:
+/// <b>Vinculado ao processo, mas fora do agregado</b> — molde de <see cref="DocumentoAPublicar"/>:
 /// FK e repositório próprios, sem navegação em <see cref="ProcessoSeletivo"/>. Como a raiz é
 /// <c>SoftDeletableEntity</c>, nenhum <c>DELETE</c> em cascata jamais dispara: a remoção é
 /// explícita, em todo caminho que registra o ato.

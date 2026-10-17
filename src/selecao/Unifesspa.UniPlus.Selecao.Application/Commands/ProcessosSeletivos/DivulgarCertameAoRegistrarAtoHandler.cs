@@ -51,7 +51,7 @@ public static class DivulgarCertameAoRegistrarAtoHandler
         IProcessoSeletivoRepository processoSeletivoRepository,
         ICertameDivulgadoRepository certameDivulgadoRepository,
         IRegistroCodecsEnvelope registroCodecs,
-        IDocumentoEditalRepository documentoEditalRepository,
+        IDocumentoAPublicarRepository documentoAPublicarRepository,
         IModeloDeDocumentoRepository modeloDeDocumentoRepository,
         IAcervoPublico acervoPublico,
         IEnderecoNoAcervoPublico enderecoNoAcervo,
@@ -63,7 +63,7 @@ public static class DivulgarCertameAoRegistrarAtoHandler
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
         ArgumentNullException.ThrowIfNull(registroCodecs);
-        ArgumentNullException.ThrowIfNull(documentoEditalRepository);
+        ArgumentNullException.ThrowIfNull(documentoAPublicarRepository);
         ArgumentNullException.ThrowIfNull(modeloDeDocumentoRepository);
         ArgumentNullException.ThrowIfNull(acervoPublico);
         ArgumentNullException.ThrowIfNull(enderecoNoAcervo);
@@ -121,7 +121,7 @@ public static class DivulgarCertameAoRegistrarAtoHandler
 
         // Antes de ler a linha de divulgação para mutação: a reentrega que a cópia falhada provoca
         // começa sem nada rastreado, e a cópia já feita é encontrada no acervo e não se repete.
-        await PublicarEditalNoAcervoAsync(versao, ato, envelope, documentoEditalRepository, acervoPublico, cancellationToken)
+        await PublicarEditalNoAcervoAsync(versao, ato, envelope, documentoAPublicarRepository, acervoPublico, cancellationToken)
             .ConfigureAwait(false);
         await PublicarModelosNoAcervoAsync(versao, envelope, modeloDeDocumentoRepository, acervoPublico, cancellationToken)
             .ConfigureAwait(false);
@@ -222,7 +222,7 @@ public static class DivulgarCertameAoRegistrarAtoHandler
         VersaoConfiguracao versao,
         AtoDaDivulgacao ato,
         JsonObject envelope,
-        IDocumentoEditalRepository documentoEditalRepository,
+        IDocumentoAPublicarRepository documentoAPublicarRepository,
         IAcervoPublico acervoPublico,
         CancellationToken cancellationToken)
     {
@@ -232,7 +232,7 @@ public static class DivulgarCertameAoRegistrarAtoHandler
                 $"Configuração congelada do processo {versao.ProcessoSeletivoId} não tem a forma esperada no documento do edital.");
         }
 
-        DocumentoEdital? documento = await documentoEditalRepository
+        DocumentoAPublicar? documento = await documentoAPublicarRepository
             .ObterPorIdAsync(edital.DocumentoEditalId, cancellationToken)
             .ConfigureAwait(false);
         if (documento is null
@@ -249,7 +249,7 @@ public static class DivulgarCertameAoRegistrarAtoHandler
                 chavePrivada,
                 edital.Chave,
                 new DocumentoNoAcervo(
-                    DocumentoEdital.ContentTypeEsperado,
+                    documento.TipoDeMidia,
                     edital.NomeDeApresentacao,
                     versao.AtoCriadorId,
                     versao.ProcessoSeletivoId,

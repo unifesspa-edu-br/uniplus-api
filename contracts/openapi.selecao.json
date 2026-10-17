@@ -367,10 +367,10 @@
         }
       }
     },
-    "/api/selecao/processos-seletivos/{processoSeletivoId}/documentos-edital": {
+    "/api/selecao/processos-seletivos/{processoSeletivoId}/documentos-a-publicar": {
       "get": {
         "tags": [
-          "DocumentosEdital"
+          "DocumentosAPublicar"
         ],
         "parameters": [
           {
@@ -387,11 +387,11 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/vnd.uniplus.documento-edital.v1\u002Bjson": {
+              "application/vnd.uniplus.documento-a-publicar.v1\u002Bjson": {
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/DocumentoEditalDto"
+                    "$ref": "#/components/schemas/DocumentoAPublicarDto"
                   }
                 }
               }
@@ -446,7 +446,7 @@
       },
       "post": {
         "tags": [
-          "DocumentosEdital"
+          "DocumentosAPublicar"
         ],
         "parameters": [
           {
@@ -471,23 +471,43 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IniciarEnvioDoDocumentoAPublicarRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IniciarEnvioDoDocumentoAPublicarRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/IniciarEnvioDoDocumentoAPublicarRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "201": {
             "description": "Created",
             "content": {
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/IniciarUploadDocumentoEditalDto"
+                  "$ref": "#/components/schemas/IniciarEnvioDoDocumentoAPublicarDto"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IniciarUploadDocumentoEditalDto"
+                  "$ref": "#/components/schemas/IniciarEnvioDoDocumentoAPublicarDto"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IniciarUploadDocumentoEditalDto"
+                  "$ref": "#/components/schemas/IniciarEnvioDoDocumentoAPublicarDto"
                 }
               }
             }
@@ -571,10 +591,10 @@
         "x-uniplus-idempotent": true
       }
     },
-    "/api/selecao/processos-seletivos/{processoSeletivoId}/documentos-edital/{documentoEditalId}/confirmacao": {
+    "/api/selecao/processos-seletivos/{processoSeletivoId}/documentos-a-publicar/{documentoAPublicarId}/confirmacao": {
       "post": {
         "tags": [
-          "DocumentosEdital"
+          "DocumentosAPublicar"
         ],
         "parameters": [
           {
@@ -587,7 +607,7 @@
             }
           },
           {
-            "name": "documentoEditalId",
+            "name": "documentoAPublicarId",
             "in": "path",
             "required": true,
             "schema": {
@@ -614,17 +634,17 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/DocumentoEditalDto"
+                  "$ref": "#/components/schemas/DocumentoAPublicarDto"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DocumentoEditalDto"
+                  "$ref": "#/components/schemas/DocumentoAPublicarDto"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DocumentoEditalDto"
+                  "$ref": "#/components/schemas/DocumentoAPublicarDto"
                 }
               }
             }
@@ -708,10 +728,10 @@
         "x-uniplus-idempotent": true
       }
     },
-    "/api/selecao/processos-seletivos/{processoSeletivoId}/documentos-edital/{documentoEditalId}/acesso": {
+    "/api/selecao/processos-seletivos/{processoSeletivoId}/documentos-a-publicar/{documentoAPublicarId}/acesso": {
       "get": {
         "tags": [
-          "DocumentosEdital"
+          "DocumentosAPublicar"
         ],
         "parameters": [
           {
@@ -724,7 +744,7 @@
             }
           },
           {
-            "name": "documentoEditalId",
+            "name": "documentoAPublicarId",
             "in": "path",
             "required": true,
             "schema": {
@@ -737,9 +757,9 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/vnd.uniplus.acesso-documento-edital.v1\u002Bjson": {
+              "application/vnd.uniplus.acesso-documento-a-publicar.v1\u002Bjson": {
                 "schema": {
-                  "$ref": "#/components/schemas/AcessoDocumentoEditalDto"
+                  "$ref": "#/components/schemas/AcessoDocumentoAPublicarDto"
                 }
               }
             }
@@ -9535,7 +9555,7 @@
           }
         }
       },
-      "AcessoDocumentoEditalDto": {
+      "AcessoDocumentoAPublicarDto": {
         "required": [
           "url",
           "expiraEm"
@@ -12167,6 +12187,70 @@
           }
         }
       },
+      "DocumentoAPublicarDto": {
+        "required": [
+          "id",
+          "processoSeletivoId",
+          "nomeArquivo",
+          "tipoDeMidia",
+          "status",
+          "criadoEm",
+          "expiraEm",
+          "tamanhoBytes",
+          "hashSha256",
+          "confirmadoEm"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "processoSeletivoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nomeArquivo": {
+            "type": "string"
+          },
+          "tipoDeMidia": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "criadoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiraEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "tamanhoBytes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "hashSha256": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "confirmadoEm": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
       "DocumentoDaInscricaoDto": {
         "required": [
           "exigenciaId",
@@ -12271,62 +12355,6 @@
           "urlDownload": {
             "type": "string",
             "format": "uri"
-          }
-        }
-      },
-      "DocumentoEditalDto": {
-        "required": [
-          "id",
-          "processoSeletivoId",
-          "status",
-          "criadoEm",
-          "expiraEm",
-          "tamanhoBytes",
-          "hashSha256",
-          "confirmadoEm"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "processoSeletivoId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "status": {
-            "type": "string"
-          },
-          "criadoEm": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "expiraEm": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "tamanhoBytes": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "null",
-              "integer",
-              "string"
-            ],
-            "format": "int64"
-          },
-          "hashSha256": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "confirmadoEm": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
           }
         }
       },
@@ -14383,6 +14411,53 @@
           }
         }
       },
+      "IniciarEnvioDoDocumentoAPublicarDto": {
+        "required": [
+          "documentoAPublicarId",
+          "urlUpload",
+          "contentTypeExigido",
+          "expiraEm"
+        ],
+        "type": "object",
+        "properties": {
+          "documentoAPublicarId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "urlUpload": {
+            "type": "string",
+            "format": "uri"
+          },
+          "contentTypeExigido": {
+            "type": "string"
+          },
+          "expiraEm": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "IniciarEnvioDoDocumentoAPublicarRequest": {
+        "required": [
+          "nomeArquivo",
+          "tipoDeMidia"
+        ],
+        "type": "object",
+        "properties": {
+          "nomeArquivo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "tipoDeMidia": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "IniciarEnvioDoModeloDeDocumentoDto": {
         "required": [
           "modeloDeDocumentoId",
@@ -14427,32 +14502,6 @@
               "null",
               "string"
             ]
-          }
-        }
-      },
-      "IniciarUploadDocumentoEditalDto": {
-        "required": [
-          "documentoEditalId",
-          "urlUpload",
-          "contentTypeExigido",
-          "expiraEm"
-        ],
-        "type": "object",
-        "properties": {
-          "documentoEditalId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "urlUpload": {
-            "type": "string",
-            "format": "uri"
-          },
-          "contentTypeExigido": {
-            "type": "string"
-          },
-          "expiraEm": {
-            "type": "string",
-            "format": "date-time"
           }
         }
       },
@@ -18383,7 +18432,7 @@
       "name": "CertamePublicado"
     },
     {
-      "name": "DocumentosEdital"
+      "name": "DocumentosAPublicar"
     },
     {
       "name": "Formularios"

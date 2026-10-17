@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Npgsql;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -19,7 +20,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// <para>
 /// Enquanto o <c>Edital</c> existia, a chave estrangeira <c>fk_editais_documento_edital_id</c>
 /// (<c>ON DELETE RESTRICT</c>) era o que impedia apagar fisicamente o PDF de um edital já
-/// publicado. Ao eliminar a tabela, essa proteção iria junto: <c>DocumentoEdital</c> continua
+/// publicado. Ao eliminar a tabela, essa proteção iria junto: <c>DocumentoAPublicar</c> continua
 /// na Seleção, e um <c>DELETE</c> cru levaria embora o documento que fundamenta uma
 /// configuração congelada. A referência <c>{id, hash}</c> guardada no snapshot prova a
 /// integridade do CONTEÚDO — não a sua permanência.
@@ -55,17 +56,17 @@ public sealed class RetencaoDocumentoEditalTests : IClassFixture<ProcessoSeletiv
         await conexao.OpenAsync();
 
         Func<Task> apagar = async () => await ExecutarAsync(
-            conexao, $"DELETE FROM selecao.documentos_edital WHERE id = '{documentoId}'");
+            conexao, $"DELETE FROM selecao.documentos_a_publicar WHERE id = '{documentoId}'");
 
         // O DELETE não passa pelo agregado: é o banco que o recusa. Sem esta trava, a
         // eliminação da tabela `editais` teria levado junto a retenção que a sua chave
         // estrangeira garantia — e o PDF que fundamenta uma configuração congelada ficaria
         // removível por um comando solto.
         (await apagar.Should().ThrowAsync<PostgresException>())
-            .Which.ConstraintName.Should().Be("ck_documentos_edital_confirmado_retido");
+            .Which.ConstraintName.Should().Be("ck_documentos_a_publicar_confirmado_retido");
 
         await using SelecaoDbContext contexto = _fixture.CreateDbContext();
-        (await contexto.DocumentosEdital.FindAsync(documentoId)).Should().NotBeNull(
+        (await contexto.DocumentosAPublicar.FindAsync(documentoId)).Should().NotBeNull(
             "o documento continua lá — a recusa não é cosmética");
     }
 
@@ -81,13 +82,13 @@ public sealed class RetencaoDocumentoEditalTests : IClassFixture<ProcessoSeletiv
         // levaria a evidência do mesmo jeito. Confirmado não tem caminho de volta — é o que o
         // ciclo de vida já declarava, e agora o banco o impõe.
         Func<Task> desconfirmar = async () => await ExecutarAsync(
-            conexao, $"UPDATE selecao.documentos_edital SET status = 0 WHERE id = '{documentoId}'");
+            conexao, $"UPDATE selecao.documentos_a_publicar SET status = 0 WHERE id = '{documentoId}'");
 
         (await desconfirmar.Should().ThrowAsync<PostgresException>())
-            .Which.ConstraintName.Should().Be("ck_documentos_edital_confirmado_retido");
+            .Which.ConstraintName.Should().Be("ck_documentos_a_publicar_confirmado_retido");
 
         await using SelecaoDbContext contexto = _fixture.CreateDbContext();
-        DocumentoEdital? documento = await contexto.DocumentosEdital.FindAsync(documentoId);
+        DocumentoAPublicar? documento = await contexto.DocumentosAPublicar.FindAsync(documentoId);
         documento!.Status.Should().Be(Domain.Enums.StatusArquivoEnviado.Confirmado);
     }
 
@@ -102,10 +103,10 @@ public sealed class RetencaoDocumentoEditalTests : IClassFixture<ProcessoSeletiv
         // TRUNCATE não dispara trigger de linha: sem uma trava de statement, um único comando
         // apagaria a tabela inteira, confirmados inclusive.
         Func<Task> truncar = async () => await ExecutarAsync(
-            conexao, "TRUNCATE TABLE selecao.documentos_edital CASCADE");
+            conexao, "TRUNCATE TABLE selecao.documentos_a_publicar CASCADE");
 
         (await truncar.Should().ThrowAsync<PostgresException>())
-            .Which.ConstraintName.Should().Be("ck_documentos_edital_confirmado_retido");
+            .Which.ConstraintName.Should().Be("ck_documentos_a_publicar_confirmado_retido");
     }
 
     [Fact(DisplayName = "DELETE de documento PENDENTE é aceito — um upload que nunca se completou não é evidência de nada")]
@@ -118,10 +119,10 @@ public sealed class RetencaoDocumentoEditalTests : IClassFixture<ProcessoSeletiv
 
         // A retenção é do CONFIRMADO, não de toda linha da tabela: a limpeza dos pendentes
         // expirados tem de continuar possível.
-        await ExecutarAsync(conexao, $"DELETE FROM selecao.documentos_edital WHERE id = '{documentoId}'");
+        await ExecutarAsync(conexao, $"DELETE FROM selecao.documentos_a_publicar WHERE id = '{documentoId}'");
 
         await using SelecaoDbContext contexto = _fixture.CreateDbContext();
-        (await contexto.DocumentosEdital.FindAsync(documentoId)).Should().BeNull();
+        (await contexto.DocumentosAPublicar.FindAsync(documentoId)).Should().BeNull();
     }
 
     [Fact(DisplayName = "Confirmar um documento pendente continua possível — a retenção não congela o que ainda não é evidência")]
@@ -135,10 +136,10 @@ public sealed class RetencaoDocumentoEditalTests : IClassFixture<ProcessoSeletiv
         // O trigger de UPDATE dispara só quando o status SAI de Confirmado. A transição
         // normal do ciclo de vida (Pendente → Confirmado) não pode ser afetada — se fosse, o
         // próprio upload deixaria de funcionar.
-        await ExecutarAsync(conexao, $"UPDATE selecao.documentos_edital SET status = 1 WHERE id = '{documentoId}'");
+        await ExecutarAsync(conexao, $"UPDATE selecao.documentos_a_publicar SET status = 1 WHERE id = '{documentoId}'");
 
         await using SelecaoDbContext contexto = _fixture.CreateDbContext();
-        DocumentoEdital? documento = await contexto.DocumentosEdital.FindAsync(documentoId);
+        DocumentoAPublicar? documento = await contexto.DocumentosAPublicar.FindAsync(documentoId);
         documento!.Status.Should().Be(Domain.Enums.StatusArquivoEnviado.Confirmado);
     }
 
@@ -149,8 +150,8 @@ public sealed class RetencaoDocumentoEditalTests : IClassFixture<ProcessoSeletiv
             Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot
                 .Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
-        DocumentoEdital documento = DocumentoEdital.IniciarPendente(
-            processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
+            processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         if (confirmado)
         {
             documento.Confirmar(1024, HashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();
@@ -158,7 +159,7 @@ public sealed class RetencaoDocumentoEditalTests : IClassFixture<ProcessoSeletiv
 
         await using SelecaoDbContext contexto = _fixture.CreateDbContext();
         await contexto.ProcessosSeletivos.AddAsync(processo, CancellationToken.None);
-        await contexto.DocumentosEdital.AddAsync(documento, CancellationToken.None);
+        await contexto.DocumentosAPublicar.AddAsync(documento, CancellationToken.None);
         await contexto.SaveChangesAsync(CancellationToken.None);
 
         return documento.Id;

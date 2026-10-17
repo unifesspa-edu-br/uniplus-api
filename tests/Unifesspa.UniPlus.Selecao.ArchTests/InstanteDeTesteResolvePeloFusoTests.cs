@@ -166,7 +166,7 @@ public sealed class InstanteDeTesteResolvePeloFusoTests
     [Theory(DisplayName = "O detector de construção aceita UTC e ignora duração de chamada comum")]
     [InlineData("""new DateTimeOffset(2026, 1, 1, 3, 0, 0, TimeSpan.Zero)""", true)]
     [InlineData("""DateTimeOffset inicio = new(2026, 1, 1, 3, 0, 0, TimeSpan.Zero);""", true)]
-    [InlineData("""DocumentoEdital.IniciarPendente(processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));""", false)]
+    [InlineData("""DocumentoAPublicar.IniciarPendente(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15));""", false)]
     [InlineData("""DateTimeOffset inicio = InstanteEmBelem.Em(2026, 3, 10, 22, 0, 0);""", false)]
     public void DetectorDeConstrucao_NaoAcusaLegitimo(string trecho, bool ehConstrucaoUtc)
     {

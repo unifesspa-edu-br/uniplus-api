@@ -144,7 +144,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
     {
         ProcessoSeletivo processo = NovoProcessoConforme(nome);
 
-        DocumentoEdital documento = DocumentoEdital.IniciarPendente(processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(1024, HashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();
 
         Result<DadosEdital> dadosResult = DadosEdital.Criar(
@@ -180,7 +180,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
         await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
         ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
         await repository.AdicionarAsync(processo, CancellationToken.None);
-        await writeContext.DocumentosEdital.AddAsync(documento, CancellationToken.None);
+        await writeContext.DocumentosAPublicar.AddAsync(documento, CancellationToken.None);
         await repository.AdicionarVersaoConfiguracaoAsync(publicarResult.Value!, CancellationToken.None);
         await writeContext.SaveChangesAsync(CancellationToken.None);
 

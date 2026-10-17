@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.Application.Queries.DocumentosEdital;
+namespace Unifesspa.UniPlus.Selecao.Application.Queries.DocumentosAPublicar;
 
 using System.Collections.Generic;
 using System.Linq;
@@ -10,21 +10,21 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
-/// Handler convention-based da leitura dos documentos do Edital. Distingue
+/// Handler convention-based da leitura dos documentos a publicar de um processo. Distingue
 /// processo sem documento (200 com lista vazia) de processo inexistente (404) —
 /// devolver lista vazia nos dois casos diria "ainda não enviaram nada" para
 /// quem, na verdade, digitou um identificador errado.
 /// </summary>
-public static class ListarDocumentosEditalQueryHandler
+public static class ListarDocumentosAPublicarQueryHandler
 {
-    public static async Task<Result<ListarDocumentosEditalResult>> Handle(
-        ListarDocumentosEditalQuery query,
-        IDocumentoEditalRepository documentoEditalRepository,
+    public static async Task<Result<ListarDocumentosAPublicarResult>> Handle(
+        ListarDocumentosAPublicarQuery query,
+        IDocumentoAPublicarRepository documentoAPublicarRepository,
         IProcessoSeletivoRepository processoSeletivoRepository,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        ArgumentNullException.ThrowIfNull(documentoEditalRepository);
+        ArgumentNullException.ThrowIfNull(documentoAPublicarRepository);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
 
         // A visibilidade do processo é decidida antes de qualquer documento ser
@@ -40,17 +40,17 @@ public static class ListarDocumentosEditalQueryHandler
 
         if (!existe)
         {
-            return Result<ListarDocumentosEditalResult>.Failure(new DomainError(
+            return Result<ListarDocumentosAPublicarResult>.Failure(new DomainError(
                 "ProcessoSeletivo.NaoEncontrado",
                 $"Processo Seletivo {query.ProcessoSeletivoId} não encontrado."));
         }
 
-        IReadOnlyList<DocumentoEdital> documentos = await documentoEditalRepository
+        IReadOnlyList<DocumentoAPublicar> documentos = await documentoAPublicarRepository
             .ListarPorProcessoAsync(query.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
 
-        DocumentoEditalDto[] items = [.. documentos.Select(DocumentoEditalMapping.ToDto)];
+        DocumentoAPublicarDto[] items = [.. documentos.Select(DocumentoAPublicarMapping.ToDto)];
 
-        return Result<ListarDocumentosEditalResult>.Success(new ListarDocumentosEditalResult(items));
+        return Result<ListarDocumentosAPublicarResult>.Success(new ListarDocumentosAPublicarResult(items));
     }
 }

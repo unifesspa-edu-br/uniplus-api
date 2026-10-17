@@ -170,7 +170,7 @@ public sealed class RascunhoSobreviveAoAtoRecusadoTests
     {
         await using AsyncServiceScope seedScope = api.Services.CreateAsyncScope();
         SelecaoDbContext seedDb = seedScope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
-        (ProcessoSeletivo processo, DocumentoEdital documento) = await ProcessoSeletivoPublicavelSeeder
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
             .SemearAsync(seedDb, $"Rascunho preservado {Guid.CreateVersion7()}");
         return (processo.Id, documento.Id);
     }

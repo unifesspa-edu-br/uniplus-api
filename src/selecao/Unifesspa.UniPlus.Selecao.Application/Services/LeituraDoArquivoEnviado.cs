@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 
 /// <summary>
-/// Lê, na confirmação, o arquivo que o cliente enviou direto ao storage — o documento do Edital e
+/// Lê, na confirmação, o arquivo que o cliente enviou direto ao storage — o documento a publicar e
 /// o modelo de documento de uma exigência —, sem nunca trazer mais que o teto do arquivo. O
 /// resultado é neutro: quem confirma traduz o objeto ausente e o tamanho excedido para os códigos
 /// de erro do próprio arquivo.

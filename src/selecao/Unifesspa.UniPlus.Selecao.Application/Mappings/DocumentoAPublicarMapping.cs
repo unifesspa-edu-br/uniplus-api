@@ -4,20 +4,22 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>
-/// Projeção <c>DocumentoEdital</c> → <c>DocumentoEditalDto</c>. Ponto único de
+/// Projeção <c>DocumentoAPublicar</c> → <c>DocumentoAPublicarDto</c>. Ponto único de
 /// travessia entre a entidade e o contrato: os endereços de storage da entidade
 /// não têm para onde ir no DTO, então nenhum caminho de leitura pode vazá-los
 /// por descuido de projeção manual.
 /// </summary>
-public static class DocumentoEditalMapping
+public static class DocumentoAPublicarMapping
 {
-    public static DocumentoEditalDto ToDto(DocumentoEdital documento)
+    public static DocumentoAPublicarDto ToDto(DocumentoAPublicar documento)
     {
         ArgumentNullException.ThrowIfNull(documento);
 
-        return new DocumentoEditalDto(
+        return new DocumentoAPublicarDto(
             Id: documento.Id,
             ProcessoSeletivoId: documento.ProcessoSeletivoId,
+            NomeArquivo: documento.NomeArquivo,
+            TipoDeMidia: documento.TipoDeMidia,
             Status: documento.Status.ToString(),
             CriadoEm: documento.CreatedAt,
             ExpiraEm: documento.ExpiraEm,

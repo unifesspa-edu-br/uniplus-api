@@ -9,6 +9,7 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -16,7 +17,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// <summary>
 /// Monta e persiste um <see cref="ProcessoSeletivo"/> minimamente conforme
 /// (CA-07: etapas, oferta de atendimento, distribuição de vagas,
-/// classificação) mais um <see cref="DocumentoEdital"/> já confirmado — o
+/// classificação) mais um <see cref="DocumentoAPublicar"/> já confirmado — o
 /// par exigido por <c>PublicarProcessoSeletivoCommand</c> para publicar com
 /// sucesso. Reusado pelos cenários de cascading (V8/V9) e pelos testes de
 /// endpoint HTTP — todos exercitam a publicação real, não um agregado de
@@ -35,7 +36,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
     /// </param>
     /// <param name="complementar">Configuração a mais do cenário, aplicada antes de gravar.</param>
     /// <param name="tipo">O tipo do processo; sem ele, SiSU.</param>
-    public static async Task<(ProcessoSeletivo Processo, DocumentoEdital Documento)> SemearAsync(
+    public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearAsync(
         SelecaoDbContext db,
         string nome,
         bool coletaSolicitacaoIsencao = false,
@@ -135,10 +136,10 @@ internal static class ProcessoSeletivoPublicavelSeeder
 
         await db.ProcessosSeletivos.AddAsync(processo);
 
-        DocumentoEdital documento = DocumentoEdital.IniciarPendente(processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         Result confirmarResult = documento.Confirmar(1024, HashFixo, TimeProvider.System);
         confirmarResult.IsSuccess.Should().BeTrue(confirmarResult.Error?.Message);
-        await db.DocumentosEdital.AddAsync(documento);
+        await db.DocumentosAPublicar.AddAsync(documento);
 
         await db.SaveChangesAsync();
 

@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -131,7 +132,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
     {
         ProcessoSeletivo processo = NovoProcessoConforme(nome);
 
-        DocumentoEdital documento = DocumentoEdital.IniciarPendente(processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         Result confirmarResult = documento.Confirmar(1024, HashFixo, TimeProvider.System);
         confirmarResult.IsSuccess.Should().BeTrue();
 
@@ -157,7 +158,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
         ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
         await repository.AdicionarAsync(processo, CancellationToken.None);
-        await writeContext.DocumentosEdital.AddAsync(documento, CancellationToken.None);
+        await writeContext.DocumentosAPublicar.AddAsync(documento, CancellationToken.None);
         await repository.AdicionarVersaoConfiguracaoAsync(publicarResult.Value!, CancellationToken.None);
         await writeContext.SaveChangesAsync(CancellationToken.None);
 
@@ -304,7 +305,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             condicoes: [], basesLegais: [baseLegal], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigenciaOriginal, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        DocumentoEdital documento = DocumentoEdital.IniciarPendente(processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(1024, HashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();
         Result<DadosEdital> dadosResult = DadosEdital.Criar(
             numero: "001/2026",
@@ -330,7 +331,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
         ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
         await repository.AdicionarAsync(processo, CancellationToken.None);
-        await writeContext.DocumentosEdital.AddAsync(documento, CancellationToken.None);
+        await writeContext.DocumentosAPublicar.AddAsync(documento, CancellationToken.None);
         await repository.AdicionarVersaoConfiguracaoAsync(versaoAbertura, CancellationToken.None);
         await writeContext.SaveChangesAsync(CancellationToken.None);
 

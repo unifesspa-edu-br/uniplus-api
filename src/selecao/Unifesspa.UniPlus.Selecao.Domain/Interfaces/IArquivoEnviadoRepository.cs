@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
 /// Os registros de arquivo enviado pelo administrador que ficaram pendentes além do prazo — o
-/// documento do Edital e o modelo de documento de uma exigência. O pendente nasce junto da URL de
+/// documento a publicar e o modelo de documento de uma exigência. O pendente nasce junto da URL de
 /// envio e só vira dado de negócio na confirmação; vencida a URL sem confirmação, nada mais o
 /// promove, e o registro e o objeto enviado são só sobra.
 /// </summary>

@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -58,7 +59,7 @@ public sealed class ValoresSelecionaveisResolverTests
             ValoresDominioDeclarados: seisValores, FonteValores: "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL");
 
         EntradaCanonicalizacao? entradaCapturada = null;
-        (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo, e => entradaCapturada = e);
+        (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo, e => entradaCapturada = e);
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
             .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[corRacaNoCatalogo]));
 
@@ -92,7 +93,7 @@ public sealed class ValoresSelecionaveisResolverTests
             ValoresDominioDeclarados: null, FonteValores: null, Ativo: true, ClassificacaoProtecao: "PESSOAL");
 
         EntradaCanonicalizacao? entradaCapturada = null;
-        (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo, e => entradaCapturada = e);
+        (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo, e => entradaCapturada = e);
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
             .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[baixaRendaNoCatalogo]));
 
@@ -136,7 +137,7 @@ public sealed class ValoresSelecionaveisResolverTests
             ValoresDominioDeclarados: null, FonteValores: "PROCESSO", Ativo: true, ClassificacaoProtecao: "PESSOAL");
 
         EntradaCanonicalizacao? entradaCapturada = null;
-        (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo, e => entradaCapturada = e);
+        (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo, e => entradaCapturada = e);
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
             .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[condicaoAtendimentoNoCatalogo]));
 
@@ -183,7 +184,7 @@ public sealed class ValoresSelecionaveisResolverTests
             ValoresDominioDeclarados: null, FonteValores: "PROCESSO", Ativo: true, ClassificacaoProtecao: "PESSOAL");
 
         EntradaCanonicalizacao? entradaCapturada = null;
-        (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo, e => entradaCapturada = e);
+        (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo, e => entradaCapturada = e);
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
             .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[condicaoAtendimentoNoCatalogo]));
 
@@ -203,22 +204,22 @@ public sealed class ValoresSelecionaveisResolverTests
 
     private sealed record Mocks(
         IProcessoSeletivoRepository ProcessoRepository,
-        IDocumentoEditalRepository DocumentoRepository,
+        IDocumentoAPublicarRepository DocumentoRepository,
         ISnapshotPublicacaoCanonicalizer Canonicalizer,
         ITipoAtoPublicadoReader TipoDeAtoReader,
         IVagaDeLinhagemReader VagaDeLinhagemReader,
         IObrigatoriedadeLegalRepository ObrigatoriedadeLegalRepository,
         IFatoCandidatoReader FatoCandidatoReader);
 
-    private static (Mocks Mocks, DocumentoEdital Documento) NovosMocks(ProcessoSeletivo processo, Action<EntradaCanonicalizacao>? captura = null)
+    private static (Mocks Mocks, DocumentoAPublicar Documento) NovosMocks(ProcessoSeletivo processo, Action<EntradaCanonicalizacao>? captura = null)
     {
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         processoRepository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
-        DocumentoEdital documento = DocumentoEdital.IniciarPendente(processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(1024, HashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();
 
-        IDocumentoEditalRepository documentoRepository = Substitute.For<IDocumentoEditalRepository>();
+        IDocumentoAPublicarRepository documentoRepository = Substitute.For<IDocumentoAPublicarRepository>();
         documentoRepository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
 
         ISnapshotPublicacaoCanonicalizer canonicalizer = Substitute.For<ISnapshotPublicacaoCanonicalizer>();
@@ -247,7 +248,7 @@ public sealed class ValoresSelecionaveisResolverTests
     }
 
     private static Task<(Result Resposta, IEnumerable<object> Eventos)> HandleAsync(
-        Mocks mocks, ProcessoSeletivo processo, DocumentoEdital documento)
+        Mocks mocks, ProcessoSeletivo processo, DocumentoAPublicar documento)
     {
         IUserContext userContext = Substitute.For<IUserContext>();
         userContext.UserId.Returns("user-sub-1");

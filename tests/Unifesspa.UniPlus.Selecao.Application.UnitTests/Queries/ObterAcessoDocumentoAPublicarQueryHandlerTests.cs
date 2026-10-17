@@ -7,24 +7,25 @@ using NSubstitute;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
-using Unifesspa.UniPlus.Selecao.Application.Queries.DocumentosEdital;
+using Unifesspa.UniPlus.Selecao.Application.Queries.DocumentosAPublicar;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 
-public sealed class ObterAcessoDocumentoEditalQueryHandlerTests
+public sealed class ObterAcessoDocumentoAPublicarQueryHandlerTests
 {
-    private const string UrlAssinada = "http://minio.local/uniplus/selecao/documentos-edital/x/confirmado.pdf?X-Amz-Signature=abc";
+    private const string UrlAssinada = "http://minio.local/uniplus/selecao/documentos-a-publicar/x/confirmado.pdf?X-Amz-Signature=abc";
 
     private static readonly DateTimeOffset Agora = new(2026, 8, 27, 12, 0, 0, TimeSpan.Zero);
 
     private static RelogioFixo Relogio() => new(Agora);
 
-    private static DocumentoEdital Pendente(Guid processoSeletivoId, TimeProvider clock) =>
-        DocumentoEdital.IniciarPendente(processoSeletivoId, clock, TimeSpan.FromMinutes(15));
+    private static DocumentoAPublicar Pendente(Guid processoSeletivoId, TimeProvider clock) =>
+        DocumentoAPublicar.IniciarPendente(processoSeletivoId, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, clock, TimeSpan.FromMinutes(15)).Value!;
 
-    private static DocumentoEdital Confirmado(Guid processoSeletivoId, TimeProvider clock)
+    private static DocumentoAPublicar Confirmado(Guid processoSeletivoId, TimeProvider clock)
     {
-        DocumentoEdital documento = Pendente(processoSeletivoId, clock);
+        DocumentoAPublicar documento = Pendente(processoSeletivoId, clock);
         documento.Confirmar(2048, new string('a', 64), clock).IsSuccess.Should().BeTrue();
         return documento;
     }
@@ -33,12 +34,12 @@ public sealed class ObterAcessoDocumentoEditalQueryHandlerTests
     public async Task ProcessoInexistente_Recusa()
     {
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
-        IDocumentoEditalRepository documentos = Substitute.For<IDocumentoEditalRepository>();
+        IDocumentoAPublicarRepository documentos = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         processos.ExisteAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(false);
 
-        Result<AcessoDocumentoEditalDto> resultado = await ObterAcessoDocumentoEditalQueryHandler.Handle(
-            new ObterAcessoDocumentoEditalQuery(Guid.CreateVersion7(), Guid.CreateVersion7()),
+        Result<AcessoDocumentoAPublicarDto> resultado = await ObterAcessoDocumentoAPublicarQueryHandler.Handle(
+            new ObterAcessoDocumentoAPublicarQuery(Guid.CreateVersion7(), Guid.CreateVersion7()),
             processos, documentos, storage, Relogio(), CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
@@ -52,17 +53,17 @@ public sealed class ObterAcessoDocumentoEditalQueryHandlerTests
     {
         Guid processoId = Guid.CreateVersion7();
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
-        IDocumentoEditalRepository documentos = Substitute.For<IDocumentoEditalRepository>();
+        IDocumentoAPublicarRepository documentos = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         processos.ExisteAsync(processoId, Arg.Any<CancellationToken>()).Returns(true);
-        documentos.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((DocumentoEdital?)null);
+        documentos.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((DocumentoAPublicar?)null);
 
-        Result<AcessoDocumentoEditalDto> resultado = await ObterAcessoDocumentoEditalQueryHandler.Handle(
-            new ObterAcessoDocumentoEditalQuery(processoId, Guid.CreateVersion7()),
+        Result<AcessoDocumentoAPublicarDto> resultado = await ObterAcessoDocumentoAPublicarQueryHandler.Handle(
+            new ObterAcessoDocumentoAPublicarQuery(processoId, Guid.CreateVersion7()),
             processos, documentos, storage, Relogio(), CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("DocumentoEdital.NaoEncontrado");
+        resultado.Error!.Code.Should().Be("DocumentoAPublicar.NaoEncontrado");
         await storage.DidNotReceive().GerarUrlLeituraAsync(Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>());
     }
 
@@ -76,20 +77,20 @@ public sealed class ObterAcessoDocumentoEditalQueryHandlerTests
     {
         Guid processoId = Guid.CreateVersion7();
         RelogioFixo clock = Relogio();
-        DocumentoEdital deOutroProcesso = Confirmado(Guid.CreateVersion7(), clock);
+        DocumentoAPublicar deOutroProcesso = Confirmado(Guid.CreateVersion7(), clock);
 
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
-        IDocumentoEditalRepository documentos = Substitute.For<IDocumentoEditalRepository>();
+        IDocumentoAPublicarRepository documentos = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         processos.ExisteAsync(processoId, Arg.Any<CancellationToken>()).Returns(true);
         documentos.ObterPorIdAsync(deOutroProcesso.Id, Arg.Any<CancellationToken>()).Returns(deOutroProcesso);
 
-        Result<AcessoDocumentoEditalDto> resultado = await ObterAcessoDocumentoEditalQueryHandler.Handle(
-            new ObterAcessoDocumentoEditalQuery(processoId, deOutroProcesso.Id),
+        Result<AcessoDocumentoAPublicarDto> resultado = await ObterAcessoDocumentoAPublicarQueryHandler.Handle(
+            new ObterAcessoDocumentoAPublicarQuery(processoId, deOutroProcesso.Id),
             processos, documentos, storage, clock, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("DocumentoEdital.NaoEncontrado");
+        resultado.Error!.Code.Should().Be("DocumentoAPublicar.NaoEncontrado");
         await storage.DidNotReceive().GerarUrlLeituraAsync(Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>());
     }
 
@@ -102,20 +103,20 @@ public sealed class ObterAcessoDocumentoEditalQueryHandlerTests
     {
         Guid processoId = Guid.CreateVersion7();
         RelogioFixo clock = Relogio();
-        DocumentoEdital pendente = Pendente(processoId, clock);
+        DocumentoAPublicar pendente = Pendente(processoId, clock);
 
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
-        IDocumentoEditalRepository documentos = Substitute.For<IDocumentoEditalRepository>();
+        IDocumentoAPublicarRepository documentos = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         processos.ExisteAsync(processoId, Arg.Any<CancellationToken>()).Returns(true);
         documentos.ObterPorIdAsync(pendente.Id, Arg.Any<CancellationToken>()).Returns(pendente);
 
-        Result<AcessoDocumentoEditalDto> resultado = await ObterAcessoDocumentoEditalQueryHandler.Handle(
-            new ObterAcessoDocumentoEditalQuery(processoId, pendente.Id),
+        Result<AcessoDocumentoAPublicarDto> resultado = await ObterAcessoDocumentoAPublicarQueryHandler.Handle(
+            new ObterAcessoDocumentoAPublicarQuery(processoId, pendente.Id),
             processos, documentos, storage, clock, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("DocumentoEdital.NaoConfirmado");
+        resultado.Error!.Code.Should().Be("DocumentoAPublicar.NaoConfirmado");
         await storage.DidNotReceive().GerarUrlLeituraAsync(Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>());
     }
 
@@ -124,29 +125,29 @@ public sealed class ObterAcessoDocumentoEditalQueryHandlerTests
     {
         Guid processoId = Guid.CreateVersion7();
         RelogioFixo clock = Relogio();
-        DocumentoEdital confirmado = Confirmado(processoId, clock);
+        DocumentoAPublicar confirmado = Confirmado(processoId, clock);
 
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
-        IDocumentoEditalRepository documentos = Substitute.For<IDocumentoEditalRepository>();
+        IDocumentoAPublicarRepository documentos = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         processos.ExisteAsync(processoId, Arg.Any<CancellationToken>()).Returns(true);
         documentos.ObterPorIdAsync(confirmado.Id, Arg.Any<CancellationToken>()).Returns(confirmado);
         storage.GerarUrlLeituraAsync(Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
             .Returns(UrlAssinada);
 
-        Result<AcessoDocumentoEditalDto> resultado = await ObterAcessoDocumentoEditalQueryHandler.Handle(
-            new ObterAcessoDocumentoEditalQuery(processoId, confirmado.Id),
+        Result<AcessoDocumentoAPublicarDto> resultado = await ObterAcessoDocumentoAPublicarQueryHandler.Handle(
+            new ObterAcessoDocumentoAPublicarQuery(processoId, confirmado.Id),
             processos, documentos, storage, clock, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Url.Should().Be(new Uri(UrlAssinada, UriKind.Absolute));
-        resultado.Value.ExpiraEm.Should().Be(Agora.Add(ObterAcessoDocumentoEditalQueryHandler.TtlLeitura));
+        resultado.Value.ExpiraEm.Should().Be(Agora.Add(ObterAcessoDocumentoAPublicarQueryHandler.TtlLeitura));
 
         // A cópia selada, nunca a chave de upload: é ela que o hash atesta, e a
         // de upload segue alcançável pela URL de PUT enquanto o TTL não expira.
         await storage.Received(1).GerarUrlLeituraAsync(
             confirmado.ObjectKeyConfirmado!,
-            ObterAcessoDocumentoEditalQueryHandler.TtlLeitura,
+            ObterAcessoDocumentoAPublicarQueryHandler.TtlLeitura,
             Arg.Any<CancellationToken>());
         await storage.DidNotReceive().GerarUrlLeituraAsync(
             confirmado.ObjectKey, Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>());

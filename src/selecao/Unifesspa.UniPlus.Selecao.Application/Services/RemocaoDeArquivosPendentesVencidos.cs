@@ -45,19 +45,19 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
     private readonly ILogger<RemocaoDeArquivosPendentesVencidos> _logger;
 
     public RemocaoDeArquivosPendentesVencidos(
-        IDocumentoEditalRepository documentosEdital,
+        IDocumentoAPublicarRepository documentosAPublicar,
         IModeloDeDocumentoRepository modelosDeDocumento,
         IArquivoArmazenadoStorage storage,
         TimeProvider clock,
         ILogger<RemocaoDeArquivosPendentesVencidos> logger)
     {
-        ArgumentNullException.ThrowIfNull(documentosEdital);
+        ArgumentNullException.ThrowIfNull(documentosAPublicar);
         ArgumentNullException.ThrowIfNull(modelosDeDocumento);
         ArgumentNullException.ThrowIfNull(storage);
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentNullException.ThrowIfNull(logger);
 
-        _repositorios = [documentosEdital, modelosDeDocumento];
+        _repositorios = [documentosAPublicar, modelosDeDocumento];
         _storage = storage;
         _clock = clock;
         _logger = logger;

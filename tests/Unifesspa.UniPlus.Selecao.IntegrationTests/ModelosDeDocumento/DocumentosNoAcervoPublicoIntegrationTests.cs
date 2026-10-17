@@ -195,7 +195,7 @@ public sealed class DocumentosNoAcervoPublicoIntegrationTests : IClassFixture<Pr
         await _minio.ProvisionarAcervoPublicoAsync();
         (ProcessoSeletivo processo, ModeloDeDocumento modelo) = await SemearProcessoComModeloAsync(ArquivosDeModeloDeTeste.Odt());
         byte[] pdf = ArquivoDeEdital();
-        DocumentoEdital edital = await SemearEditalAsync(processo.Id, pdf);
+        DocumentoAPublicar edital = await SemearEditalAsync(processo.Id, pdf);
         string identificador = IdentificadoresDeTeste.NovoValor();
         Guid ato = Guid.CreateVersion7();
         await SemearVersaoAsync(processo, modelo, ato, identificador, edital);
@@ -206,7 +206,7 @@ public sealed class DocumentosNoAcervoPublicoIntegrationTests : IClassFixture<Pr
         using HttpResponseMessage resposta = await anonimo.GetAsync(EnderecoDoEdital(identificador, ato, edital));
         resposta.StatusCode.Should().Be(HttpStatusCode.OK);
         (await resposta.Content.ReadAsByteArrayAsync()).Should().Equal(pdf);
-        resposta.Content.Headers.ContentType!.MediaType.Should().Be(DocumentoEdital.ContentTypeEsperado);
+        resposta.Content.Headers.ContentType!.MediaType.Should().Be(TiposDeMidiaDeDocumento.Pdf);
         string disposicao = resposta.Content.Headers.NonValidated["Content-Disposition"].ToString();
         disposicao.Should().StartWith("inline;", "o link do portal abre o edital em nova aba; como anexo, a aba ficaria em branco");
         disposicao.Should().EndWith(
@@ -231,7 +231,7 @@ public sealed class DocumentosNoAcervoPublicoIntegrationTests : IClassFixture<Pr
     {
         await _minio.ProvisionarAcervoPublicoAsync();
         (ProcessoSeletivo processo, ModeloDeDocumento modelo) = await SemearProcessoComModeloAsync(ArquivosDeModeloDeTeste.Odt());
-        DocumentoEdital edital = await SemearEditalAsync(processo.Id, ArquivoDeEdital());
+        DocumentoAPublicar edital = await SemearEditalAsync(processo.Id, ArquivoDeEdital());
         string identificador = IdentificadoresDeTeste.NovoValor();
         await SemearVersaoAsync(processo, modelo, Guid.CreateVersion7(), identificador, edital);
 
@@ -244,7 +244,7 @@ public sealed class DocumentosNoAcervoPublicoIntegrationTests : IClassFixture<Pr
     {
         await _minio.ProvisionarAcervoPublicoAsync();
         (ProcessoSeletivo processo, ModeloDeDocumento modelo) = await SemearProcessoComModeloAsync(ArquivosDeModeloDeTeste.Odt());
-        DocumentoEdital edital = await SemearEditalAsync(processo.Id, ArquivoDeEdital());
+        DocumentoAPublicar edital = await SemearEditalAsync(processo.Id, ArquivoDeEdital());
         string identificador = IdentificadoresDeTeste.NovoValor();
         Guid ato = Guid.CreateVersion7();
         await SemearVersaoAsync(processo, modelo, ato, identificador, edital);
@@ -272,7 +272,7 @@ public sealed class DocumentosNoAcervoPublicoIntegrationTests : IClassFixture<Pr
         await _minio.ProvisionarAcervoPublicoAsync();
         (ProcessoSeletivo processo, ModeloDeDocumento modelo) = await SemearProcessoComModeloAsync(ArquivosDeModeloDeTeste.Odt());
         byte[] pdf = ArquivoDeEdital();
-        DocumentoEdital edital = await SemearEditalAsync(processo.Id, pdf);
+        DocumentoAPublicar edital = await SemearEditalAsync(processo.Id, pdf);
         string identificador = IdentificadoresDeTeste.NovoValor();
         Guid abertura = Guid.CreateVersion7();
         Guid primeiraRetificacao = Guid.CreateVersion7();
@@ -312,7 +312,7 @@ public sealed class DocumentosNoAcervoPublicoIntegrationTests : IClassFixture<Pr
     {
         await _minio.ProvisionarAcervoPublicoAsync();
         (ProcessoSeletivo processo, ModeloDeDocumento modelo) = await SemearProcessoComModeloAsync(ArquivosDeModeloDeTeste.Odt());
-        DocumentoEdital edital = await SemearEditalAsync(processo.Id, ArquivoDeEdital());
+        DocumentoAPublicar edital = await SemearEditalAsync(processo.Id, ArquivoDeEdital());
         string identificador = IdentificadoresDeTeste.NovoValor();
         Guid abertura = Guid.CreateVersion7();
         Guid retificacao = Guid.CreateVersion7();
@@ -335,7 +335,7 @@ public sealed class DocumentosNoAcervoPublicoIntegrationTests : IClassFixture<Pr
     {
         await _minio.ProvisionarAcervoPublicoAsync();
         (ProcessoSeletivo processo, ModeloDeDocumento modelo) = await SemearProcessoComModeloAsync(ArquivosDeModeloDeTeste.Odt());
-        DocumentoEdital edital = await SemearEditalAsync(processo.Id, ArquivoDeEdital());
+        DocumentoAPublicar edital = await SemearEditalAsync(processo.Id, ArquivoDeEdital());
         Guid ato = Guid.CreateVersion7();
         await SemearVersaoAsync(processo, modelo, ato, edital: edital);
         await DivulgarAsync(ato, Acervo());
@@ -350,7 +350,7 @@ public sealed class DocumentosNoAcervoPublicoIntegrationTests : IClassFixture<Pr
     {
         await _minio.ProvisionarAcervoPublicoAsync();
         (ProcessoSeletivo processo, ModeloDeDocumento modelo) = await SemearProcessoComModeloAsync(ArquivosDeModeloDeTeste.Odt());
-        DocumentoEdital edital = await SemearEditalAsync(processo.Id, ArquivoDeEdital());
+        DocumentoAPublicar edital = await SemearEditalAsync(processo.Id, ArquivoDeEdital());
         string identificador = IdentificadoresDeTeste.NovoValor();
         Guid abertura = Guid.CreateVersion7();
         Guid retificacao = Guid.CreateVersion7();
@@ -370,7 +370,7 @@ public sealed class DocumentosNoAcervoPublicoIntegrationTests : IClassFixture<Pr
     {
         await _minio.ProvisionarAcervoPublicoAsync();
         (ProcessoSeletivo processo, ModeloDeDocumento modelo) = await SemearProcessoComModeloAsync(ArquivosDeModeloDeTeste.Odt());
-        DocumentoEdital edital = await SemearEditalAsync(processo.Id, ArquivoDeEdital());
+        DocumentoAPublicar edital = await SemearEditalAsync(processo.Id, ArquivoDeEdital());
         Guid ato = Guid.CreateVersion7();
         // O envelope aponta o documento cadastrado, mas com um hash que não é o dele.
         await SemearVersaoAsync(processo, modelo, ato, edital: edital, hashDoEditalCongelado: new string('e', 64));
@@ -391,7 +391,7 @@ public sealed class DocumentosNoAcervoPublicoIntegrationTests : IClassFixture<Pr
             new ProcessoSeletivoRepository(context, TimeProvider.System),
             new CertameDivulgadoRepository(context),
             new RegistroCodecsEnvelope(),
-            new DocumentoEditalRepository(context),
+            new DocumentoAPublicarRepository(context),
             new ModeloDeDocumentoRepository(context),
             acervo,
             AcervoDeTeste.Endereco,
@@ -439,7 +439,7 @@ public sealed class DocumentosNoAcervoPublicoIntegrationTests : IClassFixture<Pr
         ModeloDeDocumento modelo,
         Guid ato,
         string? identificador = null,
-        DocumentoEdital? edital = null,
+        DocumentoAPublicar? edital = null,
         string? hashDoEditalCongelado = null)
     {
         edital ??= await SemearEditalAsync(processo.Id, ArquivoDeEdital());
@@ -460,7 +460,7 @@ public sealed class DocumentosNoAcervoPublicoIntegrationTests : IClassFixture<Pr
     }
 
     private async Task<VersaoConfiguracao> SemearRetificacaoAsync(
-        VersaoConfiguracao anterior, ModeloDeDocumento modelo, Guid ato, string identificador, DocumentoEdital? edital = null)
+        VersaoConfiguracao anterior, ModeloDeDocumento modelo, Guid ato, string identificador, DocumentoAPublicar? edital = null)
     {
         edital ??= await SemearEditalAsync(anterior.ProcessoSeletivoId, ArquivoDeEdital());
         VersaoConfiguracao versao = VersaoConfiguracao.Suceder(
@@ -512,15 +512,15 @@ public sealed class DocumentosNoAcervoPublicoIntegrationTests : IClassFixture<Pr
     }
 
     /// <summary>Um documento do edital confirmado, com a cópia selada no bucket privado.</summary>
-    private async Task<DocumentoEdital> SemearEditalAsync(Guid processoId, byte[] conteudo)
+    private async Task<DocumentoAPublicar> SemearEditalAsync(Guid processoId, byte[] conteudo)
     {
-        DocumentoEdital edital = DocumentoEdital.IniciarPendente(processoId, TimeProvider.System, TimeSpan.FromMinutes(15));
+        DocumentoAPublicar edital = DocumentoAPublicar.IniciarPendente(processoId, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         edital.Confirmar(conteudo.LongLength, Convert.ToHexStringLower(SHA256.HashData(conteudo)), TimeProvider.System)
             .IsSuccess.Should().BeTrue();
-        await Storage().SalvarConteudoSeladoAsync(edital.ObjectKeyConfirmado!, conteudo, DocumentoEdital.ContentTypeEsperado);
+        await Storage().SalvarConteudoSeladoAsync(edital.ObjectKeyConfirmado!, conteudo, TiposDeMidiaDeDocumento.Pdf);
 
         await using SelecaoDbContext context = _dbFixture.CreateDbContext();
-        context.DocumentosEdital.Add(edital);
+        context.DocumentosAPublicar.Add(edital);
         await context.SaveChangesAsync();
         return edital;
     }
@@ -528,7 +528,7 @@ public sealed class DocumentosNoAcervoPublicoIntegrationTests : IClassFixture<Pr
     /// <summary>Um PDF mínimo; o texto distingue editais diferentes pelo conteúdo, e portanto pelo hash.</summary>
     private static byte[] ArquivoDeEdital(string texto = "edital") => Encoding.ASCII.GetBytes($"%PDF-1.4\n% {texto}\n%%EOF\n");
 
-    private Uri EnderecoDoEdital(string identificador, Guid ato, DocumentoEdital edital, string tipoDoAto = TipoDoAto) =>
+    private Uri EnderecoDoEdital(string identificador, Guid ato, DocumentoAPublicar edital, string tipoDoAto = TipoDoAto) =>
         new($"{_minio.EnderecoDoAcervoPublico}/{ChaveNoAcervoPublico.DoEdital(AnoDoAto, UnidadeDoEnvelope, tipoDoAto, identificador, ato, edital.HashSha256!)}");
 
     private static string ChaveNoAcervo(Guid processoId, Guid ato, ModeloDeDocumento modelo) =>

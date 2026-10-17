@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.Application.Queries.DocumentosEdital;
+namespace Unifesspa.UniPlus.Selecao.Application.Queries.DocumentosAPublicar;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -15,5 +15,5 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// publica — escolher aqui, em silêncio, faria a lista parecer inofensiva
 /// enquanto decidia por quem a consulta.
 /// </remarks>
-public sealed record ListarDocumentosEditalQuery(
-    Guid ProcessoSeletivoId) : IQuery<Result<ListarDocumentosEditalResult>>;
+public sealed record ListarDocumentosAPublicarQuery(
+    Guid ProcessoSeletivoId) : IQuery<Result<ListarDocumentosAPublicarResult>>;

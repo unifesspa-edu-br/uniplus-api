@@ -19,6 +19,7 @@ using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -74,22 +75,22 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
 
     private sealed record Mocks(
         IProcessoSeletivoRepository ProcessoRepository,
-        IDocumentoEditalRepository DocumentoRepository,
+        IDocumentoAPublicarRepository DocumentoRepository,
         ISnapshotPublicacaoCanonicalizer Canonicalizer,
         ITipoAtoPublicadoReader TipoDeAtoReader,
         IVagaDeLinhagemReader VagaDeLinhagemReader,
         IObrigatoriedadeLegalRepository ObrigatoriedadeLegalRepository,
         IFatoCandidatoReader FatoCandidatoReader);
 
-    private static (Mocks Mocks, DocumentoEdital Documento) NovosMocks(ProcessoSeletivo processo, Action<EntradaCanonicalizacao>? captura = null)
+    private static (Mocks Mocks, DocumentoAPublicar Documento) NovosMocks(ProcessoSeletivo processo, Action<EntradaCanonicalizacao>? captura = null)
     {
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         processoRepository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
-        DocumentoEdital documento = DocumentoEdital.IniciarPendente(processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(1024, HashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();
 
-        IDocumentoEditalRepository documentoRepository = Substitute.For<IDocumentoEditalRepository>();
+        IDocumentoAPublicarRepository documentoRepository = Substitute.For<IDocumentoAPublicarRepository>();
         documentoRepository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
 
         ISnapshotPublicacaoCanonicalizer canonicalizer = Substitute.For<ISnapshotPublicacaoCanonicalizer>();
@@ -132,7 +133,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
     public async Task Handle_LeCalendarioUmaUnicaVez()
     {
         ProcessoSeletivo processo = NovoProcessoConforme(out _);
-        (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo);
+        (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo);
         var reader = CalendarioVigenteReaderDeTeste.ComVigente();
 
         (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento, reader);
@@ -141,8 +142,26 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
         reader.Leituras.Should().Be(1);
     }
 
+    [Theory(DisplayName = "O documento do edital que não é PDF é recusado antes de qualquer escrita")]
+    [InlineData(TiposDeMidiaDeDocumento.Docx)]
+    [InlineData(TiposDeMidiaDeDocumento.Odt)]
+    public async Task Handle_DocumentoDoEditalNaoEPdf_Recusa(string tipoDeMidia)
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme(out _);
+        (Mocks mocks, _) = NovosMocks(processo);
+        DocumentoAPublicar naoPdf = DocumentoAPublicar.IniciarPendente(
+            processo.Id, "edital", tipoDeMidia, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        naoPdf.Confirmar(1024, HashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();
+        mocks.DocumentoRepository.ObterPorIdAsync(naoPdf.Id, Arg.Any<CancellationToken>()).Returns(naoPdf);
+
+        (Result resposta, IEnumerable<object> eventos) = await HandleAsync(mocks, processo, naoPdf);
+
+        resposta.Error!.Code.Should().Be("ProcessoSeletivo.DocumentoDoEditalNaoEPdf");
+        eventos.Should().BeEmpty();
+    }
+
     private static Task<(Result Resposta, IEnumerable<object> Eventos)> HandleAsync(
-        Mocks mocks, ProcessoSeletivo processo, DocumentoEdital documento,
+        Mocks mocks, ProcessoSeletivo processo, DocumentoAPublicar documento,
         ICalendarioVigenteReader? calendarioReader = null,
         ISelecaoUnitOfWork? unitOfWork = null)
     {
@@ -187,7 +206,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
         processo.DefinirItens([.. processo.FatosColetados.Select(f => f.FatoCodigo == "CPF" ? cpf : f)]).IsSuccess.Should().BeTrue();
         DefinicaoDaResposta.De(cpf.TipoRenderizacao, cpf.ClassificacaoProtecao, fatoCodigo: "CPF").Cifrada.Should().BeFalse("a cópia velha não cifra");
 
-        (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo);
+        (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo);
 
         (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento);
 
@@ -206,7 +225,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
     public async Task Handle_FonteDeValoresMudaNoCatalogo_OsGatesAvaliamACopiaNova()
     {
         ProcessoSeletivo processo = NovoProcessoConforme(out _);
-        (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo);
+        (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo);
         CatalogoComCorRacaDoProcesso(mocks);
 
         (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento);
@@ -221,7 +240,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
     public async Task Handle_RecusaPosteriorARecopia_DescartaAsAlteracoes()
     {
         ProcessoSeletivo processo = NovoProcessoConforme(out _);
-        (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo);
+        (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo);
         CatalogoComCorRacaDoProcesso(mocks);
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
 
@@ -238,7 +257,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcessoConforme(out _);
         FatoColetado item = processo.FatosColetados.Single(static f => f.FatoCodigo == "DESEJA_NOME_SOCIAL");
         item.TipoRenderizacao.Should().Be(TipoRenderizacao.Booleano);
-        (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo);
+        (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo);
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns([
             .. CatalogoDoConjuntoBasico.Fatos.Where(static f => f.Codigo != "DESEJA_NOME_SOCIAL"),
             CatalogoDoConjuntoBasico.Fatos.Single(static f => f.Codigo == "DESEJA_NOME_SOCIAL") with { Dominio = "CATEGORICO" },
@@ -258,7 +277,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcessoConforme(out _);
 
         EntradaCanonicalizacao? entradaCapturada = null;
-        (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo, e => entradaCapturada = e);
+        (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo, e => entradaCapturada = e);
 
         (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento);
 
@@ -279,7 +298,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
             .IsSuccess.Should().BeTrue();
 
         EntradaCanonicalizacao? entradaCapturada = null;
-        (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo, e => entradaCapturada = e);
+        (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo, e => entradaCapturada = e);
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
             .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[FatoModalidade() with { PontoResolucao = "RESULTADO_FINAL" }]));
 
@@ -310,7 +329,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
             .IsSuccess.Should().BeTrue();
         processo.DefinirRegrasDerivacao([], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
-        (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo);
+        (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo);
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
             .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[
                 FatoModalidade() with { Codigo = derivado, Binding = $"REGRA_DERIVACAO:{derivado}", PontoResolucao = "RESULTADO_FINAL" }]));
@@ -335,7 +354,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilhoPorFato(faseId, "MODALIDADE"), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
-        (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo);
+        (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo);
         FatoCandidatoView temRenda = FatoModalidade() with
         {
             Codigo = "TEM_RENDA",
@@ -362,7 +381,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
             .IsSuccess.Should().BeTrue();
 
         // O catálogo (D4-bis) não conhece "FATO_INEXISTENTE": NovosMocks traz só o conjunto básico.
-        (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo);
+        (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo);
 
         (Result resposta, IEnumerable<object> eventos) = await HandleAsync(mocks, processo, documento);
 
