@@ -3610,6 +3610,11 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("cep");
 
+                    b.Property<bool?>("CepConfirmado")
+                        .HasColumnType("boolean")
+                        .HasColumnName("cep_confirmado")
+                        .HasComment("O candidato confirmou que o CEP é o geral da cidade ou do bairro, quando o Geo só o resolveu por faixa.");
+
                     b.Property<string>("Complemento")
                         .HasColumnType("text")
                         .HasColumnName("complemento");

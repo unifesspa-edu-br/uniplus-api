@@ -35,6 +35,7 @@ public sealed class InscricaoTests
         ["RENDA_MENSAL"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: false),
         ["SEXO_CIVIL"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false),
         ["IDENTIDADE_GENERO"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false, CifraIndividual: true),
+        ["ENDERECO_RESIDENCIAL"] = new(TipoDoValorDeResposta.Endereco, Multivalorado: false, Identificador: false),
     };
 
     private static readonly Guid OfertaDoProcesso = Guid.CreateVersion7();
@@ -48,7 +49,7 @@ public sealed class InscricaoTests
 
     private static readonly RespostasAdmitidas Admitidas = new(
         DefinicoesDasRespostas,
-        new HashSet<string>(StringComparer.Ordinal) { "NOME_SOCIAL", "CPF", "DESEJA_NOME_SOCIAL", "RG_NUMERO", "TELEFONE", "SEXO_CIVIL", "IDENTIDADE_GENERO" },
+        new HashSet<string>(StringComparer.Ordinal) { "NOME_SOCIAL", "CPF", "DESEJA_NOME_SOCIAL", "RG_NUMERO", "TELEFONE", "SEXO_CIVIL", "IDENTIDADE_GENERO", "ENDERECO_RESIDENCIAL" },
         new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal)
         {
             ["COMPOSICAO_FAMILIAR"] = new HashSet<string>(StringComparer.Ordinal) { "PARENTESCO", "TELEFONE", "RG_NUMERO" },
@@ -1049,6 +1050,78 @@ public sealed class InscricaoTests
         inscricao.Comprovantes.Should().ContainSingle().Which.Should().BeSameAs(primeiro);
         inscricao.Derivados["MODALIDADE"].EnumerateArray().Select(static v => v.GetString()).Should().Equal("AC");
     }
+
+    [Theory(DisplayName = "Endereço sem CEP, ou com CEP que não tem 8 dígitos, é recusado ao salvar com a orientação")]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("7909673")]
+    [InlineData("7909673A")]
+    public void Salvar_EnderecoSemCepValido_Recusa(string? cep)
+    {
+        Inscricao inscricao = NovaInscricao();
+
+        Result resultado = inscricao.Salvar(
+            null, EnderecoResidencial(cep, "Campo Grande"), SemGrupos(), SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+
+        resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(
+            e => e.Field == "ENDERECO_RESIDENCIAL" && e.Error.Code == InscricaoErrorCodes.EnderecoSemCep
+                && e.Error.Message.Contains("CEP geral da sua cidade", StringComparison.Ordinal));
+    }
+
+    [Theory(DisplayName = "O CEP com a máscara ou sem ela é aceito")]
+    [InlineData("79096-730")]
+    [InlineData("79096730")]
+    public void Salvar_EnderecoComCep_Aceita(string cep)
+    {
+        Inscricao inscricao = NovaInscricao();
+
+        Result resultado = inscricao.Salvar(
+            null, EnderecoResidencial(cep, "Campo Grande"), SemGrupos(), SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+
+        resultado.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "O endereço em branco não é um endereço sem CEP: é a resposta ainda não dada")]
+    public void Salvar_EnderecoEmBranco_Aceita()
+    {
+        Inscricao inscricao = NovaInscricao();
+
+        Result resultado = inscricao.Salvar(
+            null, EnderecoResidencial(null, null), SemGrupos(), SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+
+        resultado.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "O complemento de até 300 caracteres é aceito e o de 301 é recusado, ao salvar e ao enviar")]
+    public void Complemento_LimiteDe300Caracteres()
+    {
+        Inscricao salvando = NovaInscricao();
+        Result noLimite = salvando.Salvar(
+            null, EnderecoResidencial("79096730", "Campo Grande", new string('a', 300)), SemGrupos(), SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([salvando.ETag]));
+        Result acima = salvando.Salvar(
+            null, EnderecoResidencial("79096730", "Campo Grande", new string('a', 301)), SemGrupos(), SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([salvando.ETag]));
+
+        noLimite.IsSuccess.Should().BeTrue();
+        acima.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(
+            e => e.Field == "ENDERECO_RESIDENCIAL" && e.Error.Code == InscricaoErrorCodes.EnderecoComplementoLongo);
+
+        Inscricao enviando = NovaInscricao();
+        Result<ComprovanteInscricao> enviado = enviando.Submeter(
+            "000123", OfertaDoProcesso, EnderecoResidencial("79096730", "Campo Grande", new string('a', 301)), SemGrupos(), SemAceites(), Admitidas,
+            FormularioDeTeste.AvaliacaoSemOcultos, SemDerivados(), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([enviando.ETag]), Instante());
+
+        enviado.Errors.Should().ContainSingle(e => e.Error.Code == InscricaoErrorCodes.EnderecoComplementoLongo);
+    }
+
+    private static Dictionary<string, JsonElement> EnderecoResidencial(string? cep, string? cidade, string? complemento = null) => new(StringComparer.Ordinal)
+    {
+        ["ENDERECO_RESIDENCIAL"] = JsonSerializer.SerializeToElement(new
+        {
+            cep,
+            complemento,
+            cidade = cidade is null ? null : new { codigoIbge = "5002704", nome = cidade, uf = "MS" },
+        }),
+    };
 
     private static Inscricao NovaInscricao() =>
         Inscricao.Iniciar(Processo, PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", VersaoFormulario).Value!;

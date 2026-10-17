@@ -26,6 +26,13 @@ public static class InscricaoErrorCodes
     public const string NomeAusenteNoLogin = "Inscricao.NomeAusenteNoLogin";
     public const string NomeSocialDiferenteDaConta = "Inscricao.NomeSocialDiferenteDaConta";
     public const string NomeSocialAusenteNaConta = "Inscricao.NomeSocialAusenteNaConta";
+    public const string EnderecoSemCep = "Inscricao.EnderecoSemCep";
+    public const string EnderecoComplementoLongo = "Inscricao.EnderecoComplementoLongo";
+    public const string EnderecoCepNaoEncontrado = "Inscricao.EnderecoCepNaoEncontrado";
+    public const string EnderecoCepDeOutraCidade = "Inscricao.EnderecoCepDeOutraCidade";
+    public const string EnderecoCepNaoConfirmado = "Inscricao.EnderecoCepNaoConfirmado";
+    public const string EnderecoLogradouroObrigatorio = "Inscricao.EnderecoLogradouroObrigatorio";
+    public const string EnderecoBairroObrigatorio = "Inscricao.EnderecoBairroObrigatorio";
     public const string OfertaForaDoProcesso = "Inscricao.OfertaForaDoProcesso";
     public const string OfertaObrigatoria = "Inscricao.OfertaObrigatoria";
     public const string RascunhoSoAntesDoEnvio = "Inscricao.RascunhoSoAntesDoEnvio";

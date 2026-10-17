@@ -40,4 +40,6 @@ public sealed class EnderecoDaInscricaoRecord
     public string? NivelResolucao { get; set; }
 
     public string? Procedencia { get; set; }
+
+    public bool? CepConfirmado { get; set; }
 }

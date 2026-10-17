@@ -289,6 +289,67 @@ public sealed class SalvarInscricaoCommandHandlerTests
             ["AC"], "a modalidade que só a oferta B tem não vale para quem salvou na oferta A");
     }
 
+    [Fact(DisplayName = "Endereço com CEP que o Geo não encontra é recusado no campo do endereço, sem gravar o rascunho")]
+    public async Task Handle_EnderecoComCepNaoEncontrado_RecusaSemGravar()
+    {
+        IConferenciaEnderecoGeo geo = Substitute.For<IConferenciaEnderecoGeo>();
+        geo.ResolverCepAsync("79096730", Arg.Any<CancellationToken>())
+            .Returns(Result<CepResolvido>.Failure(new DomainError(ConferenciaEnderecoGeoErrorCodes.CepNaoResolve, "sem cobertura")));
+
+        (Result<InscricaoDto> resultado, ISelecaoUnitOfWork unitOfWork) = await SalvarEnderecoAsync(geo);
+
+        resultado.Errors.Should().ContainSingle(e => e.Field == "ENDERECO_RESIDENCIAL" && e.Error.Code == InscricaoErrorCodes.EnderecoCepNaoEncontrado);
+        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Geo fora do ar não impede salvar o rascunho do endereço, e a recusa nunca é de CEP não encontrado")]
+    public async Task Handle_EnderecoComGeoIndisponivel_SalvaORascunho()
+    {
+        IConferenciaEnderecoGeo geo = Substitute.For<IConferenciaEnderecoGeo>();
+        geo.ResolverCepAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Result<CepResolvido>.Failure(new DomainError(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel, "fora do ar")));
+
+        (Result<InscricaoDto> resultado, ISelecaoUnitOfWork unitOfWork) = await SalvarEnderecoAsync(geo);
+
+        resultado.Errors.Should().NotContain(e => e.Error.Code == InscricaoErrorCodes.EnderecoCepNaoEncontrado);
+        await unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    private static async Task<(Result<InscricaoDto> Resultado, ISelecaoUnitOfWork UnitOfWork)> SalvarEnderecoAsync(IConferenciaEnderecoGeo geo)
+    {
+        Cpf cpf = PersonasDeTeste.FernandaDrumond;
+        FatoColetado item = FatoColetado.Criar(
+            "ENDERECO_RESIDENCIAL", 0, "Endereço residencial", TipoRenderizacao.Endereco, Obrigatoriedade.Sempre, null,
+            classificacaoProtecao: "PESSOAL").Value!;
+        (VersaoConfiguracao versao, GrafoConfiguracao grafo) = MontarVersaoComItem(item);
+        Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+
+        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
+        inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
+        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
+        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+
+        InscricaoRequest request = new(
+            null,
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+            {
+                ["ENDERECO_RESIDENCIAL"] = JsonSerializer.SerializeToElement(new
+                {
+                    cep = "79096-730",
+                    cidade = new { codigoIbge = "5002704", nome = "Campo Grande", uf = "MS" },
+                }),
+            },
+            null, null);
+
+        Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
+            new SalvarInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
+            inscricaoRepository, processoRepository, DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(),
+            geo, Substitute.For<IEnderecoNoAcervoPublico>(), unitOfWork, UsuarioComCpf(cpf), DivulgacaoDeTeste.Relogio, CancellationToken.None);
+        return (resultado, unitOfWork);
+    }
+
     [Fact(DisplayName = "Resposta que viola uma restrição do formulário é recusada por campo, sem gravar nada — obrigatoriedade sem resposta não é recusada")]
     public async Task Handle_RespostaViolaRestricao_RecusaPorCampoSemGravar()
     {

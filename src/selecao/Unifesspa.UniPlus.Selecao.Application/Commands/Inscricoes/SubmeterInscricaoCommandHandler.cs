@@ -125,6 +125,21 @@ public static class SubmeterInscricaoCommandHandler
         IReadOnlyDictionary<string, JsonElement> respostasMescladas = inscricao.RespostasAposMesclar(respostasDoCorpo);
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> gruposMesclados = inscricao.GruposAposMesclar(grupos);
 
+        // O CEP existir no Geo, ser da cidade declarada e, sendo o geral da cidade, vir com logradouro e
+        // bairro: o Geo fora do ar recusa o envio como indisponível, nunca como "CEP não encontrado".
+        Result<IReadOnlyList<FieldError>> doEndereco = await Services.ConferenciaDoEnderecoDaInscricao
+            .ConferirAsync(respostasMescladas, contexto.Value!.Admitidas, conferenciaEnderecoGeo, aoEnviar: true, cancellationToken)
+            .ConfigureAwait(false);
+        if (doEndereco.IsFailure)
+        {
+            return Result<ComprovanteInscricaoDto>.Failure(doEndereco.Error!);
+        }
+
+        if (doEndereco.Value!.Count > 0)
+        {
+            return Result<ComprovanteInscricaoDto>.ValidationFailure(doEndereco.Value);
+        }
+
         Result<IReadOnlyDictionary<string, JsonElement>> derivados = await Services.DerivadosDoSistemaInscricao
             .CalcularAsync(respostasMescladas, contexto.Value!.DataReferenciaFatos, conferenciaEnderecoGeo, cancellationToken)
             .ConfigureAwait(false);

@@ -18,10 +18,52 @@ public interface IConferenciaEnderecoGeo
         string cep, string cidadeCodigoIbgeDeclarada, string ufDeclarada, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Resolve <paramref name="cep"/> no Geo (8 dígitos): a cidade, a UF e até onde a resolução chegou.
+    /// O nível vem do Geo, nunca do que o navegador declarou. Sem cobertura:
+    /// <see cref="ConferenciaEnderecoGeoErrorCodes.CepNaoResolve"/>; Geo fora do ar:
+    /// <see cref="ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel"/> — nunca confundir os dois.
+    /// </summary>
+    Task<Result<CepResolvido>> ResolverCepAsync(string cep, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Confere que o município (sem CEP — ex.: naturalidade) pertence à UF declarada.
     /// </summary>
     Task<Result> ConferirMunicipioAsync(
         string cidadeCodigoIbgeDeclarado, string ufDeclarada, CancellationToken cancellationToken = default);
+}
+
+/// <summary>O que o Geo resolveu para um CEP.</summary>
+/// <param name="Origem">
+/// A estratégia que resolveu o CEP, como o Geo a declara: <c>logradouro</c>, <c>grande-usuario</c> e
+/// <c>cep-geral</c> são resolução exata; qualquer outra (as de faixa, em que o número não corresponde a
+/// um CEP cadastrado, ou uma desconhecida) exige a confirmação do candidato.
+/// </param>
+public sealed record CepResolvido(string CodigoIbge, string Uf, string Origem)
+{
+    public const string OrigemLogradouro = "logradouro";
+    public const string OrigemGrandeUsuario = "grande-usuario";
+    public const string OrigemCepGeral = "cep-geral";
+
+    /// <summary>
+    /// As únicas origens que o CEP cadastrado tem: aceitas sem confirmação. É lista fechada — qualquer
+    /// outra, inclusive uma que a API não conhece, exige a confirmação do candidato.
+    /// </summary>
+    private static readonly string[] Exatas = [OrigemLogradouro, OrigemGrandeUsuario, OrigemCepGeral];
+
+    /// <summary>O CEP está cadastrado: de logradouro, de grande usuário ou o geral oficial de cidade ou distrito.</summary>
+    public bool EhExata => Exatas.Contains(Origem, StringComparer.Ordinal);
+
+    /// <summary>
+    /// A origem não é exata (hoje, as de faixa): o número pode ser erro de digitação, e o candidato precisa
+    /// confirmá-lo.
+    /// </summary>
+    public bool ExigeConfirmacao => !EhExata;
+
+    /// <summary>
+    /// Logradouro e bairro não saem do CEP: o candidato os informa. Só no CEP geral e no CEP confirmado
+    /// sem ser exato — o de grande usuário chega sem bairro, e o de logradouro tem os dois.
+    /// </summary>
+    public bool ExigeLogradouroEBairro => ExigeConfirmacao || string.Equals(Origem, OrigemCepGeral, StringComparison.Ordinal);
 }
 
 /// <summary>Códigos de erro da conferência de endereço no Geo (issue #1865).</summary>

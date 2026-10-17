@@ -149,6 +149,21 @@ public static class SalvarInscricaoCommandHandler
             return Result<InscricaoDto>.ValidationFailure(recusas);
         }
 
+        // O CEP existir no Geo e ser da cidade declarada vale já no rascunho; o Geo fora do ar adia a
+        // conferência para o envio, e o rascunho continua salvável.
+        Result<IReadOnlyList<FieldError>> doEndereco = await Services.ConferenciaDoEnderecoDaInscricao
+            .ConferirAsync(respostas, contexto.Value!.Admitidas, conferenciaEnderecoGeo, aoEnviar: false, cancellationToken)
+            .ConfigureAwait(false);
+        if (doEndereco.IsFailure)
+        {
+            return Result<InscricaoDto>.Failure(doEndereco.Error!);
+        }
+
+        if (doEndereco.Value!.Count > 0)
+        {
+            return Result<InscricaoDto>.ValidationFailure(doEndereco.Value);
+        }
+
         Result salvar = inscricao.Salvar(
             command.Request.OfertaCursoId, respostas, grupos, aceites, contexto.Value!.Admitidas with { NomeCivilDoLogin = userContext.NomeCompleto, NomeSocialDoLogin = userContext.NomeSocial }, command.Precondicao);
         if (salvar.IsFailure)

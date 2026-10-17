@@ -23,7 +23,7 @@ public interface IGeoApi
 }
 
 /// <summary>Só os campos que a conferência usa — não o contrato completo do Geo.</summary>
-public sealed record CepResolvidoResponse(string Cidade, string CodigoIbge, string Uf);
+public sealed record CepResolvidoResponse(string Cidade, string CodigoIbge, string Uf, string? Origem = null);
 
 /// <summary>Só os campos que a conferência usa — não o contrato completo do Geo.</summary>
 public sealed record CidadeDetalheResponse(string CodigoIbge, string Nome, string Uf);

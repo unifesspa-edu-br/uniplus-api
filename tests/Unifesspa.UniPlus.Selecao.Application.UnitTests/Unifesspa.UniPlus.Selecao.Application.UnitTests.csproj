@@ -40,6 +40,7 @@
     <Compile Include="../Shared/VersoesPublicadasDeTeste.cs" Link="VersoesPublicadasDeTeste.cs" />
     <Compile Include="../Shared/CatalogoDoConjuntoBasico.cs" Link="CatalogoDoConjuntoBasico.cs" />
     <Compile Include="../Shared/PersonasDeTeste.cs" Link="PersonasDeTeste.cs" />
+    <Compile Include="../Shared/FakeConferenciaEnderecoGeo.cs" Link="FakeConferenciaEnderecoGeo.cs" />
   </ItemGroup>
 
 </Project>
