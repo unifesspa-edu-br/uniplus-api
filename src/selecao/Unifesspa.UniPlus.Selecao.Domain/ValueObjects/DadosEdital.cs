@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Errors;
 
+using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -114,7 +115,7 @@ public sealed record DadosEdital
         }
 
         return Result<DadosEdital>.Success(new DadosEdital(
-            string.IsNullOrWhiteSpace(numero) ? null : numero.Trim(),
+            numero.EmBrancoViraNulo(),
             periodoInscricaoInicio.ToUniversalTime(),
             periodoInscricaoFim.ToUniversalTime(),
             documentoEditalId,

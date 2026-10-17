@@ -360,19 +360,18 @@ public static class PublicarProcessoSeletivoCommandHandler
 
         // O registro do ato vai na mesma gravação da versão e do envio ao outbox: a consulta dos atos
         // do processo lê só ele, e a confirmação do Publicações o encontra pelo id do ato.
-        await atoDoProcessoRepository
-            .AdicionarAsync(
-                RegistroDoAtoDaVersao.Criar(
-                    processo,
-                    versao,
-                    command.Ato,
-                    tipoConferido,
-                    dados.Numero,
-                    documento.Id,
-                    atoRetificadoId: null,
-                    motivoRetificacao: null,
-                    timeProvider),
-                cancellationToken)
+        await RegistroDoAtoDaVersao.RegistrarAsync(
+            atoDoProcessoRepository,
+            processo,
+            versao,
+            command.Ato,
+            tipoConferido,
+            dados.Numero,
+            documento.Id,
+            atoRetificadoId: null,
+            motivoRetificacao: null,
+            timeProvider,
+            cancellationToken)
             .ConfigureAwait(false);
 
         try

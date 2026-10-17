@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -105,9 +106,9 @@ public sealed class AtoDoProcesso : EntityBase
         // Texto opcional em branco é ausência, não erro: quem declara pode mandar o campo vazio.
         novo = novo with
         {
-            Numero = EmBrancoViraNulo(novo.Numero),
-            PoliticaDeDivulgacaoConfirmadaPorSub = EmBrancoViraNulo(novo.PoliticaDeDivulgacaoConfirmadaPorSub),
-            MotivoDaCorrecao = EmBrancoViraNulo(novo.MotivoDaCorrecao),
+            Numero = novo.Numero.EmBrancoViraNulo(),
+            PoliticaDeDivulgacaoConfirmadaPorSub = novo.PoliticaDeDivulgacaoConfirmadaPorSub.EmBrancoViraNulo(),
+            MotivoDaCorrecao = novo.MotivoDaCorrecao.EmBrancoViraNulo(),
         };
         GuardarTextoOpcional(novo.Numero, NumeroMaxLength, nameof(novo.Numero));
         GuardarTextoOpcional(novo.PoliticaDeDivulgacaoConfirmadaPorSub, SubMaxLength, nameof(novo.PoliticaDeDivulgacaoConfirmadaPorSub));
@@ -205,9 +206,6 @@ public sealed class AtoDoProcesso : EntityBase
             throw new ArgumentException("Um documento não pode ser o principal e anexo, nem anexo duas vezes.", nameof(novo));
         }
     }
-
-    private static string? EmBrancoViraNulo(string? valor) =>
-        string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
 
     private static void GuardarTexto(string valor, int tamanhoMaximo, string nome)
     {
