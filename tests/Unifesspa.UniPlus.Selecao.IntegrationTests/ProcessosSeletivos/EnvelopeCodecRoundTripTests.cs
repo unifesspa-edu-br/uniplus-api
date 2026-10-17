@@ -528,7 +528,8 @@ public sealed class EnvelopeCodecRoundTripTests
             nosExigencia: envelope.Grafo.NosExigencia,
             referenciaTemporalFatos: envelope.Grafo.ReferenciaTemporalFatos,
             fatosColetados: envelope.Grafo.FatosColetados,
-            regrasDerivacao: envelope.Grafo.RegrasDerivacao);
+            regrasDerivacao: envelope.Grafo.RegrasDerivacao,
+            numeroDeOpcoesDeCurso: 1);
 
         Result recusa = processo.RestaurarConfiguracaoCongelada(versao, comIdRegenerado);
 

@@ -138,6 +138,21 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         Estado.De(processo).Should().BeEquivalentTo(antes);
     }
 
+    [Theory(DisplayName = "Restaurar grafo sem número de opções, ou fora de 1 e 2, é recusado, como na declaração")]
+    [InlineData(null)]
+    [InlineData(0)]
+    [InlineData(3)]
+    public void Restaurar_NumeroDeOpcoesForaDaFaixa_Recusa(int? numero)
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.PSIQ);
+        Estado antes = Estado.De(processo);
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(VersaoDo(processo), Grafo(numeroDeOpcoesDeCurso: numero));
+
+        resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.OpcoesDeCursoInvalido);
+        Estado.De(processo).Should().BeEquivalentTo(antes);
+    }
+
     [Fact(DisplayName = "Restaurar repõe o número de opções congelado, sobrepondo o que a sessão de retificação declarou")]
     public void Restaurar_ReponhaONumeroCongelado()
     {
@@ -346,7 +361,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             cronogramaFases: [FaseConforme()],
             documentosExigidos: [],
             nosExigencia: [],
-            referenciaTemporalFatos: null);
+            referenciaTemporalFatos: null,
+            numeroDeOpcoesDeCurso: 1);
 
         Result resultadoPsiq = psiq.RestaurarConfiguracaoCongelada(versaoPsiq, GrafoComClassificacaoEnem());
         Result resultadoSisu = sisu.RestaurarConfiguracaoCongelada(versaoSisu, GrafoComClassificacaoEnem());
@@ -712,7 +728,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             cronogramaFases: [FaseConforme()],
             documentosExigidos: [],
             nosExigencia: [],
-            referenciaTemporalFatos: null);
+            referenciaTemporalFatos: null,
+            numeroDeOpcoesDeCurso: 1);
 
         Result resultado = processo.RestaurarConfiguracaoCongelada(versao, invalido);
 
@@ -751,7 +768,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             cronogramaFases: [FaseConforme()],
             documentosExigidos: [],
             nosExigencia: [],
-            referenciaTemporalFatos: null);
+            referenciaTemporalFatos: null,
+            numeroDeOpcoesDeCurso: 1);
 
         Result resultado = processo.RestaurarConfiguracaoCongelada(versao, invalido);
 
@@ -790,7 +808,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             cronogramaFases: [FaseConforme()],
             documentosExigidos: [],
             nosExigencia: [],
-            referenciaTemporalFatos: null);
+            referenciaTemporalFatos: null,
+            numeroDeOpcoesDeCurso: 1);
 
         Result resultado = processo.RestaurarConfiguracaoCongelada(versao, invalido);
 
@@ -1306,7 +1325,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             cronogramaFases: [faseCongelada],
             documentosExigidos: [documentoCongelado],
             nosExigencia: [],
-            referenciaTemporalFatos: referenciaCongelada);
+            referenciaTemporalFatos: referenciaCongelada,
+            numeroDeOpcoesDeCurso: 1);
 
         Result resultado = processo.RestaurarConfiguracaoCongelada(versao, grafoCongelado);
 
@@ -1397,7 +1417,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         cronogramaFases: [FaseConforme()],
         documentosExigidos: [],
         nosExigencia: [],
-        referenciaTemporalFatos: null);
+        referenciaTemporalFatos: null,
+        numeroDeOpcoesDeCurso: 1);
 
     private static GrafoConfiguracao Grafo(
         IReadOnlyList<EtapaProcesso>? etapas = null,
@@ -1407,7 +1428,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         ConfiguracaoDivulgacao? configuracaoDivulgacao = null,
         ConfiguracaoClassificacao? classificacao = null,
         IReadOnlyList<FatoColetado>? fatosColetados = null,
-        int? numeroDeOpcoesDeCurso = null) => new(
+        int? numeroDeOpcoesDeCurso = 1) => new(
             etapas: etapas ?? [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 1m, null, 1)],
             ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
             distribuicaoVagas: [Distribuicao()],
@@ -1438,7 +1459,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             cronogramaFases: [fase],
             documentosExigidos: documentosExigidos,
             nosExigencia: nosExigencia,
-            referenciaTemporalFatos: null);
+            referenciaTemporalFatos: null,
+            numeroDeOpcoesDeCurso: 1);
 
     private static DocumentoExigido DocumentoQualquer(Guid faseId) => DocumentoExigido.Criar(
         faseId, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL",

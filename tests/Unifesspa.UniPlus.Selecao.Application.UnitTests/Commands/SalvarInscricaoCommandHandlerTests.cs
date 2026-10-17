@@ -146,7 +146,8 @@ public sealed class SalvarInscricaoCommandHandlerTests
             [.. processoBase.CronogramaFases], [.. processoBase.DocumentosExigidos], [], null,
             fatosColetados: [.. processoBase.FatosColetados],
             formularios: [.. processoBase.Formularios],
-            gruposColetados: [.. processoBase.GruposColetados]);
+            gruposColetados: [.. processoBase.GruposColetados],
+            numeroDeOpcoesDeCurso: 1);
 
         // O bloco documentosExigidos.dataReferenciaFatos é lido do JSON cru por
         // ContextoDaVersaoFixadaResolver (issue #1859) — presente em todo envelope real; aqui
