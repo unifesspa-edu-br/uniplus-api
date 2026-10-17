@@ -202,20 +202,24 @@ public static class PublicarProcessoSeletivoCommandHandler
             return (Result.Failure(pendenciaCronograma), []);
         }
 
-        // O tipo único é lido do catálogo vigente (uma só leitura, para a recusa e para o gate da
-        // raiz) e recusado antes de canonicalizar, logo depois do cronograma, como a raiz faz.
-        TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos = await ResolucaoDosTiposDeAtoUnicos
-            .ParaOperacaoAsync(
+        // Os tipos únicos e a pendência de duplicidade saem de um ponto só, logo depois do
+        // cronograma e antes de canonicalizar, na ordem da raiz.
+        Result<TiposDeAtoUnicosPorObjeto> tiposUnicos = await ResolucaoDosTiposDeAtoUnicos
+            .ConferirAsync(
                 tipoDeAtoReader,
+                vagaDeLinhagemReader,
                 processo,
-                command.Ato.TipoAtoCodigo,
-                DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime),
+                tipoConferido,
+                atosDaLinhagem,
+                ResolucaoDosTiposDeAtoUnicos.Hoje(timeProvider, fusoInstitucional),
                 cancellationToken)
             .ConfigureAwait(false);
-        if (processo.PendenciaDoTipoDeAtoUnico(tiposDeAtoUnicos) is { } pendenciaDoTipoUnico)
+        if (tiposUnicos.IsFailure)
         {
-            return (Result.Failure(pendenciaDoTipoUnico), []);
+            return (Result.Failure(tiposUnicos.Error!), []);
         }
+
+        TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos = tiposUnicos.Value!;
 
         Result<IReadOnlyList<AnexoDoEdital>> conferenciaDosAnexos = await ConferenciaDosAnexosDoEdital
             .ConferirAsync(documentoAPublicarRepository, command.ProcessoSeletivoId, command.Anexos, [], cancellationToken)

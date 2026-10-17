@@ -91,4 +91,20 @@ public interface IVagaDeLinhagemReader
     /// recusaria com <c>RaizJaRetificada</c> e a retificação ficaria publicada sem ato.
     /// </remarks>
     Task<bool> AtoJaFoiRetificadoAsync(Guid atoId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Os tipos únicos por objeto dos atos <paramref name="atoIds"/> — as vagas que esses atos
+    /// já ocupam —, sem repetição. Atos de tipo não único não aparecem.
+    /// </summary>
+    /// <remarks>
+    /// A unicidade é a que o ato registrou: ela vale para a vaga que ele reservou, mesmo que o
+    /// catálogo tenha mudado depois. Quem retifica um processo pergunta isto sobre os atos
+    /// criadores das versões, para não declarar no cronograma um tipo cuja vaga já está tomada.
+    /// </remarks>
+    Task<IReadOnlyList<TipoDeAtoUnicoRegistrado>> ListarTiposUnicosRegistradosAsync(
+        IReadOnlyCollection<Guid> atoIds,
+        CancellationToken cancellationToken = default);
 }
+
+/// <summary>Um tipo de ato único por objeto que já tem ato registrado.</summary>
+public sealed record TipoDeAtoUnicoRegistrado(string Codigo, string Nome);

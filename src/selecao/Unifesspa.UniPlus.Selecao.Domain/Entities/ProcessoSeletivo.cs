@@ -4207,9 +4207,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     {
         ArgumentNullException.ThrowIfNull(tiposUnicos);
 
-        IEnumerable<DeclaracaoDeAto> declaracoes = tiposUnicos.AtoDaOperacaoCodigo is { } atoDaOperacao
-            ? [.. DeclaracoesDeAtos(), new DeclaracaoDeAto(atoDaOperacao, "no ato que está sendo registrado")]
-            : DeclaracoesDeAtos();
+        IEnumerable<DeclaracaoDeAto> declaracoes = [.. DeclaracoesDeAtos(), .. VagasJaReivindicadas(tiposUnicos)];
 
         IGrouping<string, DeclaracaoDeAto>? repetido = declaracoes
             .Where(declaracao => tiposUnicos.EhUnico(declaracao.AtoCodigo))
@@ -4228,6 +4226,24 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         return new DomainError(
             ProcessoSeletivoErrorCodes.TipoDeAtoUnicoDeclaradoMaisDeUmaVez,
             $"O tipo de ato '{tiposUnicos.NomeDe(repetido.Key)}' só pode ser publicado uma vez por processo e está declarado {onde}.");
+    }
+
+    /// <summary>
+    /// As vagas que a operação e os atos já registrados reivindicam, uma por tipo: o ato da
+    /// operação e o ato já registrado do mesmo tipo são a mesma vaga — a retificação continua a
+    /// própria linhagem, não disputa com ela —, e por isso contam uma vez só.
+    /// </summary>
+    private static IEnumerable<DeclaracaoDeAto> VagasJaReivindicadas(TiposDeAtoUnicosPorObjeto tiposUnicos)
+    {
+        foreach (string codigo in tiposUnicos.CodigosOcupados)
+        {
+            yield return new DeclaracaoDeAto(codigo, "no ato já registrado do processo");
+        }
+
+        if (tiposUnicos.AtoDaOperacaoCodigo is { } atoDaOperacao && !tiposUnicos.VagaOcupada(atoDaOperacao))
+        {
+            yield return new DeclaracaoDeAto(atoDaOperacao, "no ato que está sendo registrado");
+        }
     }
 
     /// <summary>
