@@ -218,7 +218,8 @@ public sealed class AbrirRetificacaoCommandHandlerTests
                     [.. processo.Etapas], processo.OfertaAtendimento!, [.. processo.DistribuicaoVagas],
                     processo.BonusRegional, [.. processo.CriteriosDesempate], processo.Classificacao!,
                     [.. processo.CronogramaFases], [.. processo.DocumentosExigidos], [], null,
-                    identificadorLegivel: identificadorCongelado),
+                    identificadorLegivel: identificadorCongelado,
+            numeroDeOpcoesDeCurso: 1),
                 NovosDados(), HashFixo, "America/Sao_Paulo", retificacao: null, conformidade: null);
 
         public Task<Result<RetificacaoEmCursoDto>> ExecutarAsync() => AbrirRetificacaoCommandHandler.Handle(

@@ -1064,7 +1064,8 @@ internal static class CorpusEnvelope
             nosExigencia: [],
             referenciaTemporalFatos: null,
             fatosColetados: [],
-            regrasDerivacao: []);
+            regrasDerivacao: [],
+            numeroDeOpcoesDeCurso: 1);
     }
 
     /// <summary>Um grafo mínimo e conforme — a "sessão editorial" que o descarte terá de desfazer.</summary>
