@@ -36,22 +36,23 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
 
         ITipoAtoPublicadoReader reader = Substitute.For<ITipoAtoPublicadoReader>();
         reader.ListarVigentesAsync(
-                Arg.Is<IReadOnlyCollection<string>>(codigos => codigos.Count == 2),
+                Arg.Is<IReadOnlyCollection<string>>(codigos => codigos.Count == 3),
                 Hoje,
                 Arg.Any<CancellationToken>())
             .Returns(
             [
                 new TipoAtoPublicadoView("ATO_QUE_O_CATALOGO_DECLARA_UNICO", "Ato único", true, true, false, true),
                 new TipoAtoPublicadoView("ATO_QUE_O_CATALOGO_NAO_DECLARA_UNICO", "Ato comum", true, false, false, true),
+                new TipoAtoPublicadoView("EDITAL_JA_REGISTRADO", "Edital já registrado", true, true, false, false),
             ]);
         IVagaDeLinhagemReader vaga = Substitute.For<IVagaDeLinhagemReader>();
-        Guid atoRegistrado = Guid.CreateVersion7();
-        vaga.ListarTiposUnicosRegistradosAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
-            .Returns([new TipoDeAtoUnicoRegistrado("EDITAL_JA_REGISTRADO", "Edital já registrado")]);
+        vaga.ListarTiposDosAtosAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(["EDITAL_JA_REGISTRADO"]);
         var tipoDaOperacao = new TipoAtoPublicadoView("EDITAL_DA_OPERACAO", "Edital", true, true, false, false);
+        TimeProvider relogio = new RelogioFixo(new DateTimeOffset(2026, 10, 17, 12, 0, 0, TimeSpan.Zero));
 
-        Result<TiposDeAtoUnicosPorObjeto> resultado = await ResolucaoDosTiposDeAtoUnicos
-            .ConferirAsync(reader, vaga, processo, tipoDaOperacao, [atoRegistrado], Hoje, CancellationToken.None);
+        Result<TiposDeAtoUnicosPorObjeto> resultado = await ResolucaoDosTiposDeAtoUnicos.ConferirAsync(
+            reader, vaga, processo, tipoDaOperacao, [Guid.CreateVersion7()], relogio, TimeZoneInfo.Utc, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         TiposDeAtoUnicosPorObjeto unicos = resultado.Value!;
@@ -60,6 +61,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
         unicos.EhUnico("ATO_QUE_O_CATALOGO_NAO_DECLARA_UNICO").Should().BeFalse();
         unicos.EhUnico("EDITAL_DA_OPERACAO").Should().BeTrue("a unicidade do ato da operação vem do tipo já conferido, sem reler o catálogo");
         unicos.VagaOcupada("EDITAL_JA_REGISTRADO").Should().BeTrue();
+        unicos.EhUnico("EDITAL_JA_REGISTRADO").Should().BeTrue("o código ocupado entra na leitura em lote do catálogo, que decide a unicidade");
         await reader.Received(1).ListarVigentesAsync(Arg.Any<IReadOnlyCollection<string>>(), Hoje, Arg.Any<CancellationToken>());
         await reader.DidNotReceiveWithAnyArgs().ObterVigenteAsync(default!, default, default);
     }

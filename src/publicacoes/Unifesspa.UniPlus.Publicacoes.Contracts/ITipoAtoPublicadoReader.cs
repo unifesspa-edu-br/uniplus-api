@@ -93,18 +93,18 @@ public interface IVagaDeLinhagemReader
     Task<bool> AtoJaFoiRetificadoAsync(Guid atoId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Os tipos únicos por objeto dos atos <paramref name="atoIds"/> — as vagas que esses atos
-    /// já ocupam —, sem repetição. Atos de tipo não único não aparecem.
+    /// Os códigos de tipo dos atos <paramref name="atoIds"/>, sem repetição, quaisquer que
+    /// sejam: a unicidade não é filtrada aqui.
     /// </summary>
     /// <remarks>
-    /// A unicidade é a que o ato registrou: ela vale para a vaga que ele reservou, mesmo que o
-    /// catálogo tenha mudado depois. Quem retifica um processo pergunta isto sobre os atos
-    /// criadores das versões, para não declarar no cronograma um tipo cuja vaga já está tomada.
+    /// Quem decide se o tipo é único é o catálogo vigente, e não o que o ato gravou ao ser
+    /// registrado — é assim que o registro reserva a vaga (colide com qualquer ato do mesmo
+    /// tipo vinculado ao objeto, fora da linhagem), e é a mesma pergunta que
+    /// <see cref="ObjetoJaTemAtoDeOutraLinhagemAsync"/> faz. Quem retifica um processo pergunta
+    /// isto sobre os atos criadores das versões, para não declarar no cronograma um tipo cuja
+    /// vaga já está tomada.
     /// </remarks>
-    Task<IReadOnlyList<TipoDeAtoUnicoRegistrado>> ListarTiposUnicosRegistradosAsync(
+    Task<IReadOnlyList<string>> ListarTiposDosAtosAsync(
         IReadOnlyCollection<Guid> atoIds,
         CancellationToken cancellationToken = default);
 }
-
-/// <summary>Um tipo de ato único por objeto que já tem ato registrado.</summary>
-public sealed record TipoDeAtoUnicoRegistrado(string Codigo, string Nome);

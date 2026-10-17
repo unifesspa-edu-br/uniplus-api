@@ -31,38 +31,44 @@ internal static class ResolucaoDosTiposDeAtoUnicos
 {
     /// <summary>
     /// Resolve os tipos únicos da operação e recusa a pendência, tudo num ponto só: os handlers
-    /// que congelam versão chamam isto logo depois do cronograma, antes de canonicalizar.
+    /// que congelam versão chamam isto logo depois do cronograma, antes de canonicalizar, na
+    /// ordem da raiz.
     /// </summary>
+    /// <remarks>
+    /// Os <paramref name="atosDaLinhagem"/> são os que a conferência da vaga já obteve do
+    /// repositório. O que ela perguntou a Publicações foi outra coisa (se há ato de outra
+    /// linhagem), então a pergunta daqui — o tipo de cada ato da linhagem — é uma leitura
+    /// própria, e fundi-las só acoplaria dois contratos.
+    /// </remarks>
     public static async Task<Result<TiposDeAtoUnicosPorObjeto>> ConferirAsync(
         ITipoAtoPublicadoReader tipoAtoReader,
         IVagaDeLinhagemReader vagaDeLinhagemReader,
         ProcessoSeletivo processo,
         TipoAtoPublicadoView tipoDoAtoDaOperacao,
         IReadOnlyList<Guid> atosDaLinhagem,
-        DateOnly dataVigencia,
+        TimeProvider relogio,
+        TimeZoneInfo fusoInstitucional,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(vagaDeLinhagemReader);
         ArgumentNullException.ThrowIfNull(tipoDoAtoDaOperacao);
         ArgumentNullException.ThrowIfNull(atosDaLinhagem);
 
+        IReadOnlyList<string> ocupados = atosDaLinhagem.Count == 0
+            ? []
+            : await vagaDeLinhagemReader
+                .ListarTiposDosAtosAsync(atosDaLinhagem, cancellationToken)
+                .ConfigureAwait(false);
+
         Dictionary<string, string> unicos = await LerDoCatalogoAsync(
-            tipoAtoReader, processo, tipoDoAtoDaOperacao.Codigo, dataVigencia, cancellationToken).ConfigureAwait(false);
+            tipoAtoReader, processo, ocupados, tipoDoAtoDaOperacao.Codigo, Hoje(relogio, fusoInstitucional), cancellationToken)
+            .ConfigureAwait(false);
         if (tipoDoAtoDaOperacao.UnicoPorObjeto)
         {
             unicos[tipoDoAtoDaOperacao.Codigo] = tipoDoAtoDaOperacao.Nome;
         }
 
-        IReadOnlyList<TipoDeAtoUnicoRegistrado> registrados = atosDaLinhagem.Count == 0
-            ? []
-            : await vagaDeLinhagemReader
-                .ListarTiposUnicosRegistradosAsync(atosDaLinhagem, cancellationToken)
-                .ConfigureAwait(false);
-
-        TiposDeAtoUnicosPorObjeto tipos = TiposDeAtoUnicosPorObjeto.ParaOperacao(
-            unicos,
-            registrados.ToDictionary(static r => r.Codigo, static r => r.Nome, StringComparer.Ordinal),
-            tipoDoAtoDaOperacao.Codigo);
+        TiposDeAtoUnicosPorObjeto tipos = TiposDeAtoUnicosPorObjeto.ParaOperacao(unicos, ocupados, tipoDoAtoDaOperacao.Codigo);
 
         return processo.PendenciaDoTipoDeAtoUnico(tipos) is { } pendencia
             ? Result<TiposDeAtoUnicosPorObjeto>.Failure(pendencia)
@@ -76,10 +82,10 @@ internal static class ResolucaoDosTiposDeAtoUnicos
         DateOnly dataVigencia,
         CancellationToken cancellationToken) =>
         TiposDeAtoUnicosPorObjeto.ParaChecklist(
-            await LerDoCatalogoAsync(reader, processo, null, dataVigencia, cancellationToken).ConfigureAwait(false));
+            await LerDoCatalogoAsync(reader, processo, [], null, dataVigencia, cancellationToken).ConfigureAwait(false));
 
     /// <summary>O dia civil de hoje no fuso institucional, a data em que o catálogo é consultado.</summary>
-    public static DateOnly Hoje(TimeProvider relogio, TimeZoneInfo? fusoInstitucional)
+    internal static DateOnly Hoje(TimeProvider relogio, TimeZoneInfo? fusoInstitucional)
     {
         ArgumentNullException.ThrowIfNull(relogio);
 
@@ -89,6 +95,7 @@ internal static class ResolucaoDosTiposDeAtoUnicos
     private static async Task<Dictionary<string, string>> LerDoCatalogoAsync(
         ITipoAtoPublicadoReader reader,
         ProcessoSeletivo processo,
+        IEnumerable<string> codigosOcupados,
         string? codigoJaConferido,
         DateOnly dataVigencia,
         CancellationToken cancellationToken)
@@ -100,6 +107,7 @@ internal static class ResolucaoDosTiposDeAtoUnicos
         [
             .. processo.DeclaracoesDeAtos()
                 .Select(static declaracao => declaracao.AtoCodigo)
+                .Concat(codigosOcupados)
                 .Where(codigo => !string.Equals(codigo, codigoJaConferido, StringComparison.Ordinal))
                 .Distinct(StringComparer.Ordinal),
         ];
