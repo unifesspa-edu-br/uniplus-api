@@ -45,6 +45,7 @@ public sealed class FatosDasVersoesPublicadas
         ItensDaInscricaoNaBase = itensDaInscricaoNaBase;
         _gruposDaInscricaoNaBase = gruposDaInscricaoNaBase;
         _eixosDosItens = eixosDosItens;
+        FatosJaColetados = eixosDosItens.Keys.ToHashSet(StringComparer.Ordinal);
         _eixosDosMetadados = eixosDosMetadados;
         _operacoesDosAgregados = operacoesDosAgregados;
     }
@@ -55,6 +56,9 @@ public sealed class FatosDasVersoesPublicadas
     /// </summary>
     public IReadOnlyDictionary<string, IReadOnlyCollection<EixosDoItemCongelado>> EixosDosItens =>
         _eixosDosItens.ToDictionary(static par => par.Key, static par => (IReadOnlyCollection<EixosDoItemCongelado>)par.Value, StringComparer.Ordinal);
+
+    /// <summary>Os fatos que alguma versão publicada coletou, em item ou em campo de grupo.</summary>
+    public IReadOnlySet<string> FatosJaColetados { get; }
 
     /// <summary>Por fato citado por condição de documento exigido, os eixos que as versões congelaram dele.</summary>
     public IReadOnlyDictionary<string, IReadOnlyCollection<EixosDoMetadadoCongelado>> EixosDosMetadados =>

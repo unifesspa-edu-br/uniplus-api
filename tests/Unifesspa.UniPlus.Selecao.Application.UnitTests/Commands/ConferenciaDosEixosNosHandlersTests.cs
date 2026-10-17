@@ -30,6 +30,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed class ConferenciaDosEixosNosHandlersTests
 {
     private const string Fato = "TEM_RENDA";
+    private const string FatoNovo = "TEM_ENDERECO_PROPRIO";
     private const string Recusa = "RascunhoRetificacao.EixoDoFatoJaColetadoAlterado";
     private static readonly string HashFixo = ProcessoSeletivoConformeBuilder.HashFixo;
     private static readonly DateTimeOffset Agora = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
@@ -103,6 +104,58 @@ public sealed class ConferenciaDosEixosNosHandlersTests
         resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
     }
 
+    [Fact(DisplayName = "Retificar recopia do catálogo o fato novo e deixa o já coletado com a cópia que a versão publicada congelou")]
+    public async Task Retificar_FatosReclassificadosNoCatalogo_RecopiaSoOFatoNovo()
+    {
+        Cenario cenario = Cenario.Publicado(dominioCongelado: "BOOLEANO", classificacaoNoCatalogo: "IDENTIFICADOR", comItemNovo: true);
+
+        (Result resposta, IEnumerable<object> _) = await cenario.RetificarAsync();
+
+        resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
+        cenario.ClassificacaoDoItem(FatoNovo).Should().Be("IDENTIFICADOR");
+        cenario.ClassificacaoDoItem(Fato).Should().Be("PESSOAL", "a versão publicada já coletou o fato com essa cópia");
+    }
+
+    [Fact(DisplayName = "Retificar recusa o fato já coletado cujo campo ficou incoerente com o catálogo, orientando desfazer a correção")]
+    public async Task Retificar_FatoJaColetadoIncoerenteComOCatalogo_Recusa()
+    {
+        Cenario cenario = Cenario.Publicado(dominioCongelado: "BOOLEANO", dominioNoCatalogo: "CATEGORICO");
+
+        (Result resposta, IEnumerable<object> eventos) = await cenario.RetificarAsync();
+
+        resposta.IsFailure.Should().BeTrue();
+        resposta.Errors.Should().ContainSingle().Which.Field.Should().MatchRegex(@"^formularios\[[A-Z_]+\]\.itens\[\d+\]\.tipoRenderizacao$");
+        resposta.Error!.Message.Should().Contain("desfaça a correção no catálogo");
+        eventos.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Fechar a retificação recopia do catálogo o fato novo e deixa o já coletado com a cópia que a versão publicada congelou")]
+    public async Task Fechar_FatosReclassificadosNoCatalogo_RecopiaSoOFatoNovo()
+    {
+        Cenario cenario = Cenario.Publicado(dominioCongelado: "BOOLEANO", classificacaoNoCatalogo: "IDENTIFICADOR", comItemNovo: true);
+        cenario.AbrirSessao();
+
+        (Result resposta, IEnumerable<object> _) = await cenario.FecharAsync();
+
+        resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
+        cenario.ClassificacaoDoItem(FatoNovo).Should().Be("IDENTIFICADOR");
+        cenario.ClassificacaoDoItem(Fato).Should().Be("PESSOAL", "a versão publicada já coletou o fato com essa cópia");
+    }
+
+    [Fact(DisplayName = "Fechar a retificação recusa o fato já coletado cujo campo ficou incoerente com o catálogo, orientando desfazer a correção")]
+    public async Task Fechar_FatoJaColetadoIncoerenteComOCatalogo_Recusa()
+    {
+        Cenario cenario = Cenario.Publicado(dominioCongelado: "BOOLEANO", dominioNoCatalogo: "CATEGORICO");
+        cenario.AbrirSessao();
+
+        (Result resposta, IEnumerable<object> eventos) = await cenario.FecharAsync();
+
+        resposta.IsFailure.Should().BeTrue();
+        resposta.Errors.Should().ContainSingle().Which.Field.Should().MatchRegex(@"^formularios\[[A-Z_]+\]\.itens\[\d+\]\.tipoRenderizacao$");
+        resposta.Error!.Message.Should().Contain("desfaça a correção no catálogo");
+        eventos.Should().BeEmpty();
+    }
+
     private sealed class Cenario
     {
         private readonly IProcessoSeletivoRepository _repositorio = Substitute.For<IProcessoSeletivoRepository>();
@@ -123,10 +176,12 @@ public sealed class ConferenciaDosEixosNosHandlersTests
         public ProcessoSeletivo Processo { get; }
 
         public static Cenario Publicado(
-            string dominioCongelado, bool reidratavel = true, string classificacaoNoCatalogo = "PESSOAL", bool itemPublicadoComoData = false)
+            string dominioCongelado, bool reidratavel = true, string classificacaoNoCatalogo = "PESSOAL", bool itemPublicadoComoData = false,
+            bool comItemNovo = false, string dominioNoCatalogo = "BOOLEANO")
         {
             ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Eixos nos handlers", out Guid faseId);
-            processo.DefinirItens([Item(TipoRenderizacao.Booleano)], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+            processo.DefinirItens(
+                comItemNovo ? [Item(TipoRenderizacao.Booleano), ItemNovo()] : [Item(TipoRenderizacao.Booleano)], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
             processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilho(faseId), 0).Value!], PrecondicaoIfMatch.Curinga)
                 .IsSuccess.Should().BeTrue();
 
@@ -139,15 +194,16 @@ public sealed class ConferenciaDosEixosNosHandlersTests
             versao.IsSuccess.Should().BeTrue(versao.Error?.Message);
             processo.DequeueDomainEvents();
 
-            GrafoConfiguracao publicado = itemPublicadoComoData
-                ? VersoesPublicadasDeTeste.DoProcesso(OutroComOItemComoData())
+            // A versão publicada coletou só o fato de TEM_RENDA; o fato novo veio depois.
+            GrafoConfiguracao publicado = itemPublicadoComoData || comItemNovo
+                ? VersoesPublicadasDeTeste.DoProcesso(OutroComOItem(itemPublicadoComoData ? TipoRenderizacao.Data : TipoRenderizacao.Booleano))
                 : VersoesPublicadasDeTeste.DoProcesso(processo);
             EixosDeVersaoPublicada congelado = new(
                 new Dictionary<string, EixosDoMetadadoCongelado> { [Fato] = new(dominioCongelado, "ESCALAR", "RESULTADO_FINAL") },
                 new Dictionary<string, string>());
 
             Cenario cenario = new(processo, versao.Value!, publicado, congelado);
-            cenario.Configurar(reidratavel, classificacaoNoCatalogo);
+            cenario.Configurar(reidratavel, classificacaoNoCatalogo, dominioNoCatalogo);
             return cenario;
         }
 
@@ -202,7 +258,7 @@ public sealed class ConferenciaDosEixosNosHandlersTests
             new RelogioFixo(),
             CancellationToken.None);
 
-        private void Configurar(bool reidratavel, string classificacaoNoCatalogo)
+        private void Configurar(bool reidratavel, string classificacaoNoCatalogo, string dominioNoCatalogo)
         {
             _repositorio.ObterParaMutacaoAsync(Processo.Id, Arg.Any<CancellationToken>()).Returns(Processo);
             _repositorio.ObterVersaoAtualAsync(Processo.Id, Arg.Any<CancellationToken>()).Returns(_versao);
@@ -219,18 +275,25 @@ public sealed class ConferenciaDosEixosNosHandlersTests
                 metadadosFatosCongelados: new Dictionary<string, MetadadoFatoCongelado> { [Fato] = publicado })));
 
             FatoCandidatoView vivo = new(
-                Guid.CreateVersion7(), Fato, "Tem renda?", null, "BOOLEANO", "DECLARADO", "ESCALAR", null,
+                Guid.CreateVersion7(), Fato, "Tem renda?", null, dominioNoCatalogo, "DECLARADO", "ESCALAR", null,
                 "RESULTADO_FINAL", $"CAMPO_FORMULARIO:{Fato}", null, null, Ativo: true, ClassificacaoProtecao: classificacaoNoCatalogo);
-            _catalogo.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[vivo]));
+            FatoCandidatoView novo = vivo with { Id = Guid.CreateVersion7(), Codigo = FatoNovo, Nome = "Tem endereço próprio?", Dominio = "BOOLEANO", Binding = $"CAMPO_FORMULARIO:{FatoNovo}" };
+            _catalogo.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[vivo, novo]));
         }
 
-        // O que a versão publicada congelou do item vem de um processo cujo item é de data.
-        private static ProcessoSeletivo OutroComOItemComoData()
+        public string ClassificacaoDoItem(string fato) => Processo.FatosColetados.Single(f => f.FatoCodigo == fato).ClassificacaoProtecao;
+
+        // O que a versão publicada congelou do item vem de um processo que só coleta o fato com esse tipo.
+        private static ProcessoSeletivo OutroComOItem(TipoRenderizacao tipo)
         {
-            ProcessoSeletivo outro = ProcessoSeletivoConformeBuilder.Criar("PS Item publicado como texto");
-            outro.DefinirItens([Item(TipoRenderizacao.Data)], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+            ProcessoSeletivo outro = ProcessoSeletivoConformeBuilder.Criar("PS Item publicado");
+            outro.DefinirItens([Item(tipo)], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
             return outro;
         }
+
+        // Um fato que nenhuma versão publicada coletou, com a cópia velha do catálogo (PESSOAL).
+        private static FatoColetado ItemNovo() =>
+            FatoColetado.Criar(FatoNovo, 100, "Tem endereço próprio?", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL").Value!;
 
         private static FatoColetado Item(TipoRenderizacao tipo) =>
             FatoColetado.Criar(Fato, 0, "Tem renda?", tipo, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!;

@@ -28,15 +28,13 @@ internal static class ConferenciaDosEixosDosFatosColetados
     }
 
     /// <summary>
-    /// Lê as versões publicadas do processo e confere contra elas o que a retificação sem sessão vai
-    /// congelar. A versão que o sistema não sabe reidratar recusa, como a abertura da sessão.
+    /// Lê as versões publicadas do processo, uma vez por retificação sem sessão. Sem versão, devolve
+    /// nulo. A versão que o sistema não sabe reidratar recusa, como a abertura da sessão.
     /// </summary>
-    public static async Task<DomainError?> ConferirContraAsVersoesAsync(
+    public static async Task<Result<FatosDasVersoesPublicadas?>> LerAsync(
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegistroCodecsEnvelope registroCodecs,
         Guid processoSeletivoId,
-        IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadados,
-        IReadOnlyList<DefinicaoAgregado> agregados,
         CancellationToken cancellationToken)
     {
         IReadOnlyList<VersaoConfiguracao> versoes = await processoSeletivoRepository
@@ -44,11 +42,13 @@ internal static class ConferenciaDosEixosDosFatosColetados
             .ConfigureAwait(false);
         if (versoes.Count == 0)
         {
-            return null;
+            return Result<FatosDasVersoesPublicadas?>.Success(null);
         }
 
         Result<VersoesPublicadasLidas> lidas = VersoesPublicadasLidas.Ler(registroCodecs, versoes, abrindoSessao: false);
-        return lidas.IsFailure ? lidas.Error : Conferir(lidas.Value!.Fatos, metadados, agregados);
+        return lidas.IsFailure
+            ? Result<FatosDasVersoesPublicadas?>.Failure(lidas.Error!)
+            : Result<FatosDasVersoesPublicadas?>.Success(lidas.Value!.Fatos);
     }
 
     public static DomainError? Conferir(
