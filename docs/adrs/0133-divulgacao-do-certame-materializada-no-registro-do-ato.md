@@ -106,3 +106,7 @@ Permanece intacto o que aquela decisão fixou sobre o Portal ser um BFF por expe
 - [ADR-0108](0108-registro-do-ato-por-mensagem-duravel.md) — o registro do ato viaja no outbox
 - [ADR-0105](0105-modulo-publicacoes-registro-central-dos-atos.md) — Publicações é o registro central dos atos
 - [ADR-0004](0004-outbox-transacional-via-wolverine.md) — outbox transacional
+
+## Emenda 1 (2026-10-17) — a projeção também deriva do registro do ato do processo
+
+A projeção pública passa a derivar também do registro do ato do processo na Seleção, para o ato que não cria versão de configuração ([ADR-0132](0132-armazenamento-publico-separado-para-documento-publicado.md), emenda 1). Essa fonte é da Seleção e a projeção continua reconstruível a partir dela. Nenhum outro trecho desta ADR muda.

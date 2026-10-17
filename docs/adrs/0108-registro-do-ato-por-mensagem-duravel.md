@@ -162,4 +162,4 @@ Medido no spike, contra o host real, e replicado na implementação:
 
 ## Emenda 1 (2026-10-17) — o produto publicado também tem registro na Seleção
 
-Para o ato de processo que não cria versão de configuração (aviso, errata e semelhantes), o fato "produto publicado" passa a ter também um registro na Seleção, gravado na mesma transação do outbox, e não só o ato em Publicações. Detalhes na emenda 1 da [ADR-0132](0132-armazenamento-publico-separado-para-documento-publicado.md). Nenhum outro trecho desta ADR muda.
+Para o ato de processo que não cria versão de configuração (aviso, errata e semelhantes), o fato "produto publicado" passa a ter também um registro na Seleção, gravado na mesma transação do outbox, e não só o ato em Publicações. Detalhes na emenda 1 da [ADR-0132](0132-armazenamento-publico-separado-para-documento-publicado.md). No ato que não cria versão, o `AtoId` decidido pela Seleção fica nesse registro e dá a idempotência do lado da Seleção; a vaga de linhagem continua sendo reservada pelo Publicações, como hoje. Nenhum outro trecho desta ADR muda.
