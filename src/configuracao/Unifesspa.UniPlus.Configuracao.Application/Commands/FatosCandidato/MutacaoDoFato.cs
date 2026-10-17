@@ -16,6 +16,33 @@ internal static class MutacaoDoFato
 {
     private const string IndiceUnicoDoValor = "ux_fato_valor_dominio_fato_codigo";
 
+    /// <summary>
+    /// Mutação que só muda linhas de valor: a linha do fato não muda, então o token de concorrência
+    /// dele não avançaria e duas correções simultâneas passariam sem se ver. O fato é marcado como
+    /// alterado para o token entrar na gravação.
+    /// </summary>
+    public static Task<Result> AplicarNosValoresAsync(
+        Guid id,
+        Func<FatoCandidato, Result> mutacao,
+        IFatoCandidatoRepository repository,
+        IConfiguracaoUnitOfWork unitOfWork,
+        CancellationToken cancellationToken) =>
+        AplicarAsync(
+            id,
+            fato =>
+            {
+                Result resultado = mutacao(fato);
+                if (resultado.IsSuccess)
+                {
+                    repository.RegistrarAlteracaoDeValor(fato);
+                }
+
+                return resultado;
+            },
+            repository,
+            unitOfWork,
+            cancellationToken);
+
     public static async Task<Result> AplicarAsync(
         Guid id,
         Func<FatoCandidato, Result> mutacao,

@@ -143,6 +143,16 @@ public sealed class AgregadoDoAdministradorTests
     }
 
     [Fact]
+    public void CorrigirEReordenarValores_NoAgregado_RecusaPorqueOsValoresSaoDoFatoDeMembro()
+    {
+        FatoCandidato membro = DeMembro("CATEGORIA_RENDA", DominioFato.Categorico, fonte: FonteValoresFato.Global);
+        FatoCandidato agregado = Criar("CATEGORIAS_RENDA_FAMILIA", "CATEGORIA_RENDA", membro).Value!;
+
+        agregado.CorrigirValor("RURAL", "Rural", null).Error!.Code.Should().Be(FatoCandidatoErrorCodes.AgregadoNaoTemValoresProprios);
+        agregado.ReordenarValores([]).Error!.Code.Should().Be(FatoCandidatoErrorCodes.AgregadoNaoTemValoresProprios);
+    }
+
+    [Fact]
     public void RegraSobreAgregadoCategorico_UsaOsValoresDoFatoDeMembro()
     {
         FatoCandidato membro = DeMembro("CATEGORIA_RENDA", DominioFato.Categorico, ponto: "INSCRICAO", fonte: FonteValoresFato.Global);

@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
@@ -371,6 +372,46 @@ public sealed class FatoCandidatoPersistenceTests
             noPrimeiro.AlterarDescritivo("Nome da primeira edição", null).IsSuccess.Should().BeTrue();
             await primeiro.SaveChangesAsync();
             noSegundo.AlterarDescritivo("Nome da segunda edição", null).IsSuccess.Should().BeTrue();
+
+            Func<Task> act = () => segundo.SaveChangesAsync();
+            await act.Should().ThrowAsync<DbUpdateConcurrencyException>();
+        }
+        finally
+        {
+            await RemoverAsync(fato.Id);
+        }
+    }
+
+    [Fact(DisplayName = "Correção e reordenação concorrentes dos valores do mesmo fato: a segunda é recusada pela concorrência otimista")]
+    public async Task CorrecaoEReordenacaoConcorrentesDosValores_SegundaRecusada()
+    {
+        string codigo = CodigoUnico();
+        FatoCandidato fato = FatoCandidato.Criar(
+            codigo, "Fato com valores", null, DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar,
+            FonteValoresFato.Global, formato: null, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}", EscopoFato.Candidato,
+            ClassificacaoProtecaoDado.Pessoal, "Teste", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: false).Value!;
+        fato.AdicionarValorDominio("A", "A", 0, ativo: true).IsSuccess.Should().BeTrue();
+        fato.AdicionarValorDominio("B", "B", 1, ativo: true).IsSuccess.Should().BeTrue();
+        try
+        {
+            await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: "admin-1"))
+            {
+                ctx.FatosCandidato.Add(fato);
+                await ctx.SaveChangesAsync();
+            }
+
+            await using ConfiguracaoDbContext primeiro = _fixture.CreateDbContext(userId: "admin-1");
+            await using ConfiguracaoDbContext segundo = _fixture.CreateDbContext(userId: "admin-2");
+            FatoCandidatoRepository repositorioDoPrimeiro = new(primeiro);
+            FatoCandidatoRepository repositorioDoSegundo = new(segundo);
+            FatoCandidato noPrimeiro = (await repositorioDoPrimeiro.ObterPorIdAsync(fato.Id, CancellationToken.None))!;
+            FatoCandidato noSegundo = (await repositorioDoSegundo.ObterPorIdAsync(fato.Id, CancellationToken.None))!;
+
+            noPrimeiro.CorrigirValor("A", "A corrigido", null).IsSuccess.Should().BeTrue();
+            repositorioDoPrimeiro.RegistrarAlteracaoDeValor(noPrimeiro);
+            await primeiro.SaveChangesAsync();
+            noSegundo.ReordenarValores(["B", "A"]).IsSuccess.Should().BeTrue();
+            repositorioDoSegundo.RegistrarAlteracaoDeValor(noSegundo);
 
             Func<Task> act = () => segundo.SaveChangesAsync();
             await act.Should().ThrowAsync<DbUpdateConcurrencyException>();

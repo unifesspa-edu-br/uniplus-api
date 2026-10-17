@@ -925,6 +925,24 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.fato_valor_dominio.ordem_invalida",
                 "Ordem do valor de domínio não pode ser negativa")),
 
+        new(FatoValorDominioErrorCodes.OrdemComCodigoDesconhecido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_valor_dominio.ordem_com_codigo_desconhecido",
+                "A ordem cita um valor que o fato não tem")),
+
+        new(FatoValorDominioErrorCodes.OrdemComCodigoRepetido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_valor_dominio.ordem_com_codigo_repetido",
+                "A ordem repete um valor")),
+
+        new(FatoValorDominioErrorCodes.OrdemSemTodosOsValores,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_valor_dominio.ordem_sem_todos_os_valores",
+                "A ordem deve trazer todos os valores do fato")),
+
         // ── Modalidade de concorrência (UNI-REQ-0011) ─────────────────────
         new(ModalidadeErrorCodes.CodigoObrigatorio,
             new DomainErrorMapping(

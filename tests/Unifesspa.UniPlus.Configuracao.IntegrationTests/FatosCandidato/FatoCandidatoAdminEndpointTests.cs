@@ -145,6 +145,62 @@ public sealed class FatoCandidatoAdminEndpointTests
         valor.GetProperty("ativo").GetBoolean().Should().BeFalse();
     }
 
+    [Fact(DisplayName = "Valor é corrigido e reordenado pelos PUTs; o código não muda e a lista incompleta é recusada")]
+    public async Task CorrecaoEReordenacaoDosValores()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage criar = await EnviarAsync(client, HttpMethod.Post, Base, new
+        {
+            codigo = CodigoUnico(),
+            nome = "Forma de conclusão",
+            dominio = "CATEGORICO",
+            cardinalidade = "ESCALAR",
+            fonteValores = "GLOBAL",
+            pontoResolucao = "INSCRICAO",
+            escopo = "CANDIDATO",
+            classificacaoProtecao = "PESSOAL",
+            finalidadeTratamento = "Verificação dos requisitos do processo seletivo.",
+            hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+        });
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+        (await EnviarAsync(client, HttpMethod.Post, $"{Base}/{id}/valores", new { codigo = "EJA", descricao = "EJA", ordem = 0 }))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await EnviarAsync(client, HttpMethod.Post, $"{Base}/{id}/valores", new { codigo = "REGULAR", descricao = "Regular", ordem = 1 }))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        (await EnviarAsync(client, HttpMethod.Put, $"{Base}/{id}/valores/EJA", new { descricao = "Educação de jovens e adultos", orientacao = "Cursou o supletivo." }))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await EnviarAsync(client, HttpMethod.Put, $"{Base}/{id}/ordem-dos-valores", new { codigos = new[] { "REGULAR", "EJA" } }))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await EnviarAsync(client, HttpMethod.Put, $"{Base}/{id}/ordem-dos-valores", new { codigos = new[] { "REGULAR" } }))
+            .StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await EnviarAsync(client, HttpMethod.Put, $"{Base}/{id}/ordem-dos-valores", new { codigos = (string[]?)null }))
+            .StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await EnviarAsync(client, HttpMethod.Put, $"{Base}/{id}/valores/NAO_EXISTE", new { descricao = "Qualquer" }))
+            .StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        using JsonDocument fato = await ObterAsync(client, id);
+        JsonElement[] valores = [.. fato.RootElement.GetProperty("valores").EnumerateArray().OrderBy(static v => v.GetProperty("ordem").GetInt32())];
+        valores.Select(static v => v.GetProperty("codigo").GetString()).Should().Equal("REGULAR", "EJA");
+        valores[1].GetProperty("descricao").GetString().Should().Be("Educação de jovens e adultos");
+        valores[1].GetProperty("orientacao").GetString().Should().Be("Cursou o supletivo.");
+    }
+
+    [Theory(DisplayName = "Corrigir e reordenar valores sem o papel plataforma-admin é proibido")]
+    [InlineData("valores/EJA")]
+    [InlineData("ordem-dos-valores")]
+    public async Task CorrigirEReordenar_SemPapel_Retorna403(string caminho)
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        using HttpRequestMessage request = new(HttpMethod.Put, new Uri($"{Base}/{Guid.NewGuid()}/{caminho}", UriKind.Relative));
+        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
+        request.Headers.Add(TestAuthHandler.RolesHeader, "candidato");
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        request.Content = JsonContent.Create(new { descricao = "x", codigos = Array.Empty<string>() });
+
+        (await client.SendAsync(request)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
     [Fact(DisplayName = "Derivado por regra é cadastrado, recebe regras padrão e as devolve como gravou")]
     public async Task DerivadoComRegrasPadrao()
     {

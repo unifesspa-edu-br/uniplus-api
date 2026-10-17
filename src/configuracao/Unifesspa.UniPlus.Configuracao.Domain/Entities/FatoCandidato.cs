@@ -611,31 +611,9 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     /// </summary>
     public Result AdicionarValorDominio(string codigo, string? descricao, int ordem, bool ativo, string? orientacao = null)
     {
-        if (RecusaSeSistema() is { } recusa)
+        if (RecusaDeEstadoParaValores() is { } recusa)
         {
             return Result.Failure(recusa);
-        }
-
-        if (Dominio != DominioFato.Categorico)
-        {
-            return Result.Failure(new DomainError(
-                FatoValorDominioErrorCodes.NaoPermitidoForaDeCategorico,
-                "Valores de domínio só podem ser adicionados a um fato categórico."));
-        }
-
-        if (FatoDeMembroAgregado is { } membro)
-        {
-            return Result.Failure(new DomainError(
-                FatoCandidatoErrorCodes.AgregadoNaoTemValoresProprios,
-                $"Os valores do agregado são os do fato de membro '{membro}'; acrescente-os nele."));
-        }
-
-        if (FonteValores != FonteValoresFato.Global)
-        {
-            return Result.Failure(new DomainError(
-                FatoValorDominioErrorCodes.NaoPermitidoForaDeFonteGlobal,
-                "Valores de domínio só são declarados no catálogo quando a fonte dos valores é global; "
-                + "nas demais fontes, os valores vêm do processo."));
         }
 
         // As recusas de estado acima saem de imediato; as do valor são independentes e acumulam,
@@ -659,24 +637,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
                 $"Já existe um valor de domínio com o código '{codigoNormalizado}' neste fato.");
         }
 
-        string? descricaoNormalizada = string.IsNullOrWhiteSpace(descricao) ? null : descricao.Trim();
-        if (descricaoNormalizada is { Length: > FatoValorDominio.DescricaoMaxLength })
-        {
-            Recusar("descricao", FatoValorDominioErrorCodes.DescricaoTamanho,
-                $"Descrição do valor de domínio deve ter no máximo {FatoValorDominio.DescricaoMaxLength} caracteres.");
-        }
-        else if (Origem == OrigemFato.Declarado && descricaoNormalizada is null)
-        {
-            Recusar("descricao", FatoValorDominioErrorCodes.DescricaoObrigatoria,
-                "Descrição do valor de domínio é obrigatória quando a origem do fato é DECLARADO.");
-        }
-
-        string? orientacaoNormalizada = string.IsNullOrWhiteSpace(orientacao) ? null : orientacao.Trim();
-        if (orientacaoNormalizada is { Length: > FatoValorDominio.OrientacaoMaxLength })
-        {
-            Recusar("orientacao", FatoValorDominioErrorCodes.OrientacaoTamanho,
-                $"Orientação do valor de domínio deve ter no máximo {FatoValorDominio.OrientacaoMaxLength} caracteres.");
-        }
+        (string? descricaoNormalizada, string? orientacaoNormalizada) = ValidarTextosDoValor(descricao, orientacao, erros);
 
         if (ordem < 0)
         {
@@ -690,6 +651,152 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
 
         _valoresDominioDeclarados.Add(FatoValorDominio.Criar(Id, codigoNormalizado, descricaoNormalizada, ordem, ativo, orientacaoNormalizada));
         return Result.Success();
+    }
+
+    /// <summary>
+    /// Corrige a descrição e a orientação de um valor do fato do administrador, com as mesmas regras
+    /// do acréscimo. O código do valor não muda: mudar o sentido de uma opção é acrescentar outro
+    /// valor e desativar o antigo.
+    /// </summary>
+    public Result CorrigirValor(string codigo, string? descricao, string? orientacao)
+    {
+        if (RecusaDeEstadoParaValores() is { } recusa)
+        {
+            return Result.Failure(recusa);
+        }
+
+        FatoValorDominio? valor = _valoresDominioDeclarados.FirstOrDefault(v =>
+            string.Equals(v.Codigo, codigo?.Trim(), StringComparison.Ordinal));
+        if (valor is null)
+        {
+            return Result.Failure(new DomainError(FatoValorDominioErrorCodes.NaoEncontrado, "Valor de domínio não encontrado neste fato."));
+        }
+
+        List<FieldError> erros = [];
+        (string? descricaoNormalizada, string? orientacaoNormalizada) = ValidarTextosDoValor(descricao, orientacao, erros);
+        if (erros.Count > 0)
+        {
+            return Result.ValidationFailure(erros);
+        }
+
+        valor.CorrigirTextos(descricaoNormalizada, orientacaoNormalizada);
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Reordena os valores do fato do administrador pela lista completa de códigos — ativos e
+    /// desativados —, na ordem em que passam a aparecer. A lista que deixa um valor de fora, repete
+    /// um código ou cita um código que o fato não tem é recusada inteira, e as três faltas acumulam.
+    /// </summary>
+    public Result ReordenarValores(IReadOnlyList<string> codigosEmOrdem)
+    {
+        ArgumentNullException.ThrowIfNull(codigosEmOrdem);
+
+        if (RecusaDeEstadoParaValores() is { } recusa)
+        {
+            return Result.Failure(recusa);
+        }
+
+        string[] informados = [.. codigosEmOrdem.Select(static c => c?.Trim() ?? string.Empty)];
+        HashSet<string> conhecidos = [.. _valoresDominioDeclarados.Select(static v => v.Codigo)];
+        List<FieldError> erros = [];
+
+        string[] estranhos = [.. informados.Where(c => !conhecidos.Contains(c)).Distinct()];
+        if (estranhos.Length > 0)
+        {
+            erros.Add(new("codigos", new DomainError(
+                FatoValorDominioErrorCodes.OrdemComCodigoDesconhecido,
+                $"O fato não tem os valores: {string.Join(", ", estranhos)}.")));
+        }
+
+        string[] repetidos = [.. informados.GroupBy(static c => c).Where(static g => g.Count() > 1).Select(static g => g.Key)];
+        if (repetidos.Length > 0)
+        {
+            erros.Add(new("codigos", new DomainError(
+                FatoValorDominioErrorCodes.OrdemComCodigoRepetido,
+                $"Valores repetidos na ordem: {string.Join(", ", repetidos)}.")));
+        }
+
+        string[] ausentes = [.. conhecidos.Where(c => !informados.Contains(c, StringComparer.Ordinal)).Order(StringComparer.Ordinal)];
+        if (ausentes.Length > 0)
+        {
+            erros.Add(new("codigos", new DomainError(
+                FatoValorDominioErrorCodes.OrdemSemTodosOsValores,
+                $"A ordem deve trazer todos os valores do fato, ativos e desativados; faltam: {string.Join(", ", ausentes)}.")));
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result.ValidationFailure(erros);
+        }
+
+        for (int posicao = 0; posicao < informados.Length; posicao++)
+        {
+            _valoresDominioDeclarados.Single(v => string.Equals(v.Codigo, informados[posicao], StringComparison.Ordinal)).DefinirOrdem(posicao);
+        }
+
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// As recusas de estado comuns a tudo que mexe nos valores: só o fato do administrador, categórico,
+    /// de fonte global e que não seja agregado tem valores próprios.
+    /// </summary>
+    private DomainError? RecusaDeEstadoParaValores()
+    {
+        if (RecusaSeSistema() is { } recusa)
+        {
+            return recusa;
+        }
+
+        if (Dominio != DominioFato.Categorico)
+        {
+            return new DomainError(
+                FatoValorDominioErrorCodes.NaoPermitidoForaDeCategorico,
+                "Valores de domínio só podem ser adicionados a um fato categórico.");
+        }
+
+        if (FatoDeMembroAgregado is { } membro)
+        {
+            return new DomainError(
+                FatoCandidatoErrorCodes.AgregadoNaoTemValoresProprios,
+                $"Os valores do agregado são os do fato de membro '{membro}'; acrescente-os nele.");
+        }
+
+        if (FonteValores != FonteValoresFato.Global)
+        {
+            return new DomainError(
+                FatoValorDominioErrorCodes.NaoPermitidoForaDeFonteGlobal,
+                "Valores de domínio só são declarados no catálogo quando a fonte dos valores é global; "
+                + "nas demais fontes, os valores vêm do processo.");
+        }
+
+        return null;
+    }
+
+    /// <summary>A descrição e a orientação normalizadas; as recusas acumulam em <paramref name="erros"/>, cada uma no seu campo (ADR-0125).</summary>
+    private (string? Descricao, string? Orientacao) ValidarTextosDoValor(string? descricao, string? orientacao, List<FieldError> erros)
+    {
+        string? descricaoNormalizada = string.IsNullOrWhiteSpace(descricao) ? null : descricao.Trim();
+        if (descricaoNormalizada is { Length: > FatoValorDominio.DescricaoMaxLength })
+        {
+            erros.Add(new("descricao", new DomainError(FatoValorDominioErrorCodes.DescricaoTamanho,
+                $"Descrição do valor de domínio deve ter no máximo {FatoValorDominio.DescricaoMaxLength} caracteres.")));
+        }
+        else if (Origem == OrigemFato.Declarado && descricaoNormalizada is null)
+        {
+            erros.Add(new("descricao", new DomainError(FatoValorDominioErrorCodes.DescricaoObrigatoria,
+                "Descrição do valor de domínio é obrigatória quando a origem do fato é DECLARADO.")));
+        }
+
+        string? orientacaoNormalizada = string.IsNullOrWhiteSpace(orientacao) ? null : orientacao.Trim();
+        if (orientacaoNormalizada is { Length: > FatoValorDominio.OrientacaoMaxLength })
+        {
+            erros.Add(new("orientacao", new DomainError(FatoValorDominioErrorCodes.OrientacaoTamanho,
+                $"Orientação do valor de domínio deve ter no máximo {FatoValorDominio.OrientacaoMaxLength} caracteres.")));
+        }
+
+        return (descricaoNormalizada, orientacaoNormalizada);
     }
 
     private DomainError? RecusaSeSistema() =>

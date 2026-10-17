@@ -8,7 +8,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Errors;
 /// endereçado isoladamente, só através do <c>FatoCandidato</c> pai).
 /// </summary>
 /// <remarks>
-/// Alcançáveis ao acrescentar valor a um fato do administrador; o valor do fato de sistema nasce
+/// Alcançáveis ao acrescentar, corrigir ou reordenar valores a um fato do administrador; o valor do fato de sistema nasce
 /// só pelo seed.
 /// </remarks>
 public static class FatoValorDominioErrorCodes
@@ -30,6 +30,16 @@ public static class FatoValorDominioErrorCodes
     public const string DescricaoTamanho = "FatoValorDominio.DescricaoTamanho";
     public const string OrientacaoTamanho = "FatoValorDominio.OrientacaoTamanho";
     public const string OrdemInvalida = "FatoValorDominio.OrdemInvalida";
+
+    /// <summary>A ordem cita um código que o fato não tem.</summary>
+    public const string OrdemComCodigoDesconhecido = "FatoValorDominio.OrdemComCodigoDesconhecido";
+
+    /// <summary>A ordem repete um código.</summary>
+    public const string OrdemComCodigoRepetido = "FatoValorDominio.OrdemComCodigoRepetido";
+
+    /// <summary>A ordem deixa de fora um valor do fato, ativo ou desativado.</summary>
+    public const string OrdemSemTodosOsValores = "FatoValorDominio.OrdemSemTodosOsValores";
+
     public const string NaoEncontrado = "FatoValorDominio.NaoEncontrado";
     public const string JaAtivo = "FatoValorDominio.JaAtivo";
     public const string JaDesativado = "FatoValorDominio.JaDesativado";
