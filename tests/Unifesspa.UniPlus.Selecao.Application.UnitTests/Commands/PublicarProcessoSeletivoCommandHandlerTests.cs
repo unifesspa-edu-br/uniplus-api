@@ -87,7 +87,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         processoRepository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
-        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(1024, HashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();
 
         IDocumentoAPublicarRepository documentoRepository = Substitute.For<IDocumentoAPublicarRepository>();
@@ -150,13 +150,13 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcessoConforme(out _);
         (Mocks mocks, _) = NovosMocks(processo);
         DocumentoAPublicar naoPdf = DocumentoAPublicar.IniciarPendente(
-            processo.Id, "edital", tipoDeMidia, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+            processo.Id, FinalidadeDoDocumento.AnexoDoEdital, "edital", tipoDeMidia, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         naoPdf.Confirmar(1024, HashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();
         mocks.DocumentoRepository.ObterPorIdAsync(naoPdf.Id, Arg.Any<CancellationToken>()).Returns(naoPdf);
 
         (Result resposta, IEnumerable<object> eventos) = await HandleAsync(mocks, processo, naoPdf);
 
-        resposta.Error!.Code.Should().Be("ProcessoSeletivo.DocumentoDoEditalNaoEPdf");
+        resposta.Error!.Code.Should().Be("ProcessoSeletivo.DocumentoNaoEnviadoComoEdital");
         eventos.Should().BeEmpty();
     }
 

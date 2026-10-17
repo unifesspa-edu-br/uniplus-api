@@ -18,6 +18,7 @@ public static class DocumentoAPublicarMapping
         return new DocumentoAPublicarDto(
             Id: documento.Id,
             ProcessoSeletivoId: documento.ProcessoSeletivoId,
+            Finalidade: documento.Finalidade,
             NomeArquivo: documento.NomeArquivo,
             TipoDeMidia: documento.TipoDeMidia,
             Status: documento.Status.ToString(),

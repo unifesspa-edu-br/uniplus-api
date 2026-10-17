@@ -28,7 +28,7 @@ public sealed class DocumentoAPublicarTests
         TimeSpan ttl = TimeSpan.FromMinutes(15);
 
         DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
-            ProcessoSeletivoId, "Edital 2027", TiposDeMidiaDeDocumento.Pdf, Relogio, ttl).Value!;
+            ProcessoSeletivoId, FinalidadeDoDocumento.DocumentoDoEdital, "Edital 2027", TiposDeMidiaDeDocumento.Pdf, Relogio, ttl).Value!;
 
         documento.ProcessoSeletivoId.Should().Be(ProcessoSeletivoId);
         documento.Status.Should().Be(StatusArquivoEnviado.Pendente);
@@ -39,6 +39,50 @@ public sealed class DocumentoAPublicarTests
         documento.TamanhoBytes.Should().BeNull();
         documento.ConfirmadoEm.Should().BeNull();
         documento.ObjectKeyConfirmado.Should().BeNull();
+    }
+
+    [Theory(DisplayName = "O edital só admite PDF; o anexo e o documento de ato admitem PDF, DOCX e ODT")]
+    [InlineData(FinalidadeDoDocumento.DocumentoDoEdital, TiposDeMidiaDeDocumento.Pdf, true)]
+    [InlineData(FinalidadeDoDocumento.DocumentoDoEdital, TiposDeMidiaDeDocumento.Docx, false)]
+    [InlineData(FinalidadeDoDocumento.DocumentoDoEdital, TiposDeMidiaDeDocumento.Odt, false)]
+    [InlineData(FinalidadeDoDocumento.AnexoDoEdital, TiposDeMidiaDeDocumento.Pdf, true)]
+    [InlineData(FinalidadeDoDocumento.AnexoDoEdital, TiposDeMidiaDeDocumento.Docx, true)]
+    [InlineData(FinalidadeDoDocumento.AnexoDoEdital, TiposDeMidiaDeDocumento.Odt, true)]
+    [InlineData(FinalidadeDoDocumento.DocumentoDeAto, TiposDeMidiaDeDocumento.Docx, true)]
+    public void IniciarPendente_FormatoPorFinalidade(FinalidadeDoDocumento finalidade, string tipoDeMidia, bool aceito)
+    {
+        Result<DocumentoAPublicar> resultado = DocumentoAPublicar.IniciarPendente(
+            ProcessoSeletivoId, finalidade, "documento", tipoDeMidia, Relogio, TimeSpan.FromMinutes(15));
+
+        resultado.IsSuccess.Should().Be(aceito);
+        if (aceito)
+        {
+            resultado.Value!.Finalidade.Should().Be(finalidade);
+        }
+        else
+        {
+            resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
+            {
+                Field = "tipoDeMidia",
+                Error = new { Code = DocumentoAPublicarErrorCodes.FormatoNaoAceitoParaAFinalidade },
+            });
+        }
+    }
+
+    [Theory(DisplayName = "Finalidade ausente ou fora do catálogo é recusada")]
+    [InlineData(null)]
+    [InlineData(0)]
+    [InlineData(99)]
+    public void IniciarPendente_FinalidadeInvalida_Recusa(int? valor)
+    {
+        Result<DocumentoAPublicar> resultado = DocumentoAPublicar.IniciarPendente(
+            ProcessoSeletivoId, (FinalidadeDoDocumento?)valor, "documento", TiposDeMidiaDeDocumento.Pdf, Relogio, TimeSpan.FromMinutes(15));
+
+        resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
+        {
+            Field = "finalidade",
+            Error = new { Code = DocumentoAPublicarErrorCodes.FinalidadeInvalida },
+        });
     }
 
     [Theory(DisplayName = "O tipo de mídia define o formato e a extensão da chave de envio e da chave selada")]
@@ -66,7 +110,7 @@ public sealed class DocumentoAPublicarTests
     public void IniciarPendente_TipoDeMidiaForaDaLista_Recusa(string? tipoDeMidia)
     {
         Result<DocumentoAPublicar> resultado = DocumentoAPublicar.IniciarPendente(
-            ProcessoSeletivoId, "anexo", tipoDeMidia, Relogio, TimeSpan.FromMinutes(15));
+            ProcessoSeletivoId, FinalidadeDoDocumento.AnexoDoEdital, "anexo", tipoDeMidia, Relogio, TimeSpan.FromMinutes(15));
 
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {
@@ -83,7 +127,7 @@ public sealed class DocumentoAPublicarTests
     public void IniciarPendente_NomeInvalido_Recusa(string nome)
     {
         Result<DocumentoAPublicar> resultado = DocumentoAPublicar.IniciarPendente(
-            ProcessoSeletivoId, nome, TiposDeMidiaDeDocumento.Docx, Relogio, TimeSpan.FromMinutes(15));
+            ProcessoSeletivoId, FinalidadeDoDocumento.AnexoDoEdital, nome, TiposDeMidiaDeDocumento.Docx, Relogio, TimeSpan.FromMinutes(15));
 
         resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {
@@ -96,7 +140,7 @@ public sealed class DocumentoAPublicarTests
     public void IniciarPendente_TipoDeMidiaENomeInvalidos_RecusasAcumulam()
     {
         Result<DocumentoAPublicar> resultado = DocumentoAPublicar.IniciarPendente(
-            ProcessoSeletivoId, "", "image/png", Relogio, TimeSpan.FromMinutes(15));
+            ProcessoSeletivoId, FinalidadeDoDocumento.AnexoDoEdital, "", "image/png", Relogio, TimeSpan.FromMinutes(15));
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
@@ -196,7 +240,7 @@ public sealed class DocumentoAPublicarTests
     }
 
     private static DocumentoAPublicar Pendente(string tipoDeMidia) =>
-        DocumentoAPublicar.IniciarPendente(ProcessoSeletivoId, "anexo", tipoDeMidia, Relogio, TimeSpan.FromMinutes(15)).Value!;
+        DocumentoAPublicar.IniciarPendente(ProcessoSeletivoId, FinalidadeDoDocumento.AnexoDoEdital, "anexo", tipoDeMidia, Relogio, TimeSpan.FromMinutes(15)).Value!;
 
     private static byte[] ConteudoValido(string tipoDeMidia) => tipoDeMidia switch
     {

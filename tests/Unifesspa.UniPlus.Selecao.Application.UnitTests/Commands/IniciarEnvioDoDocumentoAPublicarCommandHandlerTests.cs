@@ -25,7 +25,7 @@ public sealed class IniciarEnvioDoDocumentoAPublicarCommandHandlerTests
         processoRepository.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((ProcessoSeletivo?)null);
 
         Result<IniciarEnvioDoDocumentoAPublicarDto> resultado = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
-            new IniciarEnvioDoDocumentoAPublicarCommand(Guid.CreateVersion7(), "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
+            new IniciarEnvioDoDocumentoAPublicarCommand(Guid.CreateVersion7(), FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
             processoRepository, documentoRepository, storage, unitOfWork, TimeProvider.System, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
@@ -49,7 +49,7 @@ public sealed class IniciarEnvioDoDocumentoAPublicarCommandHandlerTests
             .Returns("https://minio.local/uniplus-documentos/x?X-Amz-Signature=fake");
 
         Result<IniciarEnvioDoDocumentoAPublicarDto> resultado = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
-            new IniciarEnvioDoDocumentoAPublicarCommand(processoId, "Anexo I", tipoDeMidia),
+            new IniciarEnvioDoDocumentoAPublicarCommand(processoId, FinalidadeDoDocumento.AnexoDoEdital, "Anexo I", tipoDeMidia),
             processoRepository, documentoRepository, storage, unitOfWork, TimeProvider.System, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
@@ -72,7 +72,7 @@ public sealed class IniciarEnvioDoDocumentoAPublicarCommandHandlerTests
         processoRepository.ExisteAsync(processoId, Arg.Any<CancellationToken>()).Returns(true);
 
         Result<IniciarEnvioDoDocumentoAPublicarDto> resultado = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
-            new IniciarEnvioDoDocumentoAPublicarCommand(processoId, "Planilha", "application/vnd.ms-excel"),
+            new IniciarEnvioDoDocumentoAPublicarCommand(processoId, FinalidadeDoDocumento.DocumentoDoEdital, "Planilha", "application/vnd.ms-excel"),
             processoRepository, documentoRepository, storage, unitOfWork, TimeProvider.System, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
@@ -94,7 +94,7 @@ public sealed class IniciarEnvioDoDocumentoAPublicarCommandHandlerTests
             .Returns<Task<string>>(_ => throw new InvalidOperationException("MinIO indisponível (simulado)"));
 
         Func<Task> act = () => IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
-            new IniciarEnvioDoDocumentoAPublicarCommand(processoId, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
+            new IniciarEnvioDoDocumentoAPublicarCommand(processoId, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf),
             processoRepository, documentoRepository, storage, unitOfWork, TimeProvider.System, CancellationToken.None);
 
         await act.Should().ThrowAsync<InvalidOperationException>();

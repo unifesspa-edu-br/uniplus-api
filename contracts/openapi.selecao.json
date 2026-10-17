@@ -381,6 +381,13 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "finalidade",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/FinalidadeDoDocumento"
+            }
           }
         ],
         "responses": {
@@ -12210,6 +12217,7 @@
         "required": [
           "id",
           "processoSeletivoId",
+          "finalidade",
           "nomeArquivo",
           "tipoDeMidia",
           "status",
@@ -12228,6 +12236,9 @@
           "processoSeletivoId": {
             "type": "string",
             "format": "uuid"
+          },
+          "finalidade": {
+            "$ref": "#/components/schemas/FinalidadeDoDocumento"
           },
           "nomeArquivo": {
             "type": "string"
@@ -13623,6 +13634,14 @@
           }
         }
       },
+      "FinalidadeDoDocumento": {
+        "enum": [
+          "documentoDoEdital",
+          "anexoDoEdital",
+          "documentoDeAto"
+        ],
+        "type": "string"
+      },
       "FormatosAceitosCertameDto": {
         "required": [
           "qualquer",
@@ -14511,11 +14530,22 @@
       },
       "IniciarEnvioDoDocumentoAPublicarRequest": {
         "required": [
+          "finalidade",
           "nomeArquivo",
           "tipoDeMidia"
         ],
         "type": "object",
         "properties": {
+          "finalidade": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FinalidadeDoDocumento"
+              }
+            ]
+          },
           "nomeArquivo": {
             "type": [
               "null",

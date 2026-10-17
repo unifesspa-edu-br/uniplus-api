@@ -263,7 +263,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         ProcessoSeletivo processo = NovoProcessoConforme(nome);
 
         DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
-            processo.Id, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+            processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(1024, HashDocumento, TimeProvider.System).IsSuccess.Should().BeTrue();
 
         DadosEdital dados = DadosEdital.Criar(

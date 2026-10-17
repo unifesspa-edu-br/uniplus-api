@@ -51,6 +51,13 @@ public sealed record AnexoDoEdital(
     {
         ArgumentNullException.ThrowIfNull(documento);
 
+        if (documento.Finalidade != FinalidadeDoDocumento.AnexoDoEdital)
+        {
+            return Result<AnexoDoEdital>.Failure(new DomainError(
+                AnexoDoEditalErrorCodes.FinalidadeIncompativel,
+                "Somente um documento enviado como anexo do edital pode ser anexado ao edital."));
+        }
+
         if (documento.Status != StatusArquivoEnviado.Confirmado
             || documento.HashSha256 is not { } hash
             || documento.TamanhoBytes is not { } tamanho)

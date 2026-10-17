@@ -1199,7 +1199,7 @@ public sealed class EnvelopeFechadoE2ETests
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
         string hash = string.Concat(Enumerable.Repeat("cd45670189", 7))[..64];
-        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(2048, hash, TimeProvider.System).IsSuccess.Should().BeTrue();
         await db.DocumentosAPublicar.AddAsync(documento).ConfigureAwait(false);
         await db.SaveChangesAsync().ConfigureAwait(false);

@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.DocumentosAPublicar;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 
@@ -21,7 +22,7 @@ public sealed class ObterAcessoDocumentoAPublicarQueryHandlerTests
     private static RelogioFixo Relogio() => new(Agora);
 
     private static DocumentoAPublicar Pendente(Guid processoSeletivoId, TimeProvider clock) =>
-        DocumentoAPublicar.IniciarPendente(processoSeletivoId, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, clock, TimeSpan.FromMinutes(15)).Value!;
+        DocumentoAPublicar.IniciarPendente(processoSeletivoId, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, clock, TimeSpan.FromMinutes(15)).Value!;
 
     private static DocumentoAPublicar Confirmado(Guid processoSeletivoId, TimeProvider clock)
     {

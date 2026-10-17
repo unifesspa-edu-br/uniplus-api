@@ -35,11 +35,13 @@ public sealed class DocumentoAPublicarRepository : IDocumentoAPublicarRepository
 
     public async Task<IReadOnlyList<DocumentoAPublicar>> ListarPorProcessoAsync(
         Guid processoSeletivoId,
+        FinalidadeDoDocumento? finalidade,
         CancellationToken cancellationToken = default)
     {
         return await _context.DocumentosAPublicar
             .AsNoTracking()
             .Where(d => d.ProcessoSeletivoId == processoSeletivoId)
+            .Where(d => finalidade == null || d.Finalidade == finalidade)
             .OrderByDescending(d => d.CreatedAt)
             .ThenByDescending(d => d.Id)
             .ToListAsync(cancellationToken)

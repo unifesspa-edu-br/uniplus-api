@@ -41,7 +41,7 @@ public static class IniciarEnvioDoDocumentoAPublicarCommandHandler
         }
 
         Result<DocumentoAPublicar> pendente = DocumentoAPublicar.IniciarPendente(
-            command.ProcessoSeletivoId, command.NomeArquivo, command.TipoDeMidia, clock, PrazosDoArquivoEnviado.Envio);
+            command.ProcessoSeletivoId, command.Finalidade, command.NomeArquivo, command.TipoDeMidia, clock, PrazosDoArquivoEnviado.Envio);
         if (pendente.IsFailure)
         {
             return Result<IniciarEnvioDoDocumentoAPublicarDto>.ValidationFailure(pendente.Errors);

@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
@@ -89,6 +90,19 @@ public sealed class ConferenciaDosAnexosDoEditalTests
         resultado.Error!.Code.Should().Be(AnexoDoEditalErrorCodes.NaoConfirmado);
     }
 
+    [Theory(DisplayName = "Documento enviado como edital ou como documento de ato não é aceito como anexo")]
+    [InlineData(FinalidadeDoDocumento.DocumentoDoEdital)]
+    [InlineData(FinalidadeDoDocumento.DocumentoDeAto)]
+    public async Task OutraFinalidade_Recusa(FinalidadeDoDocumento finalidade)
+    {
+        DocumentoAPublicar documento = Documento("Quadro", TiposDeMidiaDeDocumento.Pdf, finalidade: finalidade);
+
+        Result<IReadOnlyList<AnexoDoEdital>> resultado = await ConferirAsync(
+            [new AnexoSolicitadoDoEdital(documento.Id, "Quadro")], [], documento);
+
+        resultado.Error!.Code.Should().Be(AnexoDoEditalErrorCodes.FinalidadeIncompativel);
+    }
+
     [Fact(DisplayName = "Nome que o download não aceita é recusado com erro nomeado")]
     public async Task NomeInvalido_Recusa()
     {
@@ -126,10 +140,14 @@ public sealed class ConferenciaDosAnexosDoEditalTests
     private static AnexoDoEdital AnexoVigente(DocumentoAPublicar documento) =>
         AnexoDoEdital.Criar(Guid.CreateVersion7(), documento, documento.NomeArquivo).Value!;
 
-    private static DocumentoAPublicar Documento(string nome, string tipoDeMidia, bool confirmado = true)
+    private static DocumentoAPublicar Documento(
+        string nome,
+        string tipoDeMidia,
+        bool confirmado = true,
+        FinalidadeDoDocumento finalidade = FinalidadeDoDocumento.AnexoDoEdital)
     {
         DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
-            ProcessoId, nome, tipoDeMidia, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+            ProcessoId, finalidade, nome, tipoDeMidia, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         if (confirmado)
         {
             documento.Confirmar(1024, new string('a', 64), TimeProvider.System).IsSuccess.Should().BeTrue();
