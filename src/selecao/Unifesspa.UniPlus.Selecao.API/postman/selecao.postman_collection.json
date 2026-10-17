@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "c15f3dfd-6301-4c33-9b90-7e25097fb103",
     "name": "Uni+ Seleção — ProcessoSeletivo (smoke completo, Story #554/PR #903)",
-    "description": "Exercita TODOS os 22 endpoints de ProcessoSeletivoController + DocumentosEditalController contra o stack local (docker compose + Newman), incluindo a configuração de catálogo necessária (Publicações/Organização/Configuração) e o fluxo completo de documentos exigidos por gatilho e fase (Story #554). Auto-contido: cada execução cria um ProcessoSeletivo novo (nome com timestamp seria ideal, mas os endpoints de setup toleram 409 em catálogos já existentes).",
+    "description": "Exercita TODOS os 22 endpoints de ProcessoSeletivoController + DocumentosAPublicarController contra o stack local (docker compose + Newman), incluindo a configuração de catálogo necessária (Publicações/Organização/Configuração) e o fluxo completo de documentos exigidos por gatilho e fase (Story #554). Auto-contido: cada execução cria um ProcessoSeletivo novo (nome com timestamp seria ideal, mas os endpoints de setup toleram 409 em catálogos já existentes).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [

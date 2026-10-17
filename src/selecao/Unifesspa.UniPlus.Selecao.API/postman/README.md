@@ -3,7 +3,7 @@
 Smoke test HTTP completo do agregado **ProcessoSeletivo** (Story #758/#851/#554),
 versionado junto da própria API (convenção: uma coleção por API, não compartilhada
 — mesmo padrão de `organizacao.postman_collection.json`). Exercita **todos os 23
-endpoints** de `ProcessoSeletivoController` + os 2 de `DocumentosEditalController`,
+endpoints** de `ProcessoSeletivoController` + os 2 de `DocumentosAPublicarController`,
 incluindo a configuração de catálogo pré-requisito (Publicações/Organização/
 Configuração) e o fluxo de documentos exigidos por gatilho e fase (Story #554,
 PR #903), com o cenário-alvo end-to-end da task 7.3 — os 4 sub-casos de gatilho
@@ -205,7 +205,7 @@ pelos guards de fase da PR-d).
 
 ### Bug real corrigido — DI keyed/não-keyed do mesmo tipo (issue #904)
 
-`POST {id}/documentos-edital` (`IniciarUpload`) respondia **500** de forma
+`POST {id}/documentos-a-publicar` (`IniciarEnvio`, antes `POST {id}/documentos-edital`) respondia **500** de forma
 determinística — `MinioStorageService.GarantirBucketExisteAsync` chamava
 `_minioClient.BucketExistsAsync(...)`, mas o cliente **interno** (que devia usar
 `Storage:Endpoint=minio:9000`) conectava em `localhost:9000` — dentro do
