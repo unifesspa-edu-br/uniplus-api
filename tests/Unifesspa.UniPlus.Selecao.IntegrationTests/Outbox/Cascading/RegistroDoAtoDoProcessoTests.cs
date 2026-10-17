@@ -118,11 +118,55 @@ public sealed class RegistroDoAtoDoProcessoTests
         using JsonDocument corpo = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
         JsonElement ato = corpo.RootElement.EnumerateArray().Single();
         ato.GetProperty("id").GetGuid().Should().Be(atoId);
-        ato.GetProperty("criaVersao").GetBoolean().Should().BeFalse();
         ato.GetProperty("tipoCodigo").GetString().Should().Be(DadosDoAtoDeTeste.TipoAviso);
         ato.GetProperty("situacao").GetString().Should().Be("registrado");
         ato.GetProperty("pendenciaAcimaDoLimiar").GetBoolean().Should().BeFalse();
         ato.GetProperty("documentoPrincipal").GetProperty("documentoAPublicarId").GetGuid().Should().Be(documentoId);
+    }
+
+    [Fact(DisplayName = "Publicar o edital registra o ato do processo com o edital como principal e o confirma quando o Publicações registra o ato")]
+    public async Task Publicar_RegistraOAtoDoEditalComOEditalComoPrincipal()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        using HttpClient client = api.CreateClient();
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
+        (Guid processoId, Guid documentoId) = await SemearAsync(api);
+
+        using HttpRequestMessage pedido = new(HttpMethod.Post, new Uri($"/api/selecao/processos-seletivos/{processoId}/publicacao", UriKind.Relative))
+        {
+            Content = System.Net.Http.Json.JsonContent.Create(new
+            {
+                numero = "001/2026",
+                documentoEditalId = documentoId,
+                ato = new
+                {
+                    orgao = "CEPS",
+                    serie = "EDITAL",
+                    ano = 2026,
+                    dataPublicacao = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
+                    assinante = "Diretor do CEPS",
+                    tipoAtoCodigo = DadosDoAtoDeTeste.TipoAbertura,
+                },
+            }),
+        };
+        pedido.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
+        pedido.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
+        pedido.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
+        (await client.SendAsync(pedido)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
+        SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        Guid atoId = await db.VersoesConfiguracao.AsNoTracking()
+            .Where(v => v.ProcessoSeletivoId == processoId)
+            .Select(v => v.AtoCriadorId)
+            .SingleAsync();
+
+        AtoDoProcesso registrado = await AguardarSituacaoAsync(api, atoId, SituacaoDoRegistroDoAto.Registrado);
+        registrado.DocumentoPrincipalId.Should().Be(documentoId);
+        registrado.TipoCodigo.Should().Be(DadosDoAtoDeTeste.TipoAbertura);
+        registrado.Numero.Should().Be("001/2026");
+        registrado.Assinante.Should().Be("Diretor do CEPS");
+        registrado.AtoCorrigidoId.Should().BeNull();
     }
 
     private static async Task<(Guid ProcessoId, Guid DocumentoId)> SemearAsync(CascadingApiFactory api)

@@ -19,8 +19,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// A consulta administrativa junta o ato que criou versão e o registro do que não cria, do mais
-/// recente para o mais antigo, e destaca a pendência que passou do limiar.
+/// A consulta administrativa projeta os registros dos atos do processo com os documentos e destaca a
+/// pendência que passou do limiar.
 /// </summary>
 public sealed class ListarAtosDoProcessoQueryHandlerTests
 {
@@ -31,13 +31,11 @@ public sealed class ListarAtosDoProcessoQueryHandlerTests
     private readonly Guid _processoId = Guid.CreateVersion7();
     private readonly IProcessoSeletivoRepository _processos = Substitute.For<IProcessoSeletivoRepository>();
     private readonly IAtoDoProcessoRepository _atos = Substitute.For<IAtoDoProcessoRepository>();
-    private readonly ICertameDivulgadoRepository _divulgados = Substitute.For<ICertameDivulgadoRepository>();
     private readonly IDocumentoAPublicarRepository _documentos = Substitute.For<IDocumentoAPublicarRepository>();
 
     public ListarAtosDoProcessoQueryHandlerTests()
     {
         _processos.ExisteAsync(_processoId, Arg.Any<CancellationToken>()).Returns(true);
-        _processos.ListarResumoDasVersoesAsync(_processoId, Arg.Any<CancellationToken>()).Returns([]);
         _atos.ListarDoProcessoAsync(_processoId, Arg.Any<CancellationToken>()).Returns([]);
         _documentos.ListarPorProcessoAsync(_processoId, null, Arg.Any<CancellationToken>()).Returns([]);
     }
@@ -46,7 +44,6 @@ public sealed class ListarAtosDoProcessoQueryHandlerTests
         new ListarAtosDoProcessoQuery(_processoId),
         _processos,
         _atos,
-        _divulgados,
         _documentos,
         Options.Create(new AtosDoProcessoOptions { LimiarDePendencia = Limiar }),
         new RelogioFixo(Agora),
@@ -60,12 +57,13 @@ public sealed class ListarAtosDoProcessoQueryHandlerTests
         return documento;
     }
 
-    private AtoDoProcesso Registro(DocumentoAPublicar principal, DateTimeOffset publicadoEm, bool registrado = false)
+    private AtoDoProcesso Registro(
+        DocumentoAPublicar principal, DateTimeOffset publicadoEm, bool registrado = false, IReadOnlyList<AnexoDeclarado>? anexos = null)
     {
         AtoDoProcesso ato = AtoDoProcesso.Registrar(
             new NovoAtoDoProcesso(
                 Guid.CreateVersion7(), _processoId, "AVISO", "Aviso", "3/2026", new DateOnly(2026, 12, 10),
-                "Diretor do CEPS", "ceps", "psm-medicina-2027", principal.Id, []),
+                "Diretor do CEPS", "ceps", "psm-medicina-2027", principal.Id, anexos ?? []),
             new RelogioFixo(publicadoEm));
         typeof(AtoDoProcesso).GetProperty(nameof(AtoDoProcesso.CreatedAt))!
             .SetValue(ato, publicadoEm);
@@ -77,49 +75,25 @@ public sealed class ListarAtosDoProcessoQueryHandlerTests
         return ato;
     }
 
-    [Fact(DisplayName = "Versão do edital e registro entram na mesma lista, do mais recente para o mais antigo")]
-    public async Task Handle_VersaoERegistro_OrdenaPorInstanteDecrescente()
+    [Fact(DisplayName = "Os atos voltam na ordem do repositório, com o principal e os anexos pelo nome de exibição")]
+    public async Task Handle_ProjetaDocumentosNaOrdemDoRepositorio()
     {
-        DocumentoAPublicar edital = Confirmado();
-        DocumentoAPublicar aviso = Confirmado(new string('b', 64), FinalidadeDoDocumento.DocumentoDeAto);
-        ResumoDaVersao versao = new(1, Agora.AddDays(-2), Guid.CreateVersion7(), HashDoEdital, null);
-        AtoDoProcesso registro = Registro(aviso, Agora.AddDays(-1), registrado: true);
-        _processos.ListarResumoDasVersoesAsync(_processoId, Arg.Any<CancellationToken>()).Returns([versao]);
-        _atos.ListarDoProcessoAsync(_processoId, Arg.Any<CancellationToken>()).Returns([registro]);
-        _documentos.ListarPorProcessoAsync(_processoId, null, Arg.Any<CancellationToken>()).Returns([aviso, edital]);
+        DocumentoAPublicar principalDoMaisNovo = Confirmado();
+        DocumentoAPublicar anexo = Confirmado(new string('b', 64));
+        DocumentoAPublicar principalDoMaisAntigo = Confirmado(new string('c', 64));
+        AtoDoProcesso maisNovo = Registro(principalDoMaisNovo, Agora.AddMinutes(-1), registrado: true, anexos: [new AnexoDeclarado(anexo.Id, "Anexo I")]);
+        AtoDoProcesso maisAntigo = Registro(principalDoMaisAntigo, Agora.AddDays(-2), registrado: true);
+        _atos.ListarDoProcessoAsync(_processoId, Arg.Any<CancellationToken>()).Returns([maisNovo, maisAntigo]);
+        _documentos.ListarPorProcessoAsync(_processoId, null, Arg.Any<CancellationToken>())
+            .Returns([principalDoMaisNovo, anexo, principalDoMaisAntigo]);
 
         Result<ListarAtosDoProcessoResult> resultado = await Consultar();
 
         AtoDoProcessoDto[] itens = [.. resultado.Value!.Items];
-        itens.Select(i => i.Id).Should().Equal(registro.Id, versao.AtoCriadorId);
-        itens[0].CriaVersao.Should().BeFalse();
+        itens.Select(i => i.Id).Should().Equal(maisNovo.Id, maisAntigo.Id);
         itens[0].TipoCodigo.Should().Be("AVISO");
-        itens[0].Situacao.Should().Be(SituacaoDoRegistroDoAto.Registrado);
-        itens[0].DocumentoPrincipal!.DocumentoAPublicarId.Should().Be(aviso.Id);
-        itens[1].CriaVersao.Should().BeTrue();
-        itens[1].DocumentoPrincipal!.DocumentoAPublicarId.Should().Be(edital.Id, "o documento do ato que cria versão é o que ele declarou por hash");
-    }
-
-    [Fact(DisplayName = "A versão do edital está registrada quando a divulgação registrou o seu edital; sem ela, está pendente")]
-    public async Task Handle_Versao_SituacaoVemDaDivulgacao()
-    {
-        ResumoDaVersao divulgada = new(1, Agora.AddMinutes(-5), Guid.CreateVersion7(), HashDoEdital, null);
-        ResumoDaVersao semDivulgacao = new(2, Agora.AddMinutes(-2), Guid.CreateVersion7(), new string('c', 64), divulgada.AtoCriadorId);
-        _processos.ListarResumoDasVersoesAsync(_processoId, Arg.Any<CancellationToken>()).Returns([divulgada, semDivulgacao]);
-        CertameDivulgado certame = CertameDivulgado.Criar(
-            _processoId, 1, divulgada.AtoCriadorId, HashDoEdital, "7",
-            new FacetasDoCertameDivulgado("ps-2027", "PS 2027", null, ["AC"], Agora, Agora.AddDays(10)), "{}", Agora);
-        certame.RegistrarEdital(new EditalDivulgado(divulgada.AtoCriadorId, 1, "https://acervo.teste/a.pdf"));
-        _divulgados.ObterParaLeituraAsync(_processoId, Arg.Any<CancellationToken>()).Returns(certame);
-
-        Result<ListarAtosDoProcessoResult> resultado = await Consultar();
-
-        resultado.Value!.Items.ToDictionary(i => i.Id, i => i.Situacao).Should().Equal(
-            new Dictionary<Guid, SituacaoDoRegistroDoAto>
-            {
-                [semDivulgacao.AtoCriadorId] = SituacaoDoRegistroDoAto.Pendente,
-                [divulgada.AtoCriadorId] = SituacaoDoRegistroDoAto.Registrado,
-            });
+        itens[0].DocumentoPrincipal!.DocumentoAPublicarId.Should().Be(principalDoMaisNovo.Id);
+        itens[0].Anexos.Select(a => (a.DocumentoAPublicarId, a.NomeDeExibicao)).Should().Equal((anexo.Id, "Anexo I"));
     }
 
     [Fact(DisplayName = "Só a pendência mais antiga que o limiar vem em destaque")]

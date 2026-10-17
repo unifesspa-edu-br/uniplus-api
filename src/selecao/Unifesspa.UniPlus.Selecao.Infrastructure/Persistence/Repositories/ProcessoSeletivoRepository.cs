@@ -233,20 +233,6 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             .ConfigureAwait(false);
     }
 
-    public async Task<IReadOnlyList<ResumoDaVersao>> ListarResumoDasVersoesAsync(
-        Guid processoSeletivoId,
-        CancellationToken cancellationToken = default)
-    {
-        return await _context.VersoesConfiguracao
-            .AsNoTracking()
-            .Where(v => v.ProcessoSeletivoId == processoSeletivoId)
-            .OrderBy(v => v.NumeroVersao)
-            .Select(v => new ResumoDaVersao(
-                v.NumeroVersao, v.VigenteAPartirDe, v.AtoCriadorId, v.AtoCriadorHash, v.AtoCriadorRetificaId))
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-    }
-
     public async Task<VersaoConfiguracao?> ObterVersaoVigenteAsync(
         Guid processoSeletivoId,
         DateTimeOffset instante,

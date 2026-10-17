@@ -178,6 +178,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
             mocks.ProcessoRepository,
             mocks.DocumentoRepository,
             Substitute.For<IRascunhoDePublicacaoRepository>(),
+            Substitute.For<IAtoDoProcessoRepository>(),
             mocks.Canonicalizer, new ResolvedorFusoDeTeste(),
             unitOfWork ?? Substitute.For<ISelecaoUnitOfWork>(),
             userContext,

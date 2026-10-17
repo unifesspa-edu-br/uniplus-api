@@ -9997,8 +9997,6 @@
       "AtoDoProcessoDto": {
         "required": [
           "id",
-          "criaVersao",
-          "numeroVersao",
           "tipoCodigo",
           "tipoNome",
           "numero",
@@ -10021,29 +10019,11 @@
             "type": "string",
             "format": "uuid"
           },
-          "criaVersao": {
-            "type": "boolean"
-          },
-          "numeroVersao": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "null",
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
           "tipoCodigo": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": "string"
           },
           "tipoNome": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": "string"
           },
           "numero": {
             "type": [
@@ -10052,10 +10032,7 @@
             ]
           },
           "dataDoAto": {
-            "type": [
-              "null",
-              "string"
-            ],
+            "type": "string",
             "format": "date"
           },
           "publicadoEm": {
@@ -10063,10 +10040,7 @@
             "format": "date-time"
           },
           "assinante": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": "string"
           },
           "situacao": {
             "$ref": "#/components/schemas/SituacaoDoRegistroDoAto"

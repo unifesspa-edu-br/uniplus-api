@@ -10,19 +10,13 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
-/// Lista os atos do processo: os que criaram versão do edital e os registros dos que não criam,
-/// ordenados do mais recente para o mais antigo, com a situação e os documentos.
+/// Lista os atos do processo, do mais recente para o mais antigo, com a situação e os documentos.
 /// </summary>
 /// <remarks>
-/// <para>
-/// O ato que criou uma versão está confirmado quando a divulgação do certame registrou o seu edital;
-/// o registro do ato que não cria versão, quando o Publicações o confirmou. Os dois entram na mesma
-/// lista porque o administrador pensa em publicações, não em duas tabelas.
-/// </para>
-/// <para>
-/// A pendência acima do limiar é destacada, e só isso: a recusa do registro não é respondida, então a
-/// consulta é a única forma de a pendência chegar a quem possa resolvê-la.
-/// </para>
+/// A fonte é só o registro do ato do processo, que o edital de abertura e o de retificação também
+/// têm: tipo, número, data e assinante de todos vêm do mesmo lugar. A pendência acima do limiar é
+/// destacada, e só isso: a recusa do registro não é respondida, então a consulta é a única forma de
+/// a pendência chegar a quem possa resolvê-la.
 /// </remarks>
 public static class ListarAtosDoProcessoQueryHandler
 {
@@ -30,7 +24,6 @@ public static class ListarAtosDoProcessoQueryHandler
         ListarAtosDoProcessoQuery query,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IAtoDoProcessoRepository atoDoProcessoRepository,
-        ICertameDivulgadoRepository certameDivulgadoRepository,
         IDocumentoAPublicarRepository documentoAPublicarRepository,
         IOptions<AtosDoProcessoOptions> opcoes,
         TimeProvider timeProvider,
@@ -39,7 +32,6 @@ public static class ListarAtosDoProcessoQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
-        ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
         ArgumentNullException.ThrowIfNull(documentoAPublicarRepository);
         ArgumentNullException.ThrowIfNull(opcoes);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -54,56 +46,26 @@ public static class ListarAtosDoProcessoQueryHandler
                 $"Processo Seletivo {query.ProcessoSeletivoId} não encontrado."));
         }
 
-        IReadOnlyList<ResumoDaVersao> versoes = await processoSeletivoRepository
-            .ListarResumoDasVersoesAsync(query.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-        IReadOnlyList<AtoDoProcesso> registros = await atoDoProcessoRepository
+        IReadOnlyList<AtoDoProcesso> atos = await atoDoProcessoRepository
             .ListarDoProcessoAsync(query.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
         IReadOnlyList<DocumentoAPublicar> documentos = await documentoAPublicarRepository
             .ListarPorProcessoAsync(query.ProcessoSeletivoId, finalidade: null, cancellationToken)
             .ConfigureAwait(false);
-        CertameDivulgado? divulgado = await certameDivulgadoRepository
-            .ObterParaLeituraAsync(query.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
 
         DateTimeOffset limite = timeProvider.GetUtcNow() - opcoes.Value.LimiarDePendencia;
         Dictionary<Guid, DocumentoAPublicar> documentosPorId = documentos.ToDictionary(static d => d.Id);
 
-        List<AtoDoProcessoDto> atos = [];
-        atos.AddRange(registros.Select(r => AtoDoProcessoMapping.DoRegistro(
-            r,
-            documentosPorId,
-            EstaPendenteAlemDoLimite(r.Situacao, r.CreatedAt, limite))));
-
-        foreach (ResumoDaVersao versao in versoes)
-        {
-            bool divulgada = divulgado?.EditaisDivulgados.Any(e => e.AtoId == versao.AtoCriadorId) == true;
-            SituacaoDoRegistroDoAto situacao = divulgada ? SituacaoDoRegistroDoAto.Registrado : SituacaoDoRegistroDoAto.Pendente;
-
-            // O documento da versão é o que o ato criador declarou por hash: o envelope congelado, que
-            // o nomeia por id, não é lido aqui. A versão retificada pode reaproveitar o documento, e o
-            // mesmo conteúdo enviado duas vezes tem dois ids — vale o primeiro a ser confirmado.
-            DocumentoAPublicar? documentoDoEdital = documentos
-                .Where(d => d.Status == StatusArquivoEnviado.Confirmado
-                    && string.Equals(d.HashSha256, versao.AtoCriadorHash, StringComparison.Ordinal))
-                .MinBy(static d => d.ConfirmadoEm);
-
-            atos.Add(AtoDoProcessoMapping.DaVersao(
-                versao,
-                situacao,
-                documentoDoEdital,
-                EstaPendenteAlemDoLimite(situacao, versao.VigenteAPartirDe, limite)));
-        }
-
-        AtoDoProcessoDto[] ordenados =
+        // A ordem é a do repositório (instante de gravação decrescente, ato como desempate); reordenar
+        // aqui desfaria o que o contrato promete.
+        AtoDoProcessoDto[] itens =
         [
-            .. atos.OrderByDescending(static a => a.PublicadoEm).ThenByDescending(static a => a.Id),
+            .. atos.Select(a => AtoDoProcessoMapping.ToDto(
+                a,
+                documentosPorId,
+                a.Situacao == SituacaoDoRegistroDoAto.Pendente && a.CreatedAt < limite)),
         ];
 
-        return Result<ListarAtosDoProcessoResult>.Success(new ListarAtosDoProcessoResult(ordenados));
+        return Result<ListarAtosDoProcessoResult>.Success(new ListarAtosDoProcessoResult(itens));
     }
-
-    private static bool EstaPendenteAlemDoLimite(SituacaoDoRegistroDoAto situacao, DateTimeOffset publicadoEm, DateTimeOffset limite) =>
-        situacao == SituacaoDoRegistroDoAto.Pendente && publicadoEm < limite;
 }

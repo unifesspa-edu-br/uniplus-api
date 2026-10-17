@@ -2,16 +2,11 @@ namespace Unifesspa.UniPlus.Selecao.Application.Mappings;
 
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
-/// <summary>
-/// Projeção dos dois tipos de ato do processo — o registro do que não cria versão e a versão do
-/// edital — para o mesmo <see cref="AtoDoProcessoDto"/>.
-/// </summary>
+/// <summary>Projeção <c>AtoDoProcesso</c> → <c>AtoDoProcessoDto</c>.</summary>
 public static class AtoDoProcessoMapping
 {
-    public static AtoDoProcessoDto DoRegistro(
+    public static AtoDoProcessoDto ToDto(
         AtoDoProcesso ato,
         IReadOnlyDictionary<Guid, DocumentoAPublicar> documentos,
         bool pendenciaAcimaDoLimiar)
@@ -21,8 +16,6 @@ public static class AtoDoProcessoMapping
 
         return new AtoDoProcessoDto(
             Id: ato.Id,
-            CriaVersao: false,
-            NumeroVersao: null,
             TipoCodigo: ato.TipoCodigo,
             TipoNome: ato.TipoNome,
             Numero: ato.Numero,
@@ -43,36 +36,6 @@ public static class AtoDoProcessoMapping
                 .OrderBy(static a => a.Ordem)
                 .Where(a => documentos.ContainsKey(a.DocumentoAPublicarId))
                 .Select(a => Documento(documentos[a.DocumentoAPublicarId], a.NomeDeExibicao))]);
-    }
-
-    public static AtoDoProcessoDto DaVersao(
-        ResumoDaVersao versao,
-        SituacaoDoRegistroDoAto situacao,
-        DocumentoAPublicar? documentoDoEdital,
-        bool pendenciaAcimaDoLimiar)
-    {
-        ArgumentNullException.ThrowIfNull(versao);
-
-        return new AtoDoProcessoDto(
-            Id: versao.AtoCriadorId,
-            CriaVersao: true,
-            NumeroVersao: versao.NumeroVersao,
-            TipoCodigo: null,
-            TipoNome: null,
-            Numero: null,
-            DataDoAto: null,
-            PublicadoEm: versao.VigenteAPartirDe,
-            Assinante: null,
-            Situacao: situacao,
-            // O instante da confirmação não é guardado na divulgação do edital.
-            RegistradoEm: null,
-            PendenciaAcimaDoLimiar: pendenciaAcimaDoLimiar,
-            AtoCorrigidoId: versao.AtoCriadorRetificaId,
-            MotivoDaCorrecao: null,
-            ProdutoDoEditalId: null,
-            PoliticaDeDivulgacaoConfirmada: false,
-            DocumentoPrincipal: documentoDoEdital is null ? null : Documento(documentoDoEdital, nomeDeExibicao: null),
-            Anexos: []);
     }
 
     private static DocumentoDoAtoDto Documento(DocumentoAPublicar documento, string? nomeDeExibicao) =>
