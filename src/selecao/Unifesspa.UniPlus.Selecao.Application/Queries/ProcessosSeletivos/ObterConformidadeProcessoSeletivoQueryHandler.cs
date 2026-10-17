@@ -84,7 +84,7 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
             FusoInstitucional: fuso.IsSuccess ? fuso.Value : null);
 
         TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos = await ResolucaoDosTiposDeAtoUnicos
-            .ParaChecklistAsync(tipoAtoPublicadoReader, processo, DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime), cancellationToken)
+            .ParaChecklistAsync(tipoAtoPublicadoReader, processo, ResolucaoDosTiposDeAtoUnicos.Hoje(timeProvider, fuso.IsSuccess ? fuso.Value : null), cancellationToken)
             .ConfigureAwait(false);
 
         FatosDeModalidade fatosDeModalidade = VocabularioDeFatos.ComValoresDeModalidade(

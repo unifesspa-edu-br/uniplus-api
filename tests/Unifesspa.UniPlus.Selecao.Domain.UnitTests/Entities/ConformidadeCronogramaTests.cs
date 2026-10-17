@@ -208,10 +208,13 @@ public sealed class ConformidadeCronogramaTests
 
     private const string CodigoItemTipoUnico = "cronograma_tipo_de_ato_unico_declarado_uma_vez";
 
-    private static TiposDeAtoUnicosPorObjeto Unicos(string codigo, string nome, string? atoDaOperacao = null) =>
+    private static TiposDeAtoUnicosPorObjeto Unicos(string codigo, string nome, string? atoDaOperacao = null, bool vagaOcupada = false) =>
         atoDaOperacao is null
             ? TiposDeAtoUnicosPorObjeto.ParaChecklist(new Dictionary<string, string> { [codigo] = nome })
-            : TiposDeAtoUnicosPorObjeto.ParaOperacao(new Dictionary<string, string> { [codigo] = nome }, atoDaOperacao);
+            : TiposDeAtoUnicosPorObjeto.ParaOperacao(
+                new Dictionary<string, string> { [codigo] = nome },
+                vagaOcupada ? new Dictionary<string, string> { [codigo] = nome } : new Dictionary<string, string>(),
+                atoDaOperacao);
 
     private static Result<VersaoConfiguracao> PublicarComUnicos(ProcessoSeletivo processo, TiposDeAtoUnicosPorObjeto unicos) =>
         processo.Publicar(
@@ -354,5 +357,29 @@ public sealed class ConformidadeCronogramaTests
 
         pendencia.Should().NotBeNull();
         pendencia!.Message.Should().Contain("na etapa 'Prova' (ordem 1) e na etapa 'Prova' (ordem 2)");
+    }
+
+    [Fact(DisplayName = "Retificação: o cronograma que passa a declarar o tipo único já ocupado por ato registrado do processo reprova")]
+    public void TipoUnico_JaOcupadoPorAtoRegistrado_ReprovaProdutoDoCronograma()
+    {
+        ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
+            FaseQuePublica(1, "ABERTURA", ProdutoDaFase.Criar("EDITAL_ABERTURA", PapelProdutoFase.Definitivo)));
+
+        DomainError? pendencia = processo.PendenciaDoTipoDeAtoUnico(
+            Unicos("EDITAL_ABERTURA", "Edital de abertura", atoDaOperacao: "RETIFICACAO_EDITAL", vagaOcupada: true));
+
+        pendencia.Should().NotBeNull();
+        pendencia!.Message.Should().Contain("na fase 'ABERTURA' e no ato já registrado do processo");
+    }
+
+    [Fact(DisplayName = "Retificação com ato do mesmo tipo único da própria linhagem não conta duas vezes a mesma vaga")]
+    public void TipoUnico_AtoDaOperacaoEAtoRegistradoDoMesmoTipo_ContamUmaVaga()
+    {
+        ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
+            FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)));
+
+        processo.PendenciaDoTipoDeAtoUnico(
+            Unicos("EDITAL_ABERTURA", "Edital de abertura", atoDaOperacao: "EDITAL_ABERTURA", vagaOcupada: true))
+            .Should().BeNull();
     }
 }
