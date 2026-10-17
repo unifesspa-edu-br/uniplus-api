@@ -148,8 +148,9 @@ internal sealed class PublicacoesDomainErrorRegistration : IDomainErrorRegistrat
                 "uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo",
                 "O tipo admite um único ato vivo por objeto, e a entidade vinculada já é tratada por outra linhagem")),
 
-        // 422: é o próprio payload que pede o que este endpoint não pode fazer — não há
-        // estado gravado em disputa.
+        // 422: o pedido quer registrar por aqui um ato que só o domínio dono do objeto
+        // registra — pelo vínculo declarado ou pelo herdado do ato retificado. Não é
+        // conflito de vaga nem de versão: nenhuma repetição do pedido o tornaria aceito.
         new(AtoNormativoErrorCodes.VinculoExigeRegistroPeloDominio,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
