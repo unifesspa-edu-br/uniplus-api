@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 
 using Refit;
 
+using Unifesspa.UniPlus.Portal.Application.Certames;
 using Unifesspa.UniPlus.Portal.Application.Certames.Origens;
 
 /// <summary>
@@ -82,7 +83,8 @@ internal sealed partial class ContratoPublicoDoCertameHttp : IContratoPublicoDoC
                 string.IsNullOrWhiteSpace(certame.Periodo?.Numero) ? null : certame.Periodo.Numero,
                 DocumentoPublico(certame.DocumentoEdital?.UrlDownload),
                 EditaisPorAto(certame.EditaisPublicados),
-                situacao));
+                situacao,
+                DocumentosPorAto(certame.EditaisPublicados)));
         }
     }
 
@@ -106,6 +108,46 @@ internal sealed partial class ContratoPublicoDoCertameHttp : IContratoPublicoDoC
 
         return porAto;
     }
+
+    /// <summary>
+    /// Os documentos de cada versão divulgada, pelo ato que a criou. Documento sem nome, sem tipo de
+    /// mídia, com tamanho negativo, papel desconhecido ou endereço fora do padrão aceito é
+    /// ignorado, como o link do edital: o resto do evento segue servido.
+    /// </summary>
+    private static Dictionary<Guid, IReadOnlyList<DocumentoDoEvento>> DocumentosPorAto(
+        IReadOnlyList<EditalPublicadoDoCertamePayload?>? editais)
+    {
+        Dictionary<Guid, IReadOnlyList<DocumentoDoEvento>> porAto = [];
+        foreach (EditalPublicadoDoCertamePayload? edital in editais ?? [])
+        {
+            if (edital is null || edital.AtoId == Guid.Empty)
+            {
+                continue;
+            }
+
+            List<DocumentoDoEvento> documentos = [];
+            foreach (DocumentoDoAtoPayload? documento in edital.Documentos ?? [])
+            {
+                if (documento is { Nome: { Length: > 0 } nome, TipoDeMidia: { Length: > 0 } tipoDeMidia, TamanhoBytes: >= 0 and { } tamanho }
+                    && PapelDe(documento.Papel) is { } papel
+                    && DocumentoPublico(documento.UrlDownload) is { } url)
+                {
+                    documentos.Add(new DocumentoDoEvento(papel, nome, tipoDeMidia, tamanho, url));
+                }
+            }
+
+            porAto[edital.AtoId] = documentos;
+        }
+
+        return porAto;
+    }
+
+    private static PapelDoDocumento? PapelDe(string? papel) => papel switch
+    {
+        "principal" => PapelDoDocumento.Principal,
+        "anexo" => PapelDoDocumento.Anexo,
+        _ => null,
+    };
 
     /// <summary>
     /// Só endereço absoluto de leitura pública chega à página: qualquer outra forma é tratada como

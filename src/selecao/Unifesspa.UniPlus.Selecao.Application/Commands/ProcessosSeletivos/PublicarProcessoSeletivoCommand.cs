@@ -22,10 +22,14 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// instante zerado.
 /// </param>
 /// <param name="PeriodoInscricaoFim">Fim do período, com a mesma regra do início.</param>
+/// <param name="Anexos">
+/// Os anexos do edital, na ordem em que ele os apresenta; nulo ou vazio quando não há.
+/// </param>
 public sealed record PublicarProcessoSeletivoCommand(
     Guid ProcessoSeletivoId,
     string? Numero,
     DateTimeOffset? PeriodoInscricaoInicio,
     DateTimeOffset? PeriodoInscricaoFim,
     Guid DocumentoEditalId,
-    DadosDoAto Ato) : ICommand<Result>;
+    DadosDoAto Ato,
+    IReadOnlyList<AnexoSolicitadoDoEdital>? Anexos = null) : ICommand<Result>;

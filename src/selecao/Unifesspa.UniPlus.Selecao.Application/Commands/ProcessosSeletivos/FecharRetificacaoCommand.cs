@@ -16,6 +16,10 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// do que a sessão registrou. O resto do corpo é o mesmo do atalho atômico: os dados do
 /// edital e o ato que o operador declara.
 /// </remarks>
+/// <param name="Anexos">
+/// Os anexos da nova versão. Nulo mantém os da vigente; uma lista substitui o conjunto inteiro, e a
+/// lista vazia os retira todos.
+/// </param>
 public sealed record FecharRetificacaoCommand(
     Guid ProcessoSeletivoId,
     string? Numero,
@@ -23,4 +27,5 @@ public sealed record FecharRetificacaoCommand(
     DateTimeOffset? PeriodoInscricaoFim,
     Guid DocumentoEditalId,
     DadosDoAto Ato,
-    PrecondicaoIfMatch Precondicao) : ICommand<Result>;
+    PrecondicaoIfMatch Precondicao,
+    IReadOnlyList<AnexoSolicitadoDoEdital>? Anexos = null) : ICommand<Result>;

@@ -22,10 +22,25 @@ internal sealed record PeriodoDoCertamePayload(string? Numero);
 internal sealed record DocumentoEditalDoCertamePayload(Uri? UrlDownload);
 
 /// <summary>
-/// O edital de uma versão divulgada: o ato que a criou e o endereço público no acervo. Origem
-/// anterior ao campo não o envia, e item nulo ou incompleto é descartado na leitura.
+/// O edital de uma versão divulgada: o ato que a criou, o endereço público no acervo e os
+/// documentos dele. Origem anterior ao campo não o envia, e item nulo ou incompleto é descartado na
+/// leitura.
 /// </summary>
-internal sealed record EditalPublicadoDoCertamePayload(Guid AtoId, Uri? UrlDownload);
+internal sealed record EditalPublicadoDoCertamePayload(
+    Guid AtoId,
+    Uri? UrlDownload,
+    IReadOnlyList<DocumentoDoAtoPayload?>? Documentos = null);
+
+/// <summary>
+/// Um documento do ato no acervo. O papel chega como texto (<c>principal</c> ou <c>anexo</c>): um
+/// papel que a Portal não conhece descarta o documento, e não a página.
+/// </summary>
+internal sealed record DocumentoDoAtoPayload(
+    string? Papel,
+    string? Nome,
+    string? TipoDeMidia,
+    long? TamanhoBytes,
+    Uri? UrlDownload);
 
 /// <summary>
 /// Os campos de um ato da consulta unificada (Publicações) que a Portal lê. O assinante não é

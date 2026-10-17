@@ -308,8 +308,14 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// <c>opcoesDeCurso</c>, e o retira de <c>classificacao</c> (<c>nOpcoesAlocacao</c>): ele deixou
     /// de ser parâmetro da classificação e passou a ser dimensão do processo. Sem produção em
     /// ambiente nenhum: <c>0.0.28</c> deixa de ser reconhecida.
+    /// O bump para <c>0.0.30</c> acrescenta ao bloco <c>hashesEdital</c> a lista <c>anexos</c>: os
+    /// arquivos que o edital leva além do documento principal, cada um com a identidade que entra no
+    /// endereço público, o documento que congela, o nome do download, o tipo de mídia, o tamanho e o
+    /// hash — sempre presente, vazia quando o edital não tem anexo, na ordem em que o edital os
+    /// apresenta. Sem novo bloco de topo. Sem produção em ambiente nenhum: fixture nova, <c>0.0.29</c>
+    /// deixa de ser reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.29";
+    internal const string SchemaVersionAtual = "0.0.30";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -1279,6 +1285,21 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     {
         ["documentoEditalId"] = dados.DocumentoEditalId,
         ["hashSha256"] = hashEdital,
+        ["anexos"] = new JsonArray([.. dados.Anexos.Select(SerializarAnexo)]),
+    };
+
+    /// <summary>
+    /// O anexo do edital, na ordem em que o edital o apresenta: a identidade que entra no endereço
+    /// público, o documento que ele congela, o nome do download, o tipo de mídia, o tamanho e o hash.
+    /// </summary>
+    private static JsonObject SerializarAnexo(AnexoDoEdital anexo) => new()
+    {
+        ["anexoId"] = anexo.Id,
+        ["documentoId"] = anexo.DocumentoId,
+        ["nomeArquivo"] = HashCanonicalComputer.NormalizeNfc(anexo.NomeArquivo),
+        ["tipoDeMidia"] = anexo.TipoDeMidia,
+        ["tamanhoBytes"] = anexo.TamanhoBytes,
+        ["hashSha256"] = anexo.HashSha256,
     };
 
     /// <summary>

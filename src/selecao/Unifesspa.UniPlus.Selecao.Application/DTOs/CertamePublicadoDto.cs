@@ -42,12 +42,34 @@ public sealed record TaxaInscricaoCertameDto(bool Cobra, string? Valor, IReadOnl
 public sealed record DocumentoEditalCertameDto(Guid DocumentoEditalId, string HashSha256, Uri UrlDownload);
 
 /// <summary>
-/// O edital de uma versão já divulgada do certame: o ato que a criou e o endereço do arquivo no
-/// acervo público.
+/// Um documento de um ato no acervo público: o edital ou um anexo dele. É a forma que o contrato
+/// público usa para todo documento de ato, e a que os atos avulsos reaproveitam.
+/// </summary>
+/// <param name="Papel"><c>principal</c> para o documento que é o próprio ato, <c>anexo</c> para o que o acompanha.</param>
+/// <param name="Nome">Nome com que o arquivo é salvo por quem o baixa.</param>
+/// <param name="TipoDeMidia">Tipo de mídia do arquivo.</param>
+/// <param name="TamanhoBytes">Tamanho do arquivo, em bytes.</param>
+/// <param name="HashSha256">Hash SHA-256 do arquivo em hexadecimal minúsculo, o que o ato atestou.</param>
+/// <param name="UrlDownload">Endereço permanente e de leitura anônima, como o de <see cref="DocumentoEditalCertameDto"/>.</param>
+public sealed record DocumentoDoAtoCertameDto(
+    string Papel,
+    string Nome,
+    string TipoDeMidia,
+    long TamanhoBytes,
+    string HashSha256,
+    Uri UrlDownload);
+
+/// <summary>
+/// O edital de uma versão já divulgada do certame: o ato que a criou, o endereço do arquivo no
+/// acervo público e os documentos dele.
 /// </summary>
 /// <param name="AtoId">O ato normativo que criou a versão — a chave que a linha do tempo de publicações já tem.</param>
 /// <param name="UrlDownload">Endereço permanente e de leitura anônima, como o de <see cref="DocumentoEditalCertameDto"/>.</param>
-public sealed record EditalPublicadoCertameDto(Guid AtoId, Uri UrlDownload);
+/// <param name="Documentos">
+/// O edital como documento principal e os anexos em seguida, na ordem em que o edital os apresenta.
+/// Vazia quando o registro da divulgação não traz os documentos.
+/// </param>
+public sealed record EditalPublicadoCertameDto(Guid AtoId, Uri UrlDownload, IReadOnlyList<DocumentoDoAtoCertameDto> Documentos);
 
 /// <summary>
 /// Presente só quando o edital foi emendado: informa ao candidato que houve retificação e por quê.

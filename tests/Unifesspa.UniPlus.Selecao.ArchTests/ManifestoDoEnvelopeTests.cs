@@ -174,8 +174,13 @@ public sealed class ManifestoDoEnvelopeTests
             [("GrupoPesoAreaEnemCongeladoId", "FK interna.")]),
 
         [typeof(DadosEdital)] = (
-            ["Numero", "PeriodoInscricaoInicio", "PeriodoInscricaoFim", "DocumentoEditalId"],
+            ["Numero", "PeriodoInscricaoInicio", "PeriodoInscricaoFim", "DocumentoEditalId", "Anexos"],
             []),
+
+        // Anexo do edital: copiado por valor do documento confirmado, no bloco hashesEdital.
+        [typeof(AnexoDoEdital)] = (
+            ["Id", "DocumentoId", "NomeArquivo", "Formato", "TamanhoBytes", "HashSha256"],
+            [("TipoDeMidia", "Derivada de Formato — congelá-la duplicaria a fonte de verdade.")]),
 
         [typeof(ReferenciaRegra)] = (
             ["Codigo", "Versao", "Hash"],

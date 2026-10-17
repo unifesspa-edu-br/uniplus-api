@@ -387,6 +387,12 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new(ModeloDeDocumentoErrorCodes.ConteudoDivergeDoFormato, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.modelo_de_documento.conteudo_diverge_do_formato", "O conteúdo do arquivo não é um documento de texto do formato declarado")),
         new(ModeloDeDocumentoErrorCodes.ContemMacro, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.modelo_de_documento.contem_macro", "O modelo não pode conter macro")),
         new(ModeloDeDocumentoErrorCodes.NomeArquivoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.modelo_de_documento.nome_arquivo_invalido", "Nome do arquivo do modelo inválido")),
+        // Anexos do edital na publicação e na retificação.
+        new(AnexoDoEditalErrorCodes.NaoEncontrado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.anexo_do_edital.nao_encontrado", "Documento do anexo não encontrado ou não pertence a este processo")),
+        new(AnexoDoEditalErrorCodes.NaoConfirmado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.anexo_do_edital.nao_confirmado", "Somente um documento confirmado pode ser anexado ao edital")),
+        new(AnexoDoEditalErrorCodes.Repetido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.anexo_do_edital.repetido", "O mesmo documento não pode constar duas vezes no edital")),
+        new(AnexoDoEditalErrorCodes.NomeInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.anexo_do_edital.nome_invalido", "Nome do anexo inválido")),
+        new(AnexoDoEditalErrorCodes.QuantidadeExcedida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.anexo_do_edital.quantidade_excedida", "O edital aceita no máximo 20 anexos")),
         // Publicação do Processo Seletivo — RN08 (Story #759, T4 #785). Todo
         // 422: status dominante do módulo para violação de regra de negócio,
         // inclusive quando a origem física é constraint de banco (ADR-0102).

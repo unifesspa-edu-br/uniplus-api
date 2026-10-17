@@ -262,6 +262,28 @@ public sealed class ComposicaoDaPaginaDoCertameTests
     }
 
     [Fact]
+    public async Task Cada_evento_traz_os_documentos_do_acervo_e_o_ato_sem_documento_traz_lista_vazia()
+    {
+        AtoDaOrigem abertura = Ato(Guid.NewGuid(), "EDITAL", "Edital de abertura", "012/2026", new(2026, 3, 10), congela: true);
+        AtoDaOrigem retificacao = Ato(Criador, "RETIFICACAO", "Retificação", "013/2026", new(2026, 3, 20), congela: true);
+        AtoDaOrigem aviso = Ato(Guid.NewGuid(), "AVISO", "Aviso", null, new(2026, 4, 1));
+        DocumentoDoEvento principal = new(PapelDoDocumento.Principal, "edital.pdf", "application/pdf", 1200, EditalNoAcervo);
+        DocumentoDoEvento anexo = new(PapelDoDocumento.Anexo, "Quadro de vagas.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", 800, new Uri("https://acervo.example/anexos/quadro.docx"));
+
+        ComposicaoDaPaginaDoCertame composicao = Montar(
+            new ConsultaDoCertame.Encontrado(new CertameDaOrigem(
+                ProcessoId, Criador, "Medicina 2027", "012/2026", EditalNoAcervo, new Dictionary<Guid, Uri>(), SituacaoDaInscricao.InscricoesAbertas,
+                new Dictionary<Guid, IReadOnlyList<DocumentoDoEvento>> { [Criador] = [principal, anexo] })),
+            new LeituraDosAtos([abertura, retificacao, aviso], null));
+
+        PaginaDoCertame pagina = (await composicao.ComporPorIdentificadorAsync(Identificador, CancellationToken.None)).Value!;
+
+        pagina.LinhaDoTempo.Single(e => e.Id == Criador).Documentos.Should().Equal(principal, anexo);
+        pagina.LinhaDoTempo.Single(e => e.Id == abertura.Id).Documentos.Should().BeEmpty();
+        pagina.LinhaDoTempo.Single(e => e.Id == aviso.Id).Documentos.Should().BeEmpty("o ato avulso só ganha documentos com a sua própria publicação");
+    }
+
+    [Fact]
     public async Task Linha_do_tempo_sem_o_ato_criador_fica_sem_data_de_publicacao()
     {
         AtoDaOrigem outro = Ato(Guid.NewGuid(), "AVISO", "Aviso", null, new(2026, 3, 10));

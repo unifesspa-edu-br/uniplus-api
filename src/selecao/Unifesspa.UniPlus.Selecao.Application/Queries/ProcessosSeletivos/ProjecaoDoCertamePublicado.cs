@@ -37,7 +37,7 @@ internal static class ProjecaoDoCertamePublicado
     /// envelope congelado, que continua o mesmo quando só a projeção muda, e um cache endereçado
     /// apenas por ele serviria a resposta antiga depois do deploy.
     /// </summary>
-    public const string Versao = "7";
+    public const string Versao = "8";
 
     /// <summary>
     /// Forma do documento divulgado — a MESMA do wire, e a usada para lê-lo de volta. A única parte
@@ -368,6 +368,62 @@ internal static class ProjecaoDoCertamePublicado
         string nomeDeApresentacao = $"{identificadorLegivel}-{ChaveNoAcervoPublico.SegmentoDoTipo(ato.TipoCodigo)}.pdf";
         edital = new EditalNoAcervo(documentoEditalId, hashSha256, chave, nomeDeApresentacao);
         return true;
+    }
+
+    /// <summary>
+    /// Os anexos do edital como o envelope da versão os congelou, na ordem em que o edital os
+    /// apresenta — o que a divulgação publica no acervo. Vazio quando o edital não tem anexo.
+    /// </summary>
+    internal static bool TentarAnexosCongelados(
+        JsonObject envelope,
+        [NotNullWhen(true)] out List<AnexoDoEdital>? anexos)
+    {
+        anexos = null;
+        if (!TentarObjeto(envelope, BlocoPublico("hashesEdital"), out JsonObject? hashes)
+            || !TentarArray(hashes, "anexos", out JsonArray? array))
+        {
+            return false;
+        }
+
+        List<AnexoDoEdital> lidos = [];
+        foreach (JsonNode? item in array)
+        {
+            if (item is not JsonObject anexo
+                || !TentarIdentificador(anexo, "anexoId", out Guid anexoId)
+                || !TentarIdentificador(anexo, "documentoId", out Guid documentoId)
+                || !TentarTexto(anexo, "nomeArquivo", out string nomeArquivo)
+                || !TentarTexto(anexo, "tipoDeMidia", out string tipoDeMidia)
+                || !TentarInteiro(anexo, "tamanhoBytes", out int tamanhoBytes)
+                || !TentarTexto(anexo, "hashSha256", out string hashSha256)
+                || FormatosDeDocumento.DoTipoDeMidia(tipoDeMidia) is not { } formato)
+            {
+                return false;
+            }
+
+            lidos.Add(new AnexoDoEdital(anexoId, documentoId, nomeArquivo, formato, tamanhoBytes, hashSha256));
+        }
+
+        anexos = lidos;
+        return true;
+    }
+
+    /// <summary>
+    /// Os anexos que a versão congelou, para a versão seguinte herdá-los. A versão publicada já foi
+    /// lida pelo codec, então um envelope que não se deixa ler aqui é defeito, e não estado do
+    /// processo.
+    /// </summary>
+    internal static IReadOnlyList<AnexoDoEdital> AnexosDaVersao(VersaoConfiguracao versao)
+    {
+        ArgumentNullException.ThrowIfNull(versao);
+
+        if (JsonNode.Parse(versao.ConfiguracaoCongelada) is not JsonObject envelope
+            || !TentarAnexosCongelados(envelope, out List<AnexoDoEdital>? anexos))
+        {
+            throw new InvalidOperationException(
+                $"Configuração congelada do processo {versao.ProcessoSeletivoId} não tem a forma esperada nos anexos do edital.");
+        }
+
+        return anexos;
     }
 
     private static bool TentarUnidadeAdministradora(

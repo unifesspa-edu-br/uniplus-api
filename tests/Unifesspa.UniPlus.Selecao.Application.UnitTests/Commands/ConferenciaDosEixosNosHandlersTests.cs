@@ -190,7 +190,7 @@ public sealed class ConferenciaDosEixosNosHandlersTests
                 "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
                 new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
             Result<VersaoConfiguracao> versao = processo.Publicar(
-                dados, "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo, "user-sub-1",
+                dados, EnvelopeCongeladoDeTeste.SemAnexos(), "1.1", "canonical-json/sha256@v1", HashFixo, "user-sub-1",
                 new RelogioFixo(), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo);
             versao.IsSuccess.Should().BeTrue(versao.Error?.Message);
             processo.DequeueDomainEvents();

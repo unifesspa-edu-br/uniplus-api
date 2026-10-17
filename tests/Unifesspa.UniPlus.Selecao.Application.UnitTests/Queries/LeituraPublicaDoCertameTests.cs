@@ -118,9 +118,39 @@ public sealed class LeituraPublicaDoCertameTests
         Result<CertamePublicadoDto> resultado = await ObterCertamePublicadoQueryHandler.Handle(
             new ObterCertamePublicadoQuery(processoId, Agora), repository, CancellationToken.None);
 
-        resultado.Value!.EditaisPublicados.Should().Equal(
-            new EditalPublicadoCertameDto(abertura.AtoId, new Uri(abertura.UrlDownload)),
-            new EditalPublicadoCertameDto(retificacao.AtoId, new Uri(retificacao.UrlDownload)));
+        resultado.Value!.EditaisPublicados!.Select(static e => (e.AtoId, e.UrlDownload.OriginalString)).Should().Equal(
+            (abertura.AtoId, abertura.UrlDownload),
+            (retificacao.AtoId, retificacao.UrlDownload));
+    }
+
+    [Fact(DisplayName = "O edital divulgado devolve o principal e os anexos, com o registro antigo sem documentos")]
+    public async Task Detalhe_TrazOsDocumentosDeCadaEdital()
+    {
+        Guid processoId = Guid.CreateVersion7();
+        CertameDivulgado divulgado = Divulgado(processoId, Projecao(processoId));
+        EditalDivulgado antigo = new(Guid.CreateVersion7(), 1, "https://acervo.teste/abertura.pdf");
+        EditalDivulgado comAnexos = new(
+            Guid.CreateVersion7(),
+            2,
+            "https://acervo.teste/retificacao.pdf",
+            [
+                new DocumentoDivulgado(PapelDoDocumentoDivulgado.Principal, "edital.pdf", "application/pdf", 1200, new string('a', 64), "https://acervo.teste/retificacao.pdf"),
+                new DocumentoDivulgado(PapelDoDocumentoDivulgado.Anexo, "Quadro de vagas.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", 800, new string('b', 64), "https://acervo.teste/quadro.docx"),
+                new DocumentoDivulgado(PapelDoDocumentoDivulgado.Anexo, "Sem endereço.pdf", "application/pdf", 10, new string('c', 64), "acervo/sem-esquema.pdf"),
+            ]);
+        divulgado.RegistrarEdital(antigo);
+        divulgado.RegistrarEdital(comAnexos);
+        ICertameDivulgadoRepository repository = Substitute.For<ICertameDivulgadoRepository>();
+        repository.ObterParaLeituraAsync(processoId, Arg.Any<CancellationToken>()).Returns(divulgado);
+
+        Result<CertamePublicadoDto> resultado = await ObterCertamePublicadoQueryHandler.Handle(
+            new ObterCertamePublicadoQuery(processoId, Agora), repository, CancellationToken.None);
+
+        IReadOnlyList<EditalPublicadoCertameDto> editais = resultado.Value!.EditaisPublicados!;
+        editais[0].Documentos.Should().BeEmpty();
+        editais[1].Documentos.Select(static d => (d.Papel, d.Nome, d.TamanhoBytes, d.UrlDownload.OriginalString)).Should().Equal(
+            ("principal", "edital.pdf", 1200L, "https://acervo.teste/retificacao.pdf"),
+            ("anexo", "Quadro de vagas.docx", 800L, "https://acervo.teste/quadro.docx"));
     }
 
     [Fact(DisplayName = "Edital com endereço ilegível fica fora da lista sem derrubar o detalhe")]
@@ -139,8 +169,7 @@ public sealed class LeituraPublicaDoCertameTests
             new ObterCertamePublicadoQuery(processoId, Agora), repository, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.EditaisPublicados.Should().Equal(
-            new EditalPublicadoCertameDto(retificacao.AtoId, new Uri(retificacao.UrlDownload)));
+        resultado.Value!.EditaisPublicados!.Select(static e => e.AtoId).Should().Equal(retificacao.AtoId);
     }
 
     [Fact(DisplayName = "Documento divulgado antes dos editais por versão continua legível e responde com a lista")]
@@ -166,14 +195,30 @@ public sealed class LeituraPublicaDoCertameTests
     public void Selo_MudaQuandoEntraEdital()
     {
         CertamePublicadoDto certame = Projecao(Guid.CreateVersion7()) with { Situacao = SituacaoDoCertame.InscricoesAbertas };
-        EditalPublicadoCertameDto abertura = new(Guid.CreateVersion7(), new Uri("https://acervo.teste/abertura.pdf"));
-        EditalPublicadoCertameDto retificacao = new(Guid.CreateVersion7(), new Uri("https://acervo.teste/retificacao.pdf"));
+        EditalPublicadoCertameDto abertura = new(Guid.CreateVersion7(), new Uri("https://acervo.teste/abertura.pdf"), []);
+        EditalPublicadoCertameDto retificacao = new(Guid.CreateVersion7(), new Uri("https://acervo.teste/retificacao.pdf"), []);
 
         string um = SeloDoCertamePublicado.De(certame with { EditaisPublicados = [abertura] });
         string dois = SeloDoCertamePublicado.De(certame with { EditaisPublicados = [abertura, retificacao] });
 
         dois.Should().NotBe(um);
         SeloDoCertamePublicado.De(certame with { EditaisPublicados = [abertura] }).Should().Be(um, "o selo é estável para a mesma lista");
+    }
+
+    [Fact(DisplayName = "O selo do detalhe muda quando muda um anexo do edital, com o mesmo endereço do edital")]
+    public void Selo_MudaQuandoMudaUmAnexo()
+    {
+        CertamePublicadoDto certame = Projecao(Guid.CreateVersion7()) with { Situacao = SituacaoDoCertame.InscricoesAbertas };
+        Guid ato = Guid.CreateVersion7();
+        DocumentoDoAtoCertameDto anexo = new("anexo", "Quadro.pdf", "application/pdf", 10, new string('a', 64), new Uri("https://acervo.teste/q.pdf"));
+        EditalPublicadoCertameDto semAnexo = new(ato, new Uri("https://acervo.teste/e.pdf"), []);
+
+        string sem = SeloDoCertamePublicado.De(certame with { EditaisPublicados = [semAnexo] });
+        string com = SeloDoCertamePublicado.De(certame with { EditaisPublicados = [semAnexo with { Documentos = [anexo] }] });
+        string trocado = SeloDoCertamePublicado.De(certame with { EditaisPublicados = [semAnexo with { Documentos = [anexo with { HashSha256 = new string('b', 64) }] }] });
+
+        com.Should().NotBe(sem);
+        trocado.Should().NotBe(com);
     }
 
     [Fact(DisplayName = "A vitrine devolve a página inteira: não há descarte depois de formada")]

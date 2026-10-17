@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ValueObjects;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -81,4 +83,31 @@ public sealed class DadosEditalTests
 
         dados.DiaDeReferenciaLegal(belem).Should().Be(new DateOnly(2026, 3, 10));
     }
+
+    [Fact(DisplayName = "O mesmo documento duas vezes, ou como principal e como anexo, é recusado")]
+    public void AnexoRepetido_Recusado()
+    {
+        Guid principal = Guid.CreateVersion7();
+        AnexoDoEdital anexo = Anexo(Guid.CreateVersion7());
+
+        Result<DadosEdital> repetido = Dados(principal, [anexo, anexo with { Id = Guid.CreateVersion7() }]);
+        Result<DadosEdital> comoPrincipal = Dados(principal, [Anexo(principal)]);
+
+        repetido.Error!.Code.Should().Be(AnexoDoEditalErrorCodes.Repetido);
+        comoPrincipal.Error!.Code.Should().Be(AnexoDoEditalErrorCodes.Repetido);
+    }
+
+    [Fact(DisplayName = "Mais anexos que o limite são recusados")]
+    public void AnexosAcimaDoLimite_Recusados()
+    {
+        AnexoDoEdital[] anexos = [.. Enumerable.Range(0, AnexoDoEdital.QuantidadeMaxima + 1).Select(static _ => Anexo(Guid.CreateVersion7()))];
+
+        Dados(Guid.CreateVersion7(), anexos).Error!.Code.Should().Be(AnexoDoEditalErrorCodes.QuantidadeExcedida);
+    }
+
+    private static Result<DadosEdital> Dados(Guid principal, IReadOnlyList<AnexoDoEdital> anexos) =>
+        DadosEdital.Criar("001/2026", InstanteEmBelem.Em(2026, 1, 1), InstanteEmBelem.Em(2026, 1, 31, 23, 59, 59), principal, anexos);
+
+    private static AnexoDoEdital Anexo(Guid documentoId) =>
+        new(Guid.CreateVersion7(), documentoId, "Quadro.pdf", FormatoDeDocumento.Pdf, 10, new string('a', 64));
 }
