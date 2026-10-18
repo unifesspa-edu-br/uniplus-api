@@ -276,7 +276,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
             agrupaEtapas: true, permiteComplementacao: false, coletaInscricao: coletaInscricao, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)],
+            produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,
             bancasRequeridas: [], regraRecurso: null).Value!;

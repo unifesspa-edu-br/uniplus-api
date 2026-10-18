@@ -194,8 +194,8 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
             coletaInscricao: false, coletaSolicitacaoIsencao: true, inicio: inicio, fim: fim,
             produtos:
             [
-                ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_PRELIMINAR_ISENCAO", PapelProdutoFase.Preliminar),
-                ProdutoDaFase.Criar("HOMOLOGACAO_RECURSOS", PapelProdutoFase.Definitivo),
+                ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_ISENCAO", PapelProdutoFase.Preliminar),
+                ProdutoDaFase.Criar("RESULTADO_ISENCAO", PapelProdutoFase.Definitivo),
             ],
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,

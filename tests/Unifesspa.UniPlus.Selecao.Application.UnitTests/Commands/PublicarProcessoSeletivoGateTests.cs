@@ -188,7 +188,7 @@ public sealed class PublicarProcessoSeletivoGateTests
     [Fact(DisplayName = "Publicar_AtoDaPublicacaoDeTipoUnicoDeclaradoNoCronograma_RecusaAntesDeCanonicalizar")]
     public async Task Publicar_AtoDaPublicacaoDeTipoUnicoDeclaradoNoCronograma_RecusaAntesDeCanonicalizar()
     {
-        // O cronograma do builder declara RESULTADO_FINAL como produto; o ato desta publicação é do
+        // O cronograma do builder declara RESULTADO_CLASSIFICACAO como produto; o ato desta publicação é do
         // mesmo tipo, que o catálogo declara único: duas declarações para uma única vaga.
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Tipo único");
 
@@ -205,9 +205,9 @@ public sealed class PublicarProcessoSeletivoGateTests
         IUserContext userContext = Substitute.For<IUserContext>();
         userContext.UserId.Returns("teste");
 
-        TipoAtoPublicadoView tipo = new("RESULTADO_FINAL", "Resultado final", CongelaConfiguracao: true, UnicoPorObjeto: true, EfeitoIrreversivel: false, EhResultado: true);
+        TipoAtoPublicadoView tipo = new("RESULTADO_CLASSIFICACAO", "Resultado da classificação", CongelaConfiguracao: true, UnicoPorObjeto: true, EfeitoIrreversivel: false, EhResultado: true);
         ITipoAtoPublicadoReader tipoDeAtoReader = Substitute.For<ITipoAtoPublicadoReader>();
-        tipoDeAtoReader.ObterVigenteAsync("RESULTADO_FINAL", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>()).Returns(tipo);
+        tipoDeAtoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>()).Returns(tipo);
         tipoDeAtoReader.ListarVigentesAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns([tipo]);
 
@@ -229,7 +229,7 @@ public sealed class PublicarProcessoSeletivoGateTests
                     Ano: 2026,
                     DataPublicacao: new DateOnly(2026, 1, 1),
                     Assinante: "Diretor do CEPS",
-                    TipoAtoCodigo: "RESULTADO_FINAL")),
+                    TipoAtoCodigo: "RESULTADO_CLASSIFICACAO")),
             processoRepository,
             documentoRepository,
             Substitute.For<IRascunhoDePublicacaoRepository>(),

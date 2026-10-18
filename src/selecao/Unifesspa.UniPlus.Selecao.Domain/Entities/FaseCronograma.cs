@@ -141,6 +141,22 @@ public sealed class FaseCronograma : EntityBase
     internal bool PublicaResultadoDefinitivo =>
         _produtos.Exists(static p => p.Papel == PapelProdutoFase.Definitivo);
 
+    /// <summary>Se a fase publica o resultado definitivo desse tipo de ato (a matéria é o tipo).</summary>
+    internal bool PublicaResultadoDefinitivoDe(string atoCodigo) =>
+        _produtos.Exists(p => p.Papel == PapelProdutoFase.Definitivo
+            && string.Equals(p.AtoCodigo, atoCodigo, StringComparison.Ordinal));
+
+    /// <summary>
+    /// Os tipos de ato cujo preliminar a fase publica sem publicar o definitivo do mesmo tipo:
+    /// são as matérias cujo ciclo recursal ela deixa para a fase concluinte fechar.
+    /// </summary>
+    public IEnumerable<string> TiposComCicloAberto() =>
+        _produtos
+            .Where(static p => p.Papel == PapelProdutoFase.Preliminar)
+            .Select(static p => p.AtoCodigo)
+            .Distinct(StringComparer.Ordinal)
+            .Where(codigo => !PublicaResultadoDefinitivoDe(codigo));
+
     /// <summary>Presença = a fase admite recurso (0..1, §3.6).</summary>
     public RegraRecursoFase? RegraRecurso { get; private set; }
 
@@ -243,11 +259,9 @@ public sealed class FaseCronograma : EntityBase
         // publicação, e o motor não teria como eleger uma.
         //
         // A chave é o par, e não o ato sozinho, porque o catálogo nomeia a MATÉRIA, não o
-        // papel: "Resultado da homologação das inscrições" é um código só, publicado uma vez
-        // como preliminar — que abre o ciclo recursal — e outra como definitivo, que o
-        // encerra. Só duas das vinte e uma entradas do catálogo trazem o papel no próprio
-        // código (gabarito e resultado), e exigir isso de todas tornaria o ciclo recursal da
-        // homologação inexprimível.
+        // papel: "Gabarito" é um código só, publicado uma vez como preliminar — que abre o
+        // ciclo recursal — e outra como definitivo, que o encerra. É esse tipo comum que liga
+        // o definitivo ao preliminar que ele espera.
         ProdutoDaFase? duplicado = produtos
             .GroupBy(static p => (p.AtoCodigo, p.Papel))
             .FirstOrDefault(static g => g.Count() > 1)?.First();

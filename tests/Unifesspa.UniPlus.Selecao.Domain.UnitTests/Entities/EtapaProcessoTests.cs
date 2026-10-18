@@ -21,12 +21,12 @@ public sealed class EtapaProcessoTests
         EtapaProcesso etapa = EtapaProcesso.Criar(
             "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 1m).Value!;
 
-        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar)])
+        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)])
             .IsSuccess.Should().BeTrue();
         Guid idOriginal = etapa.Produtos.Single().Id;
 
         // O cliente devolve a coleção que leu: instâncias novas, mesmo conteúdo.
-        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar)])
+        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)])
             .IsSuccess.Should().BeTrue();
 
         etapa.Produtos.Single().Id.Should().Be(idOriginal,
@@ -50,6 +50,33 @@ public sealed class EtapaProcessoTests
             "o código não mudou; recriar a linha gira o id e o CreatedAt sem que nada tenha mudado");
     }
 
+    [Fact(DisplayName = "O mesmo tipo de ato com o mesmo papel duas vezes na etapa é recusado")]
+    public void DefinirProdutos_MesmoTipoEMesmoPapel_Recusa()
+    {
+        EtapaProcesso etapa = EtapaProcesso.Criar(
+            "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 1m).Value!;
+
+        Result resultado = etapa.DefinirProdutos([
+            ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Preliminar),
+            ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Preliminar),
+        ]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("EtapaProcesso.AtoDuplicadoNaEtapa");
+    }
+
+    [Fact(DisplayName = "O mesmo tipo de ato uma vez como preliminar e uma como definitivo na etapa é aceito")]
+    public void DefinirProdutos_MesmoTipoComCadaPapel_Aceita()
+    {
+        EtapaProcesso etapa = EtapaProcesso.Criar(
+            "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 1m).Value!;
+
+        etapa.DefinirProdutos([
+            ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Preliminar),
+            ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Definitivo),
+        ]).IsSuccess.Should().BeTrue();
+    }
+
     [Fact(DisplayName = "Produto que sai da declaração some, e o que entra ganha Id próprio")]
     public void DefinirProdutos_ParQueMuda_TrocaDeLinha()
     {
@@ -57,19 +84,19 @@ public sealed class EtapaProcessoTests
             "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 1m).Value!;
 
         etapa.DefinirProdutos([
-            ProdutoDaEtapa.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar),
-            ProdutoDaEtapa.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Definitivo),
+            ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
+            ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
         ]).IsSuccess.Should().BeTrue();
         Guid idPreliminar = etapa.Produtos.Single(p => p.Papel == PapelProdutoFase.Preliminar).Id;
 
         // O definitivo sai, o preliminar fica, e um ato novo entra.
         etapa.DefinirProdutos([
-            ProdutoDaEtapa.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar),
+            ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
             ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Preliminar),
         ]).IsSuccess.Should().BeTrue();
 
         etapa.Produtos.Should().HaveCount(2);
-        etapa.Produtos.Single(p => p.AtoCodigo == "RESULTADO_PRELIMINAR").Id.Should().Be(idPreliminar,
+        etapa.Produtos.Single(p => p.AtoCodigo == "RESULTADO_CLASSIFICACAO").Id.Should().Be(idPreliminar,
             "preservar identidade não pode virar preservar conteúdo: o que continua declarado mantém a linha");
         etapa.Produtos.Should().ContainSingle(p => p.AtoCodigo == "GABARITO");
     }

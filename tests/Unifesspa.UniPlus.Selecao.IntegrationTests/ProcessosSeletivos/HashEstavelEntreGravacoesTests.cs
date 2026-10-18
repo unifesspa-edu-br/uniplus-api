@@ -125,8 +125,8 @@ public sealed class HashEstavelEntreGravacoesTests
         EtapaProcesso etapa = processo.Etapas.Single();
 
         etapa.DefinirProdutos([
-            ProdutoDaEtapa.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar),
-            ProdutoDaEtapa.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Definitivo),
+            ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
+            ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
             ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Preliminar),
         ]).IsSuccess.Should().BeTrue();
 
@@ -138,7 +138,7 @@ public sealed class HashEstavelEntreGravacoesTests
         // linha do produto. Sem estas duas linhas, o bloco de recursos da etapa fica fora do
         // cenário de estabilidade de bytes.
         etapa.DefinirRecursos([
-            JanelaAncoradaEm(etapa, "RESULTADO_PRELIMINAR"),
+            JanelaAncoradaEm(etapa, "RESULTADO_CLASSIFICACAO"),
             JanelaAncoradaEm(etapa, "GABARITO"),
         ]).IsSuccess.Should().BeTrue();
     }
@@ -204,7 +204,7 @@ public sealed class HashEstavelEntreGravacoesTests
             permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)],
+            produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
             faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [],
             regraRecurso: null).Value!], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 

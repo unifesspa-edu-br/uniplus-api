@@ -74,9 +74,7 @@ public sealed class EnvelopeFechadoE2ETests
     /// não edital/retificação) e nenhum é único por objeto (um certame tem mais de um
     /// resultado ao longo do ciclo).
     /// </summary>
-    private const string CodigoAtoResultadoPreliminar = "RESULTADO_PRELIMINAR";
-
-    private const string CodigoAtoResultadoDefinitivo = "RESULTADO_DEFINITIVO";
+    private const string CodigoAtoResultado = "RESULTADO_CLASSIFICACAO";
 
     private readonly CascadingFixture _fixture;
 
@@ -710,14 +708,14 @@ public sealed class EnvelopeFechadoE2ETests
                     faseCanonicaId = Catalogos.FaseResultadoPreliminarId,
                     inicio = new DateTimeOffset(2026, 3, 25, 0, 0, 0, TimeSpan.Zero),
                     fim = new DateTimeOffset(2026, 3, 25, 18, 0, 0, TimeSpan.Zero),
-                    // A fase publica preliminar e definitiva da mesma matéria e por isso
-                    // conclui a si mesma — não declara fase concluinte. Os dois tipos são
-                    // semeados à parte de TiposDeAtoSeeder, que só cobre os dois atos da
-                    // sessão editorial.
+                    // A fase publica preliminar e definitiva da mesma matéria, com o mesmo
+                    // tipo de ato, e por isso conclui a si mesma — não declara fase
+                    // concluinte. O tipo é semeado à parte de TiposDeAtoSeeder, que só cobre
+                    // os dois atos da sessão editorial.
                     produtos = new object[]
                     {
-                        new { atoCodigo = CodigoAtoResultadoPreliminar, papel = PapelProdutoFaseCodigo.Preliminar },
-                        new { atoCodigo = CodigoAtoResultadoDefinitivo, papel = PapelProdutoFaseCodigo.Definitivo },
+                        new { atoCodigo = CodigoAtoResultado, papel = PapelProdutoFaseCodigo.Preliminar },
+                        new { atoCodigo = CodigoAtoResultado, papel = PapelProdutoFaseCodigo.Definitivo },
                     },
                     faseConcluinteCodigo = (string?)null,
                     emiteParecerIndividual = true,
@@ -1147,8 +1145,7 @@ public sealed class EnvelopeFechadoE2ETests
         Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.PublicacoesDbContext db =
             scope.ServiceProvider.GetRequiredService<Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.PublicacoesDbContext>();
 
-        await GarantirTipoDeAtoDeResultadoAsync(db, CodigoAtoResultadoPreliminar, "Resultado preliminar");
-        await GarantirTipoDeAtoDeResultadoAsync(db, CodigoAtoResultadoDefinitivo, "Resultado definitivo");
+        await GarantirTipoDeAtoDeResultadoAsync(db, CodigoAtoResultado, "Resultado da classificação");
         await db.SaveChangesAsync().ConfigureAwait(false);
     }
 

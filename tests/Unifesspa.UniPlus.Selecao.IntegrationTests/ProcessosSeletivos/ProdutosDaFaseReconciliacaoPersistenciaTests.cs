@@ -40,7 +40,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
         {
             ProcessoSeletivo processo = NovoProcesso($"PS produtos {Guid.CreateVersion7()}");
             processo.DefinirCronogramaFases(
-                [Fase(faseCanonicaOrigemId, [ProdutoDaFase.Criar("HOMOLOGACAO_PRELIMINAR", PapelProdutoFase.Definitivo)])],
+                [Fase(faseCanonicaOrigemId, [ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", papel: null)])],
                 [],
                 PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -55,13 +55,13 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
         {
             ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
-            // O mesmo ato_codigo com outro papel, mais um segundo produto: é a edição comum de
-            // quem passa a declarar o ciclo recursal da fase.
+            // O mesmo ato_codigo com outro papel, mais a publicação definitiva da mesma
+            // matéria: é a edição comum de quem passa a declarar o ciclo recursal da fase.
             Result redefinicao = processo.DefinirCronogramaFases(
                 [Fase(faseCanonicaOrigemId,
                 [
-                    ProdutoDaFase.Criar("HOMOLOGACAO_PRELIMINAR", PapelProdutoFase.Preliminar),
-                    ProdutoDaFase.Criar("HOMOLOGACAO_DEFINITIVA", PapelProdutoFase.Definitivo),
+                    ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Preliminar),
+                    ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo),
                 ])],
                 [],
                 PrecondicaoIfMatch.Curinga);
@@ -76,9 +76,9 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
             IReadOnlyCollection<ProdutoDaFase> produtos = processo.CronogramaFases.Single().Produtos;
 
             produtos.Should().HaveCount(2);
-            produtos.Should().ContainSingle(p => p.AtoCodigo == "HOMOLOGACAO_PRELIMINAR")
+            produtos.Should().ContainSingle(p => p.Papel == PapelProdutoFase.Preliminar)
                 .Which.Should().Match<ProdutoDaFase>(p =>
-                    p.Id == produtoIdAntes && p.Papel == PapelProdutoFase.Preliminar,
+                    p.Id == produtoIdAntes && p.AtoCodigo == "RESULTADO_HOMOLOGACAO",
                     "o produto que permanece é retargetado na linha rastreada, não recriado — é o Id dele que o ato publicado usa para achar a configuração de recurso");
         }
     }
@@ -157,8 +157,8 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
             processo.DefinirCronogramaFases(
                 [Fase(faseCanonicaOrigemId,
                 [
-                    ProdutoDaFase.Criar("HOMOLOGACAO_PRELIMINAR", PapelProdutoFase.Preliminar),
-                    ProdutoDaFase.Criar("HOMOLOGACAO_DEFINITIVA", PapelProdutoFase.Definitivo),
+                    ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Preliminar),
+                    ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo),
                 ])],
                 [],
                 PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -172,7 +172,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
         {
             ProcessoSeletivo processo = await CarregarAsync(db, processoId);
             processo.DefinirCronogramaFases(
-                [Fase(faseCanonicaOrigemId, [ProdutoDaFase.Criar("HOMOLOGACAO_DEFINITIVA", PapelProdutoFase.Definitivo)])],
+                [Fase(faseCanonicaOrigemId, [ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo)])],
                 [],
                 PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
@@ -184,7 +184,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
             ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
             processo.CronogramaFases.Single().Produtos.Should().ContainSingle()
-                .Which.AtoCodigo.Should().Be("HOMOLOGACAO_DEFINITIVA");
+                .Which.Papel.Should().Be(PapelProdutoFase.Definitivo);
         }
     }
 

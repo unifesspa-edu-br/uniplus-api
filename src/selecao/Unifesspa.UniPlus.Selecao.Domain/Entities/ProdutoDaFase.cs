@@ -32,7 +32,7 @@ public sealed class ProdutoDaFase : EntityBase
 {
     public Guid FaseCronogramaId { get; private set; }
 
-    /// <summary>Código do tipo de ato publicado (ex.: <c>"RESULTADO_PRELIMINAR"</c>) — chave natural dentro da fase.</summary>
+    /// <summary>Código do tipo de ato publicado (ex.: <c>"GABARITO"</c>); com o papel, é a chave natural dentro da fase.</summary>
     public string AtoCodigo { get; private set; } = string.Empty;
 
     /// <summary>

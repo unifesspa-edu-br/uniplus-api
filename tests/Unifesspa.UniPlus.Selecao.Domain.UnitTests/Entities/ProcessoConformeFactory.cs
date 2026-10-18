@@ -130,11 +130,11 @@ internal static class ProcessoConformeFactory
             // que os testes desta suíte tomam como ponto de partida. O Id é fixo para que
             // quem monta a regra possa declarar a âncora antes de a fase existir.
             produtos: regraRecurso is null
-                ? [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)]
+                ? [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)]
                 :
                 [
-                    ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar),
-                    ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo),
+                    ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
+                    ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
                 ],
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,

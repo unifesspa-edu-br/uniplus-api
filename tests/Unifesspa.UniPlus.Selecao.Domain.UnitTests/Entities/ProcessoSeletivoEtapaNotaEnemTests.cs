@@ -190,7 +190,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         EtapaProcesso etapa = EtapaNotaEnem();
-        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_PRELIMINAR", papel)]).IsSuccess.Should().BeTrue();
+        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", papel)]).IsSuccess.Should().BeTrue();
 
         Result result = processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
 
@@ -215,7 +215,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     {
         EtapaProcesso comTudo = EtapaNotaEnemForaDaMedia(CaraterEtapa.Eliminatoria);
         comTudo.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA")]).IsSuccess.Should().BeTrue();
-        comTudo.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
+        comTudo.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
 
         NovoProcesso().DefinirEtapas([comTudo, EtapaNotaEnem(ordem: 2)], PrecondicaoIfMatch.Ausente)
             .Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemDuplicada");
@@ -224,7 +224,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
 
         EtapaProcesso comBancaEProduto = EtapaNotaEnem();
         comBancaEProduto.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA")]).IsSuccess.Should().BeTrue();
-        comBancaEProduto.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
+        comBancaEProduto.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
         NovoProcesso().DefinirEtapas([comBancaEProduto], PrecondicaoIfMatch.Ausente)
             .Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComBanca");
     }

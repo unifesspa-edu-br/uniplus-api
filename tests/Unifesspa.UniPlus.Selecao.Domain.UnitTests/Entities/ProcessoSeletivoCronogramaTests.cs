@@ -228,10 +228,10 @@ public sealed class ProcessoSeletivoCronogramaTests
 
     // ── Conclusão do ciclo recursal por matéria — os três estados legítimos e as violações ──
 
-    private static IReadOnlyList<ProdutoDaFase> Preliminar(string atoCodigo = "RESULTADO_PRELIMINAR") =>
+    private static IReadOnlyList<ProdutoDaFase> Preliminar(string atoCodigo = "RESULTADO_CLASSIFICACAO") =>
         [ProdutoDaFase.Criar(atoCodigo, PapelProdutoFase.Preliminar)];
 
-    private static IReadOnlyList<ProdutoDaFase> Definitiva(string atoCodigo = "RESULTADO_FINAL") =>
+    private static IReadOnlyList<ProdutoDaFase> Definitiva(string atoCodigo = "RESULTADO_CLASSIFICACAO") =>
         [ProdutoDaFase.Criar(atoCodigo, PapelProdutoFase.Definitivo)];
 
     [Fact(DisplayName = "Estado 1: fase que NÃO publica preliminar e não declara conclusão é aceita")]
@@ -254,8 +254,8 @@ public sealed class ProcessoSeletivoCronogramaTests
             "HOMOLOGACAO",
             produtos:
             [
-                ProdutoDaFase.Criar("HOMOLOGACAO_PRELIMINAR", PapelProdutoFase.Preliminar),
-                ProdutoDaFase.Criar("HOMOLOGACAO_DEFINITIVA", PapelProdutoFase.Definitivo),
+                ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Preliminar),
+                ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo),
             ]).Value!;
 
         Result resultado = processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente);
@@ -292,6 +292,28 @@ public sealed class ProcessoSeletivoCronogramaTests
             .Which.Should().Match<FieldError>(e =>
                 e.Field == "fases[0].faseConcluinteCodigo"
                 && e.Error.Code == "ProcessoSeletivo.ConclusaoNaoDeclarada");
+    }
+
+    [Fact(DisplayName = "CA-10: fase sem concluinte que publica o preliminar de um tipo e só o definitivo de outro é recusada")]
+    public void Conclusao_SemDeclaracaoComDefinitivoDeOutroTipo_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = Fase(
+            1,
+            "AVALIACAO",
+            produtos:
+            [
+                ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
+                ProdutoDaFase.Criar("GABARITO", PapelProdutoFase.Definitivo),
+            ]).Value!;
+
+        Result resultado = processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsFailure.Should().BeTrue();
+        FieldError erro = resultado.Errors.Should().ContainSingle().Subject;
+        erro.Field.Should().Be("fases[0].faseConcluinteCodigo");
+        erro.Error.Code.Should().Be("ProcessoSeletivo.ConclusaoNaoDeclarada");
+        erro.Error.Message.Should().Contain("'RESULTADO_CLASSIFICACAO'");
     }
 
     [Fact(DisplayName = "CA-09: fase que declara concluinte SEM publicar preliminar é recusada")]
@@ -341,8 +363,8 @@ public sealed class ProcessoSeletivoCronogramaTests
             "AVALIACAO",
             produtos:
             [
-                ProdutoDaFase.Criar("GABARITO_DEFINITIVO", PapelProdutoFase.Definitivo),
-                ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar),
+                ProdutoDaFase.Criar("GABARITO", PapelProdutoFase.Definitivo),
+                ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
             ],
             faseConcluinteCodigo: "RESULTADO_FINAL").Value!;
         FaseCronograma resultadoFinal = Fase(2, "RESULTADO_FINAL", produtos: Definitiva()).Value!;
@@ -362,8 +384,8 @@ public sealed class ProcessoSeletivoCronogramaTests
             "AVALIACAO",
             produtos:
             [
-                ProdutoDaFase.Criar("GABARITO_DEFINITIVO", PapelProdutoFase.Definitivo),
-                ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar),
+                ProdutoDaFase.Criar("GABARITO", PapelProdutoFase.Definitivo),
+                ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
             ],
             faseConcluinteCodigo: "RECURSOS").Value!;
         FaseCronograma recursos = Fase(2, "RECURSOS").Value!;
@@ -404,6 +426,65 @@ public sealed class ProcessoSeletivoCronogramaTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle()
             .Which.Error.Code.Should().Be("ProcessoSeletivo.FaseConcluinteSemResultadoDefinitivo");
+    }
+
+    [Fact(DisplayName = "CA-10: concluinte que só publica o definitivo de OUTRO tipo de ato é recusada")]
+    public void Conclusao_ConcluinteComDefinitivoDeOutroTipo_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma abre = Fase(
+            1, "RESULTADO_PRELIMINAR", produtos: Preliminar("GABARITO"), faseConcluinteCodigo: "RESULTADO_FINAL").Value!;
+        FaseCronograma concluinte = Fase(2, "RESULTADO_FINAL", produtos: Definitiva("RESULTADO_CLASSIFICACAO")).Value!;
+
+        Result resultado = processo.DefinirCronogramaFases([abre, concluinte], [], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsFailure.Should().BeTrue();
+        FieldError erro = resultado.Errors.Should().ContainSingle().Subject;
+        erro.Field.Should().Be("fases[0].faseConcluinteCodigo");
+        erro.Error.Code.Should().Be("ProcessoSeletivo.FaseConcluinteSemResultadoDefinitivo");
+        erro.Error.Message.Should().Contain("'GABARITO'");
+    }
+
+    [Fact(DisplayName = "CA-10: concluinte precisa fechar cada matéria que a fase deixa aberta, e não só uma")]
+    public void Conclusao_ConcluinteQueFechaSoUmaDasMaterias_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma abre = Fase(
+            1,
+            "AVALIACAO",
+            produtos:
+            [
+                ProdutoDaFase.Criar("GABARITO", PapelProdutoFase.Preliminar),
+                ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
+            ],
+            faseConcluinteCodigo: "RESULTADO_FINAL").Value!;
+        FaseCronograma concluinte = Fase(2, "RESULTADO_FINAL", produtos: Definitiva("GABARITO")).Value!;
+
+        Result resultado = processo.DefinirCronogramaFases([abre, concluinte], [], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle().Which.Error.Message.Should().Contain("'RESULTADO_CLASSIFICACAO'");
+    }
+
+    [Fact(DisplayName = "CA-10: a matéria que a própria fase fecha não precisa do definitivo na concluinte")]
+    public void Conclusao_MateriaFechadaNaPropriaFase_NaoExigeDefinitivoNaConcluinte()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma abre = Fase(
+            1,
+            "AVALIACAO",
+            produtos:
+            [
+                ProdutoDaFase.Criar("GABARITO", PapelProdutoFase.Preliminar),
+                ProdutoDaFase.Criar("GABARITO", PapelProdutoFase.Definitivo),
+                ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
+            ],
+            faseConcluinteCodigo: "RESULTADO_FINAL").Value!;
+        FaseCronograma concluinte = Fase(2, "RESULTADO_FINAL", produtos: Definitiva("RESULTADO_CLASSIFICACAO")).Value!;
+
+        Result resultado = processo.DefinirCronogramaFases([abre, concluinte], [], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
     [Fact(DisplayName = "CA-10: concluinte de ORDEM anterior à fase que ela encerra é recusada")]
