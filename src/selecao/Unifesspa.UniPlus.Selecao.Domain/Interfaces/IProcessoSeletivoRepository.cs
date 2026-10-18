@@ -157,6 +157,13 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
     Task<string?> ObterNomeAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Sigla da unidade administradora do processo, o órgão que assina os seus atos. <see langword="null"/>
+    /// quando o processo não existe.
+    /// </summary>
+    /// <remarks>Projeção estreita, pelo mesmo motivo de <see cref="ObterNomeAsync"/>.</remarks>
+    Task<string?> ObterSiglaDaUnidadeAdministradoraAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// <see langword="true"/> se existe um Processo Seletivo com este id
     /// (checagem barata via <c>AnyAsync</c>, sem materializar o agregado). Usada
     /// pelo seletor de snapshot vigente para distinguir 404 (processo

@@ -303,6 +303,13 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             .Select(p => p.Nome)
             .FirstOrDefaultAsync(cancellationToken);
 
+    public Task<string?> ObterSiglaDaUnidadeAdministradoraAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default) =>
+        _context.ProcessosSeletivos
+            .AsNoTracking()
+            .Where(p => p.Id == processoSeletivoId)
+            .Select(p => p.UnidadeAdministradora.Sigla)
+            .FirstOrDefaultAsync(cancellationToken);
+
     public async Task<bool> ExisteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _context.ProcessosSeletivos

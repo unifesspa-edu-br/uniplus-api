@@ -51,4 +51,76 @@ public sealed class AtoDoProcessoRepository : IAtoDoProcessoRepository
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
     }
+
+    public async Task<Guid?> ObterProcessoDoAtoAsync(Guid atoId, CancellationToken cancellationToken = default)
+    {
+        return await _context.AtosDoProcesso
+            .AsNoTracking()
+            .Where(a => a.Id == atoId)
+            .Select(a => (Guid?)a.ProcessoSeletivoId)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<IReadOnlyList<Guid>> ListarCadeiaDeCorrecaoAsync(Guid atoId, CancellationToken cancellationToken = default)
+    {
+        List<Guid> cadeia = [];
+        Guid? atual = atoId;
+        while (atual is { } id && !cadeia.Contains(id))
+        {
+            var registro = await _context.AtosDoProcesso
+                .AsNoTracking()
+                .Where(a => a.Id == id)
+                .Select(a => new { a.Id, a.AtoCorrigidoId })
+                .FirstOrDefaultAsync(cancellationToken)
+                .ConfigureAwait(false);
+            if (registro is null)
+            {
+                break;
+            }
+
+            cadeia.Add(registro.Id);
+            atual = registro.AtoCorrigidoId;
+        }
+
+        return cadeia;
+    }
+
+    public async Task<Guid?> ObterAtoQueCorrigeAsync(Guid atoCorrigidoId, CancellationToken cancellationToken = default)
+    {
+        return await _context.AtosDoProcesso
+            .AsNoTracking()
+            .Where(a => a.AtoCorrigidoId == atoCorrigidoId)
+            .Select(a => (Guid?)a.Id)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<IReadOnlySet<Guid>> ListarDocumentosJaUsadosAsync(
+        Guid processoSeletivoId,
+        IReadOnlyCollection<Guid> documentoIds,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(documentoIds);
+
+        Guid[] ids = [.. documentoIds];
+
+        List<Guid> principais = await _context.AtosDoProcesso
+            .AsNoTracking()
+            .Where(a => a.ProcessoSeletivoId == processoSeletivoId && ids.Contains(a.DocumentoPrincipalId))
+            .Select(a => a.DocumentoPrincipalId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        List<Guid> anexos = await _context.AtosDoProcesso
+            .AsNoTracking()
+            .Where(a => a.ProcessoSeletivoId == processoSeletivoId)
+            .SelectMany(a => a.Anexos)
+            .Where(x => ids.Contains(x.DocumentoAPublicarId))
+            .Select(x => x.DocumentoAPublicarId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return principais.Concat(anexos).ToHashSet();
+    }
 }

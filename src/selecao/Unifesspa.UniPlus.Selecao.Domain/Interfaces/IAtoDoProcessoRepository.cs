@@ -33,4 +33,31 @@ public interface IAtoDoProcessoRepository
     Task<IReadOnlyList<AtoDoProcesso>> ListarDoProcessoAsync(
         Guid processoSeletivoId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// O processo a que o ato pertence, segundo o registro da Seleção. Nulo quando o ato não tem
+    /// registro — o de outro domínio, ou um id que não é de ato.
+    /// </summary>
+    Task<Guid?> ObterProcessoDoAtoAsync(Guid atoId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Os atos da cadeia de correção que termina em <paramref name="atoId"/>, do próprio ato à raiz.
+    /// Vazio quando <paramref name="atoId"/> não tem registro. A cadeia é linear, então a leitura
+    /// segue o ato corrigido de cada um até o que não corrige ninguém.
+    /// </summary>
+    Task<IReadOnlyList<Guid>> ListarCadeiaDeCorrecaoAsync(Guid atoId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// O ato que corrige <paramref name="atoCorrigidoId"/>, ainda que pendente; nulo quando nenhum o
+    /// corrige. Só o registro da Seleção enxerga o ato pendente: o Publicações ainda não o conhece.
+    /// </summary>
+    Task<Guid?> ObterAtoQueCorrigeAsync(Guid atoCorrigidoId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Dos documentos pedidos, os que o processo já usou como principal ou como anexo de algum ato.
+    /// </summary>
+    Task<IReadOnlySet<Guid>> ListarDocumentosJaUsadosAsync(
+        Guid processoSeletivoId,
+        IReadOnlyCollection<Guid> documentoIds,
+        CancellationToken cancellationToken = default);
 }

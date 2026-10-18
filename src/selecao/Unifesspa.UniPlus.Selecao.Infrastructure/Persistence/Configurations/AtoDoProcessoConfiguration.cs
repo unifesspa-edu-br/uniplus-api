@@ -43,9 +43,13 @@ public sealed class AtoDoProcessoConfiguration : IEntityTypeConfiguration<AtoDoP
             .OnDelete(DeleteBehavior.Restrict);
 
         // Sem FK: o ato corrigido pode ser o que criou uma versão ou outro registro, e ele é do
-        // Publicações (ADR-0061).
+        // Publicações (ADR-0061). Único: a cadeia de correção é linear (ADR-0103), e o Publicações só
+        // enxerga a correção depois de registrá-la — duas correções pendentes do mesmo ato só são
+        // barradas aqui.
         builder.HasIndex(a => a.AtoCorrigidoId)
-            .HasDatabaseName("ix_atos_do_processo_ato_corrigido");
+            .IsUnique()
+            .HasFilter("ato_corrigido_id IS NOT NULL")
+            .HasDatabaseName("ux_atos_do_processo_ato_corrigido");
 
         // A consulta administrativa filtra por processo e entrega do mais recente para o mais
         // antigo; as colunas descendentes evitam o passo de ordenação.
