@@ -303,7 +303,9 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasName("pk_atos_do_processo");
 
                     b.HasIndex("AtoCorrigidoId")
-                        .HasDatabaseName("ix_atos_do_processo_ato_corrigido");
+                        .IsUnique()
+                        .HasDatabaseName("ux_atos_do_processo_ato_corrigido")
+                        .HasFilter("ato_corrigido_id IS NOT NULL");
 
                     b.HasIndex("DocumentoPrincipalId")
                         .HasDatabaseName("ix_atos_do_processo_documento_principal_id");
