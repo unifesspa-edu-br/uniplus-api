@@ -1251,8 +1251,10 @@ public sealed class ProcessoSeletivoController : ControllerBase
             : Ok(conformidade.Value!);
     }
 
+    // O item nulo segue para o validator, que o recusa com 4xx — desreferenciar aqui responderia
+    // 500 antes de o comando existir.
     private static List<AnexoSolicitadoDoEdital>? MapearAnexos(IReadOnlyList<AnexoDoEditalRequest>? anexos) =>
-        anexos?.Select(static a => new AnexoSolicitadoDoEdital(a.DocumentoId, a.Nome)).ToList();
+        anexos?.Select(static a => a is null ? null! : new AnexoSolicitadoDoEdital(a.DocumentoId, a.Nome)).ToList();
 
     /// <summary>
     /// Resolve o snapshot congelado vigente do processo num instante (RN08,
