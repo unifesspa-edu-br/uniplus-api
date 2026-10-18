@@ -32,5 +32,11 @@ public sealed class PublicarProcessoSeletivoCommandValidator : AbstractValidator
         RuleFor(x => x.Numero)
             .MaximumLength(NumeroMaxLength)
             .WithMessage($"Número do Edital deve ter no máximo {NumeroMaxLength} caracteres.");
+
+        // A lista é opcional (nula ou vazia quando o edital não tem anexo), mas um item nulo dentro
+        // dela é corpo malformado: recusado aqui, antes de o handler tentar lê-lo.
+        RuleForEach(x => x.Anexos)
+            .NotNull()
+            .WithMessage("Item da lista de anexos não pode ser nulo.");
     }
 }

@@ -67,4 +67,13 @@ public sealed class RetificarProcessoSeletivoCommandValidatorTests
         resultado.IsValid.Should().BeFalse();
         resultado.Errors.Should().Contain(e => e.PropertyName == nameof(RetificarProcessoSeletivoCommand.Motivo));
     }
+
+    [Fact(DisplayName = "Item nulo na lista de anexos é recusado antes do handler, em vez de responder 500")]
+    public void AnexoNulo_Recusado()
+    {
+        ValidationResult resultado = Validator.Validate(ComandoValido() with { Anexos = [null!] });
+
+        resultado.IsValid.Should().BeFalse();
+        resultado.Errors.Should().Contain(e => e.PropertyName.StartsWith(nameof(RetificarProcessoSeletivoCommand.Anexos), StringComparison.Ordinal));
+    }
 }
