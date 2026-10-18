@@ -63,10 +63,10 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
                 [
                     Fase(1, "INSCRICAO", faseInscricaoOrigem, []),
                     Fase(2, "RESULTADO_PRELIMINAR", famePreliminarOrigem,
-                        [ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar)],
+                        [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)],
                         faseConcluinteCodigo: "RESULTADO_FINAL"),
                     Fase(3, "RESULTADO_FINAL", faseFinalOrigem,
-                        [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)]),
+                        [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)]),
                 ],
                 [],
                 PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -82,8 +82,8 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
 
             processoId = processo.Id;
             versaoId = versao.Id;
-            produtoPreliminarId = ProdutoDe(processo, "RESULTADO_PRELIMINAR").Id;
-            produtoFinalId = ProdutoDe(processo, "RESULTADO_FINAL").Id;
+            produtoPreliminarId = ProdutoDe(processo, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar).Id;
+            produtoFinalId = ProdutoDe(processo, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo).Id;
         }
 
         // A sessão editorial insere HOMOLOGACAO na ordem 2 e empurra as duas fases de
@@ -102,10 +102,10 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
                     Fase(2, "HOMOLOGACAO", Guid.CreateVersion7(),
                         [ProdutoDaFase.Criar("HOMOLOGACAO_INSCRICOES", PapelProdutoFase.Definitivo)]),
                     Fase(3, "RESULTADO_PRELIMINAR", famePreliminarOrigem,
-                        [ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar)],
+                        [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)],
                         faseConcluinteCodigo: "RESULTADO_FINAL"),
                     Fase(4, "RESULTADO_FINAL", faseFinalOrigem,
-                        [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)]),
+                        [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)]),
                 ],
                 [],
                 PrecondicaoIfMatch.Curinga);
@@ -118,7 +118,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
         {
             ProcessoSeletivo deslocado = await CarregarAsync(conferencia, processoId);
             deslocado.CronogramaFases.Should().HaveCount(4, "pré-condição: a sessão inseriu a fase no meio");
-            ProdutoDe(deslocado, "RESULTADO_PRELIMINAR").Id.Should().Be(produtoPreliminarId,
+            ProdutoDe(deslocado, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar).Id.Should().Be(produtoPreliminarId,
                 "pré-condição: renumerar a fase preserva o Id do produto — é o que faz o Id congelado colidir no descarte");
         }
 
@@ -156,9 +156,9 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
             FaseCronograma final = reposto.CronogramaFases.Single(f => f.Codigo == "RESULTADO_FINAL");
 
             preliminar.Produtos.Should().ContainSingle()
-                .Which.AtoCodigo.Should().Be("RESULTADO_PRELIMINAR");
+                .Which.AtoCodigo.Should().Be("RESULTADO_CLASSIFICACAO");
             final.Produtos.Should().ContainSingle()
-                .Which.AtoCodigo.Should().Be("RESULTADO_FINAL");
+                .Which.AtoCodigo.Should().Be("RESULTADO_CLASSIFICACAO");
 
             reposto.CronogramaFases.SelectMany(f => f.Produtos).Select(p => p.Id)
                 .Should().OnlyHaveUniqueItems("nenhum produto pode existir em duas fases ao mesmo tempo");
@@ -192,7 +192,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
                 Regra(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, 'f'), PrecondicaoIfMatch.Ausente)
                 .IsSuccess.Should().BeTrue();
 
-            ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar);
+            ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar);
             processo.DefinirCronogramaFases(
                 [
                     Fase(1, "INSCRICAO", faseInscricaoOrigem, []),
@@ -200,7 +200,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
                         faseConcluinteCodigo: "RESULTADO_FINAL",
                         regraRecurso: Recurso(preliminar.Id)),
                     Fase(3, "RESULTADO_FINAL", faseFinalOrigem,
-                        [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)]),
+                        [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)]),
                 ],
                 [],
                 PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -215,8 +215,8 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
 
             processoId = processo.Id;
             versaoId = publicacao.Value!.Id;
-            produtoPreliminarId = ProdutoDe(processo, "RESULTADO_PRELIMINAR").Id;
-            produtoFinalId = ProdutoDe(processo, "RESULTADO_FINAL").Id;
+            produtoPreliminarId = ProdutoDe(processo, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar).Id;
+            produtoFinalId = ProdutoDe(processo, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo).Id;
         }
 
         // A sessão editorial insere HOMOLOGACAO na ordem 2 e empurra as fases de resultado
@@ -230,7 +230,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
             tracked.AbrirRetificacao("Insere a homologação no meio do cronograma", versaoDoBanco, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(tracked), "teste", Agora)
                 .IsSuccess.Should().BeTrue();
 
-            ProdutoDaFase preliminarDaSessao = ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar);
+            ProdutoDaFase preliminarDaSessao = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar);
             preliminarDaSessao.Id.Should().NotBe(produtoPreliminarId,
                 "pré-condição: a coleção que chega traz identidade nova, e é a rastreada que sobrevive");
 
@@ -243,7 +243,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
                         faseConcluinteCodigo: "RESULTADO_FINAL",
                         regraRecurso: Recurso(preliminarDaSessao.Id)),
                     Fase(4, "RESULTADO_FINAL", faseFinalOrigem,
-                        [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)]),
+                        [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)]),
                 ],
                 [],
                 PrecondicaoIfMatch.Curinga);
@@ -319,11 +319,11 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
         [
             FaseReidratada(1, "INSCRICAO", faseInscricaoOrigem, [], null),
             FaseReidratada(2, "RESULTADO_PRELIMINAR", fasePreliminarOrigem,
-                [ProdutoDaFase.Reidratar(produtoPreliminarId, "RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar)],
+                [ProdutoDaFase.Reidratar(produtoPreliminarId, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)],
                 "RESULTADO_FINAL",
                 Recurso(produtoPreliminarId)),
             FaseReidratada(3, "RESULTADO_FINAL", faseFinalOrigem,
-                [ProdutoDaFase.Reidratar(produtoFinalId, "RESULTADO_FINAL", PapelProdutoFase.Definitivo)],
+                [ProdutoDaFase.Reidratar(produtoFinalId, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
                 null),
         ],
         documentosExigidos: [],
@@ -356,10 +356,10 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
         [
             FaseReidratada(1, "INSCRICAO", faseInscricaoOrigem, [], null),
             FaseReidratada(2, "RESULTADO_PRELIMINAR", fasePreliminarOrigem,
-                [ProdutoDaFase.Reidratar(produtoPreliminarId, "RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar)],
+                [ProdutoDaFase.Reidratar(produtoPreliminarId, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)],
                 "RESULTADO_FINAL"),
             FaseReidratada(3, "RESULTADO_FINAL", faseFinalOrigem,
-                [ProdutoDaFase.Reidratar(produtoFinalId, "RESULTADO_FINAL", PapelProdutoFase.Definitivo)],
+                [ProdutoDaFase.Reidratar(produtoFinalId, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
                 null),
         ],
         documentosExigidos: [],
@@ -431,8 +431,8 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
         TimeProvider.System,
         contexto ?? ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
-    private static ProdutoDaFase ProdutoDe(ProcessoSeletivo processo, string atoCodigo) =>
-        processo.CronogramaFases.SelectMany(f => f.Produtos).Single(p => p.AtoCodigo == atoCodigo);
+    private static ProdutoDaFase ProdutoDe(ProcessoSeletivo processo, string atoCodigo, PapelProdutoFase papel) =>
+        processo.CronogramaFases.SelectMany(f => f.Produtos).Single(p => p.AtoCodigo == atoCodigo && p.Papel == papel);
 
     private static FaseCronograma Fase(
         int ordem,

@@ -131,8 +131,8 @@ public sealed class DefinirEtapasCommandHandlerTests
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
         ITipoAtoPublicadoReader tipoAtoPublicadoReader = Substitute.For<ITipoAtoPublicadoReader>();
-        tipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_PRELIMINAR", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(AtoDeResultado("RESULTADO_PRELIMINAR"));
+        tipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(AtoDeResultado("RESULTADO_CLASSIFICACAO"));
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
 
         // Quatro produtos, dois por etapa, todos do MESMO código: uma consulta basta.
@@ -143,15 +143,15 @@ public sealed class DefinirEtapasCommandHandlerTests
                     "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
                     Produtos:
                     [
-                        new ProdutoDaEtapaInput("RESULTADO_PRELIMINAR", "PRELIMINAR"),
-                        new ProdutoDaEtapaInput("RESULTADO_PRELIMINAR", "DEFINITIVO"),
+                        new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "PRELIMINAR"),
+                        new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "DEFINITIVO"),
                     ], Bancas: [], Recursos: []),
                 new EtapaProcessoInput(
                     "Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 1m, null, 2,
                     Produtos:
                     [
-                        new ProdutoDaEtapaInput("RESULTADO_PRELIMINAR", "PRELIMINAR"),
-                        new ProdutoDaEtapaInput("RESULTADO_PRELIMINAR", "DEFINITIVO"),
+                        new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "PRELIMINAR"),
+                        new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "DEFINITIVO"),
                     ], Bancas: [], Recursos: []),
             ],
             PrecondicaoIfMatch.Ausente);
@@ -161,7 +161,7 @@ public sealed class DefinirEtapasCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
         await tipoAtoPublicadoReader.Received(1).ObterVigenteAsync(
-            "RESULTADO_PRELIMINAR", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>());
+            "RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>());
     }
 
     private static ProcessoSeletivo ProcessoComEtapa(out EtapaProcesso etapa, CaraterEtapa carater = CaraterEtapa.Classificatoria)
@@ -210,15 +210,15 @@ public sealed class DefinirEtapasCommandHandlerTests
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
 
         ITipoAtoPublicadoReader catalogoComOAto = Substitute.For<ITipoAtoPublicadoReader>();
-        catalogoComOAto.ObterVigenteAsync("RESULTADO_PRELIMINAR", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(AtoDeResultado("RESULTADO_PRELIMINAR"));
+        catalogoComOAto.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(AtoDeResultado("RESULTADO_CLASSIFICACAO"));
 
         DefinirEtapasCommand primeiraGravacao = new(
             processo.Id,
             [
                 new EtapaProcessoInput(
                     "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
-                    Produtos: [new ProdutoDaEtapaInput("RESULTADO_PRELIMINAR", "PRELIMINAR")], Bancas: [], Recursos: []),
+                    Produtos: [new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "PRELIMINAR")], Bancas: [], Recursos: []),
             ],
             PrecondicaoIfMatch.Ausente);
 
@@ -238,7 +238,7 @@ public sealed class DefinirEtapasCommandHandlerTests
                 new EtapaProcessoInput(
                     "Prova Objetiva — 1ª fase", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
                     etapaId,
-                    Produtos: [new ProdutoDaEtapaInput("RESULTADO_PRELIMINAR", "PRELIMINAR")], Bancas: [], Recursos: []),
+                    Produtos: [new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "PRELIMINAR")], Bancas: [], Recursos: []),
             ],
             PrecondicaoIfMatch.Curinga);
 
@@ -313,9 +313,9 @@ public sealed class DefinirEtapasCommandHandlerTests
         // a âncora indevida. As três flags são independentes no catálogo: garantir que o ato
         // é resultado não garante que ele não congela a configuração nem que é irreversível.
         ITipoAtoPublicadoReader tipoAtoPublicadoReader = Substitute.For<ITipoAtoPublicadoReader>();
-        tipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_PRELIMINAR", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+        tipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(new TipoAtoPublicadoView(
-                "RESULTADO_PRELIMINAR", "Resultado preliminar",
+                "RESULTADO_CLASSIFICACAO", "Resultado da classificação",
                 CongelaConfiguracao: congelaConfiguracao, UnicoPorObjeto: false,
                 EfeitoIrreversivel: efeitoIrreversivel, EhResultado: true));
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
@@ -325,12 +325,12 @@ public sealed class DefinirEtapasCommandHandlerTests
             [
                 new EtapaProcessoInput(
                     "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
-                    Produtos: [new ProdutoDaEtapaInput("RESULTADO_PRELIMINAR", "PRELIMINAR")],
+                    Produtos: [new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "PRELIMINAR")],
                     Recursos:
                     [
                         new RecursoDaEtapaInput(
                             AncoraDoRecurso.AtoPublicado, "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1",
-                            2m, UnidadePrazo.DiasUteis, "RESULTADO_PRELIMINAR", null, null, null, null),
+                            2m, UnidadePrazo.DiasUteis, "RESULTADO_CLASSIFICACAO", null, null, null, null),
                     ], Bancas: []),
             ],
             PrecondicaoIfMatch.Ausente);
@@ -742,8 +742,8 @@ public sealed class DefinirEtapasCommandHandlerTests
         regra.IsSuccess.Should().BeTrue(regra.Error?.Message);
         IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
         ITipoAtoPublicadoReader tipoAtoPublicadoReader = Substitute.For<ITipoAtoPublicadoReader>();
-        tipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_PRELIMINAR", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(AtoDeResultado("RESULTADO_PRELIMINAR"));
+        tipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(AtoDeResultado("RESULTADO_CLASSIFICACAO"));
         regraCatalogoReader
             .ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(regra.Value!);
@@ -758,14 +758,14 @@ public sealed class DefinirEtapasCommandHandlerTests
                     [
                         // O definitivo vem primeiro de propósito: é a ordem que o servidor
                         // devolve depois de reler a etapa, e era ela que derrubava a gravação.
-                        new ProdutoDaEtapaInput("RESULTADO_PRELIMINAR", "DEFINITIVO"),
-                        new ProdutoDaEtapaInput("RESULTADO_PRELIMINAR", "PRELIMINAR"),
+                        new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "DEFINITIVO"),
+                        new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "PRELIMINAR"),
                     ],
                     Recursos:
                     [
                         new RecursoDaEtapaInput(
                             AncoraDoRecurso.AtoPublicado, "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1",
-                            2m, UnidadePrazo.DiasUteis, "RESULTADO_PRELIMINAR", null, null, null, null),
+                            2m, UnidadePrazo.DiasUteis, "RESULTADO_CLASSIFICACAO", null, null, null, null),
                     ], Bancas: []),
             ],
             PrecondicaoIfMatch.Ausente);
@@ -912,7 +912,7 @@ public sealed class DefinirEtapasCommandHandlerTests
                     [
                         new RecursoDaEtapaInput(
                             AncoraDoRecurso.AtoPublicado, "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1",
-                            2m, UnidadePrazo.DiasUteis, "RESULTADO_PRELIMINAR", null, null, null, null),
+                            2m, UnidadePrazo.DiasUteis, "RESULTADO_CLASSIFICACAO", null, null, null, null),
                     ], Bancas: []),
             ],
             PrecondicaoIfMatch.Ausente);

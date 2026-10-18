@@ -122,7 +122,7 @@ public sealed class DefinirEtapasCommandValidatorTests
     {
         EtapaProcessoInput etapa = EtapaValida() with
         {
-            Produtos = [new ProdutoDaEtapaInput("RESULTADO_PRELIMINAR", "PRELIMINAR")],
+            Produtos = [new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "PRELIMINAR")],
         };
 
         ValidationResult result = new DefinirEtapasCommandValidator()

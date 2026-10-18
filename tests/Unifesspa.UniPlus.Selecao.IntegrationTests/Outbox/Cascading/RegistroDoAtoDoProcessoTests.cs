@@ -209,7 +209,7 @@ public sealed class RegistroDoAtoDoProcessoTests
     [Fact(DisplayName = "A consulta dos itens previstos lê o cronograma congelado e passa o item a publicado quando o ato dele se registra")]
     public async Task ItensPrevistos_LeOCronogramaCongeladoEAcompanhaORegistro()
     {
-        const string tipoDoItem = "RESULTADO_FINAL";
+        const string tipoDoItem = "RESULTADO_CLASSIFICACAO";
         CascadingApiFactory api = _fixture.Factory;
         using HttpClient client = api.CreateClient();
         await TiposDeAtoSeeder.SemearAsync(api.Services);

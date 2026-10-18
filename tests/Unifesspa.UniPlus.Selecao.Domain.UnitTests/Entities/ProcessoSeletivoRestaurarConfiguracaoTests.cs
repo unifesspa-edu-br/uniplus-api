@@ -200,7 +200,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
     public void Restaurar_EtapaNotaEnemComProdutoOuRecursoEmAto_Recusa()
     {
         EtapaProcesso comProduto = EtapaNotaEnemCongelada(EtapaCongelada, 1);
-        comProduto.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
+        comProduto.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
         EtapaProcesso comRecursoEmAto = EtapaNotaEnemCongelada(EtapaCongelada, 1);
         comRecursoEmAto.DefinirRecursos([RecursoDaEtapaDeTeste(AncoraDoRecurso.AtoPublicado, Guid.CreateVersion7())]).IsSuccess.Should().BeTrue();
 
@@ -1281,7 +1281,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)],
+            produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,
             bancasRequeridas: [],
@@ -1300,7 +1300,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)],
+            produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,
             bancasRequeridas: [], regraRecurso: null);
@@ -1479,7 +1479,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         coletaInscricao: false, coletaSolicitacaoIsencao: false,
         inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
         fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-        produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)],
+        produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
         faseConcluinteCodigo: null,
         emiteParecerIndividual: false,
         bancasRequeridas: [],

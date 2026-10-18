@@ -4199,8 +4199,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// edital sair publicado, o primeiro ato ser registrado e o segundo ser recusado na fila
     /// semanas depois, com o edital já congelado. O ato da publicação ou da retificação ocupa
     /// a mesma vaga, então um produto do cronograma do mesmo tipo é declaração repetida. Declarar
-    /// o mesmo tipo como preliminar e como definitivo conta como duas declarações; o tipo não
-    /// único da mesma matéria é o que cabe aos dois papéis. Quais tipos são únicos é dado do
+    /// o mesmo tipo como preliminar e como definitivo conta como duas declarações: o tipo único
+    /// é só o ato que sai uma vez no processo, sem preliminar e definitivo, e a matéria que sai
+    /// nos dois papéis ou em mais de um ciclo usa tipo não único. Quais tipos são únicos é dado do
     /// catálogo, que chega em <paramref name="tiposUnicos"/> — o agregado não o conhece (ADR-0042).
     /// </remarks>
     public DomainError? PendenciaDoTipoDeAtoUnico(TiposDeAtoUnicosPorObjeto tiposUnicos)
@@ -4361,8 +4362,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <remarks>
     /// <para>
     /// Três estados legítimos, e só eles: a fase que não publica preliminar não declara
-    /// conclusão; a que publica preliminar e também definitiva conclui a si mesma; a que
-    /// publica preliminar sem definitiva própria declara qual fase a conclui.
+    /// conclusão; a que publica o definitivo de cada preliminar conclui a si mesma; a que
+    /// deixa algum preliminar sem o definitivo do mesmo tipo declara qual fase a conclui.
     /// </para>
     /// <para>
     /// <b>A declaração vence a inferência.</b> Havendo <see cref="FaseCronograma.FaseConcluinteCodigo"/>,
@@ -4371,14 +4372,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// travessia nenhuma. A auto-conclusão só decide onde o operador não declarou nada.
     /// </para>
     /// <para>
-    /// <b>Limite conhecido da auto-conclusão.</b> Ela é inferida <b>por fase</b>: "publica
-    /// alguma preliminar e alguma definitiva". O modelo não pareia produtos por matéria — o
-    /// produto declara o código do ato e o papel, e nada diz que dois deles tratam do mesmo
-    /// assunto. Uma fase que publica o gabarito definitivo ao lado do resultado preliminar,
-    /// deixando o resultado definitivo para uma fase posterior, satisfaz a inferência sem
-    /// que o ciclo do resultado esteja concluído; declarar a fase concluinte é o que fecha
-    /// esse caso, e é por isso que a declaração tem precedência. Fechá-lo também quando o
-    /// operador omite a declaração exige um eixo de matéria que a configuração não carrega.
+    /// <b>Matéria.</b> A matéria é o tipo de ato. A fase concluinte declarada fecha o ciclo de
+    /// cada matéria que a fase concluída deixa aberta, isto é, de cada preliminar sem o
+    /// definitivo do mesmo tipo na própria fase: ela precisa publicar o definitivo com o mesmo
+    /// tipo. O definitivo de outro tipo não fecha o ciclo e o deixaria aberto para sempre.
+    /// A auto-conclusão, quando nada é declarado, também é por matéria: a fase só conclui a si
+    /// mesma quando publica o definitivo de cada tipo cujo preliminar publica. A fase que
+    /// publica o resultado preliminar e só o gabarito definitivo deixa o ciclo do resultado
+    /// aberto e precisa declarar a concluinte.
     /// </para>
     /// <para>
     /// Dentro de uma fase as checagens são encadeadas — não faz sentido conferir a ordem de
@@ -4413,14 +4414,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
             if (fase.FaseConcluinteCodigo is not { } concluinteCodigo)
             {
-                // Sem declaração, a auto-conclusão decide — com o limite descrito no
-                // <remarks>: ela pergunta se a fase publica ALGUMA definitiva, não se a
-                // definitiva trata da matéria que a preliminar abriu.
-                if (!fase.PublicaResultadoDefinitivo)
+                // Sem declaração, a fase conclui a si mesma só quando publica o definitivo de
+                // cada matéria que abre: o definitivo de outro tipo não fecha o ciclo.
+                if (fase.TiposComCicloAberto().FirstOrDefault() is { } tipoSemDefinitivoProprio)
                 {
                     violacoes.Add(new(campo, new DomainError(
                         "ProcessoSeletivo.ConclusaoNaoDeclarada",
-                        $"A fase '{fase.Codigo}' publica resultado preliminar e não publica nenhum resultado definitivo — declare qual fase do cronograma a conclui.")));
+                        $"A fase '{fase.Codigo}' publica o resultado preliminar do ato '{tipoSemDefinitivoProprio}' e não publica o definitivo do mesmo tipo — publique-o na própria fase ou declare qual fase do cronograma a conclui.")));
                 }
 
                 continue;
@@ -4452,6 +4452,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 violacoes.Add(new(campo, new DomainError(
                     "ProcessoSeletivo.FaseConcluinteSemResultadoDefinitivo",
                     $"A fase '{concluinteCodigo}', declarada como concluinte de '{fase.Codigo}', não publica nenhum resultado definitivo.")));
+                continue;
+            }
+
+            string? tipoSemDefinitivo = fase.TiposComCicloAberto()
+                .FirstOrDefault(tipo => !concluinte.PublicaResultadoDefinitivoDe(tipo));
+            if (tipoSemDefinitivo is not null)
+            {
+                violacoes.Add(new(campo, new DomainError(
+                    "ProcessoSeletivo.FaseConcluinteSemResultadoDefinitivo",
+                    $"A fase '{concluinteCodigo}', declarada como concluinte de '{fase.Codigo}', não publica o resultado definitivo do ato '{tipoSemDefinitivo}', o mesmo tipo do preliminar que '{fase.Codigo}' abre.")));
                 continue;
             }
 

@@ -228,8 +228,8 @@ internal static class CorpusEnvelope
         // A MESMA matéria nos dois papéis: é o par que a ordenação canônica precisa desempatar,
         // e é o único caso em que o código do ato não basta para fixar a posição no envelope.
         etapaObjetiva.DefinirProdutos(Ordem([
-            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(1, variante), "RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar),
-            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(2, variante), "RESULTADO_PRELIMINAR", PapelProdutoFase.Definitivo),
+            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(1, variante), "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
+            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(2, variante), "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
             // Os dois últimos existem como PAR, e é o par que importa. O acento em forma
             // decomposta faz a normalização deixar de ser identidade; a escolha do companheiro
             // faz a ordem entre eles VIRAR conforme o texto esteja normalizado ou não — os dois
@@ -638,8 +638,8 @@ internal static class CorpusEnvelope
         inicio: new DateTimeOffset(2026, 3, 25, 0, 0, 0, TimeSpan.Zero),
         fim: new DateTimeOffset(2026, 3, 25, 18, 0, 0, TimeSpan.Zero),
         produtos: Ordem<ProdutoDaFase>([
-            ProdutoDaFase.Reidratar(ProdutoId(2, 1, variante), "GABARITO_PRELIMINAR", PapelProdutoFase.Preliminar),
-            ProdutoDaFase.Reidratar(ProdutoId(2, 2, variante), "RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar),
+            ProdutoDaFase.Reidratar(ProdutoId(2, 1, variante), "GABARITO", PapelProdutoFase.Preliminar),
+            ProdutoDaFase.Reidratar(ProdutoId(2, 2, variante), "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
         ], permutar),
         faseConcluinteCodigo: "RESULTADO_FINAL",
         emiteParecerIndividual: true,
@@ -678,8 +678,9 @@ internal static class CorpusEnvelope
             ProdutoId(2, 2, variante)).Value!);
 
     /// <summary>
-    /// Fase 3: conclui o ciclo recursal aberto pela fase 2 — publica a definitiva da mesma
-    /// matéria, que é o que a declaração de concluinte da fase 2 exige que exista.
+    /// Fase 3: conclui o ciclo recursal aberto pela fase 2 — publica a definitiva de cada
+    /// matéria que a fase 2 deixa aberta (o gabarito e o resultado da classificação), que é o que a
+    /// declaração de concluinte da fase 2 exige que exista.
     /// </summary>
     private static FaseCronograma FaseResultadoFinal(int variante = 0) => FaseCronograma.Reidratar(
         id: new Guid($"6666aaaa-000{variante:x}-4000-8000-000000000003"),
@@ -693,7 +694,11 @@ internal static class CorpusEnvelope
         coletaInscricao: false, coletaSolicitacaoIsencao: false,
         inicio: new DateTimeOffset(2026, 4, 10, 0, 0, 0, TimeSpan.Zero),
         fim: new DateTimeOffset(2026, 4, 10, 18, 0, 0, TimeSpan.Zero),
-        produtos: [ProdutoDaFase.Reidratar(ProdutoId(3, 1, variante), "RESULTADO_FINAL", PapelProdutoFase.Definitivo)],
+        produtos:
+        [
+            ProdutoDaFase.Reidratar(ProdutoId(3, 1, variante), "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
+            ProdutoDaFase.Reidratar(ProdutoId(3, 2, variante), "GABARITO", PapelProdutoFase.Definitivo),
+        ],
         faseConcluinteCodigo: null,
         emiteParecerIndividual: false,
         bancasRequeridas: [],
@@ -1124,7 +1129,7 @@ internal static class CorpusEnvelope
         coletaInscricao: false, coletaSolicitacaoIsencao: false,
         inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
         fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-        produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)],
+        produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
         faseConcluinteCodigo: null,
         emiteParecerIndividual: false,
         bancasRequeridas: [],

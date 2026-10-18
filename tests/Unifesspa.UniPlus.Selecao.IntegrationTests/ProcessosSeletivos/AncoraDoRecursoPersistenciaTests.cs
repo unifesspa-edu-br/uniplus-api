@@ -53,14 +53,14 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
         // A âncora passa a apontar para o produto DEFINITIVO da mesma fase: continua sendo um
         // produto dela, então nenhuma checagem de pertinência sozinha veria o defeito — o que
         // some é a decisão contestável de que o prazo contaria.
-        await ApontarAncoraParaAsync(processoId, "RESULTADO_FINAL");
+        await ApontarAncoraParaAsync(processoId, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo);
 
         await using SelecaoDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
         FaseCronograma fase = processo.CronogramaFases.Single();
         fase.RegraRecurso!.ProdutoAncoraId.Should().Be(
-            fase.Produtos.Single(p => p.AtoCodigo == "RESULTADO_FINAL").Id,
+            fase.Produtos.Single(p => p.AtoCodigo == "RESULTADO_CLASSIFICACAO" && p.Papel == PapelProdutoFase.Definitivo).Id,
             "pré-condição: o EF hidratou a âncora incoerente sem passar por fábrica nenhuma");
 
         IReadOnlyList<ItemConformidade> checklist = processo.AvaliarConformidade(ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
@@ -199,8 +199,8 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
         return processo.Id;
     }
 
-    /// <summary>Reaponta a âncora para o produto da fase que publica <paramref name="atoCodigo"/>.</summary>
-    private Task ApontarAncoraParaAsync(Guid processoId, string atoCodigo) => ExecutarAsync(
+    /// <summary>Reaponta a âncora para o produto da fase que publica <paramref name="atoCodigo"/> com o <paramref name="papel"/>.</summary>
+    private Task ApontarAncoraParaAsync(Guid processoId, string atoCodigo, PapelProdutoFase papel) => ExecutarAsync(
         """
         UPDATE selecao.regras_recurso_fase r
            SET produto_ancora_id = p.id
@@ -208,11 +208,13 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
          WHERE r.fase_cronograma_id = f.id
            AND p.fase_cronograma_id = f.id
            AND p.ato_codigo = @ato
+           AND p.papel = @papel
            AND f.processo_seletivo_id = @processo
         """,
         comando =>
         {
             comando.Parameters.AddWithValue("ato", atoCodigo);
+            comando.Parameters.AddWithValue("papel", (int)papel);
             comando.Parameters.AddWithValue("processo", processoId);
         });
 
@@ -266,7 +268,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
 
     private static FaseCronograma FaseConforme()
     {
-        ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar);
+        ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar);
 
         return FaseCronograma.Criar(
             ordem: 1,
@@ -280,7 +282,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
             coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            produtos: [preliminar, ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)],
+            produtos: [preliminar, ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,
             bancasRequeridas: [],

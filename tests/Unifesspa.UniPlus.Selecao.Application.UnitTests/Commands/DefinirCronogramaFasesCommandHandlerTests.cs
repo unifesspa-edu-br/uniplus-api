@@ -86,7 +86,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
         FaseCanonicaId: faseCanonicaId,
         Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
         Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-        Produtos: [new ProdutoDaFaseInput("RESULTADO_FINAL", PapelProdutoFaseCodigo.Definitivo)],
+        Produtos: [new ProdutoDaFaseInput("RESULTADO_CLASSIFICACAO", PapelProdutoFaseCodigo.Definitivo)],
         FaseConcluinteCodigo: null,
         EmiteParecerIndividual: false,
         BancasRequeridas: [],
@@ -167,7 +167,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
         mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId, Arg.Any<CancellationToken>())
             .Returns(FaseCanonicaResultado(faseCanonicaId));
         mocks.TipoAtoPublicadoReader.ObterVigenteAsync(Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(new TipoAtoPublicadoView("RESULTADO_FINAL", "Resultado Final", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
+            .Returns(new TipoAtoPublicadoView("RESULTADO_CLASSIFICACAO", "Resultado da classificação", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
 
         // Regra existe, mas é de outro TipoRegra (regra_bonus, não regra_prazo_recurso).
         RegraCatalogo regraErrada = RegraCatalogo.Criar(
@@ -181,7 +181,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
             RegraVersao: "v1",
             PrazoValor: 48m,
             PrazoUnidade: UnidadePrazo.Horas,
-            AtoAncoraCodigo: "RESULTADO_FINAL",
+            AtoAncoraCodigo: "RESULTADO_CLASSIFICACAO",
             SuspensividadePrimeiraInstanciaValor: null,
             SuspensividadePrimeiraInstanciaUnidade: null,
             SuspensividadeSegundaInstanciaValor: null,
@@ -204,8 +204,8 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
         Guid faseCanonicaId = Guid.CreateVersion7();
         mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId, Arg.Any<CancellationToken>())
             .Returns(FaseCanonicaRecorrivel(faseCanonicaId));
-        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_PRELIMINAR", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(new TipoAtoPublicadoView("RESULTADO_PRELIMINAR", "Resultado preliminar", CongelaConfiguracao: true, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("RESULTADO_CLASSIFICACAO", "Resultado da classificação", CongelaConfiguracao: true, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
 
         RegraCatalogo regra = RegraCatalogo.Criar(
             RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", TipoRegra.RegraPrazoRecurso,
@@ -218,7 +218,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
             RegraVersao: "v1",
             PrazoValor: 48m,
             PrazoUnidade: UnidadePrazo.Horas,
-            AtoAncoraCodigo: "RESULTADO_PRELIMINAR",
+            AtoAncoraCodigo: "RESULTADO_CLASSIFICACAO",
             SuspensividadePrimeiraInstanciaValor: null,
             SuspensividadePrimeiraInstanciaUnidade: null,
             SuspensividadeSegundaInstanciaValor: null,
@@ -226,7 +226,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
 
         FaseCronogramaInput input = InputResultado(faseCanonicaId) with
         {
-            Produtos = [new ProdutoDaFaseInput("RESULTADO_PRELIMINAR", PapelProdutoFaseCodigo.Preliminar)],
+            Produtos = [new ProdutoDaFaseInput("RESULTADO_CLASSIFICACAO", PapelProdutoFaseCodigo.Preliminar)],
             RegraRecurso = regraRecursoInput,
         };
         DefinirCronogramaFasesCommand command = new(processo.Id, [input], PrecondicaoIfMatch.Ausente);
@@ -247,8 +247,8 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
         Guid faseCanonicaId = Guid.CreateVersion7();
         mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId, Arg.Any<CancellationToken>())
             .Returns(FaseCanonicaResultado(faseCanonicaId));
-        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_FINAL", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(new TipoAtoPublicadoView("RESULTADO_FINAL", "Resultado Final", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("RESULTADO_CLASSIFICACAO", "Resultado da classificação", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
 
         DefinirCronogramaFasesCommand command = new(
             processo.Id, [InputResultado(faseCanonicaId)], PrecondicaoIfMatch.Ausente);
@@ -271,8 +271,8 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
             .Returns(FaseCanonicaRecorrivel(faseCanonicaId1));
         mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId2, Arg.Any<CancellationToken>())
             .Returns(FaseCanonicaResultado(faseCanonicaId2));
-        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_PRELIMINAR", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(new TipoAtoPublicadoView("RESULTADO_PRELIMINAR", "Resultado preliminar", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("RESULTADO_CLASSIFICACAO", "Resultado da classificação", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
         mocks.TipoAtoPublicadoReader.ObterVigenteAsync("COMUNICADO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(new TipoAtoPublicadoView("COMUNICADO", "Comunicado", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: false));
 
@@ -281,7 +281,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
         FaseCronogramaInput fase1 = InputResultado(faseCanonicaId1) with
         {
             Ordem = 1,
-            Produtos = [new ProdutoDaFaseInput("RESULTADO_PRELIMINAR", PapelProdutoFaseCodigo.Definitivo)],
+            Produtos = [new ProdutoDaFaseInput("RESULTADO_CLASSIFICACAO", PapelProdutoFaseCodigo.Definitivo)],
         };
         FaseCronogramaInput fase2 = InputResultado(faseCanonicaId2) with
         {
@@ -366,7 +366,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
 
         FaseCronogramaInput input = InputResultado(faseCanonicaId) with
         {
-            Produtos = [new ProdutoDaFaseInput("RESULTADO_FINAL", "PRELIMINARY")],
+            Produtos = [new ProdutoDaFaseInput("RESULTADO_CLASSIFICACAO", "PRELIMINARY")],
         };
         DefinirCronogramaFasesCommand command = new(processo.Id, [input], PrecondicaoIfMatch.Ausente);
 
@@ -422,8 +422,8 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
             .Returns(FaseCanonicaResultado(faseCanonicaId1));
         mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId2, Arg.Any<CancellationToken>())
             .Returns(FaseCanonicaResultado(faseCanonicaId2));
-        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_FINAL", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(new TipoAtoPublicadoView("RESULTADO_FINAL", "Resultado Final", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("RESULTADO_CLASSIFICACAO", "Resultado da classificação", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
 
         DefinirCronogramaFasesCommand command = new(
             processo.Id,
@@ -437,7 +437,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         await mocks.TipoAtoPublicadoReader.Received(1)
-            .ObterVigenteAsync("RESULTADO_FINAL", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>());
+            .ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>());
     }
 
     // ── CA-08 — recurso ancorado em ato de efeito irreversível ──
@@ -450,8 +450,8 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
         Guid faseCanonicaId = Guid.CreateVersion7();
         mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId, Arg.Any<CancellationToken>())
             .Returns(FaseCanonicaRecorrivel(faseCanonicaId));
-        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_FINAL", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(new TipoAtoPublicadoView("RESULTADO_FINAL", "Resultado final", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: true, EhResultado: true));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("RESULTADO_CLASSIFICACAO", "Resultado da classificação", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: true, EhResultado: true));
 
         RegraCatalogo regra = RegraCatalogo.Criar(
             RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", TipoRegra.RegraPrazoRecurso,
@@ -461,13 +461,13 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
 
         FaseCronogramaInput input = InputResultado(faseCanonicaId) with
         {
-            Produtos = [new ProdutoDaFaseInput("RESULTADO_FINAL", PapelProdutoFaseCodigo.Preliminar)],
+            Produtos = [new ProdutoDaFaseInput("RESULTADO_CLASSIFICACAO", PapelProdutoFaseCodigo.Preliminar)],
             RegraRecurso = new RegraRecursoFaseInput(
                 RegraCodigo: RegraPrazoRecursoCodigo.AncoradoEmAto,
                 RegraVersao: "v1",
                 PrazoValor: 48m,
                 PrazoUnidade: UnidadePrazo.Horas,
-                AtoAncoraCodigo: "RESULTADO_FINAL",
+                AtoAncoraCodigo: "RESULTADO_CLASSIFICACAO",
                 SuspensividadePrimeiraInstanciaValor: null,
                 SuspensividadePrimeiraInstanciaUnidade: null,
                 SuspensividadeSegundaInstanciaValor: null,
@@ -490,10 +490,8 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
         Guid faseCanonicaId = Guid.CreateVersion7();
         mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId, Arg.Any<CancellationToken>())
             .Returns(FaseCanonicaRecorrivel(faseCanonicaId));
-        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_PRELIMINAR", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(new TipoAtoPublicadoView("RESULTADO_PRELIMINAR", "Resultado preliminar", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
-        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_DEFINITIVO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(new TipoAtoPublicadoView("RESULTADO_DEFINITIVO", "Resultado definitivo", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("RESULTADO_CLASSIFICACAO", "Resultado da classificação", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
 
         RegraCatalogo regra = RegraCatalogo.Criar(
             RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", TipoRegra.RegraPrazoRecurso,
@@ -505,15 +503,15 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
         {
             Produtos =
             [
-                new ProdutoDaFaseInput("RESULTADO_PRELIMINAR", PapelProdutoFaseCodigo.Preliminar),
-                new ProdutoDaFaseInput("RESULTADO_DEFINITIVO", PapelProdutoFaseCodigo.Definitivo),
+                new ProdutoDaFaseInput("RESULTADO_CLASSIFICACAO", PapelProdutoFaseCodigo.Preliminar),
+                new ProdutoDaFaseInput("RESULTADO_CLASSIFICACAO", PapelProdutoFaseCodigo.Definitivo),
             ],
             RegraRecurso = new RegraRecursoFaseInput(
                 RegraCodigo: RegraPrazoRecursoCodigo.AncoradoEmAto,
                 RegraVersao: "v1",
                 PrazoValor: 48m,
                 PrazoUnidade: UnidadePrazo.Horas,
-                AtoAncoraCodigo: "RESULTADO_PRELIMINAR",
+                AtoAncoraCodigo: "RESULTADO_CLASSIFICACAO",
                 SuspensividadePrimeiraInstanciaValor: null,
                 SuspensividadePrimeiraInstanciaUnidade: null,
                 SuspensividadeSegundaInstanciaValor: null,
@@ -542,10 +540,10 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
             .Returns(FaseCanonicaRecorrivel(preliminarId));
         mocks.FaseCanonicaReader.ObterPorIdAsync(finalId, Arg.Any<CancellationToken>())
             .Returns(FaseCanonicaResultado(finalId));
-        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_PRELIMINAR", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(new TipoAtoPublicadoView("RESULTADO_PRELIMINAR", "Resultado preliminar", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
-        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_FINAL", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(new TipoAtoPublicadoView("RESULTADO_FINAL", "Resultado final", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("RESULTADO_CLASSIFICACAO", "Resultado da classificação", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("RESULTADO_CLASSIFICACAO", "Resultado da classificação", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
         mocks.RegraCatalogoReader.ObterAsync(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", Arg.Any<CancellationToken>())
             .Returns(RegraCatalogo.Criar(
                 RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", TipoRegra.RegraPrazoRecurso,
@@ -556,13 +554,13 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
             RegraVersao: "v1",
             PrazoValor: 48m,
             PrazoUnidade: UnidadePrazo.Horas,
-            AtoAncoraCodigo: "RESULTADO_PRELIMINAR",
+            AtoAncoraCodigo: "RESULTADO_CLASSIFICACAO",
             SuspensividadePrimeiraInstanciaValor: null,
             SuspensividadePrimeiraInstanciaUnidade: null,
             SuspensividadeSegundaInstanciaValor: null,
             SuspensividadeSegundaInstanciaUnidade: null);
 
-        // As duas primeiras fases publicam RESULTADO_PRELIMINAR e admitem recurso — a
+        // As duas primeiras fases publicam RESULTADO_CLASSIFICACAO e admitem recurso — a
         // situação observada em homologação, em que o código do ato sozinho não diz de qual
         // das duas publicações o prazo do candidato conta.
         DefinirCronogramaFasesCommand command = new(
@@ -571,14 +569,14 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
                 InputResultado(biopsicossocialId) with
                 {
                     Ordem = 1,
-                    Produtos = [new ProdutoDaFaseInput("RESULTADO_PRELIMINAR", PapelProdutoFaseCodigo.Preliminar)],
+                    Produtos = [new ProdutoDaFaseInput("RESULTADO_CLASSIFICACAO", PapelProdutoFaseCodigo.Preliminar)],
                     FaseConcluinteCodigo = "RESULTADO_FINAL",
                     RegraRecurso = recurso,
                 },
                 InputResultado(preliminarId) with
                 {
                     Ordem = 2,
-                    Produtos = [new ProdutoDaFaseInput("RESULTADO_PRELIMINAR", PapelProdutoFaseCodigo.Preliminar)],
+                    Produtos = [new ProdutoDaFaseInput("RESULTADO_CLASSIFICACAO", PapelProdutoFaseCodigo.Preliminar)],
                     FaseConcluinteCodigo = "RESULTADO_FINAL",
                     RegraRecurso = recurso,
                 },
@@ -616,8 +614,8 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
 
         mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId, Arg.Any<CancellationToken>())
             .Returns(FaseCanonicaResultado(faseCanonicaId));
-        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_FINAL", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(new TipoAtoPublicadoView("RESULTADO_FINAL", "Resultado final", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("RESULTADO_CLASSIFICACAO", "Resultado da classificação", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
         mocks.TipoBancaReader.ObterPorIdAsync(tipoBancaId, Arg.Any<CancellationToken>())
             .Returns(new TipoBancaView(tipoBancaId, "BANCA_ANALISE_DOCUMENTAL", "Banca de análise documental", null, null));
         mocks.CategoriaDocumentoReader.ObterPorIdAsync(categoriaViva, Arg.Any<CancellationToken>())
@@ -693,8 +691,8 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
         Guid faseCanonicaId = Guid.CreateVersion7();
         mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId, Arg.Any<CancellationToken>())
             .Returns(FaseCanonicaResultado(faseCanonicaId));
-        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_FINAL", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(new TipoAtoPublicadoView("RESULTADO_FINAL", "Resultado Final", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("RESULTADO_CLASSIFICACAO", "Resultado da classificação", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
         mocks.RegraCatalogoReader.ObterAsync("REGRA_INEXISTENTE", "v1", Arg.Any<CancellationToken>())
             .Returns((RegraCatalogo?)null);
 
@@ -705,7 +703,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
                 RegraVersao: "v1",
                 PrazoValor: 48m,
                 PrazoUnidade: UnidadePrazo.Horas,
-                AtoAncoraCodigo: "RESULTADO_FINAL",
+                AtoAncoraCodigo: "RESULTADO_CLASSIFICACAO",
                 SuspensividadePrimeiraInstanciaValor: null,
                 SuspensividadePrimeiraInstanciaUnidade: null,
                 SuspensividadeSegundaInstanciaValor: null,
