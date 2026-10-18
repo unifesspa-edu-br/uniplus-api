@@ -12,8 +12,8 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(SelecaoDbContext))]
-    [Migration("20261018103733_RegistraOAtoDoProcessoQueNaoCriaVersao")]
-    partial class RegistraOAtoDoProcessoQueNaoCriaVersao
+    [Migration("20261018104340_RegistraOAtoDoProcesso")]
+    partial class RegistraOAtoDoProcesso
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -133,8 +133,11 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasName("pk_anexos_do_ato_do_processo");
 
                     b.HasIndex("DocumentoAPublicarId")
+                        .HasDatabaseName("ix_anexos_do_ato_do_processo_documento_a_publicar_id");
+
+                    b.HasIndex("AtoDoProcessoId", "DocumentoAPublicarId")
                         .IsUnique()
-                        .HasDatabaseName("ux_anexos_do_ato_do_processo_documento");
+                        .HasDatabaseName("ux_anexos_do_ato_do_processo_ato_documento");
 
                     b.HasIndex("AtoDoProcessoId", "Ordem")
                         .IsUnique()
@@ -256,6 +259,11 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("politica_de_divulgacao_confirmada_em");
 
+                    b.Property<string>("PoliticaDeDivulgacaoConfirmadaPorSub")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("politica_de_divulgacao_confirmada_por_sub");
+
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
                         .HasColumnName("processo_seletivo_id");
@@ -301,8 +309,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_atos_do_processo_ato_corrigido");
 
                     b.HasIndex("DocumentoPrincipalId")
-                        .IsUnique()
-                        .HasDatabaseName("ux_atos_do_processo_documento_principal");
+                        .HasDatabaseName("ix_atos_do_processo_documento_principal_id");
 
                     b.HasIndex("ProcessoSeletivoId", "CreatedAt", "Id")
                         .IsDescending(false, true, true)

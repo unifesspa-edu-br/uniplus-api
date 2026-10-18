@@ -128,7 +128,7 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     public DbSet<DocumentoAPublicar> DocumentosAPublicar => Set<DocumentoAPublicar>();
 
     /// <summary>
-    /// Registro dos atos do processo que não criam versão de configuração, gravado na mesma transação
+    /// Registro dos atos do processo, criem versão de configuração ou não, gravado na mesma transação
     /// do envio ao outbox — ver <see cref="AtoDoProcesso"/>.
     /// </summary>
     public DbSet<AtoDoProcesso> AtosDoProcesso => Set<AtoDoProcesso>();

@@ -22,10 +22,11 @@ public sealed class AnexoDoAtoDoProcessoConfiguration : IEntityTypeConfiguration
             .HasForeignKey(a => a.DocumentoAPublicarId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Cada documento serve a um só anexo; a posição é única dentro do ato.
-        builder.HasIndex(a => a.DocumentoAPublicarId)
+        // Dentro do ato, um documento é anexo uma só vez e a posição é única. Entre atos o documento
+        // pode se repetir: a retificação do edital herda os anexos da versão anterior.
+        builder.HasIndex(a => new { a.AtoDoProcessoId, a.DocumentoAPublicarId })
             .IsUnique()
-            .HasDatabaseName("ux_anexos_do_ato_do_processo_documento");
+            .HasDatabaseName("ux_anexos_do_ato_do_processo_ato_documento");
         builder.HasIndex(a => new { a.AtoDoProcessoId, a.Ordem })
             .IsUnique()
             .HasDatabaseName("ux_anexos_do_ato_do_processo_ordem");
