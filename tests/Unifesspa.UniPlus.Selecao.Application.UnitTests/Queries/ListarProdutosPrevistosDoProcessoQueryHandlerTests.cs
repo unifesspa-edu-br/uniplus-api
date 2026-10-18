@@ -145,6 +145,7 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         ProdutoPrevistoDto[] produtos = [.. resultado.Value!.Fases.Single().Produtos];
         produtos.Select(p => p.Situacao).Should().AllBeEquivalentTo(SituacaoDoProdutoPrevisto.Aberto);
         produtos.Single(p => p.Id == preliminar.Id).PodePublicar.Should().BeTrue();
+        produtos.Select(p => p.Papel).Should().BeEquivalentTo("PRELIMINAR", "DEFINITIVO");
         ProdutoPrevistoDto doDefinitivo = produtos.Single(p => p.Id == definitivo.Id);
         doDefinitivo.PodePublicar.Should().BeFalse();
         doDefinitivo.Impedimento!.Motivo.Should().Be(ImpedimentoDoProduto.PreliminarNaoPublicado);

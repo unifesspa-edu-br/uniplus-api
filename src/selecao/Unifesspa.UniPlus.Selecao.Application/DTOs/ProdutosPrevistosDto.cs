@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
-
 /// <summary>Onde um item que o edital declara publicar está no registro dos atos do processo.</summary>
 public enum SituacaoDoProdutoPrevisto
 {
@@ -46,7 +44,7 @@ public sealed record ImpedimentoDoProdutoDto(ImpedimentoDoProduto Motivo, string
 /// <param name="Id">Identificador congelado do produto na versão vigente.</param>
 /// <param name="TipoCodigo">Código do tipo do ato que o item publica.</param>
 /// <param name="TipoNome">Nome do tipo do ato; nulo quando o catálogo não o tem vigente e nenhum ato o registrou.</param>
-/// <param name="Papel">Preliminar abre o prazo de recurso, definitivo o encerra; nulo quando o ato não é resultado.</param>
+/// <param name="Papel">Token canônico (<c>PRELIMINAR</c> abre o prazo de recurso, <c>DEFINITIVO</c> o encerra); nulo quando o ato não é resultado.</param>
 /// <param name="Situacao">Aberto, pendente ou publicado.</param>
 /// <param name="Ato">O ato que cumpre o item (a primeira publicação); nulo enquanto aberto.</param>
 /// <param name="Correcoes">Os atos que corrigem o ato do item, do mais antigo para o mais recente.</param>
@@ -56,7 +54,7 @@ public sealed record ProdutoPrevistoDto(
     Guid Id,
     string TipoCodigo,
     string? TipoNome,
-    PapelProdutoFase? Papel,
+    string? Papel,
     SituacaoDoProdutoPrevisto Situacao,
     AtoDoProcessoDto? Ato,
     IReadOnlyList<AtoDoProcessoDto> Correcoes,

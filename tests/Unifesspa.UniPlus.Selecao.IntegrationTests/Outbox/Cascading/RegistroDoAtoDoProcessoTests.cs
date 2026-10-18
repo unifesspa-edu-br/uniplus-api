@@ -222,7 +222,7 @@ public sealed class RegistroDoAtoDoProcessoTests
         JsonElement item = antes.GetProperty("fases").EnumerateArray().Single().GetProperty("produtos").EnumerateArray().Single();
         item.GetProperty("tipoCodigo").GetString().Should().Be(tipoDoItem);
         item.GetProperty("tipoNome").GetString().Should().Be("Resultado final");
-        item.GetProperty("papel").GetString().Should().Be("definitivo");
+        item.GetProperty("papel").GetString().Should().Be("DEFINITIVO");
         item.GetProperty("situacao").GetString().Should().Be("aberto");
         item.GetProperty("podePublicar").GetBoolean().Should().BeTrue();
 
