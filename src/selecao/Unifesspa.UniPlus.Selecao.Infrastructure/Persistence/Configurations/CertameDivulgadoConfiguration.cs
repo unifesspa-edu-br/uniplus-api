@@ -91,7 +91,7 @@ internal sealed class CertameDivulgadoConfiguration : IEntityTypeConfiguration<C
             .HasColumnType("jsonb")
             .HasDefaultValueSql("'[]'::jsonb")
             .IsRequired()
-            .HasComment("O edital de cada versão divulgada, com o ato que a criou e o endereço no acervo público.");
+            .HasComment("Os documentos de cada ato divulgado do processo — o edital de cada versão e o ato que não cria versão —, com o ato e o endereço no acervo público.");
 
         // Concorrência otimista pela coluna de sistema `xmin` (ADR-0119): avançar a divulgação é
         // check-then-act, e a guarda de monotonia é de memória, não do banco. Duas entregas

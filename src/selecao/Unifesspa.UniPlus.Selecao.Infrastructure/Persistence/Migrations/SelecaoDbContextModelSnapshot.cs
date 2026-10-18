@@ -453,7 +453,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("editais_divulgados")
                         .HasDefaultValueSql("'[]'::jsonb")
-                        .HasComment("O edital de cada versão divulgada, com o ato que a criou e o endereço no acervo público.");
+                        .HasComment("Os documentos de cada ato divulgado do processo — o edital de cada versão e o ato que não cria versão —, com o ato e o endereço no acervo público.");
 
                     b.Property<string>("HashConfiguracao")
                         .IsRequired()
