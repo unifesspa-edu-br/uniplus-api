@@ -6,7 +6,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Mappings;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
@@ -70,7 +69,7 @@ public static class ListarAtosDoProcessoQueryHandler
             .. atos.Select(a => AtoDoProcessoMapping.ToDto(
                 a,
                 documentosPorId,
-                a.Situacao == SituacaoDoRegistroDoAto.Pendente && a.CreatedAt < limite)),
+                AtoDoProcessoMapping.PendenciaAcimaDoLimiar(a, limite))),
         ];
 
         return Result<ListarAtosDoProcessoResult>.Success(new ListarAtosDoProcessoResult(itens));
