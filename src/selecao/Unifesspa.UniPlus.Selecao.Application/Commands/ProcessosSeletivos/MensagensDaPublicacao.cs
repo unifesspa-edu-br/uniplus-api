@@ -46,9 +46,9 @@ internal static class MensagensDaPublicacao
                 Numero: numeroDeclarado,
                 TipoCodigo: ato.TipoAtoCodigo,
                 // A data que o DOCUMENTO declara (ADR-0108). Não ordena coisa alguma: quem
-                // ordena as versões é o relógio do sistema (ADR-0104). É por isso que ela
-                // viaja daqui direto para Publicações, sem passar pela configuração — a
-                // Seleção não guarda atributo documental de um ato que não é seu.
+                // ordena as versões é o relógio do sistema (ADR-0104). É por isso que ela fica
+                // fora da configuração congelada: vai para o Publicações nesta requisição e
+                // para o registro do ato do processo, que a guarda como atributo do ato.
                 DataPublicacao: ato.DataPublicacao,
                 DocumentoHash: documentoHash,
                 Assinante: ato.Assinante,
