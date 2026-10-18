@@ -34,28 +34,42 @@ internal static class ConferenciaDoTipoDeAto
         DadosDoAto ato,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(reader);
         ArgumentNullException.ThrowIfNull(ato);
 
-        TipoAtoPublicadoView? tipo = await reader
-            .ObterVigenteAsync(ato.TipoAtoCodigo, ato.DataPublicacao, cancellationToken)
+        Result<TipoAtoPublicadoView> vigente = await VigenteAsync(reader, ato.TipoAtoCodigo, ato.DataPublicacao, cancellationToken)
             .ConfigureAwait(false);
-
-        if (tipo is null)
+        if (vigente.IsFailure)
         {
-            return Result<TipoAtoPublicadoView>.Failure(new DomainError(
-                "ProcessoSeletivo.TipoDeAtoSemVersaoVigente",
-                $"Não há versão vigente do tipo de ato '{ato.TipoAtoCodigo}' na data de publicação declarada ({ato.DataPublicacao:yyyy-MM-dd})."));
+            return vigente;
         }
 
-        if (!tipo.CongelaConfiguracao)
-        {
-            return Result<TipoAtoPublicadoView>.Failure(new DomainError(
+        return vigente.Value!.CongelaConfiguracao
+            ? vigente
+            : Result<TipoAtoPublicadoView>.Failure(new DomainError(
                 "ProcessoSeletivo.TipoDeAtoNaoCongelaConfiguracao",
                 $"O tipo de ato '{ato.TipoAtoCodigo}' não congela configuração, e publicar ou retificar um Processo Seletivo congela — o ato que cria a versão da configuração precisa ser de um tipo congelante."));
-        }
+    }
 
-        return Result<TipoAtoPublicadoView>.Success(tipo);
+    /// <summary>
+    /// A versão do tipo que vigora na data de publicação declarada, ou a recusa de que não há.
+    /// </summary>
+    public static async Task<Result<TipoAtoPublicadoView>> VigenteAsync(
+        ITipoAtoPublicadoReader reader,
+        string tipoAtoCodigo,
+        DateOnly dataPublicacao,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(reader);
+
+        TipoAtoPublicadoView? tipo = await reader
+            .ObterVigenteAsync(tipoAtoCodigo, dataPublicacao, cancellationToken)
+            .ConfigureAwait(false);
+
+        return tipo is null
+            ? Result<TipoAtoPublicadoView>.Failure(new DomainError(
+                "ProcessoSeletivo.TipoDeAtoSemVersaoVigente",
+                $"Não há versão vigente do tipo de ato '{tipoAtoCodigo}' na data de publicação declarada ({dataPublicacao:yyyy-MM-dd})."))
+            : Result<TipoAtoPublicadoView>.Success(tipo);
     }
 
     /// <summary>
