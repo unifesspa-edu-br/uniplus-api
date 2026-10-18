@@ -2,10 +2,22 @@ namespace Unifesspa.UniPlus.Selecao.Application.Mappings;
 
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>Projeção <c>AtoDoProcesso</c> → <c>AtoDoProcessoDto</c>.</summary>
 public static class AtoDoProcessoMapping
 {
+    /// <summary>
+    /// O ato está pendente desde antes do <paramref name="limite"/>: a confirmação nunca vem sozinha
+    /// depois de uma recusa, e é essa pendência que pede atenção.
+    /// </summary>
+    public static bool PendenciaAcimaDoLimiar(AtoDoProcesso ato, DateTimeOffset limite)
+    {
+        ArgumentNullException.ThrowIfNull(ato);
+
+        return ato.Situacao == SituacaoDoRegistroDoAto.Pendente && ato.CreatedAt < limite;
+    }
+
     /// <exception cref="InvalidOperationException">Documento referenciado pelo ato ausente.</exception>
     public static AtoDoProcessoDto ToDto(
         AtoDoProcesso ato,
