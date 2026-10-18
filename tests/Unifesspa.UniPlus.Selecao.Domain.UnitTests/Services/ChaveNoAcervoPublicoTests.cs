@@ -39,10 +39,43 @@ public sealed class ChaveNoAcervoPublicoTests
             "EDITAL_RETIFICACAO",
             "psr-medicina-2027",
             new Guid("0199a000-0000-7000-8000-0000000000f0"),
-            new string('e', 64));
+            new string('e', 64),
+            FormatoDeDocumento.Pdf);
 
         chave.Should().Be(
             "editais/2026/ceps/edital-retificacao/psr-medicina-2027/0199a000-0000-7000-8000-0000000000f0"
             + "/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee.pdf");
+    }
+
+    [Fact(DisplayName = "A extensão da chave do documento principal segue o formato do arquivo")]
+    public void DoEdital_SegueOFormatoNaExtensao()
+    {
+        string chave = ChaveNoAcervoPublico.DoEdital(
+            2026,
+            "ceps",
+            "AVISO",
+            "psr-medicina-2027",
+            new Guid("0199a000-0000-7000-8000-0000000000f0"),
+            new string('e', 64),
+            FormatoDeDocumento.Docx);
+
+        chave.Should().EndWith(".docx");
+    }
+
+    [Fact(DisplayName = "A chave do anexo do ato avulso é a do anexo do edital: processo, ato, anexo, hash e extensão do formato")]
+    public void DoAnexo_PorIdentificadores_FixaAChave()
+    {
+        string chave = ChaveNoAcervoPublico.DoAnexo(
+            new Guid("0199a000-0000-7000-8000-000000000001"),
+            new Guid("0199a000-0000-7000-8000-0000000000f0"),
+            new Guid("0199a000-0000-7000-8000-0000000000bb"),
+            new string('d', 64),
+            FormatoDeDocumento.Odt);
+
+        chave.Should().Be(
+            "selecao/processos-seletivos/0199a000-0000-7000-8000-000000000001"
+            + "/atos/0199a000-0000-7000-8000-0000000000f0"
+            + "/anexos/0199a000-0000-7000-8000-0000000000bb"
+            + "/dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd.odt");
     }
 }

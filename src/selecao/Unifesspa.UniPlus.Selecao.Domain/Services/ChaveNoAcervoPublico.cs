@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Services;
 
 using Entities;
 
+using Enums;
+
 using ValueObjects;
 
 /// <summary>
@@ -43,12 +45,24 @@ public static class ChaveNoAcervoPublico
     {
         ArgumentNullException.ThrowIfNull(anexo);
 
-        return $"selecao/processos-seletivos/{processoSeletivoId:D}/atos/{atoId:D}/anexos/{anexo.Id:D}/{anexo.HashSha256}.{FormatosDeDocumento.Extensao(anexo.Formato)}";
+        return DoAnexo(processoSeletivoId, atoId, anexo.Id, anexo.HashSha256, anexo.Formato);
+    }
+
+    /// <summary>
+    /// A chave do anexo de um ato, a mesma para o do edital e para o do ato avulso: o anexo entra pela
+    /// identidade e pelo hash, e a extensão segue o formato do arquivo.
+    /// </summary>
+    public static string DoAnexo(Guid processoSeletivoId, Guid atoId, Guid anexoId, string hashSha256, FormatoDeDocumento formato)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(hashSha256);
+
+        return $"selecao/processos-seletivos/{processoSeletivoId:D}/atos/{atoId:D}/anexos/{anexoId:D}/{hashSha256}.{FormatosDeDocumento.Extensao(formato)}";
     }
 
     /// <summary>
     /// A chave do documento do edital, na forma que a ADR-0132 fixa para o acervo de editais: ano,
-    /// unidade, tipo do ato, processo pelo identificador legível, ato e hash do documento.
+    /// unidade, tipo do ato, processo pelo identificador legível, ato e hash do documento. A extensão
+    /// segue o formato do arquivo, porque o ato avulso aceita PDF, DOCX e ODT.
     /// </summary>
     /// <remarks>
     /// O ato é o último desempate: a retificação que reaproveita o documento do ato anterior repete
@@ -60,14 +74,15 @@ public static class ChaveNoAcervoPublico
         string tipoDoAto,
         string identificadorLegivelDoProcesso,
         Guid atoId,
-        string hashSha256)
+        string hashSha256,
+        FormatoDeDocumento formato)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(unidadeAdministradora);
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoDoAto);
         ArgumentException.ThrowIfNullOrWhiteSpace(identificadorLegivelDoProcesso);
         ArgumentException.ThrowIfNullOrWhiteSpace(hashSha256);
 
-        return $"editais/{anoDoAto:D4}/{unidadeAdministradora}/{SegmentoDoTipo(tipoDoAto)}/{identificadorLegivelDoProcesso}/{atoId:D}/{hashSha256}.pdf";
+        return $"editais/{anoDoAto:D4}/{unidadeAdministradora}/{SegmentoDoTipo(tipoDoAto)}/{identificadorLegivelDoProcesso}/{atoId:D}/{hashSha256}.{FormatosDeDocumento.Extensao(formato)}";
     }
 
     /// <summary>

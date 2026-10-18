@@ -28,6 +28,15 @@ public sealed class AtoDoProcessoRepository : IAtoDoProcessoRepository
             .ConfigureAwait(false);
     }
 
+    public async Task<AtoDoProcesso?> ObterComAnexosAsync(Guid atoId, CancellationToken cancellationToken = default)
+    {
+        return await _context.AtosDoProcesso
+            .AsNoTracking()
+            .Include(a => a.Anexos)
+            .FirstOrDefaultAsync(a => a.Id == atoId, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task<IReadOnlyList<AtoDoProcesso>> ListarDoProcessoAsync(
         Guid processoSeletivoId,
         CancellationToken cancellationToken = default)

@@ -8,6 +8,7 @@ using AwesomeAssertions;
 
 using Domain.Entities;
 using Domain.Enums;
+using Domain.ValueObjects;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,7 +39,7 @@ public sealed class RegistroDoAtoDoProcessoTests
     {
         CascadingApiFactory api = _fixture.Factory;
         await TiposDeAtoSeeder.SemearAsync(api.Services);
-        (Guid processoId, Guid documentoId) = await SemearAsync(api);
+        (Guid processoId, Guid documentoId) = await SemearDivulgadoAsync(api);
         Guid atoId = Guid.CreateVersion7();
 
         await using (AsyncServiceScope escopo = api.Services.CreateAsyncScope())
@@ -98,7 +99,7 @@ public sealed class RegistroDoAtoDoProcessoTests
         CascadingApiFactory api = _fixture.Factory;
         using HttpClient client = api.CreateClient();
         await TiposDeAtoSeeder.SemearAsync(api.Services);
-        (Guid processoId, Guid documentoId) = await SemearAsync(api);
+        (Guid processoId, Guid documentoId) = await SemearDivulgadoAsync(api);
         Guid atoId = Guid.CreateVersion7();
         await using (AsyncServiceScope escopo = api.Services.CreateAsyncScope())
         {
@@ -178,7 +179,7 @@ public sealed class RegistroDoAtoDoProcessoTests
         CascadingApiFactory api = _fixture.Factory;
         using HttpClient client = api.CreateClient();
         await TiposDeAtoSeeder.SemearAsync(api.Services);
-        (Guid processoId, Guid primeiroDocumento) = await SemearAsync(api);
+        (Guid processoId, Guid primeiroDocumento) = await SemearDivulgadoAsync(api);
         Guid segundoDocumento = await SemearDocumentoAsync(api, processoId);
         Guid primeiro = Guid.CreateVersion7();
         Guid segundo = Guid.CreateVersion7();
@@ -213,6 +214,29 @@ public sealed class RegistroDoAtoDoProcessoTests
         db.DocumentosAPublicar.Add(documento);
         await db.SaveChangesAsync();
         return documento.Id;
+    }
+
+    /// <summary>
+    /// O processo com a divulgação do certame já materializada: o documento do ato que não cria versão
+    /// só é divulgado numa divulgação que existe, e a confirmação do ato anda na mesma entrega.
+    /// </summary>
+    private static async Task<(Guid ProcessoId, Guid DocumentoId)> SemearDivulgadoAsync(CascadingApiFactory api)
+    {
+        (Guid processoId, Guid documentoId) = await SemearAsync(api);
+        await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
+        SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        DateTimeOffset agora = DateTimeOffset.UtcNow;
+        db.CertamesDivulgados.Add(CertameDivulgado.Criar(
+            processoId,
+            1,
+            Guid.CreateVersion7(),
+            new string('a', 64),
+            "teste",
+            new FacetasDoCertameDivulgado($"certame-{Guid.NewGuid():N}"[..40], "Certame de teste", null, [], agora, agora.AddDays(30)),
+            "{}",
+            agora));
+        await db.SaveChangesAsync();
+        return (processoId, documentoId);
     }
 
     private static async Task<(Guid ProcessoId, Guid DocumentoId)> SemearAsync(CascadingApiFactory api)

@@ -24,10 +24,12 @@ public sealed class AcervoPublicoCaminhoUnicoDeEscritaTests
             .Where(static nome => nome != $"{nameof(IAcervoPublico)}.cs")
             .Order(StringComparer.Ordinal)];
 
+        // As duas partes da mesma materialização: a do edital que cria versão e a do ato que não cria.
+        //
         // Igualdade, e não "contido em": sem dependente nenhum o teste aprovaria um acervo que nunca
         // recebe o modelo publicado.
         dependentes.Should().Equal(
-            ["DivulgarCertameAoRegistrarAtoHandler.cs"],
+            ["DivulgarAtoDoProcessoNoAcervo.cs", "DivulgarCertameAoRegistrarAtoHandler.cs"],
             "confirmar o envio não é publicar: o documento só entra no acervo depois de o ato existir");
     }
 

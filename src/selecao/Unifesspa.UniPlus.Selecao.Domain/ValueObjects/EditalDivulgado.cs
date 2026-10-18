@@ -1,23 +1,24 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// O edital de uma versão do certame, divulgado no acervo público pelo ato que criou a versão.
+/// Os documentos de um ato do processo, divulgados no acervo público: o edital de uma versão do
+/// certame, pelo ato que a criou, ou o documento de um ato que não cria versão.
 /// </summary>
 /// <remarks>
 /// O endereço fica registrado no instante da divulgação porque a chave no acervo depende do ano e
 /// do tipo do ato, que só chegam com o registro do ato e que Seleção não guarda: depois, não há
 /// como recalculá-la.
 /// </remarks>
-/// <param name="AtoId">O ato normativo que criou a versão e, por isso, divulgou o edital.</param>
-/// <param name="NumeroVersao">A versão de configuração a que o edital pertence.</param>
-/// <param name="UrlDownload">Endereço do arquivo no acervo público, o mesmo que o documento divulgado informa.</param>
+/// <param name="AtoId">O ato normativo que divulgou os documentos.</param>
+/// <param name="NumeroVersao">A versão de configuração que o ato criou; nulo no ato que não cria versão.</param>
+/// <param name="UrlDownload">Endereço do documento principal no acervo público, o mesmo que o documento divulgado informa.</param>
 /// <param name="Documentos">
 /// Os documentos do ato no acervo — o edital como principal e os anexos em seguida. Nulo no registro
 /// gravado antes de existirem anexos, e lido como lista vazia.
 /// </param>
 public sealed record EditalDivulgado(
     Guid AtoId,
-    int NumeroVersao,
+    int? NumeroVersao,
     string UrlDownload,
     IReadOnlyList<DocumentoDivulgado>? Documentos = null);
 
