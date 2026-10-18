@@ -486,7 +486,11 @@ public sealed class DocumentosNoAcervoPublicoIntegrationTests : IClassFixture<Pr
         using HttpClient anonimo = new();
         (await anonimo.GetByteArrayAsync($"{_minio.EnderecoDoAcervoPublico}/{chavePrincipal}")).Should().Equal(docx,
             "a extensão da chave segue o formato do arquivo, e a cópia preserva os bytes");
-        (await anonimo.GetByteArrayAsync($"{_minio.EnderecoDoAcervoPublico}/{chaveAnexo}")).Should().Equal(odt);
+        using HttpResponseMessage respostaDoAnexo = await anonimo.GetAsync($"{_minio.EnderecoDoAcervoPublico}/{chaveAnexo}");
+        (await respostaDoAnexo.Content.ReadAsByteArrayAsync()).Should().Equal(odt);
+        respostaDoAnexo.Content.Headers.NonValidated["Content-Disposition"].ToString().Should().EndWith(
+            "filename*=UTF-8''Rela%C3%A7%C3%A3o%20de%20inscritos.odt",
+            "o nome de download leva a extensão do formato, que o rótulo exibido não tem");
 
         EditalDivulgado registrado = (await EditaisDivulgadosAsync(processo.Id)).Single(e => e.AtoId == ato);
         registrado.NumeroVersao.Should().BeNull("o ato não criou versão de configuração");
