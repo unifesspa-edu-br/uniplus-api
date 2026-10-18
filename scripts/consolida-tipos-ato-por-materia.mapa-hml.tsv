@@ -1,0 +1,24 @@
+# Mapa de consolidação do catálogo de tipos de ato de HML: código antigo -> código novo.
+#
+# PROPOSTA A VALIDAR COM O CEPS ANTES DE RODAR. O catálogo de HML não é o seed: estes
+# são os códigos que ele tem hoje, e a correspondência abaixo é uma proposta.
+#
+# Colunas separadas por TAB: codigo_antigo, codigo_novo, nome_do_tipo_novo (pt-BR).
+# O nome só é usado quando o tipo novo ainda não existe e não consta em
+# seeds/seed-tipos-ato.json (que, quando traz o código, é a fonte dos atributos).
+# Códigos de HML que não aparecem aqui (EDITAL_ABERTURA, EDITAL_RETIFICACAO, TESTE_AUD,
+# CONVOCACAO, HOMOLOGACAO_RESULTADO_FINAL, RESULTADO_HETEROIDENTIFICACAO) não mudam.
+# RESULTADO_HOMOLOGACAO e RESULTADO_HABILITACAO continuam e são criados só se faltarem.
+RESULTADO_PRELIMINAR	RESULTADO_CLASSIFICACAO	Resultado da classificação
+RESULTADO_FINAL	RESULTADO_CLASSIFICACAO	Resultado da classificação
+RESULTADO_PRELIMINAR_ISENCAO	RESULTADO_ISENCAO	Resultado da solicitação de isenção
+RESULTADO_FINAL_ISENCAO	RESULTADO_ISENCAO	Resultado da solicitação de isenção
+RESULTADO_PRELIMINAR_HOMOLOGACAO	RESULTADO_HOMOLOGACAO	Resultado da homologação das inscrições
+RESULTADO_PRELIMINAR_HABILITACAO	RESULTADO_HABILITACAO	Resultado da habilitação
+RESULTADO_DEFINITIVO_HABILITACAO	RESULTADO_HABILITACAO	Resultado da habilitação
+RESULTADO_PRELIMINAR_PRIMEIRA_FASE	RESULTADO_PRIMEIRA_FASE	Resultado da primeira fase
+RESULTADO_DEFINITIVO_PRIMEIRA_FASE	RESULTADO_PRIMEIRA_FASE	Resultado da primeira fase
+RESULTADO_PRELIMINAR_SEGUNDA_FASE	RESULTADO_SEGUNDA_FASE	Resultado da segunda fase
+RESULTADO_DEFINITIVO_SEGUNDA_FASE	RESULTADO_SEGUNDA_FASE	Resultado da segunda fase
+GABARITO_PRELIMINAR	GABARITO	Gabarito
+GABARITO_DEFINITIVO	GABARITO	Gabarito
