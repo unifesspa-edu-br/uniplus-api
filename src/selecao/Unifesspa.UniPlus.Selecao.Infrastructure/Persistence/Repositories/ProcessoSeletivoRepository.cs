@@ -75,9 +75,7 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
         // SELECT ... FOR UPDATE roda na MESMA transação ambiente do Wolverine
         // (EnrollDbContextInTransaction) — a segunda transação concorrente bloqueia aqui
         // até a primeira committar ou reverter.
-        await _context.Database
-            .ExecuteSqlInterpolatedAsync($"SELECT 1 FROM selecao.processos_seletivos WHERE id = {id} FOR UPDATE", cancellationToken)
-            .ConfigureAwait(false);
+        await TravarAsync(id, cancellationToken).ConfigureAwait(false);
 
         // O Rascunho é o que distingue este carregamento do de leitura: é dele que a
         // allowlist da D4 depende, e um null "por não ter sido carregado" recusaria uma
@@ -85,6 +83,13 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
         return await ComConfiguracao(_context.ProcessosSeletivos)
             .Include(p => p.Rascunho)
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task TravarAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        await _context.Database
+            .ExecuteSqlInterpolatedAsync($"SELECT 1 FROM selecao.processos_seletivos WHERE id = {id} FOR UPDATE", cancellationToken)
             .ConfigureAwait(false);
     }
 

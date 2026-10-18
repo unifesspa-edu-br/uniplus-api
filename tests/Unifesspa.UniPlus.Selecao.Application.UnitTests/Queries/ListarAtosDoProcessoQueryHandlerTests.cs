@@ -64,7 +64,7 @@ public sealed class ListarAtosDoProcessoQueryHandlerTests
             new NovoAtoDoProcesso(
                 Guid.CreateVersion7(), _processoId, "AVISO", "Aviso", "3/2026", new DateOnly(2026, 12, 10),
                 "Diretor do CEPS", "ceps", "psm-medicina-2027", principal.Id, anexos ?? []),
-            new RelogioFixo(publicadoEm));
+            new RelogioFixo(publicadoEm)).Value!;
         typeof(AtoDoProcesso).GetProperty(nameof(AtoDoProcesso.CreatedAt))!
             .SetValue(ato, publicadoEm);
         if (registrado)

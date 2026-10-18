@@ -2,8 +2,11 @@ namespace Unifesspa.UniPlus.Selecao.API.Controllers;
 
 using System.Diagnostics.CodeAnalysis;
 
+using Application.Commands.AtosDoProcesso;
 using Application.DTOs;
 using Application.Queries.AtosDoProcesso;
+
+using Contracts.Requests;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,6 +14,7 @@ using Microsoft.AspNetCore.Mvc;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
+using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -28,13 +32,59 @@ using Unifesspa.UniPlus.Kernel.Results;
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public; sem isso o MVC ignora a classe e nenhum endpoint é registrado.")]
 public sealed class AtosDoProcessoController : ControllerBase
 {
+    private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;
 
-    public AtosDoProcessoController(IQueryBus queryBus, IDomainErrorMapper mapper)
+    public AtosDoProcessoController(ICommandBus commandBus, IQueryBus queryBus, IDomainErrorMapper mapper)
     {
+        _commandBus = commandBus;
         _queryBus = queryBus;
         _mapper = mapper;
+    }
+
+    /// <summary>
+    /// Publica um ato avulso do processo — aviso, comunicado, errata e semelhantes —, com o documento
+    /// principal em PDF e os anexos já enviados, e, quando corrige um ato publicado, a indicação dele e o
+    /// motivo (ADR-0103). Tudo o que o registro central recusaria depois é conferido antes, com 422: a
+    /// recusa tardia iria para a fila de mensagens que falharam, onde ninguém a recebe.
+    /// </summary>
+    /// <remarks>
+    /// Responde 202: o registro no Publicações e a cópia ao acervo público acontecem depois, por mensagem
+    /// durável. O ato aparece como pendente na consulta dos atos do processo até o registro se confirmar.
+    /// Convocação e chamada não são documento avulso: pertencem ao Ingresso.
+    /// </remarks>
+    [HttpPost]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(typeof(AtoPublicadoDto), StatusCodes.Status202Accepted)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict,
+        Description = "Outra requisição com a mesma Idempotency-Key ainda está em processamento.")]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> Publicar(
+        Guid processoSeletivoId,
+        [FromBody] PublicarAtoAvulsoDoProcessoRequest request,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        Result<AtoPublicadoDto> resultado = await _commandBus
+            .Send(
+                new PublicarAtoAvulsoDoProcessoCommand(
+                    processoSeletivoId,
+                    request.TipoAtoCodigo,
+                    request.Numero,
+                    request.DataPublicacao,
+                    request.Assinante,
+                    request.DocumentoPrincipalId,
+                    request.Anexos?.Select(static a => a is null ? null! : new AnexoSolicitadoDoAto(a.DocumentoId, a.Nome)).ToList(),
+                    request.AtoCorrigidoId,
+                    request.MotivoDaCorrecao),
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        return resultado.IsSuccess ? StatusCode(StatusCodes.Status202Accepted, resultado.Value) : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>

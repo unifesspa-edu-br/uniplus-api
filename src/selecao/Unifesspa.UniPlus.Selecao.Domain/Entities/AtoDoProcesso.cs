@@ -4,6 +4,8 @@ using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Extensions;
+using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -36,8 +38,10 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </para>
 /// <para>
 /// As invariantes de negócio (processo com página pública, tipo vigente, documentos confirmados e de
-/// outro ato) são do comando de publicação, que as recusa com erro nomeado antes de enviar. Os guards
-/// daqui são a última linha e lançam, porque a violação é erro de programação.
+/// outro ato) são do comando de publicação, que as recusa com erro nomeado antes de enviar. O par
+/// ato corrigido e motivo é regra do agregado e vem do payload: a recusa é <see cref="Result"/> nomeado,
+/// sem exceção (ADR-0125). Os demais guards daqui são a última linha e lançam, porque a violação é
+/// erro de programação.
 /// </para>
 /// </remarks>
 public sealed class AtoDoProcesso : EntityBase
@@ -90,11 +94,53 @@ public sealed class AtoDoProcesso : EntityBase
 
     private AtoDoProcesso() { }
 
-    /// <summary>Cria o registro pendente que acompanha o envio da requisição de registro do ato.</summary>
-    public static AtoDoProcesso Registrar(NovoAtoDoProcesso novo, TimeProvider clock)
+    /// <summary>
+    /// Confere o par ato corrigido e motivo da correção, que vem do payload: quem corrige diz o que
+    /// corrige e por quê, e quem não corrige não tem motivo (ADR-0103). Acumula as violações, com o
+    /// campo no casing do payload (ADR-0125).
+    /// </summary>
+    public static Result ValidarCorrecao(Guid? atoCorrigidoId, string? motivoDaCorrecao)
+    {
+        bool temMotivo = !string.IsNullOrWhiteSpace(motivoDaCorrecao);
+        List<FieldError> erros = [];
+
+        if (atoCorrigidoId == Guid.Empty)
+        {
+            erros.Add(new FieldError("atoCorrigidoId", new DomainError(
+                AtoDoProcessoErrorCodes.AtoCorrigidoInvalido,
+                "O ato corrigido informado é inválido.")));
+        }
+        else if (atoCorrigidoId is null && temMotivo)
+        {
+            erros.Add(new FieldError("atoCorrigidoId", new DomainError(
+                AtoDoProcessoErrorCodes.AtoCorrigidoObrigatorio,
+                "Informe o ato corrigido: o motivo da correção só existe junto dele.")));
+        }
+
+        if (atoCorrigidoId is not null && !temMotivo)
+        {
+            erros.Add(new FieldError("motivoDaCorrecao", new DomainError(
+                AtoDoProcessoErrorCodes.MotivoDaCorrecaoObrigatorio,
+                "O motivo da correção é obrigatório quando o ato corrige outro.")));
+        }
+
+        return erros.Count > 0 ? Result.ValidationFailure(erros) : Result.Success();
+    }
+
+    /// <summary>
+    /// Cria o registro pendente que acompanha o envio da requisição de registro do ato. Devolve falha
+    /// nomeada quando o par ato corrigido e motivo é incoerente.
+    /// </summary>
+    public static Result<AtoDoProcesso> Registrar(NovoAtoDoProcesso novo, TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(novo);
         ArgumentNullException.ThrowIfNull(clock);
+
+        Result correcao = ValidarCorrecao(novo.AtoCorrigidoId, novo.MotivoDaCorrecao);
+        if (correcao.IsFailure)
+        {
+            return Result<AtoDoProcesso>.ValidationFailure(correcao.Errors);
+        }
 
         GuardarIdentidade(novo);
         GuardarTexto(novo.TipoCodigo, TipoCodigoMaxLength, nameof(novo.TipoCodigo));
@@ -112,7 +158,7 @@ public sealed class AtoDoProcesso : EntityBase
         };
         GuardarTextoOpcional(novo.Numero, NumeroMaxLength, nameof(novo.Numero));
         GuardarTextoOpcional(novo.PoliticaDeDivulgacaoConfirmadaPorSub, SubMaxLength, nameof(novo.PoliticaDeDivulgacaoConfirmadaPorSub));
-        GuardarCorrecao(novo);
+        GuardarAutocorrecao(novo);
         GuardarDocumentos(novo);
 
         AtoDoProcesso ato = new()
@@ -140,7 +186,7 @@ public sealed class AtoDoProcesso : EntityBase
             ato._anexos.Add(AnexoDoAtoDoProcesso.Criar(ato.Id, i, novo.Anexos[i].DocumentoAPublicarId, novo.Anexos[i].NomeDeExibicao));
         }
 
-        return ato;
+        return Result<AtoDoProcesso>.Success(ato);
     }
 
     /// <summary>
@@ -175,14 +221,9 @@ public sealed class AtoDoProcesso : EntityBase
         }
     }
 
-    private static void GuardarCorrecao(NovoAtoDoProcesso novo)
+    private static void GuardarAutocorrecao(NovoAtoDoProcesso novo)
     {
-        // Relação entre atos (ADR-0103): quem corrige diz o que corrige e por quê; quem não corrige não tem motivo.
-        if ((novo.AtoCorrigidoId is null) != (novo.MotivoDaCorrecao is null))
-        {
-            throw new ArgumentException("O ato corrigido e o motivo da correção vêm juntos.", nameof(novo));
-        }
-
+        // O identificador do ato é gerado no servidor: nunca vem do payload, logo é erro de programação.
         if (novo.AtoCorrigidoId == novo.AtoId)
         {
             throw new ArgumentException("Um ato não corrige a si mesmo.", nameof(novo));

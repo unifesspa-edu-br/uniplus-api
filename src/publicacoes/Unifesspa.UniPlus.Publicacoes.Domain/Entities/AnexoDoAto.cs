@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
@@ -74,11 +75,11 @@ public sealed partial class AnexoDoAto : IForensicEntity
                 $"O ato admite no máximo {QuantidadeMaxima} anexos; foram enviados {anexos.Count}.");
         }
 
-        HashSet<string> nomes = new(StringComparer.Ordinal);
+        HashSet<string> nomes = new(NomeDoAnexoPublicado.Comparador);
 
         foreach ((string nome, string tipoMidia, string hash) in anexos)
         {
-            string nomeNorm = nome?.Trim() ?? string.Empty;
+            string nomeNorm = NomeDoAnexoPublicado.Normalizar(nome);
             if (nomeNorm.Length == 0 || nomeNorm.Length > NomeMaxLength)
             {
                 return new DomainError(
