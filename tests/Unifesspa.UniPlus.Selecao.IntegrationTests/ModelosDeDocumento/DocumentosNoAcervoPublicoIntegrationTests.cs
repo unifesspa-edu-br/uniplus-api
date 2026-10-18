@@ -587,7 +587,7 @@ public sealed class DocumentosNoAcervoPublicoIntegrationTests : IClassFixture<Pr
                 identificador,
                 principal.Id,
                 anexo is null ? [] : [new AnexoDeclarado(anexo.Id, "Relação de inscritos")]),
-            TimeProvider.System);
+            TimeProvider.System).Value!;
         await using SelecaoDbContext context = _dbFixture.CreateDbContext();
         context.AtosDoProcesso.Add(registro);
         await context.SaveChangesAsync();

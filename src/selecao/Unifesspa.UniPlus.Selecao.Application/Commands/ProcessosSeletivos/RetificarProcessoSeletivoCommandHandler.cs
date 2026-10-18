@@ -420,14 +420,8 @@ public static class RetificarProcessoSeletivoCommandHandler
 
         VersaoConfiguracao versao = retificarResult.Value!;
 
-        await processoSeletivoRepository
-            .AdicionarVersaoConfiguracaoAsync(versao, cancellationToken)
-            .ConfigureAwait(false);
-
-        // O registro do ato vai na mesma gravação da versão e do envio ao outbox: a consulta dos atos
-        // do processo lê só ele, e a confirmação do Publicações o encontra pelo id do ato.
-        await RegistroDoAtoDaVersao.RegistrarAsync(
-            atoDoProcessoRepository,
+        // A recusa vem antes de qualquer escrita (ADR-0125).
+        Result<AtoDoProcesso> registroDoAto = RegistroDoAtoDaVersao.Montar(
             processo,
             versao,
             command.Ato,
@@ -436,9 +430,19 @@ public static class RetificarProcessoSeletivoCommandHandler
             documento.Id,
             atoRetificadoId: versaoAtual.AtoCriadorId,
             motivoRetificacao: motivo,
-            timeProvider,
-            cancellationToken)
+            timeProvider);
+        if (registroDoAto.IsFailure)
+        {
+            return (Result.ValidationFailure(registroDoAto.Errors), []);
+        }
+
+        await processoSeletivoRepository
+            .AdicionarVersaoConfiguracaoAsync(versao, cancellationToken)
             .ConfigureAwait(false);
+
+        // O registro do ato vai na mesma gravação da versão e do envio ao outbox: a consulta dos atos
+        // do processo lê só ele, e a confirmação do Publicações o encontra pelo id do ato.
+        await atoDoProcessoRepository.AdicionarAsync(registroDoAto.Value!, cancellationToken).ConfigureAwait(false);
 
         try
         {

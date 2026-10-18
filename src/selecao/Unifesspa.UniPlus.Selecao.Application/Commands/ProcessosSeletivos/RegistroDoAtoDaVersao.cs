@@ -4,6 +4,7 @@ using Domain.Entities;
 using Domain.Interfaces;
 using Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 /// <summary>
@@ -19,27 +20,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// </remarks>
 internal static class RegistroDoAtoDaVersao
 {
-    public static async Task RegistrarAsync(
-        IAtoDoProcessoRepository atoDoProcessoRepository,
-        ProcessoSeletivo processo,
-        VersaoConfiguracao versao,
-        DadosDoAto ato,
-        TipoAtoPublicadoView tipoConferido,
-        DadosEdital dados,
-        Guid documentoEditalId,
-        Guid? atoRetificadoId,
-        string? motivoRetificacao,
-        TimeProvider timeProvider,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
-
-        AtoDoProcesso registro = Criar(
-            processo, versao, ato, tipoConferido, dados, documentoEditalId, atoRetificadoId, motivoRetificacao, timeProvider);
-        await atoDoProcessoRepository.AdicionarAsync(registro, cancellationToken).ConfigureAwait(false);
-    }
-
-    private static AtoDoProcesso Criar(
+    public static Result<AtoDoProcesso> Montar(
         ProcessoSeletivo processo,
         VersaoConfiguracao versao,
         DadosDoAto ato,

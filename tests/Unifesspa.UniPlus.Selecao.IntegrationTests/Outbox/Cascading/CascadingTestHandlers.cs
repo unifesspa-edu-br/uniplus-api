@@ -119,7 +119,7 @@ public sealed class RegistrarAtoDoProcessoDeTesteHandler
             new NovoAtoDoProcesso(
                 command.AtoId, command.ProcessoSeletivoId, DadosDoAtoDeTeste.TipoAviso, "Aviso", "3/2026", data,
                 "Diretor do CEPS", "ceps", "psm-medicina-2027", command.DocumentoPrincipalId, []),
-            timeProvider);
+            timeProvider).Value!;
 
         await atoDoProcessoRepository.AdicionarAsync(ato, cancellationToken).ConfigureAwait(false);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);

@@ -24,7 +24,7 @@ public sealed class ConfirmarRegistroDoAtoDoProcessoHandlerTests
         new NovoAtoDoProcesso(
             Guid.CreateVersion7(), Guid.CreateVersion7(), "AVISO", "Aviso", "3/2026", new DateOnly(2026, 12, 10),
             "Diretor do CEPS", "ceps", "psm-medicina-2027", Guid.CreateVersion7(), []),
-        new RelogioFixo(Agora));
+        new RelogioFixo(Agora)).Value!;
 
     private Task Entregar(Guid atoId) => ConfirmarRegistroDoAtoDoProcessoHandler.Handle(
         new AtoNormativoRegistrado(atoId, 2026, "AVISO"),

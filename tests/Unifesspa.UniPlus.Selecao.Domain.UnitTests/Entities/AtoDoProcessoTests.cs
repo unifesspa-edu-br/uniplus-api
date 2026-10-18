@@ -2,8 +2,10 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -42,7 +44,7 @@ public sealed class AtoDoProcessoTests
             anexos: [new AnexoDeclarado(segundo, "Anexo B"), new AnexoDeclarado(primeiro, "Anexo A")],
             politicaConfirmadaPor: "sub-do-usuario");
 
-        AtoDoProcesso ato = AtoDoProcesso.Registrar(novo, new RelogioFixo(Agora));
+        AtoDoProcesso ato = AtoDoProcesso.Registrar(novo, new RelogioFixo(Agora)).Value!;
 
         ato.Id.Should().Be(novo.AtoId, "o registro é identificado pelo ato que a Seleção decidiu");
         ato.Situacao.Should().Be(SituacaoDoRegistroDoAto.Pendente);
@@ -56,7 +58,7 @@ public sealed class AtoDoProcessoTests
     [Fact(DisplayName = "Confirmar o registro marca o instante uma vez só: a repetição não muda nada")]
     public void ConfirmarRegistro_Repetido_NaoMudaNada()
     {
-        AtoDoProcesso ato = AtoDoProcesso.Registrar(Novo(), new RelogioFixo(Agora));
+        AtoDoProcesso ato = AtoDoProcesso.Registrar(Novo(), new RelogioFixo(Agora)).Value!;
 
         ato.ConfirmarRegistro(new RelogioFixo(Agora.AddMinutes(1))).Should().BeTrue();
         ato.ConfirmarRegistro(new RelogioFixo(Agora.AddMinutes(9))).Should().BeFalse();
@@ -65,14 +67,45 @@ public sealed class AtoDoProcessoTests
         ato.RegistradoEm.Should().Be(Agora.AddMinutes(1));
     }
 
-    [Fact(DisplayName = "O ato corrigido e o motivo vêm juntos")]
-    public void Registrar_AtoCorrigidoSemMotivo_Lanca()
+    [Fact(DisplayName = "Ato corrigido sem motivo é recusado com falha nomeada no campo do motivo")]
+    public void Registrar_AtoCorrigidoSemMotivo_DevolveFalhaNomeada()
     {
-        Func<AtoDoProcesso> semMotivo = () => AtoDoProcesso.Registrar(Novo(atoCorrigidoId: Guid.CreateVersion7()), TimeProvider.System);
-        Func<AtoDoProcesso> semAto = () => AtoDoProcesso.Registrar(Novo(motivo: "Erro de grafia"), TimeProvider.System);
+        Result<AtoDoProcesso> resultado = AtoDoProcesso.Registrar(Novo(atoCorrigidoId: Guid.CreateVersion7()), TimeProvider.System);
 
-        semMotivo.Should().Throw<ArgumentException>();
-        semAto.Should().Throw<ArgumentException>();
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle()
+            .Which.Should().Match<FieldError>(e => e.Field == "motivoDaCorrecao"
+                && e.Error.Code == AtoDoProcessoErrorCodes.MotivoDaCorrecaoObrigatorio);
+    }
+
+    [Fact(DisplayName = "Motivo sem ato corrigido é recusado com falha nomeada no campo do ato")]
+    public void Registrar_MotivoSemAtoCorrigido_DevolveFalhaNomeada()
+    {
+        Result<AtoDoProcesso> resultado = AtoDoProcesso.Registrar(Novo(motivo: "Erro de grafia"), TimeProvider.System);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle()
+            .Which.Should().Match<FieldError>(e => e.Field == "atoCorrigidoId"
+                && e.Error.Code == AtoDoProcessoErrorCodes.AtoCorrigidoObrigatorio);
+    }
+
+    [Fact(DisplayName = "Ato corrigido com identificador vazio é recusado com falha nomeada")]
+    public void Registrar_AtoCorrigidoVazio_DevolveFalhaNomeada()
+    {
+        Result<AtoDoProcesso> resultado = AtoDoProcesso.Registrar(Novo(atoCorrigidoId: Guid.Empty, motivo: "Erro de grafia"), TimeProvider.System);
+
+        resultado.Errors.Should().ContainSingle()
+            .Which.Should().Match<FieldError>(e => e.Field == "atoCorrigidoId"
+                && e.Error.Code == AtoDoProcessoErrorCodes.AtoCorrigidoInvalido);
+    }
+
+    [Fact(DisplayName = "Um ato não corrige a si mesmo: o identificador é do servidor, então a violação é de programação")]
+    public void Registrar_AtoQueCorrigeASiMesmo_Lanca()
+    {
+        NovoAtoDoProcesso novo = Novo(motivo: "Erro de grafia");
+        Func<Result<AtoDoProcesso>> registrar = () => AtoDoProcesso.Registrar(novo with { AtoCorrigidoId = novo.AtoId }, TimeProvider.System);
+
+        registrar.Should().Throw<ArgumentException>();
     }
 
     [Fact(DisplayName = "Um documento não é o principal e anexo, nem anexo duas vezes")]
@@ -81,9 +114,9 @@ public sealed class AtoDoProcessoTests
         Guid principal = Guid.CreateVersion7();
         Guid anexo = Guid.CreateVersion7();
 
-        Func<AtoDoProcesso> principalComoAnexo = () => AtoDoProcesso.Registrar(
+        Func<Result<AtoDoProcesso>> principalComoAnexo = () => AtoDoProcesso.Registrar(
             Novo(principal: principal, anexos: [new AnexoDeclarado(principal, "Anexo")]), TimeProvider.System);
-        Func<AtoDoProcesso> anexoDuasVezes = () => AtoDoProcesso.Registrar(
+        Func<Result<AtoDoProcesso>> anexoDuasVezes = () => AtoDoProcesso.Registrar(
             Novo(anexos: [new AnexoDeclarado(anexo, "Anexo"), new AnexoDeclarado(anexo, "Outro")]), TimeProvider.System);
 
         principalComoAnexo.Should().Throw<ArgumentException>();
@@ -95,20 +128,11 @@ public sealed class AtoDoProcessoTests
     {
         NovoAtoDoProcesso novo = Novo(politicaConfirmadaPor: "  ") with { Numero = "   " };
 
-        AtoDoProcesso ato = AtoDoProcesso.Registrar(novo, new RelogioFixo(Agora));
+        AtoDoProcesso ato = AtoDoProcesso.Registrar(novo, new RelogioFixo(Agora)).Value!;
 
         ato.Numero.Should().BeNull();
         ato.PoliticaDeDivulgacaoConfirmadaPorSub.Should().BeNull();
         ato.PoliticaDeDivulgacaoConfirmadaEm.Should().BeNull();
         ato.MotivoDaCorrecao.Should().BeNull();
-    }
-
-    [Fact(DisplayName = "O motivo em branco com ato corrigido continua sendo violação: os dois vêm juntos")]
-    public void Registrar_AtoCorrigidoComMotivoEmBranco_Lanca()
-    {
-        Func<AtoDoProcesso> registrar = () => AtoDoProcesso.Registrar(
-            Novo(atoCorrigidoId: Guid.CreateVersion7(), motivo: "   "), TimeProvider.System);
-
-        registrar.Should().Throw<ArgumentException>();
     }
 }

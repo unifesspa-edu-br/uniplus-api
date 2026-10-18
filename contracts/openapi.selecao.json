@@ -100,6 +100,152 @@
       }
     },
     "/api/selecao/processos-seletivos/{processoSeletivoId}/atos": {
+      "post": {
+        "tags": [
+          "AtosDoProcesso"
+        ],
+        "parameters": [
+          {
+            "name": "processoSeletivoId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[\\x21-\\x2B\\x2D-\\x3A\\x3C-\\x7E]\u002B$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicarAtoAvulsoDoProcessoRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicarAtoAvulsoDoProcessoRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicarAtoAvulsoDoProcessoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AtoPublicadoDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AtoPublicadoDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AtoPublicadoDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Outra requisi\u00E7\u00E3o com a mesma Idempotency-Key ainda est\u00E1 em processamento.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Autenticado, mas sem a autoriza\u00E7\u00E3o exigida pela rota (ex.: a role plataforma-admin).",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-uniplus-idempotent": true
+      },
       "get": {
         "tags": [
           "AtosDoProcesso"
@@ -9822,6 +9968,25 @@
         ],
         "type": "string"
       },
+      "AnexoDoAtoRequest": {
+        "required": [
+          "documentoId",
+          "nome"
+        ],
+        "type": "object",
+        "properties": {
+          "documentoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "AnexoDoEditalRequest": {
         "required": [
           "documentoId",
@@ -10171,6 +10336,18 @@
             "items": {
               "$ref": "#/components/schemas/DocumentoDoAtoDto"
             }
+          }
+        }
+      },
+      "AtoPublicadoDto": {
+        "required": [
+          "atoId"
+        ],
+        "type": "object",
+        "properties": {
+          "atoId": {
+            "type": "string",
+            "format": "uuid"
           }
         }
       },
@@ -17280,6 +17457,60 @@
             "items": {
               "$ref": "#/components/schemas/EtapaComProdutosPrevistosDto"
             }
+          }
+        }
+      },
+      "PublicarAtoAvulsoDoProcessoRequest": {
+        "required": [
+          "tipoAtoCodigo",
+          "numero",
+          "dataPublicacao",
+          "assinante",
+          "documentoPrincipalId"
+        ],
+        "type": "object",
+        "properties": {
+          "tipoAtoCodigo": {
+            "type": "string"
+          },
+          "numero": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dataPublicacao": {
+            "type": "string",
+            "format": "date"
+          },
+          "assinante": {
+            "type": "string"
+          },
+          "documentoPrincipalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "anexos": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/AnexoDoAtoRequest"
+            }
+          },
+          "atoCorrigidoId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "motivoDaCorrecao": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

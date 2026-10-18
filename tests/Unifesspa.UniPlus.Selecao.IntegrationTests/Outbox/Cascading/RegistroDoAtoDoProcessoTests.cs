@@ -235,7 +235,7 @@ public sealed class RegistroDoAtoDoProcessoTests
                 new NovoAtoDoProcesso(
                     atoId, processoId, tipoDoItem, "Resultado final", "7/2027", new DateOnly(2027, 1, 20),
                     "Diretor do CEPS", "ceps", "psm-medicina-2027", documentoId, [], ProdutoDoEditalId: produtoId),
-                TimeProvider.System);
+                TimeProvider.System).Value!;
             ato.ConfirmarRegistro(TimeProvider.System);
             db.AtosDoProcesso.Add(ato);
             await db.SaveChangesAsync();

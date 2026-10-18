@@ -108,7 +108,7 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
                 Guid.CreateVersion7(), _processoId, tipo, $"Nome de {tipo}", "5/2027", new DateOnly(2027, 1, 20),
                 "Diretor do CEPS", "ceps", "psm-medicina-2027", Documento().Id, [],
                 ProdutoDoEditalId: produtoId, AtoCorrigidoId: corrige, MotivoDaCorrecao: corrige is null ? null : "Erro de digitação"),
-            new RelogioFixo(Agora.AddMinutes(-10)));
+            new RelogioFixo(Agora.AddMinutes(-10))).Value!;
         typeof(AtoDoProcesso).GetProperty(nameof(AtoDoProcesso.CreatedAt))!.SetValue(ato, Agora.AddMinutes(-10 + _atosDoProcesso.Count));
         if (registrado)
         {

@@ -55,6 +55,27 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
     Task<ProcessoSeletivo?> ObterParaMutacaoAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Toma só o <b>lock pessimista da linha raiz</b> do processo, sem carregar o agregado.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Por que existe.</b> Há handlers que gravam fora do agregado — o ato avulso grava o
+    /// registro do ato — mas decidem com conferências do tipo "ler, depois inserir" (a vaga do tipo
+    /// único por objeto, o documento que não pode servir a dois atos). Sem serialização, duas
+    /// requisições concorrentes passam juntas pela conferência e as duas gravam. Carregar a
+    /// configuração completa só para ter o lock seria custo sem uso.
+    /// </para>
+    /// <para>
+    /// <b>O que serializa.</b> O mesmo <c>SELECT ... FOR UPDATE</c> de
+    /// <see cref="ObterParaMutacaoAsync"/>: as transações concorrentes que tocam o MESMO processo
+    /// esperam aqui, inclusive a publicação e a retificação. Roda na transação ambiente do
+    /// Wolverine, e o lock cai no commit ou no rollback; chamar antes das conferências é o que
+    /// faz a segunda transação enxergar a gravação da primeira.
+    /// </para>
+    /// </remarks>
+    Task TravarAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Lista processos paginados por cursor keyset bidirecional (ADR-0026 +
     /// ADR-0089): ordena por <c>Id</c> e retorna até <paramref name="limit"/>
     /// itens na direção <paramref name="direction"/> a partir de
