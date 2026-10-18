@@ -107,7 +107,8 @@ public static class ListarProdutosPrevistosDoProcessoQueryHandler
             versao.NumeroVersao,
             grafo,
             cadeias,
-            tipos.ToDictionary(static t => t.Codigo, static t => t.Nome, StringComparer.Ordinal),
+            tipos.GroupBy(static t => t.Codigo, StringComparer.Ordinal)
+                .ToDictionary(static g => g.Key, static g => g.First().Nome, StringComparer.Ordinal),
             ato => AtoDoProcessoMapping.ToDto(ato, documentosPorId, AtoDoProcessoMapping.PendenciaAcimaDoLimiar(ato, limite))));
     }
 

@@ -264,6 +264,20 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         doPreliminar.TipoNome.Should().BeNull();
     }
 
+    [Fact(DisplayName = "Duas versões vigentes do mesmo tipo no catálogo não derrubam a consulta")]
+    public async Task Handle_TipoComDuasVersoesVigentes_NaoFalha()
+    {
+        (ProdutoDaFase preliminar, ProdutoDaFase definitivo) = Par();
+        Cronograma([Fase("INSCRICAO", 1, preliminar, definitivo)]);
+        _tipos.ListarVigentesAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns([
+                new TipoAtoPublicadoView(Materia, "Primeira versão", false, true, false, true),
+                new TipoAtoPublicadoView(Materia, "Segunda versão", false, true, false, true),
+            ]);
+
+        (await ItemDaFase(preliminar.Id)).TipoNome.Should().Be("Primeira versão");
+    }
+
     [Fact(DisplayName = "Processo sem versão vigente devolve a recusa nomeada, e processo inexistente devolve não encontrado")]
     public async Task Handle_SemVersaoVigente_DistingueDeInexistente()
     {
