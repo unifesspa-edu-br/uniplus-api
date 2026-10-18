@@ -23,7 +23,7 @@ public sealed class AnexoDoAtoDoProcessoConfiguration : IEntityTypeConfiguration
             .OnDelete(DeleteBehavior.Restrict);
 
         // Dentro do ato, um documento é anexo uma só vez e a posição é única. Entre atos o documento
-        // pode se repetir: a retificação do edital herda os anexos da versão anterior.
+        // pode se repetir: cada versão do edital registra os anexos que publica, e a retificação sem lista nova herda os da versão anterior.
         builder.HasIndex(a => new { a.AtoDoProcessoId, a.DocumentoAPublicarId })
             .IsUnique()
             .HasDatabaseName("ux_anexos_do_ato_do_processo_ato_documento");

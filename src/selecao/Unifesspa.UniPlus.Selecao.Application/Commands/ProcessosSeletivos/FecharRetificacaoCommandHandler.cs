@@ -442,7 +442,7 @@ public static class FecharRetificacaoCommandHandler
             versao,
             command.Ato,
             tipoConferido,
-            dados.Numero,
+            dados,
             documento.Id,
             atoRetificadoId: versaoAtual.AtoCriadorId,
             motivoRetificacao: motivo,

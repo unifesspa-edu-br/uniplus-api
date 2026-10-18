@@ -366,7 +366,7 @@ public static class PublicarProcessoSeletivoCommandHandler
             versao,
             command.Ato,
             tipoConferido,
-            dados.Numero,
+            dados,
             documento.Id,
             atoRetificadoId: null,
             motivoRetificacao: null,

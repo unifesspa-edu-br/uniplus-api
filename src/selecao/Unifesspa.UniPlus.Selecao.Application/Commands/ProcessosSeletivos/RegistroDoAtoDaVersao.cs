@@ -14,7 +14,8 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// O registro nasce junto da versão e da requisição de registro do ato, na mesma transação. Tem o
 /// mesmo formato do registro do ato que não cria versão, e é o que dá à consulta dos atos do processo
 /// uma fonte única. A unidade e o identificador legível são os do processo no instante da publicação;
-/// o documento principal é o do edital.
+/// o documento principal é o do edital e os anexos são os da versão que nasce, na ordem em que o edital os
+/// declara — os herdados, quando a retificação não traz lista nova.
 /// </remarks>
 internal static class RegistroDoAtoDaVersao
 {
@@ -24,7 +25,7 @@ internal static class RegistroDoAtoDaVersao
         VersaoConfiguracao versao,
         DadosDoAto ato,
         TipoAtoPublicadoView tipoConferido,
-        string? numeroDeclarado,
+        DadosEdital dados,
         Guid documentoEditalId,
         Guid? atoRetificadoId,
         string? motivoRetificacao,
@@ -34,7 +35,7 @@ internal static class RegistroDoAtoDaVersao
         ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
 
         AtoDoProcesso registro = Criar(
-            processo, versao, ato, tipoConferido, numeroDeclarado, documentoEditalId, atoRetificadoId, motivoRetificacao, timeProvider);
+            processo, versao, ato, tipoConferido, dados, documentoEditalId, atoRetificadoId, motivoRetificacao, timeProvider);
         await atoDoProcessoRepository.AdicionarAsync(registro, cancellationToken).ConfigureAwait(false);
     }
 
@@ -43,7 +44,7 @@ internal static class RegistroDoAtoDaVersao
         VersaoConfiguracao versao,
         DadosDoAto ato,
         TipoAtoPublicadoView tipoConferido,
-        string? numeroDeclarado,
+        DadosEdital dados,
         Guid documentoEditalId,
         Guid? atoRetificadoId,
         string? motivoRetificacao,
@@ -53,6 +54,7 @@ internal static class RegistroDoAtoDaVersao
         ArgumentNullException.ThrowIfNull(versao);
         ArgumentNullException.ThrowIfNull(ato);
         ArgumentNullException.ThrowIfNull(tipoConferido);
+        ArgumentNullException.ThrowIfNull(dados);
 
         return AtoDoProcesso.Registrar(
             new NovoAtoDoProcesso(
@@ -60,13 +62,13 @@ internal static class RegistroDoAtoDaVersao
                 ProcessoSeletivoId: processo.Id,
                 TipoCodigo: ato.TipoAtoCodigo,
                 TipoNome: tipoConferido.Nome,
-                Numero: numeroDeclarado,
+                Numero: dados.Numero,
                 DataDoAto: ato.DataPublicacao,
                 Assinante: ato.Assinante,
                 UnidadeAdministradora: processo.UnidadeAdministradora.Slug,
                 IdentificadorLegivelDoProcesso: processo.IdentificadorLegivel!.Value.Valor,
                 DocumentoPrincipalId: documentoEditalId,
-                Anexos: [],
+                Anexos: [.. dados.Anexos.Select(static a => new AnexoDeclarado(a.DocumentoId, a.NomeArquivo))],
                 AtoCorrigidoId: atoRetificadoId,
                 MotivoDaCorrecao: motivoRetificacao),
             timeProvider);
