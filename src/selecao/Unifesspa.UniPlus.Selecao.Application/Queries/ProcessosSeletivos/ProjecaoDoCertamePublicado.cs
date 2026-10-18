@@ -364,7 +364,7 @@ internal static class ProjecaoDoCertamePublicado
             return false;
         }
 
-        string chave = ChaveNoAcervoPublico.DoEdital(ato.Ano, unidade, ato.TipoCodigo, identificadorLegivel, ato.Id, hashSha256);
+        string chave = ChaveNoAcervoPublico.DoEdital(ato.Ano, unidade, ato.TipoCodigo, identificadorLegivel, ato.Id, hashSha256, FormatoDeDocumento.Pdf);
         string nomeDeApresentacao = $"{identificadorLegivel}-{ChaveNoAcervoPublico.SegmentoDoTipo(ato.TipoCodigo)}.pdf";
         edital = new EditalNoAcervo(documentoEditalId, hashSha256, chave, nomeDeApresentacao);
         return true;

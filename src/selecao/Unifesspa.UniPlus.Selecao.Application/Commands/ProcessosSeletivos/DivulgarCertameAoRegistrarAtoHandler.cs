@@ -53,6 +53,7 @@ public static class DivulgarCertameAoRegistrarAtoHandler
         IRegistroCodecsEnvelope registroCodecs,
         IDocumentoAPublicarRepository documentoAPublicarRepository,
         IModeloDeDocumentoRepository modeloDeDocumentoRepository,
+        IAtoDoProcessoRepository atoDoProcessoRepository,
         IAcervoPublico acervoPublico,
         IEnderecoNoAcervoPublico enderecoNoAcervo,
         ISelecaoUnitOfWork unitOfWork,
@@ -65,6 +66,7 @@ public static class DivulgarCertameAoRegistrarAtoHandler
         ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(documentoAPublicarRepository);
         ArgumentNullException.ThrowIfNull(modeloDeDocumentoRepository);
+        ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
         ArgumentNullException.ThrowIfNull(acervoPublico);
         ArgumentNullException.ThrowIfNull(enderecoNoAcervo);
         ArgumentNullException.ThrowIfNull(unitOfWork);
@@ -74,10 +76,22 @@ public static class DivulgarCertameAoRegistrarAtoHandler
             .ObterVersoesPorAtoCriadorAsync([mensagem.AtoId], cancellationToken)
             .ConfigureAwait(false);
 
-        // Ato que não corresponde a versão alguma de Seleção: o registro central serve outros
-        // domínios, e um ato de outro objeto chega aqui sem ter o que divulgar.
+        // Ato que não cria versão: se é do processo, o registro do ato diz quais documentos divulgar;
+        // se não há registro, o ato é de outro domínio — o registro central serve a mais de um — e
+        // não há o que divulgar.
         if (versoes.Count == 0)
         {
+            await DivulgarAtoDoProcessoNoAcervo
+                .DivulgarAsync(
+                    mensagem,
+                    atoDoProcessoRepository,
+                    certameDivulgadoRepository,
+                    documentoAPublicarRepository,
+                    acervoPublico,
+                    enderecoNoAcervo,
+                    unitOfWork,
+                    cancellationToken)
+                .ConfigureAwait(false);
             return;
         }
 

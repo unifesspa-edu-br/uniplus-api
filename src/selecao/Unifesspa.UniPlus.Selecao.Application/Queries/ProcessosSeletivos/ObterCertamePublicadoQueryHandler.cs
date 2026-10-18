@@ -81,7 +81,9 @@ public static class ObterCertamePublicadoQueryHandler
         // Entrada com endereço ilegível fica de fora em vez de derrubar a página inteira: o evento
         // correspondente só perde o link, e o resto do certame continua servido.
         List<EditalPublicadoCertameDto> editais = [];
-        foreach (EditalDivulgado edital in divulgado.EditaisDivulgados.OrderBy(static e => e.NumeroVersao))
+        foreach (EditalDivulgado edital in divulgado.EditaisDivulgados
+            .OrderBy(static e => e.NumeroVersao ?? int.MaxValue)
+            .ThenBy(static e => e.AtoId))
         {
             if (Uri.TryCreate(edital.UrlDownload, UriKind.Absolute, out Uri? url))
             {

@@ -123,6 +123,24 @@ public sealed class LeituraPublicaDoCertameTests
             (retificacao.AtoId, retificacao.UrlDownload));
     }
 
+    [Fact(DisplayName = "O ato que não criou versão vem depois das versões, por ordem estável")]
+    public async Task Detalhe_PoeOAtoSemVersaoDepoisDasVersoes()
+    {
+        Guid processoId = Guid.CreateVersion7();
+        CertameDivulgado divulgado = Divulgado(processoId, Projecao(processoId));
+        EditalDivulgado aviso = new(Guid.CreateVersion7(), null, "https://acervo.teste/aviso.pdf");
+        EditalDivulgado abertura = new(Guid.CreateVersion7(), 1, "https://acervo.teste/abertura.pdf");
+        divulgado.RegistrarEdital(aviso);
+        divulgado.RegistrarEdital(abertura);
+        ICertameDivulgadoRepository repository = Substitute.For<ICertameDivulgadoRepository>();
+        repository.ObterParaLeituraAsync(processoId, Arg.Any<CancellationToken>()).Returns(divulgado);
+
+        Result<CertamePublicadoDto> resultado = await ObterCertamePublicadoQueryHandler.Handle(
+            new ObterCertamePublicadoQuery(processoId, Agora), repository, CancellationToken.None);
+
+        resultado.Value!.EditaisPublicados!.Select(static e => e.AtoId).Should().Equal(abertura.AtoId, aviso.AtoId);
+    }
+
     [Fact(DisplayName = "O edital divulgado devolve o principal e os anexos, com o registro antigo sem documentos")]
     public async Task Detalhe_TrazOsDocumentosDeCadaEdital()
     {

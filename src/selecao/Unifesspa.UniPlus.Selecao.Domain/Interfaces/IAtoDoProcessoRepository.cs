@@ -18,6 +18,12 @@ public interface IAtoDoProcessoRepository
     Task<AtoDoProcesso?> ObterParaMutacaoAsync(Guid atoId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Registro identificado pelo ato, com os anexos, sem rastreamento. Nulo quando o ato não é de um
+    /// processo que a Seleção registrou.
+    /// </summary>
+    Task<AtoDoProcesso?> ObterComAnexosAsync(Guid atoId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Registros do processo, com os anexos, sem rastreamento, do mais recente para o mais antigo.
     /// </summary>
     /// <remarks>
