@@ -74,9 +74,9 @@ internal sealed class ReentregaDaDivulgacaoDoCertame : IHandlerPolicy
 
             // O ato que não cria versão chegou antes da divulgação do edital do processo: a corrida
             // se resolve em segundos, mas a divulgação do edital pode depender de uma reentrega
-            // agendada. Espera na escala de minutos, sem esgotar as tentativas rápidas.
+            // agendada. Espera pelo menos tanto quanto ela: a mesma escala das duas causas que a atrasam.
             chain.OnException<CertameAindaNaoDivulgadoException>()
-                .ScheduleRetry(TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(2), TimeSpan.FromMinutes(10))
+                .ScheduleRetry(TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(15))
                 .Then.MoveToErrorQueue();
 
             // Endereço público já ocupado por outro certame divulgado: dado inconsistente, que
