@@ -156,8 +156,9 @@ public sealed class ComposicaoDaPaginaDoCertame
     }
 
     /// <summary>
-    /// Os documentos do ato no acervo, o principal e os anexos. Ato sem registro de documentos na
-    /// origem — o que não criou versão de Seleção — sai com lista vazia. O <c>documentoUrl</c> do
+    /// Os documentos do ato no acervo, o principal e os anexos, tanto do edital de cada versão quanto
+    /// do ato que não cria versão. Ato cujos documentos a Seleção ainda não divulgou — a cópia ao
+    /// acervo em andamento — sai com lista vazia. O <c>documentoUrl</c> do
     /// evento sai desta mesma lista, para nunca divergir do documento de papel principal.
     /// </summary>
     private static IReadOnlyList<DocumentoDoEvento> DocumentosDo(AtoDaOrigem ato, CertameDaOrigem certame) =>

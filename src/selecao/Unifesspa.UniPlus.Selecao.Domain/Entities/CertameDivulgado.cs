@@ -83,7 +83,8 @@ public sealed class CertameDivulgado : IIdentificavel
     public string Certame { get; private set; } = null!;
 
     /// <summary>
-    /// O edital de cada versão divulgada, identificado pelo ato que a criou. Fica fora do documento
+    /// Os documentos de cada ato divulgado do processo, identificados pelo ato: o edital de cada versão,
+    /// pelo ato que a criou, e o documento de cada ato que não cria versão. Fica fora do documento
     /// <see cref="Certame"/> — que descreve só a versão vigente — e cresce a cada divulgação, inclusive
     /// a de um ato que chega depois de uma versão mais nova.
     /// </summary>

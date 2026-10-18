@@ -88,7 +88,8 @@ internal sealed partial class ContratoPublicoDoCertameHttp : IContratoPublicoDoC
     }
 
     /// <summary>
-    /// Os documentos de cada versão divulgada, pelo ato que a criou. Documento sem nome, sem tipo de
+    /// Os documentos de cada ato divulgado do processo, pelo ato: o edital de cada versão e os atos que
+    /// não criam versão. Documento sem nome, sem tipo de
     /// mídia, com tamanho negativo, papel desconhecido ou endereço fora do padrão aceito é
     /// ignorado, como o link do edital: o resto do evento segue servido.
     /// </summary>

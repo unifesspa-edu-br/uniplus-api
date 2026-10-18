@@ -225,8 +225,9 @@ public sealed record AtendimentoCertameDto(
 /// da leitura, e por isso é calculada a cada consulta e nunca guardada no documento divulgado.
 /// </para>
 /// <para>
-/// <see cref="EditaisPublicados"/> é a outra parte que a leitura acrescenta: o edital de cada versão
-/// divulgada, que cresce a cada retificação e por isso não pertence ao documento da versão vigente.
+/// <see cref="EditaisPublicados"/> é a outra parte que a leitura acrescenta: os documentos de cada ato
+/// divulgado do processo, que cresce a cada retificação e a cada ato que não cria versão e por isso não
+/// pertence ao documento da versão vigente.
 /// </para>
 /// </remarks>
 public sealed record CertamePublicadoDto(
@@ -263,8 +264,9 @@ public sealed record CertamePublicadoDto(
     public SituacaoDoCertame? Situacao { get; init; }
 
     /// <summary>
-    /// O edital de cada versão divulgada do certame, da mais antiga à mais recente. O de
-    /// <see cref="DocumentoEdital"/> é o da versão vigente e também consta aqui.
+    /// Os documentos de cada ato divulgado do processo: o edital de cada versão, da mais antiga à mais
+    /// recente, seguido dos atos que não criam versão. O de <see cref="DocumentoEdital"/> é o da versão
+    /// vigente e também consta aqui.
     /// </summary>
     /// <remarks>
     /// Mesma forma de <see cref="Situacao"/>: fora do construtor e omitida quando nula, para que o

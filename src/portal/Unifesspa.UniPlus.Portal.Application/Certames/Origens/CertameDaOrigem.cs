@@ -20,8 +20,8 @@ namespace Unifesspa.UniPlus.Portal.Application.Certames.Origens;
 /// quando a versão não tem documento publicado.
 /// </param>
 /// <param name="DocumentosPorAto">
-/// Os documentos no acervo de cada versão já divulgada — o edital como principal e os anexos —, pelo
-/// ato que a criou, incluindo as versões anteriores à servida. É a única fonte dos documentos de cada
+/// Os documentos no acervo de cada ato já divulgado do processo — o principal e os anexos —, pelo
+/// ato: o edital de cada versão, incluindo as anteriores à servida, e os atos que não criam versão. É a única fonte dos documentos de cada
 /// evento, e o endereço do documento principal sai daqui; sem o ato aqui, o evento não tem documento.
 /// </param>
 /// <param name="Situacao">Situação da janela de inscrição no instante da leitura.</param>
