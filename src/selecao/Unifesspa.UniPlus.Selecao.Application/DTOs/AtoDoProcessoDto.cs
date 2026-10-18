@@ -56,5 +56,5 @@ public sealed record AtoDoProcessoDto(
     string? MotivoDaCorrecao,
     Guid? ProdutoDoEditalId,
     bool PoliticaDeDivulgacaoConfirmada,
-    DocumentoDoAtoDto? DocumentoPrincipal,
+    DocumentoDoAtoDto DocumentoPrincipal,
     IReadOnlyList<DocumentoDoAtoDto> Anexos);

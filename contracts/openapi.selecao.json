@@ -10079,14 +10079,7 @@
             "type": "boolean"
           },
           "documentoPrincipal": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/DocumentoDoAtoDto"
-              }
-            ]
+            "$ref": "#/components/schemas/DocumentoDoAtoDto"
           },
           "anexos": {
             "type": "array",
