@@ -272,7 +272,7 @@ public sealed class CertamePublicoEndpointTests : IClassFixture<PortalComOrigens
     [
         AtoCriador(),
         AtoAviso(),
-        new(ResultadoId, "RESULTADO_FINAL", "Resultado final", 2027, "003/2027", new DateOnly(2027, 3, 10), false, null),
+        new(ResultadoId, "RESULTADO_CLASSIFICACAO", "Resultado da classificação", 2027, "003/2027", new DateOnly(2027, 3, 10), false, null),
     ];
 
     private static AtoDaOrigem AtoCriador() =>

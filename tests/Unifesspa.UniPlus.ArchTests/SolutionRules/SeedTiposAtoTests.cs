@@ -28,8 +28,8 @@ public sealed partial class SeedTiposAtoTests
 
     private static readonly JsonSerializerOptions Opcoes = new(JsonSerializerDefaults.Web);
 
-    [Fact(DisplayName = "O arquivo de seed existe e traz os vinte e um tipos de ato")]
-    public void Seed_TrazOsVinteEUmTipos()
+    [Fact(DisplayName = "O arquivo de seed existe e traz os dezenove tipos de ato")]
+    public void Seed_TrazOsDezenoveTipos()
     {
         LinhaSeed[] linhas = Carregar();
 
@@ -37,7 +37,7 @@ public sealed partial class SeedTiposAtoTests
         // correspondente para ser configurável num cronograma — sem ele a fase não
         // tem o que declarar como produto, e a invariante da conclusão recusa a
         // publicação (uniplus-api#1436).
-        linhas.Should().HaveCount(21);
+        linhas.Should().HaveCount(19);
         linhas.Select(l => l.Codigo).Should().OnlyHaveUniqueItems();
     }
 
@@ -100,7 +100,10 @@ public sealed partial class SeedTiposAtoTests
         // CONVOCACAO passa a integrar a lista (uniplus-api#1432): ela concede o
         // direito de ocupar a vaga, ato que não se desfaz — o UNI-REQ-0080 usa a
         // convocação como exemplo canônico de irreversibilidade.
-        irreversiveis.Should().BeEquivalentTo(["CONVOCACAO", "GABARITO_DEFINITIVO", "RESULTADO_FINAL"]);
+        // O tipo nomeia a matéria e serve ao preliminar e ao definitivo, então um tipo de
+        // resultado não carrega efeito irreversível: o preliminar se corrige e reabre o prazo
+        // de recurso.
+        irreversiveis.Should().BeEquivalentTo(["CONVOCACAO"]);
     }
 
     [Fact(DisplayName = "Só os atos que determinam a situação do candidato são resultado")]
@@ -117,25 +120,21 @@ public sealed partial class SeedTiposAtoTests
         // entram porque cada um determina a situação do candidato na respectiva
         // matéria — isenção, heteroidentificação, habilitação, avaliação
         // biopsicossocial e homologação das inscrições (uniplus-api#1436).
-        // RESULTADO_PRELIMINAR_ISENCAO carrega "PRELIMINAR" no nome porque foi
-        // reconciliado com o nome já em uso num rascunho em homologação, não porque
-        // exista um código "definitivo" irmão — o recurso contra o lote publicado
-        // corre pela fase RECURSOS genérica, como os demais quatro.
+        // Cada tipo nomeia a matéria; o papel (preliminar ou definitivo) é do produto que o
+        // cronograma declara, e não do código do tipo.
         resultado.Should().BeEquivalentTo([
             "CONFIRMACAO_INTERESSE",
-            "GABARITO_DEFINITIVO",
-            "GABARITO_PRELIMINAR",
+            "GABARITO",
             "HOMOLOGACAO_ANALISE_DOCUMENTAL",
             "HOMOLOGACAO_HABILITACAO",
             "HOMOLOGACAO_INSCRICOES",
             "HOMOLOGACAO_RECURSOS",
             "LISTA_ESPERA",
             "RESULTADO_AVALIACAO_BIOPSICOSSOCIAL",
-            "RESULTADO_FINAL",
+            "RESULTADO_CLASSIFICACAO",
             "RESULTADO_HETEROIDENTIFICACAO",
             "RESULTADO_HOMOLOGACAO",
-            "RESULTADO_PRELIMINAR",
-            "RESULTADO_PRELIMINAR_ISENCAO",
+            "RESULTADO_ISENCAO",
         ]);
     }
 
@@ -150,7 +149,32 @@ public sealed partial class SeedTiposAtoTests
         // múltiplas convocações — únicos por objeto bloquearia uma segunda
         // publicação legítima. Mesma classe de HOMOLOGACAO_ANALISE_DOCUMENTAL e
         // HOMOLOGACAO_RECURSOS, não de HOMOLOGACAO_INSCRICOES.
-        unicos.Should().BeEquivalentTo(["EDITAL_ABERTURA", "HOMOLOGACAO_INSCRICOES", "RESULTADO_FINAL"]);
+        unicos.Should().BeEquivalentTo(["EDITAL_ABERTURA", "HOMOLOGACAO_INSCRICOES"]);
+
+        // Único é só o ato que sai uma vez no processo, sem preliminar e definitivo. Os tipos
+        // por matéria saem nos dois papéis ou em mais de um ciclo, então nunca são únicos; a
+        // garantia deles é a publicação única de cada item declarado no edital. A homologação
+        // das inscrições é o único resultado ainda único no seed.
+        Carregar().Where(l => l.UnicoPorObjeto && l.EhResultado).Select(l => l.Codigo)
+            .Should().BeEquivalentTo(["HOMOLOGACAO_INSCRICOES"]);
+        Carregar().Where(l => l.Codigo is "GABARITO" or "RESULTADO_CLASSIFICACAO" or "RESULTADO_ISENCAO")
+            .Should().OnlyContain(l => !l.UnicoPorObjeto);
+    }
+
+    [Fact(DisplayName = "Os códigos que repetiam o papel no tipo saíram do seed")]
+    public void Seed_NaoRepeteOPapelNoCodigoDoTipo()
+    {
+        string[] codigos = [.. Carregar().Select(l => l.Codigo)];
+
+        codigos.Should().Contain(["GABARITO", "RESULTADO_CLASSIFICACAO", "RESULTADO_ISENCAO"]);
+        codigos.Should().NotContain(
+        [
+            "GABARITO_PRELIMINAR",
+            "GABARITO_DEFINITIVO",
+            "RESULTADO_PRELIMINAR",
+            "RESULTADO_FINAL",
+            "RESULTADO_PRELIMINAR_ISENCAO",
+        ]);
     }
 
     private static LinhaSeed[] Carregar()

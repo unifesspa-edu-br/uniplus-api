@@ -150,7 +150,7 @@ setup_publicacoes() {
         "vigenciaFim": null, "baseLegal": null
     }' >/dev/null
     post_tolerante "/api/publicacoes/admin/tipos-ato" '{
-        "codigo": "RESULTADO_FINAL", "nome": "Resultado final",
+        "codigo": "RESULTADO_CLASSIFICACAO", "nome": "Resultado da classificação",
         "congelaConfiguracao": false, "unicoPorObjeto": false,
         "efeitoIrreversivel": false, "vigenciaInicio": "2020-01-01",
         "vigenciaFim": null, "baseLegal": null, "ehResultado": true
@@ -162,12 +162,12 @@ setup_publicacoes() {
     # (uniplus.selecao.produto_da_fase.papel_em_ato_que_nao_eh_resultado) —
     # upsert explícito via PUT.
     local atual eh_resultado id
-    atual=$(api_get "/api/publicacoes/tipos-ato/RESULTADO_FINAL/vigente")
+    atual=$(api_get "/api/publicacoes/tipos-ato/RESULTADO_CLASSIFICACAO/vigente")
     eh_resultado=$(jq -r '.ehResultado' <<< "$atual")
     if [ "$eh_resultado" != "true" ]; then
         id=$(jq -r '.id' <<< "$atual")
         api PUT "/api/publicacoes/admin/tipos-ato/$id" "{
-            \"id\": \"$id\", \"codigo\": \"RESULTADO_FINAL\", \"nome\": \"Resultado final\",
+            \"id\": \"$id\", \"codigo\": \"RESULTADO_CLASSIFICACAO\", \"nome\": \"Resultado da classificação\",
             \"congelaConfiguracao\": false, \"unicoPorObjeto\": false,
             \"efeitoIrreversivel\": false, \"ehResultado\": true,
             \"vigenciaInicio\": \"2020-01-01\", \"vigenciaFim\": null, \"baseLegal\": null
@@ -606,7 +606,7 @@ definir_cronograma_fases() {
         {
             \"ordem\": 2, \"faseCanonicaId\": \"$FASE_RESULTADO_ID\",
             \"inicio\": \"$inicio_resultado\", \"fim\": \"$fim_resultado\",
-            \"produtos\": [{\"atoCodigo\": \"RESULTADO_FINAL\", \"papel\": \"DEFINITIVO\"}],
+            \"produtos\": [{\"atoCodigo\": \"RESULTADO_CLASSIFICACAO\", \"papel\": \"DEFINITIVO\"}],
             \"faseConcluinteCodigo\": null, \"emiteParecerIndividual\": false,
             \"bancasRequeridas\": [], \"regraRecurso\": null
         },

@@ -273,7 +273,7 @@ risco desproporcional a um problema cosmético. Documentado como comentário em
   canônica com esse código, não um código arbitrário como `RESULTADO_FINAL`.
 - Cada produto declarado por uma fase do cronograma é resolvido contra o catálogo de
   Publicações, e o papel só é aceito em tipo de ato que o catálogo classifica como
-  resultado — a coleção cadastra um `TipoAtoPublicado` `RESULTADO_FINAL` em Setup para
+  resultado — a coleção cadastra um `TipoAtoPublicado` `RESULTADO_CLASSIFICACAO` em Setup para
   satisfazer o guard.
 
 Nenhum desses três é falha da coleção nem do módulo Seleção — são as regras de

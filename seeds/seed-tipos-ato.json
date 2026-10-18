@@ -88,22 +88,11 @@
     "baseLegal": null
   },
   {
-    "codigo": "RESULTADO_PRELIMINAR",
-    "nome": "Resultado preliminar",
+    "codigo": "RESULTADO_CLASSIFICACAO",
+    "nome": "Resultado da classificação",
     "congelaConfiguracao": false,
     "unicoPorObjeto": false,
     "efeitoIrreversivel": false,
-    "ehResultado": true,
-    "vigenciaInicio": "2026-01-01",
-    "vigenciaFim": null,
-    "baseLegal": null
-  },
-  {
-    "codigo": "RESULTADO_FINAL",
-    "nome": "Resultado final",
-    "congelaConfiguracao": false,
-    "unicoPorObjeto": true,
-    "efeitoIrreversivel": true,
     "ehResultado": true,
     "vigenciaInicio": "2026-01-01",
     "vigenciaFim": null,
@@ -132,22 +121,11 @@
     "baseLegal": null
   },
   {
-    "codigo": "GABARITO_PRELIMINAR",
-    "nome": "Gabarito preliminar",
+    "codigo": "GABARITO",
+    "nome": "Gabarito",
     "congelaConfiguracao": false,
     "unicoPorObjeto": false,
     "efeitoIrreversivel": false,
-    "ehResultado": true,
-    "vigenciaInicio": "2026-01-01",
-    "vigenciaFim": null,
-    "baseLegal": null
-  },
-  {
-    "codigo": "GABARITO_DEFINITIVO",
-    "nome": "Gabarito definitivo",
-    "congelaConfiguracao": false,
-    "unicoPorObjeto": false,
-    "efeitoIrreversivel": true,
     "ehResultado": true,
     "vigenciaInicio": "2026-01-01",
     "vigenciaFim": null,
@@ -176,8 +154,8 @@
     "baseLegal": null
   },
   {
-    "codigo": "RESULTADO_PRELIMINAR_ISENCAO",
-    "nome": "Resultado preliminar da solicitação de isenção",
+    "codigo": "RESULTADO_ISENCAO",
+    "nome": "Resultado da solicitação de isenção",
     "congelaConfiguracao": false,
     "unicoPorObjeto": false,
     "efeitoIrreversivel": false,
