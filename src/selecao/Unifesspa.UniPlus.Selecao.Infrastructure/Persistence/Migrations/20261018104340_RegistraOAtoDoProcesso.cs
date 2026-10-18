@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
-    public partial class RegistraOAtoDoProcessoQueNaoCriaVersao : Migration
+    public partial class RegistraOAtoDoProcesso : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -30,6 +30,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     ato_corrigido_id = table.Column<Guid>(type: "uuid", nullable: true),
                     motivo_da_correcao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     politica_de_divulgacao_confirmada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    politica_de_divulgacao_confirmada_por_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     situacao = table.Column<int>(type: "integer", nullable: false),
                     registrado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
@@ -87,10 +88,16 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "ux_anexos_do_ato_do_processo_documento",
+                name: "ix_anexos_do_ato_do_processo_documento_a_publicar_id",
                 schema: "selecao",
                 table: "anexos_do_ato_do_processo",
-                column: "documento_a_publicar_id",
+                column: "documento_a_publicar_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_anexos_do_ato_do_processo_ato_documento",
+                schema: "selecao",
+                table: "anexos_do_ato_do_processo",
+                columns: new[] { "ato_do_processo_id", "documento_a_publicar_id" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -107,18 +114,17 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                 column: "ato_corrigido_id");
 
             migrationBuilder.CreateIndex(
+                name: "ix_atos_do_processo_documento_principal_id",
+                schema: "selecao",
+                table: "atos_do_processo",
+                column: "documento_principal_id");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_atos_do_processo_processo_recentes",
                 schema: "selecao",
                 table: "atos_do_processo",
                 columns: new[] { "processo_seletivo_id", "created_at", "id" },
                 descending: new[] { false, true, true });
-
-            migrationBuilder.CreateIndex(
-                name: "ux_atos_do_processo_documento_principal",
-                schema: "selecao",
-                table: "atos_do_processo",
-                column: "documento_principal_id",
-                unique: true);
         }
 
         /// <inheritdoc />

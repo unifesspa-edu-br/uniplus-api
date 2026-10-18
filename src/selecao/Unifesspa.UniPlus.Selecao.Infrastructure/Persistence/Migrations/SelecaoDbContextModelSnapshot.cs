@@ -130,8 +130,11 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasName("pk_anexos_do_ato_do_processo");
 
                     b.HasIndex("DocumentoAPublicarId")
+                        .HasDatabaseName("ix_anexos_do_ato_do_processo_documento_a_publicar_id");
+
+                    b.HasIndex("AtoDoProcessoId", "DocumentoAPublicarId")
                         .IsUnique()
-                        .HasDatabaseName("ux_anexos_do_ato_do_processo_documento");
+                        .HasDatabaseName("ux_anexos_do_ato_do_processo_ato_documento");
 
                     b.HasIndex("AtoDoProcessoId", "Ordem")
                         .IsUnique()
