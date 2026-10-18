@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
+using AtosDoProcesso;
+
 using Domain.Entities;
 
 using Unifesspa.UniPlus.Publicacoes.Contracts;
@@ -56,15 +58,8 @@ internal static class MensagensDaPublicacao
                 VersaoInvocadaHash: versao.HashConfiguracao,
                 AtoRetificadoId: atoRetificadoId,
                 MotivoRetificacao: motivoRetificacao,
-                Vinculos: [new VinculoEntidadeRequisicao(EntidadesDeRegistroPeloDominio.ProcessoSeletivo, processo.Id)],
-                // Os atributos como o catálogo os declarava AGORA — copiados por valor
-                // (ADR-0061). O registro do ato acontece depois, e o cadastro é editável:
-                // relê-lo no consumo faria a decisão que devolveu 204 valer outra coisa.
-                AtributosDoTipo: new AtributosDoTipoAto(
-                    tipoConferido.CongelaConfiguracao,
-                    tipoConferido.UnicoPorObjeto,
-                    tipoConferido.EfeitoIrreversivel,
-                    tipoConferido.Nome)),
+                Vinculos: [RequisicaoDeRegistroDoAto.VinculoDoProcesso(processo.Id)],
+                AtributosDoTipo: RequisicaoDeRegistroDoAto.AtributosDoTipo(tipoConferido)),
         ];
     }
 }
