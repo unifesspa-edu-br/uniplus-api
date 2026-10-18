@@ -119,7 +119,7 @@ internal static class ProjecaoDosProdutosPrevistos
             produto.Id,
             produto.AtoCodigo,
             tiposVigentes.GetValueOrDefault(produto.AtoCodigo) ?? primeira?.TipoNome,
-            produto.Papel,
+            produto.Papel.ToCodigo(),
             situacao,
             primeira is null ? null : projetarAto(primeira),
             primeira is null ? [] : [.. cadeias.CorrecoesDe(primeira).Select(projetarAto)],
@@ -152,10 +152,17 @@ internal static class ProjecaoDosProdutosPrevistos
             : new(ImpedimentoDoProduto.TipoDeAtoNaoVigente, $"O tipo de ato '{produto.AtoCodigo}' não tem versão vigente no catálogo de Publicações.");
     }
 
+    /// <summary>
+    /// Os preliminares que o definitivo espera: os da mesma matéria (o tipo de ato) declarados no
+    /// mesmo lugar do cronograma. É o único ponto que define o pareamento.
+    /// </summary>
+    private static IEnumerable<Declarado> PreliminaresDaMateria(Declarado definitivo, List<Declarado> mesmoLugar) =>
+        mesmoLugar.Where(d =>
+            d.Papel == PapelProdutoFase.Preliminar && string.Equals(d.AtoCodigo, definitivo.AtoCodigo, StringComparison.Ordinal));
+
     private static ImpedimentoDoProdutoDto? ImpedimentoDoPreliminar(Declarado definitivo, List<Declarado> irmaos, CadeiasDosProdutosPrevistos cadeias)
     {
-        foreach (Declarado preliminar in irmaos.Where(i =>
-            i.Papel == PapelProdutoFase.Preliminar && string.Equals(i.AtoCodigo, definitivo.AtoCodigo, StringComparison.Ordinal)))
+        foreach (Declarado preliminar in PreliminaresDaMateria(definitivo, irmaos))
         {
             AtoDoProcesso? ato = cadeias.PrimeiraPublicacaoDe(preliminar.Id);
             if (ato is null)

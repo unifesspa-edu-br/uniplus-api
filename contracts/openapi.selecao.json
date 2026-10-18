@@ -16467,14 +16467,6 @@
         ],
         "type": "string"
       },
-      "PapelProdutoFase": {
-        "enum": [
-          "preliminar",
-          "definitivo",
-          null
-        ],
-        "type": "string"
-      },
       "ParteDescartadaDto": {
         "required": [
           "parte",
@@ -17222,13 +17214,9 @@
             ]
           },
           "papel": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/PapelProdutoFase"
-              }
+            "type": [
+              "null",
+              "string"
             ]
           },
           "situacao": {
