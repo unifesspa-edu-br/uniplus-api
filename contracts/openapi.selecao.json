@@ -9318,6 +9318,91 @@
         ]
       }
     },
+    "/api/selecao/processos-seletivos/{processoSeletivoId}/produtos-previstos": {
+      "get": {
+        "tags": [
+          "ProdutosPrevistosDoProcesso"
+        ],
+        "parameters": [
+          {
+            "name": "processoSeletivoId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.produtos-previstos-do-processo.v1\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProdutosPrevistosDoProcessoDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Autenticado, mas sem a autoriza\u00E7\u00E3o exigida pela rota (ex.: a role plataforma-admin).",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/selecao/regras-catalogo": {
       "get": {
         "tags": [
@@ -12916,6 +13001,39 @@
           }
         }
       },
+      "EtapaComProdutosPrevistosDto": {
+        "required": [
+          "id",
+          "nome",
+          "ordem",
+          "produtos"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "ordem": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "produtos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProdutoPrevistoDto"
+            }
+          }
+        }
+      },
       "EtapaConcluidaInput": {
         "required": [
           "finalidade",
@@ -13327,6 +13445,45 @@
                 "$ref": "#/components/schemas/ModeloDocumentalCertameDto"
               }
             ]
+          }
+        }
+      },
+      "FaseComProdutosPrevistosDto": {
+        "required": [
+          "id",
+          "codigo",
+          "ordem",
+          "produtos",
+          "etapas"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "ordem": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "produtos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProdutoPrevistoDto"
+            }
+          },
+          "etapas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EtapaComProdutosPrevistosDto"
+            }
           }
         }
       },
@@ -14658,6 +14815,31 @@
               "string"
             ],
             "format": "uuid"
+          }
+        }
+      },
+      "ImpedimentoDoProduto": {
+        "enum": [
+          "jaPublicado",
+          "aguardaConfirmacaoDoRegistro",
+          "preliminarNaoPublicado",
+          "preliminarAguardaConfirmacao",
+          "tipoDeAtoNaoVigente"
+        ],
+        "type": "string"
+      },
+      "ImpedimentoDoProdutoDto": {
+        "required": [
+          "motivo",
+          "mensagem"
+        ],
+        "type": "object",
+        "properties": {
+          "motivo": {
+            "$ref": "#/components/schemas/ImpedimentoDoProduto"
+          },
+          "mensagem": {
+            "type": "string"
           }
         }
       },
@@ -16285,6 +16467,14 @@
         ],
         "type": "string"
       },
+      "PapelProdutoFase": {
+        "enum": [
+          "preliminar",
+          "definitivo",
+          null
+        ],
+        "type": "string"
+      },
       "ParteDescartadaDto": {
         "required": [
           "parte",
@@ -17001,6 +17191,107 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "ProdutoPrevistoDto": {
+        "required": [
+          "id",
+          "tipoCodigo",
+          "tipoNome",
+          "papel",
+          "situacao",
+          "ato",
+          "correcoes",
+          "podePublicar",
+          "impedimento"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipoCodigo": {
+            "type": "string"
+          },
+          "tipoNome": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "papel": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PapelProdutoFase"
+              }
+            ]
+          },
+          "situacao": {
+            "$ref": "#/components/schemas/SituacaoDoProdutoPrevisto"
+          },
+          "ato": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AtoDoProcessoDto"
+              }
+            ]
+          },
+          "correcoes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AtoDoProcessoDto"
+            }
+          },
+          "podePublicar": {
+            "type": "boolean"
+          },
+          "impedimento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ImpedimentoDoProdutoDto"
+              }
+            ]
+          }
+        }
+      },
+      "ProdutosPrevistosDoProcessoDto": {
+        "required": [
+          "numeroDaVersao",
+          "fases",
+          "etapasSemFase"
+        ],
+        "type": "object",
+        "properties": {
+          "numeroDaVersao": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "fases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FaseComProdutosPrevistosDto"
+            }
+          },
+          "etapasSemFase": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EtapaComProdutosPrevistosDto"
+            }
           }
         }
       },
@@ -18129,6 +18420,14 @@
         ],
         "type": "string"
       },
+      "SituacaoDoProdutoPrevisto": {
+        "enum": [
+          "aberto",
+          "pendente",
+          "publicado"
+        ],
+        "type": "string"
+      },
       "SituacaoDoRegistroDoAto": {
         "enum": [
           "pendente",
@@ -18788,6 +19087,9 @@
     },
     {
       "name": "ProcessoSeletivo"
+    },
+    {
+      "name": "ProdutosPrevistosDoProcesso"
     },
     {
       "name": "RegrasCatalogo"
