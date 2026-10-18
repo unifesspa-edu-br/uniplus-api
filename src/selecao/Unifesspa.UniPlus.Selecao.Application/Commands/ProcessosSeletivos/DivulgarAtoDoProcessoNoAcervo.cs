@@ -52,11 +52,13 @@ internal static class DivulgarAtoDoProcessoNoAcervo
             return;
         }
 
-        CertameDivulgado divulgado = await certameDivulgadoRepository
-            .ObterParaMutacaoAsync(ato.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false)
-            ?? throw new CertameAindaNaoDivulgadoException(
+        // Leitura sem rastreamento antes das cópias: sem divulgação não há o que copiar, e a linha para
+        // mutação só é lida depois, para não segurar a versão dela durante cópias demoradas.
+        if (await certameDivulgadoRepository.ObterParaLeituraAsync(ato.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false) is null)
+        {
+            throw new CertameAindaNaoDivulgadoException(
                 $"O processo {ato.ProcessoSeletivoId} ainda não tem divulgação para receber os documentos do ato {ato.Id}.");
+        }
 
         IReadOnlyList<AnexoDoAtoDoProcesso> anexos = [.. ato.Anexos.OrderBy(static a => a.Ordem)];
         IReadOnlyList<DocumentoAPublicar> cadastrados = await documentoAPublicarRepository
@@ -77,6 +79,12 @@ internal static class DivulgarAtoDoProcessoNoAcervo
                 ato, anexo, Selado(ato, cadastrados, anexo.DocumentoAPublicarId), acervoPublico, enderecoNoAcervo, cancellationToken)
                 .ConfigureAwait(false));
         }
+
+        CertameDivulgado divulgado = await certameDivulgadoRepository
+            .ObterParaMutacaoAsync(ato.ProcessoSeletivoId, cancellationToken)
+            .ConfigureAwait(false)
+            ?? throw new CertameAindaNaoDivulgadoException(
+                $"O processo {ato.ProcessoSeletivoId} perdeu a divulgação durante a cópia dos documentos do ato {ato.Id}.");
 
         // Registrado só depois da cópia: o endereço divulgado nunca aponta para arquivo ausente.
         if (!divulgado.RegistrarEdital(new EditalDivulgado(ato.Id, null, principal.UrlDownload, documentos)))
@@ -106,7 +114,7 @@ internal static class DivulgarAtoDoProcessoNoAcervo
         string nome = $"{ato.IdentificadorLegivelDoProcesso}-{ChaveNoAcervoPublico.SegmentoDoTipo(mensagem.TipoCodigo)}.{FormatosDeDocumento.Extensao(documento.Formato)}";
 
         return await CopiarAsync(
-            PapelDoDocumentoDivulgado.Principal, nome, chave, ato, documento, acervoPublico, enderecoNoAcervo, cancellationToken)
+            PapelDoDocumentoDivulgado.Principal, nome, nome, chave, ato, documento, acervoPublico, enderecoNoAcervo, cancellationToken)
             .ConfigureAwait(false);
     }
 
@@ -120,14 +128,22 @@ internal static class DivulgarAtoDoProcessoNoAcervo
     {
         string chave = ChaveNoAcervoPublico.DoAnexo(ato.ProcessoSeletivoId, ato.Id, anexo.Id, documento.Hash, documento.Formato);
 
+        // O rótulo exibido não carrega extensão; o nome de download precisa dela para o arquivo abrir
+        // no programa certo.
+        string extensao = FormatosDeDocumento.Extensao(documento.Formato);
+        string nomeDeDownload = anexo.NomeDeExibicao.EndsWith($".{extensao}", StringComparison.OrdinalIgnoreCase)
+            ? anexo.NomeDeExibicao
+            : $"{anexo.NomeDeExibicao}.{extensao}";
+
         return await CopiarAsync(
-            PapelDoDocumentoDivulgado.Anexo, anexo.NomeDeExibicao, chave, ato, documento, acervoPublico, enderecoNoAcervo, cancellationToken)
+            PapelDoDocumentoDivulgado.Anexo, anexo.NomeDeExibicao, nomeDeDownload, chave, ato, documento, acervoPublico, enderecoNoAcervo, cancellationToken)
             .ConfigureAwait(false);
     }
 
     private static async Task<DocumentoDivulgado> CopiarAsync(
         string papel,
         string nome,
+        string nomeDeDownload,
         string chave,
         AtoDoProcesso ato,
         DocumentoSelado documento,
@@ -139,7 +155,7 @@ internal static class DivulgarAtoDoProcessoNoAcervo
             .CopiarAsync(
                 documento.ChavePrivada,
                 chave,
-                new DocumentoNoAcervo(documento.TipoDeMidia, nome, ato.Id, ato.ProcessoSeletivoId, documento.Hash),
+                new DocumentoNoAcervo(documento.TipoDeMidia, nomeDeDownload, ato.Id, ato.ProcessoSeletivoId, documento.Hash),
                 cancellationToken)
             .ConfigureAwait(false);
 
