@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProdutosPrevistos;
 
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -12,8 +13,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <remarks>
 /// <para>
 /// <b>Matéria.</b> O catálogo nomeia a matéria pelo tipo do ato, e o edital a declara uma vez como
-/// preliminar e outra como definitivo na mesma fase ou etapa. O definitivo só sai depois que o
-/// preliminar do mesmo tipo, no mesmo lugar do cronograma, foi publicado, isto é, confirmado pelo
+/// preliminar e outra como definitivo. O definitivo só sai depois que o preliminar do mesmo tipo,
+/// declarado onde <see cref="PreliminaresDaMateria"/> diz, foi publicado, isto é, confirmado pelo
 /// registro central. Item sem preliminar declarado não espera nada.
 /// </para>
 /// <para>
@@ -68,13 +69,13 @@ internal static class ProjecaoDosProdutosPrevistos
             etapa.Id,
             etapa.Nome,
             etapa.Ordem,
-            Produtos([.. etapa.Produtos.Select(static p => new Declarado(p.Id, p.AtoCodigo, p.Papel))], cadeias, tiposVigentes, projetarAto));
+            Produtos([.. etapa.Produtos.Select(static p => new Declarado(p.Id, p.AtoCodigo, p.Papel))], grafo, cadeias, tiposVigentes, projetarAto));
 
         FaseComProdutosPrevistosDto Fase(FaseCronograma fase) => new(
             fase.Id,
             fase.Codigo,
             fase.Ordem,
-            Produtos([.. fase.Produtos.Select(static p => new Declarado(p.Id, p.AtoCodigo, p.Papel))], cadeias, tiposVigentes, projetarAto),
+            Produtos([.. fase.Produtos.Select(static p => new Declarado(p.Id, p.AtoCodigo, p.Papel))], grafo, cadeias, tiposVigentes, projetarAto),
             [.. grafo.Etapas
                 .Where(e => string.Equals(e.FaseCodigo, fase.Codigo, StringComparison.Ordinal))
                 .OrderBy(static e => e.Ordem ?? int.MaxValue)
@@ -93,14 +94,15 @@ internal static class ProjecaoDosProdutosPrevistos
 
     private static List<ProdutoPrevistoDto> Produtos(
         List<Declarado> declarados,
+        GrafoConfiguracao grafo,
         CadeiasDosProdutosPrevistos cadeias,
         IReadOnlyDictionary<string, string> tiposVigentes,
         Func<AtoDoProcesso, AtoDoProcessoDto> projetarAto) =>
-        [.. declarados.Select(d => Produto(d, declarados, cadeias, tiposVigentes, projetarAto))];
+        [.. declarados.Select(d => Produto(d, grafo, cadeias, tiposVigentes, projetarAto))];
 
     private static ProdutoPrevistoDto Produto(
         Declarado produto,
-        List<Declarado> irmaos,
+        GrafoConfiguracao grafo,
         CadeiasDosProdutosPrevistos cadeias,
         IReadOnlyDictionary<string, string> tiposVigentes,
         Func<AtoDoProcesso, AtoDoProcessoDto> projetarAto)
@@ -113,7 +115,7 @@ internal static class ProjecaoDosProdutosPrevistos
             _ => SituacaoDoProdutoPrevisto.Pendente,
         };
         bool tipoVigente = tiposVigentes.ContainsKey(produto.AtoCodigo);
-        ImpedimentoDoProdutoDto? impedimento = ImpedimentoDe(produto, situacao, irmaos, cadeias, tipoVigente);
+        ImpedimentoDoProdutoDto? impedimento = ImpedimentoDe(produto, situacao, grafo, cadeias, tipoVigente);
 
         return new ProdutoPrevistoDto(
             produto.Id,
@@ -130,7 +132,7 @@ internal static class ProjecaoDosProdutosPrevistos
     private static ImpedimentoDoProdutoDto? ImpedimentoDe(
         Declarado produto,
         SituacaoDoProdutoPrevisto situacao,
-        List<Declarado> irmaos,
+        GrafoConfiguracao grafo,
         CadeiasDosProdutosPrevistos cadeias,
         bool tipoVigente)
     {
@@ -142,7 +144,7 @@ internal static class ProjecaoDosProdutosPrevistos
                 return new(ImpedimentoDoProduto.AguardaConfirmacaoDoRegistro, "O item foi enviado ao Publicações e aguarda a confirmação do registro.");
         }
 
-        if (produto.Papel == PapelProdutoFase.Definitivo && ImpedimentoDoPreliminar(produto, irmaos, cadeias) is { } doPreliminar)
+        if (produto.Papel == PapelProdutoFase.Definitivo && ImpedimentoDoPreliminar(produto, grafo, cadeias) is { } doPreliminar)
         {
             return doPreliminar;
         }
@@ -152,19 +154,11 @@ internal static class ProjecaoDosProdutosPrevistos
             : new(ImpedimentoDoProduto.TipoDeAtoNaoVigente, $"O tipo de ato '{produto.AtoCodigo}' não tem versão vigente no catálogo de Publicações.");
     }
 
-    /// <summary>
-    /// Os preliminares que o definitivo espera: os da mesma matéria (o tipo de ato) declarados no
-    /// mesmo lugar do cronograma. É o único ponto que define o pareamento.
-    /// </summary>
-    private static IEnumerable<Declarado> PreliminaresDaMateria(Declarado definitivo, List<Declarado> mesmoLugar) =>
-        mesmoLugar.Where(d =>
-            d.Papel == PapelProdutoFase.Preliminar && string.Equals(d.AtoCodigo, definitivo.AtoCodigo, StringComparison.Ordinal));
-
-    private static ImpedimentoDoProdutoDto? ImpedimentoDoPreliminar(Declarado definitivo, List<Declarado> irmaos, CadeiasDosProdutosPrevistos cadeias)
+    private static ImpedimentoDoProdutoDto? ImpedimentoDoPreliminar(Declarado definitivo, GrafoConfiguracao grafo, CadeiasDosProdutosPrevistos cadeias)
     {
-        foreach (Declarado preliminar in PreliminaresDaMateria(definitivo, irmaos))
+        foreach (Guid preliminarId in PreliminaresDaMateria.Esperados(grafo, definitivo.Id))
         {
-            AtoDoProcesso? ato = cadeias.PrimeiraPublicacaoDe(preliminar.Id);
+            AtoDoProcesso? ato = cadeias.PrimeiraPublicacaoDe(preliminarId);
             if (ato is null)
             {
                 return new(
