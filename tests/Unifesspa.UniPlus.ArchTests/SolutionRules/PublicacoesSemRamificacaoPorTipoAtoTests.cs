@@ -67,7 +67,7 @@ public sealed partial class PublicacoesSemRamificacaoPorTipoAtoTests
     [InlineData(@"if (tipo.Codigo != ""CONVOCACAO"") { return 0m; }")]
     [InlineData(@"if (tipo.Codigo.Equals(""CONVOCACAO"", StringComparison.Ordinal)) { return 0.5m; }")]
     [InlineData(@"if (string.Equals(""CONVOCACAO"", tipo.Codigo, StringComparison.Ordinal)) { return 0.5m; }")]
-    [InlineData(@"switch (tipo.Codigo) { case ""RESULTADO_FINAL"": return 1.0m; }")]
+    [InlineData(@"switch (tipo.Codigo) { case ""RESULTADO_CLASSIFICACAO"": return 1.0m; }")]
     [InlineData(@"return tipo.Codigo switch { ""CONVOCACAO"" => 0.5m, _ => 0m };")]
     [InlineData(@"if (tipo.Codigo is ""CONVOCACAO"") { return 0.5m; }")]
     [InlineData(@"if (tipo.Codigo is not ""CONVOCACAO"") { return 0m; }")]
