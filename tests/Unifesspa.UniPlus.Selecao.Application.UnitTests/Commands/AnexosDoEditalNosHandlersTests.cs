@@ -47,6 +47,26 @@ public sealed class AnexosDoEditalNosHandlersTests
             (formulario.Id, "Formulário.docx", TiposDeMidiaDeDocumento.Docx, 4096L, formulario.HashSha256!));
     }
 
+    [Fact(DisplayName = "Publicar com anexos registra o ato da versão com os mesmos anexos, na ordem do edital")]
+    public async Task Publicar_ComAnexos_RegistraOAtoComOsAnexosDoEdital()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        DocumentoAPublicar quadro = Anexo(processo.Id, "quadro", TiposDeMidiaDeDocumento.Pdf, 2048);
+        DocumentoAPublicar formulario = Anexo(processo.Id, "formulario", TiposDeMidiaDeDocumento.Docx, 4096);
+        IAtoDoProcessoRepository atos = Substitute.For<IAtoDoProcessoRepository>();
+
+        (Result resposta, _) = await PublicarAsync(
+            processo, RepositorioDeDocumento(processo.Id, formulario, quadro), CanonicalizerSubstituto(_ => { }),
+            [new AnexoSolicitadoDoEdital(quadro.Id, "Quadro de vagas"), new AnexoSolicitadoDoEdital(formulario.Id, "Formulário")],
+            atos);
+
+        resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
+        AtoDoProcesso registro = (AtoDoProcesso)atos.ReceivedCalls().Single().GetArguments()[0]!;
+        registro.Anexos.Select(static a => (a.DocumentoAPublicarId, a.NomeDeExibicao, a.Ordem)).Should().Equal(
+            (quadro.Id, "Quadro de vagas.pdf", 0),
+            (formulario.Id, "Formulário.docx", 1));
+    }
+
     [Fact(DisplayName = "Publicar sem anexos congela a lista vazia")]
     public async Task Publicar_SemAnexos_CongelaListaVazia()
     {
@@ -177,14 +197,15 @@ public sealed class AnexosDoEditalNosHandlersTests
         ProcessoSeletivo processo,
         IDocumentoAPublicarRepository documentos,
         ISnapshotPublicacaoCanonicalizer canonicalizer,
-        IReadOnlyList<AnexoSolicitadoDoEdital>? anexos) =>
+        IReadOnlyList<AnexoSolicitadoDoEdital>? anexos,
+        IAtoDoProcessoRepository? atos = null) =>
         PublicarProcessoSeletivoCommandHandler.Handle(
             new PublicarProcessoSeletivoCommand(
                 processo.Id, "001/2026", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto(), Anexos: anexos),
             RepositorioDoProcesso(processo),
             documentos,
             Substitute.For<IRascunhoDePublicacaoRepository>(),
-            Substitute.For<IAtoDoProcessoRepository>(),
+            atos ?? Substitute.For<IAtoDoProcessoRepository>(),
             canonicalizer, new ResolvedorFusoDeTeste(),
             Substitute.For<ISelecaoUnitOfWork>(),
             UsuarioAutenticado(),
