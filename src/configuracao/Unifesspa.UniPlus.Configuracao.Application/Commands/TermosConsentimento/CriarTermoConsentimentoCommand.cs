@@ -4,7 +4,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Cria um termo de consentimento/declaração no catálogo (UNI-REQ-0086/RN-COL-05).
+/// Cria um termo de consentimento/declaração no catálogo (termos imunes após a publicação, UNI-REQ-0086).
 /// Nasce sempre <c>EM_ELABORACAO</c>, com rascunho vazio ou com campos iniciais —
 /// marcar revisado e promover são operações explícitas subsequentes.
 /// </summary>

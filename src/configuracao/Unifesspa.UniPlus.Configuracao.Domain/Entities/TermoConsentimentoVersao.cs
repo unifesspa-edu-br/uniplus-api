@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 
 /// <summary>
 /// Uma versão promovida e imutável de um <see cref="TermoConsentimento"/>
-/// (UNI-REQ-0086/RN-COL-05). Corrigir o texto exige um novo rascunho revisado
+/// (termos imunes após a publicação, UNI-REQ-0086). Corrigir o texto exige um novo rascunho revisado
 /// e uma nova promoção — nunca editar esta linha.
 /// </summary>
 /// <remarks>

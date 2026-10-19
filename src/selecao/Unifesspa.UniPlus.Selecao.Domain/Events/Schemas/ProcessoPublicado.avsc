@@ -2,7 +2,7 @@
   "type": "record",
   "namespace": "unifesspa.uniplus.selecao.events",
   "name": "ProcessoPublicado",
-  "doc": "Evento Avro emitido quando um ProcessoSeletivo é publicado (RN08). Subject Confluent SR: processo_seletivo_events-value. Compatibilidade default: BACKWARD.",
+  "doc": "Evento Avro emitido quando um ProcessoSeletivo é publicado (congelamento dos parâmetros na publicação, UNI-REQ-0019). Subject Confluent SR: processo_seletivo_events-value. Compatibilidade default: BACKWARD.",
   "fields": [
     {
       "name": "EventId",

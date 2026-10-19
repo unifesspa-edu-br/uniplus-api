@@ -45,7 +45,7 @@ public sealed record ValorDominioDeclaradoCongelado(string Codigo, string? Descr
 
 /// <summary>
 /// Metadado de um fato do candidato (ADR-0111) congelado no envelope de publicação
-/// (Story #919, RN08) — domínio, origem, cardinalidade, ponto de resolução, binding e
+/// (Story #919, congelamento dos parâmetros na publicação, UNI-REQ-0019) — domínio, origem, cardinalidade, ponto de resolução, binding e
 /// o(s) conjunto(s) de valores, no instante em que o fato foi citado numa condição de
 /// gatilho de <see cref="Domain.Entities.DocumentoExigido"/>. Mapeado pelo HANDLER a
 /// partir de <c>Unifesspa.UniPlus.Configuracao.Contracts.FatoCandidatoView</c> —
@@ -54,7 +54,7 @@ public sealed record ValorDominioDeclaradoCongelado(string Codigo, string? Descr
 /// de evidência).
 /// </summary>
 /// <remarks>
-/// Sem <c>Nome</c> deliberadamente: é rótulo de apresentação, não dado que RN08 exige
+/// Sem <c>Nome</c> deliberadamente: é rótulo de apresentação, não dado que o congelamento dos parâmetros na publicação (UNI-REQ-0019) exige
 /// congelar para o gatilho — o mesmo raciocínio que exclui <c>Ativo</c> de
 /// <see cref="ValorDominioDeclaradoCongelado"/>.
 /// </remarks>
@@ -116,7 +116,7 @@ public sealed record TipoDeAtoCongelado(string Codigo, bool UnicoPorObjeto, bool
 /// teria recusado a transição antes de canonicalizar.
 /// </param>
 /// <param name="MetadadosFatosCongelados">
-/// Metadado congelado (Story #919, RN08) de cada fato do candidato citado em alguma
+/// Metadado congelado (Story #919, congelamento dos parâmetros na publicação, UNI-REQ-0019) de cada fato do candidato citado em alguma
 /// <see cref="Domain.Entities.CondicaoGatilho"/> de algum <see cref="Domain.Entities.DocumentoExigido"/>
 /// vivo do processo, por <c>Codigo</c> — montado pelo handler via
 /// <c>IFatoCandidatoReader</c> (o canonicalizador não injeta reader cross-módulo,

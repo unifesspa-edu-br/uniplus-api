@@ -49,7 +49,7 @@ public static class AtualizarReferenciaReservaDemograficaCommandHandler
         // imutável porque o Processo Seletivo congela o Censo + percentuais por valor
         // no snapshot de publicação (ADR-0061) — editar a fonte viva não retroage sobre
         // nada já publicado. Diferente do `codigo` da Modalidade (#589), que é imutável
-        // por participar do hash de publicação (RN08). Como é a chave de negócio única
+        // por participar do hash de publicação (congelamento dos parâmetros na publicação, UNI-REQ-0019). Como é a chave de negócio única
         // entre vivos, só checamos colisão quando o Censo muda. A comparação é
         // case-sensitive (Ordinal) para casar com o repositório e o índice único
         // parcial — ambos comparam o valor bruto; não há semântica de maiúsculas no Censo.

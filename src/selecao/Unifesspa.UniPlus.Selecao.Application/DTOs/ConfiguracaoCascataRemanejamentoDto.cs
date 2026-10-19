@@ -4,7 +4,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 public sealed record DestinoRemanejamentoDto(Guid Id, string ModalidadeOrigemCodigo, int Ordem, string ModalidadeDestinoCodigo);
 
 /// <summary>
-/// Projeção de leitura da cascata de remanejamento (RN-CASCATA-1..5, Story
+/// Projeção de leitura da cascata de remanejamento (cascata de remanejamento de cotas, UNI-REQ-0056, Story
 /// #575) — a sequência que a flag <c>SegueCascata</c> de
 /// <c>ModalidadeSelecionada</c> invoca. <see langword="null"/> é o estado
 /// válido "sem cascata configurada".

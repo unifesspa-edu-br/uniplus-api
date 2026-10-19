@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 /// <summary>
 /// Configuração EF Core da tabela append-only <c>versoes_configuracao</c>
-/// (RN08, ADR-0104/0063/0100). Sem soft-delete, sem audit fields, sem updates
+/// (congelamento dos parâmetros na publicação, UNI-REQ-0019, ADR-0104/0063/0100). Sem soft-delete, sem audit fields, sem updates
 /// — qualquer mutação fora de <c>INSERT</c> é incidente operacional, e o banco
 /// a bloqueia por trigger.
 /// </summary>

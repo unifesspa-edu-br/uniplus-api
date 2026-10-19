@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// A identidade de <b>runtime</b> de um nó (<see cref="NoGrafoDependencia"/>) é o par
 /// <c>(Classe, Codigo)</c> — basta para a detecção de ciclo e a ordem <b>dentro de um
 /// processo</b>. A identidade <b>canônica</b> acrescenta o escopo: o mesmo código de fato em
-/// dois processos distintos são nós distintos, e o hash RN08 não pode confundi-los. Campo e
+/// dois processos distintos são nós distintos, e o hash de congelamento dos parâmetros na publicação (UNI-REQ-0019) não pode confundi-los. Campo e
 /// fato do mesmo código continuam distintos pelo <c>tipoDeNo</c>.
 /// </para>
 /// <para>

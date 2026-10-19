@@ -133,9 +133,9 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// </summary>
     /// <remarks>
     /// Story #575: <c>cascataRemanejamento</c> sai de stub para bloco real
-    /// (RN-CASCATA-1..5) sob a MESMA <c>0.0.2</c> — reescrita no lugar, sem
+    /// (cascata de remanejamento de cotas, UNI-REQ-0056) sob a MESMA <c>0.0.2</c> — reescrita no lugar, sem
     /// bump, pelo regime pré-produção descrito acima.
-    /// Story #919 (RN08): <c>documentosExigidos</c> ganha a sub-chave
+    /// Story #919 (congelamento dos parâmetros na publicação, UNI-REQ-0019): <c>documentosExigidos</c> ganha a sub-chave
     /// <c>metadadosFatos</c> (<see cref="SerializarMetadadosFatos"/>). O bump para
     /// <c>1.3</c> também é o primeiro <c>schema_version</c> a refletir corretamente
     /// <c>formatosPermitidos</c> (Story #918, PR anterior) — que ficou sem bump próprio;
@@ -1353,7 +1353,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         };
 
     /// <summary>
-    /// Story #919 (RN08): congela o metadado — domínio, origem, cardinalidade, ponto de
+    /// Story #919 (congelamento dos parâmetros na publicação, UNI-REQ-0019): congela o metadado — domínio, origem, cardinalidade, ponto de
     /// resolução, binding e o(s) conjunto(s) de valores — de cada fato do candidato citado
     /// em alguma <see cref="CondicaoGatilho"/> de alguma <see cref="DocumentoExigido"/> do
     /// processo. Bloco IRMÃO de <c>exigencias</c>/<c>obrigatoriedades</c>/

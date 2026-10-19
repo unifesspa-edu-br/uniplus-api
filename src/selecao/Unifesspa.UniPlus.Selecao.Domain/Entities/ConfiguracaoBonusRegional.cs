@@ -8,12 +8,12 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Bônus regional do <see cref="ProcessoSeletivo"/> (RN05, Story #774):
+/// Bônus regional do <see cref="ProcessoSeletivo"/> (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015, Story #774):
 /// referencia a regra tipada <c>BONUS-MULTIPLICATIVO</c>
 /// do <c>rol_de_regras</c> e seus args (<see cref="Fator"/>, <see cref="Teto"/>).
 /// </summary>
 /// <remarks>
-/// <strong>Declaração e configuração (RN05):</strong> não existe "BONUS-NENHUM". O processo
+/// <strong>Declaração e configuração (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015):</strong> não existe "BONUS-NENHUM". O processo
 /// declara se aplica o bônus (<see cref="ProcessoSeletivo.AplicaBonusRegional"/>): esta entidade
 /// só existe quando a declaração é verdadeira, e é a sua presença, com a regra tipada, que
 /// habilita o bônus. A ausência da entidade só significa "sem bônus" quando a declaração é falsa;

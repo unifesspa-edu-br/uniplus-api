@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>
 /// Entrada da biblioteca <c>rol_de_regras</c> — uma regra TIPADA e VERSIONADA
 /// que a configuração do Processo Seletivo referencia e o snapshot de
-/// publicação congela por <c>(codigo, versao, hash)</c> (RN08). Materializa a
+/// publicação congela por <c>(codigo, versao, hash)</c> (congelamento dos parâmetros na publicação, UNI-REQ-0019). Materializa a
 /// tese "configurável, não programável": o comportamento (fórmula da nota,
 /// distribuição de vagas, bônus, desempate, …) é conteúdo versionado de uma
 /// regra, não constante do motor — lei muda → nova versão, não deploy.
@@ -32,7 +32,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// configuração congelada (<see cref="VersaoConfiguracao"/>) referenciar uma
 /// linha por <c>(codigo, versao)</c>, essa linha ainda é vocabulário de seed e
 /// pode ser corrigida por substituição. A partir do primeiro congelamento que a
-/// referencia, ela vira fato e vale append-only estrito (RN08) — o passado não
+/// referencia, ela vira fato e vale append-only estrito (congelamento dos parâmetros na publicação, UNI-REQ-0019) — o passado não
 /// se muta. A verificação é mecânica, contra o conjunto de versões congeladas.
 /// </para>
 /// <para>

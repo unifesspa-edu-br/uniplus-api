@@ -33,7 +33,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// segunda instância — inexistente no Uni+ — com a janela de suspensividade.
 /// A ADR-0112 fixa a fronteira dessa correção: o seed é corrigível por
 /// substituição enquanto nenhuma configuração congelada o referenciar; a partir
-/// do primeiro congelamento, vale append-only estrito (RN08).
+/// do primeiro congelamento, vale append-only estrito (congelamento dos parâmetros na publicação, UNI-REQ-0019).
 /// </para>
 /// <para>
 /// <b>Precondição obrigatória de migration (ADR-0112):</b> qualquer migration

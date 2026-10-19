@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// <para>
 /// A regra de fundo não é sobre rótulos, e sim sobre o que o ato FAZ: publicar e retificar
 /// um Processo Seletivo <b>congelam a configuração</b> numa nova
-/// <c>VersaoConfiguracao</c> (RN08). Um ato que declara não congelar não pode ser o criador
+/// <c>VersaoConfiguracao</c> (congelamento dos parâmetros na publicação, UNI-REQ-0019). Um ato que declara não congelar não pode ser o criador
 /// dela — o ato diria uma coisa e a versão provaria outra. E a incoerência não ficaria
 /// parada: a retificação seguinte, com um tipo congelante, seria recusada por classe
 /// divergente (ADR-0103), deixando a retificação publicada sem ato.

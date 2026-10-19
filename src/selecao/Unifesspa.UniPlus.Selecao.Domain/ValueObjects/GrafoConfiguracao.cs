@@ -129,7 +129,7 @@ public sealed class GrafoConfiguracao
 
     public IReadOnlyList<ConfiguracaoDistribuicaoVagas> DistribuicaoVagas { get; }
 
-    /// <summary>Ausência = sem bônus (RN05, INV-B5) — não existe "BONUS-NENHUM".</summary>
+    /// <summary>Ausência = sem bônus (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015, INV-B5) — não existe "BONUS-NENHUM".</summary>
     public ConfiguracaoBonusRegional? BonusRegional { get; }
 
     public IReadOnlyList<CriterioDesempate> CriteriosDesempate { get; }

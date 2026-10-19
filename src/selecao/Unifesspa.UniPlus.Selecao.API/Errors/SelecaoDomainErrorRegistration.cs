@@ -262,7 +262,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("ReferenciaReservaDemograficaSnapshot.CensoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.referencia_reserva_demografica_snapshot.censo_obrigatorio", "Censo de referência é obrigatório")),
         new("ReferenciaReservaDemograficaSnapshot.PercentualInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.referencia_reserva_demografica_snapshot.percentual_invalido", "Os percentuais demográficos devem estar entre 0 e 100")),
         new("ReferenciaReservaDemograficaSnapshot.BaseLegalObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.referencia_reserva_demografica_snapshot.base_legal_obrigatoria", "Base legal é obrigatória")),
-        // Desempate + Bônus (Story #774) — RN05
+        // Desempate + Bônus (Story #774) — Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015
         // (bônus: declaração de aplicar ou não) e INV-B6 (etapa_ref executável).
         new("ProcessoSeletivo.OrdemDesempateDuplicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.ordem_desempate_duplicada", "Cada critério de desempate deve ter uma ordem única dentro do processo")),
         new("ProcessoSeletivo.EtapaRefDesempateInexistente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.etapa_ref_desempate_inexistente", "O critério de desempate referencia uma etapa que não existe neste processo")),
@@ -296,7 +296,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("ConfiguracaoBonusRegional.RegraTipoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_bonus_regional.regra_tipo_invalido", "A regra referenciada não é do tipo regra_bonus")),
         new("ConfiguracaoBonusRegional.BaseLegalNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_bonus_regional.base_legal_nao_encontrada", "Base legal de bônus regional não encontrada ou desativada")),
         new("ConfiguracaoBonusRegional.SemMunicipios", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_bonus_regional.sem_municipios", "A base legal do bônus regional deve abranger pelo menos um município")),
-        // Cascata de remanejamento (Story #575, RN-CASCATA-1..5) — a outra metade da flag
+        // Cascata de remanejamento (Story #575, cascata de remanejamento de cotas, UNI-REQ-0056) — a outra metade da flag
         // SegueCascata de ModalidadeSelecionada, que hoje aponta para o nada.
         new("ConfiguracaoCascataRemanejamento.CamposObrigatorios", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_cascata_remanejamento.campos_obrigatorios", "RegraCodigo, RegraVersao, FallbackCodigo e Destinos precisam estar todos presentes ou todos ausentes")),
         new("ConfiguracaoCascataRemanejamento.RegraNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_cascata_remanejamento.regra_nao_encontrada", "Regra de remanejamento não encontrada no rol_de_regras")),
@@ -428,7 +428,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new(AtoDoProcessoErrorCodes.AtoCorrigidoNaoEhDoProduto, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.ato_do_processo.ato_corrigido_nao_eh_do_produto", "O ato corrigido não é uma publicação do item informado")),
         new(AtoDoProcessoErrorCodes.PreliminarFechadoPeloDefinitivo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.ato_do_processo.preliminar_fechado_pelo_definitivo", "O resultado preliminar não se corrige depois do definitivo; corrija o definitivo")),
         new(AtoDoProcessoErrorCodes.AtoCorrigidoEhItemDoEdital, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.ato_do_processo.ato_corrigido_eh_item_do_edital", "O ato corrigido é um item do edital e só se corrige pela publicação do item")),
-        // Publicação do Processo Seletivo — RN08 (Story #759, T4 #785). Todo
+        // Publicação do Processo Seletivo — congelamento dos parâmetros na publicação, UNI-REQ-0019 (Story #759, T4 #785). Todo
         // 422: status dominante do módulo para violação de regra de negócio,
         // inclusive quando a origem física é constraint de banco (ADR-0102).
         new("DadosEdital.DocumentoEditalIdObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.dados_edital.documento_edital_id_obrigatorio", "Referência ao documento do Edital é obrigatória")),
@@ -546,7 +546,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("ProcessoSeletivo.DocumentoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_nao_encontrado", "Documento do Edital não encontrado ou não pertence a este processo")),
         new("ProcessoSeletivo.DocumentoNaoEnviadoComoEdital", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_nao_enviado_como_edital", "Somente um documento enviado como edital pode ser o documento do edital")),
         new("ProcessoSeletivo.DocumentoNaoConfirmado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_nao_confirmado", "Somente um documento confirmado pode ser referenciado na publicação")),
-        // Story #919 (RN08): defesa em profundidade — o vocabulário de fatos é fechado e
+        // Story #919 (congelamento dos parâmetros na publicação, UNI-REQ-0019): defesa em profundidade — o vocabulário de fatos é fechado e
         // append-only (ADR-0111), então este código não deveria ocorrer em produção, mas
         // precisa de mapeamento nomeado (não um 500 genérico) se ocorrer.
         new("ProcessoSeletivo.FatoCongeladoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fato_congelado_nao_encontrado", "Fato citado em condição de gatilho não encontrado no catálogo de fatos do candidato")),

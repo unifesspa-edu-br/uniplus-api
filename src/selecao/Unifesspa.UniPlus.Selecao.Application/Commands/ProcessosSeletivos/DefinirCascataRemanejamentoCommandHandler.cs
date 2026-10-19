@@ -13,13 +13,13 @@ using Kernel.Results;
 
 /// <summary>
 /// Handler do <see cref="DefinirCascataRemanejamentoCommand"/>
-/// (RN-CASCATA-1..5, Story #575): campos todos nulos remove a cascata
+/// (cascata de remanejamento de cotas, UNI-REQ-0056, Story #575): campos todos nulos remove a cascata
 /// (<see cref="ProcessoSeletivo.DefinirCascataRemanejamento"/> com
 /// <see langword="null"/>); todos presentes valida a forma de cada destino e a
-/// coerência entre eles (RN-CASCATA-4) ANTES de consultar o <c>rol_de_regras</c>
+/// coerência entre eles (cascata de remanejamento de cotas, UNI-REQ-0056) ANTES de consultar o <c>rol_de_regras</c>
 /// (ADR-0125: validação sempre precede I/O) e só então compara célula a célula
 /// contra o <c>esquema_args</c> congelado da regra resolvida (conteúdo —
-/// RN-CASCATA-5) — ver §4 da story para o porquê da ordem entre forma e conteúdo.
+/// vínculo com a regra versionada da cascata de remanejamento de cotas, UNI-REQ-0056) — ver §4 da story para o porquê da ordem entre forma e conteúdo.
 /// </summary>
 public static class DefinirCascataRemanejamentoCommandHandler
 {
@@ -180,7 +180,7 @@ public static class DefinirCascataRemanejamentoCommandHandler
     }
 
     /// <summary>
-    /// RN-CASCATA-5: o payload aplicado (fallback + todos os destinos, célula a
+    /// Regra versionada da cascata de remanejamento de cotas (UNI-REQ-0056): o payload aplicado (fallback + todos os destinos, célula a
     /// célula) precisa ser idêntico ao <c>esquema_args</c> congelado da versão da
     /// regra — não só a forma (já garantida pela factory). Shape esperado:
     /// <c>{"fallbackCodigo": "AC", "ordens": [{"origem": "...", "destinos": ["...", ...]}]}</c>.

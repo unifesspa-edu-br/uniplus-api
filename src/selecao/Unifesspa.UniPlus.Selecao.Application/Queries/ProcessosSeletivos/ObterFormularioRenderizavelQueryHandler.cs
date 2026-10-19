@@ -13,7 +13,7 @@ using Services;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Handler do <see cref="ObterFormularioRenderizavelQuery"/> (RN08, UNI-REQ-0072): projeta o
+/// Handler do <see cref="ObterFormularioRenderizavelQuery"/> (congelamento dos parâmetros na publicação, UNI-REQ-0019, UNI-REQ-0072): projeta o
 /// formulário renderizável da finalidade a partir da versão que o certame <b>divulgado</b> serve —
 /// a apresentação e as regras saem do grafo reidratado, pela mesma projeção do rascunho
 /// (<see cref="ProjecaoDoFormularioRenderizavel"/>).

@@ -6,6 +6,6 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 public static class RegraBonusCodigo
 {
-    /// <summary>Multiplica a nota final pelo fator, após os pesos (ex.: ×1,20, sem teto — RN05).</summary>
+    /// <summary>Multiplica a nota final pelo fator, após os pesos (ex.: ×1,20, sem teto — Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015).</summary>
     public const string Multiplicativo = "BONUS-MULTIPLICATIVO";
 }

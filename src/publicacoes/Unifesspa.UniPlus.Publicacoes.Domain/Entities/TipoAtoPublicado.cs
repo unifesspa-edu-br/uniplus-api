@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 /// <remarks>
 /// <para>Os quatro atributos são <b>dados lidos</b>, jamais ramos de
 /// comportamento. <c>CongelaConfiguracao</c> diz se o ato produz nova versão
-/// congelada da configuração (RN08); <c>UnicoPorObjeto</c>, se o objeto do ato
+/// congelada da configuração (congelamento dos parâmetros na publicação, UNI-REQ-0019); <c>UnicoPorObjeto</c>, se o objeto do ato
 /// admite um único ato vivo daquele tipo; <c>EfeitoIrreversivel</c>, se a
 /// publicação não pode ser desfeita; <c>EhResultado</c>, se o ato determina a
 /// situação do candidato — só um ato assim pode integrar o ciclo recursal de uma
@@ -46,7 +46,7 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
     public string Codigo { get; private set; } = string.Empty;
     public string Nome { get; private set; } = string.Empty;
 
-    /// <summary>Se o ato deste tipo produz uma nova versão congelada da configuração (RN08).</summary>
+    /// <summary>Se o ato deste tipo produz uma nova versão congelada da configuração (congelamento dos parâmetros na publicação, UNI-REQ-0019).</summary>
     public bool CongelaConfiguracao { get; private set; }
 
     /// <summary>Se o objeto do ato admite um único ato vivo deste tipo.</summary>

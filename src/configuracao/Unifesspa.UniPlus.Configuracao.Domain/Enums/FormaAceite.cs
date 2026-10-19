@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 /// <summary>
-/// Forma de aceite de um termo de consentimento/declaração (UNI-REQ-0086/RN-COL-05).
+/// Forma de aceite de um termo de consentimento/declaração (termos imunes após a publicação, UNI-REQ-0086).
 /// Persistida como token UPPER_SNAKE (<see cref="FormasAceite"/>).
 /// </summary>
 public enum FormaAceite

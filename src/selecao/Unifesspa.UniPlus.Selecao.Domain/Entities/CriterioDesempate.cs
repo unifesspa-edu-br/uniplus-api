@@ -46,7 +46,7 @@ public sealed class CriterioDesempate : EntityBase
     /// já resolvido por quem chama (Application, via o leitor cross-módulo
     /// do #846). Só é consultado quando <paramref name="args"/> é
     /// <see cref="ArgsDesempatePredicadoFato"/>. Omitido (<see langword="null"/>)
-    /// no caminho de <b>reidratação</b> do envelope congelado — RN08 proíbe
+    /// no caminho de <b>reidratação</b> do envelope congelado — o congelamento dos parâmetros na publicação (UNI-REQ-0019) proíbe
     /// revalidar um predicado já publicado contra o vocabulário vivo.
     /// </param>
     /// <param name="fatosColetadosPeloProcesso">

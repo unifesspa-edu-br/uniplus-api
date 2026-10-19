@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// (não soft-deleted) — a unicidade é validada pelo handler e reforçada por
 /// índice único parcial de banco (<c>WHERE is_deleted = false</c>).</para>
 /// <para>São agregados públicos do IBGE — nenhum dado pessoal (LGPD inaplicável).
-/// O congelamento por valor (snapshot RN08) no bloco de distribuição é
+/// O congelamento por valor (snapshot do congelamento dos parâmetros na publicação, UNI-REQ-0019) no bloco de distribuição é
 /// responsabilidade do Processo Seletivo (módulo Selecao, ADR-0061); não há
 /// colunas de snapshot aqui, e a remoção lógica nunca é bloqueada por cópias
 /// congeladas em outro banco.</para>

@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Leitura dos blocos de fatos e derivação (RN08): <c>fatosColetados</c>,
+/// Leitura dos blocos de fatos e derivação (congelamento dos parâmetros na publicação, UNI-REQ-0019): <c>fatosColetados</c>,
 /// <c>regrasDerivacao</c>, e as sub-chaves de <c>documentosExigidos</c> que descrevem o
 /// vocabulário de fatos — <c>referenciaTemporalFatos</c>, <c>metadadosFatos</c> e os valores
 /// de domínio declarados. Inclui o gate fail-closed que fecha o vocabulário citado contra o
@@ -776,7 +776,7 @@ public sealed partial class EnvelopeCodec
     }
 
     /// <summary>
-    /// Recusa fail-closed do bloco de coleta/derivação (RN08): um envelope válido nunca declara fato
+    /// Recusa fail-closed do bloco de coleta/derivação (congelamento dos parâmetros na publicação, UNI-REQ-0019): um envelope válido nunca declara fato
     /// duplicado, grava derivação que a oferta define, cita fato inexistente, fecha ciclo, nem
     /// congela um grafo/modalidades que não reproduzem o recomputado. Um envelope adulterado que o
     /// faça é recusado como malformado — o grafo conjunto ignora deliberadamente referências ausentes

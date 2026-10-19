@@ -93,7 +93,7 @@ public sealed class AtoNormativo : IForensicEntity
     /// </summary>
     public string? TipoNome { get; private init; }
 
-    /// <summary>Se o ato produz nova versão congelada da configuração — copiado por valor do catálogo (RN08).</summary>
+    /// <summary>Se o ato produz nova versão congelada da configuração — copiado por valor do catálogo (congelamento dos parâmetros na publicação, UNI-REQ-0019).</summary>
     public bool CongelaConfiguracao { get; private init; }
 
     /// <summary>Se a publicação do ato não pode ser desfeita — copiado por valor do catálogo.</summary>

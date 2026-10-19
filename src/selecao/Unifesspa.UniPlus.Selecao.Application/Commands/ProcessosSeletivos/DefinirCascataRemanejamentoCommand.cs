@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// Uma posição da fila legal de remanejamento, usada por
 /// <see cref="DefinirCascataRemanejamentoCommand"/> — espelha
 /// <see cref="Domain.Entities.DestinoRemanejamento"/>, mas como entrada de
-/// borda (RN-CASCATA-4 é validada pela factory, não aqui).
+/// borda (a forma da cascata de remanejamento de cotas, UNI-REQ-0056, é validada pela factory, não aqui).
 /// </summary>
 /// <remarks>
 /// Códigos <c>string?</c> em vez de <c>string</c> (ADR-0125): sem validator garantindo
@@ -26,7 +26,7 @@ public sealed record DestinoRemanejamentoInput(
     string? ModalidadeDestinoCodigo);
 
 /// <summary>
-/// Define (ou remove) a cascata de remanejamento do processo (RN-CASCATA-1..5,
+/// Define (ou remove) a cascata de remanejamento do processo (cascata de remanejamento de cotas, UNI-REQ-0056,
 /// Story #575). Os quatro campos são todos nulos (remove) ou todos presentes
 /// (define) — presença parcial é recusada com
 /// <c>ConfiguracaoCascataRemanejamento.CamposObrigatorios</c>.

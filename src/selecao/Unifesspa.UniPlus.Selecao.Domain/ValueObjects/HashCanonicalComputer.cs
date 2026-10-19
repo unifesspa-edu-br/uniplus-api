@@ -143,7 +143,7 @@ public static class HashCanonicalComputer
     /// <c>codigo</c>+<c>versao</c>+<c>tipo</c>+<c>esquema_args</c>+<c>invariantes</c>+<c>base_legal</c>.
     /// Mudar qualquer campo definicional muda o hash — e a versão de uma regra
     /// é imutável (nova semântica = nova versão), o que dá a reprodutibilidade
-    /// do freeze do snapshot (RN08) por construção.
+    /// do freeze do snapshot (congelamento dos parâmetros na publicação, UNI-REQ-0019) por construção.
     /// </summary>
     /// <remarks>
     /// Espelha o hash validado do <c>rol_de_regras</c> (Postgres real): os

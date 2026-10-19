@@ -10,7 +10,7 @@ using DTOs;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Handler convention-based do <see cref="ObterSnapshotVigenteQuery"/> (RN08,
+/// Handler convention-based do <see cref="ObterSnapshotVigenteQuery"/> (congelamento dos parâmetros na publicação, UNI-REQ-0019,
 /// ADR-0075/0076/0068/0104): resolve o instante (explícito ou default do
 /// <c>TimeProvider</c>), seleciona a VERSÃO vigente da configuração e a projeta.
 /// Distingue 404 (processo inexistente) de 422 (<c>Snapshot.VigenteAusente</c>) —

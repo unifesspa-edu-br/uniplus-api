@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// Deriva de <see cref="EntityBase"/> puro (sem soft-delete) de propósito:
 /// a configuração em rascunho é substituível por inteiro (comandos
 /// <c>Definir*</c>) e a trilha auditável do que valeu em cada publicação é o
-/// snapshot RN08 da Story #759 — não faz sentido acumular linhas logicamente
+/// snapshot de congelamento dos parâmetros na publicação (UNI-REQ-0019) da Story #759 — não faz sentido acumular linhas logicamente
 /// excluídas de rascunho. A <c>Etapa</c> ligada a <c>Edital</c> continua
 /// existindo para a conformidade da Story #460 e é aposentada junto com o
 /// CRUD de Edital na #759.
