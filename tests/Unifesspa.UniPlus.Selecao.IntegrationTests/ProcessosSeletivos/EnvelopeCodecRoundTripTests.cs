@@ -476,7 +476,8 @@ public sealed class EnvelopeCodecRoundTripTests
             new EntradaCanonicalizacao(
                 processo, envelope.Dados, envelope.HashDocumento, FusoInstitucional.ZoneId, envelope.Retificacao, envelope.Conformidade,
                 envelope.MetadadosFatosCongelados, envelope.ValoresSelecionaveisCongelados,
-                envelope.CalendarioDiasUteis, envelope.AgregadosDosGrupos, envelope.ApresentacaoDosPressupostos));
+                envelope.CalendarioDiasUteis, envelope.AgregadosDosGrupos, envelope.ApresentacaoDosPressupostos,
+                TiposDeAtoCongelados: envelope.TiposDeAtoCongelados));
         recodificado.IsSuccess.Should().BeTrue(recodificado.Error?.Message);
 
         // Os três são independentes no modelo (VersaoConfiguracao guarda schema_version e
@@ -702,7 +703,8 @@ public sealed class EnvelopeCodecRoundTripTests
                 reidratado.Value.Conformidade,
                 reidratado.Value.MetadadosFatosCongelados,
                 reidratado.Value.ValoresSelecionaveisCongelados,
-                reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos, reidratado.Value.ApresentacaoDosPressupostos)).Value!.Bytes;
+                reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos, reidratado.Value.ApresentacaoDosPressupostos,
+                TiposDeAtoCongelados: reidratado.Value.TiposDeAtoCongelados)).Value!.Bytes;
 
         return (congelado.Bytes, bytesMutados, recodificados);
     }
@@ -830,7 +832,8 @@ public sealed class EnvelopeCodecRoundTripTests
                 reidratado.Value.Conformidade,
                 reidratado.Value.MetadadosFatosCongelados,
                 reidratado.Value.ValoresSelecionaveisCongelados,
-                reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos, reidratado.Value.ApresentacaoDosPressupostos)).Value!.Bytes;
+                reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos, reidratado.Value.ApresentacaoDosPressupostos,
+                TiposDeAtoCongelados: reidratado.Value.TiposDeAtoCongelados)).Value!.Bytes;
 
         recodificado.Should().Equal(fixture,
             "a fixture rica é o oráculo do decoder — bytes reais, GUIDs reais, agregado completo. Se ela deixar de " +
@@ -895,9 +898,10 @@ public sealed class EnvelopeCodecRoundTripTests
             processo, EnvelopeCanonicoGoldenTests.DadosDeReferencia(), EnvelopeCanonicoGoldenTests.HashFixo,
             FusoInstitucional.ZoneId,
             MetadadosFatosCongelados: metadadosFatos,
-            ValoresSelecionaveisCongelados: valoresSelecionaveis);
+            ValoresSelecionaveisCongelados: valoresSelecionaveis,
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo));
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.31", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.32", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             entrada.Dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -920,7 +924,8 @@ public sealed class EnvelopeCodecRoundTripTests
                 reidratado.Value.Conformidade,
                 reidratado.Value.MetadadosFatosCongelados,
                 reidratado.Value.ValoresSelecionaveisCongelados,
-                reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos, reidratado.Value.ApresentacaoDosPressupostos)).Value!.Bytes;
+                reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos, reidratado.Value.ApresentacaoDosPressupostos,
+                TiposDeAtoCongelados: reidratado.Value.TiposDeAtoCongelados)).Value!.Bytes;
 
         recodificado.Should().Equal(congelado.Bytes,
             "reidratar e recanonicalizar uma exigência documental rica (condicaoGatilho, basesLegais, " +
@@ -1055,8 +1060,8 @@ public sealed class EnvelopeCodecRoundTripTests
         const string hashDocumento = "2222222222222222222222222222222222222222222222222222222222222222";
 
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(
-            new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados()));
-        congelado.SchemaVersion.Should().Be("0.0.31", "pré-condição: o codec corrente emite a forma única");
+            new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
+        congelado.SchemaVersion.Should().Be("0.0.32", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -1084,7 +1089,8 @@ public sealed class EnvelopeCodecRoundTripTests
                 reidratado.Value.Conformidade,
                 reidratado.Value.MetadadosFatosCongelados,
                 reidratado.Value.ValoresSelecionaveisCongelados,
-                reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos, reidratado.Value.ApresentacaoDosPressupostos)).Value!.Bytes;
+                reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos, reidratado.Value.ApresentacaoDosPressupostos,
+                TiposDeAtoCongelados: reidratado.Value.TiposDeAtoCongelados)).Value!.Bytes;
 
         recodificado.Should().Equal(congelado.Bytes,
             "reidratar e recanonicalizar uma árvore com grupo OU, cardinalidade qualificada e repetição por " +
@@ -1271,9 +1277,10 @@ public sealed class EnvelopeCodecRoundTripTests
 
         EntradaCanonicalizacao entrada = new(
             processo, dados, hashDocumento, FusoInstitucional.ZoneId, Conformidade: conformidade, MetadadosFatosCongelados: metadadosFatos,
-            ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados());
+            ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(),
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo));
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.31", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.32", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -1327,7 +1334,8 @@ public sealed class EnvelopeCodecRoundTripTests
             v1.SchemaVersion,
             new EntradaCanonicalizacao(
                 processo, envelope.Dados, envelope.HashDocumento, FusoInstitucional.ZoneId, envelope.Retificacao, envelope.Conformidade,
-                envelope.MetadadosFatosCongelados, envelope.ValoresSelecionaveisCongelados)).Value!.Bytes;
+                envelope.MetadadosFatosCongelados, envelope.ValoresSelecionaveisCongelados,
+                TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo))).Value!.Bytes;
 
         recodificado.Should().Equal(congelado.Bytes,
             "reidratar e recanonicalizar os seis conjuntos da issue #1067, todos povoados ao mesmo tempo, tem de " +
@@ -1428,7 +1436,8 @@ public sealed class EnvelopeCodecRoundTripTests
                 reidratado.Value.Conformidade,
                 reidratado.Value.MetadadosFatosCongelados,
                 reidratado.Value.ValoresSelecionaveisCongelados,
-                reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos, reidratado.Value.ApresentacaoDosPressupostos)).Value!.Bytes;
+                reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos, reidratado.Value.ApresentacaoDosPressupostos,
+                TiposDeAtoCongelados: reidratado.Value.TiposDeAtoCongelados)).Value!.Bytes;
 
         recodificados.Should().NotEqual(congelado.Bytes,
             "o decoder tem de LER 'classificacao.baseadoEmEnem' — se o ignorasse, a recodificação traria o valor " +

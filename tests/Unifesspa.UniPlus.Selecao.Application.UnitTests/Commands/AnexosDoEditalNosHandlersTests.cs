@@ -253,7 +253,7 @@ public sealed class AnexosDoEditalNosHandlersTests
             CadastrosVivos.RegrasDesempate(),
             CadastrosVivos.CatalogoDeFatos(),
             Substitute.For<ICalendarioVigenteReader>(),
-            Substitute.For<IRegistroCodecsEnvelope>(),
+            CodecsDeTeste.QueReidrataSemTiposDeAto(),
             new RelogioFixo(Agora),
             CancellationToken.None);
     }

@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
+using Abstractions;
+
 using Domain.Entities;
 using Domain.Interfaces;
 using Domain.ValueObjects;
@@ -14,11 +16,14 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// </summary>
 /// <remarks>
 /// <para>
-/// A leitura é I/O e por isso fica aqui, e não no agregado (ADR-0042). Pergunta-se ao catálogo
-/// vigente, e não a uma lista de códigos: <c>unico_por_objeto</c> é editável, e o que o catálogo
-/// disser no momento de publicar é o que o registro do ato aplicará. Os códigos vêm do próprio
-/// agregado (<see cref="ProcessoSeletivo.DeclaracoesDeAtos"/>) e vão numa só leitura. Tipo sem
-/// versão vigente não entra: quem o recusa é a conferência do tipo declarado, não esta.
+/// A leitura é I/O e por isso fica aqui, e não no agregado (ADR-0042). Os códigos vêm do próprio
+/// agregado (<see cref="ProcessoSeletivo.DeclaracoesDeAtos"/>). A classificação de cada um vem de
+/// dois lugares, conforme ele já tenha sido congelado ou não: na publicação de abertura, e para o
+/// tipo declarado pela primeira vez numa retificação, pergunta-se ao catálogo vigente, numa só
+/// leitura; o tipo que a versão vigente já congelou mantém essa classificação, e o catálogo não é
+/// relido para ele, porque mudar o tipo no catálogo depois da publicação não alcança o processo já
+/// publicado (UNI-REQ-0163). Tipo declarado sem versão vigente no catálogo não entra: quem o recusa
+/// é o congelamento da classificação (<see cref="CongelamentoDosTiposDeAto"/>), não esta.
 /// </para>
 /// <para>
 /// <b>O ato da operação não é relido.</b> O tipo dele já foi conferido na data de publicação do
@@ -41,6 +46,11 @@ internal static class ResolucaoDosTiposDeAtoUnicos
     /// que congelam versão chamam isto logo depois do cronograma, antes de canonicalizar, na
     /// ordem da raiz.
     /// </summary>
+    /// <param name="jaCongelados">
+    /// A classificação que a versão vigente já congelou: o tipo que consta nela mantém a classificação
+    /// congelada, e só o tipo declarado pela primeira vez é lido do catálogo. Vazio na publicação de
+    /// abertura, que não tem versão anterior.
+    /// </param>
     /// <remarks>
     /// Os <paramref name="atosDaLinhagem"/> são os que a conferência da vaga já obteve do
     /// repositório. O que ela perguntou a Publicações foi outra coisa (se há ato de outra
@@ -55,25 +65,35 @@ internal static class ResolucaoDosTiposDeAtoUnicos
         IReadOnlyList<Guid> atosDaLinhagem,
         TimeProvider relogio,
         TimeZoneInfo fusoInstitucional,
+        IReadOnlyDictionary<string, TipoDeAtoCongelado> jaCongelados,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(tipoDoAtoDaOperacao);
+        ArgumentNullException.ThrowIfNull(jaCongelados);
 
         IReadOnlyList<string> ocupados = await TiposOcupadosAsync(atoDoProcessoRepository, atosDaLinhagem, cancellationToken)
             .ConfigureAwait(false);
 
         LeituraDoCatalogo leitura = await LerDoCatalogoAsync(
-            tipoAtoReader, processo, ocupados, tipoDoAtoDaOperacao.Codigo, Hoje(relogio, fusoInstitucional), cancellationToken)
+            tipoAtoReader, processo, ocupados, tipoDoAtoDaOperacao.Codigo, Hoje(relogio, fusoInstitucional), jaCongelados, cancellationToken)
             .ConfigureAwait(false);
-        Dictionary<string, string> unicos = leitura.Unicos;
-        if (tipoDoAtoDaOperacao.UnicoPorObjeto)
+
+        // O tipo do ato da operação serve só à vaga e ao registro do próprio ato. Se o mesmo código é de um
+        // item do cronograma, a classificação do item é a congelada na versão, e a do ato não a sobrescreve.
+        // Sem esse item na versão, o tipo da operação já foi lido do catálogo e entra na classificação.
+        if (!jaCongelados.ContainsKey(tipoDoAtoDaOperacao.Codigo))
         {
-            unicos[tipoDoAtoDaOperacao.Codigo] = tipoDoAtoDaOperacao.Nome;
+            if (tipoDoAtoDaOperacao.UnicoPorObjeto)
+            {
+                leitura.Unicos[tipoDoAtoDaOperacao.Codigo] = tipoDoAtoDaOperacao.Nome;
+            }
+
+            leitura.Classificacoes[tipoDoAtoDaOperacao.Codigo] = ClassificacaoDe(tipoDoAtoDaOperacao);
         }
 
-        leitura.Classificacoes[tipoDoAtoDaOperacao.Codigo] = ClassificacaoDe(tipoDoAtoDaOperacao);
-
-        TiposDeAtoUnicosPorObjeto tipos = TiposDeAtoUnicosPorObjeto.ParaOperacao(unicos, ocupados, tipoDoAtoDaOperacao.Codigo, leitura.Classificacoes);
+        TiposDeAtoUnicosPorObjeto tipos = TiposDeAtoUnicosPorObjeto.ParaOperacao(
+            leitura.Unicos, ocupados, tipoDoAtoDaOperacao.Codigo, leitura.Classificacoes,
+            tipoDoAtoDaOperacao.UnicoPorObjeto, tipoDoAtoDaOperacao.Nome);
 
         return processo.PendenciaDoTipoDeAtoUnico(tipos) is { } pendencia
             ? Result<TiposDeAtoUnicosPorObjeto>.Failure(pendencia)
@@ -90,12 +110,15 @@ internal static class ResolucaoDosTiposDeAtoUnicos
         ProcessoSeletivo processo,
         IReadOnlyList<Guid> atosDaLinhagem,
         DateOnly dataVigencia,
+        IReadOnlyDictionary<string, TipoDeAtoCongelado> jaCongelados,
         CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(jaCongelados);
+
         IReadOnlyList<string> ocupados = await TiposOcupadosAsync(atoDoProcessoRepository, atosDaLinhagem, cancellationToken)
             .ConfigureAwait(false);
 
-        LeituraDoCatalogo leitura = await LerDoCatalogoAsync(reader, processo, ocupados, null, dataVigencia, cancellationToken)
+        LeituraDoCatalogo leitura = await LerDoCatalogoAsync(reader, processo, ocupados, null, dataVigencia, jaCongelados, cancellationToken)
             .ConfigureAwait(false);
 
         return TiposDeAtoUnicosPorObjeto.ParaChecklist(leitura.Unicos, ocupados, leitura.Classificacoes);
@@ -137,6 +160,7 @@ internal static class ResolucaoDosTiposDeAtoUnicos
         IEnumerable<string> codigosOcupados,
         string? codigoJaConferido,
         DateOnly dataVigencia,
+        IReadOnlyDictionary<string, TipoDeAtoCongelado> jaCongelados,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(reader);
@@ -147,28 +171,34 @@ internal static class ResolucaoDosTiposDeAtoUnicos
             .. processo.DeclaracoesDeAtos()
                 .Select(static declaracao => declaracao.AtoCodigo)
                 .Concat(codigosOcupados)
-                .Where(codigo => !string.Equals(codigo, codigoJaConferido, StringComparison.Ordinal))
+                .Where(codigo => !string.Equals(codigo, codigoJaConferido, StringComparison.Ordinal) && !jaCongelados.ContainsKey(codigo))
                 .Distinct(StringComparer.Ordinal),
         ];
 
-        if (codigos.Length == 0)
+        IReadOnlyList<TipoAtoPublicadoView> vigentes = codigos.Length == 0
+            ? []
+            : await reader
+                .ListarVigentesAsync(codigos, dataVigencia, cancellationToken)
+                .ConfigureAwait(false);
+
+        Dictionary<string, string> unicos = vigentes
+            .Where(static tipo => tipo.UnicoPorObjeto)
+            .GroupBy(static tipo => tipo.Codigo, StringComparer.Ordinal)
+            .ToDictionary(static grupo => grupo.Key, static grupo => grupo.First().Nome, StringComparer.Ordinal);
+        Dictionary<string, ClassificacaoDoTipoDeAto> classificacoes = vigentes
+            .GroupBy(static tipo => tipo.Codigo, StringComparer.Ordinal)
+            .ToDictionary(static grupo => grupo.Key, static grupo => ClassificacaoDe(grupo.First()), StringComparer.Ordinal);
+
+        // O nome do tipo congelado não viaja no envelope: a recusa o cita pelo código.
+        foreach (TipoDeAtoCongelado congelado in jaCongelados.Values)
         {
-            return new LeituraDoCatalogo(
-                new Dictionary<string, string>(StringComparer.Ordinal),
-                new Dictionary<string, ClassificacaoDoTipoDeAto>(StringComparer.Ordinal));
+            classificacoes[congelado.Codigo] = congelado.Classificacao;
+            if (congelado.UnicoPorObjeto)
+            {
+                unicos[congelado.Codigo] = congelado.Codigo;
+            }
         }
 
-        IReadOnlyList<TipoAtoPublicadoView> vigentes = await reader
-            .ListarVigentesAsync(codigos, dataVigencia, cancellationToken)
-            .ConfigureAwait(false);
-
-        return new LeituraDoCatalogo(
-            vigentes
-                .Where(static tipo => tipo.UnicoPorObjeto)
-                .GroupBy(static tipo => tipo.Codigo, StringComparer.Ordinal)
-                .ToDictionary(static grupo => grupo.Key, static grupo => grupo.First().Nome, StringComparer.Ordinal),
-            vigentes
-                .GroupBy(static tipo => tipo.Codigo, StringComparer.Ordinal)
-                .ToDictionary(static grupo => grupo.Key, static grupo => ClassificacaoDe(grupo.First()), StringComparer.Ordinal));
+        return new LeituraDoCatalogo(unicos, classificacoes);
     }
 }

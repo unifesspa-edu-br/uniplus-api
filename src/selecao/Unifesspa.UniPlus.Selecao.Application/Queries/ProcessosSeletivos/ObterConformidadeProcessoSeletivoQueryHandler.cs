@@ -45,6 +45,12 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 /// </remarks>
 public static class ObterConformidadeProcessoSeletivoQueryHandler
 {
+    /// <summary>
+    /// Item do checklist para a versão publicada que o codec não lê: sem ela não há classificação
+    /// congelada para conferir, e a retificação recusaria o processo pelo mesmo motivo.
+    /// </summary>
+    internal const string CodigoDaVersaoPublicadaIlegivel = "cronograma_versao_publicada_legivel";
+
     public static async Task<ConformidadeProcessoSeletivoDto?> Handle(
         ObterConformidadeProcessoSeletivoQuery query,
         IProcessoSeletivoRepository processoSeletivoRepository,
@@ -53,6 +59,7 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
         IResolvedorFusoInstitucional resolvedorFuso,
         IFatoCandidatoReader fatoCandidatoReader,
         ITipoAtoPublicadoReader tipoAtoPublicadoReader,
+        IRegistroCodecsEnvelope registroCodecs,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
@@ -63,6 +70,7 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
         ArgumentNullException.ThrowIfNull(resolvedorFuso);
         ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
         ArgumentNullException.ThrowIfNull(tipoAtoPublicadoReader);
+        ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
@@ -92,8 +100,36 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
         IReadOnlyList<Guid> atosDaLinhagem = await processoSeletivoRepository
             .ObterAtosCriadoresAsync(processo.Id, cancellationToken)
             .ConfigureAwait(false);
+
+        // Como a retificação, o checklist trata o tipo que a versão vigente já congelou pela classificação
+        // congelada; só o processo ainda não publicado, ou o tipo novo, lê o catálogo de hoje. Uma versão que
+        // o codec não lê é recusada pela própria retificação, e o checklist mostra essa recusa como pendência
+        // em vez de avaliar os tipos pelo catálogo de hoje e parecer conforme.
+        VersaoConfiguracao? versaoAtual = await processoSeletivoRepository
+            .ObterVersaoAtualAsync(processo.Id, cancellationToken)
+            .ConfigureAwait(false);
+        IReadOnlyDictionary<string, TipoDeAtoCongelado> jaCongelados = new Dictionary<string, TipoDeAtoCongelado>(StringComparer.Ordinal);
+        DomainError? falhaDaVersaoPublicada = null;
+        if (versaoAtual is not null)
+        {
+            Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>> congelados =
+                CongelamentoDosTiposDeAto.DaVersao(registroCodecs, versaoAtual);
+            if (congelados.IsSuccess)
+            {
+                jaCongelados = congelados.Value!;
+            }
+            else
+            {
+                falhaDaVersaoPublicada = congelados.Error;
+            }
+        }
+
         TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos = await ResolucaoDosTiposDeAtoUnicos
-            .ParaChecklistAsync(tipoAtoPublicadoReader, atoDoProcessoRepository, processo, atosDaLinhagem, ResolucaoDosTiposDeAtoUnicos.Hoje(timeProvider, fuso.IsSuccess ? fuso.Value : null), cancellationToken)
+            .ParaChecklistAsync(
+                tipoAtoPublicadoReader, atoDoProcessoRepository, processo, atosDaLinhagem,
+                ResolucaoDosTiposDeAtoUnicos.Hoje(timeProvider, fuso.IsSuccess ? fuso.Value : null),
+                jaCongelados,
+                cancellationToken)
             .ConfigureAwait(false);
 
         FatosDeModalidade fatosDeModalidade = VocabularioDeFatos.ComValoresDeModalidade(
@@ -101,6 +137,14 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
 
         ItemConformidadeDto[] itens = [.. processo.AvaliarConformidade(contexto, fatosDeModalidade, tiposDeAtoUnicos)
             .Select(static item => new ItemConformidadeDto(item.Codigo, item.Dimensao, item.Mensagem, item.Ok))];
+        if (falhaDaVersaoPublicada is not null)
+        {
+            itens = [.. itens, new ItemConformidadeDto(
+                CodigoDaVersaoPublicadaIlegivel,
+                DimensaoConformidade.Cronograma,
+                falhaDaVersaoPublicada.Message,
+                Ok: false)];
+        }
 
         AvisoConformidadeDto[] avisos = [.. processo.AvaliarAvisos()
             .Select(static aviso => new AvisoConformidadeDto(aviso.Codigo, aviso.Dimensao, aviso.Mensagem))];

@@ -28,7 +28,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// congelamento do snapshot de publicação (RN08, ADR-0100, Story #759 T4
 /// #785). Mapa de testes de #759: <c>Snapshot_HashConfereAppEBanco</c>
 /// (re-hashear os bytes lidos de volta do banco bate com o hash persistido
-/// pela app) e <c>Snapshot_Contem32BlocosCanonicos</c> (os 32 blocos — todos
+/// pela app) e <c>Snapshot_Contem33BlocosCanonicos</c> (os 33 blocos — todos
 /// reais — estão presentes). Story #575 promoveu <c>cascataRemanejamento</c>
 /// de stub a bloco real; issue #849 promoveu <c>identidadesUnidade</c>;
 /// Story #559 promoveu <c>formulario</c>; issue #563 promoveu <c>divulgacao</c>
@@ -143,7 +143,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             documentoEditalId: documento.Id);
         dadosResult.IsSuccess.Should().BeTrue();
 
-        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosResult.Value!, documento.HashSha256!, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados()));
+        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosResult.Value!, documento.HashSha256!, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
 
         Result<VersaoConfiguracao> publicarResult = processo.Publicar(
             dadosResult.Value!,
@@ -181,10 +181,10 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             "ADR-0100 §Confirmação: re-hashear os bytes persistidos deve bater com o hash calculado pela aplicação na publicação");
     }
 
-    [Fact(DisplayName = "Snapshot_Contem32BlocosCanonicos — os 32 blocos, todos reais, estão presentes")]
-    public async Task Snapshot_Contem32BlocosCanonicos()
+    [Fact(DisplayName = "Snapshot_Contem33BlocosCanonicos — os 33 blocos, todos reais, estão presentes")]
+    public async Task Snapshot_Contem33BlocosCanonicos()
     {
-        (_, _, Guid snapshotId, _) = await PublicarAsync(nameof(Snapshot_Contem32BlocosCanonicos));
+        (_, _, Guid snapshotId, _) = await PublicarAsync(nameof(Snapshot_Contem33BlocosCanonicos));
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
         VersaoConfiguracao versao = await readContext.VersoesConfiguracao
@@ -218,6 +218,8 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             "apresentacaoDosPressupostos",
             // Quantos cursos o candidato escolhe na inscrição, dimensão do processo — 32º bloco.
             "opcoesDeCurso",
+            // A classificação, congelada, de cada tipo de ato que o cronograma declara — 33º bloco.
+            "tiposDeAto",
         ];
         JsonObject objeto = payload.AsObject();
         foreach (string bloco in blocosEsperados)
@@ -314,7 +316,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             documentoEditalId: documento.Id);
         dadosResult.IsSuccess.Should().BeTrue();
 
-        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosResult.Value!, documento.HashSha256!, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados()));
+        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosResult.Value!, documento.HashSha256!, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
         Result<VersaoConfiguracao> publicarResult = processo.Publicar(
             dadosResult.Value!,
             canonico.Bytes,

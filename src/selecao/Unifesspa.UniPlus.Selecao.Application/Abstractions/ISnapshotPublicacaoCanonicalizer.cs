@@ -15,9 +15,9 @@ public sealed record SnapshotCanonico(byte[] Bytes, string SchemaVersion, string
 
 /// <summary>
 /// Informação do ato de retificação (ADR-0103) acrescentada ao envelope como um
-/// bloco adicional (<c>retificacao</c>) além dos 32 blocos canônicos.
+/// bloco adicional (<c>retificacao</c>) além dos 33 blocos canônicos.
 /// <see langword="null"/> na publicação de abertura — o envelope de abertura
-/// mantém exatamente os 32 blocos, sem o bloco de retificação.
+/// mantém exatamente os 33 blocos, sem o bloco de retificação.
 /// </summary>
 public sealed record RetificacaoInfo(Guid EditalRetificadoId, string Motivo);
 
@@ -67,6 +67,25 @@ public sealed record MetadadoFatoCongelado(
     string Binding,
     IReadOnlyList<string>? ValoresDominio,
     IReadOnlyList<ValorDominioDeclaradoCongelado>? ValoresDominioDeclarados);
+
+/// <summary>
+/// A classificação de um tipo de ato que o cronograma declara, como o catálogo de Publicações a
+/// dizia quando a configuração foi publicada, congelada na versão.
+/// </summary>
+/// <remarks>
+/// O catálogo é editável, e a Seleção trabalha sobre a configuração congelada: o que a publicação e a
+/// correção de um item do edital perguntam sobre o tipo — se sai uma só vez, se é resultado, se congela
+/// a configuração — responde-se por esta cópia, e não pelo catálogo de hoje.
+/// </remarks>
+/// <param name="Codigo">Código do tipo de ato.</param>
+/// <param name="UnicoPorObjeto">Se o tipo sai uma só vez no processo seletivo.</param>
+/// <param name="EhResultado">Se o tipo é classificado como resultado.</param>
+/// <param name="CongelaConfiguracao">Se publicar o tipo cria uma versão da configuração.</param>
+public sealed record TipoDeAtoCongelado(string Codigo, bool UnicoPorObjeto, bool EhResultado, bool CongelaConfiguracao)
+{
+    /// <summary>O que decide se o tipo pode ser item de resultado.</summary>
+    public ClassificacaoDoTipoDeAto Classificacao => new(EhResultado, CongelaConfiguracao);
+}
 
 /// <summary>
 /// Entrada <b>única e explícita</b> da canonicalização (ADR-0109 D6).
@@ -157,15 +176,21 @@ public sealed record EntradaCanonicalizacao(
     /// formulários citam e nenhum formulário do processo pergunta. Na recodificação, é a congelada
     /// na versão que volta aqui.
     /// </summary>
-    IReadOnlyDictionary<string, ApresentacaoDoFato>? ApresentacaoDosPressupostos = null);
+    IReadOnlyDictionary<string, ApresentacaoDoFato>? ApresentacaoDosPressupostos = null,
+    /// <summary>
+    /// A classificação de cada tipo de ato que o cronograma declara, nas fases e nas etapas, por
+    /// código — a do catálogo na publicação. Na recodificação, é a congelada na versão que volta
+    /// aqui, porque o catálogo pode ter mudado.
+    /// </summary>
+    IReadOnlyDictionary<string, TipoDeAtoCongelado>? TiposDeAtoCongelados = null);
 
 /// <summary>
 /// Porta da projeção canônica do envelope de congelamento (ADR-0100, ADR-0109).
 /// Projeta a configuração viva do <see cref="ProcessoSeletivo"/> num payload de
-/// <b>32 blocos reais</b> e devolve os bytes que
+/// <b>33 blocos reais</b> e devolve os bytes que
 /// <c>VersaoConfiguracao.Abrir</c> persiste como base do hash. Quando a entrada
-/// carrega <see cref="EntradaCanonicalizacao.Retificacao"/>, acrescenta o 33º
-/// bloco <c>retificacao</c> preservando os 32 anteriores intactos (ADR-0103).
+/// carrega <see cref="EntradaCanonicalizacao.Retificacao"/>, acrescenta o 34º
+/// bloco <c>retificacao</c> preservando os 33 anteriores intactos (ADR-0103).
 /// </summary>
 /// <remarks>
 /// A assinatura recebe <b>um único</b> parâmetro por decisão (ADR-0109 D6):

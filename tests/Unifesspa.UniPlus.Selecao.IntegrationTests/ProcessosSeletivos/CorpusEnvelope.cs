@@ -983,7 +983,8 @@ internal static class CorpusEnvelope
             ValoresSelecionaveisCongelados: ValoresSelecionaveisRicos(permutarValoresSelecionaveis),
             CalendarioDiasUteis: CalendarioRico(),
             AgregadosDosGrupos: AgregadosRicos,
-            ApresentacaoDosPressupostos: ApresentacaoRica);
+            ApresentacaoDosPressupostos: ApresentacaoRica,
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo));
 
     /// <summary>
     /// A apresentação de dois derivados do sistema: o município, que o domínio categórico do Geo dá como

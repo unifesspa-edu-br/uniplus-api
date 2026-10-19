@@ -29,6 +29,7 @@ internal static class TiposDeAtoSeeder
         await GarantirAsync(db, DadosDoAtoDeTeste.TipoAviso, "Aviso", unicoPorObjeto: false, congelaConfiguracao: false, publicavelComoAvulso: true);
         await GarantirAsync(db, DadosDoAtoDeTeste.TipoAvulsoUnico, "Comunicado único", unicoPorObjeto: true, congelaConfiguracao: false, publicavelComoAvulso: true);
         await GarantirAsync(db, DadosDoAtoDeTeste.TipoResultado, "Resultado da homologação", unicoPorObjeto: false, congelaConfiguracao: false, ehResultado: true);
+        await GarantirAsync(db, DadosDoAtoDeTeste.TipoResultadoDaClassificacao, "Resultado final", unicoPorObjeto: false, congelaConfiguracao: false, ehResultado: true);
         await GarantirAsync(db, DadosDoAtoDeTeste.TipoResultadoDoRecurso, "Resultado do recurso", unicoPorObjeto: false, congelaConfiguracao: false, ehResultado: true);
 
         await db.SaveChangesAsync();

@@ -151,7 +151,7 @@ public sealed class ColetabilidadeDeFatosGateTests
             CadastrosVivos.RegrasDesempate(),
             fatoCandidatoReader,
             CalendarioVigenteReaderDeTeste.SemVigente(),
-            Substitute.For<IRegistroCodecsEnvelope>(),
+            CodecsDeTeste.QueReidrataSemTiposDeAto(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 
@@ -198,7 +198,7 @@ public sealed class ColetabilidadeDeFatosGateTests
             CadastrosVivos.RegrasDesempate(),
             fatoCandidatoReader,
             CalendarioVigenteReaderDeTeste.SemVigente(),
-            Substitute.For<IRegistroCodecsEnvelope>(),
+            CodecsDeTeste.QueReidrataSemTiposDeAto(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 
@@ -372,7 +372,7 @@ public sealed class ColetabilidadeDeFatosGateTests
                 UnicoPorObjeto: false,
                 EfeitoIrreversivel: false,
                 EhResultado: false));
-        return reader;
+        return reader.ComQualquerTipoDeclarado();
     }
 
     private static IUserContext UsuarioAutenticado()

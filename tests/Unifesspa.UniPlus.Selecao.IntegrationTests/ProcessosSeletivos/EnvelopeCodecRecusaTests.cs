@@ -1038,7 +1038,7 @@ public sealed class EnvelopeCodecRecusaTests
             "088/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
         const string hashDocumento = "3333333333333333333333333333333333333333333333333333333333333333";
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(
-            new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados()));
+            new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
 
         JsonObject envelope = JsonNode.Parse(Encoding.UTF8.GetString(congelado.Bytes))!.AsObject();
         JsonArray exigencias = envelope["documentosExigidos"]!["exigencias"]!.AsArray();
@@ -2153,6 +2153,27 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error!.Code.Should().Be("RegraRecursoFase.SuspensividadeIncompleta");
     }
 
+    [Fact(DisplayName = "Tipo de ato declarado no cronograma sem classificação congelada no envelope: recusa, e não 'não é único' por omissão")]
+    public void TipoDeAtoDeclaradoSemClassificacaoCongelada_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["tiposDeAto"]!.AsArray().RemoveAt(0));
+
+        resultado.IsFailure.Should().BeTrue(
+            "sem a classificação, a publicação do item leria a ausência como 'não é resultado, não congela, não é único'");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    [Fact(DisplayName = "Classificação de tipo de ato sem uma das chaves no envelope: recusa")]
+    public void TipoDeAtoSemUmaDasClassificacoes_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["tiposDeAto"]!.AsArray()[0]!.AsObject().Remove("congelaConfiguracao"));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
     [Fact(DisplayName = "Janela de recurso sem a declaração de instância superior no envelope: recusa, e não 'não admite' por omissão")]
     public void RegraRecursoSemAdmiteInstanciaSuperior_Recusa()
     {
@@ -2412,7 +2433,8 @@ public sealed class EnvelopeCodecRecusaTests
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(new EntradaCanonicalizacao(
             processo, dados, EnvelopeCanonicoGoldenTests.HashFixo, FusoInstitucional.ZoneId,
             MetadadosFatosCongelados: EnvelopeCanonicoGoldenTests.MetadadosFatosDeReferencia(),
-            ValoresSelecionaveisCongelados: EnvelopeCanonicoGoldenTests.ValoresSelecionaveisDeReferencia()));
+            ValoresSelecionaveisCongelados: EnvelopeCanonicoGoldenTests.ValoresSelecionaveisDeReferencia(),
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
 
         JsonObject envelope = JsonNode.Parse(Encoding.UTF8.GetString(congelado.Bytes))!.AsObject();
         adulterar(envelope);

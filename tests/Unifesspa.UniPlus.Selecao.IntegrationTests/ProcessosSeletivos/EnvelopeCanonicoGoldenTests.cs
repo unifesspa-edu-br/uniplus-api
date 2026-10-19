@@ -376,7 +376,8 @@ public sealed class EnvelopeCanonicoGoldenTests
             ProcessoDeReferencia(), DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId,
             MetadadosFatosCongelados: MetadadosFatosDeReferencia(),
             ValoresSelecionaveisCongelados: ValoresSelecionaveisDeReferencia(),
-            ApresentacaoDosPressupostos: CorpusEnvelope.ApresentacaoRica));
+            ApresentacaoDosPressupostos: CorpusEnvelope.ApresentacaoRica,
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(ProcessoDeReferencia())));
 
     /// <summary>
     /// O agregado de referência COM a cascata de remanejamento configurada (Story #575) —
@@ -414,7 +415,8 @@ public sealed class EnvelopeCanonicoGoldenTests
         Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
             ProcessoDeReferenciaComCascata(), DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId,
             MetadadosFatosCongelados: MetadadosFatosDeReferencia(),
-            ValoresSelecionaveisCongelados: ValoresSelecionaveisDeReferencia()));
+            ValoresSelecionaveisCongelados: ValoresSelecionaveisDeReferencia(),
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(ProcessoDeReferenciaComCascata())));
 
     // ── CA-03 — política: a versão declarada e a forma congelada andam juntas ──
 
@@ -561,9 +563,11 @@ public sealed class EnvelopeCanonicoGoldenTests
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis = ValoresSelecionaveisDeReferencia();
 
         byte[] primeira = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
-            processo, dados, HashFixo, FusoInstitucional.ZoneId, MetadadosFatosCongelados: metadados, ValoresSelecionaveisCongelados: valoresSelecionaveis)).Bytes;
+            processo, dados, HashFixo, FusoInstitucional.ZoneId, MetadadosFatosCongelados: metadados, ValoresSelecionaveisCongelados: valoresSelecionaveis,
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo))).Bytes;
         byte[] segunda = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
-            processo, dados, HashFixo, FusoInstitucional.ZoneId, MetadadosFatosCongelados: metadados, ValoresSelecionaveisCongelados: valoresSelecionaveis)).Bytes;
+            processo, dados, HashFixo, FusoInstitucional.ZoneId, MetadadosFatosCongelados: metadados, ValoresSelecionaveisCongelados: valoresSelecionaveis,
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo))).Bytes;
 
         segunda.Should().Equal(primeira, "a projeção é pura — mesma entrada, mesmos bytes");
     }
@@ -583,7 +587,7 @@ public sealed class EnvelopeCanonicoGoldenTests
         DadosEdital dados = DadosDeReferencia();
 
         Action canonicalizarSemDicionario = () => Canonicalizer.Canonicalizar(
-            new EntradaCanonicalizacao(processo, dados, HashFixo, FusoInstitucional.ZoneId, MetadadosFatosCongelados: MetadadosFatosDeReferencia()));
+            new EntradaCanonicalizacao(processo, dados, HashFixo, FusoInstitucional.ZoneId, MetadadosFatosCongelados: MetadadosFatosDeReferencia(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
 
         canonicalizarSemDicionario.Should().Throw<InvalidOperationException>()
             .WithMessage("*NACIONALIDADE*",
@@ -612,7 +616,8 @@ public sealed class EnvelopeCanonicoGoldenTests
             new EntradaCanonicalizacao(
                 processo, dados, HashFixo, FusoInstitucional.ZoneId,
                 MetadadosFatosCongelados: MetadadosFatosDeReferencia(),
-                ValoresSelecionaveisCongelados: valoresComListaVazia));
+                ValoresSelecionaveisCongelados: valoresComListaVazia,
+                TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
 
         canonicalizarComListaVazia.Should().Throw<InvalidOperationException>()
             .WithMessage("*COR_RACA*",
@@ -666,7 +671,8 @@ public sealed class EnvelopeCanonicoGoldenTests
             new(ValoresSelecionaveisDeReferencia()) { ["COR_RACA"] = empatados };
 
         SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
-            processo, dados, HashFixo, FusoInstitucional.ZoneId, MetadadosFatosCongelados: metadados, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(valoresSelecionaveis)));
+            processo, dados, HashFixo, FusoInstitucional.ZoneId, MetadadosFatosCongelados: metadados, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(valoresSelecionaveis),
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
 
         JsonArray valoresCorRaca = EnvelopeCodecRoundTripTests.Envelope(canonico)["fatosColetados"]!.AsArray()
             .Single(f => f!["fatoCodigo"]!.GetValue<string>() == "COR_RACA")!["valoresSelecionaveis"]!.AsArray();
@@ -729,13 +735,14 @@ public sealed class EnvelopeCanonicoGoldenTests
         switch (node)
         {
             case JsonObject obj:
-                if (obj.ContainsKey("codigo") && !obj.ContainsKey("origemId") && !obj.ContainsKey("naturezaLegal") && !obj.ContainsKey("ordem"))
+                if (obj.ContainsKey("codigo") && !obj.ContainsKey("origemId") && !obj.ContainsKey("naturezaLegal") && !obj.ContainsKey("ordem") && !obj.ContainsKey("unicoPorObjeto"))
                 {
                     // `origemId` distingue o snapshot de TipoProcesso; `naturezaLegal`
                     // distingue a MODALIDADE (que também tem `codigo`, mas não é referência
                     // de regra) de uma referência do rol. `ordem` distingue a FASE do
                     // cronograma (Story #554, PR #903) pela mesma razão — nenhuma referência
-                    // de regra tem `ordem`.
+                    // de regra tem `ordem`. `unicoPorObjeto` distingue a classificação congelada
+                    // de um tipo de ato, que tem `codigo` e não é referência de regra.
                     acumulador.Add((caminho, obj));
                 }
 
@@ -824,7 +831,7 @@ public sealed class EnvelopeCanonicoGoldenTests
         processo.DefinirOpcoesDeCurso(1, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         return Canonicalizer.Canonicalizar(
-            new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados())).Bytes;
+            new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo))).Bytes;
     }
 
     private static JsonObject EnvelopeComoObjeto() =>

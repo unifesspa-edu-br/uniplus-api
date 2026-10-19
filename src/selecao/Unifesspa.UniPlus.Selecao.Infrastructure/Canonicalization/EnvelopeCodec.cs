@@ -65,6 +65,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
         "calendarioDiasUteis",
         "identificadorLegivel",
         "apresentacaoDosPressupostos",
+        "tiposDeAto",
     ];
 
     /// <summary>
@@ -80,7 +81,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
 
     private readonly SnapshotPublicacaoCanonicalizer _encoder = new();
 
-    public string SchemaVersion => "0.0.31";
+    public string SchemaVersion => "0.0.32";
 
     public IPerfilCanonico Perfil => PerfilCanonicoV1.Instancia;
 
@@ -249,6 +250,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
         IReadOnlyList<ConfiguracaoDerivacaoFato> regrasDerivacao = LerRegrasDerivacao(leitor, payload);
         string versaoInterpretador = leitor.TextoNaoVazio(payload, "versaoInterpretador", "$");
         Dictionary<string, ApresentacaoDoFato> apresentacaoDosPressupostos = LerApresentacaoDosPressupostos(leitor, payload);
+        Dictionary<string, TipoDeAtoCongelado> tiposDeAtoCongelados = LerTiposDeAto(leitor, payload, cronogramaFases, etapas);
         if (leitor.Falhou)
         {
             return leitor.Falha<EnvelopeReidratado>();
@@ -336,7 +338,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
             new EnvelopeReidratado(
                 grafo, dados!, hashDocumento, fusoHorario!, retificacao, conformidade,
                 metadadosFatosCongelados, fatosColetadosLidos.ValoresSelecionaveis, calendarioDiasUteis, agregadosDosGrupos,
-                apresentacaoDosPressupostos));
+                apresentacaoDosPressupostos, tiposDeAtoCongelados));
     }
 
     /// <summary>

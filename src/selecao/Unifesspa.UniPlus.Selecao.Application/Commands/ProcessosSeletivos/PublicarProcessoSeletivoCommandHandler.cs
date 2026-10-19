@@ -206,7 +206,7 @@ public static class PublicarProcessoSeletivoCommandHandler
         }
 
         Result<TiposDeAtoUnicosPorObjeto> tiposUnicos = await ResolucaoDosTiposDeAtoUnicos
-            .ConferirAsync(tipoDeAtoReader, atoDoProcessoRepository, processo, tipoConferido, atosDaLinhagem, timeProvider, fusoInstitucional, cancellationToken)
+            .ConferirAsync(tipoDeAtoReader, atoDoProcessoRepository, processo, tipoConferido, atosDaLinhagem, timeProvider, fusoInstitucional, new Dictionary<string, TipoDeAtoCongelado>(StringComparer.Ordinal), cancellationToken)
             .ConfigureAwait(false);
         if (tiposUnicos.IsFailure)
         {
@@ -214,6 +214,12 @@ public static class PublicarProcessoSeletivoCommandHandler
         }
 
         TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos = tiposUnicos.Value!;
+
+        Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>> tiposDeAtoCongelados = CongelamentoDosTiposDeAto.Resolver(processo, tiposDeAtoUnicos);
+        if (tiposDeAtoCongelados.IsFailure)
+        {
+            return (Result.Failure(tiposDeAtoCongelados.Error!), []);
+        }
 
         Result<IReadOnlyList<AnexoDoEdital>> conferenciaDosAnexos = await ConferenciaDosAnexosDoEdital
             .ConferirAsync(documentoAPublicarRepository, command.ProcessoSeletivoId, command.Anexos, [], cancellationToken)
@@ -332,7 +338,8 @@ public static class PublicarProcessoSeletivoCommandHandler
                 ValoresSelecionaveisCongelados: valoresSelecionaveisResult.Value,
                 CalendarioDiasUteis: contexto.CalendarioVigente,
                 AgregadosDosGrupos: DefinicaoAvaliavelDoProcesso.AgregadosDosGrupos(processo.GruposColetados, catalogoPorCodigo),
-                ApresentacaoDosPressupostos: avaliavel.Value!.ApresentacaoDosPressupostos));
+                ApresentacaoDosPressupostos: avaliavel.Value!.ApresentacaoDosPressupostos,
+                TiposDeAtoCongelados: tiposDeAtoCongelados.Value));
 
         string atorUsuarioSub = userContext.UserId ?? "system";
 

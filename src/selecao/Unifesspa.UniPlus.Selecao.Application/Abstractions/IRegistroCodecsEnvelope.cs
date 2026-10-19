@@ -31,7 +31,8 @@ public sealed class EnvelopeReidratado
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados = null,
         CalendarioDiasUteisCongelado? calendarioDiasUteis = null,
         IReadOnlyList<DefinicaoAgregado>? agregadosDosGrupos = null,
-        IReadOnlyDictionary<string, ApresentacaoDoFato>? apresentacaoDosPressupostos = null)
+        IReadOnlyDictionary<string, ApresentacaoDoFato>? apresentacaoDosPressupostos = null,
+        IReadOnlyDictionary<string, TipoDeAtoCongelado>? tiposDeAtoCongelados = null)
     {
         ArgumentNullException.ThrowIfNull(grafo);
         ArgumentNullException.ThrowIfNull(dados);
@@ -49,7 +50,15 @@ public sealed class EnvelopeReidratado
         CalendarioDiasUteis = calendarioDiasUteis;
         AgregadosDosGrupos = agregadosDosGrupos ?? [];
         ApresentacaoDosPressupostos = apresentacaoDosPressupostos ?? new Dictionary<string, ApresentacaoDoFato>(StringComparer.Ordinal);
+        TiposDeAtoCongelados = tiposDeAtoCongelados ?? new Dictionary<string, TipoDeAtoCongelado>(StringComparer.Ordinal);
     }
+
+    /// <summary>
+    /// A classificação, na versão, de cada tipo de ato que o cronograma declara, por código — fora de
+    /// <see cref="GrafoConfiguracao"/> pela mesma razão que <see cref="MetadadosFatosCongelados"/>: é
+    /// dado de catálogo, e não propriedade do agregado vivo.
+    /// </summary>
+    public IReadOnlyDictionary<string, TipoDeAtoCongelado> TiposDeAtoCongelados { get; }
 
     /// <summary>
     /// A apresentação — rótulo e tipo de campo do catálogo — de cada fato que as regras citam e nenhum
