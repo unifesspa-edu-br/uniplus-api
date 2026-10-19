@@ -78,7 +78,7 @@ public sealed class AtosDoProcessoController : ControllerBase
                     request.DataPublicacao,
                     request.Assinante,
                     request.DocumentoPrincipalId,
-                    request.Anexos?.Select(static a => a is null ? null! : new AnexoSolicitadoDoAto(a.DocumentoId, a.Nome)).ToList(),
+                    AnexoDoAtoRequest.ParaComando(request.Anexos),
                     request.AtoCorrigidoId,
                     request.MotivoDaCorrecao),
                 cancellationToken)

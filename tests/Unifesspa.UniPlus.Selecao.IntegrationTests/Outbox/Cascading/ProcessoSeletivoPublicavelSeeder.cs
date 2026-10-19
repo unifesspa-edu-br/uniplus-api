@@ -36,12 +36,14 @@ internal static class ProcessoSeletivoPublicavelSeeder
     /// </param>
     /// <param name="complementar">Configuração a mais do cenário, aplicada antes de gravar.</param>
     /// <param name="tipo">O tipo do processo; sem ele, SiSU.</param>
+    /// <param name="produtosDaFase">O que a fase única declara publicar; sem isso, o resultado definitivo da classificação.</param>
     public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearAsync(
         SelecaoDbContext db,
         string nome,
         bool coletaSolicitacaoIsencao = false,
         Action<ProcessoSeletivo>? complementar = null,
-        TipoProcessoSnapshot? tipo = null)
+        TipoProcessoSnapshot? tipo = null,
+        IReadOnlyList<ProdutoDaFase>? produtosDaFase = null)
     {
         ArgumentNullException.ThrowIfNull(db);
         ArgumentException.ThrowIfNullOrWhiteSpace(nome);
@@ -114,7 +116,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
             coletaInscricao: true, coletaSolicitacaoIsencao: coletaSolicitacaoIsencao,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
+            produtos: produtosDaFase ?? [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,
             bancasRequeridas: [],
