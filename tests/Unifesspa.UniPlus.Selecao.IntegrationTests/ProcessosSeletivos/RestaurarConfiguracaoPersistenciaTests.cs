@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
@@ -137,7 +138,8 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
                 ValoresSelecionaveisCongelados: CorpusEnvelope.ValoresSelecionaveisRicos(),
                 CalendarioDiasUteis: CorpusEnvelope.CalendarioRico(),
                 AgregadosDosGrupos: CorpusEnvelope.AgregadosRicos,
-                ApresentacaoDosPressupostos: CorpusEnvelope.ApresentacaoRica));
+                ApresentacaoDosPressupostos: CorpusEnvelope.ApresentacaoRica,
+                TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(reposto)));
 
         recodificado.Value!.Bytes.Should().Equal(congelado.Bytes,
             "o agregado que voltou do Postgres tem de recanonicalizar nos MESMOS bytes que o ato congelou — é a " +
@@ -350,7 +352,8 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
                 ValoresSelecionaveisCongelados: CorpusEnvelope.ValoresSelecionaveisRicos(),
                 CalendarioDiasUteis: CorpusEnvelope.CalendarioRico(),
                 AgregadosDosGrupos: CorpusEnvelope.AgregadosRicos,
-                ApresentacaoDosPressupostos: CorpusEnvelope.ApresentacaoRica));
+                ApresentacaoDosPressupostos: CorpusEnvelope.ApresentacaoRica,
+                TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(reposto)));
 
         recodificado.Value!.Bytes.Should().Equal(congelado.Bytes,
             "a etapa que o descarte devolve tem de ser a que o documento publicado descreve — janela, produtos, " +

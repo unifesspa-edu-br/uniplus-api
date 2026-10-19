@@ -4264,10 +4264,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     {
         ArgumentNullException.ThrowIfNull(tiposUnicos);
 
-        IEnumerable<DeclaracaoDeAto> declaracoes = [.. DeclaracoesDeAtos(), .. VagasJaReivindicadas(tiposUnicos)];
+        IEnumerable<DeclaracaoDeAto> declaracoes =
+        [
+            .. DeclaracoesDeAtos().Where(declaracao => tiposUnicos.EhUnico(declaracao.AtoCodigo)),
+            .. VagasJaReivindicadas(tiposUnicos),
+        ];
 
         IGrouping<string, DeclaracaoDeAto>? repetido = declaracoes
-            .Where(declaracao => tiposUnicos.EhUnico(declaracao.AtoCodigo))
             .GroupBy(static declaracao => declaracao.AtoCodigo, StringComparer.Ordinal)
             .FirstOrDefault(static grupo => grupo.Count() > 1);
 
@@ -4336,12 +4339,18 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </summary>
     private static IEnumerable<DeclaracaoDeAto> VagasJaReivindicadas(TiposDeAtoUnicosPorObjeto tiposUnicos)
     {
+        string? atoDaOperacao = tiposUnicos.AtoDaOperacaoCodigo;
+
         foreach (string codigo in tiposUnicos.CodigosOcupados)
         {
-            yield return new DeclaracaoDeAto(codigo, "no ato já registrado do processo");
+            bool ocupaPeloAto = tiposUnicos.AtoDaOperacaoEhUnico && string.Equals(codigo, atoDaOperacao, StringComparison.Ordinal);
+            if (tiposUnicos.EhUnico(codigo) || ocupaPeloAto)
+            {
+                yield return new DeclaracaoDeAto(codigo, "no ato já registrado do processo");
+            }
         }
 
-        if (tiposUnicos.AtoDaOperacaoCodigo is { } atoDaOperacao && !tiposUnicos.VagaOcupada(atoDaOperacao))
+        if (atoDaOperacao is not null && tiposUnicos.AtoDaOperacaoEhUnico && !tiposUnicos.VagaOcupada(atoDaOperacao))
         {
             yield return new DeclaracaoDeAto(atoDaOperacao, "no ato que está sendo registrado");
         }

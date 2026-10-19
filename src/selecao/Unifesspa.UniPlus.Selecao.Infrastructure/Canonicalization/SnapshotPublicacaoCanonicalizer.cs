@@ -319,8 +319,13 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// janela admite recurso em instância superior (ADR-0145). Sempre presente, verdadeiro ou falso,
     /// nunca nulo. Sem novo bloco de topo. Sem produção em ambiente nenhum: fixture nova,
     /// <c>0.0.30</c> deixa de ser reconhecida.
+    /// O bump para <c>0.0.32</c> acrescenta o bloco de topo <c>tiposDeAto</c>: a classificação de cada
+    /// tipo de ato que o cronograma declara, nas fases e nas etapas — se sai uma só vez, se é resultado
+    /// e se congela a configuração —, como o catálogo de Publicações a dizia na publicação. Sempre
+    /// presente, vazio quando o cronograma não declara ato, e com uma entrada por tipo declarado.
+    /// Sem produção em ambiente nenhum: fixture nova, <c>0.0.31</c> deixa de ser reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.31";
+    internal const string SchemaVersionAtual = "0.0.32";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -383,13 +388,10 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["calendarioDiasUteis"] = SerializarCalendarioDiasUteis(entrada.CalendarioDiasUteis),
             ["identificadorLegivel"] = processo.IdentificadorLegivel?.Valor,
             ["apresentacaoDosPressupostos"] = SerializarApresentacaoDosPressupostos(entrada.ApresentacaoDosPressupostos),
+            ["tiposDeAto"] = SerializarTiposDeAto(entrada.TiposDeAtoCongelados),
         };
 
-        // ADR-0101: a retificação ACRESCENTA um 33º bloco preservando os 32
-        // anteriores (as opções de curso elevaram de 31 para 32; a issue #1112 elevou de 24 para 25, a localidade de 25 para 26, a
-        // convenção de contagem de 26 para 27, o calendário de 27 para 28, o identificador
-        // legível de 28 para 29, os grupos repetíveis de 29 para 30 e a apresentação dos
-        // pressupostos de 30 para 31). A
+        // ADR-0101: a retificação ACRESCENTA um 34º bloco preservando os 33 anteriores. A
         // abertura não escreve esta chave —
         // seu payload é byte-a-byte o mesmo do T4 (a reordenação de chaves em
         // ComputeSnapshotBytes independe da ordem de inserção aqui).
@@ -860,6 +862,17 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 ["fatoCodigo"] = a.FatoCodigo,
                 ["rotulo"] = HashCanonicalComputer.NormalizeNfc(a.Rotulo),
                 ["tipoRenderizacao"] = a.TipoRenderizacao,
+            })]);
+
+    private static JsonArray SerializarTiposDeAto(IReadOnlyDictionary<string, TipoDeAtoCongelado>? tipos) =>
+        new([.. (tipos ?? new Dictionary<string, TipoDeAtoCongelado>(StringComparer.Ordinal)).Values
+            .OrderBy(static t => HashCanonicalComputer.NormalizeNfc(t.Codigo), StringComparer.Ordinal)
+            .Select(static t => (JsonNode?)new JsonObject
+            {
+                ["codigo"] = HashCanonicalComputer.NormalizeNfc(t.Codigo),
+                ["unicoPorObjeto"] = t.UnicoPorObjeto,
+                ["ehResultado"] = t.EhResultado,
+                ["congelaConfiguracao"] = t.CongelaConfiguracao,
             })]);
 
     private static JsonObject SerializarAtendimento(ProcessoSeletivo processo)

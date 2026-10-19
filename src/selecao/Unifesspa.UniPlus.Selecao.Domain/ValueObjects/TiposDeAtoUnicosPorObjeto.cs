@@ -18,12 +18,15 @@ public sealed class TiposDeAtoUnicosPorObjeto
     private readonly Dictionary<string, string> _nomePorCodigo;
     private readonly HashSet<string> _ocupados;
     private readonly Dictionary<string, ClassificacaoDoTipoDeAto> _classificacoes;
+    private readonly string? _nomeDoAtoDaOperacao;
 
     private TiposDeAtoUnicosPorObjeto(
         IReadOnlyDictionary<string, string> nomePorCodigo,
         IReadOnlyCollection<string> ocupados,
         string? atoDaOperacaoCodigo,
-        IReadOnlyDictionary<string, ClassificacaoDoTipoDeAto>? classificacoes)
+        IReadOnlyDictionary<string, ClassificacaoDoTipoDeAto>? classificacoes,
+        bool atoDaOperacaoEhUnico = false,
+        string? nomeDoAtoDaOperacao = null)
     {
         ArgumentNullException.ThrowIfNull(nomePorCodigo);
         ArgumentNullException.ThrowIfNull(ocupados);
@@ -32,6 +35,8 @@ public sealed class TiposDeAtoUnicosPorObjeto
             classificacoes ?? new Dictionary<string, ClassificacaoDoTipoDeAto>(), StringComparer.Ordinal);
         _ocupados = new HashSet<string>(ocupados, StringComparer.Ordinal);
         AtoDaOperacaoCodigo = atoDaOperacaoCodigo;
+        AtoDaOperacaoEhUnico = atoDaOperacaoEhUnico;
+        _nomeDoAtoDaOperacao = nomeDoAtoDaOperacao;
     }
 
     /// <summary>
@@ -43,10 +48,12 @@ public sealed class TiposDeAtoUnicosPorObjeto
         IReadOnlyDictionary<string, string> nomePorCodigo,
         IReadOnlyCollection<string> ocupados,
         string atoDaOperacaoCodigo,
-        IReadOnlyDictionary<string, ClassificacaoDoTipoDeAto>? classificacoes = null)
+        IReadOnlyDictionary<string, ClassificacaoDoTipoDeAto>? classificacoes = null,
+        bool atoDaOperacaoEhUnico = false,
+        string? nomeDoAtoDaOperacao = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(atoDaOperacaoCodigo);
-        return new(nomePorCodigo, ocupados, atoDaOperacaoCodigo, classificacoes);
+        return new(nomePorCodigo, ocupados, atoDaOperacaoCodigo, classificacoes, atoDaOperacaoEhUnico, nomeDoAtoDaOperacao);
     }
 
     /// <summary>
@@ -62,6 +69,12 @@ public sealed class TiposDeAtoUnicosPorObjeto
 
     /// <summary>O tipo do ato da publicação ou da retificação em curso, ou nulo no checklist.</summary>
     public string? AtoDaOperacaoCodigo { get; }
+
+    /// <summary>
+    /// Se o tipo do ato da operação é único. É o atributo do próprio ato, para a vaga dele, e não se funde
+    /// com a classificação de um item do cronograma de mesmo código, que é a congelada na versão.
+    /// </summary>
+    public bool AtoDaOperacaoEhUnico { get; }
 
     /// <summary>Os códigos dos tipos dos atos já registrados do processo.</summary>
     public IReadOnlyCollection<string> CodigosOcupados => _ocupados;
@@ -80,5 +93,8 @@ public sealed class TiposDeAtoUnicosPorObjeto
         _classificacoes.GetValueOrDefault(codigo);
 
     /// <summary>O nome do tipo único no catálogo, ou o próprio código quando o tipo não é único.</summary>
-    public string NomeDe(string codigo) => _nomePorCodigo.GetValueOrDefault(codigo, codigo);
+    public string NomeDe(string codigo) =>
+        _nomePorCodigo.GetValueOrDefault(
+            codigo,
+            string.Equals(codigo, AtoDaOperacaoCodigo, StringComparison.Ordinal) ? _nomeDoAtoDaOperacao ?? codigo : codigo);
 }

@@ -14,6 +14,7 @@ internal static class DadosDoAtoDeTeste
     public const string TipoAvulsoUnico = "COMUNICADO_UNICO";
     public const string TipoResultado = "RESULTADO_HOMOLOGACAO";
     public const string TipoResultadoDoRecurso = "RESULTADO_RECURSO";
+    public const string TipoResultadoDaClassificacao = "RESULTADO_CLASSIFICACAO";
 
     public static DadosDoAto Padrao => new(
         "CEPS", "EDITAL", 2026, DateOnly.FromDateTime(DateTime.UtcNow), "Diretor do CEPS", TipoAbertura);

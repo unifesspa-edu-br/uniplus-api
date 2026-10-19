@@ -167,7 +167,8 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         };
 
         SnapshotCanonico congelado = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
-            processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(valoresSelecionaveis)));
+            processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(valoresSelecionaveis),
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
 
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -286,7 +287,8 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         SnapshotCanonico congelado = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
             processo, dados, hashDocumento, FusoInstitucional.ZoneId,
             ValoresSelecionaveisCongelados: naPublicacao.ValoresSelecionaveis,
-            ApresentacaoDosPressupostos: naPublicacao.ApresentacaoDosPressupostos));
+            ApresentacaoDosPressupostos: naPublicacao.ApresentacaoDosPressupostos,
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
             hashDocumento, "integration-test-user", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
@@ -342,7 +344,8 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
             "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
         DefinicaoAvaliavel naPublicacao = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(processo, CatalogoComCorRaca([.. CorRacaComoCadastrada()])).Value!;
         SnapshotCanonico congelado = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
-            processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: naPublicacao.ValoresSelecionaveis));
+            processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: naPublicacao.ValoresSelecionaveis,
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
             hashDocumento, "integration-test-user", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
@@ -400,7 +403,8 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
             SnapshotCanonico congelado = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
                 carregado, dados, documento.HashSha256!, FusoInstitucional.ZoneId,
                 new RetificacaoInfo(versaoAtual.AtoCriadorId, "Correção do texto das opções"),
-                ValoresSelecionaveisCongelados: naRetificacao.ValoresSelecionaveis));
+                ValoresSelecionaveisCongelados: naRetificacao.ValoresSelecionaveis,
+                TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(carregado)));
             Result<VersaoConfiguracao> retificar = carregado.Retificar(
                 dados, versaoAtual, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
                 documento.HashSha256!, "integration-test-user", "Correção do texto das opções", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);

@@ -106,7 +106,7 @@ public sealed class HashEstavelEntreGravacoesTests
 
     private static byte[] Canonicalizar(ProcessoSeletivo processo) =>
         Canonicalizer.Canonicalizar(
-            new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados())).Bytes;
+            new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo))).Bytes;
 
     /// <summary>Certame publicável com uma etapa que declara produtos, banca e janelas recursais.</summary>
     private static ProcessoSeletivo ProcessoComEtapaCompleta()

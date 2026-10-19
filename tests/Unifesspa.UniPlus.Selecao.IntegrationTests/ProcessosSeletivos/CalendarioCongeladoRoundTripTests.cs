@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// O que separa congelar o calendário <b>por valor</b> de guardar uma referência a ele: a versão
@@ -73,7 +74,8 @@ public sealed class CalendarioCongeladoRoundTripTests
                 reidratado.Value.Conformidade,
                 reidratado.Value.MetadadosFatosCongelados,
                 reidratado.Value.ValoresSelecionaveisCongelados,
-                reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos, reidratado.Value.ApresentacaoDosPressupostos)).Value!.Bytes;
+                reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos, reidratado.Value.ApresentacaoDosPressupostos,
+                TiposDeAtoCongelados: reidratado.Value.TiposDeAtoCongelados)).Value!.Bytes;
 
         recodificado.Should().Equal(congelado.Bytes);
     }
@@ -131,7 +133,8 @@ public sealed class CalendarioCongeladoRoundTripTests
                 reidratado.Value.Conformidade,
                 reidratado.Value.MetadadosFatosCongelados,
                 reidratado.Value.ValoresSelecionaveisCongelados,
-                reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos, reidratado.Value.ApresentacaoDosPressupostos)).Value!.Bytes;
+                reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos, reidratado.Value.ApresentacaoDosPressupostos,
+                TiposDeAtoCongelados: reidratado.Value.TiposDeAtoCongelados)).Value!.Bytes;
 
         recodificado.Should().Equal(congelado.Bytes,
             "a lista congelada basta para reproduzir a versão — a origem é rastreio, não dependência");

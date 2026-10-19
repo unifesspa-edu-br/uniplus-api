@@ -78,7 +78,7 @@ public sealed class PublicarProcessoSeletivoGateTests
         // As conferências que precedem o gate no handler (tipo de ato, vaga de
         // linhagem) têm de PASSAR — senão o teste provaria a recusa errada e o
         // canonicalizador ficaria sem ser chamado por outro motivo.
-        ITipoAtoPublicadoReader tipoDeAtoReader = Substitute.For<ITipoAtoPublicadoReader>();
+        ITipoAtoPublicadoReader tipoDeAtoReader = Substitute.For<ITipoAtoPublicadoReader>().ComQualquerTipoDeclarado();
         tipoDeAtoReader.ObterVigenteAsync("EDITAL_ABERTURA", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(new TipoAtoPublicadoView(
                 Codigo: "EDITAL_ABERTURA",
@@ -206,7 +206,7 @@ public sealed class PublicarProcessoSeletivoGateTests
         userContext.UserId.Returns("teste");
 
         TipoAtoPublicadoView tipo = new("RESULTADO_CLASSIFICACAO", "Resultado da classificação", CongelaConfiguracao: true, UnicoPorObjeto: true, EfeitoIrreversivel: false, EhResultado: true);
-        ITipoAtoPublicadoReader tipoDeAtoReader = Substitute.For<ITipoAtoPublicadoReader>();
+        ITipoAtoPublicadoReader tipoDeAtoReader = Substitute.For<ITipoAtoPublicadoReader>().ComQualquerTipoDeclarado();
         tipoDeAtoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>()).Returns(tipo);
         tipoDeAtoReader.ListarVigentesAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns([tipo]);
@@ -278,7 +278,7 @@ public sealed class PublicarProcessoSeletivoGateTests
         IUserContext userContext = Substitute.For<IUserContext>();
         userContext.UserId.Returns("teste");
 
-        ITipoAtoPublicadoReader tipoDeAtoReader = Substitute.For<ITipoAtoPublicadoReader>();
+        ITipoAtoPublicadoReader tipoDeAtoReader = Substitute.For<ITipoAtoPublicadoReader>().ComQualquerTipoDeclarado();
         tipoDeAtoReader.ObterVigenteAsync("EDITAL_ABERTURA", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(new TipoAtoPublicadoView(
                 Codigo: "EDITAL_ABERTURA",

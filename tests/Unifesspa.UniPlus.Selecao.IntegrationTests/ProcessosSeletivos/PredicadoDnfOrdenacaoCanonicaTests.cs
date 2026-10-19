@@ -361,7 +361,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
 
         DadosEdital dados = Dados();
         const string hashDocumento = "3333333333333333333333333333333333333333333333333333333333333333";
-        SnapshotCanonico congelado = Canonicalizador.Canonicalizar(new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados()));
+        SnapshotCanonico congelado = Canonicalizador.Canonicalizar(new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -392,7 +392,8 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
                 processo, reidratado.Value.Dados, reidratado.Value.HashDocumento, FusoInstitucional.ZoneId, reidratado.Value.Retificacao,
                 reidratado.Value.Conformidade, reidratado.Value.MetadadosFatosCongelados,
                 reidratado.Value.ValoresSelecionaveisCongelados,
-                reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos, reidratado.Value.ApresentacaoDosPressupostos));
+                reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos, reidratado.Value.ApresentacaoDosPressupostos,
+                TiposDeAtoCongelados: reidratado.Value.TiposDeAtoCongelados));
         recodificado.IsSuccess.Should().BeTrue(recodificado.Error?.Message);
 
         recodificado.Value!.Bytes.Should().Equal(congelado.Bytes,

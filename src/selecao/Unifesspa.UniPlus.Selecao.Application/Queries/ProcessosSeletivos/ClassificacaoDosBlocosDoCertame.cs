@@ -72,6 +72,7 @@ public static class ClassificacaoDosBlocosDoCertame
         "calendarioDiasUteis",
         "algoritmoContagemPrazo",
         "versaoInterpretador",
+        "tiposDeAto",
     };
 
     /// <summary>

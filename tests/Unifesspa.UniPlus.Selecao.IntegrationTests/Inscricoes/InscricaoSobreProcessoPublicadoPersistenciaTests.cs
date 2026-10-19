@@ -231,7 +231,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         }
 
         SnapshotCanonico congelado = Canonicalizer.Canonicalizar(
-            new EntradaCanonicalizacao(processo, dados, hash64, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: valoresDoConjuntoBasico));
+            new EntradaCanonicalizacao(processo, dados, hash64, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: valoresDoConjuntoBasico, TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
 
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, hash64,

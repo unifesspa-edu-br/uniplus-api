@@ -124,7 +124,7 @@ public sealed class FatoColetavelDeEscopoGateTests
             CadastrosVivos.RegrasDesempate(),
             Substitute.For<IFatoCandidatoReader>(),
             Substitute.For<ICalendarioVigenteReader>(),
-            Substitute.For<IRegistroCodecsEnvelope>(),
+            CodecsDeTeste.QueReidrataSemTiposDeAto(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 
@@ -175,7 +175,7 @@ public sealed class FatoColetavelDeEscopoGateTests
                 UnicoPorObjeto: false,
                 EfeitoIrreversivel: false,
                 EhResultado: false));
-        return reader;
+        return reader.ComQualquerTipoDeclarado();
     }
 
     private static IUserContext UsuarioAutenticado()

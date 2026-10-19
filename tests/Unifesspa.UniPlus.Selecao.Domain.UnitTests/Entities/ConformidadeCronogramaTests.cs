@@ -214,7 +214,9 @@ public sealed class ConformidadeCronogramaTests
             : TiposDeAtoUnicosPorObjeto.ParaOperacao(
                 new Dictionary<string, string> { [codigo] = nome },
                 vagaOcupada ? [codigo] : [],
-                atoDaOperacao);
+                atoDaOperacao,
+                atoDaOperacaoEhUnico: string.Equals(atoDaOperacao, codigo, StringComparison.Ordinal),
+                nomeDoAtoDaOperacao: nome);
 
     private static Result<VersaoConfiguracao> PublicarComUnicos(ProcessoSeletivo processo, TiposDeAtoUnicosPorObjeto unicos) =>
         processo.Publicar(

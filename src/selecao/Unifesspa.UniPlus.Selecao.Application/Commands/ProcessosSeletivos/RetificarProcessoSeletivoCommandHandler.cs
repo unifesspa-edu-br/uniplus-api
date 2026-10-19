@@ -264,8 +264,16 @@ public static class RetificarProcessoSeletivoCommandHandler
             return (Result.Failure(pendenciaCronograma), []);
         }
 
+        // O tipo que a versão vigente já congelou mantém a classificação dela: mudar o catálogo depois
+        // não alcança o processo já publicado, nem pela retificação.
+        Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>> jaCongelados = CongelamentoDosTiposDeAto.DaVersao(registroCodecs, versaoAtual);
+        if (jaCongelados.IsFailure)
+        {
+            return (Result.Failure(jaCongelados.Error!), []);
+        }
+
         Result<TiposDeAtoUnicosPorObjeto> tiposUnicos = await ResolucaoDosTiposDeAtoUnicos
-            .ConferirAsync(tipoDeAtoReader, atoDoProcessoRepository, processo, tipoConferido, atosDaLinhagem, timeProvider, fusoInstitucional, cancellationToken)
+            .ConferirAsync(tipoDeAtoReader, atoDoProcessoRepository, processo, tipoConferido, atosDaLinhagem, timeProvider, fusoInstitucional, jaCongelados.Value!, cancellationToken)
             .ConfigureAwait(false);
         if (tiposUnicos.IsFailure)
         {
@@ -273,6 +281,12 @@ public static class RetificarProcessoSeletivoCommandHandler
         }
 
         TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos = tiposUnicos.Value!;
+
+        Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>> tiposDeAtoCongelados = CongelamentoDosTiposDeAto.Resolver(processo, tiposDeAtoUnicos);
+        if (tiposDeAtoCongelados.IsFailure)
+        {
+            return (Result.Failure(tiposDeAtoCongelados.Error!), []);
+        }
 
         Result<IReadOnlyList<AnexoDoEdital>> conferenciaDosAnexos = await ConferenciaDosAnexosDoEdital
             .ConferirAsync(documentoAPublicarRepository, command.ProcessoSeletivoId, command.Anexos, ProjecaoDoCertamePublicado.AnexosDaVersao(versaoAtual, herdaOsDaVersao: command.Anexos is null), cancellationToken)
@@ -406,7 +420,8 @@ public static class RetificarProcessoSeletivoCommandHandler
                 valoresSelecionaveisResult.Value,
                 contexto.CalendarioVigente,
                 agregadosDosGrupos,
-                ApresentacaoDosPressupostos: avaliavel.Value!.ApresentacaoDosPressupostos));
+                ApresentacaoDosPressupostos: avaliavel.Value!.ApresentacaoDosPressupostos,
+                TiposDeAtoCongelados: tiposDeAtoCongelados.Value));
 
         string atorUsuarioSub = userContext.UserId ?? "system";
 

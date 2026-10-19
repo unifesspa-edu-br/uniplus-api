@@ -33,6 +33,7 @@ public sealed class ConferenciaDosEixosNosHandlersTests
 {
     private const string Fato = "TEM_RENDA";
     private const string FatoNovo = "TEM_ENDERECO_PROPRIO";
+    private const string Resultado = "RESULTADO_CLASSIFICACAO";
     private const string Recusa = "RascunhoRetificacao.EixoDoFatoJaColetadoAlterado";
     private static readonly string HashFixo = ProcessoSeletivoConformeBuilder.HashFixo;
     private static readonly DateTimeOffset Agora = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
@@ -183,12 +184,41 @@ public sealed class ConferenciaDosEixosNosHandlersTests
         eventos.Should().BeEmpty();
     }
 
+    [Fact(DisplayName = "Retificar mantém a classificação que a versão vigente congelou para o tipo: único e congelante no catálogo de hoje não o recusa nem muda o que a versão nova congela")]
+    public async Task Retificar_TipoJaCongelado_MantemAClassificacaoDaVersaoVigente()
+    {
+        Cenario cenario = Cenario.Publicado(dominioCongelado: "BOOLEANO");
+        cenario.ComResultadoCongeladoComoComumEUnicoNoCatalogo();
+
+        (Result resposta, IEnumerable<object> _) = await cenario.RetificarAsync();
+
+        resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
+        cenario.EntradaCanonicalizada!.TiposDeAtoCongelados![Resultado].Should().Be(
+            new TipoDeAtoCongelado(Resultado, UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false));
+    }
+
+    [Fact(DisplayName = "Fechar a retificação mantém a classificação que a versão vigente congelou para o tipo: único e congelante no catálogo de hoje não o recusa nem muda o que a versão nova congela")]
+    public async Task FecharRetificacao_TipoJaCongelado_MantemAClassificacaoDaVersaoVigente()
+    {
+        Cenario cenario = Cenario.Publicado(dominioCongelado: "BOOLEANO");
+        cenario.ComResultadoCongeladoComoComumEUnicoNoCatalogo();
+        cenario.AbrirSessao();
+
+        (Result resposta, IEnumerable<object> _) = await cenario.FecharAsync();
+
+        resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
+        cenario.EntradaCanonicalizada!.TiposDeAtoCongelados![Resultado].Should().Be(
+            new TipoDeAtoCongelado(Resultado, UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false));
+    }
+
     private sealed class Cenario
     {
         private readonly IProcessoSeletivoRepository _repositorio = Substitute.For<IProcessoSeletivoRepository>();
         private readonly IRegistroCodecsEnvelope _registro = Substitute.For<IRegistroCodecsEnvelope>();
         private readonly IFatoCandidatoReader _catalogo = Substitute.For<IFatoCandidatoReader>();
         private readonly IAtoDoProcessoRepository _atos = Substitute.For<IAtoDoProcessoRepository>();
+        private readonly Dictionary<string, TipoDeAtoCongelado> _tiposCongelados = new(StringComparer.Ordinal);
+        private readonly ITipoAtoPublicadoReader _tiposDeAto = TipoDeAtoReader();
         private readonly VersaoConfiguracao _versao;
         private readonly GrafoConfiguracao _grafoPublicado;
         private readonly EixosDeVersaoPublicada _congelado;
@@ -202,6 +232,20 @@ public sealed class ConferenciaDosEixosNosHandlersTests
         }
 
         public ProcessoSeletivo Processo { get; }
+
+        /// <summary>A entrada que o handler entregou ao canonicalizador na última chamada.</summary>
+        public EntradaCanonicalizacao? EntradaCanonicalizada { get; private set; }
+
+        /// <summary>
+        /// A versão publicada congelou o resultado do cronograma como tipo comum (não único, não congela), e
+        /// o catálogo de hoje o declara único e congelante.
+        /// </summary>
+        public void ComResultadoCongeladoComoComumEUnicoNoCatalogo()
+        {
+            _tiposCongelados[Resultado] = new TipoDeAtoCongelado(Resultado, UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false);
+            _tiposDeAto.ListarVigentesAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+                .Returns([new TipoAtoPublicadoView(Resultado, "Resultado", CongelaConfiguracao: true, UnicoPorObjeto: true, EfeitoIrreversivel: false, EhResultado: true)]);
+        }
 
         public static Cenario Publicado(
             string dominioCongelado, bool reidratavel = true, string classificacaoNoCatalogo = "PESSOAL", bool itemPublicadoComoData = false,
@@ -248,10 +292,10 @@ public sealed class ConferenciaDosEixosNosHandlersTests
             RepositorioDeDocumento(Processo.Id),
             Substitute.For<IRascunhoDePublicacaoRepository>(),
             _atos,
-            Canonicalizer(), new ResolvedorFusoDeTeste(),
+            Canonicalizer(e => EntradaCanonicalizada = e), new ResolvedorFusoDeTeste(),
             Substitute.For<ISelecaoUnitOfWork>(),
             UsuarioAutenticado(),
-            TipoDeAtoReader(),
+            _tiposDeAto,
             Substitute.For<IVagaDeLinhagemReader>(),
             Substitute.For<IObrigatoriedadeLegalRepository>(),
             CadastrosVivos.Modalidades(),
@@ -272,10 +316,10 @@ public sealed class ConferenciaDosEixosNosHandlersTests
             RepositorioDeDocumento(Processo.Id),
             Substitute.For<IRascunhoDePublicacaoRepository>(),
             _atos,
-            Canonicalizer(), new ResolvedorFusoDeTeste(),
+            Canonicalizer(e => EntradaCanonicalizada = e), new ResolvedorFusoDeTeste(),
             Substitute.For<ISelecaoUnitOfWork>(),
             UsuarioAutenticado(),
-            TipoDeAtoReader(),
+            _tiposDeAto,
             Substitute.For<IVagaDeLinhagemReader>(),
             Substitute.For<IObrigatoriedadeLegalRepository>(),
             CadastrosVivos.Modalidades(),
@@ -333,7 +377,8 @@ public sealed class ConferenciaDosEixosNosHandlersTests
                     "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
                     new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!,
                 HashFixo, "America/Sao_Paulo", retificacao: null, conformidade: null,
-                metadadosFatosCongelados: new Dictionary<string, MetadadoFatoCongelado> { [Fato] = publicado })));
+                metadadosFatosCongelados: new Dictionary<string, MetadadoFatoCongelado> { [Fato] = publicado },
+                tiposDeAtoCongelados: _tiposCongelados)));
 
             FatoCandidatoView vivo = new(
                 Guid.CreateVersion7(), Fato, "Tem renda?", null, dominioNoCatalogo, "DECLARADO", "ESCALAR", null,
@@ -368,11 +413,15 @@ public sealed class ConferenciaDosEixosNosHandlersTests
                 idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!,
                 tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
 
-        private static ISnapshotPublicacaoCanonicalizer Canonicalizer()
+        private static ISnapshotPublicacaoCanonicalizer Canonicalizer(Action<EntradaCanonicalizacao> captura)
         {
             ISnapshotPublicacaoCanonicalizer canonicalizer = Substitute.For<ISnapshotPublicacaoCanonicalizer>();
             canonicalizer.Canonicalizar(Arg.Any<EntradaCanonicalizacao>())
-                .Returns(new SnapshotCanonico("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1"));
+                .Returns(chamada =>
+                {
+                    captura(chamada.Arg<EntradaCanonicalizacao>());
+                    return new SnapshotCanonico("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1");
+                });
             return canonicalizer;
         }
 
@@ -392,7 +441,7 @@ public sealed class ConferenciaDosEixosNosHandlersTests
                 .Returns(new TipoAtoPublicadoView(
                     Codigo: "EDITAL_ABERTURA", Nome: "Edital de abertura", CongelaConfiguracao: true,
                     UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: false));
-            return reader;
+            return reader.ComQualquerTipoDeclarado();
         }
 
         private static IUserContext UsuarioAutenticado()

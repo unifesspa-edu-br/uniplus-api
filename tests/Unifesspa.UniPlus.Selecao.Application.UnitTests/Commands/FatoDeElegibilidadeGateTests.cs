@@ -97,7 +97,7 @@ public sealed class FatoDeElegibilidadeGateTests
             CadastrosVivos.RegrasDesempate(),
             CatalogoQueResolveNaHabilitacao(),
             CalendarioVigenteReaderDeTeste.SemVigente(),
-            Substitute.For<IRegistroCodecsEnvelope>(),
+            CodecsDeTeste.QueReidrataSemTiposDeAto(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 
@@ -139,7 +139,7 @@ public sealed class FatoDeElegibilidadeGateTests
             CadastrosVivos.RegrasDesempate(),
             CatalogoQueResolveNaHabilitacao(),
             CalendarioVigenteReaderDeTeste.SemVigente(),
-            Substitute.For<IRegistroCodecsEnvelope>(),
+            CodecsDeTeste.QueReidrataSemTiposDeAto(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 
@@ -239,7 +239,7 @@ public sealed class FatoDeElegibilidadeGateTests
             .Returns(new TipoAtoPublicadoView(
                 Codigo: "EDITAL_ABERTURA", Nome: "Edital de abertura", CongelaConfiguracao: true,
                 UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: false));
-        return reader;
+        return reader.ComQualquerTipoDeclarado();
     }
 
     private static IUserContext UsuarioAutenticado()

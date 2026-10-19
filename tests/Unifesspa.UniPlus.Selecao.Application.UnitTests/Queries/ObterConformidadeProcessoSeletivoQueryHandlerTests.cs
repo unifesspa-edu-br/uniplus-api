@@ -7,6 +7,7 @@ using NSubstitute;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
@@ -27,7 +28,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
             .Returns((ProcessoSeletivo?)null);
 
         ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeProcessoSeletivoQuery(Guid.CreateVersion7()), repository, Substitute.For<IAtoDoProcessoRepository>(), CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), TimeProvider.System, CancellationToken.None);
+            new ObterConformidadeProcessoSeletivoQuery(Guid.CreateVersion7()), repository, Substitute.For<IAtoDoProcessoRepository>(), CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), Substitute.For<IRegistroCodecsEnvelope>(), TimeProvider.System, CancellationToken.None);
 
         result.Should().BeNull();
     }
@@ -58,7 +59,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
             .Returns([new TipoAtoPublicadoView("ATO_UNICO", "Ato único", true, true, false, false)]);
 
         ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, atos, CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), catalogo, TimeProvider.System, CancellationToken.None);
+            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, atos, CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), catalogo, Substitute.For<IRegistroCodecsEnvelope>(), TimeProvider.System, CancellationToken.None);
 
         result!.Itens.Should().Contain(i => i.Codigo == "cronograma_tipo_de_ato_unico_declarado_uma_vez" && !i.Ok);
     }
@@ -73,7 +74,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
         ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, Substitute.For<IAtoDoProcessoRepository>(), CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), TimeProvider.System, CancellationToken.None);
+            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, Substitute.For<IAtoDoProcessoRepository>(), CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), Substitute.For<IRegistroCodecsEnvelope>(), TimeProvider.System, CancellationToken.None);
 
         result.Should().NotBeNull();
         // Etapa deixou de ser item do checklist (Story #851 §3.5): um processo sem prova
@@ -133,7 +134,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
         ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, Substitute.For<IAtoDoProcessoRepository>(), CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), TimeProvider.System, CancellationToken.None);
+            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, Substitute.For<IAtoDoProcessoRepository>(), CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), Substitute.For<IRegistroCodecsEnvelope>(), TimeProvider.System, CancellationToken.None);
 
         result.Should().NotBeNull();
         result!.Itens.Should().Contain(
@@ -207,7 +208,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
         ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, Substitute.For<IAtoDoProcessoRepository>(), CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), TimeProvider.System, CancellationToken.None);
+            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, Substitute.For<IAtoDoProcessoRepository>(), CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), Substitute.For<IRegistroCodecsEnvelope>(), TimeProvider.System, CancellationToken.None);
 
         result.Should().NotBeNull();
         result!.Itens.Should().OnlyContain(i => i.Ok);
@@ -238,7 +239,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
         ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, Substitute.For<IAtoDoProcessoRepository>(), CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), TimeProvider.System, CancellationToken.None);
+            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, Substitute.For<IAtoDoProcessoRepository>(), CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), Substitute.For<IRegistroCodecsEnvelope>(), TimeProvider.System, CancellationToken.None);
 
         result!.Avisos.Should().ContainSingle().Which.Should().BeEquivalentTo(
             new AvisoConformidadeDto(
@@ -246,5 +247,106 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
                 DimensaoConformidade.Cronograma,
                 result.Avisos[0].Mensagem));
         result.Itens.Should().NotContain(i => i.Codigo == CodigosDeAvisoDeConformidade.CronogramaTipoDefinitivoEmMaisDeUmLugar);
+    }
+
+    [Fact(DisplayName = "Com versão publicada, o checklist usa a classificação congelada como a retificação: tipo congelado único e desmarcado no catálogo continua vermelho")]
+    public async Task Handle_TipoCongeladoUnicoDesmarcadoNoCatalogo_ItemVermelho()
+    {
+        (ProcessoSeletivo processo, IProcessoSeletivoRepository repository, IRegistroCodecsEnvelope codecs) =
+            ProcessoPublicadoCom(
+                [ProdutoDaFase.Criar("ATO_X", PapelProdutoFase.Preliminar), ProdutoDaFase.Criar("ATO_X", PapelProdutoFase.Definitivo)],
+                new TipoDeAtoCongelado("ATO_X", UnicoPorObjeto: true, EhResultado: true, CongelaConfiguracao: false));
+
+        ConformidadeProcessoSeletivoDto result = await ChecklistAsync(
+            processo, repository, codecs, new TipoAtoPublicadoView("ATO_X", "Ato X", false, UnicoPorObjeto: false, false, true));
+
+        result.Itens.Should().Contain(i => i.Codigo == "cronograma_tipo_de_ato_unico_declarado_uma_vez" && !i.Ok);
+    }
+
+    [Fact(DisplayName = "Com versão publicada, o checklist usa a classificação congelada como a retificação: tipo congelado não congelante e marcado congelante no catálogo continua verde")]
+    public async Task Handle_TipoCongeladoComumMarcadoCongelanteNoCatalogo_ItemVerde()
+    {
+        (ProcessoSeletivo processo, IProcessoSeletivoRepository repository, IRegistroCodecsEnvelope codecs) =
+            ProcessoPublicadoCom(
+                [ProdutoDaFase.Criar("ATO_X", PapelProdutoFase.Definitivo)],
+                new TipoDeAtoCongelado("ATO_X", UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false));
+
+        ConformidadeProcessoSeletivoDto result = await ChecklistAsync(
+            processo, repository, codecs, new TipoAtoPublicadoView("ATO_X", "Ato X", CongelaConfiguracao: true, false, false, true));
+
+        result.Itens.Should().Contain(i => i.Codigo == "cronograma_tipo_que_congela_nao_eh_resultado" && i.Ok);
+    }
+
+    [Fact(DisplayName = "Com versão publicada que o codec não lê, o checklist mostra a pendência em vez de avaliar pelo catálogo de hoje")]
+    public async Task Handle_VersaoPublicadaIlegivel_ItemVermelho()
+    {
+        (ProcessoSeletivo processo, IProcessoSeletivoRepository repository, IRegistroCodecsEnvelope codecs) =
+            ProcessoPublicadoCom(
+                [ProdutoDaFase.Criar("ATO_X", PapelProdutoFase.Definitivo)],
+                new TipoDeAtoCongelado("ATO_X", UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false));
+        codecs.Reidratar(Arg.Any<VersaoConfiguracao>()).Returns(
+            Result<EnvelopeReidratado>.Failure(new DomainError("Envelope.SchemaNaoSuportado", "A versão do envelope não é suportada.")));
+
+        ConformidadeProcessoSeletivoDto result = await ChecklistAsync(
+            processo, repository, codecs, new TipoAtoPublicadoView("ATO_X", "Ato X", false, false, false, true));
+
+        result.Itens.Should().Contain(i =>
+            i.Codigo == ObterConformidadeProcessoSeletivoQueryHandler.CodigoDaVersaoPublicadaIlegivel
+            && !i.Ok
+            && i.Mensagem == "A versão do envelope não é suportada.");
+    }
+
+    private static Task<ConformidadeProcessoSeletivoDto?> ChecklistAsyncBruto(
+        ProcessoSeletivo processo, IProcessoSeletivoRepository repository, IRegistroCodecsEnvelope codecs, TipoAtoPublicadoView hoje)
+    {
+        ITipoAtoPublicadoReader catalogo = Substitute.For<ITipoAtoPublicadoReader>();
+        catalogo.ListarVigentesAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(chamada => chamada.Arg<IReadOnlyCollection<string>>().Contains(hoje.Codigo) ? [hoje] : []);
+        return ObterConformidadeProcessoSeletivoQueryHandler.Handle(
+            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, Substitute.For<IAtoDoProcessoRepository>(),
+            CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), catalogo, codecs,
+            TimeProvider.System, CancellationToken.None);
+    }
+
+    private static async Task<ConformidadeProcessoSeletivoDto> ChecklistAsync(
+        ProcessoSeletivo processo, IProcessoSeletivoRepository repository, IRegistroCodecsEnvelope codecs, TipoAtoPublicadoView hoje) =>
+        (await ChecklistAsyncBruto(processo, repository, codecs, hoje))!;
+
+    /// <summary>
+    /// Processo com o cronograma pedido, cuja versão publicada congelou a classificação dada. O processo vivo
+    /// declara o mesmo cronograma que a versão publicada.
+    /// </summary>
+    private static (ProcessoSeletivo Processo, IProcessoSeletivoRepository Repositorio, IRegistroCodecsEnvelope Codecs) ProcessoPublicadoCom(
+        ProdutoDaFase[] produtos, TipoDeAtoCongelado congelado)
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        processo.DefinirCronogramaFases(
+            [FaseCronograma.Criar(
+                1, Guid.CreateVersion7(), "CLASSIFICACAO", "CEPS", OrigemDataFase.Delegada,
+                agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
+                inicio: null, fim: null, produtos: produtos,
+                faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!],
+            [],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
+            processo.Id, [1], "0.0.32", "canonical-json/sha256@v1", Guid.CreateVersion7(), new string('a', 64), "sub", DateTimeOffset.UnixEpoch);
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        repository.ObterVersaoAtualAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(versao);
+        IRegistroCodecsEnvelope codecs = Substitute.For<IRegistroCodecsEnvelope>();
+        codecs.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(new EnvelopeReidratado(
+            new GrafoConfiguracao(
+                [.. processo.Etapas], OfertaAtendimentoEspecializado.Criar([], [], []).Value!, [.. processo.DistribuicaoVagas], processo.BonusRegional,
+                [.. processo.CriteriosDesempate], ConfiguracaoClassificacao.Criar(
+                    ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)).Value!, null, null,
+                    ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('d', 64)).Value!, [],
+                    baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!,
+                [.. processo.CronogramaFases], [.. processo.DocumentosExigidos], [], null,
+                numeroDeOpcoesDeCurso: 1),
+            DadosEdital.Criar("001/2027", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), Guid.CreateVersion7()).Value!,
+            new string('a', 64), "America/Sao_Paulo", retificacao: null, conformidade: null,
+            tiposDeAtoCongelados: new Dictionary<string, TipoDeAtoCongelado>(StringComparer.Ordinal) { [congelado.Codigo] = congelado })));
+        return (processo, repository, codecs);
     }
 }
