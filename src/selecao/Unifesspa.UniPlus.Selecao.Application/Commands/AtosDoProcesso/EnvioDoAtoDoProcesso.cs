@@ -30,7 +30,7 @@ internal sealed record ProcessoDivulgadoConferido(string Orgao, CertameDivulgado
 /// <param name="Documentos">O documento principal e os anexos já conferidos.</param>
 /// <param name="AtoCorrigidoId">O ato que este corrige, quando é errata ou retificação.</param>
 /// <param name="MotivoDaCorrecao">Motivo da correção, junto com <paramref name="AtoCorrigidoId"/>.</param>
-/// <param name="ProdutoDoEditalId">O produto do edital que o ato cumpre; nulo no documento avulso.</param>
+/// <param name="ItemDoEdital">A identidade do item do edital que o ato cumpre; nula no documento avulso.</param>
 /// <param name="PoliticaConfirmadaPorSub">Quem confirmou a política de divulgação; nulo quando ela não foi pedida.</param>
 internal sealed record AtoAEnviar(
     Guid ProcessoSeletivoId,
@@ -42,7 +42,7 @@ internal sealed record AtoAEnviar(
     DocumentosDoAtoConferidos Documentos,
     Guid? AtoCorrigidoId,
     string? MotivoDaCorrecao,
-    Guid? ProdutoDoEditalId = null,
+    Domain.ValueObjects.IdentidadeDoItemDoEdital? ItemDoEdital = null,
     string? PoliticaConfirmadaPorSub = null);
 
 /// <summary>
@@ -65,7 +65,7 @@ internal sealed record AtoAEnviar(
 internal static class EnvioDoAtoDoProcesso
 {
     private const string ConstraintDaCorrecaoUnica = "ux_atos_do_processo_ato_corrigido";
-    private const string ConstraintDaPublicacaoOriginalUnica = "ux_atos_do_processo_produto_original";
+    private const string ConstraintDaPublicacaoOriginalUnica = "ux_atos_do_processo_item_original";
 
     public static async Task<Result<ProcessoDivulgadoConferido>> ConferirProcessoDivulgadoAsync(
         IProcessoSeletivoRepository processoSeletivoRepository,
@@ -128,7 +128,7 @@ internal static class EnvioDoAtoDoProcesso
                 IdentificadorLegivelDoProcesso: versaoDivulgada.IdentificadorLegivelDoProcesso,
                 DocumentoPrincipalId: documentos.Principal.Id,
                 Anexos: [.. documentos.Anexos.Select(static a => new AnexoDeclarado(a.Documento.Id, a.Nome))],
-                ProdutoDoEditalId: ato.ProdutoDoEditalId,
+                ItemDoEdital: ato.ItemDoEdital,
                 AtoCorrigidoId: ato.AtoCorrigidoId,
                 MotivoDaCorrecao: ato.MotivoDaCorrecao,
                 PoliticaDeDivulgacaoConfirmadaPorSub: ato.PoliticaConfirmadaPorSub),
@@ -183,7 +183,7 @@ internal static class EnvioDoAtoDoProcesso
             ConstraintDaCorrecaoUnica when ato.AtoCorrigidoId is { } corrigido => new DomainError(
                 AtoDoProcessoErrorCodes.AtoCorrigidoJaCorrigido,
                 ConferenciaDoAtoCorrigido.MensagemDoAtoJaCorrigido(corrigido, corretor: null)),
-            ConstraintDaPublicacaoOriginalUnica when ato.ProdutoDoEditalId is not null => new DomainError(
+            ConstraintDaPublicacaoOriginalUnica when ato.ItemDoEdital is not null => new DomainError(
                 AtoDoProcessoErrorCodes.ProdutoJaPublicado,
                 ProjecaoDosProdutosPrevistos.MensagemDoItemJaPublicado),
             _ => null,

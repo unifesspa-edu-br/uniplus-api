@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
 using Domain.Entities;
+using Domain.ValueObjects;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -24,6 +25,7 @@ public sealed class AtoDoProcessoConfiguration : IEntityTypeConfiguration<AtoDoP
         builder.Property(a => a.IdentificadorLegivelDoProcesso).HasMaxLength(AtoDoProcesso.IdentificadorLegivelMaxLength).IsRequired();
         builder.Property(a => a.MotivoDaCorrecao).HasMaxLength(AtoDoProcesso.MotivoDaCorrecaoMaxLength);
         builder.Property(a => a.PoliticaDeDivulgacaoConfirmadaPorSub).HasMaxLength(AtoDoProcesso.SubMaxLength);
+        builder.Property(a => a.ItemDoEdital).HasMaxLength(IdentidadeDoItemDoEdital.ChaveMaxLength);
         builder.Property(a => a.Situacao).HasConversion<int>().IsRequired();
 
         // Vínculo por FK ao processo, sem navegação inversa: o registro não é filho do agregado. O
@@ -51,13 +53,15 @@ public sealed class AtoDoProcessoConfiguration : IEntityTypeConfiguration<AtoDoP
             .HasFilter("ato_corrigido_id IS NOT NULL")
             .HasDatabaseName("ux_atos_do_processo_ato_corrigido");
 
-        // Cada produto que o edital declara tem uma única publicação original: a que não corrige ato
-        // algum. A correção de um item publicado leva o mesmo produto e aponta o ato corrigido, e por
-        // isso fica fora do índice. Duas publicações simultâneas do mesmo produto só são barradas aqui.
-        builder.HasIndex(a => new { a.ProcessoSeletivoId, a.ProdutoDoEditalId })
+        // Cada item que o edital declara tem uma única publicação original: a que não corrige ato
+        // algum. O item é identificado pelo lugar, o tipo de ato e o papel, que valem em qualquer versão
+        // do edital; o Id do produto muda entre versões e não serviria à unicidade. A correção de um item
+        // publicado leva o mesmo item e aponta o ato corrigido, e por isso fica fora do índice. Duas
+        // publicações simultâneas do mesmo item só são barradas aqui.
+        builder.HasIndex(a => new { a.ProcessoSeletivoId, a.ItemDoEdital })
             .IsUnique()
-            .HasFilter("produto_do_edital_id IS NOT NULL AND ato_corrigido_id IS NULL")
-            .HasDatabaseName("ux_atos_do_processo_produto_original");
+            .HasFilter("item_do_edital IS NOT NULL AND ato_corrigido_id IS NULL")
+            .HasDatabaseName("ux_atos_do_processo_item_original");
 
         // A consulta administrativa filtra por processo e entrega do mais recente para o mais
         // antigo; as colunas descendentes evitam o passo de ordenação.

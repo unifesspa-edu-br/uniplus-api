@@ -37,7 +37,6 @@ public sealed record DocumentoDoAtoDto(
 /// </param>
 /// <param name="AtoCorrigidoId">O ato que este corrige ou retifica.</param>
 /// <param name="MotivoDaCorrecao">Motivo da correção.</param>
-/// <param name="ProdutoDoEditalId">Produto do edital que o ato cumpre, quando é resultado declarado.</param>
 /// <param name="PoliticaDeDivulgacaoConfirmada">A política de divulgação foi confirmada na publicação.</param>
 /// <param name="DocumentoPrincipal">Documento principal.</param>
 /// <param name="Anexos">Anexos, na ordem declarada.</param>
@@ -54,7 +53,6 @@ public sealed record AtoDoProcessoDto(
     bool PendenciaAcimaDoLimiar,
     Guid? AtoCorrigidoId,
     string? MotivoDaCorrecao,
-    Guid? ProdutoDoEditalId,
     bool PoliticaDeDivulgacaoConfirmada,
     DocumentoDoAtoDto DocumentoPrincipal,
     IReadOnlyList<DocumentoDoAtoDto> Anexos);

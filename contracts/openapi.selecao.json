@@ -10419,7 +10419,6 @@
           "pendenciaAcimaDoLimiar",
           "atoCorrigidoId",
           "motivoDaCorrecao",
-          "produtoDoEditalId",
           "politicaDeDivulgacaoConfirmada",
           "documentoPrincipal",
           "anexos"
@@ -10478,13 +10477,6 @@
               "null",
               "string"
             ]
-          },
-          "produtoDoEditalId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
           },
           "politicaDeDivulgacaoConfirmada": {
             "type": "boolean"

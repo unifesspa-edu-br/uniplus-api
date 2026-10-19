@@ -67,10 +67,11 @@ public sealed class AtoDoProcesso : EntityBase
     public string IdentificadorLegivelDoProcesso { get; private set; } = string.Empty;
 
     /// <summary>
-    /// Referência ao <c>Id</c> congelado do produto de fase ou de etapa que o ato cumpre. Por valor,
-    /// sem chave estrangeira: o produto vive no envelope congelado da versão, não numa tabela.
+    /// Chave da identidade do item de fase ou de etapa que o ato cumpre (<see cref="IdentidadeDoItemDoEdital"/>):
+    /// o lugar, o tipo de ato e o papel, que valem em qualquer versão do edital. Sem chave estrangeira: o
+    /// item vive no envelope congelado da versão, não numa tabela, e o <c>Id</c> do produto muda entre versões.
     /// </summary>
-    public Guid? ProdutoDoEditalId { get; private set; }
+    public string? ItemDoEdital { get; private set; }
 
     public Guid DocumentoPrincipalId { get; private set; }
 
@@ -172,7 +173,7 @@ public sealed class AtoDoProcesso : EntityBase
             Assinante = novo.Assinante,
             UnidadeAdministradora = novo.UnidadeAdministradora,
             IdentificadorLegivelDoProcesso = novo.IdentificadorLegivelDoProcesso,
-            ProdutoDoEditalId = novo.ProdutoDoEditalId,
+            ItemDoEdital = novo.ItemDoEdital?.Chave,
             DocumentoPrincipalId = novo.DocumentoPrincipalId,
             AtoCorrigidoId = novo.AtoCorrigidoId,
             MotivoDaCorrecao = novo.MotivoDaCorrecao,

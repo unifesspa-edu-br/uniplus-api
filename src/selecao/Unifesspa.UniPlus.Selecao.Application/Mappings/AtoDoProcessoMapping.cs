@@ -40,7 +40,6 @@ public static class AtoDoProcessoMapping
             PendenciaAcimaDoLimiar: pendenciaAcimaDoLimiar,
             AtoCorrigidoId: ato.AtoCorrigidoId,
             MotivoDaCorrecao: ato.MotivoDaCorrecao,
-            ProdutoDoEditalId: ato.ProdutoDoEditalId,
             PoliticaDeDivulgacaoConfirmada: ato.PoliticaDeDivulgacaoConfirmadaEm is not null,
             DocumentoPrincipal: Documento(ato.Id, documentos, ato.DocumentoPrincipalId, nomeDeExibicao: null),
             Anexos: [.. ato.Anexos

@@ -59,9 +59,8 @@ public sealed class PublicarProdutoDoEditalEndpointTests
 
         JsonElement preliminar = await ItemAsync(client, processoId, itens.Preliminar);
         preliminar.GetProperty("situacao").GetString().Should().Be("publicado");
-        preliminar.GetProperty("ato").GetProperty("produtoDoEditalId").GetGuid().Should().Be(itens.Preliminar);
         preliminar.GetProperty("ato").GetProperty("politicaDeDivulgacaoConfirmada").GetBoolean().Should().BeTrue();
-        (await ContarAtosDoItemAsync(api, itens.Preliminar)).Should().Be(1, "a repetição devolve a resposta guardada e não registra outro ato");
+        (await ContarAtosDoItemAsync(api, processoId, itens.Preliminar)).Should().Be(1, "a repetição devolve a resposta guardada e não registra outro ato");
 
         JsonElement publico = await PublicarAtoAvulsoEndpointTests.AguardarNaPaginaPublicaAsync(client, processoId, atoId);
         publico.GetProperty("documentos").EnumerateArray().Should().ContainSingle()
@@ -162,7 +161,7 @@ public sealed class PublicarProdutoDoEditalEndpointTests
                 .Should().BeOneOf("uniplus.selecao.ato_do_processo.produto_ja_publicado", "uniplus.selecao.ato_do_processo.produto_aguarda_registro");
         }
 
-        (await ContarAtosDoItemAsync(api, itens.Preliminar)).Should().Be(1);
+        (await ContarAtosDoItemAsync(api, processoId, itens.Preliminar)).Should().Be(1);
         foreach (HttpResponseMessage resposta in respostas)
         {
             resposta.Dispose();
@@ -261,11 +260,12 @@ public sealed class PublicarProdutoDoEditalEndpointTests
             .SelectMany(static f => f.GetProperty("produtos").EnumerateArray())
             .Single(p => p.GetProperty("id").GetGuid() == produtoId);
 
-    private static async Task<int> ContarAtosDoItemAsync(CascadingApiFactory api, Guid produtoId)
+    private static async Task<int> ContarAtosDoItemAsync(CascadingApiFactory api, Guid processoId, Guid produtoId)
     {
+        string item = (await IdentidadeDoItemNoBanco.DoItemAsync(api.Services, processoId, produtoId)).Chave;
         await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
         return await escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>().AtosDoProcesso.AsNoTracking()
-            .CountAsync(a => a.ProdutoDoEditalId == produtoId && a.AtoCorrigidoId == null);
+            .CountAsync(a => a.ProcessoSeletivoId == processoId && a.ItemDoEdital == item && a.AtoCorrigidoId == null);
     }
 
     private sealed record ItensDoTeste(Guid Preliminar, Guid Definitivo);

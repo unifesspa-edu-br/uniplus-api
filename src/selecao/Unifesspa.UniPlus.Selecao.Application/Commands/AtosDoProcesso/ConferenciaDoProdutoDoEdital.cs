@@ -97,7 +97,7 @@ internal static class ConferenciaDoProdutoDoEdital
         ArgumentNullException.ThrowIfNull(grafo);
         ArgumentNullException.ThrowIfNull(cadeias);
 
-        SituacaoDoProdutoPrevisto situacao = ProjecaoDosProdutosPrevistos.SituacaoDe(cadeias.PrimeiraPublicacaoDe(produto.Id));
+        SituacaoDoProdutoPrevisto situacao = ProjecaoDosProdutosPrevistos.SituacaoDe(cadeias.PrimeiraPublicacaoDe(produto.Item));
 
         // O tipo vigente já foi conferido na data do documento; a data de hoje, que a consulta usa, não manda aqui.
         ImpedimentoDoProdutoDto? impedimento = ProjecaoDosProdutosPrevistos
@@ -122,15 +122,16 @@ internal static class ConferenciaDoProdutoDoEdital
         ArgumentNullException.ThrowIfNull(grafo);
         ArgumentNullException.ThrowIfNull(cadeias);
 
-        if (!cadeias.AtosDe([produto.Id]).Any(a => a.Id == atoCorrigidoId))
+        if (!cadeias.AtosDe([produto.Item]).Any(a => a.Id == atoCorrigidoId))
         {
             return Result.Failure(new DomainError(
                 AtoDoProcessoErrorCodes.AtoCorrigidoNaoEhDoProduto,
                 $"O ato {atoCorrigidoId} não é uma publicação deste item do edital, e a correção de um item corrige a publicação dele."));
         }
 
+        Dictionary<Guid, IdentidadeDoItemDoEdital> itens = IdentidadeDoItemDoEdital.Dos(grafo.CronogramaFases, grafo.Etapas);
         if (produto.Papel == PapelProdutoFase.Preliminar
-            && PreliminaresDaMateria.DefinitivosQueFecham(grafo, produto.Id).Any(d => cadeias.PrimeiraPublicacaoDe(d) is not null))
+            && PreliminaresDaMateria.DefinitivosQueFecham(grafo, produto.Id).Any(d => cadeias.PrimeiraPublicacaoDe(itens[d]) is not null))
         {
             return Result.Failure(new DomainError(
                 AtoDoProcessoErrorCodes.PreliminarFechadoPeloDefinitivo,

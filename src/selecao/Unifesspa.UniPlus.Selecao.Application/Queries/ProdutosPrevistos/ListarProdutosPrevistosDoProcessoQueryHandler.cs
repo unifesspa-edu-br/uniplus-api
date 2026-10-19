@@ -17,8 +17,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// Lista os itens que a versão vigente do edital declara publicar, com a situação de cada um.
 /// </summary>
 /// <remarks>
-/// As declarações vêm da versão congelada, que é onde o produto tem o <c>Id</c> que o ato cumpre;
-/// a situação vem do registro do ato do processo. A configuração em rascunho não entra: uma
+/// As declarações vêm da versão congelada; a situação vem do registro do ato do processo, que
+/// reconhece o item pela identidade estável dele, e não pelo <c>Id</c> do produto na versão. A configuração em rascunho não entra: uma
 /// retificação em curso só passa a valer quando publicada.
 /// </remarks>
 public static class ListarProdutosPrevistosDoProcessoQueryHandler
@@ -65,7 +65,7 @@ public static class ListarProdutosPrevistosDoProcessoQueryHandler
             .ListarDoProcessoAsync(query.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
         CadeiasDosProdutosPrevistos cadeias = CadeiasDosProdutosPrevistos.De(atos);
-        AtoDoProcesso[] atosDosProdutos = [.. cadeias.AtosDe(ProjecaoDosProdutosPrevistos.ProdutosDeclarados(grafo))];
+        AtoDoProcesso[] atosDosProdutos = [.. cadeias.AtosDe(ProjecaoDosProdutosPrevistos.ItensDeclarados(grafo))];
 
         // Só os documentos dos atos que os itens mostram: o histórico de envios inclui pendentes e
         // documentos que nenhum ato usou.

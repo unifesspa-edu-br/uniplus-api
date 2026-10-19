@@ -357,7 +357,7 @@ public sealed class ConferenciaDosEixosNosHandlersTests
             AtoDoProcesso publicado = AtoDoProcesso.Registrar(
                 new NovoAtoDoProcesso(
                     Guid.CreateVersion7(), Processo.Id, "RESULTADO_PROVA", "Resultado da prova", "1/2026", new DateOnly(2026, 1, 20),
-                    "Diretor do CEPS", "ceps", "ps-eixos", Guid.CreateVersion7(), [], ProdutoDoEditalId: preliminar.Id),
+                    "Diretor do CEPS", "ceps", "ps-eixos", Guid.CreateVersion7(), [], ItemDoEdital: IdentidadeDoItemDoEdital.DaFase(fase, preliminar)),
                 new RelogioFixo()).Value!;
             publicado.ConfirmarRegistro(new RelogioFixo());
             _atos.ListarDoProcessoAsync(Processo.Id, Arg.Any<CancellationToken>()).Returns([publicado]);

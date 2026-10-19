@@ -24,16 +24,18 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
 
     private readonly Guid _processoId = Guid.CreateVersion7();
     private readonly List<AtoDoProcesso> _atos = [];
+    private readonly Dictionary<string, Guid> _origens = [];
 
     [Fact(DisplayName = "Preliminar publicado e retificação que retira o definitivo da fase é recusada, nomeando a matéria")]
     public void PreliminarPublicado_RetiraODefinitivo_ERecusada()
     {
         ProdutoDaFase preliminar = Produto(PapelProdutoFase.Preliminar);
         ProdutoDaFase definitivo = Produto(PapelProdutoFase.Definitivo);
-        Publicar(preliminar);
+        FaseCronograma publicada = Fase("PROVA", 1, null, preliminar, definitivo);
+        Publicar(publicada, preliminar);
 
         Result resultado = Conferir(
-            publicada: [Fase("PROVA", 1, null, preliminar, definitivo)],
+            publicada: [publicada],
             nova: [Fase("PROVA", 1, null, preliminar)]);
 
         resultado.IsFailure.Should().BeTrue();
@@ -47,10 +49,11 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
         ProdutoDaFase preliminar = Produto(PapelProdutoFase.Preliminar);
         ProdutoDaFase definitivo = Produto(PapelProdutoFase.Definitivo);
         ProdutoDaFase definitivoDeOutraFase = Produto(PapelProdutoFase.Definitivo);
-        Publicar(preliminar);
+        FaseCronograma prova = Fase("PROVA", 1, "RESULTADO", preliminar);
+        Publicar(prova, preliminar);
 
         Result resultado = Conferir(
-            publicada: [Fase("PROVA", 1, "RESULTADO", preliminar), Fase("RESULTADO", 2, null, definitivo), Fase("RECURSOS", 3, null)],
+            publicada: [prova, Fase("RESULTADO", 2, null, definitivo), Fase("RECURSOS", 3, null)],
             nova: [Fase("PROVA", 1, "RECURSOS", preliminar), Fase("RESULTADO", 2, null), Fase("RECURSOS", 3, null, definitivoDeOutraFase)]);
 
         resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.RetificacaoDesfazCicloRecursalAberto);
@@ -61,11 +64,12 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
     {
         ProdutoDaFase preliminar = Produto(PapelProdutoFase.Preliminar);
         ProdutoDaFase definitivo = Produto(PapelProdutoFase.Definitivo);
-        Publicar(preliminar);
-        Publicar(definitivo);
+        FaseCronograma publicada = Fase("PROVA", 1, null, preliminar, definitivo);
+        Publicar(publicada, preliminar);
+        Publicar(publicada, definitivo);
 
         Result resultado = Conferir(
-            publicada: [Fase("PROVA", 1, null, preliminar, definitivo)],
+            publicada: [publicada],
             nova: [Fase("PROVA", 1, null)]);
 
         resultado.IsSuccess.Should().BeTrue();
@@ -89,10 +93,11 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
     {
         ProdutoDaFase preliminar = Produto(PapelProdutoFase.Preliminar);
         ProdutoDaFase definitivo = Produto(PapelProdutoFase.Definitivo);
-        Publicar(preliminar);
+        FaseCronograma publicada = Fase("PROVA", 1, null, preliminar, definitivo);
+        Publicar(publicada, preliminar);
 
         Result resultado = Conferir(
-            publicada: [Fase("PROVA", 1, null, preliminar, definitivo)],
+            publicada: [publicada],
             nova: [Fase("PROVA", 1, null, preliminar, definitivo)]);
 
         resultado.IsSuccess.Should().BeTrue();
@@ -102,13 +107,28 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
     public void PreliminarPublicado_ItensComIdentificadoresNovosNoMesmoLugar_EAceita()
     {
         ProdutoDaFase preliminar = Produto(PapelProdutoFase.Preliminar);
-        Publicar(preliminar);
+        FaseCronograma publicada = Fase("PROVA", 1, null, preliminar, Produto(PapelProdutoFase.Definitivo));
+        Publicar(publicada, preliminar);
 
         Result resultado = Conferir(
-            publicada: [Fase("PROVA", 1, null, preliminar, Produto(PapelProdutoFase.Definitivo))],
+            publicada: [publicada],
             nova: [Fase("PROVA", 2, null, Produto(PapelProdutoFase.Preliminar), Produto(PapelProdutoFase.Definitivo))]);
 
         resultado.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Preliminar publicado e fase deslocada com produtos de Id novo, sem o definitivo, é recusada")]
+    public void PreliminarPublicado_FaseDeslocadaComProdutosRecriados_RetiraODefinitivo_ERecusada()
+    {
+        ProdutoDaFase preliminar = Produto(PapelProdutoFase.Preliminar);
+        FaseCronograma publicada = Fase("PROVA", 1, null, preliminar, Produto(PapelProdutoFase.Definitivo));
+        Publicar(publicada, preliminar);
+
+        Result resultado = Conferir(
+            publicada: [publicada],
+            nova: [Fase("HOMOLOGACAO", 1, null), Fase("PROVA", 2, null, Produto(PapelProdutoFase.Preliminar))]);
+
+        resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.RetificacaoDesfazCicloRecursalAberto);
     }
 
     [Fact(DisplayName = "Preliminar publicado numa etapa renomeada, com o mesmo par, é aceita")]
@@ -116,10 +136,11 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
     {
         Guid etapaId = Guid.CreateVersion7();
         ProdutoDaEtapa preliminar = ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Preliminar);
-        Publicar(preliminar.Id);
+        EtapaProcesso publicada = Etapa(etapaId, "Prova objetiva", preliminar, ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Definitivo));
+        Publicar(IdentidadeDoItemDoEdital.DaEtapa(publicada, preliminar));
 
         Result resultado = ConferenciaDoCicloRecursalAberto.Conferir(
-            [], [Etapa(etapaId, "Prova objetiva", preliminar, ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Definitivo))],
+            [], [publicada],
             [], [Etapa(etapaId, "Prova objetiva (reaplicação)", ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Preliminar), ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Definitivo))],
             CadeiasDosProdutosPrevistos.De(_atos));
 
@@ -132,12 +153,13 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
         Guid primeira = Guid.CreateVersion7();
         Guid segunda = Guid.CreateVersion7();
         ProdutoDaEtapa preliminar = ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Preliminar);
-        Publicar(preliminar.Id);
+        EtapaProcesso primeiraPublicada = Etapa(primeira, "Prova", preliminar, ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Definitivo));
+        Publicar(IdentidadeDoItemDoEdital.DaEtapa(primeiraPublicada, preliminar));
 
         Result resultado = ConferenciaDoCicloRecursalAberto.Conferir(
             [],
             [
-                Etapa(primeira, "Prova", preliminar, ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Definitivo)),
+                primeiraPublicada,
                 Etapa(segunda, "Prova", ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Preliminar), ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Definitivo)),
             ],
             [],
@@ -155,14 +177,27 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
 
     private static ProdutoDaFase Produto(PapelProdutoFase papel) => ProdutoDaFase.Criar(Materia, papel);
 
-    private static FaseCronograma Fase(string codigo, int ordem, string? faseConcluinteCodigo, params ProdutoDaFase[] produtos) =>
+    // A mesma fase, em versões diferentes do cronograma, tem a mesma fase canônica de origem.
+    private FaseCronograma Fase(string codigo, int ordem, string? faseConcluinteCodigo, params ProdutoDaFase[] produtos) =>
         FaseCronograma.Criar(
-            ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.Propria,
+            ordem, OrigemDe(codigo), codigo, "CEPS", OrigemDataFase.Propria,
             agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: Agora, fim: Agora.AddDays(10), produtos: produtos,
             faseConcluinteCodigo: faseConcluinteCodigo, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!;
 
-    private void Publicar(ProdutoDaFase produto) => Publicar(produto.Id);
+    private Guid OrigemDe(string codigo)
+    {
+        if (!_origens.TryGetValue(codigo, out Guid origem))
+        {
+            origem = Guid.CreateVersion7();
+            _origens[codigo] = origem;
+        }
+
+        return origem;
+    }
+
+    private void Publicar(FaseCronograma fase, ProdutoDaFase produto) =>
+        Publicar(IdentidadeDoItemDoEdital.DaFase(fase, produto));
 
     private static EtapaProcesso Etapa(Guid id, string nome, params ProdutoDaEtapa[] produtos)
     {
@@ -175,12 +210,12 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
         return etapa;
     }
 
-    private void Publicar(Guid produtoId)
+    private void Publicar(IdentidadeDoItemDoEdital item)
     {
         AtoDoProcesso ato = AtoDoProcesso.Registrar(
             new NovoAtoDoProcesso(
                 Guid.CreateVersion7(), _processoId, Materia, NomeDaMateria, "1/2027", new DateOnly(2027, 1, 20), "Diretor do CEPS", "ceps", "psm-medicina-2027",
-                Guid.CreateVersion7(), [], ProdutoDoEditalId: produtoId),
+                Guid.CreateVersion7(), [], ItemDoEdital: item),
             new RelogioFixo(Agora)).Value!;
         ato.ConfirmarRegistro(new RelogioFixo(Agora));
         _atos.Add(ato);

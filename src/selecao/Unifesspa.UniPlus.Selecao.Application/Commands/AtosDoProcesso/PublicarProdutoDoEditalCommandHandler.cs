@@ -168,7 +168,7 @@ public static class PublicarProdutoDoEditalCommandHandler
                     conferenciaDosDocumentos.Value!,
                     command.AtoCorrigidoId,
                     command.MotivoDaCorrecao,
-                    ProdutoDoEditalId: produto.Id,
+                    ItemDoEdital: produto.Item,
                     PoliticaConfirmadaPorSub: conferenciaDaPolitica.Value),
                 atoDoProcessoRepository,
                 unitOfWork,
