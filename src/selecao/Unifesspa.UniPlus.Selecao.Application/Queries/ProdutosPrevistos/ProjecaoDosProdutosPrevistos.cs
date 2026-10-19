@@ -43,6 +43,16 @@ internal static class ProjecaoDosProdutosPrevistos
         ];
     }
 
+    /// <summary>O produto que o cronograma declara com o identificador dado; nulo quando a versão não o declara.</summary>
+    internal static Declarado? ProdutoDeclarado(GrafoConfiguracao grafo, Guid produtoId)
+    {
+        ArgumentNullException.ThrowIfNull(grafo);
+
+        return grafo.CronogramaFases.SelectMany(static f => f.Produtos.Select(static p => new Declarado(p.Id, p.AtoCodigo, p.Papel)))
+            .Concat(grafo.Etapas.SelectMany(static e => e.Produtos.Select(static p => new Declarado(p.Id, p.AtoCodigo, p.Papel))))
+            .FirstOrDefault(p => p.Id == produtoId);
+    }
+
     /// <summary>Os identificadores dos produtos que o cronograma declara publicar.</summary>
     public static IReadOnlyList<Guid> ProdutosDeclarados(GrafoConfiguracao grafo)
     {

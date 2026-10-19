@@ -96,6 +96,18 @@ public sealed class AtoDoProcessoRepository : IAtoDoProcessoRepository
             .ConfigureAwait(false);
     }
 
+    public async Task<bool> ExisteItemDoEditalEntreAsync(IReadOnlyCollection<Guid> atoIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(atoIds);
+
+        Guid[] ids = [.. atoIds];
+
+        return await _context.AtosDoProcesso
+            .AsNoTracking()
+            .AnyAsync(a => ids.Contains(a.Id) && a.ProdutoDoEditalId != null, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task<bool> ExisteAtoDoTipoForaDaCadeiaAsync(
         Guid processoSeletivoId,
         string tipoCodigo,
