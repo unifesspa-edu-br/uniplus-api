@@ -146,13 +146,13 @@ setup_publicacoes() {
     post_tolerante "/api/publicacoes/admin/tipos-ato" '{
         "codigo": "EDITAL_ABERTURA", "nome": "Edital de abertura",
         "congelaConfiguracao": true, "unicoPorObjeto": true,
-        "efeitoIrreversivel": false, "vigenciaInicio": "2020-01-01",
+        "efeitoIrreversivel": false, "publicavelComoAvulso": false, "exigeAtoCorrigido": false, "vigenciaInicio": "2020-01-01",
         "vigenciaFim": null, "baseLegal": null
     }' >/dev/null
     post_tolerante "/api/publicacoes/admin/tipos-ato" '{
         "codigo": "RESULTADO_CLASSIFICACAO", "nome": "Resultado da classificação",
         "congelaConfiguracao": false, "unicoPorObjeto": false,
-        "efeitoIrreversivel": false, "vigenciaInicio": "2020-01-01",
+        "efeitoIrreversivel": false, "publicavelComoAvulso": false, "exigeAtoCorrigido": false, "vigenciaInicio": "2020-01-01",
         "vigenciaFim": null, "baseLegal": null, "ehResultado": true
     }' >/dev/null
 
@@ -169,7 +169,7 @@ setup_publicacoes() {
         api PUT "/api/publicacoes/admin/tipos-ato/$id" "{
             \"id\": \"$id\", \"codigo\": \"RESULTADO_CLASSIFICACAO\", \"nome\": \"Resultado da classificação\",
             \"congelaConfiguracao\": false, \"unicoPorObjeto\": false,
-            \"efeitoIrreversivel\": false, \"ehResultado\": true,
+            \"efeitoIrreversivel\": false, \"ehResultado\": true, \"publicavelComoAvulso\": false, \"exigeAtoCorrigido\": false,
             \"vigenciaInicio\": \"2020-01-01\", \"vigenciaFim\": null, \"baseLegal\": null
         }" >/dev/null
     fi

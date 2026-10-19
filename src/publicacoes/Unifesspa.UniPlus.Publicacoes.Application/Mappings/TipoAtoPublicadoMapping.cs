@@ -19,6 +19,8 @@ public static class TipoAtoPublicadoMapping
             tipo.VigenciaInicio,
             tipo.VigenciaFim,
             tipo.BaseLegal,
-            tipo.CreatedAt);
+            tipo.CreatedAt,
+            tipo.PublicavelComoAvulso,
+            tipo.ExigeAtoCorrigido);
     }
 }

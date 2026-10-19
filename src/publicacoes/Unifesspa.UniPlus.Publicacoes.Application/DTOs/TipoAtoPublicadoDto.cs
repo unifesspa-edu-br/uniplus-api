@@ -25,7 +25,9 @@ public sealed record TipoAtoPublicadoDto(
     DateOnly VigenciaInicio,
     DateOnly? VigenciaFim,
     string? BaseLegal,
-    DateTimeOffset CriadoEm)
+    DateTimeOffset CriadoEm,
+    bool PublicavelComoAvulso = false,
+    bool ExigeAtoCorrigido = false)
 {
     [JsonPropertyName("_links")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

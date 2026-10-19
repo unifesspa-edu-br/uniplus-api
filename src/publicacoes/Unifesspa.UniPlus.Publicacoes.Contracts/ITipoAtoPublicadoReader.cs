@@ -44,7 +44,9 @@ public sealed record TipoAtoPublicadoView(
     bool CongelaConfiguracao,
     bool UnicoPorObjeto,
     bool EfeitoIrreversivel,
-    bool EhResultado);
+    bool EhResultado,
+    bool PublicavelComoAvulso = false,
+    bool ExigeAtoCorrigido = false);
 
 /// <summary>
 /// Leitor da vaga que uma linhagem de atos reserva sobre um objeto (ADR-0107).

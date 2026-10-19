@@ -363,6 +363,10 @@ namespace Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("eh_resultado");
 
+                    b.Property<bool>("ExigeAtoCorrigido")
+                        .HasColumnType("boolean")
+                        .HasColumnName("exige_ato_corrigido");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
                         .HasColumnName("is_deleted");
@@ -372,6 +376,10 @@ namespace Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("nome");
+
+                    b.Property<bool>("PublicavelComoAvulso")
+                        .HasColumnType("boolean")
+                        .HasColumnName("publicavel_como_avulso");
 
                     b.Property<bool>("UnicoPorObjeto")
                         .HasColumnType("boolean")

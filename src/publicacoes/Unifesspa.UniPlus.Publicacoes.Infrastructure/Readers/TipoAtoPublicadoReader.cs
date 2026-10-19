@@ -44,7 +44,9 @@ internal sealed class TipoAtoPublicadoReader(PublicacoesDbContext db) : ITipoAto
             t.CongelaConfiguracao,
             t.UnicoPorObjeto,
             t.EfeitoIrreversivel,
-            t.EhResultado);
+            t.EhResultado,
+            t.PublicavelComoAvulso,
+            t.ExigeAtoCorrigido);
 
     private IQueryable<TipoAtoPublicado> Vigentes(DateOnly dataPublicacao) =>
         _db.Set<TipoAtoPublicado>()

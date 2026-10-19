@@ -15,7 +15,12 @@
 #   2. só então retira cada tipo antigo do mapa, que repetia o papel no código: a versão que
 #      atravessa a data de corte termina nela, e a versão que começa no corte ou depois, já
 #      agendada, é removida. Se a criação falhar, nada é retirado: nunca fica um estado sem
-#      tipo de resultado vigente.
+#      tipo de resultado vigente;
+#   3. define, nos tipos AVISO, COMUNICADO e ERRATA, os atributos `publicavelComoAvulso` e
+#      `exigeAtoCorrigido` com o valor de `seeds/seed-tipos-ato.json`. As colunas nasceram `false`
+#      em toda linha existente só para poder existir; sem este passo nenhum tipo é aceito como
+#      documento avulso do processo e a errata não exige o ato corrigido. O passo atualiza a
+#      versão vigente pelo PUT, só quando o valor difere, e pula o tipo sem versão vigente.
 #
 # O mapa de HML é uma PROPOSTA a validar com o CEPS antes de rodar, porque o catálogo de HML
 # não é o seed.
@@ -25,7 +30,8 @@
 # legível. O catálogo novo só vale para os cronogramas que o citam.
 #
 # Idempotente: o tipo antigo sem versão que atravesse o corte nem comece depois dele é
-# pulado, e o novo que já tem versão vigente no corte também. Rodar de novo não escreve nada.
+# pulado, e o novo que já tem versão vigente no corte também; os atributos do documento avulso
+# só são escritos quando diferem do seed. Rodar de novo não escreve nada.
 #
 # Uso:
 #   API_URL=https://uniplus-api-hml.example TOKEN=<access token plataforma-admin> \
@@ -141,7 +147,8 @@ encerrar_vigencia() {
             alterou=1
             corpo="$(jq -c --arg fim "${DATA_CORTE}" '{
                 id, codigo, nome, congelaConfiguracao, unicoPorObjeto, efeitoIrreversivel,
-                ehResultado, vigenciaInicio, vigenciaFim: $fim, baseLegal
+                ehResultado, publicavelComoAvulso, exigeAtoCorrigido, vigenciaInicio,
+                vigenciaFim: $fim, baseLegal
             }' <<< "${versao}")"
             if [[ "${DRY_RUN}" == "1" ]]; then
                 ok "${codigo}: encerraria em ${DATA_CORTE} a versão iniciada em ${inicio} (DRY_RUN)"
@@ -178,8 +185,8 @@ criar_tipo() {
         [[ -n "${nome}" ]] || fail "${codigo} não consta no seed e o mapa não traz o nome"
         corpo="$(jq -nc --arg codigo "${codigo}" --arg nome "${nome}" --arg inicio "${DATA_CORTE}" '{
             codigo: $codigo, nome: $nome, congelaConfiguracao: false, unicoPorObjeto: false,
-            efeitoIrreversivel: false, ehResultado: true, vigenciaInicio: $inicio,
-            vigenciaFim: null, baseLegal: null
+            efeitoIrreversivel: false, ehResultado: true, publicavelComoAvulso: false,
+            exigeAtoCorrigido: false, vigenciaInicio: $inicio, vigenciaFim: null, baseLegal: null
         }')"
     fi
 
@@ -196,6 +203,50 @@ criar_tipo() {
 
     escrever POST "/api/publicacoes/admin/tipos-ato" "${corpo}"
     ok "${codigo}: tipo criado"
+}
+
+# Alinha ao seed os atributos de documento avulso de toda versão do tipo que ainda vale: a vigente
+# hoje e as agendadas. Uma versão agendada que nascesse com os atributos desligados tiraria o tipo
+# de documento avulso quando começasse. $1=código
+definir_atributos_de_avulso() {
+    local codigo="$1" hoje versao id inicio esperado corpo encontrou=0
+    hoje="$(date -u +%F)"
+
+    esperado="$(jq -c --arg codigo "${codigo}" --arg corte "${DATA_CORTE}" '
+        [.[] | select(.codigo == $codigo)]
+        | (map(select(.vigenciaInicio <= $corte and (.vigenciaFim == null or .vigenciaFim > $corte))) | last)
+          // last // empty
+        | {publicavelComoAvulso, exigeAtoCorrigido}' "${SEED}")"
+    [[ -n "${esperado}" ]] || fail "${codigo} não consta no seed"
+
+    while IFS= read -r versao; do
+        encontrou=1
+        id="$(jq -r '.id' <<< "${versao}")"
+        inicio="$(jq -r '.vigenciaInicio' <<< "${versao}")"
+
+        if jq -e --argjson esperado "${esperado}" \
+            '(.publicavelComoAvulso // false) == $esperado.publicavelComoAvulso and (.exigeAtoCorrigido // false) == $esperado.exigeAtoCorrigido' \
+            <<< "${versao}" >/dev/null; then
+            ok "${codigo}: versão iniciada em ${inicio} já confere com o seed"
+            continue
+        fi
+
+        if [[ "${DRY_RUN}" == "1" ]]; then
+            ok "${codigo}: definiria os atributos de documento avulso da versão iniciada em ${inicio} (DRY_RUN)"
+            continue
+        fi
+
+        corpo="$(jq -c --argjson esperado "${esperado}" '{
+            id, codigo, nome, congelaConfiguracao, unicoPorObjeto, efeitoIrreversivel, ehResultado,
+            publicavelComoAvulso: $esperado.publicavelComoAvulso, exigeAtoCorrigido: $esperado.exigeAtoCorrigido,
+            vigenciaInicio, vigenciaFim, baseLegal
+        }' <<< "${versao}")"
+        escrever PUT "/api/publicacoes/admin/tipos-ato/${id}" "${corpo}"
+        ok "${codigo}: atributos de documento avulso da versão iniciada em ${inicio} definidos"
+    done < <(jq -c --arg codigo "${codigo}" --arg hoje "${hoje}" '
+        .[] | select(.codigo == $codigo and (.vigenciaFim == null or .vigenciaFim > $hoje))' <<< "${CATALOGO}")
+
+    [[ "${encontrou}" == "1" ]] || ok "${codigo}: sem versão vigente nem agendada, nada a definir"
 }
 
 # Lê o mapa sem comentários nem linhas em branco: antigo<TAB>novo<TAB>nome.
@@ -235,5 +286,10 @@ log "Retirando os tipos antigos a partir de ${DATA_CORTE}"
 while IFS=$'\t' read -r antigo _ _; do
     encerrar_vigencia "${antigo}"
 done < <(linhas_do_mapa)
+
+log "Definindo os atributos de documento avulso de AVISO, COMUNICADO e ERRATA"
+for codigo in AVISO COMUNICADO ERRATA; do
+    definir_atributos_de_avulso "${codigo}"
+done
 
 log "Catálogo consolidado"

@@ -138,6 +138,30 @@ public sealed partial class SeedTiposAtoTests
         ]);
     }
 
+    [Fact(DisplayName = "Só aviso, comunicado e errata são publicáveis como documento avulso")]
+    public void Seed_PublicavelComoAvulsoRestrito()
+    {
+        LinhaSeed[] linhas = Carregar();
+
+        // Convocação e chamada são do Ingresso, e o resultado e o edital têm fluxo próprio: nenhum
+        // deles pode ser publicado como documento avulso, e o catálogo é quem diz isso (ADR-0103).
+        linhas.Where(l => l.PublicavelComoAvulso).Select(l => l.Codigo)
+            .Should().BeEquivalentTo(["AVISO", "COMUNICADO", "ERRATA"]);
+        linhas.Where(l => l.PublicavelComoAvulso).Should().OnlyContain(
+            l => !l.CongelaConfiguracao && !l.EhResultado,
+            "o documento avulso não congela configuração nem determina a situação do candidato");
+        linhas.Where(l => l.Codigo is "CONVOCACAO" or "CHAMADA").Should().OnlyContain(l => !l.PublicavelComoAvulso);
+    }
+
+    [Fact(DisplayName = "Só a errata exige o ato corrigido, e ela é publicável como documento avulso")]
+    public void Seed_ExigeAtoCorrigidoRestrito()
+    {
+        LinhaSeed[] linhas = Carregar();
+
+        linhas.Where(l => l.ExigeAtoCorrigido).Select(l => l.Codigo).Should().BeEquivalentTo(["ERRATA"]);
+        linhas.Where(l => l.ExigeAtoCorrigido).Should().OnlyContain(l => l.PublicavelComoAvulso);
+    }
+
     [Fact(DisplayName = "Só os atos que o objeto admite uma vez são únicos por objeto")]
     public void Seed_UnicoPorObjetoRestrito()
     {
@@ -205,6 +229,8 @@ public sealed partial class SeedTiposAtoTests
         bool UnicoPorObjeto,
         bool EfeitoIrreversivel,
         bool EhResultado,
+        bool PublicavelComoAvulso,
+        bool ExigeAtoCorrigido,
         string VigenciaInicio,
         string? VigenciaFim,
         string? BaseLegal);

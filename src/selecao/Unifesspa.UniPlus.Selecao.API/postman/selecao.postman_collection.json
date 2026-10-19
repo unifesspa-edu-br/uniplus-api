@@ -136,7 +136,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"codigo\": \"EDITAL_ABERTURA\",\n  \"nome\": \"Edital de abertura (smoke)\",\n  \"congelaConfiguracao\": true,\n  \"unicoPorObjeto\": true,\n  \"efeitoIrreversivel\": false,\n  \"vigenciaInicio\": \"2020-01-01\",\n  \"vigenciaFim\": null,\n  \"baseLegal\": null\n}",
+              "raw": "{\n  \"codigo\": \"EDITAL_ABERTURA\",\n  \"nome\": \"Edital de abertura (smoke)\",\n  \"congelaConfiguracao\": true,\n  \"unicoPorObjeto\": true,\n  \"efeitoIrreversivel\": false,\n  \"publicavelComoAvulso\": false,\n  \"exigeAtoCorrigido\": false,\n  \"vigenciaInicio\": \"2020-01-01\",\n  \"vigenciaFim\": null,\n  \"baseLegal\": null\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -199,7 +199,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"codigo\": \"EDITAL_RETIFICACAO\",\n  \"nome\": \"Edital de retificação (smoke)\",\n  \"congelaConfiguracao\": true,\n  \"unicoPorObjeto\": false,\n  \"efeitoIrreversivel\": false,\n  \"vigenciaInicio\": \"2020-01-01\",\n  \"vigenciaFim\": null,\n  \"baseLegal\": null\n}",
+              "raw": "{\n  \"codigo\": \"EDITAL_RETIFICACAO\",\n  \"nome\": \"Edital de retificação (smoke)\",\n  \"congelaConfiguracao\": true,\n  \"unicoPorObjeto\": false,\n  \"efeitoIrreversivel\": false,\n  \"publicavelComoAvulso\": false,\n  \"exigeAtoCorrigido\": false,\n  \"vigenciaInicio\": \"2020-01-01\",\n  \"vigenciaFim\": null,\n  \"baseLegal\": null\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -262,7 +262,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"codigo\": \"RESULTADO_CLASSIFICACAO\",\n  \"nome\": \"Resultado da classificação (smoke)\",\n  \"congelaConfiguracao\": false,\n  \"unicoPorObjeto\": false,\n  \"efeitoIrreversivel\": false,\n  \"ehResultado\": true,\n  \"vigenciaInicio\": \"2020-01-01\",\n  \"vigenciaFim\": null,\n  \"baseLegal\": null\n}",
+              "raw": "{\n  \"codigo\": \"RESULTADO_CLASSIFICACAO\",\n  \"nome\": \"Resultado da classificação (smoke)\",\n  \"congelaConfiguracao\": false,\n  \"unicoPorObjeto\": false,\n  \"efeitoIrreversivel\": false,\n  \"publicavelComoAvulso\": false,\n  \"exigeAtoCorrigido\": false,\n  \"ehResultado\": true,\n  \"vigenciaInicio\": \"2020-01-01\",\n  \"vigenciaFim\": null,\n  \"baseLegal\": null\n}",
               "options": {
                 "raw": {
                   "language": "json"

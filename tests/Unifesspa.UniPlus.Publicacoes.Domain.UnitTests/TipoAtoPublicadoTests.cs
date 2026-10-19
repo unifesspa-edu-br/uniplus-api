@@ -46,6 +46,24 @@ public sealed class TipoAtoPublicadoTests
         tipo.BaseLegal.Should().BeNull();
     }
 
+    [Fact(DisplayName = "Criar e Atualizar gravam os atributos do documento avulso; sem eles o tipo nasce não publicável")]
+    public void CriarEAtualizar_GravamOsAtributosDoDocumentoAvulso()
+    {
+        TipoAtoPublicado padrao = TipoAtoPublicado.Criar("AVISO", "Aviso", false, false, false, false, Inicio, null, null).Value!;
+        padrao.PublicavelComoAvulso.Should().BeFalse();
+        padrao.ExigeAtoCorrigido.Should().BeFalse();
+
+        TipoAtoPublicado errata = TipoAtoPublicado.Criar(
+            "ERRATA", "Errata", false, false, false, false, Inicio, null, null,
+            publicavelComoAvulso: true, exigeAtoCorrigido: true).Value!;
+        errata.PublicavelComoAvulso.Should().BeTrue();
+        errata.ExigeAtoCorrigido.Should().BeTrue();
+
+        errata.Atualizar("ERRATA", "Errata", false, false, false, false, Inicio, null, null,
+            publicavelComoAvulso: true, exigeAtoCorrigido: false).IsSuccess.Should().BeTrue();
+        errata.ExigeAtoCorrigido.Should().BeFalse();
+    }
+
     [Theory(DisplayName = "Código fora do formato UPPER_SNAKE é recusado")]
     [InlineData("convocacao")]
     [InlineData("Convocacao")]

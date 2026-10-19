@@ -71,7 +71,9 @@ public static class AtualizarTipoAtoPublicadoCommandHandler
             command.EhResultado,
             command.VigenciaInicio,
             command.VigenciaFim,
-            command.BaseLegal);
+            command.BaseLegal,
+            command.PublicavelComoAvulso,
+            command.ExigeAtoCorrigido);
 
         if (atualizacao.IsFailure)
         {
