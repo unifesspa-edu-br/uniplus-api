@@ -2,12 +2,12 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.AtosDoProcesso;
 
 using Abstractions;
 
-using DTOs;
-
 using Domain.Entities;
 using Domain.Errors;
 using Domain.Interfaces;
 using Domain.ValueObjects;
+
+using DTOs;
 
 using ProcessosSeletivos;
 
@@ -105,6 +105,12 @@ public static class PublicarAtoAvulsoDoProcessoCommandHandler
 
         TipoAtoPublicadoView tipo = conferenciaDoTipo.Value!;
 
+        Result conferenciaDoAtoExigido = ConferenciaDoTipoDoAtoAvulso.ExigeAtoCorrigido(tipo, command.AtoCorrigidoId);
+        if (conferenciaDoAtoExigido.IsFailure)
+        {
+            return Recusa(conferenciaDoAtoExigido.Error!);
+        }
+
         Result<IReadOnlyList<Guid>> conferenciaDoCorrigido = await ConferenciaDoAtoCorrigido
             .ConferirAsync(atoDoProcessoRepository, processoSeletivoRepository, vagaDeLinhagemReader, command.ProcessoSeletivoId, command.AtoCorrigidoId, cancellationToken)
             .ConfigureAwait(false);
@@ -120,6 +126,14 @@ public static class PublicarAtoAvulsoDoProcessoCommandHandler
         if (conferenciaDaVaga.IsFailure)
         {
             return Recusa(conferenciaDaVaga.Error!);
+        }
+
+        Result conferenciaDaVagaLocal = await ConferenciaDoTipoDoAtoAvulso
+            .VagaNoRegistroLocalAsync(atoDoProcessoRepository, tipo, command.ProcessoSeletivoId, conferenciaDoCorrigido.Value!, cancellationToken)
+            .ConfigureAwait(false);
+        if (conferenciaDaVagaLocal.IsFailure)
+        {
+            return Recusa(conferenciaDaVagaLocal.Error!);
         }
 
         Result<DocumentosDoAtoConferidos> conferenciaDosDocumentos = await ConferenciaDosDocumentosDoAtoAvulso

@@ -5,7 +5,8 @@ public static class AtoDoProcessoErrorCodes
 {
     public const string CertameNaoDivulgado = "AtoDoProcesso.CertameNaoDivulgado";
     public const string TipoCongelaConfiguracao = "AtoDoProcesso.TipoCongelaConfiguracao";
-    public const string TipoEhResultado = "AtoDoProcesso.TipoEhResultado";
+    public const string TipoNaoPublicavelComoAvulso = "AtoDoProcesso.TipoNaoPublicavelComoAvulso";
+    public const string TipoExigeAtoCorrigido = "AtoDoProcesso.TipoExigeAtoCorrigido";
 
     public const string DocumentoNaoEncontrado = "AtoDoProcesso.DocumentoNaoEncontrado";
     public const string DocumentoNaoConfirmado = "AtoDoProcesso.DocumentoNaoConfirmado";

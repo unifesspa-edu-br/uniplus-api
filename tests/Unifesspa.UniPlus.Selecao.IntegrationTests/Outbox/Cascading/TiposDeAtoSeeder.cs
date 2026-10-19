@@ -26,12 +26,13 @@ internal static class TiposDeAtoSeeder
 
         await GarantirAsync(db, DadosDoAtoDeTeste.TipoAbertura, "Edital de abertura", unicoPorObjeto: true);
         await GarantirAsync(db, DadosDoAtoDeTeste.TipoRetificacao, "Edital de retificação", unicoPorObjeto: false);
-        await GarantirAsync(db, DadosDoAtoDeTeste.TipoAviso, "Aviso", unicoPorObjeto: false, congelaConfiguracao: false);
+        await GarantirAsync(db, DadosDoAtoDeTeste.TipoAviso, "Aviso", unicoPorObjeto: false, congelaConfiguracao: false, publicavelComoAvulso: true);
+        await GarantirAsync(db, DadosDoAtoDeTeste.TipoAvulsoUnico, "Comunicado único", unicoPorObjeto: true, congelaConfiguracao: false, publicavelComoAvulso: true);
 
         await db.SaveChangesAsync();
     }
 
-    private static async Task GarantirAsync(PublicacoesDbContext db, string codigo, string nome, bool unicoPorObjeto, bool congelaConfiguracao = true)
+    private static async Task GarantirAsync(PublicacoesDbContext db, string codigo, string nome, bool unicoPorObjeto, bool congelaConfiguracao = true, bool publicavelComoAvulso = false)
     {
         if (await db.Set<TipoAtoPublicado>().AnyAsync(t => t.Codigo == codigo))
         {
@@ -47,7 +48,8 @@ internal static class TiposDeAtoSeeder
             ehResultado: false,
             new DateOnly(2020, 1, 1),
             vigenciaFim: null,
-            baseLegal: null).Value!;
+            baseLegal: null,
+            publicavelComoAvulso).Value!;
 
         await db.Set<TipoAtoPublicado>().AddAsync(tipo);
     }

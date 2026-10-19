@@ -135,6 +135,36 @@ public sealed class PublicarAtoAvulsoEndpointTests
         }
     }
 
+    [Fact(DisplayName = "Duas publicações simultâneas com o mesmo documento: uma é aceita e a outra recusada por documento já usado")]
+    public async Task PublicacoesSimultaneas_MesmoDocumento_UmaVence()
+    {
+        (CascadingApiFactory api, HttpClient client) = await Preparar();
+        (Guid processoId, _) = await PublicarEditalAsync(api, client);
+        Guid documento = await SemearDocumentoAsync(api, processoId, TiposDeMidiaDeDocumento.Pdf, "aviso.pdf");
+
+        HttpResponseMessage[] respostas = await Task.WhenAll(
+            PublicarAvisoAsync(client, processoId, documento),
+            PublicarAvisoAsync(client, processoId, documento));
+
+        await ExigirUmaAceitaEUmaRecusadaAsync(respostas, "uniplus.selecao.ato_do_processo.documento_ja_usado_em_outro_ato");
+        (await ContarAtosAsync(api, processoId, DadosDoAtoDeTeste.TipoAviso)).Should().Be(1);
+    }
+
+    [Fact(DisplayName = "Duas publicações simultâneas do tipo único por objeto: uma é aceita e a outra recusada por vaga ocupada")]
+    public async Task PublicacoesSimultaneas_TipoUnico_UmaVence()
+    {
+        (CascadingApiFactory api, HttpClient client) = await Preparar();
+        (Guid processoId, _) = await PublicarEditalAsync(api, client);
+        Guid[] documentos = [.. await Task.WhenAll(Enumerable.Range(0, 2).Select(i =>
+            SemearDocumentoAsync(api, processoId, TiposDeMidiaDeDocumento.Pdf, $"comunicado{i}.pdf")))];
+
+        HttpResponseMessage[] respostas = await Task.WhenAll(documentos.Select(d =>
+            PublicarAvisoAsync(client, processoId, d, tipo: DadosDoAtoDeTeste.TipoAvulsoUnico)));
+
+        await ExigirUmaAceitaEUmaRecusadaAsync(respostas, "uniplus.selecao.processo_seletivo.objeto_ja_tem_ato_vivo_do_tipo");
+        (await ContarAtosAsync(api, processoId, DadosDoAtoDeTeste.TipoAvulsoUnico)).Should().Be(1);
+    }
+
     [Fact(DisplayName = "O ato corrigido de outro processo seletivo é recusado")]
     public async Task AtoCorrigidoDeOutroProcesso_Recusa()
     {
@@ -309,6 +339,23 @@ public sealed class PublicarAtoAvulsoEndpointTests
         });
         pedido.Headers.TryAddWithoutValidation("Idempotency-Key", chave ?? Guid.CreateVersion7().ToString("N"));
         return client.SendAsync(pedido);
+    }
+
+    private static async Task ExigirUmaAceitaEUmaRecusadaAsync(HttpResponseMessage[] respostas, string codigoDaRecusa)
+    {
+        try
+        {
+            respostas.Count(r => r.StatusCode == HttpStatusCode.Accepted).Should().Be(1);
+            HttpResponseMessage recusada = respostas.Single(r => r.StatusCode != HttpStatusCode.Accepted);
+            await ExigirProblemaAsync(recusada, codigoDaRecusa);
+        }
+        finally
+        {
+            foreach (HttpResponseMessage resposta in respostas)
+            {
+                resposta.Dispose();
+            }
+        }
     }
 
     private static async Task ExigirProblemaAsync(HttpResponseMessage resposta, string codigo)

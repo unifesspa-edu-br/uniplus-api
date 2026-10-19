@@ -54,6 +54,16 @@ public interface IAtoDoProcessoRepository
     Task<Guid?> ObterAtoQueCorrigeAsync(Guid atoCorrigidoId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Se o processo já registrou um ato do tipo que não pertence às <paramref name="cadeiaDeCorrecao"/>,
+    /// ainda que pendente.
+    /// </summary>
+    Task<bool> ExisteAtoDoTipoForaDaCadeiaAsync(
+        Guid processoSeletivoId,
+        string tipoCodigo,
+        IReadOnlyCollection<Guid> cadeiaDeCorrecao,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Dos documentos pedidos, os que o processo já usou como principal ou como anexo de algum ato.
     /// </summary>
     Task<IReadOnlySet<Guid>> ListarDocumentosJaUsadosAsync(
