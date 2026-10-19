@@ -84,7 +84,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
     /// <summary>
     /// Um ciclo de derivação (D1 depende de D2, D2 depende de D1) atravessa a validação isolada
     /// de <see cref="ProcessoSeletivo.DefinirRegrasDerivacao"/> — que só barra código duplicado.
-    /// A aciclicidade do grafo conjunto (§7) é condição para congelar a ordem topológica (RN08),
+    /// A aciclicidade do grafo conjunto (§7) é condição para congelar a ordem topológica (congelamento dos parâmetros na publicação, UNI-REQ-0019),
     /// e o gate de pré-canonicalização a exige antes de publicar. O ciclo entre classes/regras
     /// que nenhuma factory isolada pega é exatamente o que o grafo conjunto existe para recusar.
     /// </summary>

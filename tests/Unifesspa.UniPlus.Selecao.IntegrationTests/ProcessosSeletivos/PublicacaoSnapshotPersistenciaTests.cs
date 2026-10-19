@@ -25,7 +25,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura de integração (Postgres real via Testcontainers) do
-/// congelamento do snapshot de publicação (RN08, ADR-0100, Story #759 T4
+/// congelamento do snapshot de publicação (congelamento dos parâmetros na publicação, UNI-REQ-0019, ADR-0100, Story #759 T4
 /// #785). Mapa de testes de #759: <c>Snapshot_HashConfereAppEBanco</c>
 /// (re-hashear os bytes lidos de volta do banco bate com o hash persistido
 /// pela app) e <c>Snapshot_Contem33BlocosCanonicos</c> (os 33 blocos — todos
@@ -375,7 +375,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
     //
     // Os testes abaixo não precisam publicar: DefinirCascataRemanejamento não valida a
     // cobertura por oferta (isso é PendenciaDaCascata, exercitada em
-    // ProcessoSeletivoCascataTests, Domain.UnitTests) — só a FORMA (RN-CASCATA-4, na
+    // ProcessoSeletivoCascataTests, Domain.UnitTests) — só a FORMA (cascata de remanejamento de cotas, UNI-REQ-0056, na
     // factory). O que está em jogo aqui é o que só o Postgres real prova: o Include de
     // ProcessoSeletivoRepository, o cascade e as constraints da tabela.
 

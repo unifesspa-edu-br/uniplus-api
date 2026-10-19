@@ -24,7 +24,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Cobertura do congelamento de metadado de fato (Story #919, RN08) em
+/// Cobertura do congelamento de metadado de fato (Story #919, congelamento dos parâmetros na publicação, UNI-REQ-0019) em
 /// <see cref="PublicarProcessoSeletivoCommandHandler"/>: o resultado da resolução alimenta
 /// <see cref="EntradaCanonicalizacao.MetadadosFatosCongelados"/>, e um código de fato que não
 /// resolve no catálogo aborta a publicação com um erro nomeado ANTES de canonicalizar.

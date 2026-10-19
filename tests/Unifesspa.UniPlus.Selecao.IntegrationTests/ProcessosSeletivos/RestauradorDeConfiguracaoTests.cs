@@ -431,7 +431,7 @@ public sealed class RestauradorDeConfiguracaoTests
     }
 
     /// <summary>
-    /// A prova estrutural do RN08 (Story #919): <see cref="FatoCandidato"/> não tem
+    /// A prova estrutural do congelamento dos parâmetros na publicação (UNI-REQ-0019, Story #919): <see cref="FatoCandidato"/> não tem
     /// NENHUMA mutação em runtime (seed-governado, append-only, ADR-0111) — não é possível
     /// simular "o catálogo mudou" via um comando real. A prova correta é estrutural: publica
     /// com um metadado de fato conhecido (um <c>Binding</c> X, resolvido por um
@@ -443,7 +443,7 @@ public sealed class RestauradorDeConfiguracaoTests
     /// nunca um <c>IFatoCandidatoReader</c> (ver a asserção por reflexão abaixo). Isso prova,
     /// estruturalmente, que a restauração usa o metadado CONGELADO, nunca o catálogo vivo.
     /// </summary>
-    [Fact(DisplayName = "Story #919 (RN08): Restaurar reproduz o metadado de fato congelado sem reconsultar o catálogo vivo")]
+    [Fact(DisplayName = "Story #919 (congelamento dos parâmetros na publicação, UNI-REQ-0019): Restaurar reproduz o metadado de fato congelado sem reconsultar o catálogo vivo")]
     public void Restaurar_ComMetadadoDeFatoCongelado_ReporEProvarSemReconsultarCatalogoVivo()
     {
         // Prova estrutural, em vez de comportamental: RestauradorDeConfiguracao não tem
@@ -453,7 +453,7 @@ public sealed class RestauradorDeConfiguracaoTests
         construtor.GetParameters().Select(static p => p.ParameterType.Name).Should().NotContain(
             "IFatoCandidatoReader",
             "a restauração prova o round-trip com o metadado JÁ CONGELADO no envelope — reconsultar o catálogo vivo " +
-            "aqui reintroduziria exatamente o acoplamento que RN08 existe para impedir");
+            "aqui reintroduziria exatamente o acoplamento que o congelamento dos parâmetros na publicação (UNI-REQ-0019) existe para impedir");
 
         ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
         Guid faseId = processo.CronogramaFases.First().Id;

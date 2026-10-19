@@ -869,7 +869,7 @@ public sealed class EnvelopeCodecRoundTripTests
         "Fixtures",
         "envelope-rico.json");
 
-    // ── Round-trip com exigência documental rica (Story #554, PR #903; Story #919, RN08) ──
+    // ── Round-trip com exigência documental rica (Story #554, PR #903; Story #919, congelamento dos parâmetros na publicação, UNI-REQ-0019) ──
 
     /// <summary>
     /// Prova de fidelidade do codec sobre a MESMA exigência documental rica que a golden

@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// <summary>
 /// Cobertura de <see cref="ProcessoSeletivo.PendenciaDaCascata"/> e do item
 /// "Cascata de remanejamento" em <see cref="ProcessoSeletivo.AvaliarConformidade"/>
-/// (RN-CASCATA-1/2/2b/3, Story #575) — a validação cross-dimensão que varre
+/// (cascata de remanejamento de cotas, UNI-REQ-0056, Story #575) — a validação cross-dimensão que varre
 /// <c>DistribuicaoVagas</c> por oferta, fora do agregador genérico de
 /// conformidade (<see cref="ProcessoSeletivo.PendenciaDeConformidade"/>).
 /// </summary>

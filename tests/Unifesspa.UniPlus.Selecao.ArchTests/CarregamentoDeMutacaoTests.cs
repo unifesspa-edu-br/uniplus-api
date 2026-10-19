@@ -120,7 +120,7 @@ public sealed class CarregamentoDeMutacaoTests
         semCarregamentoDeMutacao.Should().BeEmpty(
             "todo handler de comando que carrega o ProcessoSeletivo precisa fazê-lo por " +
             $"'{CarregamentoDeMutacao}' — é ele que traz a sessão editorial (sem a qual a allowlist da D4 " +
-            "decide errado) e que trava a linha raiz (sem a qual uma publicação concorrente furaria a RN08). " +
+            "decide errado) e que trava a linha raiz (sem a qual uma publicação concorrente furaria o congelamento dos parâmetros na publicação (UNI-REQ-0019)). " +
             $"Handlers sem ele: {string.Join(", ", semCarregamentoDeMutacao)}");
     }
 
@@ -162,7 +162,7 @@ public sealed class CarregamentoDeMutacaoTests
 
         corpo.Should().Contain("FOR UPDATE",
             "sem o lock pessimista, um Definir* que leu Status=Rascunho antes de uma publicação concorrente " +
-            "persistiria a mutação DEPOIS de a versão já ter sido congelada — furando a RN08");
+            "persistiria a mutação DEPOIS de a versão já ter sido congelada — furando o congelamento dos parâmetros na publicação (UNI-REQ-0019)");
         corpo.Should().Contain("Include(p => p.Rascunho)",
             "sem a sessão editorial carregada, a allowlist da D4 lê 'não foi carregado' como 'não existe' e " +
             "recusa a edição legítima de um certame em retificação");
@@ -187,7 +187,7 @@ public sealed class CarregamentoDeMutacaoTests
     /// (<c>CriarProcessoSeletivoCommandHandler</c> é o caso, e não carrega a raiz para mutar).
     /// O que ele não pode é conviver com o carregamento que depende da transação para valer
     /// alguma coisa: a perda seria <b>silenciosa</b> — nada falha, o lock apenas deixa de
-    /// travar, e a RN08 passa a depender só dos guard rails de banco.
+    /// travar, e o congelamento dos parâmetros na publicação (UNI-REQ-0019) passa a depender só dos guard rails de banco.
     /// </para>
     /// </remarks>
     [Fact(DisplayName = "Nenhum caller do carregamento de mutação desliga a transação ambiente — sem ela o FOR UPDATE não serializa nada")]

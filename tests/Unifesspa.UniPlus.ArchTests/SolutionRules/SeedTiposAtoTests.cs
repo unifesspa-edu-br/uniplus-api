@@ -78,7 +78,7 @@ public sealed partial class SeedTiposAtoTests
         Dictionary<string, LinhaSeed> porCodigo = Carregar().ToDictionary(l => l.Codigo, StringComparer.Ordinal);
 
         // Não é o rótulo do tipo que protege a integridade da configuração publicada
-        // (RN08), é a classe de congelamento. Se um edital de abertura congela e a sua
+        // (congelamento dos parâmetros na publicação, UNI-REQ-0019), é a classe de congelamento. Se um edital de abertura congela e a sua
         // retificação não, a retificação deixaria de produzir a nova versão congelada —
         // e nenhum teste de endpoint perceberia.
         porCodigo.Should().ContainKey("EDITAL_ABERTURA");

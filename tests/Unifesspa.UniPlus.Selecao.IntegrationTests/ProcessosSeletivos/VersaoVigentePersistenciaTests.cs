@@ -25,7 +25,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura de integração (Postgres real via Testcontainers) do seletor de
-/// configuração vigente (RN08, Story #803, ADR-0075/0076/0104):
+/// configuração vigente (congelamento dos parâmetros na publicação, UNI-REQ-0019, Story #803, ADR-0075/0076/0104):
 /// <c>ObterVersaoVigenteAsync</c> resolve a <see cref="VersaoConfiguracao"/> de
 /// maior <c>vigente_a_partir_de</c> ≤ o instante, desempatando por
 /// <c>numero_versao</c> — sem ler atributo algum do ato que a criou.

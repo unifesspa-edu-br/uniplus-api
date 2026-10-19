@@ -28,7 +28,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura de integração (Postgres real via Testcontainers) da retificação
-/// (RN08, ADR-0101/0103/0104): a retificação sucede a versão corrente com um ato que
+/// (congelamento dos parâmetros na publicação, UNI-REQ-0019, ADR-0101/0103/0104): a retificação sucede a versão corrente com um ato que
 /// emenda o ato criador dela, e o novo snapshot acrescenta o bloco de retificação
 /// preservando integralmente os blocos da abertura; o snapshot da abertura permanece imutável.
 /// </summary>
