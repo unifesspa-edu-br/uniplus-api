@@ -104,7 +104,7 @@ public sealed class AtoDoProcessoRepository : IAtoDoProcessoRepository
 
         return await _context.AtosDoProcesso
             .AsNoTracking()
-            .AnyAsync(a => ids.Contains(a.Id) && a.ProdutoDoEditalId != null, cancellationToken)
+            .AnyAsync(a => ids.Contains(a.Id) && a.ItemDoEdital != null, cancellationToken)
             .ConfigureAwait(false);
     }
 

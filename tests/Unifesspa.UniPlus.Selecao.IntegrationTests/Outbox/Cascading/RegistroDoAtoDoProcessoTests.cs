@@ -226,7 +226,7 @@ public sealed class RegistroDoAtoDoProcessoTests
         item.GetProperty("situacao").GetString().Should().Be("aberto");
         item.GetProperty("podePublicar").GetBoolean().Should().BeTrue();
 
-        Guid produtoId = item.GetProperty("id").GetGuid();
+        IdentidadeDoItemDoEdital identidadeDoItem = await IdentidadeDoItemNoBanco.DoItemAsync(api.Services, processoId, item.GetProperty("id").GetGuid());
         Guid atoId = Guid.CreateVersion7();
         await using (AsyncServiceScope escopo = api.Services.CreateAsyncScope())
         {
@@ -234,7 +234,7 @@ public sealed class RegistroDoAtoDoProcessoTests
             AtoDoProcesso ato = AtoDoProcesso.Registrar(
                 new NovoAtoDoProcesso(
                     atoId, processoId, tipoDoItem, "Resultado final", "7/2027", new DateOnly(2027, 1, 20),
-                    "Diretor do CEPS", "ceps", "psm-medicina-2027", documentoId, [], ProdutoDoEditalId: produtoId),
+                    "Diretor do CEPS", "ceps", "psm-medicina-2027", documentoId, [], ItemDoEdital: identidadeDoItem),
                 TimeProvider.System).Value!;
             ato.ConfirmarRegistro(TimeProvider.System);
             db.AtosDoProcesso.Add(ato);

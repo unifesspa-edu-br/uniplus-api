@@ -6,6 +6,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.Errors;
 using Domain.Interfaces;
+using Domain.ValueObjects;
 
 using Kernel.Results;
 
@@ -28,12 +29,10 @@ using Services;
 /// <para>
 /// O pareamento entre preliminar e definitivo vem de <see cref="PreliminaresDaMateria"/>, que o mesmo
 /// cronograma consulta para liberar o definitivo, e a publicação do item vem do registro local dos atos,
-/// que enxerga também o ato ainda pendente de confirmação. O item publicado e os definitivos que o
-/// fecham se identificam pelo <c>Id</c> congelado na versão publicada. No cronograma novo eles se
-/// procuram pelo par estável lugar, tipo de ato e papel, porque o
-/// <c>Id</c> do produto muda sem mudar o ciclo quando o descarte de uma sessão reconcilia as fases pela ordem.
-/// O lugar é o código da fase e o <c>Id</c> da etapa, que é a identidade da etapa entre versões: o nome é
-/// rótulo editorial, pode mudar e pode se repetir.
+/// que enxerga também o ato ainda pendente de confirmação. O item se identifica, na versão publicada e no cronograma
+/// novo, pela identidade estável que o ato guarda (<see cref="IdentidadeDoItemDoEdital"/>): lugar, tipo de
+/// ato e papel. O <c>Id</c> do produto muda sem mudar o ciclo quando o descarte de uma sessão recria os
+/// produtos, e por isso não serve.
 /// Mover o definitivo para outro lugar muda o par, e a troca da fase concluinte muda quem fecha o preliminar.
 /// </para>
 /// </remarks>
@@ -56,7 +55,7 @@ internal static class ConferenciaDoCicloRecursalAberto
             .ConfigureAwait(false);
 
         // Sem item do edital publicado não há ciclo aberto, e a versão publicada nem precisa ser lida.
-        if (atos.All(static a => a.ProdutoDoEditalId is null))
+        if (atos.All(static a => a.ItemDoEdital is null))
         {
             return Result.Success();
         }
@@ -83,18 +82,18 @@ internal static class ConferenciaDoCicloRecursalAberto
         CadeiasDosProdutosPrevistos publicacoes)
     {
         List<string> materiasDesfeitas = [];
-        Dictionary<Guid, ItemDoCronograma> publicados = Itens(fasesPublicadas, etapasPublicadas);
-        Dictionary<Guid, ItemDoCronograma> novos = Itens(fasesNovas, etapasNovas);
+        Dictionary<Guid, IdentidadeDoItemDoEdital> publicados = IdentidadeDoItemDoEdital.Dos(fasesPublicadas, etapasPublicadas);
+        Dictionary<Guid, IdentidadeDoItemDoEdital> novos = IdentidadeDoItemDoEdital.Dos(fasesNovas, etapasNovas);
 
-        foreach ((Guid preliminarId, ItemDoCronograma item) in publicados.Where(static i => i.Value.Papel == PapelProdutoFase.Preliminar))
+        foreach ((Guid preliminarId, IdentidadeDoItemDoEdital item) in publicados.Where(static i => i.Value.Papel == PapelProdutoFase.Preliminar))
         {
-            if (publicacoes.PrimeiraPublicacaoDe(preliminarId) is not { } preliminar)
+            if (publicacoes.PrimeiraPublicacaoDe(item) is not { } preliminar)
             {
                 continue;
             }
 
             IReadOnlyList<Guid> definitivos = PreliminaresDaMateria.DefinitivosQueFecham(fasesPublicadas, etapasPublicadas, preliminarId);
-            if (definitivos.Count == 0 || definitivos.Any(d => publicacoes.PrimeiraPublicacaoDe(d) is not null))
+            if (definitivos.Count == 0 || definitivos.Any(d => publicacoes.PrimeiraPublicacaoDe(publicados[d]) is not null))
             {
                 continue;
             }
@@ -120,9 +119,9 @@ internal static class ConferenciaDoCicloRecursalAberto
             : $"as matérias {string.Join(", ", nomes.Select(static n => $"'{n}'"))}";
 
     private static bool MantemOCiclo(
-        ItemDoCronograma preliminar,
-        IEnumerable<ItemDoCronograma> definitivos,
-        Dictionary<Guid, ItemDoCronograma> novos,
+        IdentidadeDoItemDoEdital preliminar,
+        IEnumerable<IdentidadeDoItemDoEdital> definitivos,
+        Dictionary<Guid, IdentidadeDoItemDoEdital> novos,
         IReadOnlyCollection<FaseCronograma> fasesNovas,
         IReadOnlyCollection<EtapaProcesso> etapasNovas)
     {
@@ -132,21 +131,11 @@ internal static class ConferenciaDoCicloRecursalAberto
             return false;
         }
 
-        HashSet<ItemDoCronograma> quemFecha =
+        HashSet<IdentidadeDoItemDoEdital> quemFecha =
         [
             .. PreliminaresDaMateria.DefinitivosQueFecham(fasesNovas, etapasNovas, preliminarNovo.Value).Select(d => novos[d]),
         ];
 
         return definitivos.All(quemFecha.Contains);
     }
-
-    private static Dictionary<Guid, ItemDoCronograma> Itens(
-        IReadOnlyCollection<FaseCronograma> fases,
-        IReadOnlyCollection<EtapaProcesso> etapas) =>
-        fases.SelectMany(static f => f.Produtos.Select(p => (p.Id, Item: new ItemDoCronograma($"fase:{f.Codigo}", p.AtoCodigo, p.Papel))))
-            .Concat(etapas.SelectMany(static e => e.Produtos.Select(p => (p.Id, Item: new ItemDoCronograma($"etapa:{e.Id}", p.AtoCodigo, p.Papel)))))
-            .ToDictionary(static i => i.Id, static i => i.Item);
-
-    /// <summary>O item pelo que o identifica entre versões: onde está, o tipo de ato e o papel.</summary>
-    private sealed record ItemDoCronograma(string Lugar, string AtoCodigo, PapelProdutoFase? Papel);
 }

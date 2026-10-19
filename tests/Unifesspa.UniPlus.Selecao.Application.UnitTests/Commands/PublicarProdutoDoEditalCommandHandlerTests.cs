@@ -51,6 +51,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
 
     private readonly DocumentoAPublicar _principal = Documento();
     private readonly List<AtoDoProcesso> _atosDoProcesso = [];
+    private Dictionary<Guid, IdentidadeDoItemDoEdital> _itensDoCronograma = [];
 
     public PublicarProdutoDoEditalCommandHandlerTests()
     {
@@ -83,7 +84,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
 
         resposta.IsSuccess.Should().BeTrue();
         gravado.Should().NotBeNull();
-        gravado!.ProdutoDoEditalId.Should().Be(preliminar.Id);
+        gravado!.ItemDoEdital.Should().Be(_itensDoCronograma[preliminar.Id].Chave);
         gravado.TipoCodigo.Should().Be(Materia, "o tipo vem do item que o edital congelou");
         gravado.AtoCorrigidoId.Should().BeNull();
         gravado.PoliticaDeDivulgacaoConfirmadaPorSub.Should().Be(Sub);
@@ -184,7 +185,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
         (Result<AtoPublicadoDto> resposta, IEnumerable<object> mensagens) = await Publicar(Comando(preliminar.Id, corrige: original.Id));
 
         resposta.IsSuccess.Should().BeTrue();
-        gravado!.ProdutoDoEditalId.Should().Be(preliminar.Id);
+        gravado!.ItemDoEdital.Should().Be(_itensDoCronograma[preliminar.Id].Chave);
         gravado.AtoCorrigidoId.Should().Be(original.Id);
         gravado.PoliticaDeDivulgacaoConfirmadaPorSub.Should().Be(Sub);
         mensagens.Should().ContainSingle().Which.Should().BeOfType<RegistrarAtoNormativoRequisicao>()
@@ -351,6 +352,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
     private void Cronograma(params FaseCronograma[] fases)
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS 2027 — Medicina");
+        _itensDoCronograma = IdentidadeDoItemDoEdital.Dos(fases, [.. processo.Etapas]);
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
             _processoId, [1], Versao, "canonical-json/sha256@v1", Guid.CreateVersion7(), new string('a', 64), "sub", Agora);
         _processos.ObterVersaoVigenteAsync(_processoId, Agora, Arg.Any<CancellationToken>()).Returns(versao);
@@ -383,7 +385,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
         AtoDoProcesso ato = AtoDoProcesso.Registrar(
             new NovoAtoDoProcesso(
                 Guid.CreateVersion7(), _processoId, tipo, tipo, "1/2027", DataDoAto, "Diretor do CEPS", "ceps", "psm-medicina-2027",
-                Guid.CreateVersion7(), [], ProdutoDoEditalId: produtoId),
+                Guid.CreateVersion7(), [], ItemDoEdital: _itensDoCronograma[produtoId]),
             new RelogioFixo(Agora)).Value!;
         typeof(AtoDoProcesso).GetProperty(nameof(AtoDoProcesso.CreatedAt))!.SetValue(ato, Agora.AddMinutes(-60 + _atosDoProcesso.Count));
         if (registrado)

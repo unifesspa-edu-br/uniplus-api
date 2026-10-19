@@ -242,6 +242,11 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("identificador_legivel_do_processo");
 
+                    b.Property<string>("ItemDoEdital")
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)")
+                        .HasColumnName("item_do_edital");
+
                     b.Property<string>("MotivoDaCorrecao")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)")
@@ -264,10 +269,6 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
                         .HasColumnName("processo_seletivo_id");
-
-                    b.Property<Guid?>("ProdutoDoEditalId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("produto_do_edital_id");
 
                     b.Property<DateTimeOffset?>("RegistradoEm")
                         .HasColumnType("timestamp with time zone")
@@ -310,10 +311,10 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.HasIndex("DocumentoPrincipalId")
                         .HasDatabaseName("ix_atos_do_processo_documento_principal_id");
 
-                    b.HasIndex("ProcessoSeletivoId", "ProdutoDoEditalId")
+                    b.HasIndex("ProcessoSeletivoId", "ItemDoEdital")
                         .IsUnique()
-                        .HasDatabaseName("ux_atos_do_processo_produto_original")
-                        .HasFilter("produto_do_edital_id IS NOT NULL AND ato_corrigido_id IS NULL");
+                        .HasDatabaseName("ux_atos_do_processo_item_original")
+                        .HasFilter("item_do_edital IS NOT NULL AND ato_corrigido_id IS NULL");
 
                     b.HasIndex("ProcessoSeletivoId", "CreatedAt", "Id")
                         .IsDescending(false, true, true)

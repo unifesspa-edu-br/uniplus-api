@@ -41,6 +41,7 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
     private readonly IResolvedorFusoInstitucional _fuso = Substitute.For<IResolvedorFusoInstitucional>();
     private readonly List<DocumentoAPublicar> _documentosDoProcesso = [];
     private readonly List<AtoDoProcesso> _atosDoProcesso = [];
+    private Dictionary<Guid, IdentidadeDoItemDoEdital> _itensDoCronograma = [];
 
     public ListarProdutosPrevistosDoProcessoQueryHandlerTests()
     {
@@ -60,6 +61,7 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
     private void Cronograma(IReadOnlyList<FaseCronograma> fases, IReadOnlyList<EtapaProcesso>? etapas = null, ConfiguracaoDivulgacao? divulgacao = null)
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS 2027 — Medicina");
+        _itensDoCronograma = IdentidadeDoItemDoEdital.Dos(fases, etapas ?? [.. processo.Etapas]);
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
             _processoId, [1], Versao, "canonical-json/sha256@v1", Guid.CreateVersion7(), new string('a', 64), "sub", Agora);
         _processos.ObterVersaoVigenteAsync(_processoId, Agora, Arg.Any<CancellationToken>()).Returns(versao);
@@ -76,8 +78,11 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         FaseQueConclui(codigo, ordem, null, produtos);
 
     private static FaseCronograma FaseQueConclui(string codigo, int ordem, string? faseConcluinteCodigo, params ProdutoDaFase[] produtos) =>
+        FaseDeOrigem(Guid.CreateVersion7(), codigo, ordem, faseConcluinteCodigo, produtos);
+
+    private static FaseCronograma FaseDeOrigem(Guid origem, string codigo, int ordem, string? faseConcluinteCodigo, params ProdutoDaFase[] produtos) =>
         FaseCronograma.Criar(
-            ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.Propria,
+            ordem, origem, codigo, "CEPS", OrigemDataFase.Propria,
             agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: Agora, fim: Agora.AddDays(10), produtos: produtos,
             faseConcluinteCodigo: faseConcluinteCodigo, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!;
@@ -107,7 +112,7 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
             new NovoAtoDoProcesso(
                 Guid.CreateVersion7(), _processoId, tipo, $"Nome de {tipo}", "5/2027", new DateOnly(2027, 1, 20),
                 "Diretor do CEPS", "ceps", "psm-medicina-2027", Documento().Id, [],
-                ProdutoDoEditalId: produtoId, AtoCorrigidoId: corrige, MotivoDaCorrecao: corrige is null ? null : "Erro de digitação"),
+                ItemDoEdital: produtoId is { } id ? _itensDoCronograma[id] : null, AtoCorrigidoId: corrige, MotivoDaCorrecao: corrige is null ? null : "Erro de digitação"),
             new RelogioFixo(Agora.AddMinutes(-10))).Value!;
         typeof(AtoDoProcesso).GetProperty(nameof(AtoDoProcesso.CreatedAt))!.SetValue(ato, Agora.AddMinutes(-10 + _atosDoProcesso.Count));
         if (registrado)
@@ -169,6 +174,25 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         doDefinitivo.PodePublicar.Should().BeFalse();
         doDefinitivo.Impedimento!.Motivo.Should().Be(ImpedimentoDoProduto.PreliminarNaoPublicado);
         doDefinitivo.Impedimento.Mensagem.Should().NotBeNullOrWhiteSpace();
+    }
+
+    [Fact(DisplayName = "O item publicado continua publicado quando a versão seguinte o declara com produtos de Id novo, em outra ordem")]
+    public async Task Handle_ProdutosRecriadosEmOutraOrdem_ItemSegueDePublicado()
+    {
+        Guid origem = Guid.CreateVersion7();
+        (ProdutoDaFase preliminar, ProdutoDaFase definitivo) = Par();
+        Cronograma([FaseDeOrigem(origem, "INSCRICAO", 1, null, preliminar, definitivo)]);
+        AtoDoProcesso ato = Publicar(Materia, preliminar.Id, registrado: true);
+        (ProdutoDaFase preliminarRecriado, ProdutoDaFase definitivoRecriado) = Par();
+        Cronograma([Fase("HOMOLOGACAO", 1), FaseDeOrigem(origem, "INSCRICAO", 2, null, preliminarRecriado, definitivoRecriado)]);
+
+        ProdutoPrevistoDto doPreliminar = await ItemDaFase(preliminarRecriado.Id);
+        ProdutoPrevistoDto doDefinitivo = await ItemDaFase(definitivoRecriado.Id);
+
+        doPreliminar.Situacao.Should().Be(SituacaoDoProdutoPrevisto.Publicado);
+        doPreliminar.Ato!.Id.Should().Be(ato.Id);
+        doPreliminar.Impedimento!.Motivo.Should().Be(ImpedimentoDoProduto.JaPublicado);
+        doDefinitivo.PodePublicar.Should().BeTrue("o preliminar da matéria já saiu, ainda que o produto dele tenha Id novo");
     }
 
     [Fact(DisplayName = "Publicado o preliminar, ele aparece com ato e documento e o definitivo passa a poder sair")]

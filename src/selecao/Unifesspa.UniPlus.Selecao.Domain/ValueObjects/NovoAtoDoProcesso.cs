@@ -21,9 +21,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// O documento a publicar confirmado que é o principal do ato — o do edital, no ato que cria versão.
 /// </param>
 /// <param name="Anexos">Anexos do ato, na ordem declarada.</param>
-/// <param name="ProdutoDoEditalId">
-/// Referência ao <c>Id</c> congelado do produto de fase ou de etapa que o ato cumpre, quando é um
-/// resultado declarado no edital.
+/// <param name="ItemDoEdital">
+/// Identidade do item de fase ou de etapa que o ato cumpre, quando é um resultado declarado no edital.
 /// </param>
 /// <param name="AtoCorrigidoId">O ato que este corrige, quando é errata ou retificação.</param>
 /// <param name="MotivoDaCorrecao">Motivo da correção; obrigatório com <paramref name="AtoCorrigidoId"/>.</param>
@@ -43,7 +42,7 @@ public sealed record NovoAtoDoProcesso(
     string IdentificadorLegivelDoProcesso,
     Guid DocumentoPrincipalId,
     IReadOnlyList<AnexoDeclarado> Anexos,
-    Guid? ProdutoDoEditalId = null,
+    IdentidadeDoItemDoEdital? ItemDoEdital = null,
     Guid? AtoCorrigidoId = null,
     string? MotivoDaCorrecao = null,
     string? PoliticaDeDivulgacaoConfirmadaPorSub = null);
