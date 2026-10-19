@@ -1,6 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Errors;
 
-/// <summary>Códigos de erro da publicação de um ato avulso do processo e da correção de um ato publicado.</summary>
+/// <summary>
+/// Códigos de erro da publicação de um ato do processo — o documento avulso e o item que o edital
+/// declara — e da correção de um ato publicado.
+/// </summary>
 public static class AtoDoProcessoErrorCodes
 {
     public const string CertameNaoDivulgado = "AtoDoProcesso.CertameNaoDivulgado";
@@ -26,4 +29,14 @@ public static class AtoDoProcessoErrorCodes
     public const string AtoCorrigidoObrigatorio = "AtoDoProcesso.AtoCorrigidoObrigatorio";
     public const string AtoCorrigidoInvalido = "AtoDoProcesso.AtoCorrigidoInvalido";
     public const string MotivoDaCorrecaoObrigatorio = "AtoDoProcesso.MotivoDaCorrecaoObrigatorio";
+    public const string ProdutoNaoDeclarado = "AtoDoProcesso.ProdutoNaoDeclarado";
+    public const string ProdutoJaPublicado = "AtoDoProcesso.ProdutoJaPublicado";
+    public const string ProdutoAguardaRegistro = "AtoDoProcesso.ProdutoAguardaRegistro";
+    public const string PreliminarNaoPublicado = "AtoDoProcesso.PreliminarNaoPublicado";
+    public const string PreliminarAguardaRegistro = "AtoDoProcesso.PreliminarAguardaRegistro";
+    public const string PoliticaDeDivulgacaoNaoConfirmada = "AtoDoProcesso.PoliticaDeDivulgacaoNaoConfirmada";
+    public const string UsuarioNaoIdentificado = "AtoDoProcesso.UsuarioNaoIdentificado";
+    public const string AtoCorrigidoNaoEhDoProduto = "AtoDoProcesso.AtoCorrigidoNaoEhDoProduto";
+    public const string PreliminarFechadoPeloDefinitivo = "AtoDoProcesso.PreliminarFechadoPeloDefinitivo";
+    public const string AtoCorrigidoEhItemDoEdital = "AtoDoProcesso.AtoCorrigidoEhItemDoEdital";
 }
