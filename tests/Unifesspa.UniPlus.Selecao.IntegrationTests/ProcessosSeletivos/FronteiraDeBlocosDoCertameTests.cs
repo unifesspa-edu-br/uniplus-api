@@ -170,6 +170,27 @@ public sealed class FronteiraDeBlocosDoCertameTests
         oferta.Turnos.Should().Equal("MATUTINO", "VESPERTINO");
     }
 
+    [Theory(DisplayName = "A projeção expõe quantas opções de curso o certame admite, e recusa o número que o domínio não admite")]
+    [InlineData(1, true)]
+    [InlineData(2, true)]
+    [InlineData(0, false)]
+    [InlineData(3, false)]
+    public void Projetar_DeveExporONumeroDeOpcoesDeCurso(int numero, bool projeta)
+    {
+        JsonObject envelope = (JsonObject)JsonNode.Parse(
+            EnvelopeCanonicoGoldenTests.CanonicalizarReferencia().Bytes)!;
+        envelope["opcoesDeCurso"]!["numero"] = numero;
+
+        Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
+            Guid.CreateVersion7(), AtoDeTeste(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
+
+        resultado.IsSuccess.Should().Be(projeta);
+        if (projeta)
+        {
+            resultado.Value!.OpcoesDeCurso.Numero.Should().Be(numero);
+        }
+    }
+
     [Fact(DisplayName = "A projeção expõe o fuso da localidade com o identificador e o nome do domínio")]
     public void Projetar_DeveExporOFusoComONome()
     {
@@ -359,7 +380,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
     }
 
     [Theory(DisplayName = "Documento de outra versão de projeção é recusado, mesmo íntegro")]
-    [InlineData("9")]
+    [InlineData("10")]
     [InlineData("6")]
     public void TentarLerProjecao_QuandoAVersaoNaoEADesteBinario_DeveRecusar(string outraVersao)
     {

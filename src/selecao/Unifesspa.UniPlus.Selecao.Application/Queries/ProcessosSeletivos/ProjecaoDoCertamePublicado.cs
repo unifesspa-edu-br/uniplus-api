@@ -37,7 +37,7 @@ internal static class ProjecaoDoCertamePublicado
     /// envelope congelado, que continua o mesmo quando só a projeção muda, e um cache endereçado
     /// apenas por ele serviria a resposta antiga depois do deploy.
     /// </summary>
-    public const string Versao = "8";
+    public const string Versao = "9";
 
     /// <summary>
     /// Forma do documento divulgado — a MESMA do wire, e a usada para lê-lo de volta. A única parte
@@ -144,6 +144,7 @@ internal static class ProjecaoDoCertamePublicado
             && certame.OrigemCandidatos is not null
             && certame.ModalidadesOfertadas is not null
             && certame.Ofertas is not null
+            && certame.OpcoesDeCurso is not null
             && certame.Vagas is not null
             && certame.Etapas is not null
             && certame.CronogramaFases is not null
@@ -222,6 +223,11 @@ internal static class ProjecaoDoCertamePublicado
             return Recusar("ofertas");
         }
 
+        if (!TentarOpcoesDeCurso(envelope, out OpcoesDeCursoCertameDto? opcoesDeCurso))
+        {
+            return Recusar("opções de curso");
+        }
+
         if (!TentarTextos(envelope, BlocoPublico("modalidadesOfertadas"), out List<string>? modalidades))
         {
             return Recusar("modalidades ofertadas");
@@ -279,6 +285,7 @@ internal static class ProjecaoDoCertamePublicado
             unidade,
             new DocumentoEditalCertameDto(edital.DocumentoEditalId, edital.HashSha256, enderecoNoAcervo(edital.Chave)),
             ofertas,
+            opcoesDeCurso,
             modalidades,
             vagas,
             etapas,
@@ -490,6 +497,20 @@ internal static class ProjecaoDoCertamePublicado
         }
 
         ofertas = lidas;
+        return true;
+    }
+
+    private static bool TentarOpcoesDeCurso(JsonObject envelope, [NotNullWhen(true)] out OpcoesDeCursoCertameDto? opcoesDeCurso)
+    {
+        opcoesDeCurso = null;
+        if (!TentarObjeto(envelope, BlocoPublico("opcoesDeCurso"), out JsonObject? bloco)
+            || !TentarInteiro(bloco, "numero", out int numero)
+            || numero is < 1 or > ProcessoSeletivo.MaximoDeOpcoesDeCurso)
+        {
+            return false;
+        }
+
+        opcoesDeCurso = new OpcoesDeCursoCertameDto(numero);
         return true;
     }
 

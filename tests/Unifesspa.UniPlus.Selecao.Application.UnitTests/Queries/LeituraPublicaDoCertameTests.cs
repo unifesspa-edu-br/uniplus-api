@@ -370,6 +370,7 @@ public sealed class LeituraPublicaDoCertameTests
         new UnidadeAdministradoraCertameDto("UNIFESSPA", "Universidade", "Autarquia", "Marabá", "PA"),
         new DocumentoEditalCertameDto(Guid.CreateVersion7(), new string('b', 64), new Uri("https://acervo.teste/edital.pdf")),
         [],
+        new OpcoesDeCursoCertameDto(1),
         ["AC"],
         [new QuadroDeVagasCertameDto(Guid.CreateVersion7(), [], 100)],
         [],
