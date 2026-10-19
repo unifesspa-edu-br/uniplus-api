@@ -298,7 +298,9 @@ public sealed class CatalogoDeTiposAtoHealthCheckTests
                     linha.GetProperty("congelaConfiguracao").GetBoolean(),
                     linha.GetProperty("unicoPorObjeto").GetBoolean(),
                     linha.GetProperty("efeitoIrreversivel").GetBoolean(),
-                    linha.GetProperty("ehResultado").GetBoolean())),
+                    linha.GetProperty("ehResultado").GetBoolean(),
+                    linha.GetProperty("publicavelComoAvulso").GetBoolean(),
+                    linha.GetProperty("exigeAtoCorrigido").GetBoolean())),
         ];
     }
 
@@ -329,7 +331,9 @@ public sealed class CatalogoDeTiposAtoHealthCheckTests
             ehResultado: linha.EhResultado,
             vigenciaInicio: new DateOnly(2020, 1, 1),
             vigenciaFim: null,
-            baseLegal: null);
+            baseLegal: null,
+            publicavelComoAvulso: linha.PublicavelComoAvulso,
+            exigeAtoCorrigido: linha.ExigeAtoCorrigido);
 
         criado.IsSuccess.Should().BeTrue(
             "o arranjo precisa dizer qual regra recusou, e não morrer numa referência nula");
@@ -367,5 +371,7 @@ public sealed class CatalogoDeTiposAtoHealthCheckTests
         bool CongelaConfiguracao,
         bool UnicoPorObjeto,
         bool EfeitoIrreversivel,
-        bool EhResultado);
+        bool EhResultado,
+        bool PublicavelComoAvulso,
+        bool ExigeAtoCorrigido);
 }
