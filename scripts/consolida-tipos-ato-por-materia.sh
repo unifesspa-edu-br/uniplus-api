@@ -15,7 +15,10 @@
 #   2. só então retira cada tipo antigo do mapa, que repetia o papel no código: a versão que
 #      atravessa a data de corte termina nela, e a versão que começa no corte ou depois, já
 #      agendada, é removida. Se a criação falhar, nada é retirado: nunca fica um estado sem
-#      tipo de resultado vigente;
+#      tipo de resultado vigente. Ao encerrar a versão antiga que seja resultado e irreversível
+#      (o antigo resultado final), envia-a sem a marca de irreversível, que o cadastro recusaria;
+#      se houver versão assim e o corte for no futuro, para antes de escrever, porque os atos
+#      publicados até o corte copiariam a marca já retirada;
 #   3. define, nos tipos AVISO, COMUNICADO e ERRATA, os atributos `publicavelComoAvulso` e
 #      `exigeAtoCorrigido` com o valor de `seeds/seed-tipos-ato.json`. As colunas nasceram `false`
 #      em toda linha existente só para poder existir; sem este passo nenhum tipo é aceito como
@@ -145,8 +148,11 @@ encerrar_vigencia() {
             ok "${codigo}: versão que começaria em ${inicio} removida"
         elif [[ -z "${fim}" || "${fim}" > "${DATA_CORTE}" ]]; then
             alterou=1
+            # A regra do cadastro recusa tipo que seja resultado e irreversível, inclusive na edição que
+            # só encerra a vigência; o ato já publicado guarda as marcas por valor e não é afetado.
             corpo="$(jq -c --arg fim "${DATA_CORTE}" '{
-                id, codigo, nome, congelaConfiguracao, unicoPorObjeto, efeitoIrreversivel,
+                id, codigo, nome, congelaConfiguracao, unicoPorObjeto,
+                efeitoIrreversivel: (if .ehResultado and .efeitoIrreversivel then false else .efeitoIrreversivel end),
                 ehResultado, publicavelComoAvulso, exigeAtoCorrigido, vigenciaInicio,
                 vigenciaFim: $fim, baseLegal
             }' <<< "${versao}")"
@@ -270,9 +276,27 @@ conferir_versoes_dos_tipos_novos() {
     done < <(linhas_do_mapa)
 }
 
+# O tipo antigo que é resultado e irreversível perde a marca de irreversível ao ser encerrado, e
+# continua valendo até o corte. Com o corte no futuro, os atos publicados até lá copiariam a marca
+# já retirada: nesse caso o roteiro para antes de qualquer escrita e pede o corte de hoje.
+conferir_corte_dos_tipos_antigos() {
+    local codigo afetados
+    [[ ! "${DATA_CORTE}" > "$(date -u +%F)" ]] && return 0
+    while IFS=$'\t' read -r codigo _ _; do
+        afetados="$(jq -c --arg codigo "${codigo}" --arg corte "${DATA_CORTE}" '
+            [.[] | select(.codigo == $codigo and .vigenciaInicio < $corte
+                          and (.vigenciaFim == null or .vigenciaFim > $corte)
+                          and .ehResultado == true and .efeitoIrreversivel == true)
+                 | .vigenciaInicio]' <<< "${CATALOGO}")"
+        [[ "${afetados}" == "[]" ]] \
+            || fail "${codigo}: é resultado e irreversível e perderia a marca antes do corte ${DATA_CORTE}; rode a consolidação com o corte de hoje"
+    done < <(linhas_do_mapa)
+}
+
 CATALOGO="$(catalogo_completo)"
 readonly CATALOGO
 conferir_versoes_dos_tipos_novos
+conferir_corte_dos_tipos_antigos
 
 log "Criando os tipos por matéria (antes de encerrar os antigos)"
 declare -A JA_TRATADOS=()
