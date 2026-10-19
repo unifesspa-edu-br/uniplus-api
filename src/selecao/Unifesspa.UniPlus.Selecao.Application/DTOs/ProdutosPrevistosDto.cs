@@ -80,9 +80,14 @@ public sealed record FaseComProdutosPrevistosDto(
 /// Os itens que a versão vigente do edital declara publicar, agrupados pela fase do cronograma.
 /// </summary>
 /// <param name="NumeroDaVersao">Número da versão vigente de onde vêm as declarações.</param>
+/// <param name="PoliticaDeDivulgacao">
+/// A política de divulgação do certame congelada na versão vigente — o que o administrador vê e confirma
+/// antes de publicar um resultado.
+/// </param>
 /// <param name="Fases">As fases do cronograma, em ordem.</param>
 /// <param name="EtapasSemFase">As etapas que não declaram fase, quando o edital as tem.</param>
 public sealed record ProdutosPrevistosDoProcessoDto(
     int NumeroDaVersao,
+    ConfiguracaoDivulgacaoDto PoliticaDeDivulgacao,
     IReadOnlyList<FaseComProdutosPrevistosDto> Fases,
     IReadOnlyList<EtapaComProdutosPrevistosDto> EtapasSemFase);

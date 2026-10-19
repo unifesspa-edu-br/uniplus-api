@@ -57,7 +57,7 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         _tipos.ListarVigentesAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(codigos.Select(c => new TipoAtoPublicadoView(c, $"Nome de {c}", false, true, false, true)).ToList());
 
-    private void Cronograma(IReadOnlyList<FaseCronograma> fases, IReadOnlyList<EtapaProcesso>? etapas = null)
+    private void Cronograma(IReadOnlyList<FaseCronograma> fases, IReadOnlyList<EtapaProcesso>? etapas = null, ConfiguracaoDivulgacao? divulgacao = null)
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS 2027 — Medicina");
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
@@ -67,7 +67,7 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
             new GrafoConfiguracao(
                 etapas ?? [.. processo.Etapas], processo.OfertaAtendimento!, [.. processo.DistribuicaoVagas],
                 processo.BonusRegional, [.. processo.CriteriosDesempate], processo.Classificacao!,
-                fases, [.. processo.DocumentosExigidos], [], null, numeroDeOpcoesDeCurso: 1),
+                fases, [.. processo.DocumentosExigidos], [], null, configuracaoDivulgacao: divulgacao, numeroDeOpcoesDeCurso: 1),
             DadosEdital.Criar("001/2027", Agora, Agora.AddDays(30), Guid.CreateVersion7()).Value!,
             new string('a', 64), "America/Sao_Paulo", retificacao: null, conformidade: null)));
     }
@@ -136,6 +136,22 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
 
     private static (ProdutoDaFase Preliminar, ProdutoDaFase Definitivo) Par(string materia = Materia) =>
         (ProdutoDaFase.Criar(materia, PapelProdutoFase.Preliminar), ProdutoDaFase.Criar(materia, PapelProdutoFase.Definitivo));
+
+    [Fact(DisplayName = "A consulta mostra a política de divulgação que a versão congelou, e o piso quando ela não declarou")]
+    public async Task Consultar_ExibeAPoliticaDeDivulgacaoDaVersao()
+    {
+        (ProdutoDaFase preliminar, _) = Par();
+        ConfiguracaoDivulgacao ampliada = ConfiguracaoDivulgacao.Criar(
+            [ConfiguracaoDivulgacao.NumeroInscricao, ConfiguracaoDivulgacao.Nome], "Lista nominal exigida pelo edital").Value!;
+
+        Cronograma([Fase("HOMOLOGACAO", 1, preliminar)], divulgacao: ampliada);
+        (await Consultar()).Value!.PoliticaDeDivulgacao.CamposPublicos
+            .Should().BeEquivalentTo([ConfiguracaoDivulgacao.NumeroInscricao, ConfiguracaoDivulgacao.Nome]);
+
+        Cronograma([Fase("HOMOLOGACAO", 1, preliminar)]);
+        (await Consultar()).Value!.PoliticaDeDivulgacao.CamposPublicos
+            .Should().Equal(ConfiguracaoDivulgacao.NumeroInscricao);
+    }
 
     [Fact(DisplayName = "Preliminar e definitivo da mesma matéria vêm abertos, e o definitivo diz que espera o preliminar")]
     public async Task Handle_PreliminarEDefinitivoAbertos_DefinitivoNaoPodeSair()

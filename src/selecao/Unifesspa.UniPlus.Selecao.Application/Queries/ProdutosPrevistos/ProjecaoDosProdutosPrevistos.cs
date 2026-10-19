@@ -25,7 +25,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </remarks>
 internal static class ProjecaoDosProdutosPrevistos
 {
-    private sealed record Declarado(Guid Id, string AtoCodigo, PapelProdutoFase? Papel);
+    internal sealed record Declarado(Guid Id, string AtoCodigo, PapelProdutoFase? Papel);
 
     /// <summary>Os códigos dos tipos de ato que o cronograma declara publicar.</summary>
     public static IReadOnlyList<string> TiposDeAtoDeclarados(GrafoConfiguracao grafo)
@@ -84,12 +84,26 @@ internal static class ProjecaoDosProdutosPrevistos
 
         return new ProdutosPrevistosDoProcessoDto(
             numeroDaVersao,
+            PoliticaDeDivulgacaoDaVersao(grafo),
             [.. grafo.CronogramaFases.OrderBy(static f => f.Ordem).Select(Fase)],
             [.. grafo.Etapas
                 .Where(static e => e.FaseCodigo is null)
                 .OrderBy(static e => e.Ordem ?? int.MaxValue)
                 .ThenBy(static e => e.Nome, StringComparer.Ordinal)
                 .Select(Etapa)]);
+    }
+
+    /// <summary>
+    /// A política de divulgação do certame como a versão congelou, e não como o cadastro está hoje.
+    /// Sem configuração explícita vale o piso minimizado: só o número de inscrição.
+    /// </summary>
+    internal static ConfiguracaoDivulgacaoDto PoliticaDeDivulgacaoDaVersao(GrafoConfiguracao grafo)
+    {
+        ArgumentNullException.ThrowIfNull(grafo);
+
+        return grafo.ConfiguracaoDivulgacao is { } configuracao
+            ? new ConfiguracaoDivulgacaoDto(configuracao.CamposPublicos, configuracao.Justificativa)
+            : new ConfiguracaoDivulgacaoDto([ConfiguracaoDivulgacao.NumeroInscricao], null);
     }
 
     private static List<ProdutoPrevistoDto> Produtos(
@@ -108,12 +122,7 @@ internal static class ProjecaoDosProdutosPrevistos
         Func<AtoDoProcesso, AtoDoProcessoDto> projetarAto)
     {
         AtoDoProcesso? primeira = cadeias.PrimeiraPublicacaoDe(produto.Id);
-        SituacaoDoProdutoPrevisto situacao = primeira switch
-        {
-            null => SituacaoDoProdutoPrevisto.Aberto,
-            { Situacao: SituacaoDoRegistroDoAto.Registrado } => SituacaoDoProdutoPrevisto.Publicado,
-            _ => SituacaoDoProdutoPrevisto.Pendente,
-        };
+        SituacaoDoProdutoPrevisto situacao = SituacaoDe(primeira);
         bool tipoVigente = tiposVigentes.ContainsKey(produto.AtoCodigo);
         ImpedimentoDoProdutoDto? impedimento = ImpedimentoDe(produto, situacao, grafo, cadeias, tipoVigente);
 
@@ -129,7 +138,20 @@ internal static class ProjecaoDosProdutosPrevistos
             impedimento);
     }
 
-    private static ImpedimentoDoProdutoDto? ImpedimentoDe(
+    /// <summary>A situação do item, dada a primeira publicação dele.</summary>
+    internal static SituacaoDoProdutoPrevisto SituacaoDe(AtoDoProcesso? primeiraPublicacao) =>
+        primeiraPublicacao switch
+        {
+            null => SituacaoDoProdutoPrevisto.Aberto,
+            { Situacao: SituacaoDoRegistroDoAto.Registrado } => SituacaoDoProdutoPrevisto.Publicado,
+            _ => SituacaoDoProdutoPrevisto.Pendente,
+        };
+
+    /// <summary>
+    /// O que impede o item de ser publicado agora, ou nulo quando pode sair: é a mesma pergunta que a
+    /// consulta responde e que o comando de publicação confere antes de enviar o ato.
+    /// </summary>
+    internal static ImpedimentoDoProdutoDto? ImpedimentoDe(
         Declarado produto,
         SituacaoDoProdutoPrevisto situacao,
         GrafoConfiguracao grafo,
