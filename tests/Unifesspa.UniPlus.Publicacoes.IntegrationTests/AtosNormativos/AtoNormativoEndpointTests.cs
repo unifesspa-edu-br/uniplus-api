@@ -173,6 +173,8 @@ public sealed class AtoNormativoEndpointTests
             congelaConfiguracao = false,
             unicoPorObjeto = false,
             efeitoIrreversivel = false,
+            publicavelComoAvulso = false,
+            exigeAtoCorrigido = false,
             vigenciaInicio = "2020-01-01",
             vigenciaFim = (string?)null,
         });
@@ -704,6 +706,8 @@ public sealed class AtoNormativoEndpointTests
             congelaConfiguracao = congela,
             unicoPorObjeto = false,
             efeitoIrreversivel = efeito,
+            publicavelComoAvulso = false,
+            exigeAtoCorrigido = false,
             vigenciaInicio = "2020-01-01",
             vigenciaFim = (string?)null,
         };

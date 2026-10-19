@@ -46,6 +46,8 @@ internal sealed class TipoAtoPublicadoConfiguration : IEntityTypeConfiguration<T
         builder.Property(t => t.UnicoPorObjeto).IsRequired();
         builder.Property(t => t.EfeitoIrreversivel).IsRequired();
         builder.Property(t => t.EhResultado).IsRequired();
+        builder.Property(t => t.PublicavelComoAvulso).IsRequired();
+        builder.Property(t => t.ExigeAtoCorrigido).IsRequired();
 
         builder.Property(t => t.VigenciaInicio).IsRequired();
         builder.Property(t => t.VigenciaFim);

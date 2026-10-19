@@ -54,7 +54,9 @@ public static class CriarTipoAtoPublicadoCommandHandler
             command.EhResultado,
             command.VigenciaInicio,
             command.VigenciaFim,
-            command.BaseLegal).Value!;
+            command.BaseLegal,
+            command.PublicavelComoAvulso,
+            command.ExigeAtoCorrigido).Value!;
 
         await repository.AdicionarAsync(tipo, cancellationToken).ConfigureAwait(false);
 

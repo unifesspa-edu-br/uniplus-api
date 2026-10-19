@@ -54,6 +54,8 @@ internal sealed class CatalogoDeTiposAtoHealthCheck(
         (l => l.CongelaConfiguracao, c => c.CongelaConfiguracao, "congela a configuração"),
         (l => l.UnicoPorObjeto, c => c.UnicoPorObjeto, "único por objeto"),
         (l => l.EfeitoIrreversivel, c => c.EfeitoIrreversivel, "efeito irreversível"),
+        (l => l.PublicavelComoAvulso, c => c.PublicavelComoAvulso, "publicável como documento avulso"),
+        (l => l.ExigeAtoCorrigido, c => c.ExigeAtoCorrigido, "exige ato corrigido"),
     ];
 
     [SuppressMessage(
@@ -105,7 +107,9 @@ internal sealed class CatalogoDeTiposAtoHealthCheck(
                     tipo.CongelaConfiguracao,
                     tipo.UnicoPorObjeto,
                     tipo.EfeitoIrreversivel,
-                    tipo.EhResultado))
+                    tipo.EhResultado,
+                    tipo.PublicavelComoAvulso,
+                    tipo.ExigeAtoCorrigido))
                 .ToListAsync(cancellationToken)
                 .ConfigureAwait(false);
         }
@@ -165,5 +169,7 @@ internal sealed class CatalogoDeTiposAtoHealthCheck(
         bool CongelaConfiguracao,
         bool UnicoPorObjeto,
         bool EfeitoIrreversivel,
-        bool EhResultado);
+        bool EhResultado,
+        bool PublicavelComoAvulso,
+        bool ExigeAtoCorrigido);
 }

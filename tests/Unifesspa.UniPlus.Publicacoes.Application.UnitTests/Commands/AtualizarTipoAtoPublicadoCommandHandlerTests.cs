@@ -171,5 +171,7 @@ public sealed class AtualizarTipoAtoPublicadoCommandHandlerTests
             UnicoPorObjeto: true,
             EfeitoIrreversivel: false,
             EhResultado: false,
+            PublicavelComoAvulso: false,
+            ExigeAtoCorrigido: false,
             VigenciaInicio: Inicio);
 }

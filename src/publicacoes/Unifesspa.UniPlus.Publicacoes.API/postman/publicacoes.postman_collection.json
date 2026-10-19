@@ -122,7 +122,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"codigo\": \"{{tipo_ato_codigo}}\",\n  \"nome\": \"Tipo de ato criado pela coleção\",\n  \"congelaConfiguracao\": true,\n  \"unicoPorObjeto\": false,\n  \"efeitoIrreversivel\": false,\n  \"vigenciaInicio\": \"2026-01-01\",\n  \"vigenciaFim\": null,\n  \"baseLegal\": null\n}"
+              "raw": "{\n  \"codigo\": \"{{tipo_ato_codigo}}\",\n  \"nome\": \"Tipo de ato criado pela coleção\",\n  \"congelaConfiguracao\": true,\n  \"unicoPorObjeto\": false,\n  \"efeitoIrreversivel\": false,\n  \"publicavelComoAvulso\": false,\n  \"exigeAtoCorrigido\": false,\n  \"vigenciaInicio\": \"2026-01-01\",\n  \"vigenciaFim\": null,\n  \"baseLegal\": null\n}"
             },
             "url": "{{base_url}}/api/publicacoes/admin/tipos-ato"
           }
@@ -159,7 +159,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"codigo\": \"{{tipo_ato_codigo}}\",\n  \"nome\": \"Duplicata da mesma janela\",\n  \"congelaConfiguracao\": true,\n  \"unicoPorObjeto\": false,\n  \"efeitoIrreversivel\": false,\n  \"vigenciaInicio\": \"2026-06-01\",\n  \"vigenciaFim\": null\n}"
+              "raw": "{\n  \"codigo\": \"{{tipo_ato_codigo}}\",\n  \"nome\": \"Duplicata da mesma janela\",\n  \"congelaConfiguracao\": true,\n  \"unicoPorObjeto\": false,\n  \"efeitoIrreversivel\": false,\n  \"publicavelComoAvulso\": false,\n  \"exigeAtoCorrigido\": false,\n  \"vigenciaInicio\": \"2026-06-01\",\n  \"vigenciaFim\": null\n}"
             },
             "url": "{{base_url}}/api/publicacoes/admin/tipos-ato"
           }
@@ -192,7 +192,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"codigo\": \"SEM_CHAVE\",\n  \"nome\": \"Sem Idempotency-Key\",\n  \"congelaConfiguracao\": false,\n  \"unicoPorObjeto\": false,\n  \"efeitoIrreversivel\": false,\n  \"vigenciaInicio\": \"2026-01-01\"\n}"
+              "raw": "{\n  \"codigo\": \"SEM_CHAVE\",\n  \"nome\": \"Sem Idempotency-Key\",\n  \"congelaConfiguracao\": false,\n  \"unicoPorObjeto\": false,\n  \"efeitoIrreversivel\": false,\n  \"publicavelComoAvulso\": false,\n  \"exigeAtoCorrigido\": false,\n  \"vigenciaInicio\": \"2026-01-01\"\n}"
             },
             "url": "{{base_url}}/api/publicacoes/admin/tipos-ato"
           }
@@ -326,7 +326,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"id\": \"{{tipo_ato_id}}\",\n  \"codigo\": \"{{tipo_ato_codigo}}\",\n  \"nome\": \"Nome atualizado pela coleção\",\n  \"congelaConfiguracao\": true,\n  \"unicoPorObjeto\": false,\n  \"efeitoIrreversivel\": false,\n  \"vigenciaInicio\": \"2026-01-01\",\n  \"vigenciaFim\": null\n}"
+              "raw": "{\n  \"id\": \"{{tipo_ato_id}}\",\n  \"codigo\": \"{{tipo_ato_codigo}}\",\n  \"nome\": \"Nome atualizado pela coleção\",\n  \"congelaConfiguracao\": true,\n  \"unicoPorObjeto\": false,\n  \"efeitoIrreversivel\": false,\n  \"publicavelComoAvulso\": false,\n  \"exigeAtoCorrigido\": false,\n  \"vigenciaInicio\": \"2026-01-01\",\n  \"vigenciaFim\": null\n}"
             },
             "url": "{{base_url}}/api/publicacoes/admin/tipos-ato/{{tipo_ato_id}}"
           }
@@ -358,7 +358,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"id\": \"{{tipo_ato_id}}\",\n  \"codigo\": \"{{tipo_ato_codigo}}\",\n  \"nome\": \"Id divergente\",\n  \"congelaConfiguracao\": true,\n  \"unicoPorObjeto\": false,\n  \"efeitoIrreversivel\": false,\n  \"vigenciaInicio\": \"2026-01-01\"\n}"
+              "raw": "{\n  \"id\": \"{{tipo_ato_id}}\",\n  \"codigo\": \"{{tipo_ato_codigo}}\",\n  \"nome\": \"Id divergente\",\n  \"congelaConfiguracao\": true,\n  \"unicoPorObjeto\": false,\n  \"efeitoIrreversivel\": false,\n  \"publicavelComoAvulso\": false,\n  \"exigeAtoCorrigido\": false,\n  \"vigenciaInicio\": \"2026-01-01\"\n}"
             },
             "url": "{{base_url}}/api/publicacoes/admin/tipos-ato/00000000-0000-0000-0000-000000000001"
           }

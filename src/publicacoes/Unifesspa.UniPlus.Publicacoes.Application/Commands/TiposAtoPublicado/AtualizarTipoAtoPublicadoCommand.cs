@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Publicacoes.Application.Commands.TiposAtoPublicado;
 
+using System.Text.Json.Serialization;
+
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -12,6 +14,11 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <remarks>
 /// <c>Codigo</c>/<c>Nome</c> são <c>string?</c>, não <c>string</c> (ADR-0125) —
 /// mesma justificativa de <see cref="CriarTipoAtoPublicadoCommand"/>.
+/// <para>
+/// <c>PublicavelComoAvulso</c> e <c>ExigeAtoCorrigido</c> são obrigatórios no corpo: um valor implícito
+/// (<c>false</c>) faria o cliente que não os conhece desligar o atributo em silêncio. Ausentes, o corpo
+/// é recusado com 400.
+/// </para>
 /// </remarks>
 public sealed record AtualizarTipoAtoPublicadoCommand(
     Guid Id,
@@ -21,6 +28,8 @@ public sealed record AtualizarTipoAtoPublicadoCommand(
     bool UnicoPorObjeto,
     bool EfeitoIrreversivel,
     bool EhResultado,
+    [property: JsonRequired] bool PublicavelComoAvulso,
+    [property: JsonRequired] bool ExigeAtoCorrigido,
     DateOnly VigenciaInicio,
     DateOnly? VigenciaFim = null,
     string? BaseLegal = null) : ICommand<Result>;

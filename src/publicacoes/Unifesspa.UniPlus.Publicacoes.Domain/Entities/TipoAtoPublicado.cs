@@ -62,6 +62,20 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
     /// </summary>
     public bool EhResultado { get; private set; }
 
+    /// <summary>
+    /// Se um ato deste tipo pode ser publicado como documento avulso de um processo seletivo. É o
+    /// catálogo que diz quais tipos servem a um aviso, a um comunicado ou a uma errata e quais pertencem
+    /// a outro fluxo, como a convocação e a chamada do Ingresso — nenhum código compara o código do
+    /// tipo com um literal (ADR-0103).
+    /// </summary>
+    public bool PublicavelComoAvulso { get; private set; }
+
+    /// <summary>
+    /// Se o ato deste tipo corrige sempre outro ato publicado: quem o publica indica o ato corrigido e o
+    /// motivo (UNI-REQ-0156).
+    /// </summary>
+    public bool ExigeAtoCorrigido { get; private set; }
+
     /// <summary>Primeiro dia em que esta versão do tipo vale. Inclusivo.</summary>
     public DateOnly VigenciaInicio { get; private set; }
 
@@ -93,7 +107,9 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
         bool ehResultado,
         DateOnly vigenciaInicio,
         DateOnly? vigenciaFim,
-        string? baseLegal)
+        string? baseLegal,
+        bool publicavelComoAvulso = false,
+        bool exigeAtoCorrigido = false)
     {
         Result validacao = ValidarCampos(codigo, nome, vigenciaInicio, vigenciaFim, baseLegal);
         if (validacao.IsFailure)
@@ -104,7 +120,7 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
         var tipo = new TipoAtoPublicado();
         tipo.AplicarCampos(
             codigo!, nome!, congelaConfiguracao, unicoPorObjeto, efeitoIrreversivel, ehResultado,
-            vigenciaInicio, vigenciaFim, baseLegal);
+            vigenciaInicio, vigenciaFim, baseLegal, publicavelComoAvulso, exigeAtoCorrigido);
 
         return Result<TipoAtoPublicado>.Success(tipo);
     }
@@ -138,7 +154,9 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
         bool ehResultado,
         DateOnly vigenciaInicio,
         DateOnly? vigenciaFim,
-        string? baseLegal)
+        string? baseLegal,
+        bool publicavelComoAvulso = false,
+        bool exigeAtoCorrigido = false)
     {
         Result validacao = ValidarCampos(codigo, nome, vigenciaInicio, vigenciaFim, baseLegal);
         if (validacao.IsFailure)
@@ -157,7 +175,7 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
 
         AplicarCampos(
             codigo, nome!, congelaConfiguracao, unicoPorObjeto, efeitoIrreversivel, ehResultado,
-            vigenciaInicio, vigenciaFim, baseLegal);
+            vigenciaInicio, vigenciaFim, baseLegal, publicavelComoAvulso, exigeAtoCorrigido);
 
         return Result.Success();
     }
@@ -179,7 +197,9 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
         bool ehResultado,
         DateOnly vigenciaInicio,
         DateOnly? vigenciaFim,
-        string? baseLegal)
+        string? baseLegal,
+        bool publicavelComoAvulso,
+        bool exigeAtoCorrigido)
     {
         Codigo = codigo.Trim();
         Nome = nome.Trim();
@@ -187,6 +207,8 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
         UnicoPorObjeto = unicoPorObjeto;
         EfeitoIrreversivel = efeitoIrreversivel;
         EhResultado = ehResultado;
+        PublicavelComoAvulso = publicavelComoAvulso;
+        ExigeAtoCorrigido = exigeAtoCorrigido;
         VigenciaInicio = vigenciaInicio;
         VigenciaFim = vigenciaFim;
         BaseLegal = string.IsNullOrWhiteSpace(baseLegal) ? null : baseLegal.Trim();

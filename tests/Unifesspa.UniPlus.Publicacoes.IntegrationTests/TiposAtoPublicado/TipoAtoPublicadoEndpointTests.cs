@@ -315,6 +315,79 @@ public sealed class TipoAtoPublicadoEndpointTests
         response.Headers.Location!.AbsolutePath.Should().StartWith($"{Base}/");
     }
 
+    [Fact(DisplayName = "POST grava os atributos do documento avulso e o GET os devolve")]
+    public async Task Criar_GravaOsAtributosDoDocumentoAvulso()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        string codigo = CodigoUnico();
+
+        HttpResponseMessage criado = await PostAsync(client, new
+        {
+            codigo,
+            nome = "Errata de teste",
+            congelaConfiguracao = false,
+            unicoPorObjeto = false,
+            efeitoIrreversivel = false,
+            ehResultado = false,
+            publicavelComoAvulso = true,
+            exigeAtoCorrigido = true,
+            vigenciaInicio = Inicio,
+            vigenciaFim = (string?)null,
+        });
+        criado.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        HttpResponseMessage lido = await client.GetAsync(criado.Headers.Location!);
+        using JsonDocument doc = JsonDocument.Parse(await lido.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("publicavelComoAvulso").GetBoolean().Should().BeTrue();
+        doc.RootElement.GetProperty("exigeAtoCorrigido").GetBoolean().Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "POST sem os atributos do documento avulso é recusado com 400 que os nomeia")]
+    public async Task Criar_SemOsAtributosDoDocumentoAvulso_Retorna400()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage response = await PostAsync(client, new
+        {
+            codigo = CodigoUnico(),
+            nome = "Sem os atributos",
+            congelaConfiguracao = false,
+            unicoPorObjeto = false,
+            efeitoIrreversivel = false,
+            vigenciaInicio = Inicio,
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        string corpo = await response.Content.ReadAsStringAsync();
+        corpo.Should().Contain("publicavelComoAvulso").And.Contain("exigeAtoCorrigido");
+    }
+
+    [Fact(DisplayName = "PUT sem os atributos do documento avulso é recusado com 400 e não os zera em silêncio")]
+    public async Task Atualizar_SemOsAtributosDoDocumentoAvulso_Retorna400()
+    {
+        string codigo = CodigoUnico();
+        Guid id = await CriarAsync(codigo);
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        using HttpRequestMessage request = new(HttpMethod.Put, new Uri($"{Admin}/{id}", UriKind.Relative));
+        Autenticar(request);
+        request.Content = JsonContent.Create(new
+        {
+            id,
+            codigo,
+            nome = "Nome atualizado",
+            congelaConfiguracao = true,
+            unicoPorObjeto = false,
+            efeitoIrreversivel = false,
+            vigenciaInicio = Inicio,
+        });
+
+        HttpResponseMessage response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await response.Content.ReadAsStringAsync()).Should().Contain("publicavelComoAvulso");
+    }
+
     [Fact(DisplayName = "POST com janela sobreposta retorna 409 com o type do ProblemDetails")]
     public async Task Criar_ComSobreposicao_Retorna409()
     {
@@ -489,6 +562,8 @@ public sealed class TipoAtoPublicadoEndpointTests
                 congelaConfiguracao = congela,
                 unicoPorObjeto = false,
                 efeitoIrreversivel = false,
+                publicavelComoAvulso = false,
+                exigeAtoCorrigido = false,
                 vigenciaInicio = inicio,
                 vigenciaFim = fim,
             }
@@ -499,6 +574,8 @@ public sealed class TipoAtoPublicadoEndpointTests
                 congelaConfiguracao = congela,
                 unicoPorObjeto = false,
                 efeitoIrreversivel = false,
+                publicavelComoAvulso = false,
+                exigeAtoCorrigido = false,
                 vigenciaInicio = inicio,
                 vigenciaFim = fim,
             };

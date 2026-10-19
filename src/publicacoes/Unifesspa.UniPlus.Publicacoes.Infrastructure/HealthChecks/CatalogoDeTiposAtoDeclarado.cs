@@ -63,6 +63,8 @@ internal static partial class CatalogoDeTiposAtoDeclarado
         bool UnicoPorObjeto,
         bool EfeitoIrreversivel,
         bool EhResultado,
+        bool PublicavelComoAvulso,
+        bool ExigeAtoCorrigido,
         DateOnly VigenciaInicio,
         DateOnly? VigenciaFim)
     {

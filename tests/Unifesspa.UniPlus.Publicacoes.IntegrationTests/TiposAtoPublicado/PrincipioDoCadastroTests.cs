@@ -95,6 +95,8 @@ public sealed class PrincipioDoCadastroTests
             congelaConfiguracao = true,
             unicoPorObjeto = true,
             efeitoIrreversivel = true,
+            publicavelComoAvulso = false,
+            exigeAtoCorrigido = false,
             vigenciaInicio = "2026-01-01",
             vigenciaFim = (string?)null,
         });
@@ -126,6 +128,8 @@ public sealed class PrincipioDoCadastroTests
             congelaConfiguracao = congela,
             unicoPorObjeto = unico,
             efeitoIrreversivel = irreversivel,
+            publicavelComoAvulso = false,
+            exigeAtoCorrigido = false,
             vigenciaInicio = "2026-01-01",
             vigenciaFim = (string?)null,
         });

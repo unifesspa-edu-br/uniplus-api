@@ -1231,6 +1231,8 @@
           "unicoPorObjeto",
           "efeitoIrreversivel",
           "ehResultado",
+          "publicavelComoAvulso",
+          "exigeAtoCorrigido",
           "vigenciaInicio"
         ],
         "type": "object",
@@ -1261,6 +1263,12 @@
             "type": "boolean"
           },
           "ehResultado": {
+            "type": "boolean"
+          },
+          "publicavelComoAvulso": {
+            "type": "boolean"
+          },
+          "exigeAtoCorrigido": {
             "type": "boolean"
           },
           "vigenciaInicio": {
@@ -1353,6 +1361,8 @@
           "unicoPorObjeto",
           "efeitoIrreversivel",
           "ehResultado",
+          "publicavelComoAvulso",
+          "exigeAtoCorrigido",
           "vigenciaInicio"
         ],
         "type": "object",
@@ -1379,6 +1389,12 @@
             "type": "boolean"
           },
           "ehResultado": {
+            "type": "boolean"
+          },
+          "publicavelComoAvulso": {
+            "type": "boolean"
+          },
+          "exigeAtoCorrigido": {
             "type": "boolean"
           },
           "vigenciaInicio": {
@@ -1616,6 +1632,14 @@
           "criadoEm": {
             "type": "string",
             "format": "date-time"
+          },
+          "publicavelComoAvulso": {
+            "type": "boolean",
+            "default": false
+          },
+          "exigeAtoCorrigido": {
+            "type": "boolean",
+            "default": false
           },
           "_links": {
             "type": [
