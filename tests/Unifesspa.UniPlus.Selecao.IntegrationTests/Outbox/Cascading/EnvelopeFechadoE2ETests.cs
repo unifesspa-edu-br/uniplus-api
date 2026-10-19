@@ -1167,7 +1167,7 @@ public sealed class EnvelopeFechadoE2ETests
             nome,
             congelaConfiguracao: false,
             unicoPorObjeto: false,
-            efeitoIrreversivel: true,
+            efeitoIrreversivel: false,
             ehResultado: true,
             new DateOnly(2020, 1, 1),
             vigenciaFim: null,

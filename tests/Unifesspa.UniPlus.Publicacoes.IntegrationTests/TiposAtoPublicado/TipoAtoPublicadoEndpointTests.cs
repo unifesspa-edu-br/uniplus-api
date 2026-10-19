@@ -429,6 +429,29 @@ public sealed class TipoAtoPublicadoEndpointTests
         (await response.Content.ReadAsStringAsync()).Should().Contain("uniplus.publicacoes.tipo_ato.codigo_formato");
     }
 
+    [Fact(DisplayName = "POST de tipo que é resultado e de efeito irreversível retorna 422 com o código próprio")]
+    public async Task Criar_ResultadoComEfeitoIrreversivel_Retorna422()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage response = await PostAsync(client, new
+        {
+            codigo = CodigoUnico(),
+            nome = "Resultado irreversível",
+            congelaConfiguracao = false,
+            unicoPorObjeto = false,
+            efeitoIrreversivel = true,
+            ehResultado = true,
+            publicavelComoAvulso = false,
+            exigeAtoCorrigido = false,
+            vigenciaInicio = Inicio,
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await response.Content.ReadAsStringAsync()).Should()
+            .Contain("uniplus.publicacoes.tipo_ato.resultado_com_efeito_irreversivel");
+    }
+
     [Fact(DisplayName = "POST com janela vazia retorna 422 — o fim é exclusivo")]
     public async Task Criar_ComJanelaVazia_Retorna422()
     {

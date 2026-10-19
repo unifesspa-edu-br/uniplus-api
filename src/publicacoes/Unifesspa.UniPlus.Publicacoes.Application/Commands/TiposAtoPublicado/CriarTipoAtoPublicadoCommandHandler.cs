@@ -31,7 +31,8 @@ public static class CriarTipoAtoPublicadoCommandHandler
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         Result validacao = TipoAtoPublicado.ValidarCampos(
-            command.Codigo, command.Nome, command.VigenciaInicio, command.VigenciaFim, command.BaseLegal);
+            command.Codigo, command.Nome, command.VigenciaInicio, command.VigenciaFim, command.BaseLegal,
+            efeitoIrreversivel: command.EfeitoIrreversivel, ehResultado: command.EhResultado);
         if (validacao.IsFailure)
         {
             return Result<Guid>.ValidationFailure(validacao.Errors);

@@ -20,8 +20,10 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 /// admite um único ato vivo daquele tipo; <c>EfeitoIrreversivel</c>, se a
 /// publicação não pode ser desfeita; <c>EhResultado</c>, se o ato determina a
 /// situação do candidato — só um ato assim pode integrar o ciclo recursal de uma
-/// fase (UNI-REQ-0080). Um <c>if (tipo.Codigo == "CONVOCACAO")</c> seria a
-/// violação que a ADR-0103 proíbe.</para>
+/// fase (UNI-REQ-0080). Os dois últimos não se combinam: não cabe recurso contra ato
+/// irreversível, então o cadastro recusa o tipo que seja resultado e irreversível
+/// (UNI-REQ-0166). Um <c>if (tipo.Codigo == "CONVOCACAO")</c> seria a violação que
+/// a ADR-0103 proíbe.</para>
 /// <para>O cadastro é <b>editável</b> — append-only vale para o ato publicado, não
 /// para o catálogo. Editar o catálogo não reescreve o passado de ato nenhum: no
 /// instante da publicação o ato <b>copia por valor</b> os atributos do tipo. Dois
@@ -111,7 +113,8 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
         bool publicavelComoAvulso = false,
         bool exigeAtoCorrigido = false)
     {
-        Result validacao = ValidarCampos(codigo, nome, vigenciaInicio, vigenciaFim, baseLegal);
+        Result validacao = ValidarCampos(
+            codigo, nome, vigenciaInicio, vigenciaFim, baseLegal, efeitoIrreversivel, ehResultado);
         if (validacao.IsFailure)
         {
             return Result<TipoAtoPublicado>.ValidationFailure(validacao.Errors);
@@ -158,7 +161,8 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
         bool publicavelComoAvulso = false,
         bool exigeAtoCorrigido = false)
     {
-        Result validacao = ValidarCampos(codigo, nome, vigenciaInicio, vigenciaFim, baseLegal);
+        Result validacao = ValidarCampos(
+            codigo, nome, vigenciaInicio, vigenciaFim, baseLegal, efeitoIrreversivel, ehResultado);
         if (validacao.IsFailure)
         {
             return Result.ValidationFailure(validacao.Errors);
@@ -229,7 +233,9 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
         string? nome,
         DateOnly vigenciaInicio,
         DateOnly? vigenciaFim,
-        string? baseLegal)
+        string? baseLegal,
+        bool efeitoIrreversivel,
+        bool ehResultado)
     {
         List<FieldError> erros = [];
 
@@ -280,6 +286,17 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
             erros.Add(new("vigenciaFim", new DomainError(
                 TipoAtoPublicadoErrorCodes.VigenciaFimAnteriorAoInicio,
                 "Fim da vigência é exclusivo e deve ser posterior ao início.")));
+        }
+
+        // O resultado preliminar é o ato em que se abre o prazo de recurso, e não cabe recurso contra
+        // ato irreversível: a combinação inviabiliza o cronograma de quem ancora a janela nesse tipo.
+        if (ehResultado && efeitoIrreversivel)
+        {
+            erros.Add(new("efeitoIrreversivel", new DomainError(
+                TipoAtoPublicadoErrorCodes.ResultadoComEfeitoIrreversivel,
+                "Um tipo de ato de resultado não pode ter efeito irreversível: é no resultado preliminar "
+                + "que se abre o prazo de recurso, e não cabe recurso contra ato irreversível. O efeito "
+                + "irreversível fica com o ato que decorre do resultado, como a convocação. Desmarque uma das duas opções.")));
         }
 
         return erros.Count == 0 ? Result.Success() : Result.ValidationFailure(erros);

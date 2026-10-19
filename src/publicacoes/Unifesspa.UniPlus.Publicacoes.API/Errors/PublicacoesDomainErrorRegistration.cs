@@ -102,6 +102,12 @@ internal sealed class PublicacoesDomainErrorRegistration : IDomainErrorRegistrat
                 "uniplus.publicacoes.tipo_ato.vigencia_fim_anterior_ao_inicio",
                 "Fim da vigência deve ser posterior ao início")),
 
+        new(TipoAtoPublicadoErrorCodes.ResultadoComEfeitoIrreversivel,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.publicacoes.tipo_ato.resultado_com_efeito_irreversivel",
+                "Tipo de resultado não pode ter efeito irreversível")),
+
         new(AtoNormativoErrorCodes.TipoSemVersaoVigente,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,

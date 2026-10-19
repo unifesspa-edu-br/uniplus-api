@@ -27,7 +27,8 @@ public static class AtualizarTipoAtoPublicadoCommandHandler
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         Result validacaoPreCheck = TipoAtoPublicado.ValidarCampos(
-            command.Codigo, command.Nome, command.VigenciaInicio, command.VigenciaFim, command.BaseLegal);
+            command.Codigo, command.Nome, command.VigenciaInicio, command.VigenciaFim, command.BaseLegal,
+            efeitoIrreversivel: command.EfeitoIrreversivel, ehResultado: command.EhResultado);
         if (validacaoPreCheck.IsFailure)
         {
             return Result.ValidationFailure(validacaoPreCheck.Errors);
