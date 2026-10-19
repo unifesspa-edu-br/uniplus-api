@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Enums;
 
+using Services;
+
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -658,15 +660,15 @@ public sealed class EtapaProcesso : EntityBase
     }
 
     /// <summary>
-    /// Substitui as janelas recursais por inteiro. Prova o que só a etapa enxerga: a âncora
-    /// em ato referencia um produto preliminar desta etapa; a âncora em ciência exige a
-    /// promessa de parecer individual, porque é dele que corre o prazo; e não há duas
-    /// janelas para o mesmo fato.
+    /// A violação da âncora das janelas de recurso que a etapa declara, ou
+    /// <see langword="null"/> quando todas se ancoram onde podem. É o predicado que a gravação
+    /// das janelas e o gate de publicação chamam: o estado carregado do banco não passa pela
+    /// gravação, e só o gate o alcança.
     /// </summary>
-    public Result DefinirRecursos(IReadOnlyList<RecursoDaEtapa> recursos)
-    {
-        ArgumentNullException.ThrowIfNull(recursos);
+    internal DomainError? ViolacaoDaAncoraDoRecurso() => ViolacaoDaAncoraDoRecurso(_recursos);
 
+    private DomainError? ViolacaoDaAncoraDoRecurso(IReadOnlyCollection<RecursoDaEtapa> recursos)
+    {
         HashSet<Guid> preliminares =
             [.. _produtos.Where(p => p.Papel == PapelProdutoFase.Preliminar).Select(p => p.Id)];
 
@@ -677,17 +679,39 @@ public sealed class EtapaProcesso : EntityBase
             // aqui um preliminar que ela depois recusa mandaria o operador na direção errada.
             if (recurso.Ancora == AncoraDoRecurso.AtoPublicado && !DeclaraNotaDoEnem && !preliminares.Contains(recurso.ProdutoAncoraId))
             {
-                return Result.Failure(new DomainError(
+                return new DomainError(
                     "EtapaProcesso.AncoraNaoEhProdutoPreliminarDaEtapa",
-                    "O recurso contra ato publicado ancora num resultado preliminar desta etapa — é a publicação dele que abre a janela."));
+                    "O recurso contra ato publicado ancora num resultado preliminar desta etapa — é a publicação dele que abre a janela.");
             }
 
             if (recurso.Ancora == AncoraDoRecurso.CienciaIndividual && !EmiteParecerIndividual)
             {
-                return Result.Failure(new DomainError(
+                return new DomainError(
                     "EtapaProcesso.CienciaSemParecerIndividual",
-                    "O prazo que corre da ciência do candidato exige que a etapa prometa parecer individual: é dele que o candidato toma ciência."));
+                    "O prazo que corre da ciência do candidato exige que a etapa prometa parecer individual: é dele que o candidato toma ciência.");
             }
+        }
+
+        return null;
+    }
+
+    /// <summary>Os tipos de ato cujo preliminar a etapa publica sem o definitivo do mesmo tipo.</summary>
+    internal IEnumerable<string> TiposComCicloAberto() =>
+        CicloRecursal.TiposComCicloAberto(_produtos.Select(static p => (p.AtoCodigo, p.Papel)));
+
+    /// <summary>
+    /// Substitui as janelas recursais por inteiro. Prova o que só a etapa enxerga: a âncora
+    /// em ato referencia um produto preliminar desta etapa; a âncora em ciência exige a
+    /// promessa de parecer individual, porque é dele que corre o prazo; e não há duas
+    /// janelas para o mesmo fato.
+    /// </summary>
+    public Result DefinirRecursos(IReadOnlyList<RecursoDaEtapa> recursos)
+    {
+        ArgumentNullException.ThrowIfNull(recursos);
+
+        if (ViolacaoDaAncoraDoRecurso(recursos) is { } violacaoDaAncora)
+        {
+            return Result.Failure(violacaoDaAncora);
         }
 
         List<string> fatos =

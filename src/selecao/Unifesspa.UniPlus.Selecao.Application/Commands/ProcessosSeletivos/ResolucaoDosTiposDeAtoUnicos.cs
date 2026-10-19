@@ -62,15 +62,18 @@ internal static class ResolucaoDosTiposDeAtoUnicos
         IReadOnlyList<string> ocupados = await TiposOcupadosAsync(atoDoProcessoRepository, atosDaLinhagem, cancellationToken)
             .ConfigureAwait(false);
 
-        Dictionary<string, string> unicos = await LerDoCatalogoAsync(
+        LeituraDoCatalogo leitura = await LerDoCatalogoAsync(
             tipoAtoReader, processo, ocupados, tipoDoAtoDaOperacao.Codigo, Hoje(relogio, fusoInstitucional), cancellationToken)
             .ConfigureAwait(false);
+        Dictionary<string, string> unicos = leitura.Unicos;
         if (tipoDoAtoDaOperacao.UnicoPorObjeto)
         {
             unicos[tipoDoAtoDaOperacao.Codigo] = tipoDoAtoDaOperacao.Nome;
         }
 
-        TiposDeAtoUnicosPorObjeto tipos = TiposDeAtoUnicosPorObjeto.ParaOperacao(unicos, ocupados, tipoDoAtoDaOperacao.Codigo);
+        leitura.Classificacoes[tipoDoAtoDaOperacao.Codigo] = ClassificacaoDe(tipoDoAtoDaOperacao);
+
+        TiposDeAtoUnicosPorObjeto tipos = TiposDeAtoUnicosPorObjeto.ParaOperacao(unicos, ocupados, tipoDoAtoDaOperacao.Codigo, leitura.Classificacoes);
 
         return processo.PendenciaDoTipoDeAtoUnico(tipos) is { } pendencia
             ? Result<TiposDeAtoUnicosPorObjeto>.Failure(pendencia)
@@ -92,10 +95,18 @@ internal static class ResolucaoDosTiposDeAtoUnicos
         IReadOnlyList<string> ocupados = await TiposOcupadosAsync(atoDoProcessoRepository, atosDaLinhagem, cancellationToken)
             .ConfigureAwait(false);
 
-        return TiposDeAtoUnicosPorObjeto.ParaChecklist(
-            await LerDoCatalogoAsync(reader, processo, ocupados, null, dataVigencia, cancellationToken).ConfigureAwait(false),
-            ocupados);
+        LeituraDoCatalogo leitura = await LerDoCatalogoAsync(reader, processo, ocupados, null, dataVigencia, cancellationToken)
+            .ConfigureAwait(false);
+
+        return TiposDeAtoUnicosPorObjeto.ParaChecklist(leitura.Unicos, ocupados, leitura.Classificacoes);
     }
+
+    internal static ClassificacaoDoTipoDeAto ClassificacaoDe(TipoAtoPublicadoView tipo) =>
+        new(tipo.EhResultado, tipo.CongelaConfiguracao);
+
+    private sealed record LeituraDoCatalogo(
+        Dictionary<string, string> Unicos,
+        Dictionary<string, ClassificacaoDoTipoDeAto> Classificacoes);
 
     /// <summary>O dia civil de hoje no fuso institucional, a data em que o catálogo é consultado.</summary>
     internal static DateOnly Hoje(TimeProvider relogio, TimeZoneInfo? fusoInstitucional)
@@ -120,7 +131,7 @@ internal static class ResolucaoDosTiposDeAtoUnicos
                 .ConfigureAwait(false);
     }
 
-    private static async Task<Dictionary<string, string>> LerDoCatalogoAsync(
+    private static async Task<LeituraDoCatalogo> LerDoCatalogoAsync(
         ITipoAtoPublicadoReader reader,
         ProcessoSeletivo processo,
         IEnumerable<string> codigosOcupados,
@@ -142,16 +153,22 @@ internal static class ResolucaoDosTiposDeAtoUnicos
 
         if (codigos.Length == 0)
         {
-            return new Dictionary<string, string>(StringComparer.Ordinal);
+            return new LeituraDoCatalogo(
+                new Dictionary<string, string>(StringComparer.Ordinal),
+                new Dictionary<string, ClassificacaoDoTipoDeAto>(StringComparer.Ordinal));
         }
 
         IReadOnlyList<TipoAtoPublicadoView> vigentes = await reader
             .ListarVigentesAsync(codigos, dataVigencia, cancellationToken)
             .ConfigureAwait(false);
 
-        return vigentes
-            .Where(static tipo => tipo.UnicoPorObjeto)
-            .GroupBy(static tipo => tipo.Codigo, StringComparer.Ordinal)
-            .ToDictionary(static grupo => grupo.Key, static grupo => grupo.First().Nome, StringComparer.Ordinal);
+        return new LeituraDoCatalogo(
+            vigentes
+                .Where(static tipo => tipo.UnicoPorObjeto)
+                .GroupBy(static tipo => tipo.Codigo, StringComparer.Ordinal)
+                .ToDictionary(static grupo => grupo.Key, static grupo => grupo.First().Nome, StringComparer.Ordinal),
+            vigentes
+                .GroupBy(static tipo => tipo.Codigo, StringComparer.Ordinal)
+                .ToDictionary(static grupo => grupo.Key, static grupo => ClassificacaoDe(grupo.First()), StringComparer.Ordinal));
     }
 }

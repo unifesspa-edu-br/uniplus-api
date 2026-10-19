@@ -4,6 +4,7 @@ using Abstractions;
 
 using Domain.Entities;
 using Domain.Enums;
+using Domain.Errors;
 using Domain.Interfaces;
 using Domain.ValueObjects;
 
@@ -403,6 +404,15 @@ public static class DefinirEtapasCommandHandler
                         $"O tipo de ato '{d.AtoCodigo}', declarado pela etapa '{input.Nome}', não é resultado no catálogo — só resultado recebe papel preliminar ou definitivo."));
                 }
 
+                // O catálogo diz o que o tipo pode ser: o resultado sempre declara papel, e o tipo
+                // que congela a configuração não serve de item de resultado (UNI-REQ-0157).
+                if (ResolucaoDosTiposDeAtoUnicos.ClassificacaoDe(tipoAto)
+                        .ViolacaoDoProduto(tipoAto.Codigo, papel, $"na etapa '{input.Nome}'") is { } violacaoDoProduto)
+                {
+                    unitOfWork.DescartarAlteracoesNaoSalvas();
+                    return Result<MutacaoAceita>.Failure(violacaoDoProduto);
+                }
+
                 produtosDaEtapa.Add(ProdutoDaEtapa.Criar(tipoAto.Codigo, papel));
             }
 
@@ -554,7 +564,11 @@ public static class DefinirEtapasCommandHandler
             // descartar, o SaveChangesAsync automático do Wolverine persistiria a
             // mutação parcial mesmo com DefinirEtapas tendo recusado a coleção inteira.
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<MutacaoAceita>.Failure(result.Error!);
+
+            // Propaga o lote: o fechamento do ciclo acumula uma violação por matéria aberta,
+            // cada uma com o campo que a localiza; a forma serve também às recusas de erro
+            // único do mesmo método.
+            return Result<MutacaoAceita>.ValidationFailure(result.Errors);
         }
 
         // O agregado vem tracked de ObterParaMutacaoAsync: a substituição

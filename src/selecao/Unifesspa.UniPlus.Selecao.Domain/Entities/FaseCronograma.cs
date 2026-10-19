@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Enums;
 
+using Services;
+
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -151,11 +153,11 @@ public sealed class FaseCronograma : EntityBase
     /// são as matérias cujo ciclo recursal ela deixa para a fase concluinte fechar.
     /// </summary>
     public IEnumerable<string> TiposComCicloAberto() =>
-        _produtos
-            .Where(static p => p.Papel == PapelProdutoFase.Preliminar)
-            .Select(static p => p.AtoCodigo)
-            .Distinct(StringComparer.Ordinal)
-            .Where(codigo => !PublicaResultadoDefinitivoDe(codigo));
+        CicloRecursal.TiposComCicloAberto(_produtos.Select(static p => (p.AtoCodigo, p.Papel)));
+
+    /// <summary>Os tipos de ato cujo preliminar e cujo definitivo a própria fase publica.</summary>
+    internal IEnumerable<string> TiposFechadosNaPropriaFase() =>
+        CicloRecursal.TiposFechadosNoProprioLugar(_produtos.Select(static p => (p.AtoCodigo, p.Papel)));
 
     /// <summary>Presença = a fase admite recurso (0..1, §3.6).</summary>
     public RegraRecursoFase? RegraRecurso { get; private set; }

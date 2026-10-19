@@ -116,6 +116,52 @@ public sealed class CalendarioCongeladoRecusaTests
         bloco => bloco["presente"] = false,
         "declarar ausência mantendo a lista é contradição interna do artefato");
 
+    private static Result<EnvelopeReidratado> ReidratarSemCalendarioComRecursoSoNa(string ondeSobra)
+    {
+        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
+        CorpusEnvelope.Publicar(processo);
+
+        JsonObject payload = JsonNode.Parse(congelado.Bytes)!.AsObject();
+        payload["calendarioDiasUteis"] = new JsonObject { ["presente"] = false };
+        if (ondeSobra == "etapa")
+        {
+            foreach (JsonNode? fase in payload["cronogramaFases"]!["fases"]!.AsArray())
+            {
+                fase!.AsObject()["regraRecurso"] = null;
+            }
+        }
+        else
+        {
+            foreach (JsonNode? etapa in payload["etapas"]!.AsArray())
+            {
+                etapa!.AsObject()["recursos"] = new JsonArray();
+            }
+        }
+
+        return CorpusEnvelope.Registro.Reidratar(
+            CorpusEnvelope.VersaoDeAbertura(processo, PerfilCanonicoV1.Instancia.Serializar(payload)));
+    }
+
+    [Fact(DisplayName = "Calendário declarado ausente num processo cujo único recurso está numa etapa é recusado")]
+    public void AusenteComRecursoSoNaEtapa_Recusado()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarSemCalendarioComRecursoSoNa("etapa");
+
+        resultado.IsFailure.Should().BeTrue("o prazo da janela da etapa corre sobre dia útil, e o gate de publicação exige o calendário");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error!.Message.Should().Contain("calendarioDiasUteis");
+    }
+
+    [Fact(DisplayName = "Calendário declarado ausente num processo cujo único recurso está na fase também é recusado")]
+    public void AusenteComRecursoSoNaFase_Recusado()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarSemCalendarioComRecursoSoNa("fase");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Message.Should().Contain("calendarioDiasUteis");
+    }
+
     [Fact(DisplayName = "O envelope íntegro do corpus reidrata — as recusas acima não são falso positivo")]
     public void EnvelopeIntegro_Reidrata()
     {

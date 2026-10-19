@@ -590,6 +590,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.Failure(etapaForaDaFase);
         }
 
+        // O ciclo recursal de cada etapa fecha dentro dela: o preliminar sem o definitivo do
+        // mesmo tipo deixaria a matéria aberta, e a etapa não tem fase concluinte que a feche.
+        List<FieldError> violacoesDoCiclo = ViolacoesDoFechamentoDoCicloDasEtapas(etapas);
+        if (violacoesDoCiclo.Count > 0)
+        {
+            return Result.ValidationFailure(violacoesDoCiclo);
+        }
+
         _etapas.Clear();
         foreach (EtapaProcesso etapa in etapas)
         {
@@ -3421,15 +3429,28 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// pelos gates do calendário e da convenção de contagem (UNI-REQ-0116).
     /// </summary>
     /// <remarks>
-    /// Basta existir regra de recurso: toda regra declara prazo de interposição, e as duas
-    /// unidades declaráveis nele correm sobre dia útil — dias úteis por definição, e horas
-    /// porque só as horas situadas em dia útil avançam o relógio. A suspensividade em dias
-    /// úteis depende igualmente, mas nunca sozinha, já que não existe suspensividade sem a
-    /// regra que a carrega. A janela de solicitação de isenção não é regra de recurso e não
-    /// aciona nada disto.
+    /// Basta existir regra de recurso, na fase ou na janela de uma etapa: toda regra declara
+    /// prazo de interposição, e as duas unidades declaráveis nele correm sobre dia útil — dias
+    /// úteis por definição, e horas porque só as horas situadas em dia útil avançam o relógio.
+    /// A suspensividade em dias úteis depende igualmente, mas nunca sozinha, já que não existe
+    /// suspensividade sem a regra que a carrega. A janela de solicitação de isenção não é
+    /// regra de recurso e não aciona nada disto.
     /// </remarks>
-    private bool AlgumaContagemDistingueDiaUtil() =>
-        _cronogramaFases.Exists(static fase => fase.RegraRecurso is not null);
+    private bool AlgumaContagemDistingueDiaUtil() => ContagemDistingueDiaUtil(_cronogramaFases, _etapas);
+
+    /// <summary>
+    /// Se alguma janela de recurso, da fase ou da etapa, conta prazo que distingue dia útil. É a
+    /// pergunta única de que o gate da convenção, o do calendário e a leitura do envelope
+    /// congelado dependem, para que nenhum deles olhe só um dos dois lugares onde o recurso mora.
+    /// </summary>
+    public static bool ContagemDistingueDiaUtil(IEnumerable<FaseCronograma> fases, IEnumerable<EtapaProcesso> etapas)
+    {
+        ArgumentNullException.ThrowIfNull(fases);
+        ArgumentNullException.ThrowIfNull(etapas);
+
+        return fases.Any(static fase => fase.RegraRecurso is not null)
+            || etapas.Any(static etapa => etapa.Recursos.Count > 0);
+    }
 
     /// <summary>
     /// Divisor da média da nota final: soma dos pesos das etapas que compõem
@@ -3699,10 +3720,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("cronograma_fase_que_coleta_inscricao_sem_janela", DimensaoConformidade.Cronograma, "Cronograma: a fase que coleta inscrição tem início e fim definidos", FaseQueColetaInscricaoSemJanela() is null),
         new ItemConformidade("cronograma_janela_de_isencao", DimensaoConformidade.Cronograma, "Cronograma: a janela de solicitação de isenção abre com a inscrição, fecha antes dela e dura cinco dias", JanelaDeIsencaoConforme(contexto)),
         new ItemConformidade("cronograma_vagas_sem_fase_que_produz_resultado", DimensaoConformidade.Cronograma, "Cronograma: vagas ofertadas têm fase que produz resultado", !HaVagasSemFaseQueProduzResultado()),
-        new ItemConformidade("cronograma_conclusao_do_ciclo_recursal", DimensaoConformidade.Cronograma, "Cronograma: a fase que publica resultado preliminar tem conclusão declarada e alcançável", PendenciaDaConclusaoDoCicloRecursal() is null),
+        new ItemConformidade("cronograma_conclusao_do_ciclo_recursal", DimensaoConformidade.Cronograma, "Cronograma: a fase ou a etapa que publica resultado preliminar tem o definitivo do mesmo tipo de ato, na própria fase ou etapa ou na fase concluinte declarada", PendenciaDaConclusaoDoCicloRecursal() is null),
         new ItemConformidade("cronograma_ancora_do_recurso", DimensaoConformidade.Cronograma, "Cronograma: a regra de recurso ancora num produto preliminar da própria fase", PendenciaDaAncoraDoRecurso() is null),
+        new ItemConformidade("cronograma_ancora_do_recurso_da_etapa", DimensaoConformidade.Cronograma, "Cronograma: cada janela de recurso da etapa ancora num produto preliminar da própria etapa", PendenciaDaAncoraDoRecursoDasEtapas() is null),
             new ItemConformidade("cronograma_recorte_de_competencia_das_bancas", DimensaoConformidade.Cronograma, "Cronograma: bancas do mesmo tipo na mesma fase declaram recortes de competência distintos", PendenciaDoRecorteDeCompetencia() is null),
             new ItemConformidade("cronograma_etapa_fora_da_janela_da_fase", DimensaoConformidade.Cronograma, "Cronograma: a etapa acontece dentro da janela da fase que a abriga", PendenciaDaJanelaDaEtapaNaFase() is null),
+        new ItemConformidade("cronograma_resultado_declarado_com_papel", DimensaoConformidade.Cronograma, "Cronograma: o tipo de ato classificado como resultado declara papel preliminar ou definitivo", PendenciaDoResultadoSemPapel(tiposDeAtoUnicos) is null),
+        new ItemConformidade("cronograma_tipo_que_congela_nao_eh_resultado", DimensaoConformidade.Cronograma, "Cronograma: o tipo de ato que congela a configuração não é declarado como item de resultado", PendenciaDoTipoQueCongelaDeclaradoComoResultado(tiposDeAtoUnicos) is null),
         new ItemConformidade("cronograma_tipo_de_ato_unico_declarado_uma_vez", DimensaoConformidade.Cronograma, "Cronograma: o tipo de ato que só sai uma vez por processo é declarado em um único produto", PendenciaDoTipoDeAtoUnico(tiposDeAtoUnicos) is null),
 
         // ── PendenciaDaCascata: o agregado e o detalhamento por razão (RN-CASCATA-1/2/2b/3, Story #575) ──
@@ -4152,6 +4176,15 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return pendenciaDaAncora;
         }
 
+        // A mesma conferência para a janela de cada etapa, pela mesma razão: o EF hidrata
+        // recursos_da_etapa e produtos_da_etapa direto das linhas, sem passar pela gravação das
+        // janelas. A etapa com a janela ancorada fora dos preliminares dela não resolveria o
+        // prazo de interposição.
+        if (PendenciaDaAncoraDoRecursoDasEtapas() is { } pendenciaDaAncoraDaEtapa)
+        {
+            return pendenciaDaAncoraDaEtapa;
+        }
+
         // O recorte de competência das bancas, pela mesma razão: FaseCronograma.Criar o
         // recusa na escrita, e o EF hidrata bancas_requeridas e categorias_julgadas direto
         // das linhas, sem passar pela fábrica. Sem esta metade, um certame carregado do
@@ -4230,6 +4263,50 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
+    /// O primeiro produto declarado sem papel cujo tipo é resultado no catálogo, ou
+    /// <see langword="null"/>. O resultado sem preliminar é declarado definitivo: só o ato que
+    /// não é resultado fica sem papel (UNI-REQ-0157).
+    /// </summary>
+    /// <remarks>
+    /// A classificação é dado do catálogo e chega em <paramref name="tipos"/>. Tipo sem versão
+    /// vigente não tem classificação e fica de fora: quem o recusa é a conferência do tipo.
+    /// </remarks>
+    public DomainError? PendenciaDoResultadoSemPapel(TiposDeAtoUnicosPorObjeto tipos)
+    {
+        ArgumentNullException.ThrowIfNull(tipos);
+
+        foreach (DeclaracaoDeAto declaracao in DeclaracoesDeAtos())
+        {
+            if (tipos.ClassificacaoDe(declaracao.AtoCodigo)?.ViolacaoDoResultadoSemPapel(declaracao.AtoCodigo, declaracao.Papel, declaracao.Lugar) is { } violacao)
+            {
+                return violacao;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// O primeiro produto declarado com papel cujo tipo congela a configuração, ou
+    /// <see langword="null"/>. A correção de um resultado não cria versão nova (UNI-REQ-0156),
+    /// então um tipo que congela não teria correção possível como item de resultado.
+    /// </summary>
+    public DomainError? PendenciaDoTipoQueCongelaDeclaradoComoResultado(TiposDeAtoUnicosPorObjeto tipos)
+    {
+        ArgumentNullException.ThrowIfNull(tipos);
+
+        foreach (DeclaracaoDeAto declaracao in DeclaracoesDeAtos())
+        {
+            if (tipos.ClassificacaoDe(declaracao.AtoCodigo)?.ViolacaoDoTipoQueCongelaComPapel(declaracao.AtoCodigo, declaracao.Papel, declaracao.Lugar) is { } violacao)
+            {
+                return violacao;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
     /// As vagas que a operação e os atos já registrados reivindicam, uma por tipo: o ato da
     /// operação e o ato já registrado do mesmo tipo são a mesma vaga — a retificação continua a
     /// própria linhagem, não disputa com ela —, e por isso contam uma vez só.
@@ -4259,9 +4336,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public IReadOnlyList<DeclaracaoDeAto> DeclaracoesDeAtos() =>
     [
         .. _cronogramaFases.SelectMany(static fase => fase.Produtos
-            .Select(produto => new DeclaracaoDeAto(produto.AtoCodigo, $"na fase '{fase.Codigo}'"))),
+            .Select(produto => new DeclaracaoDeAto(produto.AtoCodigo, $"na fase '{fase.Codigo}'", produto.Papel))),
         .. _etapas.SelectMany(static etapa => etapa.Produtos
-            .Select(produto => new DeclaracaoDeAto(produto.AtoCodigo, $"na etapa '{etapa.Nome}' (ordem {etapa.Ordem?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "não definida"})"))),
+            .Select(produto => new DeclaracaoDeAto(produto.AtoCodigo, $"na etapa '{etapa.Nome}' (ordem {etapa.Ordem?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "não definida"})", produto.Papel))),
     ];
 
     /// <summary>
@@ -4320,6 +4397,24 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
+    /// A primeira violação da âncora das janelas de recurso das etapas, ou
+    /// <see langword="null"/> quando toda janela se ancora onde pode. Chama o mesmo predicado de
+    /// <see cref="EtapaProcesso"/> que a gravação das janelas chama.
+    /// </summary>
+    private DomainError? PendenciaDaAncoraDoRecursoDasEtapas()
+    {
+        foreach (EtapaProcesso etapa in _etapas)
+        {
+            if (etapa.ViolacaoDaAncoraDoRecurso() is { } violacao)
+            {
+                return violacao;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
     /// As violações da âncora do prazo de recurso, uma por fase mal declarada, com o campo
     /// que localiza cada uma.
     /// </summary>
@@ -4351,7 +4446,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </remarks>
     private DomainError? PendenciaDaConclusaoDoCicloRecursal()
     {
-        List<FieldError> violacoes = ViolacoesDaConclusaoDoCicloRecursal([.. _cronogramaFases]);
+        List<FieldError> violacoes =
+        [
+            .. ViolacoesDaConclusaoDoCicloRecursal([.. _cronogramaFases]),
+            .. ViolacoesDoFechamentoDoCicloDasEtapas([.. _etapas]),
+        ];
 
         return violacoes.Count > 0 ? violacoes[0].Error : null;
     }
@@ -4465,6 +4564,19 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 continue;
             }
 
+            // O tipo que a fase já fecha sozinha não tem o que a concluinte fechar: com o
+            // definitivo nos dois lugares, o ciclo teria dois definitivos sem regra que diga qual
+            // o fecha.
+            string? tipoComDoisDefinitivos = fase.TiposFechadosNaPropriaFase()
+                .FirstOrDefault(concluinte.PublicaResultadoDefinitivoDe);
+            if (tipoComDoisDefinitivos is not null)
+            {
+                violacoes.Add(new(campo, new DomainError(
+                    ProcessoSeletivoErrorCodes.ConclusaoDuplicada,
+                    $"A fase '{fase.Codigo}' já publica o resultado definitivo do ato '{tipoComDoisDefinitivos}', e a fase '{concluinte.Codigo}', declarada como concluinte, o publica também — o ciclo ficaria com dois definitivos. Remova a declaração da concluinte de '{fase.Codigo}' ou o definitivo repetido de uma das duas fases.")));
+                continue;
+            }
+
             if (concluinte.Ordem <= fase.Ordem)
             {
                 violacoes.Add(new(campo, new DomainError(
@@ -4483,6 +4595,32 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 violacoes.Add(new(campo, new DomainError(
                     "ProcessoSeletivo.FaseConcluinteComecaAntesDaConcluida",
                     $"A janela da fase '{concluinteCodigo}' começa em {inicioConcluinte:O}, antes de '{fase.Codigo}' ({inicioConcluida:O}) — a concluinte não pode começar antes da fase que ela encerra.")));
+            }
+        }
+
+        return violacoes;
+    }
+
+    /// <summary>
+    /// As violações do fechamento do ciclo recursal nas etapas, uma por matéria deixada aberta.
+    /// </summary>
+    /// <remarks>
+    /// A etapa não tem fase concluinte: o ciclo dela fecha dentro dela mesma. O preliminar de um
+    /// tipo de ato exige o definitivo do mesmo tipo na mesma etapa, pelo mesmo pareamento que as
+    /// fases usam (<see cref="CicloRecursal"/>). Sem I/O e sem navegação.
+    /// </remarks>
+    private static List<FieldError> ViolacoesDoFechamentoDoCicloDasEtapas(IReadOnlyList<EtapaProcesso> etapas)
+    {
+        List<FieldError> violacoes = [];
+
+        for (int indice = 0; indice < etapas.Count; indice++)
+        {
+            EtapaProcesso etapa = etapas[indice];
+            foreach (string tipo in etapa.TiposComCicloAberto())
+            {
+                violacoes.Add(new($"etapas[{indice}].produtos", new DomainError(
+                    ProcessoSeletivoErrorCodes.EtapaComPreliminarSemDefinitivo,
+                    $"A etapa '{etapa.Nome}' publica o resultado preliminar do ato '{tipo}' e não publica o definitivo do mesmo tipo — a etapa não tem fase concluinte, e o ciclo dela fecha dentro dela.")));
             }
         }
 
@@ -5860,6 +5998,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result<VersaoConfiguracao>.Failure(pendenciaDoTipoUnico);
         }
 
+        if (PendenciaDoResultadoSemPapel(tiposDeAtoUnicos) is { } pendenciaDoResultadoSemPapel)
+        {
+            return Result<VersaoConfiguracao>.Failure(pendenciaDoResultadoSemPapel);
+        }
+
+        if (PendenciaDoTipoQueCongelaDeclaradoComoResultado(tiposDeAtoUnicos) is { } pendenciaDoTipoQueCongela)
+        {
+            return Result<VersaoConfiguracao>.Failure(pendenciaDoTipoQueCongela);
+        }
+
         if (PendenciaDaCascata() is { } pendenciaCascata)
         {
             return Result<VersaoConfiguracao>.Failure(pendenciaCascata);
@@ -6231,6 +6379,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         if (PendenciaDoTipoDeAtoUnico(tiposDeAtoUnicos) is { } pendenciaDoTipoUnico)
         {
             return Result<VersaoConfiguracao>.Failure(pendenciaDoTipoUnico);
+        }
+
+        if (PendenciaDoResultadoSemPapel(tiposDeAtoUnicos) is { } pendenciaDoResultadoSemPapel)
+        {
+            return Result<VersaoConfiguracao>.Failure(pendenciaDoResultadoSemPapel);
+        }
+
+        if (PendenciaDoTipoQueCongelaDeclaradoComoResultado(tiposDeAtoUnicos) is { } pendenciaDoTipoQueCongela)
+        {
+            return Result<VersaoConfiguracao>.Failure(pendenciaDoTipoQueCongela);
         }
 
         if (PendenciaDaCascata() is { } pendenciaCascata)

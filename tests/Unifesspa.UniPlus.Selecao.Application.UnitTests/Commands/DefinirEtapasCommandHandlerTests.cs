@@ -179,6 +179,35 @@ public sealed class DefinirEtapasCommandHandlerTests
         return processo;
     }
 
+    [Fact(DisplayName = "Tipo classificado como resultado declarado sem papel pela etapa é recusado com ProcessoSeletivo.ResultadoDeclaradoSemPapel")]
+    public async Task Handle_ResultadoSemPapel_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        ITipoAtoPublicadoReader tipoAtoPublicadoReader = Substitute.For<ITipoAtoPublicadoReader>();
+        tipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(AtoDeResultado("RESULTADO_CLASSIFICACAO"));
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+
+        DefinirEtapasCommand command = new(
+            processo.Id,
+            [
+                new EtapaProcessoInput(
+                    "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
+                    Produtos: [new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", null)], Bancas: [], Recursos: []),
+            ],
+            PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> result = await Executar(
+            command, repository, unitOfWork, tipoAtoPublicadoReader: tipoAtoPublicadoReader);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("ProcessoSeletivo.ResultadoDeclaradoSemPapel");
+        unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
     /// <summary>
     /// Invoca o handler preenchendo com dublê inerte toda dependência que o cenário não
     /// descreve. Sem isto, cada caso repete a lista inteira de colaboradores, o dublê inerte
@@ -218,7 +247,12 @@ public sealed class DefinirEtapasCommandHandlerTests
             [
                 new EtapaProcessoInput(
                     "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
-                    Produtos: [new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "PRELIMINAR")], Bancas: [], Recursos: []),
+                    Produtos:
+                    [
+                        new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "PRELIMINAR"),
+                        new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "DEFINITIVO"),
+                    ],
+                    Bancas: [], Recursos: []),
             ],
             PrecondicaoIfMatch.Ausente);
 
@@ -238,7 +272,12 @@ public sealed class DefinirEtapasCommandHandlerTests
                 new EtapaProcessoInput(
                     "Prova Objetiva — 1ª fase", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
                     etapaId,
-                    Produtos: [new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "PRELIMINAR")], Bancas: [], Recursos: []),
+                    Produtos:
+                    [
+                        new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "PRELIMINAR"),
+                        new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "DEFINITIVO"),
+                    ],
+                    Bancas: [], Recursos: []),
             ],
             PrecondicaoIfMatch.Curinga);
 
@@ -292,7 +331,7 @@ public sealed class DefinirEtapasCommandHandlerTests
     }
 
     [Theory(DisplayName = "Âncora do recurso da etapa em ato congelante ou irreversível é recusada, como na fase")]
-    [InlineData(true, false, "RecursoDaEtapa.AncoraEmAtoCongelante")]
+    [InlineData(true, false, "ProcessoSeletivo.TipoQueCongelaDeclaradoComoResultado")]
     [InlineData(false, true, "RecursoDaEtapa.AncoraEmAtoIrreversivel")]
     public async Task Handle_AncoraEmAtoQueNaoCabeRecurso_Recusa(
         bool congelaConfiguracao, bool efeitoIrreversivel, string codigoEsperado)

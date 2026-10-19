@@ -196,7 +196,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
         resultado.Error!.Code.Should().Be("RegraRecursoFase.RegraCatalogoInvalida");
     }
 
-    [Fact(DisplayName = "CA-18: âncora cujo tipo de ato CONGELA configuração é recusada com RegraRecursoFase.AncoraEmAtoCongelante")]
+    [Fact(DisplayName = "CA-18: âncora cujo tipo de ato CONGELA configuração é recusada com ProcessoSeletivo.TipoQueCongelaDeclaradoComoResultado")]
     public async Task Handle_AncoraEmAtoCongelante_Recusa()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
@@ -234,7 +234,32 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("RegraRecursoFase.AncoraEmAtoCongelante");
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.TipoQueCongelaDeclaradoComoResultado");
+    }
+
+    [Fact(DisplayName = "Tipo classificado como resultado declarado sem papel pela fase é recusado com ProcessoSeletivo.ResultadoDeclaradoSemPapel")]
+    public async Task Handle_ResultadoSemPapel_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid faseCanonicaId = Guid.CreateVersion7();
+        mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId, Arg.Any<CancellationToken>())
+            .Returns(FaseCanonicaResultado(faseCanonicaId));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("RESULTADO_CLASSIFICACAO", "Resultado da classificação", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
+
+        FaseCronogramaInput input = InputResultado(faseCanonicaId) with
+        {
+            Produtos = [new ProdutoDaFaseInput("RESULTADO_CLASSIFICACAO", null)],
+        };
+        DefinirCronogramaFasesCommand command = new(processo.Id, [input], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(e =>
+            e.Field == "fases[0].produtos[0].papel"
+            && e.Error.Code == "ProcessoSeletivo.ResultadoDeclaradoSemPapel");
     }
 
     [Fact(DisplayName = "Handle com fase conforme resolve e persiste — devolve o ETag da sessão (ou null em rascunho)")]

@@ -67,4 +67,38 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
         await reader.Received(1).ListarVigentesAsync(Arg.Any<IReadOnlyCollection<string>>(), Hoje, Arg.Any<CancellationToken>());
         await reader.DidNotReceiveWithAnyArgs().ObterVigenteAsync(default!, default, default);
     }
+
+    [Fact(DisplayName = "Entrega ao checklist a classificação de cada tipo citado: se é resultado e se congela a configuração")]
+    public async Task ParaChecklist_LeAClassificacaoDoCatalogo()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        processo.DefinirCronogramaFases(
+            [FaseCronograma.Criar(
+                1, Guid.CreateVersion7(), "CLASSIFICACAO", "CEPS", OrigemDataFase.Delegada,
+                agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
+                inicio: null, fim: null,
+                produtos:
+                [
+                    ProdutoDaFase.Criar("RESULTADO_X", PapelProdutoFase.Definitivo),
+                    ProdutoDaFase.Criar("AVISO_X", papel: null),
+                ],
+                faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!],
+            [],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        ITipoAtoPublicadoReader reader = Substitute.For<ITipoAtoPublicadoReader>();
+        reader.ListarVigentesAsync(Arg.Any<IReadOnlyCollection<string>>(), Hoje, Arg.Any<CancellationToken>())
+            .Returns(
+            [
+                new TipoAtoPublicadoView("RESULTADO_X", "Resultado", CongelaConfiguracao: true, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true),
+                new TipoAtoPublicadoView("AVISO_X", "Aviso", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: false),
+            ]);
+
+        TiposDeAtoUnicosPorObjeto tipos = await ResolucaoDosTiposDeAtoUnicos.ParaChecklistAsync(
+            reader, Substitute.For<IAtoDoProcessoRepository>(), processo, [], Hoje, CancellationToken.None);
+
+        tipos.ClassificacaoDe("RESULTADO_X").Should().Be(new ClassificacaoDoTipoDeAto(EhResultado: true, CongelaConfiguracao: true));
+        tipos.ClassificacaoDe("AVISO_X").Should().Be(new ClassificacaoDoTipoDeAto(EhResultado: false, CongelaConfiguracao: false));
+        tipos.ClassificacaoDe("SEM_VERSAO_VIGENTE").Should().BeNull();
+    }
 }

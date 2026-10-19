@@ -244,6 +244,9 @@ internal static class CorpusEnvelope
             // De quebra, dão ao bloco de recursos uma segunda âncora preliminar de verdade.
             ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(3, variante), AtoAnaliseDecomposto, PapelProdutoFase.Preliminar),
             ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(4, variante), AtoAnulacao, PapelProdutoFase.Preliminar),
+            // A etapa fecha o próprio ciclo: cada preliminar tem o definitivo do mesmo tipo nela.
+            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(5, variante), AtoAnaliseDecomposto, PapelProdutoFase.Definitivo),
+            ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(6, variante), AtoAnulacao, PapelProdutoFase.Definitivo),
         ], permutar)).IsSuccess.Should().BeTrue();
         // A etapa requer banca: é o bloco em que o envelope congela o TIPO e o código, e não a
         // linha — o id dela muda a cada gravação, porque o comando declara a banca pelo tipo.

@@ -4,6 +4,7 @@ using Abstractions;
 
 using Domain.Entities;
 using Domain.Enums;
+using Domain.Errors;
 using Domain.Interfaces;
 using Domain.ValueObjects;
 
@@ -240,6 +241,16 @@ public static class DefinirCronogramaFasesCommandHandler
                     recusasAcumuladas.Add(new($"{campo}.papel", new DomainError(
                         "ProdutoDaFase.PapelEmAtoQueNaoEhResultado",
                         $"O tipo de ato '{produtoInput.AtoCodigo}' não é resultado no catálogo — só resultado recebe papel preliminar ou definitivo.")));
+                    produtosIntegros = false;
+                    continue;
+                }
+
+                // O catálogo diz o que o tipo pode ser: o resultado sempre declara papel, e o tipo
+                // que congela a configuração não serve de item de resultado (UNI-REQ-0157).
+                if (ResolucaoDosTiposDeAtoUnicos.ClassificacaoDe(tipoAto)
+                        .ViolacaoDoProduto(tipoAto.Codigo, papel, $"na fase '{faseCanonica.Codigo}'") is { } violacaoDoProduto)
+                {
+                    recusasAcumuladas.Add(new($"{campo}.papel", violacaoDoProduto));
                     produtosIntegros = false;
                     continue;
                 }

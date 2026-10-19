@@ -582,7 +582,8 @@ public sealed partial class EnvelopeCodec
     private static CalendarioDiasUteisCongelado? LerCalendarioDiasUteis(
         LeitorEnvelope leitor,
         JsonObject payload,
-        IReadOnlyList<FaseCronograma> cronogramaFases)
+        IReadOnlyList<FaseCronograma> cronogramaFases,
+        IReadOnlyList<EtapaProcesso> etapas)
     {
         JsonObject bloco = leitor.Objeto(payload, "calendarioDiasUteis", "$");
         if (leitor.Falhou)
@@ -601,15 +602,15 @@ public sealed partial class EnvelopeCodec
             leitor.ExigirChaves(bloco, "calendarioDiasUteis", "presente");
 
             // Invariante entre blocos: nenhuma transição que gera versão publica processo com
-            // fase que aceita recurso e sem calendário vigente. Um envelope nessa combinação não
+            // fase ou etapa que aceita recurso e sem calendário vigente. Um envelope nessa combinação não
             // foi produzido por publicação legítima, e aceitá-lo restauraria configuração que o
             // gate recusa — o round-trip byte a byte não acusaria, porque o encoder reemitiria a
             // mesma ausência.
-            if (cronogramaFases.Any(static fase => fase.RegraRecurso is not null))
+            if (ProcessoSeletivo.ContagemDistingueDiaUtil(cronogramaFases, etapas))
             {
                 return leitor.Propagar<CalendarioDiasUteisCongelado?>(new DomainError(
                     ErrosCodecEnvelope.EnvelopeMalformado,
-                    "'calendarioDiasUteis' declara ausência num processo com fase que aceita recurso — "
+                    "'calendarioDiasUteis' declara ausência num processo com fase ou etapa que aceita recurso — "
                         + "combinação que nenhuma publicação produz."));
             }
 
