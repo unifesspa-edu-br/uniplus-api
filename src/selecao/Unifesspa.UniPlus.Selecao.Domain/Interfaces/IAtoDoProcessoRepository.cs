@@ -69,6 +69,19 @@ public interface IAtoDoProcessoRepository
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Os códigos de tipo dos atos <paramref name="atoIds"/>, sem repetição, quaisquer que sejam, ainda
+    /// que o ato esteja pendente de registro em Publicações.
+    /// </summary>
+    /// <remarks>
+    /// Quem decide se o tipo é único é o catálogo vigente, e não este registro: aqui só se diz que o
+    /// processo já tem ato do tipo. Quem congela versão pergunta isto sobre os atos criadores das
+    /// versões, para não declarar no cronograma um tipo cuja vaga já está tomada.
+    /// </remarks>
+    Task<IReadOnlyList<string>> ListarTiposDosAtosAsync(
+        IReadOnlyCollection<Guid> atoIds,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Dos documentos pedidos, os que o processo já usou como principal ou como anexo de algum ato.
     /// </summary>
     Task<IReadOnlySet<Guid>> ListarDocumentosJaUsadosAsync(

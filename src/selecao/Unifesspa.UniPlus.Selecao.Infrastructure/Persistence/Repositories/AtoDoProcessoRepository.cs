@@ -126,6 +126,23 @@ public sealed class AtoDoProcessoRepository : IAtoDoProcessoRepository
             .ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyList<string>> ListarTiposDosAtosAsync(
+        IReadOnlyCollection<Guid> atoIds,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(atoIds);
+
+        Guid[] ids = [.. atoIds];
+
+        return await _context.AtosDoProcesso
+            .AsNoTracking()
+            .Where(a => ids.Contains(a.Id))
+            .Select(a => a.TipoCodigo)
+            .Distinct()
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task<IReadOnlySet<Guid>> ListarDocumentosJaUsadosAsync(
         Guid processoSeletivoId,
         IReadOnlyCollection<Guid> documentoIds,

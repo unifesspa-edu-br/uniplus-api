@@ -1,15 +1,16 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Domain.Entities;
+using Domain.Interfaces;
 using Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 /// <summary>
-/// Reúne, para os gates de publicação, o que Publicações sabe sobre os tipos de ato únicos por
-/// objeto que o processo cita (ADR-0056 — leitura cross-módulo), e recusa o processo que declara
-/// o mesmo tipo único mais de uma vez.
+/// Reúne, para os gates de publicação e para o checklist, o que Publicações sabe sobre os tipos de
+/// ato únicos por objeto que o processo cita (ADR-0056 — leitura cross-módulo) e os tipos dos atos
+/// que já criaram versão, e recusa o processo que declara o mesmo tipo único mais de uma vez.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -23,8 +24,14 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// <b>O ato da operação não é relido.</b> O tipo dele já foi conferido na data de publicação do
 /// ato (<see cref="ConferenciaDoTipoDeAto"/>) e é com essa leitura que o registro decide; reler
 /// o catálogo em outra data abriria um cenário em que o gate enxerga uma unicidade e o registro,
-/// outra. As vagas que os atos já registrados do processo ocupam vêm de Publicações pelo
-/// contrato em processo, sem HTTP.
+/// outra.
+/// </para>
+/// <para>
+/// <b>As vagas ocupadas vêm do registro local dos atos.</b> O registro do ato da versão é gravado na
+/// mesma transação da versão e da mensagem durável (ADR-0108), enquanto Publicações só conhece o ato
+/// depois de consumi-la. Perguntar a Publicações deixaria uma janela, entre o commit e o consumo, em
+/// que o tipo do ato anterior não aparece como ocupado. Os gates e o checklist leem do mesmo lugar,
+/// para que concordem.
 /// </para>
 /// </remarks>
 internal static class ResolucaoDosTiposDeAtoUnicos
@@ -42,7 +49,7 @@ internal static class ResolucaoDosTiposDeAtoUnicos
     /// </remarks>
     public static async Task<Result<TiposDeAtoUnicosPorObjeto>> ConferirAsync(
         ITipoAtoPublicadoReader tipoAtoReader,
-        IVagaDeLinhagemReader vagaDeLinhagemReader,
+        IAtoDoProcessoRepository atoDoProcessoRepository,
         ProcessoSeletivo processo,
         TipoAtoPublicadoView tipoDoAtoDaOperacao,
         IReadOnlyList<Guid> atosDaLinhagem,
@@ -50,15 +57,10 @@ internal static class ResolucaoDosTiposDeAtoUnicos
         TimeZoneInfo fusoInstitucional,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(vagaDeLinhagemReader);
         ArgumentNullException.ThrowIfNull(tipoDoAtoDaOperacao);
-        ArgumentNullException.ThrowIfNull(atosDaLinhagem);
 
-        IReadOnlyList<string> ocupados = atosDaLinhagem.Count == 0
-            ? []
-            : await vagaDeLinhagemReader
-                .ListarTiposDosAtosAsync(atosDaLinhagem, cancellationToken)
-                .ConfigureAwait(false);
+        IReadOnlyList<string> ocupados = await TiposOcupadosAsync(atoDoProcessoRepository, atosDaLinhagem, cancellationToken)
+            .ConfigureAwait(false);
 
         Dictionary<string, string> unicos = await LerDoCatalogoAsync(
             tipoAtoReader, processo, ocupados, tipoDoAtoDaOperacao.Codigo, Hoje(relogio, fusoInstitucional), cancellationToken)
@@ -75,14 +77,25 @@ internal static class ResolucaoDosTiposDeAtoUnicos
             : Result<TiposDeAtoUnicosPorObjeto>.Success(tipos);
     }
 
-    /// <summary>Para o checklist, que avalia o processo antes de haver ato.</summary>
+    /// <summary>
+    /// Para o checklist, que avalia o processo antes de haver ato da operação: conta as vagas que
+    /// os atos da linhagem já ocupam, como os gates que congelam versão.
+    /// </summary>
     public static async Task<TiposDeAtoUnicosPorObjeto> ParaChecklistAsync(
         ITipoAtoPublicadoReader reader,
+        IAtoDoProcessoRepository atoDoProcessoRepository,
         ProcessoSeletivo processo,
+        IReadOnlyList<Guid> atosDaLinhagem,
         DateOnly dataVigencia,
-        CancellationToken cancellationToken) =>
-        TiposDeAtoUnicosPorObjeto.ParaChecklist(
-            await LerDoCatalogoAsync(reader, processo, [], null, dataVigencia, cancellationToken).ConfigureAwait(false));
+        CancellationToken cancellationToken)
+    {
+        IReadOnlyList<string> ocupados = await TiposOcupadosAsync(atoDoProcessoRepository, atosDaLinhagem, cancellationToken)
+            .ConfigureAwait(false);
+
+        return TiposDeAtoUnicosPorObjeto.ParaChecklist(
+            await LerDoCatalogoAsync(reader, processo, ocupados, null, dataVigencia, cancellationToken).ConfigureAwait(false),
+            ocupados);
+    }
 
     /// <summary>O dia civil de hoje no fuso institucional, a data em que o catálogo é consultado.</summary>
     internal static DateOnly Hoje(TimeProvider relogio, TimeZoneInfo? fusoInstitucional)
@@ -90,6 +103,21 @@ internal static class ResolucaoDosTiposDeAtoUnicos
         ArgumentNullException.ThrowIfNull(relogio);
 
         return DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(relogio.GetUtcNow(), fusoInstitucional ?? TimeZoneInfo.Utc).DateTime);
+    }
+
+    private static async Task<IReadOnlyList<string>> TiposOcupadosAsync(
+        IAtoDoProcessoRepository atoDoProcessoRepository,
+        IReadOnlyList<Guid> atosDaLinhagem,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
+        ArgumentNullException.ThrowIfNull(atosDaLinhagem);
+
+        return atosDaLinhagem.Count == 0
+            ? []
+            : await atoDoProcessoRepository
+                .ListarTiposDosAtosAsync(atosDaLinhagem, cancellationToken)
+                .ConfigureAwait(false);
     }
 
     private static async Task<Dictionary<string, string>> LerDoCatalogoAsync(

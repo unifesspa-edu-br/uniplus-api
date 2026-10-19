@@ -7,5 +7,5 @@ internal static class TiposDeAtoUnicosDeTeste
 {
     /// <summary>Catálogo sem tipo único: o cronograma do teste não ocupa nenhuma vaga de linhagem.</summary>
     public static TiposDeAtoUnicosPorObjeto Nenhum { get; } =
-        TiposDeAtoUnicosPorObjeto.ParaChecklist(new Dictionary<string, string>(StringComparer.Ordinal));
+        TiposDeAtoUnicosPorObjeto.ParaChecklist(new Dictionary<string, string>(StringComparer.Ordinal), []);
 }

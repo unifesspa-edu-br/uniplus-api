@@ -44,11 +44,14 @@ public sealed class TiposDeAtoUnicosPorObjeto
     }
 
     /// <summary>
-    /// Para o checklist de conformidade, que avalia o processo antes de haver ato: só o
-    /// cronograma conta.
+    /// Para o checklist de conformidade, que avalia o processo antes de haver ato da operação: o
+    /// cronograma e os atos já registrados do processo contam, e o tipo do ato que ainda será
+    /// registrado não é conhecido.
     /// </summary>
-    public static TiposDeAtoUnicosPorObjeto ParaChecklist(IReadOnlyDictionary<string, string> nomePorCodigo) =>
-        new(nomePorCodigo, [], null);
+    public static TiposDeAtoUnicosPorObjeto ParaChecklist(
+        IReadOnlyDictionary<string, string> nomePorCodigo,
+        IReadOnlyCollection<string> ocupados) =>
+        new(nomePorCodigo, ocupados, null);
 
     /// <summary>O tipo do ato da publicação ou da retificação em curso, ou nulo no checklist.</summary>
     public string? AtoDaOperacaoCodigo { get; }

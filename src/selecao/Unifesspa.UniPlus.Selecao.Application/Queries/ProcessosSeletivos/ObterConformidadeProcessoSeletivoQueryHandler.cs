@@ -44,6 +44,7 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
     public static async Task<ConformidadeProcessoSeletivoDto?> Handle(
         ObterConformidadeProcessoSeletivoQuery query,
         IProcessoSeletivoRepository processoSeletivoRepository,
+        IAtoDoProcessoRepository atoDoProcessoRepository,
         ICalendarioVigenteReader calendarioVigenteReader,
         IResolvedorFusoInstitucional resolvedorFuso,
         IFatoCandidatoReader fatoCandidatoReader,
@@ -53,6 +54,7 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
+        ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
         ArgumentNullException.ThrowIfNull(calendarioVigenteReader);
         ArgumentNullException.ThrowIfNull(resolvedorFuso);
         ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
@@ -83,8 +85,11 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
             FalhaDoCalendarioVigente: calendario.IsFailure ? calendario.Error : null,
             FusoInstitucional: fuso.IsSuccess ? fuso.Value : null);
 
+        IReadOnlyList<Guid> atosDaLinhagem = await processoSeletivoRepository
+            .ObterAtosCriadoresAsync(processo.Id, cancellationToken)
+            .ConfigureAwait(false);
         TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos = await ResolucaoDosTiposDeAtoUnicos
-            .ParaChecklistAsync(tipoAtoPublicadoReader, processo, ResolucaoDosTiposDeAtoUnicos.Hoje(timeProvider, fuso.IsSuccess ? fuso.Value : null), cancellationToken)
+            .ParaChecklistAsync(tipoAtoPublicadoReader, atoDoProcessoRepository, processo, atosDaLinhagem, ResolucaoDosTiposDeAtoUnicos.Hoje(timeProvider, fuso.IsSuccess ? fuso.Value : null), cancellationToken)
             .ConfigureAwait(false);
 
         FatosDeModalidade fatosDeModalidade = VocabularioDeFatos.ComValoresDeModalidade(
