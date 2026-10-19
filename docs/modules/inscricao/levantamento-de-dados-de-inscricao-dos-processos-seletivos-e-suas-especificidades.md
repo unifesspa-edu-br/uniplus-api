@@ -7,7 +7,7 @@
 > **Data:** 2026-06-16
 > **Status:** rascunho para revisão
 >
-> **Fonte da verdade:** as regras de negócio (RN01–RN08) e o vocabulário canônico do projeto Uni+
+> **Fonte da verdade:** as regras de negócio (registro de requisitos `UNI-REQ` do portal de desenvolvedores) e o vocabulário canônico do projeto Uni+
 > (ver `docs/visao-do-projeto.md`) prevalecem sobre qualquer texto herdado de editais ou sistemas legados.
 >
 > **Rastreabilidade:** cada seção referencia os requisitos funcionais do registro público de requisitos
