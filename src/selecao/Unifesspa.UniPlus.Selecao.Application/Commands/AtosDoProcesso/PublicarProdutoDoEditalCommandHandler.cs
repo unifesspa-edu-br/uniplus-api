@@ -102,7 +102,7 @@ public static class PublicarProdutoDoEditalCommandHandler
         ProjecaoDosProdutosPrevistos.Declarado produto = conferenciaDoProduto.Value!;
 
         Result<TipoAtoPublicadoView> conferenciaDoTipo = await ConferenciaDoProdutoDoEdital
-            .TipoAsync(tipoDeAtoReader, produto, command.DataPublicacao, cancellationToken)
+            .TipoAsync(tipoDeAtoReader, produto, vigente.Value!.TiposDeAto, command.DataPublicacao, cancellationToken)
             .ConfigureAwait(false);
         if (conferenciaDoTipo.IsFailure)
         {

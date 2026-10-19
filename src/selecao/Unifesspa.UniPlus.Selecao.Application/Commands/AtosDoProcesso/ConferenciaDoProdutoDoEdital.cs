@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.AtosDoProcesso;
 
+using Abstractions;
+
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Errors;
@@ -29,8 +31,9 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// aqui; o prazo de recurso e os julgamentos não, porque o sistema ainda não os controla.
 /// </para>
 /// <para>
-/// O tipo vem do item, e o administrador não o escolhe. Nenhum código compara o tipo com um literal: o
-/// catálogo diz se ele congela configuração e se é resultado (ADR-0103).
+/// O tipo vem do item, e o administrador não o escolhe. Nenhum código compara o tipo com um literal: a versão
+/// publicada do edital diz se ele congela configuração, se é resultado e se é único, como o catálogo dizia na
+/// publicação (ADR-0103). Mudar a classificação no catálogo depois não muda o que vale para o item.
 /// </para>
 /// </remarks>
 internal static class ConferenciaDoProdutoDoEdital
@@ -42,24 +45,46 @@ internal static class ConferenciaDoProdutoDoEdital
                 AtoDoProcessoErrorCodes.ProdutoNaoDeclarado,
                 $"O item {produtoId} não consta na versão vigente do edital. Só se publica o que o edital declara; se for preciso publicar outro, retifique o edital."));
 
-    /// <summary>O tipo do item na data do documento: vigora no catálogo e não congela configuração.</summary>
+    /// <summary>
+    /// O tipo do item na data do documento: vigora no catálogo e não congela configuração. O catálogo diz se o
+    /// tipo existe e o seu nome; se ele congela, se é resultado e se é único, diz a versão publicada do edital.
+    /// </summary>
     public static async Task<Result<TipoAtoPublicadoView>> TipoAsync(
         ITipoAtoPublicadoReader reader,
         ProjecaoDosProdutosPrevistos.Declarado produto,
+        IReadOnlyDictionary<string, TipoDeAtoCongelado> tiposCongelados,
         DateOnly dataPublicacao,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(produto);
+        ArgumentNullException.ThrowIfNull(tiposCongelados);
 
         Result<TipoAtoPublicadoView> vigente = await ConferenciaDoTipoDeAto
             .VigenteAsync(reader, produto.AtoCodigo, dataPublicacao, cancellationToken)
             .ConfigureAwait(false);
+        if (vigente.IsFailure)
+        {
+            return vigente;
+        }
 
-        return vigente.IsSuccess && vigente.Value!.CongelaConfiguracao
+        if (!tiposCongelados.TryGetValue(produto.AtoCodigo, out TipoDeAtoCongelado? congelado))
+        {
+            throw new InvalidOperationException(
+                $"A versão publicada declara o item do tipo '{produto.AtoCodigo}' sem congelar a classificação dele; o envelope lido garante uma entrada por tipo declarado.");
+        }
+
+        TipoAtoPublicadoView tipo = vigente.Value! with
+        {
+            CongelaConfiguracao = congelado.CongelaConfiguracao,
+            UnicoPorObjeto = congelado.UnicoPorObjeto,
+            EhResultado = congelado.EhResultado,
+        };
+
+        return tipo.CongelaConfiguracao
             ? Result<TipoAtoPublicadoView>.Failure(new DomainError(
                 AtoDoProcessoErrorCodes.TipoCongelaConfiguracao,
                 $"O tipo de ato '{produto.AtoCodigo}' congela configuração e só se publica com a publicação ou a retificação do edital — o item do edital não altera a configuração do processo."))
-            : vigente;
+            : Result<TipoAtoPublicadoView>.Success(tipo);
     }
 
     /// <summary>A primeira publicação do item: ele está aberto e, sendo definitivo, o preliminar da matéria já saiu.</summary>

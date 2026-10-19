@@ -46,6 +46,9 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
     private readonly IUserContext _usuario = Substitute.For<IUserContext>();
     private readonly ISelecaoUnitOfWork _unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
 
+    // O que a versão publicada congelou do tipo do item; o catálogo vivo (_tipos) só diz que o tipo existe.
+    private TipoDeAtoCongelado _congelado = new(Materia, UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false);
+
     private readonly DocumentoAPublicar _principal = Documento();
     private readonly List<AtoDoProcesso> _atosDoProcesso = [];
 
@@ -160,7 +163,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
 
         await DeveRecusar(Comando(preliminar.Id, politica: false), AtoDoProcessoErrorCodes.PoliticaDeDivulgacaoNaoConfirmada);
 
-        Tipo(Materia, resultado: false);
+        _congelado = _congelado with { EhResultado = false };
         AtoDoProcesso? gravado = null;
         await _atos.AdicionarAsync(Arg.Do<AtoDoProcesso>(a => gravado = a), Arg.Any<CancellationToken>());
         (Result<AtoPublicadoDto> resposta, _) = await Publicar(Comando(preliminar.Id, politica: false));
@@ -255,8 +258,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
     {
         (ProdutoDaFase preliminar, _) = Par();
         Cronograma(Fase("HOMOLOGACAO", 1, preliminar));
-        _tipos.ObterVigenteAsync(Materia, DataDoAto, Arg.Any<CancellationToken>())
-            .Returns(new TipoAtoPublicadoView(Materia, "Resultado", CongelaConfiguracao: true, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
+        _congelado = _congelado with { CongelaConfiguracao = true };
 
         await DeveRecusar(Comando(preliminar.Id), AtoDoProcessoErrorCodes.TipoCongelaConfiguracao);
     }
@@ -266,12 +268,56 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
     {
         (ProdutoDaFase preliminar, _) = Par();
         Cronograma(Fase("HOMOLOGACAO", 1, preliminar));
-        _tipos.ObterVigenteAsync(Materia, DataDoAto, Arg.Any<CancellationToken>())
-            .Returns(new TipoAtoPublicadoView(Materia, "Resultado", CongelaConfiguracao: false, UnicoPorObjeto: true, EfeitoIrreversivel: false, EhResultado: true));
+        _congelado = _congelado with { UnicoPorObjeto = true };
         _atos.ExisteAtoDoTipoForaDaCadeiaAsync(_processoId, Materia, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(true);
 
         await DeveRecusar(Comando(preliminar.Id), "ProcessoSeletivo.ObjetoJaTemAtoVivoDoTipo");
+    }
+
+    [Fact(DisplayName = "Marcar o tipo como único no catálogo depois do preliminar não impede o definitivo: vale a marcação congelada na versão publicada")]
+    public async Task Definitivo_DepoisDeMarcarOTipoComoUnicoNoCatalogo_NaoEImpedido()
+    {
+        (ProdutoDaFase preliminar, ProdutoDaFase definitivo) = Par();
+        Cronograma(Fase("HOMOLOGACAO", 1, preliminar, definitivo));
+        Publicado(Materia, preliminar.Id, registrado: true);
+        Tipo(Materia, resultado: true, unico: true);
+        _atos.ExisteAtoDoTipoForaDaCadeiaAsync(_processoId, Materia, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(true);
+        _vagas.ObjetoJaTemAtoDeOutraLinhagemAsync(
+                EntidadesDeRegistroPeloDominio.ProcessoSeletivo, _processoId, Materia, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(true);
+
+        (Result<AtoPublicadoDto> resposta, IEnumerable<object> mensagens) = await Publicar(Comando(definitivo.Id));
+
+        resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
+        mensagens.Should().ContainSingle().Which.Should().BeOfType<RegistrarAtoNormativoRequisicao>()
+            .Which.AtributosDoTipo.UnicoPorObjeto.Should().BeFalse("o registro no Publicações leva a marcação congelada, e não a do catálogo de hoje");
+    }
+
+    [Fact(DisplayName = "Ligar congelaConfiguracao no catálogo depois da publicação não muda a classe da correção do resultado")]
+    public async Task Correcao_DepoisDeLigarCongelaNoCatalogo_MantemAClasseCongelada()
+    {
+        (ProdutoDaFase preliminar, _) = Par();
+        Cronograma(Fase("HOMOLOGACAO", 1, preliminar));
+        AtoDoProcesso original = Publicado(Materia, preliminar.Id, registrado: true);
+        Tipo(Materia, resultado: true, congela: true);
+
+        (Result<AtoPublicadoDto> resposta, IEnumerable<object> mensagens) = await Publicar(Comando(preliminar.Id, corrige: original.Id));
+
+        resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
+        mensagens.Should().ContainSingle().Which.Should().BeOfType<RegistrarAtoNormativoRequisicao>()
+            .Which.AtributosDoTipo.CongelaConfiguracao.Should().BeFalse("a correção tem a classe do ato corrigido, que o edital congelou");
+    }
+
+    [Fact(DisplayName = "Desligar ehResultado no catálogo depois da publicação não dispensa a confirmação da política de divulgação")]
+    public async Task Resultado_DepoisDeDesligarEhResultadoNoCatalogo_AindaExigeAPolitica()
+    {
+        (ProdutoDaFase preliminar, _) = Par();
+        Cronograma(Fase("HOMOLOGACAO", 1, preliminar));
+        Tipo(Materia, resultado: false);
+
+        await DeveRecusar(Comando(preliminar.Id, politica: false), AtoDoProcessoErrorCodes.PoliticaDeDivulgacaoNaoConfirmada);
     }
 
     private async Task DeveRecusar(PublicarProdutoDoEditalCommand comando, string codigoEsperado)
@@ -297,9 +343,10 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
         new(_processoId, produtoId, "5/2027", DataDoAto, "Diretor do CEPS", _principal.Id,
             PoliticaDeDivulgacaoConfirmada: politica, AtoCorrigidoId: corrige, MotivoDaCorrecao: corrige is null ? null : "Erro de digitação");
 
-    private void Tipo(string codigo, bool resultado) =>
+    /// <summary>O tipo no catálogo vivo, que a publicação só consulta para saber que ele existe e vigora.</summary>
+    private void Tipo(string codigo, bool resultado, bool unico = false, bool congela = false) =>
         _tipos.ObterVigenteAsync(codigo, DataDoAto, Arg.Any<CancellationToken>())
-            .Returns(new TipoAtoPublicadoView(codigo, "Resultado da homologação", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: resultado));
+            .Returns(new TipoAtoPublicadoView(codigo, "Resultado da homologação", CongelaConfiguracao: congela, UnicoPorObjeto: unico, EfeitoIrreversivel: false, EhResultado: resultado));
 
     private void Cronograma(params FaseCronograma[] fases)
     {
@@ -307,13 +354,14 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
             _processoId, [1], Versao, "canonical-json/sha256@v1", Guid.CreateVersion7(), new string('a', 64), "sub", Agora);
         _processos.ObterVersaoVigenteAsync(_processoId, Agora, Arg.Any<CancellationToken>()).Returns(versao);
-        _codecs.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(new EnvelopeReidratado(
+        _codecs.Reidratar(versao).Returns(_ => Result<EnvelopeReidratado>.Success(new EnvelopeReidratado(
             new GrafoConfiguracao(
                 [.. processo.Etapas], processo.OfertaAtendimento!, [.. processo.DistribuicaoVagas],
                 processo.BonusRegional, [.. processo.CriteriosDesempate], processo.Classificacao!,
                 fases, [.. processo.DocumentosExigidos], [], null, numeroDeOpcoesDeCurso: 1),
             DadosEdital.Criar("001/2027", Agora, Agora.AddDays(30), Guid.CreateVersion7()).Value!,
-            new string('a', 64), "America/Sao_Paulo", retificacao: null, conformidade: null)));
+            new string('a', 64), "America/Sao_Paulo", retificacao: null, conformidade: null,
+            tiposDeAtoCongelados: new Dictionary<string, TipoDeAtoCongelado>(StringComparer.Ordinal) { [Materia] = _congelado })));
     }
 
     private static FaseCronograma Fase(string codigo, int ordem, params ProdutoDaFase[] produtos) =>
