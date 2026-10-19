@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -157,11 +158,37 @@ public sealed class ConferenciaDosEixosNosHandlersTests
         eventos.Should().BeEmpty();
     }
 
+    [Fact(DisplayName = "Retificar recusa a configuração que retira o definitivo de uma matéria cujo preliminar já foi publicado")]
+    public async Task Retificar_RetiraODefinitivoDeMateriaComPreliminarPublicado_Recusa()
+    {
+        Cenario cenario = Cenario.Publicado(dominioCongelado: "BOOLEANO");
+        cenario.ComPreliminarPublicadoEDefinitivoPendente();
+
+        (Result resposta, IEnumerable<object> eventos) = await cenario.RetificarAsync();
+
+        resposta.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.RetificacaoDesfazCicloRecursalAberto);
+        eventos.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Fechar a retificação recusa a configuração que retira o definitivo de uma matéria cujo preliminar já foi publicado")]
+    public async Task Fechar_RetiraODefinitivoDeMateriaComPreliminarPublicado_Recusa()
+    {
+        Cenario cenario = Cenario.Publicado(dominioCongelado: "BOOLEANO");
+        cenario.AbrirSessao();
+        cenario.ComPreliminarPublicadoEDefinitivoPendente();
+
+        (Result resposta, IEnumerable<object> eventos) = await cenario.FecharAsync();
+
+        resposta.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.RetificacaoDesfazCicloRecursalAberto);
+        eventos.Should().BeEmpty();
+    }
+
     private sealed class Cenario
     {
         private readonly IProcessoSeletivoRepository _repositorio = Substitute.For<IProcessoSeletivoRepository>();
         private readonly IRegistroCodecsEnvelope _registro = Substitute.For<IRegistroCodecsEnvelope>();
         private readonly IFatoCandidatoReader _catalogo = Substitute.For<IFatoCandidatoReader>();
+        private readonly IAtoDoProcessoRepository _atos = Substitute.For<IAtoDoProcessoRepository>();
         private readonly VersaoConfiguracao _versao;
         private readonly GrafoConfiguracao _grafoPublicado;
         private readonly EixosDeVersaoPublicada _congelado;
@@ -220,7 +247,7 @@ public sealed class ConferenciaDosEixosNosHandlersTests
             _repositorio,
             RepositorioDeDocumento(Processo.Id),
             Substitute.For<IRascunhoDePublicacaoRepository>(),
-            Substitute.For<IAtoDoProcessoRepository>(),
+            _atos,
             Canonicalizer(), new ResolvedorFusoDeTeste(),
             Substitute.For<ISelecaoUnitOfWork>(),
             UsuarioAutenticado(),
@@ -244,7 +271,7 @@ public sealed class ConferenciaDosEixosNosHandlersTests
             _repositorio,
             RepositorioDeDocumento(Processo.Id),
             Substitute.For<IRascunhoDePublicacaoRepository>(),
-            Substitute.For<IAtoDoProcessoRepository>(),
+            _atos,
             Canonicalizer(), new ResolvedorFusoDeTeste(),
             Substitute.For<ISelecaoUnitOfWork>(),
             UsuarioAutenticado(),
@@ -258,8 +285,39 @@ public sealed class ConferenciaDosEixosNosHandlersTests
             CadastrosVivos.RegrasDesempate(),
             _catalogo,
             CalendarioVigenteReaderDeTeste.SemVigente(),
+            _registro,
             new RelogioFixo(),
             CancellationToken.None);
+
+        /// <summary>
+        /// A versão publicada declara o par preliminar e definitivo da mesma matéria e o preliminar já saiu;
+        /// o processo em edição, que não declara cronograma, ficou sem os dois.
+        /// </summary>
+        public void ComPreliminarPublicadoEDefinitivoPendente()
+        {
+            ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_PROVA", PapelProdutoFase.Preliminar);
+            FaseCronograma fase = FaseCronograma.Criar(
+                1, Guid.CreateVersion7(), "PROVA", "CEPS", OrigemDataFase.Propria,
+                agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
+                inicio: Agora, fim: Agora.AddDays(10),
+                produtos: [preliminar, ProdutoDaFase.Criar("RESULTADO_PROVA", PapelProdutoFase.Definitivo)],
+                faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!;
+            GrafoConfiguracao grafo = new(
+                [.. Processo.Etapas], Processo.OfertaAtendimento!, [.. Processo.DistribuicaoVagas], Processo.BonusRegional,
+                [.. Processo.CriteriosDesempate], Processo.Classificacao!, [fase], [.. Processo.DocumentosExigidos], [], null,
+                numeroDeOpcoesDeCurso: 1);
+            _registro.Reidratar(_versao).Returns(Result<EnvelopeReidratado>.Success(new EnvelopeReidratado(
+                grafo, DadosEdital.Criar("001/2026", Agora, Agora.AddDays(30), Guid.CreateVersion7()).Value!,
+                HashFixo, "America/Sao_Paulo", retificacao: null, conformidade: null)));
+
+            AtoDoProcesso publicado = AtoDoProcesso.Registrar(
+                new NovoAtoDoProcesso(
+                    Guid.CreateVersion7(), Processo.Id, "RESULTADO_PROVA", "Resultado da prova", "1/2026", new DateOnly(2026, 1, 20),
+                    "Diretor do CEPS", "ceps", "ps-eixos", Guid.CreateVersion7(), [], ProdutoDoEditalId: preliminar.Id),
+                new RelogioFixo()).Value!;
+            publicado.ConfirmarRegistro(new RelogioFixo());
+            _atos.ListarDoProcessoAsync(Processo.Id, Arg.Any<CancellationToken>()).Returns([publicado]);
+        }
 
         private void Configurar(bool reidratavel, string classificacaoNoCatalogo, string dominioNoCatalogo)
         {

@@ -62,6 +62,7 @@ public static class FecharRetificacaoCommandHandler
         IRegraCatalogoReader regraCatalogoReader,
         IFatoCandidatoReader fatoCandidatoReader,
         ICalendarioVigenteReader calendarioVigenteReader,
+        IRegistroCodecsEnvelope registroCodecs,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
@@ -71,7 +72,7 @@ public static class FecharRetificacaoCommandHandler
         // recusa não devolve exceção, então o que ela mudou não pode ir para o banco.
         return ReconferenciaDasCopiasDoItem.SemPersistirEmRecusaAsync(
             unitOfWork,
-            () => Executar(command, processoSeletivoRepository, documentoAPublicarRepository, rascunhoDePublicacaoRepository, atoDoProcessoRepository, canonicalizer, resolvedorFuso, unitOfWork, userContext, tipoDeAtoReader, vagaDeLinhagemReader, obrigatoriedadeLegalRepository, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, fatoCandidatoReader, calendarioVigenteReader, timeProvider, cancellationToken));
+            () => Executar(command, processoSeletivoRepository, documentoAPublicarRepository, rascunhoDePublicacaoRepository, atoDoProcessoRepository, canonicalizer, resolvedorFuso, unitOfWork, userContext, tipoDeAtoReader, vagaDeLinhagemReader, obrigatoriedadeLegalRepository, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, fatoCandidatoReader, calendarioVigenteReader, registroCodecs, timeProvider, cancellationToken));
     }
 
     private static async Task<(Result Resposta, IEnumerable<object> Eventos)> Executar(
@@ -94,6 +95,7 @@ public static class FecharRetificacaoCommandHandler
         IRegraCatalogoReader regraCatalogoReader,
         IFatoCandidatoReader fatoCandidatoReader,
         ICalendarioVigenteReader calendarioVigenteReader,
+        IRegistroCodecsEnvelope registroCodecs,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
@@ -113,6 +115,7 @@ public static class FecharRetificacaoCommandHandler
         ArgumentNullException.ThrowIfNull(tipoEtapaReader);
         ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
         ArgumentNullException.ThrowIfNull(calendarioVigenteReader);
+        ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
@@ -201,6 +204,16 @@ public static class FecharRetificacaoCommandHandler
             return (Result.Failure(new DomainError(
                 "ProcessoSeletivo.AtoJaRetificado",
                 "O ato que esta retificação emendaria já foi retificado — a cadeia de atos é linear.")), []);
+        }
+
+        // A versão nova é coerente sozinha, mas não pode desfazer o ciclo de recurso que um
+        // preliminar já publicado abriu e que o definitivo ainda não fechou.
+        Result cicloRecursal = await ConferenciaDoCicloRecursalAberto
+            .ConferirAsync(atoDoProcessoRepository, registroCodecs, processo, versaoAtual, cancellationToken)
+            .ConfigureAwait(false);
+        if (cicloRecursal.IsFailure)
+        {
+            return (cicloRecursal, []);
         }
 
         // O motivo é o do RASCUNHO — declarado na abertura e normalizado uma vez só. É o

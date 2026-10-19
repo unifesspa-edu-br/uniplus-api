@@ -124,6 +124,7 @@ public sealed class FatoColetavelDeEscopoGateTests
             CadastrosVivos.RegrasDesempate(),
             Substitute.For<IFatoCandidatoReader>(),
             Substitute.For<ICalendarioVigenteReader>(),
+            Substitute.For<IRegistroCodecsEnvelope>(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 

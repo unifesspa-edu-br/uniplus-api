@@ -198,6 +198,7 @@ public sealed class ColetabilidadeDeFatosGateTests
             CadastrosVivos.RegrasDesempate(),
             fatoCandidatoReader,
             CalendarioVigenteReaderDeTeste.SemVigente(),
+            Substitute.For<IRegistroCodecsEnvelope>(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 
