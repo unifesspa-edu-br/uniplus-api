@@ -31,7 +31,22 @@ internal static class PreliminaresDaMateria
     {
         ArgumentNullException.ThrowIfNull(grafo);
 
-        FaseCronograma? fase = grafo.CronogramaFases.FirstOrDefault(f => f.Produtos.Any(p => p.Id == definitivoId));
+        return Esperados(grafo.CronogramaFases, grafo.Etapas, definitivoId);
+    }
+
+    /// <summary>
+    /// A mesma pergunta de <see cref="Esperados(GrafoConfiguracao, Guid)"/> sobre um cronograma que
+    /// ainda não virou grafo, como o do processo em edição.
+    /// </summary>
+    public static IReadOnlyList<Guid> Esperados(
+        IReadOnlyCollection<FaseCronograma> fases,
+        IReadOnlyCollection<EtapaProcesso> etapas,
+        Guid definitivoId)
+    {
+        ArgumentNullException.ThrowIfNull(fases);
+        ArgumentNullException.ThrowIfNull(etapas);
+
+        FaseCronograma? fase = fases.FirstOrDefault(f => f.Produtos.Any(p => p.Id == definitivoId));
         if (fase is not null)
         {
             string atoCodigo = fase.Produtos.First(p => p.Id == definitivoId).AtoCodigo;
@@ -39,7 +54,7 @@ internal static class PreliminaresDaMateria
 
             // Só chega à concluinte o ciclo que a fase de origem deixa aberto: a matéria que ela
             // fecha com o próprio definitivo não espera a concluinte.
-            IEnumerable<Guid> deOutrasFases = grafo.CronogramaFases
+            IEnumerable<Guid> deOutrasFases = fases
                 .Where(f => f.Id != fase.Id
                     && string.Equals(f.FaseConcluinteCodigo, fase.Codigo, StringComparison.Ordinal)
                     && f.TiposComCicloAberto().Contains(atoCodigo, StringComparer.Ordinal))
@@ -48,7 +63,7 @@ internal static class PreliminaresDaMateria
             return [.. daFase, .. deOutrasFases];
         }
 
-        EtapaProcesso? etapa = grafo.Etapas.FirstOrDefault(e => e.Produtos.Any(p => p.Id == definitivoId));
+        EtapaProcesso? etapa = etapas.FirstOrDefault(e => e.Produtos.Any(p => p.Id == definitivoId));
         if (etapa is null)
         {
             return [];
@@ -68,13 +83,28 @@ internal static class PreliminaresDaMateria
     {
         ArgumentNullException.ThrowIfNull(grafo);
 
+        return DefinitivosQueFecham(grafo.CronogramaFases, grafo.Etapas, preliminarId);
+    }
+
+    /// <summary>
+    /// A mesma pergunta de <see cref="DefinitivosQueFecham(GrafoConfiguracao, Guid)"/> sobre um
+    /// cronograma que ainda não virou grafo.
+    /// </summary>
+    public static IReadOnlyList<Guid> DefinitivosQueFecham(
+        IReadOnlyCollection<FaseCronograma> fases,
+        IReadOnlyCollection<EtapaProcesso> etapas,
+        Guid preliminarId)
+    {
+        ArgumentNullException.ThrowIfNull(fases);
+        ArgumentNullException.ThrowIfNull(etapas);
+
         return
         [
-            .. grafo.CronogramaFases.SelectMany(static f => f.Produtos.Select(static p => (p.Id, p.Papel)))
-                .Concat(grafo.Etapas.SelectMany(static e => e.Produtos.Select(static p => (p.Id, p.Papel))))
+            .. fases.SelectMany(static f => f.Produtos.Select(static p => (p.Id, p.Papel)))
+                .Concat(etapas.SelectMany(static e => e.Produtos.Select(static p => (p.Id, p.Papel))))
                 .Where(static p => p.Papel == PapelProdutoFase.Definitivo)
                 .Select(static p => p.Id)
-                .Where(definitivoId => Esperados(grafo, definitivoId).Contains(preliminarId))
+                .Where(definitivoId => Esperados(fases, etapas, definitivoId).Contains(preliminarId))
                 .Distinct(),
         ];
     }
