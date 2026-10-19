@@ -74,6 +74,7 @@ fase de avaliação reprova a publicação. Cardinalidades diferentes por design
 Fase é `1..*` (piso derivado da origem dos candidatos, nunca do tipo de
 processo); Etapa é `0..*` (processo sem prova não tem etapa — o SiSU publica
 liso).
+<!-- Cláusula ampliada pela Emenda 4 (2026-10-18), no fim deste documento: a regra de recurso também pode ser da etapa. -->
 
 O cadastro `FaseCanonica` (Configuração, ADR-0056) ganha quatro atributos
 declarados, na mesma família de `AgrupaEtapas`/`PermiteComplementacao` que já
@@ -276,7 +277,7 @@ A decisão principal desta ADR — dois eixos distintos, fase no eixo temporal e
 
 **O `FaseCanonicaSnapshot` permanece**, e não é código morto a remover. Ele é o contrato tipado de um bloco que **já é congelado**: a fase do cronograma no envelope carrega exatamente os mesmos oito atributos. A ausência de consumidor no código é o estado esperado — esta ADR já registrava que a revisão do contrato foi feita "antes de qualquer consumidor real existir", e os consumidores chegam com as frentes de classificação e ingresso.
 
-## Emenda 2 (2026-09-07) — a ADR para de enumerar o que o código já declara
+## Emenda 3 (2026-09-07) — a ADR para de enumerar o que o código já declara
 
 Esta ADR carregava duas listas concretas que envelheceram sem que ninguém percebesse: a contagem das fases canônicas, escrita como "quatorze" quando o catálogo tem outro número; e os campos do `FaseCanonicaSnapshot`, enumerados um a um e já defasados em dois pontos independentes — um campo entrou com a frente da janela de solicitação de isenção, e outros dois saíram quando produção e definitividade de resultado deixaram o cadastro de fases canônicas.
 
@@ -300,6 +301,14 @@ O consumidor futuro enxerga **mais**, não menos: uma fase que publica gabarito 
 A decisão principal — dois eixos distintos, fase no eixo temporal e etapa no eixo de pontuação — e a revisão do `AgrupaEtapas` da Emenda 1.
 
 O `FaseCanonicaSnapshot` **permanece e não é código morto a remover**. Ele é o contrato tipado de um bloco que já é congelado, e a ausência de consumidor é o estado que esta ADR previa ao revisar o contrato "antes de qualquer consumidor real existir" — os consumidores chegam com as frentes de classificação e ingresso.
+
+## Emenda 4 (2026-10-18) — o recurso deixa de ser exclusivo da fase
+
+Esta ADR atribuía a regra de recurso à fase e deixava à etapa só peso, caráter e nota mínima. Cada prova ou procedimento tem o seu resultado e o seu público, como na habilitação em etapas para públicos diferentes, e por isso a etapa também publica atos e abre janelas de recurso próprias. O código já fazia assim; a emenda registra a decisão.
+
+A regra de recurso passa a poder morar na fase **ou** na etapa. A decisão, com as âncoras do prazo, a regra da etapa com nota do ENEM e a declaração de instância superior por janela, é da [ADR-0145](0145-recurso-por-etapa.md). A separação dos dois eixos permanece. A etapa já tem janela temporal própria (início e fim) e parecer; esta emenda diz só que a regra de recurso também pode ser da etapa, e que o instante em que o prazo corre vem do ato que ela publica ou da ciência do candidato.
+
+A segunda seção "Emenda 2" foi renumerada para "Emenda 3" em 2026-10-18, para desfazer a numeração duplicada.
 
 ## Mais informações
 
