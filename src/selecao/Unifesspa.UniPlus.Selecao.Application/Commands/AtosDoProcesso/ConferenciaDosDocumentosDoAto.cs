@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Confere os documentos que o ato avulso referencia: cada um é do processo, está confirmado, foi
+/// Confere os documentos que o ato referencia: cada um é do processo, está confirmado, foi
 /// enviado para um ato e não foi usado em outro; o principal é PDF e os anexos têm nomes distintos.
 /// </summary>
 /// <remarks>
@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// arquivo publicado tenha um único ato por trás; a finalidade já separa o documento do ato do
 /// documento e dos anexos do edital.
 /// </remarks>
-internal static class ConferenciaDosDocumentosDoAtoAvulso
+internal static class ConferenciaDosDocumentosDoAto
 {
     /// <summary>Quantos anexos um ato avulso pode levar.</summary>
     public const int QuantidadeMaximaDeAnexos = 20;

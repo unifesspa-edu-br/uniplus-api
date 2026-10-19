@@ -58,6 +58,26 @@ internal static class PreliminaresDaMateria
         return [.. PreliminaresDoTipo(etapa.Produtos.Select(static p => (p.Id, p.AtoCodigo, p.Papel)), atoDaEtapa)];
     }
 
+    /// <summary>
+    /// Os identificadores dos produtos definitivos que fecham o ciclo do preliminar
+    /// <paramref name="preliminarId"/>, ou lista vazia quando nenhum definitivo o espera. É a pergunta
+    /// inversa de <see cref="Esperados"/>, respondida por ela, para que o pareamento continue num só lugar.
+    /// </summary>
+    public static IReadOnlyList<Guid> DefinitivosQueFecham(GrafoConfiguracao grafo, Guid preliminarId)
+    {
+        ArgumentNullException.ThrowIfNull(grafo);
+
+        return
+        [
+            .. grafo.CronogramaFases.SelectMany(static f => f.Produtos.Select(static p => (p.Id, p.Papel)))
+                .Concat(grafo.Etapas.SelectMany(static e => e.Produtos.Select(static p => (p.Id, p.Papel))))
+                .Where(static p => p.Papel == PapelProdutoFase.Definitivo)
+                .Select(static p => p.Id)
+                .Where(definitivoId => Esperados(grafo, definitivoId).Contains(preliminarId))
+                .Distinct(),
+        ];
+    }
+
     private static IEnumerable<Guid> PreliminaresDoTipo(IEnumerable<(Guid Id, string AtoCodigo, PapelProdutoFase? Papel)> produtos, string atoCodigo) =>
         produtos
             .Where(p => p.Papel == PapelProdutoFase.Preliminar && string.Equals(p.AtoCodigo, atoCodigo, StringComparison.Ordinal))

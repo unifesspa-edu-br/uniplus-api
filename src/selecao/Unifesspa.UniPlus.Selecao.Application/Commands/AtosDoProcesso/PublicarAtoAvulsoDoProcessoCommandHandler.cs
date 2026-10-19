@@ -3,9 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.AtosDoProcesso;
 using Abstractions;
 
 using Domain.Entities;
-using Domain.Errors;
 using Domain.Interfaces;
-using Domain.ValueObjects;
 
 using DTOs;
 
@@ -19,26 +17,13 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// registro do ato do processo e enfileira a requisição de registro, na mesma transação (ADR-0108).
 /// </summary>
 /// <remarks>
-/// <para>
 /// <b>Por que conferir aqui.</b> O Publicações só responde o sucesso; a recusa vai para a fila de
 /// mensagens que falharam. Cada regra que o catálogo ou o registro central aplicariam é antecipada com
-/// erro nomeado, antes de qualquer escrita.
-/// </para>
-/// <para>
-/// <b>Idempotência.</b> Vem da <c>Idempotency-Key</c> do endpoint: o <c>AtoId</c> é decidido a cada
-/// requisição e fica no registro do ato, que é o que liga o aviso de registro a ele.
-/// </para>
-/// <para>
-/// <b>Campos que o documento não declara.</b> O órgão é a sigla da unidade administradora do processo, a
-/// série de numeração é o próprio tipo do ato e o ano é o da data que o documento declara. A unidade e
-/// o identificador do processo na chave do documento no acervo são os da versão divulgada, gravados no
-/// registro porque a chave não muda depois de publicada.
-/// </para>
+/// erro nomeado, antes de qualquer escrita. O que o documento avulso e a publicação de um item do edital
+/// partilham — gravar o registro e enfileirar a requisição — está em <see cref="EnvioDoAtoDoProcesso"/>.
 /// </remarks>
 public static class PublicarAtoAvulsoDoProcessoCommandHandler
 {
-    private const string ConstraintDaCorrecaoUnica = "ux_atos_do_processo_ato_corrigido";
-
     public static async Task<(Result<AtoPublicadoDto> Resposta, IEnumerable<object> Eventos)> Handle(
         PublicarAtoAvulsoDoProcessoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
@@ -75,24 +60,12 @@ public static class PublicarAtoAvulsoDoProcessoCommandHandler
             .TravarAsync(command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
 
-        string? orgao = await processoSeletivoRepository
-            .ObterSiglaDaUnidadeAdministradoraAsync(command.ProcessoSeletivoId, cancellationToken)
+        Result<ProcessoDivulgadoConferido> conferenciaDoProcesso = await EnvioDoAtoDoProcesso
+            .ConferirProcessoDivulgadoAsync(processoSeletivoRepository, certameDivulgadoRepository, command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
-        if (orgao is null)
+        if (conferenciaDoProcesso.IsFailure)
         {
-            return Recusa(new DomainError(
-                "ProcessoSeletivo.NaoEncontrado",
-                $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
-        }
-
-        CertameDivulgado? divulgado = await certameDivulgadoRepository
-            .ObterParaLeituraAsync(command.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-        if (divulgado is null)
-        {
-            return Recusa(new DomainError(
-                AtoDoProcessoErrorCodes.CertameNaoDivulgado,
-                "O processo ainda não tem página pública: o documento avulso aparece na linha do tempo do certame, que nasce com a publicação do edital de abertura."));
+            return Recusa(conferenciaDoProcesso.Error!);
         }
 
         Result<TipoAtoPublicadoView> conferenciaDoTipo = await ConferenciaDoTipoDoAtoAvulso
@@ -136,7 +109,7 @@ public static class PublicarAtoAvulsoDoProcessoCommandHandler
             return Recusa(conferenciaDaVagaLocal.Error!);
         }
 
-        Result<DocumentosDoAtoConferidos> conferenciaDosDocumentos = await ConferenciaDosDocumentosDoAtoAvulso
+        Result<DocumentosDoAtoConferidos> conferenciaDosDocumentos = await ConferenciaDosDocumentosDoAto
             .ConferirAsync(documentoAPublicarRepository, atoDoProcessoRepository, command.ProcessoSeletivoId, command.DocumentoPrincipalId, command.Anexos ?? [], cancellationToken)
             .ConfigureAwait(false);
         if (conferenciaDosDocumentos.IsFailure)
@@ -144,74 +117,23 @@ public static class PublicarAtoAvulsoDoProcessoCommandHandler
             return Recusa(conferenciaDosDocumentos.Error!);
         }
 
-        DocumentosDoAtoConferidos documentos = conferenciaDosDocumentos.Value!;
-
-        AtoDoProcesso versaoDivulgada = await atoDoProcessoRepository
-            .ObterComAnexosAsync(divulgado.AtoCriadorId, cancellationToken)
-            .ConfigureAwait(false)
-            ?? throw new InvalidOperationException(
-                $"A divulgação do processo {command.ProcessoSeletivoId} aponta para o ato {divulgado.AtoCriadorId}, que não tem registro do ato do processo.");
-
-        Result<AtoDoProcesso> registrado = AtoDoProcesso.Registrar(
-            new NovoAtoDoProcesso(
-                AtoId: Guid.CreateVersion7(),
-                ProcessoSeletivoId: command.ProcessoSeletivoId,
-                TipoCodigo: tipo.Codigo,
-                TipoNome: tipo.Nome,
-                Numero: command.Numero,
-                DataDoAto: command.DataPublicacao,
-                Assinante: command.Assinante,
-                UnidadeAdministradora: versaoDivulgada.UnidadeAdministradora,
-                IdentificadorLegivelDoProcesso: versaoDivulgada.IdentificadorLegivelDoProcesso,
-                DocumentoPrincipalId: documentos.Principal.Id,
-                Anexos: [.. documentos.Anexos.Select(static a => new AnexoDeclarado(a.Documento.Id, a.Nome))],
-                AtoCorrigidoId: command.AtoCorrigidoId,
-                MotivoDaCorrecao: command.MotivoDaCorrecao),
-            timeProvider);
-        if (registrado.IsFailure)
-        {
-            return (Result<AtoPublicadoDto>.ValidationFailure(registrado.Errors), []);
-        }
-
-        AtoDoProcesso registro = registrado.Value!;
-        await atoDoProcessoRepository.AdicionarAsync(registro, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) == ConstraintDaCorrecaoUnica)
-        {
-            // Corrida entre duas correções do mesmo ato. A recusa não devolve exceção, e o Wolverine salva
-            // de novo depois do handler: sem descartar o rastreamento, a mesma violação estoura fora do
-            // catch (ADR-0119).
-            unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Recusa(new DomainError(
-                AtoDoProcessoErrorCodes.AtoCorrigidoJaCorrigido,
-                ConferenciaDoAtoCorrigido.MensagemDoAtoJaCorrigido(command.AtoCorrigidoId!.Value, corretor: null)));
-        }
-
-        RegistrarAtoNormativoRequisicao requisicao = new(
-            AtoId: registro.Id,
-            Orgao: orgao,
-            // A série de numeração do órgão é o próprio tipo: aviso numera com aviso.
-            Serie: tipo.Codigo,
-            Ano: command.DataPublicacao.Year,
-            Numero: registro.Numero,
-            TipoCodigo: tipo.Codigo,
-            DataPublicacao: command.DataPublicacao,
-            DocumentoHash: documentos.Principal.HashSha256!,
-            Assinante: registro.Assinante,
-            // Nenhuma versão de configuração: o ato avulso não congela.
-            VersaoInvocadaId: null,
-            VersaoInvocadaHash: null,
-            AtoRetificadoId: registro.AtoCorrigidoId,
-            MotivoRetificacao: registro.MotivoDaCorrecao,
-            Vinculos: [RequisicaoDeRegistroDoAto.VinculoDoProcesso(command.ProcessoSeletivoId)],
-            AtributosDoTipo: RequisicaoDeRegistroDoAto.AtributosDoTipo(tipo),
-            Anexos: [.. documentos.Anexos.Select(static a => new AnexoDoAtoRequisicao(a.Nome, a.Documento.TipoDeMidia, a.Documento.HashSha256!))]);
-
-        return (Result<AtoPublicadoDto>.Success(new AtoPublicadoDto(registro.Id)), [requisicao]);
+        return await EnvioDoAtoDoProcesso
+            .EnviarAsync(
+                new AtoAEnviar(
+                    command.ProcessoSeletivoId,
+                    conferenciaDoProcesso.Value!,
+                    tipo,
+                    command.Numero,
+                    command.DataPublicacao,
+                    command.Assinante,
+                    conferenciaDosDocumentos.Value!,
+                    command.AtoCorrigidoId,
+                    command.MotivoDaCorrecao),
+                atoDoProcessoRepository,
+                unitOfWork,
+                timeProvider,
+                cancellationToken)
+            .ConfigureAwait(false);
     }
 
     private static (Result<AtoPublicadoDto> Resposta, IEnumerable<object> Eventos) Recusa(DomainError erro) =>
