@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Services;
 
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// O único ponto que diz, dentro de uma fase ou de uma etapa, quais matérias ficam com o
@@ -58,6 +59,32 @@ public static class CicloRecursal
             .. produtos
                 .Where(p => p.Papel == PapelProdutoFase.Preliminar && string.Equals(p.AtoCodigo, atoCodigo, StringComparison.Ordinal))
                 .Select(static p => p.Id),
+        ];
+    }
+
+    /// <summary>
+    /// Os tipos de ato declarados como definitivo em mais de um lugar do cronograma (fase ou
+    /// etapa), cada um com os lugares que o declaram, na ordem em que o cronograma os cita.
+    /// </summary>
+    /// <remarks>
+    /// Conta declarações, não ciclos: um único definitivo da fase concluinte que fecha dois
+    /// ciclos é uma declaração e não entra. O definitivo declarado em dois lugares tem dois
+    /// fechamentos, e o edital precisa confirmar que é isso que quer.
+    /// </remarks>
+    public static IReadOnlyList<(string AtoCodigo, IReadOnlyList<string> Lugares)> DefinitivosEmMaisDeUmLugar(
+        IEnumerable<DeclaracaoDeAto> declaracoes)
+    {
+        ArgumentNullException.ThrowIfNull(declaracoes);
+
+        return
+        [
+            .. declaracoes
+                .Where(static d => d.Papel == PapelProdutoFase.Definitivo)
+                .GroupBy(static d => d.AtoCodigo, StringComparer.Ordinal)
+                .Select(static grupo => (
+                    AtoCodigo: grupo.Key,
+                    Lugares: (IReadOnlyList<string>)[.. grupo.Select(static d => d.Lugar).Distinct(StringComparer.Ordinal)]))
+                .Where(static g => g.Lugares.Count > 1),
         ];
     }
 

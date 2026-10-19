@@ -10679,6 +10679,25 @@
           }
         }
       },
+      "AvisoConformidadeDto": {
+        "required": [
+          "codigo",
+          "dimensao",
+          "mensagem"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "dimensao": {
+            "type": "string"
+          },
+          "mensagem": {
+            "type": "string"
+          }
+        }
+      },
       "BancaDaEtapaDto": {
         "required": [
           "id",
@@ -11908,7 +11927,8 @@
       "ConformidadeProcessoSeletivoDto": {
         "required": [
           "processoSeletivoId",
-          "itens"
+          "itens",
+          "avisos"
         ],
         "type": "object",
         "properties": {
@@ -11920,6 +11940,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ItemConformidadeDto"
+            }
+          },
+          "avisos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AvisoConformidadeDto"
             }
           }
         }

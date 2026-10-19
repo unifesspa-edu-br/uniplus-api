@@ -3651,6 +3651,29 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
+    /// Os avisos da conformidade: o que o administrador deve confirmar e que nunca impede a
+    /// publicação. Lista própria, separada de <see cref="AvaliarConformidade"/>, porque aquela é
+    /// bicondicional com os gates e um aviso não tem gate.
+    /// </summary>
+    /// <remarks>
+    /// Só a consulta de conformidade chama este método; <see cref="Publicar"/> e
+    /// <see cref="SucederVersao"/> não o consultam, e por isso nenhum aviso recusa uma publicação.
+    /// </remarks>
+    public IReadOnlyList<AvisoConformidade> AvaliarAvisos() =>
+    [
+        .. CicloRecursal.DefinitivosEmMaisDeUmLugar(DeclaracoesDeAtos())
+            .Select(static repetido => new AvisoConformidade(
+                CodigosDeAvisoDeConformidade.CronogramaTipoDefinitivoEmMaisDeUmLugar,
+                DimensaoConformidade.Cronograma,
+                $"O tipo de ato '{repetido.AtoCodigo}' está declarado como resultado definitivo em mais de uma fase ou etapa ({JuntarLugares(repetido.Lugares)}). Confirme que o edital quer fechar mais de um ciclo com o mesmo tipo.")),
+    ];
+
+    private static string JuntarLugares(IReadOnlyList<string> lugares) =>
+        lugares.Count == 1
+            ? lugares[0]
+            : $"{string.Join(", ", lugares.Take(lugares.Count - 1))} e {lugares[^1]}";
+
+    /// <summary>
     /// Checklist de conformidade ESTRUTURAL do agregado (issue #1092): bicondicional com os
     /// gates que <see cref="Publicar"/>/<see cref="SucederVersao"/> aplicam, nesta ordem
     /// — <see cref="PendenciaDoIdentificadorLegivel"/>, <see cref="PendenciaDaLocalidade"/>,

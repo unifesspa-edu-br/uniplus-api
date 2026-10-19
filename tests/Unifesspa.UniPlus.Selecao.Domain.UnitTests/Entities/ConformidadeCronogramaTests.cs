@@ -418,4 +418,79 @@ public sealed class ConformidadeCronogramaTests
 
         processo.PendenciaDoTipoDeAtoUnico(ocupadoMasNaoUnico).Should().BeNull();
     }
+
+    private static FaseCronograma FaseQueConclui(int ordem, string codigo, string? concluinte, params ProdutoDaFase[] produtos) =>
+        FaseCronograma.Criar(
+            ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.Delegada,
+            agrupaEtapas: false, permiteComplementacao: false,
+            coletaInscricao: false, coletaSolicitacaoIsencao: false,
+            inicio: null, fim: null,
+            produtos: produtos,
+            faseConcluinteCodigo: concluinte, emiteParecerIndividual: false,
+            bancasRequeridas: [], regraRecurso: null).Value!;
+
+    [Fact(DisplayName = "Aviso: o mesmo tipo definitivo em duas fases gera o aviso, com o código estável e as duas fases na mensagem")]
+    public void Aviso_MesmoDefinitivoEmDuasFases_GeraAviso()
+    {
+        ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
+            FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)),
+            FaseQuePublica(2, "HABILITACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
+
+        AvisoConformidade aviso = processo.AvaliarAvisos().Should().ContainSingle().Subject;
+
+        aviso.Codigo.Should().Be(CodigosDeAvisoDeConformidade.CronogramaTipoDefinitivoEmMaisDeUmLugar);
+        aviso.Dimensao.Should().Be(DimensaoConformidade.Cronograma);
+        aviso.Mensagem.Should().Contain("'RESULTADO_CLASSIFICACAO'").And.Contain("na fase 'CLASSIFICACAO' e na fase 'HABILITACAO'");
+    }
+
+    [Fact(DisplayName = "Aviso: o mesmo tipo definitivo numa fase e numa etapa gera o aviso nomeando a etapa")]
+    public void Aviso_MesmoDefinitivoNaFaseENaEtapa_GeraAviso()
+    {
+        ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
+            FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
+        EtapaProcesso etapa = EtapaProcesso.Criar(
+            "Prova Objetiva", CaraterEtapa.Classificatoria,
+            TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
+            peso: 3m, ordem: 1).Value!;
+        etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)]).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.AvaliarAvisos().Should().ContainSingle().Which.Mensagem
+            .Should().Contain("na fase 'CLASSIFICACAO' e na etapa 'Prova Objetiva' (ordem 1)");
+    }
+
+    [Fact(DisplayName = "Aviso: o tipo definitivo em um lugar só, ainda que com preliminar, não gera aviso")]
+    public void Aviso_DefinitivoEmUmLugarSo_NaoGeraAviso()
+    {
+        ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
+            FaseQuePublica(1, "HOMOLOGACAO",
+                ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Preliminar),
+                ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo)));
+
+        processo.AvaliarAvisos().Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Aviso: um único definitivo da fase concluinte que fecha dois ciclos não gera aviso")]
+    public void Aviso_UmDefinitivoQueFechaDoisCiclos_NaoGeraAviso()
+    {
+        ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
+            FaseQueConclui(1, "ANALISE_A", "CONCLUSAO", ProdutoDaFase.Criar("PARECER", PapelProdutoFase.Preliminar)),
+            FaseQueConclui(2, "ANALISE_B", "CONCLUSAO", ProdutoDaFase.Criar("PARECER", PapelProdutoFase.Preliminar)),
+            FaseQueConclui(3, "CONCLUSAO", null, ProdutoDaFase.Criar("PARECER", PapelProdutoFase.Definitivo)));
+
+        processo.AvaliarAvisos().Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Aviso nunca impede a publicação: o processo com o aviso publica e o checklist não tem item vermelho por causa dele")]
+    public void Aviso_NaoImpedeAPublicacao()
+    {
+        ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
+            FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)),
+            FaseQuePublica(2, "HABILITACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
+
+        processo.AvaliarAvisos().Should().NotBeEmpty();
+        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+            .Where(static i => i.Codigo.StartsWith("cronograma_", StringComparison.Ordinal)).Should().OnlyContain(static i => i.Ok);
+        PublicarComUnicos(processo, TiposDeAtoUnicosDeTeste.Nenhum).IsSuccess.Should().BeTrue();
+    }
 }
