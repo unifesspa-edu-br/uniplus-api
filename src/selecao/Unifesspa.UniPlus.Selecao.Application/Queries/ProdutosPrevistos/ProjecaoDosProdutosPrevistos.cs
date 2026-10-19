@@ -25,6 +25,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </remarks>
 internal static class ProjecaoDosProdutosPrevistos
 {
+    /// <summary>Por que o item não tem uma segunda publicação original: a correção é outro ato.</summary>
+    internal const string MensagemDoItemJaPublicado = "O item já foi publicado. Para corrigi-lo, publique uma errata ou retificação do ato.";
+
     internal sealed record Declarado(Guid Id, string AtoCodigo, PapelProdutoFase? Papel);
 
     /// <summary>Os códigos dos tipos de ato que o cronograma declara publicar.</summary>
@@ -161,7 +164,7 @@ internal static class ProjecaoDosProdutosPrevistos
         switch (situacao)
         {
             case SituacaoDoProdutoPrevisto.Publicado:
-                return new(ImpedimentoDoProduto.JaPublicado, "O item já foi publicado. Para corrigi-lo, publique uma errata ou retificação do ato.");
+                return new(ImpedimentoDoProduto.JaPublicado, MensagemDoItemJaPublicado);
             case SituacaoDoProdutoPrevisto.Pendente:
                 return new(ImpedimentoDoProduto.AguardaConfirmacaoDoRegistro, "O item foi enviado ao Publicações e aguarda a confirmação do registro.");
         }
