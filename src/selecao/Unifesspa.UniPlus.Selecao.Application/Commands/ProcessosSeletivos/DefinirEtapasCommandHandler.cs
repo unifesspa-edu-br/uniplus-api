@@ -509,6 +509,7 @@ public static class DefinirEtapasCommandHandler
                     declarado.PrazoUnidade,
                     declarado.SuspensividadePrimeiraInstanciaValor,
                     declarado.SuspensividadePrimeiraInstanciaUnidade,
+                    declarado.AdmiteInstanciaSuperior,
                     declarado.SuspensividadeSegundaInstanciaValor,
                     declarado.SuspensividadeSegundaInstanciaUnidade);
 

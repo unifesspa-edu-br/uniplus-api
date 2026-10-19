@@ -28,6 +28,7 @@ public sealed class DefinirCronogramaFasesCommandValidatorTests
             AtoAncoraCodigo: "RESULTADO_CLASSIFICACAO",
             SuspensividadePrimeiraInstanciaValor: susp1Valor,
             SuspensividadePrimeiraInstanciaUnidade: susp1Unidade,
+            AdmiteInstanciaSuperior: susp2Valor is not null,
             SuspensividadeSegundaInstanciaValor: susp2Valor,
             SuspensividadeSegundaInstanciaUnidade: susp2Unidade);
 

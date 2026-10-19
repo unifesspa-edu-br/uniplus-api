@@ -108,6 +108,7 @@ public sealed class RecusaDeUnidadeNoPrazoDeInterposicaoProblemDetailsTests
             PrazoUnidade: prazoUnidade,
             SuspensividadePrimeiraInstanciaValor: susp1Unidade is null ? null : 5m,
             SuspensividadePrimeiraInstanciaUnidade: susp1Unidade,
+            AdmiteInstanciaSuperior: susp2Unidade is not null,
             SuspensividadeSegundaInstanciaValor: susp2Unidade is null ? null : 5m,
             SuspensividadeSegundaInstanciaUnidade: susp2Unidade);
 

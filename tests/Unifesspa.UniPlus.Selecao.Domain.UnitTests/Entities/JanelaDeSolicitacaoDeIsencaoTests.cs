@@ -211,6 +211,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
             PrazoUnidade: UnidadePrazo.DiasUteis,
             SuspensividadePrimeiraInstanciaValor: null,
             SuspensividadePrimeiraInstanciaUnidade: null,
+            AdmiteInstanciaSuperior: false,
             SuspensividadeSegundaInstanciaValor: null,
             SuspensividadeSegundaInstanciaUnidade: null),
         ProdutoPreliminarId).Value!;

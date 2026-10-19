@@ -314,8 +314,13 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// hash — sempre presente, vazia quando o edital não tem anexo, na ordem em que o edital os
     /// apresenta. Sem novo bloco de topo. Sem produção em ambiente nenhum: fixture nova, <c>0.0.29</c>
     /// deixa de ser reconhecida.
+    /// O bump para <c>0.0.31</c> acrescenta aos <c>args</c> de cada janela de recurso, da fase
+    /// (<c>regraRecurso</c>) e da etapa (<c>recursos[]</c>), o <c>admiteInstanciaSuperior</c>: se a
+    /// janela admite recurso em instância superior (ADR-0145). Sempre presente, verdadeiro ou falso,
+    /// nunca nulo. Sem novo bloco de topo. Sem produção em ambiente nenhum: fixture nova,
+    /// <c>0.0.30</c> deixa de ser reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.30";
+    internal const string SchemaVersionAtual = "0.0.31";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -1807,6 +1812,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ? HashCanonicalComputer.SerializeDecimalCanonical(v1, EscalaPadrao)
             : null,
         ["suspensividadePrimeiraInstanciaUnidade"] = args.SuspensividadePrimeiraInstanciaUnidade?.ToString(),
+        ["admiteInstanciaSuperior"] = args.AdmiteInstanciaSuperior,
         ["suspensividadeSegundaInstanciaValor"] = args.SuspensividadeSegundaInstanciaValor is { } v2
             ? HashCanonicalComputer.SerializeDecimalCanonical(v2, EscalaPadrao)
             : null,

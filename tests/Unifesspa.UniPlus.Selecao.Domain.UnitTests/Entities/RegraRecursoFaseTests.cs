@@ -20,11 +20,13 @@ public sealed class RegraRecursoFaseTests
         UnidadePrazo prazoUnidade = UnidadePrazo.Horas,
         decimal prazoValor = 48m,
         UnidadePrazo? susp1Unidade = null,
-        UnidadePrazo? susp2Unidade = null) => new(
+        UnidadePrazo? susp2Unidade = null,
+        bool? admiteInstanciaSuperior = null) => new(
             PrazoValor: prazoValor,
             PrazoUnidade: prazoUnidade,
             SuspensividadePrimeiraInstanciaValor: susp1Unidade is null ? null : 5m,
             SuspensividadePrimeiraInstanciaUnidade: susp1Unidade,
+            AdmiteInstanciaSuperior: admiteInstanciaSuperior ?? susp2Unidade is not null,
             SuspensividadeSegundaInstanciaValor: susp2Unidade is null ? null : 5m,
             SuspensividadeSegundaInstanciaUnidade: susp2Unidade);
 
@@ -37,11 +39,13 @@ public sealed class RegraRecursoFaseTests
         decimal? susp1Valor,
         UnidadePrazo? susp1Unidade,
         decimal? susp2Valor = null,
-        UnidadePrazo? susp2Unidade = null) => new(
+        UnidadePrazo? susp2Unidade = null,
+        bool? admiteInstanciaSuperior = null) => new(
             PrazoValor: 48m,
             PrazoUnidade: UnidadePrazo.Horas,
             SuspensividadePrimeiraInstanciaValor: susp1Valor,
             SuspensividadePrimeiraInstanciaUnidade: susp1Unidade,
+            AdmiteInstanciaSuperior: admiteInstanciaSuperior ?? (susp2Valor is not null || susp2Unidade is not null),
             SuspensividadeSegundaInstanciaValor: susp2Valor,
             SuspensividadeSegundaInstanciaUnidade: susp2Unidade);
 
@@ -297,6 +301,35 @@ public sealed class RegraRecursoFaseTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Args.SuspensividadePrimeiraInstanciaValor.Should().BeNull();
+        resultado.Value.Args.SuspensividadeSegundaInstanciaValor.Should().BeNull();
+    }
+
+    [Theory(DisplayName = "Janela que não admite instância superior recusa tempo de bloqueio superior, completo ou pela metade")]
+    [InlineData(5, UnidadePrazo.DiasUteis)]
+    [InlineData(5, null)]
+    [InlineData(null, UnidadePrazo.Horas)]
+    public void SemInstanciaSuperior_ComBloqueioSuperior_Recusa(int? valor, UnidadePrazo? unidade)
+    {
+        Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
+            RegraAncorada(),
+            ArgsComSuspensividade(null, null, valor, unidade, admiteInstanciaSuperior: false),
+            ProdutoAncoraId);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("RegraRecursoFase.SuspensividadeSuperiorSemInstanciaSuperior",
+            "remover o bloqueio resolve também o par pela metade, então esta é a recusa que orienta");
+    }
+
+    [Fact(DisplayName = "Janela que admite instância superior aceita o bloqueio superior ausente: existe, mas não bloqueia")]
+    public void ComInstanciaSuperior_SemBloqueioSuperior_Aceita()
+    {
+        Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
+            RegraAncorada(),
+            ArgsComSuspensividade(null, null, admiteInstanciaSuperior: true),
+            ProdutoAncoraId);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.Args.AdmiteInstanciaSuperior.Should().BeTrue();
         resultado.Value.Args.SuspensividadeSegundaInstanciaValor.Should().BeNull();
     }
 }

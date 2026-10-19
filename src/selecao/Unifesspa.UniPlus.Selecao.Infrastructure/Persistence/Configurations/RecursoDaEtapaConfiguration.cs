@@ -36,6 +36,7 @@ public sealed class RecursoDaEtapaConfiguration : IEntityTypeConfiguration<Recur
             args.Property(x => x.PrazoUnidade).HasColumnName("prazo_unidade").HasConversion<int>();
             args.Property(x => x.SuspensividadePrimeiraInstanciaValor).HasColumnName("susp_1a_valor").HasPrecision(18, 4);
             args.Property(x => x.SuspensividadePrimeiraInstanciaUnidade).HasColumnName("susp_1a_unidade").HasConversion<int>();
+            args.Property(x => x.AdmiteInstanciaSuperior).HasColumnName("admite_instancia_superior").IsRequired();
             args.Property(x => x.SuspensividadeSegundaInstanciaValor).HasColumnName("susp_2a_valor").HasPrecision(18, 4);
             args.Property(x => x.SuspensividadeSegundaInstanciaUnidade).HasColumnName("susp_2a_unidade").HasConversion<int>();
         });

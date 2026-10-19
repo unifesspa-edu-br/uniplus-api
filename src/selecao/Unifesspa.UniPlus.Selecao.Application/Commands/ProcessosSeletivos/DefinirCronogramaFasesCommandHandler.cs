@@ -294,6 +294,7 @@ public static class DefinirCronogramaFasesCommandHandler
                     regraInput.PrazoUnidade,
                     regraInput.SuspensividadePrimeiraInstanciaValor,
                     regraInput.SuspensividadePrimeiraInstanciaUnidade,
+                    regraInput.AdmiteInstanciaSuperior,
                     regraInput.SuspensividadeSegundaInstanciaValor,
                     regraInput.SuspensividadeSegundaInstanciaUnidade);
 

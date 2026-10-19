@@ -187,6 +187,7 @@ public sealed class SubstituicaoDaRegraDeRecursoFronteiraTests : IClassFixture<R
                 PrazoUnidade: unidade,
                 SuspensividadePrimeiraInstanciaValor: null,
                 SuspensividadePrimeiraInstanciaUnidade: null,
+                AdmiteInstanciaSuperior: false,
                 SuspensividadeSegundaInstanciaValor: null,
                 SuspensividadeSegundaInstanciaUnidade: null),
             preliminar.Id).Value!;

@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
+using System.Text.Json.Serialization;
+
 using Domain.Enums;
 using Domain.ValueObjects;
 
@@ -17,6 +19,11 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// como a identidade daquele produto — ancorar na publicação de outra fase deixa de ser
 /// exprimível, ainda que as duas declarem o mesmo tipo de ato.
 /// </param>
+/// <param name="AdmiteInstanciaSuperior">
+/// Se o recurso desta fase admite instância superior. <c>[JsonRequired]</c>: o ausente
+/// virava <c>false</c> em silêncio, e o edital seria congelado afirmando que o recurso termina
+/// na 1ª instância sem que ninguém tivesse decidido isso.
+/// </param>
 public sealed record RegraRecursoFaseInput(
     string RegraCodigo,
     string RegraVersao,
@@ -25,6 +32,7 @@ public sealed record RegraRecursoFaseInput(
     string AtoAncoraCodigo,
     decimal? SuspensividadePrimeiraInstanciaValor,
     UnidadePrazo? SuspensividadePrimeiraInstanciaUnidade,
+    [property: JsonRequired] bool AdmiteInstanciaSuperior,
     decimal? SuspensividadeSegundaInstanciaValor,
     UnidadePrazo? SuspensividadeSegundaInstanciaUnidade);
 

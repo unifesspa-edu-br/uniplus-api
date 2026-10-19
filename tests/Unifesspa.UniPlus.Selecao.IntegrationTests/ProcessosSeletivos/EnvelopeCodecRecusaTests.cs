@@ -2153,6 +2153,17 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error!.Code.Should().Be("RegraRecursoFase.SuspensividadeIncompleta");
     }
 
+    [Fact(DisplayName = "Janela de recurso sem a declaração de instância superior no envelope: recusa, e não 'não admite' por omissão")]
+    public void RegraRecursoSemAdmiteInstanciaSuperior_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            ArgsDaRegraDeRecurso(envelope).Remove("admiteInstanciaSuperior"));
+
+        resultado.IsFailure.Should().BeTrue(
+            "a ausência lida como falso congelaria o recurso como terminando na 1ª instância sem que o edital o tenha dito");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
     [Fact(DisplayName = "Âncora do recurso apontando para produto de OUTRA fase: recusa nomeada, não exceção da fábrica")]
     public void RegraRecursoAncoradaEmProdutoDeOutraFase_Recusa()
     {

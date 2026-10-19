@@ -34,6 +34,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     private static ArgsRegraPrazoRecurso PrazoDoRecurso => new(
         PrazoValor: 48m, PrazoUnidade: UnidadePrazo.Horas,
         SuspensividadePrimeiraInstanciaValor: null, SuspensividadePrimeiraInstanciaUnidade: null,
+        AdmiteInstanciaSuperior: false,
         SuspensividadeSegundaInstanciaValor: null, SuspensividadeSegundaInstanciaUnidade: null);
 
     private static RecursoDaEtapa RecursoPorCiencia() =>

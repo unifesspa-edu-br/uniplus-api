@@ -129,6 +129,7 @@ public sealed class RegraRecursoFase : EntityBase
         MotivoDeRecusaDeArgs.SuspensividadeNaoPositiva => new("RegraRecursoFase.SuspensividadeNaoPositiva", recusa.Mensagem),
         MotivoDeRecusaDeArgs.SuspensividadeUnidadeNaoDeclaravel => new("RegraRecursoFase.SuspensividadeUnidadeNaoDeclaravel", recusa.Mensagem),
         MotivoDeRecusaDeArgs.SuspensividadeIncompleta => new("RegraRecursoFase.SuspensividadeIncompleta", recusa.Mensagem),
+        MotivoDeRecusaDeArgs.SuspensividadeSuperiorSemInstanciaSuperior => new("RegraRecursoFase.SuspensividadeSuperiorSemInstanciaSuperior", recusa.Mensagem),
         _ => throw new ArgumentOutOfRangeException(nameof(recusa), recusa.Motivo, "Motivo de recusa desconhecido."),
     };
 

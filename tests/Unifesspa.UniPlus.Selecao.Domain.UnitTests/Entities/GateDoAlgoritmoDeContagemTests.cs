@@ -51,6 +51,7 @@ public sealed class GateDoAlgoritmoDeContagemTests
                 PrazoUnidade: prazoUnidade,
                 SuspensividadePrimeiraInstanciaValor: suspensividadeUnidade is null ? null : 5m,
                 SuspensividadePrimeiraInstanciaUnidade: suspensividadeUnidade,
+                AdmiteInstanciaSuperior: false,
                 SuspensividadeSegundaInstanciaValor: null,
                 SuspensividadeSegundaInstanciaUnidade: null),
             ProcessoConformeFactory.ProdutoPreliminarId).Value!;

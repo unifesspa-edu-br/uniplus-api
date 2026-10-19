@@ -5416,6 +5416,10 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("id");
 
+                            b1.Property<bool>("AdmiteInstanciaSuperior")
+                                .HasColumnType("boolean")
+                                .HasColumnName("admite_instancia_superior");
+
                             b1.Property<int>("PrazoUnidade")
                                 .HasColumnType("integer")
                                 .HasColumnName("prazo_unidade");
@@ -5564,6 +5568,10 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                             b1.Property<Guid>("RegraRecursoFaseId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("id");
+
+                            b1.Property<bool>("AdmiteInstanciaSuperior")
+                                .HasColumnType("boolean")
+                                .HasColumnName("admite_instancia_superior");
 
                             b1.Property<int>("PrazoUnidade")
                                 .HasColumnType("integer")
