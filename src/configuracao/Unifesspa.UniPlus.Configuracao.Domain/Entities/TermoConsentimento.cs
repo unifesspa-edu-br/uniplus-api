@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Um termo de consentimento/declaração do catálogo administrável
-/// (UNI-REQ-0086/RN-COL-05). Identidade própria e estável — dois termos
+/// (termos imunes após a publicação, UNI-REQ-0086). Identidade própria e estável — dois termos
 /// catalogados podem ter o mesmo <see cref="Nome"/>, sem colidir.
 /// </summary>
 /// <remarks>

@@ -392,7 +392,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
-    /// Declara se o processo aplica o bônus regional (RN05, Story #774). <c>Aplica</c> falso
+    /// Declara se o processo aplica o bônus regional (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015, Story #774). <c>Aplica</c> falso
     /// dispensa a configuração; verdadeiro exige <c>RegraCodigo</c> e os demais campos do bônus.
     /// A declaração é obrigatória para publicar.
     /// </summary>
@@ -517,7 +517,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
 
     /// <summary>
     /// Define (ou remove) a cascata de remanejamento do processo
-    /// (RN-CASCATA-1..5, Story #575). <c>RegraCodigo</c> nulo remove a
+    /// (cascata de remanejamento de cotas, UNI-REQ-0056, Story #575). <c>RegraCodigo</c> nulo remove a
     /// cascata — a ausência já é o toggle "sem cascata".
     /// </summary>
     [HttpPut("{id:guid}/cascata-remanejamento")]
@@ -812,7 +812,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
-    /// Publica o processo (RN08): valida a conformidade, congela a versão 1 da
+    /// Publica o processo (congelamento dos parâmetros na publicação, UNI-REQ-0019): valida a conformidade, congela a versão 1 da
     /// configuração (append-only) e transita o status para Publicado, tudo na mesma
     /// transação — junto da requisição durável que registra o ato em Publicações
     /// (ADR-0108). Toda recusa 422 é reavaliada contra o checklist estrutural
@@ -939,7 +939,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
-    /// Retifica o processo já publicado (RN08, ADR-0101/0103): registra um novo ato,
+    /// Retifica o processo já publicado (congelamento dos parâmetros na publicação, UNI-REQ-0019, ADR-0101/0103): registra um novo ato,
     /// que emenda o ato criador da versão corrente e a sucede — a versão anterior
     /// permanece imutável. O motivo é obrigatório.
     /// <para>
@@ -1264,7 +1264,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
         anexos?.Select(static a => a is null ? null! : new AnexoSolicitadoDoEdital(a.DocumentoId, a.Nome)).ToList();
 
     /// <summary>
-    /// Resolve o snapshot congelado vigente do processo num instante (RN08,
+    /// Resolve o snapshot congelado vigente do processo num instante (congelamento dos parâmetros na publicação, UNI-REQ-0019,
     /// ADR-0075/0076/0104): a VERSÃO da configuração de maior
     /// <c>vigente_a_partir_de</c> ≤ o instante, desempatada pelo número da
     /// versão. Quem ordena é o relógio do sistema, não a data que o documento

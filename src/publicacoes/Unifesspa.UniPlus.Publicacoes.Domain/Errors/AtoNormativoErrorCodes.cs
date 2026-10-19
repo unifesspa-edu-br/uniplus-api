@@ -28,7 +28,7 @@ public static class AtoNormativoErrorCodes
     /// A classe de congelamento do retificador diverge da do retificado: um ato não
     /// congelante não emenda um congelante, nem o inverso (ADR-0103). É a
     /// <c>congela_configuracao</c> que protege a integridade da configuração
-    /// publicada (RN08), não o rótulo do tipo.
+    /// publicada (congelamento dos parâmetros na publicação, UNI-REQ-0019), não o rótulo do tipo.
     /// </summary>
     public const string ClasseDeCongelamentoDivergente = "AtoNormativo.ClasseDeCongelamentoDivergente";
 

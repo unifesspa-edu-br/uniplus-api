@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 /// <remarks>
 /// O código é <b>imutável</b>: é ele que entra, por valor, dentro de um predicado
-/// congelado num snapshot de publicação (RN08, ADR-0061) — renomear reinterpretaria
+/// congelado num snapshot de publicação (congelamento dos parâmetros na publicação, UNI-REQ-0019, ADR-0061) — renomear reinterpretaria
 /// o passado. A entidade não expõe método que o altere.
 /// </remarks>
 public sealed partial record CodigoFatoCandidato

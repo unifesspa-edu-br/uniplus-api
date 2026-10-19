@@ -669,7 +669,7 @@ internal sealed class LeitorEnvelope
     /// <b>irreidratável</b> um certame legitimamente publicado — o descarte da sessão
     /// editorial dele passaria a falhar, e a configuração congelada, que é a evidência
     /// jurídica, ficaria inalcançável. O passado não se reinterpreta contra o catálogo de
-    /// hoje (RN08).
+    /// hoje (congelamento dos parâmetros na publicação, UNI-REQ-0019).
     /// </para>
     /// <para>
     /// O que resta verificável <b>sem</b> estado vivo é o que se verifica: o código pertence

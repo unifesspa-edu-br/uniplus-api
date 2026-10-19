@@ -4,7 +4,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 /// Extrai o NOME da constraint de banco violada (índice UNIQUE ou CHECK) do
 /// ciclo de publicação do Processo Seletivo, para que
 /// <see cref="VersaoConfiguracaoConstraintViolation"/> a traduza em
-/// <c>DomainError</c> nomeado (RN08, ADR-0102). Mesmo padrão de
+/// <c>DomainError</c> nomeado (congelamento dos parâmetros na publicação, UNI-REQ-0019, ADR-0102). Mesmo padrão de
 /// <c>ObrigatoriedadesLegais/UniqueConstraintViolation.cs</c>: inspeção do tipo
 /// da exceção por nome via <see cref="System.Type.FullName"/> evita dependência
 /// direta do package <c>Microsoft.EntityFrameworkCore</c> na camada Application

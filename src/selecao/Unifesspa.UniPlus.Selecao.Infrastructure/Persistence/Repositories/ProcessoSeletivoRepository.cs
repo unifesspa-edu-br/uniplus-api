@@ -70,7 +70,7 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
         // serializa handlers concorrentes (os seis Definir*, a abertura/fechamento da
         // sessão editorial, Publicar e Retificar) que carregam o MESMO processo — sem
         // isso, um Definir* que leu Status=Rascunho antes de uma publicação concorrente
-        // pode persistir mutação DEPOIS de a versão já ter sido congelada, furando a RN08
+        // pode persistir mutação DEPOIS de a versão já ter sido congelada, furando o congelamento dos parâmetros na publicação (UNI-REQ-0019)
         // sem que o guard em memória tenha visibilidade da publicação alheia. O
         // SELECT ... FOR UPDATE roda na MESMA transação ambiente do Wolverine
         // (EnrollDbContextInTransaction) — a segunda transação concorrente bloqueia aqui

@@ -49,7 +49,7 @@ public sealed partial class EnvelopeCodec
 
     /// <summary>
     /// Um nó, recursivamente. <c>tipo</c>/<c>chaveDistincao</c> usam o mesmo <c>FromCodigo</c> das
-    /// demais leituras (RN08: token não reconhecido é envelope malformado, nunca coerção silenciosa
+    /// demais leituras (congelamento dos parâmetros na publicação, UNI-REQ-0019: token não reconhecido é envelope malformado, nunca coerção silenciosa
     /// a um sentinela); <c>repetePorEntidade</c> é o código do grupo, conferido contra os grupos
     /// repostos ao lado da árvore. <c>exigenciaId</c> resolve contra
     /// <paramref name="exigenciasPorId"/> — presente sse <c>tipo</c> é <c>FOLHA</c> (checagem

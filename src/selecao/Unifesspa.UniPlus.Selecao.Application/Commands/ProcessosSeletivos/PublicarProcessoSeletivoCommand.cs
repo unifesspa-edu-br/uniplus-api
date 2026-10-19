@@ -5,7 +5,7 @@ using Kernel.Results;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 
 /// <summary>
-/// Publica o Edital de abertura do processo (RN08, Story #759, T4 #785):
+/// Publica o Edital de abertura do processo (congelamento dos parâmetros na publicação, UNI-REQ-0019, Story #759, T4 #785):
 /// valida a conformidade estrutural, congela a configuração na versão 1 da
 /// <c>VersaoConfiguracao</c> (append-only) e transita o status para Publicado,
 /// tudo na mesma transação (CA-01/CA-02). O ator (<c>IUserContext.UserId</c>)

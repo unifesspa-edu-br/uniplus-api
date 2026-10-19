@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Referência imutável a uma regra do <c>rol_de_regras</c> pela sua identidade
 /// content-addressable — <c>(codigo, versao, hash)</c>. É o que cada dimensão
 /// da configuração do Processo Seletivo embute ao aplicar uma regra e o que o
-/// snapshot de publicação congela (RN08): o par <c>(codigo, versao)</c> aponta
+/// snapshot de publicação congela (congelamento dos parâmetros na publicação, UNI-REQ-0019): o par <c>(codigo, versao)</c> aponta
 /// a regra na biblioteca versionada e o <c>hash</c> prova que a definição
 /// aplicada não mudou depois (lei muda → nova versão, não retroage a editais
 /// publicados — reprodutibilidade por construção).

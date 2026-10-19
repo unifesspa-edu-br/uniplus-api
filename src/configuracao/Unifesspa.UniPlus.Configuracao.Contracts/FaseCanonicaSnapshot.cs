@@ -13,7 +13,7 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// bicondicional (uma fase que agrupa etapas existe se e somente se há etapa
 /// pontuada) e o bloco congelado da versão publicada precisa ser autossuficiente
 /// — ler o cadastro vivo em runtime para decidir esse gate violaria o
-/// congelamento de parâmetros por edital (RN08). <c>AgrupaEtapas</c> passa a ser
+/// congelamento de parâmetros por edital (congelamento dos parâmetros na publicação, UNI-REQ-0019). <c>AgrupaEtapas</c> passa a ser
 /// congelado como qualquer outro atributo desta lista.
 /// </remarks>
 /// <param name="OrigemId">Id (Guid v7) da fase viva de origem, no momento do congelamento.</param>

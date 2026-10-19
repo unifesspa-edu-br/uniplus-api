@@ -27,7 +27,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// o antigo trio texto-livre <c>Endereco</c>/<c>Cep</c>/coordenada. Quando
 /// presente, seu snapshot de cidade deve ser coerente com a referência de cidade
 /// do campus (CA-04).</para>
-/// <para>O congelamento (snapshot RN08) é responsabilidade do Processo Seletivo
+/// <para>O congelamento (snapshot do congelamento dos parâmetros na publicação, UNI-REQ-0019) é responsabilidade do Processo Seletivo
 /// (módulo Selecao, ADR-0061) — não há colunas de snapshot aqui.</para>
 /// </remarks>
 public sealed class Campus : SoftDeletableEntity, IAuditableEntity

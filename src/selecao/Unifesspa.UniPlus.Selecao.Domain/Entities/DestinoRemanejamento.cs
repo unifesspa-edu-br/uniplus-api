@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Uma posição na fila legal de remanejamento de uma modalidade de origem
-/// (Story #575, RN-CASCATA-4): quando a vaga de <see cref="ModalidadeOrigemCodigo"/>
+/// (Story #575, cascata de remanejamento de cotas, UNI-REQ-0056): quando a vaga de <see cref="ModalidadeOrigemCodigo"/>
 /// não é preenchida, ela é oferecida a <see cref="ModalidadeDestinoCodigo"/>, na
 /// posição <see cref="Ordem"/> da fila daquela origem.
 /// </summary>

@@ -115,7 +115,7 @@ public sealed class EnvelopeReidratado
     public ResultadoConformidade? Conformidade { get; }
 
     /// <summary>
-    /// Metadado de fato do candidato congelado (Story #919, RN08), por <c>Codigo</c> —
+    /// Metadado de fato do candidato congelado (Story #919, congelamento dos parâmetros na publicação, UNI-REQ-0019), por <c>Codigo</c> —
     /// fora de <see cref="GrafoConfiguracao"/> pela MESMA razão que <see cref="Conformidade"/>:
     /// não é reposto no agregado vivo (<see cref="Domain.Entities.CondicaoGatilho"/>
     /// continua só com o trio bruto <c>{fato, operador, valor}</c>), sobrevive só para

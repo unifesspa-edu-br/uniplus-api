@@ -23,7 +23,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Geo via CEP, opcional (<see cref="ReferenciaEnderecoGeo"/>, ADR-0096) — sucede
 /// o antigo <c>Endereco</c> texto-livre. Quando presente, seu snapshot de cidade
 /// deve coincidir com a referência de cidade do local.</para>
-/// <para>O congelamento (snapshot RN08) é responsabilidade do Processo Seletivo
+/// <para>O congelamento (snapshot do congelamento dos parâmetros na publicação, UNI-REQ-0019) é responsabilidade do Processo Seletivo
 /// (módulo Selecao, via oferta de curso congelada — ADR-0061); não há colunas
 /// de snapshot aqui.</para>
 /// </remarks>

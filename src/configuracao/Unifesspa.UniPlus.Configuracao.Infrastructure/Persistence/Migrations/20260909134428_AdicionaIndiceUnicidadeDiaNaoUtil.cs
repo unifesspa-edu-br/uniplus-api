@@ -10,7 +10,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Defesa de última linha contra duplicata sob concorrência real (RN05,
+            // Defesa de última linha contra duplicata sob concorrência real no calendário de dias não úteis (UNI-REQ-0114,
             // api#1458): a partir da introdução de IncluirDiaNaoUtil, o dataset deixa
             // de ser escrito uma única vez (Criar) e passa a admitir inclusões
             // concorrentes — a checagem em memória de CalendarioDiasUteis só compara

@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 /// <summary>
-/// Abrangência territorial de um dia não útil no calendário de contagem de prazos (RN13).
+/// Abrangência territorial de um dia não útil no calendário de contagem de prazos (recurso administrativo e efeito suspensivo, UNI-REQ-0080).
 /// Quais entradas de abrangência estadual e municipal incidem num certame deriva da
 /// localidade regente que ele congela — é do código IBGE dela que saem a UF e o município
 /// (UNI-REQ-0111). Persistida como token UPPER_SNAKE (<see cref="Abrangencias"/>).

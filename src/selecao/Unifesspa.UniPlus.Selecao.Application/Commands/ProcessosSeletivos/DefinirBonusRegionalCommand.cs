@@ -7,7 +7,7 @@ using Kernel.Results;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 
 /// <summary>
-/// Declara se o processo aplica o bônus regional (RN05, Story #774) e, quando aplica, a
+/// Declara se o processo aplica o bônus regional (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015, Story #774) e, quando aplica, a
 /// configuração do bônus. <see cref="Aplica"/> falso dispensa a configuração; verdadeiro a exige.
 /// </summary>
 /// <param name="Aplica">Declaração obrigatória: o processo aplica ou não o bônus regional.</param>

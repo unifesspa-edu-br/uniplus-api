@@ -27,7 +27,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <remarks>
 /// <para>
 /// F0 entregou a raiz, as etapas pontuadas e a oferta de atendimento
-/// especializado; F2 a distribuição de vagas; F3 o bônus regional (RN05) e os
+/// especializado; F2 a distribuição de vagas; F3 o bônus regional (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015) e os
 /// critérios de desempate — ambos por referência ao catálogo de regras
 /// tipadas (<c>rol_de_regras</c>, Story #772), nunca escalares crus. A
 /// classificação (bloco 15º) entra na F4, compondo por referência as
@@ -36,7 +36,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <para>
 /// O documento normativo não pertence a esta raiz: ele é o <b>ato publicado</b>,
 /// e vive no módulo <c>Publicacoes</c> (ADR-0103/0105). O que a publicação
-/// produz aqui é a <see cref="VersaoConfiguracao"/> congelada (RN08), que
+/// produz aqui é a <see cref="VersaoConfiguracao"/> congelada (congelamento dos parâmetros na publicação, UNI-REQ-0019), que
 /// referencia o ato por VALOR — o par <c>{id, hash}</c>, sem chave estrangeira
 /// (ADR-0061). Enquanto o processo está em rascunho, a configuração é livremente
 /// substituível (o comando <c>Definir*</c> troca a coleção inteira). A
@@ -324,7 +324,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public IReadOnlyCollection<ConfiguracaoDistribuicaoVagas> DistribuicaoVagas => _distribuicaoVagas.AsReadOnly();
 
     /// <summary>
-    /// Configuração do bônus regional (RN05); só existe quando o processo declara que o aplica
+    /// Configuração do bônus regional (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015); só existe quando o processo declara que o aplica
     /// (<see cref="AplicaBonusRegional"/>).
     /// </summary>
     public ConfiguracaoBonusRegional? BonusRegional { get; private set; }
@@ -350,7 +350,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public const int MaximoDeOpcoesDeCurso = 2;
 
     /// <summary>
-    /// A cascata de remanejamento das cotas reservadas (Story #575, RN-CASCATA-1..5) —
+    /// A cascata de remanejamento das cotas reservadas (Story #575, cascata de remanejamento de cotas, UNI-REQ-0056) —
     /// ausência = nenhuma cascata configurada (toggle por presença). Uma só por processo, nunca por oferta de curso
     /// (§2.2 da story) — a cobertura por oferta é validada em <see cref="PendenciaDaCascata"/>.
     /// </summary>
@@ -779,7 +779,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         "Com 2 opções de curso, cadastre pelo menos dois cursos.");
 
     /// <summary>
-    /// Declara se o processo aplica o bônus regional (RN05). Aplicar exige a configuração, e não
+    /// Declara se o processo aplica o bônus regional (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015). Aplicar exige a configuração, e não
     /// aplicar a recusa: a declaração e a configuração não podem divergir.
     /// </summary>
     public Result DefinirBonusRegional(bool aplica, ConfiguracaoBonusRegional? bonus, PrecondicaoIfMatch precondicao)
@@ -879,7 +879,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// Define (ou remove) a cascata de remanejamento do processo (Story #575).
     /// Passar <see langword="null"/> remove a cascata — a ausência da entidade já
     /// é o toggle "sem cascata configurada".
-    /// A forma (RN-CASCATA-4) e o vínculo com a regra versionada (RN-CASCATA-5) já
+    /// A forma (cascata de remanejamento de cotas, UNI-REQ-0056) e o vínculo com a regra versionada (cascata de remanejamento de cotas, UNI-REQ-0056) já
     /// foram validados antes de chegar aqui — pela factory de <see cref="ConfiguracaoCascataRemanejamento"/>
     /// e pelo handler da Application, respectivamente; este método só aplica a mutação
     /// protegida pela sessão editorial.
@@ -3752,7 +3752,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("cronograma_tipo_que_congela_nao_eh_resultado", DimensaoConformidade.Cronograma, "Cronograma: o tipo de ato que congela a configuração não é declarado como item de resultado", PendenciaDoTipoQueCongelaDeclaradoComoResultado(tiposDeAtoUnicos) is null),
         new ItemConformidade("cronograma_tipo_de_ato_unico_declarado_uma_vez", DimensaoConformidade.Cronograma, "Cronograma: o tipo de ato que só sai uma vez por processo é declarado em um único produto", PendenciaDoTipoDeAtoUnico(tiposDeAtoUnicos) is null),
 
-        // ── PendenciaDaCascata: o agregado e o detalhamento por razão (RN-CASCATA-1/2/2b/3, Story #575) ──
+        // ── PendenciaDaCascata: o agregado e o detalhamento por razão (cascata de remanejamento de cotas, UNI-REQ-0056, Story #575) ──
         new ItemConformidade("cascata_pendente", DimensaoConformidade.CascataRemanejamento, "Cascata de remanejamento", PendenciaDaCascata() is null),
         new ItemConformidade("cascata_modalidade_fora_do_regime_federal", DimensaoConformidade.CascataRemanejamento, "Cascata: modalidade SegueCascata usa a regra de distribuição federal", !ExisteCascataForaDoRegimeFederal()),
         new ItemConformidade("cascata_origem_ausente", DimensaoConformidade.CascataRemanejamento, "Cascata: origem SegueCascata declarada na cascata de remanejamento", !ExisteCascataOrigemAusente()),
@@ -3866,7 +3866,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// Pendência de cobertura da cascata de remanejamento (Story #575, RN-CASCATA-1/2/2b/3) —
+    /// Pendência de cobertura da cascata de remanejamento (Story #575, cascata de remanejamento de cotas, UNI-REQ-0056) —
     /// erro NOMEADO, público (chamado tanto pela raiz quanto pelos handlers da Application,
     /// que estão em outro assembly). Chamado por <see cref="Publicar"/> e <see cref="SucederVersao"/>
     /// na mesma posição de <see cref="PendenciaDoCronograma"/>.
@@ -3894,7 +3894,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 continue;
             }
 
-            // RN-CASCATA-2b: SegueCascata só é coberta pela cascata única do processo quando a
+            // cascata de remanejamento de cotas (UNI-REQ-0056): SegueCascata só é coberta pela cascata única do processo quando a
             // oferta usa o regime federal — fora dele, a cascata não tem o que validar.
             if (OfertaForaDoRegimeFederal(oferta))
             {
@@ -3977,7 +3977,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         return null;
     }
 
-    /// <summary>A oferta exige a cascata única do processo: tem ≥1 modalidade SegueCascata (RN-CASCATA-2b).</summary>
+    /// <summary>A oferta exige a cascata única do processo: tem ≥1 modalidade SegueCascata (cascata de remanejamento de cotas, UNI-REQ-0056).</summary>
     private static bool OfertaExigeCascata(ConfiguracaoDistribuicaoVagas oferta) =>
         oferta.Modalidades.Any(static m => m.RegraRemanejamento == RegraRemanejamentoModalidade.SegueCascata);
 
@@ -5169,7 +5169,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// que dependa de outro é resolúvel; o que ele não sabe fazer é resolver um fato que o processo
     /// não configura. O grafo conjunto ignora de propósito uma referência ausente (projeta só o
     /// que existe), então é esta recusa que prova a completude do vocabulário citado, antes que a
-    /// aciclicidade e a ordem topológica sejam congeladas (RN08).
+    /// aciclicidade e a ordem topológica sejam congeladas (congelamento dos parâmetros na publicação, UNI-REQ-0019).
     /// </summary>
     /// <remarks>
     /// <para>
@@ -5455,7 +5455,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>
     /// O grafo de dependência conjunto (campos, fatos, exigências, seções e termos condicionados, e
     /// as quatro arestas, §6) tem
-    /// de ser um DAG para ser congelável: a ordem topológica total que o snapshot congela (RN08)
+    /// de ser um DAG para ser congelável: a ordem topológica total que o snapshot congela (congelamento dos parâmetros na publicação, UNI-REQ-0019)
     /// não existe se houver ciclo. A construção do grafo (<see cref="ConstruirGrafoDependencia"/>)
     /// já detecta o ciclo — aqui ela vira gate de publicação, antes de canonicalizar.
     /// </summary>
@@ -5535,7 +5535,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// Duas checagens:
     /// <list type="bullet">
     /// <item><c>REMOVE_VANTAGEM</c> exige vantagem viva no processo — hoje a única
-    /// vantagem modelada é <see cref="BonusRegional"/> (RN05; só existe quando
+    /// vantagem modelada é <see cref="BonusRegional"/> (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015; só existe quando
     /// <see cref="AplicaBonusRegional"/> é verdadeiro).</item>
     /// <item>Para cada modalidade que a exigência alcança pelas condições sobre os fatos cujos
     /// valores são modalidades (os mesmos do gate real, <see cref="Services.AvaliadorConformidadeLegal"/>),
@@ -5592,7 +5592,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         return null;
     }
 
-    /// <summary>A consequência é REMOVE_VANTAGEM sem nenhuma vantagem viva no processo (bônus regional, RN05).</summary>
+    /// <summary>A consequência é REMOVE_VANTAGEM sem nenhuma vantagem viva no processo (bônus regional, Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015).</summary>
     private bool ConsequenciaRemoveVantagemSemVantagemViva(string? consequencia) =>
         consequencia == "REMOVE_VANTAGEM" && BonusRegional is null;
 
@@ -5927,7 +5927,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// Publica o processo (RN08, Story #759 T4): valida a transição e a
+    /// Publica o processo (congelamento dos parâmetros na publicação, UNI-REQ-0019, Story #759 T4): valida a transição e a
     /// conformidade estrutural, abre a cadeia de <see cref="VersaoConfiguracao"/>
     /// a partir dos bytes canônicos já produzidos pelo
     /// <c>ISnapshotPublicacaoCanonicalizer</c> (Application — Domain não pode
@@ -6089,7 +6089,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// Retifica um processo já publicado (RN08, ADR-0101/0103): decide o ato que
+    /// Retifica um processo já publicado (congelamento dos parâmetros na publicação, UNI-REQ-0019, ADR-0101/0103): decide o ato que
     /// emenda o ato criador da <see cref="VersaoConfiguracao"/> corrente e sucede
     /// essa versão — a anterior permanece intocada (append-only). O status continua
     /// Publicado. Os bytes canônicos já vêm do <c>ISnapshotPublicacaoCanonicalizer</c>
@@ -7093,7 +7093,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // Story #851 — cronograma restaurado: checagens estruturais equivalentes às de
         // DefinirCronogramaFases, sobre o GRAFO (não sobre o agregado corrente). O grafo
         // de precedências e a resolução de regra/ato âncora NÃO são reconferidos aqui —
-        // são I/O, e RN08 proíbe reinterpretar um passado legitimamente publicado contra
+        // são I/O, e o congelamento dos parâmetros na publicação (UNI-REQ-0019) proíbe reinterpretar um passado legitimamente publicado contra
         // o catálogo de hoje (mesma doutrina de LeitorEnvelope.Regra).
         if (grafo.CronogramaFases.Count == 0)
         {

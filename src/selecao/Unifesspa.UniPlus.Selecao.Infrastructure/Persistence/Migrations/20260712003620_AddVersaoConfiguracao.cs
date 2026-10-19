@@ -73,7 +73,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
             // não expõe mutadores e nenhum handler chama Update/Remove — o trigger
             // fecha a última brecha: um UPDATE/DELETE cru fora do agregado. A
             // configuração congelada é a prova do que valia quando o certame foi
-            // publicado (RN08); reescrevê-la é reescrever o passado.
+            // publicado (congelamento dos parâmetros na publicação, UNI-REQ-0019); reescrevê-la é reescrever o passado.
             migrationBuilder.Sql("""
                 CREATE OR REPLACE FUNCTION selecao.fn_versoes_configuracao_somente_insercao()
                 RETURNS trigger
@@ -222,7 +222,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
             // Transporta os congelamentos já existentes para o novo modelo ANTES de
             // dropar a tabela antiga. A configuração congelada é prova do que valia
-            // no certame (RN08): perdê-la deixaria um processo publicado sem versão —
+            // no certame (congelamento dos parâmetros na publicação, UNI-REQ-0019): perdê-la deixaria um processo publicado sem versão —
             // o seletor devolveria "vigente ausente", e a retificação, estado
             // inconsistente. Cada snapshot vira uma versão, preservando o seu próprio
             // id (é ele que o ProcessoPublicadoEvent já publicou no Kafka e que os

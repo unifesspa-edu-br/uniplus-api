@@ -25,7 +25,7 @@ public sealed partial class EnvelopeCodec
     /// O bônus tem <b>duas formas fechadas</b>: <c>{"presente": false}</c> e a completa.
     /// Fechar as duas é o que impede o pior modo de falha desta leitura — um
     /// <c>{"presente":false,"fator":"1.2000",…}</c> lido como “sem bônus”
-    /// <b>descartaria o bônus regional do certame</b> (RN05) sem deixar rastro.
+    /// <b>descartaria o bônus regional do certame</b> (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015) sem deixar rastro.
     /// </summary>
     private static ConfiguracaoBonusRegional? LerBonusRegional(LeitorEnvelope leitor, JsonObject payload)
     {
@@ -91,7 +91,7 @@ public sealed partial class EnvelopeCodec
     /// <summary>
     /// A cascata de remanejamento (Story #575) tem <b>duas formas fechadas</b> — mesmo
     /// raciocínio de <see cref="LerBonusRegional"/>: <c>{"presente": false}</c> e a completa.
-    /// A forma (RN-CASCATA-4) é reconferida pela factory de <see cref="ConfiguracaoCascataRemanejamento"/>
+    /// A forma (cascata de remanejamento de cotas, UNI-REQ-0056) é reconferida pela factory de <see cref="ConfiguracaoCascataRemanejamento"/>
     /// ao reconstruir — o decoder não a duplica, só extrai os valores tipados.
     /// </summary>
     private static ConfiguracaoCascataRemanejamento? LerCascataRemanejamento(LeitorEnvelope leitor, JsonObject payload)
@@ -244,7 +244,7 @@ public sealed partial class EnvelopeCodec
                 // A validação de FORMA (fato não-vazio, operador reconhecido, valor coerente
                 // com o operador) é feita por CondicaoDnf.Criar — a mesma factory que o
                 // caminho de comando usa (DefinirCriteriosDesempateCommandHandler). O decoder
-                // não revalida SEMÂNTICA (fato pertence ao vocabulário vivo): RN08 proíbe
+                // não revalida SEMÂNTICA (fato pertence ao vocabulário vivo): o congelamento dos parâmetros na publicação (UNI-REQ-0019) proíbe
                 // reinterpretar um predicado já congelado contra um catálogo que pode ter
                 // mudado — só a forma é exigida aqui.
                 string fato = leitor.TextoNaoVazio(args, "fato", path);

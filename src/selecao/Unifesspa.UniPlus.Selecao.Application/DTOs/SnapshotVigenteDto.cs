@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 using System.Text.Json.Nodes;
 
 /// <summary>
-/// Snapshot congelado vigente de um Processo Seletivo num instante (RN08,
+/// Snapshot congelado vigente de um Processo Seletivo num instante (congelamento dos parâmetros na publicação, UNI-REQ-0019,
 /// ADR-0075/0076/0104). É o contrato de LEITURA que o runtime e os incrementos
 /// downstream (inscrição, homologação, classificação) consomem — a configuração
 /// CONGELADA, nunca a viva.

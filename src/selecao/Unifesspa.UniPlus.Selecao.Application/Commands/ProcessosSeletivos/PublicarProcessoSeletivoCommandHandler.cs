@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 /// <summary>
 /// Handler convention-based do <see cref="PublicarProcessoSeletivoCommand"/>
-/// (RN08, Story #759 T4 #785, ADR-0005 + ADR-0041): carrega o agregado,
+/// (congelamento dos parâmetros na publicação, UNI-REQ-0019, Story #759 T4 #785, ADR-0005 + ADR-0041): carrega o agregado,
 /// valida o documento confirmado (T3), canonicaliza a configuração
 /// (ADR-0100) e delega a orquestração de negócio a
 /// <see cref="ProcessoSeletivo.Publicar"/>. Cascading messages — o
@@ -179,7 +179,7 @@ public static class PublicarProcessoSeletivoCommandHandler
             return (Result.Failure(pendencia), []);
         }
 
-        // Cascata de remanejamento (RN-CASCATA-1/2/2b/3, Story #575) — cross-dimensão,
+        // Cascata de remanejamento de cotas (UNI-REQ-0056, Story #575) — cross-dimensão,
         // fora do agregador genérico acima (o item "Cascata de remanejamento" nunca
         // entra em PendenciaDeConformidade, só em PendenciaDaCascata). Mesma antecipação
         // e mesmo motivo das demais (ADR-0109 D5).
@@ -272,7 +272,7 @@ public static class PublicarProcessoSeletivoCommandHandler
             return (Result.Failure(coletabilidadeDosFatos.Error!), []);
         }
 
-        // Story #919 (RN08): congela o metadado de cada fato citado em alguma condição de
+        // Story #919 (congelamento dos parâmetros na publicação, UNI-REQ-0019): congela o metadado de cada fato citado em alguma condição de
         // gatilho, ao lado da condição bruta {fato, operador, valor} já congelada desde a 1.2.
         Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?> metadadosFatosResult =
             ResolvedorMetadadosFatosCongelados.Resolver(processo, catalogoPorCodigo);

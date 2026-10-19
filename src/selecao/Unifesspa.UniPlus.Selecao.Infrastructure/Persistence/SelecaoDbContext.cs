@@ -53,14 +53,14 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     public DbSet<VagaOfertada> VagasOfertadas => Set<VagaOfertada>();
 
     /// <summary>
-    /// Bônus regional (RN05) e critérios de desempate (Story #774) — ambos por
+    /// Bônus regional (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015) e critérios de desempate (Story #774) — ambos por
     /// referência ao <c>rol_de_regras</c>.
     /// </summary>
     public DbSet<ConfiguracaoBonusRegional> ConfiguracoesBonusRegional => Set<ConfiguracaoBonusRegional>();
     public DbSet<CriterioDesempate> CriteriosDesempate => Set<CriterioDesempate>();
 
     /// <summary>
-    /// Cascata de remanejamento das cotas federais (Story #575, RN-CASCATA-1..5)
+    /// Cascata de remanejamento das cotas federais (Story #575, cascata de remanejamento de cotas, UNI-REQ-0056)
     /// — a sequência que a flag <c>SegueCascata</c> de <see cref="ModalidadeSelecionada"/>
     /// invoca.
     /// </summary>
@@ -92,7 +92,7 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     /// Biblioteca <c>rol_de_regras</c> (Story #772) — regras tipadas e
     /// versionadas que a configuração do Processo Seletivo referencia
     /// (<c>codigo</c>+<c>versao</c>+<c>hash</c>), congeladas no snapshot de
-    /// publicação (RN08). Seed-governada e append-only (não é CRUD de admin):
+    /// publicação (congelamento dos parâmetros na publicação, UNI-REQ-0019). Seed-governada e append-only (não é CRUD de admin):
     /// a leitura passa por <c>IRegraCatalogoReader</c> e a única escrita é o
     /// seed da migration.
     /// </summary>
@@ -137,7 +137,7 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     public DbSet<ModeloDeDocumento> ModelosDeDocumento => Set<ModeloDeDocumento>();
 
     /// <summary>
-    /// Versões congeladas da configuração do certame (RN08, ADR-0104/0100) —
+    /// Versões congeladas da configuração do certame (congelamento dos parâmetros na publicação, UNI-REQ-0019, ADR-0104/0100) —
     /// <see cref="VersaoConfiguracao"/> é <c>IForensicEntity</c> e agregado
     /// próprio: referencia o ato que a criou por valor, sem chave estrangeira,
     /// e é persistida pelo <c>IProcessoSeletivoRepository</c> por fora da raiz.

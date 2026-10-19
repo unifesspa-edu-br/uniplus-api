@@ -26,7 +26,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 public static class MotorDerivacao
 {
     /// <summary>
-    /// Versão semântica do interpretador de derivação, congelada no envelope de publicação (RN08).
+    /// Versão semântica do interpretador de derivação, congelada no envelope de publicação (congelamento dos parâmetros na publicação, UNI-REQ-0019).
     /// É a identidade da semântica com que um snapshot publicado foi resolvido — muda quando a
     /// forma como o motor avalia as regras muda (não a cada deploy), para que um snapshot antigo
     /// continue reidratável com a semântica que o produziu. A "2" acrescenta o derivado booleano:

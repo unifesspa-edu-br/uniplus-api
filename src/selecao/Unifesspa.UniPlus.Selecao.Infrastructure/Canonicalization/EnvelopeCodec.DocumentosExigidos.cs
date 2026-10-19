@@ -23,7 +23,7 @@ public sealed partial class EnvelopeCodec
     /// <summary>
     /// Story #919: a orquestração do bloco inteiro — <c>exigencias</c>, <c>obrigatoriedades</c>
     /// (e o predicado que as condiciona), <c>referenciaTemporalFatos</c> e a chave
-    /// <c>metadadosFatos</c> (RN08). O bloco de topo <c>arvoreSatisfacao</c> (Story #923) é
+    /// <c>metadadosFatos</c> (congelamento dos parâmetros na publicação, UNI-REQ-0019). O bloco de topo <c>arvoreSatisfacao</c> (Story #923) é
     /// IRMÃO deste, não mudança dele — por isso não aparece aqui.
     /// </summary>
     private static (
@@ -239,7 +239,7 @@ public sealed partial class EnvelopeCodec
     /// <see cref="DocumentoExigido"/>), com <c>lista</c> nula ⟺ <c>qualquer</c> verdadeiro.
     /// A validação de forma/coerência (formato reconhecido, sem duplicata, teto por formato
     /// positivo, QUALQUER exclusivo) é <see cref="Domain.ValueObjects.FormatosPermitidos.Criar"/> —
-    /// mesma fronteira de responsabilidade que o restante deste decoder (RN08: o congelado
+    /// mesma fronteira de responsabilidade que o restante deste decoder (congelamento dos parâmetros na publicação, UNI-REQ-0019: o congelado
     /// não revalida semântica, só forma).
     /// </summary>
     private static FormatosPermitidos? LerFormatosPermitidos(LeitorEnvelope leitor, JsonObject item, string pathPai)
@@ -301,7 +301,7 @@ public sealed partial class EnvelopeCodec
     /// condições (E) — a forma espelha exatamente <c>SnapshotPublicacaoCanonicalizer.SerializarCondicaoGatilho</c>.
     /// A validação de forma de cada condição é <see cref="CondicaoGatilho.Criar"/>, a
     /// mesma factory que o caminho de comando usa — o decoder não revalida semântica
-    /// (RN08: um predicado congelado não é reinterpretado contra um vocabulário que pode
+    /// (congelamento dos parâmetros na publicação, UNI-REQ-0019: um predicado congelado não é reinterpretado contra um vocabulário que pode
     /// ter mudado).
     /// </summary>
     private static IReadOnlyList<CondicaoGatilho> LerCondicaoGatilho(LeitorEnvelope leitor, JsonObject item, string pathPai)

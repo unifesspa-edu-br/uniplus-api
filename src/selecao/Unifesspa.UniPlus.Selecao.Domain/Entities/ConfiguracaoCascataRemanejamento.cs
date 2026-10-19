@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// A sequência legal de remanejamento das cotas reservadas de um
-/// <see cref="ProcessoSeletivo"/> (Story #575, RN-CASCATA-1..5) — a outra
+/// <see cref="ProcessoSeletivo"/> (Story #575, cascata de remanejamento de cotas, UNI-REQ-0056) — a outra
 /// metade da flag <see cref="Enums.RegraRemanejamentoModalidade.SegueCascata"/>
 /// de <see cref="ModalidadeSelecionada"/>, que hoje aponta para o nada.
 /// </summary>
@@ -17,13 +17,13 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <strong>Uma cascata por processo</strong> (não por oferta de curso): a ordem
 /// legal não muda de curso para curso, e modelá-la por oferta permitiria duas
 /// ofertas do mesmo certame com ordens legais diferentes — estado que a lei não
-/// admite. A cobertura (RN-CASCATA-1/2/2b), essa sim, é validada por oferta, em
+/// admite. A cobertura (cascata de remanejamento de cotas, UNI-REQ-0056), essa sim, é validada por oferta, em
 /// <see cref="ProcessoSeletivo.PendenciaDaCascata"/>.
 /// </para>
 /// <para>
-/// A forma (RN-CASCATA-4) é validada aqui, na borda — ordens únicas/contíguas
+/// A forma da cascata de remanejamento de cotas (UNI-REQ-0056) é validada aqui, na borda — ordens únicas/contíguas
 /// por origem, sem destino repetido, limites de tamanho. O <em>conteúdo</em>
-/// (RN-CASCATA-5 — o payload bate com o <c>esquema_args</c> da regra
+/// (vínculo com a regra versionada da cascata de remanejamento de cotas, UNI-REQ-0056 — o payload bate com o <c>esquema_args</c> da regra
 /// referenciada) é responsabilidade do handler da Application, que resolve a
 /// regra no catálogo antes de montar esta entidade.
 /// </para>

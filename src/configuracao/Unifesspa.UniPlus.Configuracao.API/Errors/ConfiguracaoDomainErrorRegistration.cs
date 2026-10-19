@@ -1934,7 +1934,7 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "Outra alteração concorrente modificou o mesmo dataset ou o dataset vigente",
                 RetryableConflict: true)),
 
-        // ── Termo de consentimento (UNI-REQ-0086/RN-COL-05) ───────────────
+        // ── Termo de consentimento (termos imunes após a publicação, UNI-REQ-0086) ───────────────
         new(TermoConsentimentoErrorCodes.NomeObrigatorio,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,

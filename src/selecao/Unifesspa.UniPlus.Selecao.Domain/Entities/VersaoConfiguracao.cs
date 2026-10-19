@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Versão congelada da configuração de um <see cref="ProcessoSeletivo"/>
-/// (RN08, ADR-0104): agregado próprio, e não um apêndice do documento que a
+/// (congelamento dos parâmetros na publicação, UNI-REQ-0019, ADR-0104): agregado próprio, e não um apêndice do documento que a
 /// publicou. Quem ordena as versões é <see cref="VigenteAPartirDe"/> — o
 /// relógio do sistema —, nunca a data documental do ato, que a retificação
 /// republica inalterada.

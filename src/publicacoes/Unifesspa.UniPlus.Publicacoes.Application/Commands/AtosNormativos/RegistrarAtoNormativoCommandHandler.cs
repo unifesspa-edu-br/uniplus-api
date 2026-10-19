@@ -417,7 +417,7 @@ public static class RegistrarAtoNormativoCommandHandler
         // congela(retificador) == congela(retificado): a classe de congelamento do
         // novo ato é a do tipo vigente já resolvido; a do retificado é o snapshot que
         // ele congelou no próprio registro. É essa classe, não o rótulo do tipo, que
-        // protege a integridade da configuração publicada (RN08).
+        // protege a integridade da configuração publicada (congelamento dos parâmetros na publicação, UNI-REQ-0019).
         if (retificado.CongelaConfiguracao != congelaConfiguracao)
         {
             return new DomainError(

@@ -58,7 +58,7 @@ internal static class ConferenciaDoAtoCorrigido
 
         // Os atos que criam versão são os que congelam configuração: o tipo deles foi conferido como
         // congelante ao publicar. O ato avulso nunca congela, e a classe do corretor tem de coincidir
-        // com a do corrigido (RN08).
+        // com a do corrigido (congelamento dos parâmetros na publicação, UNI-REQ-0019).
         IReadOnlyList<Guid> atosQueCongelam = await processoSeletivoRepository
             .ObterAtosCriadoresAsync(processoSeletivoId, cancellationToken)
             .ConfigureAwait(false);

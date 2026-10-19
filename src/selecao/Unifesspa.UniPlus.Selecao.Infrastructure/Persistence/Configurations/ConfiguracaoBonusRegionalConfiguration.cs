@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>
 /// Configuração EF Core de <see cref="ConfiguracaoBonusRegional"/> (Story
-/// #774, RN05) — entidade 0..1 do agregado <see cref="ProcessoSeletivo"/>.
+/// #774, Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015) — entidade 0..1 do agregado <see cref="ProcessoSeletivo"/>.
 /// </summary>
 [SuppressMessage(
     "Performance",

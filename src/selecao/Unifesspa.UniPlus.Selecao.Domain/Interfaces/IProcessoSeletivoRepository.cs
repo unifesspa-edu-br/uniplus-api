@@ -47,7 +47,7 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
     /// concorrentes que tocam o MESMO processo (os seis <c>Definir*</c>, a abertura e o
     /// fechamento da sessão, publicar e retificar). Sem ele, um <c>Definir*</c> que leu
     /// <c>Status = Rascunho</c> antes de uma publicação concorrente persistiria a mutação
-    /// <b>depois</b> de a versão já ter sido congelada — furando a RN08 sem que o guard em
+    /// <b>depois</b> de a versão já ter sido congelada — furando o congelamento dos parâmetros na publicação (UNI-REQ-0019) sem que o guard em
     /// memória tivesse visibilidade da publicação alheia. Roda na transação ambiente do
     /// Wolverine: a segunda transação bloqueia aqui até a primeira committar.
     /// </para>
@@ -135,7 +135,7 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Resolve a <see cref="VersaoConfiguracao"/> vigente num instante (RN08,
+    /// Resolve a <see cref="VersaoConfiguracao"/> vigente num instante (congelamento dos parâmetros na publicação, UNI-REQ-0019,
     /// ADR-0075/0076/0104): a de maior
     /// <see cref="VersaoConfiguracao.VigenteAPartirDe"/> ≤
     /// <paramref name="instante"/>, desempatada por

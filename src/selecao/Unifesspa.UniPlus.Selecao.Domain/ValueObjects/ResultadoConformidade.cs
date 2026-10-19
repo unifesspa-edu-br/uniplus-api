@@ -30,7 +30,7 @@ public sealed record ResultadoConformidade(
 /// no instante da avaliação. <see cref="Hash"/> é o hash canônico
 /// determinístico da regra (<see cref="Entities.ObrigatoriedadeLegal.Hash"/>,
 /// #460) no instante em que foi avaliada — evidência estável mesmo que a
-/// regra seja editada depois (RN08: o congelado não muda).
+/// regra seja editada depois (congelamento dos parâmetros na publicação, UNI-REQ-0019: o congelado não muda).
 /// </summary>
 [SuppressMessage(
     "Design",

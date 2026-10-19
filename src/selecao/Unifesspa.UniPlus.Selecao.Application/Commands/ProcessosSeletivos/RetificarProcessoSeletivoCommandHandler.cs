@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Handler convention-based do <see cref="RetificarProcessoSeletivoCommand"/>
-/// (RN08, Story #759 T5 #786, ADR-0101 + ADR-0005): carrega o agregado com a
+/// (congelamento dos parâmetros na publicação, UNI-REQ-0019, Story #759 T5 #786, ADR-0101 + ADR-0005): carrega o agregado com a
 /// cadeia de Editais, valida o documento confirmado (T3), canonicaliza a
 /// configuração acrescida do bloco de retificação (ADR-0100/0101) e delega a
 /// orquestração de negócio a <see cref="ProcessoSeletivo.Retificar"/>.
@@ -240,7 +240,7 @@ public static class RetificarProcessoSeletivoCommandHandler
             return (Result.Failure(pendencia), []);
         }
 
-        // Cascata de remanejamento (RN-CASCATA-1/2/2b/3, Story #575) — cross-dimensão,
+        // Cascata de remanejamento de cotas (UNI-REQ-0056, Story #575) — cross-dimensão,
         // fora do agregador genérico acima. Mesma antecipação da publicação (ADR-0109 D5).
         if (processo.PendenciaDaCascata() is { } pendenciaCascata)
         {
@@ -339,7 +339,7 @@ public static class RetificarProcessoSeletivoCommandHandler
             return (Result.Failure(coletabilidadeDosFatos.Error!), []);
         }
 
-        // Story #919 (RN08): mesmo congelamento de metadado de fato que a publicação de
+        // Story #919 (congelamento dos parâmetros na publicação, UNI-REQ-0019): mesmo congelamento de metadado de fato que a publicação de
         // abertura já faz — uma retificação também pode conter gatilho de documento vivo, e
         // congelar sem este bloco deixaria o metadado incompleto (vazio) para esta versão.
         Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?> metadadosFatosResult =

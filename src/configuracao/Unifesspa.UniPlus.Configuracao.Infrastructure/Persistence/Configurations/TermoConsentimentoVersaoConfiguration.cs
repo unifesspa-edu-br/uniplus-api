@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 
 /// <summary>
 /// Configuração EF Core da tabela append-only <c>termo_consentimento_versao</c>
-/// (UNI-REQ-0086/RN-COL-05). Sem soft-delete, sem audit fields, sem updates —
+/// (termos imunes após a publicação, UNI-REQ-0086). Sem soft-delete, sem audit fields, sem updates —
 /// qualquer mutação fora de <c>INSERT</c> é incidente operacional.
 /// </summary>
 [SuppressMessage(

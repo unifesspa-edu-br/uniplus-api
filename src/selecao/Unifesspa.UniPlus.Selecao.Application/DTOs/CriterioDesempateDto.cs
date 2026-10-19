@@ -32,7 +32,7 @@ public sealed record CriterioDesempateDto(
     string? Valor,
     IReadOnlyList<string>? Areas);
 
-/// <summary>Projeção de leitura do bônus regional (RN05, Story #774), com o snapshot congelado da Base Legal (Story #1466).</summary>
+/// <summary>Projeção de leitura do bônus regional (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015, Story #774), com o snapshot congelado da Base Legal (Story #1466).</summary>
 public sealed record ConfiguracaoBonusRegionalDto(
     Guid Id,
     ReferenciaRegraDto Regra,

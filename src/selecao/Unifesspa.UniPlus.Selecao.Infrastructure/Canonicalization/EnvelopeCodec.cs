@@ -285,7 +285,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
             return Result<EnvelopeReidratado>.Failure(repeticaoSemGrupo);
         }
 
-        // Fail-closed do bloco de coleta/derivação (RN08): um envelope adulterado que declare fato
+        // Fail-closed do bloco de coleta/derivação (congelamento dos parâmetros na publicação, UNI-REQ-0019): um envelope adulterado que declare fato
         // duplicado, cite fato inexistente num gatilho/pré-condição/regra, contribua código fora do
         // domínio de modalidades, feche ciclo no grafo conjunto, ou cujo grafo/modalidades congelados
         // divirjam do recomputado, é recusado como malformado — nunca reidratado como se fosse íntegro.

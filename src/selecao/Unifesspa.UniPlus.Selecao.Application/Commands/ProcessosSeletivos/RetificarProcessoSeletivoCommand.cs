@@ -5,7 +5,7 @@ using Kernel.Results;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 
 /// <summary>
-/// Retifica um processo já publicado (RN08, Story #759, T5 #786, ADR-0101):
+/// Retifica um processo já publicado (congelamento dos parâmetros na publicação, UNI-REQ-0019, Story #759, T5 #786, ADR-0101):
 /// emite um novo Edital de natureza retificação sucedendo o Edital vigente,
 /// com motivo obrigatório, e sucede a <c>VersaoConfiguracao</c> corrente — a
 /// versão anterior permanece imutável, tudo na mesma transação. O ator
