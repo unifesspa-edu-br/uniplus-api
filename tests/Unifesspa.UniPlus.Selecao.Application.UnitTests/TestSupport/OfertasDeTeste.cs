@@ -31,6 +31,14 @@ internal static class OfertasDeTeste
 
     /// <summary>O mesmo grafo, com a distribuição de vagas dada no lugar da que ele tinha.</summary>
     public static GrafoConfiguracao ComDistribuicao(GrafoConfiguracao grafo, params ConfiguracaoDistribuicaoVagas[] distribuicao) =>
+        Reconstruir(grafo, distribuicao, grafo.NumeroDeOpcoesDeCurso);
+
+    /// <summary>O mesmo grafo, declarando quantas opções de curso a inscrição admite.</summary>
+    public static GrafoConfiguracao ComOpcoesDeCurso(GrafoConfiguracao grafo, int numeroDeOpcoesDeCurso) =>
+        Reconstruir(grafo, [.. grafo.DistribuicaoVagas], numeroDeOpcoesDeCurso);
+
+    private static GrafoConfiguracao Reconstruir(
+        GrafoConfiguracao grafo, ConfiguracaoDistribuicaoVagas[] distribuicao, int? numeroDeOpcoesDeCurso) =>
         new(
             grafo.Etapas, grafo.OfertaAtendimento, distribuicao,
             grafo.BonusRegional, grafo.CriteriosDesempate, grafo.Classificacao,
@@ -38,7 +46,8 @@ internal static class OfertasDeTeste
             fatosColetados: grafo.FatosColetados,
             formularios: grafo.Formularios,
             termosExigidos: grafo.TermosExigidos,
-            gruposColetados: grafo.GruposColetados);
+            gruposColetados: grafo.GruposColetados,
+            numeroDeOpcoesDeCurso: numeroDeOpcoesDeCurso);
 
     private static ModalidadeSelecionada Modalidade(string codigo) =>
         ModalidadeSelecionada.Criar(

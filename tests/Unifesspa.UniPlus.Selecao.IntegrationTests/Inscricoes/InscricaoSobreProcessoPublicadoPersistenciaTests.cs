@@ -300,7 +300,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
         gravada.Should().NotBeNull();
         Result<ContextoDaVersaoFixada> contexto = await ContextoDaVersaoFixadaResolver.ResolverAsync(
-            gravada!.VersaoFormularioId, processoId, new ProcessoSeletivoRepository(readContext, TimeProvider.System), RegistroCodecs, ofertaCursoId: null, CancellationToken.None);
+            gravada!.VersaoFormularioId, processoId, new ProcessoSeletivoRepository(readContext, TimeProvider.System), RegistroCodecs, ofertaCursoId: null, null, CancellationToken.None);
         contexto.IsSuccess.Should().BeTrue(contexto.Error?.Message);
         contexto.Value!.Admitidas.Definicoes.Where(static f => f.Value.Identificador).Select(static f => f.Key).Should().BeEquivalentTo(
             ["CPF", "RG_NUMERO", "PASSAPORTE_NUMERO", "RNM_NUMERO", "RG_NUMERO_MEMBRO"],
@@ -469,12 +469,12 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
         Inscricao inscricao = (await inscricaoRepository.ObterPorIdAsync(iniciar.Value!.Id))!;
         RespostasAdmitidas admitidas = (await ContextoDaVersaoFixadaResolver.ResolverAsync(
-            inscricao.VersaoFormularioId, processoId, new ProcessoSeletivoRepository(writeContext, TimeProvider.System), RegistroCodecs, ofertaCursoId: null, CancellationToken.None))
+            inscricao.VersaoFormularioId, processoId, new ProcessoSeletivoRepository(writeContext, TimeProvider.System), RegistroCodecs, ofertaCursoId: null, null, CancellationToken.None))
             .Value!.Admitidas with
         { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond };
 
         Result salvar = inscricao.Salvar(
-            null,
+            null, null,
             new Dictionary<string, JsonElement>(StringComparer.Ordinal)
             {
                 ["ENDERECO_RESIDENCIAL"] = JsonSerializer.SerializeToElement(new
@@ -520,12 +520,12 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         Inscricao? inscricao = await inscricaoRepository.ObterPorIdAsync(iniciar.Value!.Id);
         inscricao.Should().NotBeNull();
         RespostasAdmitidas admitidas = (await ContextoDaVersaoFixadaResolver.ResolverAsync(
-            inscricao!.VersaoFormularioId, processoId, new ProcessoSeletivoRepository(writeContext, TimeProvider.System), RegistroCodecs, ofertaCursoId: null, CancellationToken.None))
+            inscricao!.VersaoFormularioId, processoId, new ProcessoSeletivoRepository(writeContext, TimeProvider.System), RegistroCodecs, ofertaCursoId: null, null, CancellationToken.None))
             .Value!.Admitidas with
         { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond };
 
         inscricao!.Salvar(
-            null,
+            null, null,
             new Dictionary<string, JsonElement>(StringComparer.Ordinal)
             {
                 ["RG_NUMERO"] = JsonSerializer.SerializeToElement("30.111.222-9"),
@@ -601,7 +601,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
         Result<ContextoDaVersaoFixada> contexto = await ContextoDaVersaoFixadaResolver.ResolverAsync(
-            iniciar.Value!.VersaoFormularioId, processoId, new ProcessoSeletivoRepository(readContext, TimeProvider.System), RegistroCodecs, ofertaCursoId: null, CancellationToken.None);
+            iniciar.Value!.VersaoFormularioId, processoId, new ProcessoSeletivoRepository(readContext, TimeProvider.System), RegistroCodecs, ofertaCursoId: null, null, CancellationToken.None);
         contexto.IsSuccess.Should().BeTrue(contexto.Error?.Message);
         contexto.Value!.Ofertas[OfertaAtendimentoEspecializado.FatoRecursoAcessibilidade].Should().BeEquivalentTo(["SALA_AMAMENTACAO"]);
 
@@ -634,7 +634,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
         Result<ContextoDaVersaoFixada> contexto = await ContextoDaVersaoFixadaResolver.ResolverAsync(
-            iniciar.Value!.VersaoFormularioId, processoId, new ProcessoSeletivoRepository(readContext, TimeProvider.System), RegistroCodecs, ofertaCursoId: null, CancellationToken.None);
+            iniciar.Value!.VersaoFormularioId, processoId, new ProcessoSeletivoRepository(readContext, TimeProvider.System), RegistroCodecs, ofertaCursoId: null, null, CancellationToken.None);
         contexto.IsSuccess.Should().BeTrue(contexto.Error?.Message);
 
         IReadOnlyList<FieldError> RecusasDe(string orgao) => VeredictoDeSubmissao.RecusasDeOpcaoForaDaOferta(
@@ -664,13 +664,13 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
         Result<ContextoDaVersaoFixada> contexto = await ContextoDaVersaoFixadaResolver.ResolverAsync(
-            iniciar.Value!.VersaoFormularioId, processoId, new ProcessoSeletivoRepository(readContext, TimeProvider.System), RegistroCodecs, ofertaCursoId: null, CancellationToken.None);
+            iniciar.Value!.VersaoFormularioId, processoId, new ProcessoSeletivoRepository(readContext, TimeProvider.System), RegistroCodecs, ofertaCursoId: null, null, CancellationToken.None);
         contexto.IsSuccess.Should().BeTrue(contexto.Error?.Message);
 
         InscricaoRepository repositorio = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         Inscricao inscricao = (await repositorio.ObterPorIdAsync(iniciar.Value!.Id))!;
         inscricao.Salvar(
-            null,
+            null, null,
             new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["TELEFONE"] = JsonSerializer.SerializeToElement("(94) 3322-1234") },
             new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal),
             [], contexto.Value!.Admitidas with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond }, PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
@@ -703,12 +703,12 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
         Inscricao inscricao = (await inscricaoRepository.ObterPorIdAsync(iniciar.Value!.Id))!;
         ContextoDaVersaoFixada contexto = (await ContextoDaVersaoFixadaResolver.ResolverAsync(
-            inscricao.VersaoFormularioId, processoId, new ProcessoSeletivoRepository(writeContext, TimeProvider.System), RegistroCodecs, ofertaCursoId: null, CancellationToken.None))
+            inscricao.VersaoFormularioId, processoId, new ProcessoSeletivoRepository(writeContext, TimeProvider.System), RegistroCodecs, ofertaCursoId: null, null, CancellationToken.None))
             .Value!;
 
         // O candidato disse "sim", descreveu a condição e voltou para "não": a descrição fica no rascunho.
         inscricao.Salvar(
-            null,
+            null, null,
             new Dictionary<string, JsonElement>(StringComparer.Ordinal)
             {
                 ["PRECISA_ATENDIMENTO"] = JsonSerializer.SerializeToElement(false),
@@ -731,7 +731,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             AvaliacaoDaInscricao.CodigosDasEtapasDaInscricao(contexto.Configuracao.Definicao),
             Envio: null)).Value!;
         ComprovanteInscricao comprovante = rascunho.Submeter(
-            "000901", contexto.Admitidas.OfertasDeCurso.Single(), new Dictionary<string, JsonElement>(StringComparer.Ordinal),
+            "000901", contexto.Admitidas.OfertasDeCurso.Single(), null, new Dictionary<string, JsonElement>(StringComparer.Ordinal),
             new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [], contexto.Admitidas with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond }, avaliacao,
             new Dictionary<string, JsonElement>(StringComparer.Ordinal), DerivadosDoSistemaInscricao.DefinicoesDasRespostas,
             PrecondicaoIfMatch.DeTags([rascunho.ETag]), DentroDoPeriodo.GetUtcNow()).Value!;

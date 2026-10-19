@@ -96,7 +96,7 @@ public static class SubmeterInscricaoCommandHandler
 
         Result<Services.ContextoDaVersaoFixada> contexto = await Services.ContextoDaVersaoFixadaResolver.ResolverAsync(
             inscricao.VersaoFormularioId, command.ProcessoSeletivoId, processoSeletivoRepository, registroCodecs,
-            command.Request.OfertaCursoId, cancellationToken)
+            command.Request.OfertaCursoId, command.Request.OfertaCursoSegundaOpcaoId, cancellationToken)
             .ConfigureAwait(false);
         if (contexto.IsFailure)
         {
@@ -167,7 +167,7 @@ public static class SubmeterInscricaoCommandHandler
         // que terminou. O veredito olha só o que o formulário de inscrição pergunta.
         EnvioDasRespostas envio = new(instante, fuso.Value!);
         ConfiguracaoAvaliavel configuracao = contexto.Value!.Configuracao;
-        Result<ResultadoDaAvaliacaoDaInscricao> avaliacao = AvaliacaoDaInscricao.Avaliar(configuracao, new EntradaDaAvaliacaoDaInscricao(
+        Result<ResultadoDaAvaliacaoDaInscricao> avaliacao = Services.AvaliacaoDaInscricaoPorOpcao.Avaliar(contexto.Value!, new EntradaDaAvaliacaoDaInscricao(
             respostasMescladas,
             Services.InscricaoRequestMapper.ParaAvaliacao(gruposMesclados),
             derivados.Value!.ToDictionary(static d => d.Key, static d => FatoResolvido.Resolvido(d.Value), StringComparer.Ordinal),
@@ -209,7 +209,7 @@ public static class SubmeterInscricaoCommandHandler
         string numeroGerado = await geradorDeNumeroInscricao.ProximoAsync(cancellationToken).ConfigureAwait(false);
 
         Result<ComprovanteInscricao> submetido = inscricao.Submeter(
-            numeroGerado, command.Request.OfertaCursoId, respostasDoCorpo, grupos, aceites, admitidas,
+            numeroGerado, command.Request.OfertaCursoId, command.Request.OfertaCursoSegundaOpcaoId, respostasDoCorpo, grupos, aceites, admitidas,
             avaliacao.Value!, derivados.Value!, Services.DerivadosDoSistemaInscricao.DefinicoesDasRespostas,
             command.Precondicao, instante);
         if (submetido.IsFailure)

@@ -47,10 +47,16 @@ public sealed record EntradaDaAvaliacaoDaInscricao(
 /// O resultado de uma avaliação só: a do formulário, a de cada exigência da árvore diante do candidato
 /// e as modalidades em que ele concorre.
 /// </summary>
+/// <remarks>
+/// Com duas opções de curso, o formulário e os documentos são avaliados sobre a união das distribuições
+/// das duas ofertas, e as modalidades, por opção: <see cref="Modalidades"/> é a da 1ª e
+/// <see cref="ModalidadesSegundaOpcao"/> a da 2ª — nula quando a inscrição não declara a 2ª.
+/// </remarks>
 public sealed record ResultadoDaAvaliacaoDaInscricao(
     AvaliacaoFormulario Formulario,
     ModalidadesDeConcorrencia Modalidades,
-    DocumentosDaInscricao Documentos);
+    DocumentosDaInscricao Documentos,
+    ModalidadesDeConcorrencia? ModalidadesSegundaOpcao = null);
 
 /// <summary>
 /// Os documentos que o edital exige do candidato (UNI-REQ-0069, UNI-REQ-0077): cada folha da árvore com

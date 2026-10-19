@@ -21,7 +21,9 @@ public sealed class ComprovanteInscricaoTests
         Dictionary<string, JsonElement> Derivados,
         Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> Grupos,
         List<AceiteDeTermo> Aceites,
-        List<ModalidadeDeConcorrencia>? Modalidades);
+        List<ModalidadeDeConcorrencia>? Modalidades,
+        Guid? OfertaSegundaOpcao = null,
+        List<ModalidadeDeConcorrencia>? ModalidadesSegundaOpcao = null);
 
     private static Conteudo Base() => new(
         "00000001",
@@ -40,7 +42,8 @@ public sealed class ComprovanteInscricaoTests
         valores.ToDictionary(static v => v.Fato, static v => JsonSerializer.SerializeToElement(v.Valor), StringComparer.Ordinal);
 
     private static string Hash(Conteudo c) =>
-        ComprovanteInscricao.Emitir(Inscricao, c.Numero, c.Instante, c.Oferta, c.Respostas, c.Derivados, c.Grupos, c.Aceites, c.Modalidades).HashIntegridade;
+        ComprovanteInscricao.Emitir(Inscricao, c.Numero, c.Instante, c.Oferta, c.Respostas, c.Derivados, c.Grupos, c.Aceites, c.Modalidades,
+            ofertaCursoSegundaOpcaoId: c.OfertaSegundaOpcao, modalidadesSegundaOpcao: c.ModalidadesSegundaOpcao).HashIntegridade;
 
     [Fact(DisplayName = "O mesmo conteúdo dá o mesmo hash, em qualquer emissão")]
     public void Hash_MesmoConteudo_MesmoHash()
@@ -63,6 +66,8 @@ public sealed class ComprovanteInscricaoTests
         { "modalidade", static c => c with { Modalidades = [new ModalidadeDeConcorrencia("AC", "Ampla concorrência", 0)] } },
         { "nome da modalidade", static c => c with { Modalidades = [new ModalidadeDeConcorrencia("AC", "Ampla", 0), new ModalidadeDeConcorrencia("LI_EP", "Escola pública", 1)] } },
         { "seção das modalidades", static c => c with { Modalidades = null } },
+        { "2ª opção", static c => c with { OfertaSegundaOpcao = Guid.Parse("01a12693-0000-7000-8000-0000000000bb") } },
+        { "modalidades da 2ª opção", static c => c with { ModalidadesSegundaOpcao = [new ModalidadeDeConcorrencia("AC", "Ampla concorrência", 0)] } },
     };
 
     [Theory(DisplayName = "Qualquer mudança no conteúdo comprovado muda o hash")]

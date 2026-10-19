@@ -123,16 +123,17 @@ public sealed class DerivacoesDaOfertaTests
             .Select(static d => d.CodigoFato).Should().Equal("PRETO_DECLARADO", ModalidadeDoCandidato.Fato);
     }
 
-    [Fact(DisplayName = "A distribuição da oferta escolhida é só a dela; sem escolha, ou com oferta desconhecida, são todas")]
-    public void DistribuicaoDaOferta_EscolheAOfertaOuFicaComTodas()
+    [Fact(DisplayName = "A distribuição das ofertas escolhidas é a união das delas; sem escolha, ou com oferta desconhecida, são todas")]
+    public void DistribuicaoDasOfertas_EscolheAsOfertasOuFicaComTodas()
     {
         ConfiguracaoDistribuicaoVagas a = Oferta(Modalidade("AC", NaturezaLegalModalidade.Ampla));
         ConfiguracaoDistribuicaoVagas b = Oferta(Modalidade("AC", NaturezaLegalModalidade.Ampla), Modalidade("AC_PCD", NaturezaLegalModalidade.AcaoAfirmativa));
 
-        DerivacoesDaOferta.DistribuicaoDaOferta([a, b], b.OfertaCursoOrigemId).Should().Equal(b);
-        DerivacoesDaOferta.DistribuicaoDaOferta([a, b], null).Should().Equal(a, b);
-        DerivacoesDaOferta.DistribuicaoDaOferta([a, b], Guid.CreateVersion7()).Should().Equal(a, b);
-        DerivacoesDaOferta.DistribuicaoDaOferta([a], a.OfertaCursoOrigemId).Should().Equal(a);
+        DerivacoesDaOferta.DistribuicaoDasOfertas([a, b], [b.OfertaCursoOrigemId]).Should().Equal(b);
+        DerivacoesDaOferta.DistribuicaoDasOfertas([a, b], [a.OfertaCursoOrigemId, b.OfertaCursoOrigemId]).Should().Equal(a, b);
+        DerivacoesDaOferta.DistribuicaoDasOfertas([a, b], []).Should().Equal(a, b);
+        DerivacoesDaOferta.DistribuicaoDasOfertas([a, b], [Guid.CreateVersion7()]).Should().Equal(a, b);
+        DerivacoesDaOferta.DistribuicaoDasOfertas([a], [a.OfertaCursoOrigemId]).Should().Equal(a);
     }
 
     private static string[] Derivar(IReadOnlyList<ConfiguracaoDerivacaoFato> efetivas, params (string Fato, FatoResolvido Valor)[] fatos)

@@ -27,25 +27,30 @@ public static class AvaliacaoDaInscricao
     /// <summary>O fato que diz em quais modalidades o candidato concorre.</summary>
     public const string FatoDaModalidade = "MODALIDADE";
 
+    /// <summary>O fato que diz em quais modalidades o candidato concorre na 2ª opção de curso.</summary>
+    public const string FatoDaModalidadeDaSegundaOpcao = "MODALIDADE_SEGUNDA_OPCAO";
+
     /// <summary>Como a modalidade derivada é gravada: os códigos das modalidades, um por linha, na ordem das ofertadas.</summary>
     public static DefinicaoDaResposta DefinicaoDaModalidade { get; } = new(TipoDoValorDeResposta.Codigo, Multivalorado: true, Identificador: false);
+
+    /// <summary>
+    /// Só as modalidades em que o candidato concorre, sem a árvore de exigências nem os documentos: para
+    /// quem avalia a mesma entrada diante da distribuição de vagas de cada oferta e precisa só delas.
+    /// </summary>
+    public static ModalidadesDeConcorrencia AvaliarModalidades(ConfiguracaoAvaliavel configuracao, EntradaDaAvaliacaoDaInscricao entrada)
+    {
+        ArgumentNullException.ThrowIfNull(configuracao);
+        ArgumentNullException.ThrowIfNull(entrada);
+
+        return Modalidades(configuracao, AvaliarFormulario(configuracao, entrada));
+    }
 
     public static Result<ResultadoDaAvaliacaoDaInscricao> Avaliar(ConfiguracaoAvaliavel configuracao, EntradaDaAvaliacaoDaInscricao entrada)
     {
         ArgumentNullException.ThrowIfNull(configuracao);
         ArgumentNullException.ThrowIfNull(entrada);
 
-        AvaliacaoFormulario formulario = AvaliadorFormulario.Avaliar(
-            configuracao.Definicao,
-            new EntradaAvaliacaoFormulario(
-                RespostaDeCampo.DentroDaOferta(entrada.Respostas, configuracao.Ofertas),
-                entrada.EtapasConcluidas,
-                entrada.FatosConhecidos,
-                entrada.Envio,
-                entrada.Grupos.ToDictionary(
-                    static g => g.Key,
-                    g => (IReadOnlyList<OcorrenciaRespondida>)[.. g.Value.Select(o => o with { Respostas = RespostaDeCampo.DentroDaOferta(o.Respostas, configuracao.Ofertas) })],
-                    StringComparer.Ordinal)));
+        AvaliacaoFormulario formulario = AvaliarFormulario(configuracao, entrada);
 
         // As ocorrências de cada grupo visível são as instâncias que a árvore repete; o grupo oculto
         // não tem instância, e a subárvore dele não se aplica.
@@ -76,6 +81,19 @@ public static class AvaliacaoDaInscricao
             Modalidades(configuracao, formulario),
             new DocumentosDaInscricao(documentos, PendenciasDosDocumentos(configuracao, formulario, documentos))));
     }
+
+    private static AvaliacaoFormulario AvaliarFormulario(ConfiguracaoAvaliavel configuracao, EntradaDaAvaliacaoDaInscricao entrada) =>
+        AvaliadorFormulario.Avaliar(
+            configuracao.Definicao,
+            new EntradaAvaliacaoFormulario(
+                RespostaDeCampo.DentroDaOferta(entrada.Respostas, configuracao.Ofertas),
+                entrada.EtapasConcluidas,
+                entrada.FatosConhecidos,
+                entrada.Envio,
+                entrada.Grupos.ToDictionary(
+                    static g => g.Key,
+                    g => (IReadOnlyList<OcorrenciaRespondida>)[.. g.Value.Select(o => o with { Respostas = RespostaDeCampo.DentroDaOferta(o.Respostas, configuracao.Ofertas) })],
+                    StringComparer.Ordinal)));
 
     /// <summary>
     /// O que o formulário da inscrição pergunta e de que a avaliação depende, para quem consulta saber

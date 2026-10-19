@@ -27,9 +27,9 @@ public static class PreparacaoDaAvaliacaoDaInscricao
     /// <summary>
     /// A avaliação do que a inscrição gravou, na versão que ela fixou ao iniciar, como se as respostas
     /// fossem gravadas em <paramref name="instante"/>, no fuso da janela de inscrição — na forma que o
-    /// candidato recebe.
+    /// candidato recebe, junto das opções de curso da versão que ela fixou.
     /// </summary>
-    public static async Task<Result<AvaliacaoDaInscricaoDto>> ProjetarGravadaAsync(
+    public static async Task<Result<InscricaoDto>> ProjetarInscricaoGravadaAsync(
         Inscricao inscricao,
         Domain.Interfaces.IProcessoSeletivoRepository processoSeletivoRepository,
         IRegistroCodecsEnvelope registroCodecs,
@@ -45,16 +45,16 @@ public static class PreparacaoDaAvaliacaoDaInscricao
         Result<TimeZoneInfo> fuso = resolvedorFuso.Resolver();
         if (fuso.IsFailure)
         {
-            return Result<AvaliacaoDaInscricaoDto>.Failure(fuso.Error!);
+            return Result<InscricaoDto>.Failure(fuso.Error!);
         }
 
         Result<ContextoDaVersaoFixada> contexto = await ContextoDaVersaoFixadaResolver.ResolverAsync(
             inscricao.VersaoFormularioId, inscricao.ProcessoSeletivoId, processoSeletivoRepository, registroCodecs,
-            inscricao.OfertaCursoId, cancellationToken)
+            inscricao.OfertaCursoId, inscricao.OfertaCursoSegundaOpcaoId, cancellationToken)
             .ConfigureAwait(false);
         if (contexto.IsFailure)
         {
-            return Result<AvaliacaoDaInscricaoDto>.Failure(contexto.Error!);
+            return Result<InscricaoDto>.Failure(contexto.Error!);
         }
 
         Result<ResultadoDaAvaliacaoDaInscricao> avaliacao = await AvaliarAsync(
@@ -65,9 +65,16 @@ public static class PreparacaoDaAvaliacaoDaInscricao
             new EnvioDasRespostas(instante, fuso.Value!),
             conferenciaEnderecoGeo,
             cancellationToken).ConfigureAwait(false);
-        return avaliacao.IsFailure
-            ? Result<AvaliacaoDaInscricaoDto>.Failure(avaliacao.Error!)
-            : ProjecaoDaAvaliacaoDaInscricao.Projetar(avaliacao.Value!, contexto.Value!, inscricao.ProcessoSeletivoId, enderecoNoAcervo);
+        if (avaliacao.IsFailure)
+        {
+            return Result<InscricaoDto>.Failure(avaliacao.Error!);
+        }
+
+        Result<AvaliacaoDaInscricaoDto> projetada = ProjecaoDaAvaliacaoDaInscricao.Projetar(
+            avaliacao.Value!, contexto.Value!, inscricao.ProcessoSeletivoId, enderecoNoAcervo);
+        return projetada.IsFailure
+            ? Result<InscricaoDto>.Failure(projetada.Error!)
+            : Result<InscricaoDto>.Success(InscricaoDto.De(inscricao, projetada.Value!, contexto.Value!.Admitidas.NumeroDeOpcoesDeCurso, contexto.Value!.OfertasDeCurso));
     }
 
     /// <param name="respostasRecebidas">As respostas que chegaram; o campo ausente vale o que já está gravado.</param>
@@ -102,8 +109,8 @@ public static class PreparacaoDaAvaliacaoDaInscricao
             AvaliacaoDaInscricao.DerivadosDoSistemaCitados(contexto.Configuracao),
             cancellationToken).ConfigureAwait(false);
 
-        return AvaliacaoDaInscricao.Avaliar(
-            contexto.Configuracao,
+        return AvaliacaoDaInscricaoPorOpcao.Avaliar(
+            contexto,
             new EntradaDaAvaliacaoDaInscricao(respostas, grupos, derivados, new HashSet<string>(StringComparer.Ordinal), envio, NaFaseDaInscricao: true));
     }
 }

@@ -27,12 +27,13 @@ public sealed class InscricaoContratoProvisorioTests
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
     };
 
-    [Fact(DisplayName = "InscricaoRequest: o exemplo do rascunho desserializa com oferta, respostas, grupo e aceite")]
+    [Fact(DisplayName = "InscricaoRequest: o exemplo do rascunho desserializa com as duas opções de curso, respostas, grupo e aceite")]
     public void InscricaoRequest_ExemploDoRascunho_Desserializa()
     {
         const string Exemplo = """
         {
             "ofertaCursoId": "0199e000-0000-7000-8000-000000000001",
+            "ofertaCursoSegundaOpcaoId": "0199e000-0000-7000-8000-000000000003",
             "respostas": {
                 "NOME_SOCIAL": "Ana",
                 "RG_NUMERO": "1234567"
@@ -52,6 +53,7 @@ public sealed class InscricaoContratoProvisorioTests
 
         request.Should().NotBeNull();
         request!.OfertaCursoId.Should().Be(Guid.Parse("0199e000-0000-7000-8000-000000000001"));
+        request.OfertaCursoSegundaOpcaoId.Should().Be(Guid.Parse("0199e000-0000-7000-8000-000000000003"));
         request.Respostas.Should().ContainKey("RG_NUMERO");
         request.Grupos.Should().ContainKey("COMPOSICAO_FAMILIAR")
             .WhoseValue.Should().ContainSingle(o => o.Id == "membro-1");
@@ -68,6 +70,13 @@ public sealed class InscricaoContratoProvisorioTests
             NumeroInscricao: "000123",
             VersaoFormularioId: Guid.Parse("0199e000-0000-7000-8000-000000000012"),
             OfertaCursoId: Guid.Parse("0199e000-0000-7000-8000-000000000001"),
+            OfertaCursoSegundaOpcaoId: Guid.Parse("0199e000-0000-7000-8000-000000000003"),
+            NumeroDeOpcoesDeCurso: 2,
+            Ofertas:
+            [
+                new OfertaDeCursoCertameDto(Guid.Parse("0199e000-0000-7000-8000-000000000001"), "Direito", "Bacharelado", "Campus de Marabá", ["MATUTINO"]),
+                new OfertaDeCursoCertameDto(Guid.Parse("0199e000-0000-7000-8000-000000000003"), "Engenharia da Computação", "Bacharelado", "Campus de Marabá", ["VESPERTINO"]),
+            ],
             Respostas: new Dictionary<string, JsonElement>(StringComparer.Ordinal)
             {
                 ["NOME_SOCIAL"] = JsonSerializer.SerializeToElement("Ana"),
@@ -88,6 +97,9 @@ public sealed class InscricaoContratoProvisorioTests
         json["respostas"]!["RG_NUMERO"]!.GetValue<string>().Should().Be("1234567",
             "o RG volta dentro de respostas, decifrado — não existe campo próprio de documento no contrato");
         json.AsObject().Should().NotContainKey("cpf", "o CPF nunca sai no contrato: já está no token, e o comprovante o devolve mascarado");
+        json["ofertaCursoSegundaOpcaoId"]!.GetValue<string>().Should().Be("0199e000-0000-7000-8000-000000000003");
+        json["numeroDeOpcoesDeCurso"]!.GetValue<int>().Should().Be(2, "o número vem da versão fixada da inscrição");
+        json["ofertas"]!.AsArray().Should().HaveCount(2, "o portal escolhe a opção entre as ofertas da versão fixada, não do certame vivo");
     }
 
     [Fact(DisplayName = "ComprovanteInscricaoDto: o exemplo não carrega nenhum número de documento")]
@@ -100,6 +112,7 @@ public sealed class InscricaoContratoProvisorioTests
             FusoHorario: FusoHorarioDto.Institucional,
             HashIntegridade: "sha256-def",
             OfertaCursoId: Guid.Parse("0199e000-0000-7000-8000-000000000001"),
+            OfertaCursoSegundaOpcaoId: null,
             Respostas: new Dictionary<string, JsonElement>(StringComparer.Ordinal)
             {
                 ["NOME_SOCIAL"] = JsonSerializer.SerializeToElement("Ana"),
@@ -107,7 +120,8 @@ public sealed class InscricaoContratoProvisorioTests
             Derivados: new Dictionary<string, JsonElement>(StringComparer.Ordinal),
             Grupos: new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>(StringComparer.Ordinal),
             Aceites: [new AceiteDeTermoInput("TERMO_VERACIDADE", Guid.Parse("0199e000-0000-7000-8000-000000000002"), "sha256-abc")],
-            Modalidades: [new ModalidadeDaInscricaoDto("AC", "Ampla concorrência", 0)]);
+            Modalidades: [new ModalidadeDaInscricaoDto("AC", "Ampla concorrência", 0)],
+            ModalidadesSegundaOpcao: null);
 
         JsonNode json = JsonSerializer.SerializeToNode(dto, Opcoes)!;
 

@@ -45,7 +45,7 @@ public sealed class ObterComprovanteQueryHandlerTests
             Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal) { ["APELIDO"] = JsonSerializer.SerializeToElement($"versao-{i}") };
             Result<ComprovanteInscricao> submetido = inscricao.Submeter(
                 $"0000000{i}",
-                null,
+                null, null,
                 respostas,
                 new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal),
                 [],

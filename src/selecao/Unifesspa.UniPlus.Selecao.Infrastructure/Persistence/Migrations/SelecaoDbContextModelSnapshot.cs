@@ -595,6 +595,11 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnName("modalidades")
                         .HasComment("As modalidades em que o candidato concorre nesta submissão, com o nome congelado e a ordem das ofertadas; nulo quando a versão não deriva a modalidade.");
 
+                    b.Property<string>("ModalidadesSegundaOpcao")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("modalidades_segunda_opcao")
+                        .HasComment("As modalidades em que o candidato concorre na 2ª opção, sobre a distribuição de vagas da oferta dela; nulo quando não há 2ª opção ou a versão não deriva a modalidade.");
+
                     b.Property<string>("NumeroInscricao")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -604,6 +609,11 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("OfertaCursoId")
                         .HasColumnType("uuid")
                         .HasColumnName("oferta_curso_id");
+
+                    b.Property<Guid?>("OfertaCursoSegundaOpcaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("oferta_curso_segunda_opcao_id")
+                        .HasComment("A oferta de curso da 2ª opção; nulo quando a inscrição não a declarou nesta submissão.");
 
                     b.Property<string>("Respostas")
                         .IsRequired()
@@ -3917,6 +3927,10 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("OfertaCursoId")
                         .HasColumnType("uuid")
                         .HasColumnName("oferta_curso_id");
+
+                    b.Property<Guid?>("OfertaCursoSegundaOpcaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("oferta_curso_segunda_opcao_id");
 
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")

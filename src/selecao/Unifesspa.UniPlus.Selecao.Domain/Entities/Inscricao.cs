@@ -58,7 +58,14 @@ public sealed class Inscricao : EntityBase
 
     public Guid VersaoFormularioId { get; private set; }
 
+    /// <summary>A oferta de curso da 1ª opção.</summary>
     public Guid? OfertaCursoId { get; private set; }
+
+    /// <summary>
+    /// A oferta de curso da 2ª opção; nula quando a inscrição não a declara. Só existe com a 1ª e só se a
+    /// versão fixada admite duas opções de curso.
+    /// </summary>
+    public Guid? OfertaCursoSegundaOpcaoId { get; private set; }
 
     /// <summary>Gerado na primeira submissão (sequência do banco, formatada); nulo em rascunho.</summary>
     public string? NumeroInscricao { get; private set; }
@@ -80,6 +87,7 @@ public sealed class Inscricao : EntityBase
         new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal);
 
     private const string CampoDaOferta = "ofertaCursoId";
+    private const string CampoDaSegundaOpcao = "ofertaCursoSegundaOpcaoId";
 
     private readonly List<ComprovanteInscricao> _comprovantes = [];
 
@@ -164,6 +172,7 @@ public sealed class Inscricao : EntityBase
         SituacaoInscricao situacao,
         Guid versaoFormularioId,
         Guid? ofertaCursoId,
+        Guid? ofertaCursoSegundaOpcaoId,
         string? numeroInscricao,
         IReadOnlyDictionary<string, JsonElement> respostas,
         IReadOnlyDictionary<string, JsonElement> derivados,
@@ -191,6 +200,7 @@ public sealed class Inscricao : EntityBase
             Situacao = situacao,
             VersaoFormularioId = versaoFormularioId,
             OfertaCursoId = ofertaCursoId,
+            OfertaCursoSegundaOpcaoId = ofertaCursoSegundaOpcaoId,
             NumeroInscricao = numeroInscricao,
             Respostas = respostas,
             Derivados = derivados,
@@ -297,6 +307,7 @@ public sealed class Inscricao : EntityBase
     /// </summary>
     public Result Salvar(
         Guid? ofertaCursoId,
+        Guid? ofertaCursoSegundaOpcaoId,
         IReadOnlyDictionary<string, JsonElement> respostas,
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
         IReadOnlyList<AceiteDeTermo> aceites,
@@ -325,7 +336,7 @@ public sealed class Inscricao : EntityBase
             .. RecusasDoNome(respostas, admitidas),
             .. RecusasDoNomeSocial(respostas, admitidas, aoEnviar: false),
             .. RecusasDoEndereco(respostas, admitidas),
-            .. RecusasDaOferta(ofertaCursoId, admitidas.OfertasDeCurso, exigida: false),
+            .. RecusasDasOpcoesDeCurso(ofertaCursoId, ofertaCursoSegundaOpcaoId, admitidas, aoEnviar: false),
             .. RecusasDosAceites(aceites, admitidas.Termos),
         ];
         if (recusas.Count > 0)
@@ -334,6 +345,7 @@ public sealed class Inscricao : EntityBase
         }
 
         OfertaCursoId = ofertaCursoId;
+        OfertaCursoSegundaOpcaoId = ofertaCursoSegundaOpcaoId;
         Respostas = NaFormaCanonica(MesclarPreservandoAusentes(Respostas, respostas), admitidas.Definicoes);
         Grupos = NaFormaCanonicaNosGrupos(SemValoresNulos(GruposAposMesclar(grupos)), admitidas.Definicoes);
         Aceites = aceites;
@@ -369,6 +381,7 @@ public sealed class Inscricao : EntityBase
     public Result<ComprovanteInscricao> Submeter(
         string numeroGeradoSeNecessario,
         Guid? ofertaCursoId,
+        Guid? ofertaCursoSegundaOpcaoId,
         IReadOnlyDictionary<string, JsonElement> respostas,
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
         IReadOnlyList<AceiteDeTermo> aceites,
@@ -401,8 +414,8 @@ public sealed class Inscricao : EntityBase
             .. RecusasDoNome(MesclarPreservandoAusentes(Respostas, respostas), admitidas),
             .. RecusasDoNomeSocial(MesclarPreservandoAusentes(Respostas, respostas), admitidas, aoEnviar: true),
             .. RecusasDoEndereco(MesclarPreservandoAusentes(Respostas, respostas), admitidas),
-            .. RecusasDaOferta(ofertaCursoId, admitidas.OfertasDeCurso, exigida: admitidas.OfertasDeCurso.Count > 0),
-            .. RecusasDaModalidade(avaliacao.Modalidades),
+            .. RecusasDasOpcoesDeCurso(ofertaCursoId, ofertaCursoSegundaOpcaoId, admitidas, aoEnviar: true),
+            .. RecusasDasModalidades(avaliacao, ofertaCursoId, ofertaCursoSegundaOpcaoId, admitidas),
             .. RecusasDosAceites(aceites, admitidas.Termos),
         ];
         if (recusas.Count > 0)
@@ -415,12 +428,21 @@ public sealed class Inscricao : EntityBase
         NumeroInscricao ??= numeroGeradoSeNecessario;
 
         OfertaCursoId = ofertaCursoId;
+        OfertaCursoSegundaOpcaoId = ofertaCursoSegundaOpcaoId;
         Dictionary<string, JsonElement> derivadosDoEnvio = MesclarPreservandoAusentes(new Dictionary<string, JsonElement>(StringComparer.Ordinal), derivados);
         Dictionary<string, DefinicaoDaResposta> definicoesDoEnvio = new(definicoesDosDerivados, StringComparer.Ordinal);
         if (modalidades.Derivada)
         {
             derivadosDoEnvio[AvaliacaoDaInscricao.FatoDaModalidade] = JsonSerializer.SerializeToElement(modalidades.Itens.Select(static m => m.Codigo));
             definicoesDoEnvio[AvaliacaoDaInscricao.FatoDaModalidade] = AvaliacaoDaInscricao.DefinicaoDaModalidade;
+        }
+
+        // A 2ª opção tem a própria distribuição de vagas, então as modalidades dela são gravadas à parte.
+        ModalidadesDeConcorrencia? modalidadesDaSegundaOpcao = ofertaCursoSegundaOpcaoId is null ? null : avaliacao.ModalidadesSegundaOpcao;
+        if (modalidadesDaSegundaOpcao is { Derivada: true })
+        {
+            derivadosDoEnvio[AvaliacaoDaInscricao.FatoDaModalidadeDaSegundaOpcao] = JsonSerializer.SerializeToElement(modalidadesDaSegundaOpcao.Itens.Select(static m => m.Codigo));
+            definicoesDoEnvio[AvaliacaoDaInscricao.FatoDaModalidadeDaSegundaOpcao] = AvaliacaoDaInscricao.DefinicaoDaModalidade;
         }
 
         Derivados = derivadosDoEnvio;
@@ -439,11 +461,13 @@ public sealed class Inscricao : EntityBase
         ComprovanteInscricao comprovante = ComprovanteInscricao.Emitir(
             Id, NumeroInscricao, instante, OfertaCursoId,
             SemCifraIndividual(SemNumerosDeDocumento(Respostas)),
-            SemNumerosDeDocumento(Derivados).Where(static d => d.Key != AvaliacaoDaInscricao.FatoDaModalidade)
+            SemNumerosDeDocumento(Derivados).Where(static d => d.Key is not (AvaliacaoDaInscricao.FatoDaModalidade or AvaliacaoDaInscricao.FatoDaModalidadeDaSegundaOpcao))
                 .ToDictionary(static d => d.Key, static d => d.Value, StringComparer.Ordinal),
             SemNumerosDeDocumentoNosGrupos(Grupos), Aceites,
             modalidades.Derivada ? modalidades.Itens : null,
-            ApenasCifraIndividual(SemNumerosDeDocumento(Respostas)));
+            ApenasCifraIndividual(SemNumerosDeDocumento(Respostas)),
+            OfertaCursoSegundaOpcaoId,
+            modalidadesDaSegundaOpcao is { Derivada: true } ? modalidadesDaSegundaOpcao.Itens : null);
         _comprovantes.Add(comprovante);
 
         AddDomainEvent(primeiraSubmissao
@@ -619,11 +643,33 @@ public sealed class Inscricao : EntityBase
     }
 
     /// <summary>
+    /// A modalidade de cada opção declarada tem de estar decidida e não vazia: a 2ª opção tem a própria
+    /// distribuição de vagas, e o candidato pode concorrer na 1ª e em nenhuma modalidade da 2ª. A 2ª opção
+    /// que a inscrição não pode ter (ver <see cref="RecusasDasOpcoesDeCurso"/>) não é avaliada: a recusa
+    /// dela já diz o que fazer.
+    /// </summary>
+    private static IEnumerable<FieldError> RecusasDasModalidades(
+        ResultadoDaAvaliacaoDaInscricao avaliacao, Guid? ofertaCursoId, Guid? ofertaCursoSegundaOpcaoId, RespostasAdmitidas admitidas)
+    {
+        if (avaliacao.ModalidadesSegundaOpcao is not { } daSegunda
+            || !SegundaOpcaoAdmissivel(ofertaCursoId, ofertaCursoSegundaOpcaoId, admitidas))
+        {
+            return RecusasDaModalidade(avaliacao.Modalidades, opcao: OpcaoDeCurso.Unica);
+        }
+
+        // A pendência da 2ª opção costuma ser a mesma da 1ª: cada campo é pedido uma vez.
+        return RecusasDaModalidade(avaliacao.Modalidades, OpcaoDeCurso.Primeira)
+            .Concat(RecusasDaModalidade(daSegunda, OpcaoDeCurso.Segunda))
+            .Distinct();
+    }
+
+    /// <summary>
     /// Com a modalidade derivada, o envio exige que ela esteja decidida e não vazia. A recusa sai em
     /// cada campo de que a modalidade depende, para o candidato conferir as respostas; a modalidade que
-    /// falta decidir sai nos campos que faltam responder.
+    /// falta decidir sai nos campos que faltam responder. Na 2ª opção, quem não concorre a nenhuma
+    /// modalidade pode também trocar ou retirar a opção, então a recusa sai nela.
     /// </summary>
-    private static IEnumerable<FieldError> RecusasDaModalidade(ModalidadesDeConcorrencia modalidades)
+    private static IEnumerable<FieldError> RecusasDaModalidade(ModalidadesDeConcorrencia modalidades, OpcaoDeCurso opcao)
     {
         if (!modalidades.Derivada || modalidades.Situacao == SituacaoDasModalidades.Concorre)
         {
@@ -632,24 +678,50 @@ public sealed class Inscricao : EntityBase
 
         if (modalidades.Situacao == SituacaoDasModalidades.NaoConcorre)
         {
-            DomainError nenhuma = new(
-                InscricaoErrorCodes.NenhumaModalidade,
-                "Com estas respostas, você não concorre a nenhuma das modalidades ofertadas neste processo seletivo. "
-                + "Confira as respostas indicadas. Se as respostas estão corretas, você não atende às condições de nenhuma "
-                + "modalidade deste processo; consulte o edital.");
-            return CamposOuAModalidade([.. modalidades.Dependencias.Fatos.Where(static f => !f.Contains('.', StringComparison.Ordinal)), .. modalidades.Dependencias.Grupos])
+            if (opcao == OpcaoDeCurso.Segunda)
+            {
+                return
+                [
+                    new FieldError(CampoDaSegundaOpcao, new DomainError(
+                        InscricaoErrorCodes.NenhumaModalidade,
+                        "Com estas respostas, você não concorre a nenhuma das modalidades ofertadas na 2ª opção de curso. "
+                        + "Escolha outra oferta ou retire a 2ª opção e envie de novo.")),
+                ];
+            }
+
+            DomainError nenhuma = opcao == OpcaoDeCurso.Primeira
+                ? new(
+                    InscricaoErrorCodes.NenhumaModalidade,
+                    "Com estas respostas, você não concorre a nenhuma das modalidades ofertadas na 1ª opção de curso. "
+                    + "Confira as respostas indicadas. Se as respostas estão corretas, escolha outra oferta como 1ª opção "
+                    + "ou consulte o edital.")
+                : new(
+                    InscricaoErrorCodes.NenhumaModalidade,
+                    "Com estas respostas, você não concorre a nenhuma das modalidades ofertadas neste processo seletivo. "
+                    + "Confira as respostas indicadas. Se as respostas estão corretas, você não atende às condições de nenhuma "
+                    + "modalidade deste processo; consulte o edital.");
+            return CamposOuAModalidade([.. modalidades.Dependencias.Fatos.Where(static f => !f.Contains('.', StringComparison.Ordinal)), .. modalidades.Dependencias.Grupos], segundaOpcao: false)
                 .Select(campo => new FieldError(campo, nenhuma));
         }
 
         DomainError naoDecidida = new(
             InscricaoErrorCodes.ModalidadeNaoDecidida,
             "Ainda não é possível saber em quais modalidades você concorre. Responda os campos indicados e envie de novo.");
-        return CamposOuAModalidade([.. modalidades.Pendencias.Select(static p => p.FatoCodigo)])
+        return CamposOuAModalidade([.. modalidades.Pendencias.Select(static p => p.FatoCodigo)], opcao == OpcaoDeCurso.Segunda)
             .Select(campo => new FieldError(campo, naoDecidida));
     }
 
-    private static IReadOnlyList<string> CamposOuAModalidade(IReadOnlyList<string> campos) =>
-        campos.Count > 0 ? campos : [AvaliacaoDaInscricao.FatoDaModalidade];
+    /// <summary>A opção de curso a que a recusa de modalidade se refere: a única, quando a inscrição não tem 2ª, ou a 1ª ou a 2ª.</summary>
+    private enum OpcaoDeCurso
+    {
+        Unica,
+        Primeira,
+        Segunda,
+    }
+
+    /// <summary>Sem campo a indicar, a recusa sai na modalidade da opção: o fato <c>MODALIDADE</c> é o da 1ª, e a 2ª opção sai no campo dela.</summary>
+    private static IReadOnlyList<string> CamposOuAModalidade(IReadOnlyList<string> campos, bool segundaOpcao) =>
+        campos.Count > 0 ? campos : [segundaOpcao ? CampoDaSegundaOpcao : AvaliacaoDaInscricao.FatoDaModalidade];
 
     /// <summary>
     /// O endereço só vale com CEP (UNI-REQ do endereço da inscrição): sem ele, o candidato digitaria qualquer
@@ -798,18 +870,73 @@ public sealed class Inscricao : EntityBase
         string.Join(' ', (nome ?? string.Empty).Normalize(System.Text.NormalizationForm.FormC)
             .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 
-    private static IEnumerable<FieldError> RecusasDaOferta(Guid? oferta, IReadOnlySet<Guid> ofertasDeCurso, bool exigida)
+    /// <summary>
+    /// As recusas das opções de curso, acumuladas. A 1ª opção tem de ser oferta do processo e, no envio,
+    /// existir quando o processo tem ofertas. A 2ª é opcional: só vale se a versão fixada admite duas
+    /// opções, e então tem de ser oferta do processo e diferente da 1ª — e, no envio, ter a 1ª. Sem
+    /// admissão, a única recusa da 2ª é a de não ser admitida: retirá-la resolve o resto.
+    /// </summary>
+    private static IEnumerable<FieldError> RecusasDasOpcoesDeCurso(
+        Guid? primeira, Guid? segunda, RespostasAdmitidas admitidas, bool aoEnviar)
     {
-        if (oferta is { } escolhida && !ofertasDeCurso.Contains(escolhida))
+        if (primeira is { } escolhida && !admitidas.OfertasDeCurso.Contains(escolhida))
         {
             yield return new FieldError(CampoDaOferta, new DomainError(
                 InscricaoErrorCodes.OfertaForaDoProcesso, "A oferta de curso escolhida não é deste processo seletivo."));
         }
-        else if (oferta is null && exigida)
+        else if (primeira is null && aoEnviar && admitidas.OfertasDeCurso.Count > 0)
         {
             yield return new FieldError(CampoDaOferta, new DomainError(
                 InscricaoErrorCodes.OfertaObrigatoria, "Escolha a oferta de curso para enviar a inscrição."));
         }
+
+        if (segunda is not { } outra)
+        {
+            yield break;
+        }
+
+        if (admitidas.NumeroDeOpcoesDeCurso < 2)
+        {
+            yield return new FieldError(CampoDaSegundaOpcao, new DomainError(
+                InscricaoErrorCodes.SegundaOpcaoNaoAdmitida,
+                "Este processo seletivo admite uma só opção de curso. Retire a 2ª opção."));
+            yield break;
+        }
+
+        if (outra == primeira)
+        {
+            yield return new FieldError(CampoDaSegundaOpcao, new DomainError(
+                InscricaoErrorCodes.SegundaOpcaoIgualAPrimeira,
+                "A 2ª opção de curso tem de ser diferente da 1ª."));
+        }
+
+        if (!admitidas.OfertasDeCurso.Contains(outra))
+        {
+            yield return new FieldError(CampoDaSegundaOpcao, new DomainError(
+                InscricaoErrorCodes.OfertaForaDoProcesso, "A oferta de curso escolhida não é deste processo seletivo."));
+        }
+
+        if (primeira is null && aoEnviar)
+        {
+            yield return new FieldError(CampoDaSegundaOpcao, new DomainError(
+                InscricaoErrorCodes.SegundaOpcaoSemPrimeira,
+                "Escolha a 1ª opção de curso antes da 2ª, ou retire a 2ª opção."));
+        }
+    }
+
+    /// <summary>
+    /// Se a 2ª opção declarada é uma que a inscrição pode ter: a 1ª é oferta do processo e a 2ª não sofre
+    /// nenhuma recusa de <see cref="RecusasDasOpcoesDeCurso"/>, que é a fonte única da regra. A avaliação
+    /// só lê as modalidades de uma 2ª opção que passa aqui.
+    /// </summary>
+    public static bool SegundaOpcaoAdmissivel(Guid? primeira, Guid? segunda, RespostasAdmitidas admitidas)
+    {
+        ArgumentNullException.ThrowIfNull(admitidas);
+
+        return segunda is not null
+            && primeira is { } escolhida
+            && admitidas.OfertasDeCurso.Contains(escolhida)
+            && !RecusasDasOpcoesDeCurso(primeira, segunda, admitidas, aoEnviar: false).Any(static r => r.Field == CampoDaSegundaOpcao);
     }
 
     /// <summary>

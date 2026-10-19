@@ -10638,6 +10638,16 @@
           },
           "documentos": {
             "$ref": "#/components/schemas/DocumentosDaInscricaoDto"
+          },
+          "modalidadesSegundaOpcao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ModalidadesDaInscricaoDto"
+              }
+            ]
           }
         }
       },
@@ -10667,6 +10677,13 @@
             }
           },
           "ofertaCursoId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "ofertaCursoSegundaOpcaoId": {
             "type": [
               "null",
               "string"
@@ -11200,11 +11217,13 @@
           "fusoHorario",
           "hashIntegridade",
           "ofertaCursoId",
+          "ofertaCursoSegundaOpcaoId",
           "respostas",
           "derivados",
           "grupos",
           "aceites",
-          "modalidades"
+          "modalidades",
+          "modalidadesSegundaOpcao"
         ],
         "type": "object",
         "properties": {
@@ -11225,6 +11244,13 @@
             "type": "string"
           },
           "ofertaCursoId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "ofertaCursoSegundaOpcaoId": {
             "type": [
               "null",
               "string"
@@ -11253,6 +11279,15 @@
             }
           },
           "modalidades": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ModalidadeDaInscricaoDto"
+            }
+          },
+          "modalidadesSegundaOpcao": {
             "type": [
               "null",
               "array"
@@ -15364,6 +15399,9 @@
           "numeroInscricao",
           "versaoFormularioId",
           "ofertaCursoId",
+          "ofertaCursoSegundaOpcaoId",
+          "numeroDeOpcoesDeCurso",
+          "ofertas",
           "respostas",
           "derivados",
           "grupos",
@@ -15400,6 +15438,27 @@
               "string"
             ],
             "format": "uuid"
+          },
+          "ofertaCursoSegundaOpcaoId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "numeroDeOpcoesDeCurso": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "ofertas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfertaDeCursoCertameDto"
+            }
           },
           "respostas": {
             "type": "object"
@@ -15472,6 +15531,13 @@
             "items": {
               "$ref": "#/components/schemas/AceiteDeTermoInput"
             }
+          },
+          "ofertaCursoSegundaOpcaoId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
