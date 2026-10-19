@@ -3617,12 +3617,12 @@
                   "  const j = pm.response.json();",
                   "  pm.expect(j.hashConfiguracao).to.be.a('string');",
                   "  pm.expect(j.configuracao).to.be.an('object');",
-                  "  // RN08 (Story #919): captura o hash desta 1ª leitura para a prova de",
+                  "  // Congelamento dos parâmetros na publicação, UNI-REQ-0019 (Story #919): captura o hash desta 1ª leitura para a prova de",
                   "  // estabilidade na 2ª leitura (request seguinte) — o mesmo snapshot vigente",
                   "  // tem de devolver, sempre, o mesmo hash.",
                   "  pm.environment.set('hash_configuracao_v1', j.hashConfiguracao);",
                   "});",
-                  "pm.test('bloco congelado tem as 8 exigências (7.3 + RN08 + cardinalidade + repetição) com os gatilhos corretos', () => {",
+                  "pm.test('bloco congelado tem as 8 exigências (7.3 + congelamento na publicação + cardinalidade + repetição) com os gatilhos corretos', () => {",
                   "  const j = pm.response.json();",
                   "  const exigencias = j.configuracao.documentosExigidos.exigencias;",
                   "  pm.expect(exigencias, '3 GERAL (nível de ensino + cardinalidade qualificada + repetição por entidade) + 5 CONDICIONAL').to.have.lengthOf(8);",
@@ -3725,7 +3725,7 @@
           ]
         },
         {
-          "name": "Obter Snapshot Vigente (2ª leitura — hash estável, RN08)",
+          "name": "Obter Snapshot Vigente (2ª leitura — hash estável, congelamento na publicação)",
           "request": {
             "method": "GET",
             "header": [
@@ -3766,7 +3766,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "// RN08 (Story #919): o snapshot vigente é o MESMO envelope já congelado — uma",
+                  "// Congelamento dos parâmetros na publicação, UNI-REQ-0019 (Story #919): o snapshot vigente é o MESMO envelope já congelado — uma",
                   "// segunda leitura, sem nenhuma mutação entre elas, tem de devolver o hash",
                   "// IDÊNTICO ao da 1ª leitura. Isso prova estabilidade end-to-end sem depender",
                   "// de mutar o catálogo vivo (FatoCandidato é seed-governado, append-only — não",
