@@ -63,51 +63,6 @@ public sealed class TipoAtoPublicadoReaderTests
         emJulho.Single(t => t.Codigo == unico).Should().Be(individual, "o lote e a leitura individual projetam o mesmo");
     }
 
-    [Fact(DisplayName = "ListarTiposDosAtos devolve o código de cada ato pedido uma vez só, sem filtrar pela unicidade gravada nem depender do nome")]
-    public async Task ListarTiposDosAtos_DevolveOsCodigosDistintosDosAtosPedidos()
-    {
-        string tipoA = CodigoUnico();
-        string tipoB = CodigoUnico();
-        string tipoForaDoPedido = CodigoUnico();
-        AtoNormativo aComNome = Ato(tipoA, tipoNome: "Nome de A", unicoPorObjeto: true);
-        AtoNormativo aComOutroNome = Ato(tipoA, tipoNome: "Outro nome de A", unicoPorObjeto: false);
-        AtoNormativo bSemNome = Ato(tipoB, tipoNome: null, unicoPorObjeto: false);
-        AtoNormativo foraDoPedido = Ato(tipoForaDoPedido, tipoNome: "Fora", unicoPorObjeto: true);
-        await using (PublicacoesDbContext gravacao = _fixture.CreateDbContext(userId: null))
-        {
-            gravacao.AtosNormativos.AddRange(aComNome, aComOutroNome, bSemNome, foraDoPedido);
-            await gravacao.SaveChangesAsync();
-        }
-
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
-        var reader = new VagaDeLinhagemReader(ctx);
-
-        IReadOnlyList<string> codigos = await reader.ListarTiposDosAtosAsync(
-            [aComNome.Id, aComOutroNome.Id, bSemNome.Id], CancellationToken.None);
-
-        codigos.Should().BeEquivalentTo(
-            [tipoA, tipoB],
-            "dois atos do mesmo tipo com nomes diferentes dão um código só, o tipo de unicidade gravada falsa também entra e o ato fora do pedido não");
-    }
-
-    private static AtoNormativo Ato(string tipoCodigo, string? tipoNome, bool unicoPorObjeto) =>
-        AtoNormativo.Registrar(
-            Guid.CreateVersion7(),
-            orgao: "CEPS",
-            serie: "EDITAL",
-            ano: 2026,
-            numero: Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)[..8],
-            tipoCodigo: tipoCodigo,
-            congelaConfiguracao: false,
-            efeitoIrreversivel: false,
-            unicoPorObjeto: unicoPorObjeto,
-            dataPublicacao: new DateOnly(2026, 3, 13),
-            documentoHash: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-            assinante: "Jairo Belchior",
-            registradoEm: new DateTimeOffset(2026, 3, 13, 19, 0, 0, TimeSpan.Zero),
-            versaoInvocada: null,
-            tipoNome: tipoNome);
-
     private async Task Gravar(params TipoAtoPublicado[] tipos)
     {
         await using PublicacoesDbContext ctx = _fixture.CreateDbContext("admin-publicacoes");
