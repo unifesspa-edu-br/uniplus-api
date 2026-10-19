@@ -185,6 +185,16 @@ public static class RetificarProcessoSeletivoCommandHandler
                 "O ato que esta retificação emendaria já foi retificado — a cadeia de atos é linear.")), []);
         }
 
+        // A versão nova é coerente sozinha, mas não pode desfazer o ciclo de recurso que um
+        // preliminar já publicado abriu e que o definitivo ainda não fechou.
+        Result cicloRecursal = await ConferenciaDoCicloRecursalAberto
+            .ConferirAsync(atoDoProcessoRepository, registroCodecs, processo, versaoAtual, cancellationToken)
+            .ConfigureAwait(false);
+        if (cicloRecursal.IsFailure)
+        {
+            return (cicloRecursal, []);
+        }
+
         // Normaliza o motivo UMA vez, aqui (Trim + NFC), e usa o mesmo valor
         // nos dois caminhos: o bloco 'retificacao' do snapshot e o
         // MotivoRetificacao do Edital. O canonicalizer aplica NormalizeNfc ao

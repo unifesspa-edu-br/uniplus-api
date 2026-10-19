@@ -36,6 +36,7 @@ public static class ProcessoSeletivoErrorCodes
     public const string ResultadoDeclaradoSemPapel = "ProcessoSeletivo.ResultadoDeclaradoSemPapel";
     public const string TipoQueCongelaDeclaradoComoResultado = "ProcessoSeletivo.TipoQueCongelaDeclaradoComoResultado";
     public const string ConclusaoDuplicada = "ProcessoSeletivo.ConclusaoDuplicada";
+    public const string RetificacaoDesfazCicloRecursalAberto = "ProcessoSeletivo.RetificacaoDesfazCicloRecursalAberto";
     public const string EtapaComPreliminarSemDefinitivo = "ProcessoSeletivo.EtapaComPreliminarSemDefinitivo";
     public const string RemanejamentoIncoerenteComANatureza = "ProcessoSeletivo.RemanejamentoIncoerenteComANatureza";
 }
