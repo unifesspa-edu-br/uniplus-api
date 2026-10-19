@@ -26,6 +26,7 @@ public sealed record ArgsRegraPrazoRecursoDto(
     UnidadePrazo PrazoUnidade,
     decimal? SuspensividadePrimeiraInstanciaValor,
     UnidadePrazo? SuspensividadePrimeiraInstanciaUnidade,
+    bool AdmiteInstanciaSuperior,
     decimal? SuspensividadeSegundaInstanciaValor,
     UnidadePrazo? SuspensividadeSegundaInstanciaUnidade);
 

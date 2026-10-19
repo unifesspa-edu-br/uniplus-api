@@ -293,6 +293,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
                     PrazoUnidade: UnidadePrazo.Horas,
                     SuspensividadePrimeiraInstanciaValor: null,
                     SuspensividadePrimeiraInstanciaUnidade: null,
+                    AdmiteInstanciaSuperior: false,
                     SuspensividadeSegundaInstanciaValor: null,
                     SuspensividadeSegundaInstanciaUnidade: null),
                 preliminar.Id).Value!).Value!;

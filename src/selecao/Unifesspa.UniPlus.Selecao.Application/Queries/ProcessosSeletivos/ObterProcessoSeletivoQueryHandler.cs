@@ -81,6 +81,7 @@ public static class ObterProcessoSeletivoQueryHandler
                         r.Args.PrazoUnidade,
                         r.Args.SuspensividadePrimeiraInstanciaValor,
                         r.Args.SuspensividadePrimeiraInstanciaUnidade,
+                        r.Args.AdmiteInstanciaSuperior,
                         r.Args.SuspensividadeSegundaInstanciaValor,
                         r.Args.SuspensividadeSegundaInstanciaUnidade),
                     r.ProdutoAncoraId,
@@ -490,6 +491,7 @@ public static class ObterProcessoSeletivoQueryHandler
             regraRecurso.Args.PrazoUnidade,
             regraRecurso.Args.SuspensividadePrimeiraInstanciaValor,
             regraRecurso.Args.SuspensividadePrimeiraInstanciaUnidade,
+            regraRecurso.Args.AdmiteInstanciaSuperior,
             regraRecurso.Args.SuspensividadeSegundaInstanciaValor,
             regraRecurso.Args.SuspensividadeSegundaInstanciaUnidade));
 }

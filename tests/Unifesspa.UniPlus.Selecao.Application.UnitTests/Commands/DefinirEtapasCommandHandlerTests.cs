@@ -369,7 +369,7 @@ public sealed class DefinirEtapasCommandHandlerTests
                     [
                         new RecursoDaEtapaInput(
                             AncoraDoRecurso.AtoPublicado, "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1",
-                            2m, UnidadePrazo.DiasUteis, "RESULTADO_CLASSIFICACAO", null, null, null, null),
+                            2m, UnidadePrazo.DiasUteis, "RESULTADO_CLASSIFICACAO", null, null, false, null, null),
                     ], Bancas: []),
             ],
             PrecondicaoIfMatch.Ausente);
@@ -382,6 +382,52 @@ public sealed class DefinirEtapasCommandHandlerTests
         result.Error!.Code.Should().Be(codigoEsperado);
         unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "A declaração de instância superior da janela chega à janela gravada, e não um valor fixo do handler")]
+    public async Task Handle_JanelaComInstanciaSuperior_GravaADeclaracao()
+    {
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+
+        Result<RegraCatalogo> regra = RegraCatalogo.Criar(
+            "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1", TipoRegra.RegraPrazoRecurso,
+            JsonDocument.Parse("{}").RootElement, JsonDocument.Parse("[]").RootElement,
+            "Lei 9.784/1999, art. 59");
+        IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
+        regraCatalogoReader.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(regra.Value!);
+
+        ITipoAtoPublicadoReader tipoAtoPublicadoReader = Substitute.For<ITipoAtoPublicadoReader>();
+        tipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView(
+                "RESULTADO_CLASSIFICACAO", "Resultado da classificação",
+                CongelaConfiguracao: false, UnicoPorObjeto: false,
+                EfeitoIrreversivel: false, EhResultado: true));
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+
+        DefinirEtapasCommand command = new(
+            processo.Id,
+            [
+                new EtapaProcessoInput(
+                    "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
+                    Produtos: [new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "PRELIMINAR"), new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "DEFINITIVO")],
+                    Recursos:
+                    [
+                        new RecursoDaEtapaInput(
+                            AncoraDoRecurso.AtoPublicado, "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1",
+                            2m, UnidadePrazo.DiasUteis, "RESULTADO_CLASSIFICACAO", null, null, true, null, null),
+                    ], Bancas: []),
+            ],
+            PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> result = await Executar(
+            command, repository, unitOfWork,
+            regraCatalogoReader: regraCatalogoReader, tipoAtoPublicadoReader: tipoAtoPublicadoReader);
+
+        result.IsSuccess.Should().BeTrue(result.Error?.Message);
+        processo.Etapas.Single().Recursos.Single().Args.AdmiteInstanciaSuperior.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Handle com processo inexistente retorna ProcessoSeletivo.NaoEncontrado")]
@@ -804,7 +850,7 @@ public sealed class DefinirEtapasCommandHandlerTests
                     [
                         new RecursoDaEtapaInput(
                             AncoraDoRecurso.AtoPublicado, "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1",
-                            2m, UnidadePrazo.DiasUteis, "RESULTADO_CLASSIFICACAO", null, null, null, null),
+                            2m, UnidadePrazo.DiasUteis, "RESULTADO_CLASSIFICACAO", null, null, false, null, null),
                     ], Bancas: []),
             ],
             PrecondicaoIfMatch.Ausente);
@@ -951,7 +997,7 @@ public sealed class DefinirEtapasCommandHandlerTests
                     [
                         new RecursoDaEtapaInput(
                             AncoraDoRecurso.AtoPublicado, "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1",
-                            2m, UnidadePrazo.DiasUteis, "RESULTADO_CLASSIFICACAO", null, null, null, null),
+                            2m, UnidadePrazo.DiasUteis, "RESULTADO_CLASSIFICACAO", null, null, false, null, null),
                     ], Bancas: []),
             ],
             PrecondicaoIfMatch.Ausente);

@@ -46,6 +46,7 @@ public sealed class FaseCronogramaTests
         PrazoUnidade: UnidadePrazo.Horas,
         SuspensividadePrimeiraInstanciaValor: null,
         SuspensividadePrimeiraInstanciaUnidade: null,
+        AdmiteInstanciaSuperior: false,
         SuspensividadeSegundaInstanciaValor: null,
         SuspensividadeSegundaInstanciaUnidade: null);
 

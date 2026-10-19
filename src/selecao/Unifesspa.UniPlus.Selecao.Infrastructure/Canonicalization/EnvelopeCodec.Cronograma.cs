@@ -284,7 +284,7 @@ public sealed partial class EnvelopeCodec
     }
 
     /// <summary>
-    /// Lê os args do prazo de recurso — prazo e os dois pares de suspensividade.
+    /// Lê os args do prazo de recurso — prazo, os dois pares de suspensividade e a declaração de instância superior.
     /// </summary>
     /// <remarks>
     /// Um lugar só porque fase e etapa carregam o MESMO value object, e enquanto cada uma lia o
@@ -301,6 +301,7 @@ public sealed partial class EnvelopeCodec
             argsObjeto, argsPath,
             "prazoValor", "prazoUnidade",
             "suspensividadePrimeiraInstanciaValor", "suspensividadePrimeiraInstanciaUnidade",
+            "admiteInstanciaSuperior",
             "suspensividadeSegundaInstanciaValor", "suspensividadeSegundaInstanciaUnidade");
 
         decimal prazoValor = leitor.Decimal(argsObjeto, "prazoValor", EscalaPadrao, argsPath, LimitesDoEnvelope.PrecisaoPrazo);
@@ -309,6 +310,7 @@ public sealed partial class EnvelopeCodec
             argsObjeto, "suspensividadePrimeiraInstanciaValor", EscalaPadrao, argsPath, LimitesDoEnvelope.PrecisaoPrazo);
         UnidadePrazo? suspensividade1Unidade = leitor.EnumeracaoOpcional<UnidadePrazo>(
             argsObjeto, "suspensividadePrimeiraInstanciaUnidade", argsPath);
+        bool admiteInstanciaSuperior = leitor.Booleano(argsObjeto, "admiteInstanciaSuperior", argsPath);
         decimal? suspensividade2Valor = leitor.DecimalOpcional(
             argsObjeto, "suspensividadeSegundaInstanciaValor", EscalaPadrao, argsPath, LimitesDoEnvelope.PrecisaoPrazo);
         UnidadePrazo? suspensividade2Unidade = leitor.EnumeracaoOpcional<UnidadePrazo>(
@@ -319,6 +321,7 @@ public sealed partial class EnvelopeCodec
             : new ArgsRegraPrazoRecurso(
                 prazoValor, prazoUnidade,
                 suspensividade1Valor, suspensividade1Unidade,
+                admiteInstanciaSuperior,
                 suspensividade2Valor, suspensividade2Unidade);
     }
 }

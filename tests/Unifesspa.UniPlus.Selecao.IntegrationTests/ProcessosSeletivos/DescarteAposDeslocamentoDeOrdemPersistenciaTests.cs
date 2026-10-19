@@ -471,6 +471,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
             PrazoUnidade: UnidadePrazo.Horas,
             SuspensividadePrimeiraInstanciaValor: null,
             SuspensividadePrimeiraInstanciaUnidade: null,
+            AdmiteInstanciaSuperior: false,
             SuspensividadeSegundaInstanciaValor: null,
             SuspensividadeSegundaInstanciaUnidade: null),
         produtoAncoraId).Value!;

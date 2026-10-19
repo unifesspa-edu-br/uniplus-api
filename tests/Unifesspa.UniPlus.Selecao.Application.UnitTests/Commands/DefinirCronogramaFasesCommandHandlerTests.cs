@@ -184,6 +184,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
             AtoAncoraCodigo: "RESULTADO_CLASSIFICACAO",
             SuspensividadePrimeiraInstanciaValor: null,
             SuspensividadePrimeiraInstanciaUnidade: null,
+            AdmiteInstanciaSuperior: false,
             SuspensividadeSegundaInstanciaValor: null,
             SuspensividadeSegundaInstanciaUnidade: null);
 
@@ -221,6 +222,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
             AtoAncoraCodigo: "RESULTADO_CLASSIFICACAO",
             SuspensividadePrimeiraInstanciaValor: null,
             SuspensividadePrimeiraInstanciaUnidade: null,
+            AdmiteInstanciaSuperior: false,
             SuspensividadeSegundaInstanciaValor: null,
             SuspensividadeSegundaInstanciaUnidade: null);
 
@@ -495,6 +497,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
                 AtoAncoraCodigo: "RESULTADO_CLASSIFICACAO",
                 SuspensividadePrimeiraInstanciaValor: null,
                 SuspensividadePrimeiraInstanciaUnidade: null,
+                AdmiteInstanciaSuperior: false,
                 SuspensividadeSegundaInstanciaValor: null,
                 SuspensividadeSegundaInstanciaUnidade: null),
         };
@@ -539,6 +542,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
                 AtoAncoraCodigo: "RESULTADO_CLASSIFICACAO",
                 SuspensividadePrimeiraInstanciaValor: null,
                 SuspensividadePrimeiraInstanciaUnidade: null,
+                AdmiteInstanciaSuperior: true,
                 SuspensividadeSegundaInstanciaValor: null,
                 SuspensividadeSegundaInstanciaUnidade: null),
         };
@@ -549,6 +553,8 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.CronogramaFases.Should().ContainSingle()
             .Which.Produtos.Should().HaveCount(2);
+        processo.CronogramaFases.Single().RegraRecurso!.Args.AdmiteInstanciaSuperior.Should().BeTrue(
+            "a declaração é da janela, e o handler a leva do payload, não a fixa");
     }
 
     [Fact(DisplayName = "CA-01: duas fases que publicam o MESMO tipo de ato ancoram cada uma no produto da sua própria fase")]
@@ -582,6 +588,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
             AtoAncoraCodigo: "RESULTADO_CLASSIFICACAO",
             SuspensividadePrimeiraInstanciaValor: null,
             SuspensividadePrimeiraInstanciaUnidade: null,
+            AdmiteInstanciaSuperior: false,
             SuspensividadeSegundaInstanciaValor: null,
             SuspensividadeSegundaInstanciaUnidade: null);
 
@@ -731,6 +738,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
                 AtoAncoraCodigo: "RESULTADO_CLASSIFICACAO",
                 SuspensividadePrimeiraInstanciaValor: null,
                 SuspensividadePrimeiraInstanciaUnidade: null,
+                AdmiteInstanciaSuperior: false,
                 SuspensividadeSegundaInstanciaValor: null,
                 SuspensividadeSegundaInstanciaUnidade: null),
         };

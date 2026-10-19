@@ -274,6 +274,7 @@ public sealed class ManifestoDoEnvelopeTests
             [
                 "PrazoValor", "PrazoUnidade",
                 "SuspensividadePrimeiraInstanciaValor", "SuspensividadePrimeiraInstanciaUnidade",
+                "AdmiteInstanciaSuperior",
                 "SuspensividadeSegundaInstanciaValor", "SuspensividadeSegundaInstanciaUnidade",
             ],
             []),

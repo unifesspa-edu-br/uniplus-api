@@ -267,6 +267,7 @@ internal static class CorpusEnvelope
                 new ArgsRegraPrazoRecurso(
                     3.0000m, UnidadePrazo.DiasUteis,
                     2.0000m, UnidadePrazo.DiasUteis,
+                    true,
                     1.0000m, UnidadePrazo.DiasUteis),
                 ProdutoDaObjetivaId(1, variante)).Value!,
             // Segunda janela ancorada em ato, num produto DIFERENTE do primeiro — é o par que a
@@ -282,13 +283,13 @@ internal static class CorpusEnvelope
                 // escrita nunca produziria.
                 new ArgsRegraPrazoRecurso(
                     5.0000m, UnidadePrazo.DiasUteis,
-                    null, null, null, null),
+                    null, null, false, null, null),
                 ProdutoDaObjetivaId(3, variante)).Value!,
             RecursoDaEtapa.Reidratar(
                 RecursoDaObjetivaId(3, variante),
                 AncoraDoRecurso.CienciaIndividual,
                 Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, '9'),
-                new ArgsRegraPrazoRecurso(48.0000m, UnidadePrazo.Horas, null, null, null, null),
+                new ArgsRegraPrazoRecurso(48.0000m, UnidadePrazo.Horas, null, null, false, null, null),
                 Guid.Empty).Value!,
         ]).IsSuccess.Should().BeTrue();
 
@@ -674,6 +675,7 @@ internal static class CorpusEnvelope
                 PrazoUnidade: UnidadePrazo.Horas,
                 SuspensividadePrimeiraInstanciaValor: 5.0000m,
                 SuspensividadePrimeiraInstanciaUnidade: UnidadePrazo.Dias,
+                AdmiteInstanciaSuperior: false,
                 SuspensividadeSegundaInstanciaValor: null,
                 SuspensividadeSegundaInstanciaUnidade: null),
             // Ancora no resultado preliminar, não no gabarito preliminar: os dois têm o

@@ -37,11 +37,13 @@ public sealed class RecursoDaEtapaTests
         decimal? susp1Valor = null,
         UnidadePrazo? susp1Unidade = null,
         decimal? susp2Valor = null,
-        UnidadePrazo? susp2Unidade = null) => new(
+        UnidadePrazo? susp2Unidade = null,
+        bool? admiteInstanciaSuperior = null) => new(
             PrazoValor: prazoValor,
             PrazoUnidade: prazoUnidade,
             SuspensividadePrimeiraInstanciaValor: susp1Valor,
             SuspensividadePrimeiraInstanciaUnidade: susp1Unidade,
+            AdmiteInstanciaSuperior: admiteInstanciaSuperior ?? (susp2Valor is not null || susp2Unidade is not null),
             SuspensividadeSegundaInstanciaValor: susp2Valor,
             SuspensividadeSegundaInstanciaUnidade: susp2Unidade);
 
@@ -206,4 +208,26 @@ public sealed class RecursoDaEtapaTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
+    [Theory(DisplayName = "Janela que não admite instância superior recusa tempo de bloqueio superior, completo ou pela metade")]
+    [InlineData(5, UnidadePrazo.DiasUteis)]
+    [InlineData(5, null)]
+    [InlineData(null, UnidadePrazo.Horas)]
+    public void SemInstanciaSuperior_ComBloqueioSuperior_Recusa(int? valor, UnidadePrazo? unidade)
+    {
+        Result<RecursoDaEtapa> resultado = Criar(
+            Args(susp2Valor: valor, susp2Unidade: unidade, admiteInstanciaSuperior: false));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("RecursoDaEtapa.SuspensividadeSuperiorSemInstanciaSuperior",
+            "remover o bloqueio resolve também o par pela metade, então esta é a recusa que orienta");
+    }
+
+    [Fact(DisplayName = "Janela que admite instância superior aceita o bloqueio superior ausente: existe, mas não bloqueia")]
+    public void ComInstanciaSuperior_SemBloqueioSuperior_Aceita()
+    {
+        Result<RecursoDaEtapa> resultado = Criar(Args(admiteInstanciaSuperior: true));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.Args.AdmiteInstanciaSuperior.Should().BeTrue();
+    }
 }

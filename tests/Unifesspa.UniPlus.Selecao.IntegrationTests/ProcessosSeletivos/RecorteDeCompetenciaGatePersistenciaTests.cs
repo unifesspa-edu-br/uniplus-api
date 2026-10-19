@@ -297,6 +297,7 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
                     PrazoUnidade: UnidadePrazo.Horas,
                     SuspensividadePrimeiraInstanciaValor: null,
                     SuspensividadePrimeiraInstanciaUnidade: null,
+                    AdmiteInstanciaSuperior: false,
                     SuspensividadeSegundaInstanciaValor: null,
                     SuspensividadeSegundaInstanciaUnidade: null),
                 preliminar.Id).Value!).Value!;

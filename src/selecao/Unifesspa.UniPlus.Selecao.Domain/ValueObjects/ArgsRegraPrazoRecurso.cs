@@ -27,13 +27,15 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <param name="PrazoUnidade">Unidade do prazo de interposição — só <see cref="UnidadePrazo.DiasUteis"/> e <see cref="UnidadePrazo.Horas"/> são declaráveis; <see cref="Entities.RegraRecursoFase.Criar"/> recusa dia corrido em runtime.</param>
 /// <param name="SuspensividadePrimeiraInstanciaValor">Magnitude da janela de suspensividade da 1ª instância, ou <see langword="null"/> — não bloqueia.</param>
 /// <param name="SuspensividadePrimeiraInstanciaUnidade">Unidade da suspensividade da 1ª instância.</param>
-/// <param name="SuspensividadeSegundaInstanciaValor">Magnitude da janela de suspensividade da instância superior, ou <see langword="null"/> — não bloqueia (caso normal do Ingresso via judicial).</param>
+/// <param name="AdmiteInstanciaSuperior">Se a janela admite recurso em instância superior. Obrigatória e sem valor padrão: quem configura decide, para que nenhum edital seja congelado sem dizer se o recurso termina na 1ª instância.</param>
+/// <param name="SuspensividadeSegundaInstanciaValor">Magnitude da janela de suspensividade da instância superior, ou <see langword="null"/> — não bloqueia (caso normal do Ingresso via judicial). Só pode ser declarada quando a janela admite instância superior.</param>
 /// <param name="SuspensividadeSegundaInstanciaUnidade">Unidade da suspensividade da instância superior.</param>
 public sealed record ArgsRegraPrazoRecurso(
     decimal PrazoValor,
     UnidadePrazo PrazoUnidade,
     decimal? SuspensividadePrimeiraInstanciaValor,
     UnidadePrazo? SuspensividadePrimeiraInstanciaUnidade,
+    bool AdmiteInstanciaSuperior,
     decimal? SuspensividadeSegundaInstanciaValor,
     UnidadePrazo? SuspensividadeSegundaInstanciaUnidade);
 
@@ -51,6 +53,7 @@ public enum MotivoDeRecusaDeArgs
     SuspensividadeNaoPositiva,
     SuspensividadeUnidadeNaoDeclaravel,
     SuspensividadeIncompleta,
+    SuspensividadeSuperiorSemInstanciaSuperior,
 }
 
 /// <summary>A recusa: o motivo, que vira código, e a mensagem já redigida.</summary>
@@ -140,6 +143,19 @@ public static class ValidacaoDeArgsDeRecurso
         if (primeira is not null)
         {
             return primeira;
+        }
+
+        // Janela sem instância superior não tem o que bloquear nela: um tempo de bloqueio
+        // declarado ali descreveria um recurso que o edital diz não existir. Vem antes da
+        // conferência do par superior porque tirar o par resolve também qualquer defeito dele.
+        // A ausência do par continua legítima quando a instância existe: lá ela quer dizer
+        // "existe, mas não bloqueia".
+        if (!args.AdmiteInstanciaSuperior
+            && (args.SuspensividadeSegundaInstanciaValor is not null || args.SuspensividadeSegundaInstanciaUnidade is not null))
+        {
+            return new(
+                MotivoDeRecusaDeArgs.SuspensividadeSuperiorSemInstanciaSuperior,
+                "A janela não admite recurso em instância superior, então não pode declarar tempo de bloqueio da instância superior. Remova o bloqueio ou declare que a janela admite instância superior.");
         }
 
         // A suspensividade admite as três unidades — dias corridos, que a interposição acabou

@@ -54,6 +54,7 @@ public sealed class GateDoCalendarioVigenteTests
             PrazoUnidade: unidade,
             SuspensividadePrimeiraInstanciaValor: null,
             SuspensividadePrimeiraInstanciaUnidade: null,
+            AdmiteInstanciaSuperior: false,
             SuspensividadeSegundaInstanciaValor: null,
             SuspensividadeSegundaInstanciaUnidade: null),
         ProdutoPreliminarId).Value!;

@@ -110,6 +110,7 @@ public sealed class RecursoDaEtapa : EntityBase
         MotivoDeRecusaDeArgs.SuspensividadeNaoPositiva => new("RecursoDaEtapa.SuspensividadeNaoPositiva", recusa.Mensagem),
         MotivoDeRecusaDeArgs.SuspensividadeUnidadeNaoDeclaravel => new("RecursoDaEtapa.SuspensividadeUnidadeNaoDeclaravel", recusa.Mensagem),
         MotivoDeRecusaDeArgs.SuspensividadeIncompleta => new("RecursoDaEtapa.SuspensividadeIncompleta", recusa.Mensagem),
+        MotivoDeRecusaDeArgs.SuspensividadeSuperiorSemInstanciaSuperior => new("RecursoDaEtapa.SuspensividadeSuperiorSemInstanciaSuperior", recusa.Mensagem),
         _ => throw new ArgumentOutOfRangeException(nameof(recusa), recusa.Motivo, "Motivo de recusa desconhecido."),
     };
 

@@ -219,7 +219,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         RecursoDaEtapa.Criar(
             ancora,
             ReferenciaRegra.Criar(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)).Value!,
-            new ArgsRegraPrazoRecurso(48m, UnidadePrazo.Horas, null, null, null, null),
+            new ArgsRegraPrazoRecurso(48m, UnidadePrazo.Horas, null, null, false, null, null),
             produtoAncoraId).Value!;
 
     [Fact(DisplayName = "Restaurar etapa de nota do ENEM sob classificação ENEM pela média ponderada é aceito")]
@@ -646,7 +646,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             bancasRequeridas: [],
             regraRecurso: RegraRecursoFase.Criar(
                 ReferenciaRegra.Criar(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)).Value!,
-                new ArgsRegraPrazoRecurso(3m, UnidadePrazo.DiasUteis, null, null, null, null),
+                new ArgsRegraPrazoRecurso(3m, UnidadePrazo.DiasUteis, null, null, false, null, null),
                 preliminar.Id).Value!).Value!;
 
         GrafoConfiguracao grafo = Grafo(cronogramaFases: [congelada]);

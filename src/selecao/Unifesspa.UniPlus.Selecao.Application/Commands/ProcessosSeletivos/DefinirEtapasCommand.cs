@@ -81,7 +81,9 @@ public sealed record BancaDaEtapaInput(Guid TipoBancaId);
 /// <summary>
 /// Uma janela recursal da etapa. <paramref name="AtoAncoraCodigo"/> só é lido na âncora de
 /// ato publicado: é por ele que Application resolve, dentro dos produtos da própria etapa,
-/// qual publicação abre a janela.
+/// qual publicação abre a janela. <paramref name="AdmiteInstanciaSuperior"/> é
+/// <c>[JsonRequired]</c> pela mesma razão das listas da etapa: o ausente virava <c>false</c> em
+/// silêncio, e a janela seria congelada sem instância superior sem que ninguém o tivesse decidido.
 /// </summary>
 public sealed record RecursoDaEtapaInput(
     AncoraDoRecurso Ancora,
@@ -92,6 +94,7 @@ public sealed record RecursoDaEtapaInput(
     string? AtoAncoraCodigo,
     decimal? SuspensividadePrimeiraInstanciaValor,
     UnidadePrazo? SuspensividadePrimeiraInstanciaUnidade,
+    [property: JsonRequired] bool AdmiteInstanciaSuperior,
     decimal? SuspensividadeSegundaInstanciaValor,
     UnidadePrazo? SuspensividadeSegundaInstanciaUnidade);
 
