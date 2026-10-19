@@ -229,7 +229,7 @@ public sealed class EnvelopeCodecRecusaTests
     /// <summary>
     /// O caso crítico é o <c>bonusRegional</c>: um leitor que só olhasse <c>presente</c>
     /// leria <c>{"presente":false,"fator":"1.2000",…}</c> como “sem bônus” e
-    /// <b>descartaria o bônus regional do certame</b> (RN05) sem deixar rastro. É o modo
+    /// <b>descartaria o bônus regional do certame</b> (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015) sem deixar rastro. É o modo
     /// de falha exato que esta story existe para tornar impossível.
     /// </summary>
     [Theory(DisplayName = "Chave desconhecida em QUALQUER nível é recusada — um leitor tolerante perde configuração em silêncio")]
@@ -307,7 +307,7 @@ public sealed class EnvelopeCodecRecusaTests
 
         resultado.IsFailure.Should().BeTrue(
             "um bônus 'ausente' que ainda carrega args é envelope contraditório. Lê-lo como 'sem bônus' descartaria " +
-            "o bônus regional (RN05) de um certame publicado, e ninguém veria.");
+            "o bônus regional (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015) de um certame publicado, e ninguém veria.");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
@@ -315,7 +315,7 @@ public sealed class EnvelopeCodecRecusaTests
     /// Mesmo raciocínio de <see cref="BonusPresenteFalsoComArgs_Recusa"/>, agora para a
     /// cascata (Story #575): um leitor que só olhasse <c>presente</c> leria
     /// <c>{"presente":false,"regra":{...},...}</c> como "sem cascata" e descartaria a
-    /// sequência legal de remanejamento (RN-CASCATA-1) de um certame publicado, sem
+    /// sequência legal de remanejamento (cascata de remanejamento de cotas, UNI-REQ-0056) de um certame publicado, sem
     /// deixar rastro — exatamente o modo de falha que <c>ExigirChaves</c> torna impossível.
     /// </summary>
     [Fact(DisplayName = "O caso crítico: {presente:false} com args de cascata é RECUSADO, não lido como 'sem cascata'")]
@@ -330,7 +330,7 @@ public sealed class EnvelopeCodecRecusaTests
 
         resultado.IsFailure.Should().BeTrue(
             "uma cascata 'ausente' que ainda carrega regra/fallback/ordens é envelope contraditório. Lê-la como " +
-            "'sem cascata' descartaria a sequência legal de remanejamento (RN-CASCATA-1) de um certame publicado, " +
+            "'sem cascata' descartaria a sequência legal de remanejamento (cascata de remanejamento de cotas, UNI-REQ-0056) de um certame publicado, " +
             "e ninguém veria.");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }

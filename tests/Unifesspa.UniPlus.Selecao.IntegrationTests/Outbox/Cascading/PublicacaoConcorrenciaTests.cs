@@ -41,7 +41,7 @@ public sealed class PublicacaoConcorrenciaTests
     }
 
     [Fact(DisplayName =
-        "DefinirEtapas concorrente com Publicar nunca deixa snapshot desatualizado com processo publicado (RN08/CA-04)")]
+        "DefinirEtapas concorrente com Publicar nunca deixa snapshot desatualizado com processo publicado (congelamento dos parâmetros na publicação, UNI-REQ-0019, CA-04)")]
     public async Task DefinirEtapasConcorrenteComPublicar_NuncaDeixaEstadoInconsistente()
     {
         CascadingApiFactory api = _fixture.Factory;
@@ -182,7 +182,7 @@ public sealed class PublicacaoConcorrenciaTests
     /// </para>
     /// </remarks>
     [Fact(DisplayName =
-        "DefinirCascataRemanejamento concorrente com Publicar nunca publica snapshot sem a cascata que a oferta federal exige (Story #575, RN08/CA-04)")]
+        "DefinirCascataRemanejamento concorrente com Publicar nunca publica snapshot sem a cascata que a oferta federal exige (Story #575, congelamento dos parâmetros na publicação, UNI-REQ-0019, CA-04)")]
     public async Task DefinirCascataRemanejamentoConcorrenteComPublicar_NuncaPublicaSnapshotSemCascata()
     {
         CascadingApiFactory api = _fixture.Factory;
@@ -306,7 +306,7 @@ public sealed class PublicacaoConcorrenciaTests
     /// <summary>
     /// A matriz legal completa (8×7), fallback AC, como <c>DestinoRemanejamentoInput</c> —
     /// mesma forma exigida pelo <c>esquema_args</c> congelado de <c>REMANEJ-CASCATA-LEI-12711
-    /// v1</c> (RN-CASCATA-5, validada pelo handler): cada origem lista as outras 7 federais,
+    /// v1</c> (cascata de remanejamento de cotas, UNI-REQ-0056, validada pelo handler): cada origem lista as outras 7 federais,
     /// na ordem de <see cref="ModalidadesFederaisLei12711.Codigos"/>.
     /// </summary>
     private static List<DestinoRemanejamentoInput> MatrizLegalCompletaComoInput()

@@ -259,7 +259,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
 
         (Guid processoId, Guid documentoId) = await SemearProcessoAsync(api, nameof(Publicar_ComTipoQueNaoCongela_Recusa422_SemEscrever));
 
-        // Publicar CONGELA a configuração numa nova versão (RN08). Um ato que declara não
+        // Publicar CONGELA a configuração numa nova versão (congelamento dos parâmetros na publicação, UNI-REQ-0019). Um ato que declara não
         // congelar não pode ser o criador dela — o ato diria uma coisa e a versão provaria
         // outra. E a incoerência não ficaria parada: a retificação seguinte, com um tipo
         // congelante, seria recusada por classe divergente e ficaria sem ato.

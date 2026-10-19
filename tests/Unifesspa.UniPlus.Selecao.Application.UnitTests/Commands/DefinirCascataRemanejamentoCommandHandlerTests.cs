@@ -20,10 +20,10 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura do <see cref="DefinirCascataRemanejamentoCommandHandler"/>
-/// (RN-CASCATA-4/5, Story #575): remoção por ausência total, recusa de
+/// (cascata de remanejamento de cotas, UNI-REQ-0056, Story #575): remoção por ausência total, recusa de
 /// presença parcial, resolução da regra no catálogo, e a ordem
-/// forma-antes-de-conteúdo — a factory (RN-CASCATA-4) roda antes da
-/// comparação célula a célula contra o <c>esquema_args</c> (RN-CASCATA-5),
+/// forma-antes-de-conteúdo — a factory (cascata de remanejamento de cotas, UNI-REQ-0056) roda antes da
+/// comparação célula a célula contra o <c>esquema_args</c> (cascata de remanejamento de cotas, UNI-REQ-0056),
 /// para que um erro de forma nunca seja mascarado por
 /// <c>MatrizDivergenteDaRegra</c>.
 /// </summary>
@@ -155,7 +155,7 @@ public sealed class DefinirCascataRemanejamentoCommandHandlerTests
         result.Error!.Code.Should().Be("ConfiguracaoCascataRemanejamento.RegraTipoInvalido");
     }
 
-    [Fact(DisplayName = "Handle com ordem inválida (RN-CASCATA-4) recusa pela factory, ANTES de comparar contra o esquema_args")]
+    [Fact(DisplayName = "Handle com ordem inválida (cascata de remanejamento de cotas, UNI-REQ-0056) recusa pela factory, ANTES de comparar contra o esquema_args")]
     public async Task Handle_OrdemInvalida_RecusaPelaFactoryAntesDoEsquemaArgs()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -163,7 +163,7 @@ public sealed class DefinirCascataRemanejamentoCommandHandlerTests
         mocks.RegraCatalogoReader.ObterAsync(RegraRemanejamentoCodigo.Cascata, "v1", Arg.Any<CancellationToken>())
             .Returns(RegraCascataValida());
 
-        // Ordem 0 é inválida na FORMA (RN-CASCATA-4) — mesmo que o resto da matriz
+        // Ordem 0 é inválida na FORMA (cascata de remanejamento de cotas, UNI-REQ-0056) — mesmo que o resto da matriz
         // divergisse do esquema_args também, o erro que deve aparecer é o de forma.
         DefinirCascataRemanejamentoCommand command = new(
             processo.Id, RegraRemanejamentoCodigo.Cascata, "v1", "AC",
@@ -184,7 +184,7 @@ public sealed class DefinirCascataRemanejamentoCommandHandlerTests
         mocks.RegraCatalogoReader.ObterAsync(RegraRemanejamentoCodigo.Cascata, "v1", Arg.Any<CancellationToken>())
             .Returns(RegraCascataValida());
 
-        // Forma válida (RN-CASCATA-4 passa), mas o fallback ("AMPLA", não "AC") diverge
+        // Forma válida (a forma da cascata de remanejamento de cotas, UNI-REQ-0056, passa), mas o fallback ("AMPLA", não "AC") diverge
         // do esquema_args congelado da regra.
         DefinirCascataRemanejamentoCommand command = new(
             processo.Id, RegraRemanejamentoCodigo.Cascata, "v1", "AMPLA",

@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Story #853 — CA-18 (paridade congelado × cadastro vivo) e CA-19 (o passado não muda,
-/// RN08), contra Postgres real (Testcontainers): a fonte é a MESMA usada pelo gate — repositório
+/// congelamento dos parâmetros na publicação, UNI-REQ-0019), contra Postgres real (Testcontainers): a fonte é a MESMA usada pelo gate — repositório
 /// real de <see cref="ObrigatoriedadeLegal"/> + <see cref="AvaliadorConformidadeLegal.Avaliar"/>.
 /// </summary>
 public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>
@@ -234,7 +234,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
         congeladoSet.Select(t => t.RegraId).Should().BeEquivalentTo([regraId1, regraId2]);
     }
 
-    [Fact(DisplayName = "CA-19 (RN08 — o passado não muda) — desativar a regra depois da publicação não altera o congelado nem o hash")]
+    [Fact(DisplayName = "CA-19 (congelamento dos parâmetros na publicação, UNI-REQ-0019 — o passado não muda) — desativar a regra depois da publicação não altera o congelado nem o hash")]
     public async Task DesativarRegraAposPublicacao_NaoAlteraOCongeladoNemOHash()
     {
         await SemearRegraVigenteAsync(UniqueRegraCodigo());
@@ -266,7 +266,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
             .AsNoTracking().FirstAsync(v => v.Id == snapshotId, CancellationToken.None);
 
         versaoDepois.ConfiguracaoCongelada.Should().Be(configuracaoAntes,
-            "RN08 — o passado não muda: desativar a obrigatoriedade depois da publicação não altera o snapshot já congelado");
+            "Congelamento (UNI-REQ-0019) — o passado não muda: desativar a obrigatoriedade depois da publicação não altera o snapshot já congelado");
         versaoDepois.HashConfiguracao.Should().Be(hashAntes,
             "o hash é derivado dos bytes canônicos — se o conteúdo não muda, o hash não muda");
     }

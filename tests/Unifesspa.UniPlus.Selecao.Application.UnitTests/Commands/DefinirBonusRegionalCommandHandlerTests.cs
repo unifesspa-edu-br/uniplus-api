@@ -70,7 +70,7 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
         result.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
     }
 
-    [Fact(DisplayName = "Handle declarando que não aplica o bônus remove a configuração, declara e persiste (RN05)")]
+    [Fact(DisplayName = "Handle declarando que não aplica o bônus remove a configuração, declara e persiste (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015)")]
     public async Task Handle_NaoAplica_RemoveBonusEDeclara()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
@@ -255,7 +255,7 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
     }
 
     /// <summary>
-    /// Monta um processo minimamente conforme e já publicado (CA-07 + RN08) —
+    /// Monta um processo minimamente conforme e já publicado (CA-07 + congelamento dos parâmetros na publicação, UNI-REQ-0019) —
     /// mesmo par exigido pelo gate de conformidade de
     /// <see cref="ProcessoSeletivo.Publicar"/>, replicado aqui para exercitar
     /// o bloqueio de mutação pós-publicação (CA-04) no handler.

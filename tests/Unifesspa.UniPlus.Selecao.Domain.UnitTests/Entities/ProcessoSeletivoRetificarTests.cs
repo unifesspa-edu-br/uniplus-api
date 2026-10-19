@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Cobertura de <see cref="ProcessoSeletivo.Retificar"/> (RN08, ADR-0101/0103/0104):
+/// Cobertura de <see cref="ProcessoSeletivo.Retificar"/> (congelamento dos parâmetros na publicação, UNI-REQ-0019, ADR-0101/0103/0104):
 /// a retificação é uma <b>relação entre atos</b>, não um tipo — o novo ato emenda o
 /// ato criador da versão corrente, sucede-a na cadeia linear e exige motivo; a versão
 /// anterior fica intocada e o status permanece Publicado.
@@ -422,7 +422,7 @@ public sealed class ProcessoSeletivoRetificarTests
             composicaoOrigemCodigo: null, regraRemanejamento: RegraRemanejamentoModalidade.SegueCascata,
             remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
             regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.CotaReservada), acaoQuandoIndeferido: "RECLASSIFICA_AC", baseLegal: "Lei 12.711/2012", quantidadeDeclarada: null).Value!;
-        // As demais 7 modalidades federais (Story #575, RN-CASCATA-2b) — SegueCascata só é
+        // As demais 7 modalidades federais (Story #575, cascata de remanejamento de cotas, UNI-REQ-0056) — SegueCascata só é
         // válida no regime federal completo, com cascata legal por trás.
         List<ModalidadeSelecionada> demaisFederais =
         [

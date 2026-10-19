@@ -155,7 +155,7 @@ internal static class FronteiraAppendOnlyDoRol
             0, "sem o hash não há prova de conteúdo, e a fronteira do append-only é sobre conteúdo");
 
         (await ContarAsync(context, ContaReferenciasReais, predicado, amostra: null)).Should().Be(
-            0, "alterar ou remover entrada já congelada por configuração violaria o append-only (RN08)");
+            0, "alterar ou remover entrada já congelada por configuração violaria o append-only (congelamento dos parâmetros na publicação, UNI-REQ-0019)");
 
         // Varredura mais larga sobre os dados reais: qualquer menção ao código
         // com FORMA de referência, ainda que incompleta. O predicado exato acima

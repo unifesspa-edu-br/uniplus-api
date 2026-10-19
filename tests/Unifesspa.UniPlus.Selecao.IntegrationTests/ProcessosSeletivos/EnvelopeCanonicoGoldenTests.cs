@@ -316,7 +316,7 @@ public sealed class EnvelopeCanonicoGoldenTests
 
     /// <summary>
     /// Metadado dos fatos citados na condição de gatilho de <see cref="DocumentoExigidoDeReferencia"/>
-    /// (Story #919, RN08) — exercita <c>metadadosFatos</c> com DOIS itens reais na golden fixture.
+    /// (Story #919, congelamento dos parâmetros na publicação, UNI-REQ-0019) — exercita <c>metadadosFatos</c> com DOIS itens reais na golden fixture.
     /// MODALIDADE é derivado e de escopo-processo (ADR-0116): seus valores vêm da oferta congelada,
     /// então <c>valoresDominio</c> e <c>valoresDominioDeclarados</c> são nulos. COR_RACA é categórico
     /// ESTÁTICO: <c>valoresDominioDeclarados</c> é populado — a variante que, sem este fato no

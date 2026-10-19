@@ -264,7 +264,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     }
 
     // ══════════════════════════════════════════════════════════════════════════════════════
-    // PendenciaDaCascata — cinco razões (RN-CASCATA-1/2/2b/3)
+    // PendenciaDaCascata — cinco razões (cascata de remanejamento de cotas, UNI-REQ-0056)
     // ══════════════════════════════════════════════════════════════════════════════════════
 
     private static ReferenciaRegra RegraLei12711() => Regra(RegraDistribuicaoVagasCodigo.Lei12711, 'f');

@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// (<see cref="HashCanonicalComputer.ComputeRegraCatalogo"/>): determinismo,
 /// independência da ordem das chaves do jsonb e sensibilidade a mudança de
 /// definição — as propriedades que sustentam a reprodutibilidade do freeze
-/// (RN08).
+/// (congelamento dos parâmetros na publicação, UNI-REQ-0019).
 /// </summary>
 public sealed class HashCanonicalComputerRegraCatalogoTests
 {
@@ -29,13 +29,13 @@ public sealed class HashCanonicalComputerRegraCatalogoTests
             "BONUS-MULTIPLICATIVO", "v1", TipoRegra.RegraBonus,
             Json("""{"fator":"numeric","teto":"numeric|null"}"""),
             Json("""["nota_final × fator, após os pesos"]"""),
-            "RN05");
+            "Lei 14.723/2023 art.2º");
 
         string h2 = HashCanonicalComputer.ComputeRegraCatalogo(
             "BONUS-MULTIPLICATIVO", "v1", TipoRegra.RegraBonus,
             Json("""{"fator":"numeric","teto":"numeric|null"}"""),
             Json("""["nota_final × fator, após os pesos"]"""),
-            "RN05");
+            "Lei 14.723/2023 art.2º");
 
         h1.Should().Be(h2);
         HashCanonicalComputer.IsValidHashShape(h1).Should().BeTrue();

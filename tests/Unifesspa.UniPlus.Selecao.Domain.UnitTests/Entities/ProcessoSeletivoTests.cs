@@ -367,7 +367,7 @@ public sealed class ProcessoSeletivoTests
     private static ReferenciaRegra RegraDesempate(string codigo) =>
         ReferenciaRegra.Criar(codigo, "v1", new string('a', 64)).Value!;
 
-    [Fact(DisplayName = "DefinirBonusRegional declara que aplica e depois que não aplica, removendo a configuração (RN05)")]
+    [Fact(DisplayName = "DefinirBonusRegional declara que aplica e depois que não aplica, removendo a configuração (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015)")]
     public void DefinirBonusRegional_DefineERemove()
     {
         ProcessoSeletivo processo = NovoProcesso();

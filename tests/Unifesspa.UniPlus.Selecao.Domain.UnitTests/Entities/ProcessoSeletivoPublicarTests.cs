@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Cobertura de <see cref="ProcessoSeletivo.Publicar"/> (RN08, Story #759 T4
+/// Cobertura de <see cref="ProcessoSeletivo.Publicar"/> (congelamento dos parâmetros na publicação, UNI-REQ-0019, Story #759 T4
 /// #785) — gate de conformidade, transição atômica, congelamento da
 /// <see cref="VersaoConfiguracao"/> e bloqueio de mutação pós-publicação
 /// (CA-04). Mapa de testes de #759: <c>Lifecycle_TransicaoInvalidaRecusada</c>,
@@ -669,7 +669,7 @@ public sealed class ProcessoSeletivoPublicarTests
     /// <summary>
     /// A matriz legal 8×7 completa, fallback AC (Story #575) — usada por
     /// <see cref="NovoProcessoComModalidade"/> sempre que a modalidade do chamador é
-    /// <see cref="NaturezaLegalModalidade.CotaReservada"/>: desde a #575, RN-CASCATA-2b
+    /// <see cref="NaturezaLegalModalidade.CotaReservada"/>: desde a #575, a cascata de remanejamento de cotas (UNI-REQ-0056)
     /// recusa <c>SegueCascata</c> fora do regime federal, então uma cota reservada só
     /// publica com uma cascata legítima por trás.
     /// </summary>
@@ -698,7 +698,7 @@ public sealed class ProcessoSeletivoPublicarTests
     /// Quando a modalidade do chamador é <see cref="NaturezaLegalModalidade.CotaReservada"/>
     /// (sempre <c>SegueCascata</c>, invariante de <c>ModalidadeSelecionada.Criar</c>), a oferta
     /// precisa ser Lei 12.711 completa (as 8 federais + AC, demografia, regra de ajuste) com
-    /// uma cascata legal por trás — RN-CASCATA-2b (Story #575) recusa <c>SegueCascata</c> fora
+    /// uma cascata legal por trás — a cascata de remanejamento de cotas (UNI-REQ-0056, Story #575) recusa <c>SegueCascata</c> fora
     /// do regime federal. As demais naturezas (ampla, suplementar) continuam no ramo
     /// institucional simples de antes, com a única modalidade do chamador.
     /// </remarks>
@@ -905,7 +905,7 @@ public sealed class ProcessoSeletivoPublicarTests
         processo.DefinirDocumentosExigidos(
             [NoExigencia.CriarFolha(ExigenciaGeralComConsequencia(faseId, "COMPROVANTE_RESIDENCIA_CONVENIO", "Comprovante de residência no município do convênio", "BONUS_REGIONAL", "REMOVE_VANTAGEM"), 0).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        // O processo declara que não aplica o bônus regional (RN05): sem configuração do bônus
+        // O processo declara que não aplica o bônus regional (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015): sem configuração do bônus
         // não há "vantagem viva" para a consequência REMOVE_VANTAGEM remover.
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(

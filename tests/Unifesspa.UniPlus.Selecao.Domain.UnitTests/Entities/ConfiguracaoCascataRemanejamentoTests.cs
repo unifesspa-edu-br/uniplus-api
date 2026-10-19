@@ -9,10 +9,10 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Cobertura de <see cref="ConfiguracaoCascataRemanejamento.Criar"/> e
-/// <see cref="DestinoRemanejamento.Criar"/> (RN-CASCATA-4, Story #575) — a
+/// <see cref="DestinoRemanejamento.Criar"/> (cascata de remanejamento de cotas, UNI-REQ-0056, Story #575) — a
 /// forma da cascata: ordens únicas/contíguas a partir de 1 por origem,
 /// destinos sem repetição, origem nunca é destino de si mesma, limites de
-/// tamanho e formato dos códigos. RN-CASCATA-5 (regra tipada e conteúdo
+/// tamanho e formato dos códigos. O vínculo com a regra versionada da cascata de remanejamento de cotas (UNI-REQ-0056: regra tipada e conteúdo
 /// vinculado ao esquema_args) é responsabilidade do handler, coberta em
 /// <c>DefinirCascataRemanejamentoCommandHandlerTests</c>.
 /// </summary>

@@ -138,7 +138,7 @@ public sealed class ManifestoDoEnvelopeTests
             ["CodigoIbge", "Nome", "Uf"],
             []),
 
-        // Story #575 — a cascata de remanejamento das cotas federais (RN-CASCATA-1..5).
+        // Story #575 — a cascata de remanejamento das cotas federais (cascata de remanejamento de cotas, UNI-REQ-0056).
         [typeof(ConfiguracaoCascataRemanejamento)] = (
             ["Regra", "FallbackCodigo", "Destinos"],
             [("ProcessoSeletivoId", "FK interna.")]),
