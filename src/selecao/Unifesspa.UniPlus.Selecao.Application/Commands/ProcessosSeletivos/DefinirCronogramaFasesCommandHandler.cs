@@ -61,6 +61,7 @@ public static class DefinirCronogramaFasesCommandHandler
         IPrecedenciaFaseReader precedenciaFaseReader,
         IRegraCatalogoReader regraCatalogoReader,
         ITipoAtoPublicadoReader tipoAtoPublicadoReader,
+        IRegistroCodecsEnvelope registroCodecs,
         ISelecaoUnitOfWork unitOfWork,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
@@ -73,6 +74,7 @@ public static class DefinirCronogramaFasesCommandHandler
         ArgumentNullException.ThrowIfNull(precedenciaFaseReader);
         ArgumentNullException.ThrowIfNull(regraCatalogoReader);
         ArgumentNullException.ThrowIfNull(tipoAtoPublicadoReader);
+        ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
@@ -121,6 +123,10 @@ public static class DefinirCronogramaFasesCommandHandler
             return resolvido;
         }
 
+        // O tipo que a versão publicada já declara vale pela classificação congelada nela, como na
+        // retificação; o catálogo de hoje só vale para o tipo declarado pela primeira vez.
+        ClassificacaoDosTiposNaEdicao congelados = new(processoSeletivoRepository, registroCodecs, command.ProcessoSeletivoId);
+
         async Task<CategoriaDocumentoView?> ResolverCategoriaAsync(Guid categoriaId)
         {
             if (categoriasResolvidas.TryGetValue(categoriaId, out CategoriaDocumentoView? memoizada))
@@ -134,6 +140,15 @@ public static class DefinirCronogramaFasesCommandHandler
             categoriasResolvidas[categoriaId] = resolvida;
             return resolvida;
         }
+
+        // As âncoras que o cronograma já tinha antes desta gravação: o cliente devolve o que leu, e uma
+        // âncora que já estava no agregado não é revista pelo que o catálogo diz hoje do ato.
+        HashSet<(string Fase, string Ato)> ancorasJaDeclaradas =
+        [
+            .. processo.CronogramaFases.SelectMany(fase => fase.Produtos
+                .Where(p => fase.RegraRecurso is { } regra && p.Id == regra.ProdutoAncoraId)
+                .Select(p => (fase.Codigo, p.AtoCodigo))),
+        ];
 
         List<FaseCronograma> fases = [];
         List<FieldError> recusasAcumuladas = [];
@@ -205,9 +220,9 @@ public static class DefinirCronogramaFasesCommandHandler
                 bancas.Add(BancaRequerida.Criar(tipoBanca.Id, tipoBanca.Codigo, recorte));
             }
 
-            // Os produtos da fase: cada código resolvido contra o catálogo vigente, e o
-            // papel aceito só onde o catálogo diz que o ato É resultado (ADR-0056 — a
-            // classificação é intrínseca ao tipo e nunca varia por edital). Os atributos que
+            // Os produtos da fase: cada código resolvido contra o catálogo vigente (ou contra a
+            // versão publicada, quando o tipo já foi declarado), e o papel aceito só onde o ato
+            // É resultado (ADR-0056 — a classificação é intrínseca ao tipo e nunca varia por edital). Os atributos que
             // decidem a âncora do recurso são LIDOS logo abaixo e descartados: eles evoluem
             // com o cadastro e não são copiados para a fase.
             List<ProdutoDaFase> produtos = [];
@@ -226,17 +241,34 @@ public static class DefinirCronogramaFasesCommandHandler
                     continue;
                 }
 
-                TipoAtoPublicadoView? tipoAto = await ResolverTipoDeAtoAsync(produtoInput.AtoCodigo).ConfigureAwait(false);
-                if (tipoAto is null)
+                Result<ClassificacaoDoTipoDeAto?> congelada = await congelados
+                    .DoTipoJaDeclaradoAsync(produtoInput.AtoCodigo, cancellationToken).ConfigureAwait(false);
+                if (congelada.IsFailure)
                 {
-                    recusasAcumuladas.Add(new($"{campo}.atoCodigo", new DomainError(
-                        "ProdutoDaFase.AtoNaoEncontradoNoCatalogo",
-                        $"O tipo de ato '{produtoInput.AtoCodigo}' não tem versão vigente no catálogo de Publicações na data de hoje.")));
-                    produtosIntegros = false;
-                    continue;
+                    return InterromperCom($"{campo}.atoCodigo", congelada.Error!);
                 }
 
-                if (papel is not null && !tipoAto.EhResultado)
+                ClassificacaoDoTipoDeAto classificacao;
+                if (congelada.Value is { } daVersao)
+                {
+                    classificacao = daVersao;
+                }
+                else
+                {
+                    TipoAtoPublicadoView? tipoAto = await ResolverTipoDeAtoAsync(produtoInput.AtoCodigo).ConfigureAwait(false);
+                    if (tipoAto is null)
+                    {
+                        recusasAcumuladas.Add(new($"{campo}.atoCodigo", new DomainError(
+                            "ProdutoDaFase.AtoNaoEncontradoNoCatalogo",
+                            $"O tipo de ato '{produtoInput.AtoCodigo}' não tem versão vigente no catálogo de Publicações na data de hoje.")));
+                        produtosIntegros = false;
+                        continue;
+                    }
+
+                    classificacao = ResolucaoDosTiposDeAtoUnicos.ClassificacaoDe(tipoAto);
+                }
+
+                if (papel is not null && !classificacao.EhResultado)
                 {
                     recusasAcumuladas.Add(new($"{campo}.papel", new DomainError(
                         "ProdutoDaFase.PapelEmAtoQueNaoEhResultado",
@@ -245,17 +277,16 @@ public static class DefinirCronogramaFasesCommandHandler
                     continue;
                 }
 
-                // O catálogo diz o que o tipo pode ser: o resultado sempre declara papel, e o tipo
-                // que congela a configuração não serve de item de resultado (UNI-REQ-0157).
-                if (ResolucaoDosTiposDeAtoUnicos.ClassificacaoDe(tipoAto)
-                        .ViolacaoDoProduto(tipoAto.Codigo, papel, $"na fase '{faseCanonica.Codigo}'") is { } violacaoDoProduto)
+                // O resultado sempre declara papel, e o tipo que congela a configuração não serve de
+                // item de resultado (UNI-REQ-0157).
+                if (classificacao.ViolacaoDoProduto(produtoInput.AtoCodigo, papel, $"na fase '{faseCanonica.Codigo}'") is { } violacaoDoProduto)
                 {
                     recusasAcumuladas.Add(new($"{campo}.papel", violacaoDoProduto));
                     produtosIntegros = false;
                     continue;
                 }
 
-                produtos.Add(ProdutoDaFase.Criar(tipoAto.Codigo, papel));
+                produtos.Add(ProdutoDaFase.Criar(produtoInput.AtoCodigo, papel));
             }
 
             RegraRecursoFase? regraRecurso = null;
@@ -322,23 +353,54 @@ public static class DefinirCronogramaFasesCommandHandler
                 }
 
                 // Item 3/4 do §3.6, resolvidos sobre o ato do produto âncora: ele NÃO
-                // congela configuração e NÃO tem efeito irreversível. A resolução do tipo já
-                // foi memoizada na varredura dos produtos, porque a âncora é um deles.
-                if (produtoAncora is not null
-                    && await ResolverTipoDeAtoAsync(produtoAncora.AtoCodigo).ConfigureAwait(false) is { } tipoAncora)
+                // congela configuração e NÃO tem efeito irreversível. Se o ato congela, vale a
+                // classificação congelada quando o tipo já foi declarado, e o catálogo só para o tipo
+                // novo. A irreversibilidade nunca é congelada e é sempre lida do catálogo, que a
+                // varredura dos produtos só memoizou quando o tipo acabou de ser resolvido por ele.
+                if (produtoAncora is not null)
                 {
-                    if (tipoAncora.CongelaConfiguracao)
+                    Result<ClassificacaoDoTipoDeAto?> ancoraCongelada = await congelados
+                        .DoTipoJaDeclaradoAsync(produtoAncora.AtoCodigo, cancellationToken).ConfigureAwait(false);
+                    if (ancoraCongelada.IsFailure)
+                    {
+                        return InterromperCom($"fases[{indice}].regraRecurso.atoAncoraCodigo", ancoraCongelada.Error!);
+                    }
+
+                    TipoAtoPublicadoView? tipoAncora = await ResolverTipoDeAtoAsync(produtoAncora.AtoCodigo).ConfigureAwait(false);
+
+                    // A irreversibilidade não é congelada: sem versão vigente no catálogo, ela é desconhecida,
+                    // e uma âncora nova não pode ser aceita sem conferi-la (UNI-REQ-0080). A âncora que a
+                    // versão publicada ou o agregado já tem segue valendo.
+                    if (tipoAncora is null && !ancorasJaDeclaradas.Contains((faseCanonica.Codigo, produtoAncora.AtoCodigo)))
+                    {
+                        Result<bool> ancoraJaPublicada = await congelados
+                            .AncoraDaFaseJaPublicadaAsync(faseCanonica.Codigo, produtoAncora.AtoCodigo, cancellationToken).ConfigureAwait(false);
+                        if (ancoraJaPublicada.IsFailure)
+                        {
+                            return InterromperCom($"fases[{indice}].regraRecurso.atoAncoraCodigo", ancoraJaPublicada.Error!);
+                        }
+
+                        if (!ancoraJaPublicada.Value)
+                        {
+                            return InterromperCom($"fases[{indice}].regraRecurso.atoAncoraCodigo", new DomainError(
+                                "ProdutoDaFase.AtoNaoEncontradoNoCatalogo",
+                                $"O tipo de ato '{produtoAncora.AtoCodigo}' não tem versão vigente no catálogo de Publicações na data de hoje, e a âncora nova precisa da irreversibilidade dele."));
+                        }
+                    }
+
+                    bool ancoraCongela = ancoraCongelada.Value?.CongelaConfiguracao ?? tipoAncora?.CongelaConfiguracao ?? false;
+                    if (ancoraCongela)
                     {
                         return InterromperCom($"fases[{indice}].regraRecurso.atoAncoraCodigo", new DomainError(
                             "RegraRecursoFase.AncoraEmAtoCongelante",
-                            $"O tipo de ato âncora '{tipoAncora.Codigo}' congela configuração — a âncora do recurso nunca é o ato que congela a configuração."));
+                            $"O tipo de ato âncora '{produtoAncora.AtoCodigo}' congela configuração — a âncora do recurso nunca é o ato que congela a configuração."));
                     }
 
                     // A irreversibilidade é resolvida do catálogo, não de cópia congelada na
                     // fase (UNI-REQ-0080): um ato que consome vaga escassa concede um direito
                     // que não se desfaz, e recurso contra ele não teria o que reverter. O
                     // recurso cabível é contra o resultado que fundamentou o ato.
-                    if (tipoAncora.EfeitoIrreversivel)
+                    if (tipoAncora?.EfeitoIrreversivel == true)
                     {
                         return InterromperCom($"fases[{indice}].regraRecurso.atoAncoraCodigo", new DomainError(
                             "RegraRecursoFase.AncoraEmAtoIrreversivel",
