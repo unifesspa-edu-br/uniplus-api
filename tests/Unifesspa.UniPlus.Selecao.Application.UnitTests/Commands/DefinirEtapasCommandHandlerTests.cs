@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -289,6 +290,256 @@ public sealed class DefinirEtapasCommandHandlerTests
         processo.Etapas.Single().Nome.Should().Be("Prova Objetiva — 1ª fase");
     }
 
+    [Fact(DisplayName = "Tipo já declarado na versão publicada vale pela classificação congelada: o catálogo que passou a congelar não recusa a etapa")]
+    public async Task Handle_TipoJaDeclaradoQueOCatalogoPassouACongelar_AceitaPelaClassificacaoCongelada()
+    {
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        IRegistroCodecsEnvelope codecs = Substitute.For<IRegistroCodecsEnvelope>();
+        VersaoPublicadaDeTeste.Publicar(
+            processo, repository, codecs,
+            new TipoDeAtoCongelado("RESULTADO_CLASSIFICACAO", UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false));
+        ITipoAtoPublicadoReader catalogo = Substitute.For<ITipoAtoPublicadoReader>();
+        catalogo.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(AtoDeResultado("RESULTADO_CLASSIFICACAO") with { CongelaConfiguracao = true });
+
+        Result<MutacaoAceita> resultado = await Executar(
+            ComUmProdutoDefinitivo(processo), repository, Substitute.For<ISelecaoUnitOfWork>(),
+            tipoAtoPublicadoReader: catalogo, registroCodecs: codecs);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "Tipo declarado pela primeira vez continua conferido pelo catálogo, mesmo com versão publicada")]
+    public async Task Handle_TipoNovoEmProcessoPublicado_ConfereOCatalogo()
+    {
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        IRegistroCodecsEnvelope codecs = Substitute.For<IRegistroCodecsEnvelope>();
+        VersaoPublicadaDeTeste.Publicar(
+            processo, repository, codecs,
+            new TipoDeAtoCongelado("OUTRO_ATO", UnicoPorObjeto: false, EhResultado: false, CongelaConfiguracao: false));
+        ITipoAtoPublicadoReader catalogo = Substitute.For<ITipoAtoPublicadoReader>();
+        catalogo.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(AtoDeResultado("RESULTADO_CLASSIFICACAO") with { CongelaConfiguracao = true });
+
+        Result<MutacaoAceita> resultado = await Executar(
+            ComUmProdutoDefinitivo(processo), repository, Substitute.For<ISelecaoUnitOfWork>(),
+            tipoAtoPublicadoReader: catalogo, registroCodecs: codecs);
+
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.TipoQueCongelaDeclaradoComoResultado");
+    }
+
+    [Fact(DisplayName = "Versão publicada que o codec não lê é recusada com a falha do codec, sem cair no catálogo")]
+    public async Task Handle_VersaoPublicadaIlegivel_RecusaComAFalhaDoCodec()
+    {
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        IRegistroCodecsEnvelope codecs = Substitute.For<IRegistroCodecsEnvelope>();
+        VersaoPublicadaDeTeste.PublicarIlegivel(
+            processo, repository, codecs, new DomainError("Envelope.CodecDesconhecido", "O codec não lê esta versão."));
+        ITipoAtoPublicadoReader catalogo = Substitute.For<ITipoAtoPublicadoReader>();
+        catalogo.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(AtoDeResultado("RESULTADO_CLASSIFICACAO"));
+
+        Result<MutacaoAceita> resultado = await Executar(
+            ComUmProdutoDefinitivo(processo), repository, Substitute.For<ISelecaoUnitOfWork>(),
+            tipoAtoPublicadoReader: catalogo, registroCodecs: codecs);
+
+        resultado.Error!.Code.Should().Be("Envelope.CodecDesconhecido");
+    }
+
+    [Theory(DisplayName = "Com o tipo fora do catálogo hoje, a âncora nova da etapa é recusada e a que o agregado já tinha segue aceita")]
+    [InlineData(false, "ProdutoDaEtapa.AtoNaoEncontradoNoCatalogo")]
+    [InlineData(true, null)]
+    public async Task Handle_AncoraEmTipoSemVersaoVigenteNoCatalogo_RecusaSoANovaEmRelacaoAoAgregado(bool ancoraJaNoAgregado, string? codigoEsperado)
+    {
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        IRegistroCodecsEnvelope codecs = Substitute.For<IRegistroCodecsEnvelope>();
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        Result<RegraCatalogo> regra = RegraCatalogo.Criar(
+            "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1", TipoRegra.RegraPrazoRecurso,
+            JsonDocument.Parse("{}").RootElement, JsonDocument.Parse("[]").RootElement, "Lei 9.784/1999, art. 59");
+        IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
+        regraCatalogoReader.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(regra.Value!);
+
+        EtapaProcessoInput Etapa(Guid? id, bool comAncora) => new(
+            "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, id,
+            Produtos:
+            [
+                new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "PRELIMINAR"),
+                new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "DEFINITIVO"),
+            ],
+            Bancas: [],
+            Recursos: comAncora
+                ? [new RecursoDaEtapaInput(
+                    AncoraDoRecurso.AtoPublicado, "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1",
+                    2m, UnidadePrazo.DiasUteis, "RESULTADO_CLASSIFICACAO", null, null, false, null, null)]
+                : []);
+
+        ITipoAtoPublicadoReader catalogoComOAto = Substitute.For<ITipoAtoPublicadoReader>();
+        catalogoComOAto.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(AtoDeResultado("RESULTADO_CLASSIFICACAO"));
+        Result<MutacaoAceita> declaracao = await Executar(
+            new DefinirEtapasCommand(processo.Id, [Etapa(null, ancoraJaNoAgregado)], PrecondicaoIfMatch.Ausente),
+            repository, unitOfWork, regraCatalogoReader: regraCatalogoReader, tipoAtoPublicadoReader: catalogoComOAto, registroCodecs: codecs);
+        declaracao.IsSuccess.Should().BeTrue(declaracao.Error?.Message);
+        Guid etapaId = processo.Etapas.Single().Id;
+        VersaoPublicadaDeTeste.Publicar(
+            processo, repository, codecs,
+            new TipoDeAtoCongelado("RESULTADO_CLASSIFICACAO", UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false));
+
+        // O catálogo deixa de ter versão vigente do tipo: a irreversibilidade dele passa a ser desconhecida.
+        ITipoAtoPublicadoReader catalogoSemOAto = Substitute.For<ITipoAtoPublicadoReader>();
+        catalogoSemOAto.ObterVigenteAsync(Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns((TipoAtoPublicadoView?)null);
+        Result<MutacaoAceita> resultado = await Executar(
+            new DefinirEtapasCommand(processo.Id, [Etapa(etapaId, true)], PrecondicaoIfMatch.Curinga),
+            repository, unitOfWork, regraCatalogoReader: regraCatalogoReader, tipoAtoPublicadoReader: catalogoSemOAto, registroCodecs: codecs);
+
+        if (codigoEsperado is null)
+        {
+            resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        }
+        else
+        {
+            resultado.Error!.Code.Should().Be(codigoEsperado);
+        }
+    }
+
+    [Fact(DisplayName = "A âncora que só a versão publicada tem segue aceita quando o catálogo perde o tipo e o agregado não a tem mais")]
+    public async Task Handle_AncoraSoNaVersaoPublicada_CatalogoSemOTipo_Aceita()
+    {
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        IRegistroCodecsEnvelope codecs = Substitute.For<IRegistroCodecsEnvelope>();
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        Result<RegraCatalogo> regra = RegraCatalogo.Criar(
+            "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1", TipoRegra.RegraPrazoRecurso,
+            JsonDocument.Parse("{}").RootElement, JsonDocument.Parse("[]").RootElement, "Lei 9.784/1999, art. 59");
+        IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
+        regraCatalogoReader.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(regra.Value!);
+
+        EtapaProcessoInput Etapa(Guid? id, bool comAncora) => new(
+            "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, id,
+            Produtos:
+            [
+                new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "PRELIMINAR"),
+                new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "DEFINITIVO"),
+            ],
+            Bancas: [],
+            Recursos: comAncora
+                ? [new RecursoDaEtapaInput(
+                    AncoraDoRecurso.AtoPublicado, "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1",
+                    2m, UnidadePrazo.DiasUteis, "RESULTADO_CLASSIFICACAO", null, null, false, null, null)]
+                : []);
+
+        ITipoAtoPublicadoReader catalogoComOAto = Substitute.For<ITipoAtoPublicadoReader>();
+        catalogoComOAto.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(AtoDeResultado("RESULTADO_CLASSIFICACAO"));
+
+        // A versão publicada tem a âncora. O grafo vem de uma instância à parte, com a identidade da etapa
+        // viva, porque a gravação seguinte edita a etapa no lugar.
+        (await Executar(
+                new DefinirEtapasCommand(processo.Id, [Etapa(null, true)], PrecondicaoIfMatch.Ausente),
+                repository, unitOfWork, regraCatalogoReader: regraCatalogoReader, tipoAtoPublicadoReader: catalogoComOAto, registroCodecs: codecs))
+            .IsSuccess.Should().BeTrue();
+        Guid etapaId = processo.Etapas.Single().Id;
+
+        ProcessoSeletivo publicado = ProcessoSemEtapas();
+        IProcessoSeletivoRepository repositorioDoPublicado = Substitute.For<IProcessoSeletivoRepository>();
+        repositorioDoPublicado.ObterParaMutacaoAsync(publicado.Id, Arg.Any<CancellationToken>()).Returns(publicado);
+        (await Executar(
+                new DefinirEtapasCommand(publicado.Id, [Etapa(null, true)], PrecondicaoIfMatch.Ausente),
+                repositorioDoPublicado, unitOfWork, regraCatalogoReader: regraCatalogoReader, tipoAtoPublicadoReader: catalogoComOAto))
+            .IsSuccess.Should().BeTrue();
+        typeof(Unifesspa.UniPlus.Kernel.Domain.Entities.EntityBase).GetProperty("Id")!.SetValue(publicado.Etapas.Single(), etapaId);
+        publicado.Etapas.Single().Id.Should().Be(etapaId);
+        publicado.Etapas.Single().Recursos.Should().ContainSingle();
+        VersaoPublicadaDeTeste.Publicar(
+            processo, publicado, repository, codecs,
+            new TipoDeAtoCongelado("RESULTADO_CLASSIFICACAO", UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false));
+
+        // A sessão grava o agregado sem a âncora, o catálogo perde o tipo e o operador a reenvia.
+        (await Executar(
+                new DefinirEtapasCommand(processo.Id, [Etapa(etapaId, false)], PrecondicaoIfMatch.Curinga),
+                repository, unitOfWork, regraCatalogoReader: regraCatalogoReader, tipoAtoPublicadoReader: catalogoComOAto, registroCodecs: codecs))
+            .IsSuccess.Should().BeTrue();
+        processo.Etapas.Single().Recursos.Should().BeEmpty();
+        publicado.Etapas.Single().Recursos.Should().ContainSingle();
+        ITipoAtoPublicadoReader catalogoSemOAto = Substitute.For<ITipoAtoPublicadoReader>();
+        catalogoSemOAto.ObterVigenteAsync(Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns((TipoAtoPublicadoView?)null);
+        Result<MutacaoAceita> resultado = await Executar(
+            new DefinirEtapasCommand(processo.Id, [Etapa(etapaId, true)], PrecondicaoIfMatch.Curinga),
+            repository, unitOfWork, regraCatalogoReader: regraCatalogoReader, tipoAtoPublicadoReader: catalogoSemOAto, registroCodecs: codecs);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "Em rascunho, a âncora que a etapa já tinha segue aceita quando o catálogo perde o tipo")]
+    public async Task Handle_RascunhoComAncoraJaDeclarada_CatalogoSemOTipo_Aceita()
+    {
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        Result<RegraCatalogo> regra = RegraCatalogo.Criar(
+            "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1", TipoRegra.RegraPrazoRecurso,
+            JsonDocument.Parse("{}").RootElement, JsonDocument.Parse("[]").RootElement, "Lei 9.784/1999, art. 59");
+        IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
+        regraCatalogoReader.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(regra.Value!);
+
+        EtapaProcessoInput Etapa(Guid? id, string nome) => new(
+            nome, CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, id,
+            Produtos:
+            [
+                new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "PRELIMINAR"),
+                new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "DEFINITIVO"),
+            ],
+            Bancas: [],
+            Recursos:
+            [
+                new RecursoDaEtapaInput(
+                    AncoraDoRecurso.AtoPublicado, "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1",
+                    2m, UnidadePrazo.DiasUteis, "RESULTADO_CLASSIFICACAO", null, null, false, null, null),
+            ]);
+
+        ITipoAtoPublicadoReader catalogoComOAto = Substitute.For<ITipoAtoPublicadoReader>();
+        catalogoComOAto.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(AtoDeResultado("RESULTADO_CLASSIFICACAO"));
+        Result<MutacaoAceita> declaracao = await Executar(
+            new DefinirEtapasCommand(processo.Id, [Etapa(null, "Prova Objetiva")], PrecondicaoIfMatch.Ausente),
+            repository, unitOfWork, regraCatalogoReader: regraCatalogoReader, tipoAtoPublicadoReader: catalogoComOAto);
+        declaracao.IsSuccess.Should().BeTrue(declaracao.Error?.Message);
+        Guid etapaId = processo.Etapas.Single().Id;
+
+        ITipoAtoPublicadoReader catalogoSemOAto = Substitute.For<ITipoAtoPublicadoReader>();
+        catalogoSemOAto.ObterVigenteAsync(Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns((TipoAtoPublicadoView?)null);
+        Result<MutacaoAceita> resultado = await Executar(
+            new DefinirEtapasCommand(processo.Id, [Etapa(etapaId, "Prova Objetiva — 1ª fase")], PrecondicaoIfMatch.Curinga),
+            repository, unitOfWork, regraCatalogoReader: regraCatalogoReader, tipoAtoPublicadoReader: catalogoSemOAto);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    private static DefinirEtapasCommand ComUmProdutoDefinitivo(ProcessoSeletivo processo) => new(
+        processo.Id,
+        [
+            new EtapaProcessoInput(
+                "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
+                Produtos: [new ProdutoDaEtapaInput("RESULTADO_CLASSIFICACAO", "DEFINITIVO")],
+                Bancas: [], Recursos: []),
+        ],
+        PrecondicaoIfMatch.Ausente);
+
     private static Task<Result<MutacaoAceita>> Executar(
         DefinirEtapasCommand command,
         IProcessoSeletivoRepository repository,
@@ -296,7 +547,8 @@ public sealed class DefinirEtapasCommandHandlerTests
         ITipoEtapaReader? tipoEtapaReader = null,
         ITipoBancaReader? tipoBancaReader = null,
         IRegraCatalogoReader? regraCatalogoReader = null,
-        ITipoAtoPublicadoReader? tipoAtoPublicadoReader = null) =>
+        ITipoAtoPublicadoReader? tipoAtoPublicadoReader = null,
+        IRegistroCodecsEnvelope? registroCodecs = null) =>
         DefinirEtapasCommandHandler.Handle(
             command,
             repository,
@@ -304,6 +556,7 @@ public sealed class DefinirEtapasCommandHandlerTests
             tipoBancaReader ?? Substitute.For<ITipoBancaReader>(),
             regraCatalogoReader ?? Substitute.For<IRegraCatalogoReader>(),
             tipoAtoPublicadoReader ?? Substitute.For<ITipoAtoPublicadoReader>(),
+            registroCodecs ?? Substitute.For<IRegistroCodecsEnvelope>(),
             TimeProvider.System,
             unitOfWork,
             CancellationToken.None);

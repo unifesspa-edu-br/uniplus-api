@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -33,6 +34,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
         IPrecedenciaFaseReader PrecedenciaFaseReader,
         IRegraCatalogoReader RegraCatalogoReader,
         ITipoAtoPublicadoReader TipoAtoPublicadoReader,
+        IRegistroCodecsEnvelope Codecs,
         ISelecaoUnitOfWork UnitOfWork,
         TimeProvider TimeProvider);
 
@@ -53,6 +55,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
             precedenciaFaseReader,
             Substitute.For<IRegraCatalogoReader>(),
             Substitute.For<ITipoAtoPublicadoReader>(),
+            Substitute.For<IRegistroCodecsEnvelope>(),
             Substitute.For<ISelecaoUnitOfWork>(),
             TimeProvider.System);
     }
@@ -67,6 +70,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
             mocks.PrecedenciaFaseReader,
             mocks.RegraCatalogoReader,
             mocks.TipoAtoPublicadoReader,
+            mocks.Codecs,
             mocks.UnitOfWork,
             mocks.TimeProvider,
             CancellationToken.None);
@@ -237,6 +241,244 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.TipoQueCongelaDeclaradoComoResultado");
+    }
+
+    [Fact(DisplayName = "Tipo já declarado na versão publicada vale pela classificação congelada: o catálogo que passou a congelar não recusa a edição")]
+    public async Task Handle_TipoJaDeclaradoQueOCatalogoPassouACongelar_AceitaPelaClassificacaoCongelada()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        VersaoPublicadaDeTeste.Publicar(
+            processo, mocks.Repository, mocks.Codecs,
+            new TipoDeAtoCongelado("RESULTADO_CLASSIFICACAO", UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false));
+        Guid faseCanonicaId = Guid.CreateVersion7();
+        mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId, Arg.Any<CancellationToken>())
+            .Returns(FaseCanonicaResultado(faseCanonicaId));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("RESULTADO_CLASSIFICACAO", "Resultado da classificação", CongelaConfiguracao: true, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
+
+        FaseCronogramaInput input = InputResultado(faseCanonicaId) with
+        {
+            Produtos = [new ProdutoDaFaseInput("RESULTADO_CLASSIFICACAO", PapelProdutoFaseCodigo.Definitivo)],
+        };
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, new DefinirCronogramaFasesCommand(processo.Id, [input], PrecondicaoIfMatch.Ausente));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "Tipo declarado pela primeira vez continua conferido pelo catálogo, mesmo com versão publicada")]
+    public async Task Handle_TipoNovoEmProcessoPublicado_ConfereOCatalogo()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        VersaoPublicadaDeTeste.Publicar(
+            processo, mocks.Repository, mocks.Codecs,
+            new TipoDeAtoCongelado("OUTRO_ATO", UnicoPorObjeto: false, EhResultado: false, CongelaConfiguracao: false));
+        Guid faseCanonicaId = Guid.CreateVersion7();
+        mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId, Arg.Any<CancellationToken>())
+            .Returns(FaseCanonicaResultado(faseCanonicaId));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("RESULTADO_CLASSIFICACAO", "Resultado da classificação", CongelaConfiguracao: true, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
+
+        FaseCronogramaInput input = InputResultado(faseCanonicaId) with
+        {
+            Produtos = [new ProdutoDaFaseInput("RESULTADO_CLASSIFICACAO", PapelProdutoFaseCodigo.Definitivo)],
+        };
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, new DefinirCronogramaFasesCommand(processo.Id, [input], PrecondicaoIfMatch.Ausente));
+
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be("ProcessoSeletivo.TipoQueCongelaDeclaradoComoResultado");
+    }
+
+    [Fact(DisplayName = "Versão publicada que o codec não lê é recusada com a falha do codec, sem cair no catálogo")]
+    public async Task Handle_VersaoPublicadaIlegivel_RecusaComAFalhaDoCodec()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        VersaoPublicadaDeTeste.PublicarIlegivel(
+            processo, mocks.Repository, mocks.Codecs, new DomainError("Envelope.CodecDesconhecido", "O codec não lê esta versão."));
+        Guid faseCanonicaId = Guid.CreateVersion7();
+        mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId, Arg.Any<CancellationToken>())
+            .Returns(FaseCanonicaResultado(faseCanonicaId));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("RESULTADO_CLASSIFICACAO", "Resultado da classificação", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
+
+        FaseCronogramaInput input = InputResultado(faseCanonicaId) with
+        {
+            Produtos = [new ProdutoDaFaseInput("RESULTADO_CLASSIFICACAO", PapelProdutoFaseCodigo.Definitivo)],
+        };
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, new DefinirCronogramaFasesCommand(processo.Id, [input], PrecondicaoIfMatch.Ausente));
+
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be("Envelope.CodecDesconhecido");
+    }
+
+    [Theory(DisplayName = "Com o tipo fora do catálogo hoje, a âncora nova é recusada e a que o agregado já tinha segue aceita")]
+    [InlineData(false, "ProdutoDaFase.AtoNaoEncontradoNoCatalogo")]
+    [InlineData(true, null)]
+    public async Task Handle_AncoraEmTipoSemVersaoVigenteNoCatalogo_RecusaSoANovaEmRelacaoAoAgregado(bool ancoraJaNoAgregado, string? codigoEsperado)
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid faseCanonicaId = Guid.CreateVersion7();
+        mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId, Arg.Any<CancellationToken>())
+            .Returns(FaseCanonicaRecorrivel(faseCanonicaId));
+        mocks.RegraCatalogoReader.ObterAsync(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", Arg.Any<CancellationToken>())
+            .Returns(RegraCatalogo.Criar(
+                RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", TipoRegra.RegraPrazoRecurso,
+                JsonDocument.Parse("{}").RootElement, JsonDocument.Parse("[]").RootElement, "Lei 9.784/1999 art. 56").Value!);
+        FaseCronogramaInput semAncora = InputResultado(faseCanonicaId) with
+        {
+            Produtos =
+            [
+                new ProdutoDaFaseInput("RESULTADO_CLASSIFICACAO", PapelProdutoFaseCodigo.Preliminar),
+                new ProdutoDaFaseInput("RESULTADO_CLASSIFICACAO", PapelProdutoFaseCodigo.Definitivo),
+            ],
+        };
+        FaseCronogramaInput comAncora = semAncora with
+        {
+            RegraRecurso = new RegraRecursoFaseInput(
+                RegraCodigo: RegraPrazoRecursoCodigo.AncoradoEmAto,
+                RegraVersao: "v1",
+                PrazoValor: 48m,
+                PrazoUnidade: UnidadePrazo.Horas,
+                AtoAncoraCodigo: "RESULTADO_CLASSIFICACAO",
+                SuspensividadePrimeiraInstanciaValor: null,
+                SuspensividadePrimeiraInstanciaUnidade: null,
+                AdmiteInstanciaSuperior: false,
+                SuspensividadeSegundaInstanciaValor: null,
+                SuspensividadeSegundaInstanciaUnidade: null),
+        };
+
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("RESULTADO_CLASSIFICACAO", "Resultado da classificação", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
+        (await HandleAsync(mocks, new DefinirCronogramaFasesCommand(processo.Id, [ancoraJaNoAgregado ? comAncora : semAncora], PrecondicaoIfMatch.Ausente)))
+            .IsSuccess.Should().BeTrue();
+        VersaoPublicadaDeTeste.Publicar(
+            processo, mocks.Repository, mocks.Codecs,
+            new TipoDeAtoCongelado("RESULTADO_CLASSIFICACAO", UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false));
+
+        // O catálogo deixa de ter versão vigente do tipo: a irreversibilidade dele passa a ser desconhecida.
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns((TipoAtoPublicadoView?)null);
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, new DefinirCronogramaFasesCommand(processo.Id, [comAncora], PrecondicaoIfMatch.Ausente));
+
+        if (codigoEsperado is null)
+        {
+            resultado.IsSuccess.Should().BeTrue(resultado.Errors.Count > 0 ? resultado.Errors[0].Error.Message : resultado.Error?.Message);
+        }
+        else
+        {
+            resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(codigoEsperado);
+        }
+    }
+
+    [Fact(DisplayName = "A âncora que só a versão publicada tem segue aceita quando o catálogo perde o tipo e o agregado não a tem mais")]
+    public async Task Handle_AncoraSoNaVersaoPublicada_CatalogoSemOTipo_Aceita()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid faseCanonicaId = Guid.CreateVersion7();
+        mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId, Arg.Any<CancellationToken>())
+            .Returns(FaseCanonicaRecorrivel(faseCanonicaId));
+        mocks.RegraCatalogoReader.ObterAsync(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", Arg.Any<CancellationToken>())
+            .Returns(RegraCatalogo.Criar(
+                RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", TipoRegra.RegraPrazoRecurso,
+                JsonDocument.Parse("{}").RootElement, JsonDocument.Parse("[]").RootElement, "Lei 9.784/1999 art. 56").Value!);
+        FaseCronogramaInput semAncora = InputResultado(faseCanonicaId) with
+        {
+            Produtos =
+            [
+                new ProdutoDaFaseInput("RESULTADO_CLASSIFICACAO", PapelProdutoFaseCodigo.Preliminar),
+                new ProdutoDaFaseInput("RESULTADO_CLASSIFICACAO", PapelProdutoFaseCodigo.Definitivo),
+            ],
+        };
+        FaseCronogramaInput comAncora = semAncora with
+        {
+            RegraRecurso = new RegraRecursoFaseInput(
+                RegraCodigo: RegraPrazoRecursoCodigo.AncoradoEmAto,
+                RegraVersao: "v1",
+                PrazoValor: 48m,
+                PrazoUnidade: UnidadePrazo.Horas,
+                AtoAncoraCodigo: "RESULTADO_CLASSIFICACAO",
+                SuspensividadePrimeiraInstanciaValor: null,
+                SuspensividadePrimeiraInstanciaUnidade: null,
+                AdmiteInstanciaSuperior: false,
+                SuspensividadeSegundaInstanciaValor: null,
+                SuspensividadeSegundaInstanciaUnidade: null),
+        };
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("RESULTADO_CLASSIFICACAO", "Resultado da classificação", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
+
+        // A versão publicada tem a âncora. O grafo vem de uma instância à parte, porque a gravação seguinte
+        // reconcilia a fase no lugar.
+        ProcessoSeletivo publicado = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        IProcessoSeletivoRepository repositorioDoPublicado = Substitute.For<IProcessoSeletivoRepository>();
+        repositorioDoPublicado.ObterParaMutacaoAsync(publicado.Id, Arg.Any<CancellationToken>()).Returns(publicado);
+        (await HandleAsync(mocks with { Repository = repositorioDoPublicado }, new DefinirCronogramaFasesCommand(publicado.Id, [comAncora], PrecondicaoIfMatch.Ausente)))
+            .IsSuccess.Should().BeTrue();
+        (await HandleAsync(mocks, new DefinirCronogramaFasesCommand(processo.Id, [comAncora], PrecondicaoIfMatch.Ausente)))
+            .IsSuccess.Should().BeTrue();
+        VersaoPublicadaDeTeste.Publicar(
+            processo, publicado, mocks.Repository, mocks.Codecs,
+            new TipoDeAtoCongelado("RESULTADO_CLASSIFICACAO", UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false));
+        (await HandleAsync(mocks, new DefinirCronogramaFasesCommand(processo.Id, [semAncora], PrecondicaoIfMatch.Ausente)))
+            .IsSuccess.Should().BeTrue();
+
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns((TipoAtoPublicadoView?)null);
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, new DefinirCronogramaFasesCommand(processo.Id, [comAncora], PrecondicaoIfMatch.Ausente));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Errors.Count > 0 ? resultado.Errors[0].Error.Message : resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "Na sessão de retificação, a âncora declarada numa edição anterior segue aceita quando o catálogo perde o tipo")]
+    public async Task Handle_AncoraDeclaradaNaSessao_CatalogoSemOTipo_Aceita()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid faseCanonicaId = Guid.CreateVersion7();
+        mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId, Arg.Any<CancellationToken>())
+            .Returns(FaseCanonicaRecorrivel(faseCanonicaId));
+        mocks.RegraCatalogoReader.ObterAsync(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", Arg.Any<CancellationToken>())
+            .Returns(RegraCatalogo.Criar(
+                RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", TipoRegra.RegraPrazoRecurso,
+                JsonDocument.Parse("{}").RootElement, JsonDocument.Parse("[]").RootElement, "Lei 9.784/1999 art. 56").Value!);
+        FaseCronogramaInput comAncora = InputResultado(faseCanonicaId) with
+        {
+            Produtos =
+            [
+                new ProdutoDaFaseInput("RESULTADO_CLASSIFICACAO", PapelProdutoFaseCodigo.Preliminar),
+                new ProdutoDaFaseInput("RESULTADO_CLASSIFICACAO", PapelProdutoFaseCodigo.Definitivo),
+            ],
+            RegraRecurso = new RegraRecursoFaseInput(
+                RegraCodigo: RegraPrazoRecursoCodigo.AncoradoEmAto,
+                RegraVersao: "v1",
+                PrazoValor: 48m,
+                PrazoUnidade: UnidadePrazo.Horas,
+                AtoAncoraCodigo: "RESULTADO_CLASSIFICACAO",
+                SuspensividadePrimeiraInstanciaValor: null,
+                SuspensividadePrimeiraInstanciaUnidade: null,
+                AdmiteInstanciaSuperior: false,
+                SuspensividadeSegundaInstanciaValor: null,
+                SuspensividadeSegundaInstanciaUnidade: null),
+        };
+
+        // A versão publicada congelou o tipo, mas ainda não tinha a âncora: ela entra na sessão.
+        VersaoPublicadaDeTeste.Publicar(
+            processo, mocks.Repository, mocks.Codecs,
+            new TipoDeAtoCongelado("RESULTADO_CLASSIFICACAO", UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("RESULTADO_CLASSIFICACAO", "Resultado da classificação", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
+        Result<MutacaoAceita> primeira = await HandleAsync(mocks, new DefinirCronogramaFasesCommand(processo.Id, [comAncora], PrecondicaoIfMatch.Ausente));
+        primeira.IsSuccess.Should().BeTrue(primeira.Error?.Message);
+
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns((TipoAtoPublicadoView?)null);
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, new DefinirCronogramaFasesCommand(processo.Id, [comAncora], PrecondicaoIfMatch.Ausente));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
     [Fact(DisplayName = "Tipo classificado como resultado declarado sem papel pela fase é recusado com ProcessoSeletivo.ResultadoDeclaradoSemPapel")]

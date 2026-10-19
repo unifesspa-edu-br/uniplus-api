@@ -30,7 +30,14 @@ internal static class CongelamentoDosTiposDeAto
         ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(versaoPublicada);
 
-        Result<EnvelopeReidratado> publicada = registroCodecs.Reidratar(versaoPublicada);
+        return DoEnvelope(registroCodecs.Reidratar(versaoPublicada));
+    }
+
+    /// <summary>A classificação congelada no envelope já reidratado, ou a falha do codec.</summary>
+    public static Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>> DoEnvelope(Result<EnvelopeReidratado> publicada)
+    {
+        ArgumentNullException.ThrowIfNull(publicada);
+
         return publicada.IsFailure
             ? Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>>.Failure(publicada.Error!)
             : Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>>.Success(publicada.Value!.TiposDeAtoCongelados);

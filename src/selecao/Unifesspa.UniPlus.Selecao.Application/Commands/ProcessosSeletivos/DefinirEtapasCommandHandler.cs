@@ -45,6 +45,7 @@ public static class DefinirEtapasCommandHandler
         ITipoBancaReader tipoBancaReader,
         IRegraCatalogoReader regraCatalogoReader,
         ITipoAtoPublicadoReader tipoAtoPublicadoReader,
+        IRegistroCodecsEnvelope registroCodecs,
         TimeProvider timeProvider,
         ISelecaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
@@ -55,6 +56,7 @@ public static class DefinirEtapasCommandHandler
         ArgumentNullException.ThrowIfNull(tipoBancaReader);
         ArgumentNullException.ThrowIfNull(regraCatalogoReader);
         ArgumentNullException.ThrowIfNull(tipoAtoPublicadoReader);
+        ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
@@ -304,6 +306,10 @@ public static class DefinirEtapasCommandHandler
             return resolvido;
         }
 
+        // O tipo que a versão publicada já declara vale pela classificação congelada nela, como na
+        // retificação; o catálogo de hoje só vale para o tipo declarado pela primeira vez.
+        ClassificacaoDosTiposNaEdicao congelados = new(processoSeletivoRepository, registroCodecs, command.ProcessoSeletivoId);
+
         // Mesma memoização, e pela mesma razão: o tipo de banca e a regra de prazo são os dois
         // outros cadastros que este handler relê por ITEM de CADA etapa. Duas etapas que
         // requerem a mesma banca, ou que abrem janela recursal sob a mesma regra, são o caso
@@ -349,6 +355,13 @@ public static class DefinirEtapasCommandHandler
         {
             EtapaProcessoInput input = command.Etapas[i];
 
+            // As âncoras que a etapa já tinha antes desta gravação: o cliente devolve o que leu, e uma
+            // âncora que já estava no agregado não é revista pelo que o catálogo diz hoje do ato.
+            HashSet<string> atosJaAncorados = [.. etapas[i].Recursos
+                .SelectMany(recurso => etapas[i].Produtos
+                    .Where(p => p.Id == recurso.ProdutoAncoraId && p.Papel == PapelProdutoFase.Preliminar)
+                    .Select(static p => p.AtoCodigo))];
+
             // O papel desconhecido é RECUSADO, e não tratado como ausente. Ignorar a conversão
             // fazia um erro de digitação — `PRELIMINARR` por `PRELIMINAR` — virar produto sem
             // papel: a etapa deixava de publicar resultado, o recurso perdia onde ancorar, e
@@ -384,19 +397,37 @@ public static class DefinirEtapasCommandHandler
                 // cronograma público e a chave pela qual a restauração da configuração congelada
                 // reencontra o produto. Um código que o catálogo não conhece não resolve para
                 // nada — e só apareceria depois de publicado.
-                TipoAtoPublicadoView? tipoAto = await ResolverTipoDeAtoAsync(d.AtoCodigo).ConfigureAwait(false);
-                if (tipoAto is null)
+                Result<ClassificacaoDoTipoDeAto?> congelada = await congelados
+                    .DoTipoJaDeclaradoAsync(d.AtoCodigo, cancellationToken).ConfigureAwait(false);
+                if (congelada.IsFailure)
                 {
                     unitOfWork.DescartarAlteracoesNaoSalvas();
-                    return Result<MutacaoAceita>.Failure(new DomainError(
-                        "ProdutoDaEtapa.AtoNaoEncontradoNoCatalogo",
-                        $"O tipo de ato '{d.AtoCodigo}', declarado pela etapa '{input.Nome}', não tem versão vigente no catálogo de Publicações na data de hoje."));
+                    return Result<MutacaoAceita>.Failure(congelada.Error!);
+                }
+
+                ClassificacaoDoTipoDeAto classificacao;
+                if (congelada.Value is { } daVersao)
+                {
+                    classificacao = daVersao;
+                }
+                else
+                {
+                    TipoAtoPublicadoView? tipoAto = await ResolverTipoDeAtoAsync(d.AtoCodigo).ConfigureAwait(false);
+                    if (tipoAto is null)
+                    {
+                        unitOfWork.DescartarAlteracoesNaoSalvas();
+                        return Result<MutacaoAceita>.Failure(new DomainError(
+                            "ProdutoDaEtapa.AtoNaoEncontradoNoCatalogo",
+                            $"O tipo de ato '{d.AtoCodigo}', declarado pela etapa '{input.Nome}', não tem versão vigente no catálogo de Publicações na data de hoje."));
+                    }
+
+                    classificacao = ResolucaoDosTiposDeAtoUnicos.ClassificacaoDe(tipoAto);
                 }
 
                 // Papel preliminar ou definitivo só faz sentido sobre resultado: é o par que a
                 // janela recursal ancora. A fase recusa o mesmo, e deixar passar aqui produziria
                 // uma etapa cujo recurso aponta para um produto que nunca divulga resultado.
-                if (papel is not null && !tipoAto.EhResultado)
+                if (papel is not null && !classificacao.EhResultado)
                 {
                     unitOfWork.DescartarAlteracoesNaoSalvas();
                     return Result<MutacaoAceita>.Failure(new DomainError(
@@ -404,16 +435,15 @@ public static class DefinirEtapasCommandHandler
                         $"O tipo de ato '{d.AtoCodigo}', declarado pela etapa '{input.Nome}', não é resultado no catálogo — só resultado recebe papel preliminar ou definitivo."));
                 }
 
-                // O catálogo diz o que o tipo pode ser: o resultado sempre declara papel, e o tipo
-                // que congela a configuração não serve de item de resultado (UNI-REQ-0157).
-                if (ResolucaoDosTiposDeAtoUnicos.ClassificacaoDe(tipoAto)
-                        .ViolacaoDoProduto(tipoAto.Codigo, papel, $"na etapa '{input.Nome}'") is { } violacaoDoProduto)
+                // O resultado sempre declara papel, e o tipo que congela a configuração não serve de
+                // item de resultado (UNI-REQ-0157).
+                if (classificacao.ViolacaoDoProduto(d.AtoCodigo, papel, $"na etapa '{input.Nome}'") is { } violacaoDoProduto)
                 {
                     unitOfWork.DescartarAlteracoesNaoSalvas();
                     return Result<MutacaoAceita>.Failure(violacaoDoProduto);
                 }
 
-                produtosDaEtapa.Add(ProdutoDaEtapa.Criar(tipoAto.Codigo, papel));
+                produtosDaEtapa.Add(ProdutoDaEtapa.Criar(d.AtoCodigo, papel));
             }
 
             Result produtosResult = etapas[i].DefinirProdutos(produtosDaEtapa);
@@ -484,18 +514,50 @@ public static class DefinirEtapasCommandHandler
                 // — nomeando os preliminares disponíveis — é a etapa, logo abaixo. A memoização
                 // por código evita reler o catálogo quando o produto acabou de ser resolvido;
                 // quando ele já era declarado, esta é a única leitura que o confere.
-                if (produtoAncora is not null
-                    && await ResolverTipoDeAtoAsync(produtoAncora.AtoCodigo).ConfigureAwait(false) is { } tipoAncora)
+                if (produtoAncora is not null)
                 {
-                    if (tipoAncora.CongelaConfiguracao)
+                    Result<ClassificacaoDoTipoDeAto?> ancoraCongelada = await congelados
+                        .DoTipoJaDeclaradoAsync(produtoAncora.AtoCodigo, cancellationToken).ConfigureAwait(false);
+                    if (ancoraCongelada.IsFailure)
+                    {
+                        unitOfWork.DescartarAlteracoesNaoSalvas();
+                        return Result<MutacaoAceita>.Failure(ancoraCongelada.Error!);
+                    }
+
+                    TipoAtoPublicadoView? tipoAncora = await ResolverTipoDeAtoAsync(produtoAncora.AtoCodigo).ConfigureAwait(false);
+
+                    // A irreversibilidade não é congelada: sem versão vigente no catálogo, ela é desconhecida,
+                    // e uma âncora nova não pode ser aceita sem conferi-la (UNI-REQ-0080). A âncora que a
+                    // versão publicada ou o agregado já tem segue valendo.
+                    if (tipoAncora is null && !atosJaAncorados.Contains(produtoAncora.AtoCodigo))
+                    {
+                        Result<bool> ancoraJaPublicada = await congelados
+                            .AncoraDaEtapaJaPublicadaAsync(etapas[i].Id, produtoAncora.AtoCodigo, cancellationToken).ConfigureAwait(false);
+                        if (ancoraJaPublicada.IsFailure)
+                        {
+                            unitOfWork.DescartarAlteracoesNaoSalvas();
+                            return Result<MutacaoAceita>.Failure(ancoraJaPublicada.Error!);
+                        }
+
+                        if (!ancoraJaPublicada.Value)
+                        {
+                            unitOfWork.DescartarAlteracoesNaoSalvas();
+                            return Result<MutacaoAceita>.Failure(new DomainError(
+                                "ProdutoDaEtapa.AtoNaoEncontradoNoCatalogo",
+                                $"O tipo de ato '{produtoAncora.AtoCodigo}', declarado pela etapa '{input.Nome}', não tem versão vigente no catálogo de Publicações na data de hoje, e a âncora nova precisa da irreversibilidade dele."));
+                        }
+                    }
+
+                    bool ancoraCongela = ancoraCongelada.Value?.CongelaConfiguracao ?? tipoAncora?.CongelaConfiguracao ?? false;
+                    if (ancoraCongela)
                     {
                         unitOfWork.DescartarAlteracoesNaoSalvas();
                         return Result<MutacaoAceita>.Failure(new DomainError(
                             "RecursoDaEtapa.AncoraEmAtoCongelante",
-                            $"O tipo de ato âncora '{tipoAncora.Codigo}', declarado pela etapa '{input.Nome}', congela configuração — a âncora do recurso nunca é o ato que congela a configuração."));
+                            $"O tipo de ato âncora '{produtoAncora.AtoCodigo}', declarado pela etapa '{input.Nome}', congela configuração — a âncora do recurso nunca é o ato que congela a configuração."));
                     }
 
-                    if (tipoAncora.EfeitoIrreversivel)
+                    if (tipoAncora?.EfeitoIrreversivel == true)
                     {
                         unitOfWork.DescartarAlteracoesNaoSalvas();
                         return Result<MutacaoAceita>.Failure(new DomainError(
