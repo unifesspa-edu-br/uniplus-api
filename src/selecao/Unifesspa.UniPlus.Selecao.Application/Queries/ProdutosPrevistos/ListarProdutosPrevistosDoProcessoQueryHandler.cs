@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Mappings;
 using Unifesspa.UniPlus.Selecao.Application.Queries.AtosDoProcesso;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
@@ -45,26 +46,12 @@ public static class ListarProdutosPrevistosDoProcessoQueryHandler
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         DateTimeOffset agora = timeProvider.GetUtcNow();
-        VersaoConfiguracao? versao = await processoSeletivoRepository
-            .ObterVersaoVigenteAsync(query.ProcessoSeletivoId, agora, cancellationToken)
+        Result<GrafoVigente> vigente = await GrafoVigenteDoProcesso
+            .LerAsync(processoSeletivoRepository, registroCodecs, query.ProcessoSeletivoId, agora, cancellationToken)
             .ConfigureAwait(false);
-        if (versao is null)
+        if (vigente.IsFailure)
         {
-            return await SemVersaoVigenteAsync(query.ProcessoSeletivoId, agora, processoSeletivoRepository, cancellationToken)
-                .ConfigureAwait(false);
-        }
-
-        if (!registroCodecs.SabeLer(versao.SchemaVersion))
-        {
-            return Result<ProdutosPrevistosDoProcessoDto>.Failure(new DomainError(
-                ErrosCodecEnvelope.VersaoDesconhecida,
-                $"A versão '{versao.SchemaVersion}' do envelope congelado não está entre as capacidades de leitura reconhecidas pelo codec vivo."));
-        }
-
-        Result<EnvelopeReidratado> reidratado = registroCodecs.Reidratar(versao);
-        if (reidratado.IsFailure)
-        {
-            return Result<ProdutosPrevistosDoProcessoDto>.Failure(reidratado.Error!);
+            return Result<ProdutosPrevistosDoProcessoDto>.Failure(vigente.Error!);
         }
 
         Result<TimeZoneInfo> fuso = resolvedorFuso.Resolver();
@@ -73,7 +60,7 @@ public static class ListarProdutosPrevistosDoProcessoQueryHandler
             return Result<ProdutosPrevistosDoProcessoDto>.Failure(fuso.Error!);
         }
 
-        Domain.ValueObjects.GrafoConfiguracao grafo = reidratado.Value!.Grafo;
+        Domain.ValueObjects.GrafoConfiguracao grafo = vigente.Value!.Grafo;
         IReadOnlyList<AtoDoProcesso> atos = await atoDoProcessoRepository
             .ListarDoProcessoAsync(query.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
@@ -104,24 +91,11 @@ public static class ListarProdutosPrevistosDoProcessoQueryHandler
 
         DateTimeOffset limite = agora - opcoes.Value.LimiarDePendencia;
         return Result<ProdutosPrevistosDoProcessoDto>.Success(ProjecaoDosProdutosPrevistos.Projetar(
-            versao.NumeroVersao,
+            vigente.Value.NumeroDaVersao,
             grafo,
             cadeias,
             tipos.GroupBy(static t => t.Codigo, StringComparer.Ordinal)
                 .ToDictionary(static g => g.Key, static g => g.First().Nome, StringComparer.Ordinal),
             ato => AtoDoProcessoMapping.ToDto(ato, documentosPorId, AtoDoProcessoMapping.PendenciaAcimaDoLimiar(ato, limite))));
-    }
-
-    // Só quando não há versão vigente se distingue 404 de 422: o caminho comum não paga essa consulta.
-    private static async Task<Result<ProdutosPrevistosDoProcessoDto>> SemVersaoVigenteAsync(
-        Guid processoSeletivoId,
-        DateTimeOffset instante,
-        IProcessoSeletivoRepository processoSeletivoRepository,
-        CancellationToken cancellationToken)
-    {
-        bool existe = await processoSeletivoRepository.ExisteAsync(processoSeletivoId, cancellationToken).ConfigureAwait(false);
-        return Result<ProdutosPrevistosDoProcessoDto>.Failure(existe
-            ? new DomainError("Snapshot.VigenteAusente", $"Nenhuma publicação vigente para o instante {instante:O}.")
-            : new DomainError("ProcessoSeletivo.NaoEncontrado", $"Processo Seletivo {processoSeletivoId} não encontrado."));
     }
 }
