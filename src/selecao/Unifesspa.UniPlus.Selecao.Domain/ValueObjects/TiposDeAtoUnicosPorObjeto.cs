@@ -1,9 +1,10 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Os tipos de ato <b>únicos por objeto</b> — publicáveis uma só vez por processo seletivo — que o
-/// processo cita, segundo o catálogo vigente, os tipos dos atos já registrados do processo e o
-/// tipo do ato da operação em curso, quando há.
+/// O que o catálogo vigente diz dos tipos de ato que o processo cita, para os gates de publicação:
+/// quais são <b>únicos por objeto</b> — publicáveis uma só vez por processo seletivo —, a
+/// classificação de cada um como resultado ou como congelante, os tipos dos atos já registrados do
+/// processo e o tipo do ato da operação em curso, quando há.
 /// </summary>
 /// <remarks>
 /// Chega pronto da Application, que o lê do catálogo vigente e dos atos já registrados: o
@@ -16,15 +17,19 @@ public sealed class TiposDeAtoUnicosPorObjeto
 {
     private readonly Dictionary<string, string> _nomePorCodigo;
     private readonly HashSet<string> _ocupados;
+    private readonly Dictionary<string, ClassificacaoDoTipoDeAto> _classificacoes;
 
     private TiposDeAtoUnicosPorObjeto(
         IReadOnlyDictionary<string, string> nomePorCodigo,
         IReadOnlyCollection<string> ocupados,
-        string? atoDaOperacaoCodigo)
+        string? atoDaOperacaoCodigo,
+        IReadOnlyDictionary<string, ClassificacaoDoTipoDeAto>? classificacoes)
     {
         ArgumentNullException.ThrowIfNull(nomePorCodigo);
         ArgumentNullException.ThrowIfNull(ocupados);
         _nomePorCodigo = new Dictionary<string, string>(nomePorCodigo, StringComparer.Ordinal);
+        _classificacoes = new Dictionary<string, ClassificacaoDoTipoDeAto>(
+            classificacoes ?? new Dictionary<string, ClassificacaoDoTipoDeAto>(), StringComparer.Ordinal);
         _ocupados = new HashSet<string>(ocupados, StringComparer.Ordinal);
         AtoDaOperacaoCodigo = atoDaOperacaoCodigo;
     }
@@ -37,10 +42,11 @@ public sealed class TiposDeAtoUnicosPorObjeto
     public static TiposDeAtoUnicosPorObjeto ParaOperacao(
         IReadOnlyDictionary<string, string> nomePorCodigo,
         IReadOnlyCollection<string> ocupados,
-        string atoDaOperacaoCodigo)
+        string atoDaOperacaoCodigo,
+        IReadOnlyDictionary<string, ClassificacaoDoTipoDeAto>? classificacoes = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(atoDaOperacaoCodigo);
-        return new(nomePorCodigo, ocupados, atoDaOperacaoCodigo);
+        return new(nomePorCodigo, ocupados, atoDaOperacaoCodigo, classificacoes);
     }
 
     /// <summary>
@@ -50,8 +56,9 @@ public sealed class TiposDeAtoUnicosPorObjeto
     /// </summary>
     public static TiposDeAtoUnicosPorObjeto ParaChecklist(
         IReadOnlyDictionary<string, string> nomePorCodigo,
-        IReadOnlyCollection<string> ocupados) =>
-        new(nomePorCodigo, ocupados, null);
+        IReadOnlyCollection<string> ocupados,
+        IReadOnlyDictionary<string, ClassificacaoDoTipoDeAto>? classificacoes = null) =>
+        new(nomePorCodigo, ocupados, null, classificacoes);
 
     /// <summary>O tipo do ato da publicação ou da retificação em curso, ou nulo no checklist.</summary>
     public string? AtoDaOperacaoCodigo { get; }
@@ -64,6 +71,13 @@ public sealed class TiposDeAtoUnicosPorObjeto
 
     /// <summary>Se um ato já registrado do processo é desse tipo.</summary>
     public bool VagaOcupada(string codigo) => _ocupados.Contains(codigo);
+
+    /// <summary>
+    /// A classificação do tipo no catálogo vigente, ou nulo quando o catálogo não tem versão vigente
+    /// dele — quem recusa o tipo desconhecido é a conferência do tipo declarado, não esta.
+    /// </summary>
+    public ClassificacaoDoTipoDeAto? ClassificacaoDe(string codigo) =>
+        _classificacoes.GetValueOrDefault(codigo);
 
     /// <summary>O nome do tipo único no catálogo, ou o próprio código quando o tipo não é único.</summary>
     public string NomeDe(string codigo) => _nomePorCodigo.GetValueOrDefault(codigo, codigo);

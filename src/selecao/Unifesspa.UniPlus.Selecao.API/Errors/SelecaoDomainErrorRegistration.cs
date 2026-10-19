@@ -651,6 +651,11 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // remediação difere: declarar a fase que conclui, remover a declaração que não cabe,
         // ou mover a concluinte para depois da fase que ela encerra.
         new("ProcessoSeletivo.ConclusaoNaoDeclarada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.conclusao_nao_declarada", "A fase publica resultado preliminar sem a definitiva da matéria e não declara qual fase a conclui")),
+        // A fase que já fecha o ciclo de um tipo com o próprio definitivo não pode apontar uma
+        // concluinte que o publica também: o ciclo teria dois definitivos.
+        new(ProcessoSeletivoErrorCodes.ConclusaoDuplicada, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.conclusao_duplicada", "A fase que fecha o próprio ciclo de um tipo de ato aponta uma concluinte que publica o definitivo do mesmo tipo")),
+        // O ciclo da etapa fecha dentro dela: a etapa não tem fase concluinte.
+        new(ProcessoSeletivoErrorCodes.EtapaComPreliminarSemDefinitivo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.etapa_com_preliminar_sem_definitivo", "A etapa publica resultado preliminar sem o definitivo do mesmo tipo de ato")),
         new("ProcessoSeletivo.ConclusaoDeclaradaSemPreliminar", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.conclusao_declarada_sem_preliminar", "A fase declara uma fase concluinte sem publicar resultado preliminar")),
         new("ProcessoSeletivo.ConclusaoDeclaradaEmFaseQueSeConclui", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.conclusao_declarada_em_fase_que_se_conclui", "A fase declara a si mesma como concluinte do próprio ciclo recursal")),
         new("ProcessoSeletivo.FaseConcluinteForaDoCronograma", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fase_concluinte_fora_do_cronograma", "A fase declarada como concluinte não está no cronograma")),
@@ -677,6 +682,11 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("ProdutoDaFase.AtoNaoEncontradoNoCatalogo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.produto_da_fase.ato_nao_encontrado_no_catalogo", "O tipo de ato declarado pela fase não tem versão vigente no catálogo de Publicações")),
         new("ProdutoDaFase.PapelDesconhecido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.produto_da_fase.papel_desconhecido", "O papel do produto não é declarável")),
         new("ProdutoDaFase.PapelEmAtoQueNaoEhResultado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.produto_da_fase.papel_em_ato_que_nao_eh_resultado", "Só ato que é resultado no catálogo recebe papel preliminar ou definitivo")),
+        // O catálogo também diz o que o tipo NÃO pode ser: o resultado sem preliminar é declarado
+        // definitivo, e o tipo que congela a configuração não é item de resultado, porque a
+        // correção de um resultado não cria versão nova.
+        new(ProcessoSeletivoErrorCodes.ResultadoDeclaradoSemPapel, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.resultado_declarado_sem_papel", "O tipo de ato classificado como resultado precisa declarar papel preliminar ou definitivo")),
+        new(ProcessoSeletivoErrorCodes.TipoQueCongelaDeclaradoComoResultado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.tipo_que_congela_declarado_como_resultado", "O tipo de ato que congela a configuração não pode ser declarado como item de resultado")),
         // O produto da etapa é conferido contra o MESMO catálogo, pelas mesmas duas perguntas:
         // a etapa declara o que publicará, e o código declarado ali vira o nome do produto no
         // cronograma público e a chave por onde a restauração da configuração congelada

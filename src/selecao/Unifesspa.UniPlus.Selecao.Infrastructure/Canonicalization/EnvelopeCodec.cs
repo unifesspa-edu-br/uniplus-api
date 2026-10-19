@@ -218,7 +218,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
         (LocalidadeRegente? localidade, string? fusoHorario) = LerLocalidade(leitor, payload);
         int? numeroDeOpcoesDeCurso = LerOpcoesDeCurso(leitor, payload);
         ReferenciaRegra? algoritmoContagemPrazo = LerAlgoritmoContagemPrazo(leitor, payload);
-        CalendarioDiasUteisCongelado? calendarioDiasUteis = LerCalendarioDiasUteis(leitor, payload, cronogramaFases);
+        CalendarioDiasUteisCongelado? calendarioDiasUteis = LerCalendarioDiasUteis(leitor, payload, cronogramaFases, etapas);
         IdentificadorLegivel? identificadorLegivel = LerIdentificadorLegivel(leitor, payload);
         RetificacaoInfo? retificacao = temRetificacao ? LerRetificacao(leitor, payload) : null;
 

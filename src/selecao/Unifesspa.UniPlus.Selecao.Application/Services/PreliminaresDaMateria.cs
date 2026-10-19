@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -34,7 +35,7 @@ internal static class PreliminaresDaMateria
         if (fase is not null)
         {
             string atoCodigo = fase.Produtos.First(p => p.Id == definitivoId).AtoCodigo;
-            IEnumerable<Guid> daFase = PreliminaresDoTipo(fase.Produtos.Select(static p => (p.Id, p.AtoCodigo, p.Papel)), atoCodigo);
+            IEnumerable<Guid> daFase = CicloRecursal.PreliminaresDoTipo(fase.Produtos.Select(static p => (p.Id, p.AtoCodigo, p.Papel)), atoCodigo);
 
             // Só chega à concluinte o ciclo que a fase de origem deixa aberto: a matéria que ela
             // fecha com o próprio definitivo não espera a concluinte.
@@ -42,7 +43,7 @@ internal static class PreliminaresDaMateria
                 .Where(f => f.Id != fase.Id
                     && string.Equals(f.FaseConcluinteCodigo, fase.Codigo, StringComparison.Ordinal)
                     && f.TiposComCicloAberto().Contains(atoCodigo, StringComparer.Ordinal))
-                .SelectMany(f => PreliminaresDoTipo(f.Produtos.Select(static p => (p.Id, p.AtoCodigo, p.Papel)), atoCodigo));
+                .SelectMany(f => CicloRecursal.PreliminaresDoTipo(f.Produtos.Select(static p => (p.Id, p.AtoCodigo, p.Papel)), atoCodigo));
 
             return [.. daFase, .. deOutrasFases];
         }
@@ -55,7 +56,7 @@ internal static class PreliminaresDaMateria
 
         string atoDaEtapa = etapa.Produtos.First(p => p.Id == definitivoId).AtoCodigo;
 
-        return [.. PreliminaresDoTipo(etapa.Produtos.Select(static p => (p.Id, p.AtoCodigo, p.Papel)), atoDaEtapa)];
+        return [.. CicloRecursal.PreliminaresDoTipo(etapa.Produtos.Select(static p => (p.Id, p.AtoCodigo, p.Papel)), atoDaEtapa)];
     }
 
     /// <summary>
@@ -77,9 +78,4 @@ internal static class PreliminaresDaMateria
                 .Distinct(),
         ];
     }
-
-    private static IEnumerable<Guid> PreliminaresDoTipo(IEnumerable<(Guid Id, string AtoCodigo, PapelProdutoFase? Papel)> produtos, string atoCodigo) =>
-        produtos
-            .Where(p => p.Papel == PapelProdutoFase.Preliminar && string.Equals(p.AtoCodigo, atoCodigo, StringComparison.Ordinal))
-            .Select(static p => p.Id);
 }

@@ -321,8 +321,11 @@ public sealed class EnvelopeFechadoE2ETests
                 "cronograma_vagas_sem_fase_que_produz_resultado",
                 "cronograma_conclusao_do_ciclo_recursal",
                 "cronograma_ancora_do_recurso",
+                "cronograma_ancora_do_recurso_da_etapa",
                 "cronograma_recorte_de_competencia_das_bancas",
                 "cronograma_etapa_fora_da_janela_da_fase",
+                "cronograma_resultado_declarado_com_papel",
+                "cronograma_tipo_que_congela_nao_eh_resultado",
                 "cronograma_tipo_de_ato_unico_declarado_uma_vez",
                 // ── PendenciaDaCascata, detalhamento por razão ──
                 "cascata_modalidade_fora_do_regime_federal",
