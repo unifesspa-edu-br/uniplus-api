@@ -1192,6 +1192,13 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// recusar por conformidade LEGAL (<see cref="ObterConformidadeLegal"/>), documento
     /// confirmado, tipo de ato e outras leituras request-specific que só o comando de publicação
     /// avalia — este checklist cobre só a publicabilidade estrutural do agregado.
+    /// <para>
+    /// <b>Avisos.</b> A resposta traz também <c>avisos</c>, lista própria fora de <c>itens</c>: o
+    /// que o administrador deve confirmar e que nunca impede a publicação (por exemplo, o mesmo
+    /// tipo de ato declarado como definitivo em mais de uma fase ou etapa). Só esta consulta os
+    /// calcula; os gates de publicação e retificação não os conhecem, e a bicondicional dos
+    /// itens com os gates não muda.
+    /// </para>
     /// </remarks>
     [HttpGet("{id:guid}/conformidade")]
     [VendorMediaType(Resource = "conformidade-processo-seletivo", Versions = [1])]

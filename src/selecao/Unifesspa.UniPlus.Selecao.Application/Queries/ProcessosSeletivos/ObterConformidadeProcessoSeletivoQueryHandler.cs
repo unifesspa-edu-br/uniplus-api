@@ -38,6 +38,10 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 /// checklist (issue #1096) — são dois handlers, cada um com a sua leitura, e isso é correto: a
 /// invariante de leitura única é do handler, não do endpoint.
 /// </para>
+/// <para>
+/// <b>Avisos.</b> Os avisos vêm de <c>ProcessoSeletivo.AvaliarAvisos()</c> e viajam em lista
+/// própria: só esta consulta os calcula, nunca os gates de publicação e retificação.
+/// </para>
 /// </remarks>
 public static class ObterConformidadeProcessoSeletivoQueryHandler
 {
@@ -98,6 +102,9 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
         ItemConformidadeDto[] itens = [.. processo.AvaliarConformidade(contexto, fatosDeModalidade, tiposDeAtoUnicos)
             .Select(static item => new ItemConformidadeDto(item.Codigo, item.Dimensao, item.Mensagem, item.Ok))];
 
-        return new ConformidadeProcessoSeletivoDto(processo.Id, itens);
+        AvisoConformidadeDto[] avisos = [.. processo.AvaliarAvisos()
+            .Select(static aviso => new AvisoConformidadeDto(aviso.Codigo, aviso.Dimensao, aviso.Mensagem))];
+
+        return new ConformidadeProcessoSeletivoDto(processo.Id, itens, avisos);
     }
 }

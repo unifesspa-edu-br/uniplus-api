@@ -221,4 +221,30 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
 
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
     }
+
+    [Fact(DisplayName = "Handle devolve os avisos em lista própria, fora dos itens do checklist")]
+    public async Task Handle_DefinitivoRepetido_DevolveAvisoEmListaPropria()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Aviso", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        FaseCronograma Fase(int ordem, string codigo) => FaseCronograma.Criar(
+            ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.Delegada,
+            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
+            inicio: null, fim: null,
+            produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
+            faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!;
+        processo.DefinirCronogramaFases([Fase(1, "CLASSIFICACAO"), Fase(2, "HABILITACAO")], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+
+        ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
+            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, Substitute.For<IAtoDoProcessoRepository>(), CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), TimeProvider.System, CancellationToken.None);
+
+        result!.Avisos.Should().ContainSingle().Which.Should().BeEquivalentTo(
+            new AvisoConformidadeDto(
+                CodigosDeAvisoDeConformidade.CronogramaTipoDefinitivoEmMaisDeUmLugar,
+                DimensaoConformidade.Cronograma,
+                result.Avisos[0].Mensagem));
+        result.Itens.Should().NotContain(i => i.Codigo == CodigosDeAvisoDeConformidade.CronogramaTipoDefinitivoEmMaisDeUmLugar);
+    }
 }
