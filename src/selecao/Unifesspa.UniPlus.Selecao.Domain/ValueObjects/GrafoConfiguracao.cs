@@ -172,11 +172,12 @@ public sealed class GrafoConfiguracao
 
     /// <summary>
     /// As derivações congeladas e as que a oferta de vagas congelada define (<see cref="DerivacoesDaOferta"/>),
-    /// as mesmas que o processo vivo avaliava. Com <paramref name="ofertaCursoId"/>, as que a distribuição
-    /// dessa oferta define (<see cref="DerivacoesDaOferta.DistribuicaoDaOferta"/>); sem ela, a união de todas.
+    /// as mesmas que o processo vivo avaliava. Com <paramref name="ofertasDeCurso"/>, as que a união das
+    /// distribuições dessas ofertas define (<see cref="DerivacoesDaOferta.DistribuicaoDasOfertas"/>); sem
+    /// elas, a união de todas.
     /// </summary>
-    public IReadOnlyList<ConfiguracaoDerivacaoFato> DerivacoesEfetivas(Guid? ofertaCursoId = null) =>
-        DerivacoesDaOferta.Efetivas(RegrasDerivacao, DerivacoesDaOferta.DistribuicaoDaOferta(DistribuicaoVagas, ofertaCursoId));
+    public IReadOnlyList<ConfiguracaoDerivacaoFato> DerivacoesEfetivas(IReadOnlyCollection<Guid>? ofertasDeCurso = null) =>
+        DerivacoesDaOferta.Efetivas(RegrasDerivacao, DerivacoesDaOferta.DistribuicaoDasOfertas(DistribuicaoVagas, ofertasDeCurso ?? []));
 
     /// <summary>
     /// A cascata de remanejamento das cotas reservadas (Story #575) — congelada no envelope e

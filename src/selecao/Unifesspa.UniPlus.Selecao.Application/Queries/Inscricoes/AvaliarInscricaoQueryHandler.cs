@@ -88,7 +88,7 @@ public static class AvaliarInscricaoQueryHandler
         // A oferta do corpo é o seletor da tela, ainda sem salvar: nula, nenhuma está escolhida, como no salvar.
         Result<ContextoDaVersaoFixada> contexto = await ContextoDaVersaoFixadaResolver.ResolverAsync(
             inscricao.VersaoFormularioId, query.ProcessoSeletivoId, processoSeletivoRepository, registroCodecs,
-            query.Request?.OfertaCursoId, cancellationToken)
+            query.Request?.OfertaCursoId, query.Request?.OfertaCursoSegundaOpcaoId, cancellationToken)
             .ConfigureAwait(false);
         if (contexto.IsFailure)
         {

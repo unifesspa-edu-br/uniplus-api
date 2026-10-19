@@ -261,7 +261,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
             grafoBase, OfertasDeTeste.Distribuicao(ofertaA, "AC"), OfertasDeTeste.Distribuicao(ofertaB, "AC", "AC_FEM"));
         Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
         existente.Salvar(
-            ofertaB, new Dictionary<string, JsonElement>(), new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), [],
+            ofertaB, null, new Dictionary<string, JsonElement>(), new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), [],
             Unifesspa.UniPlus.Selecao.Application.Services.ContextoDaVersaoFixadaResolver.Admitidas(grafo) with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond },
             PrecondicaoIfMatch.DeTags([existente.ETag])).IsSuccess.Should().BeTrue();
 
@@ -427,7 +427,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
         Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
         Dictionary<string, JsonElement> semRespostas = new(StringComparer.Ordinal);
         existente.Submeter(
-            "000001", null, semRespostas, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [],
+            "000001", null, null, semRespostas, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [],
             new RespostasAdmitidas(new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal), new HashSet<string>(StringComparer.Ordinal), new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal), new HashSet<Guid>(), new Dictionary<string, TermoAdmitido>(StringComparer.Ordinal)), FormularioDeTeste.AvaliacaoSemOcultos,
             semRespostas, new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal),
             PrecondicaoIfMatch.DeTags([existente.ETag]), DateTimeOffset.UnixEpoch).IsSuccess.Should().BeTrue();
@@ -466,7 +466,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
         Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
         Dictionary<string, JsonElement> semRespostas = new(StringComparer.Ordinal);
         existente.Submeter(
-            "000001", null, semRespostas, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [],
+            "000001", null, null, semRespostas, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [],
             new RespostasAdmitidas(new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal), new HashSet<string>(StringComparer.Ordinal), new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal), new HashSet<Guid>(), new Dictionary<string, TermoAdmitido>(StringComparer.Ordinal)), FormularioDeTeste.AvaliacaoSemOcultos,
             semRespostas, new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal),
             PrecondicaoIfMatch.DeTags([existente.ETag]), DateTimeOffset.UnixEpoch).IsSuccess.Should().BeTrue();

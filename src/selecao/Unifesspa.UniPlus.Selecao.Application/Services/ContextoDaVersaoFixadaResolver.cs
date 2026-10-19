@@ -5,6 +5,8 @@ using Abstractions;
 using Domain.Entities;
 using Domain.ValueObjects;
 
+using DTOs;
+
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -17,20 +19,35 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// publicou a versão, de que é o endereço dos modelos de documento no acervo. Reusado por Salvar, por
 /// Submeter e pela consulta do candidato, que avaliam a mesma versão do mesmo jeito.
 /// </summary>
+/// <remarks>
+/// <see cref="Configuracao"/> vale para as ofertas que a inscrição escolheu: com a 1ª e a 2ª opção, a
+/// união das distribuições das duas, de onde saem o formulário, os valores admitidos e os documentos.
+/// As modalidades, porém, são por opção, porque cada oferta tem a distribuição dela:
+/// <see cref="ConfiguracaoDaPrimeiraOpcao"/> e <see cref="ConfiguracaoDaSegundaOpcao"/> leem cada uma só a
+/// distribuição da oferta da opção. A segunda é nula sem 2ª opção avaliável — não declarada, sem 1ª ou
+/// em versão que admite uma só opção. <see cref="OfertasDeCurso"/> são as ofertas da versão fixada, com o
+/// que as nomeia, para quem escolhe a opção não depender do certame vivo.
+/// </remarks>
 public sealed record ContextoDaVersaoFixada(
     IReadOnlyCollection<TermoExigidoFormulario> TermosExigidos,
     DateOnly? DataReferenciaFatos,
     IReadOnlyDictionary<string, IReadOnlySet<string>> Ofertas,
     RespostasAdmitidas Admitidas,
     ConfiguracaoAvaliavel Configuracao,
-    Guid AtoCriadorId);
+    Guid AtoCriadorId,
+    ConfiguracaoAvaliavel ConfiguracaoDaPrimeiraOpcao,
+    ConfiguracaoAvaliavel? ConfiguracaoDaSegundaOpcao,
+    IReadOnlyList<OfertaDeCursoCertameDto> OfertasDeCurso);
 
 public static class ContextoDaVersaoFixadaResolver
 {
     /// <param name="ofertaCursoId">
-    /// A oferta de curso que a inscrição escolhe — a gravada, ou a que o corpo da requisição grava. A
-    /// avaliação lê só as modalidades e as derivações da distribuição dessa oferta; nula, vale a união
-    /// de todas (<see cref="ConfiguracaoAvaliavelDoProcesso"/>).
+    /// A oferta de curso da 1ª opção que a inscrição escolhe — a gravada, ou a que o corpo da requisição
+    /// grava. Nula, a avaliação lê a união de todas as distribuições (<see cref="ConfiguracaoAvaliavelDoProcesso"/>).
+    /// </param>
+    /// <param name="ofertaCursoSegundaOpcaoId">
+    /// A oferta de curso da 2ª opção. Só conta com a 1ª escolhida e se a versão fixada admite duas
+    /// opções: a recusa da 2ª fora disso é do agregado, não da avaliação.
     /// </param>
     public static async Task<Result<ContextoDaVersaoFixada>> ResolverAsync(
         Guid versaoFormularioId,
@@ -38,6 +55,7 @@ public static class ContextoDaVersaoFixadaResolver
         Domain.Interfaces.IProcessoSeletivoRepository processoSeletivoRepository,
         IRegistroCodecsEnvelope registroCodecs,
         Guid? ofertaCursoId,
+        Guid? ofertaCursoSegundaOpcaoId,
         CancellationToken cancellationToken)
     {
         Result<VersaoConfiguracao> resolvida = await VersaoFixadaDaInscricaoResolver
@@ -63,10 +81,35 @@ public static class ContextoDaVersaoFixadaResolver
             return Result<ContextoDaVersaoFixada>.Failure(reidratado.Error!);
         }
 
-        Result<DefinicaoAvaliavel> avaliavel = DefinicaoAvaliavelDoProcesso.DoCongelado(reidratado.Value!, ofertaCursoId);
-        if (avaliavel.IsFailure)
+        GrafoConfiguracao grafo = reidratado.Value!.Grafo;
+        RespostasAdmitidas admitidas = Admitidas(grafo);
+
+        // Oferta que o processo não conhece vale como escolha nenhuma, e a 2ª só conta quando o agregado a
+        // admite: quem recusa o resto é ele, e a avaliação não mostra modalidades de uma opção que a
+        // inscrição não pode ter.
+        Guid? primeiraAvaliavel = ofertaCursoId is { } escolhida && admitidas.OfertasDeCurso.Contains(escolhida) ? escolhida : null;
+        Guid? segundaAvaliavel = Inscricao.SegundaOpcaoAdmissivel(primeiraAvaliavel, ofertaCursoSegundaOpcaoId, admitidas)
+            ? ofertaCursoSegundaOpcaoId
+            : null;
+        Result<ConfiguracaoDaOpcao> daPrimeira = ConfiguracaoDasOfertas(reidratado.Value!, primeiraAvaliavel is { } primeira ? [primeira] : []);
+        if (daPrimeira.IsFailure)
         {
-            return Result<ContextoDaVersaoFixada>.Failure(avaliavel.Error!);
+            return Result<ContextoDaVersaoFixada>.Failure(daPrimeira.Error!);
+        }
+
+        ConfiguracaoDaOpcao dasEscolhidas = daPrimeira.Value!;
+        ConfiguracaoAvaliavel? daSegunda = null;
+        if (segundaAvaliavel is { } segunda)
+        {
+            Result<ConfiguracaoDaOpcao> uniao = ConfiguracaoDasOfertas(reidratado.Value!, [primeiraAvaliavel!.Value, segunda]);
+            Result<ConfiguracaoDaOpcao> soASegunda = ConfiguracaoDasOfertas(reidratado.Value!, [segunda]);
+            if (uniao.IsFailure || soASegunda.IsFailure)
+            {
+                return Result<ContextoDaVersaoFixada>.Failure((uniao.IsFailure ? uniao : soASegunda).Error!);
+            }
+
+            dasEscolhidas = uniao.Value!;
+            daSegunda = soASegunda.Value!.Configuracao;
         }
 
         Result<DateOnly?> dataReferencia = ProjecaoDoFormularioDaVersao.ResolverDataReferenciaFatos(versao);
@@ -79,10 +122,30 @@ public static class ContextoDaVersaoFixadaResolver
             [.. reidratado.Value!.Grafo.TermosExigidos.Where(static t => t.Finalidade == FinalidadeFormulario.Inscricao)];
 
         return Result<ContextoDaVersaoFixada>.Success(new ContextoDaVersaoFixada(
-            termos, dataReferencia.Value, avaliavel.Value!.Ofertas, Admitidas(reidratado.Value!.Grafo),
-            ConfiguracaoAvaliavelDoProcesso.DoCongelado(reidratado.Value!.Grafo, avaliavel.Value!, ofertaCursoId),
-            versao.AtoCriadorId));
+            termos, dataReferencia.Value, dasEscolhidas.Avaliavel.Ofertas, admitidas,
+            dasEscolhidas.Configuracao, versao.AtoCriadorId,
+            daPrimeira.Value!.Configuracao, daSegunda, OfertasDaVersao(grafo)));
     }
+
+    private sealed record ConfiguracaoDaOpcao(DefinicaoAvaliavel Avaliavel, ConfiguracaoAvaliavel Configuracao);
+
+    private static Result<ConfiguracaoDaOpcao> ConfiguracaoDasOfertas(EnvelopeReidratado envelope, IReadOnlyCollection<Guid> ofertasDeCurso)
+    {
+        Result<DefinicaoAvaliavel> avaliavel = DefinicaoAvaliavelDoProcesso.DoCongelado(envelope, ofertasDeCurso);
+        return avaliavel.IsFailure
+            ? Result<ConfiguracaoDaOpcao>.Failure(avaliavel.Error!)
+            : Result<ConfiguracaoDaOpcao>.Success(new ConfiguracaoDaOpcao(
+                avaliavel.Value!, ConfiguracaoAvaliavelDoProcesso.DoCongelado(envelope.Grafo, avaliavel.Value!, ofertasDeCurso)));
+    }
+
+    private static List<OfertaDeCursoCertameDto> OfertasDaVersao(GrafoConfiguracao grafo) =>
+    [
+        .. grafo.DistribuicaoVagas
+            .Where(static d => d.OfertaCurso is not null)
+            .OrderBy(static d => d.OfertaCursoOrigemId.ToString(), StringComparer.Ordinal)
+            .Select(static d => new OfertaDeCursoCertameDto(
+                d.OfertaCursoOrigemId, d.OfertaCurso!.CursoNome, d.OfertaCurso.CursoGrau, d.OfertaCurso.UnidadeOfertanteNome, d.OfertaCurso.Turnos)),
+    ];
 
     public static RespostasAdmitidas Admitidas(GrafoConfiguracao grafo)
     {
@@ -93,7 +156,8 @@ public static class ContextoDaVersaoFixadaResolver
             FatosDeNivelSuperiorDaInscricao(grafo),
             SubitensDosGruposDaInscricao(grafo),
             grafo.DistribuicaoVagas.Select(static d => d.OfertaCursoOrigemId).ToHashSet(),
-            TermosDaInscricao(grafo));
+            TermosDaInscricao(grafo),
+            NumeroDeOpcoesDeCurso: grafo.NumeroDeOpcoesDeCurso ?? 1);
     }
 
     private static Dictionary<string, TermoAdmitido> TermosDaInscricao(GrafoConfiguracao grafo)

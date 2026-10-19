@@ -35,6 +35,15 @@ public static class InscricaoErrorCodes
     public const string EnderecoBairroObrigatorio = "Inscricao.EnderecoBairroObrigatorio";
     public const string OfertaForaDoProcesso = "Inscricao.OfertaForaDoProcesso";
     public const string OfertaObrigatoria = "Inscricao.OfertaObrigatoria";
+
+    /// <summary>A versão fixada da inscrição declara uma só opção de curso, e a inscrição traz a 2ª.</summary>
+    public const string SegundaOpcaoNaoAdmitida = "Inscricao.SegundaOpcaoNaoAdmitida";
+
+    /// <summary>A 2ª opção de curso é a mesma oferta da 1ª.</summary>
+    public const string SegundaOpcaoIgualAPrimeira = "Inscricao.SegundaOpcaoIgualAPrimeira";
+
+    /// <summary>A inscrição traz a 2ª opção de curso e não traz a 1ª.</summary>
+    public const string SegundaOpcaoSemPrimeira = "Inscricao.SegundaOpcaoSemPrimeira";
     public const string RascunhoSoAntesDoEnvio = "Inscricao.RascunhoSoAntesDoEnvio";
     public const string ForaDoPeriodo = "Inscricao.ForaDoPeriodo";
     public const string ProcessoSemInscricao = "Inscricao.ProcessoSemInscricao";

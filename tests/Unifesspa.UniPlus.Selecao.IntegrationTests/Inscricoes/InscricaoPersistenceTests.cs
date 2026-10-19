@@ -98,7 +98,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         Guid processo = Guid.CreateVersion7();
         Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, processo);
         original.Salvar(
-            OfertaDoProcesso,
+            OfertaDoProcesso, null,
             new Dictionary<string, JsonElement>(StringComparer.Ordinal)
             {
                 ["NOME_SOCIAL"] = JsonSerializer.SerializeToElement("Ariel Drumond"),
@@ -166,7 +166,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
     {
         Guid processo = Guid.CreateVersion7();
         Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, processo);
-        original.Salvar(null, Respostas(("RG_NUMERO", "12.868.927-4")), SemGrupos(), [], Admitidas, PrecondicaoIfMatch.DeTags([original.ETag]));
+        original.Salvar(null, null, Respostas(("RG_NUMERO", "12.868.927-4")), SemGrupos(), [], Admitidas, PrecondicaoIfMatch.DeTags([original.ETag]));
 
         await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
         InscricaoRepository writeRepository = new(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
@@ -200,7 +200,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         {
             InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
             ComprovanteInscricao comprovante = original.Submeter(
-                "000555", OfertaDoProcesso,
+                "000555", OfertaDoProcesso, null,
                 Respostas(("SEXO_CIVIL", "FEMININO"), ("IDENTIDADE_GENERO", "PESSOA_NAO_BINARIA"), ("ORIENTACAO_SEXUAL", "BISSEXUAL")),
                 SemGrupos(), [], Admitidas, FormularioDeTeste.AvaliacaoSemOcultos,
                 Respostas(), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), DateTimeOffset.UtcNow).Value!;
@@ -277,10 +277,10 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         {
             InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
             ComprovanteInscricao envio = original.Submeter(
-                "000556", OfertaDoProcesso, Respostas(("IDENTIDADE_GENERO", "PESSOA_CIS")), SemGrupos(), [], Admitidas,
+                "000556", OfertaDoProcesso, null, Respostas(("IDENTIDADE_GENERO", "PESSOA_CIS")), SemGrupos(), [], Admitidas,
                 FormularioDeTeste.AvaliacaoSemOcultos, Respostas(), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), instante).Value!;
             ComprovanteInscricao correcao = original.Submeter(
-                "000556", OfertaDoProcesso, Respostas(("IDENTIDADE_GENERO", "PESSOA_NAO_BINARIA")), SemGrupos(), [], Admitidas,
+                "000556", OfertaDoProcesso, null, Respostas(("IDENTIDADE_GENERO", "PESSOA_NAO_BINARIA")), SemGrupos(), [], Admitidas,
                 FormularioDeTeste.AvaliacaoSemOcultos, Respostas(), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), instante.AddMinutes(5)).Value!;
             await repositorio.AdicionarAsync(original);
             await repositorio.AdicionarComprovanteAsync(envio);
@@ -328,7 +328,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         {
             InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
             ComprovanteInscricao envio = original.Submeter(
-                "000557", OfertaDoProcesso, Respostas(("IDENTIDADE_GENERO", "PESSOA_CIS")), SemGrupos(), [], Admitidas,
+                "000557", OfertaDoProcesso, null, Respostas(("IDENTIDADE_GENERO", "PESSOA_CIS")), SemGrupos(), [], Admitidas,
                 FormularioDeTeste.AvaliacaoSemOcultos, Respostas(), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), DateTimeOffset.UtcNow).Value!;
             await repositorio.AdicionarAsync(original);
             await repositorio.AdicionarComprovanteAsync(envio);
@@ -370,7 +370,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         respostas["ENDERECO_RESIDENCIAL"] = JsonSerializer.Deserialize<JsonElement>(
             """{"cep":"68500000","logradouro":"Folha 31","cidade":{"codigoIbge":"1504208","nome":"Marabá","uf":"PA"},"origem":"geo-api"}""");
         original.Submeter(
-            "000321", OfertaDoProcesso, respostas, SemGrupos(), [], Admitidas, FormularioDeTeste.AvaliacaoSemOcultos,
+            "000321", OfertaDoProcesso, null, respostas, SemGrupos(), [], Admitidas, FormularioDeTeste.AvaliacaoSemOcultos,
             Respostas(("FAIXA_ETARIA", 25), ("UF_RESIDENCIA", "PA")), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
 
         await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
@@ -420,7 +420,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
     {
         Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, Guid.CreateVersion7());
         original.Salvar(
-            null, Respostas(("NOME_SOCIAL", "Ariel"), ("MODALIDADES", new[] { "AC", "LB_PPI" })), Familia("membro-1", "membro-2"), [],
+            null, null, Respostas(("NOME_SOCIAL", "Ariel"), ("MODALIDADES", new[] { "AC", "LB_PPI" })), Familia("membro-1", "membro-2"), [],
             Admitidas, PrecondicaoIfMatch.DeTags([original.ETag]));
 
         await using (SelecaoDbContext context = _fixture.CreateDbContext())
@@ -435,7 +435,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             Inscricao lida = (await repositorio.ObterPorIdAsync(original.Id))!;
             Dictionary<string, JsonElement> mudanca = Respostas(("MODALIDADES", new[] { "LB_PPI" }));
             mudanca["NOME_SOCIAL"] = JsonSerializer.SerializeToElement<string?>(null);
-            lida.Salvar(null, mudanca, Familia("membro-2", "membro-3"), [], Admitidas, PrecondicaoIfMatch.DeTags([lida.ETag]))
+            lida.Salvar(null, null, mudanca, Familia("membro-2", "membro-3"), [], Admitidas, PrecondicaoIfMatch.DeTags([lida.ETag]))
                 .IsSuccess.Should().BeTrue();
             await repositorio.AtualizarAsync(lida);
             await context.SaveChangesAsync();
@@ -455,7 +455,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
     {
         Inscricao original = NovaInscricao(PersonasDeTeste.KevinCarvalho, Guid.CreateVersion7());
         original.Submeter(
-            "000654", OfertaDoProcesso, Respostas(("NOME_SOCIAL", "Kevin")), SemGrupos(), [], Admitidas, FormularioDeTeste.AvaliacaoSemOcultos,
+            "000654", OfertaDoProcesso, null, Respostas(("NOME_SOCIAL", "Kevin")), SemGrupos(), [], Admitidas, FormularioDeTeste.AvaliacaoSemOcultos,
             Respostas(("UF_RESIDENCIA", "PA")), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
 
         await using (SelecaoDbContext context = _fixture.CreateDbContext())
@@ -468,7 +468,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         {
             InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
             Inscricao lida = (await repositorio.ObterPorIdAsync(original.Id))!;
-            Result salvo = lida.Salvar(null, Respostas(("NOME_SOCIAL", "Kevin C.")), SemGrupos(), [], Admitidas, PrecondicaoIfMatch.DeTags([lida.ETag]));
+            Result salvo = lida.Salvar(null, null, Respostas(("NOME_SOCIAL", "Kevin C.")), SemGrupos(), [], Admitidas, PrecondicaoIfMatch.DeTags([lida.ETag]));
             salvo.Error!.Code.Should().Be(InscricaoErrorCodes.RascunhoSoAntesDoEnvio);
             await context.SaveChangesAsync();
         }
@@ -492,10 +492,10 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         {
             InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
             ComprovanteInscricao envio = original.Submeter(
-                "000777", OfertaDoProcesso, Respostas(("NOME_SOCIAL", "Ariel")), SemGrupos(), [], Admitidas, FormularioDeTeste.AvaliacaoSemOcultos,
+                "000777", OfertaDoProcesso, null, Respostas(("NOME_SOCIAL", "Ariel")), SemGrupos(), [], Admitidas, FormularioDeTeste.AvaliacaoSemOcultos,
                 Respostas(), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), primeira).Value!;
             ComprovanteInscricao correcao = original.Submeter(
-                "000777", OfertaDoProcesso, Respostas(("NOME_SOCIAL", "Ariel D.")), SemGrupos(), [], Admitidas, FormularioDeTeste.AvaliacaoSemOcultos,
+                "000777", OfertaDoProcesso, null, Respostas(("NOME_SOCIAL", "Ariel D.")), SemGrupos(), [], Admitidas, FormularioDeTeste.AvaliacaoSemOcultos,
                 Respostas(), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), primeira.AddMinutes(5)).Value!;
             hashDaCorrecao = correcao.HashIntegridade;
             await repositorio.AdicionarAsync(original);
@@ -535,7 +535,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         {
             InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
             ComprovanteInscricao envio = original.Submeter(
-                "000778", OfertaDoProcesso, Respostas(("NOME_SOCIAL", "Ariel")), SemGrupos(), [], Admitidas, FormularioDeTeste.AvaliacaoSemOcultos,
+                "000778", OfertaDoProcesso, null, Respostas(("NOME_SOCIAL", "Ariel")), SemGrupos(), [], Admitidas, FormularioDeTeste.AvaliacaoSemOcultos,
                 derivados, DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]),
                 new DateTimeOffset(2026, 10, 10, 12, 0, 0, 123, TimeSpan.Zero)).Value!;
             await repositorio.AdicionarAsync(original);
@@ -564,7 +564,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             Modalidades = new ModalidadesDeConcorrencia(true, SituacaoDasModalidades.Concorre, modalidades, [], new DependenciasDaAvaliacao([], [])),
         };
         ComprovanteInscricao envio = original.Submeter(
-            "000901", OfertaDoProcesso, Respostas(("NOME_SOCIAL", "Ariel")), SemGrupos(), [], Admitidas, avaliacao,
+            "000901", OfertaDoProcesso, null, Respostas(("NOME_SOCIAL", "Ariel")), SemGrupos(), [], Admitidas, avaliacao,
             Respostas(), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), DateTimeOffset.UtcNow).Value!;
 
         await using (SelecaoDbContext context = _fixture.CreateDbContext())
@@ -600,6 +600,48 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         InscricaoRepository leitura = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         ComprovanteInscricao relido = (await leitura.ObterComprovantesAsync([original.Id], CancellationToken.None)).Single();
         relido.Modalidades.Should().Equal(modalidades);
+        relido.IntegridadeConfere().Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "A 2ª opção e as modalidades dela são gravadas na inscrição e no comprovante, e o comprovante relido do banco confere")]
+    public async Task Submeter_GravaASegundaOpcaoEAsModalidadesDela()
+    {
+        Guid segundaOferta = Guid.CreateVersion7();
+        RespostasAdmitidas admitidasComDuasOpcoes = Admitidas with
+        {
+            OfertasDeCurso = new HashSet<Guid> { OfertaDoProcesso, segundaOferta },
+            NumeroDeOpcoesDeCurso = 2,
+        };
+        Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, Guid.CreateVersion7());
+        ModalidadeDeConcorrencia[] daPrimeira = [new("AC", "Ampla concorrência", 0), new("LI_EP", "Egressos de escola pública", 4)];
+        ModalidadeDeConcorrencia[] daSegunda = [new("AC", "Ampla concorrência", 0)];
+        DependenciasDaAvaliacao dependencias = new([], []);
+        ResultadoDaAvaliacaoDaInscricao avaliacao = FormularioDeTeste.AvaliacaoSemOcultos with
+        {
+            Modalidades = new ModalidadesDeConcorrencia(true, SituacaoDasModalidades.Concorre, daPrimeira, [], dependencias),
+            ModalidadesSegundaOpcao = new ModalidadesDeConcorrencia(true, SituacaoDasModalidades.Concorre, daSegunda, [], dependencias),
+        };
+        ComprovanteInscricao envio = original.Submeter(
+            "000902", OfertaDoProcesso, segundaOferta, Respostas(("NOME_SOCIAL", "Ariel")), SemGrupos(), [], admitidasComDuasOpcoes, avaliacao,
+            Respostas(), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), DateTimeOffset.UtcNow).Value!;
+
+        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        {
+            InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+            await repositorio.AdicionarAsync(original);
+            await repositorio.AdicionarComprovanteAsync(envio);
+            await context.SaveChangesAsync();
+        }
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        InscricaoRepository leitura = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+        Inscricao? lida = await leitura.ObterPorProcessoECpfAsync(original.ProcessoSeletivoId, PersonasDeTeste.FernandaDrumond);
+        lida!.OfertaCursoSegundaOpcaoId.Should().Be(segundaOferta);
+        lida.Derivados["MODALIDADE_SEGUNDA_OPCAO"].EnumerateArray().Select(static v => v.GetString()).Should().Equal("AC");
+
+        ComprovanteInscricao relido = (await leitura.ObterComprovantesAsync([original.Id], CancellationToken.None)).Single();
+        relido.OfertaCursoSegundaOpcaoId.Should().Be(segundaOferta);
+        relido.ModalidadesSegundaOpcao.Should().Equal(daSegunda);
         relido.IntegridadeConfere().Should().BeTrue();
     }
 

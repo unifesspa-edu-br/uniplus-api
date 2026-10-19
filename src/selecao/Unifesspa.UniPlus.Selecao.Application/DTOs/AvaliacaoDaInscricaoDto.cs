@@ -15,18 +15,23 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// avaliação lê as modalidades e as regras dessa oferta. Nula ou ausente, nenhuma oferta está escolhida
 /// — a mesma leitura do salvar, que grava a oferta nula —, nunca a gravada na inscrição; uma oferta que
 /// o processo não conhece não é recusada aqui — o envio e o rascunho a recusam — e a avaliação trata
-/// como se nenhuma tivesse sido escolhida.
+/// como se nenhuma tivesse sido escolhida. <see cref="OfertaCursoSegundaOpcaoId"/> é a 2ª opção, com a
+/// mesma leitura: nula ou ausente, não há 2ª opção.
 /// </summary>
 public sealed record AvaliacaoDaInscricaoRequest(
     IReadOnlyDictionary<string, JsonElement>? Respostas,
     IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>? Grupos,
-    Guid? OfertaCursoId = null);
+    Guid? OfertaCursoId = null,
+    Guid? OfertaCursoSegundaOpcaoId = null);
 
 /// <summary>
 /// A avaliação da inscrição diante das respostas do candidato: as modalidades em que ele concorre e os
-/// documentos que o edital exige dele, por fase.
+/// documentos que o edital exige dele, por fase. <see cref="Modalidades"/> são as da 1ª opção de curso e
+/// <see cref="ModalidadesSegundaOpcao"/> as da 2ª, que tem a própria distribuição de vagas — nulas quando
+/// a inscrição não tem 2ª opção. Os documentos valem para as duas opções.
 /// </summary>
-public sealed record AvaliacaoDaInscricaoDto(ModalidadesDaInscricaoDto Modalidades, DocumentosDaInscricaoDto Documentos)
+public sealed record AvaliacaoDaInscricaoDto(
+    ModalidadesDaInscricaoDto Modalidades, DocumentosDaInscricaoDto Documentos, ModalidadesDaInscricaoDto? ModalidadesSegundaOpcao = null)
 {
     /// <param name="fases">As fases que a resposta lista, na ordem do cronograma.</param>
     /// <param name="enderecoDoModelo">O endereço no acervo público do modelo que a exigência oferece.</param>
@@ -37,24 +42,27 @@ public sealed record AvaliacaoDaInscricaoDto(ModalidadesDaInscricaoDto Modalidad
         ArgumentNullException.ThrowIfNull(fases);
         ArgumentNullException.ThrowIfNull(enderecoDoModelo);
 
-        ModalidadesDeConcorrencia modalidades = resultado.Modalidades;
         ILookup<Guid, DocumentoAvaliado> documentosPorFase = resultado.Documentos.Itens
             .Where(static d => d.Situacao != SituacaoDoDocumento.NaoExigido)
             .ToLookup(static d => d.Documento.ExigidoNaFaseId);
         return new AvaliacaoDaInscricaoDto(
-            new ModalidadesDaInscricaoDto(
-                modalidades.Derivada,
-                modalidades.Situacao.ToCodigo(),
-                [.. modalidades.Itens.Select(static m => new ModalidadeDaInscricaoDto(m.Codigo, m.Nome, m.Ordem))],
-                [.. modalidades.Pendencias.Select(Pendencia)]),
+            ProjetarModalidades(resultado.Modalidades),
             new DocumentosDaInscricaoDto(
                 [.. fases.OrderBy(static f => f.Ordem).Select(f => new FaseDosDocumentosDto(
                     f.Id,
                     f.Codigo,
                     f.Ordem,
                     [.. documentosPorFase[f.Id].Select(d => Documento(d, enderecoDoModelo))],
-                    [.. resultado.Documentos.PendenciasPorFase.GetValueOrDefault(f.Id, []).Select(Pendencia)]))]));
+                    [.. resultado.Documentos.PendenciasPorFase.GetValueOrDefault(f.Id, []).Select(Pendencia)]))]),
+            resultado.ModalidadesSegundaOpcao is { } daSegunda ? ProjetarModalidades(daSegunda) : null);
     }
+
+    private static ModalidadesDaInscricaoDto ProjetarModalidades(ModalidadesDeConcorrencia modalidades) =>
+        new(
+            modalidades.Derivada,
+            modalidades.Situacao.ToCodigo(),
+            [.. modalidades.Itens.Select(static m => new ModalidadeDaInscricaoDto(m.Codigo, m.Nome, m.Ordem))],
+            [.. modalidades.Pendencias.Select(Pendencia)]);
 
     private static PendenciaDaAvaliacaoDto Pendencia(PendenciaDaAvaliacao pendencia) =>
         new(pendencia.FatoCodigo, pendencia.Rotulo, pendencia.SecaoCodigo);

@@ -268,7 +268,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
 
         return Inscricao.Reidratar(
             record.Id, record.ProcessoSeletivoId, cpf, record.Sub, record.EmissorToken, record.Situacao,
-            record.VersaoFormularioId, record.OfertaCursoId, record.NumeroInscricao,
+            record.VersaoFormularioId, record.OfertaCursoId, record.OfertaCursoSegundaOpcaoId, record.NumeroInscricao,
             respostas, derivados, grupos, aceites, definicoes,
             record.Revisao, record.CreatedAt, record.UpdatedAt);
     }
@@ -580,6 +580,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
         record.Situacao = entity.Situacao;
         record.VersaoFormularioId = entity.VersaoFormularioId;
         record.OfertaCursoId = entity.OfertaCursoId;
+        record.OfertaCursoSegundaOpcaoId = entity.OfertaCursoSegundaOpcaoId;
         record.NumeroInscricao = entity.NumeroInscricao;
         record.Revisao = entity.Revisao;
     }

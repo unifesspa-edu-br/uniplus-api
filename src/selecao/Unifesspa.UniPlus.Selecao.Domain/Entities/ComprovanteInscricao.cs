@@ -11,7 +11,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// #1855): cópia do que foi enviado, SEM nenhum número de documento, com o hash de integridade
 /// que prova que o comprovante não mudou. O hash é o SHA-256 do JSON canônico do conteúdo
 /// (número, instante em segundos UTC, oferta, respostas, derivados, grupos, aceites e, quando a
-/// versão deriva a modalidade, as modalidades em que o candidato concorre); qualquer um o
+/// versão deriva a modalidade, as modalidades em que o candidato concorre; e, quando a inscrição
+/// declara a 2ª opção de curso, a oferta dela e as modalidades dela); qualquer um o
 /// recalcula, e não é um código de autenticação.
 /// </summary>
 /// <remarks>
@@ -41,7 +42,11 @@ public sealed class ComprovanteInscricao : IForensicEntity
 
     public string HashIntegridade { get; private init; } = string.Empty;
 
+    /// <summary>A oferta de curso da 1ª opção.</summary>
     public Guid? OfertaCursoId { get; private init; }
+
+    /// <summary>A oferta de curso da 2ª opção; nula quando a inscrição não a declarou nesta submissão.</summary>
+    public Guid? OfertaCursoSegundaOpcaoId { get; private init; }
 
     /// <summary>O que o candidato informou, no momento da submissão — sem números de documento.</summary>
     public IReadOnlyDictionary<string, JsonElement> Respostas { get; private init; } =
@@ -79,6 +84,12 @@ public sealed class ComprovanteInscricao : IForensicEntity
     /// </summary>
     public IReadOnlyList<ModalidadeDeConcorrencia>? Modalidades { get; private init; }
 
+    /// <summary>
+    /// As modalidades em que o candidato concorre na 2ª opção, calculadas sobre a distribuição de vagas
+    /// da oferta dela; nulo quando não há 2ª opção ou a versão fixada não deriva a modalidade.
+    /// </summary>
+    public IReadOnlyList<ModalidadeDeConcorrencia>? ModalidadesSegundaOpcao { get; private init; }
+
     // Construtor de materialização do EF Core.
     private ComprovanteInscricao() { }
 
@@ -92,7 +103,9 @@ public sealed class ComprovanteInscricao : IForensicEntity
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
         IReadOnlyList<AceiteDeTermo> aceites,
         IReadOnlyList<ModalidadeDeConcorrencia>? modalidades = null,
-        IReadOnlyDictionary<string, JsonElement>? respostasSensiveis = null)
+        IReadOnlyDictionary<string, JsonElement>? respostasSensiveis = null,
+        Guid? ofertaCursoSegundaOpcaoId = null,
+        IReadOnlyList<ModalidadeDeConcorrencia>? modalidadesSegundaOpcao = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(numeroInscricao);
         ArgumentNullException.ThrowIfNull(respostas);
@@ -115,13 +128,15 @@ public sealed class ComprovanteInscricao : IForensicEntity
             Instante = instante,
             HashIntegridade = HashDoConteudo(
                 numeroInscricao, instante, ofertaCursoId, respostasGravadas, derivadosGravados, gruposGravados, aceites, modalidades,
-                (respostasSensiveis ?? new Dictionary<string, JsonElement>()).Keys),
+                (respostasSensiveis ?? new Dictionary<string, JsonElement>()).Keys, ofertaCursoSegundaOpcaoId, modalidadesSegundaOpcao),
             Grupos = gruposGravados,
             OfertaCursoId = ofertaCursoId,
+            OfertaCursoSegundaOpcaoId = ofertaCursoSegundaOpcaoId,
             Respostas = respostasGravadas,
             Derivados = derivadosGravados,
             Aceites = aceites,
             Modalidades = modalidades,
+            ModalidadesSegundaOpcao = modalidadesSegundaOpcao,
             RespostasSensiveis = NaFormaGravada(respostasSensiveis),
         };
     }
@@ -144,7 +159,9 @@ public sealed class ComprovanteInscricao : IForensicEntity
     public bool IntegridadeConfere() =>
         string.Equals(
             HashIntegridade,
-            HashDoConteudo(NumeroInscricao, Instante, OfertaCursoId, Respostas, Derivados, Grupos, Aceites, Modalidades, RespostasSensiveis.Keys),
+            HashDoConteudo(
+                NumeroInscricao, Instante, OfertaCursoId, Respostas, Derivados, Grupos, Aceites, Modalidades, RespostasSensiveis.Keys,
+                OfertaCursoSegundaOpcaoId, ModalidadesSegundaOpcao),
             StringComparison.Ordinal);
 
     /// <summary>
@@ -208,7 +225,9 @@ public sealed class ComprovanteInscricao : IForensicEntity
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
         IReadOnlyList<AceiteDeTermo> aceites,
         IReadOnlyList<ModalidadeDeConcorrencia>? modalidades,
-        IEnumerable<string> codigosSensiveis)
+        IEnumerable<string> codigosSensiveis,
+        Guid? ofertaCursoSegundaOpcaoId,
+        IReadOnlyList<ModalidadeDeConcorrencia>? modalidadesSegundaOpcao)
     {
         JsonObject conteudo = new()
         {
@@ -224,6 +243,17 @@ public sealed class ComprovanteInscricao : IForensicEntity
         if (modalidades is not null)
         {
             conteudo["modalidades"] = Nodo(modalidades);
+        }
+
+        // A 2ª opção só entra quando declarada: o comprovante sem ela segue com o hash que sempre teve.
+        if (ofertaCursoSegundaOpcaoId is { } segundaOpcao)
+        {
+            conteudo["ofertaCursoSegundaOpcaoId"] = segundaOpcao.ToString();
+        }
+
+        if (modalidadesSegundaOpcao is not null)
+        {
+            conteudo["modalidadesSegundaOpcao"] = Nodo(modalidadesSegundaOpcao);
         }
 
         // Só os códigos, nunca os valores: apagar as colunas dos sensíveis muda o hash, e o comprovante

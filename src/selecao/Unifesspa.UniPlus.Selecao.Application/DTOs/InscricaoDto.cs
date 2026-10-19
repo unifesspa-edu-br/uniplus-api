@@ -18,12 +18,18 @@ using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 /// As respostas por fato seguem a mesma forma de <see cref="PreVisualizacaoDoProcessoInput"/>
 /// (código do fato → valor bruto) para que o avaliador de formulário leia as duas do mesmo jeito. O
 /// CPF nunca aparece em <see cref="Respostas"/>: ele vem do claim do token, nunca do corpo.
+/// <para>
+/// <see cref="OfertaCursoId"/> é a 1ª opção de curso e <see cref="OfertaCursoSegundaOpcaoId"/> a 2ª, que
+/// é opcional. Os dois campos substituem o que está gravado: omitidos ou nulos, a opção fica sem oferta,
+/// e é assim que o candidato retira a 2ª opção.
+/// </para>
 /// </remarks>
 public sealed record InscricaoRequest(
     Guid? OfertaCursoId,
     IReadOnlyDictionary<string, JsonElement>? Respostas,
     IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>? Grupos,
-    IReadOnlyList<AceiteDeTermoInput>? Aceites);
+    IReadOnlyList<AceiteDeTermoInput>? Aceites,
+    Guid? OfertaCursoSegundaOpcaoId = null);
 
 /// <summary>
 /// Uma ocorrência de grupo repetível da inscrição, pelo id estável do membro — nunca pela posição,
@@ -46,6 +52,9 @@ public sealed record AceiteDeTermoInput(string Codigo, Guid VersaoId, string Has
 /// comprovante o devolve mascarado. <see cref="Derivados"/> é o que o sistema calculou das
 /// respostas na última submissão. <see cref="Avaliacao"/> é a avaliação das respostas gravadas, a
 /// mesma que a consulta do candidato devolve — calculada a cada leitura, nunca gravada (ADR-0143).
+/// <see cref="OfertaCursoId"/> e <see cref="OfertaCursoSegundaOpcaoId"/> são a 1ª e a 2ª opção de curso.
+/// <see cref="NumeroDeOpcoesDeCurso"/> e <see cref="Ofertas"/> são os da versão fixada, e não os do
+/// processo vivo: uma retificação posterior não muda as opções que esta inscrição admite.
 /// </summary>
 public sealed record InscricaoDto(
     Guid Id,
@@ -54,6 +63,9 @@ public sealed record InscricaoDto(
     string? NumeroInscricao,
     Guid VersaoFormularioId,
     Guid? OfertaCursoId,
+    Guid? OfertaCursoSegundaOpcaoId,
+    int NumeroDeOpcoesDeCurso,
+    IReadOnlyList<OfertaDeCursoCertameDto> Ofertas,
     IReadOnlyDictionary<string, JsonElement> Respostas,
     IReadOnlyDictionary<string, JsonElement> Derivados,
     IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>> Grupos,
@@ -62,10 +74,14 @@ public sealed record InscricaoDto(
     AvaliacaoDaInscricaoDto Avaliacao)
 {
     /// <summary>Projeta o agregado no contrato — <c>Grupos</c>/<c>Aceites</c> do domínio têm a mesma forma, em tipos próprios do contrato (não acopla um ao outro).</summary>
-    public static InscricaoDto De(Inscricao inscricao, AvaliacaoDaInscricaoDto avaliacao)
+    /// <param name="numeroDeOpcoesDeCurso">O número de opções da versão que a inscrição fixou.</param>
+    /// <param name="ofertas">As ofertas da versão que a inscrição fixou.</param>
+    public static InscricaoDto De(
+        Inscricao inscricao, AvaliacaoDaInscricaoDto avaliacao, int numeroDeOpcoesDeCurso, IReadOnlyList<OfertaDeCursoCertameDto> ofertas)
     {
         ArgumentNullException.ThrowIfNull(inscricao);
         ArgumentNullException.ThrowIfNull(avaliacao);
+        ArgumentNullException.ThrowIfNull(ofertas);
 
         return new InscricaoDto(
             inscricao.Id,
@@ -74,6 +90,9 @@ public sealed record InscricaoDto(
             inscricao.NumeroInscricao,
             inscricao.VersaoFormularioId,
             inscricao.OfertaCursoId,
+            inscricao.OfertaCursoSegundaOpcaoId,
+            numeroDeOpcoesDeCurso,
+            ofertas,
             inscricao.Respostas,
             inscricao.Derivados,
             inscricao.Grupos.ToDictionary(
@@ -96,8 +115,11 @@ public sealed record InscricaoDto(
 /// para o próprio dono.
 /// <see cref="FusoHorario"/> é a zona em que o <see cref="Instante"/> se lê: o comprovante se
 /// apresenta sem depender de o certame estar disponível.
-/// <see cref="Modalidades"/> são as modalidades em que o candidato concorre, na ordem das ofertadas;
-/// nulas quando o processo não define pela inscrição as modalidades de concorrência.
+/// <see cref="Modalidades"/> são as modalidades em que o candidato concorre na 1ª opção, na ordem das
+/// ofertadas; nulas quando o processo não define pela inscrição as modalidades de concorrência.
+/// <see cref="OfertaCursoSegundaOpcaoId"/> e <see cref="ModalidadesSegundaOpcao"/> são a 2ª opção de curso
+/// e as modalidades em que o candidato concorre nela — a oferta tem a própria distribuição de vagas —,
+/// nulas quando a inscrição não declarou a 2ª opção.
 /// </summary>
 public sealed record ComprovanteInscricaoDto(
     string CpfMascarado,
@@ -106,11 +128,13 @@ public sealed record ComprovanteInscricaoDto(
     FusoHorarioDto FusoHorario,
     string HashIntegridade,
     Guid? OfertaCursoId,
+    Guid? OfertaCursoSegundaOpcaoId,
     IReadOnlyDictionary<string, JsonElement> Respostas,
     IReadOnlyDictionary<string, JsonElement> Derivados,
     IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>> Grupos,
     IReadOnlyList<AceiteDeTermoInput> Aceites,
-    IReadOnlyList<ModalidadeDaInscricaoDto>? Modalidades)
+    IReadOnlyList<ModalidadeDaInscricaoDto>? Modalidades,
+    IReadOnlyList<ModalidadeDaInscricaoDto>? ModalidadesSegundaOpcao)
 {
     public static ComprovanteInscricaoDto De(ComprovanteInscricao comprovante, Cpf cpf)
     {
@@ -124,6 +148,7 @@ public sealed record ComprovanteInscricaoDto(
             FusoHorarioDto.Institucional,
             comprovante.HashIntegridade,
             comprovante.OfertaCursoId,
+            comprovante.OfertaCursoSegundaOpcaoId,
             comprovante.Respostas.Concat(comprovante.RespostasSensiveis).ToDictionary(static r => r.Key, static r => r.Value, StringComparer.Ordinal),
             comprovante.Derivados,
             comprovante.Grupos.ToDictionary(
@@ -132,7 +157,8 @@ public sealed record ComprovanteInscricaoDto(
                     [.. g.Value.Select(static o => new OcorrenciaDeGrupoInscricaoInput(o.Id, o.Respostas))],
                 StringComparer.Ordinal),
             [.. comprovante.Aceites.Select(static a => new AceiteDeTermoInput(a.Codigo, a.VersaoId, a.HashVersao))],
-            comprovante.Modalidades?.Select(static m => new ModalidadeDaInscricaoDto(m.Codigo, m.Nome, m.Ordem)).ToList());
+            comprovante.Modalidades?.Select(static m => new ModalidadeDaInscricaoDto(m.Codigo, m.Nome, m.Ordem)).ToList(),
+            comprovante.ModalidadesSegundaOpcao?.Select(static m => new ModalidadeDaInscricaoDto(m.Codigo, m.Nome, m.Ordem)).ToList());
     }
 }
 

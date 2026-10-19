@@ -98,7 +98,7 @@ public static class SalvarInscricaoCommandHandler
 
         Result<Services.ContextoDaVersaoFixada> contexto = await Services.ContextoDaVersaoFixadaResolver.ResolverAsync(
             inscricao.VersaoFormularioId, command.ProcessoSeletivoId, processoSeletivoRepository, registroCodecs,
-            command.Request.OfertaCursoId, cancellationToken)
+            command.Request.OfertaCursoId, command.Request.OfertaCursoSegundaOpcaoId, cancellationToken)
             .ConfigureAwait(false);
         if (contexto.IsFailure)
         {
@@ -130,7 +130,8 @@ public static class SalvarInscricaoCommandHandler
         List<AceiteDeTermo> aceites = aceitesLidos.Value!;
 
         // A mesma avaliação do envio e da consulta (ADR-0143), sem etapa concluída: o rascunho ainda
-        // está sendo preenchido, e só o que o corpo traz é conferido.
+        // está sendo preenchido, e só o que o corpo traz é conferido. As restrições vêm do formulário,
+        // que é um só para as duas opções; as modalidades por opção ficam para a avaliação devolvida.
         Result<ResultadoDaAvaliacaoDaInscricao> avaliacao = AvaliacaoDaInscricao.Avaliar(contexto.Value!.Configuracao, new EntradaDaAvaliacaoDaInscricao(
             respostas,
             Services.InscricaoRequestMapper.ParaAvaliacao(grupos),
@@ -165,7 +166,7 @@ public static class SalvarInscricaoCommandHandler
         }
 
         Result salvar = inscricao.Salvar(
-            command.Request.OfertaCursoId, respostas, grupos, aceites, contexto.Value!.Admitidas with { NomeCivilDoLogin = userContext.NomeCompleto, NomeSocialDoLogin = userContext.NomeSocial }, command.Precondicao);
+            command.Request.OfertaCursoId, command.Request.OfertaCursoSegundaOpcaoId, respostas, grupos, aceites, contexto.Value!.Admitidas with { NomeCivilDoLogin = userContext.NomeCompleto, NomeSocialDoLogin = userContext.NomeSocial }, command.Precondicao);
         if (salvar.IsFailure)
         {
             return Result<InscricaoDto>.ValidationFailure(salvar.Errors);
@@ -192,7 +193,8 @@ public static class SalvarInscricaoCommandHandler
             avaliada.Value!, contexto.Value!, inscricao.ProcessoSeletivoId, enderecoNoAcervo);
         return projetada.IsFailure
             ? Result<InscricaoDto>.Failure(projetada.Error!)
-            : Result<InscricaoDto>.Success(InscricaoDto.De(inscricao, projetada.Value!));
+            : Result<InscricaoDto>.Success(InscricaoDto.De(
+                inscricao, projetada.Value!, contexto.Value!.Admitidas.NumeroDeOpcoesDeCurso, contexto.Value!.OfertasDeCurso));
     }
 
     /// <summary>

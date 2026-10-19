@@ -38,6 +38,8 @@ public sealed class InscricaoRecord
 
     public Guid? OfertaCursoId { get; set; }
 
+    public Guid? OfertaCursoSegundaOpcaoId { get; set; }
+
     public string? NumeroInscricao { get; set; }
 
     /// <summary>Token de concorrência (ADR-0119) — espelha <see cref="Domain.Entities.Inscricao.Revisao"/>.</summary>

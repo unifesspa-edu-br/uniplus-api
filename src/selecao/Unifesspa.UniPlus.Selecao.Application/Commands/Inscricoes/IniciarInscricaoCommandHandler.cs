@@ -142,14 +142,11 @@ public static class IniciarInscricaoCommandHandler
                 return Result<InscricaoDto>.Failure(erroDono);
             }
 
-            Result<AvaliacaoDaInscricaoDto> avaliacao = await Services.PreparacaoDaAvaliacaoDaInscricao
-                .ProjetarGravadaAsync(
+            return await Services.PreparacaoDaAvaliacaoDaInscricao
+                .ProjetarInscricaoGravadaAsync(
                     lida, processoSeletivoRepository, registroCodecs, resolvedorFuso, conferenciaEnderecoGeo, enderecoNoAcervo,
                     timeProvider.GetUtcNow(), cancellationToken)
                 .ConfigureAwait(false);
-            return avaliacao.IsFailure
-                ? Result<InscricaoDto>.Failure(avaliacao.Error!)
-                : Result<InscricaoDto>.Success(InscricaoDto.De(lida, avaliacao.Value!));
         }
     }
 }

@@ -49,6 +49,9 @@ internal sealed class ComprovanteInscricaoConfiguration : IEntityTypeConfigurati
 
         builder.Property(c => c.OfertaCursoId);
 
+        builder.Property(c => c.OfertaCursoSegundaOpcaoId)
+            .HasComment("A oferta de curso da 2ª opção; nulo quando a inscrição não a declarou nesta submissão.");
+
         builder.Property(c => c.Respostas)
             .HasConversion(RespostasConverter, RespostasComparer)
             .HasColumnType("jsonb")
@@ -85,6 +88,11 @@ internal sealed class ComprovanteInscricaoConfiguration : IEntityTypeConfigurati
             .HasConversion(ModalidadesConverter, ModalidadesComparer)
             .HasColumnType("jsonb")
             .HasComment("As modalidades em que o candidato concorre nesta submissão, com o nome congelado e a ordem das ofertadas; nulo quando a versão não deriva a modalidade.");
+
+        builder.Property(c => c.ModalidadesSegundaOpcao)
+            .HasConversion(ModalidadesConverter, ModalidadesComparer)
+            .HasColumnType("jsonb")
+            .HasComment("As modalidades em que o candidato concorre na 2ª opção, sobre a distribuição de vagas da oferta dela; nulo quando não há 2ª opção ou a versão não deriva a modalidade.");
 
         // Mesmo padrão de ObrigatoriedadeLegalHistoricoConfiguration: sem navigation property —
         // a forensic não navega de volta para a Inscricao em queries de histórico.
