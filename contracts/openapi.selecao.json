@@ -11037,6 +11037,7 @@
           "unidadeAdministradora",
           "documentoEdital",
           "ofertas",
+          "opcoesDeCurso",
           "modalidadesOfertadas",
           "vagas",
           "etapas",
@@ -11089,6 +11090,9 @@
             "items": {
               "$ref": "#/components/schemas/OfertaDeCursoCertameDto"
             }
+          },
+          "opcoesDeCurso": {
+            "$ref": "#/components/schemas/OpcoesDeCursoCertameDto"
           },
           "modalidadesOfertadas": {
             "type": "array",
@@ -16778,6 +16782,22 @@
             "items": {
               "$ref": "#/components/schemas/OpcaoDoProcessoDto"
             }
+          }
+        }
+      },
+      "OpcoesDeCursoCertameDto": {
+        "required": [
+          "numero"
+        ],
+        "type": "object",
+        "properties": {
+          "numero": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },

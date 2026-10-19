@@ -118,6 +118,12 @@ public sealed record OfertaDeCursoCertameDto(
     IReadOnlyList<string> Turnos);
 
 /// <summary>
+/// Quantas opções de curso a inscrição admite neste certame — uma ou duas. É regra do edital: o
+/// candidato lê quantos cursos pode declarar antes de se inscrever.
+/// </summary>
+public sealed record OpcoesDeCursoCertameDto(int Numero);
+
+/// <summary>
 /// O quadro de vagas de uma oferta de curso.
 /// </summary>
 /// <remarks>
@@ -243,6 +249,7 @@ public sealed record CertamePublicadoDto(
     UnidadeAdministradoraCertameDto UnidadeAdministradora,
     DocumentoEditalCertameDto DocumentoEdital,
     IReadOnlyList<OfertaDeCursoCertameDto> Ofertas,
+    OpcoesDeCursoCertameDto OpcoesDeCurso,
     IReadOnlyList<string> ModalidadesOfertadas,
     IReadOnlyList<QuadroDeVagasCertameDto> Vagas,
     IReadOnlyList<EtapaCertameDto> Etapas,
