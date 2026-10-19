@@ -96,6 +96,24 @@ public sealed class AtoDoProcessoRepository : IAtoDoProcessoRepository
             .ConfigureAwait(false);
     }
 
+    public async Task<bool> ExisteAtoDoTipoForaDaCadeiaAsync(
+        Guid processoSeletivoId,
+        string tipoCodigo,
+        IReadOnlyCollection<Guid> cadeiaDeCorrecao,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(cadeiaDeCorrecao);
+
+        Guid[] cadeia = [.. cadeiaDeCorrecao];
+
+        return await _context.AtosDoProcesso
+            .AsNoTracking()
+            .AnyAsync(
+                a => a.ProcessoSeletivoId == processoSeletivoId && a.TipoCodigo == tipoCodigo && !cadeia.Contains(a.Id),
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task<IReadOnlySet<Guid>> ListarDocumentosJaUsadosAsync(
         Guid processoSeletivoId,
         IReadOnlyCollection<Guid> documentoIds,

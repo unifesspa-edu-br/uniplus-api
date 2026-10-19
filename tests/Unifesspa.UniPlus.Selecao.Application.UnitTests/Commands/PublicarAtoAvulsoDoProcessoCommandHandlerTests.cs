@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.AtosDoProcesso;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -55,7 +56,7 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
         _atos.ObterComAnexosAsync(_versaoDivulgadaAtoId, Arg.Any<CancellationToken>()).Returns(
             RegistroDoAto(_versaoDivulgadaAtoId, "EDITAL_ABERTURA"));
 
-        Tipo(congela: false, resultado: false);
+        Tipo(congela: false);
         _documentos.ListarDoProcessoAsync(_processoId, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(call => ((IReadOnlyCollection<Guid>)call[1])
                 .SelectMany(id => new[] { _principal, _anexo, _anexoPdf, _outroAnexoPdf }.Where(d => d.Id == id)).ToList());
@@ -157,24 +158,57 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
     [Fact(DisplayName = "Tipo que congela configuração não é documento avulso")]
     public async Task TipoQueCongela_Recusa()
     {
-        Tipo(congela: true, resultado: false);
+        Tipo(congela: true);
 
         await ExigirRecusa(Comando(), AtoDoProcessoErrorCodes.TipoCongelaConfiguracao);
     }
 
-    [Fact(DisplayName = "Tipo que é resultado — como convocação e chamada, que determinam a situação do candidato — não é documento avulso")]
-    public async Task TipoQueEResultado_Recusa()
+    [Theory(DisplayName = "Convocação e chamada, como o seed as declara, não são documento avulso")]
+    [InlineData("CONVOCACAO")]
+    [InlineData("CHAMADA")]
+    [InlineData("RESULTADO_CLASSIFICACAO")]
+    public async Task TipoNaoPublicavelComoAvulso_Recusa(string codigo)
     {
-        Tipo(congela: false, resultado: true);
+        _tipos.ObterVigenteAsync(codigo, DataDoAto, Arg.Any<CancellationToken>()).Returns(SeedDosTiposDeAto.Tipo(codigo));
 
-        await ExigirRecusa(Comando(), AtoDoProcessoErrorCodes.TipoEhResultado);
+        await ExigirRecusa(Comando(tipo: codigo), AtoDoProcessoErrorCodes.TipoNaoPublicavelComoAvulso);
+    }
+
+    [Fact(DisplayName = "A errata, como o seed a declara, sem ato corrigido é recusada")]
+    public async Task ErrataSemAtoCorrigido_Recusa()
+    {
+        _tipos.ObterVigenteAsync("ERRATA", DataDoAto, Arg.Any<CancellationToken>()).Returns(SeedDosTiposDeAto.Tipo("ERRATA"));
+
+        await ExigirRecusa(Comando(tipo: "ERRATA"), AtoDoProcessoErrorCodes.TipoExigeAtoCorrigido);
+    }
+
+    [Theory(DisplayName = "Aviso e comunicado, como o seed os declara, são aceitos sem ato corrigido")]
+    [InlineData("AVISO")]
+    [InlineData("COMUNICADO")]
+    public async Task AvisoEComunicado_SemAtoCorrigido_SaoAceitos(string codigo)
+    {
+        _tipos.ObterVigenteAsync(codigo, DataDoAto, Arg.Any<CancellationToken>()).Returns(SeedDosTiposDeAto.Tipo(codigo));
+
+        (Result<AtoPublicadoDto> resposta, _) = await Publicar(Comando(tipo: codigo));
+
+        resposta.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Tipo único por objeto com o primeiro ato ainda pendente na Seleção recusa o segundo")]
+    public async Task VagaDoObjetoOcupadaPorAtoPendente_Recusa()
+    {
+        Tipo(congela: false, unico: true);
+        _atos.ExisteAtoDoTipoForaDaCadeiaAsync(_processoId, "AVISO", Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(true);
+
+        await ExigirRecusa(Comando(), "ProcessoSeletivo.ObjetoJaTemAtoVivoDoTipo");
     }
 
     [Fact(DisplayName = "Tipo único por objeto com a vaga tomada por outra linhagem é recusado")]
     public async Task VagaDoObjetoTomada_Recusa()
     {
         _tipos.ObterVigenteAsync("AVISO", DataDoAto, Arg.Any<CancellationToken>()).Returns(
-            new TipoAtoPublicadoView("AVISO", "Aviso", false, true, false, false));
+            new TipoAtoPublicadoView("AVISO", "Aviso", false, true, false, false, PublicavelComoAvulso: true));
         _vagas.ObjetoJaTemAtoDeOutraLinhagemAsync(
             EntidadesDeRegistroPeloDominio.ProcessoSeletivo, _processoId, "AVISO", Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(true);
@@ -329,12 +363,13 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
         Guid? principalId = null,
         IReadOnlyList<AnexoSolicitadoDoAto>? anexos = null,
         Guid? atoCorrigidoId = null,
-        string? motivo = null) =>
-        new(_processoId, "AVISO", "5/2026", DataDoAto, "Diretor do CEPS", principalId ?? _principal.Id, anexos, atoCorrigidoId, motivo);
+        string? motivo = null,
+        string tipo = "AVISO") =>
+        new(_processoId, tipo, "5/2026", DataDoAto, "Diretor do CEPS", principalId ?? _principal.Id, anexos, atoCorrigidoId, motivo);
 
-    private void Tipo(bool congela, bool resultado) =>
+    private void Tipo(bool congela, bool unico = false) =>
         _tipos.ObterVigenteAsync("AVISO", DataDoAto, Arg.Any<CancellationToken>()).Returns(
-            new TipoAtoPublicadoView("AVISO", "Aviso", congela, false, false, resultado));
+            new TipoAtoPublicadoView("AVISO", "Aviso", congela, unico, false, false, PublicavelComoAvulso: true));
 
     /// <summary>Um ato do processo dado, registrado na Seleção; o que congela é um dos atos criadores de versão.</summary>
     private Guid AtoPublicadoDoProcesso(Guid processoId, bool aoCongelar = false)

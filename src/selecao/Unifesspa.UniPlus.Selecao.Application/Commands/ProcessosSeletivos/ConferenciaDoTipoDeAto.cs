@@ -123,8 +123,19 @@ internal static class ConferenciaDoTipoDeAto
             return Result.Success();
         }
 
-        return Result.Failure(new DomainError(
+        return Result.Failure(VagaOcupada(tipo));
+    }
+
+    /// <summary>
+    /// A recusa da vaga do objeto já tomada por outra linhagem. Única, porque a conferência no registro
+    /// central e a do registro local da Seleção respondem a mesma pergunta e devem recusar igual.
+    /// </summary>
+    public static DomainError VagaOcupada(TipoAtoPublicadoView tipo)
+    {
+        ArgumentNullException.ThrowIfNull(tipo);
+
+        return new DomainError(
             "ProcessoSeletivo.ObjetoJaTemAtoVivoDoTipo",
-            $"Este Processo Seletivo já tem um ato vivo do tipo '{tipo.Codigo}', de outra linhagem. O tipo admite um único ato vivo por objeto, e a vaga não se libera."));
+            $"Este Processo Seletivo já tem um ato vivo do tipo '{tipo.Codigo}', de outra linhagem. O tipo admite um único ato vivo por objeto, e a vaga não se libera.");
     }
 }
