@@ -18,6 +18,9 @@ public static class TipoAtoPublicadoErrorCodes
     public const string BaseLegalTamanho = "TipoAtoPublicado.BaseLegalTamanho";
     public const string VigenciaFimAnteriorAoInicio = "TipoAtoPublicado.VigenciaFimAnteriorAoInicio";
 
+    /// <summary>O tipo está marcado como resultado e como de efeito irreversível: não cabe recurso contra ato irreversível.</summary>
+    public const string ResultadoComEfeitoIrreversivel = "TipoAtoPublicado.ResultadoComEfeitoIrreversivel";
+
     /// <summary>
     /// Já existe versão viva do mesmo código cuja janela de vigência intercepta a
     /// janela informada. Detectado pela exclusion constraint do banco.

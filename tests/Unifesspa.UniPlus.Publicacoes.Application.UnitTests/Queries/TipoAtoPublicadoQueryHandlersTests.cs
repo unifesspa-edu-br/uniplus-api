@@ -25,7 +25,7 @@ public sealed class TipoAtoPublicadoQueryHandlersTests
     [Fact(DisplayName = "ObterPorId projeta em DTO, com os quatro atributos de consequência")]
     public async Task ObterPorId_Projeta()
     {
-        TipoAtoPublicado tipo = Novo("CONVOCACAO", congela: false, irreversivel: true, ehResultado: true);
+        TipoAtoPublicado tipo = Novo("CONVOCACAO", congela: false, irreversivel: true, ehResultado: false);
         _repository.ObterPorIdParaLeituraAsync(tipo.Id, Arg.Any<CancellationToken>()).Returns(tipo);
 
         TipoAtoPublicadoDto? dto = await ObterTipoAtoPublicadoPorIdQueryHandler.Handle(
@@ -35,7 +35,7 @@ public sealed class TipoAtoPublicadoQueryHandlersTests
         dto!.Codigo.Should().Be("CONVOCACAO");
         dto.CongelaConfiguracao.Should().BeFalse();
         dto.EfeitoIrreversivel.Should().BeTrue();
-        dto.EhResultado.Should().BeTrue();
+        dto.EhResultado.Should().BeFalse();
         dto.VigenciaFim.Should().BeNull();
     }
 

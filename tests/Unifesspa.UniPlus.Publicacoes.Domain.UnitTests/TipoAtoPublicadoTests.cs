@@ -251,11 +251,46 @@ public sealed class TipoAtoPublicadoTests
         resultado.Errors.Should().Contain(e => e.Field == "vigenciaFim" && e.Error.Code == TipoAtoPublicadoErrorCodes.VigenciaFimAnteriorAoInicio);
     }
 
+    [Fact(DisplayName = "Criar recusa o tipo que é resultado e de efeito irreversível, acumulando com as demais violações")]
+    public void Criar_ResultadoComEfeitoIrreversivel_RecusaEAcumula()
+    {
+        Result<TipoAtoPublicado> resultado = TipoAtoPublicado.Criar(
+            codigo: "resultado final",
+            nome: "Resultado final",
+            congelaConfiguracao: false,
+            unicoPorObjeto: false,
+            efeitoIrreversivel: true,
+            ehResultado: true,
+            vigenciaInicio: Inicio,
+            vigenciaFim: null,
+            baseLegal: null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors.Should().Contain(e => e.Field == "codigo" && e.Error.Code == TipoAtoPublicadoErrorCodes.CodigoFormato);
+        resultado.Errors.Should().Contain(e => e.Field == "efeitoIrreversivel" && e.Error.Code == TipoAtoPublicadoErrorCodes.ResultadoComEfeitoIrreversivel);
+    }
+
+    [Fact(DisplayName = "Atualizar recusa tornar irreversível o tipo que é resultado e não muta a entidade")]
+    public void Atualizar_ResultadoComEfeitoIrreversivel_RecusaENaoMuta()
+    {
+        TipoAtoPublicado tipo = TipoAtoPublicado.Criar(
+            "RESULTADO_FINAL", "Resultado final", false, false, false, true, Inicio, null, null).Value!;
+
+        Result resultado = tipo.Atualizar(
+            "RESULTADO_FINAL", "Resultado final", false, false, efeitoIrreversivel: true, ehResultado: true, Inicio, null, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle(e => e.Error.Code == TipoAtoPublicadoErrorCodes.ResultadoComEfeitoIrreversivel);
+        tipo.EfeitoIrreversivel.Should().BeFalse();
+    }
+
     [Fact(DisplayName = "ValidarCampos replica o resultado de Criar sem instanciar o agregado")]
     public void ValidarCampos_MesmoPayloadDeCriarComFalha_RetornaMesmosErros()
     {
         Result validacao = TipoAtoPublicado.ValidarCampos(
-            codigo: null, nome: null, vigenciaInicio: Inicio, vigenciaFim: null, baseLegal: null);
+            codigo: null, nome: null, vigenciaInicio: Inicio, vigenciaFim: null, baseLegal: null,
+            efeitoIrreversivel: false, ehResultado: false);
 
         validacao.IsFailure.Should().BeTrue();
         validacao.Errors.Should().ContainSingle(e => e.Field == "codigo" && e.Error.Code == TipoAtoPublicadoErrorCodes.CodigoObrigatorio);
