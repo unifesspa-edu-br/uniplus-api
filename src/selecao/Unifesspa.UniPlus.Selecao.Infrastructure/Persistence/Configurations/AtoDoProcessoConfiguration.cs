@@ -51,6 +51,14 @@ public sealed class AtoDoProcessoConfiguration : IEntityTypeConfiguration<AtoDoP
             .HasFilter("ato_corrigido_id IS NOT NULL")
             .HasDatabaseName("ux_atos_do_processo_ato_corrigido");
 
+        // Cada produto que o edital declara tem uma única publicação original: a que não corrige ato
+        // algum. A correção de um item publicado leva o mesmo produto e aponta o ato corrigido, e por
+        // isso fica fora do índice. Duas publicações simultâneas do mesmo produto só são barradas aqui.
+        builder.HasIndex(a => new { a.ProcessoSeletivoId, a.ProdutoDoEditalId })
+            .IsUnique()
+            .HasFilter("produto_do_edital_id IS NOT NULL AND ato_corrigido_id IS NULL")
+            .HasDatabaseName("ux_atos_do_processo_produto_original");
+
         // A consulta administrativa filtra por processo e entrega do mais recente para o mais
         // antigo; as colunas descendentes evitam o passo de ordenação.
         builder.HasIndex(a => new { a.ProcessoSeletivoId, a.CreatedAt, a.Id })
