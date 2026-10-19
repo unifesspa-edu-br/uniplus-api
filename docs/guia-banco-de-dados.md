@@ -144,7 +144,7 @@ Sem implementar `IAuditableEntity`, audit fica nos 4 campos default do `EntityBa
 
 ## 6. Value Objects
 
-**Padrão atual: `OwnsOne` para todos os VOs**. A migração para `ComplexProperty` (EF 10 nativo) está **diferida** em [#397](https://github.com/unifesspa-edu-br/uniplus-api/issues/397) por limitação técnica do EF 10 (`HasIndex` em ComplexProperty não suportado; necessário para Cpf — RN01).
+**Padrão atual: `OwnsOne` para todos os VOs**. A migração para `ComplexProperty` (EF 10 nativo) está **diferida** em [#397](https://github.com/unifesspa-edu-br/uniplus-api/issues/397) por limitação técnica do EF 10 (`HasIndex` em ComplexProperty não suportado; necessário para Cpf — inscrição única por CPF e nível, UNI-REQ-0031).
 
 ### Quando criar VO
 
