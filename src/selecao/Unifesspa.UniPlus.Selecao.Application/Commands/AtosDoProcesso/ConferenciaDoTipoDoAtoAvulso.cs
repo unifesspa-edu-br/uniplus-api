@@ -19,6 +19,11 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// é cadastro: resultado, convocação e chamada (esta do Ingresso) ficam de fora porque o catálogo não os
 /// declara publicáveis, e nenhum código compara o tipo com um literal (ADR-0103). O tipo que congela é
 /// recusado à parte porque o ato diria uma coisa e nenhuma versão de configuração a provaria.
+/// <para>
+/// O documento avulso não é item do edital: o tipo dele não é declarado no cronograma, e a versão publicada
+/// só congela a classificação dos tipos que o cronograma declara. Por isso as classificações que importam
+/// aqui — se congela e se é único — vêm do catálogo vigente na data do documento, e não da versão publicada.
+/// </para>
 /// </remarks>
 internal static class ConferenciaDoTipoDoAtoAvulso
 {

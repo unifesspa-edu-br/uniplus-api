@@ -9,7 +9,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>A versão congelada que vigora e o grafo de configuração dela, já reidratado.</summary>
 /// <param name="NumeroDaVersao">Número da versão vigente.</param>
 /// <param name="Grafo">A configuração congelada na versão.</param>
-internal sealed record GrafoVigente(int NumeroDaVersao, GrafoConfiguracao Grafo);
+/// <param name="TiposDeAto">A classificação, congelada na versão, de cada tipo de ato que o cronograma declara, por código.</param>
+internal sealed record GrafoVigente(int NumeroDaVersao, GrafoConfiguracao Grafo, IReadOnlyDictionary<string, TipoDeAtoCongelado> TiposDeAto);
 
 /// <summary>
 /// Lê a configuração congelada que vigora no processo: é onde o produto do edital tem o <c>Id</c> que
@@ -47,7 +48,7 @@ internal static class GrafoVigenteDoProcesso
         Result<EnvelopeReidratado> reidratado = registroCodecs.Reidratar(versao);
         return reidratado.IsFailure
             ? Result<GrafoVigente>.Failure(reidratado.Error!)
-            : Result<GrafoVigente>.Success(new GrafoVigente(versao.NumeroVersao, reidratado.Value!.Grafo));
+            : Result<GrafoVigente>.Success(new GrafoVigente(versao.NumeroVersao, reidratado.Value!.Grafo, reidratado.Value!.TiposDeAtoCongelados));
     }
 
     // Só quando não há versão vigente se distingue 404 de 422: o caminho comum não paga essa consulta.
