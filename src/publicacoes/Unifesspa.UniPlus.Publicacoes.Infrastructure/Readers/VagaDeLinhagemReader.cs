@@ -58,21 +58,4 @@ internal sealed class VagaDeLinhagemReader(PublicacoesDbContext db) : IVagaDeLin
             .AnyAsync(a => a.AtoRetificadoId == atoId, cancellationToken)
             .ConfigureAwait(false);
     }
-
-    public async Task<IReadOnlyList<string>> ListarTiposDosAtosAsync(
-        IReadOnlyCollection<Guid> atoIds,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(atoIds);
-
-        Guid[] ids = [.. atoIds];
-
-        return await _db.Set<AtoNormativo>()
-            .AsNoTracking()
-            .Where(a => ids.Contains(a.Id))
-            .Select(a => a.TipoCodigo)
-            .Distinct()
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-    }
 }

@@ -93,20 +93,4 @@ public interface IVagaDeLinhagemReader
     /// recusaria com <c>RaizJaRetificada</c> e a retificação ficaria publicada sem ato.
     /// </remarks>
     Task<bool> AtoJaFoiRetificadoAsync(Guid atoId, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Os códigos de tipo dos atos <paramref name="atoIds"/>, sem repetição, quaisquer que
-    /// sejam: a unicidade não é filtrada aqui.
-    /// </summary>
-    /// <remarks>
-    /// Quem decide se o tipo é único é o catálogo vigente, e não o que o ato gravou ao ser
-    /// registrado — é assim que o registro reserva a vaga (colide com qualquer ato do mesmo
-    /// tipo vinculado ao objeto, fora da linhagem), e é a mesma pergunta que
-    /// <see cref="ObjetoJaTemAtoDeOutraLinhagemAsync"/> faz. Quem retifica um processo pergunta
-    /// isto sobre os atos criadores das versões, para não declarar no cronograma um tipo cuja
-    /// vaga já está tomada.
-    /// </remarks>
-    Task<IReadOnlyList<string>> ListarTiposDosAtosAsync(
-        IReadOnlyCollection<Guid> atoIds,
-        CancellationToken cancellationToken = default);
 }
