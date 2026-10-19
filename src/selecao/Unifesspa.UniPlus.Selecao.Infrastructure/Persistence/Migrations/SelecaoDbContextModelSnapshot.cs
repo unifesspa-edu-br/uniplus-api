@@ -310,6 +310,11 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.HasIndex("DocumentoPrincipalId")
                         .HasDatabaseName("ix_atos_do_processo_documento_principal_id");
 
+                    b.HasIndex("ProcessoSeletivoId", "ProdutoDoEditalId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_atos_do_processo_produto_original")
+                        .HasFilter("produto_do_edital_id IS NOT NULL AND ato_corrigido_id IS NULL");
+
                     b.HasIndex("ProcessoSeletivoId", "CreatedAt", "Id")
                         .IsDescending(false, true, true)
                         .HasDatabaseName("ix_atos_do_processo_processo_recentes");
