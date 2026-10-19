@@ -173,8 +173,9 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0142](0142-elegibilidade-do-fator-de-atenuacao.md) | O Fator de Atenuação das Desigualdades de Acesso cita o fato booleano do processo que decide quem o recebe; o motor aplica o acréscimo a quem o fato resolve verdadeiro | proposed | 2026-10-10 |
 | [0143](0143-avaliacao-sob-demanda-dos-fatos-do-candidato.md) | A API avalia sob demanda o que depende dos fatos do candidato | proposed | 2026-10-10 |
 | [0144](0144-regra-de-aplicabilidade-pertence-a-modalidade.md) | A regra de aplicabilidade pertence à modalidade | proposed | 2026-10-11 |
+| [0145](0145-recurso-por-etapa.md) | O recurso também pertence à etapa, e cada janela declara se admite instância superior | accepted | 2026-10-18 |
 
-> **Nota de numeração:** a sequência de `0001` a `0144` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0145+`.
+> **Nota de numeração:** a sequência de `0001` a `0145` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0146+`.
 
 ## Como adicionar um novo ADR
 
