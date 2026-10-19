@@ -29,7 +29,7 @@ public sealed record PublicarAtoAvulsoDoProcessoCommand(
     Guid DocumentoPrincipalId,
     IReadOnlyList<AnexoSolicitadoDoAto>? Anexos = null,
     Guid? AtoCorrigidoId = null,
-    string? MotivoDaCorrecao = null) : ICommand<Result<AtoPublicadoDto>>;
+    string? MotivoDaCorrecao = null) : ICommand<Result<AtoPublicadoDto>>, IDadosDoAtoPublicado;
 
 /// <summary>Um anexo que o administrador pede para o ato: o documento confirmado e o nome do download.</summary>
 /// <param name="DocumentoId">O documento a publicar confirmado, do mesmo processo.</param>

@@ -54,6 +54,11 @@ public interface IAtoDoProcessoRepository
     Task<Guid?> ObterAtoQueCorrigeAsync(Guid atoCorrigidoId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Se algum dos atos é a publicação de um item que o edital declara, ainda que pendente.
+    /// </summary>
+    Task<bool> ExisteItemDoEditalEntreAsync(IReadOnlyCollection<Guid> atoIds, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Se o processo já registrou um ato do tipo que não pertence às <paramref name="cadeiaDeCorrecao"/>,
     /// ainda que pendente.
     /// </summary>

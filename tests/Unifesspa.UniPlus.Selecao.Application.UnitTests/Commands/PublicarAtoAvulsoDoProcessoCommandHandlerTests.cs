@@ -238,6 +238,21 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
         await ExigirRecusa(Comando(atoCorrigidoId: edital, motivo: "Erro"), AtoDoProcessoErrorCodes.AtoCorrigidoDeOutraClasse);
     }
 
+    [Fact(DisplayName = "O ato corrigido que é a publicação de um item do edital não é corrigido por documento avulso")]
+    public async Task AtoCorrigidoQueEhItemDoEdital_Recusa()
+    {
+        Guid resultado = AtoPublicadoDoProcesso(_processoId);
+        _atos.ListarCadeiaDeCorrecaoAsync(resultado, Arg.Any<CancellationToken>()).Returns([resultado]);
+        _atos.ExisteItemDoEditalEntreAsync(Arg.Is<IReadOnlyCollection<Guid>>(c => c.Contains(resultado)), Arg.Any<CancellationToken>())
+            .Returns(true);
+
+        (Result<AtoPublicadoDto> resposta, _) = await Publicar(Comando(atoCorrigidoId: resultado, motivo: "Erro"));
+
+        resposta.Error!.Code.Should().Be(AtoDoProcessoErrorCodes.AtoCorrigidoEhItemDoEdital);
+        resposta.Error.Message.Should().Contain("publicação do próprio item", "a recusa orienta a corrigir pela publicação do item");
+        await NadaFoiEscrito();
+    }
+
     [Fact(DisplayName = "A segunda correção do mesmo ato é recusada quando a primeira ainda está pendente na Seleção")]
     public async Task SegundaCorrecaoComAPrimeiraPendente_Recusa()
     {

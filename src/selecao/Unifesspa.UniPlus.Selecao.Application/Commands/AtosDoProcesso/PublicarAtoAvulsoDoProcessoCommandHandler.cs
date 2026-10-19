@@ -92,6 +92,14 @@ public static class PublicarAtoAvulsoDoProcessoCommandHandler
             return Recusa(conferenciaDoCorrigido.Error!);
         }
 
+        Result conferenciaDoItem = await ConferenciaDoAtoCorrigido
+            .NaoEhItemDoEditalAsync(atoDoProcessoRepository, conferenciaDoCorrigido.Value!, cancellationToken)
+            .ConfigureAwait(false);
+        if (conferenciaDoItem.IsFailure)
+        {
+            return Recusa(conferenciaDoItem.Error!);
+        }
+
         // O ato que corrige integra a linhagem do corrigido, e a vaga do objeto é da linhagem.
         Result conferenciaDaVaga = await ConferenciaDoTipoDeAto
             .VagaDoObjetoAsync(vagaDeLinhagemReader, tipo, command.ProcessoSeletivoId, conferenciaDoCorrigido.Value!, cancellationToken)

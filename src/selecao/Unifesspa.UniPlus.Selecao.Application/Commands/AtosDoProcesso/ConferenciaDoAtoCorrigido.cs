@@ -83,6 +83,36 @@ internal static class ConferenciaDoAtoCorrigido
             await atoDoProcessoRepository.ListarCadeiaDeCorrecaoAsync(corrigidoId, cancellationToken).ConfigureAwait(false));
     }
 
+    /// <summary>
+    /// O item que o edital declara só se corrige pela publicação do item: é ela que exige a confirmação da
+    /// política de divulgação, fecha o preliminar depois do definitivo e confere a cadeia do item. Corrigir
+    /// o resultado por documento avulso contornaria as três.
+    /// </summary>
+    /// <param name="cadeiaDoAtoCorrigido">A cadeia que <see cref="ConferirAsync"/> devolveu; vazia quando não corrige.</param>
+    public static async Task<Result> NaoEhItemDoEditalAsync(
+        IAtoDoProcessoRepository atoDoProcessoRepository,
+        IReadOnlyCollection<Guid> cadeiaDoAtoCorrigido,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
+        ArgumentNullException.ThrowIfNull(cadeiaDoAtoCorrigido);
+
+        if (cadeiaDoAtoCorrigido.Count == 0)
+        {
+            return Result.Success();
+        }
+
+        bool ehItemDoEdital = await atoDoProcessoRepository
+            .ExisteItemDoEditalEntreAsync(cadeiaDoAtoCorrigido, cancellationToken)
+            .ConfigureAwait(false);
+
+        return ehItemDoEdital
+            ? Result.Failure(new DomainError(
+                AtoDoProcessoErrorCodes.AtoCorrigidoEhItemDoEdital,
+                "O ato corrigido é a publicação de um item do edital, como um resultado, e só se corrige pela publicação do próprio item, que confirma a política de divulgação e confere a cadeia de correções."))
+            : Result.Success();
+    }
+
     public static string MensagemDoAtoJaCorrigido(Guid atoId, Guid? corretor) =>
         (corretor is null ? $"O ato {atoId} já foi corrigido" : $"O ato {atoId} já foi corrigido pelo ato {corretor}")
         + ". A cadeia de correção é linear: a correção seguinte aponta o ato mais recente da cadeia.";

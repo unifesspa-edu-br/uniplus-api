@@ -315,7 +315,7 @@ public sealed class PublicarAtoAvulsoEndpointTests
         return atoId;
     }
 
-    private static Task<HttpResponseMessage> PublicarAvisoAsync(
+    internal static Task<HttpResponseMessage> PublicarAvisoAsync(
         HttpClient client,
         Guid processoId,
         Guid documentoPrincipal,
