@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.API.Contracts.Requests;
 
+using Unifesspa.UniPlus.Selecao.Application.Commands.AtosDoProcesso;
+
 /// <summary>
 /// Corpo de <see cref="Controllers.AtosDoProcessoController.Publicar"/> — omite o processo, que vem da
 /// rota. O órgão, a série e o ano do ato não são declarados: saem do processo, do tipo e da data.
@@ -30,4 +32,9 @@ public sealed record PublicarAtoAvulsoDoProcessoRequest(
 /// Nome do arquivo no download. A extensão do formato é acrescentada quando falta; o nome é
 /// obrigatório, tem até 120 caracteres com a extensão e não admite separador de caminho.
 /// </param>
-public sealed record AnexoDoAtoRequest(Guid DocumentoId, string? Nome);
+public sealed record AnexoDoAtoRequest(Guid DocumentoId, string? Nome)
+{
+    /// <summary>Os anexos do corpo como o comando os recebe; um item nulo segue adiante para o validator recusar.</summary>
+    internal static List<AnexoSolicitadoDoAto>? ParaComando(IReadOnlyList<AnexoDoAtoRequest>? anexos) =>
+        anexos?.Select(static a => a is null ? null! : new AnexoSolicitadoDoAto(a.DocumentoId, a.Nome)).ToList();
+}

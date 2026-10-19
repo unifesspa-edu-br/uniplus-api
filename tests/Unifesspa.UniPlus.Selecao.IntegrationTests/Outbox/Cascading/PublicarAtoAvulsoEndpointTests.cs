@@ -260,14 +260,17 @@ public sealed class PublicarAtoAvulsoEndpointTests
     }
 
     /// <summary>Publica o edital de abertura pela API e espera a divulgação do certame, que o ato avulso exige.</summary>
-    private static async Task<(Guid ProcessoId, Guid EditalAtoId)> PublicarEditalAsync(CascadingApiFactory api, HttpClient client)
+    internal static async Task<(Guid ProcessoId, Guid EditalAtoId)> PublicarEditalAsync(
+        CascadingApiFactory api,
+        HttpClient client,
+        IReadOnlyList<ProdutoDaFase>? produtosDaFase = null)
     {
         Guid processoId;
         Guid documentoEdital;
         await using (AsyncServiceScope escopo = api.Services.CreateAsyncScope())
         {
             (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
-                escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>(), $"Atos avulsos {Guid.CreateVersion7()}");
+                escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>(), $"Atos avulsos {Guid.CreateVersion7()}", produtosDaFase: produtosDaFase);
             processoId = processo.Id;
             documentoEdital = documento.Id;
         }
@@ -341,7 +344,7 @@ public sealed class PublicarAtoAvulsoEndpointTests
         return client.SendAsync(pedido);
     }
 
-    private static async Task ExigirUmaAceitaEUmaRecusadaAsync(HttpResponseMessage[] respostas, string codigoDaRecusa)
+    internal static async Task ExigirUmaAceitaEUmaRecusadaAsync(HttpResponseMessage[] respostas, string codigoDaRecusa)
     {
         try
         {
@@ -358,13 +361,13 @@ public sealed class PublicarAtoAvulsoEndpointTests
         }
     }
 
-    private static async Task ExigirProblemaAsync(HttpResponseMessage resposta, string codigo)
+    internal static async Task ExigirProblemaAsync(HttpResponseMessage resposta, string codigo)
     {
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, await resposta.Content.ReadAsStringAsync());
         (await resposta.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("code").GetString().Should().Be(codigo);
     }
 
-    private static HttpRequestMessage Autenticado(HttpMethod metodo, string rota)
+    internal static HttpRequestMessage Autenticado(HttpMethod metodo, string rota)
     {
         HttpRequestMessage pedido = new(metodo, new Uri(rota, UriKind.Relative));
         pedido.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
@@ -372,10 +375,10 @@ public sealed class PublicarAtoAvulsoEndpointTests
         return pedido;
     }
 
-    private static string HojeEmTexto() =>
+    internal static string HojeEmTexto() =>
         DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
-    private static async Task<IReadOnlyList<JsonElement>> ConsultarAtosAsync(HttpClient client, Guid processoId)
+    internal static async Task<IReadOnlyList<JsonElement>> ConsultarAtosAsync(HttpClient client, Guid processoId)
     {
         using HttpRequestMessage pedido = Autenticado(HttpMethod.Get, $"/api/selecao/processos-seletivos/{processoId}/atos");
         pedido.Headers.TryAddWithoutValidation("Accept", "application/vnd.uniplus.ato-do-processo.v1+json");
@@ -385,7 +388,7 @@ public sealed class PublicarAtoAvulsoEndpointTests
     }
 
     /// <summary>A divulgação chega pela fila depois do registro do ato, então a página pode demorar a existir.</summary>
-    private static async Task<JsonElement> AguardarNaPaginaPublicaAsync(HttpClient client, Guid processoId, Guid atoId)
+    internal static async Task<JsonElement> AguardarNaPaginaPublicaAsync(HttpClient client, Guid processoId, Guid atoId)
     {
         DateTimeOffset limite = DateTimeOffset.UtcNow.AddSeconds(30);
         while (true)
@@ -408,7 +411,7 @@ public sealed class PublicarAtoAvulsoEndpointTests
         }
     }
 
-    private static async Task AguardarDivulgacaoAsync(CascadingApiFactory api, Guid processoId)
+    internal static async Task AguardarDivulgacaoAsync(CascadingApiFactory api, Guid processoId)
     {
         DateTimeOffset limite = DateTimeOffset.UtcNow.AddSeconds(30);
         while (true)
@@ -432,7 +435,7 @@ public sealed class PublicarAtoAvulsoEndpointTests
             .CountAsync(a => a.ProcessoSeletivoId == processoId && a.TipoCodigo == tipo);
     }
 
-    private static async Task AguardarSituacaoAsync(CascadingApiFactory api, Guid atoId, SituacaoDoRegistroDoAto esperada)
+    internal static async Task AguardarSituacaoAsync(CascadingApiFactory api, Guid atoId, SituacaoDoRegistroDoAto esperada)
     {
         DateTimeOffset limite = DateTimeOffset.UtcNow.AddSeconds(30);
         while (true)
@@ -450,7 +453,7 @@ public sealed class PublicarAtoAvulsoEndpointTests
         }
     }
 
-    private static async Task<Guid> SemearDocumentoAsync(CascadingApiFactory api, Guid processoId, string tipoDeMidia, string nome)
+    internal static async Task<Guid> SemearDocumentoAsync(CascadingApiFactory api, Guid processoId, string tipoDeMidia, string nome)
     {
         await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
         SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
