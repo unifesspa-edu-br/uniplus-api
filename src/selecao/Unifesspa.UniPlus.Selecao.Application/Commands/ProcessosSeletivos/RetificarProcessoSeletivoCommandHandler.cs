@@ -255,7 +255,7 @@ public static class RetificarProcessoSeletivoCommandHandler
         }
 
         Result<TiposDeAtoUnicosPorObjeto> tiposUnicos = await ResolucaoDosTiposDeAtoUnicos
-            .ConferirAsync(tipoDeAtoReader, vagaDeLinhagemReader, processo, tipoConferido, atosDaLinhagem, timeProvider, fusoInstitucional, cancellationToken)
+            .ConferirAsync(tipoDeAtoReader, atoDoProcessoRepository, processo, tipoConferido, atosDaLinhagem, timeProvider, fusoInstitucional, cancellationToken)
             .ConfigureAwait(false);
         if (tiposUnicos.IsFailure)
         {

@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -16,7 +17,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
 {
     private static readonly DateOnly Hoje = new(2026, 10, 17);
 
-    [Fact(DisplayName = "Resolve a unicidade numa só leitura do catálogo vigente, incluindo o tipo do ato da operação")]
+    [Fact(DisplayName = "Resolve a unicidade numa só leitura do catálogo vigente, com as vagas lidas do registro local dos atos e o tipo do ato da operação")]
     public async Task Resolver_LeAUnicidadeDoCatalogo()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
@@ -45,14 +46,15 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
                 new TipoAtoPublicadoView("ATO_QUE_O_CATALOGO_NAO_DECLARA_UNICO", "Ato comum", true, false, false, true),
                 new TipoAtoPublicadoView("EDITAL_JA_REGISTRADO", "Edital já registrado", true, true, false, false),
             ]);
-        IVagaDeLinhagemReader vaga = Substitute.For<IVagaDeLinhagemReader>();
-        vaga.ListarTiposDosAtosAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+        Guid atoDaLinhagem = Guid.CreateVersion7();
+        IAtoDoProcessoRepository atos = Substitute.For<IAtoDoProcessoRepository>();
+        atos.ListarTiposDosAtosAsync(Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Single() == atoDaLinhagem), Arg.Any<CancellationToken>())
             .Returns(["EDITAL_JA_REGISTRADO"]);
         var tipoDaOperacao = new TipoAtoPublicadoView("EDITAL_DA_OPERACAO", "Edital", true, true, false, false);
         TimeProvider relogio = new RelogioFixo(new DateTimeOffset(2026, 10, 17, 12, 0, 0, TimeSpan.Zero));
 
         Result<TiposDeAtoUnicosPorObjeto> resultado = await ResolucaoDosTiposDeAtoUnicos.ConferirAsync(
-            reader, vaga, processo, tipoDaOperacao, [Guid.CreateVersion7()], relogio, TimeZoneInfo.Utc, CancellationToken.None);
+            reader, atos, processo, tipoDaOperacao, [atoDaLinhagem], relogio, TimeZoneInfo.Utc, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         TiposDeAtoUnicosPorObjeto unicos = resultado.Value!;

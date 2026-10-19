@@ -210,7 +210,7 @@ public sealed class ConformidadeCronogramaTests
 
     private static TiposDeAtoUnicosPorObjeto Unicos(string codigo, string nome, string? atoDaOperacao = null, bool vagaOcupada = false) =>
         atoDaOperacao is null
-            ? TiposDeAtoUnicosPorObjeto.ParaChecklist(new Dictionary<string, string> { [codigo] = nome })
+            ? TiposDeAtoUnicosPorObjeto.ParaChecklist(new Dictionary<string, string> { [codigo] = nome }, [])
             : TiposDeAtoUnicosPorObjeto.ParaOperacao(
                 new Dictionary<string, string> { [codigo] = nome },
                 vagaOcupada ? [codigo] : [],

@@ -27,9 +27,40 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
             .Returns((ProcessoSeletivo?)null);
 
         ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeProcessoSeletivoQuery(Guid.CreateVersion7()), repository, CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), TimeProvider.System, CancellationToken.None);
+            new ObterConformidadeProcessoSeletivoQuery(Guid.CreateVersion7()), repository, Substitute.For<IAtoDoProcessoRepository>(), CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), TimeProvider.System, CancellationToken.None);
 
         result.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Handle marca vermelho o tipo de ato único do cronograma que o ato da linhagem, ainda pendente em Publicações, já ocupa")]
+    public async Task Handle_TipoUnicoOcupadoPeloRegistroLocal_ItemVermelho()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        processo.DefinirCronogramaFases(
+            [FaseCronograma.Criar(
+                1, Guid.CreateVersion7(), "CLASSIFICACAO", "CEPS", OrigemDataFase.Delegada,
+                agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
+                inicio: null, fim: null,
+                produtos: [ProdutoDaFase.Criar("ATO_UNICO", PapelProdutoFase.Definitivo)],
+                faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!],
+            [],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Guid atoDaLinhagem = Guid.CreateVersion7();
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        repository.ObterAtosCriadoresAsync(processo.Id, Arg.Any<CancellationToken>()).Returns([atoDaLinhagem]);
+        IAtoDoProcessoRepository atos = Substitute.For<IAtoDoProcessoRepository>();
+        atos.ListarTiposDosAtosAsync(Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Single() == atoDaLinhagem), Arg.Any<CancellationToken>())
+            .Returns(["ATO_UNICO"]);
+        ITipoAtoPublicadoReader catalogo = Substitute.For<ITipoAtoPublicadoReader>();
+        catalogo.ListarVigentesAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns([new TipoAtoPublicadoView("ATO_UNICO", "Ato único", true, true, false, false)]);
+
+        ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
+            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, atos, CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), catalogo, TimeProvider.System, CancellationToken.None);
+
+        result!.Itens.Should().Contain(i => i.Codigo == "cronograma_tipo_de_ato_unico_declarado_uma_vez" && !i.Ok);
     }
 
     [Fact(DisplayName = "Handle com processo sem atendimento nem cronograma devolve os dois pendentes (Story #851 — Etapas não é mais item incondicional)")]
@@ -42,7 +73,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
         ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), TimeProvider.System, CancellationToken.None);
+            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, Substitute.For<IAtoDoProcessoRepository>(), CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), TimeProvider.System, CancellationToken.None);
 
         result.Should().NotBeNull();
         // Etapa deixou de ser item do checklist (Story #851 §3.5): um processo sem prova
@@ -102,7 +133,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
         ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), TimeProvider.System, CancellationToken.None);
+            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, Substitute.For<IAtoDoProcessoRepository>(), CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), TimeProvider.System, CancellationToken.None);
 
         result.Should().NotBeNull();
         result!.Itens.Should().Contain(
@@ -176,7 +207,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
         ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), TimeProvider.System, CancellationToken.None);
+            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, Substitute.For<IAtoDoProcessoRepository>(), CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), TimeProvider.System, CancellationToken.None);
 
         result.Should().NotBeNull();
         result!.Itens.Should().OnlyContain(i => i.Ok);
