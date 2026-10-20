@@ -126,9 +126,12 @@ public sealed class InscricaoRepository : IInscricaoRepository
     {
         ArgumentNullException.ThrowIfNull(entity);
 
+        // Duas remoções do mesmo rascunho (duplo clique): a segunda não acha a linha, e isso é conflito de
+        // concorrência — o middleware o responde como 409 —, não falha do servidor.
         InscricaoRecord record = await _dbContext.Inscricoes
-            .FirstAsync(r => r.Id == entity.Id, cancellationToken)
-            .ConfigureAwait(false);
+            .FirstOrDefaultAsync(r => r.Id == entity.Id, cancellationToken)
+            .ConfigureAwait(false)
+            ?? throw new DbUpdateConcurrencyException($"A inscrição {entity.Id} já foi removida por outra requisição.");
 
         // As linhas filhas caem na própria remoção: a chave estrangeira de cada uma é em cascata.
         _dbContext.Inscricoes.Remove(record);
