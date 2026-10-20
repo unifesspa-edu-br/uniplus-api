@@ -171,12 +171,14 @@ public static class ConjuntoBasicoDaInscricao
             .DefaultIfEmpty(int.MaxValue).Min();
         int deslocamento = primeiro <= teto ? teto + 1 - primeiro : 0;
 
-        // Os itens básicos enviados valem pela referência, que já tem a ordem e o rótulo do conjunto:
-        // repetidos como estão, são iguais a ela; os omitidos entram por ela.
+        // O item básico enviado vale pelo da referência, que já tem a ordem e o rótulo do conjunto; o
+        // omitido entra por ela.
+        Dictionary<string, FatoColetadoInput> basicos = referencia.ToDictionary(static r => r.FatoCodigo, StringComparer.Ordinal);
+        HashSet<string> enviadosBasicos = new(enviados.Where(static i => i is not null && Fatos.Contains(i.FatoCodigo)).Select(static i => i.FatoCodigo), StringComparer.Ordinal);
         IReadOnlyList<FatoColetadoInput> itens =
         [
-            .. enviados.Where(static i => i is null || !Fatos.Contains(i.FatoCodigo)).Select(i => i is null ? i! : i with { Ordem = i.Ordem + deslocamento }),
-            .. referencia,
+            .. enviados.Select(i => i is null ? i! : basicos.GetValueOrDefault(i.FatoCodigo) ?? (Fatos.Contains(i.FatoCodigo) ? i : i with { Ordem = i.Ordem + deslocamento })),
+            .. referencia.Where(r => !enviadosBasicos.Contains(r.FatoCodigo)),
         ];
         IReadOnlyList<GrupoColetadoInput> gruposMesclados = [.. grupos.Select(g => g is null ? g! : g with { Ordem = g.Ordem + deslocamento })];
         return (itens, gruposMesclados, erros);
@@ -213,18 +215,19 @@ public static class ConjuntoBasicoDaInscricao
 
     /// <summary>
     /// Recusa o item básico enviado que difere do de <paramref name="referencia"/>: o conjunto
-    /// básico não é alterado pela escrita, só repetido ou omitido.
+    /// básico não é alterado pela escrita, só repetido ou omitido. A ordem e o rótulo são do
+    /// conjunto, não do cliente: o item gravado antes de uma mudança neles continua repetível.
     /// </summary>
     private static List<FieldError> ConferirBasicosEnviados(IReadOnlyList<FatoColetadoInput> enviados, IReadOnlyList<FatoColetadoInput> referencia)
     {
-        Dictionary<string, string> canonicos = referencia.ToDictionary(static r => r.FatoCodigo, FormaCanonica, StringComparer.Ordinal);
+        Dictionary<string, string> canonicos = referencia.ToDictionary(static r => r.FatoCodigo, static r => FormaCanonica(SemOrdemNemRotulo(r)), StringComparer.Ordinal);
         List<FieldError> erros = [];
         for (int i = 0; i < enviados.Count; i++)
         {
             if (enviados[i] is { } item && Fatos.Contains(item.FatoCodigo)
                 && (!canonicos.TryGetValue(item.FatoCodigo, out string? canonico)
                     || TemValorAusente(item)
-                    || !string.Equals(canonico, FormaCanonica(item), StringComparison.Ordinal)))
+                    || !string.Equals(canonico, FormaCanonica(SemOrdemNemRotulo(item)), StringComparison.Ordinal)))
             {
                 erros.Add(new($"itens[{i}]", new DomainError(
                     EstruturaFormularioErrorCodes.DadoBasicoAlterado,
@@ -234,6 +237,8 @@ public static class ConjuntoBasicoDaInscricao
 
         return erros;
     }
+
+    private static FatoColetadoInput SemOrdemNemRotulo(FatoColetadoInput item) => item with { Ordem = 0, Rotulo = string.Empty };
 
     /// <summary>
     /// A forma canônica do item na entrada, para conferir que o item básico enviado é o de
