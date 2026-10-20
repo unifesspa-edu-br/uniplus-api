@@ -103,7 +103,7 @@ public sealed class ModeloFormularioAdminEndpointTests
         (await EnviarAsync(client, HttpMethod.Put, $"{Base}/{id}", new { nome = "Inscrição", descricao = (string?)null, tipoProcessoCodigo = (string?)null, conteudo = lido["conteudo"] }))
             .StatusCode.Should().Be(HttpStatusCode.NoContent);
         JsonNode alterado = lido["conteudo"]!.DeepClone();
-        alterado["itens"]!.AsArray().Single(static i => i!["fatoCodigo"]!.GetValue<string>() == "COR_RACA")!["rotulo"] = "Raça";
+        alterado["itens"]!.AsArray().Single(static i => i!["fatoCodigo"]!.GetValue<string>() == "COR_RACA")!["obrigatoriedade"] = "NUNCA";
         HttpResponseMessage recusada = await EnviarAsync(
             client, HttpMethod.Put, $"{Base}/{id}", new { nome = "Inscrição", descricao = (string?)null, tipoProcessoCodigo = (string?)null, conteudo = alterado });
 
