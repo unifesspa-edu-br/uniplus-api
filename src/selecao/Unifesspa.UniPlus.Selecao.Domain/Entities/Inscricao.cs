@@ -259,6 +259,22 @@ public sealed class Inscricao : EntityBase
             : null;
 
     /// <summary>
+    /// Confere o descarte do rascunho: inscrição ainda não enviada e <c>If-Match</c> corrente — a recusa definitiva vem antes da que pede releitura. A enviada
+    /// tem número e comprovante, e sai pelo cancelamento — nunca por remoção.
+    /// </summary>
+    public DomainError? ConferirDescarte(PrecondicaoIfMatch precondicao)
+    {
+        if (Situacao == SituacaoInscricao.Submetida)
+        {
+            return new DomainError(
+                InscricaoErrorCodes.DescarteSoDeRascunho,
+                "Sua inscrição já foi enviada e não pode ser descartada. Para desistir dela, cancele a inscrição.");
+        }
+
+        return ConferirPrecondicao(precondicao);
+    }
+
+    /// <summary>
     /// O token tem de pertencer a quem abriu a inscrição — <c>sub</c> diferente do gravado para o
     /// mesmo CPF nunca é "outra inscrição", é identidade trocada. Sem <c>sub</c>, não há dono a
     /// conferir: a recusa é a mesma do iniciar.

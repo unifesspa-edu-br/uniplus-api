@@ -415,6 +415,36 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         lida.Respostas["ENDERECO_RESIDENCIAL"].GetProperty("cidade").GetProperty("codigoIbge").GetString().Should().Be("1504208");
     }
 
+    [Fact(DisplayName = "Remover apaga a inscrição e todas as linhas filhas: respostas, ocorrências de grupo e aceites")]
+    public async Task Remover_ApagaAInscricaoEAsLinhasFilhas()
+    {
+        Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, Guid.CreateVersion7());
+        original.Salvar(
+            null, null, Respostas(("NOME_SOCIAL", "Ariel")), Familia("membro-1"),
+            [new AceiteDeTermo("TERMO_VERACIDADE", VersaoDoTermoVeracidade, "sha256-abc")],
+            Admitidas, PrecondicaoIfMatch.DeTags([original.ETag]));
+
+        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        {
+            await new InscricaoRepository(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System).AdicionarAsync(original);
+            await context.SaveChangesAsync();
+        }
+
+        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        {
+            InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+            await repositorio.RemoverAsync((await repositorio.ObterPorIdAsync(original.Id))!);
+            await context.SaveChangesAsync();
+        }
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        (await readContext.Inscricoes.AnyAsync(r => r.Id == original.Id)).Should().BeFalse();
+        (await readContext.RespostasDaInscricao.AnyAsync(r => r.InscricaoId == original.Id)).Should().BeFalse();
+        (await readContext.EnderecosDaInscricao.AnyAsync(r => r.InscricaoId == original.Id)).Should().BeFalse();
+        (await readContext.AceitesDaInscricao.AnyAsync(r => r.InscricaoId == original.Id)).Should().BeFalse();
+        (await readContext.OcorrenciasDeGrupoDaInscricao.AnyAsync(r => r.InscricaoId == original.Id)).Should().BeFalse();
+    }
+
     [Fact(DisplayName = "Regravar troca, acrescenta e remove linhas, inclusive ocorrências de grupo, sem colidir no índice único")]
     public async Task Atualizar_SincronizaAsLinhas()
     {

@@ -45,6 +45,7 @@ public static class InscricaoErrorCodes
     /// <summary>A inscrição traz a 2ª opção de curso e não traz a 1ª.</summary>
     public const string SegundaOpcaoSemPrimeira = "Inscricao.SegundaOpcaoSemPrimeira";
     public const string RascunhoSoAntesDoEnvio = "Inscricao.RascunhoSoAntesDoEnvio";
+    public const string DescarteSoDeRascunho = "Inscricao.DescarteSoDeRascunho";
     public const string ForaDoPeriodo = "Inscricao.ForaDoPeriodo";
     public const string ProcessoSemInscricao = "Inscricao.ProcessoSemInscricao";
 
