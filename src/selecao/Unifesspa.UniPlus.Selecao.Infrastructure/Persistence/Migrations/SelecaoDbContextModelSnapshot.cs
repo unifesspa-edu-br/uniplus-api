@@ -3960,7 +3960,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("VersaoFormularioId")
                         .HasColumnType("uuid")
                         .HasColumnName("versao_formulario_id")
-                        .HasComment("A versão do formulário divulgada no instante do início (UNI-REQ-0084) — fixa, nunca recalculada.");
+                        .HasComment("A versão do formulário da inscrição (UNI-REQ-0084): a divulgada que o rascunho adotou por último; o primeiro envio a congela.");
 
                     b.HasKey("Id")
                         .HasName("pk_inscricoes");

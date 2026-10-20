@@ -24,13 +24,14 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>A versão do formulário é fixada ao iniciar</b> (UNI-REQ-0084) e nunca muda depois — uma
-/// retificação publicada em seguida não altera uma inscrição em curso. A leitura e a validação da
-/// inscrição usam sempre <see cref="VersaoFormularioId"/>, nunca a versão vigente por relógio.
+/// <b>A versão do formulário segue a vigente enquanto a inscrição é rascunho</b> (UNI-REQ-0084): o
+/// rascunho adota a versão divulgada (<see cref="AdotarVersao"/>), e só o primeiro envio a congela. A
+/// inscrição enviada lê e valida sempre <see cref="VersaoFormularioId"/>, e uma retificação divulgada
+/// depois não a muda; a correção continua na versão congelada.
 /// </para>
 /// <para>
 /// <b>Cada valor gravado tem definição.</b> <see cref="DefinicoesDasRespostas"/> diz o tipo de cada fato respondido e se
-/// ele é número de documento; um fato sem definição na versão fixada, ou um valor fora do tipo dela, é
+/// ele é número de documento; um fato sem definição na versão da inscrição, ou um valor fora do tipo dela, é
 /// recusado antes de mudar o agregado. O repositório cifra os números de documento na fronteira
 /// (ADR-0121), guiado pela definição.
 /// </para>
@@ -56,6 +57,10 @@ public sealed class Inscricao : EntityBase
 
     public SituacaoInscricao Situacao { get; private set; }
 
+    /// <summary>
+    /// A versão do formulário da inscrição: a divulgada que o rascunho adotou por último, e a do primeiro
+    /// envio, que a congela. Quem a resolve é a Application, pela situação da inscrição.
+    /// </summary>
     public Guid VersaoFormularioId { get; private set; }
 
     /// <summary>A oferta de curso da 1ª opção.</summary>
@@ -63,7 +68,7 @@ public sealed class Inscricao : EntityBase
 
     /// <summary>
     /// A oferta de curso da 2ª opção; nula quando a inscrição não a declara. Só existe com a 1ª e só se a
-    /// versão fixada admite duas opções de curso.
+    /// versão da inscrição admite duas opções de curso.
     /// </summary>
     public Guid? OfertaCursoSegundaOpcaoId { get; private set; }
 
@@ -101,7 +106,7 @@ public sealed class Inscricao : EntityBase
 
     private Inscricao() { }
 
-    /// <summary>Cria o rascunho, fixando a versão do formulário divulgada no instante do início.</summary>
+    /// <summary>Cria o rascunho na versão do formulário divulgada no instante do início.</summary>
     public static Result<Inscricao> Iniciar(
         Guid processoSeletivoId,
         Cpf cpf,
@@ -213,8 +218,11 @@ public sealed class Inscricao : EntityBase
         };
     }
 
-    /// <summary>O ETag forte da revisão corrente — identidade da inscrição dentro dele (mesmo motivo do ETag de <see cref="RascunhoRetificacao"/>: ABA sem ela).</summary>
-    public string ETag => $"\"{Id}:{Revisao}\"";
+    /// <summary>
+    /// O ETag forte da revisão corrente — identidade da inscrição dentro dele (mesmo motivo do ETag de <see cref="RascunhoRetificacao"/>: ABA sem ela)
+    /// e a versão do formulário, porque o rascunho adotado na memória e o gravado podem estar na mesma revisão em versões diferentes.
+    /// </summary>
+    public string ETag => $"\"{Id}:{Revisao}:{VersaoFormularioId}\"";
 
     /// <summary>Confere o <c>If-Match</c> contra o <see cref="ETag"/> corrente — <see langword="null"/> quando a mutação pode prosseguir.</summary>
     public DomainError? ConferirPrecondicao(PrecondicaoIfMatch precondicao)
@@ -300,6 +308,55 @@ public sealed class Inscricao : EntityBase
     }
 
     /// <summary>
+    /// O rascunho passa para a versão divulgada <paramref name="versaoVigenteId"/>: troca a versão e tira o
+    /// que ela não admite, sem recusa, porque o candidato não escolheu a retificação. Saem as respostas e
+    /// os grupos de fatos que a versão não pede, os aceites de termo de outra versão ou hash, a oferta
+    /// que ela não tem e a 2ª opção que deixou de valer (a versão passou a admitir uma só, ou a 1ª saiu).
+    /// A revisão sobe, e com ela o ETag. Na mesma versão, nada muda. A inscrição enviada não troca de
+    /// versão: a recusa é do agregado.
+    /// </summary>
+    public Result AdotarVersao(Guid versaoVigenteId, RespostasAdmitidas admitidas)
+    {
+        ArgumentNullException.ThrowIfNull(admitidas);
+
+        if (ConferirAindaEmRascunho() is { } erroRascunho)
+        {
+            return Result.Failure(erroRascunho);
+        }
+
+        if (versaoVigenteId == VersaoFormularioId)
+        {
+            return Result.Success();
+        }
+
+        VersaoFormularioId = versaoVigenteId;
+        OfertaCursoId = OfertaCursoId is { } primeira && admitidas.OfertasDeCurso.Contains(primeira) ? primeira : null;
+        OfertaCursoSegundaOpcaoId = SegundaOpcaoAdmissivel(OfertaCursoId, OfertaCursoSegundaOpcaoId, admitidas) ? OfertaCursoSegundaOpcaoId : null;
+        Respostas = Respostas
+            .Where(r => admitidas.DoNivelSuperior.Contains(r.Key))
+            .ToDictionary(static r => r.Key, static r => r.Value, StringComparer.Ordinal);
+        Grupos = Grupos
+            .Where(g => admitidas.SubitensPorGrupo.ContainsKey(g.Key))
+            .ToDictionary(
+                static g => g.Key,
+                g => (IReadOnlyList<OcorrenciaDeGrupoInscricao>)
+                    [.. g.Value.Select(o => o with
+                    {
+                        Respostas = o.Respostas
+                            .Where(r => admitidas.SubitensPorGrupo[g.Key].Contains(r.Key))
+                            .ToDictionary(static r => r.Key, static r => r.Value, StringComparer.Ordinal),
+                    })],
+                StringComparer.Ordinal);
+        Aceites = [.. Aceites.Where(a => admitidas.Termos.TryGetValue(a.Codigo, out TermoAdmitido? termo)
+            && a.VersaoId == termo.VersaoId
+            && string.Equals(a.HashVersao, termo.HashVersao, StringComparison.Ordinal))];
+        DefinicoesDasRespostas = admitidas.Definicoes;
+        Revisao++;
+
+        return Result.Success();
+    }
+
+    /// <summary>
     /// Salva o rascunho: validação estrutural, sem exigir obrigatórios — a validação completa é da
     /// submissão (issue #1859). Preserva um número de documento ausente do corpo: ausência nunca
     /// apaga, só um valor enviado substitui. Depois do envio, a inscrição que vale é a enviada
@@ -371,7 +428,7 @@ public sealed class Inscricao : EntityBase
     /// recusa o envio. O rascunho (<see cref="Salvar"/>) continua guardando a resposta oculta, para o
     /// candidato poder voltar atrás.
     /// <para>
-    /// Quando a versão fixada deriva a modalidade, o envio só sai se o candidato concorre a alguma das
+    /// Quando a versão da inscrição deriva a modalidade, o envio só sai se o candidato concorre a alguma das
     /// ofertadas (UNI-REQ-0076). A modalidade derivada é gravada com os derivados, e o comprovante a
     /// registra com o nome congelado na publicação.
     /// </para>
@@ -872,7 +929,7 @@ public sealed class Inscricao : EntityBase
 
     /// <summary>
     /// As recusas das opções de curso, acumuladas. A 1ª opção tem de ser oferta do processo e, no envio,
-    /// existir quando o processo tem ofertas. A 2ª é opcional: só vale se a versão fixada admite duas
+    /// existir quando o processo tem ofertas. A 2ª é opcional: só vale se a versão da inscrição admite duas
     /// opções, e então tem de ser oferta do processo e diferente da 1ª — e, no envio, ter a 1ª. Sem
     /// admissão, a única recusa da 2ª é a de não ser admitida: retirá-la resolve o resto.
     /// </summary>
@@ -1036,5 +1093,5 @@ public sealed class Inscricao : EntityBase
 /// <summary>Uma ocorrência de grupo repetível da inscrição, pelo id estável do membro.</summary>
 public sealed record OcorrenciaDeGrupoInscricao(string Id, IReadOnlyDictionary<string, JsonElement> Respostas);
 
-/// <summary>O aceite de um termo, com a versão e o hash que a inscrição carrega da versão fixada.</summary>
+/// <summary>O aceite de um termo, com a versão e o hash que a inscrição carrega da versão da inscrição.</summary>
 public sealed record AceiteDeTermo(string Codigo, Guid VersaoId, string HashVersao);

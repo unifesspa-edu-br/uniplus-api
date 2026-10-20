@@ -364,7 +364,7 @@ public sealed class InscricaoTests
         inscricao.OfertaCursoId.Should().Be(oferta);
         inscricao.NumeroInscricao.Should().Be("000123");
         inscricao.Revisao.Should().Be(3);
-        inscricao.ETag.Should().Be($"\"{id}:3\"");
+        inscricao.ETag.Should().Be($"\"{id}:3:{VersaoFormulario}\"");
         inscricao.CreatedAt.Should().Be(criadoEm);
         inscricao.UpdatedAt.Should().Be(atualizadoEm);
         inscricao.Respostas.Should().ContainKey("NOME_SOCIAL");
@@ -1281,6 +1281,106 @@ public sealed class InscricaoTests
             cidade = cidade is null ? null : new { codigoIbge = "5002704", nome = cidade, uf = "MS" },
         }),
     };
+
+    private static readonly Guid VersaoRetificada = Guid.CreateVersion7();
+
+    [Fact(DisplayName = "O rascunho que adota a versão nova perde, sem recusa, a resposta, o grupo e o aceite que ela não admite, e a revisão sobe")]
+    public void AdotarVersao_RetiraORespostaOGrupoEOAceiteQueAVersaoNaoAdmite()
+    {
+        Inscricao inscricao = NovaInscricao();
+        inscricao.Salvar(
+            null, null,
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+            {
+                ["NOME_SOCIAL"] = JsonSerializer.SerializeToElement("Ariel Drumond"),
+                ["RG_NUMERO"] = JsonSerializer.SerializeToElement("1234567"),
+            },
+            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal)
+            {
+                ["COMPOSICAO_FAMILIAR"] = [new OcorrenciaDeGrupoInscricao("m1", Respostas(("PARENTESCO", "MAE"), ("RG_NUMERO", "7654321")))],
+                ["FONTES_DE_RENDA"] = [new OcorrenciaDeGrupoInscricao("r1", Respostas(("RENDA_MENSAL", "1000")))],
+            },
+            [new AceiteDeTermo(TermoLgpd, VersaoDoTermoLgpd, HashDoTermoLgpd), new AceiteDeTermo(TermoVeracidade, VersaoDoTermoVeracidade, HashDoTermoVeracidade)],
+            Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
+        int revisao = inscricao.Revisao;
+
+        RespostasAdmitidas daVersaoNova = Admitidas with
+        {
+            DoNivelSuperior = new HashSet<string>(StringComparer.Ordinal) { "NOME_SOCIAL" },
+            SubitensPorGrupo = new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal)
+            {
+                ["COMPOSICAO_FAMILIAR"] = new HashSet<string>(StringComparer.Ordinal) { "PARENTESCO" },
+            },
+            Termos = new Dictionary<string, TermoAdmitido>(StringComparer.Ordinal)
+            {
+                [TermoLgpd] = new(VersaoDoTermoLgpd, "hash-lgpd-v3"),
+                [TermoVeracidade] = new(VersaoDoTermoVeracidade, HashDoTermoVeracidade),
+            },
+        };
+
+        Result resultado = inscricao.AdotarVersao(VersaoRetificada, daVersaoNova);
+
+        resultado.IsSuccess.Should().BeTrue();
+        inscricao.VersaoFormularioId.Should().Be(VersaoRetificada);
+        inscricao.Respostas.Keys.Should().Equal("NOME_SOCIAL");
+        inscricao.Grupos.Keys.Should().Equal("COMPOSICAO_FAMILIAR");
+        inscricao.Grupos["COMPOSICAO_FAMILIAR"].Single().Respostas.Keys.Should().Equal("PARENTESCO");
+        inscricao.Aceites.Select(static a => a.Codigo).Should().Equal(TermoVeracidade);
+        inscricao.Revisao.Should().Be(revisao + 1);
+    }
+
+    [Fact(DisplayName = "O rascunho que adota a versão de uma opção de curso só perde a 2ª opção, e o que sai da oferta leva a 2ª junto")]
+    public void AdotarVersao_RetiraAOfertaEA2aOpcaoQueAVersaoNaoAdmite()
+    {
+        Inscricao deUmaOpcao = NovaInscricao();
+        SalvarOpcoes(deUmaOpcao, OfertaDoProcesso, SegundaOfertaDoProcesso, AdmitidasComDuasOpcoes).IsSuccess.Should().BeTrue();
+        Inscricao semAPrimeira = NovaInscricao();
+        SalvarOpcoes(semAPrimeira, OfertaDoProcesso, SegundaOfertaDoProcesso, AdmitidasComDuasOpcoes).IsSuccess.Should().BeTrue();
+
+        deUmaOpcao.AdotarVersao(VersaoRetificada, Admitidas).IsSuccess.Should().BeTrue();
+        semAPrimeira.AdotarVersao(VersaoRetificada, AdmitidasComDuasOpcoes with { OfertasDeCurso = new HashSet<Guid> { SegundaOfertaDoProcesso } }).IsSuccess.Should().BeTrue();
+
+        deUmaOpcao.OfertaCursoId.Should().Be(OfertaDoProcesso);
+        deUmaOpcao.OfertaCursoSegundaOpcaoId.Should().BeNull();
+        semAPrimeira.OfertaCursoId.Should().BeNull();
+        semAPrimeira.OfertaCursoSegundaOpcaoId.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Adotar a versão em que o rascunho já está não muda nada, nem a revisão")]
+    public void AdotarVersao_NaMesmaVersao_NaoMudaNada()
+    {
+        Inscricao inscricao = NovaInscricao();
+        int revisao = inscricao.Revisao;
+
+        Result resultado = inscricao.AdotarVersao(VersaoFormulario, Admitidas with { DoNivelSuperior = new HashSet<string>(StringComparer.Ordinal) });
+
+        resultado.IsSuccess.Should().BeTrue();
+        inscricao.Revisao.Should().Be(revisao);
+    }
+
+    [Fact(DisplayName = "A inscrição enviada não troca de versão: a adoção é recusada e a versão congelada fica")]
+    public void AdotarVersao_NaInscricaoEnviada_Recusa()
+    {
+        Inscricao inscricao = NovaInscricao();
+        SubmeterCom(inscricao, FormularioDeTeste.AvaliacaoSemOcultos).IsSuccess.Should().BeTrue();
+
+        Result resultado = inscricao.AdotarVersao(VersaoRetificada, Admitidas);
+
+        resultado.Error!.Code.Should().Be(InscricaoErrorCodes.RascunhoSoAntesDoEnvio);
+        inscricao.VersaoFormularioId.Should().Be(VersaoFormulario);
+    }
+
+    [Fact(DisplayName = "O ETag muda com a versão do formulário, para o If-Match de uma versão não valer na adoção de outra")]
+    public void ETag_DependeDaVersaoDoFormulario()
+    {
+        Inscricao deUma = NovaInscricao();
+        Inscricao deOutra = NovaInscricao();
+        deOutra.AdotarVersao(VersaoRetificada, Admitidas).IsSuccess.Should().BeTrue();
+        deUma.AdotarVersao(Guid.CreateVersion7(), Admitidas).IsSuccess.Should().BeTrue();
+
+        deUma.Revisao.Should().Be(deOutra.Revisao);
+        deUma.ETag.Should().NotBe(deOutra.ETag.Replace(deOutra.Id.ToString(), deUma.Id.ToString(), StringComparison.Ordinal));
+    }
 
     private static Inscricao NovaInscricao() =>
         Inscricao.Iniciar(Processo, PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", VersaoFormulario).Value!;

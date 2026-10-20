@@ -94,6 +94,14 @@ public static class SubmeterInscricaoCommandHandler
             return Result<ComprovanteInscricaoDto>.Failure(foraDoPeriodo);
         }
 
+        Result adotada = await Services.VersaoDaInscricaoResolver
+            .AdotarAsync(inscricao, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, cancellationToken)
+            .ConfigureAwait(false);
+        if (adotada.IsFailure)
+        {
+            return Result<ComprovanteInscricaoDto>.Failure(adotada.Error!);
+        }
+
         Result<Services.ContextoDaVersaoFixada> contexto = await Services.ContextoDaVersaoFixadaResolver.ResolverAsync(
             inscricao.VersaoFormularioId, command.ProcessoSeletivoId, processoSeletivoRepository, registroCodecs,
             command.Request.OfertaCursoId, command.Request.OfertaCursoSegundaOpcaoId, cancellationToken)

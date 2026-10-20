@@ -76,7 +76,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
         Result<InscricaoDto> resultado = await IniciarInscricaoCommandHandler.Handle(
             new IniciarInscricaoCommand(ProcessoId),
             inscricaoRepository,
-            Substitute.For<ICertameDivulgadoRepository>(),
+            DivulgacaoDeTeste.Certame(ProcessoId),
             cenario.Processos,
             cenario.Codecs,
             Fuso(),

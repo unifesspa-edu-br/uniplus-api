@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// Salva o rascunho (issue #1859) sobre a versão do formulário fixada ao iniciar — nunca a vigente
+/// Salva o rascunho (issue #1859) sobre a versão do formulário em que está o rascunho (a divulgada) — nunca a vigente
 /// por relógio. A validação é estrutural: só recusa por campo a resposta que viola uma restrição do
 /// formulário; nunca por obrigatoriedade, que é exigida somente na submissão.
 /// </summary>
@@ -94,6 +94,14 @@ public static class SalvarInscricaoCommandHandler
         if (inscricao.ConferirAindaEmRascunho() is { } erroRascunho)
         {
             return Result<InscricaoDto>.Failure(erroRascunho);
+        }
+
+        Result adotada = await Services.VersaoDaInscricaoResolver
+            .AdotarAsync(inscricao, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, cancellationToken)
+            .ConfigureAwait(false);
+        if (adotada.IsFailure)
+        {
+            return Result<InscricaoDto>.Failure(adotada.Error!);
         }
 
         Result<Services.ContextoDaVersaoFixada> contexto = await Services.ContextoDaVersaoFixadaResolver.ResolverAsync(

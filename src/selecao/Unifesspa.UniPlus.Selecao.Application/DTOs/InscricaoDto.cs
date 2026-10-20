@@ -39,22 +39,22 @@ public sealed record OcorrenciaDeGrupoInscricaoInput(string Id, IReadOnlyDiction
 
 /// <summary>
 /// O aceite de um termo exigido pelo formulário: a versão e o hash são os que a inscrição carrega da
-/// versão do formulário fixada, nunca os do catálogo vivo — um termo ausente desta lista é um termo
+/// versão do formulário da inscrição, nunca os do catálogo vivo — um termo ausente desta lista é um termo
 /// não aceito.
 /// </summary>
 public sealed record AceiteDeTermoInput(string Codigo, Guid VersaoId, string HashVersao);
 
 /// <summary>
 /// A inscrição do dono do token: respostas, aceites, oferta escolhida e situação, na versão do
-/// formulário fixada ao iniciar (UNI-REQ-0084). Os números de documento <c>Identificador</c>
+/// formulário em que está a inscrição (UNI-REQ-0084). Os números de documento <c>Identificador</c>
 /// declarados (RG, documento do estrangeiro) voltam dentro de <see cref="Respostas"/>, decifrados
 /// pelo repositório — só para o próprio dono; o CPF nunca aparece aqui porque já está no token, e o
 /// comprovante o devolve mascarado. <see cref="Derivados"/> é o que o sistema calculou das
 /// respostas na última submissão. <see cref="Avaliacao"/> é a avaliação das respostas gravadas, a
 /// mesma que a consulta do candidato devolve — calculada a cada leitura, nunca gravada (ADR-0143).
 /// <see cref="OfertaCursoId"/> e <see cref="OfertaCursoSegundaOpcaoId"/> são a 1ª e a 2ª opção de curso.
-/// <see cref="NumeroDeOpcoesDeCurso"/> e <see cref="Ofertas"/> são os da versão fixada, e não os do
-/// processo vivo: uma retificação posterior não muda as opções que esta inscrição admite.
+/// <see cref="NumeroDeOpcoesDeCurso"/> e <see cref="Ofertas"/> são os da versão em que está a inscrição, e não os do
+/// processo vivo: no rascunho, uma retificação divulgada muda as opções; depois do primeiro envio, não muda.
 /// </summary>
 public sealed record InscricaoDto(
     Guid Id,
@@ -74,8 +74,8 @@ public sealed record InscricaoDto(
     AvaliacaoDaInscricaoDto Avaliacao)
 {
     /// <summary>Projeta o agregado no contrato — <c>Grupos</c>/<c>Aceites</c> do domínio têm a mesma forma, em tipos próprios do contrato (não acopla um ao outro).</summary>
-    /// <param name="numeroDeOpcoesDeCurso">O número de opções da versão que a inscrição fixou.</param>
-    /// <param name="ofertas">As ofertas da versão que a inscrição fixou.</param>
+    /// <param name="numeroDeOpcoesDeCurso">O número de opções da versão em que está a inscrição.</param>
+    /// <param name="ofertas">As ofertas da versão em que está a inscrição.</param>
     public static InscricaoDto De(
         Inscricao inscricao, AvaliacaoDaInscricaoDto avaliacao, int numeroDeOpcoesDeCurso, IReadOnlyList<OfertaDeCursoCertameDto> ofertas)
     {

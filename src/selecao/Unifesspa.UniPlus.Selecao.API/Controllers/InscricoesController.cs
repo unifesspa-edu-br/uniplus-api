@@ -65,7 +65,7 @@ public sealed class InscricoesController : ControllerBase
         return Ok(resultado.Value);
     }
 
-    /// <summary>O formulário renderizável da versão que a inscrição do dono do token fixou ao iniciar — nunca a vigente por relógio.</summary>
+    /// <summary>O formulário renderizável da versão em que está a inscrição do dono do token: a divulgada, no rascunho, e a congelada no primeiro envio, depois dele.</summary>
     [HttpGet("processos-seletivos/{id:guid}/inscricao/formulario")]
     [Authorize(Policy = "Candidato")]
     [VendorMediaType(Resource = "formulario-inscricao", Versions = [1])]
@@ -85,7 +85,7 @@ public sealed class InscricoesController : ControllerBase
     /// <summary>
     /// Avalia, sem gravar nada, as respostas que o dono do token tem na tela (ADR-0143): as
     /// modalidades em que ele concorre, os documentos que o edital exige dele em cada fase e o que falta
-    /// responder, na versão fixada ao iniciar. <c>faseId</c> restringe os documentos a uma fase do
+    /// responder, na versão em que está a inscrição (a divulgada, no rascunho; a congelada no primeiro envio, depois dele). <c>faseId</c> restringe os documentos a uma fase do
     /// cronograma dessa versão. É prévia: não recusa por restrição nem por obrigatoriedade, só pela forma
     /// do corpo.
     /// </summary>

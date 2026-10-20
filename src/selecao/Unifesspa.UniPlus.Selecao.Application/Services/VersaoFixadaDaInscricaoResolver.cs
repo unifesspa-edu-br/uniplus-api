@@ -6,11 +6,11 @@ using Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Resolve a <see cref="VersaoConfiguracao"/> que uma inscrição fixou ao iniciar (UNI-REQ-0084) —
-/// pelo id exato, gravado em <c>Inscricao.VersaoFormularioId</c>, nunca pela divulgação atual: uma
-/// retificação publicada depois não pode mudar a validação nem a apresentação de uma inscrição já
-/// em curso. Não há "obter versão por id" dedicado no repositório — a lista inteira de versões do
-/// processo é pequena (uma por publicação/retificação) e já vem pronta via
+/// Resolve a <see cref="VersaoConfiguracao"/> pelo id exato que a inscrição guarda em
+/// <c>Inscricao.VersaoFormularioId</c> (UNI-REQ-0084), nunca pela divulgação atual: a inscrição enviada
+/// não muda de versão com uma retificação divulgada depois. Quem decide qual versão vale para a inscrição
+/// é <see cref="VersaoDaInscricaoResolver"/>. Não há "obter versão por id" dedicado no repositório — a
+/// lista inteira de versões do processo é pequena (uma por publicação/retificação) e já vem pronta via
 /// <see cref="IProcessoSeletivoRepository.ObterVersoesAsync"/>.
 /// </summary>
 public static class VersaoFixadaDaInscricaoResolver
@@ -31,7 +31,7 @@ public static class VersaoFixadaDaInscricaoResolver
         {
             return Result<VersaoConfiguracao>.Failure(new DomainError(
                 "Snapshot.VigenteAusente",
-                $"A inscrição fixou a versão {versaoFormularioId}, que não existe mais entre as versões do processo {processoSeletivoId}."));
+                $"A inscrição está na versão {versaoFormularioId}, que não existe mais entre as versões do processo {processoSeletivoId}."));
         }
 
         return Result<VersaoConfiguracao>.Success(versao);

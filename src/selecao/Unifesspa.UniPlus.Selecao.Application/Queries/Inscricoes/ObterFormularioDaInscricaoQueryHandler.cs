@@ -18,16 +18,17 @@ using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
-/// O formulário renderizável da versão fixada pela inscrição do dono do token ao iniciar — a
-/// mesma projeção de <c>ObterFormularioRenderizavelQueryHandler</c>
-/// (<see cref="ProjecaoDoFormularioDaVersao"/>), só resolvendo a versão por
-/// <see cref="VersaoFixadaDaInscricaoResolver"/> em vez de pela divulgação.
+/// O formulário renderizável da versão em que está a inscrição do dono do token — a divulgada, no
+/// rascunho; a congelada no primeiro envio, depois dele. É a mesma projeção de
+/// <c>ObterFormularioRenderizavelQueryHandler</c> (<see cref="ProjecaoDoFormularioDaVersao"/>), com a
+/// versão resolvida por <see cref="VersaoDaInscricaoResolver"/>.
 /// </summary>
 public static class ObterFormularioDaInscricaoQueryHandler
 {
     public static async Task<Result<FormularioRenderizavelDto>> Handle(
         ObterFormularioDaInscricaoQuery query,
         IInscricaoRepository inscricaoRepository,
+        ICertameDivulgadoRepository certameDivulgadoRepository,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegistroCodecsEnvelope registroCodecs,
         IEnderecoNoAcervoPublico enderecoNoAcervo,
@@ -68,8 +69,8 @@ public static class ObterFormularioDaInscricaoQueryHandler
             return Result<FormularioRenderizavelDto>.Failure(erroDono);
         }
 
-        Result<VersaoConfiguracao> resolvida = await VersaoFixadaDaInscricaoResolver
-            .ResolverAsync(inscricao.VersaoFormularioId, query.ProcessoSeletivoId, processoSeletivoRepository, cancellationToken)
+        Result<VersaoConfiguracao> resolvida = await VersaoDaInscricaoResolver
+            .ResolverAsync(inscricao, certameDivulgadoRepository, processoSeletivoRepository, cancellationToken)
             .ConfigureAwait(false);
         if (resolvida.IsFailure)
         {
