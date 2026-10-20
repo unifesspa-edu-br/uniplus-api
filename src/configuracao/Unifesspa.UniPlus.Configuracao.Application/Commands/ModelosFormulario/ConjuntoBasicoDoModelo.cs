@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// <summary>
 /// O conteúdo do modelo de inscrição com o conjunto básico de dados do candidato na seção reservada,
 /// mesclado como a gravação e a aplicação do modelo o mesclam. O item básico que o conteúdo já traz
-/// fica como está.
+/// sai com a ordem e o rótulo do conjunto básico.
 /// </summary>
 public static class ConjuntoBasicoDoModelo
 {

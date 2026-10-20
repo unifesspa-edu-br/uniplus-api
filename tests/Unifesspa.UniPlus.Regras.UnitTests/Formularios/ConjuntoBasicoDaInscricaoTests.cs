@@ -86,6 +86,7 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
     [Theory(DisplayName = "O item básico alterado é recusado na posição do envio")]
     [InlineData("obrigatoriedade")]
     [InlineData("secao")]
+    [InlineData("precondicao")]
     public void MesclarItens_BasicoAlterado_Recusa(string alteracao)
     {
         FatoColetadoInput nome = ConjuntoBasicoDaInscricao.Itens[0];
