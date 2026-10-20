@@ -445,6 +445,19 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         (await readContext.OcorrenciasDeGrupoDaInscricao.AnyAsync(r => r.InscricaoId == original.Id)).Should().BeFalse();
     }
 
+    [Fact(DisplayName = "Remover uma inscrição que outra requisição já removeu é conflito de concorrência, não falha do servidor")]
+    public async Task Remover_InscricaoJaRemovida_LancaConflitoDeConcorrencia()
+    {
+        Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, Guid.CreateVersion7());
+
+        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+
+        Func<Task> remover = () => repositorio.RemoverAsync(original);
+
+        await remover.Should().ThrowAsync<DbUpdateConcurrencyException>();
+    }
+
     [Fact(DisplayName = "Regravar troca, acrescenta e remove linhas, inclusive ocorrências de grupo, sem colidir no índice único")]
     public async Task Atualizar_SincronizaAsLinhas()
     {
