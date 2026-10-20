@@ -28,7 +28,13 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             WHEN c.fato_codigo IS NOT NULL AND item->>'etapaCodigo' = '{ConjuntoBasicoDaInscricao.CodigoDaSecao}'
                                 THEN item || jsonb_build_object('ordem', basicos.inicio + c.posicao, 'rotulo', c.rotulo)
                             ELSE item
-                        END ORDER BY posicao_original)
+                        END ORDER BY
+                            CASE
+                                WHEN c.fato_codigo IS NOT NULL AND item->>'etapaCodigo' = '{ConjuntoBasicoDaInscricao.CodigoDaSecao}'
+                                    THEN basicos.inicio + c.posicao
+                                ELSE (item->>'ordem')::int
+                            END,
+                            posicao_original)
                     FROM jsonb_array_elements(m.conteudo->'itens') WITH ORDINALITY AS itens(item, posicao_original)
                     LEFT JOIN dados_basicos_canonicos c ON c.fato_codigo = item->>'fatoCodigo'))
                 FROM (
