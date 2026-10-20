@@ -152,12 +152,12 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
         InscricaoRepository readRepository = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
-        Inscricao? lida = await readRepository.ObterPorProcessoECpfAsync(processo, PersonasDeTeste.KevinCarvalho);
+        Inscricao? lida = await readRepository.ObterAtivaPorProcessoECpfAsync(processo, PersonasDeTeste.KevinCarvalho);
 
         lida.Should().NotBeNull();
         lida!.Id.Should().Be(original.Id);
 
-        Inscricao? outroProcesso = await readRepository.ObterPorProcessoECpfAsync(Guid.CreateVersion7(), PersonasDeTeste.KevinCarvalho);
+        Inscricao? outroProcesso = await readRepository.ObterAtivaPorProcessoECpfAsync(Guid.CreateVersion7(), PersonasDeTeste.KevinCarvalho);
         outroProcesso.Should().BeNull("o mesmo CPF noutro processo não é a mesma inscrição");
     }
 
@@ -678,7 +678,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
         InscricaoRepository leitura = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
-        Inscricao? lida = await leitura.ObterPorProcessoECpfAsync(original.ProcessoSeletivoId, PersonasDeTeste.FernandaDrumond);
+        Inscricao? lida = await leitura.ObterAtivaPorProcessoECpfAsync(original.ProcessoSeletivoId, PersonasDeTeste.FernandaDrumond);
         lida!.OfertaCursoSegundaOpcaoId.Should().Be(segundaOferta);
         lida.Derivados["MODALIDADE_SEGUNDA_OPCAO"].EnumerateArray().Select(static v => v.GetString()).Should().Equal("AC");
 
@@ -754,5 +754,55 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         Func<Task> segundaGravacao = async () => await segundoContexto.SaveChangesAsync();
         await segundaGravacao.Should().ThrowAsync<DbUpdateException>(
             "o índice único (processo_seletivo_id, cpf_indice) recusa a segunda linha — quem chama traduz isso em 'devolver a existente', não um 500");
+    }
+
+    [Fact(DisplayName = "A inscrição cancelada é gravada com data, ator e motivo, sai da busca da ativa e libera nova inscrição, mas duas ativas seguem recusadas")]
+    public async Task Cancelada_LiberaNovaInscricaoAtivaDoMesmoCpfNoMesmoProcesso()
+    {
+        Guid processo = Guid.CreateVersion7();
+        Inscricao primeira = NovaInscricao(PersonasDeTeste.FernandaDrumond, processo);
+        primeira.Submeter(
+            "000777", OfertaDoProcesso, null, Respostas(("NOME_SOCIAL", "Fê")), SemGrupos(), [], Admitidas, FormularioDeTeste.AvaliacaoSemOcultos,
+            Respostas(("UF_RESIDENCIA", "PA")), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([primeira.ETag]), DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
+
+        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        {
+            await new InscricaoRepository(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System).AdicionarAsync(primeira);
+            await context.SaveChangesAsync();
+        }
+
+        DateTimeOffset canceladaEm = DateTimeOffset.UtcNow;
+        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        {
+            InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+            Inscricao lida = (await repositorio.ObterPorIdAsync(primeira.Id))!;
+            lida.Cancelar("Mudei de curso", "sub-1", canceladaEm, PrecondicaoIfMatch.DeTags([lida.ETag])).IsSuccess.Should().BeTrue();
+            await repositorio.AtualizarAsync(lida);
+            await context.SaveChangesAsync();
+        }
+
+        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        {
+            InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+            Inscricao cancelada = (await repositorio.ObterPorIdAsync(primeira.Id))!;
+            cancelada.Situacao.Should().Be(SituacaoInscricao.Cancelada);
+            cancelada.NumeroInscricao.Should().Be("000777");
+            cancelada.CanceladaPor.Should().Be("sub-1");
+            cancelada.MotivoDoCancelamento.Should().Be("Mudei de curso");
+            cancelada.CanceladaEm.Should().BeCloseTo(canceladaEm, TimeSpan.FromMilliseconds(1));
+            (await repositorio.ObterAtivaPorProcessoECpfAsync(processo, PersonasDeTeste.FernandaDrumond))
+                .Should().BeNull("a cancelada não é a inscrição ativa");
+
+            Inscricao nova = NovaInscricao(PersonasDeTeste.FernandaDrumond, processo);
+            await repositorio.AdicionarAsync(nova);
+            await context.SaveChangesAsync();
+            (await repositorio.ObterAtivaPorProcessoECpfAsync(processo, PersonasDeTeste.FernandaDrumond))!.Id.Should().Be(nova.Id);
+        }
+
+        await using SelecaoDbContext terceiroContexto = _fixture.CreateDbContext();
+        await new InscricaoRepository(terceiroContexto, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System)
+            .AdicionarAsync(NovaInscricao(PersonasDeTeste.FernandaDrumond, processo));
+        Func<Task> segundaAtiva = async () => await terceiroContexto.SaveChangesAsync();
+        await segundaAtiva.Should().ThrowAsync<DbUpdateException>("o índice parcial segue recusando duas inscrições ativas");
     }
 }

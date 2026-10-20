@@ -50,7 +50,7 @@ public static class DescartarRascunhoDaInscricaoCommandHandler
         }
 
         Inscricao? inscricao = await inscricaoRepository
-            .ObterPorProcessoECpfAsync(command.ProcessoSeletivoId, cpf.Value!, cancellationToken)
+            .ObterAtivaPorProcessoECpfAsync(command.ProcessoSeletivoId, cpf.Value!, cancellationToken)
             .ConfigureAwait(false);
         if (inscricao is null)
         {

@@ -22,8 +22,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// A inscrição do candidato (issue #1859) num processo seletivo. A policy <c>Candidato</c>
 /// (claim <c>cpf</c>) é declarada em cada action — o host não tem fallback policy, então omitir a
 /// anotação nasceria o endpoint anônimo por omissão (mesma convenção de
-/// <see cref="FormulariosController"/> com <c>plataforma-admin</c>). Nenhuma rota recebe id de
-/// inscrição: o dono do token, pelo CPF do claim, é sempre quem resolve qual inscrição.
+/// <see cref="FormulariosController"/> com <c>plataforma-admin</c>). As rotas do processo não recebem id de
+/// inscrição: o dono do token, pelo CPF do claim, resolve a ativa. Só a leitura do comprovante recebe o id,
+/// para alcançar a cancelada.
 /// </summary>
 [ApiController]
 [SuppressMessage(
@@ -196,6 +197,41 @@ public sealed class InscricoesController : ControllerBase
     }
 
     /// <summary>
+    /// Cancela a inscrição enviada do dono do token, com as inscrições abertas. O <c>motivo</c> é opcional
+    /// (sem ele, grava "a pedido do candidato"). Exige <c>If-Match</c> com o <see cref="InscricaoDto.ETag"/>
+    /// corrente e <c>Idempotency-Key</c> (ADR-0027). O rascunho não se cancela (422): sai pelo descarte.
+    /// Depois do cancelamento, iniciar a inscrição cria outra, que recebe outro número no envio.
+    /// </summary>
+    [HttpPost("processos-seletivos/{id:guid}/inscricao/cancelamento")]
+    [Authorize(Policy = "Candidato")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
+    public async Task<IActionResult> Cancelar(
+        Guid id,
+        [FromBody] CancelamentoDaInscricaoRequest? request,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        CancellationToken cancellationToken)
+    {
+        Result<PrecondicaoIfMatch> analise = IfMatchHeader.Analisar(ifMatch);
+        if (analise.IsFailure)
+        {
+            return analise.ToActionResult(_mapper);
+        }
+
+        Result resultado = await _commandBus
+            .Send(new CancelarInscricaoCommand(id, request?.Motivo, analise.Value!), cancellationToken)
+            .ConfigureAwait(false);
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
     /// Envia ou corrige a inscrição: exige obrigatórios, restrições, impedimentos, grupos e termos
     /// — a validação completa do veredito de submissão. Exige <c>If-Match</c> com o
     /// <see cref="InscricaoDto.ETag"/> corrente, e <c>Idempotency-Key</c> (ADR-0027): a repetição da
@@ -249,6 +285,25 @@ public sealed class InscricoesController : ControllerBase
     {
         Result<ComprovanteInscricaoDto> resultado = await _queryBus
             .Send(new ObterComprovanteQuery(id, numero), cancellationToken)
+            .ConfigureAwait(false);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
+    /// O comprovante número <paramref name="numero"/> de uma inscrição do dono do token, pelo id dela —
+    /// também a cancelada, que a rota por processo não alcança. O id é o de <see cref="MinhaInscricaoDto.InscricaoId"/>.
+    /// </summary>
+    [HttpGet("inscricoes/{inscricaoId:guid}/comprovantes/{numero:int}")]
+    [Authorize(Policy = "Candidato")]
+    [VendorMediaType(Resource = "comprovante-inscricao", Versions = [1])]
+    [ProducesResponseType(typeof(ComprovanteInscricaoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ObterComprovanteDaInscricao(Guid inscricaoId, int numero, CancellationToken cancellationToken)
+    {
+        Result<ComprovanteInscricaoDto> resultado = await _queryBus
+            .Send(new ObterComprovanteDaInscricaoQuery(inscricaoId, numero), cancellationToken)
             .ConfigureAwait(false);
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }

@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
@@ -64,6 +65,17 @@ internal sealed class InscricaoRecordConfiguration : IEntityTypeConfiguration<In
             .HasMaxLength(20)
             .HasComment("Gerado na primeira submissão (sequência do banco, formatada); nulo em rascunho.");
 
+        builder.Property(i => i.CanceladaEm)
+            .HasComment("O instante em que o candidato cancelou a inscrição enviada; nulo se não foi cancelada.");
+
+        builder.Property(i => i.CanceladaPor)
+            .HasMaxLength(255)
+            .HasComment("O sub do token de quem cancelou; nulo se não foi cancelada.");
+
+        builder.Property(i => i.MotivoDoCancelamento)
+            .HasMaxLength(Domain.Entities.Inscricao.TamanhoMaximoDoMotivoDoCancelamento)
+            .HasComment("O motivo do cancelamento; 'a pedido do candidato' quando o candidato não o disse. Nulo se não foi cancelada.");
+
         // Token de concorrência (ADR-0119): a checagem em memória de Inscricao.ConferirPrecondicao
         // devolve 412 limpo quando já basta; isto cobre a corrida que ela sozinha não pega — duas
         // gravações que leram a mesma revisão não passam as duas no UPDATE.
@@ -74,12 +86,14 @@ internal sealed class InscricaoRecordConfiguration : IEntityTypeConfiguration<In
         builder.Property(i => i.CreatedAt).IsRequired();
         builder.Property(i => i.UpdatedAt);
 
-        // Dois "iniciar" simultâneos do mesmo CPF no mesmo processo: um insere, o outro colide
+        // Uma inscrição ATIVA por CPF e processo: a cancelada fica fora do índice, e o candidato se
+        // inscreve de novo. Dois "iniciar" simultâneos do mesmo CPF no mesmo processo: um insere, o outro colide
         // aqui — InscricaoRepository.AdicionarAsync não traduz a violação (sem catch, de propósito,
         // ver o teste de colisão); é o handler de "iniciar" que, ao capturar a exceção, decide
-        // devolver a inscrição existente em vez de um 500. Nunca duas linhas para o mesmo candidato.
+        // devolver a inscrição existente em vez de um 500. Nunca duas ativas para o mesmo candidato.
         builder.HasIndex(i => new { i.ProcessoSeletivoId, i.CpfIndice })
             .IsUnique()
+            .HasFilter($"situacao <> {(int)SituacaoInscricao.Cancelada}")
             .HasDatabaseName("ux_inscricoes_processo_cpf_indice");
 
         // "Minhas inscrições" (issue #1860) busca por CPF em qualquer processo — o índice

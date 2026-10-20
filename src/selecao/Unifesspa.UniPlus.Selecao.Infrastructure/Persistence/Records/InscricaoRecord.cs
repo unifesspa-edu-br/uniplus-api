@@ -42,6 +42,12 @@ public sealed class InscricaoRecord
 
     public string? NumeroInscricao { get; set; }
 
+    public DateTimeOffset? CanceladaEm { get; set; }
+
+    public string? CanceladaPor { get; set; }
+
+    public string? MotivoDoCancelamento { get; set; }
+
     /// <summary>Token de concorrência (ADR-0119) — espelha <see cref="Domain.Entities.Inscricao.Revisao"/>.</summary>
     public int Revisao { get; set; }
 

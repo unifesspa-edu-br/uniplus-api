@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services;
 using Abstractions;
 
 using Domain.Entities;
-using Domain.Enums;
 using Domain.Interfaces;
 using Domain.ValueObjects;
 
@@ -13,7 +12,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// O único ponto que diz em que versão do formulário a inscrição está (UNI-REQ-0084): o rascunho segue a
-/// versão divulgada do certame, e a inscrição enviada fica na que o primeiro envio congelou. Nunca o
+/// versão divulgada do certame, e a inscrição enviada, mesmo cancelada depois, fica na que o primeiro envio congelou. Nunca o
 /// relógio: a divulgação aponta o ato que confirmou a publicidade, então uma retificação sem publicidade
 /// não é adotada. Salvar, enviar, avaliar, ler a inscrição e ler o formulário partem daqui.
 /// </summary>
@@ -27,7 +26,7 @@ public static class VersaoDaInscricaoResolver
     {
         ArgumentNullException.ThrowIfNull(inscricao);
 
-        if (inscricao.Situacao == SituacaoInscricao.Submetida)
+        if (!inscricao.EhRascunho)
         {
             return await VersaoFixadaDaInscricaoResolver
                 .ResolverAsync(inscricao.VersaoFormularioId, inscricao.ProcessoSeletivoId, processoSeletivoRepository, cancellationToken)
@@ -55,7 +54,7 @@ public static class VersaoDaInscricaoResolver
     {
         ArgumentNullException.ThrowIfNull(inscricao);
 
-        if (inscricao.Situacao == SituacaoInscricao.Submetida)
+        if (!inscricao.EhRascunho)
         {
             return Result.Success();
         }

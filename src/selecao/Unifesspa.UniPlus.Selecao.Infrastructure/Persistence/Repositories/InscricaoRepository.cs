@@ -64,7 +64,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
         return record is null ? null : (await ParaDominioAsync([record], cancellationToken).ConfigureAwait(false))[0];
     }
 
-    public async Task<Inscricao?> ObterPorProcessoECpfAsync(
+    public async Task<Inscricao?> ObterAtivaPorProcessoECpfAsync(
         Guid processoSeletivoId, Cpf cpf, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(cpf);
@@ -73,7 +73,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
 
         InscricaoRecord? record = await _dbContext.Inscricoes
             .FirstOrDefaultAsync(
-                r => r.ProcessoSeletivoId == processoSeletivoId && r.CpfIndice.SequenceEqual(indice),
+                r => r.ProcessoSeletivoId == processoSeletivoId && r.Situacao != SituacaoInscricao.Cancelada && r.CpfIndice.SequenceEqual(indice),
                 cancellationToken)
             .ConfigureAwait(false);
 
@@ -284,6 +284,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
         return Inscricao.Reidratar(
             record.Id, record.ProcessoSeletivoId, cpf, record.Sub, record.EmissorToken, record.Situacao,
             record.VersaoFormularioId, record.OfertaCursoId, record.OfertaCursoSegundaOpcaoId, record.NumeroInscricao,
+            record.CanceladaEm, record.CanceladaPor, record.MotivoDoCancelamento,
             respostas, derivados, grupos, aceites, definicoes,
             record.Revisao, record.CreatedAt, record.UpdatedAt);
     }
@@ -597,6 +598,9 @@ public sealed class InscricaoRepository : IInscricaoRepository
         record.OfertaCursoId = entity.OfertaCursoId;
         record.OfertaCursoSegundaOpcaoId = entity.OfertaCursoSegundaOpcaoId;
         record.NumeroInscricao = entity.NumeroInscricao;
+        record.CanceladaEm = entity.CanceladaEm;
+        record.CanceladaPor = entity.CanceladaPor;
+        record.MotivoDoCancelamento = entity.MotivoDoCancelamento;
         record.Revisao = entity.Revisao;
     }
 

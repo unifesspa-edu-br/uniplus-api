@@ -9,9 +9,11 @@ using NSubstitute;
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -53,7 +55,7 @@ public sealed class MinhasInscricoesQueryHandlerTests
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
 
         Result<IReadOnlyList<MinhaInscricaoDto>> resultado = await MinhasInscricoesQueryHandler.Handle(
-            new MinhasInscricoesQuery(), inscricaoRepository, CertamesDivulgados(), userContext, CancellationToken.None);
+            new MinhasInscricoesQuery(), inscricaoRepository, CertamesDivulgados(), Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(), Substitute.For<IResolvedorFusoInstitucional>(), TimeProvider.System, userContext, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.CpfAusenteNoToken");
@@ -69,7 +71,7 @@ public sealed class MinhasInscricoesQueryHandlerTests
             .Returns((IReadOnlyList<Inscricao>)[Inscricao.Iniciar(Guid.CreateVersion7(), cpf, "sub-1", "https://issuer", Guid.CreateVersion7()).Value!]);
 
         Result<IReadOnlyList<MinhaInscricaoDto>> resultado = await MinhasInscricoesQueryHandler.Handle(
-            new MinhasInscricoesQuery(), inscricaoRepository, CertamesDivulgados(), UsuarioComCpf(cpf, sub: ""), CancellationToken.None);
+            new MinhasInscricoesQuery(), inscricaoRepository, CertamesDivulgados(), Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(), Substitute.For<IResolvedorFusoInstitucional>(), TimeProvider.System, UsuarioComCpf(cpf, sub: ""), CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.SubObrigatorio);
@@ -83,7 +85,7 @@ public sealed class MinhasInscricoesQueryHandlerTests
         inscricaoRepository.ObterTodasPorCpfAsync(cpf, Arg.Any<CancellationToken>()).Returns((IReadOnlyList<Inscricao>)[]);
 
         Result<IReadOnlyList<MinhaInscricaoDto>> resultado = await MinhasInscricoesQueryHandler.Handle(
-            new MinhasInscricoesQuery(), inscricaoRepository, CertamesDivulgados(), UsuarioComCpf(cpf), CancellationToken.None);
+            new MinhasInscricoesQuery(), inscricaoRepository, CertamesDivulgados(), Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(), Substitute.For<IResolvedorFusoInstitucional>(), TimeProvider.System, UsuarioComCpf(cpf), CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Should().BeEmpty();
@@ -100,7 +102,7 @@ public sealed class MinhasInscricoesQueryHandlerTests
         inscricaoRepository.ObterTodasPorCpfAsync(cpf, Arg.Any<CancellationToken>()).Returns((IReadOnlyList<Inscricao>)[deOutroSub]);
 
         Result<IReadOnlyList<MinhaInscricaoDto>> resultado = await MinhasInscricoesQueryHandler.Handle(
-            new MinhasInscricoesQuery(), inscricaoRepository, CertamesDivulgados(), UsuarioComCpf(cpf, sub: "sub-1"), CancellationToken.None);
+            new MinhasInscricoesQuery(), inscricaoRepository, CertamesDivulgados(), Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(), Substitute.For<IResolvedorFusoInstitucional>(), TimeProvider.System, UsuarioComCpf(cpf, sub: "sub-1"), CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Should().BeEmpty();
@@ -120,7 +122,7 @@ public sealed class MinhasInscricoesQueryHandlerTests
         inscricaoRepository.ObterTodasPorCpfAsync(cpf, Arg.Any<CancellationToken>()).Returns((IReadOnlyList<Inscricao>)[inscricao]);
 
         Result<IReadOnlyList<MinhaInscricaoDto>> resultado = await MinhasInscricoesQueryHandler.Handle(
-            new MinhasInscricoesQuery(), inscricaoRepository, CertamesDivulgados(), UsuarioComCpf(cpf), CancellationToken.None);
+            new MinhasInscricoesQuery(), inscricaoRepository, CertamesDivulgados(), Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(), Substitute.For<IResolvedorFusoInstitucional>(), TimeProvider.System, UsuarioComCpf(cpf), CancellationToken.None);
 
         resultado.Value!.Should().ContainSingle(i => i.NomePreferido == PersonasDeTeste.NomeFernandaDrumond && i.CpfMascarado == cpf.Mascarado);
     }
@@ -155,11 +157,35 @@ public sealed class MinhasInscricoesQueryHandlerTests
             """{"nome":"documento"}""", instante));
 
         Result<IReadOnlyList<MinhaInscricaoDto>> resultado = await MinhasInscricoesQueryHandler.Handle(
-            new MinhasInscricoesQuery(), inscricaoRepository, divulgados, UsuarioComCpf(cpf), CancellationToken.None);
+            new MinhasInscricoesQuery(), inscricaoRepository, divulgados, Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(), Substitute.For<IResolvedorFusoInstitucional>(), TimeProvider.System, UsuarioComCpf(cpf), CancellationToken.None);
 
         MinhaInscricaoDto item = resultado.Value!.Should().ContainSingle().Subject;
         item.NomeDoProcesso.Should().Be("PSS Medicina 2027");
         item.Comprovantes.Should().Equal(new ComprovanteEmitidoDto(1, instante), new ComprovanteEmitidoDto(2, instante.AddHours(1)));
+    }
+
+    [Fact(DisplayName = "A cancelada e a nova inscrição do mesmo processo aparecem, cada uma com o próprio id")]
+    public async Task Handle_CanceladaENova_AparecemAsDuasComIdProprio()
+    {
+        Cpf cpf = PersonasDeTeste.KevinCarvalho;
+        Guid processoId = Guid.CreateVersion7();
+        Inscricao cancelada = Inscricao.Reidratar(
+            Guid.CreateVersion7(), processoId, cpf, "sub-1", "https://issuer", SituacaoInscricao.Cancelada, Guid.CreateVersion7(), null, null,
+            "000123", DateTimeOffset.UtcNow, "sub-1", "a pedido do candidato",
+            new Dictionary<string, JsonElement>(), new Dictionary<string, JsonElement>(),
+            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), [], new Dictionary<string, DefinicaoDaResposta>(), 2, DateTimeOffset.UtcNow, null);
+        Inscricao nova = Inscricao.Iniciar(processoId, cpf, "sub-1", "https://issuer", Guid.CreateVersion7()).Value!;
+        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
+        inscricaoRepository.ObterTodasPorCpfAsync(cpf, Arg.Any<CancellationToken>()).Returns((IReadOnlyList<Inscricao>)[cancelada, nova]);
+
+        Result<IReadOnlyList<MinhaInscricaoDto>> resultado = await MinhasInscricoesQueryHandler.Handle(
+            new MinhasInscricoesQuery(), inscricaoRepository, CertamesDivulgados(), Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(), Substitute.For<IResolvedorFusoInstitucional>(), TimeProvider.System, UsuarioComCpf(cpf), CancellationToken.None);
+
+        resultado.Value!.Select(static i => i.InscricaoId).Should().BeEquivalentTo([cancelada.Id, nova.Id]);
+        MinhaInscricaoDto daCancelada = resultado.Value!.Single(i => i.InscricaoId == cancelada.Id);
+        daCancelada.Situacao.Should().Be(SituacaoInscricao.Cancelada);
+        daCancelada.MotivoDoCancelamento.Should().Be("a pedido do candidato");
+        daCancelada.Acoes.Should().Be(new AcoesDaInscricaoDto(false, false, false));
     }
 
     [Fact(DisplayName = "Desejando nome social e com NOME_SOCIAL preenchido, o nome preferido é o social (UNI-REQ-0032)")]
@@ -177,7 +203,7 @@ public sealed class MinhasInscricoesQueryHandlerTests
         inscricaoRepository.ObterTodasPorCpfAsync(cpf, Arg.Any<CancellationToken>()).Returns((IReadOnlyList<Inscricao>)[inscricao]);
 
         Result<IReadOnlyList<MinhaInscricaoDto>> resultado = await MinhasInscricoesQueryHandler.Handle(
-            new MinhasInscricoesQuery(), inscricaoRepository, CertamesDivulgados(), UsuarioComCpf(cpf), CancellationToken.None);
+            new MinhasInscricoesQuery(), inscricaoRepository, CertamesDivulgados(), Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(), Substitute.For<IResolvedorFusoInstitucional>(), TimeProvider.System, UsuarioComCpf(cpf), CancellationToken.None);
 
         resultado.Value!.Should().ContainSingle(i => i.NomePreferido == "Kéfera");
     }
@@ -196,7 +222,7 @@ public sealed class MinhasInscricoesQueryHandlerTests
         inscricaoRepository.ObterTodasPorCpfAsync(cpf, Arg.Any<CancellationToken>()).Returns((IReadOnlyList<Inscricao>)[inscricao]);
 
         Result<IReadOnlyList<MinhaInscricaoDto>> resultado = await MinhasInscricoesQueryHandler.Handle(
-            new MinhasInscricoesQuery(), inscricaoRepository, CertamesDivulgados(), UsuarioComCpf(cpf), CancellationToken.None);
+            new MinhasInscricoesQuery(), inscricaoRepository, CertamesDivulgados(), Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(), Substitute.For<IResolvedorFusoInstitucional>(), TimeProvider.System, UsuarioComCpf(cpf), CancellationToken.None);
 
         resultado.Value!.Should().ContainSingle(i => i.NomePreferido == PersonasDeTeste.NomeFernandaDrumond);
     }

@@ -274,6 +274,121 @@ public sealed class InscricaoTests
         inscricao.Revisao.Should().Be(revisao);
     }
 
+    private static Inscricao NovaInscricaoEnviada()
+    {
+        Inscricao inscricao = NovaInscricao();
+        inscricao.Submeter(
+            "000123", OfertaDoProcesso, null, Respostas(), SemGrupos(), SemAceites(), Admitidas, FormularioDeTeste.AvaliacaoSemOcultos, SemDerivados(), DefinicoesDosDerivados,
+            PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante()).IsSuccess.Should().BeTrue();
+        inscricao.ClearDomainEvents();
+        return inscricao;
+    }
+
+    [Fact(DisplayName = "Cancelar a inscrição enviada grava data, ator e motivo, mantém o número e emite InscricaoCanceladaEvent")]
+    public void Cancelar_Enviada_GravaDataAtorEMotivoEMantemONumero()
+    {
+        Inscricao inscricao = NovaInscricaoEnviada();
+        int revisao = inscricao.Revisao;
+        DateTimeOffset instante = Instante();
+
+        Result resultado = inscricao.Cancelar("Mudei de curso", "sub-1", instante, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        inscricao.Situacao.Should().Be(SituacaoInscricao.Cancelada);
+        inscricao.CanceladaEm.Should().Be(instante);
+        inscricao.CanceladaPor.Should().Be("sub-1");
+        inscricao.MotivoDoCancelamento.Should().Be("Mudei de curso");
+        inscricao.NumeroInscricao.Should().Be("000123");
+        inscricao.Revisao.Should().Be(revisao + 1);
+        inscricao.DomainEvents.Should().ContainSingle().Which.Should().BeOfType<InscricaoCanceladaEvent>();
+    }
+
+    [Theory(DisplayName = "Cancelar sem motivo grava \"a pedido do candidato\"")]
+    [InlineData(null)]
+    [InlineData("   ")]
+    public void Cancelar_SemMotivo_GravaOMotivoPadrao(string? motivo)
+    {
+        Inscricao inscricao = NovaInscricaoEnviada();
+
+        inscricao.Cancelar(motivo, "sub-1", Instante(), PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
+
+        inscricao.MotivoDoCancelamento.Should().Be("a pedido do candidato");
+    }
+
+    [Fact(DisplayName = "Descartar a inscrição enviada é recusado orientando a cancelar")]
+    public void ConferirDescarte_Enviada_OrientaACancelar()
+    {
+        Inscricao inscricao = NovaInscricaoEnviada();
+
+        DomainError recusa = inscricao.ConferirDescarte(PrecondicaoIfMatch.DeTags([inscricao.ETag]))!;
+
+        recusa.Code.Should().Be(InscricaoErrorCodes.DescarteSoDeRascunho);
+        recusa.Message.Should().Contain("cancele a inscrição").And.NotContain("/");
+    }
+
+    [Fact(DisplayName = "O rascunho não se cancela: a recusa orienta a descartar e nada muda")]
+    public void Cancelar_Rascunho_RecusaSemMutar()
+    {
+        Inscricao inscricao = NovaInscricao();
+        int revisao = inscricao.Revisao;
+
+        Result resultado = inscricao.Cancelar(null, "sub-1", Instante(), PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+
+        resultado.Error!.Code.Should().Be(InscricaoErrorCodes.CancelamentoSoDeEnviada);
+        inscricao.Situacao.Should().Be(SituacaoInscricao.Rascunho);
+        inscricao.Revisao.Should().Be(revisao);
+    }
+
+    [Fact(DisplayName = "Cancelar com If-Match vencido ou com motivo acima do limite é recusado, sem mutar")]
+    public void Cancelar_PrecondicaoOuMotivoInvalidos_RecusaSemMutar()
+    {
+        Inscricao inscricao = NovaInscricaoEnviada();
+
+        inscricao.Cancelar(null, "sub-1", Instante(), PrecondicaoIfMatch.DeTags(["\"outro\""])).Error!.Code
+            .Should().Be(InscricaoErrorCodes.PrecondicaoFalhou);
+        inscricao.Cancelar(new string('x', Inscricao.TamanhoMaximoDoMotivoDoCancelamento + 1), "sub-1", Instante(), PrecondicaoIfMatch.DeTags([inscricao.ETag])).Error!.Code
+            .Should().Be(InscricaoErrorCodes.MotivoDoCancelamentoLongo);
+
+        inscricao.Situacao.Should().Be(SituacaoInscricao.Submetida);
+    }
+
+    [Fact(DisplayName = "A inscrição cancelada recusa salvar, enviar, cancelar de novo, descartar e adotar versão")]
+    public void Cancelada_NaoSeAltera()
+    {
+        Inscricao inscricao = NovaInscricaoEnviada();
+        inscricao.Cancelar(null, "sub-1", Instante(), PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
+        PrecondicaoIfMatch corrente = PrecondicaoIfMatch.DeTags([inscricao.ETag]);
+        int revisao = inscricao.Revisao;
+
+        List<DomainError?> recusas =
+        [
+            inscricao.Salvar(OfertaDoProcesso, null, Respostas(), SemGrupos(), SemAceites(), Admitidas, corrente).Error,
+            inscricao.Submeter(
+                "999999", OfertaDoProcesso, null, Respostas(), SemGrupos(), SemAceites(), Admitidas, FormularioDeTeste.AvaliacaoSemOcultos, SemDerivados(), DefinicoesDosDerivados,
+                corrente, Instante()).Error,
+            inscricao.Cancelar(null, "sub-1", Instante(), corrente).Error,
+            inscricao.ConferirDescarte(corrente),
+            inscricao.AdotarVersao(Guid.CreateVersion7(), Admitidas).Error,
+        ];
+
+        recusas.Should().OnlyContain(e => e != null && e.Code == InscricaoErrorCodes.InscricaoCancelada);
+        inscricao.Revisao.Should().Be(revisao);
+    }
+
+    [Fact(DisplayName = "Corrigir e cancelar pedem inscrição enviada e período aberto; descartar pede só o rascunho")]
+    public void AcoesPermitidas_DependemDaSituacaoEDoPeriodo()
+    {
+        Inscricao rascunho = NovaInscricao();
+        Inscricao enviada = NovaInscricaoEnviada();
+        Inscricao cancelada = NovaInscricaoEnviada();
+        cancelada.Cancelar(null, "sub-1", Instante(), PrecondicaoIfMatch.DeTags([cancelada.ETag]));
+
+        enviada.AcoesPermitidas(inscricoesAbertas: true).Should().Be(new AcoesDaInscricao(true, true, false));
+        enviada.AcoesPermitidas(inscricoesAbertas: false).Should().Be(new AcoesDaInscricao(false, false, false));
+        rascunho.AcoesPermitidas(inscricoesAbertas: false).Should().Be(new AcoesDaInscricao(false, false, true));
+        cancelada.AcoesPermitidas(inscricoesAbertas: true).Should().Be(new AcoesDaInscricao(false, false, false));
+    }
+
     [Fact(DisplayName = "O comprovante nunca carrega número de documento, mesmo que a inscrição carregue")]
     public void Submeter_Comprovante_NaoCarregaDocumento()
     {
@@ -355,7 +470,7 @@ public sealed class InscricaoTests
 
         Inscricao inscricao = Inscricao.Reidratar(
             id, Processo, PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer",
-            SituacaoInscricao.Submetida, VersaoFormulario, oferta, null, "000123",
+            SituacaoInscricao.Submetida, VersaoFormulario, oferta, null, "000123", null, null, null,
             respostas, SemDerivados(), SemGrupos(), SemAceites(), DefinicoesDasRespostas,
             3, criadoEm, atualizadoEm);
 
