@@ -73,7 +73,7 @@ public sealed class ObterComprovanteQueryHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.CpfAusenteNoToken");
-        await inscricaoRepository.DidNotReceive().ObterPorProcessoECpfAsync(Arg.Any<Guid>(), Arg.Any<Cpf>(), Arg.Any<CancellationToken>());
+        await inscricaoRepository.DidNotReceive().ObterAtivaPorProcessoECpfAsync(Arg.Any<Guid>(), Arg.Any<Cpf>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Sem inscrição para o CPF e o processo, recusa como não encontrada")]
@@ -81,7 +81,7 @@ public sealed class ObterComprovanteQueryHandlerTests
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
-        inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns((Inscricao?)null);
+        inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns((Inscricao?)null);
 
         Result<ComprovanteInscricaoDto> resultado = await ObterComprovanteQueryHandler.Handle(
             new ObterComprovanteQuery(ProcessoId, 1), inscricaoRepository, UsuarioComCpf(cpf), CancellationToken.None);
@@ -97,13 +97,58 @@ public sealed class ObterComprovanteQueryHandlerTests
         Inscricao existente = InscricaoComComprovantes(cpf, "sub-original", quantidade: 1);
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
-        inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
+        inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
         inscricaoRepository.ObterComprovantesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(existente.Comprovantes);
 
         Result<ComprovanteInscricaoDto> resultado = await ObterComprovanteQueryHandler.Handle(
             new ObterComprovanteQuery(ProcessoId, 1), inscricaoRepository, UsuarioComCpf(cpf, sub: "sub-outro"), CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("Inscricao.DonoDivergente");
+    }
+
+    private static IInscricaoRepository RepositorioCom(Inscricao inscricao)
+    {
+        IInscricaoRepository repositorio = Substitute.For<IInscricaoRepository>();
+        repositorio.ObterPorIdAsync(inscricao.Id, Arg.Any<CancellationToken>()).Returns(inscricao);
+        repositorio.ObterComprovantesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(inscricao.Comprovantes);
+        return repositorio;
+    }
+
+    [Fact(DisplayName = "Por id, o comprovante da inscrição cancelada continua acessível ao dono")]
+    public async Task PorId_InscricaoCancelada_DevolveOComprovante()
+    {
+        Cpf cpf = PersonasDeTeste.KevinCarvalho;
+        Inscricao cancelada = InscricaoComComprovantes(cpf, "sub-1", quantidade: 1);
+        cancelada.Cancelar(null, "sub-1", DateTimeOffset.UtcNow, PrecondicaoIfMatch.DeTags([cancelada.ETag])).IsSuccess.Should().BeTrue();
+
+        Result<ComprovanteInscricaoDto> resultado = await ObterComprovanteDaInscricaoQueryHandler.Handle(
+            new ObterComprovanteDaInscricaoQuery(cancelada.Id, 1), RepositorioCom(cancelada), UsuarioComCpf(cpf), CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.NumeroInscricao.Should().Be("00000001");
+    }
+
+    [Fact(DisplayName = "Por id, a inscrição de outro CPF responde como inexistente, sem confirmar que o id existe")]
+    public async Task PorId_InscricaoDeOutroCpf_RespondeNaoEncontrada()
+    {
+        Inscricao deOutro = InscricaoComComprovantes(PersonasDeTeste.KevinCarvalho, "sub-1", quantidade: 1);
+
+        Result<ComprovanteInscricaoDto> resultado = await ObterComprovanteDaInscricaoQueryHandler.Handle(
+            new ObterComprovanteDaInscricaoQuery(deOutro.Id, 1), RepositorioCom(deOutro), UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None);
+
+        resultado.Error!.Code.Should().Be("Inscricao.NaoEncontrada");
+    }
+
+    [Fact(DisplayName = "Por id, o mesmo CPF com outro sub é recusado como dono divergente")]
+    public async Task PorId_SubDivergente_RecusaComoDonoDivergente()
+    {
+        Cpf cpf = PersonasDeTeste.KevinCarvalho;
+        Inscricao existente = InscricaoComComprovantes(cpf, "sub-original", quantidade: 1);
+
+        Result<ComprovanteInscricaoDto> resultado = await ObterComprovanteDaInscricaoQueryHandler.Handle(
+            new ObterComprovanteDaInscricaoQuery(existente.Id, 1), RepositorioCom(existente), UsuarioComCpf(cpf, sub: "sub-outro"), CancellationToken.None);
+
         resultado.Error!.Code.Should().Be("Inscricao.DonoDivergente");
     }
 
@@ -114,7 +159,7 @@ public sealed class ObterComprovanteQueryHandlerTests
         Inscricao existente = InscricaoComComprovantes(cpf, "sub-1", quantidade: 1);
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
-        inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
+        inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
         inscricaoRepository.ObterComprovantesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(existente.Comprovantes);
 
         Result<ComprovanteInscricaoDto> resultado = await ObterComprovanteQueryHandler.Handle(
@@ -135,7 +180,7 @@ public sealed class ObterComprovanteQueryHandlerTests
         Inscricao existente = InscricaoComComprovantes(cpf, "sub-1", quantidade: 1);
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
-        inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
+        inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
         inscricaoRepository.ObterComprovantesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(existente.Comprovantes);
 
         Result<ComprovanteInscricaoDto> resultado = await ObterComprovanteQueryHandler.Handle(
@@ -153,7 +198,7 @@ public sealed class ObterComprovanteQueryHandlerTests
         Inscricao existente = InscricaoComComprovantes(cpf, "sub-1", quantidade: 2);
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
-        inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
+        inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
         inscricaoRepository.ObterComprovantesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(existente.Comprovantes);
 
         Result<ComprovanteInscricaoDto> primeiro = await ObterComprovanteQueryHandler.Handle(
@@ -175,7 +220,7 @@ public sealed class ObterComprovanteQueryHandlerTests
         Inscricao existente = InscricaoComComprovantes(cpf, "sub-1", quantidade: 1);
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
-        inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
+        inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
         inscricaoRepository.ObterComprovantesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(existente.Comprovantes);
 
         Result<ComprovanteInscricaoDto> resultado = await ObterComprovanteQueryHandler.Handle(

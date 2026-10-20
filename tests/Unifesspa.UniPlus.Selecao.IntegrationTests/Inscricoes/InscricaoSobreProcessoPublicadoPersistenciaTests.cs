@@ -1283,7 +1283,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     {
         await using SelecaoDbContext leitura = _fixture.CreateDbContext();
         InscricaoRepository repositorio = new(leitura, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
-        Inscricao inscricao = (await repositorio.ObterPorProcessoECpfAsync(processoId, PersonasDeTeste.FernandaDrumond, CancellationToken.None))!;
+        Inscricao inscricao = (await repositorio.ObterAtivaPorProcessoECpfAsync(processoId, PersonasDeTeste.FernandaDrumond, CancellationToken.None))!;
         return (inscricao, await repositorio.ObterComprovantesAsync([inscricao.Id], CancellationToken.None));
     }
 

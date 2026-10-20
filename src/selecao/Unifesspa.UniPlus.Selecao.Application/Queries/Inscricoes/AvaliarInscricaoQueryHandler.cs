@@ -54,7 +54,7 @@ public static class AvaliarInscricaoQueryHandler
         }
 
         Inscricao? inscricao = await inscricaoRepository
-            .ObterPorProcessoECpfAsync(query.ProcessoSeletivoId, cpf.Value!, cancellationToken)
+            .ObterAtivaPorProcessoECpfAsync(query.ProcessoSeletivoId, cpf.Value!, cancellationToken)
             .ConfigureAwait(false);
         if (inscricao is null)
         {

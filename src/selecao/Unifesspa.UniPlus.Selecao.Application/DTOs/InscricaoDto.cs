@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using Domain.Entities;
 using Domain.Enums;
+using Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
@@ -166,15 +167,21 @@ public sealed record ComprovanteInscricaoDto(
 /// Um item de "Minhas inscrições" (issue #1860): o nome preferido é o social, quando o candidato
 /// o declarou, e o CPF vem mascarado — nenhum outro número de documento aparece na lista.
 /// </summary>
+/// <param name="InscricaoId">A identidade da inscrição: o processo pode ter mais de uma, uma cancelada e a ativa, e o comprovante da cancelada se lê por ela.</param>
 /// <param name="NomeDoProcesso">O nome do processo como está divulgado; nulo se ele deixou de ser público.</param>
+/// <param name="Acoes">O que o candidato pode fazer agora com a inscrição, pelo período e pela situação.</param>
 /// <param name="Comprovantes">Os comprovantes emitidos, em ordem de emissão; vazio em rascunho.</param>
 public sealed record MinhaInscricaoDto(
+    Guid InscricaoId,
     Guid ProcessoSeletivoId,
     string? NomeDoProcesso,
     string? NumeroInscricao,
     SituacaoInscricao Situacao,
     string NomePreferido,
     string CpfMascarado,
+    DateTimeOffset? CanceladaEm,
+    string? MotivoDoCancelamento,
+    AcoesDaInscricaoDto Acoes,
     IReadOnlyList<ComprovanteEmitidoDto> Comprovantes)
 {
     /// <summary>
@@ -182,14 +189,19 @@ public sealed record MinhaInscricaoDto(
     /// NOME_SOCIAL (UNI-REQ-0032) — a ausência de qualquer um dos dois cai no nome civil, nunca
     /// em branco.
     /// </summary>
+    /// <param name="inscricoesAbertas">Se o processo está no período de inscrição neste instante.</param>
     /// <param name="comprovantes">Os da inscrição, em ordem de emissão.</param>
-    public static MinhaInscricaoDto De(Inscricao inscricao, string? nomeDoProcesso, IReadOnlyList<ComprovanteInscricao> comprovantes)
+    public static MinhaInscricaoDto De(
+        Inscricao inscricao, string? nomeDoProcesso, bool inscricoesAbertas, IReadOnlyList<ComprovanteInscricao> comprovantes)
     {
         ArgumentNullException.ThrowIfNull(inscricao);
         ArgumentNullException.ThrowIfNull(comprovantes);
+        AcoesDaInscricao acoes = inscricao.AcoesPermitidas(inscricoesAbertas);
         return new MinhaInscricaoDto(
-            inscricao.ProcessoSeletivoId, nomeDoProcesso, inscricao.NumeroInscricao, inscricao.Situacao,
+            inscricao.Id, inscricao.ProcessoSeletivoId, nomeDoProcesso, inscricao.NumeroInscricao, inscricao.Situacao,
             ResolverNomePreferido(inscricao.Respostas), inscricao.Cpf.Mascarado,
+            inscricao.CanceladaEm, inscricao.MotivoDoCancelamento,
+            new AcoesDaInscricaoDto(acoes.PodeCorrigir, acoes.PodeCancelar, acoes.PodeDescartar),
             [.. comprovantes.Select(static (c, i) => new ComprovanteEmitidoDto(i + 1, c.Instante))]);
     }
 
@@ -210,6 +222,12 @@ public sealed record MinhaInscricaoDto(
             : string.Empty;
     }
 }
+
+/// <summary>O que o candidato pode fazer agora com a inscrição (<see cref="AcoesDaInscricao"/>).</summary>
+public sealed record AcoesDaInscricaoDto(bool PodeCorrigir, bool PodeCancelar, bool PodeDescartar);
+
+/// <summary>O corpo do cancelamento da inscrição: o motivo é opcional.</summary>
+public sealed record CancelamentoDaInscricaoRequest(string? Motivo);
 
 /// <summary>Um comprovante emitido, pelo número com que se lê em <c>GET .../comprovantes/{numero}</c>.</summary>
 public sealed record ComprovanteEmitidoDto(int Numero, DateTimeOffset Instante);

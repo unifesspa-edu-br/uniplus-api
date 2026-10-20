@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.Inscricoes;
 
+using Abstractions;
+
 using Domain.Entities;
 using Domain.Errors;
 using Domain.Interfaces;
@@ -22,12 +24,20 @@ public static class MinhasInscricoesQueryHandler
         MinhasInscricoesQuery query,
         IInscricaoRepository inscricaoRepository,
         ICertameDivulgadoRepository certameDivulgadoRepository,
+        IProcessoSeletivoRepository processoSeletivoRepository,
+        IRegistroCodecsEnvelope registroCodecs,
+        IResolvedorFusoInstitucional resolvedorFuso,
+        TimeProvider timeProvider,
         IUserContext userContext,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(inscricaoRepository);
         ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
+        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
+        ArgumentNullException.ThrowIfNull(registroCodecs);
+        ArgumentNullException.ThrowIfNull(resolvedorFuso);
+        ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(userContext);
 
         if (userContext.Cpf is not { } cpfDoToken)
@@ -67,6 +77,10 @@ public static class MinhasInscricoesQueryHandler
             .ConfigureAwait(false))
             .ToLookup(static c => c.InscricaoId);
 
+        // As ações dependem do período, que é do processo: uma conferência por processo, no mesmo instante.
+        // Processo sem versão divulgada legível (ou sem janela) conta como fechado: nada a oferecer.
+        DateTimeOffset agora = timeProvider.GetUtcNow();
+        Dictionary<Guid, bool> abertas = [];
         Dictionary<Guid, string?> nomes = [];
         foreach (Guid processo in doDono.Select(static i => i.ProcessoSeletivoId).Distinct())
         {
@@ -74,9 +88,12 @@ public static class MinhasInscricoesQueryHandler
                 .ObterParaLeituraAsync(processo, cancellationToken)
                 .ConfigureAwait(false);
             nomes[processo] = divulgado?.Nome;
+            abertas[processo] = await Services.PeriodoDaInscricaoResolver.ConferirAsync(
+                processo, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, resolvedorFuso, agora, cancellationToken)
+                .ConfigureAwait(false) is null;
         }
 
         return Result<IReadOnlyList<MinhaInscricaoDto>>.Success(
-            [.. doDono.Select(i => MinhaInscricaoDto.De(i, nomes[i.ProcessoSeletivoId], [.. comprovantes[i.Id]]))]);
+            [.. doDono.Select(i => MinhaInscricaoDto.De(i, nomes[i.ProcessoSeletivoId], abertas[i.ProcessoSeletivoId], [.. comprovantes[i.Id]]))]);
     }
 }

@@ -76,7 +76,7 @@ public static class IniciarInscricaoCommandHandler
         Cpf cpf = cpfResult.Value!;
 
         Inscricao? existente = await inscricaoRepository
-            .ObterPorProcessoECpfAsync(command.ProcessoSeletivoId, cpf, cancellationToken)
+            .ObterAtivaPorProcessoECpfAsync(command.ProcessoSeletivoId, cpf, cancellationToken)
             .ConfigureAwait(false);
         if (existente is not null)
         {
@@ -117,7 +117,7 @@ public static class IniciarInscricaoCommandHandler
             unitOfWork.DescartarAlteracoesNaoSalvas();
 
             Inscricao? vencedora = await inscricaoRepository
-                .ObterPorProcessoECpfAsync(command.ProcessoSeletivoId, cpf, cancellationToken)
+                .ObterAtivaPorProcessoECpfAsync(command.ProcessoSeletivoId, cpf, cancellationToken)
                 .ConfigureAwait(false);
             if (vencedora is null)
             {

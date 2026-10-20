@@ -66,7 +66,7 @@ public static class SalvarInscricaoCommandHandler
         }
 
         Inscricao? inscricao = await inscricaoRepository
-            .ObterPorProcessoECpfAsync(command.ProcessoSeletivoId, cpfResult.Value!, cancellationToken)
+            .ObterAtivaPorProcessoECpfAsync(command.ProcessoSeletivoId, cpfResult.Value!, cancellationToken)
             .ConfigureAwait(false);
         if (inscricao is null)
         {

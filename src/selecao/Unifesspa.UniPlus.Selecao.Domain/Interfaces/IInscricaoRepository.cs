@@ -9,16 +9,16 @@ public interface IInscricaoRepository
     Task<Inscricao?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Localiza a inscrição pelo dono (CPF) num processo — a mesma chave do índice único
-    /// <c>(processo_seletivo_id, cpf_indice)</c>. Assíncrono: a implementação computa o índice
+    /// Localiza a inscrição ATIVA (rascunho ou enviada, nunca a cancelada) do dono (CPF) num processo —
+    /// a mesma chave do índice único parcial <c>(processo_seletivo_id, cpf_indice)</c>. Assíncrono: a implementação computa o índice
     /// cego via <c>IUniPlusBlindIndexService</c>, que não tem versão síncrona.
     /// </summary>
-    Task<Inscricao?> ObterPorProcessoECpfAsync(Guid processoSeletivoId, Cpf cpf, CancellationToken cancellationToken = default);
+    Task<Inscricao?> ObterAtivaPorProcessoECpfAsync(Guid processoSeletivoId, Cpf cpf, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Todas as inscrições do dono (CPF), em qualquer processo seletivo (issue #1860, "Minhas
-    /// inscrições") — mesmo índice cego de <see cref="ObterPorProcessoECpfAsync"/>, sem o filtro
-    /// de processo.
+    /// inscrições") — mesmo índice cego de <see cref="ObterAtivaPorProcessoECpfAsync"/>, sem o filtro
+    /// de processo e com as canceladas: é o histórico do candidato.
     /// </summary>
     Task<IReadOnlyList<Inscricao>> ObterTodasPorCpfAsync(Cpf cpf, CancellationToken cancellationToken = default);
 

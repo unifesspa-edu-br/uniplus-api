@@ -57,7 +57,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.CpfAusenteNoToken");
-        await inscricaoRepository.DidNotReceive().ObterPorProcessoECpfAsync(Arg.Any<Guid>(), Arg.Any<Cpf>(), Arg.Any<CancellationToken>());
+        await inscricaoRepository.DidNotReceive().ObterAtivaPorProcessoECpfAsync(Arg.Any<Guid>(), Arg.Any<Cpf>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Inscrição já existente para o CPF e o processo: devolve a existente, mesmo fora do período, sem gravar nada")]
@@ -69,7 +69,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
             ProcessoId, cpf, "sub-1", "https://issuer", cenario.Versao.Id).Value!;
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
-        inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
+        inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
 
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
 
@@ -101,7 +101,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
             ProcessoId, cpf, "sub-original", "https://issuer", cenario.Versao.Id).Value!;
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
-        inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
+        inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
 
         Result<InscricaoDto> resultado = await IniciarInscricaoCommandHandler.Handle(
             new IniciarInscricaoCommand(ProcessoId),
@@ -126,7 +126,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
         Cpf cpf = PersonasDeTeste.KevinCarvalho;
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
-        inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns((Inscricao?)null);
+        inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns((Inscricao?)null);
 
         ICertameDivulgadoRepository divulgadoRepository = Substitute.For<ICertameDivulgadoRepository>();
         divulgadoRepository.ObterParaLeituraAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns((CertameDivulgado?)null);
@@ -224,7 +224,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
             new string('a', 64), "America/Belem", retificacao: null, conformidade: null);
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
-        inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns((Inscricao?)null);
+        inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns((Inscricao?)null);
 
         ICertameDivulgadoRepository divulgadoRepository = Substitute.For<ICertameDivulgadoRepository>();
         divulgadoRepository.ObterParaLeituraAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns(divulgado);

@@ -16,9 +16,10 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// A inscrição de um candidato num processo seletivo (issue #1858, UNI-REQ-0023): uma por CPF e
-/// processo. Nasce <see cref="SituacaoInscricao.Rascunho"/> ao <see cref="Iniciar"/> e passa a
-/// <see cref="SituacaoInscricao.Submetida"/> na primeira <see cref="Submeter"/> — não existe
+/// A inscrição de um candidato num processo seletivo (issue #1858, UNI-REQ-0023): uma ativa por CPF e
+/// processo; a cancelada sai da conta e o candidato pode se inscrever de novo. Nasce <see cref="SituacaoInscricao.Rascunho"/> ao <see cref="Iniciar"/> e passa a
+/// <see cref="SituacaoInscricao.Submetida"/> na primeira <see cref="Submeter"/>, e a enviada desfeita pelo
+/// candidato fica <see cref="SituacaoInscricao.Cancelada"/> (<see cref="Cancelar"/>) — não existe
 /// terceiro estado para "corrigida": uma submissão seguinte é uma correção da mesma inscrição, com
 /// comprovante novo, e a anterior não muda (ela é <see cref="ComprovanteInscricao"/>, append-only).
 /// </summary>
@@ -74,6 +75,19 @@ public sealed class Inscricao : EntityBase
 
     /// <summary>Gerado na primeira submissão (sequência do banco, formatada); nulo em rascunho.</summary>
     public string? NumeroInscricao { get; private set; }
+
+    /// <summary>O instante do cancelamento; nulo enquanto a inscrição não foi cancelada.</summary>
+    public DateTimeOffset? CanceladaEm { get; private set; }
+
+    /// <summary>O <c>sub</c> de quem cancelou; nulo enquanto a inscrição não foi cancelada.</summary>
+    public string? CanceladaPor { get; private set; }
+
+    /// <summary>O motivo do cancelamento, ou <see cref="MotivoPadraoDoCancelamento"/> quando o candidato não o disse.</summary>
+    public string? MotivoDoCancelamento { get; private set; }
+
+    public const string MotivoPadraoDoCancelamento = "a pedido do candidato";
+
+    public const int TamanhoMaximoDoMotivoDoCancelamento = 500;
 
     /// <summary>O que o candidato digitou ou selecionou.</summary>
     public IReadOnlyDictionary<string, JsonElement> Respostas { get; private set; } =
@@ -179,6 +193,9 @@ public sealed class Inscricao : EntityBase
         Guid? ofertaCursoId,
         Guid? ofertaCursoSegundaOpcaoId,
         string? numeroInscricao,
+        DateTimeOffset? canceladaEm,
+        string? canceladaPor,
+        string? motivoDoCancelamento,
         IReadOnlyDictionary<string, JsonElement> respostas,
         IReadOnlyDictionary<string, JsonElement> derivados,
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
@@ -207,6 +224,9 @@ public sealed class Inscricao : EntityBase
             OfertaCursoId = ofertaCursoId,
             OfertaCursoSegundaOpcaoId = ofertaCursoSegundaOpcaoId,
             NumeroInscricao = numeroInscricao,
+            CanceladaEm = canceladaEm,
+            CanceladaPor = canceladaPor,
+            MotivoDoCancelamento = motivoDoCancelamento,
             Respostas = respostas,
             Derivados = derivados,
             Grupos = grupos,
@@ -250,12 +270,24 @@ public sealed class Inscricao : EntityBase
     public static DomainError NaoEncontrada { get; } = new(
         InscricaoErrorCodes.NaoEncontrada, "Você ainda não tem inscrição neste processo seletivo.");
 
-    /// <summary>Depois do envio, a inscrição só muda por novo envio, que emite novo comprovante.</summary>
+    /// <summary>Ainda é rascunho: a inscrição enviada só muda por novo envio, e a cancelada não muda mais.</summary>
+    public bool EhRascunho => Situacao == SituacaoInscricao.Rascunho;
+
+    /// <summary>Depois do envio, a inscrição só muda por novo envio, que emite novo comprovante; depois do cancelamento, não muda.</summary>
     public DomainError? ConferirAindaEmRascunho() =>
-        Situacao == SituacaoInscricao.Submetida
+        ConferirNaoCancelada()
+        ?? (Situacao == SituacaoInscricao.Submetida
             ? new DomainError(
                 InscricaoErrorCodes.RascunhoSoAntesDoEnvio,
                 "Sua inscrição já foi enviada. Para corrigi-la, envie de novo: cada envio gera um novo comprovante.")
+            : null);
+
+    /// <summary>A inscrição cancelada não salva, não envia, não corrige nem adota versão: para se inscrever de novo, inicia-se outra.</summary>
+    public DomainError? ConferirNaoCancelada() =>
+        Situacao == SituacaoInscricao.Cancelada
+            ? new DomainError(
+                InscricaoErrorCodes.InscricaoCancelada,
+                "Esta inscrição foi cancelada e não pode mais ser alterada. Para participar, inicie uma nova inscrição.")
             : null;
 
     /// <summary>
@@ -264,6 +296,11 @@ public sealed class Inscricao : EntityBase
     /// </summary>
     public DomainError? ConferirDescarte(PrecondicaoIfMatch precondicao)
     {
+        if (ConferirNaoCancelada() is { } cancelada)
+        {
+            return cancelada;
+        }
+
         if (Situacao == SituacaoInscricao.Submetida)
         {
             return new DomainError(
@@ -273,6 +310,64 @@ public sealed class Inscricao : EntityBase
 
         return ConferirPrecondicao(precondicao);
     }
+
+    /// <summary>
+    /// Só a inscrição enviada se cancela: o rascunho sai pelo descarte, e a cancelada já saiu. A recusa
+    /// definitiva vem antes da que pede releitura; o período é conferido antes por quem chama, porque fora dele a orientação levaria a outra recusa.
+    /// </summary>
+    public DomainError? ConferirCancelamento() =>
+        ConferirNaoCancelada()
+        ?? (Situacao == SituacaoInscricao.Rascunho
+            ? new DomainError(
+                InscricaoErrorCodes.CancelamentoSoDeEnviada,
+                "Só a inscrição enviada se cancela. Para desistir do rascunho, descarte-o.")
+            : null);
+
+    /// <summary>
+    /// Cancela a inscrição enviada: grava quando, quem e por quê (sem motivo, <see cref="MotivoPadraoDoCancelamento"/>)
+    /// e mantém o número, que não é reaproveitado por outra inscrição. O período é conferido por quem chama.
+    /// </summary>
+    public Result Cancelar(string? motivo, string ator, DateTimeOffset instante, PrecondicaoIfMatch precondicao)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(ator);
+        ArgumentNullException.ThrowIfNull(precondicao);
+
+        if (ConferirCancelamento() is { } recusa)
+        {
+            return Result.Failure(recusa);
+        }
+
+        if (ConferirPrecondicao(precondicao) is { } erroPrecondicao)
+        {
+            return Result.Failure(erroPrecondicao);
+        }
+
+        string motivoDito = string.IsNullOrWhiteSpace(motivo) ? MotivoPadraoDoCancelamento : motivo.Trim();
+        if (motivoDito.Length > TamanhoMaximoDoMotivoDoCancelamento)
+        {
+            return Result.Failure(new DomainError(
+                InscricaoErrorCodes.MotivoDoCancelamentoLongo,
+                $"O motivo do cancelamento aceita até {TamanhoMaximoDoMotivoDoCancelamento} caracteres."));
+        }
+
+        Situacao = SituacaoInscricao.Cancelada;
+        CanceladaEm = instante;
+        CanceladaPor = ator;
+        MotivoDoCancelamento = motivoDito;
+        Revisao++;
+        AddDomainEvent(new InscricaoCanceladaEvent(Id, ProcessoSeletivoId, NumeroInscricao!, instante));
+
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// O que o candidato pode fazer com a inscrição, dado se as inscrições estão abertas. Corrigir e
+    /// cancelar pedem inscrição enviada e período aberto; descartar pede só o rascunho.
+    /// </summary>
+    public AcoesDaInscricao AcoesPermitidas(bool inscricoesAbertas) => new(
+        PodeCorrigir: Situacao == SituacaoInscricao.Submetida && inscricoesAbertas,
+        PodeCancelar: Situacao == SituacaoInscricao.Submetida && inscricoesAbertas,
+        PodeDescartar: Situacao == SituacaoInscricao.Rascunho);
 
     /// <summary>
     /// O token tem de pertencer a quem abriu a inscrição — <c>sub</c> diferente do gravado para o
@@ -473,6 +568,11 @@ public sealed class Inscricao : EntityBase
         ArgumentNullException.ThrowIfNull(admitidas);
         ArgumentNullException.ThrowIfNull(avaliacao);
         ArgumentNullException.ThrowIfNull(definicoesDosDerivados);
+
+        if (ConferirNaoCancelada() is { } erroCancelada)
+        {
+            return Result<ComprovanteInscricao>.Failure(erroCancelada);
+        }
 
         if (ConferirPrecondicao(precondicao) is { } erroPrecondicao)
         {

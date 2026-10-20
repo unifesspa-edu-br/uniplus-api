@@ -46,6 +46,9 @@ public static class InscricaoErrorCodes
     public const string SegundaOpcaoSemPrimeira = "Inscricao.SegundaOpcaoSemPrimeira";
     public const string RascunhoSoAntesDoEnvio = "Inscricao.RascunhoSoAntesDoEnvio";
     public const string DescarteSoDeRascunho = "Inscricao.DescarteSoDeRascunho";
+    public const string CancelamentoSoDeEnviada = "Inscricao.CancelamentoSoDeEnviada";
+    public const string InscricaoCancelada = "Inscricao.InscricaoCancelada";
+    public const string MotivoDoCancelamentoLongo = "Inscricao.MotivoDoCancelamentoLongo";
     public const string ForaDoPeriodo = "Inscricao.ForaDoPeriodo";
     public const string ProcessoSemInscricao = "Inscricao.ProcessoSemInscricao";
 

@@ -3895,6 +3895,17 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<DateTimeOffset?>("CanceladaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cancelada_em")
+                        .HasComment("O instante em que o candidato cancelou a inscrição enviada; nulo se não foi cancelada.");
+
+                    b.Property<string>("CanceladaPor")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("cancelada_por")
+                        .HasComment("O sub do token de quem cancelou; nulo se não foi cancelada.");
+
                     b.Property<byte[]>("CpfCiphertext")
                         .IsRequired()
                         .HasColumnType("bytea")
@@ -3917,6 +3928,12 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("emissor_token")
                         .HasComment("O emissor (issuer) do token de quem iniciou a inscrição.");
+
+                    b.Property<string>("MotivoDoCancelamento")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("motivo_do_cancelamento")
+                        .HasComment("O motivo do cancelamento; 'a pedido do candidato' quando o candidato não o disse. Nulo se não foi cancelada.");
 
                     b.Property<string>("NumeroInscricao")
                         .HasMaxLength(20)
@@ -3970,7 +3987,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("ProcessoSeletivoId", "CpfIndice")
                         .IsUnique()
-                        .HasDatabaseName("ux_inscricoes_processo_cpf_indice");
+                        .HasDatabaseName("ux_inscricoes_processo_cpf_indice")
+                        .HasFilter("situacao <> 3");
 
                     b.ToTable("inscricoes", "selecao", t =>
                         {

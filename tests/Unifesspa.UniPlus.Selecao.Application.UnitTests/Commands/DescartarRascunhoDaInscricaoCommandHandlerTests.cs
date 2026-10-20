@@ -49,7 +49,7 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
         Func<Inscricao, string> precondicao, Inscricao rascunho, VersaoConfiguracao fixada, VersaoConfiguracao divulgada, GrafoConfiguracao grafo, string sub = "sub-1")
     {
         IInscricaoRepository repositorio = Substitute.For<IInscricaoRepository>();
-        repositorio.ObterPorProcessoECpfAsync(ProcessoId, Dono, Arg.Any<CancellationToken>()).Returns(rascunho);
+        repositorio.ObterAtivaPorProcessoECpfAsync(ProcessoId, Dono, Arg.Any<CancellationToken>()).Returns(rascunho);
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
         DivulgacaoDeTeste.ConfigurarFixadaEDivulgada(
@@ -92,7 +92,7 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    private static Inscricao Enviada(Guid versaoFormularioId)
+    internal static Inscricao Enviada(Guid versaoFormularioId)
     {
         Inscricao enviada = NovoRascunho(versaoFormularioId);
         Dictionary<string, JsonElement> semRespostas = new(StringComparer.Ordinal);
