@@ -44,14 +44,7 @@ public static class PeriodoDaInscricaoResolver
         ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(resolvedorFuso);
 
-        if (!registroCodecs.SabeLer(versaoDivulgada.SchemaVersion))
-        {
-            return new DomainError(
-                ErrosCodecEnvelope.VersaoDesconhecida,
-                $"A versão '{versaoDivulgada.SchemaVersion}' do envelope congelado não está entre as capacidades de leitura reconhecidas pelo codec vivo.");
-        }
-
-        Result<EnvelopeReidratado> reidratado = registroCodecs.Reidratar(versaoDivulgada);
+        Result<EnvelopeReidratado> reidratado = ContextoDaVersaoFixadaResolver.Reidratar(versaoDivulgada, registroCodecs);
         if (reidratado.IsFailure)
         {
             return reidratado.Error;

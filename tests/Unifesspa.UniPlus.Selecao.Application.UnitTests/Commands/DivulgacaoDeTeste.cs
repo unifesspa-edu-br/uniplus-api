@@ -39,6 +39,10 @@ internal static class DivulgacaoDeTeste
         return repositorio;
     }
 
+    /// <summary>O ETag que o candidato tem depois de o rascunho adotar a versão divulgada: a adoção sobe a revisão uma vez.</summary>
+    public static string ETagDepoisDeAdotar(Inscricao rascunho, VersaoConfiguracao divulgada) =>
+        $"\"{rascunho.Id}:{rascunho.Revisao + 1}:{divulgada.Id}\"";
+
     public static IResolvedorFusoInstitucional Fuso()
     {
         IResolvedorFusoInstitucional fuso = Substitute.For<IResolvedorFusoInstitucional>();

@@ -85,6 +85,14 @@ public static class AvaliarInscricaoQueryHandler
             return Result<AvaliacaoDaInscricaoDto>.ValidationFailure(erros);
         }
 
+        Result adotada = await VersaoDaInscricaoResolver
+            .AdotarAsync(inscricao, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, cancellationToken)
+            .ConfigureAwait(false);
+        if (adotada.IsFailure)
+        {
+            return Result<AvaliacaoDaInscricaoDto>.Failure(adotada.Error!);
+        }
+
         // A oferta do corpo é o seletor da tela, ainda sem salvar: nula, nenhuma está escolhida, como no salvar.
         Result<ContextoDaVersaoFixada> contexto = await ContextoDaVersaoFixadaResolver.ResolverAsync(
             inscricao.VersaoFormularioId, query.ProcessoSeletivoId, processoSeletivoRepository, registroCodecs,

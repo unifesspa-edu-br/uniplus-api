@@ -24,6 +24,7 @@ public static class ObterInscricaoQueryHandler
     public static async Task<Result<InscricaoDto>> Handle(
         ObterInscricaoQuery query,
         IInscricaoRepository inscricaoRepository,
+        ICertameDivulgadoRepository certameDivulgadoRepository,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegistroCodecsEnvelope registroCodecs,
         IResolvedorFusoInstitucional resolvedorFuso,
@@ -67,7 +68,7 @@ public static class ObterInscricaoQueryHandler
 
         return await Services.PreparacaoDaAvaliacaoDaInscricao
             .ProjetarInscricaoGravadaAsync(
-                inscricao, processoSeletivoRepository, registroCodecs, resolvedorFuso, conferenciaEnderecoGeo, enderecoNoAcervo,
+                inscricao, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, resolvedorFuso, conferenciaEnderecoGeo, enderecoNoAcervo,
                 timeProvider.GetUtcNow(), cancellationToken)
             .ConfigureAwait(false);
     }

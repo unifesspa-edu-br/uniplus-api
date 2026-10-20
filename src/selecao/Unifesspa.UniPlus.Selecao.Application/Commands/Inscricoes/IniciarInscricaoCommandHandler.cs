@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>A versão do formulário é fixada aqui, da divulgação — nunca do relógio</b> (UNI-REQ-0084),
+/// <b>A versão do formulário de uma inscrição nova é a divulgada, nunca a do relógio</b> (UNI-REQ-0084; o rascunho a troca pela divulgada seguinte e o primeiro envio a congela),
 /// no mesmo caminho de <c>ObterFormularioRenderizavelQueryHandler</c>: a divulgação aponta o ato
 /// que confirmou a publicidade, e é a versão que ele congelou — não a mais nova, que sob
 /// retificação pendente ainda não tem publicidade nenhuma.
@@ -144,7 +144,7 @@ public static class IniciarInscricaoCommandHandler
 
             return await Services.PreparacaoDaAvaliacaoDaInscricao
                 .ProjetarInscricaoGravadaAsync(
-                    lida, processoSeletivoRepository, registroCodecs, resolvedorFuso, conferenciaEnderecoGeo, enderecoNoAcervo,
+                    lida, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, resolvedorFuso, conferenciaEnderecoGeo, enderecoNoAcervo,
                     timeProvider.GetUtcNow(), cancellationToken)
                 .ConfigureAwait(false);
         }

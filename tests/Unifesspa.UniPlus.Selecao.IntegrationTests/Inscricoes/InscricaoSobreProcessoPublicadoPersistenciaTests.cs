@@ -181,21 +181,14 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         return processo;
     }
 
-    /// <summary>Publica e divulga o processo com os repositórios de produção, no mesmo <paramref name="db"/>.</summary>
-    private static async Task<(Guid ProcessoId, DadosEdital Dados)> PublicarEDivulgarAsync(
-        SelecaoDbContext db,
+    /// <summary>O congelamento do processo como a publicação o faz, com os valores selecionáveis do conjunto básico e os dos campos.</summary>
+    private static SnapshotCanonico CongelarProcesso(
         ProcessoSeletivo processo,
-        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresDosCampos = null)
+        DadosEdital dados,
+        string hash64,
+        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresDosCampos,
+        RetificacaoInfo? retificacao = null)
     {
-        await db.ProcessosSeletivos.AddAsync(processo);
-        await db.SaveChangesAsync();
-
-        const string hashDocumento = "3333333333333333333333333333333333333333333333333333333333333333333";
-        string hash64 = hashDocumento[..64];
-        DadosEdital dados = DadosEdital.Criar(
-            "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
-            new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
-
         // O conjunto básico do candidato (sempre presente num formulário de inscrição) traz onze
         // fatos de seleção (nacionalidade, órgão emissor e UF do RG, estado civil, sexo, sexo civil, identidade de
         // gênero, orientação sexual, cor/raça,
@@ -231,7 +224,27 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         }
 
         SnapshotCanonico congelado = Canonicalizer.Canonicalizar(
-            new EntradaCanonicalizacao(processo, dados, hash64, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: valoresDoConjuntoBasico, TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
+            new EntradaCanonicalizacao(processo, dados, hash64, FusoInstitucional.ZoneId, Retificacao: retificacao, ValoresSelecionaveisCongelados: valoresDoConjuntoBasico, TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
+
+        return congelado;
+    }
+
+    /// <summary>Publica e divulga o processo com os repositórios de produção, no mesmo <paramref name="db"/>.</summary>
+    private static async Task<(Guid ProcessoId, DadosEdital Dados)> PublicarEDivulgarAsync(
+        SelecaoDbContext db,
+        ProcessoSeletivo processo,
+        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresDosCampos = null)
+    {
+        await db.ProcessosSeletivos.AddAsync(processo);
+        await db.SaveChangesAsync();
+
+        const string hashDocumento = "3333333333333333333333333333333333333333333333333333333333333333333";
+        string hash64 = hashDocumento[..64];
+        DadosEdital dados = DadosEdital.Criar(
+            "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
+            new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
+
+        SnapshotCanonico congelado = CongelarProcesso(processo, dados, hash64, valoresDosCampos);
 
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, hash64,
@@ -864,7 +877,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         Result<FormularioRenderizavelDto> formulario = await ObterFormularioDaInscricaoQueryHandler.Handle(
             new ObterFormularioDaInscricaoQuery(processoId),
             new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
-            new ProcessoSeletivoRepository(db, TimeProvider.System), RegistroCodecs, Substitute.For<IEnderecoNoAcervoPublico>(), fernanda,
+            new CertameDivulgadoRepository(db), new ProcessoSeletivoRepository(db, TimeProvider.System), RegistroCodecs, Substitute.For<IEnderecoNoAcervoPublico>(), fernanda,
             CancellationToken.None);
 
         formulario.IsSuccess.Should().BeTrue(formulario.Error?.Message);
@@ -895,7 +908,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         Result<FormularioRenderizavelDto> formulario = await ObterFormularioDaInscricaoQueryHandler.Handle(
             new ObterFormularioDaInscricaoQuery(processoId),
             new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
-            new ProcessoSeletivoRepository(db, TimeProvider.System), RegistroCodecs, Substitute.For<IEnderecoNoAcervoPublico>(), fernanda,
+            new CertameDivulgadoRepository(db), new ProcessoSeletivoRepository(db, TimeProvider.System), RegistroCodecs, Substitute.For<IEnderecoNoAcervoPublico>(), fernanda,
             CancellationToken.None);
         formulario.IsSuccess.Should().BeTrue(formulario.Error?.Message);
         return formulario.Value!;
@@ -992,7 +1005,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         Result<FormularioRenderizavelDto> formulario = await ObterFormularioDaInscricaoQueryHandler.Handle(
             new ObterFormularioDaInscricaoQuery(processoId),
             new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
-            new ProcessoSeletivoRepository(db, TimeProvider.System), RegistroCodecs, Substitute.For<IEnderecoNoAcervoPublico>(), fernanda,
+            new CertameDivulgadoRepository(db), new ProcessoSeletivoRepository(db, TimeProvider.System), RegistroCodecs, Substitute.For<IEnderecoNoAcervoPublico>(), fernanda,
             CancellationToken.None);
         formulario.Value!.DependenciasDaAvaliacao!.Fatos.Should().Contain(declaraRenda, "a resposta que decide o gatilho muda a avaliação");
     }
@@ -1509,12 +1522,198 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             inscricoes, processos, new CertameDivulgadoRepository(db), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
             db, fernanda, DentroDoPeriodo, CancellationToken.None);
         Result<InscricaoDto> ler = await ObterInscricaoQueryHandler.Handle(
-            new ObterInscricaoQuery(processoId), inscricoes, processos, RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), fernanda,
+            new ObterInscricaoQuery(processoId), inscricoes, new CertameDivulgadoRepository(db), processos, RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), fernanda,
             DentroDoPeriodo, CancellationToken.None);
 
         salvar.IsSuccess.Should().BeTrue(salvar.Error?.Message);
         ModalidadesDaInscricaoDto concorre = new(true, "CONCORRE", [new ModalidadeDaInscricaoDto("AC", "AC", 0)], []);
         salvar.Value!.Avaliacao.Modalidades.Should().BeEquivalentTo(concorre);
         ler.Value!.Avaliacao.Modalidades.Should().BeEquivalentTo(concorre);
+    }
+
+    private static ProcessoSeletivo ProcessoComUmCampo(string nome, string fato, Obrigatoriedade obrigatoriedade) =>
+        NovoProcessoDeInscricao(nome, camposAdicionais:
+        [
+            FatoColetado.Criar(
+                fato, 1, fato, TipoRenderizacao.Texto, obrigatoriedade, null,
+                classificacaoProtecao: "PESSOAL", etapaCodigo: FormularioDeTeste.Secao, formato: "LIVRE", finalidade: FinalidadeFormulario.Inscricao).Value!,
+        ]);
+
+    /// <summary>O processo que deriva a modalidade da resposta a CONCORRER_PCD e ainda pede <paramref name="fato"/>, obrigatório.</summary>
+    private static ProcessoSeletivo ProcessoQueDerivaAModalidadeComUmCampo(string nome, string fato)
+    {
+        FatoColetado concorrerPcd = FatoColetado.Criar(
+            "CONCORRER_PCD", 1, "Você quer concorrer às vagas para pessoa com deficiência?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null,
+            classificacaoProtecao: "SENSIVEL", etapaCodigo: FormularioDeTeste.Secao, finalidade: FinalidadeFormulario.Inscricao).Value!;
+        FatoColetado pedido = FatoColetado.Criar(
+            fato, 2, fato, TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
+            classificacaoProtecao: "PESSOAL", etapaCodigo: FormularioDeTeste.Secao, formato: "LIVRE", finalidade: FinalidadeFormulario.Inscricao).Value!;
+        ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(
+            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, Clausulas([("CONCORRER_PCD", true)]), null, "Res. Unifesspa 532/2021",
+            quantidadeDeclarada: 40).Value!;
+        return NovoProcessoDeInscricao(nome, camposAdicionais: [concorrerPcd, pedido], modalidades: [ampla]);
+    }
+
+    /// <summary>Grava <paramref name="retificado"/> como a versão seguinte do processo, sem divulgá-la: a retificação fechada ainda sem publicidade.</summary>
+    private static async Task<VersaoConfiguracao> GravarRetificacaoAsync(SelecaoDbContext db, Guid processoId, ProcessoSeletivo retificado, DadosEdital dados)
+    {
+        string hash = new('4', 64);
+        ProcessoSeletivoRepository processos = new(db, TimeProvider.System);
+        VersaoConfiguracao anterior = (await processos.ObterVersoesAsync(processoId, CancellationToken.None)).MaxBy(static v => v.NumeroVersao)!;
+        SnapshotCanonico congelado = CongelarProcesso(retificado, dados, hash, valoresDosCampos: null, new RetificacaoInfo(anterior.AtoCriadorId, "Retificação de teste"));
+        VersaoConfiguracao sucessora = VersaoConfiguracao.Suceder(
+            anterior, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, Guid.CreateVersion7(), hash,
+            anterior.AtoCriadorId, "integration-test-user", TimeProvider.System.GetUtcNow());
+        await processos.AdicionarVersaoConfiguracaoAsync(sucessora, CancellationToken.None);
+        await db.SaveChangesAsync();
+        return sucessora;
+    }
+
+    /// <summary>Faz o certame divulgar <paramref name="versao"/>, a que dá publicidade à retificação.</summary>
+    private static async Task DivulgarAsync(SelecaoDbContext db, Guid processoId, VersaoConfiguracao versao)
+    {
+        CertameDivulgado divulgado = (await new CertameDivulgadoRepository(db).ObterParaMutacaoAsync(processoId, CancellationToken.None))!;
+        divulgado.TentarAvancar(
+            versao.NumeroVersao, versao.AtoCriadorId, new string('4', 64), "1",
+            new FacetasDoCertameDivulgado(
+                divulgado.IdentificadorLegivel, divulgado.Nome, divulgado.Numero, ["AC"], divulgado.InscricoesDe, divulgado.InscricoesAte),
+            """{"nome":"documento"}""", TimeProvider.System.GetUtcNow()).Should().BeTrue();
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task DivulgarRetificacaoAsync(SelecaoDbContext db, Guid processoId, ProcessoSeletivo retificado, DadosEdital dados) =>
+        await DivulgarAsync(db, processoId, await GravarRetificacaoAsync(db, processoId, retificado, dados));
+
+    [Fact(DisplayName = "O rascunho adota a versão divulgada ao salvar e ao enviar, sem gravar na leitura; o primeiro envio congela a versão")]
+    public async Task Rascunho_AdotaAVersaoDivulgada_EOPrimeiroEnvioACongela()
+    {
+        string nome = nameof(Rascunho_AdotaAVersaoDivulgada_EOPrimeiroEnvioACongela);
+        ProcessoSeletivo v1 = ProcessoComUmCampo(nome, "ANTIGA", Obrigatoriedade.Nunca);
+        ProcessoSeletivo v2 = ProcessoQueDerivaAModalidadeComUmCampo(nome, "NOVA");
+        ProcessoSeletivo v3 = ProcessoComUmCampo(nome, "OUTRA", Obrigatoriedade.Sempre);
+        Guid processoId;
+        DadosEdital dados;
+        string etag;
+        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        {
+            (processoId, dados) = await PublicarEDivulgarAsync(db, v1);
+            etag = await IniciarAsync(db, processoId);
+            Result<InscricaoDto> comAntiga = await SalvarAsync(
+                db, processoId,
+                new InscricaoRequest(null, new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["ANTIGA"] = JsonSerializer.SerializeToElement("resposta") }, null, null),
+                etag);
+            comAntiga.IsSuccess.Should().BeTrue(comAntiga.Error?.Message);
+            etag = comAntiga.Value!.ETag;
+        }
+
+        // A retificação fechada e ainda sem publicidade não é adotada: o rascunho continua na versão divulgada.
+        VersaoConfiguracao semPublicidade;
+        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        {
+            semPublicidade = await GravarRetificacaoAsync(db, processoId, v2, dados);
+        }
+
+        Guid versaoUm = (await RelerAsync(processoId)).Inscricao.VersaoFormularioId;
+        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        {
+            Result<InscricaoDto> ainda = await ObterInscricaoQueryHandler.Handle(
+                new ObterInscricaoQuery(processoId), new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
+                new CertameDivulgadoRepository(db), new ProcessoSeletivoRepository(db, TimeProvider.System), RegistroCodecs, Fuso(),
+                Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), UsuarioComCpf(PersonasDeTeste.FernandaDrumond),
+                DentroDoPeriodo, CancellationToken.None);
+            ainda.Value!.VersaoFormularioId.Should().Be(versaoUm);
+            ainda.Value!.Respostas.Should().ContainKey("ANTIGA");
+        }
+
+        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        {
+            await DivulgarAsync(db, processoId, semPublicidade);
+        }
+
+        // A leitura mostra a versão nova e não grava: a linha continua na versão em que o rascunho nasceu.
+        InscricaoDto lida;
+        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        {
+            Result<InscricaoDto> ler = await ObterInscricaoQueryHandler.Handle(
+                new ObterInscricaoQuery(processoId), new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
+                new CertameDivulgadoRepository(db), new ProcessoSeletivoRepository(db, TimeProvider.System), RegistroCodecs, Fuso(),
+                Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), UsuarioComCpf(PersonasDeTeste.FernandaDrumond),
+                DentroDoPeriodo, CancellationToken.None);
+            ler.IsSuccess.Should().BeTrue(ler.Error?.Message);
+            lida = ler.Value!;
+        }
+
+        (Inscricao naoGravada, _) = await RelerAsync(processoId);
+        lida.VersaoFormularioId.Should().NotBe(naoGravada.VersaoFormularioId);
+        lida.Respostas.Should().NotContainKey("ANTIGA");
+        naoGravada.Respostas.Should().ContainKey("ANTIGA");
+        naoGravada.Revisao.Should().BeLessThan(int.Parse(lida.ETag.Trim('"').Split(':')[1], System.Globalization.CultureInfo.InvariantCulture));
+
+        // O formulário e a avaliação avulsa do rascunho também são os da versão nova.
+        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        {
+            Result<FormularioRenderizavelDto> formulario = await ObterFormularioDaInscricaoQueryHandler.Handle(
+                new ObterFormularioDaInscricaoQuery(processoId), new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
+                new CertameDivulgadoRepository(db), new ProcessoSeletivoRepository(db, TimeProvider.System), RegistroCodecs, Substitute.For<IEnderecoNoAcervoPublico>(),
+                UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None);
+            formulario.IsSuccess.Should().BeTrue(formulario.Error?.Message);
+            formulario.Value!.FatosColetados.Select(static c => c.FatoCodigo).Should().Contain("NOVA").And.NotContain("ANTIGA");
+            Result<AvaliacaoDaInscricaoDto> avaliacao = await AvaliarAsync(db, processoId, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), null);
+            avaliacao.Value!.Modalidades.Situacao.Should().Be("FALTA_RESPONDER", "só a versão nova deriva a modalidade da resposta a CONCORRER_PCD");
+        }
+
+        // O envio sem a pergunta nova obrigatória é recusado nela, e nada é gravado.
+        InscricaoRequest semNova = PedidoDeEnvio(v2, new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["CONCORRER_PCD"] = JsonSerializer.SerializeToElement(true) });
+        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        {
+            Result<ComprovanteInscricaoDto> recusado = await EnviarAsync(db, processoId, semNova, lida.ETag, "00000201");
+            recusado.Errors.Should().ContainSingle().Which.Field.Should().Be("NOVA");
+        }
+
+        (Inscricao aindaRascunho, _) = await RelerAsync(processoId);
+        aindaRascunho.VersaoFormularioId.Should().Be(naoGravada.VersaoFormularioId);
+
+        // Salvar grava a adoção: a versão nova, sem a resposta à pergunta retirada.
+        InscricaoDto salvo;
+        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        {
+            Result<InscricaoDto> salvar = await SalvarAsync(db, processoId, new InscricaoRequest(null, null, null, null), lida.ETag);
+            salvar.IsSuccess.Should().BeTrue(salvar.Error?.Message);
+            salvo = salvar.Value!;
+        }
+
+        (Inscricao adotada, _) = await RelerAsync(processoId);
+        adotada.VersaoFormularioId.Should().Be(lida.VersaoFormularioId);
+        adotada.Respostas.Should().NotContainKey("ANTIGA");
+        adotada.Situacao.Should().Be(SituacaoInscricao.Rascunho);
+
+        // O primeiro envio, agora com a pergunta nova respondida, congela a versão.
+        InscricaoRequest comNova = PedidoDeEnvio(v2, new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+        {
+            ["NOVA"] = JsonSerializer.SerializeToElement("resposta"),
+            ["CONCORRER_PCD"] = JsonSerializer.SerializeToElement(true),
+        });
+        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        {
+            (await EnviarAsync(db, processoId, comNova, salvo.ETag, "00000202")).IsSuccess.Should().BeTrue();
+        }
+
+        // Uma retificação divulgada depois do envio não muda a versão da inscrição: a correção continua nela.
+        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        {
+            await DivulgarRetificacaoAsync(db, processoId, v3, dados);
+        }
+
+        (Inscricao enviada, _) = await RelerAsync(processoId);
+        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        {
+            Result<ComprovanteInscricaoDto> correcao = await EnviarAsync(db, processoId, comNova, enviada.ETag, "00000203");
+            correcao.IsSuccess.Should().BeTrue(correcao.Error?.Message ?? string.Join("; ", correcao.Errors.Select(static e => $"{e.Field}: {e.Error.Message}")));
+        }
+
+        (Inscricao corrigida, IReadOnlyList<ComprovanteInscricao> comprovantes) = await RelerAsync(processoId);
+        corrigida.VersaoFormularioId.Should().Be(lida.VersaoFormularioId);
+        comprovantes.Should().HaveCount(2);
     }
 }

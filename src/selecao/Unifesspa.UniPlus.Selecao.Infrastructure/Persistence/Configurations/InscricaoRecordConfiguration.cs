@@ -58,7 +58,7 @@ internal sealed class InscricaoRecordConfiguration : IEntityTypeConfiguration<In
             .IsRequired();
 
         builder.Property(i => i.VersaoFormularioId)
-            .HasComment("A versão do formulário divulgada no instante do início (UNI-REQ-0084) — fixa, nunca recalculada.");
+            .HasComment("A versão do formulário da inscrição (UNI-REQ-0084): a divulgada que o rascunho adotou por último; o primeiro envio a congela.");
 
         builder.Property(i => i.NumeroInscricao)
             .HasMaxLength(20)

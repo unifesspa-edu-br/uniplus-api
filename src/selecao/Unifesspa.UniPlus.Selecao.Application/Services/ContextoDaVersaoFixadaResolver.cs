@@ -12,7 +12,7 @@ using Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
-/// O contexto de avaliação da finalidade Inscrição na versão FIXADA por uma inscrição ao iniciar —
+/// O contexto de avaliação da finalidade Inscrição na versão da inscrição (<see cref="VersaoDaInscricaoResolver"/>) —
 /// nunca a vigente por relógio (UNI-REQ-0084): os termos exigidos dessa finalidade, a data de
 /// referência dos fatos congelada na publicação, a oferta de valores de cada campo, o que a versão
 /// admite como resposta, a configuração inteira que a avaliação da inscrição lê (ADR-0143) e o ato que
@@ -49,6 +49,7 @@ public static class ContextoDaVersaoFixadaResolver
     /// A oferta de curso da 2ª opção. Só conta com a 1ª escolhida e se a versão fixada admite duas
     /// opções: a recusa da 2ª fora disso é do agregado, não da avaliação.
     /// </param>
+    /// <remarks>Lê <paramref name="versaoFormularioId"/> como está: o rascunho já tem de ter adotado a divulgada (<see cref="VersaoDaInscricaoResolver.AdotarAsync"/>).</remarks>
     public static async Task<Result<ContextoDaVersaoFixada>> ResolverAsync(
         Guid versaoFormularioId,
         Guid processoSeletivoId,
@@ -68,14 +69,7 @@ public static class ContextoDaVersaoFixadaResolver
 
         VersaoConfiguracao versao = resolvida.Value!;
 
-        if (!registroCodecs.SabeLer(versao.SchemaVersion))
-        {
-            return Result<ContextoDaVersaoFixada>.Failure(new DomainError(
-                ErrosCodecEnvelope.VersaoDesconhecida,
-                $"A versão '{versao.SchemaVersion}' do envelope congelado não está entre as capacidades de leitura reconhecidas pelo codec vivo."));
-        }
-
-        Result<EnvelopeReidratado> reidratado = registroCodecs.Reidratar(versao);
+        Result<EnvelopeReidratado> reidratado = Reidratar(versao, registroCodecs);
         if (reidratado.IsFailure)
         {
             return Result<ContextoDaVersaoFixada>.Failure(reidratado.Error!);
@@ -125,6 +119,19 @@ public static class ContextoDaVersaoFixadaResolver
             termos, dataReferencia.Value, dasEscolhidas.Avaliavel.Ofertas, admitidas,
             dasEscolhidas.Configuracao, versao.AtoCriadorId,
             daPrimeira.Value!.Configuracao, daSegunda, OfertasDaVersao(grafo)));
+    }
+
+    /// <summary>O envelope congelado da versão, lido pelo codec que sabe ler a versão de esquema dele.</summary>
+    public static Result<EnvelopeReidratado> Reidratar(VersaoConfiguracao versao, IRegistroCodecsEnvelope registroCodecs)
+    {
+        ArgumentNullException.ThrowIfNull(versao);
+        ArgumentNullException.ThrowIfNull(registroCodecs);
+
+        return registroCodecs.SabeLer(versao.SchemaVersion)
+            ? registroCodecs.Reidratar(versao)
+            : Result<EnvelopeReidratado>.Failure(new DomainError(
+                ErrosCodecEnvelope.VersaoDesconhecida,
+                $"A versão '{versao.SchemaVersion}' do envelope congelado não está entre as capacidades de leitura reconhecidas pelo codec vivo."));
     }
 
     private sealed record ConfiguracaoDaOpcao(DefinicaoAvaliavel Avaliavel, ConfiguracaoAvaliavel Configuracao);

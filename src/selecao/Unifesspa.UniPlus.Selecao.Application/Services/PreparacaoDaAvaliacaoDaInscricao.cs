@@ -25,12 +25,13 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 public static class PreparacaoDaAvaliacaoDaInscricao
 {
     /// <summary>
-    /// A avaliação do que a inscrição gravou, na versão que ela fixou ao iniciar, como se as respostas
+    /// A avaliação do que a inscrição gravou, na versão em que ela está (o rascunho adotado na memória, sem gravar), como se as respostas
     /// fossem gravadas em <paramref name="instante"/>, no fuso da janela de inscrição — na forma que o
-    /// candidato recebe, junto das opções de curso da versão que ela fixou.
+    /// candidato recebe, junto das opções de curso dessa versão.
     /// </summary>
     public static async Task<Result<InscricaoDto>> ProjetarInscricaoGravadaAsync(
         Inscricao inscricao,
+        Domain.Interfaces.ICertameDivulgadoRepository certameDivulgadoRepository,
         Domain.Interfaces.IProcessoSeletivoRepository processoSeletivoRepository,
         IRegistroCodecsEnvelope registroCodecs,
         IResolvedorFusoInstitucional resolvedorFuso,
@@ -46,6 +47,14 @@ public static class PreparacaoDaAvaliacaoDaInscricao
         if (fuso.IsFailure)
         {
             return Result<InscricaoDto>.Failure(fuso.Error!);
+        }
+
+        Result adotada = await VersaoDaInscricaoResolver
+            .AdotarAsync(inscricao, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, cancellationToken)
+            .ConfigureAwait(false);
+        if (adotada.IsFailure)
+        {
+            return Result<InscricaoDto>.Failure(adotada.Error!);
         }
 
         Result<ContextoDaVersaoFixada> contexto = await ContextoDaVersaoFixadaResolver.ResolverAsync(

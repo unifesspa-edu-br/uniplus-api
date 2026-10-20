@@ -185,7 +185,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "A retificação que prorroga o período vale para quem já iniciou: salva depois do fim da versão fixada")]
+    [Fact(DisplayName = "O rascunho adota a versão divulgada que prorroga o período: salva depois do fim da versão em que ele nasceu")]
     public async Task Handle_PeriodoProrrogadoPelaRetificacao_Salva()
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
@@ -207,7 +207,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
 
         Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
-            new SalvarInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags([existente.ETag])),
+            new SalvarInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags([DivulgacaoDeTeste.ETagDepoisDeAdotar(existente, divulgada)])),
             inscricaoRepository, processoRepository, DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
             unitOfWork, UsuarioComCpf(cpf), new RelogioFixo(DivulgacaoDeTeste.FimDoPeriodo.AddDays(10)), CancellationToken.None);
 

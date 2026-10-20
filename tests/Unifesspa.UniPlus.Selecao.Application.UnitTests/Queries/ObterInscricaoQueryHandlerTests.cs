@@ -40,7 +40,7 @@ public sealed class ObterInscricaoQueryHandlerTests
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
 
         Result<InscricaoDto> resultado = await ObterInscricaoQueryHandler.Handle(
-            new ObterInscricaoQuery(ProcessoId), inscricaoRepository, Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(), DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), userContext, DivulgacaoDeTeste.Relogio, CancellationToken.None);
+            new ObterInscricaoQuery(ProcessoId), inscricaoRepository, Substitute.For<ICertameDivulgadoRepository>(), Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(), DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), userContext, DivulgacaoDeTeste.Relogio, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.CpfAusenteNoToken");
@@ -55,7 +55,7 @@ public sealed class ObterInscricaoQueryHandlerTests
         inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns((Inscricao?)null);
 
         Result<InscricaoDto> resultado = await ObterInscricaoQueryHandler.Handle(
-            new ObterInscricaoQuery(ProcessoId), inscricaoRepository, Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(), DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), UsuarioComCpf(cpf), DivulgacaoDeTeste.Relogio, CancellationToken.None);
+            new ObterInscricaoQuery(ProcessoId), inscricaoRepository, Substitute.For<ICertameDivulgadoRepository>(), Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(), DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), UsuarioComCpf(cpf), DivulgacaoDeTeste.Relogio, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.NaoEncontrada");
@@ -73,7 +73,7 @@ public sealed class ObterInscricaoQueryHandlerTests
         inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
 
         Result<InscricaoDto> resultado = await ObterInscricaoQueryHandler.Handle(
-            new ObterInscricaoQuery(ProcessoId), inscricaoRepository, Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(), DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), UsuarioComCpf(cpf, sub: "sub-outro"), DivulgacaoDeTeste.Relogio, CancellationToken.None);
+            new ObterInscricaoQuery(ProcessoId), inscricaoRepository, Substitute.For<ICertameDivulgadoRepository>(), Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(), DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), UsuarioComCpf(cpf, sub: "sub-outro"), DivulgacaoDeTeste.Relogio, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.DonoDivergente");
@@ -93,7 +93,7 @@ public sealed class ObterInscricaoQueryHandlerTests
         DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
 
         Result<InscricaoDto> resultado = await ObterInscricaoQueryHandler.Handle(
-            new ObterInscricaoQuery(ProcessoId), inscricaoRepository, processoRepository, registroCodecs, DivulgacaoDeTeste.Fuso(),
+            new ObterInscricaoQuery(ProcessoId), inscricaoRepository, DivulgacaoDeTeste.Certame(ProcessoId), processoRepository, registroCodecs, DivulgacaoDeTeste.Fuso(),
             Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), UsuarioComCpf(cpf), DivulgacaoDeTeste.Relogio, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);

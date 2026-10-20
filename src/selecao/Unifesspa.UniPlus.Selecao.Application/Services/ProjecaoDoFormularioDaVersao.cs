@@ -22,8 +22,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// JÁ RESOLVIDA (ADR-0139) — extraído de <c>ObterFormularioRenderizavelQueryHandler</c> (issue #1059,
 /// UNI-REQ-0072) para ser reusado por <c>ObterFormularioDaInscricaoQueryHandler</c> (issue #1859):
 /// as duas leituras projetam os mesmos bytes congelados do mesmo jeito — a única diferença entre
-/// elas é COMO a versão é resolvida (pela divulgação atual, ou pela versão que a inscrição fixou ao
-/// iniciar), nunca o que se faz com ela depois de resolvida.
+/// elas é COMO a versão é resolvida (pela divulgação atual, ou pela versão em que está a inscrição:
+/// a divulgada no rascunho, a congelada no primeiro envio depois dele), nunca o que se faz com ela depois de resolvida.
 /// </summary>
 public static class ProjecaoDoFormularioDaVersao
 {

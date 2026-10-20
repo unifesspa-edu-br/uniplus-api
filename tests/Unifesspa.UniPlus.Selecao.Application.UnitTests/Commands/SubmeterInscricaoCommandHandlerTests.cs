@@ -229,7 +229,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         await inscricaoRepository.DidNotReceive().AdicionarComprovanteAsync(Arg.Any<ComprovanteInscricao>(), Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "A retificação que prorroga o período vale para quem já iniciou: envia depois do fim da versão fixada")]
+    [Fact(DisplayName = "O rascunho adota a versão divulgada que prorroga o período: envia depois do fim da versão em que ele nasceu")]
     public async Task Handle_PeriodoProrrogadoPelaRetificacao_Submete()
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
@@ -249,7 +249,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             divulgada: (divulgada, DivulgacaoDeTeste.FimDoPeriodo.AddDays(30)));
 
         Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
-            new SubmeterInscricaoCommand(ProcessoId, RequestComApelidoETermoAceito(cpf, termo, grafo), PrecondicaoIfMatch.DeTags([existente.ETag])),
+            new SubmeterInscricaoCommand(ProcessoId, RequestComApelidoETermoAceito(cpf, termo, grafo), PrecondicaoIfMatch.DeTags([DivulgacaoDeTeste.ETagDepoisDeAdotar(existente, divulgada)])),
             inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf),
             geradorDeNumeroInscricao: GeradorQueDevolve("00000007"), relogio: new RelogioFixo(DivulgacaoDeTeste.FimDoPeriodo.AddDays(10)));
 

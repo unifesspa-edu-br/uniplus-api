@@ -94,7 +94,7 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
 
         Result<FormularioRenderizavelDto> resultado = await ObterFormularioDaInscricaoQueryHandler.Handle(
-            new ObterFormularioDaInscricaoQuery(ProcessoId), inscricaoRepository, Substitute.For<IProcessoSeletivoRepository>(),
+            new ObterFormularioDaInscricaoQuery(ProcessoId), inscricaoRepository, Substitute.For<ICertameDivulgadoRepository>(), Substitute.For<IProcessoSeletivoRepository>(),
             Substitute.For<IRegistroCodecsEnvelope>(), CriarAcervo(), userContext, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
@@ -110,15 +110,15 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
         inscricaoRepository.ObterPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns((Inscricao?)null);
 
         Result<FormularioRenderizavelDto> resultado = await ObterFormularioDaInscricaoQueryHandler.Handle(
-            new ObterFormularioDaInscricaoQuery(ProcessoId), inscricaoRepository, Substitute.For<IProcessoSeletivoRepository>(),
+            new ObterFormularioDaInscricaoQuery(ProcessoId), inscricaoRepository, Substitute.For<ICertameDivulgadoRepository>(), Substitute.For<IProcessoSeletivoRepository>(),
             Substitute.For<IRegistroCodecsEnvelope>(), CriarAcervo(), UsuarioComCpf(cpf), CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.NaoEncontrada");
     }
 
-    [Fact(DisplayName = "Devolve o formulário da versão FIXADA pela inscrição, não a divulgada atual")]
-    public async Task Handle_InscricaoComVersaoFixada_DevolveFormularioDaquelaVersao()
+    [Fact(DisplayName = "Devolve o formulário da versão divulgada ao rascunho")]
+    public async Task Handle_RascunhoDevolveFormularioDaVersaoDivulgada()
     {
         Cpf cpf = PersonasDeTeste.KevinCarvalho;
         (VersaoConfiguracao versao, EnvelopeReidratado envelope) = MontarVersaoComFormularioDeInscricao();
@@ -130,9 +130,10 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
 
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
+        processoRepository.ObterVersoesPorAtoCriadorAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([versao]);
 
         Result<FormularioRenderizavelDto> resultado = await ObterFormularioDaInscricaoQueryHandler.Handle(
-            new ObterFormularioDaInscricaoQuery(ProcessoId), inscricaoRepository, processoRepository,
+            new ObterFormularioDaInscricaoQuery(ProcessoId), inscricaoRepository, DivulgacaoDeTeste.Certame(ProcessoId), processoRepository,
             RegistroReidratando(envelope), CriarAcervo(), UsuarioComCpf(cpf), CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -155,9 +156,10 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
             .Returns(Inscricao.Iniciar(ProcessoId, cpf, "sub-1", "https://issuer", versao.Id).Value!);
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
+        processoRepository.ObterVersoesPorAtoCriadorAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([versao]);
 
         Result<FormularioRenderizavelDto> resultado = await ObterFormularioDaInscricaoQueryHandler.Handle(
-            new ObterFormularioDaInscricaoQuery(ProcessoId), inscricaoRepository, processoRepository,
+            new ObterFormularioDaInscricaoQuery(ProcessoId), inscricaoRepository, DivulgacaoDeTeste.Certame(ProcessoId), processoRepository,
             RegistroReidratando(envelope), CriarAcervo(), UsuarioComCpf(cpf), CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -175,9 +177,10 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
             .Returns(Inscricao.Iniciar(ProcessoId, cpf, "sub-1", "https://issuer", versao.Id).Value!);
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
+        processoRepository.ObterVersoesPorAtoCriadorAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([versao]);
 
         Result<FormularioRenderizavelDto> resultado = await ObterFormularioDaInscricaoQueryHandler.Handle(
-            new ObterFormularioDaInscricaoQuery(ProcessoId), inscricaoRepository, processoRepository,
+            new ObterFormularioDaInscricaoQuery(ProcessoId), inscricaoRepository, DivulgacaoDeTeste.Certame(ProcessoId), processoRepository,
             RegistroReidratando(envelope), CriarAcervo(), UsuarioComCpf(cpf), CancellationToken.None);
 
         resultado.Value!.FaseId.Should().Be(fase);
