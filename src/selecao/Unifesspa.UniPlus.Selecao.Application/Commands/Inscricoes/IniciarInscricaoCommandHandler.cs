@@ -83,6 +83,19 @@ public static class IniciarInscricaoCommandHandler
             return await ComAvaliacaoAsync(existente).ConfigureAwait(false);
         }
 
+        // Sem inscrição ativa, a cancelada do mesmo CPF neste processo ainda diz quem é o dono: outro sub
+        // não se inscreve por cima dela, como não se inscrevia por cima da ativa.
+        IReadOnlyList<Inscricao> doCpf = await inscricaoRepository
+            .ObterTodasPorCpfAsync(cpf, cancellationToken)
+            .ConfigureAwait(false);
+        foreach (Inscricao cancelada in doCpf.Where(i => i.ProcessoSeletivoId == command.ProcessoSeletivoId))
+        {
+            if (cancelada.ConferirDono(userContext.UserId ?? string.Empty) is { } erroDono)
+            {
+                return Result<InscricaoDto>.Failure(erroDono);
+            }
+        }
+
         Result<Services.VersaoDivulgada> versaoDivulgada = await Services.VersaoDivulgadaResolver
             .ResolverAsync(command.ProcessoSeletivoId, certameDivulgadoRepository, processoSeletivoRepository, cancellationToken)
             .ConfigureAwait(false);

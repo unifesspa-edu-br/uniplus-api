@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
 using System.Text;
+using System.Text.Json;
 
 using AwesomeAssertions;
 
@@ -15,6 +16,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -118,6 +120,30 @@ public sealed class IniciarInscricaoCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.DonoDivergente");
+    }
+
+    [Fact(DisplayName = "Inscrição cancelada de outro sub com o mesmo CPF: iniciar é recusado como dono divergente, e o mesmo sub se inscreve de novo")]
+    public async Task Handle_CanceladaDeOutroSub_RecusaEMesmoSubInscreveDeNovo()
+    {
+        Cpf cpf = PersonasDeTeste.FernandaDrumond;
+        Cenario cenario = MontarCriacao(cpf);
+        Inscricao cancelada = Inscricao.Reidratar(
+            Guid.CreateVersion7(), ProcessoId, cpf, "sub-1", "https://issuer", SituacaoInscricao.Cancelada, cenario.Versao.Id, null, null,
+            "000123", DataHoraFixa, "sub-1", "a pedido do candidato",
+            new Dictionary<string, JsonElement>(), new Dictionary<string, JsonElement>(),
+            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), [], new Dictionary<string, DefinicaoDaResposta>(), 2, DataHoraFixa, null);
+        cenario.Inscricoes.ObterTodasPorCpfAsync(cpf, Arg.Any<CancellationToken>()).Returns((IReadOnlyList<Inscricao>)[cancelada]);
+
+        Result<InscricaoDto> deOutro = await IniciarInscricaoCommandHandler.Handle(
+            new IniciarInscricaoCommand(ProcessoId), cenario.Inscricoes, cenario.Divulgados, cenario.Processos, cenario.Codecs, Fuso(),
+            Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), new RelogioFixo(DentroDoPeriodo),
+            Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf, "sub-outro"), CancellationToken.None);
+        deOutro.Error!.Code.Should().Be(InscricaoErrorCodes.DonoDivergente);
+        await cenario.Inscricoes.DidNotReceive().AdicionarAsync(Arg.Any<Inscricao>(), Arg.Any<CancellationToken>());
+
+        Result<InscricaoDto> domesmo = await Iniciar(cenario, cpf, new RelogioFixo(DentroDoPeriodo));
+        domesmo.IsSuccess.Should().BeTrue(domesmo.Error?.Message);
+        await cenario.Inscricoes.Received(1).AdicionarAsync(Arg.Any<Inscricao>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Processo sem divulgação: não encontrado, sem tentar gravar")]
