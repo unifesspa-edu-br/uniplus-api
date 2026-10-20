@@ -119,13 +119,6 @@ public static class ConjuntoBasicoDaInscricao
             with { Ordem = inicio + posicao, Rotulo = canonico.Rotulo })];
     }
 
-    /// <summary>
-    /// A sequência do conjunto básico — código e rótulo de cada item, na ordem canônica — como JSON,
-    /// para a migração de dados regravar a seção com a mesma normalização de <see cref="Referencia"/>.
-    /// </summary>
-    public static string SequenciaEmJson() =>
-        JsonSerializer.Serialize(Itens.Select(static i => new { fatoCodigo = i.FatoCodigo, rotulo = i.Rotulo }));
-
     /// <summary>A seção gravada num formulário ou num modelo, ou a do conjunto básico.</summary>
     public static EtapaFormularioInput SecaoDe(IEnumerable<EtapaFormularioInput> gravadas)
     {
