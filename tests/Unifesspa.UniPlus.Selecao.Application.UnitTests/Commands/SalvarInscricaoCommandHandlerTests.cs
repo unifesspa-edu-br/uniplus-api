@@ -130,7 +130,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    private static (VersaoConfiguracao Versao, GrafoConfiguracao Grafo) MontarVersaoComItem(
+    internal static (VersaoConfiguracao Versao, GrafoConfiguracao Grafo) MontarVersaoComItem(
         FatoColetado item, IReadOnlyList<GrupoColetado>? grupos = null)
     {
         ProcessoSeletivo processoBase = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Salvar rascunho");

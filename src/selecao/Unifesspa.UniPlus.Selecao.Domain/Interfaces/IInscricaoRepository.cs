@@ -30,6 +30,9 @@ public interface IInscricaoRepository
     /// </summary>
     Task AtualizarAsync(Inscricao entity, CancellationToken cancellationToken = default);
 
+    /// <summary>Remove fisicamente a inscrição e as linhas filhas (respostas, grupos, aceites e endereços).</summary>
+    Task RemoverAsync(Inscricao entity, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Os comprovantes gravados das inscrições, em ordem de emissão — o agregado reidratado não os
     /// carrega.

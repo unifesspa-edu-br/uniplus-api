@@ -163,6 +163,39 @@ public sealed class InscricoesController : ControllerBase
     }
 
     /// <summary>
+    /// Descarta o rascunho do dono do token: remove a inscrição e tudo que ela guarda, sem deixar dado
+    /// pessoal sem finalidade. Exige <c>If-Match</c> com o <see cref="InscricaoDto.ETag"/> corrente. A
+    /// inscrição já enviada não é descartada (422): sai pelo cancelamento. Iniciar a inscrição de novo
+    /// cria um rascunho novo na versão vigente.
+    /// </summary>
+    [HttpDelete("processos-seletivos/{id:guid}/inscricao")]
+    [Authorize(Policy = "Candidato")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
+    public async Task<IActionResult> Descartar(
+        Guid id,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        CancellationToken cancellationToken)
+    {
+        Result<PrecondicaoIfMatch> analise = IfMatchHeader.Analisar(ifMatch);
+        if (analise.IsFailure)
+        {
+            return analise.ToActionResult(_mapper);
+        }
+
+        Result resultado = await _commandBus
+            .Send(new DescartarRascunhoDaInscricaoCommand(id, analise.Value!), cancellationToken)
+            .ConfigureAwait(false);
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
     /// Envia ou corrige a inscrição: exige obrigatórios, restrições, impedimentos, grupos e termos
     /// — a validação completa do veredito de submissão. Exige <c>If-Match</c> com o
     /// <see cref="InscricaoDto.ETag"/> corrente, e <c>Idempotency-Key</c> (ADR-0027): a repetição da

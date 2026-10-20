@@ -122,6 +122,18 @@ public sealed class InscricaoRepository : IInscricaoRepository
         Sincronizar(atuais, desejadas);
     }
 
+    public async Task RemoverAsync(Inscricao entity, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+
+        InscricaoRecord record = await _dbContext.Inscricoes
+            .FirstAsync(r => r.Id == entity.Id, cancellationToken)
+            .ConfigureAwait(false);
+
+        // As linhas filhas caem na própria remoção: a chave estrangeira de cada uma é em cascata.
+        _dbContext.Inscricoes.Remove(record);
+    }
+
     public async Task<IReadOnlyList<ComprovanteInscricao>> ObterComprovantesAsync(
         IReadOnlyCollection<Guid> inscricoes, CancellationToken cancellationToken = default)
     {

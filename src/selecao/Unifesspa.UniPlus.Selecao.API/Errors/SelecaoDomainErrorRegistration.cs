@@ -845,6 +845,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // Inscrição do candidato (issue #1858).
         new(InscricaoErrorCodes.SubObrigatorio, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.selecao.inscricao.sub_obrigatorio", "O token precisa trazer o claim sub")),
         new(InscricaoErrorCodes.EmissorObrigatorio, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.selecao.inscricao.emissor_obrigatorio", "O token precisa trazer o emissor")),
+        new(InscricaoErrorCodes.DescarteSoDeRascunho, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.descarte_so_de_rascunho", "Só o rascunho da inscrição pode ser descartado")),
         new(InscricaoErrorCodes.PrecondicaoRequerida, new DomainErrorMapping(StatusCodes.Status428PreconditionRequired, "uniplus.selecao.inscricao.precondicao_requerida", "A mutação da inscrição exige o If-Match com o ETag corrente")),
         new(InscricaoErrorCodes.PrecondicaoFalhou, new DomainErrorMapping(StatusCodes.Status412PreconditionFailed, "uniplus.selecao.inscricao.precondicao_falhou", "O If-Match não corresponde ao estado atual da inscrição")),
         new(InscricaoErrorCodes.DonoDivergente, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.selecao.inscricao.dono_divergente", "Esta inscrição pertence a outro candidato")),
