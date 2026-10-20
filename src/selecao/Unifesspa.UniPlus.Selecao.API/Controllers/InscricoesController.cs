@@ -10,6 +10,7 @@ using Http;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -215,7 +216,7 @@ public sealed class InscricoesController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
     public async Task<IActionResult> Cancelar(
         Guid id,
-        [FromBody] CancelamentoDaInscricaoRequest? request,
+        [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] CancelamentoDaInscricaoRequest? request,
         [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
