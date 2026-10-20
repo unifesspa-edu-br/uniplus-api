@@ -201,7 +201,7 @@ public sealed record MinhaInscricaoDto(
             inscricao.Id, inscricao.ProcessoSeletivoId, nomeDoProcesso, inscricao.NumeroInscricao, inscricao.Situacao,
             ResolverNomePreferido(inscricao.Respostas), inscricao.Cpf.Mascarado,
             inscricao.CanceladaEm, inscricao.MotivoDoCancelamento,
-            new AcoesDaInscricaoDto(acoes.PodeCorrigir, acoes.PodeCancelar, acoes.PodeDescartar),
+            new AcoesDaInscricaoDto(acoes.PodeContinuar, acoes.PodeCorrigir, acoes.PodeCancelar, acoes.PodeDescartar),
             [.. comprovantes.Select(static (c, i) => new ComprovanteEmitidoDto(i + 1, c.Instante))]);
     }
 
@@ -224,7 +224,7 @@ public sealed record MinhaInscricaoDto(
 }
 
 /// <summary>O que o candidato pode fazer agora com a inscrição (<see cref="AcoesDaInscricao"/>).</summary>
-public sealed record AcoesDaInscricaoDto(bool PodeCorrigir, bool PodeCancelar, bool PodeDescartar);
+public sealed record AcoesDaInscricaoDto(bool PodeContinuar, bool PodeCorrigir, bool PodeCancelar, bool PodeDescartar);
 
 /// <summary>O corpo do cancelamento da inscrição: o motivo é opcional.</summary>
 public sealed record CancelamentoDaInscricaoRequest(string? Motivo);
