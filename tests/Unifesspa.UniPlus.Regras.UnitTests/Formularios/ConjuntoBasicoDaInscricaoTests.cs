@@ -123,14 +123,33 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
     [Fact(DisplayName = "A referência é o item gravado na seção; o básico gravado fora dela não é referência")]
     public void Referencia_SoOGravadoNaSecao()
     {
-        FatoColetadoInput nomeNaSecao = ConjuntoBasicoDaInscricao.Itens[0] with { Rotulo = "Nome civil" };
+        FatoColetadoInput nomeNaSecao = ConjuntoBasicoDaInscricao.Itens[0] with { Ajuda = "Como está no documento." };
         FatoColetadoInput sexoForaDaSecao = ConjuntoBasicoDaInscricao.Itens.Single(static i => i.FatoCodigo == "SEXO") with { EtapaCodigo = "DADOS" };
 
         IReadOnlyList<FatoColetadoInput> referencia = ConjuntoBasicoDaInscricao.Referencia([nomeNaSecao, sexoForaDaSecao]);
 
         referencia.Should().HaveCount(Teto);
-        referencia[0].Rotulo.Should().Be("Nome civil");
+        referencia[0].Ajuda.Should().Be("Como está no documento.");
         referencia.Single(static i => i.FatoCodigo == "SEXO").EtapaCodigo.Should().Be(ConjuntoBasicoDaInscricao.CodigoDaSecao);
+    }
+
+    [Fact(DisplayName = "A referência refaz a ordem e o rótulo do conjunto, a partir da menor ordem gravada, e preserva o resto")]
+    public void Referencia_GravadoForaDeOrdem_VoltaAoConjunto()
+    {
+        const int inicio = 5;
+        string[] codigos = [.. ConjuntoBasicoDaInscricao.Itens.Select(static i => i.FatoCodigo)];
+        string[] sexoENoFim = [.. codigos.Where(static c => c != "SEXO"), "SEXO"];
+        IEnumerable<FatoColetadoInput> gravados = sexoENoFim.Select((codigo, posicao) =>
+            ConjuntoBasicoDaInscricao.Itens.Single(i => i.FatoCodigo == codigo)
+            with
+            { Ordem = inicio + posicao, Rotulo = codigo == "SEXO" ? "Sexo" : "Antigo", Ajuda = "Ajuda gravada." });
+
+        IReadOnlyList<FatoColetadoInput> referencia = ConjuntoBasicoDaInscricao.Referencia(gravados);
+
+        referencia.Select(static i => i.FatoCodigo).Should().Equal(codigos);
+        referencia.Select(static i => i.Ordem).Should().Equal(Enumerable.Range(inicio, Teto));
+        referencia.Select(static i => i.Rotulo).Should().Equal(ConjuntoBasicoDaInscricao.Itens.Select(static i => i.Rotulo));
+        referencia.Should().OnlyContain(static i => i.Ajuda == "Ajuda gravada.");
     }
 
     [Theory(DisplayName = "A seção omitida entra na primeira posição, e as etapas do cliente sobem só quando colidem")]

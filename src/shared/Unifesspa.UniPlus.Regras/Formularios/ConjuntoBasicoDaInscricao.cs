@@ -87,13 +87,20 @@ public static class ConjuntoBasicoDaInscricao
 
     /// <summary>
     /// A referência dos itens básicos: o gravado na seção reservada de um formulário ou de um
-    /// modelo, e o do conjunto básico onde ele ainda não foi gravado. O item básico gravado fora da
-    /// seção não é referência: o envio que o repete é recusado como alteração.
+    /// modelo, normalizado, e o do conjunto básico onde ele ainda não foi gravado. O item básico
+    /// gravado fora da seção não é referência: o envio que o repete é recusado como alteração.
     /// </summary>
     /// <remarks>
-    /// O item básico que falta numa seção já gravada — por ter entrado no conjunto depois — recebe a
-    /// ordem logo acima do último item da seção, para ficar nela: o que vem depois da seção desloca-se
-    /// em <see cref="MesclarItens"/>. Sem nenhum item básico gravado, o conjunto básico vale como é.
+    /// <para>
+    /// A normalização é pura: a ordem segue sempre a sequência do conjunto básico, renumerada a partir
+    /// da menor ordem gravada, e o rótulo vem do conjunto; o restante do item gravado é preservado.
+    /// Assim, o item gravado antes de uma mudança na sequência ou nos rótulos do conjunto volta a ela.
+    /// </para>
+    /// <para>
+    /// O item básico que falta numa seção já gravada — por ter entrado no conjunto depois — ocupa a
+    /// posição que o conjunto lhe dá: o que vem depois da seção desloca-se em
+    /// <see cref="MesclarItens"/>. Sem nenhum item básico gravado, o conjunto básico vale como é.
+    /// </para>
     /// </remarks>
     public static IReadOnlyList<FatoColetadoInput> Referencia(IEnumerable<FatoColetadoInput> gravados)
     {
@@ -102,9 +109,22 @@ public static class ConjuntoBasicoDaInscricao
             .Where(static g => g is not null && Fatos.Contains(g.FatoCodigo) && EhDaSecao(g.EtapaCodigo))
             .DistinctBy(static g => g.FatoCodigo, StringComparer.Ordinal)
             .ToDictionary(static g => g.FatoCodigo, StringComparer.Ordinal);
-        int proxima = porCodigo.Count == 0 ? 0 : porCodigo.Values.Max(static g => g.Ordem) + 1;
-        return [.. Itens.Select(i => porCodigo.GetValueOrDefault(i.FatoCodigo) ?? (porCodigo.Count == 0 ? i : i with { Ordem = proxima++ }))];
+        if (porCodigo.Count == 0)
+        {
+            return Itens;
+        }
+
+        int inicio = porCodigo.Values.Min(static g => g.Ordem);
+        return [.. Itens.Select((canonico, posicao) => (porCodigo.GetValueOrDefault(canonico.FatoCodigo) ?? canonico)
+            with { Ordem = inicio + posicao, Rotulo = canonico.Rotulo })];
     }
+
+    /// <summary>
+    /// A sequência do conjunto básico — código e rótulo de cada item, na ordem canônica — como JSON,
+    /// para a migração de dados regravar a seção com a mesma normalização de <see cref="Referencia"/>.
+    /// </summary>
+    public static string SequenciaEmJson() =>
+        JsonSerializer.Serialize(Itens.Select(static i => new { fatoCodigo = i.FatoCodigo, rotulo = i.Rotulo }));
 
     /// <summary>A seção gravada num formulário ou num modelo, ou a do conjunto básico.</summary>
     public static EtapaFormularioInput SecaoDe(IEnumerable<EtapaFormularioInput> gravadas)
@@ -114,9 +134,9 @@ public static class ConjuntoBasicoDaInscricao
     }
 
     /// <summary>
-    /// Mescla os itens enviados com os da seção de <paramref name="referencia"/>: o item básico que
-    /// falta entra no fim da lista, e os itens e grupos do cliente sobem acima da seção só quando
-    /// alguma ordem deles colide com a dela. Recusa o item básico enviado que difere da referência,
+    /// Mescla os itens enviados com os da seção de <paramref name="referencia"/>: os itens básicos
+    /// entram pela referência, e os itens e grupos do cliente sobem acima da seção só quando alguma
+    /// ordem deles colide com a dela. Recusa o item básico enviado que difere da referência,
     /// e o item ou o grupo do cliente na seção reservada.
     /// </summary>
     public static (IReadOnlyList<FatoColetadoInput> Itens, IReadOnlyList<GrupoColetadoInput> Grupos, List<FieldError> Erros) MesclarItens(
@@ -151,11 +171,12 @@ public static class ConjuntoBasicoDaInscricao
             .DefaultIfEmpty(int.MaxValue).Min();
         int deslocamento = primeiro <= teto ? teto + 1 - primeiro : 0;
 
-        HashSet<string> enviadosBasicos = new(enviados.Where(static i => i is not null && Fatos.Contains(i.FatoCodigo)).Select(static i => i.FatoCodigo), StringComparer.Ordinal);
+        // Os itens básicos enviados valem pela referência, que já tem a ordem e o rótulo do conjunto:
+        // repetidos como estão, são iguais a ela; os omitidos entram por ela.
         IReadOnlyList<FatoColetadoInput> itens =
         [
-            .. enviados.Select(i => i is null || Fatos.Contains(i.FatoCodigo) ? i! : i with { Ordem = i.Ordem + deslocamento }),
-            .. referencia.Where(r => !enviadosBasicos.Contains(r.FatoCodigo)),
+            .. enviados.Where(static i => i is null || !Fatos.Contains(i.FatoCodigo)).Select(i => i is null ? i! : i with { Ordem = i.Ordem + deslocamento }),
+            .. referencia,
         ];
         IReadOnlyList<GrupoColetadoInput> gruposMesclados = [.. grupos.Select(g => g is null ? g! : g with { Ordem = g.Ordem + deslocamento })];
         return (itens, gruposMesclados, erros);

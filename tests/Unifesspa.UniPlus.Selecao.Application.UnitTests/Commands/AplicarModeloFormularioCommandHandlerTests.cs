@@ -269,7 +269,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     [Fact(DisplayName = "Derivado sem regra padrão nem configuração é recusado")]
     public async Task Handle_DerivadoSemRegra_Recusa()
     {
-        FatoColetadoInput porSemRegra = Item("COR_RACA", 1, "SELECAO_UNICA") with
+        FatoColetadoInput porSemRegra = Item("CERTIFICADO", 1, "SELECAO_UNICA") with
         {
             Precondicao = [[new CondicaoPrecondicaoInput("SEM_REGRA", "EM", JsonSerializer.SerializeToElement(new[] { "X" }))]],
         };
