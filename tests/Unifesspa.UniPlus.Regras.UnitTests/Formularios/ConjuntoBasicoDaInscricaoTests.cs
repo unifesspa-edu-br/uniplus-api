@@ -84,19 +84,16 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
     }
 
     [Theory(DisplayName = "O item básico alterado é recusado na posição do envio")]
-    [InlineData("rotulo")]
     [InlineData("obrigatoriedade")]
     [InlineData("secao")]
-    [InlineData("ordem")]
     public void MesclarItens_BasicoAlterado_Recusa(string alteracao)
     {
         FatoColetadoInput nome = ConjuntoBasicoDaInscricao.Itens[0];
         FatoColetadoInput alterado = alteracao switch
         {
-            "rotulo" => nome with { Rotulo = "Nome" },
             "obrigatoriedade" => nome with { Obrigatoriedade = PredicadoDnfJson.ObrigatoriedadeNunca },
             "secao" => nome with { EtapaCodigo = "DADOS" },
-            _ => nome with { Ordem = 40 },
+            _ => nome with { Precondicao = [[new CondicaoPrecondicaoInput("NACIONALIDADE", "IGUAL", JsonSerializer.SerializeToElement("NATO"))]] },
         };
 
         (_, _, List<FieldError> erros) = ConjuntoBasicoDaInscricao.MesclarItens(
@@ -107,6 +104,19 @@ public class ConjuntoBasicoDaInscricaoTests : TestesDeAvaliacao
             Field = "itens[1]",
             Error = new { Code = EstruturaFormularioErrorCodes.DadoBasicoAlterado },
         });
+    }
+
+    [Fact(DisplayName = "O item básico gravado com ordem e rótulo antigos é repetível e entra pela referência")]
+    public void MesclarItens_BasicoComOrdemERotuloAntigos_EntraPelaReferencia()
+    {
+        FatoColetadoInput sexo = ConjuntoBasicoDaInscricao.Itens.Single(static i => i.FatoCodigo == "SEXO");
+
+        (IReadOnlyList<FatoColetadoInput> itens, _, List<FieldError> erros) = ConjuntoBasicoDaInscricao.MesclarItens(
+            [sexo with { Ordem = 40, Rotulo = "Sexo" }], [], ConjuntoBasicoDaInscricao.Itens);
+
+        erros.Should().BeEmpty();
+        itens.Should().HaveCount(Teto);
+        itens.Single(static i => i.FatoCodigo == "SEXO").Should().Be(sexo);
     }
 
     [Fact(DisplayName = "O item básico com condição sem valor é recusado como alteração, sem erro")]

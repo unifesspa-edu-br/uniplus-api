@@ -49,4 +49,21 @@ public sealed class ConjuntoBasicoDoModeloTests
         int ultimoDaSecao = mesclado.Itens.Where(static i => i.EtapaCodigo == ConjuntoBasicoDaInscricao.CodigoDaSecao).Max(static i => i.Ordem);
         mesclado.Itens.Single(static i => i.FatoCodigo == "BAIXA_RENDA").Ordem.Should().BeGreaterThan(ultimoDaSecao, "o item do administrador segue depois da seção");
     }
+
+    [Fact(DisplayName = "O modelo com a seção dos dados básicos fora da ordem canônica sai na ordem e com os rótulos do conjunto")]
+    public void Mesclar_SecaoForaDaOrdem_SaiNaOrdemCanonica()
+    {
+        ConteudoDoModelo completo = ConjuntoBasicoDoModelo.Mesclar(
+            new ConteudoDoModelo("Inscrição", [Dados], [], [], [], []), Formatos);
+        ItemDoModelo[] doConjunto = [.. completo.Itens.Where(i => i.EtapaCodigo == ConjuntoBasicoDaInscricao.CodigoDaSecao)];
+        ItemDoModelo sexo = doConjunto.Single(static i => i.FatoCodigo == "SEXO");
+        ItemDoModelo[] sexoNoFim = [.. doConjunto.Where(static i => i.FatoCodigo != "SEXO"), sexo with { Rotulo = "Sexo" }];
+        ConteudoDoModelo legado = completo with { Itens = [.. sexoNoFim.Select(static (item, ordem) => item with { Ordem = ordem })] };
+
+        ConteudoDoModelo mesclado = ConjuntoBasicoDoModelo.Mesclar(legado, Formatos);
+
+        mesclado.Itens.OrderBy(static i => i.Ordem).Select(static i => i.FatoCodigo)
+            .Should().Equal(ConjuntoBasicoDaInscricao.Itens.Select(static i => i.FatoCodigo));
+        mesclado.Itens.Single(static i => i.FatoCodigo == "SEXO").Rotulo.Should().Be("Sexo biológico");
+    }
 }

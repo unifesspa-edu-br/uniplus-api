@@ -44,8 +44,9 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
                 UPDATE selecao.fatos_coletados f
                 SET ordem = f.ordem - 1000000
-                FROM dados_basicos_alvo a
-                WHERE f.processo_seletivo_id = a.processo_seletivo_id AND f.finalidade = {(int)FinalidadeFormulario.Inscricao}
+                FROM dados_basicos_alvo a, dados_basicos_canonicos c
+                WHERE f.processo_seletivo_id = a.processo_seletivo_id AND f.fato_codigo = c.fato_codigo
+                  AND f.finalidade = {(int)FinalidadeFormulario.Inscricao} AND f.etapa_codigo = '{ConjuntoBasicoDaInscricao.CodigoDaSecao}'
                   AND f.grupo_coletado_id IS NULL AND f.ordem >= 1000000;
 
                 DROP TABLE dados_basicos_alvo;
