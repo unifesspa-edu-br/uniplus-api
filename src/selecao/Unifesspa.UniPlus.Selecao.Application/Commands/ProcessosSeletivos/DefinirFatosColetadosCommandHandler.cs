@@ -72,8 +72,9 @@ public static class DefinirFatosColetadosCommandHandler
             return Result<MutacaoAceita>.ValidationFailure(excesso);
         }
 
-        // O formulário de inscrição coleta o conjunto básico na seção reservada: o item básico omitido
-        // entra como está gravado, e o enviado tem de ser igual a ele. Os grupos omitidos ficam como
+        // O formulário de inscrição coleta o conjunto básico na seção reservada: o item básico, omitido
+        // ou enviado, entra pela referência, com a ordem e o rótulo do conjunto, e o enviado só pode
+        // diferir dela nessas duas coisas. Os grupos omitidos ficam como
         // estão gravados, na ordem do formulário, e não sobem com os itens enviados.
         IReadOnlyList<FatoColetadoInput> itens = command.Itens;
         List<FieldError> daSecao = [];
