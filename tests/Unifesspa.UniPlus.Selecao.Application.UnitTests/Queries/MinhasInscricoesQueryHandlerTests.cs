@@ -185,7 +185,7 @@ public sealed class MinhasInscricoesQueryHandlerTests
         MinhaInscricaoDto daCancelada = resultado.Value!.Single(i => i.InscricaoId == cancelada.Id);
         daCancelada.Situacao.Should().Be(SituacaoInscricao.Cancelada);
         daCancelada.MotivoDoCancelamento.Should().Be("a pedido do candidato");
-        daCancelada.Acoes.Should().Be(new AcoesDaInscricaoDto(false, false, false));
+        daCancelada.Acoes.Should().Be(new AcoesDaInscricaoDto(false, false, false, false));
     }
 
     [Fact(DisplayName = "Desejando nome social e com NOME_SOCIAL preenchido, o nome preferido é o social (UNI-REQ-0032)")]

@@ -362,12 +362,13 @@ public sealed class Inscricao : EntityBase
 
     /// <summary>
     /// O que o candidato pode fazer com a inscrição, dado se as inscrições estão abertas. Corrigir e
-    /// cancelar pedem inscrição enviada e período aberto; descartar pede só o rascunho.
+    /// cancelar pedem inscrição enviada e período aberto; continuar e descartar pedem rascunho e período aberto.
     /// </summary>
     public AcoesDaInscricao AcoesPermitidas(bool inscricoesAbertas) => new(
+        PodeContinuar: Situacao == SituacaoInscricao.Rascunho && inscricoesAbertas,
         PodeCorrigir: Situacao == SituacaoInscricao.Submetida && inscricoesAbertas,
         PodeCancelar: Situacao == SituacaoInscricao.Submetida && inscricoesAbertas,
-        PodeDescartar: Situacao == SituacaoInscricao.Rascunho);
+        PodeDescartar: Situacao == SituacaoInscricao.Rascunho && inscricoesAbertas);
 
     /// <summary>
     /// O token tem de pertencer a quem abriu a inscrição — <c>sub</c> diferente do gravado para o

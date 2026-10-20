@@ -46,7 +46,7 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
 
     /// <summary>A divulgação aponta para <paramref name="divulgada"/>; o rascunho nasce na versão <paramref name="fixada"/>, que é a mesma quando a retificação não mudou nada.</summary>
     private static async Task<(Result Resultado, IInscricaoRepository Repositorio, ISelecaoUnitOfWork UnitOfWork)> Descartar(
-        Func<Inscricao, string> precondicao, Inscricao rascunho, VersaoConfiguracao fixada, VersaoConfiguracao divulgada, GrafoConfiguracao grafo, string sub = "sub-1")
+        Func<Inscricao, string> precondicao, Inscricao rascunho, VersaoConfiguracao fixada, VersaoConfiguracao divulgada, GrafoConfiguracao grafo, string sub = "sub-1", DateTimeOffset? agora = null)
     {
         IInscricaoRepository repositorio = Substitute.For<IInscricaoRepository>();
         repositorio.ObterAtivaPorProcessoECpfAsync(ProcessoId, Dono, Arg.Any<CancellationToken>()).Returns(rascunho);
@@ -60,15 +60,15 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
 
         Result resultado = await DescartarRascunhoDaInscricaoCommandHandler.Handle(
             new DescartarRascunhoDaInscricaoCommand(ProcessoId, PrecondicaoIfMatch.DeTags([precondicao(rascunho)])),
-            repositorio, processoRepository, DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, unitOfWork, Usuario(sub), CancellationToken.None);
+            repositorio, processoRepository, DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(), new RelogioFixo(agora ?? DivulgacaoDeTeste.DentroDoPeriodo), unitOfWork, Usuario(sub), CancellationToken.None);
         return (resultado, repositorio, unitOfWork);
     }
 
     private static Task<(Result Resultado, IInscricaoRepository Repositorio, ISelecaoUnitOfWork UnitOfWork)> DescartarNaVersaoDivulgada(
-        Func<Inscricao, string> precondicao, Func<Guid, Inscricao>? rascunho = null, string sub = "sub-1")
+        Func<Inscricao, string> precondicao, Func<Guid, Inscricao>? rascunho = null, string sub = "sub-1", DateTimeOffset? agora = null)
     {
         (VersaoConfiguracao versao, GrafoConfiguracao grafo) = SalvarInscricaoCommandHandlerTests.MontarVersaoComItem(Item);
-        return Descartar(precondicao, (rascunho ?? NovoRascunho)(versao.Id), versao, versao, grafo, sub);
+        return Descartar(precondicao, (rascunho ?? NovoRascunho)(versao.Id), versao, versao, grafo, sub, agora);
     }
 
     [Fact(DisplayName = "Descartar o próprio rascunho com o If-Match corrente remove a inscrição e grava")]
@@ -79,6 +79,25 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
         resultado.IsSuccess.Should().BeTrue();
         await repositorio.Received(1).RemoverAsync(Arg.Any<Inscricao>(), Arg.Any<CancellationToken>());
         await unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Com as inscrições encerradas, o rascunho não é descartado")]
+    public async Task Handle_ForaDoPeriodo_Recusa()
+    {
+        (Result resultado, IInscricaoRepository repositorio, _) = await DescartarNaVersaoDivulgada(
+            static r => r.ETag, agora: DivulgacaoDeTeste.DentroDoPeriodo.AddMonths(1));
+
+        resultado.Error!.Code.Should().Be(InscricaoErrorCodes.ForaDoPeriodo);
+        await repositorio.DidNotReceive().RemoverAsync(Arg.Any<Inscricao>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Fora do período, a recusa da inscrição enviada é a do período: orientar a cancelar levaria a outra recusa")]
+    public async Task Handle_EnviadaForaDoPeriodo_RecusaPeloPeriodo()
+    {
+        (Result resultado, _, _) = await DescartarNaVersaoDivulgada(
+            static r => r.ETag, rascunho: Enviada, agora: DivulgacaoDeTeste.DentroDoPeriodo.AddMonths(1));
+
+        resultado.Error!.Code.Should().Be(InscricaoErrorCodes.ForaDoPeriodo);
     }
 
     [Fact(DisplayName = "Inscrição enviada não é descartada: recusa orientando a cancelar")]

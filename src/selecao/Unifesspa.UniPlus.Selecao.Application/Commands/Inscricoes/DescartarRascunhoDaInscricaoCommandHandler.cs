@@ -23,6 +23,8 @@ public static class DescartarRascunhoDaInscricaoCommandHandler
         IProcessoSeletivoRepository processoSeletivoRepository,
         ICertameDivulgadoRepository certameDivulgadoRepository,
         IRegistroCodecsEnvelope registroCodecs,
+        IResolvedorFusoInstitucional resolvedorFuso,
+        TimeProvider timeProvider,
         ISelecaoUnitOfWork unitOfWork,
         IUserContext userContext,
         CancellationToken cancellationToken)
@@ -32,6 +34,8 @@ public static class DescartarRascunhoDaInscricaoCommandHandler
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
         ArgumentNullException.ThrowIfNull(registroCodecs);
+        ArgumentNullException.ThrowIfNull(resolvedorFuso);
+        ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(userContext);
 
@@ -60,6 +64,15 @@ public static class DescartarRascunhoDaInscricaoCommandHandler
         if (inscricao.ConferirDono(userContext.UserId ?? string.Empty) is { } erroDono)
         {
             return Result.Failure(erroDono);
+        }
+
+        // Com as inscrições encerradas o rascunho não tem ação (AcoesPermitidas): a mesma regra da lista.
+        DomainError? foraDoPeriodo = await Services.PeriodoDaInscricaoResolver.ConferirAsync(
+            command.ProcessoSeletivoId, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, resolvedorFuso,
+            timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+        if (foraDoPeriodo is not null)
+        {
+            return Result.Failure(foraDoPeriodo);
         }
 
         // O If-Match que o candidato tem é o do rascunho já levado à versão divulgada, que é o que a

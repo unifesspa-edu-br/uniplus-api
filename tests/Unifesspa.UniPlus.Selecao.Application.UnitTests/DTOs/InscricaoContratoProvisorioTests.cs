@@ -142,7 +142,7 @@ public sealed class InscricaoContratoProvisorioTests
             CpfMascarado: "***.456.789-**",
             CanceladaEm: null,
             MotivoDoCancelamento: null,
-            Acoes: new AcoesDaInscricaoDto(PodeCorrigir: true, PodeCancelar: true, PodeDescartar: false),
+            Acoes: new AcoesDaInscricaoDto(PodeContinuar: false, PodeCorrigir: true, PodeCancelar: true, PodeDescartar: false),
             Comprovantes: [new ComprovanteEmitidoDto(1, new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero))]);
 
         JsonNode json = JsonSerializer.SerializeToNode(dto, Opcoes)!;

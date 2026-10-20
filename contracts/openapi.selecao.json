@@ -10440,12 +10440,16 @@
       },
       "AcoesDaInscricaoDto": {
         "required": [
+          "podeContinuar",
           "podeCorrigir",
           "podeCancelar",
           "podeDescartar"
         ],
         "type": "object",
         "properties": {
+          "podeContinuar": {
+            "type": "boolean"
+          },
           "podeCorrigir": {
             "type": "boolean"
           },

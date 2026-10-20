@@ -375,7 +375,7 @@ public sealed class InscricaoTests
         inscricao.Revisao.Should().Be(revisao);
     }
 
-    [Fact(DisplayName = "Corrigir e cancelar pedem inscrição enviada e período aberto; descartar pede só o rascunho")]
+    [Fact(DisplayName = "Com o período encerrado nenhuma ação vale; aberto, corrigir e cancelar pedem a enviada e continuar e descartar, o rascunho")]
     public void AcoesPermitidas_DependemDaSituacaoEDoPeriodo()
     {
         Inscricao rascunho = NovaInscricao();
@@ -383,10 +383,11 @@ public sealed class InscricaoTests
         Inscricao cancelada = NovaInscricaoEnviada();
         cancelada.Cancelar(null, "sub-1", Instante(), PrecondicaoIfMatch.DeTags([cancelada.ETag]));
 
-        enviada.AcoesPermitidas(inscricoesAbertas: true).Should().Be(new AcoesDaInscricao(true, true, false));
-        enviada.AcoesPermitidas(inscricoesAbertas: false).Should().Be(new AcoesDaInscricao(false, false, false));
-        rascunho.AcoesPermitidas(inscricoesAbertas: false).Should().Be(new AcoesDaInscricao(false, false, true));
-        cancelada.AcoesPermitidas(inscricoesAbertas: true).Should().Be(new AcoesDaInscricao(false, false, false));
+        enviada.AcoesPermitidas(inscricoesAbertas: true).Should().Be(new AcoesDaInscricao(false, true, true, false));
+        enviada.AcoesPermitidas(inscricoesAbertas: false).Should().Be(new AcoesDaInscricao(false, false, false, false));
+        rascunho.AcoesPermitidas(inscricoesAbertas: true).Should().Be(new AcoesDaInscricao(true, false, false, true));
+        rascunho.AcoesPermitidas(inscricoesAbertas: false).Should().Be(new AcoesDaInscricao(false, false, false, false));
+        cancelada.AcoesPermitidas(inscricoesAbertas: true).Should().Be(new AcoesDaInscricao(false, false, false, false));
     }
 
     [Fact(DisplayName = "O comprovante nunca carrega número de documento, mesmo que a inscrição carregue")]
