@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services;
 
 using Abstractions;
 
+using Domain.Entities;
 using Domain.Interfaces;
 
 using Microsoft.Extensions.Logging;
@@ -80,7 +81,7 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
             removidos += await RemoverVencidosAsync(repositorio, agora, cancellationToken).ConfigureAwait(false);
         }
 
-        await LimparEnviosConfirmadosAsync(agora, cancellationToken).ConfigureAwait(false);
+        await LimparChavesAgendadasAsync(cancellationToken).ConfigureAwait(false);
 
         if (removidos > 0)
         {
@@ -128,28 +129,29 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
     }
 
     /// <summary>
-    /// O arquivo do candidato confirmado já tem a cópia cifrada, e a chave de envio, em claro, foi apagada na
-    /// confirmação. A URL pré-assinada, porém, vale até o prazo: um PUT dentro dele recria o objeto em claro.
-    /// Vencido o prazo, a chave de envio é apagada de novo e marcada como limpa.
+    /// Apaga as chaves agendadas cuja hora passou — a chave de envio do arquivo confirmado, removido ou
+    /// descartado, que a URL pré-assinada ainda pode recriar em claro até vencer, e a selada do pendente
+    /// vencido. A chave sai da agenda depois de apagada; a falha fica para a próxima execução.
     /// </summary>
-    private async Task LimparEnviosConfirmadosAsync(DateTimeOffset agora, CancellationToken cancellationToken)
+    private async Task LimparChavesAgendadasAsync(CancellationToken cancellationToken)
     {
+        DateTimeOffset agora = _clock.GetUtcNow();
         while (true)
         {
-            IReadOnlyList<ArquivoPendenteVencido> lote = await _documentosDaInscricao
-                .ListarEnviosConfirmadosAptosALimpezaAsync(agora, TamanhoDoLote, cancellationToken)
+            IReadOnlyList<ChaveALimpar> lote = await _documentosDaInscricao
+                .ListarChavesVencidasAsync(agora, TamanhoDoLote, cancellationToken)
                 .ConfigureAwait(false);
 
             bool houveFalha = false;
-            foreach (ArquivoPendenteVencido arquivo in lote)
+            foreach (ChaveALimpar chave in lote)
             {
-                if (!await RemoverObjetoAsync(arquivo, cancellationToken).ConfigureAwait(false))
+                if (!await RemoverObjetoAsync(new ArquivoPendenteVencido(chave.Id, chave.ObjectKey), cancellationToken).ConfigureAwait(false))
                 {
                     houveFalha = true;
                     continue;
                 }
 
-                await _documentosDaInscricao.MarcarEnvioLimpoAsync(arquivo.Id, _clock.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+                await _documentosDaInscricao.RemoverChaveAgendadaAsync(chave.Id, cancellationToken).ConfigureAwait(false);
             }
 
             if (houveFalha || lote.Count < TamanhoDoLote)

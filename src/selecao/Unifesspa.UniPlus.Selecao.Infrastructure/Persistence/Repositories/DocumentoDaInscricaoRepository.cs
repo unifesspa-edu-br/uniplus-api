@@ -104,6 +104,9 @@ public sealed class DocumentoDaInscricaoRepository : IDocumentoDaInscricaoReposi
             .ConfigureAwait(false);
         if (linhasAfetadas == 1)
         {
+            // A confirmação que falhou no commit pode ter deixado a cópia selada: as duas chaves saem.
+            _context.ChavesALimpar.Add(ChaveALimpar.Agendar(ArquivoDaApresentacao.ChaveSeladaDe(id), agora));
+            await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             await _context.ApresentacoesDeDocumento
                 .Where(p => p.Id == apresentacaoId && !_context.ArquivosDaApresentacao.Any(a => a.ApresentacaoId == p.Id))
                 .ExecuteDeleteAsync(cancellationToken)
@@ -113,23 +116,22 @@ public sealed class DocumentoDaInscricaoRepository : IDocumentoDaInscricaoReposi
         return linhasAfetadas == 1;
     }
 
-    public async Task<IReadOnlyList<ArquivoPendenteVencido>> ListarEnviosConfirmadosAptosALimpezaAsync(
+    public async Task AgendarLimpezaAsync(string objectKey, DateTimeOffset limparApos, CancellationToken cancellationToken = default) =>
+        await _context.ChavesALimpar.AddAsync(ChaveALimpar.Agendar(objectKey, limparApos), cancellationToken).ConfigureAwait(false);
+
+    public async Task<IReadOnlyList<ChaveALimpar>> ListarChavesVencidasAsync(
         DateTimeOffset agora, int limite, CancellationToken cancellationToken = default) =>
-        await _context.ArquivosDaApresentacao
+        await _context.ChavesALimpar
             .AsNoTracking()
-            .Where(a => a.Status == StatusArquivoEnviado.Confirmado && a.EnvioLimpoEm == null && a.ExpiraEm <= agora)
-            .OrderBy(a => a.ExpiraEm)
-            .ThenBy(a => a.Id)
+            .Where(c => c.LimparApos <= agora)
+            .OrderBy(c => c.LimparApos)
+            .ThenBy(c => c.Id)
             .Take(limite)
-            .Select(a => new ArquivoPendenteVencido(a.Id, a.ObjectKey))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-    public async Task MarcarEnvioLimpoAsync(Guid id, DateTimeOffset agora, CancellationToken cancellationToken = default) =>
-        await _context.ArquivosDaApresentacao
-            .Where(a => a.Id == id)
-            .ExecuteUpdateAsync(setters => setters.SetProperty(a => a.EnvioLimpoEm, agora), cancellationToken)
-            .ConfigureAwait(false);
+    public async Task RemoverChaveAgendadaAsync(Guid id, CancellationToken cancellationToken = default) =>
+        await _context.ChavesALimpar.Where(c => c.Id == id).ExecuteDeleteAsync(cancellationToken).ConfigureAwait(false);
 
     private static Expression<Func<ArquivoDaApresentacao, bool>> PendenteVencido(DateTimeOffset agora) =>
         a => a.Status == StatusArquivoEnviado.Pendente && a.ExpiraEm <= agora;

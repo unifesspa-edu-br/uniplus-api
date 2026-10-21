@@ -216,32 +216,42 @@ public sealed class DocumentoDaInscricaoIntegrationTests
         outroContext.Dispose();
     }
 
-    [Fact(DisplayName = "Objeto recriado em claro na chave de envio pela URL ainda válida é apagado pela rotina depois do prazo, uma vez só")]
-    public async Task Rotina_ApagaOEnvioRecriadoDepoisDaConfirmacao()
+    private RemocaoDeArquivosPendentesVencidos Rotina(SelecaoDbContext context, DocumentoDaInscricaoRepository repositorio, DateTimeOffset agora) => new(
+        new DocumentoAPublicarRepository(context), new ModeloDeDocumentoRepository(context), repositorio, _storage,
+        new RelogioFixo(agora), NullLogger<RemocaoDeArquivosPendentesVencidos>.Instance);
+
+    [Fact(DisplayName = "Chave agendada: o objeto recriado em claro pela URL ainda válida é apagado pela rotina depois do prazo, não antes")]
+    public async Task Rotina_ApagaAChaveAgendadaSoDepoisDoPrazo()
     {
         (SelecaoDbContext context, DocumentoDaInscricaoRepository repositorio, ArquivoDaApresentacao arquivo) = await PendenteComObjetoAsync(PdfLimpo);
-        (await ConfirmarAsync(repositorio, arquivo, Protecao())).IsSuccess.Should().BeTrue();
-        repositorio.Atualizar(arquivo);
-        await context.SaveChangesAsync();
         await _storage.RemoverAsync(arquivo.ObjectKey);
+        await repositorio.AgendarLimpezaAsync(arquivo.ObjectKey, arquivo.ExpiraEm + RemocaoDeArquivosPendentesVencidos.Tolerancia);
+        await context.SaveChangesAsync();
 
         // A URL pré-assinada ainda vale: um novo PUT recria o conteúdo em claro.
         await _storage.SalvarConteudoSeladoAsync(arquivo.ObjectKey, PdfLimpo, "application/pdf");
-        (await _storage.ObterInfoAsync(arquivo.ObjectKey)).Should().NotBeNull();
 
-        RemocaoDeArquivosPendentesVencidos Rotina(DateTimeOffset agora) => new(
-            new DocumentoAPublicarRepository(context), new ModeloDeDocumentoRepository(context), repositorio, _storage,
-            new RelogioFixo(agora), NullLogger<RemocaoDeArquivosPendentesVencidos>.Instance);
-
-        await Rotina(DateTimeOffset.UtcNow).ExecutarAsync(CancellationToken.None);
+        await Rotina(context, repositorio, DateTimeOffset.UtcNow).ExecutarAsync(CancellationToken.None);
         (await _storage.ObterInfoAsync(arquivo.ObjectKey)).Should().NotBeNull("a URL ainda não venceu");
 
-        await Rotina(DateTimeOffset.UtcNow.AddHours(3)).ExecutarAsync(CancellationToken.None);
+        await Rotina(context, repositorio, DateTimeOffset.UtcNow.AddHours(3)).ExecutarAsync(CancellationToken.None);
 
         (await _storage.ObterInfoAsync(arquivo.ObjectKey)).Should().BeNull();
-        (await _storage.ObterInfoAsync(arquivo.ChaveSelada)).Should().NotBeNull("a cópia cifrada fica");
         await using SelecaoDbContext leitura = _db.CreateDbContext();
-        (await leitura.ArquivosDaApresentacao.AsNoTracking().SingleAsync(a => a.Id == arquivo.Id)).EnvioLimpoEm.Should().NotBeNull();
+        (await leitura.ChavesALimpar.AnyAsync(c => c.ObjectKey == arquivo.ObjectKey)).Should().BeFalse("a chave sai da agenda");
+        context.Dispose();
+    }
+
+    [Fact(DisplayName = "Pendente vencido com a cópia selada já gravada (commit que falhou): as duas chaves somem")]
+    public async Task Rotina_PendenteVencidoComSelada_ApagaAsDuasChaves()
+    {
+        (SelecaoDbContext context, DocumentoDaInscricaoRepository repositorio, ArquivoDaApresentacao arquivo) = await PendenteComObjetoAsync(PdfLimpo);
+        await _storage.SalvarConteudoSeladoAsync(arquivo.ChaveSelada, [1, 2, 3], "application/octet-stream");
+
+        await Rotina(context, repositorio, DateTimeOffset.UtcNow.AddHours(3)).ExecutarAsync(CancellationToken.None);
+
+        (await _storage.ObterInfoAsync(arquivo.ObjectKey)).Should().BeNull();
+        (await _storage.ObterInfoAsync(arquivo.ChaveSelada)).Should().BeNull();
         context.Dispose();
     }
 }

@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosDaInscricao;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -268,6 +269,8 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
         Result<ArquivoDaApresentacaoDto> resultado = await Confirmar(arquivo.Id);
 
         resultado.IsSuccess.Should().BeTrue();
+        await _documentos.Received(1).AgendarLimpezaAsync(
+            arquivo.ObjectKey, arquivo.ExpiraEm + RemocaoDeArquivosPendentesVencidos.Tolerancia, Arg.Any<CancellationToken>());
         Received.InOrder(() =>
         {
             _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
@@ -288,6 +291,9 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
         await _documentos.Received(1).RemoverArquivoAsync(arquivo, Arg.Any<CancellationToken>());
         await _storage.Received(1).RemoverAsync(arquivo.ObjectKey, Arg.Any<CancellationToken>());
         await _storage.Received(1).RemoverAsync(arquivo.ChaveSelada, Arg.Any<CancellationToken>());
+        await _documentos.Received(1).AgendarLimpezaAsync(
+            arquivo.ObjectKey, arquivo.ExpiraEm + RemocaoDeArquivosPendentesVencidos.Tolerancia, Arg.Any<CancellationToken>());
+        await _documentos.Received(1).AgendarLimpezaAsync(arquivo.ChaveSelada, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Depois do envio da inscrição o arquivo é retido: a remoção é recusada e nada é apagado")]
