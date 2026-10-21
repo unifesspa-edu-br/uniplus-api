@@ -248,8 +248,13 @@ public sealed class ComprovanteInscricao : IForensicEntity
             ["derivados"] = Nodo(derivados),
             ["grupos"] = Nodo(grupos),
             ["aceites"] = Nodo(aceites),
-            ["documentos"] = Nodo(documentos),
         };
+
+        // Só entra quando há documentos: o comprovante sem eles segue com o hash que sempre teve.
+        if (documentos.Count > 0)
+        {
+            conteudo["documentos"] = Nodo(documentos);
+        }
 
         if (modalidades is not null)
         {

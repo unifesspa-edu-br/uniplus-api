@@ -99,6 +99,14 @@ public sealed class ComprovanteInscricaoTests
             .HashIntegridade.Should().Be(Hash(c)).And.Be("7492bc231faac865a679c9b5fff33c0c43958055afc9110014a2b5ddd030a1d3", "o hash do conteúdo canônico, com a lista de documentos, é estável");
     }
 
+    [Fact(DisplayName = "O comprovante sem documentos tem o hash que os já emitidos sempre tiveram")]
+    public void Hash_SemDocumentos_ContinuaIgualAoDeSempre()
+    {
+        Conteudo c = Base() with { Oferta = Guid.Parse("01a12693-0000-7000-8000-0000000000aa"), Documentos = [] };
+
+        Hash(c).Should().Be("8b6439933cd74d633d0f17b210e2d5ceefd85d5d317c3d9d27d88a9e14f89c58");
+    }
+
     [Fact(DisplayName = "O hash cobre os códigos dos fatos sensíveis e nunca os valores")]
     public void Hash_Sensiveis_CobreOsCodigosENaoOsValores()
     {
