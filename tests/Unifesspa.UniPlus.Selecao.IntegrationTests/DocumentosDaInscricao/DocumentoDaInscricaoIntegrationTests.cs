@@ -215,4 +215,33 @@ public sealed class DocumentoDaInscricaoIntegrationTests
         context.Dispose();
         outroContext.Dispose();
     }
+
+    [Fact(DisplayName = "Objeto recriado em claro na chave de envio pela URL ainda válida é apagado pela rotina depois do prazo, uma vez só")]
+    public async Task Rotina_ApagaOEnvioRecriadoDepoisDaConfirmacao()
+    {
+        (SelecaoDbContext context, DocumentoDaInscricaoRepository repositorio, ArquivoDaApresentacao arquivo) = await PendenteComObjetoAsync(PdfLimpo);
+        (await ConfirmarAsync(repositorio, arquivo, Protecao())).IsSuccess.Should().BeTrue();
+        repositorio.Atualizar(arquivo);
+        await context.SaveChangesAsync();
+        await _storage.RemoverAsync(arquivo.ObjectKey);
+
+        // A URL pré-assinada ainda vale: um novo PUT recria o conteúdo em claro.
+        await _storage.SalvarConteudoSeladoAsync(arquivo.ObjectKey, PdfLimpo, "application/pdf");
+        (await _storage.ObterInfoAsync(arquivo.ObjectKey)).Should().NotBeNull();
+
+        RemocaoDeArquivosPendentesVencidos Rotina(DateTimeOffset agora) => new(
+            new DocumentoAPublicarRepository(context), new ModeloDeDocumentoRepository(context), repositorio, _storage,
+            new RelogioFixo(agora), NullLogger<RemocaoDeArquivosPendentesVencidos>.Instance);
+
+        await Rotina(DateTimeOffset.UtcNow).ExecutarAsync(CancellationToken.None);
+        (await _storage.ObterInfoAsync(arquivo.ObjectKey)).Should().NotBeNull("a URL ainda não venceu");
+
+        await Rotina(DateTimeOffset.UtcNow.AddHours(3)).ExecutarAsync(CancellationToken.None);
+
+        (await _storage.ObterInfoAsync(arquivo.ObjectKey)).Should().BeNull();
+        (await _storage.ObterInfoAsync(arquivo.ChaveSelada)).Should().NotBeNull("a cópia cifrada fica");
+        await using SelecaoDbContext leitura = _db.CreateDbContext();
+        (await leitura.ArquivosDaApresentacao.AsNoTracking().SingleAsync(a => a.Id == arquivo.Id)).EnvioLimpoEm.Should().NotBeNull();
+        context.Dispose();
+    }
 }

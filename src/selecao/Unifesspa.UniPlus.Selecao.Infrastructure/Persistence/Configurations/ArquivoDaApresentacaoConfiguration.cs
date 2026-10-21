@@ -35,6 +35,8 @@ internal sealed class ArquivoDaApresentacaoConfiguration : IEntityTypeConfigurat
         builder.Property(a => a.Status).HasConversion<int>().IsRequired();
         builder.Property(a => a.HashSha256).HasMaxLength(64)
             .HasComment("O SHA-256 do conteúdo em claro, calculado no servidor na confirmação.");
+        builder.Property(a => a.EnvioLimpoEm)
+            .HasComment("Quando a chave de envio, em claro, foi limpa depois de vencida a URL de envio; nulo no confirmado = ainda a limpar.");
         builder.Ignore(a => a.TipoDeMidia);
         builder.Ignore(a => a.ChaveSelada);
 

@@ -267,6 +267,11 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<DateTimeOffset?>("EnvioLimpoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("envio_limpo_em")
+                        .HasComment("Quando a chave de envio, em claro, foi limpa depois de vencida a URL de envio; nulo no confirmado = ainda a limpar.");
+
                     b.Property<DateTimeOffset>("ExpiraEm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expira_em");

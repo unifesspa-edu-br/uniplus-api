@@ -40,6 +40,7 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
     public static readonly TimeSpan Tolerancia = TimeSpan.FromHours(1);
 
     private readonly IArquivoEnviadoRepository[] _repositorios;
+    private readonly IDocumentoDaInscricaoRepository _documentosDaInscricao;
     private readonly IArquivoArmazenadoStorage _storage;
     private readonly TimeProvider _clock;
     private readonly ILogger<RemocaoDeArquivosPendentesVencidos> _logger;
@@ -60,6 +61,7 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
         ArgumentNullException.ThrowIfNull(logger);
 
         _repositorios = [documentosAPublicar, modelosDeDocumento, documentosDaInscricao];
+        _documentosDaInscricao = documentosDaInscricao;
         _storage = storage;
         _clock = clock;
         _logger = logger;
@@ -77,6 +79,8 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
         {
             removidos += await RemoverVencidosAsync(repositorio, agora, cancellationToken).ConfigureAwait(false);
         }
+
+        await LimparEnviosConfirmadosAsync(agora, cancellationToken).ConfigureAwait(false);
 
         if (removidos > 0)
         {
@@ -119,6 +123,38 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
             if (houveFalha || lote.Count < TamanhoDoLote)
             {
                 return removidos;
+            }
+        }
+    }
+
+    /// <summary>
+    /// O arquivo do candidato confirmado já tem a cópia cifrada, e a chave de envio, em claro, foi apagada na
+    /// confirmação. A URL pré-assinada, porém, vale até o prazo: um PUT dentro dele recria o objeto em claro.
+    /// Vencido o prazo, a chave de envio é apagada de novo e marcada como limpa.
+    /// </summary>
+    private async Task LimparEnviosConfirmadosAsync(DateTimeOffset agora, CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            IReadOnlyList<ArquivoPendenteVencido> lote = await _documentosDaInscricao
+                .ListarEnviosConfirmadosAptosALimpezaAsync(agora, TamanhoDoLote, cancellationToken)
+                .ConfigureAwait(false);
+
+            bool houveFalha = false;
+            foreach (ArquivoPendenteVencido arquivo in lote)
+            {
+                if (!await RemoverObjetoAsync(arquivo, cancellationToken).ConfigureAwait(false))
+                {
+                    houveFalha = true;
+                    continue;
+                }
+
+                await _documentosDaInscricao.MarcarEnvioLimpoAsync(arquivo.Id, _clock.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+            }
+
+            if (houveFalha || lote.Count < TamanhoDoLote)
+            {
+                return;
             }
         }
     }
