@@ -46,18 +46,25 @@ public static class DocumentosAusentesDaInscricao
                 return;
             }
 
-            if (!NaoAtendido(EstadoDe(no, entidadeId)))
-            {
-                return;
-            }
-
+            EstadoSatisfacao estado = EstadoDe(no, entidadeId);
             if (no.Tipo == TipoNo.GrupoE)
             {
+                // O E impossível por um OU irmão não esconde o que falta nos outros filhos.
+                if (estado is not (EstadoSatisfacao.Pendente or EstadoSatisfacao.Impossivel))
+                {
+                    return;
+                }
+
                 foreach (NoExigencia filho in no.Filhos.OrderBy(static f => f.Ordem))
                 {
                     Percorrer(filho, entidadeId);
                 }
 
+                return;
+            }
+
+            if (!NaoAtendido(estado))
+            {
                 return;
             }
 

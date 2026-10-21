@@ -822,7 +822,10 @@ public sealed class Inscricao : EntityBase
     /// primeira alternativa, quando o grupo "um ou outro" não foi atendido por nenhuma — e, no grupo
     /// repetível, da ocorrência que falta.
     /// </summary>
-    private static IEnumerable<FieldError> RecusasDosDocumentos(DocumentosDaInscricao documentos) =>
+    public static IEnumerable<FieldError> RecusasDosDocumentos(DocumentosDaInscricao documentos) =>
+        RecusasDosDocumentosDe(documentos ?? throw new ArgumentNullException(nameof(documentos)));
+
+    private static IEnumerable<FieldError> RecusasDosDocumentosDe(DocumentosDaInscricao documentos) =>
         documentos.Ausentes.Select(static ausente =>
         {
             string nomes = string.Join(" ou ", ausente.Alternativas.Select(static d => d.TipoDocumentoNome));

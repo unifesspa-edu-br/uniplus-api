@@ -428,7 +428,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             return ([laudo, naoSeAplica], [NoExigencia.CriarFolha(laudo, 0).Value!, NoExigencia.CriarFolha(naoSeAplica, 1).Value!]);
         });
 
-        async Task<(Result<ComprovanteInscricaoDto> Resultado, IDocumentoDaInscricaoRepository Repositorio, ArquivoDaApresentacao Fixado, ArquivoDaApresentacao Orfao)> EnviarAsync(bool comLaudo)
+        async Task<(Result<ComprovanteInscricaoDto> Resultado, IDocumentoDaInscricaoRepository Repositorio, ArquivoDaApresentacao Fixado, ArquivoDaApresentacao Orfao)> EnviarAsync(bool comLaudo, bool semApelido = false)
         {
             Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
             IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
@@ -455,8 +455,14 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             documentos.ObterArquivoAsync(fixado.Id, Arg.Any<CancellationToken>()).Returns(fixado);
             documentos.ObterArquivoAsync(orfao.Id, Arg.Any<CancellationToken>()).Returns(orfao);
 
+            InscricaoRequest request = RequestComApelidoETermoAceito(cpf, termo, grafo);
+            if (semApelido)
+            {
+                request = request with { Respostas = request.Respostas!.Where(static r => r.Key != "APELIDO").ToDictionary(static r => r.Key, static r => r.Value) };
+            }
+
             Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
-                new SubmeterInscricaoCommand(ProcessoId, RequestComApelidoETermoAceito(cpf, termo, grafo), PrecondicaoIfMatch.DeTags([existente.ETag])),
+                new SubmeterInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
                 inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf), documentoRepository: documentos);
             return (resultado, documentos, fixado, orfao);
         }
@@ -465,6 +471,10 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         semArquivo.IsFailure.Should().BeTrue();
         semArquivo.Errors.Should().ContainSingle(e => e.Error.Code == InscricaoErrorCodes.DocumentoObrigatorioAusente);
         await repoSem.DidNotReceiveWithAnyArgs().RemoverArquivoAsync(default!, default);
+
+        (Result<ComprovanteInscricaoDto> semTudo, _, _, _) = await EnviarAsync(comLaudo: false, semApelido: true);
+        semTudo.Errors.Select(static e => e.Error.Code).Should().Contain(InscricaoErrorCodes.DocumentoObrigatorioAusente)
+            .And.Contain(c => c != InscricaoErrorCodes.DocumentoObrigatorioAusente, "a falta do documento sai junto das recusas do formulário");
 
         (Result<ComprovanteInscricaoDto> comArquivo, IDocumentoDaInscricaoRepository repo, ArquivoDaApresentacao fixado, ArquivoDaApresentacao orfao) = await EnviarAsync(comLaudo: true);
         comArquivo.IsSuccess.Should().BeTrue(comArquivo.Error?.Message);

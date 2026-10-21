@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Services;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -74,6 +75,19 @@ public sealed class DocumentosAusentesDaInscricaoTests
         Ausentes([conjunto], Apresentadas(rg)).Should().ContainSingle().Which.Alternativas.Should().Equal(cpf);
     }
 
+    [Fact(DisplayName = "O grupo E impossível por um OU irmão não esconde o documento obrigatório que falta nos outros filhos")]
+    public void GrupoEImpossivel_NaoEscondeIrmao()
+    {
+        DocumentoExigido laudo = Documento("Laudo"), rg = Documento("RG");
+        // Só o RG se aplica: o OU "2 de 2" é impossível, e o laudo continua faltando.
+        DocumentoExigido cnhNaoAplica = Documento("CNH condicional", gatilhoFalso: true);
+        NoExigencia ouImpossivel = NoExigencia.CriarGrupo(
+            TipoNo.GrupoOu, 1, 2, null, [], [NoExigencia.CriarFolha(rg, 0).Value!, NoExigencia.CriarFolha(cnhNaoAplica, 1).Value!]).Value!;
+        NoExigencia arvore = NoExigencia.CriarGrupo(TipoNo.GrupoE, 0, null, null, [], [NoExigencia.CriarFolha(laudo, 0).Value!, ouImpossivel]).Value!;
+
+        Ausentes([arvore]).Select(static a => a.Alternativas[0].TipoDocumentoNome).Should().Contain("Laudo");
+    }
+
     [Fact(DisplayName = "No grupo repetível a falta é de cada ocorrência")]
     public void Repetivel_FaltaPorOcorrencia()
     {
@@ -101,10 +115,11 @@ public sealed class DocumentosAusentesDaInscricaoTests
         falta.Alternativas.Should().BeEquivalentTo([rg, cnh]);
     }
 
-    private static DocumentoExigido Documento(string nome, bool obrigatorio = true, FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao) =>
+    private static DocumentoExigido Documento(string nome, bool obrigatorio = true, FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao, bool gatilhoFalso = false) =>
         DocumentoExigido.Criar(
             Fase, Guid.CreateVersion7(), nome.ToUpperInvariant().Replace(' ', '_'), nome, "CAT",
-            Aplicabilidade.Geral, obrigatorio, consequenciaIndeferimento: null, [], [], null, Qualquer, null, finalidade: finalidade).Value!;
+            gatilhoFalso ? Aplicabilidade.Condicional : Aplicabilidade.Geral, obrigatorio, consequenciaIndeferimento: null,
+            gatilhoFalso ? [CondicaoGatilho.Criar(0, "NUNCA", Operador.Igual, System.Text.Json.JsonSerializer.SerializeToElement(true)).Value!] : [], [], null, Qualquer, null, finalidade: finalidade).Value!;
 
     private static NoExigencia GrupoOu(int ordem, params DocumentoExigido[] alternativas) =>
         NoExigencia.CriarGrupo(
@@ -128,7 +143,7 @@ public sealed class DocumentosAusentesDaInscricaoTests
             ? []
             : new() { [Familia] = [.. ocorrencias.Select(static o => new InstanciaEntidade(o, new Dictionary<string, FatoResolvido>()))] };
         Kernel.Results.Result<ResultadoResolucaoArvore> resultado = ResolvedorArvoreSatisfacao.Resolver(
-            arvore, new Dictionary<string, FatoResolvido>(), apresentacoes ?? [], instancias);
+            arvore, new Dictionary<string, FatoResolvido> { ["NUNCA"] = FatoResolvido.Resolvido(System.Text.Json.JsonSerializer.SerializeToElement(false)) }, apresentacoes ?? [], instancias);
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         return DocumentosAusentesDaInscricao.Apurar(arvore, resultado.Value!);
     }
