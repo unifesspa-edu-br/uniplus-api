@@ -102,10 +102,7 @@ public static class DescartarRascunhoDaInscricaoCommandHandler
         foreach (ArquivoDaApresentacao arquivo in arquivos)
         {
             // A URL de envio ainda vale até ExpiraEm: um PUT nela recria o conteúdo em claro.
-            await documentoRepository
-                .AgendarLimpezaAsync(arquivo.ObjectKey, arquivo.ExpiraEm + Services.RemocaoDeArquivosPendentesVencidos.Tolerancia, cancellationToken)
-                .ConfigureAwait(false);
-            await documentoRepository.AgendarLimpezaAsync(arquivo.ChaveSelada, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+            await Services.AgendaDeLimpezaDoArquivoDoCandidato.AgendarAsync(documentoRepository, arquivo, comSelada: true, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
         }
 
         await inscricaoRepository.RemoverAsync(inscricao, cancellationToken).ConfigureAwait(false);

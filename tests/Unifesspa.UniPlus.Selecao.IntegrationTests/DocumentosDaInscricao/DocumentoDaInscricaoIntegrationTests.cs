@@ -224,9 +224,13 @@ public sealed class DocumentoDaInscricaoIntegrationTests
     public async Task Rotina_ApagaAChaveAgendadaSoDepoisDoPrazo()
     {
         (SelecaoDbContext context, DocumentoDaInscricaoRepository repositorio, ArquivoDaApresentacao arquivo) = await PendenteComObjetoAsync(PdfLimpo);
-        await _storage.RemoverAsync(arquivo.ObjectKey);
-        await repositorio.AgendarLimpezaAsync(arquivo.ObjectKey, arquivo.ExpiraEm + RemocaoDeArquivosPendentesVencidos.Tolerancia);
+
+        // Confirmado, o arquivo não é alcançado pela limpeza dos pendentes: só a agenda apaga a chave de envio.
+        (await ConfirmarAsync(repositorio, arquivo, Protecao())).IsSuccess.Should().BeTrue();
+        repositorio.Atualizar(arquivo);
+        await AgendaDeLimpezaDoArquivoDoCandidato.AgendarAsync(repositorio, arquivo, comSelada: false, DateTimeOffset.UtcNow, CancellationToken.None);
         await context.SaveChangesAsync();
+        await _storage.RemoverAsync(arquivo.ObjectKey);
 
         // A URL pré-assinada ainda vale: um novo PUT recria o conteúdo em claro.
         await _storage.SalvarConteudoSeladoAsync(arquivo.ObjectKey, PdfLimpo, "application/pdf");
