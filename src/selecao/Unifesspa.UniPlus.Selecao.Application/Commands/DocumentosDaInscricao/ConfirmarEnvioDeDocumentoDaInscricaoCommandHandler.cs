@@ -94,11 +94,8 @@ public static class ConfirmarEnvioDeDocumentoDaInscricaoCommandHandler
         documentoRepository.Atualizar(arquivo);
 
         // A URL de envio vale até ExpiraEm: um PUT nela recria o conteúdo em claro, que a rotina apaga depois.
-        await AgendaDeLimpezaDoArquivoDoCandidato.AgendarAsync(documentoRepository, arquivo, comSelada: false, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+        await AgendaDeLimpezaDoArquivoDoCandidato.AgendarAsync(documentoRepository, arquivo, comSelada: false, timeProvider.GetUtcNow(), cancellationToken, envioTambemAgora: true).ConfigureAwait(false);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-
-        // O objeto do envio guarda o conteúdo em claro; a cópia cifrada já substitui o arquivo.
-        await storage.RemoverAsync(arquivo.ObjectKey, cancellationToken).ConfigureAwait(false);
 
         return Result<ArquivoDaApresentacaoDto>.Success(new ArquivoDaApresentacaoDto(
             arquivo.Id, arquivo.ApresentacaoId, apresentacao.ExigenciaId, apresentacao.OcorrenciaId,
