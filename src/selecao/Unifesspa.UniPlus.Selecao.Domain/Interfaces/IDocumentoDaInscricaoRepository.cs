@@ -26,4 +26,14 @@ public interface IDocumentoDaInscricaoRepository : IArquivoEnviadoRepository
     /// <summary>Os arquivos de todas as apresentações da inscrição, sem rastreamento.</summary>
     Task<IReadOnlyList<ArquivoDaApresentacao>> ListarArquivosDaInscricaoAsync(
         Guid inscricaoId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Até <paramref name="limite"/> arquivos confirmados cuja URL de envio já venceu em <paramref name="agora"/> e cuja
+    /// chave de envio ainda não foi limpa, sem rastreamento.
+    /// </summary>
+    Task<IReadOnlyList<ArquivoPendenteVencido>> ListarEnviosConfirmadosAptosALimpezaAsync(
+        DateTimeOffset agora, int limite, CancellationToken cancellationToken = default);
+
+    /// <summary>Marca a chave de envio do arquivo confirmado como limpa, sem passar pelo change tracker.</summary>
+    Task MarcarEnvioLimpoAsync(Guid id, DateTimeOffset agora, CancellationToken cancellationToken = default);
 }

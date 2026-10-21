@@ -52,6 +52,15 @@ public sealed class ArquivoDaApresentacao : EntityBase, IArquivoEnviado
 
     public DateTimeOffset? ConfirmadoEm { get; private set; }
 
+    /// <summary>
+    /// Quando a chave de envio, em claro, foi limpa depois de vencida a URL pré-assinada. Nulo no arquivo
+    /// confirmado significa que a chave ainda precisa de limpeza: um PUT dentro do prazo da URL a recria.
+    /// </summary>
+    public DateTimeOffset? EnvioLimpoEm { get; private set; }
+
+    /// <summary>Registra que a chave de envio foi limpa.</summary>
+    public void MarcarEnvioLimpo(DateTimeOffset instante) => EnvioLimpoEm = instante;
+
     /// <summary>A chave do conteúdo selado cifrado, definida na confirmação; nunca alvo de URL pré-assinada.</summary>
     public string? ObjectKeyConfirmado { get; private set; }
 
