@@ -421,6 +421,25 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
             [("SOLICITA_ATENDIMENTO_ESPECIALIZADO", 0), ("CONDICAO_ATENDIMENTO", 0)]);
     }
 
+    [Fact(DisplayName = "O derivado que só a condição de um documento do modelo cita recebe a regra padrão do catálogo")]
+    public async Task Handle_DerivadoCitadoSoPeloDocumento_CopiaARegraPadrao()
+    {
+        FaseDoCronograma("INSCRICAO");
+        DeclararAtendimentoEspecializado();
+        
+        DocumentoExigidoDoModeloInput documento = new(
+            "INSCRICAO", "LAUDO_MEDICO", false,
+            [[new CondicaoPrecondicaoInput("FLAG", "IGUAL", JsonSerializer.SerializeToElement(true))]], "REMOVE_VANTAGEM", []);
+
+        Result<AplicacaoDeModeloDto> resultado = await AplicarAsync(Modelo(
+            FinalidadeFormulario.Inscricao,
+            [.. ConjuntoBasicoDaInscricao.Itens, Item("SOLICITA_ATENDIMENTO_ESPECIALIZADO", 100), Item("QUILOMBOLA", 101)],
+            documentos: [documento]));
+
+        resultado.IsSuccess.Should().BeTrue(string.Join("; ", resultado.Errors.Select(static e => $"{e.Field}: {e.Error.Code}")));
+        resultado.Value!.DerivacoesCopiadas.Should().Contain("FLAG");
+    }
+
     [Fact(DisplayName = "O documento do modelo numa fase que o cronograma não tem é recusado, e nada é gravado")]
     public async Task Handle_DocumentoEmFaseInexistente_RecusaSemGravar()
     {

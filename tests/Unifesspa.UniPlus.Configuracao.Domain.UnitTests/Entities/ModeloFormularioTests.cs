@@ -296,6 +296,22 @@ public sealed class ModeloFormularioTests
         valor.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.TextoNaoGravavel);
     }
 
+    [Fact(DisplayName = "Texto com caractere nulo no documento exigido do conjunto padrão, no código, na condição ou na base legal, é recusado")]
+    public void DocumentoComCaractereNulo_Recusa()
+    {
+        PredicadoDnf Quando(string valor) => PredicadoDnf.CriarDeCondicoesAgrupadas(
+            [(0, CondicaoDnf.Criar("CERTIFICADO", Operador.Igual, JsonSerializer.SerializeToElement(valor)).Value!)]).Value!;
+        DocumentoExigidoDoModelo Documento(string tipo, string valor, string referencia) =>
+            new("INSCRICAO", tipo, false, Quando(valor), "REMOVE_VANTAGEM", [new("Edital", "INTERNA_EDITAL", "PENDENTE", referencia)]);
+
+        foreach (DocumentoExigidoDoModelo documento in new[] { Documento("LAUDO\0", "A", "x"), Documento("LAUDO", "A\0", "x"), Documento("LAUDO", "A", "x\0") })
+        {
+            Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CERTIFICADO", 0)]) with { DocumentosExigidos = [documento] });
+
+            modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.TextoNaoGravavel);
+        }
+    }
+
     [Fact(DisplayName = "Código com surrogate sem par é recusado, sem exceção na normalização")]
     public void CodigoComSurrogateSemPar_Recusa()
     {

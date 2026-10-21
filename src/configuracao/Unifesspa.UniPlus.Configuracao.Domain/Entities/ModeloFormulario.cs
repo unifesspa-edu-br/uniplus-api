@@ -666,6 +666,17 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
             .Concat(conteudo.Termos.SelectMany(static (t, i) => new (string, string?)[] { ($"termos[{i}].codigo", t.Codigo) }
                 .Concat(TextosDoPredicado($"termos[{i}].exibicao", t.Exibicao))
                 .Concat(TextosDoPredicado($"termos[{i}].obrigatoriedade", t.Obrigatoriedade.Predicado))))
+            .Concat(conteudo.Documentos.SelectMany(static (d, i) => new (string, string?)[]
+                {
+                    ($"documentosExigidos[{i}].faseCodigo", d.FaseCodigo), ($"documentosExigidos[{i}].tipoDocumentoCodigo", d.TipoDocumentoCodigo),
+                    ($"documentosExigidos[{i}].consequenciaIndeferimento", d.ConsequenciaIndeferimento),
+                }
+                .Concat(TextosDoPredicado($"documentosExigidos[{i}].quando", d.Quando))
+                .Concat(d.BasesLegais.SelectMany((b, j) => new (string, string?)[]
+                {
+                    ($"documentosExigidos[{i}].basesLegais[{j}].referencia", b.Referencia), ($"documentosExigidos[{i}].basesLegais[{j}].abrangencia", b.Abrangencia),
+                    ($"documentosExigidos[{i}].basesLegais[{j}].status", b.Status), ($"documentosExigidos[{i}].basesLegais[{j}].observacao", b.Observacao),
+                }))))
             .Concat(conteudo.Pressupostos.Select(static (p, i) => ($"pressupostos[{i}]", (string?)p)));
         return textos.SelectMany(static t => NaoGravavel(t.Campo, t.Texto)).DistinctBy(static e => e.Field);
     }
