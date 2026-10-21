@@ -207,6 +207,7 @@ public static class SubmeterInscricaoCommandHandler
         IReadOnlyList<FieldError> recusas =
         [
             .. doNomeSocial,
+            .. Inscricao.RecusasDosDocumentos(avaliacao.Value!.Documentos),
             .. Services.VeredictoDeSubmissao.RecusasDeOpcaoForaDaOferta(respostasFinais, gruposMesclados, contexto.Value!.Ofertas),
             .. Services.VeredictoDeSubmissao.Avaliar(
                 AvaliacaoDaInscricao.DaInscricao(avaliacao.Value!.Formulario), [.. contexto.Value!.TermosExigidos], aceites, envio.Dia)
