@@ -88,6 +88,14 @@ internal static class ConferenciaDoModelo
             }
         }
 
+        for (int i = 0; i < conteudo.Documentos.Count; i++)
+        {
+            if (ConferirPredicado($"documentosExigidos[{i}].quando", conteudo.Documentos[i].Quando, catalogo) is { } quando)
+            {
+                erros.Add(quando);
+            }
+        }
+
         foreach ((int indice, EtapaDoModelo etapa) in conteudo.Etapas)
         {
             if (ConferirPredicado($"etapas[{indice}].exibicao", etapa.Exibicao, catalogo) is { } recusa)

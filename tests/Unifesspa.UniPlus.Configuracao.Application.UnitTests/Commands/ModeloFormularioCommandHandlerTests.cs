@@ -114,6 +114,19 @@ public sealed class ModeloFormularioCommandHandlerTests
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(VinculoCatalogoErrorCodes.FatoDesativado);
     }
 
+    [Fact(DisplayName = "A condição de um documento do conjunto padrão é conferida contra o catálogo na gravação do modelo")]
+    public async Task Criar_DocumentoCitaFatoForaDoCatalogo_RecusaNoCampoDoDocumento()
+    {
+        ConteudoDoModeloInput conteudo = Conteudo(Item("CERTIFICADO", 0)) with
+        {
+            DocumentosExigidos = [new("INSCRICAO", "LAUDO_MEDICO", false, Quando("NAO_EXISTE", true), "REMOVE_VANTAGEM", [])],
+        };
+
+        Result<Guid> resultado = await CriarAsync(conteudo);
+
+        resultado.Errors.Should().Contain(static e => e.Field == "conteudo.documentosExigidos[0].quando" && e.Error.Code == "PredicadoDnf.FatoDesconhecido");
+    }
+
     [Theory(DisplayName = "Regra cita a faixa etária quando a data de nascimento é coletada antes; sem ela, é recusada")]
     [InlineData(true)]
     [InlineData(false)]
