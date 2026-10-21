@@ -123,4 +123,30 @@ public sealed class DocumentosDoComprovanteTests
         itens.Should().OnlyContain(static d => d.Situacao == SituacaoDoDocumentoCodigo.Pendente);
         itens.Should().OnlyContain(static d => d.Consequencia!.Contains("RG, CNH") && d.Consequencia.Contains("ampla concorrência"));
     }
+
+    [Fact(DisplayName = "No grupo um-ou-outro com consequência, a alternativa mostra a do grupo, e não a própria")]
+    public void Compor_OuComConsequencia_PrevaleceSobreADaAlternativa()
+    {
+        DocumentoExigido rg = Documento("RG", ConsequenciaIndeferimentoCodigo.PendenciaReenvio);
+        DocumentoExigido cnh = Documento("CNH");
+        GrupoDaArvore ou = new(Guid.CreateVersion7(), TipoNo.GrupoOu, 1, null, ConsequenciaIndeferimentoCodigo.ReclassificaAc);
+
+        IReadOnlyList<DocumentoDoComprovante> itens = DocumentosDoComprovante.Compor(
+            ComOu(ou, false, (rg, SituacaoDoDocumento.Pendente), (cnh, SituacaoDoDocumento.Pendente)), []);
+
+        itens.Should().OnlyContain(static d => d.Consequencia!.Contains("ampla concorrência"));
+    }
+
+    [Fact(DisplayName = "No grupo um-ou-outro sem consequência, a alternativa não traz texto, mesmo declarando a própria")]
+    public void Compor_OuSemConsequencia_AlternativaSemTexto()
+    {
+        DocumentoExigido rg = Documento("RG", ConsequenciaIndeferimentoCodigo.Elimina);
+        DocumentoExigido cnh = Documento("CNH");
+        GrupoDaArvore ou = new(Guid.CreateVersion7(), TipoNo.GrupoOu, 1, null);
+
+        IReadOnlyList<DocumentoDoComprovante> itens = DocumentosDoComprovante.Compor(
+            ComOu(ou, false, (rg, SituacaoDoDocumento.Pendente), (cnh, SituacaoDoDocumento.Pendente)), []);
+
+        itens.Should().OnlyContain(static d => d.Consequencia == null);
+    }
 }
