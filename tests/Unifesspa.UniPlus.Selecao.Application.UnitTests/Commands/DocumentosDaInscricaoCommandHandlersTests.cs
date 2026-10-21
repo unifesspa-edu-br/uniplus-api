@@ -41,6 +41,8 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
     private readonly ISelecaoUnitOfWork _unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
     private readonly IProtecaoDoConteudoSelado _protecao = Substitute.For<IProtecaoDoConteudoSelado>();
     private readonly Guid _versaoId;
+    private readonly VersaoConfiguracao _versao;
+    private readonly GrafoConfiguracao _grafo;
     private readonly ICertameDivulgadoRepository _certame = DivulgacaoDeTeste.Certame(ProcessoId);
 
     public DocumentosDaInscricaoCommandHandlersTests()
@@ -63,6 +65,8 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
             numeroDeOpcoesDeCurso: 1);
         DivulgacaoDeTeste.ConfigurarVersao(_processos, _codecs, versao, grafo);
         _versaoId = versao.Id;
+        _versao = versao;
+        _grafo = grafo;
 
         _storage.GerarUrlUploadAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
             .Returns("https://armazenamento.exemplo/envio");
@@ -147,6 +151,35 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
             Arg.Is<ArquivoDaApresentacao>(a => a.Id == resultado.Value.ArquivoId && a.ObjectKey.Contains(a.Id.ToString("D"), StringComparison.Ordinal)),
             Arg.Any<CancellationToken>());
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "O iniciar avança a revisão da inscrição, e quem perde a disputa não cria arquivo")]
+    public async Task Iniciar_DisputaDaRevisao_PerdidaNaoCriaArquivo()
+    {
+        Inscricao inscricao = Rascunho();
+        (await Iniciar(_laudo)).IsSuccess.Should().BeTrue();
+        await _inscricoes.Received(1).TentarAvancarRevisaoAsync(inscricao.Id, inscricao.Revisao, false, Arg.Any<CancellationToken>());
+
+        _documentos.ClearReceivedCalls();
+        _inscricoes.TentarAvancarRevisaoAsync(inscricao.Id, inscricao.Revisao, false, Arg.Any<CancellationToken>()).Returns(false);
+
+        (await Iniciar(_laudo)).Error!.Code.Should().Be(DocumentoDaInscricaoErrorCodes.InscricaoAlterada);
+        await _documentos.DidNotReceive().AdicionarArquivoAsync(Arg.Any<ArquivoDaApresentacao>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "O rascunho que adota a versão divulgada tem a adoção gravada junto do envio pendente")]
+    public async Task Iniciar_AdocaoDeVersao_EGravada()
+    {
+        Inscricao inscricao = Rascunho();
+        VersaoConfiguracao divulgada = DivulgacaoDeTeste.VersaoConforme(ProcessoId).Versao;
+        DivulgacaoDeTeste.ConfigurarFixadaEDivulgada(
+            _processos, _codecs, _grafo, fixada: (_versao, DivulgacaoDeTeste.FimDoPeriodo), divulgada: (divulgada, DivulgacaoDeTeste.FimDoPeriodo));
+
+        (await Iniciar(_laudo)).IsSuccess.Should().BeTrue();
+
+        inscricao.VersaoFormularioId.Should().Be(divulgada.Id);
+        await _inscricoes.Received(1).AtualizarAsync(inscricao, Arg.Any<CancellationToken>());
+        await _inscricoes.DidNotReceive().TentarAvancarRevisaoAsync(Arg.Any<Guid>(), Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Exigência que não está na árvore congelada da versão da inscrição não recebe arquivo")]
@@ -254,8 +287,8 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
         await _storage.DidNotReceive().SalvarConteudoSeladoAsync(Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Confirmado o arquivo, o objeto do envio, em claro, é apagado depois de gravar")]
-    public async Task Confirmar_Sucesso_ApagaOObjetoDoEnvio()
+    [Fact(DisplayName = "Confirmado o arquivo, a chave do envio, em claro, só é agendada para limpeza: o armazenamento não é tocado antes do commit")]
+    public async Task Confirmar_Sucesso_AgendaALimpezaDoEnvio()
     {
         Inscricao inscricao = Rascunho();
         ArquivoDaApresentacao arquivo = ArquivoPendente(inscricao);
@@ -269,13 +302,11 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
         Result<ArquivoDaApresentacaoDto> resultado = await Confirmar(arquivo.Id);
 
         resultado.IsSuccess.Should().BeTrue();
+        await _storage.DidNotReceive().RemoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
         await _documentos.Received(1).AgendarLimpezaAsync(
             arquivo.ObjectKey, arquivo.ExpiraEm + RemocaoDeArquivosPendentesVencidos.Tolerancia, Arg.Any<CancellationToken>());
-        Received.InOrder(() =>
-        {
-            _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-            _storage.RemoverAsync(arquivo.ObjectKey, Arg.Any<CancellationToken>());
-        });
+        await _documentos.Received(1).AgendarLimpezaAsync(
+            arquivo.ObjectKey, Arg.Is<DateTimeOffset>(d => d < arquivo.ExpiraEm + RemocaoDeArquivosPendentesVencidos.Tolerancia), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Remover o arquivo do rascunho apaga o registro e só agenda as duas chaves: o armazenamento é da rotina, depois do commit")]

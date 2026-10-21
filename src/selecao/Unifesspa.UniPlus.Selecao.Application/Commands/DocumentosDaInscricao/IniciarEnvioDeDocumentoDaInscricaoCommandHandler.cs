@@ -10,6 +10,8 @@ using DTOs;
 
 using Kernel.Results;
 
+using MotivosDecisaoIsencao;
+
 using Services;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
@@ -56,12 +58,25 @@ public static class IniciarEnvioDeDocumentoDaInscricaoCommandHandler
         Inscricao inscricao = acesso.Value!;
 
         // O rascunho acompanha a versão divulgada: a exigência que o candidato vê é a dela.
+        int revisaoLida = inscricao.Revisao;
         Result adotada = await VersaoDaInscricaoResolver
             .AdotarAsync(inscricao, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, cancellationToken)
             .ConfigureAwait(false);
         if (adotada.IsFailure)
         {
             return Result<IniciarEnvioDeDocumentoDaInscricaoDto>.Failure(adotada.Error!);
+        }
+
+        // A adoção da versão é gravada junto do envio pendente: a exigência só vale na versão em que a
+        // inscrição fica. Sem adoção, a revisão é disputada direto. Nos dois casos o descarte, o envio e o
+        // cancelamento concorrentes falham por concorrência em vez de apagar a inscrição sem agendar a chave.
+        if (inscricao.Revisao != revisaoLida)
+        {
+            await inscricaoRepository.AtualizarAsync(inscricao, cancellationToken).ConfigureAwait(false);
+        }
+        else if (!await inscricaoRepository.TentarAvancarRevisaoAsync(inscricao.Id, revisaoLida, apenasRascunho: false, cancellationToken).ConfigureAwait(false))
+        {
+            return Result<IniciarEnvioDeDocumentoDaInscricaoDto>.Failure(AcessoAoDocumentoDaInscricao.InscricaoAlterada);
         }
 
         Result<ContextoDaVersaoFixada> contexto = await ContextoDaVersaoFixadaResolver.ResolverAsync(
@@ -118,7 +133,16 @@ public static class IniciarEnvioDeDocumentoDaInscricaoCommandHandler
         }
 
         await documentoRepository.AdicionarArquivoAsync(arquivo, cancellationToken).ConfigureAwait(false);
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (OptimisticConcurrencyViolation.Is(ex))
+        {
+            // Com Idempotency-Key o handler captura e descarta o rastreamento (ADR-0119).
+            unitOfWork.DescartarAlteracoesNaoSalvas();
+            return Result<IniciarEnvioDeDocumentoDaInscricaoDto>.Failure(AcessoAoDocumentoDaInscricao.InscricaoAlterada);
+        }
 
         return Result<IniciarEnvioDeDocumentoDaInscricaoDto>.Success(new IniciarEnvioDeDocumentoDaInscricaoDto(
             arquivo.Id, apresentacao.Value!.Id, new Uri(urlUpload, UriKind.Absolute), arquivo.TipoDeMidia, arquivo.ExpiraEm));
