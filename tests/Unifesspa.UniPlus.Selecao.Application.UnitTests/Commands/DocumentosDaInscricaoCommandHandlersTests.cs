@@ -120,7 +120,7 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
     private Task<Result> Remover(Guid arquivoId) =>
         RemoverArquivoDaInscricaoCommandHandler.Handle(
             new RemoverArquivoDaInscricaoCommand(ProcessoId, arquivoId),
-            _inscricoes, _processos, _certame, _codecs, DivulgacaoDeTeste.Fuso(), _documentos, _storage, _unitOfWork, Usuario(),
+            _inscricoes, _processos, _certame, _codecs, DivulgacaoDeTeste.Fuso(), _documentos, _unitOfWork, Usuario(),
             DivulgacaoDeTeste.Relogio, CancellationToken.None);
 
     private ArquivoDaApresentacao ArquivoPendente(Inscricao inscricao)
@@ -278,8 +278,8 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
         });
     }
 
-    [Fact(DisplayName = "Remover o arquivo do rascunho apaga o registro e as duas chaves do armazenamento")]
-    public async Task Remover_Rascunho_ApagaRegistroEAsDuasChaves()
+    [Fact(DisplayName = "Remover o arquivo do rascunho apaga o registro e só agenda as duas chaves: o armazenamento é da rotina, depois do commit")]
+    public async Task Remover_Rascunho_ApagaRegistroEAgendaAsDuasChaves()
     {
         Inscricao inscricao = Rascunho();
         ArquivoDaApresentacao arquivo = ArquivoPendente(inscricao);
@@ -289,8 +289,7 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
         resultado.IsSuccess.Should().BeTrue();
         await _inscricoes.Received(1).TentarAvancarRevisaoAsync(inscricao.Id, inscricao.Revisao, true, Arg.Any<CancellationToken>());
         await _documentos.Received(1).RemoverArquivoAsync(arquivo, Arg.Any<CancellationToken>());
-        await _storage.Received(1).RemoverAsync(arquivo.ObjectKey, Arg.Any<CancellationToken>());
-        await _storage.Received(1).RemoverAsync(arquivo.ChaveSelada, Arg.Any<CancellationToken>());
+        await _storage.DidNotReceive().RemoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
         await _documentos.Received(1).AgendarLimpezaAsync(
             arquivo.ObjectKey, arquivo.ExpiraEm + RemocaoDeArquivosPendentesVencidos.Tolerancia, Arg.Any<CancellationToken>());
         await _documentos.Received(1).AgendarLimpezaAsync(arquivo.ChaveSelada, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());

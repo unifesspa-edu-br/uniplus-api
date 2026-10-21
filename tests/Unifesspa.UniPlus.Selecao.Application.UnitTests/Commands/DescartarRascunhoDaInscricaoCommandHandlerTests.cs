@@ -48,7 +48,7 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
     /// <summary>A divulgação aponta para <paramref name="divulgada"/>; o rascunho nasce na versão <paramref name="fixada"/>, que é a mesma quando a retificação não mudou nada.</summary>
     private static async Task<(Result Resultado, IInscricaoRepository Repositorio, ISelecaoUnitOfWork UnitOfWork)> Descartar(
         Func<Inscricao, string> precondicao, Inscricao rascunho, VersaoConfiguracao fixada, VersaoConfiguracao divulgada, GrafoConfiguracao grafo, string sub = "sub-1", DateTimeOffset? agora = null,
-        IDocumentoDaInscricaoRepository? documentos = null, IArquivoArmazenadoStorage? storage = null)
+        IDocumentoDaInscricaoRepository? documentos = null)
     {
         IInscricaoRepository repositorio = Substitute.For<IInscricaoRepository>();
         repositorio.ObterAtivaPorProcessoECpfAsync(ProcessoId, Dono, Arg.Any<CancellationToken>()).Returns(rascunho);
@@ -63,16 +63,16 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
         Result resultado = await DescartarRascunhoDaInscricaoCommandHandler.Handle(
             new DescartarRascunhoDaInscricaoCommand(ProcessoId, PrecondicaoIfMatch.DeTags([precondicao(rascunho)])),
             repositorio, processoRepository, DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(), new RelogioFixo(agora ?? DivulgacaoDeTeste.DentroDoPeriodo), unitOfWork, Usuario(sub),
-            documentos ?? Substitute.For<IDocumentoDaInscricaoRepository>(), storage ?? Substitute.For<IArquivoArmazenadoStorage>(), CancellationToken.None);
+            documentos ?? Substitute.For<IDocumentoDaInscricaoRepository>(), CancellationToken.None);
         return (resultado, repositorio, unitOfWork);
     }
 
     private static Task<(Result Resultado, IInscricaoRepository Repositorio, ISelecaoUnitOfWork UnitOfWork)> DescartarNaVersaoDivulgada(
         Func<Inscricao, string> precondicao, Func<Guid, Inscricao>? rascunho = null, string sub = "sub-1", DateTimeOffset? agora = null,
-        IDocumentoDaInscricaoRepository? documentos = null, IArquivoArmazenadoStorage? storage = null)
+        IDocumentoDaInscricaoRepository? documentos = null)
     {
         (VersaoConfiguracao versao, GrafoConfiguracao grafo) = SalvarInscricaoCommandHandlerTests.MontarVersaoComItem(Item);
-        return Descartar(precondicao, (rascunho ?? NovoRascunho)(versao.Id), versao, versao, grafo, sub, agora, documentos, storage);
+        return Descartar(precondicao, (rascunho ?? NovoRascunho)(versao.Id), versao, versao, grafo, sub, agora, documentos);
     }
 
     [Fact(DisplayName = "Descartar o próprio rascunho com o If-Match corrente remove a inscrição e grava")]
@@ -85,11 +85,10 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
         await unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Descartar o rascunho apaga do armazenamento as duas chaves de cada arquivo de documento")]
+    [Fact(DisplayName = "Descartar o rascunho agenda a limpeza das duas chaves de cada arquivo de documento, sem tocar o armazenamento")]
     public async Task Handle_RascunhoComArquivos_ApagaOsObjetos()
     {
         IDocumentoDaInscricaoRepository documentos = Substitute.For<IDocumentoDaInscricaoRepository>();
-        IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
         DocumentoExigido laudo = DocumentoExigido.Criar(
             Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo", "SAUDE", Aplicabilidade.Geral, false, null,
             [], [], null, FormatosPermitidos.Criar(true, null).Value!, null).Value!;
@@ -97,11 +96,9 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
             Guid.CreateVersion7(), Guid.CreateVersion7(), laudo, "application/pdf", 10, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documentos.ListarArquivosDaInscricaoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns([arquivo]);
 
-        (Result resultado, _, _) = await DescartarNaVersaoDivulgada(static r => r.ETag, documentos: documentos, storage: storage);
+        (Result resultado, _, _) = await DescartarNaVersaoDivulgada(static r => r.ETag, documentos: documentos);
 
         resultado.IsSuccess.Should().BeTrue();
-        await storage.Received(1).RemoverAsync(arquivo.ObjectKey, Arg.Any<CancellationToken>());
-        await storage.Received(1).RemoverAsync(arquivo.ChaveSelada, Arg.Any<CancellationToken>());
         await documentos.Received(1).AgendarLimpezaAsync(arquivo.ObjectKey, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
         await documentos.Received(1).AgendarLimpezaAsync(arquivo.ChaveSelada, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
     }
