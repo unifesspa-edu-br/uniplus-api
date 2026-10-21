@@ -206,7 +206,9 @@ public static partial class AplicarModeloFormularioCommandHandler
             await fatoCandidatoReader.ListarRegrasPadraoAsync(cancellationToken).ConfigureAwait(false);
         // Os citados vêm da entrada das partes que entram na cópia, inclusive das que serão recusadas:
         // o que falta configurar aparece junto das outras recusas, e o que saiu da cópia não pesa.
-        string[] citados = [.. FatosCitados(itensACopiar, gruposACopiar, conteudo.Etapas ?? [], termosACopiar).Distinct(StringComparer.Ordinal)];
+        string[] citados = [.. FatosCitados(itensACopiar, gruposACopiar, conteudo.Etapas ?? [], termosACopiar)
+            .Concat((conteudo.DocumentosExigidos ?? []).SelectMany(static d => Citados(d.Quando)))
+            .Distinct(StringComparer.Ordinal)];
         List<ConfiguracaoDerivacaoInput> derivacoesACopiar = EscolherDerivacoes(citados, processo, contexto, regrasPadrao, relatorio, erros);
 
         // A modalidade pode vir pela cópia ou pelas regras padrão que ela traz.
