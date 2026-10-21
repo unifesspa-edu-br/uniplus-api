@@ -25,7 +25,8 @@
 #   1.6) → Critérios de Desempate (item 6.3) → Classificação e eliminação
 #   (itens 5.6 e 8.1) → Taxa de Inscrição (gratuita, item 2.2) → Cronograma de
 #   Fases → aplicar o modelo de inscrição da Medicina → vincular a fase do
-#   formulário → documentos que comprovam o Fator na habilitação → Documento do
+#   formulário → documentos que comprovam o Fator na habilitação (os do atendimento
+#   especializado vêm do modelo) → Documento do
 #   Edital → Divulgação (sempre ANTES de publicar: depois da publicação o
 #   processo só aceita mutação por retificação) → Publicar.
 #
@@ -678,14 +679,28 @@ vincular_fase_do_formulario() {
 # remove o acréscimo, não elimina. Vem depois do modelo: os gatilhos citam
 # fatos que o formulário coleta.
 definir_documentos_exigidos() {
-    log "Definir os documentos que comprovam o Fator na habilitação"
-    local fase_habilitacao_processo_id base_legal
-    fase_habilitacao_processo_id=$(api_get "/api/selecao/processos-seletivos/$PROCESSO_ID" | jq -r '.cronogramaFases[] | select(.codigo=="HABILITACAO") | .id')
+    log "Definir os documentos que comprovam o Fator na habilitação, mantendo os do modelo"
+    local fase_habilitacao_processo_id base_legal processo documentos_do_modelo
+    processo=$(api_get "/api/selecao/processos-seletivos/$PROCESSO_ID")
+    fase_habilitacao_processo_id=$(jq -r '.cronogramaFases[] | select(.codigo=="HABILITACAO") | .id' <<< "$processo")
     [ -n "$fase_habilitacao_processo_id" ] || fail "fase HABILITACAO não encontrada no cronograma do processo $PROCESSO_ID"
     base_legal='[{"referencia": "Edital nº XX/2026-CEPS/Unifesspa, itens 1.6 e 13", "abrangencia": "INTERNA_EDITAL", "status": "RESOLVIDO", "observacao": null}]'
 
+    # O PUT troca a árvore inteira: os documentos que o modelo de inscrição trouxe (o laudo e a
+    # certidão do atendimento especializado) voltam na entrada, com a base legal resolvida — o
+    # modelo a deixa pendente até o CEPS indicar a norma, e a publicação a exige resolvida.
+    documentos_do_modelo=$(jq -c --argjson bases "$base_legal" '[.raizesExigencia[] | {
+        tipo: "FOLHA",
+        documento: (.documento | {
+            exigidoNaFaseId, tipoDocumentoId: .tipoDocumentoOrigemId, aplicabilidade, obrigatorio, consequenciaIndeferimento,
+            condicoes: [.condicoes[] | {clausula, fato, operador, valor}], basesLegais: $bases,
+            formatosPermitidos, finalidade
+        })
+    }]' <<< "$processo")
+    [ "$(jq 'length' <<< "$documentos_do_modelo")" -gt 0 ] || fail "o modelo de inscrição não trouxe os documentos do atendimento especializado"
+
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/documentos-exigidos" "$(jq -nc \
-        --arg fase "$fase_habilitacao_processo_id" --arg historico "$TIPO_DOCUMENTO_HISTORICO_ID" \
+        --argjson doModelo "$documentos_do_modelo" --arg fase "$fase_habilitacao_processo_id" --arg historico "$TIPO_DOCUMENTO_HISTORICO_ID" \
         --arg residencia "$TIPO_DOCUMENTO_RESIDENCIA_ID" --argjson basesLegais "$base_legal" '
         def folha($tipo; $condicoes): {
             tipo: "FOLHA",
@@ -696,7 +711,7 @@ definir_documentos_exigidos() {
             }
         };
         def pedido($clausula): {clausula: $clausula, fato: "SOLICITA_FATOR_ATENUACAO", operador: "IGUAL", valor: "true"};
-        [
+        $doModelo + [
             folha($historico; [
                 pedido(0), {clausula: 0, fato: "FORMA_CONCLUSAO_EM", operador: "EM", valor: "[\"REGULAR\",\"EJA\"]"},
                 pedido(1), {clausula: 1, fato: "CAMINHO_FATOR_ATENUACAO", operador: "IGUAL", valor: "\"ENSINO_MEDIO\""}
@@ -705,7 +720,7 @@ definir_documentos_exigidos() {
                 pedido(0), {clausula: 0, fato: "CAMINHO_FATOR_ATENUACAO", operador: "IGUAL", valor: "\"RESIDENCIA\""}
             ])
         ]')" >/dev/null
-    ok "documentos do Fator definidos na fase $fase_habilitacao_processo_id"
+    ok "documentos do modelo mantidos e documentos do Fator definidos na fase $fase_habilitacao_processo_id"
 }
 
 documento_do_edital() {

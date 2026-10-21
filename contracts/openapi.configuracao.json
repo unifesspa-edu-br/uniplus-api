@@ -14486,6 +14486,32 @@
           }
         }
       },
+      "BaseLegalDoModeloInput": {
+        "required": [
+          "referencia",
+          "abrangencia",
+          "status",
+          "observacao"
+        ],
+        "type": "object",
+        "properties": {
+          "referencia": {
+            "type": "string"
+          },
+          "abrangencia": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "observacao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "CalendarioDiasUteisDto": {
         "required": [
           "id",
@@ -14997,6 +15023,15 @@
             ],
             "items": {
               "$ref": "#/components/schemas/GrupoColetadoInput"
+            }
+          },
+          "documentosExigidos": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/DocumentoExigidoDoModeloInput"
             }
           }
         }
@@ -16379,6 +16414,52 @@
           },
           "descricao": {
             "type": "string"
+          }
+        }
+      },
+      "DocumentoExigidoDoModeloInput": {
+        "required": [
+          "faseCodigo",
+          "tipoDocumentoCodigo",
+          "obrigatorio",
+          "quando",
+          "consequenciaIndeferimento",
+          "basesLegais"
+        ],
+        "type": "object",
+        "properties": {
+          "faseCodigo": {
+            "type": "string"
+          },
+          "tipoDocumentoCodigo": {
+            "type": "string"
+          },
+          "obrigatorio": {
+            "type": "boolean"
+          },
+          "quando": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
+              }
+            }
+          },
+          "consequenciaIndeferimento": {
+            "type": "string"
+          },
+          "basesLegais": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/BaseLegalDoModeloInput"
+            }
           }
         }
       },

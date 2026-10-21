@@ -73,6 +73,27 @@ public sealed record TermoDoModelo(string Codigo, int Ordem, Guid TermoId, Guid 
         [.. (Exibicao?.FatosCitados ?? []).Concat(Obrigatoriedade.FatosCitados).Distinct(StringComparer.Ordinal)];
 }
 
+/// <summary>Uma base legal que sustenta o documento exigido do modelo; copiada como está para a exigência do processo.</summary>
+public sealed record BaseLegalDoDocumentoDoModelo(string Referencia, string Abrangencia, string Status, string? Observacao);
+
+/// <summary>
+/// Um documento do conjunto padrão que o modelo exige do processo (UNI-REQ-0026): o tipo do catálogo e
+/// a fase canônica pelos códigos, que o processo resolve ao aplicar o modelo, as condições sobre fatos
+/// que o tornam exigido (ausentes, vale para todo candidato) e a consequência de o candidato não o
+/// apresentar. É sempre do formulário da finalidade do próprio modelo.
+/// </summary>
+public sealed record DocumentoExigidoDoModelo(
+    string FaseCodigo,
+    string TipoDocumentoCodigo,
+    bool Obrigatorio,
+    PredicadoDnf? Quando,
+    string ConsequenciaIndeferimento,
+    IReadOnlyList<BaseLegalDoDocumentoDoModelo> BasesLegais)
+{
+    /// <summary>Os fatos que as condições do documento citam.</summary>
+    public IReadOnlyCollection<string> FatosCitados => Quando?.FatosCitados ?? [];
+}
+
 /// <summary>
 /// O conteúdo do modelo, lido e gravado inteiro: o título, as etapas, os itens, os termos, os fatos
 /// pressupostos — coletados pela inscrição, que o modelo de outra finalidade pode citar (UNI-REQ-0144)
@@ -84,8 +105,12 @@ public sealed record ConteudoDoModelo(
     IReadOnlyList<ItemDoModelo> Itens,
     IReadOnlyList<TermoDoModelo> Termos,
     IReadOnlyList<string> Pressupostos,
-    IReadOnlyList<GrupoDoModelo> Grupos)
+    IReadOnlyList<GrupoDoModelo> Grupos,
+    IReadOnlyList<DocumentoExigidoDoModelo>? DocumentosExigidos = null)
 {
+    /// <summary>O conjunto padrão de documentos exigidos que a aplicação do modelo copia para o processo; ausente é nenhum.</summary>
+    public IReadOnlyList<DocumentoExigidoDoModelo> Documentos => DocumentosExigidos ?? [];
+
     /// <summary>
     /// O conteúdo como o avaliador de formulário o lê: cada seção, na ordem, com os seus itens e grupos
     /// repetíveis — os blocos que o sistema monta não têm regra, como na definição do processo —; os
@@ -382,6 +407,17 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
             return termo;
         }
 
+        // O documento do conjunto padrão cita só o que o modelo coleta, como o termo.
+        for (int i = 0; i < conteudo.Documentos.Count; i++)
+        {
+            if (conteudo.Documentos[i].FatosCitados.FirstOrDefault(f => dependencias.Conferir(f, DependenciasDoFormulario.PosicaoDosTermos) is not null) is { } citado)
+            {
+                return new DomainError(
+                    GrafoFormularioErrorCodes.CitaFatoNaoConhecido,
+                    $"A condição do documento exigido '{conteudo.Documentos[i].TipoDocumentoCodigo}' (documentosExigidos[{i}]) cita '{citado}', que o modelo não coleta nem deriva, nem é conhecido antes dele.");
+            }
+        }
+
         return CampoQueAlimentaRegra.PrimeiroOpcional(
             conteudo.Itens.OrderBy(static i => i.Ordem)
                 .Concat(conteudo.Grupos.OrderBy(static g => g.Ordem).SelectMany(static g => g.Subitens.OrderBy(static s => s.Ordem)))
@@ -427,7 +463,8 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
         Campos(conteudo).SelectMany(static i => i.FatosCitados)
             .Concat(conteudo.Grupos.SelectMany(static g => g.FatosCitados))
             .Concat(conteudo.Etapas.SelectMany(static e => e.FatosCitados))
-            .Concat(conteudo.Termos.SelectMany(static t => t.FatosCitados));
+            .Concat(conteudo.Termos.SelectMany(static t => t.FatosCitados))
+            .Concat(conteudo.Documentos.SelectMany(static d => d.FatosCitados));
 
     /// <summary>As condições de todas as regras do modelo, com o operador — a negação é o que importa aqui.</summary>
     private static IEnumerable<(string Fato, Operador Operador)> CondicoesDasRegras(ConteudoDoModelo conteudo)
@@ -437,7 +474,8 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
                 .Concat(i.Restricoes.OfType<OpcoesPermitidas>().SelectMany(static o => o.Entradas.Select(static e => e.Quando))))
             .Concat(conteudo.Grupos.SelectMany(static g => new[] { g.Exibicao, g.Obrigatoriedade.Predicado }))
             .Concat(conteudo.Etapas.Select(static e => e.Exibicao))
-            .Concat(conteudo.Termos.SelectMany(static t => new[] { t.Exibicao, t.Obrigatoriedade.Predicado }));
+            .Concat(conteudo.Termos.SelectMany(static t => new[] { t.Exibicao, t.Obrigatoriedade.Predicado }))
+            .Concat(conteudo.Documentos.Select(static d => d.Quando));
         return predicados.OfType<PredicadoDnf>()
             .SelectMany(static p => p.Clausulas)
             .SelectMany(static c => c.Condicoes)
@@ -550,6 +588,7 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
             Termos = [.. conteudo.Termos.OrderBy(static t => t.Ordem)],
             Grupos = [.. conteudo.Grupos.OrderBy(static g => g.Ordem)
                 .Select(static g => g with { Subitens = [.. g.Subitens.OrderBy(static s => s.Ordem).Select(ComRestricoesOrdenadas)] })],
+            DocumentosExigidos = conteudo.Documentos,
         };
     }
 
@@ -579,6 +618,11 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
             EtapaCodigo = g.EtapaCodigo is null ? null : Normalizar(g.EtapaCodigo),
             Rotulo = (g.Rotulo ?? string.Empty).Trim(),
             Subitens = [.. (g.Subitens ?? []).Select(NormalizarCampo)],
+        })],
+        [.. (conteudo.DocumentosExigidos ?? []).Select(static d => d with
+        {
+            FaseCodigo = Normalizar(d.FaseCodigo),
+            TipoDocumentoCodigo = Normalizar(d.TipoDocumentoCodigo),
         })]);
 
     private static ItemDoModelo NormalizarCampo(ItemDoModelo campo) => campo with

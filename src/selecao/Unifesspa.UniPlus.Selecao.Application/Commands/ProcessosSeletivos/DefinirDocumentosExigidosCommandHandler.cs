@@ -90,6 +90,34 @@ public static class DefinirDocumentosExigidosCommandHandler
             return Result<MutacaoAceita>.Failure(bloqueio);
         }
 
+        Result definido = await DefinirAsync(
+                processo, command.Raizes, [], command.Precondicao, tipoDocumentoReader, fatoCandidatoReader, modeloDeDocumentoRepository, cancellationToken)
+            .ConfigureAwait(false);
+        if (definido.IsFailure)
+        {
+            return definido.Errors.Count > 0 ? Result<MutacaoAceita>.ValidationFailure(definido.Errors) : Result<MutacaoAceita>.Failure(definido.Error!);
+        }
+
+        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+
+        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+    }
+
+    /// <summary>
+    /// Constrói a árvore a partir das entradas e a define no processo, sem gravar: quem chama fecha a
+    /// transação. As raízes <paramref name="mantidas"/> seguem como estão, na frente das novas, e a
+    /// aplicação de um modelo de formulário usa isso para trazer o seu conjunto sem tirar o resto.
+    /// </summary>
+    internal static async Task<Result> DefinirAsync(
+        ProcessoSeletivo processo,
+        IReadOnlyList<NoExigenciaInput> entradas,
+        IReadOnlyList<NoExigencia> mantidas,
+        PrecondicaoIfMatch precondicao,
+        ITipoDocumentoReader tipoDocumentoReader,
+        IFatoCandidatoReader fatoCandidatoReader,
+        IModeloDeDocumentoRepository modeloDeDocumentoRepository,
+        CancellationToken cancellationToken)
+    {
         // ADR-0125: travessia PURA da árvore (sem nenhum I/O) que confirma a forma de cada
         // nó (documento + bases legais em folha, só bases legais em grupo) antes de resolver
         // qualquer cadastro externo (vocabulário de fatos, TipoDocumento) — validação vence
@@ -97,23 +125,23 @@ public static class DefinirDocumentosExigidosCommandHandler
         // acumula entre nós diferentes — isso exigiria o path posicional ainda sem
         // convenção nesta rolagem), só adianta a checagem pura do primeiro nó problemático
         // para antes de qualquer I/O.
-        List<FieldError> formaErros = ValidarFormaBasicaDaArvore(command.Raizes);
+        List<FieldError> formaErros = ValidarFormaBasicaDaArvore(entradas);
         if (formaErros.Count > 0)
         {
-            return Result<MutacaoAceita>.ValidationFailure(formaErros);
+            return Result.ValidationFailure(formaErros);
         }
 
         // O grupo da repetição vem antes dos gatilhos: um gatilho que cita campo de grupo
         // inexistente seria recusado como fato fora do processo, e a recusa que orienta é a do
         // grupo.
-        if (ValidadorRepeticaoPorGrupo.PrimeiroGrupoInexistente(GruposDaRepeticao(command.Raizes), processo.GruposColetados) is { } semGrupo)
+        if (ValidadorRepeticaoPorGrupo.PrimeiroGrupoInexistente(GruposDaRepeticao(entradas), processo.GruposColetados) is { } semGrupo)
         {
-            return Result<MutacaoAceita>.Failure(semGrupo);
+            return Result.Failure(semGrupo);
         }
 
         // Os modelos citados pelas folhas são lidos numa consulta só, e só os deste processo: o
         // de outro processo cai na mesma recusa do inexistente.
-        HashSet<Guid> idsDosModelos = ModelosCitados(command.Raizes);
+        HashSet<Guid> idsDosModelos = ModelosCitados(entradas);
         IReadOnlyDictionary<Guid, ModeloDeDocumento> modelos = idsDosModelos.Count == 0
             ? new Dictionary<Guid, ModeloDeDocumento>()
             : (await modeloDeDocumentoRepository.ListarDoProcessoAsync(processo.Id, idsDosModelos, cancellationToken).ConfigureAwait(false))
@@ -121,7 +149,7 @@ public static class DefinirDocumentosExigidosCommandHandler
 
         // O vocabulário só é resolvido (I/O cross-módulo) quando alguma folha declara
         // gatilho — mesmo princípio de DefinirCriteriosDesempateCommandHandler.
-        bool existeGatilho = ExisteGatilho(command.Raizes);
+        bool existeGatilho = ExisteGatilho(entradas);
         IReadOnlyDictionary<string, DescritorFatoCandidato>? vocabularioFatos = null;
         IReadOnlyDictionary<string, string>? pontoResolucaoPorFato = null;
         IReadOnlyDictionary<string, string>? membroPorAgregado = null;
@@ -221,13 +249,13 @@ public static class DefinirDocumentosExigidosCommandHandler
         }
 
         List<NoExigencia> raizes = [];
-        int ordemRaiz = 0;
-        foreach (NoExigenciaInput raizInput in command.Raizes)
+        int ordemRaiz = mantidas.Count == 0 ? 0 : mantidas.Max(static r => r.Ordem) + 1;
+        foreach (NoExigenciaInput raizInput in entradas)
         {
             Result<NoExigencia> raizResult = await ConstruirNoAsync(raizInput, ordemRaiz, grupoAncestral: null).ConfigureAwait(false);
             if (raizResult.IsFailure)
             {
-                return Result<MutacaoAceita>.ValidationFailure(raizResult.Errors);
+                return Result.ValidationFailure(raizResult.Errors);
             }
 
             raizes.Add(raizResult.Value!);
@@ -248,19 +276,13 @@ public static class DefinirDocumentosExigidosCommandHandler
                         .Select(static c => (c.Fato, c.Valor))));
             if (vinculoNovo.IsFailure)
             {
-                return Result<MutacaoAceita>.Failure(vinculoNovo.Error!);
+                return Result.Failure(vinculoNovo.Error!);
             }
         }
 
-        Result definirResult = processo.DefinirDocumentosExigidos(raizes, command.Precondicao);
-        if (definirResult.IsFailure)
-        {
-            return Result<MutacaoAceita>.Failure(definirResult.Error!);
-        }
+        Result definirResult = processo.DefinirDocumentosExigidos([.. mantidas, .. raizes], precondicao);
+        return definirResult.IsFailure ? Result.Failure(definirResult.Error!) : Result.Success();
 
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
     }
 
     /// <summary>Os modelos de documento que as folhas da floresta citam.</summary>

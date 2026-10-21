@@ -66,6 +66,21 @@ internal static class ConteudoDoModeloJson
             ["obrigatoriedade"] = PredicadoDnfJson.ParaJson(g.Obrigatoriedade),
             ["subitens"] = new JsonArray([.. g.Subitens.Select(static s => (JsonNode)CampoParaJson(s))]),
         })]),
+        ["documentosExigidos"] = new JsonArray([.. conteudo.Documentos.Select(static d => (JsonNode)new JsonObject
+        {
+            ["faseCodigo"] = d.FaseCodigo,
+            ["tipoDocumentoCodigo"] = d.TipoDocumentoCodigo,
+            ["obrigatorio"] = d.Obrigatorio,
+            ["quando"] = d.Quando is null ? null : PredicadoDnfJson.ParaJson(d.Quando),
+            ["consequenciaIndeferimento"] = d.ConsequenciaIndeferimento,
+            ["basesLegais"] = new JsonArray([.. d.BasesLegais.Select(static b => (JsonNode)new JsonObject
+            {
+                ["referencia"] = b.Referencia,
+                ["abrangencia"] = b.Abrangencia,
+                ["status"] = b.Status,
+                ["observacao"] = b.Observacao,
+            })]),
+        })]),
     }.ToJsonString();
 
     private static JsonObject CampoParaJson(ItemDoModelo campo) => new()
@@ -122,7 +137,20 @@ internal static class ConteudoDoModeloJson
                 Predicado(g, "exibicao"),
                 Remontar(PredicadoDnfJson.ObrigatoriedadeDeJson(g.GetProperty("obrigatoriedade"))),
                 [.. g.GetProperty("subitens").EnumerateArray().Select(CampoDeJson)],
-                g.GetProperty("incluiCandidato").GetBoolean()))]);
+                g.GetProperty("incluiCandidato").GetBoolean()))],
+            raiz.TryGetProperty("documentosExigidos", out JsonElement documentos)
+                ? [.. documentos.EnumerateArray().Select(static d => new DocumentoExigidoDoModelo(
+                    d.GetProperty("faseCodigo").GetString()!,
+                    d.GetProperty("tipoDocumentoCodigo").GetString()!,
+                    d.GetProperty("obrigatorio").GetBoolean(),
+                    Predicado(d, "quando"),
+                    d.GetProperty("consequenciaIndeferimento").GetString()!,
+                    [.. d.GetProperty("basesLegais").EnumerateArray().Select(static b => new BaseLegalDoDocumentoDoModelo(
+                        b.GetProperty("referencia").GetString()!,
+                        b.GetProperty("abrangencia").GetString()!,
+                        b.GetProperty("status").GetString()!,
+                        Texto(b, "observacao")))]))]
+                : []);
     }
 
     private static ItemDoModelo CampoDeJson(JsonElement campo) => new(

@@ -271,6 +271,36 @@ public sealed class ResolvedorArvoreSatisfacaoTests
         resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Satisfeito);
     }
 
+    [Theory(DisplayName = "Atendimento especializado: o laudo é exigido da condição de saúde e a certidão da lactante, só de quem solicita o atendimento")]
+    [InlineData(true, "PCD", EstadoSatisfacao.Pendente, EstadoSatisfacao.NaoAplicavel)]
+    [InlineData(true, "LACTANTE", EstadoSatisfacao.NaoAplicavel, EstadoSatisfacao.Pendente)]
+    [InlineData(true, "PESSOA_IDOSA", EstadoSatisfacao.NaoAplicavel, EstadoSatisfacao.NaoAplicavel)]
+    [InlineData(false, "PCD", EstadoSatisfacao.NaoAplicavel, EstadoSatisfacao.NaoAplicavel)]
+    public void Folha_DocumentosDoAtendimentoEspecializado_SaoExigidosPeloFato(
+        bool solicita, string condicao, EstadoSatisfacao laudo, EstadoSatisfacao certidao)
+    {
+        static DocumentoExigido Documento(string tipo, params string[] condicoes) => DocumentoExigido.Criar(
+            FaseId, Guid.CreateVersion7(), tipo, tipo, "SAUDE", Aplicabilidade.Condicional, obrigatorio: true, "REMOVE_VANTAGEM",
+            [.. condicoes.SelectMany(static (c, clausula) => new[]
+            {
+                CondicaoGatilho.Criar(clausula, "SOLICITA_ATENDIMENTO_ESPECIALIZADO", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!,
+                CondicaoGatilho.Criar(clausula, "CONDICAO_ATENDIMENTO", Operador.Igual, JsonSerializer.SerializeToElement(c)).Value!,
+            })],
+            [], null, Qualquer, null).Value!;
+        NoExigencia noLaudo = NoExigencia.CriarFolha(Documento("LAUDO_MEDICO", "PCD", "DISLEXIA"), 0).Value!;
+        NoExigencia noCertidao = NoExigencia.CriarFolha(Documento("CERTIDAO_NASCIMENTO", "LACTANTE"), 1).Value!;
+        Dictionary<string, FatoResolvido> fatos = new(StringComparer.Ordinal)
+        {
+            ["SOLICITA_ATENDIMENTO_ESPECIALIZADO"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(solicita)),
+            ["CONDICAO_ATENDIMENTO"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(new[] { condicao })),
+        };
+
+        Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(noLaudo, noCertidao), fatos);
+
+        resultado.Value!.EstadosPorNo[noLaudo.Id].Should().Be(laudo);
+        resultado.Value!.EstadosPorNo[noCertidao.Id].Should().Be(certidao);
+    }
+
     [Fact(DisplayName = "E com filho IMPOSSIVEL é IMPOSSIVEL")]
     public void E_ComFilhoImpossivel_EhImpossivel()
     {

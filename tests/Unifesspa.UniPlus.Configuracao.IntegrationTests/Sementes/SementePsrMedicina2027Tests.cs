@@ -184,6 +184,28 @@ public sealed class SementePsrMedicina2027Tests
         itens["TIPO_DEFICIENCIA"].EtapaCodigo.Should().Be("RESERVA_DE_VAGAS", "a âncora do tipo de deficiência não muda nesta configuração");
     }
 
+    [Fact(DisplayName = "A inscrição traz o conjunto padrão de documentos: o laudo das condições de saúde e a certidão da lactante, e nada para a pessoa idosa")]
+    public async Task Inscricao_TrazOsDocumentosDoAtendimentoEspecializado()
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        ModeloFormulario inscricao = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricao);
+        ModeloFormulario habilitacao = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeHabilitacao);
+
+        inscricao.Conteudo.Documentos.Should().OnlyContain(static d => d.FaseCodigo == "INSCRICAO" && d.ConsequenciaIndeferimento == "REMOVE_VANTAGEM" && !d.Obrigatorio);
+        inscricao.Conteudo.Documentos.Where(static d => d.TipoDocumentoCodigo == "LAUDO_MEDICO").Select(CondicaoDe).Should().BeEquivalentTo(
+            ["PCD", "DISLEXIA", "DISCALCULIA", "DEFICIT_ATENCAO", "GESTANTE", SementePsrMedicina2027.CondicaoForaDaLista]);
+        inscricao.Conteudo.Documentos.Where(static d => d.TipoDocumentoCodigo == "CERTIDAO_NASCIMENTO").Select(CondicaoDe).Should().Equal("LACTANTE");
+        inscricao.Conteudo.Documentos.Should().HaveCount(7, "um documento por condição, e nada para a pessoa idosa");
+        inscricao.Conteudo.Documentos.SelectMany(static d => d.Quando!.Clausulas).Should().OnlyContain(
+            static c => c.Condicoes.Any(k => k.Fato == "SOLICITA_ATENDIMENTO_ESPECIALIZADO"), "sem pedir atendimento não há exigência");
+        habilitacao.Conteudo.Documentos.Should().BeEmpty();
+    }
+
+    /// <summary>A condição de atendimento que dispara o documento: cada documento tem uma só cláusula.</summary>
+    private static string CondicaoDe(DocumentoExigidoDoModelo documento) =>
+        documento.Quando!.Clausulas.Single().Condicoes.Single(static k => k.Fato == "CONDICAO_ATENDIMENTO").Valor.GetString()!;
+
     /// <summary>A exibição do item, na forma canônica em que o modelo a grava.</summary>
     private static string? Exibicao(ItemDoModelo item) =>
         item.Exibicao is null ? null : PredicadoDnfJson.ParaJson(item.Exibicao).ToJsonString();

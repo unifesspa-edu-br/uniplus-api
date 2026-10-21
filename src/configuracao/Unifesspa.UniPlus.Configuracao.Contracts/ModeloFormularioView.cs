@@ -13,7 +13,24 @@ public sealed record ConteudoDoModeloInput(
     IReadOnlyList<FatoColetadoInput>? Itens,
     IReadOnlyList<TermoExigidoInput>? Termos,
     IReadOnlyList<string>? Pressupostos,
-    IReadOnlyList<GrupoColetadoInput>? Grupos = null);
+    IReadOnlyList<GrupoColetadoInput>? Grupos = null,
+    IReadOnlyList<DocumentoExigidoDoModeloInput>? DocumentosExigidos = null);
+
+/// <summary>Uma base legal do documento exigido do modelo; tokens de abrangência e status como os da exigência do processo.</summary>
+public sealed record BaseLegalDoModeloInput(string Referencia, string Abrangencia, string Status, string? Observacao);
+
+/// <summary>
+/// Um documento do conjunto padrão do modelo: tipo do catálogo e fase canônica pelo código,
+/// condições sobre fatos no formato das exibições (ausentes, vale para todo candidato) e consequência
+/// do indeferimento. A aplicação do modelo copia o conjunto para os documentos exigidos do processo.
+/// </summary>
+public sealed record DocumentoExigidoDoModeloInput(
+    string FaseCodigo,
+    string TipoDocumentoCodigo,
+    bool Obrigatorio,
+    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Quando,
+    string ConsequenciaIndeferimento,
+    IReadOnlyList<BaseLegalDoModeloInput?>? BasesLegais);
 
 /// <summary>
 /// Um modelo de formulário composto pelo administrador para um tipo de processo — ou para todos —

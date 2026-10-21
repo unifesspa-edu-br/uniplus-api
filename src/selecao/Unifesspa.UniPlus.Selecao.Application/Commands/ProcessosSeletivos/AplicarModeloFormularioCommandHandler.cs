@@ -1,10 +1,12 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 using Abstractions;
 
 using Domain.Entities;
+using Domain.Enums;
 using Domain.Interfaces;
 using Domain.Services;
 using Domain.ValueObjects;
@@ -58,6 +60,8 @@ public static partial class AplicarModeloFormularioCommandHandler
         IModeloFormularioReader modeloFormularioReader,
         IFatoCandidatoReader fatoCandidatoReader,
         ITermoConsentimentoReader termoConsentimentoReader,
+        ITipoDocumentoReader tipoDocumentoReader,
+        IModeloDeDocumentoRepository modeloDeDocumentoRepository,
         ISelecaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
@@ -66,6 +70,8 @@ public static partial class AplicarModeloFormularioCommandHandler
         ArgumentNullException.ThrowIfNull(modeloFormularioReader);
         ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
         ArgumentNullException.ThrowIfNull(termoConsentimentoReader);
+        ArgumentNullException.ThrowIfNull(tipoDocumentoReader);
+        ArgumentNullException.ThrowIfNull(modeloDeDocumentoRepository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
@@ -277,10 +283,135 @@ public static partial class AplicarModeloFormularioCommandHandler
                     NaPosicaoDoModelo(NaPosicaoDoModelo(e, "itens", indicesDosItens), "grupos", indicesDosGrupos), "termos", indicesDosTermos))).ToList());
         }
 
+        // O conjunto padrão de documentos entra no mesmo estado em memória e na mesma gravação: a
+        // recusa de um documento desfaz a aplicação inteira.
+        Result documentos = await CopiarDocumentosExigidosAsync(
+                processo, conteudo.DocumentosExigidos ?? [], finalidade, catalogo, command.Precondicao,
+                tipoDocumentoReader, fatoCandidatoReader, modeloDeDocumentoRepository, cancellationToken)
+            .ConfigureAwait(false);
+        if (documentos.IsFailure)
+        {
+            // O formulário já mudou em memória, e o Wolverine grava o que estiver rastreado ao fim do
+            // handler, inclusive quando ele devolve falha.
+            unitOfWork.DescartarAlteracoesNaoSalvas();
+            return Result<AplicacaoDeModeloDto>.ValidationFailure(
+                documentos.Errors.Select(static e => NoModelo(e with { Field = NoConjuntoDeDocumentos(e.Field) })).ToList());
+        }
+
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         return Result<AplicacaoDeModeloDto>.Success(new AplicacaoDeModeloDto(
             modelo.Finalidade, relatorio.Trazidos, relatorio.Mantidos, relatorio.Descartados, relatorio.Copiadas, relatorio.Mantidas));
     }
+
+    /// <summary>
+    /// Copia o conjunto padrão de documentos exigidos do modelo para a árvore do processo, resolvendo a
+    /// fase pelo código no cronograma e o tipo pelo código no catálogo. Os documentos da finalidade do
+    /// modelo que o processo já tinha são trocados pelos do modelo, como o formulário da finalidade; os
+    /// das outras finalidades ficam. Modelo sem conjunto não mexe na árvore. A cláusula que cita valor
+    /// que o processo não oferta — a condição de atendimento fora da oferta — não tem como valer e sai da
+    /// cópia; o documento sem nenhuma cláusula que valha sai com ela.
+    /// </summary>
+    private static async Task<Result> CopiarDocumentosExigidosAsync(
+        ProcessoSeletivo processo,
+        IReadOnlyList<DocumentoExigidoDoModeloInput> documentos,
+        FinalidadeFormulario finalidade,
+        IReadOnlyList<FatoCandidatoView> catalogo,
+        PrecondicaoIfMatch precondicao,
+        ITipoDocumentoReader tipoDocumentoReader,
+        IFatoCandidatoReader fatoCandidatoReader,
+        IModeloDeDocumentoRepository modeloDeDocumentoRepository,
+        CancellationToken cancellationToken)
+    {
+        if (documentos.Count == 0)
+        {
+            return Result.Success();
+        }
+
+        List<FieldError> erros = [];
+        List<NoExigenciaInput> entradas = [];
+        Dictionary<string, TipoDocumentoView?> tipos = new(StringComparer.Ordinal);
+        IReadOnlyDictionary<string, DominioDeValores> ofertados = VocabularioDeFatos.DominiosDinamicos(processo, catalogo);
+        for (int i = 0; i < documentos.Count; i++)
+        {
+            DocumentoExigidoDoModeloInput documento = documentos[i] with { Quando = ClausulasOfertadas(documentos[i].Quando, ofertados) };
+            if (documentos[i].Quando is { Count: > 0 } && documento.Quando is not { Count: > 0 })
+            {
+                continue;
+            }
+
+            string campo = $"documentosExigidos[{i}]";
+            FaseCronograma? fase = processo.CronogramaFases.FirstOrDefault(f => string.Equals(f.Codigo, documento.FaseCodigo, StringComparison.Ordinal));
+            if (fase is null)
+            {
+                erros.Add(new($"{campo}.faseCodigo", new DomainError(
+                    AplicacaoDeModeloErrorCodes.FaseDoDocumentoInexistente,
+                    $"O modelo exige o documento '{documento.TipoDocumentoCodigo}' na fase '{documento.FaseCodigo}', que o cronograma do processo não tem; defina o cronograma antes.")));
+            }
+
+            if (!tipos.TryGetValue(documento.TipoDocumentoCodigo, out TipoDocumentoView? tipo))
+            {
+                tipo = await tipoDocumentoReader.ObterVivoPorCodigoAsync(documento.TipoDocumentoCodigo, cancellationToken).ConfigureAwait(false);
+                tipos[documento.TipoDocumentoCodigo] = tipo;
+            }
+
+            if (tipo is null)
+            {
+                erros.Add(new($"{campo}.tipoDocumentoCodigo", new DomainError(
+                    AplicacaoDeModeloErrorCodes.TipoDeDocumentoInexistente,
+                    $"O modelo exige o tipo de documento '{documento.TipoDocumentoCodigo}', que o catálogo não tem.")));
+            }
+
+            if (fase is null || tipo is null)
+            {
+                continue;
+            }
+
+            entradas.Add(new NoExigenciaInput(
+                "FOLHA",
+                new ItemDocumentoExigidoInput(
+                    fase.Id, tipo.Id, documento.Quando is { Count: > 0 } ? "CONDICIONAL" : "GERAL", Obrigatorio: documento.Obrigatorio,
+                    documento.ConsequenciaIndeferimento, CondicoesDoGatilho(documento.Quando),
+                    [.. (documento.BasesLegais ?? []).OfType<BaseLegalDoModeloInput>().Select(static b => new BaseLegalInput(b.Referencia, b.Abrangencia, b.Status, b.Observacao))],
+                    IdadeMaximaEmissao: null, FormatosPermitidos: JsonSerializer.SerializeToElement("QUALQUER"), TamanhoMaximoBytes: null,
+                    Finalidade: EstruturaFormulario.ParaToken(finalidade)),
+                QuantidadeMinima: null, Consequencia: null, BasesLegais: null, Filhos: null));
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result.ValidationFailure(erros);
+        }
+
+        // A raiz cujas folhas são todas da finalidade do modelo é a que o modelo substitui.
+        List<NoExigencia> mantidas = [.. processo.RaizesDeExigencia.Where(raiz => !raiz.AchatarComDescendentes()
+            .Where(static n => n.Tipo == TipoNo.Folha)
+            .All(n => n.DocumentoExigido!.Finalidade == finalidade))];
+        return await DefinirDocumentosExigidosCommandHandler.DefinirAsync(
+                processo, entradas, mantidas, precondicao, tipoDocumentoReader, fatoCandidatoReader, modeloDeDocumentoRepository, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>O campo da recusa no conjunto de documentos do modelo: o da fase e o do tipo já trazem a posição; os da construção, não.</summary>
+    private static string NoConjuntoDeDocumentos(string? campo) =>
+        string.IsNullOrEmpty(campo) ? "documentosExigidos"
+        : campo.StartsWith("documentosExigidos", StringComparison.Ordinal) ? campo
+        : $"documentosExigidos.{campo}";
+
+    /// <summary>As cláusulas cujos valores o processo oferta: a que cita valor fora do que ele oferece para o fato não vale.</summary>
+    private static List<IReadOnlyList<CondicaoPrecondicaoInput>>? ClausulasOfertadas(
+        IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? quando, IReadOnlyDictionary<string, DominioDeValores> ofertados) =>
+        quando is null
+            ? null
+            : [.. quando.Where(clausula => clausula.All(c =>
+                !ofertados.TryGetValue(c.Fato, out DominioDeValores? dominio)
+                || dominio.Valores is null
+                || c.Valor.ValueKind != JsonValueKind.String
+                || dominio.Valores.Contains(c.Valor.GetString()!)))];
+
+    /// <summary>As cláusulas do predicado do modelo como linhas do gatilho: uma cláusula por índice, o valor como JSON.</summary>
+    private static List<CondicaoGatilhoInput> CondicoesDoGatilho(IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? quando) =>
+        [.. (quando ?? []).SelectMany(static (clausula, indice) => clausula.Select(
+            c => new CondicaoGatilhoInput(indice, c.Fato, c.Operador, c.Valor.GetRawText())))];
 
     /// <summary>
     /// O modelo serve a este processo: está ativo, é do tipo dele ou de todos os tipos, e os

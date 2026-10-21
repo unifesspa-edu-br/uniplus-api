@@ -249,6 +249,23 @@ public sealed class ModeloFormularioTests
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.PressupostoTambemItem);
     }
 
+    [Theory(DisplayName = "Documento do conjunto padrão que cita fato que o modelo não coleta é recusado, e o que cita fato coletado passa")]
+    [InlineData("CERTIFICADO", true)]
+    [InlineData("OUTRO_FATO", false)]
+    public void DocumentoCitaFatoQueOModeloNaoColeta_Recusa(string fatoCitado, bool aceito)
+    {
+        PredicadoDnf quando = PredicadoDnf.CriarDeCondicoesAgrupadas(
+            [(0, CondicaoDnf.Criar(fatoCitado, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
+        ConteudoDoModelo conteudo = Conteudo([Item("CERTIFICADO", 0)]) with
+        {
+            DocumentosExigidos = [new("INSCRICAO", "LAUDO_MEDICO", false, quando, "REMOVE_VANTAGEM", [])],
+        };
+
+        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, conteudo);
+
+        modelo.IsSuccess.Should().Be(aceito, string.Join("; ", modelo.Errors.Select(static e => e.Error.Message)));
+    }
+
     [Fact(DisplayName = "Pressuposto em branco é recusado")]
     public void PressupostoEmBranco_Recusa()
     {

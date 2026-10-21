@@ -22,11 +22,12 @@ internal sealed record ConteudoLido(
     IReadOnlyList<(int Indice, TermoDoModelo Termo)> Termos,
     IReadOnlyList<string> Pressupostos,
     IReadOnlyList<(int Indice, GrupoDoModelo Grupo)> Grupos,
+    IReadOnlyList<DocumentoExigidoDoModelo> Documentos,
     IReadOnlyList<FieldError> Erros)
 {
     public ConteudoDoModelo ParaConteudo() => new(
         Titulo, [.. Etapas.Select(static e => e.Etapa)], [.. Itens.Select(static i => i.Item)], [.. Termos.Select(static t => t.Termo)], Pressupostos,
-        [.. Grupos.Select(static g => g.Grupo)]);
+        [.. Grupos.Select(static g => g.Grupo)], Documentos);
 
     /// <summary>
     /// Lê a entrada pela forma das regras do formulário (<see cref="EntradaDeRegras"/>): token
@@ -79,7 +80,52 @@ internal sealed record ConteudoLido(
             }
         }
 
-        return new(entrada?.Titulo, etapas, itens, termos, [.. (entrada?.Pressupostos ?? []).Select(static p => p ?? string.Empty)], grupos, erros);
+        List<DocumentoExigidoDoModelo> documentos = [];
+        IReadOnlyList<DocumentoExigidoDoModeloInput?> documentosDeEntrada = entrada?.DocumentosExigidos ?? [];
+        for (int i = 0; i < documentosDeEntrada.Count; i++)
+        {
+            if (LerDocumento(documentosDeEntrada[i], $"documentosExigidos[{i}]", erros) is { } documento)
+            {
+                documentos.Add(documento);
+            }
+        }
+
+        return new(entrada?.Titulo, etapas, itens, termos, [.. (entrada?.Pressupostos ?? []).Select(static p => p ?? string.Empty)], grupos, documentos, erros);
+    }
+
+    /// <summary>
+    /// Lê o documento do conjunto padrão pela forma: os códigos de fase e de tipo presentes e as
+    /// condições bem formadas. Que a fase exista no cronograma e o tipo no catálogo, e que os fatos
+    /// citados sejam do processo, quem confere é a aplicação do modelo, que tem o processo.
+    /// </summary>
+    private static DocumentoExigidoDoModelo? LerDocumento(DocumentoExigidoDoModeloInput? entrada, string campo, List<FieldError> erros)
+    {
+        if (entrada is null)
+        {
+            erros.Add(Nula(campo));
+            return null;
+        }
+
+        int recusasAntes = erros.Count;
+        PredicadoDnf? quando = LerPredicado(entrada.Quando, $"{campo}.quando", erros, out _);
+        if ((entrada.BasesLegais ?? []).Any(static b => b is null))
+        {
+            erros.Add(Nula($"{campo}.basesLegais"));
+        }
+        foreach ((string valor, string nome) in new[] { (entrada.FaseCodigo, "faseCodigo"), (entrada.TipoDocumentoCodigo, "tipoDocumentoCodigo"), (entrada.ConsequenciaIndeferimento, "consequenciaIndeferimento") })
+        {
+            if (string.IsNullOrWhiteSpace(valor))
+            {
+                erros.Add(new($"{campo}.{nome}", new DomainError(
+                    ModeloFormularioErrorCodes.EntradaMalformada, $"O documento exigido do modelo precisa informar '{nome}'.")));
+            }
+        }
+
+        return erros.Count > recusasAntes
+            ? null
+            : new DocumentoExigidoDoModelo(
+                entrada.FaseCodigo, entrada.TipoDocumentoCodigo, entrada.Obrigatorio, quando, entrada.ConsequenciaIndeferimento,
+                [.. (entrada.BasesLegais ?? []).OfType<BaseLegalDoModeloInput>().Select(static b => new BaseLegalDoDocumentoDoModelo(b.Referencia, b.Abrangencia, b.Status, b.Observacao))]);
     }
 
     private static GrupoDoModelo? LerGrupo(

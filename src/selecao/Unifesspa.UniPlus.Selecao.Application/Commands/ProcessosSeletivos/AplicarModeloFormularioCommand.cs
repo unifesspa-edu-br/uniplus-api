@@ -47,4 +47,6 @@ public static class AplicacaoDeModeloErrorCodes
     public const string DerivadoSemRegra = "AplicacaoDeModelo.DerivadoSemRegra";
     public const string SemDistribuicaoDeVagas = "AplicacaoDeModelo.SemDistribuicaoDeVagas";
     public const string SemCotaDaLeiOfertada = "AplicacaoDeModelo.SemCotaDaLeiOfertada";
+    public const string FaseDoDocumentoInexistente = "AplicacaoDeModelo.FaseDoDocumentoInexistente";
+    public const string TipoDeDocumentoInexistente = "AplicacaoDeModelo.TipoDeDocumentoInexistente";
 }

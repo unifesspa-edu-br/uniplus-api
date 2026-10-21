@@ -40,7 +40,10 @@ public static class ModeloFormularioMapping
             [.. conteudo.Grupos.Select(static g => new GrupoColetadoInput(
                 g.Codigo, g.Ordem, g.Rotulo, g.EtapaCodigo, g.Minimo, g.Maximo, EntradaDeRegras.ParaEntrada(g.Exibicao),
                 EntradaDeRegras.ParaEntrada(g.Obrigatoriedade), EntradaDeRegras.ParaEntrada(g.Obrigatoriedade.Predicado),
-                [.. g.Subitens.Select(ParaEntrada)], g.IncluiCandidato))]);
+                [.. g.Subitens.Select(ParaEntrada)], g.IncluiCandidato))],
+            [.. conteudo.Documentos.Select(static d => new DocumentoExigidoDoModeloInput(
+                d.FaseCodigo, d.TipoDocumentoCodigo, d.Obrigatorio, EntradaDeRegras.ParaEntrada(d.Quando), d.ConsequenciaIndeferimento,
+                [.. d.BasesLegais.Select(static b => new BaseLegalDoModeloInput(b.Referencia, b.Abrangencia, b.Status, b.Observacao))]))]);
     }
 
     private static FatoColetadoInput ParaEntrada(ItemDoModelo campo) => new(

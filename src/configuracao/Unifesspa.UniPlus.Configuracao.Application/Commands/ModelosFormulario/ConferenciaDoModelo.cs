@@ -143,6 +143,7 @@ internal static class ConferenciaDoModelo
             .Concat(conteudo.Grupos.SelectMany(static g => new[] { g.Exibicao, g.Obrigatoriedade.Predicado }))
             .Concat(conteudo.Etapas.Select(static e => e.Exibicao))
             .Concat(conteudo.Termos.SelectMany(static t => new[] { t.Exibicao, t.Obrigatoriedade.Predicado }))
+            .Concat(conteudo.Documentos.Select(static d => d.Quando))
             .OfType<PredicadoDnf>();
         IEnumerable<(string Fato, JsonElement Valor)> condicoes = predicados
             .SelectMany(static p => p.Clausulas).SelectMany(static c => c.Condicoes).Select(static c => (c.Fato, c.Valor));
