@@ -11242,6 +11242,30 @@
           }
         }
       },
+      "ArquivoDoComprovanteDto": {
+        "required": [
+          "hashSha256",
+          "tamanhoBytes",
+          "formato"
+        ],
+        "type": "object",
+        "properties": {
+          "hashSha256": {
+            "type": "string"
+          },
+          "tamanhoBytes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "formato": {
+            "type": "string"
+          }
+        }
+      },
       "AtendimentoCertameDto": {
         "required": [
           "condicoes",
@@ -12101,6 +12125,7 @@
           "derivados",
           "grupos",
           "aceites",
+          "documentos",
           "modalidades",
           "modalidadesSegundaOpcao"
         ],
@@ -12155,6 +12180,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AceiteDeTermoInput"
+            }
+          },
+          "documentos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDoComprovanteDto"
             }
           },
           "modalidades": {
@@ -13999,6 +14030,55 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "DocumentoDoComprovanteDto": {
+        "required": [
+          "exigenciaId",
+          "tipoDocumentoCodigo",
+          "nome",
+          "obrigatorio",
+          "situacao",
+          "ocorrenciaId",
+          "consequencia",
+          "arquivos"
+        ],
+        "type": "object",
+        "properties": {
+          "exigenciaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipoDocumentoCodigo": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "obrigatorio": {
+            "type": "boolean"
+          },
+          "situacao": {
+            "type": "string"
+          },
+          "ocorrenciaId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "consequencia": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "arquivos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArquivoDoComprovanteDto"
+            }
           }
         }
       },

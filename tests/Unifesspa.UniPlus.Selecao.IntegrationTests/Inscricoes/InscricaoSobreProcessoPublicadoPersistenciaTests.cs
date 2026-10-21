@@ -747,7 +747,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             "000901", contexto.Admitidas.OfertasDeCurso.Single(), null, new Dictionary<string, JsonElement>(StringComparer.Ordinal),
             new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [], contexto.Admitidas with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond }, avaliacao,
             new Dictionary<string, JsonElement>(StringComparer.Ordinal), DerivadosDoSistemaInscricao.DefinicoesDasRespostas,
-            PrecondicaoIfMatch.DeTags([rascunho.ETag]), DentroDoPeriodo.GetUtcNow()).Value!;
+            PrecondicaoIfMatch.DeTags([rascunho.ETag]), DentroDoPeriodo.GetUtcNow(), []).Value!;
         await envioRepository.AtualizarAsync(rascunho, CancellationToken.None);
         await envioRepository.AdicionarComprovanteAsync(comprovante, CancellationToken.None);
         await envioContext.SaveChangesAsync(CancellationToken.None);

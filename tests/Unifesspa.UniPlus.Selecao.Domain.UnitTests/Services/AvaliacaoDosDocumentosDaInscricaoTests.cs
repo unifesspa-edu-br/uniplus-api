@@ -197,6 +197,39 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
             FaseDaInscricao.Id, Guid.CreateVersion7(), "DOCUMENTO", "Documento", "CAT",
             Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null, [], [], null, Qualquer, null).Value!;
 
+    private static Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> Enviados(params DocumentoExigido[] documentos) =>
+        documentos.ToDictionary(static d => d.Id, static _ => (IReadOnlyList<ApresentacaoDocumento>)[new(Guid.CreateVersion7())]);
+
+    [Fact(DisplayName = "A alternativa não enviada de um OU atendido, inclusive de um OU externo, é dispensada pelo grupo")]
+    public void OuAtendido_DispensaAsAlternativasNaoEnviadas()
+    {
+        DocumentoExigido rg = Geral(), cnh = Geral(), passaporte = Geral();
+        NoExigencia interno = NoExigencia.CriarGrupo(
+            TipoNo.GrupoOu, 1, 1, null, [], [NoExigencia.CriarFolha(cnh, 0).Value!, NoExigencia.CriarFolha(passaporte, 1).Value!]).Value!;
+        NoExigencia externo = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, 1, null, [], [NoExigencia.CriarFolha(rg, 0).Value!, interno]).Value!;
+
+        List<DocumentoAvaliado> comRg = [.. Avaliar(ComRaizes([externo]), Respostas(), apresentacoes: Enviados(rg)).Documentos.Itens];
+        List<DocumentoAvaliado> semNada = [.. Avaliar(ComRaizes([externo]), Respostas()).Documentos.Itens];
+
+        comRg.Single(d => d.Documento.Id == rg.Id).DispensadoPeloGrupo.Should().BeFalse("o enviado está atendido, não dispensado");
+        comRg.Where(d => d.Documento.Id != rg.Id).Should().OnlyContain(static d => d.DispensadoPeloGrupo, "o RG atende o OU de fora, e a CNH e o passaporte não são necessários");
+        semNada.Should().OnlyContain(static d => !d.DispensadoPeloGrupo);
+    }
+
+    [Fact(DisplayName = "O OU atendido por uma alternativa sem repetição dispensa a alternativa repetida por membro, em cada ocorrência")]
+    public void OuAtendidoForaDaRepeticao_DispensaAAlternativaRepetida()
+    {
+        DocumentoExigido cadUnico = Geral(), renda = Geral();
+        NoExigencia ou = NoExigencia.CriarGrupo(
+            TipoNo.GrupoOu, 0, 1, null, [],
+            [NoExigencia.CriarFolha(cadUnico, 0).Value!, NoExigencia.CriarFolha(renda, 1, repetePorEntidade: Familia).Value!]).Value!;
+
+        List<DocumentoAvaliado> documentos = [.. Avaliar(
+            ComRaizes([ou]), Respostas(), Membros(("m1", true), ("m2", true)), apresentacoes: Enviados(cadUnico)).Documentos.Itens];
+
+        documentos.Where(d => d.Documento.Id == renda.Id).Should().HaveCount(2).And.OnlyContain(static d => d.DispensadoPeloGrupo);
+    }
+
     [Fact(DisplayName = "O documento enviado e confirmado deixa a exigência satisfeita; sem ele, segue pendente")]
     public void DocumentoEnviado_SatisfazAExigencia()
     {

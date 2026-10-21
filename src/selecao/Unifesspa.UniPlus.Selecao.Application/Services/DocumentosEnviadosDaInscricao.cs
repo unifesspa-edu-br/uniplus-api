@@ -32,8 +32,8 @@ public static class DocumentosEnviadosDaInscricao
                 static g => (IReadOnlyList<ApresentacaoDocumento>)[.. g.Select(static a => new ApresentacaoDocumento(a.Id, a.Id.ToString("D"), a.OcorrenciaId))]);
     }
 
-    /// <summary>Os arquivos confirmados da inscrição, por exigência e ocorrência, como o candidato os enxerga.</summary>
-    public static async Task<IReadOnlyList<ArquivoDaApresentacaoDto>> ArquivosAsync(
+    /// <summary>Os arquivos confirmados da inscrição, por exigência e ocorrência, do mais antigo ao mais recente.</summary>
+    public static async Task<IReadOnlyList<ArquivoConfirmado>> ConfirmadosAsync(
         IDocumentoDaInscricaoRepository repositorio, Guid inscricaoId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(repositorio);
@@ -43,10 +43,18 @@ public static class DocumentosEnviadosDaInscricao
         return [.. (await repositorio.ListarArquivosDaInscricaoAsync(inscricaoId, cancellationToken).ConfigureAwait(false))
             .Where(a => a.Status == StatusArquivoEnviado.Confirmado && apresentacoes.ContainsKey(a.ApresentacaoId))
             .OrderBy(static a => a.ConfirmadoEm)
-            .Select(a => new ArquivoDaApresentacaoDto(
+            .Select(a => new ArquivoConfirmado(
                 a.Id, a.ApresentacaoId, apresentacoes[a.ApresentacaoId].ExigenciaId, apresentacoes[a.ApresentacaoId].OcorrenciaId,
-                a.TipoDeMidia, a.TamanhoBytes!.Value, a.HashSha256!, a.ConfirmadoEm!.Value))];
+                a.Formato, a.TamanhoBytes!.Value, a.HashSha256!, a.ConfirmadoEm!.Value))];
     }
+
+    /// <summary>Os arquivos confirmados da inscrição, por exigência e ocorrência, como o candidato os enxerga.</summary>
+    public static async Task<IReadOnlyList<ArquivoDaApresentacaoDto>> ArquivosAsync(
+        IDocumentoDaInscricaoRepository repositorio, Guid inscricaoId, CancellationToken cancellationToken) =>
+        [.. (await ConfirmadosAsync(repositorio, inscricaoId, cancellationToken).ConfigureAwait(false))
+            .Select(static a => new ArquivoDaApresentacaoDto(
+                a.ArquivoId, a.ApresentacaoId, a.ExigenciaId, a.OcorrenciaId,
+                ArquivoDaApresentacao.TipoDeMidiaDe(a.Formato), a.TamanhoBytes, a.HashSha256, a.ConfirmadoEm))];
 
     /// <summary>
     /// O que o envio faz com os arquivos, sobre a avaliação da versão fixada: o arquivo confirmado de
@@ -60,12 +68,15 @@ public static class DocumentosEnviadosDaInscricao
         IDocumentoDaInscricaoRepository repositorio,
         Guid inscricaoId,
         ResultadoDaAvaliacaoDaInscricao avaliacao,
+        IReadOnlyList<ArquivoConfirmado> noComprovante,
         DateTimeOffset agora,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(repositorio);
         ArgumentNullException.ThrowIfNull(avaliacao);
+        ArgumentNullException.ThrowIfNull(noComprovante);
 
+        HashSet<Guid> constamDoComprovante = [.. noComprovante.Select(static a => a.ArquivoId)];
         HashSet<(Guid Exigencia, string? Ocorrencia)> queSeAplicam = [.. avaliacao.Documentos.Itens
             .Where(static d => d.Situacao != SituacaoDoDocumento.NaoExigido)
             .Select(static d => (d.Documento.Id, d.OcorrenciaId))];
@@ -84,7 +95,12 @@ public static class DocumentosEnviadosDaInscricao
 
             if (queSeAplicam.Contains((apresentacao.ExigenciaId, apresentacao.OcorrenciaId)))
             {
-                arquivo.MarcarComoConstanteDeEnvio();
+                // O arquivo confirmado depois que o comprovante foi composto fica para o envio seguinte: só consta
+                // do envio o que o comprovante registra.
+                if (constamDoComprovante.Contains(arquivo.Id))
+                {
+                    arquivo.MarcarComoConstanteDeEnvio();
+                }
             }
             else if (!arquivo.ConstouDeEnvio)
             {

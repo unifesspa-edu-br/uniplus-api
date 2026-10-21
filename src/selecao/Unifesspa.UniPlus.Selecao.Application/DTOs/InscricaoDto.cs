@@ -134,6 +134,7 @@ public sealed record ComprovanteInscricaoDto(
     IReadOnlyDictionary<string, JsonElement> Derivados,
     IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>> Grupos,
     IReadOnlyList<AceiteDeTermoInput> Aceites,
+    IReadOnlyList<DocumentoDoComprovanteDto> Documentos,
     IReadOnlyList<ModalidadeDaInscricaoDto>? Modalidades,
     IReadOnlyList<ModalidadeDaInscricaoDto>? ModalidadesSegundaOpcao)
 {
@@ -158,10 +159,31 @@ public sealed record ComprovanteInscricaoDto(
                     [.. g.Value.Select(static o => new OcorrenciaDeGrupoInscricaoInput(o.Id, o.Respostas))],
                 StringComparer.Ordinal),
             [.. comprovante.Aceites.Select(static a => new AceiteDeTermoInput(a.Codigo, a.VersaoId, a.HashVersao))],
+            [.. comprovante.Documentos.Select(static d => new DocumentoDoComprovanteDto(
+                d.ExigenciaId, d.TipoDocumentoCodigo, d.Nome, d.Obrigatorio, d.Situacao, d.OcorrenciaId, d.Consequencia,
+                [.. d.Arquivos.Select(static a => new ArquivoDoComprovanteDto(a.HashSha256, a.TamanhoBytes, a.Formato))]))],
             comprovante.Modalidades?.Select(static m => new ModalidadeDaInscricaoDto(m.Codigo, m.Nome, m.Ordem)).ToList(),
             comprovante.ModalidadesSegundaOpcao?.Select(static m => new ModalidadeDaInscricaoDto(m.Codigo, m.Nome, m.Ordem)).ToList());
     }
 }
+
+/// <summary>
+/// Uma exigência documental da inscrição no comprovante (UNI-REQ-0029): a obrigatoriedade, a situação no
+/// envio (<c>SATISFEITA</c>, <c>PENDENTE</c>, <c>PODE_SER_EXIGIDO</c>, <c>DEPENDE_DE_FASE_POSTERIOR</c> ou <c>DISPENSADA</c> — a alternativa que um grupo "um ou outro" já atendido dispensou) e a
+/// consequência escrita de não atender; nula quando a exigência não declara consequência.
+/// </summary>
+public sealed record DocumentoDoComprovanteDto(
+    Guid ExigenciaId,
+    string TipoDocumentoCodigo,
+    string Nome,
+    bool Obrigatorio,
+    string Situacao,
+    string? OcorrenciaId,
+    string? Consequencia,
+    IReadOnlyList<ArquivoDoComprovanteDto> Arquivos);
+
+/// <summary>Um arquivo no comprovante: o SHA-256 do conteúdo, o tamanho e o formato (<c>PDF</c>, <c>JPEG</c> ou <c>PNG</c>); nunca o nome nem o local de armazenamento.</summary>
+public sealed record ArquivoDoComprovanteDto(string HashSha256, long TamanhoBytes, string Formato);
 
 /// <summary>
 /// Um item de "Minhas inscrições" (issue #1860): o nome preferido é o social, quando o candidato

@@ -120,12 +120,22 @@ public sealed class InscricaoContratoProvisorioTests
             Derivados: new Dictionary<string, JsonElement>(StringComparer.Ordinal),
             Grupos: new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>(StringComparer.Ordinal),
             Aceites: [new AceiteDeTermoInput("TERMO_VERACIDADE", Guid.Parse("0199e000-0000-7000-8000-000000000002"), "sha256-abc")],
+            Documentos:
+            [
+                new DocumentoDoComprovanteDto(
+                    Guid.Parse("0199e000-0000-7000-8000-000000000004"), "LAUDO_MEDICO", "Laudo médico", true, "SATISFEITA", null,
+                    "Sem o documento Laudo médico, a vantagem que você pleiteia não será concedida.",
+                    [new ArquivoDoComprovanteDto(new string('a', 64), 2048, "PDF")]),
+            ],
             Modalidades: [new ModalidadeDaInscricaoDto("AC", "Ampla concorrência", 0)],
             ModalidadesSegundaOpcao: null);
 
         JsonNode json = JsonSerializer.SerializeToNode(dto, Opcoes)!;
 
         json.AsObject().Should().NotContainKey("rgNumero").And.NotContainKey("documentoEstrangeiroNumero");
+        JsonNode arquivo = json["documentos"]![0]!["arquivos"]![0]!;
+        arquivo.AsObject().Select(static p => p.Key).Should().BeEquivalentTo(["hashSha256", "tamanhoBytes", "formato"],
+            "o comprovante identifica o arquivo sem revelar nome nem local de armazenamento");
         json["hashIntegridade"]!.GetValue<string>().Should().Be("sha256-def");
     }
 

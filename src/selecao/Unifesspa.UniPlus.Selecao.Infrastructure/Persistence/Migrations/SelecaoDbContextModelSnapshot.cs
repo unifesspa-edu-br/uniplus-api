@@ -736,6 +736,12 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnName("derivados")
                         .HasComment("O que o sistema derivou das respostas nesta submissão, como a UF a partir do endereço.");
 
+                    b.Property<string>("Documentos")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("documentos")
+                        .HasComment("As exigências documentais da inscrição neste envio, com a situação, a consequência escrita e, de cada arquivo, SHA-256, tamanho e formato — nunca nome nem local de armazenamento.");
+
                     b.Property<string>("Grupos")
                         .IsRequired()
                         .HasColumnType("jsonb")

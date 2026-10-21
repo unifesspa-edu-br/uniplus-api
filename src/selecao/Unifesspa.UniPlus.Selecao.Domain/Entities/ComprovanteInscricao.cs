@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// O comprovante de uma submissão da <see cref="Inscricao"/> (issue #1858, §4.1 do plano da
 /// #1855): cópia do que foi enviado, SEM nenhum número de documento, com o hash de integridade
 /// que prova que o comprovante não mudou. O hash é o SHA-256 do JSON canônico do conteúdo
-/// (número, instante em segundos UTC, oferta, respostas, derivados, grupos, aceites e, quando a
+/// (número, instante em segundos UTC, oferta, respostas, derivados, grupos, aceites, documentos e, quando a
 /// versão deriva a modalidade, as modalidades em que o candidato concorre; e, quando a inscrição
 /// declara a 2ª opção de curso, a oferta dela e as modalidades dela); qualquer um o
 /// recalcula, e não é um código de autenticação.
@@ -63,6 +63,12 @@ public sealed class ComprovanteInscricao : IForensicEntity
     public IReadOnlyList<AceiteDeTermo> Aceites { get; private init; } = [];
 
     /// <summary>
+    /// As exigências documentais da inscrição neste envio, com a situação, a consequência escrita e, de cada
+    /// arquivo, o SHA-256, o tamanho e o formato — nunca o nome nem o local de armazenamento (UNI-REQ-0029).
+    /// </summary>
+    public IReadOnlyList<DocumentoDoComprovante> Documentos { get; private init; } = [];
+
+    /// <summary>
     /// As respostas de cifra individual desta submissão, em claro só em memória: o repositório as cifra
     /// ao gravar (<see cref="SensiveisCifrados"/>) e as devolve ao ler. Fora do hash.
     /// </summary>
@@ -102,6 +108,7 @@ public sealed class ComprovanteInscricao : IForensicEntity
         IReadOnlyDictionary<string, JsonElement> derivados,
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
         IReadOnlyList<AceiteDeTermo> aceites,
+        IReadOnlyList<DocumentoDoComprovante> documentos,
         IReadOnlyList<ModalidadeDeConcorrencia>? modalidades = null,
         IReadOnlyDictionary<string, JsonElement>? respostasSensiveis = null,
         Guid? ofertaCursoSegundaOpcaoId = null,
@@ -112,6 +119,7 @@ public sealed class ComprovanteInscricao : IForensicEntity
         ArgumentNullException.ThrowIfNull(derivados);
         ArgumentNullException.ThrowIfNull(grupos);
         ArgumentNullException.ThrowIfNull(aceites);
+        ArgumentNullException.ThrowIfNull(documentos);
 
         Dictionary<string, JsonElement> respostasGravadas = NaFormaGravada(respostas);
         Dictionary<string, JsonElement> derivadosGravados = NaFormaGravada(derivados);
@@ -127,7 +135,7 @@ public sealed class ComprovanteInscricao : IForensicEntity
             NumeroInscricao = numeroInscricao,
             Instante = instante,
             HashIntegridade = HashDoConteudo(
-                numeroInscricao, instante, ofertaCursoId, respostasGravadas, derivadosGravados, gruposGravados, aceites, modalidades,
+                numeroInscricao, instante, ofertaCursoId, respostasGravadas, derivadosGravados, gruposGravados, aceites, documentos, modalidades,
                 (respostasSensiveis ?? new Dictionary<string, JsonElement>()).Keys, ofertaCursoSegundaOpcaoId, modalidadesSegundaOpcao),
             Grupos = gruposGravados,
             OfertaCursoId = ofertaCursoId,
@@ -135,6 +143,7 @@ public sealed class ComprovanteInscricao : IForensicEntity
             Respostas = respostasGravadas,
             Derivados = derivadosGravados,
             Aceites = aceites,
+            Documentos = documentos,
             Modalidades = modalidades,
             ModalidadesSegundaOpcao = modalidadesSegundaOpcao,
             RespostasSensiveis = NaFormaGravada(respostasSensiveis),
@@ -160,7 +169,7 @@ public sealed class ComprovanteInscricao : IForensicEntity
         string.Equals(
             HashIntegridade,
             HashDoConteudo(
-                NumeroInscricao, Instante, OfertaCursoId, Respostas, Derivados, Grupos, Aceites, Modalidades, RespostasSensiveis.Keys,
+                NumeroInscricao, Instante, OfertaCursoId, Respostas, Derivados, Grupos, Aceites, Documentos, Modalidades, RespostasSensiveis.Keys,
                 OfertaCursoSegundaOpcaoId, ModalidadesSegundaOpcao),
             StringComparison.Ordinal);
 
@@ -224,6 +233,7 @@ public sealed class ComprovanteInscricao : IForensicEntity
         IReadOnlyDictionary<string, JsonElement> derivados,
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
         IReadOnlyList<AceiteDeTermo> aceites,
+        IReadOnlyList<DocumentoDoComprovante> documentos,
         IReadOnlyList<ModalidadeDeConcorrencia>? modalidades,
         IEnumerable<string> codigosSensiveis,
         Guid? ofertaCursoSegundaOpcaoId,
@@ -238,6 +248,7 @@ public sealed class ComprovanteInscricao : IForensicEntity
             ["derivados"] = Nodo(derivados),
             ["grupos"] = Nodo(grupos),
             ["aceites"] = Nodo(aceites),
+            ["documentos"] = Nodo(documentos),
         };
 
         if (modalidades is not null)

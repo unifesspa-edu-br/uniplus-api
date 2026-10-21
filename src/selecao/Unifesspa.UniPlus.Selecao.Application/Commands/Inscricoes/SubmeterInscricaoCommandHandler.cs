@@ -218,12 +218,14 @@ public static class SubmeterInscricaoCommandHandler
             return Result<ComprovanteInscricaoDto>.ValidationFailure(recusas);
         }
 
+        IReadOnlyList<ArquivoConfirmado> arquivosConfirmados = await Services.DocumentosEnviadosDaInscricao
+            .ConfirmadosAsync(documentoRepository, inscricao.Id, cancellationToken).ConfigureAwait(false);
         string numeroGerado = await geradorDeNumeroInscricao.ProximoAsync(cancellationToken).ConfigureAwait(false);
 
         Result<ComprovanteInscricao> submetido = inscricao.Submeter(
             numeroGerado, command.Request.OfertaCursoId, command.Request.OfertaCursoSegundaOpcaoId, respostasDoCorpo, grupos, aceites, admitidas,
             avaliacao.Value!, derivados.Value!, Services.DerivadosDoSistemaInscricao.DefinicoesDasRespostas,
-            command.Precondicao, instante);
+            command.Precondicao, instante, arquivosConfirmados);
         if (submetido.IsFailure)
         {
             return Result<ComprovanteInscricaoDto>.ValidationFailure(submetido.Errors);
@@ -232,7 +234,7 @@ public static class SubmeterInscricaoCommandHandler
         // O envio fixa os arquivos que contam e remove os de exigência que não se aplica na versão fixada;
         // no rascunho nada foi apagado. Os objetos do armazenamento saem pela rotina de limpeza, depois do commit.
         await Services.DocumentosEnviadosDaInscricao
-            .ConciliarNoEnvioAsync(documentoRepository, inscricao.Id, avaliacao.Value!, instante, cancellationToken).ConfigureAwait(false);
+            .ConciliarNoEnvioAsync(documentoRepository, inscricao.Id, avaliacao.Value!, arquivosConfirmados, instante, cancellationToken).ConfigureAwait(false);
 
         await inscricaoRepository.AtualizarAsync(inscricao, cancellationToken).ConfigureAwait(false);
         await inscricaoRepository.AdicionarComprovanteAsync(submetido.Value!, cancellationToken).ConfigureAwait(false);

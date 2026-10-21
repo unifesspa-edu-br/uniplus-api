@@ -547,6 +547,7 @@ public sealed class Inscricao : EntityBase
     /// </remarks>
     /// <param name="avaliacao">A avaliação da inscrição sobre o estado final dela, com todas as etapas da inscrição concluídas.</param>
     /// <param name="derivados">Substituem os da submissão anterior; o candidato nunca os informa.</param>
+    /// <param name="arquivosConfirmados">Os arquivos confirmados da inscrição, que o comprovante registra por exigência.</param>
     public Result<ComprovanteInscricao> Submeter(
         string numeroGeradoSeNecessario,
         Guid? ofertaCursoId,
@@ -559,7 +560,8 @@ public sealed class Inscricao : EntityBase
         IReadOnlyDictionary<string, JsonElement> derivados,
         IReadOnlyDictionary<string, DefinicaoDaResposta> definicoesDosDerivados,
         PrecondicaoIfMatch precondicao,
-        DateTimeOffset instante)
+        DateTimeOffset instante,
+        IReadOnlyList<ArquivoConfirmado> arquivosConfirmados)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(numeroGeradoSeNecessario);
         ArgumentNullException.ThrowIfNull(respostas);
@@ -639,6 +641,7 @@ public sealed class Inscricao : EntityBase
             SemNumerosDeDocumento(Derivados).Where(static d => d.Key is not (AvaliacaoDaInscricao.FatoDaModalidade or AvaliacaoDaInscricao.FatoDaModalidadeDaSegundaOpcao))
                 .ToDictionary(static d => d.Key, static d => d.Value, StringComparer.Ordinal),
             SemNumerosDeDocumentoNosGrupos(Grupos), Aceites,
+            DocumentosDoComprovante.Compor(avaliacao.Documentos, arquivosConfirmados),
             modalidades.Derivada ? modalidades.Itens : null,
             ApenasCifraIndividual(SemNumerosDeDocumento(Respostas)),
             OfertaCursoSegundaOpcaoId,
