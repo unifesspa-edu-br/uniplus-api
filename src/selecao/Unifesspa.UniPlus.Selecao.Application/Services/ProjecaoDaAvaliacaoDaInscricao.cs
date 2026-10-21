@@ -25,6 +25,7 @@ public static class ProjecaoDaAvaliacaoDaInscricao
         ContextoDaVersaoFixada contexto,
         Guid processoSeletivoId,
         IEnderecoNoAcervoPublico enderecoNoAcervo,
+        IReadOnlyList<ArquivoDaApresentacaoDto> arquivos,
         Guid? faseId = null)
     {
         ArgumentNullException.ThrowIfNull(resultado);
@@ -40,6 +41,6 @@ public static class ProjecaoDaAvaliacaoDaInscricao
         }
 
         DocumentosDoAtoNoAcervo acervo = new(processoSeletivoId, contexto.AtoCriadorId, enderecoNoAcervo.De);
-        return Result<AvaliacaoDaInscricaoDto>.Success(AvaliacaoDaInscricaoDto.De(resultado, fases, acervo.DoModelo));
+        return Result<AvaliacaoDaInscricaoDto>.Success(AvaliacaoDaInscricaoDto.De(resultado, fases, acervo.DoModelo, arquivos));
     }
 }

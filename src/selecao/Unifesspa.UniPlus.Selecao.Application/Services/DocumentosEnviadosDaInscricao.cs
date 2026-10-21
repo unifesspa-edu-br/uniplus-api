@@ -5,6 +5,8 @@ using Domain.Enums;
 using Domain.Interfaces;
 using Domain.ValueObjects;
 
+using DTOs;
+
 /// <summary>
 /// Os documentos que o candidato enviou, diante da avaliação da inscrição: o que entra no resolvedor
 /// como apresentação e o que o envio da inscrição conserva ou remove (UNI-REQ-0028, UNI-REQ-0168).
@@ -27,6 +29,22 @@ public static class DocumentosEnviadosDaInscricao
             .ToDictionary(
                 static g => g.Key,
                 static g => (IReadOnlyList<ApresentacaoDocumento>)[.. g.Select(static a => new ApresentacaoDocumento(a.Id, a.OcorrenciaId, a.OcorrenciaId))]);
+    }
+
+    /// <summary>Os arquivos confirmados da inscrição, por exigência e ocorrência, como o candidato os enxerga.</summary>
+    public static async Task<IReadOnlyList<ArquivoDaApresentacaoDto>> ArquivosAsync(
+        IDocumentoDaInscricaoRepository repositorio, Guid inscricaoId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(repositorio);
+
+        Dictionary<Guid, ApresentacaoDeDocumento> apresentacoes = (await repositorio
+            .ListarApresentacoesDaInscricaoAsync(inscricaoId, cancellationToken).ConfigureAwait(false)).ToDictionary(static a => a.Id);
+        return [.. (await repositorio.ListarArquivosDaInscricaoAsync(inscricaoId, cancellationToken).ConfigureAwait(false))
+            .Where(static a => a.Status == StatusArquivoEnviado.Confirmado)
+            .OrderBy(static a => a.ConfirmadoEm)
+            .Select(a => new ArquivoDaApresentacaoDto(
+                a.Id, a.ApresentacaoId, apresentacoes[a.ApresentacaoId].ExigenciaId, apresentacoes[a.ApresentacaoId].OcorrenciaId,
+                a.TipoDeMidia, a.TamanhoBytes!.Value, a.HashSha256!, a.ConfirmadoEm!.Value))];
     }
 
     /// <summary>

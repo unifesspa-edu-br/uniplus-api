@@ -36,11 +36,15 @@ public sealed record AvaliacaoDaInscricaoDto(
     /// <param name="fases">As fases que a resposta lista, na ordem do cronograma.</param>
     /// <param name="enderecoDoModelo">O endereço no acervo público do modelo que a exigência oferece.</param>
     public static AvaliacaoDaInscricaoDto De(
-        ResultadoDaAvaliacaoDaInscricao resultado, IEnumerable<FaseCronograma> fases, Func<ModeloDaExigencia, Uri> enderecoDoModelo)
+        ResultadoDaAvaliacaoDaInscricao resultado,
+        IEnumerable<FaseCronograma> fases,
+        Func<ModeloDaExigencia, Uri> enderecoDoModelo,
+        IReadOnlyList<ArquivoDaApresentacaoDto> arquivos)
     {
         ArgumentNullException.ThrowIfNull(resultado);
         ArgumentNullException.ThrowIfNull(fases);
         ArgumentNullException.ThrowIfNull(enderecoDoModelo);
+        ArgumentNullException.ThrowIfNull(arquivos);
 
         ILookup<Guid, DocumentoAvaliado> documentosPorFase = resultado.Documentos.Itens
             .Where(static d => d.Situacao != SituacaoDoDocumento.NaoExigido)
@@ -52,7 +56,7 @@ public sealed record AvaliacaoDaInscricaoDto(
                     f.Id,
                     f.Codigo,
                     f.Ordem,
-                    [.. documentosPorFase[f.Id].Select(d => Documento(d, enderecoDoModelo))],
+                    [.. documentosPorFase[f.Id].Select(d => Documento(d, enderecoDoModelo, arquivos))],
                     [.. resultado.Documentos.PendenciasPorFase.GetValueOrDefault(f.Id, []).Select(Pendencia)]))]),
             resultado.ModalidadesSegundaOpcao is { } daSegunda ? ProjetarModalidades(daSegunda) : null);
     }
@@ -67,7 +71,7 @@ public sealed record AvaliacaoDaInscricaoDto(
     private static PendenciaDaAvaliacaoDto Pendencia(PendenciaDaAvaliacao pendencia) =>
         new(pendencia.FatoCodigo, pendencia.Rotulo, pendencia.SecaoCodigo);
 
-    private static DocumentoDaInscricaoDto Documento(DocumentoAvaliado avaliado, Func<ModeloDaExigencia, Uri> enderecoDoModelo)
+    private static DocumentoDaInscricaoDto Documento(DocumentoAvaliado avaliado, Func<ModeloDaExigencia, Uri> enderecoDoModelo, IReadOnlyList<ArquivoDaApresentacaoDto> arquivos)
     {
         DocumentoExigido documento = avaliado.Documento;
         return new DocumentoDaInscricaoDto(
@@ -87,7 +91,11 @@ public sealed record AvaliacaoDaInscricaoDto(
             avaliado.GrupoCodigo,
             avaliado.OcorrenciaId,
             [.. avaliado.Grupos.Select(static g => new GrupoDaArvoreDto(g.GrupoId, g.Tipo.ToCodigo(), g.Minimo, g.RepetePorEntidade))],
-            avaliado.RepetePorEntidade);
+            avaliado.RepetePorEntidade,
+            [.. ArquivoDaApresentacao.FormatosAceitosPor(documento).Select(static f => f.ToCodigo())],
+            ArquivoDaApresentacao.LimiteAnunciadoDe(documento),
+            avaliado.QuantidadeMinima,
+            [.. arquivos.Where(a => a.ExigenciaId == documento.Id && a.OcorrenciaId == avaliado.OcorrenciaId)]);
     }
 }
 
@@ -142,7 +150,11 @@ public sealed record DocumentoDaInscricaoDto(
     string? GrupoCodigo,
     string? OcorrenciaId,
     IReadOnlyList<GrupoDaArvoreDto> Grupos,
-    string? RepetePorEntidade);
+    string? RepetePorEntidade,
+    IReadOnlyList<string> FormatosAceitos,
+    long TamanhoMaximoBytes,
+    int QuantidadeMinima,
+    IReadOnlyList<ArquivoDaApresentacaoDto> Arquivos);
 
 /// <summary>
 /// Um grupo da árvore de exigências: o nó, o tipo — <c>E</c>, em que todos os filhos são exigidos, ou

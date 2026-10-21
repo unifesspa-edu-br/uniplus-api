@@ -13827,7 +13827,11 @@
           "grupoCodigo",
           "ocorrenciaId",
           "grupos",
-          "repetePorEntidade"
+          "repetePorEntidade",
+          "formatosAceitos",
+          "tamanhoMaximoBytes",
+          "quantidadeMinima",
+          "arquivos"
         ],
         "type": "object",
         "properties": {
@@ -13896,6 +13900,34 @@
               "null",
               "string"
             ]
+          },
+          "formatosAceitos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tamanhoMaximoBytes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "quantidadeMinima": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "arquivos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArquivoDaApresentacaoDto"
+            }
           }
         }
       },
