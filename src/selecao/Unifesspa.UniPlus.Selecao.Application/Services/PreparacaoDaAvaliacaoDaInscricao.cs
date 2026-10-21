@@ -83,7 +83,8 @@ public static class PreparacaoDaAvaliacaoDaInscricao
         }
 
         Result<AvaliacaoDaInscricaoDto> projetada = ProjecaoDaAvaliacaoDaInscricao.Projetar(
-            avaliacao.Value!, contexto.Value!, inscricao.ProcessoSeletivoId, enderecoNoAcervo);
+            avaliacao.Value!, contexto.Value!, inscricao.ProcessoSeletivoId, enderecoNoAcervo,
+            await DocumentosEnviadosDaInscricao.ArquivosAsync(documentoRepository, inscricao.Id, cancellationToken).ConfigureAwait(false));
         return projetada.IsFailure
             ? Result<InscricaoDto>.Failure(projetada.Error!)
             : Result<InscricaoDto>.Success(InscricaoDto.De(inscricao, projetada.Value!, contexto.Value!.Admitidas.NumeroDeOpcoesDeCurso, contexto.Value!.OfertasDeCurso));

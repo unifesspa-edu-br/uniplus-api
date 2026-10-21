@@ -124,6 +124,7 @@ public static class AvaliarInscricaoQueryHandler
             return Result<AvaliacaoDaInscricaoDto>.Failure(avaliacao.Error!);
         }
 
-        return ProjecaoDaAvaliacaoDaInscricao.Projetar(avaliacao.Value!, contexto.Value!, query.ProcessoSeletivoId, enderecoNoAcervo, query.FaseId);
+        return ProjecaoDaAvaliacaoDaInscricao.Projetar(avaliacao.Value!, contexto.Value!, query.ProcessoSeletivoId, enderecoNoAcervo,
+            await DocumentosEnviadosDaInscricao.ArquivosAsync(documentoRepository, inscricao.Id, cancellationToken).ConfigureAwait(false), query.FaseId);
     }
 }

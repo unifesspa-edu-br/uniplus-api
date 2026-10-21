@@ -202,7 +202,8 @@ public static class SalvarInscricaoCommandHandler
         }
 
         Result<AvaliacaoDaInscricaoDto> projetada = Services.ProjecaoDaAvaliacaoDaInscricao.Projetar(
-            avaliada.Value!, contexto.Value!, inscricao.ProcessoSeletivoId, enderecoNoAcervo);
+            avaliada.Value!, contexto.Value!, inscricao.ProcessoSeletivoId, enderecoNoAcervo,
+            await Services.DocumentosEnviadosDaInscricao.ArquivosAsync(documentoRepository, inscricao.Id, cancellationToken).ConfigureAwait(false));
         return projetada.IsFailure
             ? Result<InscricaoDto>.Failure(projetada.Error!)
             : Result<InscricaoDto>.Success(InscricaoDto.De(

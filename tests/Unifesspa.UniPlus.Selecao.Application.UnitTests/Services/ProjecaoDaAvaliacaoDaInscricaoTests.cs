@@ -95,10 +95,36 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
             .Pendencias.Select(static p => p.FatoCodigo).Should().Equal("PEDIU_FATOR");
     }
 
+    [Fact(DisplayName = "O documento traz ao portal os formatos, o limite efetivo, a quantidade mínima e os arquivos enviados da própria exigência e ocorrência")]
+    public void Documento_TrazOQueOPortalPrecisaParaEnviar()
+    {
+        DocumentoExigido laudo = DocumentoExigido.Criar(
+            FaseDaInscricao.Id, Guid.CreateVersion7(), "LAUDO", "Laudo", "CAT", Aplicabilidade.Geral, obrigatorio: true,
+            consequenciaIndeferimento: null, [], [], null, FormatosPermitidos.Criar(false, [("PDF", 1_000_000), ("JPEG", 3_000_000)]).Value!, 2_000_000,
+            finalidade: FinalidadeFormulario.Inscricao).Value!;
+        DocumentoExigido outro = Documento(FaseDaInscricao, FinalidadeFormulario.Inscricao);
+        ArquivoDaApresentacaoDto doLaudo = new(Guid.CreateVersion7(), Guid.CreateVersion7(), laudo.Id, null, "application/pdf", 10, new string('a', 64), DateTimeOffset.UnixEpoch);
+        ArquivoDaApresentacaoDto doOutro = doLaudo with { ArquivoId = Guid.CreateVersion7(), ExigenciaId = outro.Id };
+
+        IReadOnlyList<DocumentoDaInscricaoDto> documentos = Projetar(
+            [(laudo, SituacaoDoDocumento.Satisfeita), (outro, SituacaoDoDocumento.Pendente)], faseId: null, arquivos: [doLaudo, doOutro])
+            .Value!.Documentos.Fases.Single(static f => f.Codigo == "INSCRICAO").Documentos;
+
+        DocumentoDaInscricaoDto projetado = documentos.Single(d => d.ExigenciaId == laudo.Id);
+        projetado.Situacao.Should().Be("SATISFEITA");
+        projetado.FormatosAceitos.Should().Equal("PDF", "JPEG");
+        projetado.TamanhoMaximoBytes.Should().Be(1_000_000, "o menor limite efetivo entre os formatos aceitos");
+        projetado.QuantidadeMinima.Should().Be(1);
+        projetado.Arquivos.Should().Equal(doLaudo);
+        documentos.Single(d => d.ExigenciaId == outro.Id).FormatosAceitos.Should().Equal("PDF", "JPEG", "PNG");
+        documentos.Single(d => d.ExigenciaId == outro.Id).TamanhoMaximoBytes.Should().Be(ArquivoDaApresentacao.TetoDoSistemaBytes);
+    }
+
     private static Result<AvaliacaoDaInscricaoDto> Projetar(
         IEnumerable<(DocumentoExigido Documento, SituacaoDoDocumento Situacao)> documentos,
         Guid? faseId,
-        IReadOnlyDictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>>? pendencias = null)
+        IReadOnlyDictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>>? pendencias = null,
+        IReadOnlyList<ArquivoDaApresentacaoDto>? arquivos = null)
     {
         ResultadoDaAvaliacaoDaInscricao resultado = FormularioDeTeste.AvaliacaoSemOcultos with
         {
@@ -120,7 +146,7 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
         IEnderecoNoAcervoPublico acervo = Substitute.For<IEnderecoNoAcervoPublico>();
         acervo.De(Arg.Any<string>()).Returns(static chamada => new Uri($"https://acervo.teste/{chamada.Arg<string>()}"));
 
-        return ProjecaoDaAvaliacaoDaInscricao.Projetar(resultado, contexto, ProcessoId, acervo, faseId);
+        return ProjecaoDaAvaliacaoDaInscricao.Projetar(resultado, contexto, ProcessoId, acervo, arquivos ?? [], faseId);
     }
 
     private static DocumentoExigido Documento(FaseCronograma fase, FinalidadeFormulario finalidade, ModeloDaExigencia? modelo = null) =>

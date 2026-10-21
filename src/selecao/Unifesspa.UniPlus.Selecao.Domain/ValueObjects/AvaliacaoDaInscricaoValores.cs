@@ -121,7 +121,8 @@ public sealed record DocumentoAvaliado(
     string? GrupoCodigo,
     string? OcorrenciaId,
     IReadOnlyList<GrupoDaArvore> Grupos,
-    string? RepetePorEntidade);
+    string? RepetePorEntidade,
+    int QuantidadeMinima = NoExigencia.QuantidadeMinimaPadrao);
 
 /// <summary>
 /// Um grupo da árvore de exigências: o nó, se é um E ou um OU, no OU quantos dos filhos bastam — o N-de

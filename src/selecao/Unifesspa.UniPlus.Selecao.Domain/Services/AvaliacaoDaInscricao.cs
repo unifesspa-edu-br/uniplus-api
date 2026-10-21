@@ -513,7 +513,9 @@ public static class AvaliacaoDaInscricao
 
             DocumentoExigido documento = no.DocumentoExigido!;
             DocumentoAvaliado Avaliado(StatusResolucaoExigencia status, string? ocorrenciaId) =>
-                new(documento, Situacao(status, deFasePosterior.Contains(documento.Id)), repetido, ocorrenciaId, ancestrais, no.RepetePorEntidade);
+                new(
+                    documento, Situacao(status, deFasePosterior.Contains(documento.Id)), repetido, ocorrenciaId, ancestrais, no.RepetePorEntidade,
+                    no.QuantidadeMinima ?? NoExigencia.QuantidadeMinimaPadrao);
 
             if (repetido is null)
             {

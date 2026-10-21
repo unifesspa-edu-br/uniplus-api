@@ -916,6 +916,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new(InscricaoErrorCodes.GrupoIdDuplicado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.grupo_id_duplicado", "Duas ocorrências do grupo repetem o mesmo id")),
         new(InscricaoErrorCodes.TermoNaoAceito, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.termo_nao_aceito", "Um termo obrigatório não foi aceito na versão da inscrição")),
         new(InscricaoErrorCodes.NenhumaModalidade, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.nenhuma_modalidade", "As respostas não dão nenhuma das modalidades ofertadas")),
+        new(InscricaoErrorCodes.DocumentoObrigatorioAusente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.documento_obrigatorio_ausente", "Falta enviar um documento obrigatório")),
         new(InscricaoErrorCodes.ModalidadeNaoDecidida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.modalidade_nao_decidida", "As respostas ainda não decidem as modalidades em que o candidato concorre")),
         // Derivados do sistema (issue #1859, ADR-0136) — calculados só na submissão.
         new("Inscricao.DataNascimentoInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.data_nascimento_invalida", "A data de nascimento não é uma data válida")),

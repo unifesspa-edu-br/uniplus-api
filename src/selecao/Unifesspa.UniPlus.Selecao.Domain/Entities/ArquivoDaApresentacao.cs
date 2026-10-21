@@ -222,6 +222,26 @@ public sealed class ArquivoDaApresentacao : EntityBase, IArquivoEnviado
 
     private const string PrefixoDasChaves = "selecao/documentos-da-inscricao";
 
+    /// <summary>Os formatos que a exigência aceita; "qualquer" são os três que o sistema recebe.</summary>
+    public static IReadOnlyList<FormatoPermitido> FormatosAceitosPor(DocumentoExigido exigencia)
+    {
+        ArgumentNullException.ThrowIfNull(exigencia);
+        return exigencia.FormatosPermitidos.Qualquer
+            ? [FormatoPermitido.Pdf, FormatoPermitido.Jpeg, FormatoPermitido.Png]
+            : [.. exigencia.FormatosPermitidos.Lista!.Select(static e => e.Formato).Distinct()];
+    }
+
+    /// <summary>
+    /// O tamanho máximo que o portal pode anunciar para a exigência sem saber o formato: o menor limite
+    /// efetivo entre os formatos aceitos. O servidor confere o do formato escolhido.
+    /// </summary>
+    public static long LimiteAnunciadoDe(DocumentoExigido exigencia)
+    {
+        ArgumentNullException.ThrowIfNull(exigencia);
+        return FormatosAceitosPor(exigencia).Min(formato => LimiteEfetivo(
+            exigencia, exigencia.FormatosPermitidos.Lista?.FirstOrDefault(e => e.Formato == formato)));
+    }
+
     /// <summary>O limite da exigência (o menor entre o do formato e o global); o teto do sistema só quando ela não define nenhum.</summary>
     private static long LimiteEfetivo(DocumentoExigido exigencia, FormatoPermitidoEntry? entrada)
     {
