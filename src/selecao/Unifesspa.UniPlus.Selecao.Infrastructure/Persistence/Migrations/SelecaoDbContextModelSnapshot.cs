@@ -143,6 +143,47 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.ToTable("anexos_do_ato_do_processo", "selecao");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ApresentacaoDeDocumento", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("ExigenciaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("exigencia_id")
+                        .HasComment("O DocumentoExigido.Id da árvore congelada da versão da inscrição. Sem chave estrangeira para a configuração viva (ADR-0070).");
+
+                    b.Property<Guid>("InscricaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inscricao_id");
+
+                    b.Property<string>("OcorrenciaId")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("ocorrencia_id")
+                        .HasComment("A ocorrência do grupo repetível a que o documento se refere; nulo quando a exigência não se repete.");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_apresentacoes_de_documento");
+
+                    b.HasIndex("InscricaoId", "ExigenciaId")
+                        .HasDatabaseName("ix_apresentacoes_de_documento_inscricao_exigencia");
+
+                    b.ToTable("apresentacoes_de_documento", "selecao", t =>
+                        {
+                            t.HasComment("A apresentação de um documento exigido pela inscrição: a unidade que a exigência conta, com um ou mais arquivos.");
+                        });
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.AreaPesoAreaEnemCongelada", b =>
                 {
                     b.Property<Guid>("Id")
@@ -205,6 +246,88 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_areas_peso_area_enem_congeladas_corte", "corte IS NULL OR (corte >= 0 AND corte <= 1000)");
 
                             t.HasCheckConstraint("ck_areas_peso_area_enem_congeladas_peso", "peso >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ArquivoDaApresentacao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ApresentacaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("apresentacao_id");
+
+                    b.Property<DateTimeOffset?>("ConfirmadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("confirmado_em");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("ExpiraEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expira_em");
+
+                    b.Property<int>("Formato")
+                        .HasColumnType("integer")
+                        .HasColumnName("formato")
+                        .HasComment("O formato do arquivo (PDF, JPEG ou PNG), conferido contra a exigência no início do envio.");
+
+                    b.Property<string>("HashSha256")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("hash_sha256")
+                        .HasComment("O SHA-256 do conteúdo em claro, calculado no servidor na confirmação.");
+
+                    b.Property<Guid>("InscricaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inscricao_id");
+
+                    b.Property<string>("ObjectKey")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("object_key")
+                        .HasComment("A chave do objeto do envio, em claro; só o id do arquivo a compõe. Apagada na confirmação.");
+
+                    b.Property<string>("ObjectKeyConfirmado")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("object_key_confirmado")
+                        .HasComment("A chave do conteúdo selado cifrado; nula enquanto pendente.");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<long?>("TamanhoBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tamanho_bytes");
+
+                    b.Property<long>("TamanhoMaximoBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tamanho_maximo_bytes")
+                        .HasComment("O maior tamanho que a exigência admite para o formato; o teto do sistema (10 MB) só quando ela não define limite. Copiado da exigência no início do envio.");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_arquivos_da_apresentacao");
+
+                    b.HasIndex("ApresentacaoId")
+                        .HasDatabaseName("ix_arquivos_da_apresentacao_apresentacao");
+
+                    b.HasIndex("InscricaoId")
+                        .HasDatabaseName("ix_arquivos_da_apresentacao_inscricao");
+
+                    b.ToTable("arquivos_da_apresentacao", "selecao", t =>
+                        {
+                            t.HasComment("O arquivo de uma apresentação de documento da inscrição. O conteúdo fica no armazenamento privado, cifrado; o nome original do arquivo não é guardado.");
                         });
                 });
 
@@ -4148,6 +4271,16 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_anexos_do_ato_do_processo_documentos_a_publicar_documento_a");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ApresentacaoDeDocumento", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records.InscricaoRecord", null)
+                        .WithMany()
+                        .HasForeignKey("InscricaoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_apresentacoes_de_documento_inscricoes_inscricao_id");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.AreaPesoAreaEnemCongelada", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.GrupoPesoAreaEnemCongelado", null)
@@ -4156,6 +4289,23 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_areas_peso_area_enem_congeladas_grupos_peso_area_enem_conge");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ArquivoDaApresentacao", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ApresentacaoDeDocumento", null)
+                        .WithMany()
+                        .HasForeignKey("ApresentacaoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_arquivos_da_apresentacao_apresentacoes_de_documento_apresen");
+
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records.InscricaoRecord", null)
+                        .WithMany()
+                        .HasForeignKey("InscricaoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_arquivos_da_apresentacao_inscricoes_inscricao_id");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.AtoDoProcesso", b =>

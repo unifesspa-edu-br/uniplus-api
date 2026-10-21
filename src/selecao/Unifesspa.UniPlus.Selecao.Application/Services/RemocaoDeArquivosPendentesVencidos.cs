@@ -47,17 +47,19 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
     public RemocaoDeArquivosPendentesVencidos(
         IDocumentoAPublicarRepository documentosAPublicar,
         IModeloDeDocumentoRepository modelosDeDocumento,
+        IDocumentoDaInscricaoRepository documentosDaInscricao,
         IArquivoArmazenadoStorage storage,
         TimeProvider clock,
         ILogger<RemocaoDeArquivosPendentesVencidos> logger)
     {
         ArgumentNullException.ThrowIfNull(documentosAPublicar);
         ArgumentNullException.ThrowIfNull(modelosDeDocumento);
+        ArgumentNullException.ThrowIfNull(documentosDaInscricao);
         ArgumentNullException.ThrowIfNull(storage);
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentNullException.ThrowIfNull(logger);
 
-        _repositorios = [documentosAPublicar, modelosDeDocumento];
+        _repositorios = [documentosAPublicar, modelosDeDocumento, documentosDaInscricao];
         _storage = storage;
         _clock = clock;
         _logger = logger;

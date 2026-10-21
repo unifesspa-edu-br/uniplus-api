@@ -62,6 +62,13 @@ geo:
   oauthTokenEndpoint: ""
   oauthClientId: ""
 
+# Antivírus do arquivo que o candidato envia (issue #2036): a confirmação do envio abre uma conexão
+# com o clamd e só grava o arquivo limpo. Com o clamd fora do ar a confirmação responde 503 e o
+# arquivo continua pendente — a API sobe sem ele. Viram Clamd__Host / Clamd__Port.
+clamd:
+  host: "clamav-scanner"
+  port: 3310
+
 # Chaves esperadas no Secret externo `{{ .Release.Name }}-uniplus-secrets`
 # (provisionado pelo RUNBOOK do uniplus-infra — NÃO renderizado por este chart).
 # O monólito usa as 6 connection strings apontando para o MESMO banco `uniplus`

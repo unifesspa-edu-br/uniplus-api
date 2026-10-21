@@ -42,4 +42,15 @@ public interface IInscricaoRepository
 
     /// <summary>Grava o comprovante emitido por <see cref="Inscricao.Submeter"/> — nunca pela navegação do agregado.</summary>
     Task AdicionarComprovanteAsync(ComprovanteInscricao comprovante, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Avança a revisão da inscrição só se ela ainda está na <paramref name="revisaoLida"/> e não foi
+    /// cancelada — <c>UPDATE ... WHERE id = @id AND revisao = @lida AND situacao &lt;&gt; Cancelada</c>, sem
+    /// passar pelo change tracker, na transação do handler. É como a mutação de um arquivo de documento
+    /// disputa a inscrição com o envio e o cancelamento: quem chega depois encontra a revisão já avançada
+    /// e não afeta nada. <paramref name="apenasRascunho"/> restringe ao rascunho.
+    /// </summary>
+    /// <returns><see langword="true"/> quando a revisão avançou.</returns>
+    Task<bool> TentarAvancarRevisaoAsync(
+        Guid id, int revisaoLida, bool apenasRascunho, CancellationToken cancellationToken = default);
 }

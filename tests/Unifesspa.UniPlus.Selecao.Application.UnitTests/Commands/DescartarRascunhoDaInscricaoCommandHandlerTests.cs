@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -46,7 +47,8 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
 
     /// <summary>A divulgação aponta para <paramref name="divulgada"/>; o rascunho nasce na versão <paramref name="fixada"/>, que é a mesma quando a retificação não mudou nada.</summary>
     private static async Task<(Result Resultado, IInscricaoRepository Repositorio, ISelecaoUnitOfWork UnitOfWork)> Descartar(
-        Func<Inscricao, string> precondicao, Inscricao rascunho, VersaoConfiguracao fixada, VersaoConfiguracao divulgada, GrafoConfiguracao grafo, string sub = "sub-1", DateTimeOffset? agora = null)
+        Func<Inscricao, string> precondicao, Inscricao rascunho, VersaoConfiguracao fixada, VersaoConfiguracao divulgada, GrafoConfiguracao grafo, string sub = "sub-1", DateTimeOffset? agora = null,
+        IDocumentoDaInscricaoRepository? documentos = null, IArquivoArmazenadoStorage? storage = null)
     {
         IInscricaoRepository repositorio = Substitute.For<IInscricaoRepository>();
         repositorio.ObterAtivaPorProcessoECpfAsync(ProcessoId, Dono, Arg.Any<CancellationToken>()).Returns(rascunho);
@@ -60,15 +62,17 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
 
         Result resultado = await DescartarRascunhoDaInscricaoCommandHandler.Handle(
             new DescartarRascunhoDaInscricaoCommand(ProcessoId, PrecondicaoIfMatch.DeTags([precondicao(rascunho)])),
-            repositorio, processoRepository, DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(), new RelogioFixo(agora ?? DivulgacaoDeTeste.DentroDoPeriodo), unitOfWork, Usuario(sub), CancellationToken.None);
+            repositorio, processoRepository, DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(), new RelogioFixo(agora ?? DivulgacaoDeTeste.DentroDoPeriodo), unitOfWork, Usuario(sub),
+            documentos ?? Substitute.For<IDocumentoDaInscricaoRepository>(), storage ?? Substitute.For<IArquivoArmazenadoStorage>(), CancellationToken.None);
         return (resultado, repositorio, unitOfWork);
     }
 
     private static Task<(Result Resultado, IInscricaoRepository Repositorio, ISelecaoUnitOfWork UnitOfWork)> DescartarNaVersaoDivulgada(
-        Func<Inscricao, string> precondicao, Func<Guid, Inscricao>? rascunho = null, string sub = "sub-1", DateTimeOffset? agora = null)
+        Func<Inscricao, string> precondicao, Func<Guid, Inscricao>? rascunho = null, string sub = "sub-1", DateTimeOffset? agora = null,
+        IDocumentoDaInscricaoRepository? documentos = null, IArquivoArmazenadoStorage? storage = null)
     {
         (VersaoConfiguracao versao, GrafoConfiguracao grafo) = SalvarInscricaoCommandHandlerTests.MontarVersaoComItem(Item);
-        return Descartar(precondicao, (rascunho ?? NovoRascunho)(versao.Id), versao, versao, grafo, sub, agora);
+        return Descartar(precondicao, (rascunho ?? NovoRascunho)(versao.Id), versao, versao, grafo, sub, agora, documentos, storage);
     }
 
     [Fact(DisplayName = "Descartar o próprio rascunho com o If-Match corrente remove a inscrição e grava")]
@@ -79,6 +83,25 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
         resultado.IsSuccess.Should().BeTrue();
         await repositorio.Received(1).RemoverAsync(Arg.Any<Inscricao>(), Arg.Any<CancellationToken>());
         await unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Descartar o rascunho apaga do armazenamento as duas chaves de cada arquivo de documento")]
+    public async Task Handle_RascunhoComArquivos_ApagaOsObjetos()
+    {
+        IDocumentoDaInscricaoRepository documentos = Substitute.For<IDocumentoDaInscricaoRepository>();
+        IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
+        DocumentoExigido laudo = DocumentoExigido.Criar(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo", "SAUDE", Aplicabilidade.Geral, false, null,
+            [], [], null, FormatosPermitidos.Criar(true, null).Value!, null).Value!;
+        ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), laudo, "application/pdf", 10, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        documentos.ListarArquivosDaInscricaoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns([arquivo]);
+
+        (Result resultado, _, _) = await DescartarNaVersaoDivulgada(static r => r.ETag, documentos: documentos, storage: storage);
+
+        resultado.IsSuccess.Should().BeTrue();
+        await storage.Received(1).RemoverAsync(arquivo.ObjectKey, Arg.Any<CancellationToken>());
+        await storage.Received(1).RemoverAsync(arquivo.ChaveSelada, Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Com as inscrições encerradas, o rascunho não é descartado")]

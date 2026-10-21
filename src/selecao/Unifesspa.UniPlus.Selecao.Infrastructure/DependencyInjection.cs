@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure;
 
+using Antivirus;
+
 using Canonicalization;
 
 using Domain.Interfaces;
@@ -76,6 +78,7 @@ public static class SelecaoInfrastructureRegistration
         services.AddScoped<IDocumentoAPublicarRepository, DocumentoAPublicarRepository>();
         services.AddScoped<IAtoDoProcessoRepository, AtoDoProcessoRepository>();
         services.AddScoped<IModeloDeDocumentoRepository, ModeloDeDocumentoRepository>();
+        services.AddScoped<IDocumentoDaInscricaoRepository, DocumentoDaInscricaoRepository>();
         services.AddScoped<IRascunhoDePublicacaoRepository, RascunhoDePublicacaoRepository>();
         services.AddScoped<IInscricaoRepository, InscricaoRepository>();
         services.AddScoped<IGeradorDeNumeroInscricao, GeradorDeNumeroInscricao>();
@@ -89,6 +92,13 @@ public static class SelecaoInfrastructureRegistration
         // AddUniPlusStorage). Não registra AddUniPlusStorage aqui: é
         // cross-cutting compartilhado entre módulos, já ligado no host.
         services.AddScoped<IArquivoArmazenadoStorage, ArquivoArmazenadoStorageService>();
+
+        // Proteção do arquivo do candidato: o clamd (seção Clamd) verifica o conteúdo na confirmação e a
+        // chave de dado sensível o sela cifrado. O clamd fora do ar não derruba a API: a confirmação
+        // responde 503 e o arquivo continua pendente.
+        services.AddOptions<ClamdOptions>().BindConfiguration(ClamdOptions.SectionName);
+        services.AddScoped<ClamdClient>();
+        services.AddScoped<IProtecaoDoConteudoSelado, ProtecaoDoConteudoSelado>();
 
         // Acervo público (ADR-0132): a escrita, pela materialização da divulgação, e o endereço que
         // os contratos públicos divulgam. As opções vêm de AddUniPlusAcervoPublico, ligado no host

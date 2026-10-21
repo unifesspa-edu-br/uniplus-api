@@ -100,6 +100,23 @@ services:
         mc mb --ignore-existing local/uniplus-acervo-publico &&
         mc anonymous set-json /politicas/acervo-publico.policy.json local/uniplus-acervo-publico
 
+  # Antivírus do arquivo que o candidato envia (issue #2036): a API abre uma conexão TCP na porta 3310
+  # (clamd, comando INSTREAM) a cada confirmação. A primeira subida baixa as assinaturas, o que leva
+  # alguns minutos; até lá a confirmação responde 503 e o arquivo continua pendente.
+  clamav:
+    image: clamav/clamav:1.4@sha256:3bba6dd5ac6663d55b80f86a3126e146612d93b593cc2617188d13f637d91260
+    restart: unless-stopped
+    ports:
+      - "3310:3310"
+    volumes:
+      - clamav_data:/var/lib/clamav
+    healthcheck:
+      test: ["CMD-SHELL", "clamdcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 180s
+
   openldap:
     # OpenLDAP local com dados sintéticos (4devs) para reproduzir o cenário
     # do LDAP institucional Unifesspa em ambiente de desenvolvimento.
@@ -204,5 +221,6 @@ services:
 volumes:
   postgres_data:
   minio_data:
+  clamav_data:
   openldap_data:
   openldap_config:
