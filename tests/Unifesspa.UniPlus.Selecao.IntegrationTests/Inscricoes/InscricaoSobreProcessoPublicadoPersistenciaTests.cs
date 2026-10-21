@@ -1269,7 +1269,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         await SubmeterInscricaoCommandHandler.Handle(
             new SubmeterInscricaoCommand(processoId, pedido, PrecondicaoIfMatch.DeTags([etag])),
             new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
-            new ProcessoSeletivoRepository(db, TimeProvider.System), new CertameDivulgadoRepository(db), Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), Substitute.For<Unifesspa.UniPlus.Selecao.Application.Abstractions.IArquivoArmazenadoStorage>(), RegistroCodecs, Fuso(), GeoQueConfirma(),
+            new ProcessoSeletivoRepository(db, TimeProvider.System), new CertameDivulgadoRepository(db), Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(), GeoQueConfirma(),
             GeradorQueDevolve(numero), db, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), DentroDoPeriodo, CancellationToken.None);
 
     private static IGeradorDeNumeroInscricao GeradorQueDevolve(string numero)

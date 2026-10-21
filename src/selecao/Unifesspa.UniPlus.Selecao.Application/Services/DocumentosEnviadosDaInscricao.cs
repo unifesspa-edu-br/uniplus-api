@@ -50,14 +50,16 @@ public static class DocumentosEnviadosDaInscricao
     /// <summary>
     /// O que o envio faz com os arquivos, sobre a avaliação da versão fixada: o arquivo confirmado de
     /// exigência que se aplica passa a constar do envio e nunca mais é apagado; o de exigência que não se
-    /// aplica — ou que a versão fixada não tem — é removido, se nunca constou de um envio. Devolve os
-    /// arquivos removidos, de que quem grava apaga os objetos do armazenamento depois de salvar. No
+    /// aplica — ou que a versão fixada não tem — é removido, se nunca constou de um envio, e as chaves
+    /// dele ficam agendadas para a rotina de limpeza, na mesma transação (nunca se apaga o armazenamento
+    /// antes do commit). No
     /// rascunho nada disso roda: desmarcar e remarcar uma condição não perde o arquivo.
     /// </summary>
-    public static async Task<IReadOnlyList<ArquivoDaApresentacao>> ConciliarNoEnvioAsync(
+    public static async Task ConciliarNoEnvioAsync(
         IDocumentoDaInscricaoRepository repositorio,
         Guid inscricaoId,
         ResultadoDaAvaliacaoDaInscricao avaliacao,
+        DateTimeOffset agora,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(repositorio);
@@ -70,7 +72,6 @@ public static class DocumentosEnviadosDaInscricao
             .ListarApresentacoesDaInscricaoAsync(inscricaoId, cancellationToken).ConfigureAwait(false))
             .ToDictionary(static a => a.Id);
 
-        List<ArquivoDaApresentacao> removidos = [];
         foreach (ArquivoDaApresentacao listado in await repositorio.ListarArquivosDaInscricaoAsync(inscricaoId, cancellationToken).ConfigureAwait(false))
         {
             ApresentacaoDeDocumento apresentacao = apresentacoes[listado.ApresentacaoId];
@@ -82,10 +83,9 @@ public static class DocumentosEnviadosDaInscricao
             else if (!arquivo.ConstouDeEnvio)
             {
                 await repositorio.RemoverArquivoAsync(arquivo, cancellationToken).ConfigureAwait(false);
-                removidos.Add(arquivo);
+                await AgendaDeLimpezaDoArquivoDoCandidato.AgendarAsync(repositorio, arquivo, comSelada: true, agora, cancellationToken).ConfigureAwait(false);
             }
         }
 
-        return removidos;
     }
 }

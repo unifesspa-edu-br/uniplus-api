@@ -25,9 +25,9 @@ public sealed class DocumentosEnviadosDaInscricaoTests
         DocumentoExigido laudo = Exigencia();
         Cenario cenario = Cenario.Com(laudo, ocorrencia: null);
 
-        IReadOnlyList<ArquivoDaApresentacao> removidos = await Conciliar(cenario, (laudo, SituacaoDoDocumento.Pendente, null));
+        await Conciliar(cenario, (laudo, SituacaoDoDocumento.Pendente, null));
 
-        removidos.Should().BeEmpty();
+        await cenario.Repositorio.DidNotReceiveWithAnyArgs().AgendarLimpezaAsync(default!, default, default);
         cenario.Arquivo.ConstouDeEnvio.Should().BeTrue();
     }
 
@@ -37,10 +37,11 @@ public sealed class DocumentosEnviadosDaInscricaoTests
         DocumentoExigido laudo = Exigencia();
         Cenario cenario = Cenario.Com(laudo, ocorrencia: null);
 
-        IReadOnlyList<ArquivoDaApresentacao> removidos = await Conciliar(cenario, (laudo, SituacaoDoDocumento.NaoExigido, null));
+        await Conciliar(cenario, (laudo, SituacaoDoDocumento.NaoExigido, null));
 
-        removidos.Should().ContainSingle().Which.Should().BeSameAs(cenario.Arquivo);
         await cenario.Repositorio.Received(1).RemoverArquivoAsync(cenario.Arquivo, Arg.Any<CancellationToken>());
+        await cenario.Repositorio.Received(1).AgendarLimpezaAsync(cenario.Arquivo.ChaveSelada, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
+        await cenario.Repositorio.Received(1).AgendarLimpezaAsync(cenario.Arquivo.ObjectKey, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "O arquivo de exigência que a versão fixada não tem mais é removido")]
@@ -48,9 +49,9 @@ public sealed class DocumentosEnviadosDaInscricaoTests
     {
         Cenario cenario = Cenario.Com(Exigencia(), ocorrencia: null);
 
-        IReadOnlyList<ArquivoDaApresentacao> removidos = await Conciliar(cenario);
+        await Conciliar(cenario);
 
-        removidos.Should().ContainSingle();
+        await cenario.Repositorio.Received(1).RemoverArquivoAsync(cenario.Arquivo, Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "O arquivo que já constou de um envio nunca é removido, ainda que a exigência deixe de se aplicar")]
@@ -60,10 +61,10 @@ public sealed class DocumentosEnviadosDaInscricaoTests
         Cenario cenario = Cenario.Com(laudo, ocorrencia: null);
         cenario.Arquivo.MarcarComoConstanteDeEnvio();
 
-        IReadOnlyList<ArquivoDaApresentacao> removidos = await Conciliar(cenario, (laudo, SituacaoDoDocumento.NaoExigido, null));
+        await Conciliar(cenario, (laudo, SituacaoDoDocumento.NaoExigido, null));
 
-        removidos.Should().BeEmpty();
         await cenario.Repositorio.DidNotReceiveWithAnyArgs().RemoverArquivoAsync(default!, default);
+        await cenario.Repositorio.DidNotReceiveWithAnyArgs().AgendarLimpezaAsync(default!, default, default);
     }
 
     [Fact(DisplayName = "No grupo repetível o arquivo da ocorrência que saiu da lista é removido, e o da que ficou, não")]
@@ -72,12 +73,12 @@ public sealed class DocumentosEnviadosDaInscricaoTests
         DocumentoExigido renda = Exigencia();
         Cenario cenario = Cenario.Com(renda, ocorrencia: "m2");
 
-        IReadOnlyList<ArquivoDaApresentacao> removidos = await Conciliar(cenario, (renda, SituacaoDoDocumento.Pendente, "m1"));
+        await Conciliar(cenario, (renda, SituacaoDoDocumento.Pendente, "m1"));
 
-        removidos.Should().ContainSingle("m2 não é mais membro, e a exigência só se aplica a m1");
+        await cenario.Repositorio.Received(1).RemoverArquivoAsync(cenario.Arquivo, Arg.Any<CancellationToken>());
     }
 
-    private static Task<IReadOnlyList<ArquivoDaApresentacao>> Conciliar(
+    private static Task Conciliar(
         Cenario cenario, params (DocumentoExigido Documento, SituacaoDoDocumento Situacao, string? Ocorrencia)[] itens)
     {
         ResultadoDaAvaliacaoDaInscricao avaliacao = FormularioDeTeste.AvaliacaoSemOcultos with
@@ -87,7 +88,7 @@ public sealed class DocumentosEnviadosDaInscricaoTests
                 new Dictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>>(),
                 []),
         };
-        return DocumentosEnviadosDaInscricao.ConciliarNoEnvioAsync(cenario.Repositorio, InscricaoId, avaliacao, CancellationToken.None);
+        return DocumentosEnviadosDaInscricao.ConciliarNoEnvioAsync(cenario.Repositorio, InscricaoId, avaliacao, DateTimeOffset.UnixEpoch, CancellationToken.None);
     }
 
     private static DocumentoExigido Exigencia() =>
