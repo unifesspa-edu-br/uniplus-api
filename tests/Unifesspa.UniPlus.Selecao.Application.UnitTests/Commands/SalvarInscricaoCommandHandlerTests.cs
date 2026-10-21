@@ -430,7 +430,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
             "000001", null, null, semRespostas, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [],
             new RespostasAdmitidas(new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal), new HashSet<string>(StringComparer.Ordinal), new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal), new HashSet<Guid>(), new Dictionary<string, TermoAdmitido>(StringComparer.Ordinal)), FormularioDeTeste.AvaliacaoSemOcultos,
             semRespostas, new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal),
-            PrecondicaoIfMatch.DeTags([existente.ETag]), DateTimeOffset.UnixEpoch).IsSuccess.Should().BeTrue();
+            PrecondicaoIfMatch.DeTags([existente.ETag]), DateTimeOffset.UnixEpoch, []).IsSuccess.Should().BeTrue();
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
@@ -469,7 +469,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
             "000001", null, null, semRespostas, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [],
             new RespostasAdmitidas(new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal), new HashSet<string>(StringComparer.Ordinal), new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal), new HashSet<Guid>(), new Dictionary<string, TermoAdmitido>(StringComparer.Ordinal)), FormularioDeTeste.AvaliacaoSemOcultos,
             semRespostas, new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal),
-            PrecondicaoIfMatch.DeTags([existente.ETag]), DateTimeOffset.UnixEpoch).IsSuccess.Should().BeTrue();
+            PrecondicaoIfMatch.DeTags([existente.ETag]), DateTimeOffset.UnixEpoch, []).IsSuccess.Should().BeTrue();
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);

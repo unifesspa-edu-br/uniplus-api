@@ -141,10 +141,10 @@ public sealed class MinhasInscricoesQueryHandlerTests
         [
             ComprovanteInscricao.Emitir(inscricao.Id, "00000001", instante, null,
                 new Dictionary<string, JsonElement>(StringComparer.Ordinal), new Dictionary<string, JsonElement>(StringComparer.Ordinal),
-                new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), []),
+                new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [], []),
             ComprovanteInscricao.Emitir(inscricao.Id, "00000001", instante.AddHours(1), null,
                 new Dictionary<string, JsonElement>(StringComparer.Ordinal), new Dictionary<string, JsonElement>(StringComparer.Ordinal),
-                new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), []),
+                new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [], []),
         ];
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();

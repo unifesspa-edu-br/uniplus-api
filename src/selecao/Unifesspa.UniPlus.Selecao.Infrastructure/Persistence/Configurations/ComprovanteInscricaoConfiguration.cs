@@ -84,6 +84,12 @@ internal sealed class ComprovanteInscricaoConfiguration : IEntityTypeConfigurati
             .HasColumnType("jsonb")
             .IsRequired();
 
+        builder.Property(c => c.Documentos)
+            .HasConversion(DocumentosConverter, DocumentosComparer)
+            .HasColumnType("jsonb")
+            .IsRequired()
+            .HasComment("As exigências documentais da inscrição neste envio, com a situação, a consequência escrita e, de cada arquivo, SHA-256, tamanho e formato — nunca nome nem local de armazenamento.");
+
         builder.Property(c => c.Modalidades)
             .HasConversion(ModalidadesConverter, ModalidadesComparer)
             .HasColumnType("jsonb")
@@ -145,4 +151,14 @@ internal sealed class ComprovanteInscricaoConfiguration : IEntityTypeConfigurati
             (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
             v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null).GetHashCode(StringComparison.Ordinal),
             v => JsonSerializer.Deserialize<List<AceiteDeTermo>>(JsonSerializer.Serialize(v, (JsonSerializerOptions?)null), (JsonSerializerOptions?)null)!);
+
+    private static readonly ValueConverter<IReadOnlyList<DocumentoDoComprovante>, string> DocumentosConverter =
+        new(valor => JsonSerializer.Serialize(valor, (JsonSerializerOptions?)null),
+            json => JsonSerializer.Deserialize<List<DocumentoDoComprovante>>(json, (JsonSerializerOptions?)null)!);
+
+    private static readonly ValueComparer<IReadOnlyList<DocumentoDoComprovante>> DocumentosComparer =
+        new(
+            (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
+            v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null).GetHashCode(StringComparison.Ordinal),
+            v => JsonSerializer.Deserialize<List<DocumentoDoComprovante>>(JsonSerializer.Serialize(v, (JsonSerializerOptions?)null), (JsonSerializerOptions?)null)!);
 }

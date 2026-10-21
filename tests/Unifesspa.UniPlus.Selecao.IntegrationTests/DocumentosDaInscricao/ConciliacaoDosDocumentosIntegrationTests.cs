@@ -59,7 +59,7 @@ public sealed class ConciliacaoDosDocumentosIntegrationTests : IClassFixture<Ins
 
         // Nenhuma exigência se aplica mais na versão fixada.
         await DocumentosEnviadosDaInscricao.ConciliarNoEnvioAsync(
-            repositorio, inscricaoId, FormularioDeTeste.AvaliacaoSemOcultos, DateTimeOffset.UtcNow, CancellationToken.None);
+            repositorio, inscricaoId, FormularioDeTeste.AvaliacaoSemOcultos, [], DateTimeOffset.UtcNow, CancellationToken.None);
         await context.SaveChangesAsync();
 
         await using SelecaoDbContext leitura = _db.CreateDbContext();

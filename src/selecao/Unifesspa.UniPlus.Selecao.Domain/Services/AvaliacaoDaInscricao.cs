@@ -492,6 +492,14 @@ public static class AvaliacaoDaInscricao
 
         return documentos;
 
+        // O estado do grupo é o do resolvedor, o mesmo que decide quais faltas recusam o envio: o da ocorrência
+        // quando o grupo está dentro da repetição, e o do nó quando está fora dela.
+        bool GrupoAtendido(Guid grupoId, string? ocorrenciaId) =>
+            (ocorrenciaId is not null
+                && resultado.EstadosPorEntidade.FirstOrDefault(e => e.NoExigenciaId == grupoId && e.EntidadeId == ocorrenciaId) is { } daOcorrencia
+                    ? daOcorrencia.Estado
+                    : resultado.EstadosPorNo.GetValueOrDefault(grupoId, EstadoSatisfacao.Indeterminado)) == EstadoSatisfacao.Satisfeito;
+
         void Coletar(NoExigencia no, IReadOnlyList<GrupoDaArvore> ancestrais, string? grupoRepetido)
         {
             string? repetido = no.RepetePorEntidade ?? grupoRepetido;
@@ -501,7 +509,8 @@ public static class AvaliacaoDaInscricao
                 [
                     .. ancestrais,
                     new GrupoDaArvore(
-                        no.Id, no.Tipo, no.Tipo == TipoNo.GrupoOu ? no.QuantidadeMinima ?? NoExigencia.QuantidadeMinimaPadrao : null, no.RepetePorEntidade),
+                        no.Id, no.Tipo, no.Tipo == TipoNo.GrupoOu ? no.QuantidadeMinima ?? NoExigencia.QuantidadeMinimaPadrao : null, no.RepetePorEntidade,
+                        no.Tipo == TipoNo.GrupoOu ? no.Consequencia : null),
                 ];
                 foreach (NoExigencia filho in no.Filhos.OrderBy(static f => f.Ordem))
                 {
@@ -512,10 +521,15 @@ public static class AvaliacaoDaInscricao
             }
 
             DocumentoExigido documento = no.DocumentoExigido!;
-            DocumentoAvaliado Avaliado(StatusResolucaoExigencia status, string? ocorrenciaId) =>
-                new(
-                    documento, Situacao(status, deFasePosterior.Contains(documento.Id)), repetido, ocorrenciaId, ancestrais, no.RepetePorEntidade,
-                    no.QuantidadeMinima ?? NoExigencia.QuantidadeMinimaPadrao);
+            DocumentoAvaliado Avaliado(StatusResolucaoExigencia status, string? ocorrenciaId)
+            {
+                SituacaoDoDocumento situacao = Situacao(status, deFasePosterior.Contains(documento.Id));
+                return new(
+                    documento, situacao, repetido, ocorrenciaId, ancestrais, no.RepetePorEntidade,
+                    no.QuantidadeMinima ?? NoExigencia.QuantidadeMinimaPadrao,
+                    DispensadoPeloGrupo: situacao != SituacaoDoDocumento.Satisfeita
+                        && ancestrais.Any(g => g.Tipo == TipoNo.GrupoOu && GrupoAtendido(g.GrupoId, ocorrenciaId)));
+            }
 
             if (repetido is null)
             {

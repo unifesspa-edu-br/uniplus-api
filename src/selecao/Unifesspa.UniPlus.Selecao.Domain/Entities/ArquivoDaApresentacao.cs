@@ -255,7 +255,7 @@ public sealed class ArquivoDaApresentacao : EntityBase, IArquivoEnviado
         return daExigencia ?? TetoDoSistemaBytes;
     }
 
-    private static string TipoDeMidiaDe(FormatoPermitido formato) => formato switch
+    public static string TipoDeMidiaDe(FormatoPermitido formato) => formato switch
     {
         FormatoPermitido.Pdf => "application/pdf",
         FormatoPermitido.Jpeg => "image/jpeg",

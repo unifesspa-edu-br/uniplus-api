@@ -31,6 +31,24 @@ public sealed class DocumentosEnviadosDaInscricaoTests
         cenario.Arquivo.ConstouDeEnvio.Should().BeTrue();
     }
 
+    [Fact(DisplayName = "O arquivo confirmado depois de composto o comprovante fica para o envio seguinte")]
+    public async Task ArquivoForaDoComprovante_NaoConstaDoEnvio()
+    {
+        DocumentoExigido laudo = Exigencia();
+        Cenario cenario = Cenario.Com(laudo, ocorrencia: null);
+        ResultadoDaAvaliacaoDaInscricao avaliacao = FormularioDeTeste.AvaliacaoSemOcultos with
+        {
+            Documentos = new DocumentosDaInscricao(
+                [new DocumentoAvaliado(laudo, SituacaoDoDocumento.Pendente, null, null, [], null)],
+                new Dictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>>(), []),
+        };
+
+        await DocumentosEnviadosDaInscricao.ConciliarNoEnvioAsync(cenario.Repositorio, InscricaoId, avaliacao, [], DateTimeOffset.UnixEpoch, CancellationToken.None);
+
+        cenario.Arquivo.ConstouDeEnvio.Should().BeFalse();
+        await cenario.Repositorio.DidNotReceiveWithAnyArgs().RemoverArquivoAsync(default!, default);
+    }
+
     [Fact(DisplayName = "O arquivo de exigência que não se aplica é removido, com o objeto devolvido para quem apaga o armazenamento")]
     public async Task ExigenciaQueNaoSeAplica_Remove()
     {
@@ -78,7 +96,7 @@ public sealed class DocumentosEnviadosDaInscricaoTests
         await cenario.Repositorio.Received(1).RemoverArquivoAsync(cenario.Arquivo, Arg.Any<CancellationToken>());
     }
 
-    private static Task Conciliar(
+    private static async Task Conciliar(
         Cenario cenario, params (DocumentoExigido Documento, SituacaoDoDocumento Situacao, string? Ocorrencia)[] itens)
     {
         ResultadoDaAvaliacaoDaInscricao avaliacao = FormularioDeTeste.AvaliacaoSemOcultos with
@@ -88,7 +106,8 @@ public sealed class DocumentosEnviadosDaInscricaoTests
                 new Dictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>>(),
                 []),
         };
-        return DocumentosEnviadosDaInscricao.ConciliarNoEnvioAsync(cenario.Repositorio, InscricaoId, avaliacao, DateTimeOffset.UnixEpoch, CancellationToken.None);
+        IReadOnlyList<ArquivoConfirmado> noComprovante = await DocumentosEnviadosDaInscricao.ConfirmadosAsync(cenario.Repositorio, InscricaoId, CancellationToken.None);
+        await DocumentosEnviadosDaInscricao.ConciliarNoEnvioAsync(cenario.Repositorio, InscricaoId, avaliacao, noComprovante, DateTimeOffset.UnixEpoch, CancellationToken.None);
     }
 
     private static DocumentoExigido Exigencia() =>

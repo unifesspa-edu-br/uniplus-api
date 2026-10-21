@@ -479,6 +479,10 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         (Result<ComprovanteInscricaoDto> comArquivo, IDocumentoDaInscricaoRepository repo, ArquivoDaApresentacao fixado, ArquivoDaApresentacao orfao) = await EnviarAsync(comLaudo: true);
         comArquivo.IsSuccess.Should().BeTrue(comArquivo.Error?.Message);
         fixado.ConstouDeEnvio.Should().BeTrue();
+        DocumentoDoComprovanteDto noComprovante = comArquivo.Value!.Documentos.Should().ContainSingle("a exigência que não se aplica não consta do comprovante").Subject;
+        noComprovante.Nome.Should().Be("Laudo");
+        noComprovante.Situacao.Should().Be(SituacaoDoDocumentoCodigo.Satisfeita);
+        noComprovante.Arquivos.Should().Equal(new ArquivoDoComprovanteDto(new string('a', 64), 1024, "PDF"));
         await repo.Received(1).RemoverArquivoAsync(orfao, Arg.Any<CancellationToken>());
         await repo.Received(1).AgendarLimpezaAsync(orfao.ChaveSelada, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
     }
