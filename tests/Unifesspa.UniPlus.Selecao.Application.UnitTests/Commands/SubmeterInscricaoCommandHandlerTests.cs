@@ -62,7 +62,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         IGeradorDeNumeroInscricao? geradorDeNumeroInscricao = null,
         TimeProvider? relogio = null) =>
         SubmeterInscricaoCommandHandler.Handle(
-            command, inscricaoRepository, processoSeletivoRepository, DivulgacaoDeTeste.Certame(ProcessoId), Substitute.For<IDocumentoDaInscricaoRepository>(), Substitute.For<IArquivoArmazenadoStorage>(), registroCodecs,
+            command, inscricaoRepository, processoSeletivoRepository, DivulgacaoDeTeste.Certame(ProcessoId), Substitute.For<IDocumentoDaInscricaoRepository>(), registroCodecs,
             DivulgacaoDeTeste.Fuso(),
             conferenciaEnderecoGeo ?? ConferenciaQueAceitaTudo(),
             geradorDeNumeroInscricao ?? GeradorQueDevolve("00000001"),

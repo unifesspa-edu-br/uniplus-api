@@ -58,11 +58,10 @@ public sealed class ConciliacaoDosDocumentosIntegrationTests : IClassFixture<Ins
         await context.SaveChangesAsync();
 
         // Nenhuma exigência se aplica mais na versão fixada.
-        IReadOnlyList<ArquivoDaApresentacao> removidos = await DocumentosEnviadosDaInscricao.ConciliarNoEnvioAsync(
-            repositorio, inscricaoId, FormularioDeTeste.AvaliacaoSemOcultos, CancellationToken.None);
+        await DocumentosEnviadosDaInscricao.ConciliarNoEnvioAsync(
+            repositorio, inscricaoId, FormularioDeTeste.AvaliacaoSemOcultos, DateTimeOffset.UtcNow, CancellationToken.None);
         await context.SaveChangesAsync();
 
-        removidos.Should().HaveCount(2);
         await using SelecaoDbContext leitura = _db.CreateDbContext();
         (await leitura.ApresentacoesDeDocumento.Where(a => a.InscricaoId == inscricaoId).Select(static a => a.Id).ToListAsync())
             .Should().BeEquivalentTo([jaEnviada.Id], "a apresentação cujos arquivos saíram vai junto, e a que já constou de um envio fica");
