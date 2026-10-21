@@ -426,7 +426,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     {
         FaseDoCronograma("INSCRICAO");
         DeclararAtendimentoEspecializado();
-        
+
         DocumentoExigidoDoModeloInput documento = new(
             "INSCRICAO", "LAUDO_MEDICO", false,
             [[new CondicaoPrecondicaoInput("FLAG", "IGUAL", JsonSerializer.SerializeToElement(true))]], "REMOVE_VANTAGEM", []);
