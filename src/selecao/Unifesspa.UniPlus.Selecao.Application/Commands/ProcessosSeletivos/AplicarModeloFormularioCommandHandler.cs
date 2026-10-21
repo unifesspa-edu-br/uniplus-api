@@ -399,14 +399,19 @@ public static partial class AplicarModeloFormularioCommandHandler
         : campo.StartsWith("documentosExigidos", StringComparison.Ordinal) ? campo
         : $"documentosExigidos.{campo}";
 
-    /// <summary>As cláusulas cujos valores o processo oferta: a que cita valor fora do que ele oferece para o fato não vale.</summary>
-    private static List<IReadOnlyList<CondicaoPrecondicaoInput>>? ClausulasOfertadas(
+    /// <summary>
+    /// As cláusulas cujos valores o processo oferta: a que afirma (IGUAL) valor fora do que ele oferece
+    /// para o fato não vale. As de outro operador seguem intactas para o validador do gatilho: negar um
+    /// valor não ofertado não é o mesmo que ele não existir.
+    /// </summary>
+    internal static List<IReadOnlyList<CondicaoPrecondicaoInput>>? ClausulasOfertadas(
         IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? quando, IReadOnlyDictionary<string, DominioDeValores> ofertados) =>
         quando is null
             ? null
             : [.. quando.Where(clausula => clausula.All(c =>
                 !ofertados.TryGetValue(c.Fato, out DominioDeValores? dominio)
                 || dominio.Valores is null
+                || c.Operador != "IGUAL"
                 || c.Valor.ValueKind != JsonValueKind.String
                 || dominio.Valores.Contains(c.Valor.GetString()!)))];
 

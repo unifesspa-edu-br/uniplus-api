@@ -440,6 +440,21 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         resultado.Value!.DerivacoesCopiadas.Should().Contain("FLAG");
     }
 
+    [Theory(DisplayName = "O filtro de oferta poda só a cláusula que afirma valor não ofertado; a de outro operador segue para o validador")]
+    [InlineData("IGUAL", 0)]
+    [InlineData("DIFERENTE", 1)]
+    public void ClausulasOfertadas_PodaSoAAfirmacaoDeValorNaoOfertado(string operador, int esperadas)
+    {
+        IReadOnlyDictionary<string, DominioDeValores> ofertados = new Dictionary<string, DominioDeValores>(StringComparer.Ordinal)
+        {
+            ["CONDICAO_ATENDIMENTO"] = DominioDeValores.OfertadoPeloProcesso(["PCD"]),
+        };
+        IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> quando =
+            [[new CondicaoPrecondicaoInput("CONDICAO_ATENDIMENTO", operador, JsonSerializer.SerializeToElement("LACTANTE"))]];
+
+        AplicarModeloFormularioCommandHandler.ClausulasOfertadas(quando, ofertados)!.Should().HaveCount(esperadas);
+    }
+
     [Fact(DisplayName = "O documento do modelo numa fase que o cronograma não tem é recusado, e nada é gravado")]
     public async Task Handle_DocumentoEmFaseInexistente_RecusaSemGravar()
     {
