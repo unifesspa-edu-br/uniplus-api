@@ -61,24 +61,21 @@ public static class DocumentosDoComprovante
     };
 
     /// <summary>
-    /// A consequência da própria exigência; sem ela, a do grupo "um ou outro" mais interno que a declara,
-    /// escrita sobre os documentos do grupo, porque é deles todos que o candidato precisa de um (ou de N).
+    /// O grupo "um ou outro" é a unidade da consequência (UNI-REQ-0070): dentro dele, vale a do grupo mais
+    /// externo, escrita sobre os documentos do grupo, e as alternativas só orientam o que falta — a
+    /// consequência própria delas não vale, e o grupo sem consequência não tem texto. Fora de grupo "um ou
+    /// outro", vale a da própria exigência; o grupo "E" não carrega consequência.
     /// </summary>
     private static string? ConsequenciaDe(DocumentoAvaliado avaliado, IReadOnlyList<DocumentoAvaliado> todos)
     {
-        if (avaliado.Documento.ConsequenciaIndeferimento is { } propria)
+        GrupoDaArvore? ou = avaliado.Grupos.FirstOrDefault(static g => g.Tipo == TipoNo.GrupoOu);
+        if (ou is null)
         {
-            return ConsequenciaPorEscrito(propria, $"o documento {avaliado.Documento.TipoDocumentoNome}");
+            return ConsequenciaPorEscrito(avaliado.Documento.ConsequenciaIndeferimento, $"o documento {avaliado.Documento.TipoDocumentoNome}");
         }
 
-        GrupoDaArvore? doGrupo = avaliado.Grupos.LastOrDefault(static g => g.Consequencia is not null);
-        if (doGrupo is null)
-        {
-            return null;
-        }
-
-        string nomes = string.Join(", ", NoGrupo(doGrupo, todos).Select(static d => d.Documento.TipoDocumentoNome).Distinct(StringComparer.Ordinal));
-        return ConsequenciaPorEscrito(doGrupo.Consequencia, $"os documentos exigidos ({nomes})");
+        string nomes = string.Join(", ", NoGrupo(ou, todos).Select(static d => d.Documento.TipoDocumentoNome).Distinct(StringComparer.Ordinal));
+        return ConsequenciaPorEscrito(ou.Consequencia, $"os documentos exigidos ({nomes})");
     }
 
     private static IEnumerable<DocumentoAvaliado> NoGrupo(GrupoDaArvore grupo, IReadOnlyList<DocumentoAvaliado> todos) =>
