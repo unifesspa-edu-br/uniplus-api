@@ -29,7 +29,6 @@ public static class DescartarRascunhoDaInscricaoCommandHandler
         ISelecaoUnitOfWork unitOfWork,
         IUserContext userContext,
         IDocumentoDaInscricaoRepository documentoRepository,
-        IArquivoArmazenadoStorage storage,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
@@ -42,7 +41,6 @@ public static class DescartarRascunhoDaInscricaoCommandHandler
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(documentoRepository);
-        ArgumentNullException.ThrowIfNull(storage);
 
         if (userContext.Cpf is not { } cpfDoToken)
         {
@@ -95,7 +93,7 @@ public static class DescartarRascunhoDaInscricaoCommandHandler
             return Result.Failure(recusa);
         }
 
-        // Os registros dos arquivos caem em cascata com a inscrição; os objetos do armazenamento, não.
+        // Os registros dos arquivos caem em cascata com a inscrição; os objetos do armazenamento saem pela rotina, depois do commit.
         IReadOnlyList<ArquivoDaApresentacao> arquivos = await documentoRepository
             .ListarArquivosDaInscricaoAsync(inscricao.Id, cancellationToken).ConfigureAwait(false);
 
@@ -107,12 +105,6 @@ public static class DescartarRascunhoDaInscricaoCommandHandler
 
         await inscricaoRepository.RemoverAsync(inscricao, cancellationToken).ConfigureAwait(false);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-
-        foreach (ArquivoDaApresentacao arquivo in arquivos)
-        {
-            await storage.RemoverAsync(arquivo.ObjectKey, cancellationToken).ConfigureAwait(false);
-            await storage.RemoverAsync(arquivo.ChaveSelada, cancellationToken).ConfigureAwait(false);
-        }
 
         return Result.Success();
     }

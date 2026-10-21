@@ -26,7 +26,6 @@ public static class RemoverArquivoDaInscricaoCommandHandler
         IRegistroCodecsEnvelope registroCodecs,
         IResolvedorFusoInstitucional resolvedorFuso,
         IDocumentoDaInscricaoRepository documentoRepository,
-        IArquivoArmazenadoStorage storage,
         ISelecaoUnitOfWork unitOfWork,
         IUserContext userContext,
         TimeProvider timeProvider,
@@ -35,7 +34,6 @@ public static class RemoverArquivoDaInscricaoCommandHandler
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(inscricaoRepository);
         ArgumentNullException.ThrowIfNull(documentoRepository);
-        ArgumentNullException.ThrowIfNull(storage);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
@@ -73,14 +71,10 @@ public static class RemoverArquivoDaInscricaoCommandHandler
         ArquivoDaApresentacao arquivo = encontrado.Value!;
         await documentoRepository.RemoverArquivoAsync(arquivo, cancellationToken).ConfigureAwait(false);
 
-        // A URL de envio ainda vale até ExpiraEm e um PUT nela recria o conteúdo em claro: a chave de envio
-        // é apagada de novo depois do prazo, e a selada, se a remoção abaixo falhar.
+        // O armazenamento só é tocado pela rotina, depois do commit; a de envio espera o prazo da URL.
         await AgendaDeLimpezaDoArquivoDoCandidato.AgendarAsync(documentoRepository, arquivo, comSelada: true, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        // As duas chaves saem: a do envio e a selada. A remoção do objeto ausente conclui.
-        await storage.RemoverAsync(arquivo.ObjectKey, cancellationToken).ConfigureAwait(false);
-        await storage.RemoverAsync(arquivo.ChaveSelada, cancellationToken).ConfigureAwait(false);
         return Result.Success();
     }
 }

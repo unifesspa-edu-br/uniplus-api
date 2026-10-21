@@ -97,6 +97,10 @@ public sealed class DocumentoDaInscricaoRepository : IDocumentoDaInscricaoReposi
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
+        // A remoção da linha e o agendamento da selada ficam na mesma transação: a linha sai só se a chave
+        // da cópia selada, que a confirmação que falhou pode ter deixado, fica agendada.
+        await using Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction transacao =
+            await _context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
         int linhasAfetadas = await _context.ArquivosDaApresentacao
             .Where(a => a.Id == id)
             .Where(PendenteVencido(agora))
@@ -104,7 +108,6 @@ public sealed class DocumentoDaInscricaoRepository : IDocumentoDaInscricaoReposi
             .ConfigureAwait(false);
         if (linhasAfetadas == 1)
         {
-            // A confirmação que falhou no commit pode ter deixado a cópia selada: as duas chaves saem.
             _context.ChavesALimpar.Add(ChaveALimpar.Agendar(ArquivoDaApresentacao.ChaveSeladaDe(id), agora));
             await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             await _context.ApresentacoesDeDocumento
@@ -113,6 +116,7 @@ public sealed class DocumentoDaInscricaoRepository : IDocumentoDaInscricaoReposi
                 .ConfigureAwait(false);
         }
 
+        await transacao.CommitAsync(cancellationToken).ConfigureAwait(false);
         return linhasAfetadas == 1;
     }
 
