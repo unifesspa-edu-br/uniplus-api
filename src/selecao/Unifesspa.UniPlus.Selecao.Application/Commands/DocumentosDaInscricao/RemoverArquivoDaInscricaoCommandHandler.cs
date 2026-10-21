@@ -14,7 +14,9 @@ using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 
 /// <summary>
 /// Handler de <see cref="RemoverArquivoDaInscricaoCommand"/>. Só o rascunho remove: depois do envio da
-/// inscrição o arquivo é retido. Apaga o registro e as duas chaves do armazenamento, a do envio e a selada.
+/// inscrição o arquivo é retido. Apaga o registro e agenda a limpeza das duas
+/// chaves do armazenamento, na mesma transação: a rotina apaga a selada na próxima execução e a de envio depois do
+/// prazo da URL, nunca antes do commit.
 /// </summary>
 public static class RemoverArquivoDaInscricaoCommandHandler
 {
