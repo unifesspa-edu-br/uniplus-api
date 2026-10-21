@@ -136,6 +136,9 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     /// <summary>As apresentações de documento que o candidato faz para atender as exigências da inscrição.</summary>
     public DbSet<ApresentacaoDeDocumento> ApresentacoesDeDocumento => Set<ApresentacaoDeDocumento>();
 
+    /// <summary>As chaves do armazenamento agendadas para limpeza.</summary>
+    public DbSet<ChaveALimpar> ChavesALimpar => Set<ChaveALimpar>();
+
     /// <summary>Os arquivos das apresentações de documento da inscrição.</summary>
     public DbSet<ArquivoDaApresentacao> ArquivosDaApresentacao => Set<ArquivoDaApresentacao>();
 

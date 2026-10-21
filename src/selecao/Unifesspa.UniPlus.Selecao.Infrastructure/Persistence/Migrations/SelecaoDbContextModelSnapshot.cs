@@ -267,11 +267,6 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<DateTimeOffset?>("EnvioLimpoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("envio_limpo_em")
-                        .HasComment("Quando a chave de envio, em claro, foi limpa depois de vencida a URL de envio; nulo no confirmado = ainda a limpar.");
-
                     b.Property<DateTimeOffset>("ExpiraEm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expira_em");
@@ -679,6 +674,44 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_certames_divulgados_nome_ordenacao");
 
                     b.ToTable("certames_divulgados", "selecao");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ChaveALimpar", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("LimparApos")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("limpar_apos")
+                        .HasComment("A partir de quando a chave pode ser apagada.");
+
+                    b.Property<string>("ObjectKey")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("object_key")
+                        .HasComment("A chave do objeto; leva só o id do arquivo.");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_chaves_a_limpar");
+
+                    b.HasIndex("LimparApos")
+                        .HasDatabaseName("ix_chaves_a_limpar_limpar_apos");
+
+                    b.ToTable("chaves_a_limpar", "selecao", t =>
+                        {
+                            t.HasComment("Chaves do armazenamento a apagar depois de uma hora: a URL de envio recria o objeto em claro até vencer.");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ComprovanteInscricao", b =>

@@ -28,12 +28,15 @@ public interface IDocumentoDaInscricaoRepository : IArquivoEnviadoRepository
         Guid inscricaoId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Até <paramref name="limite"/> arquivos confirmados cuja URL de envio já venceu em <paramref name="agora"/> e cuja
-    /// chave de envio ainda não foi limpa, sem rastreamento.
+    /// Agenda a limpeza de uma chave do armazenamento a partir de <paramref name="limparApos"/>. A URL
+    /// pré-assinada de envio vale até o prazo e um PUT nela recria o objeto em claro, então a chave de
+    /// envio de um arquivo removido, descartado ou confirmado só se apaga de vez depois dele.
     /// </summary>
-    Task<IReadOnlyList<ArquivoPendenteVencido>> ListarEnviosConfirmadosAptosALimpezaAsync(
-        DateTimeOffset agora, int limite, CancellationToken cancellationToken = default);
+    Task AgendarLimpezaAsync(string objectKey, DateTimeOffset limparApos, CancellationToken cancellationToken = default);
 
-    /// <summary>Marca a chave de envio do arquivo confirmado como limpa, sem passar pelo change tracker.</summary>
-    Task MarcarEnvioLimpoAsync(Guid id, DateTimeOffset agora, CancellationToken cancellationToken = default);
+    /// <summary>Até <paramref name="limite"/> chaves agendadas cuja hora já passou em <paramref name="agora"/>, sem rastreamento.</summary>
+    Task<IReadOnlyList<ChaveALimpar>> ListarChavesVencidasAsync(DateTimeOffset agora, int limite, CancellationToken cancellationToken = default);
+
+    /// <summary>Tira a chave da agenda depois de apagada do armazenamento.</summary>
+    Task RemoverChaveAgendadaAsync(Guid id, CancellationToken cancellationToken = default);
 }

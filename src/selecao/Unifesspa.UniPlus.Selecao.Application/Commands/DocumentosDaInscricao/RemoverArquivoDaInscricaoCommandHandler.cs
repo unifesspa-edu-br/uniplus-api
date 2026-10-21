@@ -72,6 +72,13 @@ public static class RemoverArquivoDaInscricaoCommandHandler
 
         ArquivoDaApresentacao arquivo = encontrado.Value!;
         await documentoRepository.RemoverArquivoAsync(arquivo, cancellationToken).ConfigureAwait(false);
+
+        // A URL de envio ainda vale até ExpiraEm e um PUT nela recria o conteúdo em claro: a chave de envio
+        // é apagada de novo depois do prazo, e a selada, se a remoção abaixo falhar.
+        await documentoRepository
+            .AgendarLimpezaAsync(arquivo.ObjectKey, arquivo.ExpiraEm + RemocaoDeArquivosPendentesVencidos.Tolerancia, cancellationToken)
+            .ConfigureAwait(false);
+        await documentoRepository.AgendarLimpezaAsync(arquivo.ChaveSelada, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
         // As duas chaves saem: a do envio e a selada. A remoção do objeto ausente conclui.

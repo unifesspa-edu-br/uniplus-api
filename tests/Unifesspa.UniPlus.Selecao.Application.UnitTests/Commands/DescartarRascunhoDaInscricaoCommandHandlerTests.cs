@@ -102,6 +102,8 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
         resultado.IsSuccess.Should().BeTrue();
         await storage.Received(1).RemoverAsync(arquivo.ObjectKey, Arg.Any<CancellationToken>());
         await storage.Received(1).RemoverAsync(arquivo.ChaveSelada, Arg.Any<CancellationToken>());
+        await documentos.Received(1).AgendarLimpezaAsync(arquivo.ObjectKey, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
+        await documentos.Received(1).AgendarLimpezaAsync(arquivo.ChaveSelada, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Com as inscrições encerradas, o rascunho não é descartado")]
