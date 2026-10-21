@@ -55,10 +55,18 @@ public sealed class AplicarModelosPsrMedicina2027Tests
             .Include(static p => p.Formularios)
             .Include(static p => p.Campos)
             .Include(static p => p.GruposColetados)
+            .Include(static p => p.DocumentosExigidos).ThenInclude(static d => d.Condicoes)
             .SingleAsync(p => p.Id == processoId);
         processo.Formularios.Select(static f => f.Finalidade)
             .Should().BeEquivalentTo([FinalidadeFormulario.Inscricao, FinalidadeFormulario.Habilitacao]);
         processo.GruposColetados.Should().ContainSingle(static g => g.Codigo == "COMPOSICAO_FAMILIAR");
+
+        // A oferta tem só a condição fora da lista: a certidão da lactante, cuja condição o processo não
+        // oferta, não entra, e o laudo vale só para a condição ofertada.
+        DocumentoExigido laudo = processo.DocumentosExigidos.Should().ContainSingle().Which;
+        laudo.TipoDocumentoCodigo.Should().Be("LAUDO_MEDICO");
+        laudo.Finalidade.Should().Be(FinalidadeFormulario.Inscricao);
+        laudo.Condicoes.Select(static c => c.Fato).Should().BeEquivalentTo(["SOLICITA_ATENDIMENTO_ESPECIALIZADO", "CONDICAO_ATENDIMENTO"]);
         processo.Campos.Select(static c => c.FatoCodigo).Should().Contain(
             ["CAMINHO_FATOR_ATENUACAO", "MUNICIPIO_ENSINO_MEDIO_FATOR_ATENUACAO", "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO"]);
         processo.Campos.Select(static c => c.FatoCodigo).Should().Contain(
@@ -111,6 +119,15 @@ public sealed class AplicarModelosPsrMedicina2027Tests
             []).Value!;
         Result ofertada = processo.DefinirOfertaAtendimento(oferta, PrecondicaoIfMatch.Ausente);
         ofertada.IsSuccess.Should().BeTrue(ofertada.Error?.Message);
+
+        // O modelo exige os documentos do atendimento na fase de inscrição do cronograma.
+        FaseCronograma inscricao = FaseCronograma.Criar(
+            2, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.Delegada,
+            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
+            produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
+            bancasRequeridas: [], regraRecurso: null).Value!;
+        Result cronograma = processo.DefinirCronogramaFases([.. processo.CronogramaFases, inscricao], [], PrecondicaoIfMatch.Ausente);
+        cronograma.IsSuccess.Should().BeTrue(string.Join("; ", cronograma.Errors.Select(static e => e.Error.Code)) + cronograma.Error?.Message);
     }
 
     private static ModalidadeSelecionada Modalidade(string codigo, NaturezaLegalModalidade natureza, PredicadoDnf regra, int vagas) =>

@@ -434,7 +434,42 @@ public static class SementePsrMedicina2027
                 Termo(Termos[1], 2),
             ],
             [],
-            []);
+            [],
+            DocumentosDoAtendimentoEspecializado());
+    }
+
+    /// <summary>
+    /// O conjunto padrão de documentos da inscrição (UNI-REQ-0026): o CEPS só concede o atendimento
+    /// especializado a quem comprova a condição, e o documento comprova a condição, não o recurso. Um
+    /// laudo comprova cada condição de saúde, e a lactante apresenta a certidão de nascimento da criança. A pessoa idosa não apresenta nada: a
+    /// idade vem do cadastro. Sem o documento, o candidato perde o atendimento e mantém a inscrição. A
+    /// base legal fica pendente até o CEPS indicar a norma, e a publicação a exige resolvida.
+    /// </summary>
+    private static DocumentoExigidoDoModelo[] DocumentosDoAtendimentoEspecializado()
+    {
+        const string solicitaAtendimento = "SOLICITA_ATENDIMENTO_ESPECIALIZADO";
+        const string condicaoAtendimento = "CONDICAO_ATENDIMENTO";
+        const string removeVantagem = "REMOVE_VANTAGEM";
+        BaseLegalDoDocumentoDoModelo[] baseLegal =
+        [
+            new("Edital do processo: comprovação da condição que dá direito ao atendimento especializado", "INTERNA_EDITAL", "PENDENTE",
+                "O CEPS indica a norma que fundamenta a exigência."),
+        ];
+
+        static CondicaoDnf[] Declarou(string condicao) =>
+        [
+            Condicao(solicitaAtendimento, Operador.Igual, true),
+            Condicao(condicaoAtendimento, Operador.Igual, condicao),
+        ];
+
+        // Um documento por condição: o CEPS defere ou indefere cada comprovação por si, e a candidata
+        // com mais de uma condição apresenta o laudo de cada uma.
+        return
+        [
+            .. new[] { "PCD", "DISLEXIA", "DISCALCULIA", "DEFICIT_ATENCAO", "GESTANTE", CondicaoForaDaLista }.Select(
+                condicao => new DocumentoExigidoDoModelo("INSCRICAO", "LAUDO_MEDICO", Obrigatorio: false, SeAlguma(Declarou(condicao)), removeVantagem, baseLegal)),
+            new("INSCRICAO", "CERTIDAO_NASCIMENTO", Obrigatorio: false, SeAlguma(Declarou("LACTANTE")), removeVantagem, baseLegal),
+        ];
     }
 
     private static ConteudoDoModelo ConteudoDaHabilitacao()

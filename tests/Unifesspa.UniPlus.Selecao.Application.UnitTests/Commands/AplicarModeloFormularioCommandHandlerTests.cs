@@ -33,6 +33,8 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     private readonly IModeloFormularioReader _modelos = Substitute.For<IModeloFormularioReader>();
     private readonly IFatoCandidatoReader _fatos = Substitute.For<IFatoCandidatoReader>();
     private readonly ITermoConsentimentoReader _termos = Substitute.For<ITermoConsentimentoReader>();
+    private readonly ITipoDocumentoReader _tiposDocumento = Substitute.For<ITipoDocumentoReader>();
+    private readonly IModeloDeDocumentoRepository _modelosDeDocumento = Substitute.For<IModeloDeDocumentoRepository>();
     private readonly ISelecaoUnitOfWork _unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
     private readonly ProcessoSeletivo _processo = ProcessoSeletivo.Criar(
         "PS Modelo", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
@@ -388,6 +390,93 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         });
     }
 
+    [Fact(DisplayName = "O modelo copia o conjunto de documentos exigidos para o processo, na fase de inscrição, e a nova aplicação troca só os da finalidade do modelo")]
+    public async Task Handle_ModeloComDocumentos_CopiaETrocaOsDaFinalidade()
+    {
+        FaseCronograma fase = FaseDoCronograma("INSCRICAO", "RESULTADO_FINAL");
+        DeclararAtendimentoEspecializado();
+        ModeloFormularioView modelo = ModeloComDocumentos(
+            DocumentoDoModelo("LAUDO_MEDICO", "PCD"), DocumentoDoModelo("LAUDO_MEDICO", "LACTANTE"), DocumentoDoModelo("CERTIDAO_NASCIMENTO", "LACTANTE"));
+        DocumentoExigido daHabilitacao = DocumentoExigido.Criar(
+            _processo.CronogramaFases.Single(static f => f.Codigo == "RESULTADO_FINAL").Id, Guid.CreateVersion7(), "HISTORICO_ENSINO_MEDIO", "Histórico", "ESCOLARIDADE",
+            Aplicabilidade.Geral, obrigatorio: true, null, [], [], null, FormatosPermitidos.Criar(true, null).Value!, null).Value!;
+        _processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(daHabilitacao, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Result<AplicacaoDeModeloDto> primeira = await AplicarAsync(modelo);
+        Result<AplicacaoDeModeloDto> segunda = await AplicarAsync(modelo);
+
+        primeira.IsSuccess.Should().BeTrue(string.Join("; ", primeira.Errors.Select(static e => $"{e.Field}: {e.Error.Code}")));
+        segunda.IsSuccess.Should().BeTrue();
+        _processo.DocumentosExigidos.Select(static d => (d.TipoDocumentoCodigo, d.Finalidade)).Should().BeEquivalentTo(
+        [
+            ("HISTORICO_ENSINO_MEDIO", (FinalidadeFormulario?)null),
+            ("LAUDO_MEDICO", FinalidadeFormulario.Inscricao),
+            ("LAUDO_MEDICO", FinalidadeFormulario.Inscricao),
+            ("CERTIDAO_NASCIMENTO", FinalidadeFormulario.Inscricao),
+        ]);
+        DocumentoExigido laudo = _processo.DocumentosExigidos.First(static d => d.TipoDocumentoCodigo == "LAUDO_MEDICO");
+        laudo.ExigidoNaFaseId.Should().Be(fase.Id);
+        laudo.ConsequenciaIndeferimento.Should().Be("REMOVE_VANTAGEM");
+        laudo.Condicoes.Select(static c => (c.Fato, c.Clausula)).Should().BeEquivalentTo(
+            [("SOLICITA_ATENDIMENTO_ESPECIALIZADO", 0), ("CONDICAO_ATENDIMENTO", 0)]);
+    }
+
+    [Fact(DisplayName = "O documento do modelo numa fase que o cronograma não tem é recusado, e nada é gravado")]
+    public async Task Handle_DocumentoEmFaseInexistente_RecusaSemGravar()
+    {
+        FaseDoCronograma("RESULTADO_FINAL");
+        DeclararAtendimentoEspecializado();
+
+        Result<AplicacaoDeModeloDto> resultado = await AplicarAsync(ModeloComDocumentos(DocumentoDoModelo("LAUDO_MEDICO", "PCD")));
+
+        resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
+        {
+            Field = "modelo.documentosExigidos[0].faseCodigo",
+            Error = new { Code = AplicacaoDeModeloErrorCodes.FaseDoDocumentoInexistente },
+        });
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+    }
+
+    /// <summary>O cronograma do processo com as fases dos códigos; só a de inscrição coleta inscrição. Devolve a primeira.</summary>
+    private FaseCronograma FaseDoCronograma(params string[] codigos)
+    {
+        FaseCronograma[] fases =
+        [
+            .. codigos.Select((codigo, i) => FaseCronograma.Criar(
+                i + 1, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.Delegada,
+                agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: codigo == "INSCRICAO", coletaSolicitacaoIsencao: false, inicio: null, fim: null,
+                produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
+                bancasRequeridas: [], regraRecurso: null).Value!),
+        ];
+        _processo.DefinirCronogramaFases(fases, [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        return fases[0];
+    }
+
+    private void DeclararAtendimentoEspecializado()
+    {
+        _catalogo.Add(Declarado("SOLICITA_ATENDIMENTO_ESPECIALIZADO"));
+        _catalogo.Add(new FatoCandidatoView(Guid.CreateVersion7(), "CONDICAO_ATENDIMENTO", "Condição", null, "CATEGORICO", "DECLARADO", "MULTIVALORADO", ["PCD", "LACTANTE"], "INSCRICAO",
+            "CAMPO_FORMULARIO:CONDICAO_ATENDIMENTO", [new("PCD", "PcD", 0, true), new("LACTANTE", "Lactante", 1, true)], "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL"));
+        List<TipoDocumentoView> tipos = [.. new[] { "LAUDO_MEDICO", "CERTIDAO_NASCIMENTO" }.Select(static codigo => new TipoDocumentoView(Guid.CreateVersion7(), codigo, codigo, "SAUDE"))];
+        _tiposDocumento.ObterVivoPorCodigoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(call => tipos.Single(t => t.Codigo == call.Arg<string>()));
+        _tiposDocumento.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(call => tipos.Single(t => t.Id == call.Arg<Guid>()));
+    }
+
+    private static ModeloFormularioView ModeloComDocumentos(params DocumentoExigidoDoModeloInput[] documentos) =>
+        Modelo(
+            FinalidadeFormulario.Inscricao,
+            [.. ConjuntoBasicoDaInscricao.Itens, Item("SOLICITA_ATENDIMENTO_ESPECIALIZADO", 100), Item("CONDICAO_ATENDIMENTO", 101, "SELECAO_MULTIPLA")],
+            documentos: documentos);
+
+    private static DocumentoExigidoDoModeloInput DocumentoDoModelo(string tipo, string condicao) =>
+        new("INSCRICAO", tipo, Obrigatorio: false,
+            [[
+                new CondicaoPrecondicaoInput("SOLICITA_ATENDIMENTO_ESPECIALIZADO", "IGUAL", JsonSerializer.SerializeToElement(true)),
+                new CondicaoPrecondicaoInput("CONDICAO_ATENDIMENTO", "IGUAL", JsonSerializer.SerializeToElement(condicao)),
+            ]],
+            "REMOVE_VANTAGEM", []);
+
     private Task<Result<AplicacaoDeModeloDto>> AplicarAsync(ModeloFormularioView modelo)
     {
         _modelos.ObterAsync(modelo.Id, Arg.Any<CancellationToken>()).Returns(modelo);
@@ -453,19 +542,20 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     private Task<Result<AplicacaoDeModeloDto>> AplicarAsync(Guid modeloId) =>
         AplicarModeloFormularioCommandHandler.Handle(
             new AplicarModeloFormularioCommand(_processo.Id, modeloId, PrecondicaoIfMatch.Ausente),
-            _repository, _modelos, _fatos, _termos, _unitOfWork, CancellationToken.None);
+            _repository, _modelos, _fatos, _termos, _tiposDocumento, _modelosDeDocumento, _unitOfWork, CancellationToken.None);
 
     private static ModeloFormularioView Modelo(
         FinalidadeFormulario finalidade,
         IReadOnlyList<FatoColetadoInput> itens,
         IReadOnlyList<TermoExigidoInput>? termos = null,
         IReadOnlyList<string>? pressupostos = null,
-        IReadOnlyList<GrupoColetadoInput>? grupos = null) =>
+        IReadOnlyList<GrupoColetadoInput>? grupos = null,
+        IReadOnlyList<DocumentoExigidoDoModeloInput>? documentos = null) =>
         new(Guid.NewGuid(), "MODELO", "Modelo", null, EstruturaFormulario.ParaToken(finalidade), null, true,
             new ConteudoDoModeloInput(
                 "Formulário",
                 [new EtapaFormularioInput("DADOS", 0, "SECAO", null, "Dados", null, null), new EtapaFormularioInput("REVISAO", 1, "BLOCO", "REVISAO_E_ACEITE", "Revisão", null, null)],
-                itens, termos ?? [], pressupostos ?? [], grupos ?? []));
+                itens, termos ?? [], pressupostos ?? [], grupos ?? [], documentos));
 
     private static GrupoColetadoInput Composicao(params FatoColetadoInput[] campos) =>
         new("COMPOSICAO_FAMILIAR", 1, "Composição familiar", "DADOS", 1, 10, null, "SEMPRE", null, campos);
