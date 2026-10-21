@@ -34,6 +34,11 @@ public sealed class DocumentosAusentesDaInscricaoTests
     public void NaoObrigatorio_NaoFalta() =>
         Ausentes([NoExigencia.CriarFolha(Documento("Laudo do atendimento", obrigatorio: false), 0).Value!]).Should().BeEmpty();
 
+    [Fact(DisplayName = "A exigência cujos espaços o envio não registra (competência mensal) não recusa, e não torna a inscrição impossível de enviar")]
+    public void ComChaveDeCompetencia_NaoRecusa() =>
+        Ausentes([NoExigencia.CriarFolha(Documento("Contracheque"), 0, quantidadeMinima: 3, chaveDistincao: ChaveDistincao.CompetenciaMensal, dataReferencia: new DateOnly(2026, 10, 1)).Value!])
+            .Should().BeEmpty();
+
     [Fact(DisplayName = "O documento que não é da inscrição não falta no envio dela")]
     public void DeOutraFinalidade_NaoFalta() =>
         Ausentes([NoExigencia.CriarFolha(Documento("Comprovante da habilitação", finalidade: FinalidadeFormulario.Habilitacao), 0).Value!]).Should().BeEmpty();

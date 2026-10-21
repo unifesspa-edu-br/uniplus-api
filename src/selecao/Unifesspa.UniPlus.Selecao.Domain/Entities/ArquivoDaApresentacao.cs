@@ -228,7 +228,7 @@ public sealed class ArquivoDaApresentacao : EntityBase, IArquivoEnviado
         ArgumentNullException.ThrowIfNull(exigencia);
         return exigencia.FormatosPermitidos.Qualquer
             ? [FormatoPermitido.Pdf, FormatoPermitido.Jpeg, FormatoPermitido.Png]
-            : [.. exigencia.FormatosPermitidos.Lista!.Select(static e => e.Formato).Distinct()];
+            : [.. exigencia.FormatosPermitidos.Lista!.Select(static e => e.Formato)];
     }
 
     /// <summary>

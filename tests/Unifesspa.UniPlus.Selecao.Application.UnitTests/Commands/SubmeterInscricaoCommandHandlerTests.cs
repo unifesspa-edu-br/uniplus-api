@@ -21,6 +21,7 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
@@ -60,9 +61,10 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         IUserContext userContext,
         IConferenciaEnderecoGeo? conferenciaEnderecoGeo = null,
         IGeradorDeNumeroInscricao? geradorDeNumeroInscricao = null,
-        TimeProvider? relogio = null) =>
+        TimeProvider? relogio = null,
+        IDocumentoDaInscricaoRepository? documentoRepository = null) =>
         SubmeterInscricaoCommandHandler.Handle(
-            command, inscricaoRepository, processoSeletivoRepository, DivulgacaoDeTeste.Certame(ProcessoId), Substitute.For<IDocumentoDaInscricaoRepository>(), registroCodecs,
+            command, inscricaoRepository, processoSeletivoRepository, DivulgacaoDeTeste.Certame(ProcessoId), documentoRepository ?? Substitute.For<IDocumentoDaInscricaoRepository>(), registroCodecs,
             DivulgacaoDeTeste.Fuso(),
             conferenciaEnderecoGeo ?? ConferenciaQueAceitaTudo(),
             geradorDeNumeroInscricao ?? GeradorQueDevolve("00000001"),
@@ -262,7 +264,8 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     /// <paramref name="ajustar"/> muda o processo antes de a versão o congelar.
     /// </summary>
     private static (VersaoConfiguracao Versao, GrafoConfiguracao Grafo, VersaoTermoEscolhida Termo) MontarVersaoComItemObrigatorioETermo(
-        IReadOnlyList<FatoColetado>? outrosItens = null, IReadOnlyList<GrupoColetado>? grupos = null, Action<ProcessoSeletivo>? ajustar = null)
+        IReadOnlyList<FatoColetado>? outrosItens = null, IReadOnlyList<GrupoColetado>? grupos = null, Action<ProcessoSeletivo>? ajustar = null,
+        Func<ProcessoSeletivo, (IReadOnlyList<DocumentoExigido> Documentos, IReadOnlyList<NoExigencia> Nos)>? exigencias = null)
     {
         FatoColetado item = FatoColetado.Criar(
             "APELIDO", 0, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
@@ -281,10 +284,12 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             "o termo não cita fato nenhum, então não tem citação pendente de garantir");
         ajustar?.Invoke(processoBase);
 
+        (IReadOnlyList<DocumentoExigido> documentos, IReadOnlyList<NoExigencia> nos) =
+            exigencias?.Invoke(processoBase) ?? ([.. processoBase.DocumentosExigidos], []);
         GrafoConfiguracao grafo = new(
             [.. processoBase.Etapas], processoBase.OfertaAtendimento!, [.. processoBase.DistribuicaoVagas],
             processoBase.BonusRegional, [.. processoBase.CriteriosDesempate], processoBase.Classificacao!,
-            [.. processoBase.CronogramaFases], [.. processoBase.DocumentosExigidos], [], null,
+            [.. processoBase.CronogramaFases], documentos, nos, null,
             fatosColetados: [.. processoBase.FatosColetados],
             formularios: [.. processoBase.Formularios],
             termosExigidos: [.. processoBase.TermosExigidos],
@@ -405,6 +410,67 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         return await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([inscricao.ETag])),
             inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf));
+    }
+
+    [Fact(DisplayName = "O envio recusa o documento obrigatório sem arquivo; com o arquivo confirmado submete, fixa o que conta e agenda a limpeza do que não se aplica")]
+    public async Task Handle_DocumentoObrigatorio_ContaOsArquivosEnviados()
+    {
+        Cpf cpf = PersonasDeTeste.FernandaDrumond;
+        DocumentoExigido laudo = null!, naoSeAplica = null!;
+        (VersaoConfiguracao versao, GrafoConfiguracao grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo(exigencias: processo =>
+        {
+            Guid fase = processo.CronogramaFases.First(static f => f.ColetaInscricao).Id;
+            DocumentoExigido Doc(string nome, Aplicabilidade aplicabilidade, IReadOnlyList<CondicaoGatilho> condicoes) => DocumentoExigido.Criar(
+                fase, Guid.CreateVersion7(), nome.ToUpperInvariant(), nome, "CAT", aplicabilidade, obrigatorio: true, null, condicoes, [], null,
+                FormatosPermitidos.Criar(true, null).Value!, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
+            laudo = Doc("Laudo", Aplicabilidade.Geral, []);
+            naoSeAplica = Doc("Outro", Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, "APELIDO", Operador.Igual, JsonSerializer.SerializeToElement("Outro")).Value!]);
+            return ([laudo, naoSeAplica], [NoExigencia.CriarFolha(laudo, 0).Value!, NoExigencia.CriarFolha(naoSeAplica, 1).Value!]);
+        });
+
+        async Task<(Result<ComprovanteInscricaoDto> Resultado, IDocumentoDaInscricaoRepository Repositorio, ArquivoDaApresentacao Fixado, ArquivoDaApresentacao Orfao)> EnviarAsync(bool comLaudo)
+        {
+            Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+            IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
+            inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
+            IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+            IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
+            DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
+
+            ApresentacaoDeDocumento doLaudo = ApresentacaoDeDocumento.Criar(existente.Id, laudo.Id, null);
+            ApresentacaoDeDocumento doOutro = ApresentacaoDeDocumento.Criar(existente.Id, naoSeAplica.Id, null);
+            ArquivoDaApresentacao Confirmado(ApresentacaoDeDocumento apresentacao, DocumentoExigido exigencia)
+            {
+                ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(
+                    apresentacao.Id, existente.Id, exigencia, "application/pdf", 1024, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+                arquivo.Confirmar(1024, new string('a', 64), TimeProvider.System);
+                return arquivo;
+            }
+
+            ArquivoDaApresentacao fixado = Confirmado(doLaudo, laudo), orfao = Confirmado(doOutro, naoSeAplica);
+            IDocumentoDaInscricaoRepository documentos = Substitute.For<IDocumentoDaInscricaoRepository>();
+            documentos.ListarApresentacoesConfirmadasAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(comLaudo ? [doLaudo] : []);
+            documentos.ListarApresentacoesDaInscricaoAsync(existente.Id, Arg.Any<CancellationToken>()).Returns([doLaudo, doOutro]);
+            documentos.ListarArquivosDaInscricaoAsync(existente.Id, Arg.Any<CancellationToken>()).Returns([fixado, orfao]);
+            documentos.ObterArquivoAsync(fixado.Id, Arg.Any<CancellationToken>()).Returns(fixado);
+            documentos.ObterArquivoAsync(orfao.Id, Arg.Any<CancellationToken>()).Returns(orfao);
+
+            Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
+                new SubmeterInscricaoCommand(ProcessoId, RequestComApelidoETermoAceito(cpf, termo, grafo), PrecondicaoIfMatch.DeTags([existente.ETag])),
+                inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf), documentoRepository: documentos);
+            return (resultado, documentos, fixado, orfao);
+        }
+
+        (Result<ComprovanteInscricaoDto> semArquivo, IDocumentoDaInscricaoRepository repoSem, _, _) = await EnviarAsync(comLaudo: false);
+        semArquivo.IsFailure.Should().BeTrue();
+        semArquivo.Errors.Should().ContainSingle(e => e.Error.Code == InscricaoErrorCodes.DocumentoObrigatorioAusente);
+        await repoSem.DidNotReceiveWithAnyArgs().RemoverArquivoAsync(default!, default);
+
+        (Result<ComprovanteInscricaoDto> comArquivo, IDocumentoDaInscricaoRepository repo, ArquivoDaApresentacao fixado, ArquivoDaApresentacao orfao) = await EnviarAsync(comLaudo: true);
+        comArquivo.IsSuccess.Should().BeTrue(comArquivo.Error?.Message);
+        fixado.ConstouDeEnvio.Should().BeTrue();
+        await repo.Received(1).RemoverArquivoAsync(orfao, Arg.Any<CancellationToken>());
+        await repo.Received(1).AgendarLimpezaAsync(orfao.ChaveSelada, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Item obrigatório respondido e termo obrigatório aceito na versão fixada: submete, gera número e grava o comprovante, com 'Prefiro não informar' em identidade de gênero e orientação sexual")]
