@@ -9,8 +9,10 @@ using Microsoft.Extensions.Logging;
 
 /// <summary>
 /// Remove os registros de arquivo enviado que ficaram pendentes além do prazo — do documento do
-/// Edital e do modelo de documento — junto dos objetos que as URLs de envio deles apontavam no
-/// armazenamento privado. O confirmado nunca é removido.
+/// Edital, do modelo de documento e do documento da inscrição — junto dos objetos que as URLs de envio
+/// deles apontavam no armazenamento privado. O confirmado nunca é removido. Apaga também as chaves
+/// agendadas em <c>chaves_a_limpar</c> (envio de arquivo confirmado, removido ou descartado, e selada
+/// órfã), depois do commit de quem as agendou.
 /// </summary>
 /// <remarks>
 /// <para>
