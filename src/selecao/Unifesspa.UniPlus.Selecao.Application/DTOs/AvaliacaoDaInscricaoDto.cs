@@ -123,11 +123,16 @@ public sealed record FaseDosDocumentosDto(
 /// <param name="Finalidade">O formulário em que o documento é apresentado, como <c>INSCRICAO</c> ou <c>ISENCAO_TAXA</c>; nulo quando a exigência não o declara.</param>
 /// <param name="EtapaId">A etapa da fase em que o documento é exigido; nula quando vale a fase inteira.</param>
 /// <param name="Situacao">
-/// <c>EXIGIDO</c>, <c>PODE_SER_EXIGIDO</c> — uma resposta que ainda falta decide — ou
+/// <c>PENDENTE</c> — se aplica e falta enviar —, <c>SATISFEITA</c> — se aplica e os documentos enviados a atendem —,
+/// <c>PODE_SER_EXIGIDO</c> — uma resposta que ainda falta decide — ou
 /// <c>DEPENDE_DE_FASE_POSTERIOR</c> — decide um fato que só se conhece depois da inscrição.
 /// </param>
 /// <param name="GrupoCodigo">O grupo de membros a que a exigência se liga, uma vez por membro; nulo fora de repetição.</param>
 /// <param name="OcorrenciaId">A ocorrência do grupo a que a exigência se liga; nula quando ainda não se sabe quais membros o grupo tem.</param>
+/// <param name="FormatosAceitos">Os formatos que a exigência aceita (PDF, JPEG, PNG); "qualquer" são os três.</param>
+/// <param name="TamanhoMaximoBytes">O menor limite efetivo entre os formatos aceitos; o servidor confere o do formato escolhido.</param>
+/// <param name="QuantidadeMinima">Quantas apresentações a exigência pede; uma apresentação com frente e verso conta uma.</param>
+/// <param name="Arquivos">Os arquivos confirmados desta exigência e ocorrência.</param>
 /// <param name="Grupos">
 /// Os grupos da árvore de exigências que contêm a exigência, do mais externo ao mais interno. Os
 /// documentos que dividem um grupo dividem o <c>grupoId</c>, e assim se reconstrói a escolha: o OU, o
