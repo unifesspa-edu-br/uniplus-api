@@ -84,6 +84,6 @@ public static class DocumentosAusentesDaInscricao
     private static bool ConferivelPelasApresentacoes(NoExigencia folha) =>
         folha.ChaveDistincao is null || (folha.ChaveDistincao == ChaveDistincao.Ocorrencia && folha.OcorrenciasEsperadas is null);
 
-    /// <summary>Pendente ou impossível de atender: o indeterminado (ainda não se sabe se se aplica) e o não aplicável não faltam.</summary>
-    private static bool NaoAtendido(EstadoSatisfacao estado) => estado is EstadoSatisfacao.Pendente or EstadoSatisfacao.Impossivel;
+    /// <summary>Só o pendente falta: o indeterminado (ainda não se sabe se se aplica), o não aplicável e o impossível — que enviar mais nada resolve — não recusam.</summary>
+    private static bool NaoAtendido(EstadoSatisfacao estado) => estado == EstadoSatisfacao.Pendente;
 }
