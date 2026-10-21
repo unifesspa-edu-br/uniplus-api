@@ -3,7 +3,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <summary>O token (UPPER_SNAKE) de <see cref="SituacaoDoDocumento"/> no contrato da avaliação da inscrição.</summary>
 public static class SituacaoDoDocumentoCodigo
 {
-    public const string Exigido = "EXIGIDO";
+    public const string Pendente = "PENDENTE";
+    public const string Satisfeita = "SATISFEITA";
     public const string PodeSerExigido = "PODE_SER_EXIGIDO";
     public const string DependeDeFasePosterior = "DEPENDE_DE_FASE_POSTERIOR";
 
@@ -13,7 +14,8 @@ public static class SituacaoDoDocumentoCodigo
     /// </summary>
     public static string ToCodigo(this SituacaoDoDocumento situacao) => situacao switch
     {
-        SituacaoDoDocumento.Exigido => Exigido,
+        SituacaoDoDocumento.Pendente => Pendente,
+        SituacaoDoDocumento.Satisfeita => Satisfeita,
         SituacaoDoDocumento.PodeSerExigido => PodeSerExigido,
         SituacaoDoDocumento.DependeDeFasePosterior => DependeDeFasePosterior,
         _ => throw new ArgumentOutOfRangeException(nameof(situacao), situacao, "Situação do documento fora do contrato do candidato."),

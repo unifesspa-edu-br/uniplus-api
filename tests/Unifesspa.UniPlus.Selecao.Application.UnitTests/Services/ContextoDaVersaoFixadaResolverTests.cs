@@ -159,7 +159,7 @@ public sealed class ContextoDaVersaoFixadaResolverTests
                 new Dictionary<string, IReadOnlyList<OcorrenciaRespondida>>(StringComparer.Ordinal),
                 new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
                 new HashSet<string>(StringComparer.Ordinal),
-                Envio: null,
+                Envio: null, Apresentacoes: EntradaDaAvaliacaoDaInscricao.SemApresentacoes,
                 NaFaseDaInscricao: true));
         avaliacao.IsSuccess.Should().BeTrue(avaliacao.Error?.Message);
         return avaliacao.Value!;
@@ -199,7 +199,7 @@ public sealed class ContextoDaVersaoFixadaResolverTests
                 new Dictionary<string, IReadOnlyList<OcorrenciaRespondida>>(StringComparer.Ordinal),
                 new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
                 new HashSet<string>(StringComparer.Ordinal),
-                Envio: null,
+                Envio: null, Apresentacoes: EntradaDaAvaliacaoDaInscricao.SemApresentacoes,
                 NaFaseDaInscricao: true));
         avaliacao.IsSuccess.Should().BeTrue(avaliacao.Error?.Message);
         return avaliacao.Value!;

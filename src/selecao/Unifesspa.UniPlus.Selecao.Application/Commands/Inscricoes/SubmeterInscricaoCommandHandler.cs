@@ -34,6 +34,8 @@ public static class SubmeterInscricaoCommandHandler
         IInscricaoRepository inscricaoRepository,
         IProcessoSeletivoRepository processoSeletivoRepository,
         ICertameDivulgadoRepository certameDivulgadoRepository,
+        IDocumentoDaInscricaoRepository documentoRepository,
+        IArquivoArmazenadoStorage storage,
         IRegistroCodecsEnvelope registroCodecs,
         IResolvedorFusoInstitucional resolvedorFuso,
         IConferenciaEnderecoGeo conferenciaEnderecoGeo,
@@ -47,6 +49,8 @@ public static class SubmeterInscricaoCommandHandler
         ArgumentNullException.ThrowIfNull(inscricaoRepository);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
+        ArgumentNullException.ThrowIfNull(documentoRepository);
+        ArgumentNullException.ThrowIfNull(storage);
         ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(resolvedorFuso);
         ArgumentNullException.ThrowIfNull(conferenciaEnderecoGeo);
@@ -181,6 +185,7 @@ public static class SubmeterInscricaoCommandHandler
             derivados.Value!.ToDictionary(static d => d.Key, static d => FatoResolvido.Resolvido(d.Value), StringComparer.Ordinal),
             AvaliacaoDaInscricao.CodigosDasEtapasDaInscricao(configuracao.Definicao),
             envio,
+            await Services.DocumentosEnviadosDaInscricao.ApresentacoesAsync(documentoRepository, inscricao.Id, cancellationToken).ConfigureAwait(false),
             NaFaseDaInscricao: true));
         if (avaliacao.IsFailure)
         {
@@ -225,6 +230,11 @@ public static class SubmeterInscricaoCommandHandler
             return Result<ComprovanteInscricaoDto>.ValidationFailure(submetido.Errors);
         }
 
+        // O envio fixa os arquivos que contam e remove os de exigência que não se aplica na versão fixada;
+        // no rascunho nada foi apagado. Os objetos do armazenamento saem só depois de gravar.
+        IReadOnlyList<ArquivoDaApresentacao> removidos = await Services.DocumentosEnviadosDaInscricao
+            .ConciliarNoEnvioAsync(documentoRepository, inscricao.Id, avaliacao.Value!, cancellationToken).ConfigureAwait(false);
+
         await inscricaoRepository.AtualizarAsync(inscricao, cancellationToken).ConfigureAwait(false);
         await inscricaoRepository.AdicionarComprovanteAsync(submetido.Value!, cancellationToken).ConfigureAwait(false);
 
@@ -239,6 +249,12 @@ public static class SubmeterInscricaoCommandHandler
             unitOfWork.DescartarAlteracoesNaoSalvas();
             return Result<ComprovanteInscricaoDto>.Failure(new DomainError(
                 InscricaoErrorCodes.ConflitoDeConcorrencia, "Esta inscrição foi alterada concorrentemente. Tente novamente."));
+        }
+
+        foreach (ArquivoDaApresentacao arquivo in removidos)
+        {
+            await storage.RemoverAsync(arquivo.ObjectKey, cancellationToken).ConfigureAwait(false);
+            await storage.RemoverAsync(arquivo.ChaveSelada, cancellationToken).ConfigureAwait(false);
         }
 
         return Result<ComprovanteInscricaoDto>.Success(ComprovanteInscricaoDto.De(submetido.Value!, inscricao.Cpf));

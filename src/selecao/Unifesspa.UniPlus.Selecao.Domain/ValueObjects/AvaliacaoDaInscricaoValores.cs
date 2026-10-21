@@ -33,7 +33,8 @@ public sealed record ConfiguracaoAvaliavel(
 /// em que as respostas são gravadas, de que dependem os limites de data relativos a ele — nulo na
 /// pré-visualização, que não grava. <see cref="NaFaseDaInscricao"/> diz que quem avalia é o candidato,
 /// na fase da inscrição: o que só se conhece numa fase posterior não decide documento nenhum. A
-/// pré-visualização simula o perfil inteiro, e por isso não o diz.
+/// pré-visualização simula o perfil inteiro, e por isso não o diz. <see cref="Apresentacoes"/> são os
+/// documentos que o candidato enviou e foram confirmados, por exigência (<c>DocumentoExigido.Id</c>).
 /// </summary>
 public sealed record EntradaDaAvaliacaoDaInscricao(
     IReadOnlyDictionary<string, JsonElement> Respostas,
@@ -41,7 +42,13 @@ public sealed record EntradaDaAvaliacaoDaInscricao(
     IReadOnlyDictionary<string, FatoResolvido> FatosConhecidos,
     IReadOnlySet<string> EtapasConcluidas,
     EnvioDasRespostas? Envio,
-    bool NaFaseDaInscricao = false);
+    IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> Apresentacoes,
+    bool NaFaseDaInscricao = false)
+{
+    /// <summary>Sem documento enviado: o rascunho que ainda não tem arquivo, a pré-visualização e o salvamento.</summary>
+    public static IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> SemApresentacoes { get; } =
+        new Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>>();
+}
 
 /// <summary>
 /// O resultado de uma avaliação só: a do formulário, a de cada exigência da árvore diante do candidato
@@ -60,12 +67,21 @@ public sealed record ResultadoDaAvaliacaoDaInscricao(
 
 /// <summary>
 /// Os documentos que o edital exige do candidato (UNI-REQ-0069, UNI-REQ-0077): cada folha da árvore com
-/// a situação dela diante das respostas, e, por fase, o que falta responder para saber se as exigências
-/// daquela fase que podem ser exigidas se aplicam. A fase sem pendência não tem entrada.
+/// a situação dela diante das respostas e dos documentos enviados, e, por fase, o que falta responder
+/// para saber se as exigências daquela fase que podem ser exigidas se aplicam. A fase sem pendência não
+/// tem entrada. <see cref="Ausentes"/> são os documentos obrigatórios da inscrição que ainda faltam,
+/// decididos pelo estado do nó da árvore (UNI-REQ-0028).
 /// </summary>
 public sealed record DocumentosDaInscricao(
     IReadOnlyList<DocumentoAvaliado> Itens,
-    IReadOnlyDictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>> PendenciasPorFase);
+    IReadOnlyDictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>> PendenciasPorFase,
+    IReadOnlyList<DocumentoAusente> Ausentes);
+
+/// <summary>
+/// Um documento obrigatório que falta: a exigência, ou as alternativas de um grupo "um ou outro" de que
+/// nenhuma foi atendida, e a ocorrência do grupo repetível a que a falta se refere.
+/// </summary>
+public sealed record DocumentoAusente(IReadOnlyList<DocumentoExigido> Alternativas, string? OcorrenciaId);
 
 /// <summary>
 /// As modalidades em que o candidato concorre (UNI-REQ-0076). <see cref="Derivada"/> diz se a

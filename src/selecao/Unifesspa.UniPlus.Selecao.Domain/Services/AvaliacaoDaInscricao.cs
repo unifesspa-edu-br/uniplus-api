@@ -66,7 +66,7 @@ public static class AvaliacaoDaInscricao
         Result<ResultadoResolucaoArvore> arvore = ResolvedorArvoreSatisfacao.Resolver(
             configuracao.Arvore,
             formulario.Fatos,
-            new Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>>(),
+            entrada.Apresentacoes,
             instancias,
             deFasePosterior);
         if (arvore.IsFailure)
@@ -79,7 +79,10 @@ public static class AvaliacaoDaInscricao
         return Result<ResultadoDaAvaliacaoDaInscricao>.Success(new ResultadoDaAvaliacaoDaInscricao(
             formulario,
             Modalidades(configuracao, formulario),
-            new DocumentosDaInscricao(documentos, PendenciasDosDocumentos(configuracao, formulario, documentos))));
+            new DocumentosDaInscricao(
+                documentos,
+                PendenciasDosDocumentos(configuracao, formulario, documentos),
+                DocumentosAusentesDaInscricao.Apurar(configuracao.Arvore, arvore.Value!))));
     }
 
     private static AvaliacaoFormulario AvaliarFormulario(ConfiguracaoAvaliavel configuracao, EntradaDaAvaliacaoDaInscricao entrada) =>
@@ -552,7 +555,8 @@ public static class AvaliacaoDaInscricao
     {
         StatusResolucaoExigencia.NaoAplicavel => SituacaoDoDocumento.NaoExigido,
         _ when deFasePosterior => SituacaoDoDocumento.DependeDeFasePosterior,
-        StatusResolucaoExigencia.Pendente or StatusResolucaoExigencia.Satisfeita => SituacaoDoDocumento.Exigido,
+        StatusResolucaoExigencia.Pendente => SituacaoDoDocumento.Pendente,
+        StatusResolucaoExigencia.Satisfeita => SituacaoDoDocumento.Satisfeita,
         _ => SituacaoDoDocumento.PodeSerExigido,
     };
 }

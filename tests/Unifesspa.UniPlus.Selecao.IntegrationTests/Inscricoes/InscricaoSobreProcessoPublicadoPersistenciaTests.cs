@@ -301,7 +301,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
         Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
             new IniciarInscricaoCommand(processoId),
-            inscricaoRepository, divulgadoRepository, processoRepository, RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), DentroDoPeriodo, writeContext,
+            inscricaoRepository, divulgadoRepository, processoRepository, Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), DentroDoPeriodo, writeContext,
             UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None);
 
         iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
@@ -442,7 +442,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         IUserContext usuario = UsuarioComCpf(PersonasDeTeste.FernandaDrumond);
         Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
             new IniciarInscricaoCommand(processoId),
-            inscricaoRepository, divulgadoRepository, processoRepository, RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
+            inscricaoRepository, divulgadoRepository, processoRepository, Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
             DentroDoPeriodo, writeContext, usuario, CancellationToken.None);
         iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
 
@@ -453,7 +453,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             null);
         Result<InscricaoDto> salvar = await SalvarInscricaoCommandHandler.Handle(
             new SalvarInscricaoCommand(processoId, request, PrecondicaoIfMatch.DeTags([iniciar.Value!.ETag])),
-            inscricaoRepository, processoRepository, divulgadoRepository, RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
+            inscricaoRepository, processoRepository, Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), divulgadoRepository, RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
             writeContext, usuario, DentroDoPeriodo, CancellationToken.None);
 
         salvar.Errors.Should().ContainSingle(static e => e.Field == "DATA_NASCIMENTO" && e.Error.Code == InscricaoErrorCodes.DataForaDaFaixa)
@@ -477,7 +477,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
             new IniciarInscricaoCommand(processoId),
             inscricaoRepository, new CertameDivulgadoRepository(writeContext), new ProcessoSeletivoRepository(writeContext, TimeProvider.System),
-            RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), DentroDoPeriodo, writeContext, UsuarioComCpf(PersonasDeTeste.KevinCarvalho), CancellationToken.None);
+            Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), DentroDoPeriodo, writeContext, UsuarioComCpf(PersonasDeTeste.KevinCarvalho), CancellationToken.None);
         iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
 
         Inscricao inscricao = (await inscricaoRepository.ObterPorIdAsync(iniciar.Value!.Id))!;
@@ -527,7 +527,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
             new IniciarInscricaoCommand(processoId),
             inscricaoRepository, new CertameDivulgadoRepository(writeContext), new ProcessoSeletivoRepository(writeContext, TimeProvider.System),
-            RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), DentroDoPeriodo, writeContext, UsuarioComCpf(PersonasDeTeste.KevinCarvalho), CancellationToken.None);
+            Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), DentroDoPeriodo, writeContext, UsuarioComCpf(PersonasDeTeste.KevinCarvalho), CancellationToken.None);
         iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
 
         Inscricao? inscricao = await inscricaoRepository.ObterPorIdAsync(iniciar.Value!.Id);
@@ -609,7 +609,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             new IniciarInscricaoCommand(processoId),
             new InscricaoRepository(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
             new CertameDivulgadoRepository(writeContext), new ProcessoSeletivoRepository(writeContext, TimeProvider.System),
-            RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), DentroDoPeriodo, writeContext, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None);
+            Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), DentroDoPeriodo, writeContext, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None);
         iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
@@ -642,7 +642,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             new IniciarInscricaoCommand(processoId),
             new InscricaoRepository(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
             new CertameDivulgadoRepository(writeContext), new ProcessoSeletivoRepository(writeContext, TimeProvider.System),
-            RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), DentroDoPeriodo, writeContext, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None);
+            Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), DentroDoPeriodo, writeContext, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None);
         iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
@@ -672,7 +672,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             new IniciarInscricaoCommand(processoId),
             new InscricaoRepository(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
             new CertameDivulgadoRepository(writeContext), new ProcessoSeletivoRepository(writeContext, TimeProvider.System),
-            RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), DentroDoPeriodo, writeContext, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None);
+            Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), DentroDoPeriodo, writeContext, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None);
         iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
@@ -711,7 +711,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
             new IniciarInscricaoCommand(processoId),
             inscricaoRepository, new CertameDivulgadoRepository(writeContext), new ProcessoSeletivoRepository(writeContext, TimeProvider.System),
-            RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), DentroDoPeriodo, writeContext, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None);
+            Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), DentroDoPeriodo, writeContext, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None);
         iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
 
         Inscricao inscricao = (await inscricaoRepository.ObterPorIdAsync(iniciar.Value!.Id))!;
@@ -742,7 +742,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             new Dictionary<string, IReadOnlyList<OcorrenciaRespondida>>(StringComparer.Ordinal),
             new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
             AvaliacaoDaInscricao.CodigosDasEtapasDaInscricao(contexto.Configuracao.Definicao),
-            Envio: null)).Value!;
+            Envio: null, Apresentacoes: EntradaDaAvaliacaoDaInscricao.SemApresentacoes)).Value!;
         ComprovanteInscricao comprovante = rascunho.Submeter(
             "000901", contexto.Admitidas.OfertasDeCurso.Single(), null, new Dictionary<string, JsonElement>(StringComparer.Ordinal),
             new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [], contexto.Admitidas with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond }, avaliacao,
@@ -782,7 +782,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         await AvaliarInscricaoQueryHandler.Handle(
             new AvaliarInscricaoQuery(processoId, new AvaliacaoDaInscricaoRequest(respostas, null)),
             new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
-            new ProcessoSeletivoRepository(db, TimeProvider.System), new CertameDivulgadoRepository(db),
+            new ProcessoSeletivoRepository(db, TimeProvider.System), Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), new CertameDivulgadoRepository(db),
             RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), usuario, DentroDoPeriodo, CancellationToken.None);
 
     [Fact(DisplayName = "A consulta da inscrição sobre o processo publicado devolve as modalidades das respostas, o que falta e o nome congelado, sem gravar nada")]
@@ -794,7 +794,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
             new IniciarInscricaoCommand(processoId),
             new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System), new CertameDivulgadoRepository(db),
-            new ProcessoSeletivoRepository(db, TimeProvider.System), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
+            new ProcessoSeletivoRepository(db, TimeProvider.System), Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
             DentroDoPeriodo, db, fernanda, CancellationToken.None);
         iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
         iniciar.Value!.Avaliacao.Modalidades.Should().BeEquivalentTo(new ModalidadesDaInscricaoDto(
@@ -832,7 +832,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         (await IniciarInscricaoCommandHandler.Handle(
             new IniciarInscricaoCommand(processoId),
             new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System), new CertameDivulgadoRepository(db),
-            new ProcessoSeletivoRepository(db, TimeProvider.System), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
+            new ProcessoSeletivoRepository(db, TimeProvider.System), Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
             DentroDoPeriodo, db, fernanda, CancellationToken.None)).IsSuccess.Should().BeTrue();
 
         Result<AvaliacaoDaInscricaoDto> avaliacao = await AvaliarAsync(db, processoId, fernanda, null);
@@ -850,7 +850,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         (await IniciarInscricaoCommandHandler.Handle(
             new IniciarInscricaoCommand(processoId),
             new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System), new CertameDivulgadoRepository(db),
-            new ProcessoSeletivoRepository(db, TimeProvider.System), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
+            new ProcessoSeletivoRepository(db, TimeProvider.System), Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
             DentroDoPeriodo, db, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None)).IsSuccess.Should().BeTrue();
 
         IUserContext mesmoCpfOutroSub = UsuarioComCpf(PersonasDeTeste.FernandaDrumond);
@@ -871,7 +871,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         (await IniciarInscricaoCommandHandler.Handle(
             new IniciarInscricaoCommand(processoId),
             new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System), new CertameDivulgadoRepository(db),
-            new ProcessoSeletivoRepository(db, TimeProvider.System), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
+            new ProcessoSeletivoRepository(db, TimeProvider.System), Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
             DentroDoPeriodo, db, fernanda, CancellationToken.None)).IsSuccess.Should().BeTrue();
 
         Result<FormularioRenderizavelDto> formulario = await ObterFormularioDaInscricaoQueryHandler.Handle(
@@ -902,7 +902,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         (await IniciarInscricaoCommandHandler.Handle(
             new IniciarInscricaoCommand(processoId),
             new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System), new CertameDivulgadoRepository(db),
-            new ProcessoSeletivoRepository(db, TimeProvider.System), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
+            new ProcessoSeletivoRepository(db, TimeProvider.System), Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
             DentroDoPeriodo, db, fernanda, CancellationToken.None)).IsSuccess.Should().BeTrue();
 
         Result<FormularioRenderizavelDto> formulario = await ObterFormularioDaInscricaoQueryHandler.Handle(
@@ -982,7 +982,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         (await IniciarInscricaoCommandHandler.Handle(
             new IniciarInscricaoCommand(processoId),
             new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System), new CertameDivulgadoRepository(db),
-            new ProcessoSeletivoRepository(db, TimeProvider.System), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
+            new ProcessoSeletivoRepository(db, TimeProvider.System), Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
             DentroDoPeriodo, db, fernanda, CancellationToken.None)).IsSuccess.Should().BeTrue();
 
         DocumentosDaInscricaoDto pendente = (await AvaliarDocumentosAsync(db, processoId, fernanda, null, [], fase)).Value!.Documentos;
@@ -991,11 +991,11 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         Result<AvaliacaoDaInscricaoDto> faseDesconhecida = await AvaliarDocumentosAsync(db, processoId, fernanda, null, [], Guid.CreateVersion7());
 
         Situacoes(pendente).Should().Equal(
-            [("RG", null, "EXIGIDO"), ("COMPROVANTE_RENDA", null, "PODE_SER_EXIGIDO"), ("CERTIDAO", null, "DEPENDE_DE_FASE_POSTERIOR")],
+            [("RG", null, "PENDENTE"), ("COMPROVANTE_RENDA", null, "PODE_SER_EXIGIDO"), ("CERTIDAO", null, "DEPENDE_DE_FASE_POSTERIOR")],
             "sem a resposta o comprovante pode ser exigido; sem membro, nada por membro; a convocação só existe depois da inscrição");
         pendente.Fases.Single().Pendencias.Select(static p => p.FatoCodigo).Should().Equal(declaraRenda);
         Situacoes(enquadra).Should().Equal(
-            [("RG", null, "EXIGIDO"), ("COMPROVANTE_RENDA", null, "EXIGIDO"), ("RG_DO_MEMBRO", "m1", "EXIGIDO"), ("RG_DO_MEMBRO", "m2", "EXIGIDO"),
+            [("RG", null, "PENDENTE"), ("COMPROVANTE_RENDA", null, "PENDENTE"), ("RG_DO_MEMBRO", "m1", "PENDENTE"), ("RG_DO_MEMBRO", "m2", "PENDENTE"),
              ("CERTIDAO", null, "DEPENDE_DE_FASE_POSTERIOR")]);
         enquadra.Fases.Single().Documentos.Where(static d => d.TipoDocumentoCodigo == "RG_DO_MEMBRO")
             .Should().OnlyContain(d => d.GrupoCodigo == familia);
@@ -1029,7 +1029,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         return await AvaliarInscricaoQueryHandler.Handle(
             new AvaliarInscricaoQuery(processoId, new AvaliacaoDaInscricaoRequest(respostas, grupos), faseId),
             new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
-            new ProcessoSeletivoRepository(db, TimeProvider.System), new CertameDivulgadoRepository(db),
+            new ProcessoSeletivoRepository(db, TimeProvider.System), Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), new CertameDivulgadoRepository(db),
             RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), usuario, DentroDoPeriodo, CancellationToken.None);
     }
 
@@ -1169,7 +1169,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
             new IniciarInscricaoCommand(processoId),
             new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System), new CertameDivulgadoRepository(db),
-            new ProcessoSeletivoRepository(db, TimeProvider.System), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
+            new ProcessoSeletivoRepository(db, TimeProvider.System), Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
             DentroDoPeriodo, db, fernanda, CancellationToken.None);
         iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
 
@@ -1259,7 +1259,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
             new IniciarInscricaoCommand(processoId),
             new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System), new CertameDivulgadoRepository(db),
-            new ProcessoSeletivoRepository(db, TimeProvider.System), RegistroCodecs, Fuso(), GeoQueConfirma(), Substitute.For<IEnderecoNoAcervoPublico>(),
+            new ProcessoSeletivoRepository(db, TimeProvider.System), Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(), GeoQueConfirma(), Substitute.For<IEnderecoNoAcervoPublico>(),
             DentroDoPeriodo, db, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None);
         iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
         return iniciar.Value!.ETag;
@@ -1269,7 +1269,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         await SubmeterInscricaoCommandHandler.Handle(
             new SubmeterInscricaoCommand(processoId, pedido, PrecondicaoIfMatch.DeTags([etag])),
             new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
-            new ProcessoSeletivoRepository(db, TimeProvider.System), new CertameDivulgadoRepository(db), RegistroCodecs, Fuso(), GeoQueConfirma(),
+            new ProcessoSeletivoRepository(db, TimeProvider.System), new CertameDivulgadoRepository(db), Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), Substitute.For<Unifesspa.UniPlus.Selecao.Application.Abstractions.IArquivoArmazenadoStorage>(), RegistroCodecs, Fuso(), GeoQueConfirma(),
             GeradorQueDevolve(numero), db, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), DentroDoPeriodo, CancellationToken.None);
 
     private static IGeradorDeNumeroInscricao GeradorQueDevolve(string numero)
@@ -1311,7 +1311,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         await SalvarInscricaoCommandHandler.Handle(
             new SalvarInscricaoCommand(processoId, pedido, PrecondicaoIfMatch.DeTags([etag])),
             new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
-            new ProcessoSeletivoRepository(db, TimeProvider.System), new CertameDivulgadoRepository(db), RegistroCodecs, Fuso(), GeoQueConfirma(),
+            new ProcessoSeletivoRepository(db, TimeProvider.System), Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), new CertameDivulgadoRepository(db), RegistroCodecs, Fuso(), GeoQueConfirma(),
             Substitute.For<IEnderecoNoAcervoPublico>(), db, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), DentroDoPeriodo, CancellationToken.None);
 
     [Fact(DisplayName = "Salvar e enviar sobre a versão publicada recusam, no nível superior, o fato que a versão só coleta dentro de um grupo")]
@@ -1507,7 +1507,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         InscricaoRepository inscricoes = new(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         ProcessoSeletivoRepository processos = new(db, TimeProvider.System);
         Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
-            new IniciarInscricaoCommand(processoId), inscricoes, new CertameDivulgadoRepository(db), processos, RegistroCodecs, Fuso(),
+            new IniciarInscricaoCommand(processoId), inscricoes, new CertameDivulgadoRepository(db), processos, Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(),
             Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), DentroDoPeriodo, db, fernanda, CancellationToken.None);
         iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
 
@@ -1519,10 +1519,10 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
                     ["CONCORRER_PCD"] = JsonSerializer.SerializeToElement(true),
                 }, null, null),
                 PrecondicaoIfMatch.DeTags([iniciar.Value!.ETag])),
-            inscricoes, processos, new CertameDivulgadoRepository(db), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
+            inscricoes, processos, Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), new CertameDivulgadoRepository(db), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
             db, fernanda, DentroDoPeriodo, CancellationToken.None);
         Result<InscricaoDto> ler = await ObterInscricaoQueryHandler.Handle(
-            new ObterInscricaoQuery(processoId), inscricoes, new CertameDivulgadoRepository(db), processos, RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), fernanda,
+            new ObterInscricaoQuery(processoId), inscricoes, new CertameDivulgadoRepository(db), processos, Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), fernanda,
             DentroDoPeriodo, CancellationToken.None);
 
         salvar.IsSuccess.Should().BeTrue(salvar.Error?.Message);
@@ -1619,7 +1619,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         {
             Result<InscricaoDto> ainda = await ObterInscricaoQueryHandler.Handle(
                 new ObterInscricaoQuery(processoId), new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
-                new CertameDivulgadoRepository(db), new ProcessoSeletivoRepository(db, TimeProvider.System), RegistroCodecs, Fuso(),
+                new CertameDivulgadoRepository(db), new ProcessoSeletivoRepository(db, TimeProvider.System), Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(),
                 Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), UsuarioComCpf(PersonasDeTeste.FernandaDrumond),
                 DentroDoPeriodo, CancellationToken.None);
             ainda.Value!.VersaoFormularioId.Should().Be(versaoUm);
@@ -1637,7 +1637,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         {
             Result<InscricaoDto> ler = await ObterInscricaoQueryHandler.Handle(
                 new ObterInscricaoQuery(processoId), new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
-                new CertameDivulgadoRepository(db), new ProcessoSeletivoRepository(db, TimeProvider.System), RegistroCodecs, Fuso(),
+                new CertameDivulgadoRepository(db), new ProcessoSeletivoRepository(db, TimeProvider.System), Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(),
                 Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), UsuarioComCpf(PersonasDeTeste.FernandaDrumond),
                 DentroDoPeriodo, CancellationToken.None);
             ler.IsSuccess.Should().BeTrue(ler.Error?.Message);

@@ -92,7 +92,8 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
                         .Where(static e => e is not null)
                         .Select(static e => DefinicaoDoProcesso.CodigoDaEtapa(EstruturaFormulario.FinalidadeDoToken(e.Finalidade), e.Etapa)),
                     StringComparer.Ordinal),
-                Envio: null));
+                Envio: null,
+                Apresentacoes: EntradaDaAvaliacaoDaInscricao.SemApresentacoes));
         if (avaliada.IsFailure)
         {
             return Result<PreVisualizacaoDoProcessoDto>.Failure(avaliada.Error!);
@@ -158,7 +159,7 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
     /// </summary>
     private static string Situacao(SituacaoDoDocumento situacao) => situacao switch
     {
-        SituacaoDoDocumento.Exigido => "EXIGIDO",
+        SituacaoDoDocumento.Pendente or SituacaoDoDocumento.Satisfeita => "EXIGIDO",
         SituacaoDoDocumento.NaoExigido => "NAO_EXIGIDO",
         _ => "INDETERMINADO",
     };

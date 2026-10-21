@@ -37,7 +37,7 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
     {
         DocumentoExigido comprovante = Condicional(FaseDaInscricao, (BaixaRenda, true));
 
-        Situacao(Avaliar(Configuracao(comprovante), Respostas((BaixaRenda, true))), comprovante).Should().Be(SituacaoDoDocumento.Exigido);
+        Situacao(Avaliar(Configuracao(comprovante), Respostas((BaixaRenda, true))), comprovante).Should().Be(SituacaoDoDocumento.Pendente);
         Situacao(Avaliar(Configuracao(comprovante), Respostas((BaixaRenda, false))), comprovante).Should().Be(SituacaoDoDocumento.NaoExigido);
     }
 
@@ -107,7 +107,7 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
             Respostas(),
             Membros(("m1", true), ("m2", false))).Documentos.Itens];
 
-        documentos.Single(static d => d.OcorrenciaId == "m1").Situacao.Should().Be(SituacaoDoDocumento.Exigido);
+        documentos.Single(static d => d.OcorrenciaId == "m1").Situacao.Should().Be(SituacaoDoDocumento.Pendente);
         documentos.Single(static d => d.OcorrenciaId == "m2").Situacao.Should().Be(SituacaoDoDocumento.NaoExigido);
     }
 
@@ -197,6 +197,37 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
             FaseDaInscricao.Id, Guid.CreateVersion7(), "DOCUMENTO", "Documento", "CAT",
             Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null, [], [], null, Qualquer, null).Value!;
 
+    [Fact(DisplayName = "O documento enviado e confirmado deixa a exigência satisfeita; sem ele, segue pendente")]
+    public void DocumentoEnviado_SatisfazAExigencia()
+    {
+        DocumentoExigido laudo = Condicional(FaseDaInscricao, (BaixaRenda, true));
+        ConfiguracaoAvaliavel configuracao = Configuracao(laudo);
+        Dictionary<string, JsonElement> respostas = Respostas((BaixaRenda, true));
+
+        Situacao(Avaliar(configuracao, respostas), laudo).Should().Be(SituacaoDoDocumento.Pendente);
+        Situacao(
+            Avaliar(configuracao, respostas, apresentacoes: new Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> { [laudo.Id] = [new(Guid.CreateVersion7())] }),
+            laudo).Should().Be(SituacaoDoDocumento.Satisfeita);
+    }
+
+    [Fact(DisplayName = "A quantidade mínima conta apresentações: uma só segue pendente, e duas satisfazem")]
+    public void QuantidadeMinima_ContaApresentacoes()
+    {
+        DocumentoExigido extrato = Geral();
+        ConfiguracaoAvaliavel configuracao = ComRaizes([NoExigencia.CriarFolha(extrato, 0, quantidadeMinima: 2).Value!]);
+
+        ResultadoDaAvaliacaoDaInscricao UmaApresentacao(int quantas) => Avaliar(
+            configuracao,
+            Respostas(),
+            apresentacoes: new Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>>
+            {
+                [extrato.Id] = [.. Enumerable.Range(0, quantas).Select(static _ => new ApresentacaoDocumento(Guid.CreateVersion7()))],
+            });
+
+        Situacao(UmaApresentacao(1), extrato).Should().Be(SituacaoDoDocumento.Pendente);
+        Situacao(UmaApresentacao(2), extrato).Should().Be(SituacaoDoDocumento.Satisfeita);
+    }
+
     [Fact(DisplayName = "As dependências da avaliação cobrem o campo e o subitem que os gatilhos citam, e o grupo pelo qual a árvore se repete")]
     public void Dependencias_CobremOsGatilhos()
     {
@@ -218,7 +249,8 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
         ConfiguracaoAvaliavel configuracao,
         Dictionary<string, JsonElement> respostas,
         IReadOnlyList<OcorrenciaRespondida>? membros = null,
-        bool naFaseDaInscricao = true)
+        bool naFaseDaInscricao = true,
+        IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>>? apresentacoes = null)
     {
         Dictionary<string, IReadOnlyList<OcorrenciaRespondida>> grupos = new(StringComparer.Ordinal);
         if (membros is not null)
@@ -230,7 +262,7 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
             configuracao,
             new EntradaDaAvaliacaoDaInscricao(
                 respostas, grupos, new Dictionary<string, FatoResolvido>(StringComparer.Ordinal), new HashSet<string>(StringComparer.Ordinal),
-                Envio: null, NaFaseDaInscricao: naFaseDaInscricao));
+                Envio: null, Apresentacoes: apresentacoes ?? EntradaDaAvaliacaoDaInscricao.SemApresentacoes, NaFaseDaInscricao: naFaseDaInscricao));
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         return resultado.Value!;
     }

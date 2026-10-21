@@ -163,7 +163,7 @@ public sealed class AvaliacaoDaInscricaoTests
                 new Dictionary<string, IReadOnlyList<OcorrenciaRespondida>>(StringComparer.Ordinal),
                 new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
                 new HashSet<string>(StringComparer.Ordinal),
-                Envio: null));
+                Envio: null, Apresentacoes: EntradaDaAvaliacaoDaInscricao.SemApresentacoes));
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         return resultado.Value!;
     }

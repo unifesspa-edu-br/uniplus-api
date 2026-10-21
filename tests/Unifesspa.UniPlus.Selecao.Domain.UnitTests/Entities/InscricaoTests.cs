@@ -6,6 +6,8 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -1106,6 +1108,24 @@ public sealed class InscricaoTests
         inscricao.Situacao.Should().Be(SituacaoInscricao.Rascunho);
         inscricao.Revisao.Should().Be(revisao);
         inscricao.Comprovantes.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "O documento obrigatório ausente recusa o envio junto das demais recusas, sem mudar a inscrição")]
+    public void Submeter_DocumentoObrigatorioAusente_RecusaJuntoDasDemais()
+    {
+        Inscricao inscricao = NovaInscricao();
+        DocumentoExigido laudo = DocumentoExigido.Criar(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo médico", "CAT", Aplicabilidade.Geral, obrigatorio: true, null, [], [], null,
+            FormatosPermitidos.Criar(true, null).Value!, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
+        ResultadoDaAvaliacaoDaInscricao avaliacao = ComModalidades(SituacaoDasModalidades.FaltaResponder);
+        avaliacao = avaliacao with { Documentos = avaliacao.Documentos with { Ausentes = [new DocumentoAusente([laudo], null)] } };
+
+        Result<ComprovanteInscricao> resultado = SubmeterCom(inscricao, avaliacao);
+
+        resultado.Errors.Select(static e => e.Error.Code).Should().Equal(
+            InscricaoErrorCodes.ModalidadeNaoDecidida, InscricaoErrorCodes.DocumentoObrigatorioAusente);
+        resultado.Errors[^1].Field.Should().Be($"documentos.{laudo.Id}");
+        inscricao.Situacao.Should().Be(SituacaoInscricao.Rascunho);
     }
 
     [Fact(DisplayName = "Com a modalidade derivada ainda indecidida, o envio é recusado em vez de sair sem modalidade")]

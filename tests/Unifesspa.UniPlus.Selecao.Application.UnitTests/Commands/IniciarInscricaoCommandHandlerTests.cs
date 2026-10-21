@@ -49,7 +49,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
             inscricaoRepository,
             Substitute.For<ICertameDivulgadoRepository>(),
             Substitute.For<IProcessoSeletivoRepository>(),
-            Substitute.For<IRegistroCodecsEnvelope>(),
+            Substitute.For<IDocumentoDaInscricaoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(),
             Fuso(),
             Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
             TimeProvider.System,
@@ -80,7 +80,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
             inscricaoRepository,
             DivulgacaoDeTeste.Certame(ProcessoId),
             cenario.Processos,
-            cenario.Codecs,
+            Substitute.For<IDocumentoDaInscricaoRepository>(), cenario.Codecs,
             Fuso(),
             Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
             new RelogioFixo(DentroDoPeriodo.AddYears(4)),
@@ -110,7 +110,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
             inscricaoRepository,
             Substitute.For<ICertameDivulgadoRepository>(),
             cenario.Processos,
-            cenario.Codecs,
+            Substitute.For<IDocumentoDaInscricaoRepository>(), cenario.Codecs,
             Fuso(),
             Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
             new RelogioFixo(DentroDoPeriodo),
@@ -135,7 +135,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
         cenario.Inscricoes.ObterTodasPorCpfAsync(cpf, Arg.Any<CancellationToken>()).Returns((IReadOnlyList<Inscricao>)[cancelada]);
 
         Result<InscricaoDto> deOutro = await IniciarInscricaoCommandHandler.Handle(
-            new IniciarInscricaoCommand(ProcessoId), cenario.Inscricoes, cenario.Divulgados, cenario.Processos, cenario.Codecs, Fuso(),
+            new IniciarInscricaoCommand(ProcessoId), cenario.Inscricoes, cenario.Divulgados, cenario.Processos, Substitute.For<IDocumentoDaInscricaoRepository>(), cenario.Codecs, Fuso(),
             Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), new RelogioFixo(DentroDoPeriodo),
             Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf, "sub-outro"), CancellationToken.None);
         deOutro.Error!.Code.Should().Be(InscricaoErrorCodes.DonoDivergente);
@@ -162,7 +162,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
             inscricaoRepository,
             divulgadoRepository,
             Substitute.For<IProcessoSeletivoRepository>(),
-            Substitute.For<IRegistroCodecsEnvelope>(),
+            Substitute.For<IDocumentoDaInscricaoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(),
             Fuso(),
             Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
             TimeProvider.System,
@@ -273,7 +273,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
             cenario.Inscricoes,
             cenario.Divulgados,
             cenario.Processos,
-            cenario.Codecs,
+            Substitute.For<IDocumentoDaInscricaoRepository>(), cenario.Codecs,
             Fuso(),
             Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
             relogio,

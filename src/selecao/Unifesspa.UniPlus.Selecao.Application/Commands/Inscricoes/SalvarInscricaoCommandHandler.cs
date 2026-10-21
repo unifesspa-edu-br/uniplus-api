@@ -30,6 +30,7 @@ public static class SalvarInscricaoCommandHandler
         SalvarInscricaoCommand command,
         IInscricaoRepository inscricaoRepository,
         IProcessoSeletivoRepository processoSeletivoRepository,
+        IDocumentoDaInscricaoRepository documentoRepository,
         ICertameDivulgadoRepository certameDivulgadoRepository,
         IRegistroCodecsEnvelope registroCodecs,
         IResolvedorFusoInstitucional resolvedorFuso,
@@ -43,6 +44,7 @@ public static class SalvarInscricaoCommandHandler
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(inscricaoRepository);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
+        ArgumentNullException.ThrowIfNull(documentoRepository);
         ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
         ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(resolvedorFuso);
@@ -146,6 +148,7 @@ public static class SalvarInscricaoCommandHandler
             new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
             new HashSet<string>(StringComparer.Ordinal),
             envio,
+            EntradaDaAvaliacaoDaInscricao.SemApresentacoes,
             NaFaseDaInscricao: true));
         if (avaliacao.IsFailure)
         {
@@ -191,6 +194,7 @@ public static class SalvarInscricaoCommandHandler
             new Dictionary<string, IReadOnlyList<OcorrenciaRespondida>>(StringComparer.Ordinal),
             envio,
             conferenciaEnderecoGeo,
+            documentoRepository,
             cancellationToken).ConfigureAwait(false);
         if (avaliada.IsFailure)
         {

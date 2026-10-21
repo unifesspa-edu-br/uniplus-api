@@ -35,6 +35,8 @@ internal sealed class ArquivoDaApresentacaoConfiguration : IEntityTypeConfigurat
         builder.Property(a => a.Status).HasConversion<int>().IsRequired();
         builder.Property(a => a.HashSha256).HasMaxLength(64)
             .HasComment("O SHA-256 do conteúdo em claro, calculado no servidor na confirmação.");
+        builder.Property(a => a.ConstouDeEnvio).IsRequired()
+            .HasComment("O arquivo confirmado já constou de um envio da inscrição; a limpeza dos envios seguintes nunca o apaga (UNI-REQ-0168).");
         builder.Ignore(a => a.TipoDeMidia);
         builder.Ignore(a => a.ChaveSelada);
 

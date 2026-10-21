@@ -590,6 +590,7 @@ public sealed class Inscricao : EntityBase
             .. RecusasDoEndereco(MesclarPreservandoAusentes(Respostas, respostas), admitidas),
             .. RecusasDasOpcoesDeCurso(ofertaCursoId, ofertaCursoSegundaOpcaoId, admitidas, aoEnviar: true),
             .. RecusasDasModalidades(avaliacao, ofertaCursoId, ofertaCursoSegundaOpcaoId, admitidas),
+            .. RecusasDosDocumentos(avaliacao.Documentos),
             .. RecusasDosAceites(aceites, admitidas.Termos),
         ];
         if (recusas.Count > 0)
@@ -815,6 +816,23 @@ public sealed class Inscricao : EntityBase
 
         return recusas;
     }
+
+    /// <summary>
+    /// Cada documento obrigatório que falta é uma recusa (UNI-REQ-0028), no campo da exigência — a
+    /// primeira alternativa, quando o grupo "um ou outro" não foi atendido por nenhuma — e, no grupo
+    /// repetível, da ocorrência que falta.
+    /// </summary>
+    private static IEnumerable<FieldError> RecusasDosDocumentos(DocumentosDaInscricao documentos) =>
+        documentos.Ausentes.Select(static ausente =>
+        {
+            string nomes = string.Join(" ou ", ausente.Alternativas.Select(static d => d.TipoDocumentoNome));
+            string campo = $"documentos.{ausente.Alternativas[0].Id}" + (ausente.OcorrenciaId is { } ocorrencia ? $".{ocorrencia}" : string.Empty);
+            return new FieldError(campo, new DomainError(
+                InscricaoErrorCodes.DocumentoObrigatorioAusente,
+                ausente.Alternativas.Count == 1
+                    ? $"Envie o documento obrigatório: {nomes}."
+                    : $"Envie um dos documentos obrigatórios: {nomes}."));
+        });
 
     /// <summary>
     /// A modalidade de cada opção declarada tem de estar decidida e não vazia: a 2ª opção tem a própria

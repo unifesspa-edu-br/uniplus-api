@@ -158,8 +158,13 @@ public static class ResolvedorArvoreSatisfacao
             .SelectMany(static instancia => instancia.StatusDescendentes.Select(
                 par => new StatusPorEntidade(par.Key, instancia.EntidadeId, par.Value)))];
 
+        List<EstadoPorEntidade> estadosPorEntidade = [.. instanciasResolvidasPorNo.Values
+            .SelectMany(static resolvidas => resolvidas)
+            .SelectMany(static instancia => instancia.EstadosDescendentes.Select(
+                par => new EstadoPorEntidade(par.Key, instancia.EntidadeId, par.Value)))];
+
         return Result<ResultadoResolucaoArvore>.Success(new ResultadoResolucaoArvore(
-            estados, statusPorExigencia, consequenciasVigentes, pendenciasDeOrientacao, statusPorEntidade, nosEmissaoSuprimida));
+            estados, statusPorExigencia, consequenciasVigentes, pendenciasDeOrientacao, statusPorEntidade, estadosPorEntidade, nosEmissaoSuprimida));
     }
 
     private static EstadoSatisfacao ResolverNo(
