@@ -133,6 +133,12 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     /// </summary>
     public DbSet<AtoDoProcesso> AtosDoProcesso => Set<AtoDoProcesso>();
 
+    /// <summary>As apresentações de documento que o candidato faz para atender as exigências da inscrição.</summary>
+    public DbSet<ApresentacaoDeDocumento> ApresentacoesDeDocumento => Set<ApresentacaoDeDocumento>();
+
+    /// <summary>Os arquivos das apresentações de documento da inscrição.</summary>
+    public DbSet<ArquivoDaApresentacao> ArquivosDaApresentacao => Set<ArquivoDaApresentacao>();
+
     /// <summary>Modelos de documento que as exigências oferecem ao candidato — fora do agregado, como o documento a publicar.</summary>
     public DbSet<ModeloDeDocumento> ModelosDeDocumento => Set<ModeloDeDocumento>();
 

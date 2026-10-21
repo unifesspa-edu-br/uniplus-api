@@ -185,6 +185,21 @@ public sealed class InscricaoRepository : IInscricaoRepository
         return comprovantes;
     }
 
+    public async Task<bool> TentarAvancarRevisaoAsync(
+        Guid id, int revisaoLida, bool apenasRascunho, CancellationToken cancellationToken = default)
+    {
+        DateTimeOffset agora = _timeProvider.GetUtcNow();
+        int linhasAfetadas = await _dbContext.Inscricoes
+            .Where(r => r.Id == id && r.Revisao == revisaoLida)
+            .Where(r => apenasRascunho ? r.Situacao == SituacaoInscricao.Rascunho : r.Situacao != SituacaoInscricao.Cancelada)
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(r => r.Revisao, revisaoLida + 1).SetProperty(r => r.UpdatedAt, agora),
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        return linhasAfetadas == 1;
+    }
+
     public async Task AdicionarComprovanteAsync(ComprovanteInscricao comprovante, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(comprovante);

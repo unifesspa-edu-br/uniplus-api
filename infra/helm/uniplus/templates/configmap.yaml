@@ -20,3 +20,5 @@ data:
   Geo__BaseUrl: {{ .Values.geo.baseUrl | quote }}
   Geo__OAuth__TokenEndpoint: {{ .Values.geo.oauthTokenEndpoint | quote }}
   Geo__OAuth__ClientId: {{ .Values.geo.oauthClientId | quote }}
+  Clamd__Host: {{ .Values.clamd.host | quote }}
+  Clamd__Port: {{ .Values.clamd.port | quote }}

@@ -67,6 +67,9 @@ services:
       # só resolve dentro dela. Porta 9000 já é publicada no host (ver serviço
       # minio), então localhost funciona para quem roda o frontend fora do Docker.
       Storage__PublicEndpoint: "localhost:9000"
+      # Antivírus do arquivo do candidato (serviço clamav do docker-compose.yml).
+      Clamd__Host: "clamav"
+      Clamd__Port: "3310"
       # Realm `unifesspa` — o mesmo em que os frontends `*-web` autenticam. Para smoke
       # via password grant, o override docker-compose.smoke.yml realinha para dev-local.
       Auth__Authority: "http://keycloak:8080/realms/unifesspa"

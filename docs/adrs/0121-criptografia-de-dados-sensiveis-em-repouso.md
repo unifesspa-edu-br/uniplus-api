@@ -346,3 +346,14 @@ inscrições com o mesmo CPF no mesmo certame sem decifrar a coluna cifrada inte
 - Guia de configuração: `docs/guia-config-cifragem.md`, seção "Índice cego (`IUniPlusBlindIndexService`)".
 - A manifestação formal da Encarregada de Proteção de Dados sobre o uso do índice cego para CPF
   (memorando de 2026-10-09) é anexada a esta emenda quando chegar.
+
+## Emenda 2 (2026-10-21) — cifra do arquivo enviado pelo candidato
+
+O documento que o candidato envia para atender uma exigência da inscrição (issue #2036) é dado pessoal e,
+no caso do laudo, sensível. O conteúdo selado no armazenamento é cifrado com a chave de dado sensível que
+a Seleção já tem (`uniplus-selecao-sensiveis-aesgcm`), por uma porta da Application implementada na
+Infrastructure. Não há chave por arquivo, nem chave nova no Vault: a cifra individual que o parecer das
+encarregadas de dados de 13/10/2026 pede é a do envelope autenticado de cada arquivo. O SHA-256 do
+conteúdo em claro, gravado na confirmação, é conferido ao decifrar, e o objeto trocado por outro registro
+não abre. A verificação do antivírus acontece antes, com o conteúdo ainda em claro na memória, e o objeto
+do envio, em claro, é apagado na confirmação. O nome original do arquivo não é guardado.

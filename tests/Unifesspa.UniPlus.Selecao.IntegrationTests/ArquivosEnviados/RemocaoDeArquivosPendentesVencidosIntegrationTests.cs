@@ -207,6 +207,7 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
         RemocaoDeArquivosPendentesVencidos remocao = new(
             new DocumentoAPublicarRepository(context),
             new ModeloDeDocumentoRepository(context),
+            new DocumentoDaInscricaoRepository(context),
             _storage,
             TimeProvider.System,
             NullLogger<RemocaoDeArquivosPendentesVencidos>.Instance);

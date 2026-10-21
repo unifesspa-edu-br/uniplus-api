@@ -13,7 +13,8 @@ using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 
 /// <summary>
 /// Remove fisicamente o rascunho do dono do token. O rascunho não tem número nem comprovante, e guardar
-/// dado pessoal sem finalidade contraria a LGPD; a inscrição enviada nunca passa por aqui.
+/// dado pessoal sem finalidade contraria a LGPD, e por isso os arquivos de documento saem também do
+/// armazenamento; a inscrição enviada nunca passa por aqui.
 /// </summary>
 public static class DescartarRascunhoDaInscricaoCommandHandler
 {
@@ -27,6 +28,8 @@ public static class DescartarRascunhoDaInscricaoCommandHandler
         TimeProvider timeProvider,
         ISelecaoUnitOfWork unitOfWork,
         IUserContext userContext,
+        IDocumentoDaInscricaoRepository documentoRepository,
+        IArquivoArmazenadoStorage storage,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
@@ -38,6 +41,8 @@ public static class DescartarRascunhoDaInscricaoCommandHandler
         ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(userContext);
+        ArgumentNullException.ThrowIfNull(documentoRepository);
+        ArgumentNullException.ThrowIfNull(storage);
 
         if (userContext.Cpf is not { } cpfDoToken)
         {
@@ -90,8 +95,19 @@ public static class DescartarRascunhoDaInscricaoCommandHandler
             return Result.Failure(recusa);
         }
 
+        // Os registros dos arquivos caem em cascata com a inscrição; os objetos do armazenamento, não.
+        IReadOnlyList<ArquivoDaApresentacao> arquivos = await documentoRepository
+            .ListarArquivosDaInscricaoAsync(inscricao.Id, cancellationToken).ConfigureAwait(false);
+
         await inscricaoRepository.RemoverAsync(inscricao, cancellationToken).ConfigureAwait(false);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+
+        foreach (ArquivoDaApresentacao arquivo in arquivos)
+        {
+            await storage.RemoverAsync(arquivo.ObjectKey, cancellationToken).ConfigureAwait(false);
+            await storage.RemoverAsync(arquivo.ChaveSelada, cancellationToken).ConfigureAwait(false);
+        }
+
         return Result.Success();
     }
 }
