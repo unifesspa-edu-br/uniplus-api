@@ -23,6 +23,14 @@ public interface IDocumentoDaInscricaoRepository : IArquivoEnviadoRepository
     /// </summary>
     Task RemoverArquivoAsync(ArquivoDaApresentacao arquivo, CancellationToken cancellationToken = default);
 
+    /// <summary>As apresentações da inscrição que têm ao menos um arquivo confirmado — as que contam para a exigência.</summary>
+    Task<IReadOnlyList<ApresentacaoDeDocumento>> ListarApresentacoesConfirmadasAsync(
+        Guid inscricaoId, CancellationToken cancellationToken = default);
+
+    /// <summary>Todas as apresentações da inscrição, confirmadas ou não, sem rastreamento.</summary>
+    Task<IReadOnlyList<ApresentacaoDeDocumento>> ListarApresentacoesDaInscricaoAsync(
+        Guid inscricaoId, CancellationToken cancellationToken = default);
+
     /// <summary>Os arquivos de todas as apresentações da inscrição, sem rastreamento.</summary>
     Task<IReadOnlyList<ArquivoDaApresentacao>> ListarArquivosDaInscricaoAsync(
         Guid inscricaoId, CancellationToken cancellationToken = default);

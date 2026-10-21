@@ -263,6 +263,11 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("confirmado_em");
 
+                    b.Property<bool>("ConstouDeEnvio")
+                        .HasColumnType("boolean")
+                        .HasColumnName("constou_de_envio")
+                        .HasComment("O arquivo confirmado já constou de um envio da inscrição; a limpeza dos envios seguintes nunca o apaga (UNI-REQ-0168).");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");

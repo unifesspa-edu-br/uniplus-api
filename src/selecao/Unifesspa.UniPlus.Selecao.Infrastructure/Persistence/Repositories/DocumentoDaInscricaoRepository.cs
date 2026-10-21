@@ -48,9 +48,13 @@ public sealed class DocumentoDaInscricaoRepository : IDocumentoDaInscricaoReposi
 
         _context.ArquivosDaApresentacao.Remove(arquivo);
 
-        // A apresentação sai com o último arquivo; os irmãos que continuam a seguram.
+        // A apresentação sai com o último arquivo; os irmãos que continuam a seguram. Os irmãos que esta
+        // mesma gravação já remove não contam, ou a apresentação ficaria sem arquivo e sem saída.
+        List<Guid> jaRemovidos = [.. _context.ChangeTracker.Entries<ArquivoDaApresentacao>()
+            .Where(static e => e.State == EntityState.Deleted)
+            .Select(static e => e.Entity.Id)];
         bool temIrmaos = await _context.ArquivosDaApresentacao
-            .AnyAsync(a => a.ApresentacaoId == arquivo.ApresentacaoId && a.Id != arquivo.Id, cancellationToken)
+            .AnyAsync(a => a.ApresentacaoId == arquivo.ApresentacaoId && !jaRemovidos.Contains(a.Id), cancellationToken)
             .ConfigureAwait(false);
         if (!temIrmaos
             && await _context.ApresentacoesDeDocumento.FirstOrDefaultAsync(a => a.Id == arquivo.ApresentacaoId, cancellationToken).ConfigureAwait(false) is { } apresentacao)
@@ -58,6 +62,23 @@ public sealed class DocumentoDaInscricaoRepository : IDocumentoDaInscricaoReposi
             _context.ApresentacoesDeDocumento.Remove(apresentacao);
         }
     }
+
+    public async Task<IReadOnlyList<ApresentacaoDeDocumento>> ListarApresentacoesConfirmadasAsync(
+        Guid inscricaoId, CancellationToken cancellationToken = default) =>
+        await _context.ApresentacoesDeDocumento
+            .AsNoTracking()
+            .Where(p => p.InscricaoId == inscricaoId
+                && _context.ArquivosDaApresentacao.Any(a => a.ApresentacaoId == p.Id && a.Status == StatusArquivoEnviado.Confirmado))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+    public async Task<IReadOnlyList<ApresentacaoDeDocumento>> ListarApresentacoesDaInscricaoAsync(
+        Guid inscricaoId, CancellationToken cancellationToken = default) =>
+        await _context.ApresentacoesDeDocumento
+            .AsNoTracking()
+            .Where(p => p.InscricaoId == inscricaoId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
 
     public async Task<IReadOnlyList<ArquivoDaApresentacao>> ListarArquivosDaInscricaoAsync(
         Guid inscricaoId, CancellationToken cancellationToken = default) =>

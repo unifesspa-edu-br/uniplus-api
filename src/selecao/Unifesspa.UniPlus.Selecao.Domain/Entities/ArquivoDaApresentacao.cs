@@ -52,6 +52,12 @@ public sealed class ArquivoDaApresentacao : EntityBase, IArquivoEnviado
 
     public DateTimeOffset? ConfirmadoEm { get; private set; }
 
+    /// <summary>
+    /// O arquivo já constou de um envio da inscrição (UNI-REQ-0168): a prova do que o candidato
+    /// apresentou, que a limpeza dos envios seguintes nunca apaga.
+    /// </summary>
+    public bool ConstouDeEnvio { get; private set; }
+
     /// <summary>A chave do conteúdo selado cifrado, definida na confirmação; nunca alvo de URL pré-assinada.</summary>
     public string? ObjectKeyConfirmado { get; private set; }
 
@@ -143,6 +149,15 @@ public sealed class ArquivoDaApresentacao : EntityBase, IArquivoEnviado
         ConfirmadoEm = clock.GetUtcNow();
         ObjectKeyConfirmado = ChaveSelada;
         return Result.Success();
+    }
+
+    /// <summary>Registra que o arquivo confirmado entrou num envio da inscrição; a partir daí ele não é mais apagado.</summary>
+    public void MarcarComoConstanteDeEnvio()
+    {
+        if (Status == StatusArquivoEnviado.Confirmado)
+        {
+            ConstouDeEnvio = true;
+        }
     }
 
     /// <summary>

@@ -30,6 +30,7 @@ public static class AvaliarInscricaoQueryHandler
         AvaliarInscricaoQuery query,
         IInscricaoRepository inscricaoRepository,
         IProcessoSeletivoRepository processoSeletivoRepository,
+        IDocumentoDaInscricaoRepository documentoRepository,
         ICertameDivulgadoRepository certameDivulgadoRepository,
         IRegistroCodecsEnvelope registroCodecs,
         IResolvedorFusoInstitucional resolvedorFuso,
@@ -116,6 +117,7 @@ public static class AvaliarInscricaoQueryHandler
             grupos,
             new EnvioDasRespostas(instante, fuso.Value!),
             conferenciaEnderecoGeo,
+            documentoRepository,
             cancellationToken).ConfigureAwait(false);
         if (avaliacao.IsFailure)
         {

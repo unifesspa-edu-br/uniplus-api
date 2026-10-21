@@ -33,6 +33,7 @@ public static class PreparacaoDaAvaliacaoDaInscricao
         Inscricao inscricao,
         Domain.Interfaces.ICertameDivulgadoRepository certameDivulgadoRepository,
         Domain.Interfaces.IProcessoSeletivoRepository processoSeletivoRepository,
+        Domain.Interfaces.IDocumentoDaInscricaoRepository documentoRepository,
         IRegistroCodecsEnvelope registroCodecs,
         IResolvedorFusoInstitucional resolvedorFuso,
         IConferenciaEnderecoGeo conferenciaEnderecoGeo,
@@ -42,6 +43,7 @@ public static class PreparacaoDaAvaliacaoDaInscricao
     {
         ArgumentNullException.ThrowIfNull(inscricao);
         ArgumentNullException.ThrowIfNull(resolvedorFuso);
+        ArgumentNullException.ThrowIfNull(documentoRepository);
 
         Result<TimeZoneInfo> fuso = resolvedorFuso.Resolver();
         if (fuso.IsFailure)
@@ -73,6 +75,7 @@ public static class PreparacaoDaAvaliacaoDaInscricao
             new Dictionary<string, IReadOnlyList<OcorrenciaRespondida>>(StringComparer.Ordinal),
             new EnvioDasRespostas(instante, fuso.Value!),
             conferenciaEnderecoGeo,
+            documentoRepository,
             cancellationToken).ConfigureAwait(false);
         if (avaliacao.IsFailure)
         {
@@ -96,6 +99,7 @@ public static class PreparacaoDaAvaliacaoDaInscricao
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaRespondida>> gruposRecebidos,
         EnvioDasRespostas envio,
         IConferenciaEnderecoGeo conferenciaEnderecoGeo,
+        Domain.Interfaces.IDocumentoDaInscricaoRepository documentoRepository,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(inscricao);
@@ -103,6 +107,7 @@ public static class PreparacaoDaAvaliacaoDaInscricao
         ArgumentNullException.ThrowIfNull(respostasRecebidas);
         ArgumentNullException.ThrowIfNull(gruposRecebidos);
         ArgumentNullException.ThrowIfNull(conferenciaEnderecoGeo);
+        ArgumentNullException.ThrowIfNull(documentoRepository);
 
         IReadOnlyDictionary<string, JsonElement> respostas = inscricao.RespostasAposMesclar(respostasRecebidas);
         Dictionary<string, IReadOnlyList<OcorrenciaRespondida>> grupos = InscricaoRequestMapper.ParaAvaliacao(inscricao.Grupos);
@@ -120,6 +125,8 @@ public static class PreparacaoDaAvaliacaoDaInscricao
 
         return AvaliacaoDaInscricaoPorOpcao.Avaliar(
             contexto,
-            new EntradaDaAvaliacaoDaInscricao(respostas, grupos, derivados, new HashSet<string>(StringComparer.Ordinal), envio, NaFaseDaInscricao: true));
+            new EntradaDaAvaliacaoDaInscricao(respostas, grupos, derivados, new HashSet<string>(StringComparer.Ordinal), envio,
+                await DocumentosEnviadosDaInscricao.ApresentacoesAsync(documentoRepository, inscricao.Id, cancellationToken).ConfigureAwait(false),
+                NaFaseDaInscricao: true));
     }
 }

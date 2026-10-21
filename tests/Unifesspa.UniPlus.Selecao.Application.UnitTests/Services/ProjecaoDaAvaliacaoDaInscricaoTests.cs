@@ -38,7 +38,7 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
         AvaliacaoDaInscricaoDto avaliacao = Projetar(
             [
                 (daHabilitacao, SituacaoDoDocumento.DependeDeFasePosterior),
-                (daInscricao, SituacaoDoDocumento.Exigido),
+                (daInscricao, SituacaoDoDocumento.Pendente),
                 (daIsencao, SituacaoDoDocumento.PodeSerExigido),
                 (dispensado, SituacaoDoDocumento.NaoExigido),
             ],
@@ -46,7 +46,7 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
 
         avaliacao.Documentos.Fases.Select(static f => f.Codigo).Should().Equal("INSCRICAO", "HABILITACAO");
         avaliacao.Documentos.Fases[0].Documentos.Select(static d => (d.ExigenciaId, d.Finalidade, d.Situacao)).Should().Equal(
-            [(daInscricao.Id, "INSCRICAO", "EXIGIDO"), (daIsencao.Id, "ISENCAO_TAXA", "PODE_SER_EXIGIDO")],
+            [(daInscricao.Id, "INSCRICAO", "PENDENTE"), (daIsencao.Id, "ISENCAO_TAXA", "PODE_SER_EXIGIDO")],
             "a isenção na mesma fase aparece como da isenção, e não como exigência da inscrição");
         avaliacao.Documentos.Fases[1].Documentos.Select(static d => d.Situacao).Should().Equal("DEPENDE_DE_FASE_POSTERIOR");
     }
@@ -56,8 +56,8 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
     {
         (DocumentoExigido, SituacaoDoDocumento)[] documentos =
         [
-            (Documento(FaseDaInscricao, FinalidadeFormulario.Inscricao), SituacaoDoDocumento.Exigido),
-            (Documento(FaseDaHabilitacao, FinalidadeFormulario.Habilitacao), SituacaoDoDocumento.Exigido),
+            (Documento(FaseDaInscricao, FinalidadeFormulario.Inscricao), SituacaoDoDocumento.Pendente),
+            (Documento(FaseDaHabilitacao, FinalidadeFormulario.Habilitacao), SituacaoDoDocumento.Pendente),
         ];
 
         Projetar(documentos, FaseDaHabilitacao.Id).Value!.Documentos.Fases.Select(static f => f.Codigo).Should().Equal("HABILITACAO");
@@ -70,7 +70,7 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
         ModeloDaExigencia modelo = new(Guid.CreateVersion7(), "Autodeclaração.odt", FormatoDeDocumento.Odt, new string('a', 64));
 
         DocumentoDaInscricaoDto documento = Projetar(
-            [(Documento(FaseDaInscricao, FinalidadeFormulario.Inscricao, modelo), SituacaoDoDocumento.Exigido)], faseId: null)
+            [(Documento(FaseDaInscricao, FinalidadeFormulario.Inscricao, modelo), SituacaoDoDocumento.Pendente)], faseId: null)
             .Value!.Documentos.Fases[0].Documentos.Single();
 
         documento.Modelo!.UrlDownload.ToString().Should().Contain($"/atos/{AtoId:D}/");
@@ -82,7 +82,7 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
     {
         (DocumentoExigido, SituacaoDoDocumento)[] documentos =
         [
-            (Documento(FaseDaInscricao, FinalidadeFormulario.Inscricao), SituacaoDoDocumento.Exigido),
+            (Documento(FaseDaInscricao, FinalidadeFormulario.Inscricao), SituacaoDoDocumento.Pendente),
             (Documento(FaseDaHabilitacao, FinalidadeFormulario.Habilitacao), SituacaoDoDocumento.PodeSerExigido),
         ];
         Dictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>> pendencias = new()
@@ -104,7 +104,7 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
         {
             Documentos = new DocumentosDaInscricao(
                 [.. documentos.Select(static d => new DocumentoAvaliado(d.Documento, d.Situacao, null, null, [], null))],
-                pendencias ?? new Dictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>>()),
+                pendencias ?? new Dictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>>(), []),
         };
         ConfiguracaoAvaliavel configuracao = new(
             new DefinicaoFormulario([], [], []),

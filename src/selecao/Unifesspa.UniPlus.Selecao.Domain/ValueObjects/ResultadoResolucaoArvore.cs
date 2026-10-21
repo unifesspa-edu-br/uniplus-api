@@ -47,6 +47,14 @@ public sealed record PendenciaDeOrientacao(Guid NoExigenciaId, string? EntidadeI
 public sealed record StatusPorEntidade(Guid DocumentoExigidoId, string EntidadeId, StatusResolucaoExigencia Status);
 
 /// <summary>
+/// O <see cref="EstadoSatisfacao"/> de UM nó (folha ou grupo) PARA uma instância de uma subárvore
+/// <c>repetePorEntidade</c>. Complementa <see cref="ResultadoResolucaoArvore.EstadosPorNo"/>, que não
+/// cobre os nós de dentro da repetição: quem decide pelo estado do nó, e não da folha, lê o grupo
+/// "um ou outro" de cada ocorrência aqui.
+/// </summary>
+public sealed record EstadoPorEntidade(Guid NoExigenciaId, string EntidadeId, EstadoSatisfacao Estado);
+
+/// <summary>
 /// O resultado agregado de <see cref="Services.ResolvedorArvoreSatisfacao.Resolver"/> (Story #920)
 /// — substitui <c>ResultadoResolucaoExigencias</c> (grupo plano).
 /// </summary>
@@ -73,6 +81,10 @@ public sealed record StatusPorEntidade(Guid DocumentoExigidoId, string EntidadeI
 /// uma entrada por (folha, instância) — o complemento de <see cref="StatusPorExigencia"/> que
 /// este NÃO cobre. Vazio quando a árvore não usa repetição.
 /// </param>
+/// <param name="EstadosPorEntidade">
+/// O estado de todo nó dentro de QUALQUER subárvore <c>repetePorEntidade</c>, uma entrada por (nó,
+/// instância). Vazio quando a árvore não usa repetição.
+/// </param>
 /// <param name="NosEmissaoSuprimida">
 /// Story #928, §6 — os ids dos nós cuja emissão está suprimida pela fronteira de disponibilidade
 /// (<c>emissionBlocked</c>): folha BLOQUEADA ou grupo cuja fronteira decisiva é toda bloqueada. Um
@@ -88,4 +100,5 @@ public sealed record ResultadoResolucaoArvore(
     IReadOnlyList<ConsequenciaEmitida> ConsequenciasVigentes,
     IReadOnlyList<PendenciaDeOrientacao> PendenciasDeOrientacao,
     IReadOnlyList<StatusPorEntidade> StatusPorEntidade,
+    IReadOnlyList<EstadoPorEntidade> EstadosPorEntidade,
     IReadOnlySet<Guid> NosEmissaoSuprimida);

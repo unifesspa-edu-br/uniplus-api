@@ -38,6 +38,7 @@ public static class IniciarInscricaoCommandHandler
         IInscricaoRepository inscricaoRepository,
         ICertameDivulgadoRepository certameDivulgadoRepository,
         IProcessoSeletivoRepository processoSeletivoRepository,
+        IDocumentoDaInscricaoRepository documentoRepository,
         IRegistroCodecsEnvelope registroCodecs,
         IResolvedorFusoInstitucional resolvedorFuso,
         IConferenciaEnderecoGeo conferenciaEnderecoGeo,
@@ -51,6 +52,7 @@ public static class IniciarInscricaoCommandHandler
         ArgumentNullException.ThrowIfNull(inscricaoRepository);
         ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
+        ArgumentNullException.ThrowIfNull(documentoRepository);
         ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(resolvedorFuso);
         ArgumentNullException.ThrowIfNull(conferenciaEnderecoGeo);
@@ -157,7 +159,7 @@ public static class IniciarInscricaoCommandHandler
 
             return await Services.PreparacaoDaAvaliacaoDaInscricao
                 .ProjetarInscricaoGravadaAsync(
-                    lida, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, resolvedorFuso, conferenciaEnderecoGeo, enderecoNoAcervo,
+                    lida, certameDivulgadoRepository, processoSeletivoRepository, documentoRepository, registroCodecs, resolvedorFuso, conferenciaEnderecoGeo, enderecoNoAcervo,
                     timeProvider.GetUtcNow(), cancellationToken)
                 .ConfigureAwait(false);
         }

@@ -26,6 +26,7 @@ public static class ObterInscricaoQueryHandler
         IInscricaoRepository inscricaoRepository,
         ICertameDivulgadoRepository certameDivulgadoRepository,
         IProcessoSeletivoRepository processoSeletivoRepository,
+        IDocumentoDaInscricaoRepository documentoRepository,
         IRegistroCodecsEnvelope registroCodecs,
         IResolvedorFusoInstitucional resolvedorFuso,
         IConferenciaEnderecoGeo conferenciaEnderecoGeo,
@@ -68,7 +69,7 @@ public static class ObterInscricaoQueryHandler
 
         return await Services.PreparacaoDaAvaliacaoDaInscricao
             .ProjetarInscricaoGravadaAsync(
-                inscricao, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, resolvedorFuso, conferenciaEnderecoGeo, enderecoNoAcervo,
+                inscricao, certameDivulgadoRepository, processoSeletivoRepository, documentoRepository, registroCodecs, resolvedorFuso, conferenciaEnderecoGeo, enderecoNoAcervo,
                 timeProvider.GetUtcNow(), cancellationToken)
             .ConfigureAwait(false);
     }
