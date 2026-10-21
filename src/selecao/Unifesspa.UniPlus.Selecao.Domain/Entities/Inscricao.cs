@@ -831,7 +831,7 @@ public sealed class Inscricao : EntityBase
                 InscricaoErrorCodes.DocumentoObrigatorioAusente,
                 ausente.Alternativas.Count == 1
                     ? $"Envie o documento obrigatório: {nomes}."
-                    : $"Envie um dos documentos obrigatórios: {nomes}."));
+                    : $"Envie os documentos obrigatórios conforme o edital: {nomes}."));
         });
 
     /// <summary>

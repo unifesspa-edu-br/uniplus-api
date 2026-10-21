@@ -13,7 +13,9 @@ using ValueObjects;
 /// do NÓ da árvore, nunca da folha: num grupo "um ou outro" basta uma alternativa atendida, e a folha
 /// que ficou pendente ao lado dela não falta. Dentro de um grupo repetível o estado é o de cada
 /// ocorrência, e a falta sai por ocorrência. O que não é da inscrição — outra finalidade ou fase
-/// posterior — e o documento não obrigatório não recusam.
+/// posterior —, o documento não obrigatório e a exigência cujos espaços (competência, exercício ou ocorrências
+/// esperadas) o envio ainda não registra não recusam: o arquivo não diz a qual espaço pertence, e recusar
+/// tornaria a inscrição impossível de enviar.
 /// </summary>
 public static class DocumentosAusentesDaInscricao
 {
@@ -62,7 +64,8 @@ public static class DocumentosAusentesDaInscricao
             // A folha, ou o grupo "um ou outro" ainda não atendido: falta o que o grupo tem de pendente e
             // obrigatório; sem nenhuma alternativa obrigatória, o grupo não recusa.
             DocumentoExigido[] faltantes = [.. no.AchatarComDescendentes()
-                .Where(n => n.Tipo == TipoNo.Folha && NaoAtendido(EstadoDe(n, entidadeId)))
+                .Where(n => n.Tipo == TipoNo.Folha && ConferivelPelasApresentacoes(n))
+                .Where(n => NaoAtendido(EstadoDe(n, entidadeId)))
                 .Select(static n => n.DocumentoExigido!)
                 .Where(static d => d.Obrigatorio && d.Finalidade == FinalidadeFormulario.Inscricao)];
             if (faltantes.Length > 0)
@@ -76,6 +79,10 @@ public static class DocumentosAusentesDaInscricao
                 ? resultado.EstadosPorNo.GetValueOrDefault(no.Id, EstadoSatisfacao.Indeterminado)
                 : porEntidade.GetValueOrDefault((no.Id, entidadeId), EstadoSatisfacao.Indeterminado);
     }
+
+    /// <summary>A folha que conta apresentações, ou apresentações distintas: o envio registra só isso, e não o espaço de cada arquivo.</summary>
+    private static bool ConferivelPelasApresentacoes(NoExigencia folha) =>
+        folha.ChaveDistincao is null || (folha.ChaveDistincao == ChaveDistincao.Ocorrencia && folha.OcorrenciasEsperadas is null);
 
     /// <summary>Pendente ou impossível de atender: o indeterminado (ainda não se sabe se se aplica) e o não aplicável não faltam.</summary>
     private static bool NaoAtendido(EstadoSatisfacao estado) => estado is EstadoSatisfacao.Pendente or EstadoSatisfacao.Impossivel;

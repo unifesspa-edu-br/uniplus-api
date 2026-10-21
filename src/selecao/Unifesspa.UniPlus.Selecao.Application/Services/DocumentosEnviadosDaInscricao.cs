@@ -15,7 +15,8 @@ public static class DocumentosEnviadosDaInscricao
 {
     /// <summary>
     /// As apresentações confirmadas, por exigência — uma apresentação conta uma vez, qualquer que seja o
-    /// número de arquivos dela (a frente e o verso). A ocorrência do grupo repetível é a entidade.
+    /// número de arquivos dela (a frente e o verso). A ocorrência do grupo repetível é a entidade; a chave de distinção é a própria apresentação, que
+    /// distingue as ocorrências da exigência que só conta apresentações distintas.
     /// </summary>
     public static async Task<IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>>> ApresentacoesAsync(
         IDocumentoDaInscricaoRepository repositorio, Guid inscricaoId, CancellationToken cancellationToken)
@@ -28,7 +29,7 @@ public static class DocumentosEnviadosDaInscricao
             .GroupBy(static a => a.ExigenciaId)
             .ToDictionary(
                 static g => g.Key,
-                static g => (IReadOnlyList<ApresentacaoDocumento>)[.. g.Select(static a => new ApresentacaoDocumento(a.Id, a.OcorrenciaId, a.OcorrenciaId))]);
+                static g => (IReadOnlyList<ApresentacaoDocumento>)[.. g.Select(static a => new ApresentacaoDocumento(a.Id, a.Id.ToString("D"), a.OcorrenciaId))]);
     }
 
     /// <summary>Os arquivos confirmados da inscrição, por exigência e ocorrência, como o candidato os enxerga.</summary>
@@ -40,7 +41,7 @@ public static class DocumentosEnviadosDaInscricao
         Dictionary<Guid, ApresentacaoDeDocumento> apresentacoes = (await repositorio
             .ListarApresentacoesDaInscricaoAsync(inscricaoId, cancellationToken).ConfigureAwait(false)).ToDictionary(static a => a.Id);
         return [.. (await repositorio.ListarArquivosDaInscricaoAsync(inscricaoId, cancellationToken).ConfigureAwait(false))
-            .Where(static a => a.Status == StatusArquivoEnviado.Confirmado)
+            .Where(a => a.Status == StatusArquivoEnviado.Confirmado && apresentacoes.ContainsKey(a.ApresentacaoId))
             .OrderBy(static a => a.ConfirmadoEm)
             .Select(a => new ArquivoDaApresentacaoDto(
                 a.Id, a.ApresentacaoId, apresentacoes[a.ApresentacaoId].ExigenciaId, apresentacoes[a.ApresentacaoId].OcorrenciaId,
@@ -74,8 +75,13 @@ public static class DocumentosEnviadosDaInscricao
 
         foreach (ArquivoDaApresentacao listado in await repositorio.ListarArquivosDaInscricaoAsync(inscricaoId, cancellationToken).ConfigureAwait(false))
         {
-            ApresentacaoDeDocumento apresentacao = apresentacoes[listado.ApresentacaoId];
-            ArquivoDaApresentacao arquivo = (await repositorio.ObterArquivoAsync(listado.Id, cancellationToken).ConfigureAwait(false))!;
+            // Um arquivo removido ou criado em paralelo entre as consultas fica para o envio seguinte.
+            if (!apresentacoes.TryGetValue(listado.ApresentacaoId, out ApresentacaoDeDocumento? apresentacao)
+                || await repositorio.ObterArquivoAsync(listado.Id, cancellationToken).ConfigureAwait(false) is not { } arquivo)
+            {
+                continue;
+            }
+
             if (queSeAplicam.Contains((apresentacao.ExigenciaId, apresentacao.OcorrenciaId)))
             {
                 arquivo.MarcarComoConstanteDeEnvio();
