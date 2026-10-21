@@ -79,6 +79,13 @@ public static class IniciarEnvioDeDocumentoDaInscricaoCommandHandler
                 DocumentoDaInscricaoErrorCodes.ExigenciaNaoEncontrada, "A exigência não existe na versão desta inscrição."));
         }
 
+        // Só a exigência da fase que coleta a inscrição recebe arquivo; a de outra fase não é do candidato aqui.
+        if (!contexto.Value!.Configuracao.Fases.Any(f => f.ColetaInscricao && f.Id == localizada.Exigencia.ExigidoNaFaseId))
+        {
+            return Result<IniciarEnvioDeDocumentoDaInscricaoDto>.Failure(new DomainError(
+                DocumentoDaInscricaoErrorCodes.ExigenciaNaoEncontrada, "A exigência não é da fase de inscrição desta versão."));
+        }
+
         if (OcorrenciaInvalida(inscricao, localizada.GrupoRepetido, command.OcorrenciaId) is { } ocorrenciaInvalida)
         {
             return Result<IniciarEnvioDeDocumentoDaInscricaoDto>.Failure(ocorrenciaInvalida);

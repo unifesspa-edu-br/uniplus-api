@@ -29,8 +29,9 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
     private static readonly Guid ProcessoId = Guid.CreateVersion7();
     private static readonly Cpf Dono = PersonasDeTeste.KevinCarvalho;
 
-    private readonly DocumentoExigido _laudo = Exigencia("LAUDO");
-    private readonly DocumentoExigido _certidao = Exigencia("CERTIDAO");
+    private readonly DocumentoExigido _laudo;
+    private readonly DocumentoExigido _certidao;
+    private readonly DocumentoExigido _deOutraFase;
     private readonly IInscricaoRepository _inscricoes = Substitute.For<IInscricaoRepository>();
     private readonly IProcessoSeletivoRepository _processos = Substitute.For<IProcessoSeletivoRepository>();
     private readonly IRegistroCodecsEnvelope _codecs = Substitute.For<IRegistroCodecsEnvelope>();
@@ -43,13 +44,20 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
 
     public DocumentosDaInscricaoCommandHandlersTests()
     {
+        (VersaoConfiguracao versao, GrafoConfiguracao conforme) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
+        FaseCronograma faseDaInscricao = Fase(1, "INSCRICAO", coletaInscricao: true);
+        FaseCronograma outraFase = Fase(2, "RESULTADO_FINAL", coletaInscricao: false);
+        _laudo = Exigencia("LAUDO", faseDaInscricao.Id);
+        _certidao = Exigencia("CERTIDAO", faseDaInscricao.Id);
+        _deOutraFase = Exigencia("RESULTADO", outraFase.Id);
+
         // O laudo é uma folha simples; a certidão vale por ocorrência do grupo de dependentes.
         NoExigencia folhaLaudo = NoExigencia.CriarFolha(_laudo, 0).Value!;
         NoExigencia folhaCertidao = NoExigencia.CriarFolha(_certidao, 1, repetePorEntidade: Grupo).Value!;
-        (VersaoConfiguracao versao, GrafoConfiguracao conforme) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
+        NoExigencia folhaOutraFase = NoExigencia.CriarFolha(_deOutraFase, 2).Value!;
         GrafoConfiguracao grafo = new(
             conforme.Etapas, conforme.OfertaAtendimento, conforme.DistribuicaoVagas, conforme.BonusRegional, conforme.CriteriosDesempate,
-            conforme.Classificacao, conforme.CronogramaFases, [_laudo, _certidao], [folhaLaudo, folhaCertidao], null,
+            conforme.Classificacao, [faseDaInscricao, outraFase], [_laudo, _certidao, _deOutraFase], [folhaLaudo, folhaCertidao, folhaOutraFase], null,
             fatosColetados: conforme.FatosColetados, formularios: conforme.Formularios, gruposColetados: conforme.GruposColetados,
             numeroDeOpcoesDeCurso: 1);
         DivulgacaoDeTeste.ConfigurarVersao(_processos, _codecs, versao, grafo);
@@ -60,8 +68,15 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
         _inscricoes.TentarAvancarRevisaoAsync(Arg.Any<Guid>(), Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>()).Returns(true);
     }
 
-    private static DocumentoExigido Exigencia(string codigo) => DocumentoExigido.Criar(
-        Guid.CreateVersion7(), Guid.CreateVersion7(), codigo, codigo, "PESSOAL",
+    private static FaseCronograma Fase(int ordem, string codigo, bool coletaInscricao) => FaseCronograma.Criar(
+        ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.Propria,
+        agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: coletaInscricao, coletaSolicitacaoIsencao: false,
+        inicio: new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 3, 20, 12, 0, 0, TimeSpan.Zero),
+        produtos: [ProdutoDaFase.Criar(codigo, PapelProdutoFase.Definitivo)], faseConcluinteCodigo: null, emiteParecerIndividual: false,
+        bancasRequeridas: [], regraRecurso: null).Value!;
+
+    private static DocumentoExigido Exigencia(string codigo, Guid faseId = default) => DocumentoExigido.Criar(
+        faseId == Guid.Empty ? Guid.CreateVersion7() : faseId, Guid.CreateVersion7(), codigo, codigo, "PESSOAL",
         Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
         [], [], null, FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null).Value!;
 
@@ -139,6 +154,17 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
         Rascunho();
 
         Result<IniciarEnvioDeDocumentoDaInscricaoDto> resultado = await Iniciar(Exigencia("OUTRA"));
+
+        resultado.Error!.Code.Should().Be(DocumentoDaInscricaoErrorCodes.ExigenciaNaoEncontrada);
+        await _documentos.DidNotReceive().AdicionarArquivoAsync(Arg.Any<ArquivoDaApresentacao>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Exigência de outra fase que não a da inscrição não recebe arquivo")]
+    public async Task Iniciar_ExigenciaDeOutraFase_Recusa()
+    {
+        Rascunho();
+
+        Result<IniciarEnvioDeDocumentoDaInscricaoDto> resultado = await Iniciar(_deOutraFase);
 
         resultado.Error!.Code.Should().Be(DocumentoDaInscricaoErrorCodes.ExigenciaNaoEncontrada);
         await _documentos.DidNotReceive().AdicionarArquivoAsync(Arg.Any<ArquivoDaApresentacao>(), Arg.Any<CancellationToken>());
