@@ -20,7 +20,7 @@ A POC da issue #2045 (`spikes/cifra-no-minio/`) testou essa direção na versão
 ## Drivers da decisão
 
 - A API não conhece o conteúdo dos arquivos: nem memória proporcional ao arquivo, nem acesso a dado sensível.
-- Cada arquivo tem cifra individual, como pede o parecer das encarregadas de dados de 13/10/2026.
+- Cada arquivo tem cifra individual, como pede o parecer da encarregada de dados de 13/10/2026.
 - O candidato abre e baixa os próprios arquivos sem a API intermediar o conteúdo.
 - Falha fechada: sem a chave, o armazenamento não entrega nem grava conteúdo.
 - Não há produção: os arquivos selados em HML podem ser apagados e reenviados.
@@ -122,7 +122,7 @@ A confirmação passa a registrar o arquivo em verificação, e a API consome o 
 
 ### Pendências
 
-- **Encarregadas de dados:** confirmar que a chave de dados por objeto do SSE-KMS atende à cifra individual do parecer de 13/10/2026. Ainda não há resposta. **Pendente; não atendida.**
+- **Encarregada de dados:** confirmar que a chave de dados por objeto do SSE-KMS atende à cifra individual do parecer de 13/10/2026. Ainda não há resposta. **Pendente; não atendida.**
 - **PO, com repasse do líder técnico:** UNI-REQ-0027, UNI-REQ-0028, UNI-REQ-0029 e a seção 6.3 do modelo de negócio da Seleção supõem verificação síncrona, por exemplo "verificação fora do ar recusa o envio do arquivo" e "o comprovante nunca mostra arquivo em verificação". É preciso decidir:
   - se o envio da inscrição aguarda o veredicto dos documentos obrigatórios (recomendado: o documento só atende quando verificado, e o comprovante continua sem arquivo em verificação);
   - como o portal mostra "em verificação" e "recusado".
