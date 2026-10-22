@@ -363,6 +363,6 @@ do envio, em claro, é apagado na confirmação. O nome original do arquivo não
 Se a [ADR-0146](0146-cifra-e-verificacao-dos-arquivos-do-candidato-no-armazenamento.md) for aceita, a emenda 2
 deixa de valer: o conteúdo do arquivo enviado pelo candidato não é cifrado pela aplicação nem lido pela API. A
 cifra fica no MinIO (SSE-KMS, chave do KES guardada no Vault), com uma chave de dados por objeto, que é a cifra
-individual do parecer da encarregada de dados de 13/10/2026, a confirmar com ela. A verificação do antivírus
+individual do parecer da encarregada de dados de 13/10/2026, aprovada por ela. A verificação do antivírus
 passa a um verificador que lê direto do armazenamento. O restante desta ADR, a cifra de campo na fronteira do
 repositório e o índice cego, não muda.
