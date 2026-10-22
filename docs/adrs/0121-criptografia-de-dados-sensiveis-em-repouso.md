@@ -357,3 +357,12 @@ encarregadas de dados de 13/10/2026 pede é a do envelope autenticado de cada ar
 conteúdo em claro, gravado na confirmação, é conferido ao decifrar, e o objeto trocado por outro registro
 não abre. A verificação do antivírus acontece antes, com o conteúdo ainda em claro na memória, e o objeto
 do envio, em claro, é apagado na confirmação. O nome original do arquivo não é guardado.
+
+## Emenda 3 (2026-10-22, proposta pela ADR-0146) — o arquivo do candidato é cifrado pelo armazenamento
+
+Se a [ADR-0146](0146-cifra-e-verificacao-dos-arquivos-do-candidato-no-armazenamento.md) for aceita, a emenda 2
+deixa de valer: o conteúdo do arquivo enviado pelo candidato não é cifrado pela aplicação nem lido pela API. A
+cifra fica no MinIO (SSE-KMS, chave do KES guardada no Vault), com uma chave de dados por objeto, que é a cifra
+individual do parecer das encarregadas de dados de 13/10/2026, a confirmar com elas. A verificação do antivírus
+passa a um verificador que lê direto do armazenamento. O restante desta ADR, a cifra de campo na fronteira do
+repositório e o índice cego, não muda.

@@ -149,7 +149,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0118](0118-identidade-publica-modulos-api-metadado-assembly.md) | Identidade pública de módulos de API via metadado de assembly | proposed | 2026-07-29 |
 | [0119](0119-padrao-concorrencia-otimista-handlers-wolverine.md) | Padrão de conflito de concorrência otimista em handlers Wolverine — propagar sem catch quando o endpoint não é idempotency-protected; mapeamento centralizado no GlobalExceptionMiddleware | accepted | 2026-08-03 |
 | [0120](0120-fonte-normativa-matriz-cascata-remanejamento.md) | Fonte normativa da matriz de remanejamento de cotas (Portaria MEC 704/2025, Anexo — art. 20-A da Portaria Normativa MEC 21/2012) e decisão de alcance institucional além do Sisu | accepted | 2026-08-03 |
-| [0121](0121-criptografia-de-dados-sensiveis-em-repouso.md) | Criptografia de campo sensível em repouso (CPF hoje, outros dados pessoais no futuro): proteção assíncrona na fronteira de repositório/query service, opt-in por propriedade, sem alterar `ValueObjectConventions` globalmente; emendada em 2026-10-10: `IUniPlusBlindIndexService` implementado, versão de chave HMAC fixa, primeiro consumidor é a unicidade de CPF na inscrição | proposed | 2026-07-28 |
+| [0121](0121-criptografia-de-dados-sensiveis-em-repouso.md) | Criptografia de campo sensível em repouso (CPF hoje, outros dados pessoais no futuro): proteção assíncrona na fronteira de repositório/query service, opt-in por propriedade, sem alterar `ValueObjectConventions` globalmente; emendada em 2026-10-10: `IUniPlusBlindIndexService` implementado, versão de chave HMAC fixa, primeiro consumidor é a unicidade de CPF na inscrição; emendada em 2026-10-21: o arquivo enviado pelo candidato é cifrado pela API com a chave de dado sensível; emenda proposta em 2026-10-22 pela ADR-0146: o arquivo do candidato é cifrado pelo armazenamento, não pela API | proposed | 2026-07-28 |
 | [0122](0122-tipos-processo-seletivo-configuraveis.md) | Tipos de processo seletivo configuráveis | accepted | 2026-08-10 |
 | [0123](0123-tipos-etapa-configuraveis.md) | Tipos de etapa configuráveis — conformidade legal por código congelado, não por rótulo editorial | accepted | 2026-08-11 |
 | [0124](0124-comentarios-schema-postgresql-via-hascomment-ef-core.md) | Comentários do schema PostgreSQL via metadados do modelo EF Core (`HasComment`), com `COMMENT ON` manual restrito ao que o modelo não representa | accepted | 2026-08-11 |
@@ -174,8 +174,9 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0143](0143-avaliacao-sob-demanda-dos-fatos-do-candidato.md) | A API avalia sob demanda o que depende dos fatos do candidato | proposed | 2026-10-10 |
 | [0144](0144-regra-de-aplicabilidade-pertence-a-modalidade.md) | A regra de aplicabilidade pertence à modalidade | proposed | 2026-10-11 |
 | [0145](0145-recurso-por-etapa.md) | O recurso também pertence à etapa, e cada janela declara se admite instância superior | accepted | 2026-10-18 |
+| [0146](0146-cifra-e-verificacao-dos-arquivos-do-candidato-no-armazenamento.md) | O arquivo do candidato é cifrado pelo armazenamento (SSE-KMS no MinIO, chave do KES no Vault, chave de dados por objeto) e verificado por um processo fora da API, que lê direto do MinIO — emenda a ADR-0121 | proposed | 2026-10-22 |
 
-> **Nota de numeração:** a sequência de `0001` a `0145` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0146+`.
+> **Nota de numeração:** a sequência de `0001` a `0146` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0147+`.
 
 ## Como adicionar um novo ADR
 
