@@ -1,0 +1,172 @@
+# POC da cifra no MinIO (SSE-KMS via KES + Vault) e da verificação dos arquivos sem a API (#2045).
+# Isolada de docker/docker-compose.yml: projeto, rede, volumes e portas próprios. Suba com
+# scripts/subir.sh, que gera .estado/env (identidades do KES, AppRole do Vault) antes do compose.
+name: uniplus-poc-sse-kms
+
+x-app: &app
+  build:
+    context: src
+  restart: unless-stopped
+  # Os mesmos limites do pod da API em HML (infra/helm/uniplus/values.yaml): 2 CPUs e 1 GiB.
+  cpus: 2
+  mem_limit: 1g
+  environment: &app-env
+    MINIO_ENDPOINT: minio:9000
+    MINIO_ENDPOINT_PUBLICO: localhost:19000
+    CLAMD_HOST: clamav
+    CLAMD_PORT: "3310"
+    BUCKET_ENVIOS: uniplus-envios
+    BUCKET_ENVIOS_ATUAL: uniplus-envios-atual
+    BUCKET_ARQUIVOS: uniplus-arquivos-candidato
+    BUCKET_SELADOS: uniplus-selados-atual
+    ASPNETCORE_URLS: http://0.0.0.0:8080
+    Logging__LogLevel__Microsoft.AspNetCore: Warning
+  networks: [poc]
+
+services:
+  vault:
+    image: hashicorp/vault:1.21.2
+    restart: unless-stopped
+    command: server -config=/poc/vault.hcl
+    environment:
+      VAULT_ADDR: http://127.0.0.1:8200
+    volumes:
+      - ./config/vault.hcl:/poc/vault.hcl:ro
+      - ./config/vault-politica-kes.hcl:/poc/politica-kes.hcl:ro
+      - vault_dados:/vault/file
+    networks: [poc]
+
+  kes:
+    image: quay.io/minio/kes:2025-03-12T09-35-18Z
+    restart: unless-stopped
+    command: server --config /config/kes.yml
+    environment:
+      KES_IDENTIDADE_MINIO: ${KES_IDENTIDADE_MINIO:?rode scripts/subir.sh}
+      KES_VAULT_ROLE_ID: ${KES_VAULT_ROLE_ID:-}
+      KES_VAULT_SECRET_ID: ${KES_VAULT_SECRET_ID:-}
+    volumes:
+      - ./config/kes.yml:/config/kes.yml:ro
+      - ./.estado/kes:/certs:ro
+    depends_on: [vault]
+    networks: [poc]
+
+  minio:
+    image: ghcr.io/unifesspa-edu-br/minio:RELEASE.2025-09-07T16-13-09Z@sha256:52dfd5c0bbd38d3219f2058c7af216d9f9a27a994b7b5baad09bbd38866015ff
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_KMS_KES_ENDPOINT: https://kes:7373
+      MINIO_KMS_KES_API_KEY: ${KES_API_KEY_MINIO}
+      MINIO_KMS_KES_KEY_NAME: uniplus-arquivos-candidato
+      MINIO_KMS_KES_CAPATH: /certs/kes.crt
+      # Notificação de bucket para o verificador. A fila em disco guarda o evento enquanto o
+      # verificador estiver fora e reentrega quando ele voltar.
+      MINIO_NOTIFY_WEBHOOK_ENABLE_VERIFICADOR: "on"
+      MINIO_NOTIFY_WEBHOOK_ENDPOINT_VERIFICADOR: http://verificador:8080/eventos
+      MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_VERIFICADOR: ${TOKEN_WEBHOOK}
+      # Vazio desliga a fila em disco (entrega síncrona, sem reentrega), para a medição comparativa.
+      MINIO_NOTIFY_WEBHOOK_QUEUE_DIR_VERIFICADOR: ${FILA_DO_WEBHOOK-/fila}
+      MINIO_NOTIFY_WEBHOOK_QUEUE_LIMIT_VERIFICADOR: "100000"
+      # Log de auditoria por requisição (quem, o quê, qual objeto), enviado ao coletor da POC.
+      MINIO_AUDIT_WEBHOOK_ENABLE_COLETOR: "on"
+      MINIO_AUDIT_WEBHOOK_ENDPOINT_COLETOR: http://verificador:8080/auditoria
+      MINIO_AUDIT_WEBHOOK_AUTH_TOKEN_COLETOR: Bearer ${TOKEN_WEBHOOK}
+    ports:
+      - "127.0.0.1:19000:9000"
+    volumes:
+      - minio_dados:/data
+      - minio_fila:/fila
+      - ./.estado/kes/kes.crt:/certs/kes.crt:ro
+    depends_on: [kes]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9000/minio/health/live || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [poc]
+
+  # Só nas provas, com o MinIO principal parado: o mesmo volume e as mesmas credenciais de
+  # administrador, mas uma identidade do KES que não está em nenhuma política.
+  minio-sem-permissao-no-kes:
+    image: ghcr.io/unifesspa-edu-br/minio:RELEASE.2025-09-07T16-13-09Z@sha256:52dfd5c0bbd38d3219f2058c7af216d9f9a27a994b7b5baad09bbd38866015ff
+    profiles: [provas]
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_KMS_KES_ENDPOINT: https://kes:7373
+      MINIO_KMS_KES_API_KEY: ${KES_API_KEY_SEM_PERMISSAO}
+      MINIO_KMS_KES_KEY_NAME: uniplus-arquivos-candidato
+      MINIO_KMS_KES_CAPATH: /certs/kes.crt
+    volumes:
+      - minio_dados:/data
+      - ./.estado/kes/kes.crt:/certs/kes.crt:ro
+    networks: [poc]
+
+  clamav:
+    image: clamav/clamav:1.4@sha256:3bba6dd5ac6663d55b80f86a3126e146612d93b593cc2617188d13f637d91260
+    restart: unless-stopped
+    volumes:
+      - clamav_dados:/var/lib/clamav
+    healthcheck:
+      test: ["CMD-SHELL", "clamdcheck.sh"]
+      interval: 15s
+      timeout: 10s
+      retries: 40
+      start_period: 180s
+    networks: [poc]
+
+  # Verificador: recebe a notificação do bucket de envio, lê o objeto direto do MinIO, passa ao
+  # clamd e promove ou remove. Só ele tem leitura no bucket de envio.
+  verificador:
+    <<: *app
+    environment:
+      <<: *app-env
+      PAPEL: verificador
+      MINIO_ACCESS_KEY: verificador
+      MINIO_SECRET_KEY: ${SENHA_VERIFICADOR}
+      TOKEN_WEBHOOK: ${TOKEN_WEBHOOK}
+      PARALELISMO: ${PARALELISMO_VERIFICADOR:-8}
+    ports:
+      - "127.0.0.1:18082:8080"
+    volumes:
+      - ./resultados/registro:/registro
+
+  # A API no fluxo novo: só assina URLs; não tem leitura no bucket de envio.
+  api-nova:
+    <<: *app
+    environment:
+      <<: *app-env
+      PAPEL: api-nova
+      MINIO_ACCESS_KEY: api
+      MINIO_SECRET_KEY: ${SENHA_API}
+    ports:
+      - "127.0.0.1:18080:8080"
+
+  # O fluxo atual da confirmação, reproduzido passo a passo (lê o objeto inteiro em memória, passa
+  # ao clamd, cifra com AES-GCM e grava a cópia selada), para comparação nas medições.
+  api-atual:
+    <<: *app
+    environment:
+      <<: *app-env
+      PAPEL: api-atual
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      CHAVE_AES_LOCAL: ${CHAVE_AES_LOCAL}
+    ports:
+      - "127.0.0.1:18081:8080"
+
+networks:
+  poc:
+    ipam:
+      config:
+        # Fora de 172.18.0.0/24 e das demais rotas que a VPN (tun0) instala.
+        - subnet: 172.31.250.0/24
+
+volumes:
+  vault_dados:
+  minio_dados:
+  minio_fila:
+  clamav_dados:

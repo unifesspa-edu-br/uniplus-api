@@ -1,0 +1,16 @@
+<Project>
+
+  <!--
+    Ilha de pacotes da POC da cifra no MinIO (#2045). Standalone, como a do spike de Event
+    Sourcing: não importa o Directory.Packages.props da raiz. O SDK do MinIO fica na mesma versão
+    da produção, para que as provas de URL pré-assinada valham para o cliente que a API usa.
+  -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="Minio" Version="7.0.0" />
+  </ItemGroup>
+
+</Project>
