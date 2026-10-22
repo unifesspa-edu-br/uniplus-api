@@ -67,6 +67,8 @@ O log de auditoria do MinIO (audit webhook) vai ao coletor de logs e registra ca
 
 **Emenda da ADR-0121.** A emenda 2 deixa de valer para o arquivo do candidato: o conteúdo não é cifrado pela aplicação, e a cifra individual do parecer é a chave de dados por objeto do SSE-KMS. A cifra de campo da ADR-0121 continua como está.
 
+**Cifra individual.** O parecer da encarregada de dados de 13/10/2026 pede cifra individual. A chave de dados por objeto atende a esse pedido: o mesmo conteúdo não fica igual no bucket, e não há acesso ao conteúdo sem a chave. Segundo repasse do líder técnico em 22/10/2026, a encarregada aprovou a solução, que será apresentada a ela em reunião.
+
 ### Medições e dimensionamento
 
 O ambiente está descrito em `spikes/cifra-no-minio/resultados/ambiente.md`. O verificador e a API rodaram com os limites do pod de HML: 2 CPUs e 1 GiB.
@@ -122,7 +124,6 @@ A confirmação passa a registrar o arquivo em verificação, e a API consome o 
 
 ### Pendências
 
-- **Encarregada de dados:** confirmar que a chave de dados por objeto do SSE-KMS atende à cifra individual do parecer de 13/10/2026. Ainda não há resposta. **Pendente; não atendida.**
 - **PO, com repasse do líder técnico:** UNI-REQ-0027, UNI-REQ-0028, UNI-REQ-0029 e a seção 6.3 do modelo de negócio da Seleção supõem verificação síncrona, por exemplo "verificação fora do ar recusa o envio do arquivo" e "o comprovante nunca mostra arquivo em verificação". É preciso decidir:
   - se o envio da inscrição aguarda o veredicto dos documentos obrigatórios (recomendado: o documento só atende quando verificado, e o comprovante continua sem arquivo em verificação);
   - como o portal mostra "em verificação" e "recusado".
