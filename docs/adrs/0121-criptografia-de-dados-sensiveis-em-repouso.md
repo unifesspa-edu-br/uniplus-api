@@ -352,8 +352,8 @@ inscrições com o mesmo CPF no mesmo certame sem decifrar a coluna cifrada inte
 O documento que o candidato envia para atender uma exigência da inscrição (issue #2036) é dado pessoal e,
 no caso do laudo, sensível. O conteúdo selado no armazenamento é cifrado com a chave de dado sensível que
 a Seleção já tem (`uniplus-selecao-sensiveis-aesgcm`), por uma porta da Application implementada na
-Infrastructure. Não há chave por arquivo, nem chave nova no Vault: a cifra individual que o parecer das
-encarregadas de dados de 13/10/2026 pede é a do envelope autenticado de cada arquivo. O SHA-256 do
+Infrastructure. Não há chave por arquivo, nem chave nova no Vault: a cifra individual que o parecer da
+encarregada de dados de 13/10/2026 pede é a do envelope autenticado de cada arquivo. O SHA-256 do
 conteúdo em claro, gravado na confirmação, é conferido ao decifrar, e o objeto trocado por outro registro
 não abre. A verificação do antivírus acontece antes, com o conteúdo ainda em claro na memória, e o objeto
 do envio, em claro, é apagado na confirmação. O nome original do arquivo não é guardado.
@@ -363,6 +363,6 @@ do envio, em claro, é apagado na confirmação. O nome original do arquivo não
 Se a [ADR-0146](0146-cifra-e-verificacao-dos-arquivos-do-candidato-no-armazenamento.md) for aceita, a emenda 2
 deixa de valer: o conteúdo do arquivo enviado pelo candidato não é cifrado pela aplicação nem lido pela API. A
 cifra fica no MinIO (SSE-KMS, chave do KES guardada no Vault), com uma chave de dados por objeto, que é a cifra
-individual do parecer das encarregadas de dados de 13/10/2026, a confirmar com elas. A verificação do antivírus
+individual do parecer da encarregada de dados de 13/10/2026, a confirmar com ela. A verificação do antivírus
 passa a um verificador que lê direto do armazenamento. O restante desta ADR, a cifra de campo na fronteira do
 repositório e o índice cego, não muda.
