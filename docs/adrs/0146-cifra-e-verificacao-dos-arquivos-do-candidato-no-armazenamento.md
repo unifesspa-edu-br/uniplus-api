@@ -15,7 +15,7 @@ informed:
 
 Na confirmação do envio de um arquivo do candidato (issue #2036), a API lê o objeto inteiro do MinIO, passa o conteúdo ao clamd, cifra com a chave de dado sensível da Seleção e grava uma cópia selada (ADR-0121, emenda 2). Assim, a API tem em memória o conteúdo de todo arquivo enviado e concentra o acesso a dado sensível, como laudos e documentos de PcD. Em 21/10/2026, o líder técnico definiu outra direção: a cifra fica no armazenamento, com chave por objeto, e a verificação fica com um processo que lê direto do MinIO (issue #2044).
 
-A POC da issue #2045 testou essa direção na versão do MinIO do projeto, no KES e no Vault de HML (1.21.2). Primeiro com o verificador acionado pelo webhook do bucket; depois com o verificador consumindo uma fila, em RabbitMQ e na fila do Wolverine no Postgres. O código da POC é descartável e sai depois da implementação; os resultados que sustentam esta decisão estão resumidos aqui.
+A POC da issue #2045 validou essa direção na versão do MinIO do projeto, com o KES e o Vault de HML (1.21.2), e comparou três formas de acionar o verificador: webhook do bucket, RabbitMQ e a fila do Wolverine no Postgres. Os resultados que sustentam a decisão estão abaixo.
 
 ## Drivers da decisão
 
@@ -88,15 +88,15 @@ O log de auditoria do MinIO (audit webhook) vai ao coletor de logs e registra ca
 
 **Emenda da ADR-0121.** A emenda 2 deixa de valer para o arquivo do candidato: o conteúdo não é cifrado pela aplicação, e a cifra individual do parecer é a chave de dados por objeto do SSE-KMS. A cifra de campo da ADR-0121 continua como está.
 
-**Cifra individual.** O parecer da encarregada de dados de 13/10/2026 pede cifra individual. A chave de dados por objeto atende a esse pedido: o mesmo conteúdo não fica igual no bucket, e não há acesso ao conteúdo sem a chave. Segundo repasse do líder técnico em 22/10/2026, a encarregada aprovou a solução, que será apresentada a ela em reunião.
+**Cifra individual.** O parecer da encarregada de dados de 13/10/2026 pede cifra individual. A chave de dados por objeto atende a esse pedido: o mesmo conteúdo não fica igual no bucket, e não há acesso ao conteúdo sem a chave. A encarregada aprovou a solução (repasse do líder técnico, 22/10/2026).
 
 ### Transportes descartados
 
-- **Webhook do MinIO com fila em disco.** Garante a entrega ao verificador, mas não até o veredicto: o verificador aceita o evento numa fila em memória, e um arquivo da POC ficou sem veredicto exatamente assim. Acrescenta ~2 s de espera.
+- **Webhook do MinIO com fila em disco.** Garante a entrega ao verificador, mas não até o veredicto: o verificador aceita o evento numa fila em memória e, se cair antes do veredicto, o arquivo fica sem ele. Acrescenta ~2 s de espera.
 - **Fila do Wolverine no Postgres** (a da ADR-0044). Passou nas mesmas provas de robustez e, com polling de 100 ms, teve latência e vazão equivalentes às do RabbitMQ. Ficou em segundo lugar por três motivos:
   - o verificador precisaria de credencial e conexões no banco da API;
   - a latência depende do polling: com o padrão do Wolverine, um arquivo esperou ~9,5 s;
-  - cada réplica soma dois pools de conexão (o do EF e o do Wolverine) ao `max_connections` do banco. Numa rodada com pools de 50, as confirmações falharam por falta de conexão.
+  - cada réplica soma dois pools de conexão (o do EF e o do Wolverine) ao `max_connections` do banco, o que limita o número de réplicas.
 
   Sem componente novo, ela continua sendo a alternativa, se o RabbitMQ não puder entrar na infraestrutura.
 - **Kafka** (ADR-0014). Funcionaria, mas, com consumer groups (o modelo do transporte Kafka do Wolverine), o paralelismo fica preso ao número de partições, e uma mensagem que falha repetidamente bloqueia a partição ou precisa de tópico de erro próprio. A fila de trabalho do RabbitMQ entrega um pedido por vez a quem estiver livre e tem fila de erro nativa.
