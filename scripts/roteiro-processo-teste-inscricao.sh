@@ -291,10 +291,11 @@ setup_configuracao() {
     TIPO_PROCESSO_ID=$(api_get "/api/configuracao/tipos-processo?limit=100" | jq -r '.[] | select(.codigo=="PSR") | .id')
     [ -n "$TIPO_PROCESSO_ID" ] || fail "tipo de processo 'PSR' não encontrado no catálogo semeado"
 
-    # O modelo de inscrição sem prova coleta TIPO_DEFICIENCIA (opções = o atendimento
-    # especializado declarado na oferta) — a conformidade recusa publicar o fato
-    # coletável sem ao menos uma opção. O modelo com prova coletaria também
-    # CONDICAO_ATENDIMENTO e RECURSO_ACESSIBILIDADE, das mesmas ofertas.
+    # O modelo com prova coleta CONDICAO_ATENDIMENTO e RECURSO_ACESSIBILIDADE, cujas
+    # opções são as que o processo oferta em atendimento especializado; a conformidade
+    # recusa publicar o fato coletável sem ao menos uma opção. O processo sem prova
+    # não oferta atendimento: o TIPO_DEFICIENCIA da reserva de vagas oferece os tipos
+    # do cadastro, em qualquer processo (UNI-REQ-0012).
     # As condições são as do atendimento especializado do INEP (Edital ENEM
     # 52/2025): atendimento especializado não é só de quem tem deficiência.
     # "PCD" é o código reconhecido por OfertaAtendimentoEspecializado.CodigoCondicaoPcd
@@ -344,7 +345,8 @@ setup_configuracao() {
         RECURSO_ACESSIBILIDADE_IDS=$(jq -c --arg id "$id" '. + [$id]' <<< "$RECURSO_ACESSIBILIDADE_IDS")
     done <<< "$recursos"
 
-    # Os tipos de deficiência do item 11.2.2 da minuta.
+    # Os tipos de deficiência do item 11.2.2 da minuta: o cadastro é a fonte das opções
+    # do TIPO_DEFICIENCIA, e a oferta do processo com prova escolhe entre eles os atendidos.
     local tipos
     TIPO_DEFICIENCIA_IDS="[]"
     tipos=$(jq -nr '[
@@ -437,6 +439,11 @@ definir_algoritmo_contagem_prazo() {
 }
 
 definir_oferta_atendimento() {
+    # Sem prova não há atendimento especializado a ofertar (UNI-REQ-0012).
+    if [ "$MODELO_INSCRICAO_ID" != "$MODELO_COM_PROVA_ID" ]; then
+        ok "processo sem prova: sem oferta de atendimento"
+        return
+    fi
     log "Definir Oferta de Atendimento"
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/oferta-atendimento" "{
         \"condicaoIds\": $CONDICAO_ATENDIMENTO_IDS, \"recursoIds\": $RECURSO_ACESSIBILIDADE_IDS,

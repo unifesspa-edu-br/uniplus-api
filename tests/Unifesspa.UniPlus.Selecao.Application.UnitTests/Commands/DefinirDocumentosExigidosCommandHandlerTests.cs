@@ -89,9 +89,13 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         Guid.CreateVersion7(), "MODALIDADE", "Modalidade de concorrência", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO", null,
         "INSCRICAO", "REGRA_DERIVACAO:MODALIDADE", null, "MODALIDADE", Ativo: true, ClassificacaoProtecao: "PESSOAL");
 
+    // Os valores são os tipos do cadastro de tipos de deficiência, que o catálogo entrega como valores do fato.
     private static FatoCandidatoView FatoTipoDeficiencia() => new(
-        Guid.CreateVersion7(), "TIPO_DEFICIENCIA", "Tipo de deficiência", null, "CATEGORICO", "DECLARADO", "ESCALAR", null,
-        "INSCRICAO", "CAMPO_FORMULARIO:TIPO_DEFICIENCIA", null, "PROCESSO", Ativo: true, ClassificacaoProtecao: "PESSOAL");
+        Guid.CreateVersion7(), "TIPO_DEFICIENCIA", "Tipo de deficiência", null, "CATEGORICO", "DECLARADO", "ESCALAR",
+        ["DEFICIENCIA_VISUAL", "TEA"], "INSCRICAO", "CAMPO_FORMULARIO:TIPO_DEFICIENCIA",
+        [new FatoValorDominioViewItem("DEFICIENCIA_VISUAL", "Deficiência visual", 0, Ativo: true),
+         new FatoValorDominioViewItem("TEA", "Transtorno do espectro autista", 1, Ativo: true)],
+        "TIPOS_DEFICIENCIA", Ativo: true, ClassificacaoProtecao: "SENSIVEL");
 
     [Fact(DisplayName = "Handle com processo inexistente retorna ProcessoSeletivo.NaoEncontrado")]
     public async Task Handle_ProcessoInexistente_RetornaNaoEncontrado()
@@ -422,17 +426,13 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         resultado.Error!.Code.Should().Be("NoExigencia.TipoEntidadeInvalido");
     }
 
-    [Fact(DisplayName = "Story #917: TIPO_DEFICIENCIA participa do domínio dinâmico igual a MODALIDADE/CONDICAO_ATENDIMENTO")]
-    public async Task Handle_GatilhoTipoDeficienciaOfertado_PersisteCondicao()
+    [Fact(DisplayName = "Gatilho por TIPO_DEFICIENCIA aceita tipo do cadastro sem o processo oferecer atendimento especializado")]
+    public async Task Handle_GatilhoTipoDeficienciaDoCadastroSemOferta_PersisteCondicao()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseQualquer();
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        OfertaCondicao condicaoPcd = OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência");
-        OfertaTipoDeficiencia tipoTea = OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "TEA", "TEA");
-        OfertaAtendimentoEspecializado oferta = OfertaAtendimentoEspecializado.Criar([condicaoPcd], [], [tipoTea]).Value!;
-        processo.DefinirOfertaAtendimento(oferta, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        // Processo NÃO oferece atendimento especializado — OfertaAtendimento nulo.
 
         Mocks mocks = NovosMocks(processo, processo.Id);
         Guid tipoDocumentoId = Guid.CreateVersion7();
@@ -456,21 +456,13 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
     [Fact(DisplayName = "Gatilho por TIPO_DEFICIENCIA usa o código do tipo, não o nome de exibição")]
     public async Task Handle_GatilhoTipoDeficiencia_UsaCodigoNaoNome()
     {
-        // O domínio dinâmico de TIPO_DEFICIENCIA era montado a partir do NOME do tipo
-        // ofertado, enquanto o irmão CONDICAO_ATENDIMENTO já usava o código. A
-        // consequência: uma condição escrita com o código canônico era recusada como
-        // valor fora do domínio, e renomear o rótulo invalidava condições existentes.
+        // O valor de domínio do tipo de deficiência é o código do cadastro; o nome é só o rótulo,
+        // e renomeá-lo não invalida condição existente.
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
             Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseQualquer();
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        // Código e nome deliberadamente diferentes: é o que separa os dois regimes.
-        OfertaCondicao condicaoPcd = OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência");
-        OfertaTipoDeficiencia tipo = OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "DEFICIENCIA_VISUAL", "Deficiência visual");
-        OfertaAtendimentoEspecializado oferta = OfertaAtendimentoEspecializado.Criar([condicaoPcd], [], [tipo]).Value!;
-        processo.DefinirOfertaAtendimento(oferta, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Mocks mocks = NovosMocks(processo, processo.Id);
         Guid tipoDocumentoId = Guid.CreateVersion7();
@@ -487,23 +479,18 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
             mocks, new DefinirDocumentosExigidosCommand(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente));
 
         resultado.IsSuccess.Should().BeTrue(
-            "o código do tipo ofertado é o valor de domínio — antes só o nome era aceito");
+            "o código do tipo no cadastro é o valor de domínio");
     }
 
     [Fact(DisplayName = "Gatilho por TIPO_DEFICIENCIA com o nome de exibição é recusado")]
     public async Task Handle_GatilhoTipoDeficienciaPeloNome_Recusa()
     {
-        // A contraprova: se o domínio ainda viesse do nome, este cenário passaria.
+        // A contraprova: se o domínio viesse do nome, este cenário passaria.
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
             Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseQualquer();
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        OfertaCondicao condicaoPcd = OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência");
-        OfertaTipoDeficiencia tipo = OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "DEFICIENCIA_VISUAL", "Deficiência visual");
-        OfertaAtendimentoEspecializado oferta = OfertaAtendimentoEspecializado.Criar([condicaoPcd], [], [tipo]).Value!;
-        processo.DefinirOfertaAtendimento(oferta, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Mocks mocks = NovosMocks(processo, processo.Id);
         Guid tipoDocumentoId = Guid.CreateVersion7();
@@ -521,8 +508,8 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         resultado.IsFailure.Should().BeTrue("o nome é rótulo de exibição, não valor de domínio");
     }
 
-    [Fact(DisplayName = "Story #917/CA-03: gatilho por TIPO_DEFICIENCIA não ofertado pelo processo é recusado (integridade referencial)")]
-    public async Task Handle_GatilhoTipoDeficienciaNaoOfertado_RetornaErroNomeado()
+    [Fact(DisplayName = "Gatilho por TIPO_DEFICIENCIA fora do cadastro de tipos de deficiência é recusado (integridade referencial)")]
+    public async Task Handle_GatilhoTipoDeficienciaForaDoCadastro_RetornaErroNomeado()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseQualquer();
@@ -537,7 +524,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
             .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[FatoTipoDeficiencia()]));
 
         ColetarFato(processo, "TIPO_DEFICIENCIA", TipoRenderizacao.SelecaoUnica);
-        CondicaoGatilhoInput condicao = new(0, "TIPO_DEFICIENCIA", "IGUAL", "\"TEA\"");
+        CondicaoGatilhoInput condicao = new(0, "TIPO_DEFICIENCIA", "IGUAL", "\"NANISMO\"");
         ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, [condicao], [], null, Qualquer, null);
         DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 

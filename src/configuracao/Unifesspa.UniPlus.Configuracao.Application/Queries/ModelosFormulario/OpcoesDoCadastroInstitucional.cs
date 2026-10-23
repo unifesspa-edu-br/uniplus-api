@@ -7,17 +7,16 @@ using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
-/// As opções que o processo oferta, quando ainda não há processo. No processo, a condição de atendimento,
-/// o recurso de acessibilidade e o tipo de deficiência são os que a oferta de atendimento especializado
-/// dele declara, e os municípios
-/// do bônus, os da base legal que ele adota; no modelo, a simulação oferece o cadastro institucional vivo
-/// — os municípios de todas as bases legais, sem repetir —, na mesma ordem que o processo usa.
+/// As opções que o processo oferta, quando ainda não há processo. No processo, a condição de atendimento
+/// e o recurso de acessibilidade são os que a oferta de atendimento especializado dele declara, e os
+/// municípios do bônus, os da base legal que ele adota; no modelo, a simulação oferece o cadastro
+/// institucional vivo — os municípios de todas as bases legais, sem repetir —, na mesma ordem que o
+/// processo usa. O tipo de deficiência é o cadastro vivo também no processo.
 /// </summary>
 internal static class OpcoesDoCadastroInstitucional
 {
     private const string FatoCondicaoAtendimento = "CONDICAO_ATENDIMENTO";
     private const string FatoRecursoAcessibilidade = "RECURSO_ACESSIBILIDADE";
-    private const string FatoTipoDeficiencia = "TIPO_DEFICIENCIA";
 
     /// <summary>
     /// Preenche as opções que o catálogo deixou nulas e que o cadastro institucional supre: condição de
@@ -70,13 +69,20 @@ internal static class OpcoesDoCadastroInstitucional
                 .Select(static (r, ordem) => new ValorSelecionavel(r.Codigo.Valor, r.Nome, ordem))];
         }
 
-        if (opcoes.TryGetValue(FatoTipoDeficiencia, out IReadOnlyList<ValorSelecionavel>? tipos) && tipos is null)
+        string[] camposDeTipoDeficiencia = [.. fatos
+            .Where(f => f.FonteValores == FonteValoresFato.TiposDeficiencia && opcoes.TryGetValue(f.Codigo, out IReadOnlyList<ValorSelecionavel>? atuais) && atuais is null)
+            .Select(static f => f.Codigo)];
+        if (camposDeTipoDeficiencia.Length > 0)
         {
             IReadOnlyList<TipoDeficiencia> cadastro =
                 await tipoDeficienciaRepository.ListarVivosParaLeituraAsync(cancellationToken).ConfigureAwait(false);
-            opcoes[FatoTipoDeficiencia] = [.. cadastro
+            ValorSelecionavel[] tipos = [.. cadastro
                 .OrderBy(static t => t.Codigo.Valor, StringComparer.Ordinal)
                 .Select(static (t, ordem) => new ValorSelecionavel(t.Codigo.Valor, t.Nome, ordem))];
+            foreach (string campo in camposDeTipoDeficiencia)
+            {
+                opcoes[campo] = tipos;
+            }
         }
     }
 }

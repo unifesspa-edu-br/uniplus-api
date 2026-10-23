@@ -42,7 +42,8 @@ internal sealed class FatoCandidatoReader : IFatoCandidatoReader
             .ConfigureAwait(false);
 
         Dictionary<string, FatoCandidato> porCodigo = fatos.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
-        return [.. fatos.Select(f => ParaView(f, porCodigo))];
+        IReadOnlyList<FatoValorDominioViewItem>? tiposDeficiencia = await TiposDeficienciaSeAlgumUsaAsync(fatos, cancellationToken).ConfigureAwait(false);
+        return [.. fatos.Select(f => ParaView(f, porCodigo, tiposDeficiencia))];
     }
 
     public async Task<FatoCandidatoView?> ObterPorCodigoAsync(
@@ -69,7 +70,8 @@ internal sealed class FatoCandidatoReader : IFatoCandidatoReader
             porCodigo[doMembro.Codigo] = doMembro;
         }
 
-        return ParaView(fato, porCodigo);
+        IReadOnlyList<FatoValorDominioViewItem>? tiposDeficiencia = await TiposDeficienciaSeAlgumUsaAsync([fato], cancellationToken).ConfigureAwait(false);
+        return ParaView(fato, porCodigo, tiposDeficiencia);
     }
 
     public async Task<IReadOnlyDictionary<string, IReadOnlyList<RegraDerivacao>>> ListarRegrasPadraoAsync(
@@ -85,10 +87,44 @@ internal sealed class FatoCandidatoReader : IFatoCandidatoReader
             .ToDictionary(static f => f.Codigo, static f => f.RegrasPadrao, StringComparer.Ordinal);
     }
 
-    private static FatoCandidatoView ParaView(FatoCandidato f, IReadOnlyDictionary<string, FatoCandidato> porCodigo)
+    /// <summary>
+    /// Os valores do fato de fonte <see cref="FonteValoresFato.TiposDeficiencia"/>: os tipos do cadastro,
+    /// pelo código, com o nome como rótulo, em ordem de código. O tipo removido entra inativo, como o
+    /// valor desativado de um fato de valores próprios, para que a condição que já o cita continue
+    /// resolvendo; o código recriado vale pelo tipo vivo. <see langword="null"/> quando nenhum fato
+    /// lido usa a fonte, ou quando o cadastro está vazio.
+    /// </summary>
+    private async Task<IReadOnlyList<FatoValorDominioViewItem>?> TiposDeficienciaSeAlgumUsaAsync(
+        IEnumerable<FatoCandidato> fatos, CancellationToken cancellationToken)
     {
-        IReadOnlyList<FatoValorDominioViewItem>? valoresDominioDeclarados =
-            ParaValoresDominioDeclarados(VocabularioDoCatalogo.ValoresDe(f, porCodigo));
+        if (!fatos.Any(static f => f.FonteValores == FonteValoresFato.TiposDeficiencia))
+        {
+            return null;
+        }
+
+        var cadastro = await _dbContext.TiposDeficiencia
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Select(static t => new { t.Codigo, t.Nome, t.IsDeleted, t.DeletedAt })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        FatoValorDominioViewItem[] tipos = [.. cadastro
+            .GroupBy(static t => t.Codigo.Valor, StringComparer.Ordinal)
+            .Select(static g => g.FirstOrDefault(static t => !t.IsDeleted) ?? g.MaxBy(static t => t.DeletedAt)!)
+            .OrderBy(static t => t.Codigo.Valor, StringComparer.Ordinal)
+            .Select(static (t, ordem) => new FatoValorDominioViewItem(t.Codigo.Valor, t.Nome, ordem, Ativo: !t.IsDeleted))];
+        return tipos.Length == 0 ? null : tipos;
+    }
+
+    private static FatoCandidatoView ParaView(
+        FatoCandidato f,
+        IReadOnlyDictionary<string, FatoCandidato> porCodigo,
+        IReadOnlyList<FatoValorDominioViewItem>? tiposDeficiencia)
+    {
+        IReadOnlyList<FatoValorDominioViewItem>? valoresDominioDeclarados = f.FonteValores == FonteValoresFato.TiposDeficiencia
+            ? tiposDeficiencia
+            : ParaValoresDominioDeclarados(VocabularioDoCatalogo.ValoresDe(f, porCodigo));
 
         return new(
             f.Id,

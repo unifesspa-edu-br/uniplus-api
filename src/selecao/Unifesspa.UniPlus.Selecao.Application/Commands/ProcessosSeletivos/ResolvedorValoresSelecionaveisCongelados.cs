@@ -147,7 +147,7 @@ internal static class ResolvedorValoresSelecionaveisCongelados
         }
 
         // Defesa em profundidade (issue #1077): o caminho esperado para um fato de escopo-processo
-        // (CONDICAO_ATENDIMENTO/RECURSO_ACESSIBILIDADE/TIPO_DEFICIENCIA) sem nenhum valor ofertado é
+        // (CONDICAO_ATENDIMENTO/RECURSO_ACESSIBILIDADE) sem nenhum valor ofertado é
         // ProcessoSeletivo.PendenciaDeFatoColetadoSemValoresOfertados, avaliado ANTES deste
         // resolvedor rodar (PendenciaPreCanonicalizacao precede a canonicalização, ADR-0109 D5).
         // Chegar aqui com lista vazia significaria o gate e este resolvedor operando sobre
@@ -162,6 +162,17 @@ internal static class ResolvedorValoresSelecionaveisCongelados
 
         return resolvido;
     }
+
+    /// <summary>
+    /// O fato cujos valores são os tipos do cadastro de tipos de deficiência não tem o que oferecer
+    /// quando o cadastro não tem tipo vivo: a recusa diz onde corrigir, e não cai na de fonte desconhecida.
+    /// </summary>
+    private static DomainError? SemTiposDeDeficiencia(FatoCandidatoView fatoNoCatalogo) =>
+        string.Equals(fatoNoCatalogo.FonteValores, DominioDoCatalogo.FonteTiposDeficiencia, StringComparison.Ordinal)
+            ? new DomainError(
+                "ProcessoSeletivo.FatoColetadoSemValoresOfertados",
+                $"O fato coletado '{fatoNoCatalogo.Codigo}' oferece os tipos do cadastro de tipos de deficiência, e o cadastro não tem nenhum tipo ativo.")
+            : null;
 
     private static Result<IReadOnlyList<ValorDominioDeclaradoCongelado>> ResolverOrigemDosValores(
         FatoColetado fato, FatoCandidatoView fatoNoCatalogo, ProcessoSeletivo processo,
@@ -199,7 +210,14 @@ internal static class ResolvedorValoresSelecionaveisCongelados
                 .OrderBy(static v => v.Ordem)
                 .ThenBy(static v => v.Codigo, StringComparer.Ordinal)
                 .Select(static v => new ValorDominioDeclaradoCongelado(v.Codigo, v.Descricao, v.Ordem, v.Orientacao))];
-            return Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Success(valores);
+            return valores.Count == 0 && SemTiposDeDeficiencia(fatoNoCatalogo) is { } soRemovidos
+                ? Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Failure(soRemovidos)
+                : Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Success(valores);
+        }
+
+        if (SemTiposDeDeficiencia(fatoNoCatalogo) is { } semTipos)
+        {
+            return Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Failure(semTipos);
         }
 
         return Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Failure(new DomainError(

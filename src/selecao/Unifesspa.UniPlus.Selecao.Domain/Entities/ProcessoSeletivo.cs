@@ -185,13 +185,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>
     /// De onde vêm as opções de um campo coletado: a origem copiada do catálogo quando a coleta foi
-    /// definida, com os fatos da oferta de atendimento sempre de opções do processo, porque a
+    /// definida, com a condição e o recurso de atendimento sempre de opções do processo, porque a
     /// oferta é a dona deles.
     /// </summary>
     public static OrigemValoresColeta OrigemDasOpcoes(FatoColetado fato)
     {
         ArgumentNullException.ThrowIfNull(fato);
-        return OfertaAtendimentoEspecializado.GereOpcoesDoFato(fato.FatoCodigo)
+        return OfertaAtendimentoEspecializado.ImpoeOrigemDoFato(fato.FatoCodigo)
             ? OrigemValoresColeta.OpcoesDoProcesso
             : fato.OrigemValores;
     }
@@ -5250,7 +5250,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>
     /// Um fato categórico coletável cujo domínio é derivado da oferta do próprio processo
-    /// (<c>CONDICAO_ATENDIMENTO</c>, <c>RECURSO_ACESSIBILIDADE</c>, <c>TIPO_DEFICIENCIA</c>) não pode ser publicado sem pelo
+    /// (<c>CONDICAO_ATENDIMENTO</c>, <c>RECURSO_ACESSIBILIDADE</c> e o <c>TIPO_DEFICIENCIA</c> cujo campo
+    /// congelou a origem do processo antes de as opções virem do cadastro) não pode ser publicado sem pelo
     /// menos um valor ofertado — obrigatório ou opcional, a pessoa candidata precisa de alguma
     /// opção para responder. Sem este gate, <c>DefinirFatosColetadosCommandHandler</c> aceita o
     /// vínculo (rascunho aceita configuração incompleta, de propósito) e

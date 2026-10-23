@@ -33,11 +33,20 @@ public sealed class OfertaAtendimentoEspecializado : EntityBase
     public const string FatoTipoDeficiencia = "TIPO_DEFICIENCIA";
 
     /// <summary>
-    /// Indica que as opções do fato são geridas pela oferta de atendimento, e não declaradas
-    /// diretamente pelo processo. A oferta é, por natureza, a dona desses três fatos.
+    /// Indica que as opções do fato vêm sempre da oferta de atendimento, qualquer que seja a origem
+    /// copiada para o campo: a oferta é, por natureza, a dona da condição e do recurso.
+    /// </summary>
+    public static bool ImpoeOrigemDoFato(string fatoCodigo) =>
+        fatoCodigo is FatoCondicaoAtendimento or FatoRecursoAcessibilidade;
+
+    /// <summary>
+    /// Indica que, quando o campo tem as opções do processo, quem responde por elas é a oferta de
+    /// atendimento, e não as opções declaradas. Inclui o tipo de deficiência: o campo novo dele tem os
+    /// tipos do cadastro (UNI-REQ-0012), mas o processo publicado antes disso congelou a origem do
+    /// processo, e as opções dele continuam sendo as da oferta.
     /// </summary>
     public static bool GereOpcoesDoFato(string fatoCodigo) =>
-        fatoCodigo is FatoCondicaoAtendimento or FatoRecursoAcessibilidade or FatoTipoDeficiencia;
+        ImpoeOrigemDoFato(fatoCodigo) || fatoCodigo is FatoTipoDeficiencia;
 
     public Guid ProcessoSeletivoId { get; private set; }
 

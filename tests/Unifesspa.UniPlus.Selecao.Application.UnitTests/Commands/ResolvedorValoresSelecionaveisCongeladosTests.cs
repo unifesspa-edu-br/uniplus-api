@@ -151,6 +151,33 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
             .Should().Equal(["PA", "PB", "PR", "SC", "SP", "SE"], "a ordem é alfabética sem acento: Pará, Paraíba, Paraná; Santa Catarina, São Paulo, Sergipe");
     }
 
+    [Theory(DisplayName = "Resolver recusa o tipo de deficiência quando o cadastro de tipos não tem tipo ativo, dizendo onde corrigir")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Resolver_TipoDeficienciaSemTipoAtivoNoCadastro_RecusaApontandoOCadastro(bool soTiposRemovidos)
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        processo.DefinirItens(
+            [FatoColetado.Criar("TIPO_DEFICIENCIA", 0, "Tipo de deficiência", TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null, classificacaoProtecao: "SENSIVEL").Value!],
+            PrecondicaoIfMatch.Ausente, finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+
+        Dictionary<string, FatoCandidatoView> catalogo = new(StringComparer.Ordinal)
+        {
+            ["TIPO_DEFICIENCIA"] = FatoCategoricoDeEscopoProcesso("TIPO_DEFICIENCIA") with
+            {
+                FonteValores = "TIPOS_DEFICIENCIA",
+                ValoresDominioDeclarados = soTiposRemovidos ? [new FatoValorDominioViewItem("TEA", "Transtorno do espectro autista", 0, Ativo: false)] : null,
+            },
+        };
+
+        Result<IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>> resultado =
+            ResolvedorValoresSelecionaveisCongelados.Resolver(processo, catalogo);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.FatoColetadoSemValoresOfertados");
+        resultado.Error.Message.Should().Contain("cadastro de tipos de deficiência");
+    }
+
     [Fact(DisplayName = "Resolver recusa CONDICAO_ATENDIMENTO coletável sem nenhuma condição ofertada")]
     public void Resolver_CondicaoAtendimentoSemOferta_Recusa()
     {

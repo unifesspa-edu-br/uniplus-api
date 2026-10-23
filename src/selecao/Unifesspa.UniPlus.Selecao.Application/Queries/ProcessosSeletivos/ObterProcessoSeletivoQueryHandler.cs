@@ -136,7 +136,7 @@ public static class ObterProcessoSeletivoQueryHandler
         fato.Obrigatoriedade.ToDto(),
         ProjectPredicado(fato.Precondicoes, static c => (c.Clausula, c.Fato, c.Operador, c.Valor),
             static (f, o, v) => new CondicaoPrecondicaoDto(f, o, v)),
-        fato.OpcoesDoProcesso || OfertaAtendimentoEspecializado.GereOpcoesDoFato(fato.FatoCodigo)
+        ProcessoSeletivo.OrigemDasOpcoes(fato) == OrigemValoresColeta.OpcoesDoProcesso
             ? [.. processo.OpcoesDoProcesso(fato.FatoCodigo).Select(static o => new OpcaoDoProcessoDto(o.Codigo, o.Rotulo, o.Ordem))]
             : null,
         fato.EtapaCodigo,

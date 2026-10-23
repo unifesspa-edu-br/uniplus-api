@@ -16,6 +16,7 @@ public static class FontesValoresFato
         [FonteValoresFato.MunicipiosBonus] = "MUNICIPIOS_BONUS",
         [FonteValoresFato.GeoUf] = "GEO_UF",
         [FonteValoresFato.GeoMunicipio] = "GEO_MUNICIPIO",
+        [FonteValoresFato.TiposDeficiencia] = "TIPOS_DEFICIENCIA",
     };
 
     private static readonly Dictionary<string, FonteValoresFato> DeToken =

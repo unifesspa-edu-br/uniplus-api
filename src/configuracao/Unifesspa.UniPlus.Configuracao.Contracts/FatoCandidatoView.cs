@@ -15,7 +15,7 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// <param name="Origem">Origem do dado — token canônico (DERIVADO, DECLARADO, INTEGRACAO).</param>
 /// <param name="Cardinalidade">Cardinalidade — token canônico (ESCALAR, MULTIVALORADO).</param>
 /// <param name="ValoresDominio">
-/// Os códigos dos valores de um categórico de fonte global, na ordem de
+/// Os códigos dos valores de um categórico de fonte global ou de tipos de deficiência, na ordem de
 /// <paramref name="ValoresDominioDeclarados"/>, ou <see langword="null"/> quando o fato não tem
 /// valores no catálogo.
 /// </param>
@@ -23,12 +23,13 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// <param name="Binding">Referência de onde/como o valor é produzido, no formato <c>"{PREFIXO}:{REFERENCIA}"</c>.</param>
 /// <param name="ValoresDominioDeclarados">
 /// Descrição por valor de um categórico estático (ADR-0116), ou <see langword="null"/>
-/// quando o fato não tem <c>FatoValorDominio</c> filhos — booleano/numérico, ou
-/// categórico de escopo-processo. Ordenada por <c>Ordem</c> e depois por <c>Codigo</c>.
+/// quando o fato não tem valores no catálogo — booleano/numérico, ou categórico de
+/// escopo-processo. No fato de fonte TIPOS_DEFICIENCIA, os valores são os tipos do cadastro de
+/// tipos de deficiência, com o removido inativo. Ordenada por <c>Ordem</c> e depois por <c>Codigo</c>.
 /// </param>
 /// <param name="FonteValores">
 /// De onde vêm os valores de um categórico (ADR-0136) — token canônico (GLOBAL, PROCESSO,
-/// MODALIDADE, MUNICIPIOS_BONUS, GEO_UF, GEO_MUNICIPIO), ou <see langword="null"/> em todo domínio que não é categórico. O consumidor decide por ela,
+/// MODALIDADE, MUNICIPIOS_BONUS, GEO_UF, GEO_MUNICIPIO, TIPOS_DEFICIENCIA), ou <see langword="null"/> em todo domínio que não é categórico. O consumidor decide por ela,
 /// nunca pelo código do fato.
 /// </param>
 /// <param name="Ativo">

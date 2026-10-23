@@ -735,8 +735,22 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.FatoColetadoSemValoresOfertados");
     }
 
-    [Fact(DisplayName = "Pré-canonicalização: fato coletável TIPO_DEFICIENCIA sem nenhum tipo ofertado — item vermelho e Publicar recusa com FatoColetadoSemValoresOfertados")]
-    public void PreCanon_FatoColetadoTipoDeficienciaSemValoresOfertados()
+    [Fact(DisplayName = "TIPO_DEFICIENCIA com os tipos do cadastro não depende da oferta de atendimento: sem tipo ofertado, o processo publica")]
+    public void FatoColetadoTipoDeficienciaDoCadastro_NaoDependeDaOfertaDeAtendimento()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+        FatoColetado fato = FatoColetado.Criar(
+            "TIPO_DEFICIENCIA", 0, "Qual o tipo de deficiência?",
+            TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, precondicoes: null, classificacaoProtecao: "SENSIVEL").Value!;
+        processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
+
+        ProcessoSeletivo.OrigemDasOpcoes(processo.Campos.Single(static c => c.FatoCodigo == "TIPO_DEFICIENCIA")).Should().Be(OrigemValoresColeta.Catalogo);
+        Result<VersaoConfiguracao> resultado = Publicar(processo);
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "TIPO_DEFICIENCIA com a origem do processo, copiada antes dos tipos do cadastro, segue com as opções da oferta: sem tipo ofertado, item vermelho e Publicar recusa")]
+    public void PreCanon_FatoColetadoTipoDeficienciaDaOfertaSemValoresOfertados()
     {
         ProcessoSeletivo processo = ProcessoConforme();
         // Condição PcD ofertada (pré-requisito da ADR-0067), mas nenhum TipoDeficiencia —
@@ -744,7 +758,8 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirOfertaAtendimento(OfertaComCondicaoPcd(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         FatoColetado fato = FatoColetado.Criar(
             "TIPO_DEFICIENCIA", 0, "Qual o tipo de deficiência?",
-            TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, precondicoes: null, classificacaoProtecao: "PESSOAL").Value!;
+            TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, precondicoes: null, classificacaoProtecao: "PESSOAL",
+            origemValores: OrigemValoresColeta.OpcoesDoProcesso).Value!;
         processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
 
         VermelhosForaDoFormulario(processo).Should().ContainSingle()
