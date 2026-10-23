@@ -455,6 +455,30 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         AplicarModeloFormularioCommandHandler.ClausulasOfertadas(quando, ofertados)!.Should().HaveCount(esperadas);
     }
 
+    [Fact(DisplayName = "O documento multiplicado pelas opções do fato entra uma vez por opção ofertada, menos as excetuadas, e cada cópia vale só para quem declarou a opção")]
+    public void PorOpcaoOfertada_UmaCopiaPorOpcaoOfertadaNaoExcetuada()
+    {
+        IReadOnlyDictionary<string, DominioDeValores> ofertados = new Dictionary<string, DominioDeValores>(StringComparer.Ordinal)
+        {
+            ["CONDICAO_ATENDIMENTO"] = DominioDeValores.OfertadoPeloProcesso(["VISAO_MONOCULAR", "LACTANTE", "PCD"]),
+        };
+        DocumentoExigidoDoModeloInput laudo = new(
+            "INSCRICAO", "LAUDO_MEDICO", true,
+            [[new CondicaoPrecondicaoInput("SOLICITA_ATENDIMENTO_ESPECIALIZADO", "IGUAL", JsonSerializer.SerializeToElement(true))]], "REMOVE_VANTAGEM", [],
+            new ExigenciaPorOpcaoInput("CONDICAO_ATENDIMENTO", ["LACTANTE"]));
+
+        List<DocumentoExigidoDoModeloInput> copias = [.. AplicarModeloFormularioCommandHandler.PorOpcaoOfertada(laudo, ofertados)];
+
+        copias.Should().OnlyContain(static c => c.PorOpcao == null && c.Obrigatorio);
+        copias.Select(static c => string.Join(" e ", c.Quando!.Single().Select(static k => $"{k.Fato}={k.Valor.GetRawText()}"))).Should().BeEquivalentTo(
+        [
+            "SOLICITA_ATENDIMENTO_ESPECIALIZADO=true e CONDICAO_ATENDIMENTO=\"PCD\"",
+            "SOLICITA_ATENDIMENTO_ESPECIALIZADO=true e CONDICAO_ATENDIMENTO=\"VISAO_MONOCULAR\"",
+        ]);
+        AplicarModeloFormularioCommandHandler.PorOpcaoOfertada(laudo, new Dictionary<string, DominioDeValores>(StringComparer.Ordinal))
+            .Should().BeEmpty("sem opção ofertada não há o que comprovar");
+    }
+
     [Fact(DisplayName = "O documento do modelo numa fase que o cronograma não tem é recusado, e nada é gravado")]
     public async Task Handle_DocumentoEmFaseInexistente_RecusaSemGravar()
     {

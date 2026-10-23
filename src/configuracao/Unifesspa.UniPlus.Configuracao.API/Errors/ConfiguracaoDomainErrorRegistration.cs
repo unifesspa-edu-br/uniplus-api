@@ -1528,6 +1528,10 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
         new(ModeloFormularioErrorCodes.EntradaMalformada,
             new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.modelo_formulario.entrada_malformada", "Uma etapa, item ou termo do modelo veio nulo")),
+        new(ModeloFormularioErrorCodes.ExigenciaPorOpcaoInvalida,
+            new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modelo_formulario.exigencia_por_opcao_invalida",
+                "O documento só se multiplica pelas opções de fato categórico cujas opções o processo declara")),
         // ── Tipo de etapa (UNI-REQ-0015, UNI-REQ-0087) ────────────────────
         new(TipoEtapaErrorCodes.CodigoObrigatorio,
             new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,

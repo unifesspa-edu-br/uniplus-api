@@ -208,6 +208,7 @@ public static partial class AplicarModeloFormularioCommandHandler
         // o que falta configurar aparece junto das outras recusas, e o que saiu da cópia não pesa.
         string[] citados = [.. FatosCitados(itensACopiar, gruposACopiar, conteudo.Etapas ?? [], termosACopiar)
             .Concat((conteudo.DocumentosExigidos ?? []).SelectMany(static d => Citados(d.Quando)))
+            .Concat((conteudo.DocumentosExigidos ?? []).Select(static d => d.PorOpcao?.FatoCodigo).OfType<string>())
             .Distinct(StringComparer.Ordinal)];
         List<ConfiguracaoDerivacaoInput> derivacoesACopiar = EscolherDerivacoes(citados, processo, contexto, regrasPadrao, relatorio, erros);
 
@@ -311,7 +312,8 @@ public static partial class AplicarModeloFormularioCommandHandler
     /// modelo que o processo já tinha são trocados pelos do modelo, como o formulário da finalidade; os
     /// das outras finalidades ficam. Modelo sem conjunto não mexe na árvore. A cláusula que cita valor
     /// que o processo não oferta — a condição de atendimento fora da oferta — não tem como valer e sai da
-    /// cópia; o documento sem nenhuma cláusula que valha sai com ela.
+    /// cópia; o documento sem nenhuma cláusula que valha sai com ela. O documento que o modelo multiplica
+    /// pelas opções de um fato entra uma vez por opção ofertada.
     /// </summary>
     private static async Task<Result> CopiarDocumentosExigidosAsync(
         ProcessoSeletivo processo,
@@ -333,10 +335,10 @@ public static partial class AplicarModeloFormularioCommandHandler
         List<NoExigenciaInput> entradas = [];
         Dictionary<string, TipoDocumentoView?> tipos = new(StringComparer.Ordinal);
         IReadOnlyDictionary<string, DominioDeValores> ofertados = VocabularioDeFatos.DominiosDinamicos(processo, catalogo);
-        for (int i = 0; i < documentos.Count; i++)
+        foreach ((int i, DocumentoExigidoDoModeloInput copia) in documentos.SelectMany((d, i) => PorOpcaoOfertada(d, ofertados).Select(c => (i, c))))
         {
-            DocumentoExigidoDoModeloInput documento = documentos[i] with { Quando = ClausulasOfertadas(documentos[i].Quando, ofertados) };
-            if (documentos[i].Quando is { Count: > 0 } && documento.Quando is not { Count: > 0 })
+            DocumentoExigidoDoModeloInput documento = copia with { Quando = ClausulasOfertadas(copia.Quando, ofertados) };
+            if (copia.Quando is { Count: > 0 } && documento.Quando is not { Count: > 0 })
             {
                 continue;
             }
@@ -381,7 +383,9 @@ public static partial class AplicarModeloFormularioCommandHandler
 
         if (erros.Count > 0)
         {
-            return Result.ValidationFailure(erros);
+            // As cópias de um documento multiplicado pelas opções têm a mesma fase e o mesmo tipo: a
+            // recusa sai uma vez, na posição do documento no modelo.
+            return Result.ValidationFailure([.. erros.DistinctBy(static e => (e.Field, e.Error.Code))]);
         }
 
         // A raiz cujas folhas são todas da finalidade do modelo é a que o modelo substitui.
@@ -398,6 +402,36 @@ public static partial class AplicarModeloFormularioCommandHandler
         string.IsNullOrEmpty(campo) ? "documentosExigidos"
         : campo.StartsWith("documentosExigidos", StringComparison.Ordinal) ? campo
         : $"documentosExigidos.{campo}";
+
+    /// <summary>
+    /// O documento uma vez por opção que o processo oferece para o fato, salvo as excetuadas: cada cópia
+    /// acrescenta a cada cláusula a declaração da opção, e vale só para quem a declarou. A opção que o
+    /// processo não oferece não gera cópia. O documento que não se multiplica segue como está.
+    /// </summary>
+    internal static IEnumerable<DocumentoExigidoDoModeloInput> PorOpcaoOfertada(
+        DocumentoExigidoDoModeloInput documento, IReadOnlyDictionary<string, DominioDeValores> ofertados)
+    {
+        if (documento.PorOpcao is not { } porOpcao)
+        {
+            return [documento];
+        }
+
+        HashSet<string> excetuadas = [.. (porOpcao.Exceto ?? []).OfType<string>()];
+        IEnumerable<string> opcoes = ofertados.TryGetValue(porOpcao.FatoCodigo, out DominioDeValores? dominio) && dominio.Valores is { } valores
+            ? valores.Where(v => !excetuadas.Contains(v)).Order(StringComparer.Ordinal)
+            : [];
+        return opcoes.Select(opcao =>
+        {
+            CondicaoPrecondicaoInput declarou = new(porOpcao.FatoCodigo, "IGUAL", JsonSerializer.SerializeToElement(opcao));
+            return documento with
+            {
+                Quando = documento.Quando is { Count: > 0 } quando
+                    ? [.. quando.Select(clausula => (IReadOnlyList<CondicaoPrecondicaoInput>)[.. clausula, declarou])]
+                    : [[declarou]],
+                PorOpcao = null,
+            };
+        });
+    }
 
     /// <summary>
     /// As cláusulas cujos valores o processo oferta: a que afirma (IGUAL) valor fora do que ele oferece

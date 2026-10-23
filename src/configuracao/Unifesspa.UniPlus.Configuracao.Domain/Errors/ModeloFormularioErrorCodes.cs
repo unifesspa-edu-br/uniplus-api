@@ -27,4 +27,7 @@ public static class ModeloFormularioErrorCodes
 
     /// <summary>Ocorrência de grupo simulada sem identidade própria no grupo.</summary>
     public const string OcorrenciaSimuladaInvalida = "ModeloFormulario.OcorrenciaSimuladaInvalida";
+
+    /// <summary>Documento multiplicado pelas opções de um fato cujas opções o processo não declara.</summary>
+    public const string ExigenciaPorOpcaoInvalida = "ModeloFormulario.ExigenciaPorOpcaoInvalida";
 }

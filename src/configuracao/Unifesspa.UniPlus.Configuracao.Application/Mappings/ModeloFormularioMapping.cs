@@ -43,7 +43,8 @@ public static class ModeloFormularioMapping
                 [.. g.Subitens.Select(ParaEntrada)], g.IncluiCandidato))],
             [.. conteudo.Documentos.Select(static d => new DocumentoExigidoDoModeloInput(
                 d.FaseCodigo, d.TipoDocumentoCodigo, d.Obrigatorio, EntradaDeRegras.ParaEntrada(d.Quando), d.ConsequenciaIndeferimento,
-                [.. d.BasesLegais.Select(static b => new BaseLegalDoModeloInput(b.Referencia, b.Abrangencia, b.Status, b.Observacao))]))]);
+                [.. d.BasesLegais.Select(static b => new BaseLegalDoModeloInput(b.Referencia, b.Abrangencia, b.Status, b.Observacao))],
+                d.PorOpcao is null ? null : new ExigenciaPorOpcaoInput(d.PorOpcao.FatoCodigo, [.. d.PorOpcao.Exceto])))]);
     }
 
     private static FatoColetadoInput ParaEntrada(ItemDoModelo campo) => new(

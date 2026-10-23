@@ -16460,6 +16460,16 @@
             "items": {
               "$ref": "#/components/schemas/BaseLegalDoModeloInput"
             }
+          },
+          "porOpcao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ExigenciaPorOpcaoInput"
+              }
+            ]
           }
         }
       },
@@ -16838,6 +16848,27 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/GrupoPortavel"
+            }
+          }
+        }
+      },
+      "ExigenciaPorOpcaoInput": {
+        "required": [
+          "fatoCodigo",
+          "exceto"
+        ],
+        "type": "object",
+        "properties": {
+          "fatoCodigo": {
+            "type": "string"
+          },
+          "exceto": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
             }
           }
         }

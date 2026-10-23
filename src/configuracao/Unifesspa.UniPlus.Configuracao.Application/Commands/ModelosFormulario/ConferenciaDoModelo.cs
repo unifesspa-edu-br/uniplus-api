@@ -4,9 +4,11 @@ using System.Text.Json;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -94,6 +96,11 @@ internal static class ConferenciaDoModelo
             {
                 erros.Add(quando);
             }
+
+            if (conteudo.Documentos[i].PorOpcao is { } porOpcao && ConferirPorOpcao(porOpcao.FatoCodigo, catalogo) is { } recusa)
+            {
+                erros.Add(new($"documentosExigidos[{i}].porOpcao.fatoCodigo", recusa, porOpcao.FatoCodigo));
+            }
         }
 
         foreach ((int indice, EtapaDoModelo etapa) in conteudo.Etapas)
@@ -160,7 +167,8 @@ internal static class ConferenciaDoModelo
                 .SelectMany(e => e.Valores.Select(v => (i.FatoCodigo, v))));
         IEnumerable<string> fatos = campos.Select(static i => i.FatoCodigo)
             .Concat(conteudo.Pressupostos)
-            .Concat(campos.SelectMany(static i => i.Restricoes.SelectMany(static r => r.FatosCitados)));
+            .Concat(campos.SelectMany(static i => i.Restricoes.SelectMany(static r => r.FatosCitados)))
+            .Concat(conteudo.Documentos.Select(static d => d.PorOpcao?.FatoCodigo).OfType<string>().Select(ModeloFormulario.CodigoNaFormaGravada));
         return VinculosDeFatos.De(fatos, condicoes, opcoes);
     }
 
@@ -260,6 +268,25 @@ internal static class ConferenciaDoModelo
             is ({ IsFailure: true } recusa, { } causa)
             ? new(campo, recusa.Error!, causa)
             : null;
+    }
+
+    /// <summary>
+    /// O documento só se multiplica pelas opções que o processo declara para o fato: são elas que a
+    /// aplicação do modelo enumera. Fato de valores globais ou de outra fonte não tem essa lista.
+    /// </summary>
+    private static DomainError? ConferirPorOpcao(string fatoCodigoInformado, CatalogoDoModelo catalogo)
+    {
+        string fatoCodigo = ModeloFormulario.CodigoNaFormaGravada(fatoCodigoInformado);
+        if (!catalogo.Fatos.TryGetValue(fatoCodigo, out FatoDoCatalogo? fato))
+        {
+            return new(ItemFormularioErrorCodes.FatoDesconhecido, $"O fato '{fatoCodigo}' não pertence ao catálogo de fatos do candidato.");
+        }
+
+        return string.Equals(fato.Dominio, DominiosFato.ParaTokenCanonico(DominioFato.Categorico), StringComparison.Ordinal)
+            && string.Equals(fato.FonteValores, FontesValoresFato.ParaTokenCanonico(FonteValoresFato.Processo), StringComparison.Ordinal)
+            ? null
+            : new(ModeloFormularioErrorCodes.ExigenciaPorOpcaoInvalida,
+                $"O documento só pode ser exigido uma vez por opção de fato cujas opções o processo declara; o fato '{fatoCodigo}' não é um deles.");
     }
 
     private static string Prefixar(string prefixo, string? campo) => string.IsNullOrEmpty(campo) ? prefixo : $"{prefixo}.{campo}";

@@ -121,11 +121,27 @@ internal sealed record ConteudoLido(
             }
         }
 
+        if (entrada.PorOpcao is { } porOpcao)
+        {
+            if (string.IsNullOrWhiteSpace(porOpcao.FatoCodigo))
+            {
+                erros.Add(new($"{campo}.porOpcao.fatoCodigo", new DomainError(
+                    ModeloFormularioErrorCodes.EntradaMalformada, "A exigência por opção precisa informar o fato cujas opções a multiplicam.")));
+            }
+
+            if ((porOpcao.Exceto ?? []).Any(string.IsNullOrWhiteSpace))
+            {
+                erros.Add(new($"{campo}.porOpcao.exceto", new DomainError(
+                    ModeloFormularioErrorCodes.EntradaMalformada, "A opção excetuada precisa ser um código.")));
+            }
+        }
+
         return erros.Count > recusasAntes
             ? null
             : new DocumentoExigidoDoModelo(
                 entrada.FaseCodigo, entrada.TipoDocumentoCodigo, entrada.Obrigatorio, quando, entrada.ConsequenciaIndeferimento,
-                [.. (entrada.BasesLegais ?? []).OfType<BaseLegalDoModeloInput>().Select(static b => new BaseLegalDoDocumentoDoModelo(b.Referencia, b.Abrangencia, b.Status, b.Observacao))]);
+                [.. (entrada.BasesLegais ?? []).OfType<BaseLegalDoModeloInput>().Select(static b => new BaseLegalDoDocumentoDoModelo(b.Referencia, b.Abrangencia, b.Status, b.Observacao))],
+                entrada.PorOpcao is { } opcoes ? new ExigenciaPorOpcao(opcoes.FatoCodigo, [.. (opcoes.Exceto ?? []).OfType<string>()]) : null);
     }
 
     private static GrupoDoModelo? LerGrupo(
