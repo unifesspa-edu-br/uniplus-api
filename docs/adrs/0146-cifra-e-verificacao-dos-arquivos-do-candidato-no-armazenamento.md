@@ -15,7 +15,7 @@ informed:
 
 Na confirmação do envio de um arquivo do candidato (issue #2036), a API lê o objeto inteiro do MinIO, passa o conteúdo ao clamd, cifra com a chave de dado sensível da Seleção e grava uma cópia selada (ADR-0121, emenda 2). Assim, a API tem em memória o conteúdo de todo arquivo enviado e concentra o acesso a dado sensível, como laudos e documentos de PcD. Em 21/10/2026, o líder técnico definiu outra direção: a cifra fica no armazenamento, com chave por objeto, e a verificação fica com um processo que lê direto do MinIO (issue #2044).
 
-A POC da issue #2045 (`spikes/cifra-no-minio/`) testou essa direção na versão do MinIO do projeto, no KES e no Vault de HML (1.21.2). Primeiro com o verificador acionado pelo webhook do bucket; depois com o verificador consumindo uma fila, em RabbitMQ e na fila do Wolverine no Postgres. As provas estão em `resultados/provas.txt` e `resultados/provas-fila.txt`, e as medições em `resultados/medicoes.md` e `resultados/medicoes-fila.md`.
+A POC da issue #2045 testou essa direção na versão do MinIO do projeto, no KES e no Vault de HML (1.21.2). Primeiro com o verificador acionado pelo webhook do bucket; depois com o verificador consumindo uma fila, em RabbitMQ e na fila do Wolverine no Postgres. O código da POC é descartável e sai depois da implementação; os resultados que sustentam esta decisão estão resumidos aqui.
 
 ## Drivers da decisão
 
@@ -53,7 +53,7 @@ A chave `uniplus-arquivos-candidato` vive no KES, que a guarda no KV do Vault ci
 
 O RabbitMQ foi escolhido pelo isolamento, e não pelo desempenho, que foi equivalente ao da fila no Postgres (abaixo). Com ele, o verificador, que manipula o conteúdo sensível, não tem credencial nem conexão no banco da API. A entrega também não depende de ajuste de polling.
 
-**Reconciliação.** Uma rotina periódica da API republica o que está em verificação há mais tempo que o esperado. Ela cobre o pedido perdido, o que foi para a fila de erro e o clamd que voltou. O verificador é idempotente: a reentrega de um arquivo já promovido devolve o mesmo veredicto, e a API só registra o primeiro.
+**Reconciliação.** Uma rotina periódica da API republica o que está em verificação sem pedido publicado há mais tempo que o esperado. O prazo conta da última publicação, e não da confirmação, para não republicar a cada execução o pedido que ainda está nas novas tentativas. Ela cobre o pedido perdido, o que foi para a fila de erro e o clamd que voltou. O verificador é idempotente: a reentrega devolve o mesmo veredicto, e a API só registra o primeiro.
 
 **Verificador.** É um processo próprio, fora da API. Ele:
 
@@ -61,15 +61,15 @@ O RabbitMQ foi escolhido pelo isolamento, e não pelo desempenho, que foi equiva
 2. confere se o formato corresponde ao declarado;
 3. passa o conteúdo ao clamd (`INSTREAM`) e calcula o SHA-256 no caminho.
 
-O arquivo limpo é promovido por cópia no próprio servidor, com o mesmo ETag e o SHA-256 no metadado: o que foi verificado é exatamente o que é promovido. O arquivo infectado ou fora do formato é removido. O resultado vai à API pela fila de resultados, com o veredicto, o SHA-256, o tamanho e o formato, nunca o conteúdo nem o nome da ameaça.
+O arquivo limpo é promovido por cópia no próprio servidor, com o mesmo ETag e o SHA-256 no metadado: o que foi verificado é exatamente o que é promovido. Um PUT na mesma chave depois da confirmação não é verificado nem promovido; substituir o arquivo é um novo envio, com chave nova. O arquivo infectado ou fora do formato não é promovido e fica na quarentena, que só o verificador lê, até expirar; assim a reentrega o verifica de novo e devolve o mesmo veredicto. O resultado vai à API pela fila de resultados, com o veredicto, o SHA-256, o tamanho e o formato, nunca o conteúdo nem o nome da ameaça.
 
 Com o clamd fora do ar, o verificador tenta de novo três vezes, espaçadas, e manda o pedido para a fila de erro. O arquivo segue em verificação até a reconciliação. O clamd recusa arquivo acima do `StreamMaxLength` (100 MB por padrão), e o arquivo fica em verificação sem nunca ser aprovado; o limite de envio do produto precisa ficar abaixo dele.
 
 A aprovação por etiqueta no próprio bucket de envio, sem cópia, foi recusada. O candidato consegue mandar a etiqueta de aprovado no PUT pela URL pré-assinada e se aprovar sem verificação.
 
-**Estado do arquivo.** O arquivo passa por `EM_VERIFICACAO` e termina em `VERIFICADO` ou `RECUSADO`. Ele não é recusado por indisponibilidade.
+**Estado do arquivo.** O arquivo passa por `EM_VERIFICACAO` e termina em `VERIFICADO`, `RECUSADO` ou `REENVIO_NECESSARIO`. O último vale quando o objeto não está na quarentena nem no bucket definitivo: o candidato confirmou sem enviar, ou o envio expirou antes de ser verificado. Ele não é recusa da verificação, encerra a reconciliação e pede um novo envio. Nenhum arquivo é recusado por indisponibilidade, e a expiração da quarentena precisa ser maior que a indisponibilidade tolerada da verificação.
 
-**Leitura pelo candidato.** A API assina uma URL de GET curta no bucket definitivo, com `Content-Disposition` (`inline` ou `attachment`). O MinIO entrega o conteúdo em claro e aceita `Range`. Adulterar a URL a invalida.
+**Leitura pelo candidato.** A API assina uma URL de GET curta no bucket definitivo, com `Content-Disposition` só `inline` ou `attachment` e o nome do arquivo codificado (`filename*`, RFC 5987), para que o nome não injete parâmetros no cabeçalho. O MinIO entrega o conteúdo em claro e aceita `Range`. Adulterar a URL a invalida.
 
 **Acesso e auditoria.**
 
@@ -101,7 +101,7 @@ O log de auditoria do MinIO (audit webhook) vai ao coletor de logs e registra ca
 
 ### Medições e dimensionamento
 
-O ambiente está descrito em `spikes/cifra-no-minio/resultados/ambiente.md`. O verificador e a API rodaram com os limites do pod de HML: 2 CPUs e 1 GiB.
+Tudo rodou numa única máquina (AMD Ryzen 9 9950X, NVMe, Debian 13), com MinIO de um nó e um disco. O verificador e a API rodaram com os limites do pod de HML: 2 CPUs e 1 GiB. O conteúdo de cada arquivo era aleatório e único, porque o clamd guarda em cache o veredicto do conteúdo já visto.
 
 Comparação com o fluxo atual (clamd sem limite de CPU, verificador por webhook):
 
@@ -198,6 +198,6 @@ Não há produção. Os arquivos selados em HML são apagados e reenviados, sem 
 
 ## Mais informações
 
-- POC: `spikes/cifra-no-minio/` (README, roteiros e resultados); issues #2044, #2045 e #2036.
+- Issues #2044 (direção), #2045 (POC) e #2036 (fluxo atual).
 - [ADR-0121](0121-criptografia-de-dados-sensiveis-em-repouso.md), emendada por esta ADR; [ADR-0132](0132-armazenamento-publico-separado-para-documento-publicado.md), a do acervo público, que não muda.
 - [ADR-0004](0004-outbox-transacional-via-wolverine.md) (outbox), [ADR-0014](0014-kafka-como-bus-assincrono-inter-modulos.md) (Kafka entre módulos) e [ADR-0044](0044-roteamento-domain-events-pg-queue-kafka-opcional.md) (fila no Postgres para eventos internos), que não mudam.
