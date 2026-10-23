@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # roteiro-processo-teste-inscricao.sh — cria o processo local de validação: o
 # Processo Seletivo para o Curso de Medicina Unifesspa 2027, pela minuta do
-# edital nº XX/2026-CEPS/Unifesspa, com o modelo de inscrição da Medicina
+# edital nº XX/2026-CEPS/Unifesspa, com o modelo de inscrição sem prova
 # aplicado, publicado e divulgado, e a inscrição aberta no dia da execução.
 #
 # Os cadastros (unidades, campus, curso, oferta) têm os códigos da minuta e são
@@ -25,8 +25,8 @@
 #   1.6) → Critérios de Desempate (item 6.3) → Classificação e eliminação
 #   (itens 5.6 e 8.1) → Taxa de Inscrição (gratuita, item 2.2) → Cronograma de
 #   Fases → aplicar o modelo de inscrição da Medicina → vincular a fase do
-#   formulário → documentos que comprovam o Fator na habilitação (os do atendimento
-#   especializado vêm do modelo) → Documento do
+#   formulário → documentos que comprovam o Fator na habilitação (os do modelo, se
+#   houver, são mantidos) → Documento do
 #   Edital → Divulgação (sempre ANTES de publicar: depois da publicação o
 #   processo só aceita mutação por retificação) → Publicar.
 #
@@ -45,8 +45,10 @@
 #   ADMIN_USER    (default: admin)
 #   ADMIN_PASS    (default: $TEST_PASSWORD, senão Uni+Teste26 — mesmo default
 #                 de setup-keycloak-dev.sh)
-#   MODELO_MEDICINA_ID (default: 5e3d0006-0000-7000-8000-000000000001 —
-#                 PSR_MEDICINA_2027_INSCRICAO, SementePsrMedicina2027)
+#   MODELO_INSCRICAO_ID (default: 5e3d0006-0000-7000-8000-000000000004 —
+#                 PSR_INSCRICAO_SEM_PROVA, SementePsrMedicina2027; para
+#                 simular processo com prova, 5e3d0006-0000-7000-8000-000000000003,
+#                 PSR_INSCRICAO_COM_PROVA)
 #   EDITAL_PDF    (default: scripts/edital-de-teste.pdf) — PDF enviado como
 #                 documento do edital, por exemplo a minuta
 
@@ -59,7 +61,8 @@ ADMIN_USER="${ADMIN_USER:-admin}"
 # Mesmo default de setup-keycloak-dev.sh — se o setup rodou com TEST_PASSWORD
 # diferente, o admin está com esse valor, não com Uni+Teste26.
 ADMIN_PASS="${ADMIN_PASS:-${TEST_PASSWORD:-Uni+Teste26}}"
-MODELO_MEDICINA_ID="${MODELO_MEDICINA_ID:-5e3d0006-0000-7000-8000-000000000001}"
+MODELO_INSCRICAO_ID="${MODELO_INSCRICAO_ID:-5e3d0006-0000-7000-8000-000000000004}"
+MODELO_COM_PROVA_ID="5e3d0006-0000-7000-8000-000000000003"
 # Um PDF de verdade: o portal abre o edital no navegador, e bytes que só começam
 # com %PDF- abririam uma aba em branco.
 EDITAL_PDF="${EDITAL_PDF:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/edital-de-teste.pdf}"
@@ -288,16 +291,16 @@ setup_configuracao() {
     TIPO_PROCESSO_ID=$(api_get "/api/configuracao/tipos-processo?limit=100" | jq -r '.[] | select(.codigo=="PSR") | .id')
     [ -n "$TIPO_PROCESSO_ID" ] || fail "tipo de processo 'PSR' não encontrado no catálogo semeado"
 
-    # O modelo de inscrição da Medicina coleta CONDICAO_ATENDIMENTO (seleção múltipla,
-    # opções do próprio processo) e TIPO_DEFICIENCIA (opções = o atendimento
-    # especializado declarado na oferta) — a conformidade recusa publicar os dois
-    # fatos coletáveis sem ao menos uma opção.
+    # O modelo de inscrição sem prova coleta TIPO_DEFICIENCIA (opções = o atendimento
+    # especializado declarado na oferta) — a conformidade recusa publicar o fato
+    # coletável sem ao menos uma opção. O modelo com prova coletaria também
+    # CONDICAO_ATENDIMENTO e RECURSO_ACESSIBILIDADE, das mesmas ofertas.
     # As condições são as do atendimento especializado do INEP (Edital ENEM
     # 52/2025): atendimento especializado não é só de quem tem deficiência.
     # "PCD" é o código reconhecido por OfertaAtendimentoEspecializado.CodigoCondicaoPcd
     # (ADR-0067) — tipo de deficiência só é aceito sob essa condição, por esse código.
-    # "OUTRA_CONDICAO" é a condição cuja escolha o modelo de inscrição da Medicina cita
-    # para pedir a descrição: aplicar o modelo exige que o processo a oferte.
+    # "OUTRA_CONDICAO" é a condição cuja escolha o modelo de inscrição com prova cita
+    # para pedir a descrição: aplicar esse modelo exige que o processo a oferte.
     local condicoes codigo nome descricao id
     CONDICAO_ATENDIMENTO_IDS="[]"
     condicoes=$(jq -nr '[
@@ -621,10 +624,10 @@ definir_cronograma_fases() {
     ok "cronograma definido — inscrição de $inicio_inscricao a $fim_inscricao"
 }
 
-aplicar_modelo_medicina() {
-    log "Aplicar o modelo de inscrição da Medicina ($MODELO_MEDICINA_ID)"
+aplicar_modelo_inscricao() {
+    log "Aplicar o modelo de inscrição ($MODELO_INSCRICAO_ID)"
     api POST "/api/selecao/admin/processos-seletivos/$PROCESSO_ID/formularios/aplicacoes-de-modelo" \
-        "{\"modeloId\": \"$MODELO_MEDICINA_ID\"}" >/dev/null
+        "{\"modeloId\": \"$MODELO_INSCRICAO_ID\"}" >/dev/null
     ok "modelo aplicado"
 }
 
@@ -686,10 +689,10 @@ definir_documentos_exigidos() {
     [ -n "$fase_habilitacao_processo_id" ] || fail "fase HABILITACAO não encontrada no cronograma do processo $PROCESSO_ID"
     base_legal='[{"referencia": "Edital nº XX/2026-CEPS/Unifesspa, itens 1.6 e 13", "abrangencia": "INTERNA_EDITAL", "status": "RESOLVIDO", "observacao": null}]'
 
-    # O PUT troca a árvore inteira: os documentos que o modelo de inscrição trouxe (o laudo e a
-    # certidão do atendimento especializado) voltam na entrada, com a base legal resolvida — o
-    # modelo a deixa pendente até o CEPS indicar a norma, e a publicação a exige resolvida.
-    documentos_do_modelo=$(jq -c --argjson bases "$base_legal" '[.raizesExigencia[] | {
+    # O PUT troca a árvore inteira: os documentos que o modelo de inscrição trouxer voltam na
+    # entrada, com a base legal resolvida — o modelo a deixa pendente até o CEPS indicar a norma, e
+    # a publicação a exige resolvida. O modelo sem prova não traz nenhum.
+    documentos_do_modelo=$(jq -c --argjson bases "$base_legal" '[(.raizesExigencia // [])[] | {
         tipo: "FOLHA",
         documento: (.documento | {
             exigidoNaFaseId, tipoDocumentoId: .tipoDocumentoOrigemId, aplicabilidade, obrigatorio, consequenciaIndeferimento,
@@ -697,7 +700,11 @@ definir_documentos_exigidos() {
             formatosPermitidos, finalidade
         })
     }]' <<< "$processo")
-    [ "$(jq 'length' <<< "$documentos_do_modelo")" -gt 0 ] || fail "o modelo de inscrição não trouxe os documentos do atendimento especializado"
+    # O modelo com prova sempre traz os documentos do atendimento especializado; sem eles, a
+    # aplicação regrediu e o processo sairia publicado sem exigir o laudo.
+    if [ "$MODELO_INSCRICAO_ID" = "$MODELO_COM_PROVA_ID" ] && [ "$(jq length <<< "$documentos_do_modelo")" -eq 0 ]; then
+        fail "o modelo com prova não trouxe os documentos do atendimento especializado"
+    fi
 
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/documentos-exigidos" "$(jq -nc \
         --argjson doModelo "$documentos_do_modelo" --arg fase "$fase_habilitacao_processo_id" --arg historico "$TIPO_DOCUMENTO_HISTORICO_ID" \
@@ -824,7 +831,7 @@ main() {
     definir_edicoes_enem
     definir_taxa_inscricao
     definir_cronograma_fases
-    aplicar_modelo_medicina
+    aplicar_modelo_inscricao
     vincular_fase_do_formulario
     definir_documentos_exigidos
     documento_do_edital

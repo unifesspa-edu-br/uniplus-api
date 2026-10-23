@@ -76,8 +76,17 @@ public static class SementePsrMedicina2027
     private const int TabelaValor = 5;
     private const int TabelaModelo = 6;
 
-    /// <summary>O modelo do formulário de inscrição de Medicina.</summary>
-    public const string ModeloDeInscricao = "PSR_MEDICINA_2027_INSCRICAO";
+    /// <summary>
+    /// O modelo do formulário de inscrição de processo PSR sem prova, como o de Medicina, que classifica
+    /// pela nota do ENEM: não pergunta por atendimento especializado, que serve à realização da prova.
+    /// </summary>
+    public const string ModeloDeInscricaoSemProva = "PSR_INSCRICAO_SEM_PROVA";
+
+    /// <summary>
+    /// O modelo do formulário de inscrição de processo PSR com prova: traz o atendimento especializado
+    /// nas etapas presenciais e os documentos que o comprovam.
+    /// </summary>
+    public const string ModeloDeInscricaoComProva = "PSR_INSCRICAO_COM_PROVA";
 
     /// <summary>O modelo do formulário de habilitação de Medicina.</summary>
     public const string ModeloDeHabilitacao = "PSR_MEDICINA_2027_HABILITACAO";
@@ -87,6 +96,12 @@ public static class SementePsrMedicina2027
     /// processo que aplica o modelo de inscrição oferta e cuja escolha pede a descrição da condição.
     /// </summary>
     public const string CondicaoForaDaLista = "OUTRA_CONDICAO";
+
+    /// <summary>
+    /// O máximo de caracteres da descrição da condição de atendimento que não consta da lista: ela diz
+    /// qual é a condição, e o atendimento de que se precisa vai para o laudo.
+    /// </summary>
+    public const int LimiteDaDescricaoDaOutraCondicao = 120;
 
     /// <summary>
     /// O caminho do Fator de Atenuação de quem concluiu o ensino médio por certificação: o município
@@ -254,7 +269,8 @@ public static class SementePsrMedicina2027
     }
 
     /// <summary>
-    /// Os comandos que gravam os dois modelos, ativos. O conteúdo é construído pelos records do
+    /// Os comandos que gravam os modelos, ativos: a inscrição sem prova e com prova, que partem das
+    /// mesmas partes e diferem só pelo atendimento especializado, e a habilitação. O conteúdo é construído pelos records do
     /// domínio e conferido por <see cref="ModeloFormulario.Criar"/> — estrutura, blocos por finalidade
     /// e grafo das regras —, e serializado pelo mesmo conversor que a aplicação usa para ler.
     /// </summary>
@@ -264,13 +280,16 @@ public static class SementePsrMedicina2027
     /// </remarks>
     public static IReadOnlyList<string> ComandosDosModelos() =>
     [
-        ComandoDoModelo(1, ModeloDeInscricao, "Inscrição — Medicina 2027",
-            "Formulário de inscrição do Processo Seletivo Regular Unificado de Medicina 2027.",
-            FinalidadeFormulario.Inscricao, ConjuntoBasicoDoModelo.Mesclar(ConteudoDaInscricao(), FormatosDoCatalogo()), DerivacoesDaInscricao),
+        ComandoDoModelo(4, ModeloDeInscricaoSemProva, "Inscrição — PSR sem prova",
+            "Formulário de inscrição do Processo Seletivo Regular Unificado sem aplicação de prova, que classifica pela nota do ENEM.",
+            FinalidadeFormulario.Inscricao, ConjuntoBasicoDoModelo.Mesclar(ConteudoDaInscricao(comProva: false), FormatosDoCatalogo()), DerivacoesDaInscricao),
         ComandoDoModelo(2, ModeloDeHabilitacao, "Habilitação — Medicina 2027",
             "Formulário de habilitação dos convocados no Processo Seletivo Regular Unificado de Medicina 2027.",
             FinalidadeFormulario.Habilitacao, ConteudoDaHabilitacao(),
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)),
+        ComandoDoModelo(3, ModeloDeInscricaoComProva, "Inscrição — PSR com prova",
+            "Formulário de inscrição do Processo Seletivo Regular Unificado com aplicação de prova, com o pedido de atendimento especializado nas etapas presenciais.",
+            FinalidadeFormulario.Inscricao, ConjuntoBasicoDoModelo.Mesclar(ConteudoDaInscricao(comProva: true), FormatosDoCatalogo()), DerivacoesDaInscricao),
     ];
 
     /// <summary>
@@ -333,7 +352,11 @@ public static class SementePsrMedicina2027
             .Concat(VocabularioDoCatalogo.Formatos(Construir(Fatos).Select(static c => c.Fato)))
             .ToDictionary(StringComparer.Ordinal);
 
-    private static ConteudoDoModelo ConteudoDaInscricao()
+    /// <summary>
+    /// O conteúdo da inscrição. O atendimento especializado serve à realização da prova (UNI-REQ-0012):
+    /// só o processo com prova pergunta por ele e exige os documentos que o comprovam.
+    /// </summary>
+    private static ConteudoDoModelo ConteudoDaInscricao(bool comProva)
     {
         const string enem = "ENEM";
         const string escolaridade = "ESCOLARIDADE";
@@ -341,21 +364,18 @@ public static class SementePsrMedicina2027
         const string fator = "FATOR_ATENUACAO";
         const string solicitaFator = "SOLICITA_FATOR_ATENUACAO";
         const string caminhoFator = "CAMINHO_FATOR_ATENUACAO";
-        const string atendimento = "ATENDIMENTO_ESPECIALIZADO";
-        const string solicitaAtendimento = "SOLICITA_ATENDIMENTO_ESPECIALIZADO";
-        const string condicaoAtendimento = "CONDICAO_ATENDIMENTO";
         const string indigena = "INDIGENA";
         const string quilombola = "QUILOMBOLA";
         const string baixaRenda = "BAIXA_RENDA";
 
         return new(
-            "Inscrição no Processo Seletivo Regular Unificado de Medicina 2027",
+            "Inscrição no Processo Seletivo Regular Unificado",
             [
                 Secao(enem, 1, "ENEM", "A edição do ENEM cujas notas você vai usar neste processo seletivo."),
                 Secao(escolaridade, 2, "Ensino médio", "Como você concluiu o ensino médio e onde o cursou."),
                 Secao(fator, 3, "Fator de Atenuação das Desigualdades de Acesso", "Pedido do Fator de Atenuação das Desigualdades de Acesso previsto no edital."),
                 Secao(cotas, 4, "Reserva de vagas", "Condições que permitem concorrer às vagas reservadas da Lei nº 12.711/2012 e às ações afirmativas do edital."),
-                Secao(atendimento, 5, "Atendimento especializado", "Pedido de atendimento especializado nas etapas presenciais do processo seletivo."),
+                .. comProva ? [SecaoDoAtendimento()] : Array.Empty<EtapaDoModelo>(),
                 Bloco("MODALIDADES", 6, BlocoSistema.ModalidadesCalculadas, "Modalidades de concorrência"),
                 Bloco("DOCUMENTOS", 7, BlocoSistema.ComprovacaoDocumental, "Documentos"),
                 Bloco("REVISAO", 8, BlocoSistema.RevisaoEAceite, "Revisão e aceite"),
@@ -413,21 +433,7 @@ public static class SementePsrMedicina2027
                     exibicao: SeAlguma([Optou])),
                 Campo("CONCORRER_RENDA", 116, cotas, "Deseja concorrer às vagas com critério de renda?", TipoRenderizacao.Booleano, null,
                     exibicao: SeAlguma([Optou, Condicao(baixaRenda, Operador.Igual, true)])),
-                // Atendimento especializado não é só de quem tem deficiência (UNI-REQ-0026): quem pede
-                // escolhe a condição e o recurso entre os que o processo oferta; a condição fora da
-                // lista é descrita.
-                Campo(solicitaAtendimento, 117, atendimento, "Você precisa de atendimento especializado em alguma etapa presencial do processo?", TipoRenderizacao.Booleano,
-                    "Por exemplo, por deficiência, gestação, amamentação, idade ou transtorno de aprendizagem."),
-                Campo(condicaoAtendimento, 118, atendimento, "Em quais condições você se enquadra?", TipoRenderizacao.SelecaoMultipla,
-                    "Marque todas as que se aplicam a você.",
-                    exibicao: Se(solicitaAtendimento, Operador.Igual, true)),
-                Campo("DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO", 119, atendimento, "Descreva a sua condição específica", TipoRenderizacao.Texto,
-                    "Diga qual é a condição e de que atendimento você precisa por causa dela.",
-                    exibicao: Se(condicaoAtendimento, Operador.Igual, CondicaoForaDaLista), formato: "LIVRE",
-                    restricoes: [new TamanhoTexto(null, 500)]),
-                Campo("RECURSO_ACESSIBILIDADE", 120, atendimento, "De quais recursos você vai precisar nas etapas presenciais?", TipoRenderizacao.SelecaoMultipla,
-                    "Só aparecem os recursos que o processo oferece. Marque todos de que você precisa.",
-                    exibicao: Se(solicitaAtendimento, Operador.Igual, true)),
+                .. comProva ? CamposDoAtendimento() : Array.Empty<ItemDoModelo>(),
             ],
             [
                 Termo(Termos[0], 1),
@@ -435,8 +441,34 @@ public static class SementePsrMedicina2027
             ],
             [],
             [],
-            DocumentosDoAtendimentoEspecializado());
+            comProva ? DocumentosDoAtendimentoEspecializado() : []);
     }
+
+    private const string Atendimento = "ATENDIMENTO_ESPECIALIZADO";
+    private const string SolicitaAtendimento = "SOLICITA_ATENDIMENTO_ESPECIALIZADO";
+    private const string CondicaoAtendimento = "CONDICAO_ATENDIMENTO";
+
+    private static EtapaDoModelo SecaoDoAtendimento() =>
+        Secao(Atendimento, 5, "Atendimento especializado", "Pedido de atendimento especializado nas etapas presenciais do processo seletivo.");
+
+    private static ItemDoModelo[] CamposDoAtendimento() =>
+    [
+        // Atendimento especializado não é só de quem tem deficiência (UNI-REQ-0026): quem pede
+        // escolhe a condição e o recurso entre os que o processo oferta; a condição fora da
+        // lista é descrita.
+        Campo(SolicitaAtendimento, 117, Atendimento, "Você precisa de atendimento especializado em alguma etapa presencial do processo?", TipoRenderizacao.Booleano,
+            "Por exemplo, por deficiência, gestação, amamentação, idade ou transtorno de aprendizagem."),
+        Campo(CondicaoAtendimento, 118, Atendimento, "Em quais condições você se enquadra?", TipoRenderizacao.SelecaoMultipla,
+            "Marque todas as que se aplicam a você.",
+            exibicao: Se(SolicitaAtendimento, Operador.Igual, true)),
+        Campo("DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO", 119, Atendimento, "Descreva a sua condição específica", TipoRenderizacao.Texto,
+            "Diga qual é a condição, em poucas palavras.",
+            exibicao: Se(CondicaoAtendimento, Operador.Igual, CondicaoForaDaLista), formato: "LIVRE",
+            restricoes: [new TamanhoTexto(null, LimiteDaDescricaoDaOutraCondicao)]),
+        Campo("RECURSO_ACESSIBILIDADE", 120, Atendimento, "De quais recursos você vai precisar nas etapas presenciais?", TipoRenderizacao.SelecaoMultipla,
+            "Só aparecem os recursos que o processo oferece. Marque todos de que você precisa.",
+            exibicao: Se(SolicitaAtendimento, Operador.Igual, true)),
+    ];
 
     /// <summary>
     /// O conjunto padrão de documentos da inscrição (UNI-REQ-0026, UNI-REQ-0170): o CEPS só concede o
@@ -449,8 +481,6 @@ public static class SementePsrMedicina2027
     /// </summary>
     private static DocumentoExigidoDoModelo[] DocumentosDoAtendimentoEspecializado()
     {
-        const string solicitaAtendimento = "SOLICITA_ATENDIMENTO_ESPECIALIZADO";
-        const string condicaoAtendimento = "CONDICAO_ATENDIMENTO";
         const string lactante = "LACTANTE";
         const string pessoaIdosa = "PESSOA_IDOSA";
         const string removeVantagem = "REMOVE_VANTAGEM";
@@ -473,10 +503,10 @@ public static class SementePsrMedicina2027
         // o administrador cadastrar depois também pede o laudo.
         return
         [
-            new("INSCRICAO", "LAUDO_MEDICO", Obrigatorio: true, SeAlguma([Condicao(solicitaAtendimento, Operador.Igual, true)]), removeVantagem, doLaudo,
-                new ExigenciaPorOpcao(condicaoAtendimento, [lactante, pessoaIdosa])),
+            new("INSCRICAO", "LAUDO_MEDICO", Obrigatorio: true, SeAlguma([Condicao(SolicitaAtendimento, Operador.Igual, true)]), removeVantagem, doLaudo,
+                new ExigenciaPorOpcao(CondicaoAtendimento, [lactante, pessoaIdosa])),
             new("INSCRICAO", "CERTIDAO_NASCIMENTO", Obrigatorio: true,
-                SeAlguma([Condicao(solicitaAtendimento, Operador.Igual, true), Condicao(condicaoAtendimento, Operador.Igual, lactante)]),
+                SeAlguma([Condicao(SolicitaAtendimento, Operador.Igual, true), Condicao(CondicaoAtendimento, Operador.Igual, lactante)]),
                 removeVantagem, daCertidao),
         ];
     }
