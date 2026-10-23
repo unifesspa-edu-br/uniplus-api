@@ -43,7 +43,7 @@ A POC da issue #2045 testou essa direção na versão do MinIO do projeto, no KE
 
 A chave `uniplus-arquivos-candidato` vive no KES, que a guarda no KV do Vault cifrada por uma chave Transit. Cada objeto recebe uma chave de dados própria, selada por essa chave. Nenhuma requisição leva cabeçalho de SSE: a URL pré-assinada de envio continua como é hoje.
 
-**Acionamento.** Quando o candidato confirma o envio, a API grava o arquivo como `EM_VERIFICACAO` e publica o pedido de verificação pelo outbox do Wolverine (ADR-0004), na mesma transação. Não existe arquivo em verificação sem pedido, nem pedido sem arquivo. O pedido traz só a chave do objeto.
+**Acionamento.** Quando o candidato confirma o envio, a API grava o arquivo como `EM_VERIFICACAO` e publica o pedido de verificação pelo outbox do Wolverine (ADR-0004), na mesma transação. Não existe arquivo em verificação sem pedido, nem pedido sem arquivo. O pedido traz a chave do objeto e o ETag que o PUT devolveu ao candidato, que o envia na confirmação (o CORS do bucket de envio expõe o `ETag`). A confirmação fixa assim a versão a verificar.
 
 **Transporte.** RabbitMQ, com quorum queues: uma fila de pedidos e uma de resultados. O verificador consome um pedido por vez em cada slot de paralelismo e só confirma a mensagem depois de publicar o veredicto; se ele cair no meio, a mensagem volta à fila. O RabbitMQ entra aqui como fila de trabalho. A ADR-0014 o recusou como barramento de eventos entre módulos, por não ter replay, o que não pesa neste uso. A POC provou:
 
@@ -53,21 +53,23 @@ A chave `uniplus-arquivos-candidato` vive no KES, que a guarda no KV do Vault ci
 
 O RabbitMQ foi escolhido pelo isolamento, e não pelo desempenho, que foi equivalente ao da fila no Postgres (abaixo). Com ele, o verificador, que manipula o conteúdo sensível, não tem credencial nem conexão no banco da API. A entrega também não depende de ajuste de polling.
 
-**Reconciliação.** Uma rotina periódica da API republica o que está em verificação sem pedido publicado há mais tempo que o esperado. O prazo conta da última publicação, e não da confirmação, para não republicar a cada execução o pedido que ainda está nas novas tentativas. Ela cobre o pedido perdido, o que foi para a fila de erro e o clamd que voltou. O verificador é idempotente: a reentrega devolve o mesmo veredicto, e a API só registra o primeiro.
+**Reconciliação.** Uma rotina periódica da API, numa instância só e em lotes, republica o que está em verificação sem pedido publicado há mais tempo que o esperado. O prazo conta da última publicação, e não da confirmação, para não republicar a cada execução o pedido que ainda está nas novas tentativas. Ela cobre o pedido perdido, o que foi para a fila de erro e o clamd que voltou. O verificador é idempotente: a reentrega devolve o mesmo veredicto, e a API só registra o primeiro.
 
 **Verificador.** É um processo próprio, fora da API. Ele:
 
-1. lê o ETag atual e o objeto em stream, já decifrado pelo MinIO, exigindo esse ETag;
-2. confere se o formato corresponde ao declarado;
-3. passa o conteúdo ao clamd (`INSTREAM`) e calcula o SHA-256 no caminho.
+1. consulta o bucket definitivo: se a chave já foi promovida (reentrega), devolve o veredicto gravado, sem promover de novo;
+2. recusa sem ler o arquivo acima do tamanho máximo, porque a URL pré-assinada de PUT não limita o tamanho e o clamd não verifica stream acima do `StreamMaxLength` (100 MB por padrão);
+3. lê em stream a versão confirmada, exigindo o ETag do pedido, já decifrada pelo MinIO;
+4. confere se o formato corresponde ao declarado;
+5. passa o conteúdo ao clamd (`INSTREAM`) e calcula o SHA-256 no caminho.
 
-O arquivo limpo é promovido por cópia no próprio servidor, com o mesmo ETag e o SHA-256 no metadado: o que foi verificado é exatamente o que é promovido. Um PUT na mesma chave depois da confirmação não é verificado nem promovido; substituir o arquivo é um novo envio, com chave nova. O arquivo infectado ou fora do formato não é promovido e fica na quarentena, que só o verificador lê, até expirar; assim a reentrega o verifica de novo e devolve o mesmo veredicto. O resultado vai à API pela fila de resultados, com o veredicto, o SHA-256, o tamanho e o formato, nunca o conteúdo nem o nome da ameaça.
+O arquivo limpo é promovido por cópia no próprio servidor, com o mesmo ETag, e o objeto definitivo guarda no metadado o SHA-256 e o ETag do envio: o que foi confirmado é exatamente o que é verificado e promovido, e o promovido nunca é sobrescrito. Se a versão confirmada não estiver mais no bucket de envio, porque outro PUT a substituiu, o arquivo termina em reenvio necessário; substituir o arquivo é um novo envio, com chave nova. O arquivo infectado ou fora do formato não é promovido e fica na quarentena, que só o verificador lê, até expirar; assim a reentrega o verifica de novo e devolve o mesmo veredicto. O resultado vai à API pela fila de resultados, com o veredicto, o SHA-256, o tamanho e o formato, nunca o conteúdo nem o nome da ameaça.
 
-Com o clamd fora do ar, o verificador tenta de novo três vezes, espaçadas, e manda o pedido para a fila de erro. O arquivo segue em verificação até a reconciliação. O clamd recusa arquivo acima do `StreamMaxLength` (100 MB por padrão), e o arquivo fica em verificação sem nunca ser aprovado; o limite de envio do produto precisa ficar abaixo dele.
+Com o clamd fora do ar, o verificador tenta de novo três vezes, espaçadas, e manda o pedido para a fila de erro. O arquivo segue em verificação até a reconciliação.
 
 A aprovação por etiqueta no próprio bucket de envio, sem cópia, foi recusada. O candidato consegue mandar a etiqueta de aprovado no PUT pela URL pré-assinada e se aprovar sem verificação.
 
-**Estado do arquivo.** O arquivo passa por `EM_VERIFICACAO` e termina em `VERIFICADO`, `RECUSADO` ou `REENVIO_NECESSARIO`. O último vale quando o objeto não está na quarentena nem no bucket definitivo: o candidato confirmou sem enviar, ou o envio expirou antes de ser verificado. Ele não é recusa da verificação, encerra a reconciliação e pede um novo envio. Nenhum arquivo é recusado por indisponibilidade, e a expiração da quarentena precisa ser maior que a indisponibilidade tolerada da verificação.
+**Estado do arquivo.** O arquivo passa por `EM_VERIFICACAO` e termina em `VERIFICADO`, `RECUSADO` ou `REENVIO_NECESSARIO`. O último vale quando a versão confirmada não está na quarentena nem no bucket definitivo: o candidato confirmou sem enviar, regravou o arquivo depois de confirmar, ou o envio expirou antes de ser verificado. Ele não é recusa da verificação, encerra a reconciliação e pede um novo envio. Nenhum arquivo é recusado por indisponibilidade, e a expiração da quarentena precisa ser maior que a indisponibilidade tolerada da verificação.
 
 **Leitura pelo candidato.** A API assina uma URL de GET curta no bucket definitivo, com `Content-Disposition` só `inline` ou `attachment` e o nome do arquivo codificado (`filename*`, RFC 5987), para que o nome não injete parâmetros no cabeçalho. O MinIO entrega o conteúdo em claro e aceita `Range`. Adulterar a URL a invalida.
 
@@ -146,7 +148,7 @@ Não há produção. Os arquivos selados em HML são apagados e reenviados, sem 
 
 - o KES, com autenticação no Vault por Kubernetes;
 - a chave Transit e o caminho do KV, com a política do KES;
-- o SSE-KMS e as políticas dos dois buckets;
+- o SSE-KMS e as políticas dos dois buckets, e o CORS do bucket de envio expondo o `ETag`;
 - o RabbitMQ em cluster de três nós;
 - o verificador com o clamd como sidecar, escalado pelo tamanho da fila;
 - o audit webhook;
