@@ -1,7 +1,7 @@
 
 
 ==================== Ambiente ====================
-Data: 2026-10-22T23:50:32-03:00
+Data: 2026-10-23T00:15:00-03:00
 RabbitMQ 4.1.4
 postgres (PostgreSQL) 18.6
 Wolverine 5.41.0 (a versão da API); verificador com paralelismo 8
@@ -13,8 +13,8 @@ enviados e confirmados: 5 de 5; falhas: 0
 $ curl -sf localhost:18083/arquivos/resumo
 [{"estado":"VERIFICADO","arquivos":5,"veredictos":5,"publicacoes":5}]
 
-$ estado 9062851a03264069b049ae4988f4e702
-{"chave":"9062851a03264069b049ae4988f4e702","estado":"VERIFICADO","confirmadoEm":"2026-10-23T02:50:41.000654+00:00","publicadoEm":"2026-10-23T02:50:41.000654+00:00","eTag":"3d5c267f1f9fdd8ab544406a350b46ff","inicioDaVerificacaoEm":"2026-10-23T02:50:41.797052+00:00","fimDaVerificacaoEm":"2026-10-23T02:50:41.898493+00:00","registradoEm":"2026-10-23T02:50:42.647626+00:00","verificacaoMs":101.4412,"veredicto":"LIMPO","sha256":"feacb9f0baacf23d241fa6d30f20f3db7356f4ad41725f0479efb5597031f826","bytes":1048576,"verificador":"e8c64e75b119","veredictos":1,"publicacoes":1}
+$ estado 7ef9dff35c604d7587e0d40d47e145be
+{"chave":"7ef9dff35c604d7587e0d40d47e145be","estado":"VERIFICADO","confirmadoEm":"2026-10-23T03:15:10.542728+00:00","publicadoEm":"2026-10-23T03:15:10.542728+00:00","eTag":"4ac68366935e2e5e8e2332c7aee12bae","inicioDaVerificacaoEm":"2026-10-23T03:15:11.308006+00:00","fimDaVerificacaoEm":"2026-10-23T03:15:11.435278+00:00","registradoEm":"2026-10-23T03:15:12.143884+00:00","verificacaoMs":127.2633,"veredicto":"LIMPO","sha256":"c2686a76eaf17795db40397db2cfb1e44c3d40de982f6b931bd020cc10a59f02","bytes":1048576,"verificador":"ce9515c374a7","veredictos":1,"publicacoes":1}
 Objetos no bucket de envio: 0; no definitivo: 5
 
 
@@ -23,8 +23,8 @@ Objetos no bucket de envio: 0; no definitivo: 5
 # 40 arquivos de 10 MB; o verificador é morto depois dos primeiros veredictos e só volta 10 s depois.
 enviados e confirmados: 40 de 40; falhas: 0
 
-$ docker kill -s KILL e8c64e75b11908be0472d1283ce06924dcb821916443d9bfa7853a66a2df8b75
-e8c64e75b11908be0472d1283ce06924dcb821916443d9bfa7853a66a2df8b75
+$ docker kill -s KILL ce9515c374a7b2ce374315bfaea2f859012e82d976c980999f0f1439de12dce8
+ce9515c374a7b2ce374315bfaea2f859012e82d976c980999f0f1439de12dce8
 
 # Com o verificador fora: o que estava com ele voltou para a fila.
 
@@ -33,7 +33,7 @@ $ curl -sf localhost:18083/arquivos/resumo
 
 $ dc exec -T rabbitmq rabbitmqctl -q list_queues name type messages messages_unacknowledged consumers
 name	type	messages	messages_unacknowledged	consumers
-wolverine.response.e9d6022b-5029-44ba-b414-48cd67e2fb14	classic	0	0	1
+wolverine.response.bbcd9ef6-3bb8-427b-95cd-d7697b3d357b	classic	0	0	1
 verificacao	quorum	32	0	0
 resultado_verificacao	quorum	0	0	1
 wolverine-dead-letter-queue	classic	0	0	0
@@ -97,7 +97,7 @@ enviados e confirmados: 1 de 1; falhas: 0
 $ curl -sf -X POST localhost:18083/reconciliar?segundos=0
 {"republicados":1}
 
-$ sql select "Estado", "Veredicto", "Sha256" = '59fa5f0b25a091402b313ff37f15cebc46ad50fe6799caa02847188a676869cb' as mesmo_sha256, "Veredictos", "Publicacoes" from poc.arquivo_enviado where "Chave" = 'd4938fe9da3c4e518b064beca6cc63b0'
+$ sql select "Estado", "Veredicto", "Sha256" = '277e8457e9cbcb4a86a9f20f2a90ee880e1a2373b445d2a085418246bf4d54d1' as mesmo_sha256, "Veredictos", "Publicacoes" from poc.arquivo_enviado where "Chave" = '534f506cf3004c9fadd9918f592486d3'
 VERIFICADO | LIMPO | t | 2 | 2
 
 
@@ -140,10 +140,10 @@ wolverine-dead-letter-queue	0
 
 ==================== rabbitmq · 8. Arquivo infectado: fica na quarentena, e a reentrega devolve o mesmo veredicto ====================
 
-$ curl -sf -X POST localhost:18083/confirmar/eicar-rabbitmq-1792723939?etag=5652a9ef78bfaea80961576a223645a5-1
+$ curl -sf -X POST localhost:18083/confirmar/eicar-rabbitmq-1792725409?etag=8a47a04195397516c8f7ecae1a7b47d0-1
 {"estado":"EM_VERIFICACAO"}
 
-$ sql select "Estado", "Veredicto", "Veredictos" from poc.arquivo_enviado where "Chave" = 'eicar-rabbitmq-1792723939'
+$ sql select "Estado", "Veredicto", "Veredictos" from poc.arquivo_enviado where "Chave" = 'eicar-rabbitmq-1792725409'
 RECUSADO | INFECTADO | 1
 
 # Objetos com essa chave no bucket de envio (a quarentena, que só o verificador lê) e no definitivo:
@@ -154,16 +154,16 @@ envio: 1 · definitivo: 0
 $ curl -sf -X POST localhost:18083/reconciliar?segundos=0
 {"republicados":1}
 
-$ sql select "Estado", "Veredicto", "Veredictos", "Publicacoes" from poc.arquivo_enviado where "Chave" = 'eicar-rabbitmq-1792723939'
+$ sql select "Estado", "Veredicto", "Veredictos", "Publicacoes" from poc.arquivo_enviado where "Chave" = 'eicar-rabbitmq-1792725409'
 RECUSADO | INFECTADO | 2 | 2
 
 
 ==================== rabbitmq · 9. Confirmação sem objeto no bucket: reenvio necessário, e a reconciliação para ====================
 
-$ curl -sf -X POST localhost:18083/confirmar/ausente-rabbitmq-1792723942?etag=inexistente
+$ curl -sf -X POST localhost:18083/confirmar/ausente-rabbitmq-1792725412?etag=inexistente
 {"estado":"EM_VERIFICACAO"}
 
-$ sql select "Estado", "Veredicto", "Publicacoes" from poc.arquivo_enviado where "Chave" = 'ausente-rabbitmq-1792723942'
+$ sql select "Estado", "Veredicto", "Publicacoes" from poc.arquivo_enviado where "Chave" = 'ausente-rabbitmq-1792725412'
 REENVIO_NECESSARIO | NAO_ENCONTRADO | 1
 
 # A reconciliação não republica o que já tem estado final.
@@ -176,20 +176,25 @@ $ curl -sf -X POST localhost:18083/reconciliar?segundos=0
 
 # a) O candidato confirma a versão A e, antes da verificação, regrava B na mesma chave pela URL ainda válida.
 
-$ curl -sf -X POST localhost:18083/confirmar/versao-rabbitmq-1792723944?etag=7340bb01c953815c56843de3b7fc41bc-1
+$ curl -sf -X POST localhost:18083/confirmar/versao-rabbitmq-1792725414?etag=c461ce3441669179bc3c794f8de3598f-1
 {"estado":"EM_VERIFICACAO"}
-ETag confirmado: 7340bb01c953815c56843de3b7fc41bc-1 · ETag atual: 6923338b65a212526fdb495dc83c5aa2-1
+ETag confirmado: c461ce3441669179bc3c794f8de3598f-1 · ETag atual: 13d3d4b0693177663c819cf87e6d11ea-1
 
-$ sql select "Estado", "Veredicto" from poc.arquivo_enviado where "Chave" = 'versao-rabbitmq-1792723944'
+$ sql select "Estado", "Veredicto" from poc.arquivo_enviado where "Chave" = 'versao-rabbitmq-1792725414'
 REENVIO_NECESSARIO | NAO_ENCONTRADO
 no definitivo: 0
 
 # b) A versão A é promovida; depois o candidato regrava B no envio e a mensagem é reentregue.
 
+# Confirmar B na mesma chave é recusado: um novo arquivo é um novo envio, com chave nova.
+
+$ curl -s -w  · HTTP %{http_code} -X POST localhost:18083/confirmar/reentrega-rabbitmq-1792725417?etag=599d6188434b192b21d87fa1b35e6a9c-1
+{"erro":"esta chave já foi confirmada com outra versão; um novo arquivo é um novo envio, com chave nova"} · HTTP 409
+
 $ curl -sf -X POST localhost:18083/reconciliar?segundos=0
 {"republicados":1}
 
-$ sql select "Estado", "Veredicto", "Sha256" = 'f4da193a81c2e42f26bced3dc7712c1217dd8f7e798d0062f1fee9fb18041ff4' as mesmo_sha256, "Veredictos" from poc.arquivo_enviado where "Chave" = 'reentrega-rabbitmq-1792723947'
+$ sql select "Estado", "Veredicto", "Sha256" = '45d5d37ccb171725ab1e1a06a70edcf50f653b8f72d28b2b1332d96152b71f11' as mesmo_sha256, "Veredictos" from poc.arquivo_enviado where "Chave" = 'reentrega-rabbitmq-1792725417'
 VERIFICADO | LIMPO | t | 2
 
 # O objeto definitivo continua sendo A: o metadado guarda o ETag e o SHA-256 da versão confirmada.
@@ -202,8 +207,8 @@ enviados e confirmados: 5 de 5; falhas: 0
 $ curl -sf localhost:18083/arquivos/resumo
 [{"estado":"VERIFICADO","arquivos":5,"veredictos":5,"publicacoes":5}]
 
-$ estado e1e30655d7ed4ab4a907e8d280a76806
-{"chave":"e1e30655d7ed4ab4a907e8d280a76806","estado":"VERIFICADO","confirmadoEm":"2026-10-23T02:52:38.178476+00:00","publicadoEm":"2026-10-23T02:52:38.178476+00:00","eTag":"68410e469585f2abb25fc6ec9de66129","inicioDaVerificacaoEm":"2026-10-23T02:52:39.000521+00:00","fimDaVerificacaoEm":"2026-10-23T02:52:39.103716+00:00","registradoEm":"2026-10-23T02:52:39.836725+00:00","verificacaoMs":103.1998,"veredicto":"LIMPO","sha256":"8c30cd5c6e1060a5010dd891b7773e74148fd5b8158146f22b863c634df0b886","bytes":1048576,"verificador":"4a65adcd368d","veredictos":1,"publicacoes":1}
+$ estado c3045ad8c6c2487583e16fc2820b227f
+{"chave":"c3045ad8c6c2487583e16fc2820b227f","estado":"VERIFICADO","confirmadoEm":"2026-10-23T03:17:09.155596+00:00","publicadoEm":"2026-10-23T03:17:09.155596+00:00","eTag":"f7a457d9cab3dc2ad0ad2970f8c410c9","inicioDaVerificacaoEm":"2026-10-23T03:17:09.891971+00:00","fimDaVerificacaoEm":"2026-10-23T03:17:10.012898+00:00","registradoEm":"2026-10-23T03:17:10.787073+00:00","verificacaoMs":120.9271,"veredicto":"LIMPO","sha256":"e1837aa59e8d36aa57ce444e0107892aed47b0925030cfdd3b3337bed176d06b","bytes":1048576,"verificador":"92db42b6ecb4","veredictos":1,"publicacoes":1}
 Objetos no bucket de envio: 0; no definitivo: 5
 
 
@@ -212,8 +217,8 @@ Objetos no bucket de envio: 0; no definitivo: 5
 # 40 arquivos de 10 MB; o verificador é morto depois dos primeiros veredictos e só volta 10 s depois.
 enviados e confirmados: 40 de 40; falhas: 0
 
-$ docker kill -s KILL 4a65adcd368df51c0e7d1e4f3779d5ec62a0a078a4fa12aaf34202a126b461a9
-4a65adcd368df51c0e7d1e4f3779d5ec62a0a078a4fa12aaf34202a126b461a9
+$ docker kill -s KILL 92db42b6ecb4206c91b0819d1bebde7730bde152407a44ed78fd27ff76236238
+92db42b6ecb4206c91b0819d1bebde7730bde152407a44ed78fd27ff76236238
 
 # Com o verificador fora: o que estava com ele voltou para a fila.
 
@@ -224,7 +229,7 @@ $ sql select 'na fila', count(*) from wolverine_filas.wolverine_queue_verificaca
       union all select 'no inbox do verificador', count(*) from wolverine_verificador.wolverine_incoming_envelopes
       union all select 'na fila de erro', count(*) from wolverine_verificador.wolverine_dead_letters
 na fila | 0
-no inbox do verificador | 92
+no inbox do verificador | 140
 na fila de erro | 0
 
 # Depois de o verificador voltar: nenhum arquivo perdido. Veredictos acima de 40 são entregas repetidas, absorvidas.
@@ -289,7 +294,7 @@ enviados e confirmados: 1 de 1; falhas: 0
 $ curl -sf -X POST localhost:18083/reconciliar?segundos=0
 {"republicados":1}
 
-$ sql select "Estado", "Veredicto", "Sha256" = '6db3d6d998df5ce68be4fb88ae330bf33eca299d38fa3117afc16e98ff9c4a76' as mesmo_sha256, "Veredictos", "Publicacoes" from poc.arquivo_enviado where "Chave" = '32600371be694b44bb68bf66064a2ce3'
+$ sql select "Estado", "Veredicto", "Sha256" = 'c8fd9b71ed4623dbb9917a018097c2c940c2152d632d11cbad57408a49abd951' as mesmo_sha256, "Veredictos", "Publicacoes" from poc.arquivo_enviado where "Chave" = '4899233d9aee4c92826f4fdffe444c26'
 VERIFICADO | LIMPO | t | 2 | 2
 
 
@@ -311,10 +316,10 @@ $ sql select count(*) as pedidos_pendentes from wolverine_filas.wolverine_queue_
 
 ==================== postgres · 8. Arquivo infectado: fica na quarentena, e a reentrega devolve o mesmo veredicto ====================
 
-$ curl -sf -X POST localhost:18083/confirmar/eicar-postgres-1792724261?etag=0bb2c8a96f5ffc55cb582c8b7045f71e-1
+$ curl -sf -X POST localhost:18083/confirmar/eicar-postgres-1792725734?etag=adb108aadfe953c05c9419c151f09648-1
 {"estado":"EM_VERIFICACAO"}
 
-$ sql select "Estado", "Veredicto", "Veredictos" from poc.arquivo_enviado where "Chave" = 'eicar-postgres-1792724261'
+$ sql select "Estado", "Veredicto", "Veredictos" from poc.arquivo_enviado where "Chave" = 'eicar-postgres-1792725734'
 RECUSADO | INFECTADO | 1
 
 # Objetos com essa chave no bucket de envio (a quarentena, que só o verificador lê) e no definitivo:
@@ -325,16 +330,16 @@ envio: 1 · definitivo: 0
 $ curl -sf -X POST localhost:18083/reconciliar?segundos=0
 {"republicados":1}
 
-$ sql select "Estado", "Veredicto", "Veredictos", "Publicacoes" from poc.arquivo_enviado where "Chave" = 'eicar-postgres-1792724261'
+$ sql select "Estado", "Veredicto", "Veredictos", "Publicacoes" from poc.arquivo_enviado where "Chave" = 'eicar-postgres-1792725734'
 RECUSADO | INFECTADO | 2 | 2
 
 
 ==================== postgres · 9. Confirmação sem objeto no bucket: reenvio necessário, e a reconciliação para ====================
 
-$ curl -sf -X POST localhost:18083/confirmar/ausente-postgres-1792724264?etag=inexistente
+$ curl -sf -X POST localhost:18083/confirmar/ausente-postgres-1792725737?etag=inexistente
 {"estado":"EM_VERIFICACAO"}
 
-$ sql select "Estado", "Veredicto", "Publicacoes" from poc.arquivo_enviado where "Chave" = 'ausente-postgres-1792724264'
+$ sql select "Estado", "Veredicto", "Publicacoes" from poc.arquivo_enviado where "Chave" = 'ausente-postgres-1792725737'
 REENVIO_NECESSARIO | NAO_ENCONTRADO | 1
 
 # A reconciliação não republica o que já tem estado final.
@@ -347,20 +352,25 @@ $ curl -sf -X POST localhost:18083/reconciliar?segundos=0
 
 # a) O candidato confirma a versão A e, antes da verificação, regrava B na mesma chave pela URL ainda válida.
 
-$ curl -sf -X POST localhost:18083/confirmar/versao-postgres-1792724267?etag=fce058992d216a4f8290868939bdfa01-1
+$ curl -sf -X POST localhost:18083/confirmar/versao-postgres-1792725739?etag=04ed470e16a307c24abe5edf72ac672d-1
 {"estado":"EM_VERIFICACAO"}
-ETag confirmado: fce058992d216a4f8290868939bdfa01-1 · ETag atual: 5658b9b51c887e7c6ccb222f365a64b4-1
+ETag confirmado: 04ed470e16a307c24abe5edf72ac672d-1 · ETag atual: fa109bc13d6b0d9e9659a92598b7fe24-1
 
-$ sql select "Estado", "Veredicto" from poc.arquivo_enviado where "Chave" = 'versao-postgres-1792724267'
+$ sql select "Estado", "Veredicto" from poc.arquivo_enviado where "Chave" = 'versao-postgres-1792725739'
 REENVIO_NECESSARIO | NAO_ENCONTRADO
 no definitivo: 0
 
 # b) A versão A é promovida; depois o candidato regrava B no envio e a mensagem é reentregue.
 
+# Confirmar B na mesma chave é recusado: um novo arquivo é um novo envio, com chave nova.
+
+$ curl -s -w  · HTTP %{http_code} -X POST localhost:18083/confirmar/reentrega-postgres-1792725743?etag=0371141a82f57adc54fcafcb912f431b-1
+{"erro":"esta chave já foi confirmada com outra versão; um novo arquivo é um novo envio, com chave nova"} · HTTP 409
+
 $ curl -sf -X POST localhost:18083/reconciliar?segundos=0
 {"republicados":1}
 
-$ sql select "Estado", "Veredicto", "Sha256" = '21b4d560bc77acd89ab1f5270fe036567b12c38066490482ac500cfc2b0424cc' as mesmo_sha256, "Veredictos" from poc.arquivo_enviado where "Chave" = 'reentrega-postgres-1792724271'
+$ sql select "Estado", "Veredicto", "Sha256" = '208aea7549212dba44e97c0c7abd3ca5dde39f9b4da253053ebf9883c59665ae' as mesmo_sha256, "Veredictos" from poc.arquivo_enviado where "Chave" = 'reentrega-postgres-1792725743'
 VERIFICADO | LIMPO | t | 2
 
 # O objeto definitivo continua sendo A: o metadado guarda o ETag e o SHA-256 da versão confirmada.
@@ -409,8 +419,8 @@ $ cat ./config/politica-api-etiqueta.json
 $ curl -T um-mb.pdf -H "x-amz-tagging: verificacao=aprovado" <URL de envio>
 HTTP 200
 
-$ mc_admin tag list local/uniplus-envios/994e12d834054fd9ac21df0606f5f96f
-Name        : http://localhost:9000/uniplus-envios/994e12d834054fd9ac21df0606f5f96f
+$ mc_admin tag list local/uniplus-envios/68e2a8d149364a7a833ac6d2d653208b
+Name        : http://localhost:9000/uniplus-envios/68e2a8d149364a7a833ac6d2d653208b
 verificacao : aprovado
 
 # 2. Sem a etiqueta, a URL de leitura assinada pela api-etiqueta é recusada.
@@ -421,8 +431,8 @@ GET pela URL assinada com a credencial api-etiqueta: HTTP 200
 
 # 4. Se o candidato regravar o objeto pela mesma URL, a etiqueta não sobrevive: a leitura volta a ser recusada.
 
-$ mc_admin tag list local/uniplus-envios/994e12d834054fd9ac21df0606f5f96f
-Name : http://localhost:9000/uniplus-envios/994e12d834054fd9ac21df0606f5f96f
+$ mc_admin tag list local/uniplus-envios/68e2a8d149364a7a833ac6d2d653208b
+Name : http://localhost:9000/uniplus-envios/68e2a8d149364a7a833ac6d2d653208b
 No tags found
 GET pela URL assinada com a credencial api-etiqueta: HTTP 403
 
@@ -432,8 +442,8 @@ enviados e confirmados: 5 de 5; falhas: 0
 $ curl -sf localhost:18083/arquivos/resumo
 [{"estado":"VERIFICADO","arquivos":5,"veredictos":5,"publicacoes":5}]
 
-$ mc_admin tag list local/uniplus-envios/23cc5f6e6c3e4fc0b859280a8a91a19b
-Name        : http://localhost:9000/uniplus-envios/23cc5f6e6c3e4fc0b859280a8a91a19b
-sha256      : dfa42d73eaa9da87d00c63357df28d1f2875540b3fe599cf2049048c43403acc
+$ mc_admin tag list local/uniplus-envios/04dd13cd7f3d4dfdb92ab80b268d1ae0
+Name        : http://localhost:9000/uniplus-envios/04dd13cd7f3d4dfdb92ab80b268d1ae0
+sha256      : 268c2c52eda8c72be248adc50f807ea18065b3850f13edbdab3a85154fd7708d
 verificacao : aprovado
 Objetos no bucket de envio: 5; no definitivo: 0

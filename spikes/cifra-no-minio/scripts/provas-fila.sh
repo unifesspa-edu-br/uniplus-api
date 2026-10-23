@@ -266,6 +266,8 @@ provas_do_transporte() {
   aguardar_veredictos 60
   sha_a=$(sql "select \"Sha256\" from poc.arquivo_enviado where \"Chave\" = '$chave'")
   gravar "$chave" 1
+  nota "Confirmar B na mesma chave é recusado: um novo arquivo é um novo envio, com chave nova."
+  mostrar curl -s -w ' · HTTP %{http_code}' -X POST "$API/confirmar/$chave?etag=$(etag_de "$chave")"; echo
   sql "update poc.arquivo_enviado set \"Estado\" = 'EM_VERIFICACAO' where \"Chave\" = '$chave'" >/dev/null
   mostrar curl -sf -X POST "$API/reconciliar?segundos=0"; echo
   aguardar_veredictos 60

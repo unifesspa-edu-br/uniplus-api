@@ -54,6 +54,7 @@ public static class ApiFila
         // A confirmação fixa a versão: o candidato manda o ETag que o PUT lhe devolveu, e só essa versão
         // é verificada. Confirmar de novo o mesmo arquivo não publica outro pedido, nem quando as duas
         // confirmações chegam juntas: a chave primária barra a segunda, que devolve o estado gravado.
+        // Outra versão na mesma chave é recusada: substituir o arquivo é um novo envio, com chave nova.
         app.MapPost("/confirmar/{chave}", async (string chave, string? etag, IDbContextOutbox<Banco> outbox, CancellationToken cancellationToken) =>
         {
             if (string.IsNullOrWhiteSpace(etag))
@@ -61,9 +62,9 @@ public static class ApiFila
                 return Results.BadRequest(new { erro = "o ETag devolvido pelo PUT é obrigatório" });
             }
 
-            if (await EstadoAsync(outbox.DbContext, chave, cancellationToken) is { } existente)
+            if (await ConfirmacaoAsync(outbox.DbContext, chave, cancellationToken) is { } existente)
             {
-                return Results.Ok(new { Estado = existente });
+                return Reconfirmacao(existente, etag);
             }
 
             DateTimeOffset agora = DateTimeOffset.UtcNow;
@@ -76,7 +77,7 @@ public static class ApiFila
             catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
             {
                 outbox.DbContext.ChangeTracker.Clear();
-                return Results.Ok(new { Estado = await EstadoAsync(outbox.DbContext, chave, cancellationToken) });
+                return Reconfirmacao((await ConfirmacaoAsync(outbox.DbContext, chave, cancellationToken))!, etag);
             }
 
             return Results.Accepted(value: new { Estado = EmVerificacao });
@@ -122,8 +123,13 @@ public static class ApiFila
         });
     }
 
-    private static Task<string?> EstadoAsync(Banco banco, string chave, CancellationToken cancellationToken) =>
-        banco.Arquivos.AsNoTracking().Where(a => a.Chave == chave).Select(a => a.Estado).FirstOrDefaultAsync(cancellationToken);
+    private static Task<ArquivoEnviado?> ConfirmacaoAsync(Banco banco, string chave, CancellationToken cancellationToken) =>
+        banco.Arquivos.AsNoTracking().FirstOrDefaultAsync(a => a.Chave == chave, cancellationToken);
+
+    private static IResult Reconfirmacao(ArquivoEnviado confirmado, string etag) =>
+        string.Equals(confirmado.ETag.Trim('"'), etag.Trim('"'), StringComparison.OrdinalIgnoreCase)
+            ? Results.Ok(new { confirmado.Estado })
+            : Results.Conflict(new { erro = "esta chave já foi confirmada com outra versão; um novo arquivo é um novo envio, com chave nova" });
 }
 
 /// <summary>
