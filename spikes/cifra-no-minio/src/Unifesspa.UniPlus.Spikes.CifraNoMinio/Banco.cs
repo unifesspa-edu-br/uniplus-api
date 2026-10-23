@@ -3,8 +3,8 @@ namespace Unifesspa.UniPlus.Spikes.CifraNoMinio;
 using Microsoft.EntityFrameworkCore;
 
 /// <summary>
-/// O estado do arquivo na API: EM_VERIFICACAO na confirmação, VERIFICADO ou RECUSADO quando o
-/// veredicto chega. Os instantes servem às medições; <c>Veredictos</c> conta quantos veredictos
+/// O estado do arquivo na API: EM_VERIFICACAO na confirmação; VERIFICADO, RECUSADO ou
+/// REENVIO_NECESSARIO (o objeto não está mais no bucket de envio) quando o veredicto chega. Os instantes servem às medições; <c>Veredictos</c> conta quantos veredictos
 /// chegaram para o mesmo arquivo, o que mostra a entrega repetida sendo absorvida.
 /// </summary>
 public sealed class ArquivoEnviado
@@ -14,6 +14,8 @@ public sealed class ArquivoEnviado
     public required string Estado { get; set; }
 
     public required DateTimeOffset ConfirmadoEm { get; init; }
+
+    public required DateTimeOffset PublicadoEm { get; set; }
 
     public DateTimeOffset? InicioDaVerificacaoEm { get; set; }
 
@@ -48,7 +50,7 @@ public sealed class Banco(DbContextOptions<Banco> options) : DbContext(options)
         {
             arquivo.ToTable("arquivo_enviado", "poc");
             arquivo.HasKey(a => a.Chave);
-            arquivo.HasIndex(a => new { a.Estado, a.ConfirmadoEm });
+            arquivo.HasIndex(a => new { a.Estado, a.PublicadoEm });
         });
     }
 }
