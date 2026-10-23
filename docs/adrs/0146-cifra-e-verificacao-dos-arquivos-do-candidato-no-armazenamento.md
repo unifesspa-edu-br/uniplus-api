@@ -58,7 +58,7 @@ O RabbitMQ foi escolhido pelo isolamento, e não pelo desempenho, que foi equiva
 **Verificador.** É um processo próprio, fora da API. Ele:
 
 1. consulta o bucket definitivo: se a chave já foi promovida (reentrega), devolve o veredicto gravado, sem promover de novo;
-2. recusa sem ler o arquivo acima do tamanho máximo, porque a URL pré-assinada de PUT não limita o tamanho e o clamd não verifica stream acima do `StreamMaxLength` (100 MB por padrão);
+2. recusa sem ler o arquivo acima do tamanho máximo, de 20 MB (UNI-REQ-0027), porque a URL pré-assinada de PUT não limita o tamanho;
 3. lê em stream a versão confirmada, exigindo o ETag do pedido, já decifrada pelo MinIO;
 4. confere se o formato corresponde ao declarado;
 5. passa o conteúdo ao clamd (`INSTREAM`) e calcula o SHA-256 no caminho.
@@ -175,8 +175,7 @@ Não há produção. Os arquivos selados em HML são apagados e reenviados, sem 
 
 - **PO, com repasse do líder técnico:** UNI-REQ-0027, UNI-REQ-0028, UNI-REQ-0029 e a seção 6.3 do modelo de negócio da Seleção supõem verificação síncrona, por exemplo "verificação fora do ar recusa o envio do arquivo" e "o comprovante nunca mostra arquivo em verificação". É preciso decidir:
   - se o envio da inscrição aguarda o veredicto dos documentos obrigatórios (recomendado: o documento só atende quando verificado, e o comprovante continua sem arquivo em verificação);
-  - como o portal mostra "em verificação" e "recusado";
-  - o tamanho máximo do arquivo, abaixo do limite do clamd.
+  - como o portal mostra "em verificação" e "recusado".
 
   O SHA-256 e o formato do comprovante passam a vir do verificador.
 - **Líder técnico:** o volume de inscrições e de arquivos no pico, para o dimensionamento.
