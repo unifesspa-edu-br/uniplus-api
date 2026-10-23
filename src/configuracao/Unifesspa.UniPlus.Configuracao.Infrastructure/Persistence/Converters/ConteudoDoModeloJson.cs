@@ -80,6 +80,11 @@ internal static class ConteudoDoModeloJson
                 ["status"] = b.Status,
                 ["observacao"] = b.Observacao,
             })]),
+            ["porOpcao"] = d.PorOpcao is null ? null : new JsonObject
+            {
+                ["fatoCodigo"] = d.PorOpcao.FatoCodigo,
+                ["exceto"] = new JsonArray([.. d.PorOpcao.Exceto.Select(static v => (JsonNode)JsonValue.Create(v))]),
+            },
         })]),
     }.ToJsonString();
 
@@ -149,7 +154,12 @@ internal static class ConteudoDoModeloJson
                         b.GetProperty("referencia").GetString()!,
                         b.GetProperty("abrangencia").GetString()!,
                         b.GetProperty("status").GetString()!,
-                        Texto(b, "observacao")))]))]
+                        Texto(b, "observacao")))],
+                    d.TryGetProperty("porOpcao", out JsonElement porOpcao) && porOpcao.ValueKind == JsonValueKind.Object
+                        ? new ExigenciaPorOpcao(
+                            porOpcao.GetProperty("fatoCodigo").GetString()!,
+                            [.. porOpcao.GetProperty("exceto").EnumerateArray().Select(static v => v.GetString()!)])
+                        : null))]
                 : []);
     }
 

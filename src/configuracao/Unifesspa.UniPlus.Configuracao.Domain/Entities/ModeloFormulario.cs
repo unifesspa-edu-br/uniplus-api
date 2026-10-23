@@ -77,10 +77,18 @@ public sealed record TermoDoModelo(string Codigo, int Ordem, Guid TermoId, Guid 
 public sealed record BaseLegalDoDocumentoDoModelo(string Referencia, string Abrangencia, string Status, string? Observacao);
 
 /// <summary>
+/// O documento exigido uma vez por opção que o processo oferece para o fato, salvo as de
+/// <paramref name="Exceto"/>. As opções só existem no processo: o modelo não as enumera, e a opção
+/// que o processo passar a oferecer entra na próxima aplicação sem mudar o modelo.
+/// </summary>
+public sealed record ExigenciaPorOpcao(string FatoCodigo, IReadOnlyList<string> Exceto);
+
+/// <summary>
 /// Um documento do conjunto padrão que o modelo exige do processo (UNI-REQ-0026): o tipo do catálogo e
 /// a fase canônica pelos códigos, que o processo resolve ao aplicar o modelo, as condições sobre fatos
 /// que o tornam exigido (ausentes, vale para todo candidato) e a consequência de o candidato não o
-/// apresentar. É sempre do formulário da finalidade do próprio modelo.
+/// apresentar. É sempre do formulário da finalidade do próprio modelo. Com <paramref name="PorOpcao"/>,
+/// o processo recebe uma exigência por opção ofertada, cada uma condicionada à declaração dela.
 /// </summary>
 public sealed record DocumentoExigidoDoModelo(
     string FaseCodigo,
@@ -88,10 +96,14 @@ public sealed record DocumentoExigidoDoModelo(
     bool Obrigatorio,
     PredicadoDnf? Quando,
     string ConsequenciaIndeferimento,
-    IReadOnlyList<BaseLegalDoDocumentoDoModelo> BasesLegais)
+    IReadOnlyList<BaseLegalDoDocumentoDoModelo> BasesLegais,
+    ExigenciaPorOpcao? PorOpcao = null)
 {
-    /// <summary>Os fatos que as condições do documento citam.</summary>
-    public IReadOnlyCollection<string> FatosCitados => Quando?.FatosCitados ?? [];
+    /// <summary>Os fatos que as condições do documento citam, inclusive o das opções que o multiplicam.</summary>
+    public IReadOnlyCollection<string> FatosCitados =>
+        PorOpcao is null
+            ? Quando?.FatosCitados ?? []
+            : [.. (Quando?.FatosCitados ?? []).Append(PorOpcao.FatoCodigo).Distinct(StringComparer.Ordinal)];
 }
 
 /// <summary>
@@ -623,6 +635,9 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
         {
             FaseCodigo = Normalizar(d.FaseCodigo),
             TipoDocumentoCodigo = Normalizar(d.TipoDocumentoCodigo),
+            PorOpcao = d.PorOpcao is { } porOpcao
+                ? new ExigenciaPorOpcao(Normalizar(porOpcao.FatoCodigo), [.. porOpcao.Exceto.Select(static v => Normalizar(v))])
+                : null,
         })]);
 
     private static ItemDoModelo NormalizarCampo(ItemDoModelo campo) => campo with
@@ -672,6 +687,10 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
                     ($"documentosExigidos[{i}].consequenciaIndeferimento", d.ConsequenciaIndeferimento),
                 }
                 .Concat(TextosDoPredicado($"documentosExigidos[{i}].quando", d.Quando))
+                .Concat(d.PorOpcao is { } porOpcao
+                    ? porOpcao.Exceto.Select((v, j) => ($"documentosExigidos[{i}].porOpcao.exceto[{j}]", (string?)v))
+                        .Prepend(($"documentosExigidos[{i}].porOpcao.fatoCodigo", porOpcao.FatoCodigo))
+                    : [])
                 .Concat(d.BasesLegais.SelectMany((b, j) => new (string, string?)[]
                 {
                     ($"documentosExigidos[{i}].basesLegais[{j}].referencia", b.Referencia), ($"documentosExigidos[{i}].basesLegais[{j}].abrangencia", b.Abrangencia),

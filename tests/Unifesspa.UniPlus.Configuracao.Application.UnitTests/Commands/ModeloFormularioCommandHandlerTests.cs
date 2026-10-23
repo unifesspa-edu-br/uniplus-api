@@ -127,6 +127,34 @@ public sealed class ModeloFormularioCommandHandlerTests
         resultado.Errors.Should().Contain(static e => e.Field == "conteudo.documentosExigidos[0].quando" && e.Error.Code == "PredicadoDnf.FatoDesconhecido");
     }
 
+    [Theory(DisplayName = "O documento só se multiplica pelas opções de fato cujas opções o processo declara")]
+    [InlineData("CONDICAO", null)]
+    [InlineData(" CONDICAO ", null)]
+    [InlineData("CERTIFICADO", ModeloFormularioErrorCodes.ExigenciaPorOpcaoInvalida)]
+    [InlineData("NAO_EXISTE", ItemFormularioErrorCodes.FatoDesconhecido)]
+    public async Task Criar_DocumentoPorOpcao_SoComOpcoesDoProcesso(string fato, string? recusa)
+    {
+        FatoCandidato condicao = FatoCandidato.CriarDoAdministrador(
+            "CONDICAO", "Condição", null, DominioFato.Categorico, CardinalidadeFato.Multivalorado, FonteValoresFato.Processo, null, "INSCRICAO",
+            EscopoFato.Candidato, ClassificacaoProtecaoDado.Pessoal, Finalidade, Hipotese).Value!;
+        _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [_certificado, condicao]);
+        ConteudoDoModeloInput conteudo = Conteudo(Item("CERTIFICADO", 0), Item("CONDICAO", 1, "SELECAO_MULTIPLA")) with
+        {
+            DocumentosExigidos = [new("INSCRICAO", "LAUDO_MEDICO", true, Quando("CERTIFICADO", true), "REMOVE_VANTAGEM", [], new ExigenciaPorOpcaoInput(fato, []))],
+        };
+
+        Result<Guid> resultado = await CriarAsync(conteudo);
+
+        if (recusa is null)
+        {
+            resultado.IsSuccess.Should().BeTrue(string.Join("; ", resultado.Errors.Select(static e => $"{e.Field}: {e.Error.Code}")));
+        }
+        else
+        {
+            resultado.Errors.Should().Contain(e => e.Field == "conteudo.documentosExigidos[0].porOpcao.fatoCodigo" && e.Error.Code == recusa);
+        }
+    }
+
     [Theory(DisplayName = "Regra cita a faixa etária quando a data de nascimento é coletada antes; sem ela, é recusada")]
     [InlineData(true)]
     [InlineData(false)]

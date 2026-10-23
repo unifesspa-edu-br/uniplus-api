@@ -20,9 +20,16 @@ public sealed record ConteudoDoModeloInput(
 public sealed record BaseLegalDoModeloInput(string Referencia, string Abrangencia, string Status, string? Observacao);
 
 /// <summary>
+/// O documento exigido uma vez por opção que o processo oferece para o fato, salvo as listadas em
+/// <paramref name="Exceto"/>: cada cópia vale para quem declarou aquela opção.
+/// </summary>
+public sealed record ExigenciaPorOpcaoInput(string FatoCodigo, IReadOnlyList<string?>? Exceto);
+
+/// <summary>
 /// Um documento do conjunto padrão do modelo: tipo do catálogo e fase canônica pelo código,
 /// condições sobre fatos no formato das exibições (ausentes, vale para todo candidato) e consequência
-/// do indeferimento. A aplicação do modelo copia o conjunto para os documentos exigidos do processo.
+/// do indeferimento. A aplicação do modelo copia o conjunto para os documentos exigidos do processo;
+/// com <paramref name="PorOpcao"/>, uma cópia por opção que o processo oferece para o fato.
 /// </summary>
 public sealed record DocumentoExigidoDoModeloInput(
     string FaseCodigo,
@@ -30,7 +37,8 @@ public sealed record DocumentoExigidoDoModeloInput(
     bool Obrigatorio,
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Quando,
     string ConsequenciaIndeferimento,
-    IReadOnlyList<BaseLegalDoModeloInput?>? BasesLegais);
+    IReadOnlyList<BaseLegalDoModeloInput?>? BasesLegais,
+    ExigenciaPorOpcaoInput? PorOpcao = null);
 
 /// <summary>
 /// Um modelo de formulário composto pelo administrador para um tipo de processo — ou para todos —
