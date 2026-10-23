@@ -130,7 +130,9 @@ Uma réplica (verificador + clamd com 2 CPUs) verifica ~12 arquivos de 5 MB por 
 réplicas (verificador + clamd) = arquivos na hora de pico ÷ 40 mil
 ```
 
-A conferência do formato (passo 4) não entrou nas medições. O número de inscrições esperado, os arquivos por inscrição e a fração enviada na hora de pico ainda não foram levantados.
+A conferência do formato (passo 4) não entrou nas medições.
+
+Para o primeiro processo, o de Medicina, a expectativa é de 10 mil inscrições em 20 dias. Mesmo supondo 5 arquivos por inscrição e 30% das inscrições no último dia, com 20% delas numa única hora, o pico fica em torno de 3 mil arquivos por hora, menos de um décimo de uma réplica. O verificador sobe com duas réplicas: uma basta para a vazão, e a segunda mantém a verificação no ar se um pod cair perto do encerramento das inscrições.
 
 ### Plano de migração
 
@@ -150,7 +152,7 @@ Não há produção. Os arquivos selados em HML são apagados e reenviados, sem 
 - a chave Transit e o caminho do KV, com a política do KES;
 - o SSE-KMS e as políticas dos dois buckets, e o CORS do bucket de envio expondo o `ETag`;
 - o RabbitMQ em cluster de três nós;
-- o verificador com o clamd como sidecar, escalado pelo tamanho da fila;
+- o verificador com o clamd como sidecar, com duas réplicas no mínimo, escalado pelo tamanho da fila;
 - o audit webhook;
 - o volume cifrado.
 
@@ -173,8 +175,7 @@ Não há produção. Os arquivos selados em HML são apagados e reenviados, sem 
 
 ### Pendências
 
-- **PO:** confirmar o tratamento do arquivo em verificação nos UNI-REQ-0027, UNI-REQ-0028 e UNI-REQ-0029 e os textos com que o portal mostra "em verificação" e "recusado".
-- **Líder técnico:** o volume de inscrições e de arquivos no pico, para o dimensionamento.
+- **PO:** confirmar o tratamento do arquivo em verificação nos UNI-REQ-0027 a UNI-REQ-0030 e os textos com que o portal mostra "em verificação" e "recusado".
 
 ## Prós e contras das opções
 
