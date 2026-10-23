@@ -166,18 +166,14 @@ Não há produção. Os arquivos selados em HML são apagados e reenviados, sem 
 
 ### Negativas
 
-- O arquivo passa a ter o estado "em verificação", e o produto precisa tratá-lo (pendências abaixo).
+- O arquivo passa a ter o estado "em verificação". O documento só atende quando verificado, o envio da inscrição espera o resultado e o prazo vale para o envio (UNI-REQ-0027, UNI-REQ-0028 e UNI-REQ-0029).
 - KES e Vault entram no caminho de leitura e gravação. Com o Vault selado ou fora de alcance, depois do cache do KES, o MinIO recusa leitura e envio (falha fechada, provada). O cache do KES é uma escolha entre disponibilidade e revogação.
 - Quem tem `GetObject` no MinIO, ou uma URL pré-assinada válida, lê o conteúdo em claro. A proteção contra leitura indevida é o controle de acesso; a cifra protege o disco e o backup.
 - Três componentes novos para operar: o KES, o RabbitMQ e o verificador.
 
 ### Pendências
 
-- **PO, com repasse do líder técnico:** UNI-REQ-0027, UNI-REQ-0028, UNI-REQ-0029 e a seção 6.3 do modelo de negócio da Seleção supõem verificação síncrona, por exemplo "verificação fora do ar recusa o envio do arquivo" e "o comprovante nunca mostra arquivo em verificação". É preciso decidir:
-  - se o envio da inscrição aguarda o veredicto dos documentos obrigatórios (recomendado: o documento só atende quando verificado, e o comprovante continua sem arquivo em verificação);
-  - como o portal mostra "em verificação" e "recusado".
-
-  O SHA-256 e o formato do comprovante passam a vir do verificador.
+- **PO:** confirmar o tratamento do arquivo em verificação nos UNI-REQ-0027, UNI-REQ-0028 e UNI-REQ-0029 e os textos com que o portal mostra "em verificação" e "recusado".
 - **Líder técnico:** o volume de inscrições e de arquivos no pico, para o dimensionamento.
 
 ## Prós e contras das opções
