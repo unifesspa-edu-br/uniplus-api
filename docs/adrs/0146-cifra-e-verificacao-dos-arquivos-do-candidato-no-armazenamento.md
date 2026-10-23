@@ -69,7 +69,7 @@ Com o clamd fora do ar, o verificador tenta de novo três vezes, espaçadas, e m
 
 A aprovação por etiqueta no próprio bucket de envio, sem cópia, foi recusada. O candidato consegue mandar a etiqueta de aprovado no PUT pela URL pré-assinada e se aprovar sem verificação.
 
-**Estado do arquivo.** O arquivo passa por `EM_VERIFICACAO` e termina em `VERIFICADO`, `RECUSADO` ou `REENVIO_NECESSARIO`. O último vale quando a versão confirmada não está na quarentena nem no bucket definitivo: o candidato confirmou sem enviar, regravou o arquivo depois de confirmar, ou o envio expirou antes de ser verificado. Ele não é recusa da verificação, encerra a reconciliação e pede um novo envio. Nenhum arquivo é recusado por indisponibilidade, e a expiração da quarentena precisa ser maior que a indisponibilidade tolerada da verificação.
+**Estado do arquivo.** O arquivo passa por `EM_VERIFICACAO` e termina em `VERIFICADO`, `RECUSADO` ou `REENVIO_NECESSARIO`. O último vale quando a versão confirmada não está na quarentena nem no bucket definitivo: o candidato confirmou sem enviar, regravou o arquivo depois de confirmar, ou o envio expirou antes de ser verificado. Ele não é recusa da verificação, encerra a reconciliação e pede um novo envio. Nenhum arquivo é recusado por indisponibilidade, e a expiração da quarentena precisa ser maior que a indisponibilidade tolerada da verificação. A mesma expiração encerra a falha que não passa com novas tentativas: sem a versão confirmada na quarentena, o arquivo termina em reenvio necessário.
 
 **Leitura pelo candidato.** A API assina uma URL de GET curta no bucket definitivo, com `Content-Disposition` só `inline` ou `attachment` e o nome do arquivo codificado (`filename*`, RFC 5987), para que o nome não injete parâmetros no cabeçalho. O MinIO entrega o conteúdo em claro e aceita `Range`. Adulterar a URL a invalida.
 
@@ -130,7 +130,7 @@ Uma réplica (verificador + clamd com 2 CPUs) verifica ~12 arquivos de 5 MB por 
 réplicas (verificador + clamd) = arquivos na hora de pico ÷ 40 mil
 ```
 
-O número de inscrições esperado, os arquivos por inscrição e a fração enviada na hora de pico ainda não foram levantados.
+A conferência do formato (passo 4) não entrou nas medições. O número de inscrições esperado, os arquivos por inscrição e a fração enviada na hora de pico ainda não foram levantados.
 
 ### Plano de migração
 
