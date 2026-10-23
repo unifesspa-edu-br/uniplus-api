@@ -42,5 +42,5 @@ Condições:
 - "Espera na fila" vai da confirmação ao início da verificação; no webhook, do fim do PUT à chegada do evento. "Até o veredicto" vai da confirmação ao registro do veredicto no banco da API, lido pelo gerador de carga.
 - A CPU é a média das amostras de `docker stats` durante a carga, somada por família de contêiner (por exemplo, os três clamd juntos).
 - O pico de memória do verificador e da API inclui o host do Wolverine e o cliente do transporte; não muda com o tamanho nem com o número de arquivos.
-- As medições são anteriores a três ajustes do código: o veredicto passou a ser gravado por `UPDATE` atômico, o envio só é removido depois de uma leitura de metadado que confere o ETag, e o infectado deixou de ser removido. Nenhum deles toca o clamd, que é o gargalo.
+- As medições são anteriores a ajustes de correção do código: o veredicto passou a ser gravado por `UPDATE` atômico, a confirmação passou a fixar a versão pelo ETag, o verificador passou a consultar o bucket definitivo (uma leitura de metadado a mais) antes de ler o envio, e o infectado deixou de ser removido. Nenhum deles toca o clamd, que é o gargalo.
 - Antes de cada cenário, o roteiro confere o disco e, abaixo de 3 GiB livres, reinicia o MinIO para esvaziar a lixeira. Isso aconteceu três vezes na rodada publicada, sempre entre cenários.
