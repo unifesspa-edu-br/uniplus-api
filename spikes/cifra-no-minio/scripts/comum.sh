@@ -45,7 +45,8 @@ carregar_env() {
   source "$ESTADO/env"
   set +a
   SEGREDOS=("$MINIO_ROOT_PASSWORD" "$KES_API_KEY_MINIO" "$KES_API_KEY_SEM_PERMISSAO" "$TOKEN_WEBHOOK"
-    "$SENHA_API" "$SENHA_VERIFICADOR" "$CHAVE_AES_LOCAL" "${KES_VAULT_SECRET_ID:-}")
+    "$SENHA_API" "$SENHA_VERIFICADOR" "$CHAVE_AES_LOCAL" "${KES_VAULT_SECRET_ID:-}"
+    "${SENHA_POSTGRES:-}" "${SENHA_RABBITMQ:-}")
   [[ -f "$ESTADO/vault-unseal-key" ]] && SEGREDOS+=("$(cat "$ESTADO/vault-unseal-key")" "$(cat "$ESTADO/vault-root-token")")
   return 0
 }

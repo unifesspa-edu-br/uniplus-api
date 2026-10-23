@@ -13,6 +13,8 @@ using System.Text.Json;
 /// candidatos enviando ao mesmo tempo. No fluxo atual o candidato espera a confirmação síncrona; no
 /// novo ele é liberado ao fim do PUT e o veredicto chega depois, então o tempo até o veredicto vai do
 /// fim do PUT ao registro do verificador, e a notificação, do fim do PUT à chegada do evento.
+/// No modo <c>fila</c>, o candidato confirma o envio na API (que publica o pedido pelo outbox) e é
+/// liberado; o veredicto é o registrado pela API quando o resultado volta do verificador.
 /// </summary>
 public static class Carga
 {
@@ -33,6 +35,8 @@ public static class Carga
         int quantidade = int.Parse(opcoes["quantidade"], CultureInfo.InvariantCulture);
         int concorrencia = int.Parse(opcoes["concorrencia"], CultureInfo.InvariantCulture);
         string rotulo = opcoes.GetValueOrDefault("rotulo", $"{modo}-{tamanhoMb}mb-c{concorrencia}");
+        // Nas provas de robustez, a carga só envia e confirma; quem acompanha o estado é o roteiro.
+        SoConfirmar = string.Equals(opcoes.GetValueOrDefault("aguardar", "sim"), "nao", StringComparison.Ordinal);
 
         using HttpClient http = new() { Timeout = TimeSpan.FromMinutes(5) };
         using SemaphoreSlim vagas = new(concorrencia);
@@ -76,8 +80,9 @@ public static class Carga
         bool vagaLiberada = false;
         try
         {
+            string api = modo == "fila" ? ApiComFila : "http://localhost:18080";
             using HttpResponseMessage criado = await http.PostAsync(
-                new Uri($"http://localhost:18080/envios?fluxo={modo}"), content: null);
+                new Uri($"{api}/envios?fluxo={modo}"), content: null);
             Envio envio = (await criado.EnsureSuccessStatusCode().Content.ReadFromJsonAsync<Envio>(Json))!;
             using ByteArrayContent corpo = new(conteudo);
             corpo.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
@@ -93,6 +98,11 @@ public static class Carga
                 JsonElement corpoResposta = await confirmado.EnsureSuccessStatusCode().Content.ReadFromJsonAsync<JsonElement>(Json);
                 double total = cronometro.Elapsed.TotalMilliseconds;
                 return new Medida(true, corpoResposta.GetProperty("veredicto").GetString()!, envioMs, total - envioMs, corpoResposta.GetProperty("ms").GetDouble(), 0);
+            }
+
+            if (modo == "fila")
+            {
+                return await ConfirmarEAguardarAsync(http, envio.Chave, envioMs, fimDoEnvio, cronometro, vaga, () => vagaLiberada = true);
             }
 
             // No fluxo novo o candidato termina no PUT: a vaga dele volta para o próximo envio.
@@ -134,6 +144,53 @@ public static class Carga
                 vaga.Release();
             }
         }
+    }
+
+    private static bool SoConfirmar { get; set; }
+
+    private static readonly string ApiComFila = Environment.GetEnvironmentVariable("API_FILA") ?? "http://localhost:18083";
+
+    private sealed record EstadoDoArquivo(string Estado, string? Veredicto, DateTimeOffset ConfirmadoEm, DateTimeOffset? InicioDaVerificacaoEm, DateTimeOffset? RegistradoEm, double? VerificacaoMs);
+
+    /// <summary>
+    /// A confirmação é a última espera do candidato. Depois dela, a vaga volta para o próximo envio e
+    /// a carga só acompanha o estado na API. "Notificação" passa a ser o tempo da confirmação ao
+    /// início da verificação (a fila), e "fila" o da confirmação na API (a última espera do candidato).
+    /// </summary>
+    private static async Task<Medida> ConfirmarEAguardarAsync(HttpClient http, string chave, double envioMs, DateTimeOffset fimDoEnvio, Stopwatch cronometro, SemaphoreSlim vaga, Action liberada)
+    {
+        using (HttpResponseMessage confirmado = await http.PostAsync(new Uri($"{ApiComFila}/confirmar/{chave}"), content: null))
+        {
+            confirmado.EnsureSuccessStatusCode();
+        }
+
+        double confirmacaoMs = cronometro.Elapsed.TotalMilliseconds - envioMs;
+        vaga.Release();
+        liberada();
+        if (SoConfirmar)
+        {
+            return new Medida(true, "CONFIRMADO", envioMs, 0, 0, confirmacaoMs);
+        }
+
+        while (cronometro.Elapsed < TimeSpan.FromMinutes(5))
+        {
+            EstadoDoArquivo estado = (await http.GetFromJsonAsync<EstadoDoArquivo>(new Uri($"{ApiComFila}/arquivos/{chave}/estado"), Json))!;
+            if (estado is { Estado: not "EM_VERIFICACAO", InicioDaVerificacaoEm: { } inicio, RegistradoEm: { } registrado })
+            {
+                return new Medida(
+                    estado.Estado == "VERIFICADO",
+                    estado.Veredicto ?? estado.Estado,
+                    envioMs,
+                    (registrado - fimDoEnvio).TotalMilliseconds,
+                    estado.VerificacaoMs ?? 0,
+                    confirmacaoMs,
+                    (inicio - estado.ConfirmadoEm).TotalMilliseconds);
+            }
+
+            await Task.Delay(50);
+        }
+
+        return new Medida(false, "SEM-RESULTADO", envioMs, 0, 0, 0, Erro: "sem veredicto em 5 min");
     }
 
     private static object Percentis(IEnumerable<double> valores)

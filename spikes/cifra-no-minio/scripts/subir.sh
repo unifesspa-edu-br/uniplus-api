@@ -24,6 +24,10 @@ SENHA_VERIFICADOR=$(openssl rand -hex 16)
 CHAVE_AES_LOCAL=$(openssl rand -base64 32)
 EOF
 fi
+# Segredos do fluxo com fila, acrescentados a um .estado/ anterior a ele.
+for segredo in SENHA_POSTGRES SENHA_RABBITMQ; do
+  grep -q "^$segredo=" "$ESTADO/env" || echo "$segredo=$(openssl rand -hex 16)" >>"$ESTADO/env"
+done
 carregar_env
 
 echo ">> Vault"
@@ -73,17 +77,25 @@ mc_admin "ilm rule add --expire-days 1 local/uniplus-envios" >/dev/null 2>&1 || 
 
 dc cp "$POC_DIR/config/politica-api.json" minio:/tmp/politica-api.json
 dc cp "$POC_DIR/config/politica-verificador.json" minio:/tmp/politica-verificador.json
+dc cp "$POC_DIR/config/politica-api-etiqueta.json" minio:/tmp/politica-api-etiqueta.json
 mc_admin "admin policy create local poc-api /tmp/politica-api.json" >/dev/null
 mc_admin "admin policy create local poc-verificador /tmp/politica-verificador.json" >/dev/null
+mc_admin "admin policy create local poc-api-etiqueta /tmp/politica-api-etiqueta.json" >/dev/null
 mc_admin "admin user add local api $SENHA_API" >/dev/null
 mc_admin "admin user add local verificador $SENHA_VERIFICADOR" >/dev/null
+# A credencial da API na alternativa sem cópia: lê do bucket de envio só o que tem a etiqueta de aprovado.
+mc_admin "admin user add local api-etiqueta $SENHA_API" >/dev/null
 mc_admin "admin policy attach local poc-api --user api" >/dev/null 2>&1 || true
 mc_admin "admin policy attach local poc-verificador --user verificador" >/dev/null 2>&1 || true
+mc_admin "admin policy attach local poc-api-etiqueta --user api-etiqueta" >/dev/null 2>&1 || true
 
 echo ">> Aplicação (verificador, api-nova, api-atual)"
 dotnet publish "$POC_DIR/src/Unifesspa.UniPlus.Spikes.CifraNoMinio" -c Release -o "$POC_DIR/src/publicado" --nologo -v q
 dc up -d --build verificador api-nova api-atual
 mc_admin "event add --ignore-existing local/uniplus-envios arn:minio:sqs::VERIFICADOR:webhook --event put" >/dev/null
+
+echo ">> Fluxo com fila: Postgres, RabbitMQ, API e verificador (o transporte vem de TRANSPORTE)"
+dc --profile fila up -d --build postgres rabbitmq api-fila verificador-fila-1
 
 echo ">> Aguardando as assinaturas do clamd (a primeira subida baixa a base, alguns minutos)"
 until [[ "$(docker inspect -f '{{.State.Health.Status}}' "$(dc ps -q clamav)")" == "healthy" ]]; do sleep 5; done
