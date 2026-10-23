@@ -61,7 +61,10 @@ public sealed partial class VerificadorDaFila(Configuracao config, IMinioClient 
         ObjectStat? envio = await StatAsync(config.BucketEnvios, pedido.Chave, cancellationToken);
         if (envio is null || !MesmoETag(envio.ETag, pedido.ETag))
         {
-            return Resultado(pedido.Chave, "NAO_ENCONTRADO", string.Empty, 0, inicio, cronometro);
+            // Outra entrega do mesmo pedido pode ter promovido o arquivo entre as duas consultas.
+            return !PorEtiqueta && await StatAsync(config.BucketArquivos, pedido.Chave, cancellationToken) is { } recemPromovido
+                ? JaPromovido(pedido, recemPromovido, inicio, cronometro)
+                : Resultado(pedido.Chave, "NAO_ENCONTRADO", string.Empty, 0, inicio, cronometro);
         }
 
         if (envio.Size > TamanhoMaximo)
