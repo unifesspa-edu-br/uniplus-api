@@ -13,10 +13,31 @@
       ]
     },
     {
+      "Sid": "AprovaPorEtiquetaNoProprioEnvio",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObjectTagging",
+        "s3:PutObjectTagging"
+      ],
+      "Resource": [
+        "arn:aws:s3:::uniplus-envios/*"
+      ]
+    },
+    {
       "Sid": "PromoveOArquivoLimpo",
       "Effect": "Allow",
       "Action": [
         "s3:PutObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::uniplus-arquivos-candidato/*"
+      ]
+    },
+    {
+      "Sid": "ReconheceOArquivoJaPromovidoNaReentrega",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject"
       ],
       "Resource": [
         "arn:aws:s3:::uniplus-arquivos-candidato/*"

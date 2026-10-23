@@ -23,6 +23,15 @@ x-app: &app
     Logging__LogLevel__Microsoft.AspNetCore: Warning
   networks: [poc]
 
+# O transporte entre a API e o verificador: rabbitmq (padrão) ou postgres.
+x-fila-env: &fila-env
+  TRANSPORTE: ${TRANSPORTE:-rabbitmq}
+  RABBITMQ: amqp://poc:${SENHA_RABBITMQ:-}@rabbitmq:5672
+  POSTGRES: Host=postgres;Database=uniplus_poc;Username=poc;Password=${SENHA_POSTGRES:-};Maximum Pool Size=${POOL_POSTGRES:-10};Gss Encryption Mode=Disable
+  POLLING_MS: ${POLLING_MS:-}
+  Logging__LogLevel__Wolverine: Warning
+  Logging__LogLevel__Microsoft.EntityFrameworkCore: Warning
+
 services:
   vault:
     image: hashicorp/vault:1.21.2
@@ -105,9 +114,12 @@ services:
       - ./.estado/kes/kes.crt:/certs/kes.crt:ro
     networks: [poc]
 
-  clamav:
+  clamav: &clamav
     image: clamav/clamav:1.4@sha256:3bba6dd5ac6663d55b80f86a3126e146612d93b593cc2617188d13f637d91260
     restart: unless-stopped
+    # Sem limite por padrão (as medições do fluxo por webhook). As de escala usam 2 CPUs por clamd,
+    # o tamanho de um sidecar ao lado de cada verificador.
+    cpus: ${CPUS_CLAMD:-0}
     volumes:
       - clamav_dados:/var/lib/clamav
     healthcheck:
@@ -116,6 +128,52 @@ services:
       timeout: 10s
       retries: 40
       start_period: 180s
+    networks: [poc]
+
+  # O clamd de cada réplica extra do verificador, como um sidecar: usa a base de assinaturas que o
+  # primeiro clamd mantém atualizada e não roda o freshclam.
+  clamav-2: &clamav-extra
+    <<: *clamav
+    profiles: [escala2, escala3]
+    environment:
+      CLAMAV_NO_FRESHCLAMD: "true"
+  clamav-3:
+    <<: *clamav-extra
+    profiles: [escala3]
+
+  # Fluxo com fila: a confirmação do envio publica o pedido de verificação pelo outbox do Wolverine.
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    profiles: [fila]
+    environment:
+      POSTGRES_DB: uniplus_poc
+      POSTGRES_USER: poc
+      POSTGRES_PASSWORD: ${SENHA_POSTGRES:?rode scripts/subir.sh}
+    volumes:
+      - postgres_dados:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U poc -d uniplus_poc"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    networks: [poc]
+
+  rabbitmq:
+    image: rabbitmq:4.1.4-management-alpine
+    restart: unless-stopped
+    profiles: [fila]
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: poc
+      RABBITMQ_DEFAULT_PASS: ${SENHA_RABBITMQ:?rode scripts/subir.sh}
+    volumes:
+      - rabbitmq_dados:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q check_port_connectivity"]
+      interval: 5s
+      timeout: 10s
+      retries: 30
     networks: [poc]
 
   # Verificador: recebe a notificação do bucket de envio, lê o objeto direto do MinIO, passa ao
@@ -145,6 +203,49 @@ services:
     ports:
       - "127.0.0.1:18080:8080"
 
+  # A API do fluxo com fila: assina as URLs como a api-nova, confirma o envio gravando o arquivo
+  # "em verificação" e o pedido no outbox, e consome o veredicto. Não tem leitura no bucket de envio.
+  api-fila:
+    <<: *app
+    profiles: [fila]
+    environment:
+      <<: [*app-env, *fila-env]
+      PAPEL: api-nova
+      MINIO_ACCESS_KEY: api
+      MINIO_SECRET_KEY: ${SENHA_API}
+    ports:
+      - "127.0.0.1:18083:8080"
+    depends_on:
+      postgres: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+
+  # O verificador como consumidor da fila; cada réplica tem o seu clamd.
+  verificador-fila-1: &verificador-fila
+    <<: *app
+    profiles: [fila]
+    environment: &verificador-fila-env
+      <<: [*app-env, *fila-env]
+      PAPEL: verificador-fila
+      MINIO_ACCESS_KEY: verificador
+      MINIO_SECRET_KEY: ${SENHA_VERIFICADOR}
+      PARALELISMO: ${PARALELISMO_VERIFICADOR:-8}
+      PROMOCAO: ${PROMOCAO:-copia}
+    depends_on:
+      postgres: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+  verificador-fila-2:
+    <<: *verificador-fila
+    profiles: [escala2, escala3]
+    environment:
+      <<: *verificador-fila-env
+      CLAMD_HOST: clamav-2
+  verificador-fila-3:
+    <<: *verificador-fila
+    profiles: [escala3]
+    environment:
+      <<: *verificador-fila-env
+      CLAMD_HOST: clamav-3
+
   # O fluxo atual da confirmação, reproduzido passo a passo (lê o objeto inteiro em memória, passa
   # ao clamd, cifra com AES-GCM e grava a cópia selada), para comparação nas medições.
   api-atual:
@@ -170,3 +271,5 @@ volumes:
   minio_dados:
   minio_fila:
   clamav_dados:
+  postgres_dados:
+  rabbitmq_dados:
