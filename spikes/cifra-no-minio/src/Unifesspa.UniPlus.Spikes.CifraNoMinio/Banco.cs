@@ -17,6 +17,8 @@ public sealed class ArquivoEnviado
 
     public required DateTimeOffset PublicadoEm { get; set; }
 
+    public required string ETag { get; init; }
+
     public DateTimeOffset? InicioDaVerificacaoEm { get; set; }
 
     public DateTimeOffset? FimDaVerificacaoEm { get; set; }

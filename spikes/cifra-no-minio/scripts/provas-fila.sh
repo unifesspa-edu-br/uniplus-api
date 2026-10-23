@@ -55,6 +55,16 @@ aguardar_veredictos() {
     echo "(ainda há arquivos em verificação depois de ${1:-240} s)"
 }
 
+# ETag de um objeto do bucket de envio, como o PUT o devolve ao candidato.
+etag_de() {
+  mc_admin "stat --json local/uniplus-envios/$1" | python3 -c 'import json,sys;print(json.load(sys.stdin)["etag"])'
+}
+
+# Grava N MB aleatórios direto no bucket de envio, como faria o PUT pré-assinado.
+gravar() {
+  head -c "$(($2 * 1048576))" /dev/urandom | mc_admin "pipe local/uniplus-envios/$1" >/dev/null
+}
+
 aguardar_clamd() {
   until [[ "$(docker inspect -f '{{.State.Health.Status}}' "$(dc ps -q clamav)")" == "healthy" ]]; do sleep 2; done
 }
@@ -187,12 +197,12 @@ provas_do_transporte() {
     mostrar sql "select count(*) as pedidos_no_outbox_da_api from wolverine_api.wolverine_outgoing_envelopes"
     limpar
 
-    titulo "$t · 7. Arquivo acima do StreamMaxLength do clamd (100 MB no clamd 1.4)"
+    titulo "$t · 7. Arquivo acima do tamanho máximo: recusado sem ser lido"
+    nota "O clamd não verifica stream acima do StreamMaxLength, e a URL pré-assinada de PUT não limita o tamanho. O verificador recusa antes de ler o que passa do máximo (100 MB, abaixo do limite do clamd)."
     mostrar dc exec -T clamav sh -c 'clamconf | grep -E "^(StreamMaxLength|MaxThreads) "'
     enviar 1 110 1
-    sleep 35
-    nota "O clamd recusa o stream acima do limite; o verificador trata como falha passageira e, esgotadas as tentativas, o pedido vai à fila de erro. O arquivo fica em verificação, sem ser recusado: o tamanho máximo aceito no envio precisa ficar abaixo do limite do clamd."
-    resumo
+    aguardar_veredictos 60
+    mostrar sql "select \"Estado\", \"Veredicto\", \"Bytes\", \"VerificacaoMs\" < 1000 as sem_leitura from poc.arquivo_enviado"
     fila_de_erro "$t"
     limpar
   else
@@ -212,7 +222,7 @@ provas_do_transporte() {
   # A assinatura de teste EICAR é montada em tempo de execução para o repositório não carregá-la.
   chave="eicar-$t-$(date +%s)"
   printf '%s%s' 'X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD' '-ANTIVIRUS-TEST-FILE!$H+H*' | mc_admin "pipe local/uniplus-envios/$chave" >/dev/null
-  mostrar curl -sf -X POST "$API/confirmar/$chave"; echo
+  mostrar curl -sf -X POST "$API/confirmar/$chave?etag=$(etag_de "$chave")"; echo
   aguardar_veredictos 60
   mostrar sql "select \"Estado\", \"Veredicto\", \"Veredictos\" from poc.arquivo_enviado where \"Chave\" = '$chave'"
   nota "Objetos com essa chave no bucket de envio (a quarentena, que só o verificador lê) e no definitivo:"
@@ -226,11 +236,43 @@ provas_do_transporte() {
 
   titulo "$t · 9. Confirmação sem objeto no bucket: reenvio necessário, e a reconciliação para"
   chave="ausente-$t-$(date +%s)"
-  mostrar curl -sf -X POST "$API/confirmar/$chave"; echo
+  mostrar curl -sf -X POST "$API/confirmar/$chave?etag=inexistente"; echo
   aguardar_veredictos 60
   mostrar sql "select \"Estado\", \"Veredicto\", \"Publicacoes\" from poc.arquivo_enviado where \"Chave\" = '$chave'"
   nota "A reconciliação não republica o que já tem estado final."
   mostrar curl -sf -X POST "$API/reconciliar?segundos=0"; echo
+  limpar
+
+  titulo "$t · 10. A confirmação fixa a versão: um PUT depois dela não é verificado nem promovido"
+  nota "a) O candidato confirma a versão A e, antes da verificação, regrava B na mesma chave pela URL ainda válida."
+  dc stop verificador-fila-1 >/dev/null 2>&1
+  chave="versao-$t-$(date +%s)"
+  gravar "$chave" 1
+  etag_a=$(etag_de "$chave")
+  mostrar curl -sf -X POST "$API/confirmar/$chave?etag=$etag_a"; echo
+  gravar "$chave" 1
+  echo "ETag confirmado: $etag_a · ETag atual: $(etag_de "$chave")"
+  dc start verificador-fila-1 >/dev/null 2>&1
+  aguardar_veredictos 120
+  mostrar sql "select \"Estado\", \"Veredicto\" from poc.arquivo_enviado where \"Chave\" = '$chave'"
+  echo "no definitivo: $(mc_admin "ls local/uniplus-arquivos-candidato/$chave" 2>/dev/null | wc -l)"
+  limpar
+
+  nota "b) A versão A é promovida; depois o candidato regrava B no envio e a mensagem é reentregue."
+  chave="reentrega-$t-$(date +%s)"
+  gravar "$chave" 1
+  etag_a=$(etag_de "$chave")
+  curl -sf -X POST "$API/confirmar/$chave?etag=$etag_a" >/dev/null
+  aguardar_veredictos 60
+  sha_a=$(sql "select \"Sha256\" from poc.arquivo_enviado where \"Chave\" = '$chave'")
+  gravar "$chave" 1
+  sql "update poc.arquivo_enviado set \"Estado\" = 'EM_VERIFICACAO' where \"Chave\" = '$chave'" >/dev/null
+  mostrar curl -sf -X POST "$API/reconciliar?segundos=0"; echo
+  aguardar_veredictos 60
+  mostrar sql "select \"Estado\", \"Veredicto\", \"Sha256\" = '$sha_a' as mesmo_sha256, \"Veredictos\" from poc.arquivo_enviado where \"Chave\" = '$chave'"
+  nota "O objeto definitivo continua sendo A: o metadado guarda o ETag e o SHA-256 da versão confirmada."
+  mc_admin "stat --json local/uniplus-arquivos-candidato/$chave" |
+    python3 -c 'import json,sys;m={k.lower():v for k,v in json.load(sys.stdin)["metadata"].items()};print("etag do envio = A:", m.get("x-amz-meta-etag-envio")==sys.argv[1].strip(chr(34)), "· sha256 = A:", m.get("x-amz-meta-sha256")==sys.argv[2], "· tipo:", m.get("content-type"))' "$etag_a" "$sha_a"
   limpar
 }
 

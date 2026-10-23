@@ -14,6 +14,7 @@ using Wolverine.EntityFrameworkCore;
 public static class ApiFila
 {
     public const string EmVerificacao = "EM_VERIFICACAO";
+    private const int LoteDaReconciliacao = 500;
 
     public static async Task PrepararAsync(WebApplication app)
     {
@@ -28,6 +29,7 @@ public static class ApiFila
                 "Estado" text NOT NULL,
                 "ConfirmadoEm" timestamptz NOT NULL,
                 "PublicadoEm" timestamptz NOT NULL,
+                "ETag" text NOT NULL,
                 "InicioDaVerificacaoEm" timestamptz,
                 "FimDaVerificacaoEm" timestamptz,
                 "RegistradoEm" timestamptz,
@@ -39,6 +41,7 @@ public static class ApiFila
                 "Veredictos" integer NOT NULL DEFAULT 0,
                 "Publicacoes" integer NOT NULL DEFAULT 0);
             ALTER TABLE poc.arquivo_enviado ADD COLUMN IF NOT EXISTS "PublicadoEm" timestamptz NOT NULL DEFAULT now();
+            ALTER TABLE poc.arquivo_enviado ADD COLUMN IF NOT EXISTS "ETag" text NOT NULL DEFAULT '';
             DROP INDEX IF EXISTS poc.ix_arquivo_enviado_estado;
             CREATE INDEX IF NOT EXISTS ix_arquivo_enviado_estado_publicacao ON poc.arquivo_enviado ("Estado", "PublicadoEm");
             """);
@@ -48,18 +51,24 @@ public static class ApiFila
     {
         ArgumentNullException.ThrowIfNull(app);
 
-        // Confirmar de novo o mesmo arquivo não publica outro pedido, nem quando as duas confirmações
-        // chegam juntas: a chave primária barra a segunda, que devolve o estado gravado pela primeira.
-        app.MapPost("/confirmar/{chave}", async (string chave, IDbContextOutbox<Banco> outbox, CancellationToken cancellationToken) =>
+        // A confirmação fixa a versão: o candidato manda o ETag que o PUT lhe devolveu, e só essa versão
+        // é verificada. Confirmar de novo o mesmo arquivo não publica outro pedido, nem quando as duas
+        // confirmações chegam juntas: a chave primária barra a segunda, que devolve o estado gravado.
+        app.MapPost("/confirmar/{chave}", async (string chave, string? etag, IDbContextOutbox<Banco> outbox, CancellationToken cancellationToken) =>
         {
+            if (string.IsNullOrWhiteSpace(etag))
+            {
+                return Results.BadRequest(new { erro = "o ETag devolvido pelo PUT é obrigatório" });
+            }
+
             if (await EstadoAsync(outbox.DbContext, chave, cancellationToken) is { } existente)
             {
                 return Results.Ok(new { Estado = existente });
             }
 
             DateTimeOffset agora = DateTimeOffset.UtcNow;
-            outbox.DbContext.Arquivos.Add(new ArquivoEnviado { Chave = chave, Estado = EmVerificacao, ConfirmadoEm = agora, PublicadoEm = agora, Publicacoes = 1 });
-            await outbox.PublishAsync(new VerificarArquivo(chave, agora));
+            outbox.DbContext.Arquivos.Add(new ArquivoEnviado { Chave = chave, ETag = etag, Estado = EmVerificacao, ConfirmadoEm = agora, PublicadoEm = agora, Publicacoes = 1 });
+            await outbox.PublishAsync(new VerificarArquivo(chave, etag, agora));
             try
             {
                 await outbox.SaveChangesAndFlushMessagesAsync(cancellationToken);
@@ -90,19 +99,22 @@ public static class ApiFila
         // A rede de segurança: o que está em verificação sem pedido publicado há mais de N segundos
         // ganha um novo pedido. Contar da última publicação, e não da confirmação, evita republicar a
         // cada execução o arquivo cujo pedido ainda está nas novas tentativas do verificador.
-        // Em produção roda periodicamente; aqui é chamada pelos roteiros das provas.
+        // Em produção roda periodicamente, numa instância só e em lotes; aqui é chamada pelos roteiros
+        // das provas. Um pedido publicado duas vezes não faz mal: o verificador é idempotente.
         app.MapPost("/reconciliar", async (int segundos, IDbContextOutbox<Banco> outbox, CancellationToken cancellationToken) =>
         {
             DateTimeOffset agora = DateTimeOffset.UtcNow;
             DateTimeOffset limite = agora.AddSeconds(-segundos);
             List<ArquivoEnviado> pendentes = await outbox.DbContext.Arquivos
                 .Where(a => a.Estado == EmVerificacao && a.PublicadoEm <= limite)
+                .OrderBy(a => a.PublicadoEm)
+                .Take(LoteDaReconciliacao)
                 .ToListAsync(cancellationToken);
             foreach (ArquivoEnviado arquivo in pendentes)
             {
                 arquivo.Publicacoes++;
                 arquivo.PublicadoEm = agora;
-                await outbox.PublishAsync(new VerificarArquivo(arquivo.Chave, arquivo.ConfirmadoEm));
+                await outbox.PublishAsync(new VerificarArquivo(arquivo.Chave, arquivo.ETag, arquivo.ConfirmadoEm));
             }
 
             await outbox.SaveChangesAndFlushMessagesAsync(cancellationToken);
@@ -149,12 +161,12 @@ public sealed class ResultadoDaVerificacaoHandler
                 cancellationToken);
     }
 
-    // NAO_ENCONTRADO não é recusa da verificação: o objeto não chegou ou expirou na quarentena, e o
-    // candidato precisa enviar de novo. O estado final encerra a reconciliação desse arquivo.
+    // NAO_ENCONTRADO não é recusa da verificação: a versão confirmada não chegou, foi substituída ou
+    // expirou na quarentena, e o candidato precisa enviar de novo. O estado final encerra a reconciliação desse arquivo.
     private static string Estado(string veredicto) => veredicto switch
     {
         "LIMPO" => "VERIFICADO",
-        "INFECTADO" => "RECUSADO",
+        "INFECTADO" or "FORA_DO_LIMITE" => "RECUSADO",
         _ => "REENVIO_NECESSARIO",
     };
 }
