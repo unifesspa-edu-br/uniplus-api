@@ -25,7 +25,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
 /// <summary>
-/// Os modelos de inscrição e de habilitação do edital de Medicina 2027, semeados pela migration da
+/// Os modelos de inscrição (com e sem prova) e de habilitação do PSR, semeados pela migration da
 /// Configuração, são aplicados a um processo PSR em rascunho, com bônus regional, a oferta de
 /// atendimento especializado e cota da lei ofertada, pelo passo Formulários, sem recusa.
 /// </summary>
@@ -38,25 +38,11 @@ public sealed class AplicarModelosPsrMedicina2027Tests
 
     public AplicarModelosPsrMedicina2027Tests(CascadingFixture fixture) => _fixture = fixture;
 
-    [Fact(DisplayName = "A inscrição e a habilitação de Medicina são aplicadas ao processo PSR com bônus regional e oferta de atendimento, com os municípios do bônus, o atendimento especializado e a composição familiar")]
-    public async Task ModelosDeMedicina_SaoAplicadosAoProcessoPsr()
+    [Fact(DisplayName = "A inscrição com prova e a habilitação são aplicadas ao processo PSR com bônus regional e oferta de atendimento, com os municípios do bônus, o atendimento especializado, os documentos dele e a composição familiar")]
+    public async Task ModelosComProva_SaoAplicadosAoProcessoPsr()
     {
-        Guid processoId = await SemearProcessoPsrAsync();
+        ProcessoSeletivo processo = await AplicarInscricaoEHabilitacaoAsync(SementePsrMedicina2027.ModeloDeInscricaoComProva);
 
-        // A habilitação pressupõe a forma de conclusão do ensino médio, que a inscrição coleta.
-        HttpResponseMessage inscricao = await AplicarAsync(processoId, await ModeloAsync(SementePsrMedicina2027.ModeloDeInscricao));
-        inscricao.StatusCode.Should().Be(HttpStatusCode.OK, await inscricao.Content.ReadAsStringAsync());
-        HttpResponseMessage habilitacao = await AplicarAsync(processoId, await ModeloAsync(SementePsrMedicina2027.ModeloDeHabilitacao));
-        habilitacao.StatusCode.Should().Be(HttpStatusCode.OK, await habilitacao.Content.ReadAsStringAsync());
-
-        await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
-        ProcessoSeletivo processo = await db.ProcessosSeletivos.AsNoTracking()
-            .Include(static p => p.Formularios)
-            .Include(static p => p.Campos)
-            .Include(static p => p.GruposColetados)
-            .Include(static p => p.DocumentosExigidos).ThenInclude(static d => d.Condicoes)
-            .SingleAsync(p => p.Id == processoId);
         processo.Formularios.Select(static f => f.Finalidade)
             .Should().BeEquivalentTo([FinalidadeFormulario.Inscricao, FinalidadeFormulario.Habilitacao]);
         processo.GruposColetados.Should().ContainSingle(static g => g.Codigo == "COMPOSICAO_FAMILIAR");
@@ -77,6 +63,39 @@ public sealed class AplicarModelosPsrMedicina2027Tests
             ["CAMINHO_FATOR_ATENUACAO", "MUNICIPIO_ENSINO_MEDIO_FATOR_ATENUACAO", "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO"]);
         processo.Campos.Select(static c => c.FatoCodigo).Should().Contain(
             ["SOLICITA_ATENDIMENTO_ESPECIALIZADO", "CONDICAO_ATENDIMENTO", "DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO", "RECURSO_ACESSIBILIDADE"]);
+    }
+
+    [Fact(DisplayName = "A inscrição sem prova e a habilitação são aplicadas ao processo PSR que oferta atendimento, sem pergunta de atendimento nem documento do atendimento")]
+    public async Task ModelosSemProva_SaoAplicadosSemAtendimentoEspecializado()
+    {
+        ProcessoSeletivo processo = await AplicarInscricaoEHabilitacaoAsync(SementePsrMedicina2027.ModeloDeInscricaoSemProva);
+
+        processo.Formularios.Select(static f => f.Finalidade)
+            .Should().BeEquivalentTo([FinalidadeFormulario.Inscricao, FinalidadeFormulario.Habilitacao]);
+        processo.DocumentosExigidos.Should().BeEmpty();
+        processo.Campos.Select(static c => c.FatoCodigo).Should().NotContain(
+            ["SOLICITA_ATENDIMENTO_ESPECIALIZADO", "CONDICAO_ATENDIMENTO", "DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO", "RECURSO_ACESSIBILIDADE"]);
+        processo.Campos.Select(static c => c.FatoCodigo).Should().Contain("TIPO_DEFICIENCIA");
+    }
+
+    private async Task<ProcessoSeletivo> AplicarInscricaoEHabilitacaoAsync(string modeloDeInscricao)
+    {
+        Guid processoId = await SemearProcessoPsrAsync();
+
+        // A habilitação pressupõe a forma de conclusão do ensino médio, que a inscrição coleta.
+        HttpResponseMessage inscricao = await AplicarAsync(processoId, await ModeloAsync(modeloDeInscricao));
+        inscricao.StatusCode.Should().Be(HttpStatusCode.OK, await inscricao.Content.ReadAsStringAsync());
+        HttpResponseMessage habilitacao = await AplicarAsync(processoId, await ModeloAsync(SementePsrMedicina2027.ModeloDeHabilitacao));
+        habilitacao.StatusCode.Should().Be(HttpStatusCode.OK, await habilitacao.Content.ReadAsStringAsync());
+
+        await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
+        SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        return await db.ProcessosSeletivos.AsNoTracking()
+            .Include(static p => p.Formularios)
+            .Include(static p => p.Campos)
+            .Include(static p => p.GruposColetados)
+            .Include(static p => p.DocumentosExigidos).ThenInclude(static d => d.Condicoes)
+            .SingleAsync(p => p.Id == processoId);
     }
 
     private async Task<Guid> SemearProcessoPsrAsync()

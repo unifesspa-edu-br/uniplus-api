@@ -302,7 +302,7 @@ public sealed class ModeloFormularioAdminEndpointTests
         HttpResponseMessage listar = await EnviarAsync(client, HttpMethod.Get, $"{Base}?finalidade=INSCRICAO", null);
         using JsonDocument lista = JsonDocument.Parse(await listar.Content.ReadAsStringAsync());
         Guid id = lista.RootElement.EnumerateArray()
-            .Single(static m => m.GetProperty("codigo").GetString() == "PSR_MEDICINA_2027_INSCRICAO").GetProperty("id").GetGuid();
+            .Single(static m => m.GetProperty("codigo").GetString() == "PSR_INSCRICAO_SEM_PROVA").GetProperty("id").GetGuid();
 
         HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Get, $"{Base}/{id}/renderizavel", null);
 
@@ -343,7 +343,7 @@ public sealed class ModeloFormularioAdminEndpointTests
         HttpResponseMessage listar = await EnviarAsync(client, HttpMethod.Get, $"{Base}?finalidade=INSCRICAO", null);
         using JsonDocument lista = JsonDocument.Parse(await listar.Content.ReadAsStringAsync());
         Guid id = lista.RootElement.EnumerateArray()
-            .Single(static m => m.GetProperty("codigo").GetString() == "PSR_MEDICINA_2027_INSCRICAO").GetProperty("id").GetGuid();
+            .Single(static m => m.GetProperty("codigo").GetString() == "PSR_INSCRICAO_COM_PROVA").GetProperty("id").GetGuid();
 
         JsonObject formulario = JsonNode.Parse(await (await EnviarAsync(client, HttpMethod.Get, $"{Base}/{id}/renderizavel", null)).Content.ReadAsStringAsync())!.AsObject();
 
@@ -397,7 +397,7 @@ public sealed class ModeloFormularioAdminEndpointTests
         HttpResponseMessage listar = await EnviarAsync(client, HttpMethod.Get, $"{Base}?finalidade=INSCRICAO", null);
         using JsonDocument lista = JsonDocument.Parse(await listar.Content.ReadAsStringAsync());
         Guid id = lista.RootElement.EnumerateArray()
-            .Single(static m => m.GetProperty("codigo").GetString() == "PSR_MEDICINA_2027_INSCRICAO").GetProperty("id").GetGuid();
+            .Single(static m => m.GetProperty("codigo").GetString() == "PSR_INSCRICAO_SEM_PROVA").GetProperty("id").GetGuid();
         JsonObject formulario = JsonNode.Parse(await (await EnviarAsync(client, HttpMethod.Get, $"{Base}/{id}/renderizavel", null)).Content.ReadAsStringAsync())!.AsObject();
 
         List<string> codigos = [.. formulario["fatosColetados"]!.AsArray()
@@ -415,7 +415,7 @@ public sealed class ModeloFormularioAdminEndpointTests
         HttpResponseMessage listar = await EnviarAsync(client, HttpMethod.Get, $"{Base}?finalidade=INSCRICAO", null);
         using JsonDocument lista = JsonDocument.Parse(await listar.Content.ReadAsStringAsync());
         Guid id = lista.RootElement.EnumerateArray()
-            .Single(static m => m.GetProperty("codigo").GetString() == "PSR_MEDICINA_2027_INSCRICAO").GetProperty("id").GetGuid();
+            .Single(static m => m.GetProperty("codigo").GetString() == "PSR_INSCRICAO_SEM_PROVA").GetProperty("id").GetGuid();
 
         JsonObject formulario = JsonNode.Parse(await (await EnviarAsync(client, HttpMethod.Get, $"{Base}/{id}/renderizavel", null)).Content.ReadAsStringAsync())!.AsObject();
         List<string> basicos = [.. formulario["regras"]!["etapas"]!.AsArray()
@@ -443,7 +443,7 @@ public sealed class ModeloFormularioAdminEndpointTests
         HttpResponseMessage listar = await EnviarAsync(client, HttpMethod.Get, $"{Base}?finalidade=INSCRICAO", null);
         using JsonDocument lista = JsonDocument.Parse(await listar.Content.ReadAsStringAsync());
         Guid id = lista.RootElement.EnumerateArray()
-            .Single(static m => m.GetProperty("codigo").GetString() == "PSR_MEDICINA_2027_INSCRICAO").GetProperty("id").GetGuid();
+            .Single(static m => m.GetProperty("codigo").GetString() == "PSR_INSCRICAO_SEM_PROVA").GetProperty("id").GetGuid();
 
         HttpResponseMessage previa = await EnviarAsync(
             client, HttpMethod.Post, $"{Base}/{id}/pre-visualizacao",
@@ -766,7 +766,7 @@ public sealed class ModeloFormularioAdminEndpointTests
     {
         using JsonDocument lista = await ListarAsync(client, "?finalidade=INSCRICAO");
         return lista.RootElement.EnumerateArray()
-            .Single(static m => m.GetProperty("codigo").GetString() == "PSR_MEDICINA_2027_INSCRICAO").GetProperty("id").GetGuid();
+            .Single(static m => m.GetProperty("codigo").GetString() == "PSR_INSCRICAO_SEM_PROVA").GetProperty("id").GetGuid();
     }
 
     /// <summary>Uma base legal do bônus com Marabá, de onde vêm as opções de município do Fator.</summary>

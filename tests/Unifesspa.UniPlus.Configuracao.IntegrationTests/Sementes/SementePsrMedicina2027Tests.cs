@@ -75,11 +75,13 @@ public sealed class SementePsrMedicina2027Tests
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         List<ModeloFormulario> modelos = await ctx.ModelosFormulario
-            .Where(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricao || m.Codigo == SementePsrMedicina2027.ModeloDeHabilitacao)
+            .Where(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricaoSemProva
+                || m.Codigo == SementePsrMedicina2027.ModeloDeInscricaoComProva
+                || m.Codigo == SementePsrMedicina2027.ModeloDeHabilitacao)
             .ToListAsync();
         List<ItemDoModelo> itens = [.. modelos.SelectMany(static m => m.Conteudo.Itens.Concat(m.Conteudo.Grupos.SelectMany(static g => g.Subitens)))];
 
-        modelos.Should().HaveCount(2);
+        modelos.Should().HaveCount(3);
         itens.Where(static i => i.TipoRenderizacao == TipoRenderizacao.Booleano)
             .Should().OnlyContain(static i => i.Rotulo.EndsWith('?'), "o sim ou não responde a uma pergunta");
         itens.Where(static i => i.Ajuda != null).Should().OnlyContain(
@@ -129,7 +131,7 @@ public sealed class SementePsrMedicina2027Tests
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
-        ModeloFormulario inscricao = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricao);
+        ModeloFormulario inscricao = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricaoSemProva);
         ModeloFormulario habilitacao = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeHabilitacao);
 
         inscricao.Conteudo.Termos.Should().NotContain(static t => t.Codigo == "CONSULTA_AO_BANCO_CENTRAL");
@@ -155,7 +157,7 @@ public sealed class SementePsrMedicina2027Tests
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
-        ModeloFormulario inscricao = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricao);
+        ModeloFormulario inscricao = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricaoSemProva);
 
         inscricao.Conteudo.Etapas.Should().Contain(static e => e.Codigo == ConjuntoBasicoDaInscricao.CodigoDaSecao);
         inscricao.Conteudo.Itens.Where(static i => i.EtapaCodigo == ConjuntoBasicoDaInscricao.CodigoDaSecao).Select(static i => i.FatoCodigo)
@@ -163,12 +165,12 @@ public sealed class SementePsrMedicina2027Tests
         inscricao.Conteudo.Itens.Single(static i => i.FatoCodigo == "CONCORRER_PPI").FatosCitados.Should().Contain("COR_RACA");
     }
 
-    [Fact(DisplayName = "A inscrição pede o atendimento especializado em seção própria: quem pede escolhe a condição e o recurso, e descreve a condição fora da lista")]
+    [Fact(DisplayName = "A inscrição com prova pede o atendimento especializado em seção própria: quem pede escolhe a condição e o recurso, e descreve a condição fora da lista")]
     public async Task Inscricao_PedeOAtendimentoEspecializadoEmSecaoPropria()
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
-        ModeloFormulario inscricao = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricao);
+        ModeloFormulario inscricao = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricaoComProva);
         Dictionary<string, ItemDoModelo> itens = inscricao.Conteudo.Itens.ToDictionary(static i => i.FatoCodigo, StringComparer.Ordinal);
 
         inscricao.Conteudo.Etapas.Should().ContainSingle(static e => e.Codigo == "ATENDIMENTO_ESPECIALIZADO")
@@ -182,14 +184,33 @@ public sealed class SementePsrMedicina2027Tests
         Exibicao(itens["RECURSO_ACESSIBILIDADE"]).Should().Be(Se("SOLICITA_ATENDIMENTO_ESPECIALIZADO", true));
         Exibicao(itens["DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO"]).Should().Be(Se("CONDICAO_ATENDIMENTO", SementePsrMedicina2027.CondicaoForaDaLista));
         itens["TIPO_DEFICIENCIA"].EtapaCodigo.Should().Be("RESERVA_DE_VAGAS", "a âncora do tipo de deficiência não muda nesta configuração");
+        itens["DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO"].Restricoes.Should().ContainSingle()
+            .Which.Should().BeEquivalentTo(new TamanhoTexto(null, 120));
     }
 
-    [Fact(DisplayName = "A inscrição exige de quem solicita atendimento o laudo de cada condição ofertada e a certidão da lactante, com a base legal resolvida")]
+    [Fact(DisplayName = "A inscrição sem prova não pergunta por atendimento especializado nem exige os documentos dele, e as duas versões mantêm o tipo de deficiência da reserva de vagas")]
+    public async Task InscricaoSemProva_NaoTrazOAtendimentoEspecializado()
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        ModeloFormulario semProva = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricaoSemProva);
+        ModeloFormulario comProva = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricaoComProva);
+
+        string[] doAtendimento = ["SOLICITA_ATENDIMENTO_ESPECIALIZADO", "CONDICAO_ATENDIMENTO", "DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO", "RECURSO_ACESSIBILIDADE"];
+        semProva.Conteudo.Itens.Select(static i => i.FatoCodigo).Should().NotContain(doAtendimento);
+        semProva.Conteudo.Etapas.Should().NotContain(static e => e.Codigo == "ATENDIMENTO_ESPECIALIZADO");
+        semProva.Conteudo.Documentos.Should().BeEmpty();
+
+        semProva.Conteudo.Itens.Should().Contain(static i => i.FatoCodigo == "TIPO_DEFICIENCIA");
+        comProva.Conteudo.Itens.Should().Contain(static i => i.FatoCodigo == "TIPO_DEFICIENCIA");
+    }
+
+    [Fact(DisplayName = "A inscrição com prova exige de quem solicita atendimento o laudo de cada condição ofertada e a certidão da lactante, com a base legal resolvida")]
     public async Task Inscricao_TrazOsDocumentosDoAtendimentoEspecializado()
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
-        ModeloFormulario inscricao = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricao);
+        ModeloFormulario inscricao = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricaoComProva);
         ModeloFormulario habilitacao = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeHabilitacao);
 
         inscricao.Conteudo.Documentos.Should().OnlyContain(static d => d.FaseCodigo == "INSCRICAO" && d.ConsequenciaIndeferimento == "REMOVE_VANTAGEM" && d.Obrigatorio);

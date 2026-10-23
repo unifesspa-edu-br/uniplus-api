@@ -33,7 +33,8 @@ public sealed class SementeModelosPsrMedicina2027EndpointTests
     }
 
     [Theory(DisplayName = "O modelo semeado está ativo, tem campos, e o conteúdo dele volta à escrita aceito pela conferência do catálogo")]
-    [InlineData(SementePsrMedicina2027.ModeloDeInscricao)]
+    [InlineData(SementePsrMedicina2027.ModeloDeInscricaoSemProva)]
+    [InlineData(SementePsrMedicina2027.ModeloDeInscricaoComProva)]
     [InlineData(SementePsrMedicina2027.ModeloDeHabilitacao)]
     public async Task ModeloSemeado_EhAceitoPelaEscrita(string codigo)
     {
@@ -60,7 +61,8 @@ public sealed class SementeModelosPsrMedicina2027EndpointTests
     }
 
     [Theory(DisplayName = "A pré-visualização do modelo semeado responde")]
-    [InlineData(SementePsrMedicina2027.ModeloDeInscricao)]
+    [InlineData(SementePsrMedicina2027.ModeloDeInscricaoSemProva)]
+    [InlineData(SementePsrMedicina2027.ModeloDeInscricaoComProva)]
     [InlineData(SementePsrMedicina2027.ModeloDeHabilitacao)]
     public async Task ModeloSemeado_PreVisualiza(string codigo)
     {
