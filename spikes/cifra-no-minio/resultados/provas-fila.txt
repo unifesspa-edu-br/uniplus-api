@@ -1,0 +1,323 @@
+
+
+==================== Ambiente ====================
+Data: 2026-10-22T19:43:06-03:00
+RabbitMQ 4.1.4
+postgres (PostgreSQL) 18.6
+Wolverine 5.41.0 (a versão da API); verificador com paralelismo 8
+
+
+==================== rabbitmq · 1. Fluxo básico: confirmar, verificar, registrar ====================
+enviados e confirmados: 5 de 5; falhas: 0
+
+$ curl -sf localhost:18083/arquivos/resumo
+[{"estado":"VERIFICADO","arquivos":5,"veredictos":5,"publicacoes":5}]
+
+$ estado e6be2479e68b4baf9e7e582c92724c6d
+{"chave":"e6be2479e68b4baf9e7e582c92724c6d","estado":"VERIFICADO","confirmadoEm":"2026-10-22T22:43:14.656355+00:00","inicioDaVerificacaoEm":"2026-10-22T22:43:15.427463+00:00","fimDaVerificacaoEm":"2026-10-22T22:43:15.529073+00:00","registradoEm":"2026-10-22T22:43:16.243919+00:00","verificacaoMs":101.6111,"veredicto":"LIMPO","sha256":"f762d565495cdfdefa1c696c1daa3d6673f6c975d2b1ffc7184c20fcbd039133","bytes":1048576,"verificador":"e83bfcab588b","veredictos":1,"publicacoes":1}
+Objetos no bucket de envio: 0; no definitivo: 5
+
+
+==================== rabbitmq · 2. O verificador cai no meio das verificações (SIGKILL) ====================
+
+# 40 arquivos de 10 MB; o verificador é morto depois dos primeiros veredictos e só volta 10 s depois.
+enviados e confirmados: 40 de 40; falhas: 0
+
+$ docker kill -s KILL e83bfcab588b44f9442e2ef3a60a0305ad19cb358d51fef7434f692a9eda139a
+e83bfcab588b44f9442e2ef3a60a0305ad19cb358d51fef7434f692a9eda139a
+
+# Com o verificador fora: o que estava com ele voltou para a fila.
+
+$ curl -sf localhost:18083/arquivos/resumo
+[{"estado":"VERIFICADO","arquivos":8,"veredictos":8,"publicacoes":8},{"estado":"EM_VERIFICACAO","arquivos":32,"veredictos":0,"publicacoes":32}]
+
+$ dc exec -T rabbitmq rabbitmqctl -q list_queues name type messages messages_unacknowledged consumers
+name	type	messages	messages_unacknowledged	consumers
+verificacao	quorum	32	0	0
+wolverine.response.9c2e92c8-0340-4273-be5c-3b19202aade6	classic	0	0	1
+resultado_verificacao	quorum	0	0	1
+wolverine-dead-letter-queue	classic	0	0	0
+
+# Depois de o verificador voltar: nenhum arquivo perdido. Veredictos acima de 40 são entregas repetidas, absorvidas.
+
+$ curl -sf localhost:18083/arquivos/resumo
+[{"estado":"VERIFICADO","arquivos":40,"veredictos":40,"publicacoes":40}]
+Objetos no bucket de envio: 0; no definitivo: 40
+
+
+==================== rabbitmq · 3. O clamd fora do ar: o arquivo segue em verificação e nunca é recusado ====================
+
+$ dc stop clamav
+ Container uniplus-poc-sse-kms-clamav-1 Stopping 
+ Container uniplus-poc-sse-kms-clamav-1 Stopped 
+enviados e confirmados: 5 de 5; falhas: 0
+
+# 10 s depois: em verificação, com o verificador repetindo (1 s, 5 s, 15 s).
+
+$ curl -sf localhost:18083/arquivos/resumo
+[{"estado":"EM_VERIFICACAO","arquivos":5,"veredictos":0,"publicacoes":5}]
+
+# Esgotadas as tentativas, o pedido vai para a fila de erro; o arquivo continua em verificação.
+wolverine-dead-letter-queue	5
+
+$ curl -sf localhost:18083/arquivos/resumo
+[{"estado":"EM_VERIFICACAO","arquivos":5,"veredictos":0,"publicacoes":5}]
+
+# Com o clamd de volta, a reconciliação republica o que está em verificação.
+
+$ curl -sf -X POST localhost:18083/reconciliar?segundos=0
+{"republicados":5}
+
+$ curl -sf localhost:18083/arquivos/resumo
+[{"estado":"VERIFICADO","arquivos":5,"veredictos":5,"publicacoes":10}]
+
+
+==================== rabbitmq · 4. Pedido perdido no transporte: a reconciliação pelo banco da API recupera ====================
+enviados e confirmados: 5 de 5; falhas: 0
+
+$ dc exec -T rabbitmq rabbitmqctl -q purge_queue verificacao
+
+# 15 s depois de o verificador voltar: nada chegou, porque os pedidos foram descartados.
+
+$ curl -sf localhost:18083/arquivos/resumo
+[{"estado":"EM_VERIFICACAO","arquivos":5,"veredictos":0,"publicacoes":5}]
+
+$ curl -sf -X POST localhost:18083/reconciliar?segundos=0
+{"republicados":5}
+
+$ curl -sf localhost:18083/arquivos/resumo
+[{"estado":"VERIFICADO","arquivos":5,"veredictos":5,"publicacoes":10}]
+
+
+==================== rabbitmq · 5. Reentrega de um arquivo já promovido devolve o mesmo veredicto ====================
+enviados e confirmados: 1 de 1; falhas: 0
+
+# O arquivo volta a 'em verificação' no banco e é republicado; o objeto já está no bucket definitivo.
+
+$ curl -sf -X POST localhost:18083/reconciliar?segundos=0
+{"republicados":1}
+
+$ sql select "Estado", "Veredicto", "Sha256" = 'a7425c175512d08f8875a8b556dd201b016b7190d5a467bf9bf025b6d7f8d904' as mesmo_sha256, "Veredictos", "Publicacoes" from poc.arquivo_enviado where "Chave" = 'd93d2c5aefaf4d2b887c8786d3e20347'
+VERIFICADO | LIMPO | t | 2 | 2
+
+
+==================== rabbitmq · 6. O RabbitMQ fora do ar: a confirmação continua, o outbox segura os pedidos ====================
+
+$ dc stop rabbitmq
+ Container uniplus-poc-sse-kms-rabbitmq-1 Stopping 
+ Container uniplus-poc-sse-kms-rabbitmq-1 Stopped 
+enviados e confirmados: 10 de 10; falhas: 0
+
+$ curl -sf localhost:18083/arquivos/resumo
+[{"estado":"EM_VERIFICACAO","arquivos":10,"veredictos":0,"publicacoes":10}]
+
+$ sql select count(*) as pedidos_no_outbox_da_api from wolverine_api.wolverine_outgoing_envelopes
+10
+
+# Com o RabbitMQ de volta, o outbox entrega e tudo é verificado.
+
+$ curl -sf localhost:18083/arquivos/resumo
+[{"estado":"VERIFICADO","arquivos":10,"veredictos":10,"publicacoes":10}]
+
+$ sql select count(*) as pedidos_no_outbox_da_api from wolverine_api.wolverine_outgoing_envelopes
+0
+
+
+==================== rabbitmq · 7. Arquivo acima do StreamMaxLength do clamd (100 MB no clamd 1.4) ====================
+
+$ dc exec -T clamav sh -c clamconf | grep -E "^(StreamMaxLength|MaxThreads) "
+StreamMaxLength = "104857600"
+MaxThreads = "10"
+MaxThreads = "10"
+enviados e confirmados: 1 de 1; falhas: 0
+
+# O clamd recusa o stream acima do limite; o verificador trata como falha passageira e, esgotadas as tentativas, o pedido vai à fila de erro. O arquivo fica em verificação, sem ser recusado: o tamanho máximo aceito no envio precisa ficar abaixo do limite do clamd.
+
+$ curl -sf localhost:18083/arquivos/resumo
+[{"estado":"EM_VERIFICACAO","arquivos":1,"veredictos":0,"publicacoes":1}]
+wolverine-dead-letter-queue	1
+
+
+==================== postgres · 1. Fluxo básico: confirmar, verificar, registrar ====================
+enviados e confirmados: 5 de 5; falhas: 0
+
+$ curl -sf localhost:18083/arquivos/resumo
+[{"estado":"VERIFICADO","arquivos":5,"veredictos":5,"publicacoes":5}]
+
+$ estado 4258ba036ca24abd9d75f59e0af4d05e
+{"chave":"4258ba036ca24abd9d75f59e0af4d05e","estado":"VERIFICADO","confirmadoEm":"2026-10-22T22:51:02.213969+00:00","inicioDaVerificacaoEm":"2026-10-22T22:51:03.02143+00:00","fimDaVerificacaoEm":"2026-10-22T22:51:03.126148+00:00","registradoEm":"2026-10-22T22:51:03.89481+00:00","verificacaoMs":104.7206,"veredicto":"LIMPO","sha256":"b4832392c7a1f15ea471179639b2d267c381b3b10216e1d0cfb0f7a9251d3ecf","bytes":1048576,"verificador":"e6ad8c4e2fad","veredictos":1,"publicacoes":1}
+Objetos no bucket de envio: 0; no definitivo: 5
+
+
+==================== postgres · 2. O verificador cai no meio das verificações (SIGKILL) ====================
+
+# 40 arquivos de 10 MB; o verificador é morto depois dos primeiros veredictos e só volta 10 s depois.
+enviados e confirmados: 40 de 40; falhas: 0
+
+$ docker kill -s KILL e6ad8c4e2fadcd04db1c6722fb9d624d7a1ab8ff421968089de1caa04dc0e2ab
+e6ad8c4e2fadcd04db1c6722fb9d624d7a1ab8ff421968089de1caa04dc0e2ab
+
+# Com o verificador fora: o que estava com ele voltou para a fila.
+
+$ curl -sf localhost:18083/arquivos/resumo
+[{"estado":"VERIFICADO","arquivos":8,"veredictos":8,"publicacoes":8},{"estado":"EM_VERIFICACAO","arquivos":32,"veredictos":0,"publicacoes":32}]
+
+$ sql select 'na fila', count(*) from wolverine_filas.wolverine_queue_verificacao
+      union all select 'no inbox do verificador', count(*) from wolverine_verificador.wolverine_incoming_envelopes
+      union all select 'na fila de erro', count(*) from wolverine_verificador.wolverine_dead_letters
+na fila | 0
+no inbox do verificador | 89
+na fila de erro | 0
+
+# Depois de o verificador voltar: nenhum arquivo perdido. Veredictos acima de 40 são entregas repetidas, absorvidas.
+
+$ curl -sf localhost:18083/arquivos/resumo
+[{"estado":"VERIFICADO","arquivos":40,"veredictos":40,"publicacoes":40}]
+Objetos no bucket de envio: 0; no definitivo: 40
+
+
+==================== postgres · 3. O clamd fora do ar: o arquivo segue em verificação e nunca é recusado ====================
+
+$ dc stop clamav
+ Container uniplus-poc-sse-kms-clamav-1 Stopping 
+ Container uniplus-poc-sse-kms-clamav-1 Stopped 
+enviados e confirmados: 5 de 5; falhas: 0
+
+# 10 s depois: em verificação, com o verificador repetindo (1 s, 5 s, 15 s).
+
+$ curl -sf localhost:18083/arquivos/resumo
+[{"estado":"EM_VERIFICACAO","arquivos":5,"veredictos":0,"publicacoes":5}]
+
+# Esgotadas as tentativas, o pedido vai para a fila de erro; o arquivo continua em verificação.
+
+$ sql select message_type, exception_type, count(*) from wolverine_verificador.wolverine_dead_letters group by 1, 2
+Unifesspa.UniPlus.Spikes.CifraNoMinio.VerificarArquivo | Unifesspa.UniPlus.Spikes.CifraNoMinio.ClamdIndisponivelException | 5
+
+$ curl -sf localhost:18083/arquivos/resumo
+[{"estado":"EM_VERIFICACAO","arquivos":5,"veredictos":0,"publicacoes":5}]
+
+# Com o clamd de volta, a reconciliação republica o que está em verificação.
+
+$ curl -sf -X POST localhost:18083/reconciliar?segundos=0
+{"republicados":5}
+
+$ curl -sf localhost:18083/arquivos/resumo
+[{"estado":"VERIFICADO","arquivos":5,"veredictos":5,"publicacoes":10}]
+
+
+==================== postgres · 4. Pedido perdido no transporte: a reconciliação pelo banco da API recupera ====================
+enviados e confirmados: 5 de 5; falhas: 0
+
+$ sql delete from wolverine_filas.wolverine_queue_verificacao
+DELETE 5
+
+# 15 s depois de o verificador voltar: nada chegou, porque os pedidos foram descartados.
+
+$ curl -sf localhost:18083/arquivos/resumo
+[{"estado":"EM_VERIFICACAO","arquivos":5,"veredictos":0,"publicacoes":5}]
+
+$ curl -sf -X POST localhost:18083/reconciliar?segundos=0
+{"republicados":5}
+
+$ curl -sf localhost:18083/arquivos/resumo
+[{"estado":"VERIFICADO","arquivos":5,"veredictos":5,"publicacoes":10}]
+
+
+==================== postgres · 5. Reentrega de um arquivo já promovido devolve o mesmo veredicto ====================
+enviados e confirmados: 1 de 1; falhas: 0
+
+# O arquivo volta a 'em verificação' no banco e é republicado; o objeto já está no bucket definitivo.
+
+$ curl -sf -X POST localhost:18083/reconciliar?segundos=0
+{"republicados":1}
+
+$ sql select "Estado", "Veredicto", "Sha256" = '2092c658a29426c2e1550baba3b92e37164d75b517f40704e61251d356879d8a' as mesmo_sha256, "Veredictos", "Publicacoes" from poc.arquivo_enviado where "Chave" = 'be3ab57958c24de491b0eac8a038ea90'
+VERIFICADO | LIMPO | t | 2 | 2
+
+
+==================== postgres · 6. O Postgres fora do ar: a confirmação falha inteira, sem metade gravada ====================
+
+$ dc stop postgres
+ Container uniplus-poc-sse-kms-postgres-1 Stopping 
+ Container uniplus-poc-sse-kms-postgres-1 Stopped 
+enviados e confirmados: 0 de 3; falhas: {'HTTP 500': 3}
+
+# Com o Postgres de volta: nenhum arquivo em verificação sem pedido, nem pedido sem arquivo.
+
+$ curl -sf localhost:18083/arquivos/resumo
+[]
+
+$ sql select count(*) as pedidos_pendentes from wolverine_filas.wolverine_queue_verificacao
+0
+
+
+==================== A API não lê o conteúdo no fluxo com fila ====================
+enviados e confirmados: 5 de 5; falhas: 0
+origem               operação           chamadas  bytes enviados ao MinIO  bytes lidos do MinIO
+candidato (host)     s3.PutObject              5                 52429430                     0
+verificador-fila-1   s3.CopyObject             5                     1055                  1160
+verificador-fila-1   s3.DeleteObject           5                      385                     0
+verificador-fila-1   s3.GetObject              5                      385              52428800
+verificador-fila-1   s3.HeadBucket            15                     1155                     0
+verificador-fila-1   s3.HeadObject            15                     1155                     0
+
+Nenhuma linha com origem api-fila: confirmar só grava no banco e publica a chave.
+
+
+==================== Alternativa sem cópia: o arquivo aprovado ganha uma etiqueta no próprio bucket de envio ====================
+
+# A credencial api-etiqueta só lê do bucket de envio o objeto com a etiqueta verificacao=aprovado.
+
+$ cat ./config/politica-api-etiqueta.json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AssinaOEnvio",
+      "Effect": "Allow",
+      "Action": ["s3:PutObject"],
+      "Resource": ["arn:aws:s3:::uniplus-envios/*"]
+    },
+    {
+      "Sid": "AssinaALeituraSoDoArquivoAprovado",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject"],
+      "Resource": ["arn:aws:s3:::uniplus-envios/*"],
+      "Condition": {"StringEquals": {"s3:ExistingObjectTag/verificacao": "aprovado"}}
+    }
+  ]
+}
+
+# 1. O candidato tenta se aprovar: acrescenta x-amz-tagging ao PUT pela URL pré-assinada.
+
+$ curl -T um-mb.pdf -H "x-amz-tagging: verificacao=aprovado" <URL de envio>
+HTTP 200
+
+$ mc_admin tag list local/uniplus-envios/bc4e0638f2fe4b5fa911b89e8ef80834
+Name        : http://localhost:9000/uniplus-envios/bc4e0638f2fe4b5fa911b89e8ef80834
+verificacao : aprovado
+
+# 2. Sem a etiqueta, a URL de leitura assinada pela api-etiqueta é recusada.
+GET pela URL assinada com a credencial api-etiqueta: HTTP 403
+
+# 3. Com a etiqueta posta pelo verificador, a mesma leitura passa.
+GET pela URL assinada com a credencial api-etiqueta: HTTP 200
+
+# 4. Se o candidato regravar o objeto pela mesma URL, a etiqueta não sobrevive: a leitura volta a ser recusada.
+
+$ mc_admin tag list local/uniplus-envios/bc4e0638f2fe4b5fa911b89e8ef80834
+Name : http://localhost:9000/uniplus-envios/bc4e0638f2fe4b5fa911b89e8ef80834
+No tags found
+GET pela URL assinada com a credencial api-etiqueta: HTTP 403
+
+# 5. O verificador no modo etiqueta: 5 arquivos, nenhum copiado.
+enviados e confirmados: 5 de 5; falhas: 0
+
+$ curl -sf localhost:18083/arquivos/resumo
+[{"estado":"VERIFICADO","arquivos":5,"veredictos":5,"publicacoes":5}]
+
+$ mc_admin tag list local/uniplus-envios/ea5ed972b242499bb5ad6f96b9a3c584
+Name        : http://localhost:9000/uniplus-envios/ea5ed972b242499bb5ad6f96b9a3c584
+sha256      : 353bf5352a5d381552512d4e9fb0a22f630e3550f684cbef79f5ea26eaf997d7
+verificacao : aprovado
+Objetos no bucket de envio: 5; no definitivo: 0

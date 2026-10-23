@@ -23,3 +23,23 @@ Condições:
 - O pico de memória é o VmHWM do processo, zerado antes de cada cenário (`/proc/self/clear_refs`).
 - No fluxo novo, o candidato é liberado ao fim do PUT. "Até o veredicto" vai do fim do PUT ao registro do verificador. "Notificação" vai do fim do PUT à chegada do evento ao verificador. No fluxo atual, "até o veredicto" é a própria confirmação síncrona.
 - A vazão (arq/s) é o total de arquivos dividido pelo tempo de parede, do primeiro envio ao último veredicto.
+
+## Medições do fluxo com fila (`medicoes-fila.md`)
+
+Mesma máquina, com estas diferenças e acréscimos:
+
+| Item | Valor |
+|---|---|
+| ClamAV | 1.4, **2 CPUs por clamd** (o tamanho de um sidecar), `StreamMaxLength` padrão de 100 MB, 10 conexões |
+| Verificador | uma a três réplicas, cada uma com o seu clamd; 2 CPUs e 1 GiB; paralelismo 8 por réplica |
+| API (`api-fila`) | 2 CPUs e 1 GiB; Wolverine 5.41.0 com outbox durável sobre EF Core |
+| RabbitMQ | 4.1.4, um nó, quorum queues |
+| Postgres | 18.6, `max_connections` 100; dois pools por processo (EF e Wolverine), de até 10 conexões cada |
+| Fila no Postgres | polling de 100 ms (`postgres`) ou o padrão do Wolverine (`postgres-padrao`) |
+
+Condições:
+
+- "Espera na fila" vai da confirmação ao início da verificação; no webhook, do fim do PUT à chegada do evento. "Até o veredicto" vai da confirmação ao registro do veredicto no banco da API, lido pelo gerador de carga.
+- A CPU é a média das amostras de `docker stats` durante a carga, somada por família de contêiner (por exemplo, os três clamd juntos).
+- O pico de memória do verificador e da API inclui o host do Wolverine e o cliente do transporte; não muda com o tamanho nem com o número de arquivos.
+- Antes de cada cenário, o roteiro confere o disco e, abaixo de 3 GiB livres, reinicia o MinIO para esvaziar a lixeira. Isso aconteceu três vezes na rodada publicada, sempre entre cenários.
