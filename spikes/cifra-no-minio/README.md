@@ -24,7 +24,7 @@ A POC tem duas partes. A primeira prova a cifra no armazenamento e o verificador
 
 ### Verificador por fila
 
-As provas 1 a 6, 8 e 9 rodaram com os dois transportes. Estão em `resultados/provas-fila.txt`, na seção de cada transporte.
+As provas 1 a 6 e 8 a 10 rodaram com os dois transportes. Estão em `resultados/provas-fila.txt`, na seção de cada transporte.
 
 | Prova | RabbitMQ | Postgres |
 |---|---|---|
@@ -34,9 +34,10 @@ As provas 1 a 6, 8 e 9 rodaram com os dois transportes. Estão em `resultados/pr
 | 4. Pedido perdido no transporte (fila esvaziada à mão): a reconciliação pelo banco da API recupera | ✓ | ✓ |
 | 5. Reentrega de um arquivo já promovido: mesmo veredicto e mesmo SHA-256, sem nova verificação | ✓ | ✓ |
 | 6. O transporte fora do ar | a confirmação continua (10 de 10), o pedido espera no outbox e segue quando o RabbitMQ volta | a confirmação falha inteira (HTTP 500), sem arquivo sem pedido nem pedido sem arquivo |
-| 7. Arquivo acima do `StreamMaxLength` do clamd (110 MB): fica em verificação e vai para a fila de erro, nunca é aprovado | ✓ | — |
+| 7. Arquivo acima do tamanho máximo (110 MB, o clamd não verifica acima de 100 MB): recusado sem ser lido | ✓ | — |
 | 8. Arquivo infectado (EICAR): recusado, fica na quarentena, e a reentrega devolve o mesmo veredicto | ✓ | ✓ |
 | 9. Confirmação sem objeto no bucket: reenvio necessário, e a reconciliação não o republica | ✓ | ✓ |
+| 10. A confirmação fixa a versão pelo ETag: um PUT depois dela termina em reenvio necessário, e a reentrega não sobrescreve o arquivo promovido | ✓ | ✓ |
 
 Outras provas, na mesma saída:
 
@@ -100,14 +101,14 @@ Na primeira subida, o clamd baixa a base de assinaturas, o que leva alguns minut
 
 - **KV com Transit, e não só KV.** O keystore Vault do KES guarda as chaves no KV, e o bloco `transit` faz o KES cifrar cada chave com uma chave Transit que nunca sai do Vault. Quem lê o KV, ou um backup dele, vê só `vault:v1:…` (prova 4). O Transit já é o que a API usa em HML.
 - **Dois buckets.** O de envio recebe o PUT pré-assinado e é a quarentena. O definitivo só recebe o que o verificador promoveu. As políticas de acesso seguem essa divisão. O envio não verificado expira em 1 dia (regra de ciclo de vida).
-- **Mesmo ETag na leitura e na cópia.** O verificador lê e promove com `If-Match` do ETag: o do evento, no webhook; o lido no início da verificação, na fila. Se outro PUT trocar o objeto entre a verificação e a promoção, a cópia falha.
+- **Mesmo ETag na leitura e na cópia.** O verificador lê e promove com `If-Match` do ETag: o do evento, no webhook; o confirmado pelo candidato, na fila. No fluxo com fila, o candidato manda na confirmação o ETag que o PUT lhe devolveu, e a API o põe no pedido. Se outro PUT trocar o objeto antes da verificação, a versão confirmada não existe mais, e o arquivo termina em reenvio necessário.
 - **Leitura em stream.** O verificador passa o objeto ao clamd em pedaços de 64 KiB e calcula o SHA-256 no caminho, sem ter o arquivo inteiro em memória.
 - **Cache do KES curto** (30 s, sem cache offline), para a prova de falha fechada não esperar minutos. Em HML, esse valor é escolha de disponibilidade × revogação.
 - **O pedido nasce na confirmação, não no bucket.** A API grava o arquivo como `EM_VERIFICACAO` e publica o pedido no outbox na mesma transação. Não existe arquivo em verificação sem pedido, nem pedido sem arquivo.
 - **Reconciliação pelo banco da API.** `POST /reconciliar?segundos=N` republica o que está em verificação sem pedido publicado há mais de N segundos, contados da última publicação. Ela cobre pedido perdido, fila de erro e clamd que voltou. Em produção, roda periodicamente.
-- **Idempotência no verificador.** A promoção grava o SHA-256 no metadado do objeto definitivo. O arquivo infectado não é removido: fica na quarentena até expirar. Assim, a reentrega devolve o mesmo veredicto nos dois casos, e a API só conta o veredicto repetido, sem mudar o estado. O veredicto vira estado por `UPDATE` atômico, condicionado a `EM_VERIFICACAO`, e dois veredictos simultâneos não se sobrescrevem.
-- **Reenvio necessário.** O objeto que não está na quarentena nem no definitivo (confirmação sem PUT, envio expirado) volta como `NAO_ENCONTRADO` e termina em `REENVIO_NECESSARIO`, que não é recusa e encerra a reconciliação.
-- **Remoção condicionada ao ETag.** Depois da cópia, o verificador só remove o envio se o ETag ainda for o verificado. Um PUT novo na mesma chave, depois da confirmação, não é apagado; ele não foi confirmado e expira na quarentena.
+- **Idempotência no verificador.** A promoção grava o SHA-256 e o ETag do envio no metadado do objeto definitivo, junto do `Content-Type` do PUT (a cópia com REPLACE o perderia). A reentrega consulta primeiro o bucket definitivo e nunca sobrescreve o que já foi promovido. O arquivo infectado não é removido: fica na quarentena até expirar. Assim, a reentrega devolve o mesmo veredicto nos dois casos, e a API só conta o veredicto repetido, sem mudar o estado. O veredicto vira estado por `UPDATE` atômico, condicionado a `EM_VERIFICACAO`, e dois veredictos simultâneos não se sobrescrevem.
+- **Reenvio necessário.** A versão confirmada que não está na quarentena nem no definitivo (confirmação sem PUT, PUT depois da confirmação, envio expirado) volta como `NAO_ENCONTRADO` e termina em `REENVIO_NECESSARIO`, que não é recusa e encerra a reconciliação.
+- **Tamanho máximo no verificador.** A URL pré-assinada de PUT não limita o tamanho, e o clamd não verifica stream acima do `StreamMaxLength`. O verificador recusa sem ler o que passa de `TAMANHO_MAXIMO_BYTES` (padrão de 100 milhões de bytes, abaixo dos 104857600 do clamd).
 - **Dois pools por processo.** Cada processo com Wolverine abre dois pools no Postgres, o do EF e o do Wolverine, ambos com o `Maximum Pool Size` da string de conexão (`POOL_POSTGRES`, padrão 10). A soma de todos os pools tem de caber no `max_connections`. Numa rodada anterior, com 50 por pool, só a API chegou às 100 conexões do Postgres, e a fila no Postgres falhou com `too many clients`. Os números publicados são da rodada com o pool corrigido.
 - **Lixeira do MinIO.** O objeto removido fica em `.minio.sys/tmp` até um expurgo assíncrono, mais lento que as remoções da medição. Com o disco quase cheio, o MinIO recusa gravação, e a cópia para o bucket definitivo falha; numa rodada anterior, isso mandou 120 pedidos à fila de erro. O `medir-fila.sh` reinicia o MinIO quando o disco cai abaixo de 3 GiB e para se não recuperar. Em HML, o bucket de envio precisa de folga para essa lixeira.
 - **Consumo um a um no RabbitMQ.** O verificador usa `ProcessInline`, `PreFetchCount(1)` e um consumidor por slot de paralelismo. A mensagem só é confirmada depois do veredicto publicado; se o processo morrer, ela volta à fila.
