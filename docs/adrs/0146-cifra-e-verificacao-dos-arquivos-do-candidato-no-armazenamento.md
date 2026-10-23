@@ -173,10 +173,6 @@ Não há produção. Os arquivos selados em HML são apagados e reenviados, sem 
 - Quem tem `GetObject` no MinIO, ou uma URL pré-assinada válida, lê o conteúdo em claro. A proteção contra leitura indevida é o controle de acesso; a cifra protege o disco e o backup.
 - Três componentes novos para operar: o KES, o RabbitMQ e o verificador.
 
-### Pendências
-
-- **PO:** confirmar o tratamento do arquivo em verificação nos UNI-REQ-0027 a UNI-REQ-0030 e os textos com que o portal mostra "em verificação" e "recusado".
-
 ## Prós e contras das opções
 
 ### A. Cifra e verificação na API
