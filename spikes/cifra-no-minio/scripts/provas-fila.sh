@@ -8,6 +8,8 @@ carregar_env
 
 TMP="$RESULTADOS/tmp"
 mkdir -p "$TMP"
+# A imagem empacota src/publicado: sem publicar antes, as provas rodariam o binário anterior.
+dotnet publish "$POC_DIR/src/Unifesspa.UniPlus.Spikes.CifraNoMinio" -c Release -o "$POC_DIR/src/publicado" --nologo -v q
 exec > >(sed -u "s#$POC_DIR#.#g" | tee "$RESULTADOS/provas-fila.txt") 2>&1
 
 # Postgres, RabbitMQ, a API e o verificador do fluxo com fila estão no perfil "fila" do compose:
@@ -205,6 +207,31 @@ provas_do_transporte() {
     mostrar sql "select count(*) as pedidos_pendentes from wolverine_filas.wolverine_queue_verificacao"
     limpar
   fi
+
+  titulo "$t · 8. Arquivo infectado: fica na quarentena, e a reentrega devolve o mesmo veredicto"
+  # A assinatura de teste EICAR é montada em tempo de execução para o repositório não carregá-la.
+  chave="eicar-$t-$(date +%s)"
+  printf '%s%s' 'X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD' '-ANTIVIRUS-TEST-FILE!$H+H*' | mc_admin "pipe local/uniplus-envios/$chave" >/dev/null
+  mostrar curl -sf -X POST "$API/confirmar/$chave"; echo
+  aguardar_veredictos 60
+  mostrar sql "select \"Estado\", \"Veredicto\", \"Veredictos\" from poc.arquivo_enviado where \"Chave\" = '$chave'"
+  nota "Objetos com essa chave no bucket de envio (a quarentena, que só o verificador lê) e no definitivo:"
+  echo "envio: $(mc_admin "ls local/uniplus-envios/$chave" 2>/dev/null | wc -l) · definitivo: $(mc_admin "ls local/uniplus-arquivos-candidato/$chave" 2>/dev/null | wc -l)"
+  nota "O arquivo volta a 'em verificação' no banco e é republicado, como numa reentrega."
+  sql "update poc.arquivo_enviado set \"Estado\" = 'EM_VERIFICACAO' where \"Chave\" = '$chave'" >/dev/null
+  mostrar curl -sf -X POST "$API/reconciliar?segundos=0"; echo
+  aguardar_veredictos 60
+  mostrar sql "select \"Estado\", \"Veredicto\", \"Veredictos\", \"Publicacoes\" from poc.arquivo_enviado where \"Chave\" = '$chave'"
+  limpar
+
+  titulo "$t · 9. Confirmação sem objeto no bucket: reenvio necessário, e a reconciliação para"
+  chave="ausente-$t-$(date +%s)"
+  mostrar curl -sf -X POST "$API/confirmar/$chave"; echo
+  aguardar_veredictos 60
+  mostrar sql "select \"Estado\", \"Veredicto\", \"Publicacoes\" from poc.arquivo_enviado where \"Chave\" = '$chave'"
+  nota "A reconciliação não republica o que já tem estado final."
+  mostrar curl -sf -X POST "$API/reconciliar?segundos=0"; echo
+  limpar
 }
 
 prova_trace() {

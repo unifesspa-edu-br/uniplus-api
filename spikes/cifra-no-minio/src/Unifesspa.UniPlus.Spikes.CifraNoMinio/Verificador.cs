@@ -150,7 +150,8 @@ public sealed partial class Verificador(Configuracao config, ILogger<Verificador
                 destino = "removido";
                 break;
             default:
-                // Sem veredicto o arquivo fica onde está, para nova tentativa; nunca é promovido.
+                // Sem veredicto o arquivo fica onde está e nunca é promovido. Este fluxo não tenta de
+                // novo: o evento do webhook já foi consumido, e só um novo PUT gera outro.
                 destino = config.BucketEnvios;
                 break;
         }

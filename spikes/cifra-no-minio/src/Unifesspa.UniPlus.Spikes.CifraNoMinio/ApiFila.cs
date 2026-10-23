@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Spikes.CifraNoMinio;
 
 using Microsoft.EntityFrameworkCore;
 
+using Npgsql;
+
 using Wolverine.EntityFrameworkCore;
 
 /// <summary>
@@ -11,7 +13,7 @@ using Wolverine.EntityFrameworkCore;
 /// </summary>
 public static class ApiFila
 {
-    private const string EmVerificacao = "EM_VERIFICACAO";
+    public const string EmVerificacao = "EM_VERIFICACAO";
 
     public static async Task PrepararAsync(WebApplication app)
     {
@@ -25,6 +27,7 @@ public static class ApiFila
                 "Chave" text PRIMARY KEY,
                 "Estado" text NOT NULL,
                 "ConfirmadoEm" timestamptz NOT NULL,
+                "PublicadoEm" timestamptz NOT NULL,
                 "InicioDaVerificacaoEm" timestamptz,
                 "FimDaVerificacaoEm" timestamptz,
                 "RegistradoEm" timestamptz,
@@ -35,7 +38,9 @@ public static class ApiFila
                 "Verificador" text,
                 "Veredictos" integer NOT NULL DEFAULT 0,
                 "Publicacoes" integer NOT NULL DEFAULT 0);
-            CREATE INDEX IF NOT EXISTS ix_arquivo_enviado_estado ON poc.arquivo_enviado ("Estado", "ConfirmadoEm");
+            ALTER TABLE poc.arquivo_enviado ADD COLUMN IF NOT EXISTS "PublicadoEm" timestamptz NOT NULL DEFAULT now();
+            DROP INDEX IF EXISTS poc.ix_arquivo_enviado_estado;
+            CREATE INDEX IF NOT EXISTS ix_arquivo_enviado_estado_publicacao ON poc.arquivo_enviado ("Estado", "PublicadoEm");
             """);
     }
 
@@ -43,18 +48,28 @@ public static class ApiFila
     {
         ArgumentNullException.ThrowIfNull(app);
 
-        // Confirmar de novo o mesmo arquivo não publica outro pedido.
+        // Confirmar de novo o mesmo arquivo não publica outro pedido, nem quando as duas confirmações
+        // chegam juntas: a chave primária barra a segunda, que devolve o estado gravado pela primeira.
         app.MapPost("/confirmar/{chave}", async (string chave, IDbContextOutbox<Banco> outbox, CancellationToken cancellationToken) =>
         {
-            if (await outbox.DbContext.Arquivos.AsNoTracking().FirstOrDefaultAsync(a => a.Chave == chave, cancellationToken) is { } existente)
+            if (await EstadoAsync(outbox.DbContext, chave, cancellationToken) is { } existente)
             {
-                return Results.Ok(new { existente.Estado });
+                return Results.Ok(new { Estado = existente });
             }
 
             DateTimeOffset agora = DateTimeOffset.UtcNow;
-            outbox.DbContext.Arquivos.Add(new ArquivoEnviado { Chave = chave, Estado = EmVerificacao, ConfirmadoEm = agora, Publicacoes = 1 });
+            outbox.DbContext.Arquivos.Add(new ArquivoEnviado { Chave = chave, Estado = EmVerificacao, ConfirmadoEm = agora, PublicadoEm = agora, Publicacoes = 1 });
             await outbox.PublishAsync(new VerificarArquivo(chave, agora));
-            await outbox.SaveChangesAndFlushMessagesAsync(cancellationToken);
+            try
+            {
+                await outbox.SaveChangesAndFlushMessagesAsync(cancellationToken);
+            }
+            catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+            {
+                outbox.DbContext.ChangeTracker.Clear();
+                return Results.Ok(new { Estado = await EstadoAsync(outbox.DbContext, chave, cancellationToken) });
+            }
+
             return Results.Accepted(value: new { Estado = EmVerificacao });
         });
 
@@ -72,17 +87,21 @@ public static class ApiFila
         app.MapDelete("/arquivos", async (Banco banco, CancellationToken cancellationToken) =>
             Results.Ok(await banco.Arquivos.ExecuteDeleteAsync(cancellationToken)));
 
-        // A rede de segurança: o que está em verificação há mais de N segundos ganha um novo pedido.
+        // A rede de segurança: o que está em verificação sem pedido publicado há mais de N segundos
+        // ganha um novo pedido. Contar da última publicação, e não da confirmação, evita republicar a
+        // cada execução o arquivo cujo pedido ainda está nas novas tentativas do verificador.
         // Em produção roda periodicamente; aqui é chamada pelos roteiros das provas.
         app.MapPost("/reconciliar", async (int segundos, IDbContextOutbox<Banco> outbox, CancellationToken cancellationToken) =>
         {
-            DateTimeOffset limite = DateTimeOffset.UtcNow.AddSeconds(-segundos);
+            DateTimeOffset agora = DateTimeOffset.UtcNow;
+            DateTimeOffset limite = agora.AddSeconds(-segundos);
             List<ArquivoEnviado> pendentes = await outbox.DbContext.Arquivos
-                .Where(a => a.Estado == EmVerificacao && a.ConfirmadoEm < limite)
+                .Where(a => a.Estado == EmVerificacao && a.PublicadoEm <= limite)
                 .ToListAsync(cancellationToken);
             foreach (ArquivoEnviado arquivo in pendentes)
             {
                 arquivo.Publicacoes++;
+                arquivo.PublicadoEm = agora;
                 await outbox.PublishAsync(new VerificarArquivo(arquivo.Chave, arquivo.ConfirmadoEm));
             }
 
@@ -90,11 +109,16 @@ public static class ApiFila
             return Results.Ok(new { republicados = pendentes.Count });
         });
     }
+
+    private static Task<string?> EstadoAsync(Banco banco, string chave, CancellationToken cancellationToken) =>
+        banco.Arquivos.AsNoTracking().Where(a => a.Chave == chave).Select(a => a.Estado).FirstOrDefaultAsync(cancellationToken);
 }
 
 /// <summary>
 /// O veredicto chega pela fila de resultados. Só o primeiro muda o estado; os repetidos (entrega
-/// duplicada, reconciliação de um arquivo que já tinha sido verificado) só são contados.
+/// duplicada, reconciliação de um arquivo que já tinha sido verificado) só são contados. As duas
+/// gravações são atômicas no banco, então dois veredictos simultâneos para a mesma chave não perdem
+/// a contagem nem sobrescrevem o primeiro.
 /// </summary>
 public sealed class ResultadoDaVerificacaoHandler
 {
@@ -103,26 +127,34 @@ public sealed class ResultadoDaVerificacaoHandler
         ArgumentNullException.ThrowIfNull(resultado);
         ArgumentNullException.ThrowIfNull(banco);
 
-        ArquivoEnviado? arquivo = await banco.Arquivos.FirstOrDefaultAsync(a => a.Chave == resultado.Chave, cancellationToken);
-        if (arquivo is null)
-        {
-            return;
-        }
+        await banco.Arquivos
+            .Where(a => a.Chave == resultado.Chave)
+            .ExecuteUpdateAsync(a => a.SetProperty(x => x.Veredictos, x => x.Veredictos + 1), cancellationToken);
 
-        arquivo.Veredictos++;
-        if (arquivo.Estado != "EM_VERIFICACAO")
-        {
-            return;
-        }
-
-        arquivo.Estado = resultado.Veredicto == "LIMPO" ? "VERIFICADO" : "RECUSADO";
-        arquivo.Veredicto = resultado.Veredicto;
-        arquivo.Sha256 = resultado.Sha256;
-        arquivo.Bytes = resultado.Bytes;
-        arquivo.InicioDaVerificacaoEm = resultado.InicioEm;
-        arquivo.FimDaVerificacaoEm = resultado.ConcluidoEm;
-        arquivo.VerificacaoMs = resultado.VerificacaoMs;
-        arquivo.Verificador = resultado.Verificador;
-        arquivo.RegistradoEm = DateTimeOffset.UtcNow;
+        DateTimeOffset agora = DateTimeOffset.UtcNow;
+        string estado = Estado(resultado.Veredicto);
+        await banco.Arquivos
+            .Where(a => a.Chave == resultado.Chave && a.Estado == ApiFila.EmVerificacao)
+            .ExecuteUpdateAsync(
+                a => a
+                    .SetProperty(x => x.Estado, estado)
+                    .SetProperty(x => x.Veredicto, resultado.Veredicto)
+                    .SetProperty(x => x.Sha256, resultado.Sha256)
+                    .SetProperty(x => x.Bytes, resultado.Bytes)
+                    .SetProperty(x => x.InicioDaVerificacaoEm, resultado.InicioEm)
+                    .SetProperty(x => x.FimDaVerificacaoEm, resultado.ConcluidoEm)
+                    .SetProperty(x => x.VerificacaoMs, resultado.VerificacaoMs)
+                    .SetProperty(x => x.Verificador, resultado.Verificador)
+                    .SetProperty(x => x.RegistradoEm, agora),
+                cancellationToken);
     }
+
+    // NAO_ENCONTRADO não é recusa da verificação: o objeto não chegou ou expirou na quarentena, e o
+    // candidato precisa enviar de novo. O estado final encerra a reconciliação desse arquivo.
+    private static string Estado(string veredicto) => veredicto switch
+    {
+        "LIMPO" => "VERIFICADO",
+        "INFECTADO" => "RECUSADO",
+        _ => "REENVIO_NECESSARIO",
+    };
 }

@@ -10,14 +10,17 @@ using Minio.Exceptions;
 
 /// <summary>
 /// O verificador como consumidor de fila. Mesmo trabalho do verificador por webhook (lê o objeto em
-/// stream, já decifrado pelo MinIO, passa ao clamd, calcula o SHA-256 e promove ou remove), com duas
+/// stream, já decifrado pelo MinIO, passa ao clamd, calcula o SHA-256 e promove o limpo), com duas
 /// diferenças que a fila exige:
 /// <list type="bullet">
 /// <item>O pedido traz só a chave. O verificador lê o ETag atual e exige o mesmo ETag na leitura e
-/// na promoção: o que foi verificado é o que é promovido.</item>
+/// na cópia: o que foi verificado é o que é promovido. A promoção por etiqueta não tem essa garantia
+/// (a etiqueta não aceita condição de ETag), mais um motivo para ela ter sido recusada.</item>
 /// <item>A mesma mensagem pode chegar de novo (o verificador caiu depois de promover e antes de
 /// confirmar). Por isso a promoção grava o SHA-256 junto do objeto, e a reentrega de um arquivo já
-/// promovido devolve o mesmo veredicto sem verificar outra vez.</item>
+/// promovido devolve o mesmo veredicto sem verificar outra vez. O arquivo infectado não é removido:
+/// fica na quarentena, que ninguém além do verificador lê, até expirar; assim a reentrega o
+/// verifica de novo e devolve INFECTADO, e não NAO_ENCONTRADO.</item>
 /// </list>
 /// <c>PROMOCAO</c> escolhe como o arquivo limpo é liberado: <c>copia</c> para o bucket definitivo
 /// (o desenho da ADR-0146) ou <c>etiqueta</c> no próprio bucket de envio, que a política da API
@@ -67,7 +70,6 @@ public sealed partial class VerificadorDaFila(Configuracao config, IMinioClient 
                 await PromoverAsync(pedido.Chave, envio.ETag, resultado.Sha256, cancellationToken);
                 break;
             case Veredicto.Infectado:
-                await minio.RemoveObjectAsync(new RemoveObjectArgs().WithBucket(config.BucketEnvios).WithObject(pedido.Chave), cancellationToken);
                 break;
             default:
                 // Sem veredicto, a exceção devolve a mensagem para nova tentativa; nunca recusa.
@@ -108,13 +110,18 @@ public sealed partial class VerificadorDaFila(Configuracao config, IMinioClient 
                     .WithObject(chave)
                     .WithMatchETag(etag)),
             cancellationToken);
-        await minio.RemoveObjectAsync(new RemoveObjectArgs().WithBucket(config.BucketEnvios).WithObject(chave), cancellationToken);
+        // Só remove a versão que foi copiada: um PUT novo na mesma chave, depois da confirmação, não
+        // é apagado aqui; ele não foi confirmado e expira na quarentena.
+        if (await StatAsync(config.BucketEnvios, chave, cancellationToken) is { } atual && atual.ETag == etag)
+        {
+            await minio.RemoveObjectAsync(new RemoveObjectArgs().WithBucket(config.BucketEnvios).WithObject(chave), cancellationToken);
+        }
     }
 
     /// <summary>
     /// O objeto já não está no bucket de envio: ou foi promovido numa entrega anterior desta mesma
-    /// mensagem, e o veredicto se repete, ou sumiu sem verificação (expirou, foi removido por estar
-    /// infectado numa entrega anterior), e o candidato precisa enviar de novo.
+    /// mensagem, e o veredicto se repete, ou não chegou ou expirou na quarentena antes de ser
+    /// verificado, e o candidato precisa enviar de novo.
     /// </summary>
     private async Task<ArquivoVerificado> JaPromovidoAsync(string chave, DateTimeOffset inicio, Stopwatch cronometro, CancellationToken cancellationToken)
     {
@@ -124,8 +131,11 @@ public sealed partial class VerificadorDaFila(Configuracao config, IMinioClient 
             return Resultado(chave, "NAO_ENCONTRADO", string.Empty, 0, inicio, cronometro);
         }
 
+        // O SDK pode devolver o metadado com ou sem o prefixo x-amz-meta-; o checksum do PUT
+        // (x-amz-checksum-sha256) não pode ser confundido com ele.
         string sha256 = promovido.MetaData
-            .FirstOrDefault(m => m.Key.EndsWith(EtiquetaDoSha256, StringComparison.OrdinalIgnoreCase)).Value ?? string.Empty;
+            .FirstOrDefault(m => m.Key.Equals(MetadadoDoSha256, StringComparison.OrdinalIgnoreCase)
+                || m.Key.Equals(EtiquetaDoSha256, StringComparison.OrdinalIgnoreCase)).Value ?? string.Empty;
         return Resultado(chave, "LIMPO", sha256, promovido.Size, inicio, cronometro);
     }
 
