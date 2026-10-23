@@ -1178,7 +1178,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_rol_de_fatos_candidato_escopo", "escopo IN ('CANDIDATO', 'MEMBRO_GRUPO')");
 
-                            t.HasCheckConstraint("ck_rol_de_fatos_candidato_fonte_valores_coerente", "(dominio = 'CATEGORICO' AND fonte_valores IS NOT NULL AND fonte_valores IN ('GLOBAL', 'PROCESSO', 'MODALIDADE', 'MUNICIPIOS_BONUS', 'GEO_UF', 'GEO_MUNICIPIO')) OR (dominio <> 'CATEGORICO' AND fonte_valores IS NULL)");
+                            t.HasCheckConstraint("ck_rol_de_fatos_candidato_fonte_valores_coerente", "(dominio = 'CATEGORICO' AND fonte_valores IS NOT NULL AND fonte_valores IN ('GLOBAL', 'PROCESSO', 'MODALIDADE', 'MUNICIPIOS_BONUS', 'GEO_UF', 'GEO_MUNICIPIO', 'TIPOS_DEFICIENCIA')) OR (dominio <> 'CATEGORICO' AND fonte_valores IS NULL)");
 
                             t.HasCheckConstraint("ck_rol_de_fatos_candidato_formato_coerente", "(dominio = 'TEXTO' AND formato IS NOT NULL AND formato IN ('LIVRE', 'CPF', 'EMAIL', 'TELEFONE', 'CEP', 'NOME_PESSOA')) OR (dominio <> 'TEXTO' AND formato IS NULL)");
 
@@ -1406,7 +1406,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             Dominio = "CATEGORICO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.",
-                            FonteValores = "PROCESSO",
+                            FonteValores = "TIPOS_DEFICIENCIA",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             Nome = "Tipo de deficiência",
                             Origem = "DECLARADO",

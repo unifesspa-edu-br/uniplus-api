@@ -68,6 +68,8 @@ public static class VocabularioDoCatalogo
     /// O domínio dos categóricos cujos valores o catálogo não enumera. UF e município de residência
     /// vêm do Geo e são conferidos como em qualquer processo; as opções do processo, as modalidades
     /// e os municípios do bônus só existem no processo, que confere a regra de novo quando a copia.
+    /// Os tipos de deficiência vivem em outro cadastro, e a Seleção confere contra ele o código que a
+    /// regra cita quando aplica o modelo.
     /// </summary>
     public static Dictionary<string, DominioDeValores> DominiosDinamicos(IEnumerable<FatoCandidato> fatos)
     {
@@ -80,6 +82,7 @@ public static class VocabularioDoCatalogo
                 FonteValoresFato.GeoUf => DominioDeValores.Enumerado(ReferenciaCidadeGeo.Ufs),
                 FonteValoresFato.GeoMunicipio => DominioDeValores.PorFormato(ReferenciaCidadeGeo.EhCodigoMunicipioValido),
                 FonteValoresFato.Processo or FonteValoresFato.Modalidade or FonteValoresFato.MunicipiosBonus
+                    or FonteValoresFato.TiposDeficiencia
                     => DominioDeValores.PorFormato(static _ => true),
                 _ => null,
             };

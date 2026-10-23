@@ -155,7 +155,7 @@ public static class FatoCandidatoSeed
             ClassificacaoProtecaoDado.Pessoal, FinalidadeRequisitos),
 
         new(SeedId(11), "TIPO_DEFICIENCIA", "Tipo de deficiência", null,
-            DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Processo,
+            DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.TiposDeficiencia,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:TIPO_DEFICIENCIA",
             ClassificacaoProtecaoDado.Sensivel, FinalidadeReservaDeVagas),
 

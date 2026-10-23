@@ -30,9 +30,11 @@ internal static class VocabularioDeFatos
     private const string FonteMunicipiosBonus = "MUNICIPIOS_BONUS";
     private const string FonteGeoUf = DominioDoCatalogo.FonteGeoUf;
     private const string FonteGeoMunicipio = DominioDoCatalogo.FonteGeoMunicipio;
+    private const string FonteTiposDeficiencia = DominioDoCatalogo.FonteTiposDeficiencia;
 
     /// <summary>
-    /// O tipo de domínio do fato: estático quando os valores estão no catálogo; dinâmico quando vêm
+    /// O tipo de domínio do fato: estático quando os valores estão no catálogo, inclusive os tipos de
+    /// deficiência, que o catálogo entrega como valores do fato; dinâmico quando vêm
     /// do processo (opções declaradas, modalidades ofertadas ou municípios do bônus regional) ou do
     /// Geo (UF e município de residência); <see langword="null"/> para fato fora do vocabulário
     /// avaliável, como texto, data e endereço.
@@ -45,7 +47,7 @@ internal static class VocabularioDeFatos
         {
             { Dominio: DominioBooleano } => TipoDominioFato.Booleano,
             { Dominio: DominioNumerico } => TipoDominioFato.Numerico,
-            { Dominio: DominioCategorico, FonteValores: FonteGlobal } => TipoDominioFato.CategoricoEstatico,
+            { Dominio: DominioCategorico, FonteValores: FonteGlobal or FonteTiposDeficiencia } => TipoDominioFato.CategoricoEstatico,
             { Dominio: DominioCategorico, FonteValores: FonteProcesso or FonteModalidade or FonteMunicipiosBonus or FonteGeoUf or FonteGeoMunicipio }
                 => TipoDominioFato.CategoricoDinamico,
             _ => null,
@@ -293,6 +295,8 @@ internal static class VocabularioDeFatos
             return dinamico.Valores;
         }
 
-        return fato.FonteValores == FonteGlobal ? [.. (fato.ValoresDominioDeclarados ?? []).Select(static v => v.Codigo)] : null;
+        return fato.FonteValores is FonteGlobal or FonteTiposDeficiencia
+            ? [.. (fato.ValoresDominioDeclarados ?? []).Select(static v => v.Codigo)]
+            : null;
     }
 }

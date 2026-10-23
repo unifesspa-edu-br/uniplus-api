@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Sementes;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 using AwesomeAssertions;
 
@@ -13,6 +14,7 @@ using Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
@@ -78,9 +80,59 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         processo.Campos.Select(static c => c.FatoCodigo).Should().Contain("TIPO_DEFICIENCIA");
     }
 
-    private async Task<ProcessoSeletivo> AplicarInscricaoEHabilitacaoAsync(string modeloDeInscricao)
+    [Fact(DisplayName = "No processo sem prova e sem oferta de atendimento, o tipo de deficiência da inscrição oferece os tipos ativos do cadastro")]
+    public async Task ModeloSemProva_SemOfertaDeAtendimento_TipoDeficienciaOfereceOsTiposDoCadastro()
     {
-        Guid processoId = await SemearProcessoPsrAsync();
+        string prefixo = $"DEF_{Guid.NewGuid().ToString("N")[..10].ToUpperInvariant()}";
+        TipoDeficiencia ativo = TipoDeficiencia.Criar($"{prefixo}_ATIVO", "Tipo ativo", "Descrição de teste").Value!;
+        TipoDeficiencia removido = TipoDeficiencia.Criar($"{prefixo}_REMOVIDO", "Tipo removido", "Descrição de teste").Value!;
+        await using (AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope())
+        {
+            ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+            db.TiposDeficiencia.AddRange(ativo, removido);
+            await db.SaveChangesAsync();
+            db.TiposDeficiencia.Remove(removido);
+            await db.SaveChangesAsync();
+        }
+
+        try
+        {
+            ProcessoSeletivo processo = await AplicarInscricaoEHabilitacaoAsync(SementePsrMedicina2027.ModeloDeInscricaoSemProva, ofertarAtendimento: false);
+            processo.OfertaAtendimento.Should().BeNull();
+
+            string[] tiposAtivos;
+            await using (AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope())
+            {
+                ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+                tiposAtivos = [.. (await db.TiposDeficiencia.AsNoTracking().ToListAsync())
+                    .Select(static t => t.Codigo.Valor).Order(StringComparer.Ordinal)];
+            }
+
+            using HttpClient client = _fixture.Factory.CreateClient();
+            using HttpRequestMessage request = new(
+                HttpMethod.Get, new Uri($"/api/selecao/admin/processos-seletivos/{processo.Id}/formularios/INSCRICAO/renderizavel", UriKind.Relative));
+            Autenticar(request);
+            HttpResponseMessage resposta = await client.SendAsync(request);
+            resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
+
+            JsonElement campo = (await resposta.Content.ReadFromJsonAsync<JsonElement>())
+                .GetProperty("fatosColetados").EnumerateArray()
+                .Single(static c => c.GetProperty("fatoCodigo").GetString() == "TIPO_DEFICIENCIA");
+            string[] opcoes = [.. campo.GetProperty("valoresSelecionaveis").EnumerateArray().Select(static v => v.GetProperty("codigo").GetString()!)];
+            opcoes.Should().Equal(tiposAtivos);
+            opcoes.Should().Contain(ativo.Codigo.Valor).And.NotContain(removido.Codigo.Valor);
+        }
+        finally
+        {
+            await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
+            ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+            await db.TiposDeficiencia.IgnoreQueryFilters().Where(t => t.Id == ativo.Id || t.Id == removido.Id).ExecuteDeleteAsync();
+        }
+    }
+
+    private async Task<ProcessoSeletivo> AplicarInscricaoEHabilitacaoAsync(string modeloDeInscricao, bool ofertarAtendimento = true)
+    {
+        Guid processoId = await SemearProcessoPsrAsync(ofertarAtendimento);
 
         // A habilitação pressupõe a forma de conclusão do ensino médio, que a inscrição coleta.
         HttpResponseMessage inscricao = await AplicarAsync(processoId, await ModeloAsync(modeloDeInscricao));
@@ -98,14 +150,14 @@ public sealed class AplicarModelosPsrMedicina2027Tests
             .SingleAsync(p => p.Id == processoId);
     }
 
-    private async Task<Guid> SemearProcessoPsrAsync()
+    private async Task<Guid> SemearProcessoPsrAsync(bool ofertarAtendimento)
     {
         TipoProcessoSnapshot psr = TipoProcessoSnapshot.Criar(
             SementePsrMedicina2027.TipoProcessoId, SementePsrMedicina2027.TipoProcessoCodigo, "Processo Seletivo Regular Unificado").Value!;
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
         (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
-            db, $"Medicina 2027 {Guid.CreateVersion7()}", complementar: ComBonusRegionalEAtendimento, tipo: psr);
+            db, $"Medicina 2027 {Guid.CreateVersion7()}", complementar: p => ComBonusRegionalEAtendimento(p, ofertarAtendimento), tipo: psr);
         return processo.Id;
     }
 
@@ -115,7 +167,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
     /// descrição, uma condição que o modelo não conhece, a lactante, a pessoa idosa e um recurso; e uma cota da lei ofertada, porque a inscrição pergunta pela opção
     /// pelas cotas.
     /// </summary>
-    private static void ComBonusRegionalEAtendimento(ProcessoSeletivo processo)
+    private static void ComBonusRegionalEAtendimento(ProcessoSeletivo processo, bool ofertarAtendimento)
     {
         Result distribuida = processo.DefinirDistribuicaoVagas(
             [ConfiguracaoDistribuicaoVagas.Criar(
@@ -147,8 +199,26 @@ public sealed class AplicarModelosPsrMedicina2027Tests
             ],
             [OfertaRecurso.Criar(Guid.CreateVersion7(), "SALA_DE_FACIL_ACESSO", "Sala de fácil acesso")],
             []).Value!;
-        Result ofertada = processo.DefinirOfertaAtendimento(oferta, PrecondicaoIfMatch.Ausente);
-        ofertada.IsSuccess.Should().BeTrue(ofertada.Error?.Message);
+        // A classificação pelas notas do ENEM e a edição que a inscrição pergunta: sem ela o formulário
+        // não teria o que oferecer.
+        Result classificada = processo.DefinirClassificacao(
+            ConfiguracaoClassificacao.Criar(
+                ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('c', 64)).Value!,
+                ReferenciaRegra.Criar(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('d', 64)).Value!,
+                2,
+                ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('f', 64)).Value!,
+                [], baseadoEmEnem: true, Testes.Compartilhado.QuadroPesoAreaEnemDeTeste.Resolucao, Testes.Compartilhado.QuadroPesoAreaEnemDeTeste.Completo()).Value!,
+            PrecondicaoIfMatch.Ausente);
+        classificada.IsSuccess.Should().BeTrue(classificada.Error?.Message);
+        Result edicoes = processo.DefinirOpcoesDeclaradas(
+            EdicaoDoEnem.Fato, [OpcaoDeclaradaFato.Criar(EdicaoDoEnem.Fato, "2025", "ENEM 2025", 0).Value!], PrecondicaoIfMatch.Ausente);
+        edicoes.IsSuccess.Should().BeTrue(edicoes.Error?.Message);
+
+        if (ofertarAtendimento)
+        {
+            Result ofertada = processo.DefinirOfertaAtendimento(oferta, PrecondicaoIfMatch.Ausente);
+            ofertada.IsSuccess.Should().BeTrue(ofertada.Error?.Message);
+        }
 
         // O modelo exige os documentos do atendimento na fase de inscrição do cronograma.
         FaseCronograma inscricao = FaseCronograma.Criar(
@@ -186,9 +256,14 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         {
             Content = JsonContent.Create(new { modeloId }),
         };
-        request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
+        Autenticar(request);
         request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
         return await client.SendAsync(request);
+    }
+
+    private static void Autenticar(HttpRequestMessage request)
+    {
+        request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
+        request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
     }
 }
