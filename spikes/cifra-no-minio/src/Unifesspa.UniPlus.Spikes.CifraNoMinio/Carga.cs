@@ -102,7 +102,8 @@ public static class Carga
 
             if (modo == "fila")
             {
-                return await ConfirmarEAguardarAsync(http, envio.Chave, envioMs, fimDoEnvio, cronometro, vaga, () => vagaLiberada = true);
+                string etag = put.Headers.ETag?.Tag ?? string.Empty;
+                return await ConfirmarEAguardarAsync(http, envio.Chave, etag, envioMs, fimDoEnvio, cronometro, vaga, () => vagaLiberada = true);
             }
 
             // No fluxo novo o candidato termina no PUT: a vaga dele volta para o próximo envio.
@@ -157,9 +158,10 @@ public static class Carga
     /// a carga só acompanha o estado na API. "Notificação" passa a ser o tempo da confirmação ao
     /// início da verificação (a fila), e "fila" o da confirmação na API (a última espera do candidato).
     /// </summary>
-    private static async Task<Medida> ConfirmarEAguardarAsync(HttpClient http, string chave, double envioMs, DateTimeOffset fimDoEnvio, Stopwatch cronometro, SemaphoreSlim vaga, Action liberada)
+    private static async Task<Medida> ConfirmarEAguardarAsync(HttpClient http, string chave, string etag, double envioMs, DateTimeOffset fimDoEnvio, Stopwatch cronometro, SemaphoreSlim vaga, Action liberada)
     {
-        using (HttpResponseMessage confirmado = await http.PostAsync(new Uri($"{ApiComFila}/confirmar/{chave}"), content: null))
+        using (HttpResponseMessage confirmado = await http.PostAsync(
+            new Uri($"{ApiComFila}/confirmar/{chave}?etag={Uri.EscapeDataString(etag.Trim('"'))}"), content: null))
         {
             confirmado.EnsureSuccessStatusCode();
         }

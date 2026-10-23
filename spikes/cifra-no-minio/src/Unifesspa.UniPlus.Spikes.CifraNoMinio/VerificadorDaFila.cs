@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Spikes.CifraNoMinio;
 
 using System.Diagnostics;
+using System.Globalization;
 
 using Minio;
 using Minio.DataModel;
@@ -10,17 +11,20 @@ using Minio.Exceptions;
 
 /// <summary>
 /// O verificador como consumidor de fila. Mesmo trabalho do verificador por webhook (lê o objeto em
-/// stream, já decifrado pelo MinIO, passa ao clamd, calcula o SHA-256 e promove o limpo), com duas
+/// stream, já decifrado pelo MinIO, passa ao clamd, calcula o SHA-256 e promove o limpo), com as
 /// diferenças que a fila exige:
 /// <list type="bullet">
-/// <item>O pedido traz só a chave. O verificador lê o ETag atual e exige o mesmo ETag na leitura e
-/// na cópia: o que foi verificado é o que é promovido. A promoção por etiqueta não tem essa garantia
-/// (a etiqueta não aceita condição de ETag), mais um motivo para ela ter sido recusada.</item>
+/// <item>O pedido traz a chave e o ETag que o PUT devolveu ao candidato, confirmado por ele. Só essa
+/// versão é lida, verificada e copiada (as três com o mesmo ETag): um PUT na mesma chave depois da
+/// confirmação não é verificado nem promovido, e o arquivo termina em reenvio necessário. A promoção
+/// por etiqueta não tem essa garantia na etiquetagem, mais um motivo para ela ter sido recusada.</item>
 /// <item>A mesma mensagem pode chegar de novo (o verificador caiu depois de promover e antes de
-/// confirmar). Por isso a promoção grava o SHA-256 junto do objeto, e a reentrega de um arquivo já
-/// promovido devolve o mesmo veredicto sem verificar outra vez. O arquivo infectado não é removido:
-/// fica na quarentena, que ninguém além do verificador lê, até expirar; assim a reentrega o
-/// verifica de novo e devolve INFECTADO, e não NAO_ENCONTRADO.</item>
+/// confirmar). A promoção grava no objeto definitivo o SHA-256 e o ETag do envio, e a reentrega olha
+/// primeiro o bucket definitivo: o arquivo já promovido devolve o mesmo veredicto e nunca é
+/// sobrescrito. O arquivo infectado não é removido: fica na quarentena, que ninguém além do
+/// verificador lê, até expirar; assim a reentrega o verifica de novo e devolve INFECTADO.</item>
+/// <item>A URL pré-assinada de PUT não limita o tamanho. O arquivo acima do máximo é recusado sem ser
+/// lido, antes de chegar ao limite de stream do clamd, que o deixaria sem veredicto.</item>
 /// </list>
 /// <c>PROMOCAO</c> escolhe como o arquivo limpo é liberado: <c>copia</c> para o bucket definitivo
 /// (o desenho da ADR-0146) ou <c>etiqueta</c> no próprio bucket de envio, que a política da API
@@ -31,10 +35,16 @@ public sealed partial class VerificadorDaFila(Configuracao config, IMinioClient 
     public const string EtiquetaDeVerificacao = "verificacao";
     public const string Aprovado = "aprovado";
     private const string EtiquetaDoSha256 = "sha256";
-    private const string MetadadoDoSha256 = "x-amz-meta-sha256";
+    private const string MetadadoDoSha256 = "sha256";
+    private const string MetadadoDoEtagDoEnvio = "etag-envio";
 
     private static readonly bool PorEtiqueta =
         string.Equals(Environment.GetEnvironmentVariable("PROMOCAO"), "etiqueta", StringComparison.Ordinal);
+
+    // Abaixo do StreamMaxLength padrão do clamd 1.4 (104857600 bytes).
+    private static readonly long TamanhoMaximo = Environment.GetEnvironmentVariable("TAMANHO_MAXIMO_BYTES") is { Length: > 0 } valor
+        ? long.Parse(valor, CultureInfo.InvariantCulture)
+        : 100_000_000;
 
     public async Task<ArquivoVerificado> Handle(VerificarArquivo pedido, CancellationToken cancellationToken)
     {
@@ -43,10 +53,20 @@ public sealed partial class VerificadorDaFila(Configuracao config, IMinioClient 
         DateTimeOffset inicio = DateTimeOffset.UtcNow;
         Stopwatch cronometro = Stopwatch.StartNew();
 
-        ObjectStat? envio = await StatAsync(config.BucketEnvios, pedido.Chave, cancellationToken);
-        if (envio is null)
+        if (!PorEtiqueta && await StatAsync(config.BucketArquivos, pedido.Chave, cancellationToken) is { } promovido)
         {
-            return await JaPromovidoAsync(pedido.Chave, inicio, cronometro, cancellationToken);
+            return JaPromovido(pedido, promovido, inicio, cronometro);
+        }
+
+        ObjectStat? envio = await StatAsync(config.BucketEnvios, pedido.Chave, cancellationToken);
+        if (envio is null || !MesmoETag(envio.ETag, pedido.ETag))
+        {
+            return Resultado(pedido.Chave, "NAO_ENCONTRADO", string.Empty, 0, inicio, cronometro);
+        }
+
+        if (envio.Size > TamanhoMaximo)
+        {
+            return Resultado(pedido.Chave, "FORA_DO_LIMITE", string.Empty, envio.Size, inicio, cronometro);
         }
 
         if (PorEtiqueta && await EtiquetasAsync(pedido.Chave, cancellationToken) is { } etiquetas
@@ -60,14 +80,14 @@ public sealed partial class VerificadorDaFila(Configuracao config, IMinioClient 
             new GetObjectArgs()
                 .WithBucket(config.BucketEnvios)
                 .WithObject(pedido.Chave)
-                .WithMatchETag(envio.ETag)
+                .WithMatchETag(pedido.ETag)
                 .WithCallbackStream(async (stream, ct) => resultado = await clamd.VerificarAsync(stream, ct)),
             cancellationToken);
 
         switch (resultado.Veredicto)
         {
             case Veredicto.Limpo:
-                await PromoverAsync(pedido.Chave, envio.ETag, resultado.Sha256, cancellationToken);
+                await PromoverAsync(pedido, envio.ContentType, resultado.Sha256, cancellationToken);
                 break;
             case Veredicto.Infectado:
                 break;
@@ -82,14 +102,14 @@ public sealed partial class VerificadorDaFila(Configuracao config, IMinioClient 
         return verificado;
     }
 
-    private async Task PromoverAsync(string chave, string etag, string sha256, CancellationToken cancellationToken)
+    private async Task PromoverAsync(VerificarArquivo pedido, string contentType, string sha256, CancellationToken cancellationToken)
     {
         if (PorEtiqueta)
         {
             await minio.SetObjectTagsAsync(
                 new SetObjectTagsArgs()
                     .WithBucket(config.BucketEnvios)
-                    .WithObject(chave)
+                    .WithObject(pedido.Chave)
                     .WithTagging(Tagging.GetObjectTags(new Dictionary<string, string>(StringComparer.Ordinal)
                     {
                         [EtiquetaDeVerificacao] = Aprovado,
@@ -99,45 +119,49 @@ public sealed partial class VerificadorDaFila(Configuracao config, IMinioClient 
             return;
         }
 
+        // REPLACE porque o SHA-256 e o ETag do envio entram no metadado; o Content-Type do PUT é
+        // repetido, senão o objeto definitivo perde o tipo e a leitura inline deixa de abrir o PDF.
         await minio.CopyObjectAsync(
             new CopyObjectArgs()
                 .WithBucket(config.BucketArquivos)
-                .WithObject(chave)
+                .WithObject(pedido.Chave)
                 .WithReplaceMetadataDirective(true)
-                .WithHeaders(new Dictionary<string, string>(StringComparer.Ordinal) { [MetadadoDoSha256] = sha256 })
+                .WithHeaders(new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    ["Content-Type"] = contentType,
+                    [$"x-amz-meta-{MetadadoDoSha256}"] = sha256,
+                    [$"x-amz-meta-{MetadadoDoEtagDoEnvio}"] = SemAspas(pedido.ETag),
+                })
                 .WithCopyObjectSource(new CopySourceObjectArgs()
                     .WithBucket(config.BucketEnvios)
-                    .WithObject(chave)
-                    .WithMatchETag(etag)),
+                    .WithObject(pedido.Chave)
+                    .WithMatchETag(pedido.ETag)),
             cancellationToken);
-        // Só remove a versão que foi copiada: um PUT novo na mesma chave, depois da confirmação, não
-        // é apagado aqui; ele não foi confirmado e expira na quarentena.
-        if (await StatAsync(config.BucketEnvios, chave, cancellationToken) is { } atual && atual.ETag == etag)
-        {
-            await minio.RemoveObjectAsync(new RemoveObjectArgs().WithBucket(config.BucketEnvios).WithObject(chave), cancellationToken);
-        }
+
+        // O que restar na chave depois da cópia não é a versão confirmada e é descartado com ela.
+        await minio.RemoveObjectAsync(new RemoveObjectArgs().WithBucket(config.BucketEnvios).WithObject(pedido.Chave), cancellationToken);
     }
 
     /// <summary>
-    /// O objeto já não está no bucket de envio: ou foi promovido numa entrega anterior desta mesma
-    /// mensagem, e o veredicto se repete, ou não chegou ou expirou na quarentena antes de ser
-    /// verificado, e o candidato precisa enviar de novo.
+    /// A chave já está no bucket definitivo: uma entrega anterior desta mesma mensagem a promoveu. O
+    /// veredicto se repete se for a versão confirmada; o objeto definitivo nunca é sobrescrito.
     /// </summary>
-    private async Task<ArquivoVerificado> JaPromovidoAsync(string chave, DateTimeOffset inicio, Stopwatch cronometro, CancellationToken cancellationToken)
-    {
-        ObjectStat? promovido = PorEtiqueta ? null : await StatAsync(config.BucketArquivos, chave, cancellationToken);
-        if (promovido is null)
-        {
-            return Resultado(chave, "NAO_ENCONTRADO", string.Empty, 0, inicio, cronometro);
-        }
+    private static ArquivoVerificado JaPromovido(VerificarArquivo pedido, ObjectStat promovido, DateTimeOffset inicio, Stopwatch cronometro) =>
+        MesmoETag(Metadado(promovido, MetadadoDoEtagDoEnvio), pedido.ETag)
+            ? Resultado(pedido.Chave, "LIMPO", Metadado(promovido, MetadadoDoSha256), promovido.Size, inicio, cronometro)
+            : Resultado(pedido.Chave, "NAO_ENCONTRADO", string.Empty, 0, inicio, cronometro);
 
-        // O SDK pode devolver o metadado com ou sem o prefixo x-amz-meta-; o checksum do PUT
-        // (x-amz-checksum-sha256) não pode ser confundido com ele.
-        string sha256 = promovido.MetaData
-            .FirstOrDefault(m => m.Key.Equals(MetadadoDoSha256, StringComparison.OrdinalIgnoreCase)
-                || m.Key.Equals(EtiquetaDoSha256, StringComparison.OrdinalIgnoreCase)).Value ?? string.Empty;
-        return Resultado(chave, "LIMPO", sha256, promovido.Size, inicio, cronometro);
-    }
+    // O SDK pode devolver o metadado com ou sem o prefixo x-amz-meta-; o checksum do PUT
+    // (x-amz-checksum-sha256) não pode ser confundido com ele.
+    private static string Metadado(ObjectStat objeto, string nome) =>
+        objeto.MetaData
+            .FirstOrDefault(m => m.Key.Equals($"x-amz-meta-{nome}", StringComparison.OrdinalIgnoreCase)
+                || m.Key.Equals(nome, StringComparison.OrdinalIgnoreCase)).Value ?? string.Empty;
+
+    private static bool MesmoETag(string? a, string? b) =>
+        SemAspas(a).Length > 0 && string.Equals(SemAspas(a), SemAspas(b), StringComparison.OrdinalIgnoreCase);
+
+    private static string SemAspas(string? etag) => (etag ?? string.Empty).Trim('"');
 
     private async Task<ObjectStat?> StatAsync(string bucket, string chave, CancellationToken cancellationToken)
     {
