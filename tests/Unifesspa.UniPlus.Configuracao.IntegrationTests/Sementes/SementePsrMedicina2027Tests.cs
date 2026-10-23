@@ -184,7 +184,7 @@ public sealed class SementePsrMedicina2027Tests
         itens["TIPO_DEFICIENCIA"].EtapaCodigo.Should().Be("RESERVA_DE_VAGAS", "a âncora do tipo de deficiência não muda nesta configuração");
     }
 
-    [Fact(DisplayName = "A inscrição traz o conjunto padrão de documentos: o laudo das condições de saúde e a certidão da lactante, e nada para a pessoa idosa")]
+    [Fact(DisplayName = "A inscrição exige de quem solicita atendimento o laudo de cada condição ofertada e a certidão da lactante, com a base legal resolvida")]
     public async Task Inscricao_TrazOsDocumentosDoAtendimentoEspecializado()
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
@@ -192,13 +192,21 @@ public sealed class SementePsrMedicina2027Tests
         ModeloFormulario inscricao = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricao);
         ModeloFormulario habilitacao = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeHabilitacao);
 
-        inscricao.Conteudo.Documentos.Should().OnlyContain(static d => d.FaseCodigo == "INSCRICAO" && d.ConsequenciaIndeferimento == "REMOVE_VANTAGEM" && !d.Obrigatorio);
-        inscricao.Conteudo.Documentos.Where(static d => d.TipoDocumentoCodigo == "LAUDO_MEDICO").Select(CondicaoDe).Should().BeEquivalentTo(
-            ["PCD", "DISLEXIA", "DISCALCULIA", "DEFICIT_ATENCAO", "GESTANTE", SementePsrMedicina2027.CondicaoForaDaLista]);
-        inscricao.Conteudo.Documentos.Where(static d => d.TipoDocumentoCodigo == "CERTIDAO_NASCIMENTO").Select(CondicaoDe).Should().Equal("LACTANTE");
-        inscricao.Conteudo.Documentos.Should().HaveCount(7, "um documento por condição, e nada para a pessoa idosa");
-        inscricao.Conteudo.Documentos.SelectMany(static d => d.Quando!.Clausulas).Should().OnlyContain(
-            static c => c.Condicoes.Any(k => k.Fato == "SOLICITA_ATENDIMENTO_ESPECIALIZADO"), "sem pedir atendimento não há exigência");
+        inscricao.Conteudo.Documentos.Should().OnlyContain(static d => d.FaseCodigo == "INSCRICAO" && d.ConsequenciaIndeferimento == "REMOVE_VANTAGEM" && d.Obrigatorio);
+        inscricao.Conteudo.Documentos.SelectMany(static d => d.BasesLegais).Should().OnlyContain(static b => b.Status == "RESOLVIDO" && b.Abrangencia == "FEDERAL");
+
+        // O laudo não enumera as condições: vale para cada uma que o processo ofertar, menos a lactante e
+        // a pessoa idosa.
+        DocumentoExigidoDoModelo laudo = inscricao.Conteudo.Documentos.Should().ContainSingle(static d => d.TipoDocumentoCodigo == "LAUDO_MEDICO").Which;
+        laudo.PorOpcao.Should().BeEquivalentTo(new ExigenciaPorOpcao("CONDICAO_ATENDIMENTO", ["LACTANTE", "PESSOA_IDOSA"]));
+        laudo.Quando!.Clausulas.Single().Condicoes.Select(static c => c.Fato).Should().Equal("SOLICITA_ATENDIMENTO_ESPECIALIZADO");
+
+        DocumentoExigidoDoModelo certidao = inscricao.Conteudo.Documentos.Should().ContainSingle(static d => d.TipoDocumentoCodigo == "CERTIDAO_NASCIMENTO").Which;
+        certidao.PorOpcao.Should().BeNull();
+        CondicaoDe(certidao).Should().Be("LACTANTE");
+        certidao.BasesLegais.Select(static b => b.Referencia).Should().Equal("Lei nº 13.872/2019, art. 2º, § 2º");
+
+        inscricao.Conteudo.Documentos.Should().HaveCount(2);
         habilitacao.Conteudo.Documentos.Should().BeEmpty();
     }
 

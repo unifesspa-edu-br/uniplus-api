@@ -61,12 +61,18 @@ public sealed class AplicarModelosPsrMedicina2027Tests
             .Should().BeEquivalentTo([FinalidadeFormulario.Inscricao, FinalidadeFormulario.Habilitacao]);
         processo.GruposColetados.Should().ContainSingle(static g => g.Codigo == "COMPOSICAO_FAMILIAR");
 
-        // A oferta tem só a condição fora da lista: a certidão da lactante, cuja condição o processo não
-        // oferta, não entra, e o laudo vale só para a condição ofertada.
-        DocumentoExigido laudo = processo.DocumentosExigidos.Should().ContainSingle().Which;
-        laudo.TipoDocumentoCodigo.Should().Be("LAUDO_MEDICO");
-        laudo.Finalidade.Should().Be(FinalidadeFormulario.Inscricao);
-        laudo.Condicoes.Select(static c => c.Fato).Should().BeEquivalentTo(["SOLICITA_ATENDIMENTO_ESPECIALIZADO", "CONDICAO_ATENDIMENTO"]);
+        // Cada condição ofertada pede o seu documento a quem solicita atendimento: o laudo, inclusive para
+        // a condição que o modelo não conhece, e a certidão da criança para a lactante; a pessoa idosa não
+        // apresenta nada. Todos obrigatórios.
+        processo.DocumentosExigidos.Select(static d => (d.TipoDocumentoCodigo, CondicaoDe(d))).Should().BeEquivalentTo(
+        [
+            ("LAUDO_MEDICO", SementePsrMedicina2027.CondicaoForaDaLista),
+            ("LAUDO_MEDICO", "VISAO_MONOCULAR"),
+            ("CERTIDAO_NASCIMENTO", "LACTANTE"),
+        ]);
+        processo.DocumentosExigidos.Should().OnlyContain(static d => d.Obrigatorio && d.Finalidade == FinalidadeFormulario.Inscricao);
+        processo.DocumentosExigidos.SelectMany(static d => d.Condicoes).Where(static c => c.Fato == "SOLICITA_ATENDIMENTO_ESPECIALIZADO")
+            .Should().HaveCount(3, "sem pedir atendimento não há exigência");
         processo.Campos.Select(static c => c.FatoCodigo).Should().Contain(
             ["CAMINHO_FATOR_ATENUACAO", "MUNICIPIO_ENSINO_MEDIO_FATOR_ATENUACAO", "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO"]);
         processo.Campos.Select(static c => c.FatoCodigo).Should().Contain(
@@ -87,7 +93,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
     /// <summary>
     /// O bônus regional com um município, de onde o campo do município do bônus tira as opções; a
     /// oferta de atendimento com a condição fora da lista, cuja escolha a inscrição cita para pedir a
-    /// descrição, e um recurso; e uma cota da lei ofertada, porque a inscrição pergunta pela opção
+    /// descrição, uma condição que o modelo não conhece, a lactante, a pessoa idosa e um recurso; e uma cota da lei ofertada, porque a inscrição pergunta pela opção
     /// pelas cotas.
     /// </summary>
     private static void ComBonusRegionalEAtendimento(ProcessoSeletivo processo)
@@ -114,7 +120,12 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
 
         OfertaAtendimentoEspecializado oferta = OfertaAtendimentoEspecializado.Criar(
-            [OfertaCondicao.Criar(Guid.CreateVersion7(), SementePsrMedicina2027.CondicaoForaDaLista, "Outra condição específica")],
+            [
+                OfertaCondicao.Criar(Guid.CreateVersion7(), SementePsrMedicina2027.CondicaoForaDaLista, "Outra condição específica"),
+                OfertaCondicao.Criar(Guid.CreateVersion7(), "VISAO_MONOCULAR", "Visão monocular"),
+                OfertaCondicao.Criar(Guid.CreateVersion7(), "LACTANTE", "Lactante"),
+                OfertaCondicao.Criar(Guid.CreateVersion7(), "PESSOA_IDOSA", "Pessoa idosa"),
+            ],
             [OfertaRecurso.Criar(Guid.CreateVersion7(), "SALA_DE_FACIL_ACESSO", "Sala de fácil acesso")],
             []).Value!;
         Result ofertada = processo.DefinirOfertaAtendimento(oferta, PrecondicaoIfMatch.Ausente);
@@ -129,6 +140,10 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         Result cronograma = processo.DefinirCronogramaFases([.. processo.CronogramaFases, inscricao], [], PrecondicaoIfMatch.Ausente);
         cronograma.IsSuccess.Should().BeTrue(string.Join("; ", cronograma.Errors.Select(static e => e.Error.Code)) + cronograma.Error?.Message);
     }
+
+    /// <summary>A condição de atendimento cuja declaração torna o documento exigido.</summary>
+    private static string CondicaoDe(DocumentoExigido documento) =>
+        documento.Condicoes.Single(static c => c.Fato == "CONDICAO_ATENDIMENTO").Valor.GetString()!;
 
     private static ModalidadeSelecionada Modalidade(string codigo, NaturezaLegalModalidade natureza, PredicadoDnf regra, int vagas) =>
         ModalidadeSelecionada.Criar(

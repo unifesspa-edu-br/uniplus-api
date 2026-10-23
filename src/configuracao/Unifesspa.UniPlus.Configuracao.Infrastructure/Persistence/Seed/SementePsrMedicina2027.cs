@@ -439,36 +439,45 @@ public static class SementePsrMedicina2027
     }
 
     /// <summary>
-    /// O conjunto padrão de documentos da inscrição (UNI-REQ-0026): o CEPS só concede o atendimento
-    /// especializado a quem comprova a condição, e o documento comprova a condição, não o recurso. Um
-    /// laudo comprova cada condição de saúde, e a lactante apresenta a certidão de nascimento da criança. A pessoa idosa não apresenta nada: a
-    /// idade vem do cadastro. Sem o documento, o candidato perde o atendimento e mantém a inscrição. A
-    /// base legal fica pendente até o CEPS indicar a norma, e a publicação a exige resolvida.
+    /// O conjunto padrão de documentos da inscrição (UNI-REQ-0026, UNI-REQ-0170): o CEPS só concede o
+    /// atendimento especializado a quem comprova a condição, e o documento comprova a condição, não o
+    /// recurso. Toda condição que o processo oferece pede o laudo médico, menos a lactante, que apresenta
+    /// a certidão de nascimento da criança, e a pessoa idosa, cuja idade vem do cadastro. Para quem
+    /// solicita atendimento o documento é obrigatório: sem ele, a inscrição não é enviada; o documento
+    /// enviado e indeferido na análise tira o atendimento e mantém a inscrição. As normas são de concurso
+    /// público, adotadas como referência; exigir o documento já na inscrição é regra do edital.
     /// </summary>
     private static DocumentoExigidoDoModelo[] DocumentosDoAtendimentoEspecializado()
     {
         const string solicitaAtendimento = "SOLICITA_ATENDIMENTO_ESPECIALIZADO";
         const string condicaoAtendimento = "CONDICAO_ATENDIMENTO";
+        const string lactante = "LACTANTE";
+        const string pessoaIdosa = "PESSOA_IDOSA";
         const string removeVantagem = "REMOVE_VANTAGEM";
-        BaseLegalDoDocumentoDoModelo[] baseLegal =
+        const string federal = "FEDERAL";
+        const string resolvido = "RESOLVIDO";
+        const string referencia = "Norma de concurso público adotada como referência; o edital exige o documento na inscrição.";
+        BaseLegalDoDocumentoDoModelo[] doLaudo =
         [
-            new("Edital do processo: comprovação da condição que dá direito ao atendimento especializado", "INTERNA_EDITAL", "PENDENTE",
-                "O CEPS indica a norma que fundamenta a exigência."),
+            new("Lei nº 13.146/2015 (Lei Brasileira de Inclusão)", federal, resolvido, null),
+            new("Decreto nº 9.508/2018, na redação do Decreto nº 9.546/2018", federal, resolvido, referencia),
+            new("Decreto nº 3.298/1999", federal, resolvido, referencia),
+        ];
+        BaseLegalDoDocumentoDoModelo[] daCertidao =
+        [
+            new("Lei nº 13.872/2019, art. 2º, § 2º", federal, resolvido, referencia),
         ];
 
-        static CondicaoDnf[] Declarou(string condicao) =>
-        [
-            Condicao(solicitaAtendimento, Operador.Igual, true),
-            Condicao(condicaoAtendimento, Operador.Igual, condicao),
-        ];
-
-        // Um documento por condição: o CEPS defere ou indefere cada comprovação por si, e a candidata
-        // com mais de uma condição apresenta o laudo de cada uma.
+        // Um laudo por condição: o CEPS defere ou indefere cada comprovação por si, e quem declara mais
+        // de uma condição apresenta o laudo de cada uma. As condições vêm da oferta do processo, e a que
+        // o administrador cadastrar depois também pede o laudo.
         return
         [
-            .. new[] { "PCD", "DISLEXIA", "DISCALCULIA", "DEFICIT_ATENCAO", "GESTANTE", CondicaoForaDaLista }.Select(
-                condicao => new DocumentoExigidoDoModelo("INSCRICAO", "LAUDO_MEDICO", Obrigatorio: false, SeAlguma(Declarou(condicao)), removeVantagem, baseLegal)),
-            new("INSCRICAO", "CERTIDAO_NASCIMENTO", Obrigatorio: false, SeAlguma(Declarou("LACTANTE")), removeVantagem, baseLegal),
+            new("INSCRICAO", "LAUDO_MEDICO", Obrigatorio: true, SeAlguma([Condicao(solicitaAtendimento, Operador.Igual, true)]), removeVantagem, doLaudo,
+                new ExigenciaPorOpcao(condicaoAtendimento, [lactante, pessoaIdosa])),
+            new("INSCRICAO", "CERTIDAO_NASCIMENTO", Obrigatorio: true,
+                SeAlguma([Condicao(solicitaAtendimento, Operador.Igual, true), Condicao(condicaoAtendimento, Operador.Igual, lactante)]),
+                removeVantagem, daCertidao),
         ];
     }
 
