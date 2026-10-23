@@ -92,7 +92,7 @@ secao_memoria() {
 
 secao_sem_fila() {
   echo ">> Fluxo novo com o webhook sem fila em disco"
-  FILA_DO_WEBHOOK= dc up -d minio >/dev/null 2>&1
+  FILA_DO_WEBHOOK='' dc up -d minio >/dev/null 2>&1
   until dc exec -T minio curl -sf http://localhost:9000/minio/health/live >/dev/null 2>&1; do sleep 1; done
   "${CARGA[@]}" --modo nova --tamanho-mb 1 --quantidade 5 --concorrencia 1 >/dev/null || true
   cenario nova 5 20 1 "sem-fila-em-disco"
