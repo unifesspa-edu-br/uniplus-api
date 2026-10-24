@@ -1,0 +1,28 @@
+{"modo": "deteccao", "arquivo": "cifrado-10mb.pdf", "mb": 11.38, "config": "adotada", "veredicto": "OK", "ms": 680.5}
+{"modo": "deteccao", "arquivo": "cifrado-1mb.pdf", "mb": 1.9, "config": "adotada", "veredicto": "OK", "ms": 126.6}
+{"modo": "deteccao", "arquivo": "cifrado-20mb.pdf", "mb": 20.86, "config": "adotada", "veredicto": "OK", "ms": 1212.3}
+{"modo": "deteccao", "arquivo": "cifrado-5mb.pdf", "mb": 5.69, "config": "adotada", "veredicto": "OK", "ms": 378.4}
+{"modo": "deteccao", "arquivo": "digitalizado-10mb.pdf", "mb": 11.38, "config": "adotada", "veredicto": "OK", "ms": 762.6}
+{"modo": "deteccao", "arquivo": "digitalizado-1mb.pdf", "mb": 1.9, "config": "adotada", "veredicto": "OK", "ms": 126.4}
+{"modo": "deteccao", "arquivo": "digitalizado-20mb.pdf", "mb": 20.86, "config": "adotada", "veredicto": "OK", "ms": 1347.5}
+{"modo": "deteccao", "arquivo": "digitalizado-5mb.pdf", "mb": 5.69, "config": "adotada", "veredicto": "OK", "ms": 377.9}
+{"modo": "deteccao", "arquivo": "eicar-anexo-de-1mb.pdf", "mb": 1.9, "config": "adotada", "veredicto": "OK", "ms": 209.6}
+{"modo": "deteccao", "arquivo": "eicar-anexo-de-30mb.pdf", "mb": 1.93, "config": "adotada", "veredicto": "OK", "ms": 2531.0}
+{"modo": "deteccao", "arquivo": "eicar-anexo.pdf", "mb": 1.9, "config": "adotada", "veredicto": "Eicar-Test-Signature FOUND", "ms": 129.6}
+{"modo": "deteccao", "arquivo": "eicar-depois-de-120mb.pdf", "mb": 2.02, "config": "adotada", "veredicto": "Eicar-Test-Signature FOUND", "ms": 9749.2}
+{"modo": "deteccao", "arquivo": "formulario-js-1mb.pdf", "mb": 1.9, "config": "adotada", "veredicto": "OK", "ms": 135.8}
+{"modo": "deteccao", "arquivo": "formulario-js-5mb.pdf", "mb": 5.69, "config": "adotada", "veredicto": "OK", "ms": 381.3}
+{"modo": "deteccao", "arquivo": "formulario-js-em-linha-1mb.pdf", "mb": 1.9, "config": "adotada", "veredicto": "OK", "ms": 134.9}
+{"modo": "deteccao", "arquivo": "jpeg-10mb.jpg", "mb": 9.96, "config": "adotada", "veredicto": "OK", "ms": 317.6}
+{"modo": "deteccao", "arquivo": "jpeg-1mb.jpg", "mb": 1.0, "config": "adotada", "veredicto": "OK", "ms": 39.9}
+{"modo": "deteccao", "arquivo": "jpeg-20mb.jpg", "mb": 19.94, "config": "adotada", "veredicto": "OK", "ms": 619.3}
+{"modo": "deteccao", "arquivo": "jpeg-5mb.jpg", "mb": 4.99, "config": "adotada", "veredicto": "OK", "ms": 164.5}
+{"modo": "deteccao", "arquivo": "png-10mb.png", "mb": 9.98, "config": "adotada", "veredicto": "OK", "ms": 243.3}
+{"modo": "deteccao", "arquivo": "png-1mb.png", "mb": 2.29, "config": "adotada", "veredicto": "OK", "ms": 59.0}
+{"modo": "deteccao", "arquivo": "png-20mb.png", "mb": 19.96, "config": "adotada", "veredicto": "OK", "ms": 479.7}
+{"modo": "deteccao", "arquivo": "png-5mb.png", "mb": 4.99, "config": "adotada", "veredicto": "OK", "ms": 125.3}
+{"modo": "deteccao", "arquivo": "texto-1mb.pdf", "mb": 1.02, "config": "adotada", "veredicto": "OK", "ms": 763.6}
+{"modo": "deteccao", "arquivo": "texto-5mb.pdf", "mb": 5.09, "config": "adotada", "veredicto": "OK", "ms": 3767.6}
+{"modo": "deteccao", "arquivo": "texto-natural-19mb.pdf", "mb": 20.0, "config": "adotada", "veredicto": "OK", "ms": 42184.8}
+{"modo": "deteccao", "arquivo": "texto-natural-5mb.pdf", "mb": 5.26, "config": "adotada", "veredicto": "OK", "ms": 11125.6}
+{"modo": "deteccao", "arquivo": "zip-cifrado-anexo.pdf", "mb": 1.9, "config": "adotada", "veredicto": "Heuristics.Encrypted.Zip FOUND", "ms": 133.0}

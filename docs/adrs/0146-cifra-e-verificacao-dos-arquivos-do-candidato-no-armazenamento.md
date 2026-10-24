@@ -60,12 +60,14 @@ O RabbitMQ foi escolhido pelo isolamento, e não pelo desempenho, que foi equiva
 1. consulta o bucket definitivo: se a chave já foi promovida (reentrega), devolve o veredicto gravado, sem promover de novo;
 2. recusa sem ler o arquivo acima do tamanho máximo, de 20 MB (UNI-REQ-0027), porque a URL pré-assinada de PUT não limita o tamanho;
 3. lê em stream a versão confirmada, exigindo o ETag do pedido, já decifrada pelo MinIO;
-4. confere se o formato corresponde ao declarado;
+4. confere se o formato corresponde ao declarado e recusa o PDF que exige senha para abrir, porque ele não pode ser varrido nem lido pela comissão; o PDF protegido só contra edição ou impressão abre sem senha e segue;
 5. passa o conteúdo ao clamd (`INSTREAM`) e calcula o SHA-256 no caminho.
 
-O arquivo limpo é promovido por cópia no próprio servidor, com o mesmo ETag, e o objeto definitivo guarda no metadado o SHA-256 e o ETag do envio: o que foi confirmado é exatamente o que é verificado e promovido, e o promovido nunca é sobrescrito. Se a versão confirmada não estiver mais no bucket de envio, porque outro PUT a substituiu, o arquivo termina em reenvio necessário; substituir o arquivo é um novo envio, com chave nova. O arquivo infectado ou fora do formato não é promovido e fica na quarentena, que só o verificador lê, até expirar; assim a reentrega o verifica de novo e devolve o mesmo veredicto. O resultado vai à API pela fila de resultados, com o veredicto, o SHA-256, o tamanho e o formato, nunca o conteúdo nem o nome da ameaça.
+O arquivo limpo é promovido por cópia no próprio servidor, com o mesmo ETag, e o objeto definitivo guarda no metadado o SHA-256 e o ETag do envio: o que foi confirmado é exatamente o que é verificado e promovido, e o promovido nunca é sobrescrito. Se a versão confirmada não estiver mais no bucket de envio, porque outro PUT a substituiu, o arquivo termina em reenvio necessário; substituir o arquivo é um novo envio, com chave nova. O arquivo infectado ou fora do formato não é promovido e fica na quarentena, que só o verificador lê, até expirar; assim a reentrega o verifica de novo e devolve o mesmo veredicto. O resultado vai à API pela fila de resultados, com o veredicto, o SHA-256, o tamanho e o formato, nunca o conteúdo nem o nome da ameaça. O nome da assinatura fica no log do verificador, para que o suporte distinga a ameaça da recusa por limite de varredura ou por arquivo cifrado.
 
 Com o clamd fora do ar, o verificador tenta de novo três vezes, espaçadas, e manda o pedido para a fila de erro. O arquivo segue em verificação até a reconciliação.
+
+O clamd recusa só a ameaça reconhecida por assinatura ou por heurística. A detecção de PUA ("programa potencialmente indesejado") fica ligada, com duas assinaturas ignoradas: as que recusavam como ameaça um PDF válido que só ajusta o zoom com JavaScript ao abrir. O arquivo compactado cifrado dentro do envio, como um ZIP com senha anexado a um PDF que abre sem senha, é recusado, porque não pode ser varrido. O alerta de documento cifrado fica desligado, para que o PDF protegido só contra edição ou impressão siga. O arquivo cujo conteúdo interno passa de um limite de varredura do clamd é recusado: sem esse alerta, o clamd deixa de varrer o que passa do limite e responde que o arquivo está limpo. Os limites ficam folgados (100 MB por arquivo interno, 400 MB no total e 50 mil objetos internos), para que o arquivo legítimo de até 20 MB seja varrido por inteiro. O tamanho do próprio arquivo não chega a esses limites, porque o verificador recusa antes o que passa de 20 MB (passo 2). A recarga da base de assinaturas é concorrente: com a recarga bloqueante, o clamd travou ao recarregar com verificações em andamento. A base chega a cada clamd por um espelho interno ([ADR-0147](0147-base-de-assinaturas-do-antivirus-por-espelho-interno.md)).
 
 A aprovação por etiqueta no próprio bucket de envio, sem cópia, foi recusada. O candidato consegue mandar a etiqueta de aprovado no PUT pela URL pré-assinada e se aprovar sem verificação.
 
@@ -113,7 +115,7 @@ Comparação com o fluxo atual (clamd sem limite de CPU, verificador por webhook
 | Pico de memória da API | constante (92–98 MiB só assinando; 300–380 MiB com Wolverine e outbox) | 104 MiB (1 envio de 1 MB) a 860 MiB (64 de 10 MB) |
 | 64 envios simultâneos de 10 MB | 64 de 64 verificados | 15 de 64 falharam com `OutOfMemoryException` |
 
-Fluxo com fila, cada clamd com 2 CPUs (o tamanho de um sidecar), arquivos de 5 MB:
+Fluxo com fila, cada clamd com 2 CPUs (o tamanho usado na POC), arquivos de 5 MB:
 
 | | RabbitMQ | Postgres (polling de 100 ms) |
 |---|---|---|
@@ -124,10 +126,22 @@ Fluxo com fila, cada clamd com 2 CPUs (o tamanho de um sidecar), arquivos de 5 M
 
 A vazão é limitada pela CPU do clamd: em toda carga, cada clamd ficou perto do teto das suas 2 CPUs, enquanto o verificador usou 0,1 a 0,7 CPU e a API menos de 1. Com mais paralelismo, cada verificação demora mais, e o total não sobe. A promoção por cópia não pesa: sem cópia, a vazão foi a mesma (11,9 arquivos/s). A escala é horizontal, uma réplica do verificador por clamd, guiada pelo tamanho da fila de pedidos.
 
-Uma réplica (verificador + clamd com 2 CPUs) verifica ~12 arquivos de 5 MB por segundo, ou seja, ~40 mil por hora; três verificam ~28 por segundo. O dimensionamento para a véspera do encerramento é:
+Na POC, uma réplica com o clamd de 2 CPUs verificou ~12 arquivos de 5 MB por segundo; três verificaram ~28 por segundo.
+
+Uma medição complementar foi direto ao clamd, com PDFs e imagens com a estrutura real dos formatos, até 20 MB, e o clamd com 4 CPUs (`spikes/cifra-no-minio/medicao-clamd/`):
+
+| | clamd com 4 CPUs, 4 verificações simultâneas |
+|---|---|
+| Documento típico: PDF digitalizado de 3 páginas (~6 MB) | ~0,4 s cada; ~9,4 por segundo, ~34 mil por hora |
+| Limite de espera de um arquivo sozinho | PDF digitalizado de 20 MB: 1,4 a 2,4 s; PDF de texto com milhares de páginas: dezenas de segundos |
+| 8 verificações simultâneas em vez de 4 | vazão de 1% a 10% maior, espera de cada arquivo duas vezes maior |
+| Memória | ~950 MiB em repouso; pico de 2,7 GiB ao recarregar a base durante a verificação de JPEGs de 20 MB |
+| Recarga da base sob carga | 6 a 7 s pelo log do clamd, sem falha; espera máxima de 0,9 s, contra 0,7 s antes da recarga |
+
+Cada réplica tem um clamd com 4 CPUs, 4 verificações simultâneas (o `MaxThreads` do clamd) e memória de 2 GiB reservados, com limite de 3,5 GiB. O documento do candidato tem, na grande maioria, 2 ou 3 páginas, e o dimensionamento parte dele. O arquivo de 20 MB e o PDF de texto longo são exceção: alongam a espera daquele envio, mas não mudam a vazão. O dimensionamento para a véspera do encerramento é:
 
 ```text
-réplicas (verificador + clamd) = arquivos na hora de pico ÷ 40 mil
+réplicas (verificador + clamd) = arquivos na hora de pico ÷ 34 mil
 ```
 
 A conferência do formato (passo 4) não entrou nas medições.
@@ -153,6 +167,7 @@ Não há produção. Os arquivos selados em HML são apagados e reenviados, sem 
 - o SSE-KMS e as políticas dos dois buckets, e o CORS do bucket de envio expondo o `ETag`;
 - o RabbitMQ em cluster de três nós;
 - o verificador com o clamd como sidecar, com duas réplicas no mínimo, escalado pelo tamanho da fila;
+- o espelho interno da base de assinaturas (ADR-0147);
 - o audit webhook;
 - o volume cifrado.
 
