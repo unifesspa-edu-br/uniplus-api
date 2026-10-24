@@ -1238,6 +1238,26 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmarEnvioDeDocumentoDaInscricaoRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmarEnvioDeDocumentoDaInscricaoRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmarEnvioDeDocumentoDaInscricaoRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -1299,28 +1319,106 @@
               }
             }
           },
-          "422": {
-            "description": "Unprocessable Entity",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Service Unavailable",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "413": {
             "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Mesma Idempotency-Key reusada com corpo diferente (uniplus.idempotency.body_mismatch) \u2014 a chave identifica a requisi\u00E7\u00E3o pelo hash do corpo."
+          },
+          "401": {
+            "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-uniplus-idempotent": true
+      }
+    },
+    "/api/selecao/processos-seletivos/{id}/inscricao/documentos/arquivos/{arquivoId}/acesso": {
+      "get": {
+        "tags": [
+          "DocumentosDaInscricao"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "arquivoId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.acesso-arquivo-do-candidato.v1\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcessoArquivoDoCandidatoDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1344,8 +1442,7 @@
           {
             "bearerAuth": []
           }
-        ],
-        "x-uniplus-idempotent": true
+        ]
       }
     },
     "/api/selecao/processos-seletivos/{id}/inscricao/documentos/arquivos/{arquivoId}": {
@@ -10819,6 +10916,23 @@
           }
         }
       },
+      "AcessoArquivoDoCandidatoDto": {
+        "required": [
+          "url",
+          "expiraEm"
+        ],
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "expiraEm": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "AcessoDocumentoAPublicarDto": {
         "required": [
           "url",
@@ -11200,7 +11314,9 @@
           "tipoDeMidia",
           "tamanhoBytes",
           "hashSha256",
-          "confirmadoEm"
+          "confirmadoEm",
+          "situacao",
+          "mensagem"
         ],
         "type": "object",
         "properties": {
@@ -11228,17 +11344,30 @@
           "tamanhoBytes": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
+              "null",
               "integer",
               "string"
             ],
             "format": "int64"
           },
           "hashSha256": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "confirmadoEm": {
             "type": "string",
             "format": "date-time"
+          },
+          "situacao": {
+            "$ref": "#/components/schemas/SituacaoDoArquivoDoCandidato"
+          },
+          "mensagem": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -12835,6 +12964,20 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "ConfirmarEnvioDeDocumentoDaInscricaoRequest": {
+        "required": [
+          "etag"
+        ],
+        "type": "object",
+        "properties": {
+          "etag": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -20049,6 +20192,16 @@
             "type": "string"
           }
         }
+      },
+      "SituacaoDoArquivoDoCandidato": {
+        "enum": [
+          "pendente",
+          "emVerificacao",
+          "verificado",
+          "recusado",
+          "reenvioNecessario"
+        ],
+        "type": "string"
       },
       "SituacaoDoCertame": {
         "enum": [

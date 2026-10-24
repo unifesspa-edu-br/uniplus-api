@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 /// entidade filha do agregado <see cref="ProcessoSeletivo"/> (ver comentário
 /// da entidade).
 /// </summary>
-public interface IDocumentoAPublicarRepository : IRepository<DocumentoAPublicar>, IArquivoEnviadoRepository
+public interface IDocumentoAPublicarRepository : IRepository<DocumentoAPublicar>, IArquivoDoAdministradorRepository
 {
     /// <summary>
     /// Lista os documentos de um único Processo Seletivo, do mais recente para

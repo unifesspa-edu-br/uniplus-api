@@ -31,13 +31,14 @@ public static class IniciarEnvioDeDocumentoDaInscricaoCommandHandler
         IRegistroCodecsEnvelope registroCodecs,
         IResolvedorFusoInstitucional resolvedorFuso,
         IDocumentoDaInscricaoRepository documentoRepository,
-        IArquivoArmazenadoStorage storage,
+        IArquivoDoCandidatoStorage storage,
         ISelecaoUnitOfWork unitOfWork,
         IUserContext userContext,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(inscricaoRepository);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
         ArgumentNullException.ThrowIfNull(documentoRepository);

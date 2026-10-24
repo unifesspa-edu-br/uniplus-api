@@ -187,6 +187,8 @@ public static class SalvarInscricaoCommandHandler
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
         // A avaliação devolvida é a do que ficou gravado, e não se grava: o rascunho a recalcula.
+        Services.ArquivosDaInscricao arquivos = await Services.ArquivosDaInscricao
+            .CarregarAsync(documentoRepository, inscricao.Id, cancellationToken).ConfigureAwait(false);
         Result<ResultadoDaAvaliacaoDaInscricao> avaliada = await Services.PreparacaoDaAvaliacaoDaInscricao.AvaliarAsync(
             inscricao,
             contexto.Value!,
@@ -194,7 +196,7 @@ public static class SalvarInscricaoCommandHandler
             new Dictionary<string, IReadOnlyList<OcorrenciaRespondida>>(StringComparer.Ordinal),
             envio,
             conferenciaEnderecoGeo,
-            documentoRepository,
+            arquivos,
             cancellationToken).ConfigureAwait(false);
         if (avaliada.IsFailure)
         {
@@ -203,7 +205,7 @@ public static class SalvarInscricaoCommandHandler
 
         Result<AvaliacaoDaInscricaoDto> projetada = Services.ProjecaoDaAvaliacaoDaInscricao.Projetar(
             avaliada.Value!, contexto.Value!, inscricao.ProcessoSeletivoId, enderecoNoAcervo,
-            await Services.DocumentosEnviadosDaInscricao.ArquivosAsync(documentoRepository, inscricao.Id, cancellationToken).ConfigureAwait(false));
+            arquivos.ParaOCandidato());
         return projetada.IsFailure
             ? Result<InscricaoDto>.Failure(projetada.Error!)
             : Result<InscricaoDto>.Success(InscricaoDto.De(

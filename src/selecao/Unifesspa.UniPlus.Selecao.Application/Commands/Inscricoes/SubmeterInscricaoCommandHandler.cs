@@ -176,6 +176,8 @@ public static class SubmeterInscricaoCommandHandler
         // consulta do candidato, com as etapas da inscrição concluídas: o envio é o candidato dizendo
         // que terminou. O veredito olha só o que o formulário de inscrição pergunta.
         EnvioDasRespostas envio = new(instante, fuso.Value!);
+        Services.ArquivosDaInscricao arquivos = await Services.ArquivosDaInscricao
+            .CarregarAsync(documentoRepository, inscricao.Id, cancellationToken).ConfigureAwait(false);
         ConfiguracaoAvaliavel configuracao = contexto.Value!.Configuracao;
         Result<ResultadoDaAvaliacaoDaInscricao> avaliacao = Services.AvaliacaoDaInscricaoPorOpcao.Avaliar(contexto.Value!, new EntradaDaAvaliacaoDaInscricao(
             respostasMescladas,
@@ -183,7 +185,7 @@ public static class SubmeterInscricaoCommandHandler
             derivados.Value!.ToDictionary(static d => d.Key, static d => FatoResolvido.Resolvido(d.Value), StringComparer.Ordinal),
             AvaliacaoDaInscricao.CodigosDasEtapasDaInscricao(configuracao.Definicao),
             envio,
-            await Services.DocumentosEnviadosDaInscricao.ApresentacoesAsync(documentoRepository, inscricao.Id, cancellationToken).ConfigureAwait(false),
+            arquivos.ApresentacoesVerificadas(),
             NaFaseDaInscricao: true));
         if (avaliacao.IsFailure)
         {
@@ -207,7 +209,9 @@ public static class SubmeterInscricaoCommandHandler
         IReadOnlyList<FieldError> recusas =
         [
             .. doNomeSocial,
-            .. Inscricao.RecusasDosDocumentos(avaliacao.Value!.Documentos),
+            .. Inscricao.RecusasDosDocumentos(
+                avaliacao.Value!.Documentos,
+                arquivos.EmVerificacao()),
             .. Services.VeredictoDeSubmissao.RecusasDeOpcaoForaDaOferta(respostasFinais, gruposMesclados, contexto.Value!.Ofertas),
             .. Services.VeredictoDeSubmissao.Avaliar(
                 AvaliacaoDaInscricao.DaInscricao(avaliacao.Value!.Formulario), [.. contexto.Value!.TermosExigidos], aceites, envio.Dia)
@@ -218,8 +222,7 @@ public static class SubmeterInscricaoCommandHandler
             return Result<ComprovanteInscricaoDto>.ValidationFailure(recusas);
         }
 
-        IReadOnlyList<ArquivoConfirmado> arquivosConfirmados = await Services.DocumentosEnviadosDaInscricao
-            .ConfirmadosAsync(documentoRepository, inscricao.Id, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<ArquivoConfirmado> arquivosConfirmados = arquivos.Verificados();
         string numeroGerado = await geradorDeNumeroInscricao.ProximoAsync(cancellationToken).ConfigureAwait(false);
 
         Result<ComprovanteInscricao> submetido = inscricao.Submeter(
@@ -234,7 +237,7 @@ public static class SubmeterInscricaoCommandHandler
         // O envio fixa os arquivos que contam e remove os de exigência que não se aplica na versão fixada;
         // no rascunho nada foi apagado. Os objetos do armazenamento saem pela rotina de limpeza, depois do commit.
         await Services.DocumentosEnviadosDaInscricao
-            .ConciliarNoEnvioAsync(documentoRepository, inscricao.Id, avaliacao.Value!, arquivosConfirmados, instante, cancellationToken).ConfigureAwait(false);
+            .ConciliarNoEnvioAsync(documentoRepository, arquivos, avaliacao.Value!, arquivosConfirmados, instante, cancellationToken).ConfigureAwait(false);
 
         await inscricaoRepository.AtualizarAsync(inscricao, cancellationToken).ConfigureAwait(false);
         await inscricaoRepository.AdicionarComprovanteAsync(submetido.Value!, cancellationToken).ConfigureAwait(false);

@@ -428,7 +428,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             return ([laudo, naoSeAplica], [NoExigencia.CriarFolha(laudo, 0).Value!, NoExigencia.CriarFolha(naoSeAplica, 1).Value!]);
         });
 
-        async Task<(Result<ComprovanteInscricaoDto> Resultado, IDocumentoDaInscricaoRepository Repositorio, ArquivoDaApresentacao Fixado, ArquivoDaApresentacao Orfao)> EnviarAsync(bool comLaudo, bool semApelido = false)
+        async Task<(Result<ComprovanteInscricaoDto> Resultado, IDocumentoDaInscricaoRepository Repositorio, ArquivoDaApresentacao Fixado, ArquivoDaApresentacao Orfao)> EnviarAsync(bool comLaudo, bool semApelido = false, bool laudoEmVerificacao = false)
         {
             Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
             IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
@@ -439,19 +439,23 @@ public sealed class SubmeterInscricaoCommandHandlerTests
 
             ApresentacaoDeDocumento doLaudo = ApresentacaoDeDocumento.Criar(existente.Id, laudo.Id, null);
             ApresentacaoDeDocumento doOutro = ApresentacaoDeDocumento.Criar(existente.Id, naoSeAplica.Id, null);
-            ArquivoDaApresentacao Confirmado(ApresentacaoDeDocumento apresentacao, DocumentoExigido exigencia)
+            ArquivoDaApresentacao Confirmado(ApresentacaoDeDocumento apresentacao, DocumentoExigido exigencia, bool verificado = true)
             {
                 ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(
                     apresentacao.Id, existente.Id, exigencia, "application/pdf", 1024, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
-                arquivo.Confirmar(1024, new string('a', 64), TimeProvider.System);
+                arquivo.Confirmar("\"etag\"", TimeProvider.System);
+                if (verificado)
+                {
+                    arquivo.RegistrarVerificado(1024, new string('a', 64), FormatoPermitido.Pdf);
+                }
+
                 return arquivo;
             }
 
-            ArquivoDaApresentacao fixado = Confirmado(doLaudo, laudo), orfao = Confirmado(doOutro, naoSeAplica);
+            ArquivoDaApresentacao fixado = Confirmado(doLaudo, laudo, verificado: comLaudo), orfao = Confirmado(doOutro, naoSeAplica);
             IDocumentoDaInscricaoRepository documentos = Substitute.For<IDocumentoDaInscricaoRepository>();
-            documentos.ListarApresentacoesConfirmadasAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(comLaudo ? [doLaudo] : []);
             documentos.ListarApresentacoesDaInscricaoAsync(existente.Id, Arg.Any<CancellationToken>()).Returns([doLaudo, doOutro]);
-            documentos.ListarArquivosDaInscricaoAsync(existente.Id, Arg.Any<CancellationToken>()).Returns([fixado, orfao]);
+            documentos.ListarArquivosDaInscricaoAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(comLaudo || laudoEmVerificacao ? [fixado, orfao] : [orfao]);
             documentos.ObterArquivoAsync(fixado.Id, Arg.Any<CancellationToken>()).Returns(fixado);
             documentos.ObterArquivoAsync(orfao.Id, Arg.Any<CancellationToken>()).Returns(orfao);
 
@@ -472,6 +476,10 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         semArquivo.Errors.Should().ContainSingle(e => e.Error.Code == InscricaoErrorCodes.DocumentoObrigatorioAusente);
         await repoSem.DidNotReceiveWithAnyArgs().RemoverArquivoAsync(default!, default);
 
+        (Result<ComprovanteInscricaoDto> emVerificacao, _, _, _) = await EnviarAsync(comLaudo: false, laudoEmVerificacao: true);
+        emVerificacao.Errors.Should().ContainSingle(e => e.Error.Code == InscricaoErrorCodes.DocumentoObrigatorioEmVerificacao)
+            .Which.Error.Message.Should().Be("Aguarde a verificação completa dos documentos obrigatórios para enviar a inscrição.");
+
         (Result<ComprovanteInscricaoDto> semTudo, _, _, _) = await EnviarAsync(comLaudo: false, semApelido: true);
         semTudo.Errors.Select(static e => e.Error.Code).Should().Contain(InscricaoErrorCodes.DocumentoObrigatorioAusente)
             .And.Contain(c => c != InscricaoErrorCodes.DocumentoObrigatorioAusente, "a falta do documento sai junto das recusas do formulário");
@@ -484,7 +492,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         noComprovante.Situacao.Should().Be(SituacaoDoDocumentoCodigo.Satisfeita);
         noComprovante.Arquivos.Should().Equal(new ArquivoDoComprovanteDto(new string('a', 64), 1024, "PDF"));
         await repo.Received(1).RemoverArquivoAsync(orfao, Arg.Any<CancellationToken>());
-        await repo.Received(1).AgendarLimpezaAsync(orfao.ChaveSelada, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
+        await repo.Received(1).AgendarLimpezaAsync(orfao.ChaveDefinitivaPrevista, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Item obrigatório respondido e termo obrigatório aceito na versão fixada: submete, gera número e grava o comprovante, com 'Prefiro não informar' em identidade de gênero e orientação sexual")]

@@ -13,11 +13,14 @@ using Serilog;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging.SchemaRegistry;
 using Unifesspa.UniPlus.Selecao.Domain.Events;
+using Unifesspa.UniPlus.Verificador.Contratos;
 
 using Wolverine;
 using Wolverine.Kafka;
 using Wolverine.Kafka.Serialization;
 using Wolverine.Postgresql;
+using Wolverine.RabbitMQ;
+using Wolverine.RabbitMQ.Internal;
 
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 using ProcessoPublicadoAvro = unifesspa.uniplus.selecao.events.ProcessoPublicado;
@@ -106,6 +109,8 @@ public static partial class SelecaoMessagingRegistration
         // certame fica invisível com o ato já registrado — ver ReentregaDaDivulgacaoDoCertame.
         opts.Policies.Add<ReentregaDaDivulgacaoDoCertame>();
 
+        ConfigurarVerificacaoDosArquivos(opts, configuration);
+
         bool kafkaConfigured = !string.IsNullOrWhiteSpace(configuration["Kafka:BootstrapServers"]);
         if (kafkaConfigured && srClient is not null)
         {
@@ -116,6 +121,30 @@ public static partial class SelecaoMessagingRegistration
                 .ToKafkaTopic("processo_seletivo_events")
                 .DefaultSerializer(new SchemaRegistryAvroSerializer(srClient));
         }
+    }
+
+    /// <summary>
+    /// Transporte da verificação dos arquivos do candidato (ADR-0146): o pedido sai pelo outbox durável para a quorum
+    /// queue de pedidos e o resultado chega pela de resultados. <c>RabbitMq:Uri</c> é obrigatória: sem ela o arquivo
+    /// ficaria em verificação para sempre.
+    /// </summary>
+    internal static void ConfigurarVerificacaoDosArquivos(WolverineOptions opts, IConfiguration configuration)
+    {
+        string? uri = configuration["RabbitMq:Uri"];
+        if (string.IsNullOrWhiteSpace(uri))
+        {
+            throw new InvalidOperationException(
+                "Configuração inválida: RabbitMq:Uri é obrigatório — é por ele que a API publica o pedido de verificação dos "
+                + "arquivos do candidato e recebe o resultado (ADR-0146).");
+        }
+
+        opts.UseRabbitMq(new Uri(uri, UriKind.Absolute)).AutoProvision();
+
+        opts.PublishMessage<PedidoDeVerificacaoDeArquivo>()
+            .ToRabbitQueue(FilasDaVerificacao.Pedidos, fila => fila.QueueType = QueueType.quorum);
+        opts.ListenToRabbitQueue(FilasDaVerificacao.Resultados, fila => fila.QueueType = QueueType.quorum);
+
+        opts.Policies.Add<ReentregaDoResultadoDaVerificacao>();
     }
 
     /// <summary>

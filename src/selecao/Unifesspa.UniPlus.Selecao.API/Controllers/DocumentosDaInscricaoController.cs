@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Application.Commands.DocumentosDaInscricao;
 using Application.DTOs;
+using Application.Queries.DocumentosDaInscricao;
 using Application.Services;
 
 using Contracts.Requests;
@@ -13,12 +14,14 @@ using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Os documentos que o candidato envia para atender as exigências da inscrição. Fluxo em 3 passos:
-/// iniciar (aqui) → PUT direto ao armazenamento (fora da API) → confirmar (aqui). A inscrição é a do
+/// iniciar (aqui) → PUT direto ao armazenamento (fora da API) → confirmar (aqui), que põe o arquivo em
+/// verificação; o verificador conclui fora da API. A inscrição é a do
 /// dono do token, resolvida pelo CPF do claim; um arquivo que não é dele responde 404 como o que não
 /// existe. A policy <c>Candidato</c> é declarada em cada action: o host não tem fallback policy.
 /// </summary>
@@ -31,11 +34,13 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed class DocumentosDaInscricaoController : ControllerBase
 {
     private readonly ICommandBus _commandBus;
+    private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;
 
-    public DocumentosDaInscricaoController(ICommandBus commandBus, IDomainErrorMapper mapper)
+    public DocumentosDaInscricaoController(ICommandBus commandBus, IQueryBus queryBus, IDomainErrorMapper mapper)
     {
         _commandBus = commandBus;
+        _queryBus = queryBus;
         _mapper = mapper;
     }
 
@@ -68,9 +73,8 @@ public sealed class DocumentosDaInscricaoController : ControllerBase
     }
 
     /// <summary>
-    /// Passo 3: lê o arquivo do armazenamento, confere o conteúdo contra o formato pela assinatura dos
-    /// primeiros bytes, passa o antivírus, calcula o SHA-256 e sela o conteúdo cifrado. Arquivo infectado
-    /// responde 422 e nada é gravado; antivírus fora do ar responde 503 e o arquivo continua pendente.
+    /// Passo 3: o candidato informa o <c>ETag</c> que o PUT devolveu. A API não lê o objeto: grava o arquivo como
+    /// em verificação e publica o pedido ao verificador na mesma transação.
     /// </summary>
     [HttpPost("envios/{arquivoId:guid}/confirmacao")]
     [Authorize(Policy = "Candidato")]
@@ -80,14 +84,41 @@ public sealed class DocumentosDaInscricaoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
-    public async Task<IActionResult> ConfirmarEnvio(Guid id, Guid arquivoId, CancellationToken cancellationToken)
+    public async Task<IActionResult> ConfirmarEnvio(
+        Guid id, Guid arquivoId, [FromBody] ConfirmarEnvioDeDocumentoDaInscricaoRequest request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
+
         Result<ArquivoDaApresentacaoDto> resultado = await _commandBus
-            .Send(new ConfirmarEnvioDeDocumentoDaInscricaoCommand(id, arquivoId), cancellationToken)
+            .Send(new ConfirmarEnvioDeDocumentoDaInscricaoCommand(id, arquivoId, request.Etag ?? string.Empty), cancellationToken)
             .ConfigureAwait(false);
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
+    /// Emite a URL pré-assinada de curta validade do arquivo verificado do próprio candidato. Arquivo de outra
+    /// pessoa responde 404; o não verificado, 422. A URL é credencial de acesso, então a resposta vai com <c>no-store</c>.
+    /// </summary>
+    [HttpGet("arquivos/{arquivoId:guid}/acesso")]
+    [Authorize(Policy = "Candidato")]
+    [VendorMediaType(Resource = "acesso-arquivo-do-candidato", Versions = [1])]
+    [ProducesResponseType(typeof(AcessoArquivoDoCandidatoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> Acesso(Guid id, Guid arquivoId, CancellationToken cancellationToken)
+    {
+        Result<AcessoArquivoDoCandidatoDto> resultado = await _queryBus
+            .Send(new ObterAcessoDoArquivoDoCandidatoQuery(id, arquivoId), cancellationToken)
+            .ConfigureAwait(false);
+        if (!resultado.IsSuccess)
+        {
+            return resultado.ToActionResult(_mapper);
+        }
+
+        Response.Headers.CacheControl = "no-store";
+        return Ok(resultado.Value);
     }
 
     /// <summary>

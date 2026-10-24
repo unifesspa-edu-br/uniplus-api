@@ -825,14 +825,25 @@ public sealed class Inscricao : EntityBase
     /// primeira alternativa, quando o grupo "um ou outro" não foi atendido por nenhuma — e, no grupo
     /// repetível, da ocorrência que falta.
     /// </summary>
-    public static IEnumerable<FieldError> RecusasDosDocumentos(DocumentosDaInscricao documentos) =>
-        RecusasDosDocumentosDe(documentos ?? throw new ArgumentNullException(nameof(documentos)));
+    public static IEnumerable<FieldError> RecusasDosDocumentos(
+        DocumentosDaInscricao documentos, IReadOnlySet<(Guid ExigenciaId, string? OcorrenciaId)>? emVerificacao = null) =>
+        RecusasDosDocumentosDe(documentos ?? throw new ArgumentNullException(nameof(documentos)), emVerificacao);
 
-    private static IEnumerable<FieldError> RecusasDosDocumentosDe(DocumentosDaInscricao documentos) =>
-        documentos.Ausentes.Select(static ausente =>
+    private static IEnumerable<FieldError> RecusasDosDocumentosDe(
+        DocumentosDaInscricao documentos, IReadOnlySet<(Guid ExigenciaId, string? OcorrenciaId)>? emVerificacao) =>
+        documentos.Ausentes.Select(ausente =>
         {
             string nomes = string.Join(" ou ", ausente.Alternativas.Select(static d => d.TipoDocumentoNome));
             string campo = $"documentos.{ausente.Alternativas[0].Id}" + (ausente.OcorrenciaId is { } ocorrencia ? $".{ocorrencia}" : string.Empty);
+
+            // O documento cujo arquivo ainda está em verificação não faltou: o envio espera o resultado (UNI-REQ-0028).
+            if (emVerificacao is not null && ausente.Alternativas.Any(d => emVerificacao.Contains((d.Id, ausente.OcorrenciaId))))
+            {
+                return new FieldError(campo, new DomainError(
+                    InscricaoErrorCodes.DocumentoObrigatorioEmVerificacao,
+                    "Aguarde a verificação completa dos documentos obrigatórios para enviar a inscrição."));
+            }
+
             return new FieldError(campo, new DomainError(
                 InscricaoErrorCodes.DocumentoObrigatorioAusente,
                 ausente.Alternativas.Count == 1

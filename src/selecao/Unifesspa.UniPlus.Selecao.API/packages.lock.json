@@ -53,6 +53,16 @@
           "WolverineFx.RDBMS": "5.41.0"
         }
       },
+      "WolverineFx.RabbitMQ": {
+        "type": "Direct",
+        "requested": "[5.41.0, )",
+        "resolved": "5.41.0",
+        "contentHash": "FEzP/EozvI6fxLl1MT5CtbtDE82Dz0q1FetDnOucAcszqsTQgmZR2/Kre4zRnXS9C2GujvIljVFeg9Z0iXYfjA==",
+        "dependencies": {
+          "RabbitMQ.Client": "7.1.2",
+          "WolverineFx": "5.41.0"
+        }
+      },
       "CommunityToolkit.HighPerformance": {
         "type": "Transitive",
         "resolved": "8.4.0",
@@ -554,6 +564,11 @@
           "Polly.Core": "8.4.2"
         }
       },
+      "RabbitMQ.Client": {
+        "type": "Transitive",
+        "resolved": "7.1.2",
+        "contentHash": "y3c6ulgULScWthHw5PLM1ShHRLhxg0vCtzX/hh61gRgNecL3ZC3WoBW2HYHoXOVRqTl99Br9E7CZEytGZEsCyQ=="
+      },
       "ReactiveUI.Disposables": {
         "type": "Transitive",
         "resolved": "7.1.1",
@@ -858,6 +873,7 @@
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
           "Unifesspa.UniPlus.Publicacoes.Contracts": "[1.0.0, )",
           "Unifesspa.UniPlus.Selecao.Domain": "[1.0.0, )",
+          "Unifesspa.UniPlus.Verificador.Contratos": "[1.0.0, )",
           "WolverineFx": "[5.41.0, )"
         }
       },
@@ -883,6 +899,9 @@
           "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
           "Unifesspa.UniPlus.Selecao.Application": "[1.0.0, )"
         }
+      },
+      "unifesspa.uniplus.verificador.contratos": {
+        "type": "Project"
       },
       "Apache.Avro": {
         "type": "CentralTransitive",

@@ -110,6 +110,7 @@ public static class AvaliarInscricaoQueryHandler
             return Result<AvaliacaoDaInscricaoDto>.Failure(fuso.Error!);
         }
 
+        ArquivosDaInscricao arquivos = await ArquivosDaInscricao.CarregarAsync(documentoRepository, inscricao.Id, cancellationToken).ConfigureAwait(false);
         Result<ResultadoDaAvaliacaoDaInscricao> avaliacao = await PreparacaoDaAvaliacaoDaInscricao.AvaliarAsync(
             inscricao,
             contexto.Value!,
@@ -117,7 +118,7 @@ public static class AvaliarInscricaoQueryHandler
             grupos,
             new EnvioDasRespostas(instante, fuso.Value!),
             conferenciaEnderecoGeo,
-            documentoRepository,
+            arquivos,
             cancellationToken).ConfigureAwait(false);
         if (avaliacao.IsFailure)
         {
@@ -125,6 +126,6 @@ public static class AvaliarInscricaoQueryHandler
         }
 
         return ProjecaoDaAvaliacaoDaInscricao.Projetar(avaliacao.Value!, contexto.Value!, query.ProcessoSeletivoId, enderecoNoAcervo,
-            await DocumentosEnviadosDaInscricao.ArquivosAsync(documentoRepository, inscricao.Id, cancellationToken).ConfigureAwait(false), query.FaseId);
+            arquivos.ParaOCandidato(), query.FaseId);
     }
 }

@@ -3,33 +3,27 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosDaInscricao;
 using Abstractions;
 
 using Domain.Entities;
-using Domain.Errors;
+using Domain.Enums;
 using Domain.Interfaces;
+using Domain.ValueObjects;
 
 using DTOs;
 
 using Kernel.Results;
+
+using Microsoft.Extensions.Options;
 
 using Services;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 
 /// <summary>
-/// Handler de <see cref="ConfirmarEnvioDeDocumentoDaInscricaoCommand"/>. O antivírus olha o conteúdo ainda
-/// em claro na memória, antes de qualquer gravação: o infectado e o não verificado recusam a confirmação
-/// e o arquivo continua pendente. O que se guarda é o conteúdo cifrado, e o objeto do envio, em claro,
-/// sai logo depois.
+/// Grava o arquivo como em verificação e devolve o pedido como mensagem de saída, que o Wolverine instala no
+/// outbox na mesma transação: não há arquivo em verificação sem pedido, nem pedido sem arquivo (ADR-0146).
 /// </summary>
 public static class ConfirmarEnvioDeDocumentoDaInscricaoCommandHandler
 {
-    private static ConfirmacaoDoArquivoEnviado.Recusas RecusasDe(ArquivoDaApresentacao arquivo) => new(
-        ObjetoNaoEncontrado: new DomainError(
-            DocumentoDaInscricaoErrorCodes.ObjetoNaoEncontrado,
-            "O arquivo ainda não foi enviado ao armazenamento ou expirou antes da confirmação."),
-        TamanhoExcedido: ArquivoDaApresentacao.TamanhoExcedidoAte(arquivo.TamanhoMaximoBytes),
-        StatusInvalido: ArquivoDaApresentacao.StatusInvalidoParaConfirmacao);
-
-    public static async Task<Result<ArquivoDaApresentacaoDto>> Handle(
+    public static async Task<(Result<ArquivoDaApresentacaoDto> Resposta, IEnumerable<object> Mensagens)> Handle(
         ConfirmarEnvioDeDocumentoDaInscricaoCommand command,
         IInscricaoRepository inscricaoRepository,
         IProcessoSeletivoRepository processoSeletivoRepository,
@@ -37,9 +31,8 @@ public static class ConfirmarEnvioDeDocumentoDaInscricaoCommandHandler
         IRegistroCodecsEnvelope registroCodecs,
         IResolvedorFusoInstitucional resolvedorFuso,
         IDocumentoDaInscricaoRepository documentoRepository,
-        IArquivoArmazenadoStorage storage,
-        IProtecaoDoConteudoSelado protecao,
         ISelecaoUnitOfWork unitOfWork,
+        IOptions<ReconciliacaoDaVerificacaoOptions> reconciliacao,
         IUserContext userContext,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
@@ -47,9 +40,8 @@ public static class ConfirmarEnvioDeDocumentoDaInscricaoCommandHandler
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(inscricaoRepository);
         ArgumentNullException.ThrowIfNull(documentoRepository);
-        ArgumentNullException.ThrowIfNull(storage);
-        ArgumentNullException.ThrowIfNull(protecao);
         ArgumentNullException.ThrowIfNull(unitOfWork);
+        ArgumentNullException.ThrowIfNull(reconciliacao);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         Result<Inscricao> acesso = await AcessoAoDocumentoDaInscricao
@@ -59,7 +51,7 @@ public static class ConfirmarEnvioDeDocumentoDaInscricaoCommandHandler
             .ConfigureAwait(false);
         if (acesso.IsFailure)
         {
-            return Result<ArquivoDaApresentacaoDto>.Failure(acesso.Error!);
+            return Recusa(acesso.Error!);
         }
 
         Inscricao inscricao = acesso.Value!;
@@ -68,7 +60,7 @@ public static class ConfirmarEnvioDeDocumentoDaInscricaoCommandHandler
             .ConfigureAwait(false);
         if (encontrado.IsFailure)
         {
-            return Result<ArquivoDaApresentacaoDto>.Failure(encontrado.Error!);
+            return Recusa(encontrado.Error!);
         }
 
         ArquivoDaApresentacao arquivo = encontrado.Value!;
@@ -76,29 +68,58 @@ public static class ConfirmarEnvioDeDocumentoDaInscricaoCommandHandler
             .ObterApresentacaoAsync(arquivo.ApresentacaoId, cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException($"O arquivo {arquivo.Id} não tem apresentação.");
 
-        // O arquivo só vale se a inscrição ainda é a que foi lida: o envio e o cancelamento disputam a
-        // mesma revisão, na transação desta confirmação.
-        Result confirmacao = await ConfirmacaoDoArquivoEnviado
-            .ConfirmarAsync(
-                arquivo, arquivo.TamanhoMaximoBytes, RecusasDe(arquivo), documentoRepository, storage, timeProvider, cancellationToken,
-                protecao,
-                async ct => await inscricaoRepository.TentarAvancarRevisaoAsync(inscricao.Id, inscricao.Revisao, apenasRascunho: false, ct).ConfigureAwait(false)
-                    ? Result.Success()
-                    : Result.Failure(AcessoAoDocumentoDaInscricao.InscricaoAlterada))
-            .ConfigureAwait(false);
+        // As recusas por estado e por prazo vêm antes de disputar a revisão: a transação é confirmada mesmo na
+        // recusa, e a revisão avançada à toa derrubaria os outros passos do envio.
+        DateTimeOffset agora = timeProvider.GetUtcNow();
+        Result etagValido = ArquivoDaApresentacao.ValidarETag(command.ETag);
+        if (etagValido.IsFailure)
+        {
+            return Recusa(etagValido.Error!);
+        }
+
+        if (arquivo.Situacao != SituacaoDoArquivoDoCandidato.Pendente)
+        {
+            return Recusa(ArquivoDaApresentacao.StatusInvalidoParaConfirmacao);
+        }
+
+        if (arquivo.ExpiraEm + RemocaoDeArquivosPendentesVencidos.Tolerancia <= agora)
+        {
+            return Recusa(ArquivoDaApresentacao.ObjetoNaoEncontrado);
+        }
+
+        // A reivindicação vem antes de avançar a revisão: perdida para a remoção do pendente vencido, a recusa não
+        // deixa uma revisão avançada à toa. Ela não sincroniza o rastreamento: o arquivo segue pendente em memória e
+        // Confirmar não recusa.
+        PoliticaDeRepublicacao politica = reconciliacao.Value.Politica;
+        if (!await documentoRepository
+            .TentarReivindicarConfirmacaoAsync(arquivo.Id, command.ETag, agora, agora + politica.PrazoApos(1), cancellationToken)
+            .ConfigureAwait(false))
+        {
+            return Recusa(ArquivoDaApresentacao.StatusInvalidoParaConfirmacao);
+        }
+
+        // O arquivo só vale se a inscrição ainda é a que foi lida: o envio e o cancelamento disputam a mesma revisão.
+        if (!await inscricaoRepository.TentarAvancarRevisaoAsync(inscricao.Id, inscricao.Revisao, apenasRascunho: false, cancellationToken).ConfigureAwait(false))
+        {
+            await documentoRepository.DesfazerReivindicacaoAsync(arquivo.Id, cancellationToken).ConfigureAwait(false);
+            return Recusa(AcessoAoDocumentoDaInscricao.InscricaoAlterada);
+        }
+
+        Result confirmacao = arquivo.Confirmar(command.ETag, timeProvider, politica);
         if (confirmacao.IsFailure)
         {
-            return Result<ArquivoDaApresentacaoDto>.Failure(confirmacao.Error!);
+            throw new InvalidOperationException(
+                $"A confirmação do arquivo {arquivo.Id} falhou após a reivindicação atômica ({confirmacao.Error!.Code}); revertendo a transação.");
         }
 
         documentoRepository.Atualizar(arquivo);
-
-        // A URL de envio vale até ExpiraEm: um PUT nela recria o conteúdo em claro, que a rotina apaga depois.
-        await AgendaDeLimpezaDoArquivoDoCandidato.AgendarAsync(documentoRepository, arquivo, comSelada: false, timeProvider.GetUtcNow(), cancellationToken, envioTambemAgora: true).ConfigureAwait(false);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        return Result<ArquivoDaApresentacaoDto>.Success(new ArquivoDaApresentacaoDto(
-            arquivo.Id, arquivo.ApresentacaoId, apresentacao.ExigenciaId, apresentacao.OcorrenciaId,
-            arquivo.TipoDeMidia, arquivo.TamanhoBytes!.Value, arquivo.HashSha256!, arquivo.ConfirmadoEm!.Value));
+        return (
+            Result<ArquivoDaApresentacaoDto>.Success(ArquivoDaApresentacaoDto.De(arquivo, apresentacao)),
+            [PedidoDeVerificacao.De(arquivo)]);
     }
+
+    private static (Result<ArquivoDaApresentacaoDto> Resposta, IEnumerable<object> Mensagens) Recusa(DomainError erro) =>
+        (Result<ArquivoDaApresentacaoDto>.Failure(erro), []);
 }

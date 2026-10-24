@@ -13,6 +13,8 @@ using Microsoft.Extensions.Hosting.Internal;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
+using NSubstitute;
+
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Storage;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
@@ -209,6 +211,7 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
             new ModeloDeDocumentoRepository(context),
             new DocumentoDaInscricaoRepository(context),
             _storage,
+            Substitute.For<IArquivoDoCandidatoStorage>(),
             TimeProvider.System,
             NullLogger<RemocaoDeArquivosPendentesVencidos>.Instance);
         await remocao.ExecutarAsync(CancellationToken.None);
