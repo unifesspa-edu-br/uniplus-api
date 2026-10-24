@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "verificador.name" . }}-config
+  labels:
+    {{- include "verificador.labels" . | nindent 4 }}
+data:
+  DOTNET_ENVIRONMENT: {{ .Values.env.DOTNET_ENVIRONMENT | quote }}
+  Verificador__TamanhoMaximoBytes: {{ .Values.verificador.tamanhoMaximoBytes | int64 | quote }}
+  Verificador__Paralelismo: {{ .Values.verificador.paralelismo | quote }}
+  Verificador__Clamd__Host: "127.0.0.1"
+  Verificador__Clamd__Port: "3310"
+  Verificador__Clamd__TimeoutSegundos: {{ .Values.clamd.timeoutSegundos | quote }}
+  Verificador__Clamd__StreamMaxLengthBytes: {{ .Values.clamd.streamMaxLengthBytes | int64 | quote }}
+  Verificador__Clamd__MaxThreads: {{ .Values.clamd.maxThreads | quote }}
+  Verificador__Armazenamento__Endpoint: {{ required "minio.endpoint e obrigatorio" .Values.minio.endpoint | quote }}
+  Verificador__Armazenamento__UsarSsl: {{ .Values.minio.usarSsl | quote }}
+  Verificador__Armazenamento__BucketEnvios: {{ required "minio.bucketEnvios e obrigatorio" .Values.minio.bucketEnvios | quote }}
+  Verificador__Armazenamento__BucketArquivos: {{ required "minio.bucketArquivos e obrigatorio" .Values.minio.bucketArquivos | quote }}
+  {{- if .Values.otel.endpoint }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.otel.endpoint | quote }}
+  {{- end }}

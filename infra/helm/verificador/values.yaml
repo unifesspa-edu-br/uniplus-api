@@ -1,0 +1,74 @@
+# Duas réplicas no mínimo (ADR-0146): a segunda mantém a verificação no ar se um pod cair.
+replicaCount: 2
+
+image:
+  repository: ghcr.io/unifesspa-edu-br/uniplus-api-verificador
+  # Vazio usa v<appVersion>, a convenção das tags publicadas. O ArgoCD fixa a tag da release.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+clamd:
+  image:
+    repository: ghcr.io/unifesspa-edu-br/uniplus-api-clamd-verificador
+    tag: ""
+    pullPolicy: IfNotPresent
+  # Espelho interno da base de assinaturas (ADR-0147).
+  privateMirror: http://clamav-espelho.uniplus.svc.cluster.local
+  # Repetem o clamd.conf da imagem (StreamMaxLength 25M e MaxThreads 5); o verificador os confere na subida.
+  streamMaxLengthBytes: 26214400
+  maxThreads: 5
+  timeoutSegundos: 60
+  resources:
+    requests:
+      cpu: "4"
+      memory: 2Gi
+    limits:
+      cpu: "4"
+      memory: 3584Mi
+  databaseSizeLimit: 2Gi
+
+verificador:
+  resources:
+    requests:
+      cpu: 250m
+      memory: 384Mi
+    limits:
+      cpu: "1"
+      memory: 768Mi
+  tamanhoMaximoBytes: 20971520
+  paralelismo: 4
+  temporarioSizeLimit: 512Mi
+
+env:
+  DOTNET_ENVIRONMENT: Production
+
+minio:
+  endpoint: minio.uniplus.svc.cluster.local:9000
+  usarSsl: false
+  bucketEnvios: uniplus-candidato-envio
+  bucketArquivos: uniplus-candidato-definitivo
+  # Secret com MINIO_ACCESS_KEY e MINIO_SECRET_KEY; com externalSecrets.enabled o chart o cria do Vault.
+  secretName: ""
+
+rabbitmq:
+  existingSecret: rabbitmq-verificador
+  uriKey: RABBITMQ_URI
+
+externalSecrets:
+  enabled: true
+  refreshInterval: "1h"
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: vault-default
+  minio:
+    vaultPath: secret/standalone/minio/arquivos-candidato-verificador
+    accessKey: access_key
+    secretKey: secret_key
+
+otel:
+  endpoint: ""
+
+podDisruptionBudget:
+  minAvailable: 1
+
+terminationGracePeriodSeconds: 90
