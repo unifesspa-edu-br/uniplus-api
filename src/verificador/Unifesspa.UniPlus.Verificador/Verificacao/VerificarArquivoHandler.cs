@@ -94,9 +94,7 @@ public sealed partial class VerificarArquivoHandler
         ObjetoArmazenado? envio = await _armazenamento.ConsultarEnvioAsync(pedido.ChaveDeEnvio, cancellationToken).ConfigureAwait(false);
         if (envio is null || !ArmazenamentoMinio.MesmoETag(envio.ETag, pedido.ETag))
         {
-            // Outra entrega do mesmo pedido pode ter promovido o arquivo entre as duas consultas.
-            return await ResultadoJaPromovidoAsync(pedido, cancellationToken).ConfigureAwait(false)
-                ?? Reenvio(pedido);
+            return await PromovidoOuReenvioAsync(pedido, cancellationToken).ConfigureAwait(false);
         }
 
         long limite = Math.Min(pedido.TamanhoMaximoBytes, _options.TamanhoMaximoBytes);
@@ -120,7 +118,7 @@ public sealed partial class VerificarArquivoHandler
         {
             if (!await _armazenamento.LerEnvioAsync(pedido.ChaveDeEnvio, pedido.ETag, temporario, cancellationToken).ConfigureAwait(false))
             {
-                return Reenvio(pedido);
+                return await PromovidoOuReenvioAsync(pedido, cancellationToken).ConfigureAwait(false);
             }
 
             return await VerificarConteudoAsync(pedido, envio, temporario, cancellationToken).ConfigureAwait(false);
@@ -193,6 +191,10 @@ public sealed partial class VerificarArquivoHandler
             LogFalhaNaLimpezaDoEnvio(_logger, pedido.ArquivoId, ex);
         }
     }
+
+    // A versão sumiu do envio: uma entrega duplicada do mesmo pedido pode tê-la promovido e removido no intervalo.
+    private async Task<ResultadoDaVerificacaoDeArquivo> PromovidoOuReenvioAsync(PedidoDeVerificacaoDeArquivo pedido, CancellationToken cancellationToken) =>
+        await ResultadoJaPromovidoAsync(pedido, cancellationToken).ConfigureAwait(false) ?? Reenvio(pedido);
 
     private async Task<ResultadoDaVerificacaoDeArquivo?> ResultadoJaPromovidoAsync(PedidoDeVerificacaoDeArquivo pedido, CancellationToken cancellationToken)
     {
