@@ -91,7 +91,7 @@ internal static class Cenario
 
     public static ObjetoArmazenado EnvioComETag(string etag, long tamanho = 1024) => new(etag, tamanho, null, null);
 
-    public static byte[] Fixture(string nome) => File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", nome));
+    public static byte[] Fixture(string nome) => File.ReadAllBytes(Path.Join(AppContext.BaseDirectory, "Fixtures", nome));
 
     public static VerificarArquivoHandler Handler(IArmazenamentoDeArquivos armazenamento, ClamdFalso clamd) =>
         new(

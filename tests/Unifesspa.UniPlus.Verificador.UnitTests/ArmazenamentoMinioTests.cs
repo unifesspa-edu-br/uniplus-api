@@ -40,7 +40,10 @@ public sealed class ArmazenamentoMinioTests
     public async Task ChaveInexistente_RetornaNulo()
     {
         IMinioClient minio = Substitute.For<IMinioClient>();
-        ErrorResponseException semChave = new(new ErrorResponse { Code = "NoSuchKey" }, new Minio.DataModel.Result.ResponseResult(new HttpRequestMessage(), new HttpResponseMessage()));
+        using HttpRequestMessage requisicao = new();
+        using HttpResponseMessage resposta = new();
+        using Minio.DataModel.Result.ResponseResult resultado = new(requisicao, resposta);
+        ErrorResponseException semChave = new(new ErrorResponse { Code = "NoSuchKey" }, resultado);
         minio.StatObjectAsync(Arg.Any<StatObjectArgs>(), Arg.Any<CancellationToken>()).Returns(Task.FromException<ObjectStat>(semChave));
         ArmazenamentoMinio armazenamento = new(minio, Options.Create(new VerificadorOptions()));
 
