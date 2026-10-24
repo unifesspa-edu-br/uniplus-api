@@ -1,5 +1,5 @@
 ---
-status: "proposed"
+status: "accepted"
 date: "2026-10-22"
 decision-makers:
   - "Tech Lead"

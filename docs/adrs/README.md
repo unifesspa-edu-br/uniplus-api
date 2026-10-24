@@ -174,7 +174,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0143](0143-avaliacao-sob-demanda-dos-fatos-do-candidato.md) | A API avalia sob demanda o que depende dos fatos do candidato | proposed | 2026-10-10 |
 | [0144](0144-regra-de-aplicabilidade-pertence-a-modalidade.md) | A regra de aplicabilidade pertence à modalidade | proposed | 2026-10-11 |
 | [0145](0145-recurso-por-etapa.md) | O recurso também pertence à etapa, e cada janela declara se admite instância superior | accepted | 2026-10-18 |
-| [0146](0146-cifra-e-verificacao-dos-arquivos-do-candidato-no-armazenamento.md) | O arquivo do candidato é cifrado pelo armazenamento (SSE-KMS no MinIO, chave do KES no Vault, chave de dados por objeto) e verificado por um processo fora da API, que lê direto do MinIO e é acionado por fila no RabbitMQ — emenda a ADR-0121 | proposed | 2026-10-22 |
+| [0146](0146-cifra-e-verificacao-dos-arquivos-do-candidato-no-armazenamento.md) | O arquivo do candidato é cifrado pelo armazenamento (SSE-KMS no MinIO, chave do KES no Vault, chave de dados por objeto) e verificado por um processo fora da API, que lê direto do MinIO e é acionado por fila no RabbitMQ — emenda a ADR-0121 | accepted | 2026-10-22 |
 | [0147](0147-base-de-assinaturas-do-antivirus-por-espelho-interno.md) | A base de assinaturas do antivírus chega aos clamd sidecar do verificador por um espelho interno no cluster; o verificador não tem saída para a internet | accepted | 2026-10-23 |
 
 > **Nota de numeração:** a sequência de `0001` a `0147` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0148+`.
