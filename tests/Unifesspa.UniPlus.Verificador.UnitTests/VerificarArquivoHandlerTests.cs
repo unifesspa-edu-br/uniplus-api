@@ -121,6 +121,22 @@ public sealed class VerificarArquivoHandlerTests
         resultado.Veredicto.Should().Be(VeredictoDaVerificacao.ReenvioNecessario);
     }
 
+    [Fact(DisplayName = "Versão promovida por entrega duplicada entre a consulta e a leitura devolve verificado, e não reenvio")]
+    public async Task PromovidaPorOutraEntregaNaLeitura_DevolveVerificado()
+    {
+        ArmazenamentoFalso armazenamento = new()
+        {
+            Envio = Cenario.EnvioComETag(Cenario.ETag),
+            VersaoLegivel = false,
+            DefinitivoAoLer = new ObjetoArmazenado("\"d\"", 2048, "abc123", Cenario.ETag),
+        };
+
+        ResultadoDaVerificacaoDeArquivo resultado = await Cenario.Handler(armazenamento, new ClamdFalso()).Handle(Cenario.Pedido(), CancellationToken.None);
+
+        resultado.Veredicto.Should().Be(VeredictoDaVerificacao.Verificado);
+        resultado.HashSha256.Should().Be("abc123");
+    }
+
     [Fact(DisplayName = "Arquivo acima do tamanho máximo é recusado sem ser lido")]
     public async Task TamanhoAcimaDoMaximo_RecusaSemLer()
     {
