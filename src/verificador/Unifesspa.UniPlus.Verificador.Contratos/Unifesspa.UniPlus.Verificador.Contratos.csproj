@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    As mensagens trocadas pela fila entre a API e o verificador de arquivos (ADR-0146).
+    Não depende de nenhum outro projeto: o verificador não conhece módulo de negócio, e a
+    API não conhece o verificador além destas mensagens.
+  -->
+
+</Project>
