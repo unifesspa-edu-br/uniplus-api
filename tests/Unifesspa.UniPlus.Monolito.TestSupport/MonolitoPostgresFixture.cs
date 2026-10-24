@@ -2,6 +2,9 @@ namespace Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 using System.Diagnostics.CodeAnalysis;
 
+using DotNet.Testcontainers.Builders;
+using DotNet.Testcontainers.Containers;
+
 using Testcontainers.PostgreSql;
 
 /// <summary>
@@ -42,6 +45,8 @@ public abstract class MonolitoPostgresFixtureBase<TFactory> : IAsyncLifetime
     ];
 
     private const string KafkaBootstrapEnvVar = "Kafka__BootstrapServers";
+    private const string RabbitMqUriEnvVar = "RabbitMq__Uri";
+    private const ushort RabbitMqPort = 5672;
 
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:18-alpine")
         .WithDatabase("uniplus")
@@ -49,7 +54,17 @@ public abstract class MonolitoPostgresFixtureBase<TFactory> : IAsyncLifetime
         .WithPassword("uniplus_test")
         .Build();
 
+    // O RabbitMQ é obrigatório na configuração da API e o transporte dele não convive com o stub dos transportes
+    // externos do Wolverine, que também apagaria as filas do Postgres que as suítes exercitam.
+    private readonly IContainer _rabbitMq = new ContainerBuilder("rabbitmq:4.1.4-management-alpine")
+        .WithPortBinding(RabbitMqPort, true)
+        .WithEnvironment("RABBITMQ_DEFAULT_USER", "uniplus_test")
+        .WithEnvironment("RABBITMQ_DEFAULT_PASS", "uniplus_test")
+        .WithWaitStrategy(Wait.ForUnixContainer().UntilMessageIsLogged("Server startup complete"))
+        .Build();
+
     private readonly Dictionary<string, string?> _envVarsPrevios = [];
+    private string? _rabbitMqEnvVarPrevio;
     private string? _kafkaEnvVarPrevio;
     private TFactory? _factory;
 
@@ -68,8 +83,9 @@ public abstract class MonolitoPostgresFixtureBase<TFactory> : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        await _postgres.StartAsync().ConfigureAwait(false);
+        await Task.WhenAll(_postgres.StartAsync(), _rabbitMq.StartAsync()).ConfigureAwait(false);
 
+        _rabbitMqEnvVarPrevio = Environment.GetEnvironmentVariable(RabbitMqUriEnvVar);
         _kafkaEnvVarPrevio = Environment.GetEnvironmentVariable(KafkaBootstrapEnvVar);
         foreach (string envVar in ConnectionStringEnvVars)
         {
@@ -87,6 +103,8 @@ public abstract class MonolitoPostgresFixtureBase<TFactory> : IAsyncLifetime
             // a variável. O host não configura transporte Kafka em teste, mas
             // neutralizamos por garantia (o routing Kafka só liga com SR + bootstrap).
             Environment.SetEnvironmentVariable(KafkaBootstrapEnvVar, " ");
+            Environment.SetEnvironmentVariable(
+                RabbitMqUriEnvVar, $"amqp://uniplus_test:uniplus_test@{_rabbitMq.Hostname}:{_rabbitMq.GetMappedPublicPort(RabbitMqPort)}");
 
             _factory = CreateFactory(ConnectionString);
 
@@ -111,6 +129,7 @@ public abstract class MonolitoPostgresFixtureBase<TFactory> : IAsyncLifetime
         RestaurarEnvVars();
 
         await _postgres.DisposeAsync().ConfigureAwait(false);
+        await _rabbitMq.DisposeAsync().ConfigureAwait(false);
     }
 
     private void RestaurarEnvVars()
@@ -121,6 +140,7 @@ public abstract class MonolitoPostgresFixtureBase<TFactory> : IAsyncLifetime
         }
 
         Environment.SetEnvironmentVariable(KafkaBootstrapEnvVar, _kafkaEnvVarPrevio);
+        Environment.SetEnvironmentVariable(RabbitMqUriEnvVar, _rabbitMqEnvVarPrevio);
     }
 }
 
