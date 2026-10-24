@@ -1,0 +1,117 @@
+{{- if lt (int .Values.replicaCount) 2 }}
+{{- fail "replicaCount deve ser no minimo 2: a segunda replica mantem a verificacao no ar se um pod cair (ADR-0146)" }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "verificador.name" . }}
+  labels:
+    {{- include "verificador.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      {{- include "verificador.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "verificador.labels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 101
+      # Sidecar nativo (Kubernetes 1.29+): o worker só sobe com o clamd pronto, e o clamd encerra depois dele.
+      initContainers:
+        - name: clamd
+          restartPolicy: Always
+          image: "{{ .Values.clamd.image.repository }}:{{ default (printf "v%s" .Chart.AppVersion) .Values.clamd.image.tag }}"
+          imagePullPolicy: {{ .Values.clamd.image.pullPolicy }}
+          env:
+            - name: CLAMAV_PRIVATE_MIRROR
+              value: {{ .Values.clamd.privateMirror | quote }}
+          ports:
+            - name: clamd
+              containerPort: 3310
+              protocol: TCP
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 100
+            runAsGroup: 101
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          # O clamd só escuta depois de carregar a base: o PING respondido é a base carregada.
+          startupProbe:
+            exec:
+              command: ["sh", "-c", "echo PING | nc -w 2 127.0.0.1 3310 | grep -q PONG"]
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "echo PING | nc -w 2 127.0.0.1 3310 | grep -q PONG"]
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", "echo PING | nc -w 2 127.0.0.1 3310 | grep -q PONG"]
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.clamd.resources | nindent 12 }}
+          volumeMounts:
+            - name: base-do-antivirus
+              mountPath: /var/lib/clamav
+      containers:
+        - name: verificador
+          image: "{{ .Values.image.repository }}:{{ default (printf "v%s" .Chart.AppVersion) .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "verificador.name" . }}-config
+          env:
+            - name: TMPDIR
+              value: /tmp
+            - name: Verificador__Armazenamento__AccessKey
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "verificador.minioSecretName" . }}
+                  key: MINIO_ACCESS_KEY
+            - name: Verificador__Armazenamento__SecretKey
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "verificador.minioSecretName" . }}
+                  key: MINIO_SECRET_KEY
+            - name: Verificador__RabbitMq__Uri
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.rabbitmq.existingSecret }}
+                  key: {{ .Values.rabbitmq.uriKey }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            {{- toYaml .Values.verificador.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: base-do-antivirus
+          emptyDir:
+            sizeLimit: {{ .Values.clamd.databaseSizeLimit }}
+        - name: tmp
+          emptyDir:
+            sizeLimit: {{ .Values.verificador.temporarioSizeLimit }}

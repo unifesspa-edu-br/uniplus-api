@@ -1,0 +1,6 @@
+apiVersion: v2
+name: uniplus-verificador
+description: Verificador de arquivos do candidato do Sistema Unificado UniPlus, com o clamd como sidecar
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
