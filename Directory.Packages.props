@@ -72,6 +72,9 @@
     <!-- Storage -->
     <PackageVersion Include="Minio" Version="7.0.0" />
 
+    <!-- PDF: abertura da estrutura para reconhecer o que exige senha (verificador) -->
+    <PackageVersion Include="PdfPig" Version="0.1.16" />
+
     <!-- Health Checks -->
     <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="10.0.5" />
     <PackageVersion Include="Npgsql" Version="10.0.3" />
