@@ -1,0 +1,29 @@
+# ---- Restore + Build ----
+FROM mcr.microsoft.com/dotnet/sdk:10.0.400 AS build
+WORKDIR /src
+
+# .editorconfig vive junto da solution porque as políticas de análise por glob estão nele.
+COPY Directory.Build.props Directory.Packages.props global.json UniPlus.slnx .editorconfig ./
+
+# O verificador não depende de src/shared nem de módulo de negócio: só dos seus dois projetos.
+COPY src/verificador/ src/verificador/
+
+RUN dotnet restore src/verificador/Unifesspa.UniPlus.Verificador/Unifesspa.UniPlus.Verificador.csproj
+
+RUN dotnet publish src/verificador/Unifesspa.UniPlus.Verificador/Unifesspa.UniPlus.Verificador.csproj \
+    -c Release \
+    --no-restore \
+    -o /app/publish
+
+# ---- Runtime ----
+# Worker sem HTTP: o runtime base basta, sem ASP.NET.
+FROM mcr.microsoft.com/dotnet/runtime:10.0 AS runtime
+WORKDIR /app
+
+RUN groupadd -r appuser && useradd -r -g appuser -s /sbin/nologin appuser
+
+COPY --from=build /app/publish .
+
+USER appuser
+
+ENTRYPOINT ["dotnet", "Unifesspa.UniPlus.Verificador.dll"]
