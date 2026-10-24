@@ -39,9 +39,11 @@ public static class ConfiguracaoDoWolverine
         .AutoProvision();
 
         opcoes.ListenToRabbitQueue(FilasDaVerificacao.Pedidos, fila => fila.QueueType = QueueType.quorum)
-            .MaximumParallelMessages(verificador.Paralelismo)
-            .PreFetchCount((ushort)verificador.Paralelismo);
+            .ProcessInline()
+            .ListenerCount(verificador.Paralelismo)
+            .PreFetchCount(1);
 
+        // No modo inline, a concorrência vem de um listener por slot de paralelismo, cada um com um pedido por vez.
         // Inline: o pedido só é confirmado depois de o RabbitMQ confirmar a publicação do resultado.
         opcoes.PublishMessage<ResultadoDaVerificacaoDeArquivo>()
             .ToRabbitQueue(FilasDaVerificacao.Resultados, fila => fila.QueueType = QueueType.quorum)
