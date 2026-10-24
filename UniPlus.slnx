@@ -55,6 +55,7 @@
     <Project Path="src/shared/Unifesspa.UniPlus.Kernel/Unifesspa.UniPlus.Kernel.csproj" />
   </Folder>
   <Folder Name="/src/verificador/">
+    <Project Path="src/verificador/Unifesspa.UniPlus.Verificador/Unifesspa.UniPlus.Verificador.csproj" />
     <Project Path="src/verificador/Unifesspa.UniPlus.Verificador.Contratos/Unifesspa.UniPlus.Verificador.Contratos.csproj" />
   </Folder>
   <Folder Name="/tests/">
@@ -87,6 +88,8 @@
     <Project Path="tests/Unifesspa.UniPlus.Portal.ArchTests/Unifesspa.UniPlus.Portal.ArchTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Portal.IntegrationTests/Unifesspa.UniPlus.Portal.IntegrationTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Portal.UnitTests/Unifesspa.UniPlus.Portal.UnitTests.csproj" />
+    <Project Path="tests/Unifesspa.UniPlus.Verificador.ArchTests/Unifesspa.UniPlus.Verificador.ArchTests.csproj" />
+    <Project Path="tests/Unifesspa.UniPlus.Verificador.UnitTests/Unifesspa.UniPlus.Verificador.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Discentes.UnitTests/Unifesspa.UniPlus.Discentes.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Host.IntegrationTests/Unifesspa.UniPlus.Host.IntegrationTests.csproj" />
   </Folder>
