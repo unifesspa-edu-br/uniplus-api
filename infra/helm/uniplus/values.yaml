@@ -62,12 +62,22 @@ geo:
   oauthTokenEndpoint: ""
   oauthClientId: ""
 
-# Antivírus do arquivo que o candidato envia (issue #2036): a confirmação do envio abre uma conexão
-# com o clamd e só grava o arquivo limpo. Com o clamd fora do ar a confirmação responde 503 e o
-# arquivo continua pendente — a API sobe sem ele. Viram Clamd__Host / Clamd__Port.
-clamd:
-  host: "clamav-scanner"
-  port: 3310
+# Arquivos do candidato (ADR-0146): o PUT pré-assinado vai ao bucket de envio (quarentena) e a leitura sai do
+# definitivo, onde só o verificador promove. Os nomes são obrigatórios — sem eles o pod falha no startup. A cifra
+# (SSE-KMS) e as permissões dos buckets são da infraestrutura. Viram ArquivosDoCandidato__BucketDeEnvio e
+# ArquivosDoCandidato__BucketDefinitivo. A credencial própria dos dois buckets (a geral enxerga todos, e a API não
+# lê o de envio) vem do Vault, em secrets.arquivosDoCandidatoAccessKey / SecretKey.
+arquivosDoCandidato:
+  bucketDeEnvio: uniplus-candidato-envio
+  bucketDefinitivo: uniplus-candidato-definitivo
+
+# Reconciliação do que ficou em verificação sem resultado: prazo contado da última publicação do pedido (precisa
+# passar do tempo de fila no pico), intervalo entre execuções e tamanho do lote. Viram
+# Selecao__ReconciliacaoDaVerificacao__Prazo / __Intervalo / __TamanhoDoLote.
+reconciliacaoDaVerificacao:
+  prazo: "00:10:00"
+  intervalo: "00:01:00"
+  tamanhoDoLote: 100
 
 # Chaves esperadas no Secret externo `{{ .Release.Name }}-uniplus-secrets`
 # (provisionado pelo RUNBOOK do uniplus-infra — NÃO renderizado por este chart).
@@ -91,6 +101,13 @@ secrets:
   # URLs devolvidas ao cliente ficam com um host só o pod resolve.
   storagePublicEndpoint: ""      # Storage__PublicEndpoint
   storagePublicUseSsl: ""        # Storage__PublicUseSSL ("true"/"false" — opcional, cai para o mesmo de Storage__UseSSL)
+  # Conexão do RabbitMQ (obrigatória): a fila de trabalho da verificação dos arquivos do candidato. Vem do secret
+  # `rabbitmq-api` (chave RABBITMQ_URI, vhost `verificacao`), com as credenciais embutidas na URI.
+  rabbitMqUri: ""                # RabbitMq__Uri
+  # Credencial própria dos buckets do candidato, do Vault em secret/standalone/minio/arquivos-candidato-api
+  # (access_key, secret_key), pelo mesmo ExternalSecret das demais chaves deste Secret.
+  arquivosDoCandidatoAccessKey: ""  # ArquivosDoCandidato__AccessKey
+  arquivosDoCandidatoSecretKey: ""  # ArquivosDoCandidato__SecretKey
   authAuthority: ""              # Auth__Authority
   # Criptografia de PII (LGPD): AddUniPlusEncryption valida no startup
   # (ValidateOnStart) — SEM estas chaves o host crasha no boot antes de servir.

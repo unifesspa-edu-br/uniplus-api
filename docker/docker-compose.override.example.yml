@@ -67,9 +67,11 @@ services:
       # só resolve dentro dela. Porta 9000 já é publicada no host (ver serviço
       # minio), então localhost funciona para quem roda o frontend fora do Docker.
       Storage__PublicEndpoint: "localhost:9000"
-      # Antivírus do arquivo do candidato (serviço clamav do docker-compose.yml).
-      Clamd__Host: "clamav"
-      Clamd__Port: "3310"
+      # Credencial dos buckets do candidato; local, a root do MinIO.
+      ArquivosDoCandidato__AccessKey: "${MINIO_ROOT_USER}"
+      ArquivosDoCandidato__SecretKey: "${MINIO_ROOT_PASSWORD}"
+      # Fila da verificação dos arquivos do candidato (serviço rabbitmq do docker-compose.yml).
+      RabbitMq__Uri: "amqp://${RABBITMQ_USER:-uniplus}:${RABBITMQ_PASSWORD:-uniplus_dev}@rabbitmq:5672"
       # Realm `unifesspa` — o mesmo em que os frontends `*-web` autenticam. Para smoke
       # via password grant, o override docker-compose.smoke.yml realinha para dev-local.
       Auth__Authority: "http://keycloak:8080/realms/unifesspa"

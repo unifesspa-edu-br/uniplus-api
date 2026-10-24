@@ -20,5 +20,8 @@ data:
   Geo__BaseUrl: {{ .Values.geo.baseUrl | quote }}
   Geo__OAuth__TokenEndpoint: {{ .Values.geo.oauthTokenEndpoint | quote }}
   Geo__OAuth__ClientId: {{ .Values.geo.oauthClientId | quote }}
-  Clamd__Host: {{ .Values.clamd.host | quote }}
-  Clamd__Port: {{ .Values.clamd.port | quote }}
+  ArquivosDoCandidato__BucketDeEnvio: {{ .Values.arquivosDoCandidato.bucketDeEnvio | quote }}
+  ArquivosDoCandidato__BucketDefinitivo: {{ .Values.arquivosDoCandidato.bucketDefinitivo | quote }}
+  Selecao__ReconciliacaoDaVerificacao__Prazo: {{ .Values.reconciliacaoDaVerificacao.prazo | quote }}
+  Selecao__ReconciliacaoDaVerificacao__Intervalo: {{ .Values.reconciliacaoDaVerificacao.intervalo | quote }}
+  Selecao__ReconciliacaoDaVerificacao__TamanhoDoLote: {{ .Values.reconciliacaoDaVerificacao.tamanhoDoLote | quote }}
