@@ -24,6 +24,12 @@ public static class ConfiguracaoDoWolverine
         RabbitMqOptions rabbit = verificador.RabbitMq;
         opcoes.UseRabbitMq(fabrica =>
         {
+            if (!string.IsNullOrWhiteSpace(rabbit.Uri))
+            {
+                fabrica.Uri = new Uri(rabbit.Uri);
+                return;
+            }
+
             fabrica.HostName = rabbit.Host;
             fabrica.Port = rabbit.Port;
             fabrica.VirtualHost = rabbit.VirtualHost;

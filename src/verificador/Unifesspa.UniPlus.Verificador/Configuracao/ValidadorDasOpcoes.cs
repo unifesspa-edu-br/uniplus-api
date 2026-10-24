@@ -49,7 +49,14 @@ public sealed class ValidadorDasOpcoes : IValidateOptions<VerificadorOptions>
         ExigirTexto(falhas, options.Armazenamento.SecretKey, "A chave secreta do MinIO é obrigatória.");
         ExigirTexto(falhas, options.Armazenamento.BucketEnvios, "O bucket de envio é obrigatório.");
         ExigirTexto(falhas, options.Armazenamento.BucketArquivos, "O bucket definitivo é obrigatório.");
-        ExigirTexto(falhas, options.RabbitMq.Host, "O endereço do RabbitMQ é obrigatório.");
+        if (string.IsNullOrWhiteSpace(options.RabbitMq.Uri))
+        {
+            ExigirTexto(falhas, options.RabbitMq.Host, "O endereço do RabbitMQ é obrigatório.");
+        }
+        else if (!Uri.TryCreate(options.RabbitMq.Uri, UriKind.Absolute, out _))
+        {
+            falhas.Add("A URI do RabbitMQ é inválida.");
+        }
 
         return falhas.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(falhas);
     }
