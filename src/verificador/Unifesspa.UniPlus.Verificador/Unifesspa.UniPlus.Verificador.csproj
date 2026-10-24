@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <!--
+    Deployable autônomo do verificador de arquivos do candidato (ADR-0146). Não referencia módulo
+    de negócio, DbContext, EF Core nem Npgsql: o conteúdo sensível que ele manipula não tem
+    credencial nem conexão no banco da API. Quem garante isso é o teste de arquitetura.
+  -->
+  <ItemGroup>
+    <!-- Sem entrada central: uma entrada em Directory.Packages.props reescreve os lock files dos demais projetos. -->
+    <PackageReference Include="Microsoft.Extensions.Hosting" VersionOverride="10.0.0" />
+    <PackageReference Include="Minio" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
+    <PackageReference Include="PdfPig" />
+    <PackageReference Include="WolverineFx" />
+    <PackageReference Include="WolverineFx.RabbitMQ" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Unifesspa.UniPlus.Verificador.Contratos\Unifesspa.UniPlus.Verificador.Contratos.csproj" />
+  </ItemGroup>
+
+</Project>
