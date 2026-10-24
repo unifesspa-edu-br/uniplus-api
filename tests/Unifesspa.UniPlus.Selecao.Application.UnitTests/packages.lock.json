@@ -752,6 +752,7 @@
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
           "Unifesspa.UniPlus.Publicacoes.Contracts": "[1.0.0, )",
           "Unifesspa.UniPlus.Selecao.Domain": "[1.0.0, )",
+          "Unifesspa.UniPlus.Verificador.Contratos": "[1.0.0, )",
           "WolverineFx": "[5.41.0, )"
         }
       },
@@ -762,6 +763,9 @@
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
           "Unifesspa.UniPlus.Regras": "[1.0.0, )"
         }
+      },
+      "unifesspa.uniplus.verificador.contratos": {
+        "type": "Project"
       },
       "FluentValidation": {
         "type": "CentralTransitive",

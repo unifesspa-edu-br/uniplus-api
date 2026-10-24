@@ -63,15 +63,6 @@ public sealed class DocumentoDaInscricaoRepository : IDocumentoDaInscricaoReposi
         }
     }
 
-    public async Task<IReadOnlyList<ApresentacaoDeDocumento>> ListarApresentacoesConfirmadasAsync(
-        Guid inscricaoId, CancellationToken cancellationToken = default) =>
-        await _context.ApresentacoesDeDocumento
-            .AsNoTracking()
-            .Where(p => p.InscricaoId == inscricaoId
-                && _context.ArquivosDaApresentacao.Any(a => a.ApresentacaoId == p.Id && a.Status == StatusArquivoEnviado.Confirmado))
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
     public async Task<IReadOnlyList<ApresentacaoDeDocumento>> ListarApresentacoesDaInscricaoAsync(
         Guid inscricaoId, CancellationToken cancellationToken = default) =>
         await _context.ApresentacoesDeDocumento
@@ -88,15 +79,55 @@ public sealed class DocumentoDaInscricaoRepository : IDocumentoDaInscricaoReposi
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-    public async Task<bool> TentarReivindicarConfirmacaoAsync(Guid id, CancellationToken cancellationToken = default)
-    {
-        int linhasAfetadas = await _context.ArquivosDaApresentacao
-            .Where(a => a.Id == id && a.Status == StatusArquivoEnviado.Pendente)
-            .ExecuteUpdateAsync(setters => setters.SetProperty(a => a.Status, StatusArquivoEnviado.Confirmado), cancellationToken)
+    public async Task<bool> TentarReivindicarConfirmacaoAsync(
+        Guid id, string etag, DateTimeOffset agora, DateTimeOffset proximaPublicacaoEm, CancellationToken cancellationToken = default) =>
+        await _context.ArquivosDaApresentacao
+            .Where(a => a.Id == id && a.Situacao == SituacaoDoArquivoDoCandidato.Pendente)
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(a => a.Situacao, SituacaoDoArquivoDoCandidato.EmVerificacao)
+                    .SetProperty(a => a.ETag, etag.Trim())
+                    .SetProperty(a => a.ConfirmadoEm, agora)
+                    .SetProperty(a => a.Publicacoes, 1)
+                    .SetProperty(a => a.ProximaPublicacaoEm, proximaPublicacaoEm),
+                cancellationToken)
+            .ConfigureAwait(false) == 1;
+
+    public async Task<bool> TentarConcluirVerificacaoAsync(
+        Guid id, SituacaoDoArquivoDoCandidato situacao, CancellationToken cancellationToken = default) =>
+        await _context.ArquivosDaApresentacao
+            .Where(a => a.Id == id && a.Situacao == SituacaoDoArquivoDoCandidato.EmVerificacao)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(a => a.Situacao, situacao), cancellationToken)
+            .ConfigureAwait(false) == 1;
+
+    public async Task DesfazerReivindicacaoAsync(Guid id, CancellationToken cancellationToken = default) =>
+        await _context.ArquivosDaApresentacao
+            .Where(a => a.Id == id && a.Situacao == SituacaoDoArquivoDoCandidato.EmVerificacao)
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(a => a.Situacao, SituacaoDoArquivoDoCandidato.Pendente)
+                    .SetProperty(a => a.ETag, (string?)null)
+                    .SetProperty(a => a.ConfirmadoEm, (DateTimeOffset?)null)
+                    .SetProperty(a => a.Publicacoes, 0)
+                    .SetProperty(a => a.ProximaPublicacaoEm, (DateTimeOffset?)null),
+                cancellationToken)
             .ConfigureAwait(false);
 
-        return linhasAfetadas == 1;
-    }
+    public async Task<IReadOnlyList<ArquivoDaApresentacao>> ListarEmVerificacaoParaRepublicarAsync(
+        DateTimeOffset agora, int limite, CancellationToken cancellationToken = default) =>
+        await _context.ArquivosDaApresentacao
+            .Where(a => a.Situacao == SituacaoDoArquivoDoCandidato.EmVerificacao && a.ProximaPublicacaoEm <= agora)
+            .OrderBy(a => a.ProximaPublicacaoEm)
+            .ThenBy(a => a.Id)
+            .Take(limite)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+    public async Task<bool> TentarObterExclusividadeDaReconciliacaoAsync(CancellationToken cancellationToken = default) =>
+        await _context.Database
+            .SqlQueryRaw<bool>("SELECT pg_try_advisory_xact_lock(hashtext('selecao.reconciliacao_da_verificacao')) AS \"Value\"")
+            .SingleAsync(cancellationToken)
+            .ConfigureAwait(false);
 
     public async Task<IReadOnlyList<ArquivoPendenteVencido>> ListarPendentesVencidosAsync(
         DateTimeOffset agora, int limite, CancellationToken cancellationToken = default) =>
@@ -118,8 +149,6 @@ public sealed class DocumentoDaInscricaoRepository : IDocumentoDaInscricaoReposi
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        // A remoção da linha e o agendamento da selada ficam na mesma transação: a linha sai só se a chave
-        // da cópia selada, que a confirmação que falhou pode ter deixado, fica agendada.
         await using Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction transacao =
             await _context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
         int linhasAfetadas = await _context.ArquivosDaApresentacao
@@ -129,8 +158,6 @@ public sealed class DocumentoDaInscricaoRepository : IDocumentoDaInscricaoReposi
             .ConfigureAwait(false);
         if (linhasAfetadas == 1)
         {
-            _context.ChavesALimpar.Add(ChaveALimpar.Agendar(ArquivoDaApresentacao.ChaveSeladaDe(id), agora));
-            await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             await _context.ApresentacoesDeDocumento
                 .Where(p => p.Id == apresentacaoId && !_context.ArquivosDaApresentacao.Any(a => a.ApresentacaoId == p.Id))
                 .ExecuteDeleteAsync(cancellationToken)
@@ -159,5 +186,5 @@ public sealed class DocumentoDaInscricaoRepository : IDocumentoDaInscricaoReposi
         await _context.ChavesALimpar.Where(c => c.Id == id).ExecuteDeleteAsync(cancellationToken).ConfigureAwait(false);
 
     private static Expression<Func<ArquivoDaApresentacao, bool>> PendenteVencido(DateTimeOffset agora) =>
-        a => a.Status == StatusArquivoEnviado.Pendente && a.ExpiraEm <= agora;
+        a => a.Situacao == SituacaoDoArquivoDoCandidato.Pendente && a.ExpiraEm <= agora;
 }

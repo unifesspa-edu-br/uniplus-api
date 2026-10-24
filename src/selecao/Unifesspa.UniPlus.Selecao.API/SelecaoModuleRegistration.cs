@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Routing;
 using Unifesspa.UniPlus.Selecao.API.Errors;
 using Unifesspa.UniPlus.Selecao.API.Hateoas;
 using Unifesspa.UniPlus.Selecao.API.Rotinas;
+using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosDaInscricao;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Mappings;
 using Unifesspa.UniPlus.Selecao.Application.Queries.AtosDoProcesso;
@@ -97,6 +98,17 @@ public static class SelecaoModuleRegistration
                 $"{RemocaoDeArquivosPendentesOptions.SectionName}:Intervalo deve ficar entre {RemocaoDeArquivosPendentesOptions.IntervaloMinimo} e {RemocaoDeArquivosPendentesOptions.IntervaloMaximo}.")
             .ValidateOnStart();
         services.AddHostedService<RemocaoDeArquivosPendentesVencidosHostedService>();
+
+        services.AddOptions<ReconciliacaoDaVerificacaoOptions>()
+            .Bind(configuration.GetSection(ReconciliacaoDaVerificacaoOptions.SectionName))
+            .Validate(
+                static options => options.Prazo >= ReconciliacaoDaVerificacaoOptions.PrazoMinimo
+                    && options.PrazoMaximo >= options.Prazo
+                    && options.Intervalo >= ReconciliacaoDaVerificacaoOptions.IntervaloMinimo
+                    && options.TamanhoDoLote > 0,
+                $"{ReconciliacaoDaVerificacaoOptions.SectionName}: Prazo de pelo menos {ReconciliacaoDaVerificacaoOptions.PrazoMinimo} e PrazoMaximo não menor que ele, Intervalo de pelo menos {ReconciliacaoDaVerificacaoOptions.IntervaloMinimo} e TamanhoDoLote positivo.")
+            .ValidateOnStart();
+        services.AddHostedService<ReconciliacaoDaVerificacaoHostedService>();
 
         services.AddOptions<AtosDoProcessoOptions>()
             .Bind(configuration.GetSection(AtosDoProcessoOptions.SectionName))

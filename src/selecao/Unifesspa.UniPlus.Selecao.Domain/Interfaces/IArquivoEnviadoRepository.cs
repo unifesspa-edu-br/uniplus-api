@@ -1,8 +1,8 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
-/// Os registros de arquivo enviado pelo administrador que ficaram pendentes além do prazo — o
-/// documento a publicar e o modelo de documento de uma exigência. O pendente nasce junto da URL de
+/// Os registros de arquivo enviado por URL pré-assinada que ficaram pendentes além do prazo — o
+/// documento a publicar e o modelo de documento do administrador e o arquivo do candidato. O pendente nasce junto da URL de
 /// envio e só vira dado de negócio na confirmação; vencida a URL sem confirmação, nada mais o
 /// promove, e o registro e o objeto enviado são só sobra.
 /// </summary>
@@ -29,14 +29,4 @@ public interface IArquivoEnviadoRepository
     /// </summary>
     /// <returns><see langword="true"/> quando a linha foi removida.</returns>
     Task<bool> RemoverSePendenteVencidoAsync(Guid id, DateTimeOffset agora, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Reivindica atomicamente a confirmação — <c>UPDATE ... WHERE id = @id AND status =
-    /// Pendente</c>, sem passar pelo change tracker. Duas confirmações concorrentes
-    /// (Idempotency-Keys diferentes) nunca ganham as duas: a perdedora bloqueia no lock de linha
-    /// do Postgres e, ao destravar, sua condição não bate mais, então afeta zero linhas. Só depois
-    /// de reivindicar com sucesso a confirmação grava a cópia selada — a perdedora nunca escreve
-    /// no armazenamento.
-    /// </summary>
-    Task<bool> TentarReivindicarConfirmacaoAsync(Guid id, CancellationToken cancellationToken = default);
 }

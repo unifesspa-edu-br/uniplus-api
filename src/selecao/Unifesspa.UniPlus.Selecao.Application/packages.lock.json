@@ -646,6 +646,9 @@
           "Unifesspa.UniPlus.Regras": "[1.0.0, )"
         }
       },
+      "unifesspa.uniplus.verificador.contratos": {
+        "type": "Project"
+      },
       "Microsoft.Extensions.Logging.Abstractions": {
         "type": "CentralTransitive",
         "requested": "[10.0.12, )",

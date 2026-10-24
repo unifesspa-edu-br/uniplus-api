@@ -110,7 +110,7 @@ public sealed class RemocaoDeArquivosPendentesVencidosTests
     }
 
     private RemocaoDeArquivosPendentesVencidos Remocao() => new(
-        _documentos, _modelos, Substitute.For<IDocumentoDaInscricaoRepository>(), _storage, new RelogioFixo(Agora), NullLogger<RemocaoDeArquivosPendentesVencidos>.Instance);
+        _documentos, _modelos, Substitute.For<IDocumentoDaInscricaoRepository>(), _storage, Substitute.For<IArquivoDoCandidatoStorage>(), new RelogioFixo(Agora), NullLogger<RemocaoDeArquivosPendentesVencidos>.Instance);
 
     private static ArquivoPendenteVencido Pendente(string prefixo)
     {

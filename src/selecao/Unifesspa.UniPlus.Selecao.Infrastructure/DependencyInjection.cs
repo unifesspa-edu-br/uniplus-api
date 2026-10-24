@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure;
 
-using Antivirus;
-
 using Canonicalization;
 
 using Domain.Interfaces;
@@ -18,6 +16,7 @@ using Persistence.Interceptors;
 using Persistence.Readers;
 using Persistence.Repositories;
 
+using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Storage;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -93,12 +92,30 @@ public static class SelecaoInfrastructureRegistration
         // cross-cutting compartilhado entre módulos, já ligado no host.
         services.AddScoped<IArquivoArmazenadoStorage, ArquivoArmazenadoStorageService>();
 
-        // Proteção do arquivo do candidato: o clamd (seção Clamd) verifica o conteúdo na confirmação e a
-        // chave de dado sensível o sela cifrado. O clamd fora do ar não derruba a API: a confirmação
-        // responde 503 e o arquivo continua pendente.
-        services.AddOptions<ClamdOptions>().BindConfiguration(ClamdOptions.SectionName);
-        services.AddScoped<ClamdClient>();
-        services.AddScoped<IProtecaoDoConteudoSelado, ProtecaoDoConteudoSelado>();
+        // Os nomes dos buckets são obrigatórios: sem eles o pod falha no startup, e não no primeiro envio.
+        services.AddOptions<ArquivosDoCandidatoOptions>()
+            .BindConfiguration(ArquivosDoCandidatoOptions.SectionName)
+            .Validate(
+                static o => !string.IsNullOrWhiteSpace(o.BucketDeEnvio) && !string.IsNullOrWhiteSpace(o.BucketDefinitivo)
+                    && !string.IsNullOrWhiteSpace(o.AccessKey) && !string.IsNullOrWhiteSpace(o.SecretKey),
+                "ArquivosDoCandidato:BucketDeEnvio, BucketDefinitivo, AccessKey e SecretKey são obrigatórios.")
+            .ValidateOnStart();
+        services.AddKeyedUniPlusStorage(ArquivoDoCandidatoStorageService.ChaveDoArmazenamento, static sp =>
+        {
+            StorageOptions geral = sp.GetRequiredService<IOptions<StorageOptions>>().Value;
+            ArquivosDoCandidatoOptions candidato = sp.GetRequiredService<IOptions<ArquivosDoCandidatoOptions>>().Value;
+            return new StorageOptions
+            {
+                Endpoint = geral.Endpoint,
+                UseSSL = geral.UseSSL,
+                Region = geral.Region,
+                PublicEndpoint = geral.PublicEndpoint,
+                PublicUseSSL = geral.PublicUseSSL,
+                AccessKey = candidato.AccessKey,
+                SecretKey = candidato.SecretKey,
+            };
+        });
+        services.AddScoped<IArquivoDoCandidatoStorage, ArquivoDoCandidatoStorageService>();
 
         // Acervo público (ADR-0132): a escrita, pela materialização da divulgação, e o endereço que
         // os contratos públicos divulgam. As opções vêm de AddUniPlusAcervoPublico, ligado no host

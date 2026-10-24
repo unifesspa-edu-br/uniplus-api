@@ -68,6 +68,7 @@ public static class PreparacaoDaAvaliacaoDaInscricao
             return Result<InscricaoDto>.Failure(contexto.Error!);
         }
 
+        ArquivosDaInscricao arquivos = await ArquivosDaInscricao.CarregarAsync(documentoRepository, inscricao.Id, cancellationToken).ConfigureAwait(false);
         Result<ResultadoDaAvaliacaoDaInscricao> avaliacao = await AvaliarAsync(
             inscricao,
             contexto.Value!,
@@ -75,7 +76,7 @@ public static class PreparacaoDaAvaliacaoDaInscricao
             new Dictionary<string, IReadOnlyList<OcorrenciaRespondida>>(StringComparer.Ordinal),
             new EnvioDasRespostas(instante, fuso.Value!),
             conferenciaEnderecoGeo,
-            documentoRepository,
+            arquivos,
             cancellationToken).ConfigureAwait(false);
         if (avaliacao.IsFailure)
         {
@@ -84,7 +85,7 @@ public static class PreparacaoDaAvaliacaoDaInscricao
 
         Result<AvaliacaoDaInscricaoDto> projetada = ProjecaoDaAvaliacaoDaInscricao.Projetar(
             avaliacao.Value!, contexto.Value!, inscricao.ProcessoSeletivoId, enderecoNoAcervo,
-            await DocumentosEnviadosDaInscricao.ArquivosAsync(documentoRepository, inscricao.Id, cancellationToken).ConfigureAwait(false));
+            arquivos.ParaOCandidato());
         return projetada.IsFailure
             ? Result<InscricaoDto>.Failure(projetada.Error!)
             : Result<InscricaoDto>.Success(InscricaoDto.De(inscricao, projetada.Value!, contexto.Value!.Admitidas.NumeroDeOpcoesDeCurso, contexto.Value!.OfertasDeCurso));
@@ -100,7 +101,7 @@ public static class PreparacaoDaAvaliacaoDaInscricao
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaRespondida>> gruposRecebidos,
         EnvioDasRespostas envio,
         IConferenciaEnderecoGeo conferenciaEnderecoGeo,
-        Domain.Interfaces.IDocumentoDaInscricaoRepository documentoRepository,
+        ArquivosDaInscricao arquivos,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(inscricao);
@@ -108,7 +109,7 @@ public static class PreparacaoDaAvaliacaoDaInscricao
         ArgumentNullException.ThrowIfNull(respostasRecebidas);
         ArgumentNullException.ThrowIfNull(gruposRecebidos);
         ArgumentNullException.ThrowIfNull(conferenciaEnderecoGeo);
-        ArgumentNullException.ThrowIfNull(documentoRepository);
+        ArgumentNullException.ThrowIfNull(arquivos);
 
         IReadOnlyDictionary<string, JsonElement> respostas = inscricao.RespostasAposMesclar(respostasRecebidas);
         Dictionary<string, IReadOnlyList<OcorrenciaRespondida>> grupos = InscricaoRequestMapper.ParaAvaliacao(inscricao.Grupos);
@@ -127,7 +128,7 @@ public static class PreparacaoDaAvaliacaoDaInscricao
         return AvaliacaoDaInscricaoPorOpcao.Avaliar(
             contexto,
             new EntradaDaAvaliacaoDaInscricao(respostas, grupos, derivados, new HashSet<string>(StringComparer.Ordinal), envio,
-                await DocumentosEnviadosDaInscricao.ApresentacoesAsync(documentoRepository, inscricao.Id, cancellationToken).ConfigureAwait(false),
+                arquivos.ApresentacoesVerificadas(),
                 NaFaseDaInscricao: true));
     }
 }

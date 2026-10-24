@@ -3,8 +3,8 @@
   <!--
     Módulo interno do monólito modular: class library (não executável). Roda apenas
     dentro da API UniPlus; não carrega Program/appsettings próprios. Deploy: somente
-    Portal e UniPlus são executáveis. WolverineFx.Kafka permanece — o wiring de
-    mensageria (SelecaoMessagingRegistration) é consumido pelo host.
+    Portal e UniPlus são executáveis. WolverineFx.Kafka e WolverineFx.RabbitMQ permanecem — o
+    wiring de mensageria (SelecaoMessagingRegistration) é consumido pelo host.
   -->
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
@@ -13,6 +13,7 @@
     <PackageReference Include="Serilog.AspNetCore" />
     <PackageReference Include="WolverineFx.Postgresql" />
     <PackageReference Include="WolverineFx.Kafka" />
+    <PackageReference Include="WolverineFx.RabbitMQ" />
   </ItemGroup>
 
   <!-- Implicit usings que o Sdk.Web adicionava e o Sdk padrão não traz. -->
@@ -29,6 +30,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Unifesspa.UniPlus.Selecao.Application\Unifesspa.UniPlus.Selecao.Application.csproj" />
     <ProjectReference Include="..\Unifesspa.UniPlus.Selecao.Infrastructure\Unifesspa.UniPlus.Selecao.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\verificador\Unifesspa.UniPlus.Verificador.Contratos\Unifesspa.UniPlus.Verificador.Contratos.csproj" />
   </ItemGroup>
 
   <!--

@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 /// Repositório de <see cref="ModeloDeDocumento"/> — independente de
 /// <see cref="IProcessoSeletivoRepository"/> porque o modelo não é filho do agregado.
 /// </summary>
-public interface IModeloDeDocumentoRepository : IRepository<ModeloDeDocumento>, IArquivoEnviadoRepository
+public interface IModeloDeDocumentoRepository : IRepository<ModeloDeDocumento>, IArquivoDoAdministradorRepository
 {
     /// <summary>Os modelos do processo entre os ids dados, numa consulta só, sem rastreamento.</summary>
     Task<IReadOnlyList<ModeloDeDocumento>> ListarDoProcessoAsync(

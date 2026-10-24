@@ -10,12 +10,10 @@ public static class DocumentoDaInscricaoErrorCodes
     public const string FormatoNaoAceitoPelaExigencia = "DocumentoDaInscricao.FormatoNaoAceitoPelaExigencia";
     public const string TamanhoExcedido = "DocumentoDaInscricao.TamanhoExcedido";
     public const string ArquivoVazio = "DocumentoDaInscricao.ArquivoVazio";
-    public const string ConteudoNaoConfereComFormato = "DocumentoDaInscricao.ConteudoNaoConfereComFormato";
     public const string ObjetoNaoEncontrado = "DocumentoDaInscricao.ObjetoNaoEncontrado";
     public const string StatusInvalidoParaConfirmacao = "DocumentoDaInscricao.StatusInvalidoParaConfirmacao";
-    public const string ArquivoInfectado = "DocumentoDaInscricao.ArquivoInfectado";
-    public const string AntivirusIndisponivel = "DocumentoDaInscricao.AntivirusIndisponivel";
-    public const string ConteudoAdulterado = "DocumentoDaInscricao.ConteudoAdulterado";
+    public const string ETagObrigatorio = "DocumentoDaInscricao.ETagObrigatorio";
+    public const string ArquivoNaoVerificado = "DocumentoDaInscricao.ArquivoNaoVerificado";
     public const string RemocaoSoNoRascunho = "DocumentoDaInscricao.RemocaoSoNoRascunho";
     public const string InscricaoAlterada = "DocumentoDaInscricao.InscricaoAlterada";
 }

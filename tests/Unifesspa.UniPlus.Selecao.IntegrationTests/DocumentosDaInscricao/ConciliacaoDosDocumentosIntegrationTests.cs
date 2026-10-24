@@ -24,18 +24,20 @@ public sealed class ConciliacaoDosDocumentosIntegrationTests : IClassFixture<Ins
 
     public ConciliacaoDosDocumentosIntegrationTests(InscricaoDbFixture db) => _db = db;
 
-    [Fact(DisplayName = "Só a apresentação com ao menos um arquivo confirmado conta para a exigência")]
-    public async Task ApresentacoesConfirmadas_IgnoraAQueSoTemPendente()
+    [Fact(DisplayName = "Só a apresentação com ao menos um arquivo verificado conta; o arquivo em verificação não atende a exigência")]
+    public async Task ApresentacoesVerificadas_IgnoraEmVerificacaoEPendente()
     {
         (SelecaoDbContext context, Guid inscricaoId, DocumentoExigido laudo) = await InscricaoComLaudoAsync();
         DocumentoDaInscricaoRepository repositorio = new(context);
         ApresentacaoDeDocumento confirmada = await ApresentacaoComArquivosAsync(repositorio, inscricaoId, laudo, confirmados: 1);
         await ApresentacaoComArquivosAsync(repositorio, inscricaoId, laudo, confirmados: 0);
+        await ApresentacaoComArquivosAsync(repositorio, inscricaoId, laudo, confirmados: 1, verificar: false);
         await context.SaveChangesAsync();
 
-        IReadOnlyList<ApresentacaoDeDocumento> contam = await repositorio.ListarApresentacoesConfirmadasAsync(inscricaoId);
+        ArquivosDaInscricao arquivos = await ArquivosDaInscricao.CarregarAsync(repositorio, inscricaoId, CancellationToken.None);
 
-        contam.Should().ContainSingle().Which.Id.Should().Be(confirmada.Id);
+        arquivos.ApresentacoesVerificadas().Should().ContainSingle()
+            .Which.Value.Should().ContainSingle().Which.Id.Should().Be(confirmada.Id);
     }
 
     [Fact(DisplayName = "Ao remover todos os arquivos de uma apresentação no mesmo envio, ela sai junto; o que constou de envio fica")]
@@ -59,7 +61,8 @@ public sealed class ConciliacaoDosDocumentosIntegrationTests : IClassFixture<Ins
 
         // Nenhuma exigência se aplica mais na versão fixada.
         await DocumentosEnviadosDaInscricao.ConciliarNoEnvioAsync(
-            repositorio, inscricaoId, FormularioDeTeste.AvaliacaoSemOcultos, [], DateTimeOffset.UtcNow, CancellationToken.None);
+            repositorio, await ArquivosDaInscricao.CarregarAsync(repositorio, inscricaoId, CancellationToken.None),
+            FormularioDeTeste.AvaliacaoSemOcultos, [], DateTimeOffset.UtcNow, CancellationToken.None);
         await context.SaveChangesAsync();
 
         await using SelecaoDbContext leitura = _db.CreateDbContext();
@@ -83,7 +86,7 @@ public sealed class ConciliacaoDosDocumentosIntegrationTests : IClassFixture<Ins
     }
 
     private static async Task<ApresentacaoDeDocumento> ApresentacaoComArquivosAsync(
-        DocumentoDaInscricaoRepository repositorio, Guid inscricaoId, DocumentoExigido laudo, int confirmados)
+        DocumentoDaInscricaoRepository repositorio, Guid inscricaoId, DocumentoExigido laudo, int confirmados, bool verificar = true)
     {
         ApresentacaoDeDocumento apresentacao = ApresentacaoDeDocumento.Criar(inscricaoId, laudo.Id, null);
         await repositorio.AdicionarApresentacaoAsync(apresentacao);
@@ -93,7 +96,11 @@ public sealed class ConciliacaoDosDocumentosIntegrationTests : IClassFixture<Ins
                 apresentacao.Id, inscricaoId, laudo, "application/pdf", 1024, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
             if (i < confirmados)
             {
-                arquivo.Confirmar(1024, new string('a', 64), TimeProvider.System);
+                arquivo.Confirmar("\"etag\"", TimeProvider.System);
+                if (verificar)
+                {
+                    arquivo.RegistrarVerificado(1024, new string('a', 64), FormatoPermitido.Pdf);
+                }
             }
 
             await repositorio.AdicionarArquivoAsync(arquivo);

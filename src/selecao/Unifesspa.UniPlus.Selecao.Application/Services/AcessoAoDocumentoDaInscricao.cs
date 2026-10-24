@@ -30,9 +30,30 @@ public static class AcessoAoDocumentoDaInscricao
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(timeProvider);
+
+        Result<Inscricao> doDono = await ResolverInscricaoDoDonoAsync(processoSeletivoId, userContext, inscricaoRepository, cancellationToken)
+            .ConfigureAwait(false);
+        if (doDono.IsFailure)
+        {
+            return doDono;
+        }
+
+        DomainError? foraDoPeriodo = await PeriodoDaInscricaoResolver.ConferirAsync(
+            processoSeletivoId, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, resolvedorFuso,
+            timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+        return foraDoPeriodo is not null ? Result<Inscricao>.Failure(foraDoPeriodo) : doDono;
+    }
+
+    /// <summary>A inscrição do dono do token, sem conferir o período: ler o que já foi enviado não depende dele.</summary>
+    public static async Task<Result<Inscricao>> ResolverInscricaoDoDonoAsync(
+        Guid processoSeletivoId,
+        IUserContext userContext,
+        IInscricaoRepository inscricaoRepository,
+        CancellationToken cancellationToken)
+    {
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(inscricaoRepository);
-        ArgumentNullException.ThrowIfNull(timeProvider);
 
         if (userContext.Cpf is not { } cpfDoToken)
         {
@@ -56,15 +77,9 @@ public static class AcessoAoDocumentoDaInscricao
             return Result<Inscricao>.Failure(Inscricao.NaoEncontrada);
         }
 
-        if (inscricao.ConferirDono(userContext.UserId ?? string.Empty) is { } erroDono)
-        {
-            return Result<Inscricao>.Failure(erroDono);
-        }
-
-        DomainError? foraDoPeriodo = await PeriodoDaInscricaoResolver.ConferirAsync(
-            processoSeletivoId, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, resolvedorFuso,
-            timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
-        return foraDoPeriodo is not null ? Result<Inscricao>.Failure(foraDoPeriodo) : Result<Inscricao>.Success(inscricao);
+        return inscricao.ConferirDono(userContext.UserId ?? string.Empty) is { } erroDono
+            ? Result<Inscricao>.Failure(erroDono)
+            : Result<Inscricao>.Success(inscricao);
     }
 
     /// <summary>

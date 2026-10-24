@@ -7,18 +7,16 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// O arquivo que o candidato envia para uma exigência: o formato e o tamanho vêm da exigência congelada,
-/// o conteúdo é conferido pela assinatura dos primeiros bytes e as chaves do armazenamento levam só o id.
+/// O arquivo que o candidato envia para uma exigência: o formato e o tamanho vêm da exigência congelada, a
+/// confirmação o põe em verificação, só o primeiro resultado do verificador vale e as chaves do armazenamento
+/// levam só o id.
 /// </summary>
 public sealed class ArquivoDaApresentacaoTests
 {
     private const long MegaByte = 1024 * 1024;
-
-    private static readonly byte[] Pdf = [.. "%PDF-1.7 laudo"u8];
-    private static readonly byte[] Jpeg = [0xFF, 0xD8, 0xFF, 0xE0, 0x00];
-    private static readonly byte[] Png = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00];
 
     private static DocumentoExigido Exigencia(
         IReadOnlyList<(string Formato, int? Teto)>? formatos = null, int? tamanhoMaximoBytes = null) => DocumentoExigido.Criar(
@@ -49,10 +47,11 @@ public sealed class ArquivoDaApresentacaoTests
     public void IniciarPendente_QualquerFormato_AceitaSoPdfJpegEPng(string tipoDeMidia, bool aceito) =>
         Iniciar(Exigencia(), tipoDeMidia, 1024).IsSuccess.Should().Be(aceito);
 
-    [Theory(DisplayName = "O limite é o da exigência (o menor entre o do formato e o global); o teto de 10 MB só vale quando ela não define nenhum")]
+    [Theory(DisplayName = "O limite é o da exigência (o menor entre o do formato e o global); o teto de 10 MB só vale quando ela não define nenhum, e nada passa de 20 MB")]
     [InlineData(null, null, 10 * MegaByte, 10 * MegaByte + 1)]
     [InlineData(2 * (int)MegaByte, null, 2 * MegaByte, 2 * MegaByte + 1)]
     [InlineData(20 * (int)MegaByte, null, 20 * MegaByte, 20 * MegaByte + 1)]
+    [InlineData(50 * (int)MegaByte, null, 20 * MegaByte, 20 * MegaByte + 1)]
     [InlineData(5 * (int)MegaByte, 1 * (int)MegaByte, 1 * MegaByte, 1 * MegaByte + 1)]
     public void IniciarPendente_Tamanho_RespeitaOMenorLimite(int? tetoDaExigencia, int? tetoDoFormato, long cabe, long naoCabe)
     {
@@ -63,43 +62,119 @@ public sealed class ArquivoDaApresentacaoTests
             .Should().ContainSingle(e => e.Error.Code == DocumentoDaInscricaoErrorCodes.TamanhoExcedido);
     }
 
+    private static ArquivoDaApresentacao EmVerificacao()
+    {
+        ArquivoDaApresentacao arquivo = Iniciar(Exigencia(), "application/pdf", 1024).Value!;
+        arquivo.Confirmar("\"etag-do-put\"", TimeProvider.System).IsSuccess.Should().BeTrue();
+        return arquivo;
+    }
+
     [Fact(DisplayName = "As chaves do armazenamento levam só o id do arquivo")]
     public void Chaves_LevamSoOIdDoArquivo()
     {
         ArquivoDaApresentacao arquivo = Iniciar(Exigencia(), "application/pdf", 1024).Value!;
-        arquivo.Confirmar(1024, new string('a', 64), TimeProvider.System).IsSuccess.Should().BeTrue();
 
         arquivo.ObjectKey.Should().Be($"selecao/documentos-da-inscricao/{arquivo.Id:D}/envio");
-        arquivo.ObjectKeyConfirmado.Should().Be($"selecao/documentos-da-inscricao/{arquivo.Id:D}/selado");
+        arquivo.ChaveDefinitivaPrevista.Should().Be($"selecao/documentos-da-inscricao/{arquivo.Id:D}/definitivo");
     }
 
-    [Theory(DisplayName = "O conteúdo tem de começar pela assinatura do formato declarado, não só declarar o tipo de mídia")]
-    [InlineData("application/pdf", "application/pdf", true)]
-    [InlineData("image/jpeg", "image/jpeg", true)]
-    [InlineData("image/png", "image/png", true)]
-    [InlineData("application/pdf", "image/jpeg", false)]
-    [InlineData("image/png", "application/pdf", false)]
-    [InlineData("image/jpeg", "image/png", false)]
-    public void ValidarConteudo_ConfereAAssinaturaDoFormatoDeclarado(string declarado, string conteudoDe, bool aceito)
+    [Fact(DisplayName = "Confirmar põe o arquivo em verificação com o ETag, e só o pendente pode ser confirmado")]
+    public void Confirmar_PoeEmVerificacao_ESoUmaVez()
     {
-        byte[] conteudo = conteudoDe switch { "application/pdf" => Pdf, "image/jpeg" => Jpeg, _ => Png };
-        ArquivoDaApresentacao arquivo = Iniciar(Exigencia(), declarado, conteudo.Length).Value!;
+        ArquivoDaApresentacao arquivo = EmVerificacao();
 
-        Result resultado = arquivo.ValidarConteudo(conteudo.Length, declarado, conteudo);
+        arquivo.Situacao.Should().Be(SituacaoDoArquivoDoCandidato.EmVerificacao);
+        arquivo.ETag.Should().Be("\"etag-do-put\"");
+        arquivo.Publicacoes.Should().Be(1);
+        arquivo.ProximaPublicacaoEm.Should().NotBeNull();
+        arquivo.Confirmar("outro", TimeProvider.System).Error!.Code
+            .Should().Be(DocumentoDaInscricaoErrorCodes.StatusInvalidoParaConfirmacao);
+    }
 
-        resultado.IsSuccess.Should().Be(aceito);
-        if (!aceito)
+    [Theory(DisplayName = "Confirmar recusa o ETag ausente ou em branco e deixa o arquivo pendente")]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Confirmar_ETagEmBranco_Recusa(string? etag)
+    {
+        ArquivoDaApresentacao arquivo = Iniciar(Exigencia(), "application/pdf", 1024).Value!;
+
+        arquivo.Confirmar(etag!, TimeProvider.System).Error!.Code.Should().Be(DocumentoDaInscricaoErrorCodes.ETagObrigatorio);
+        arquivo.Situacao.Should().Be(SituacaoDoArquivoDoCandidato.Pendente);
+    }
+
+    [Fact(DisplayName = "O prazo da próxima publicação dobra a cada uma, até o teto")]
+    public void RegistrarPublicacao_PrazoCresce_ComTeto()
+    {
+        PoliticaDeRepublicacao politica = new(TimeSpan.FromMinutes(10), TimeSpan.FromHours(1));
+        DateTimeOffset agora = new(2026, 10, 24, 12, 0, 0, TimeSpan.Zero);
+        ArquivoDaApresentacao arquivo = Iniciar(Exigencia(), "application/pdf", 1024).Value!;
+        arquivo.Confirmar("etag", new RelogioFixo(agora), politica).IsSuccess.Should().BeTrue();
+
+        List<TimeSpan> prazos = [arquivo.ProximaPublicacaoEm!.Value - agora];
+        for (int i = 0; i < 4; i++)
         {
-            resultado.Error!.Code.Should().Be(DocumentoDaInscricaoErrorCodes.ConteudoNaoConfereComFormato);
+            arquivo.RegistrarPublicacao(new RelogioFixo(agora), politica);
+            prazos.Add(arquivo.ProximaPublicacaoEm!.Value - agora);
         }
+
+        prazos.Should().Equal(
+            TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(20), TimeSpan.FromMinutes(40), TimeSpan.FromHours(1), TimeSpan.FromHours(1));
+        arquivo.Publicacoes.Should().Be(5);
     }
 
-    [Fact(DisplayName = "Arquivo que passou do limite entre o início e a confirmação é recusado pelo tamanho lido")]
-    public void ValidarConteudo_TamanhoLidoAcimaDoLimite_Recusa()
+    [Theory(DisplayName = "O verificado diverge do declarado no formato, no tamanho e no SHA-256 que não tem 64 hexadecimais")]
+    [InlineData(FormatoPermitido.Png, 1024, 'a', true)]
+    [InlineData(FormatoPermitido.Pdf, 0, 'a', true)]
+    [InlineData(FormatoPermitido.Pdf, 21 * MegaByte, 'a', true)]
+    [InlineData(FormatoPermitido.Pdf, 1024, 'g', true)]
+    [InlineData(FormatoPermitido.Pdf, 1024, 'a', false)]
+    public void DivergenciaDoVerificado_ConfereFormatoTamanhoEHash(FormatoPermitido formato, long tamanho, char digito, bool diverge)
     {
-        ArquivoDaApresentacao arquivo = Iniciar(Exigencia(tamanhoMaximoBytes: (int)MegaByte), "application/pdf", 1024).Value!;
+        ArquivoDaApresentacao arquivo = EmVerificacao();
 
-        arquivo.ValidarConteudo(MegaByte + 1, "application/pdf", Pdf).Error!.Code
-            .Should().Be(DocumentoDaInscricaoErrorCodes.TamanhoExcedido);
+        string? divergencia = arquivo.DivergenciaDoVerificado(tamanho, new string(digito, 64), formato);
+
+        (divergencia is not null).Should().Be(diverge);
+    }
+
+    [Fact(DisplayName = "Só o primeiro resultado vale: o segundo, ainda que de outro veredicto, não altera o arquivo")]
+    public void Resultado_SoOPrimeiroPrevalece()
+    {
+        ArquivoDaApresentacao arquivo = EmVerificacao();
+
+        arquivo.RegistrarVerificado(2048, new string('a', 64), FormatoPermitido.Pdf).Should().BeTrue();
+        arquivo.RegistrarRecusa(MotivoDeRecusaDoArquivo.NaoPassouNaVerificacaoDeSeguranca).Should().BeFalse();
+        arquivo.PedirReenvio().Should().BeFalse();
+
+        arquivo.Situacao.Should().Be(SituacaoDoArquivoDoCandidato.Verificado);
+        arquivo.TamanhoBytes.Should().Be(2048);
+        arquivo.ChaveDefinitiva.Should().Be(arquivo.ChaveDefinitivaPrevista);
+        arquivo.MensagemAoCandidato.Should().BeNull();
+    }
+
+    [Theory(DisplayName = "A mensagem de recusa diz o que corrigir e nunca nomeia a ameaça")]
+    [InlineData(MotivoDeRecusaDoArquivo.TamanhoExcedido, "Este arquivo passa do tamanho máximo de 10 MB para este documento. Envie um arquivo menor.")]
+    [InlineData(MotivoDeRecusaDoArquivo.FormatoNaoCorresponde, "O conteúdo deste arquivo não corresponde ao formato PDF. Envie o arquivo original.")]
+    [InlineData(MotivoDeRecusaDoArquivo.PdfComSenha, "Este PDF está protegido por senha. Envie o arquivo sem senha.")]
+    [InlineData(MotivoDeRecusaDoArquivo.NaoPassouNaVerificacaoDeSeguranca, "Este arquivo não passou na verificação de segurança (antivírus) e não foi aceito. Envie outro arquivo.")]
+    public void Recusa_MensagemDaUniReq0027(MotivoDeRecusaDoArquivo motivo, string mensagem)
+    {
+        ArquivoDaApresentacao arquivo = EmVerificacao();
+
+        arquivo.RegistrarRecusa(motivo).Should().BeTrue();
+
+        arquivo.MensagemAoCandidato.Should().Be(mensagem);
+    }
+
+    [Fact(DisplayName = "Em verificação e a reenviar têm a mensagem própria da tela")]
+    public void Mensagens_EmVerificacaoEReenvio()
+    {
+        ArquivoDaApresentacao arquivo = EmVerificacao();
+        arquivo.MensagemAoCandidato.Should().Be("Arquivo em verificação. Isso costuma levar poucos segundos.");
+
+        arquivo.PedirReenvio().Should().BeTrue();
+
+        arquivo.MensagemAoCandidato.Should().Be("Não recebemos este arquivo. Envie-o novamente.");
     }
 }

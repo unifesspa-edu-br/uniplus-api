@@ -85,7 +85,7 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
         await unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Descartar o rascunho agenda a limpeza das duas chaves de cada arquivo de documento, sem tocar o armazenamento")]
+    [Fact(DisplayName = "Descartar o rascunho não agenda a chave de envio, que o bucket expira sozinho, nem a definitiva do arquivo ainda pendente")]
     public async Task Handle_RascunhoComArquivos_ApagaOsObjetos()
     {
         IDocumentoDaInscricaoRepository documentos = Substitute.For<IDocumentoDaInscricaoRepository>();
@@ -99,8 +99,8 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
         (Result resultado, _, _) = await DescartarNaVersaoDivulgada(static r => r.ETag, documentos: documentos);
 
         resultado.IsSuccess.Should().BeTrue();
-        await documentos.Received(1).AgendarLimpezaAsync(arquivo.ObjectKey, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
-        await documentos.Received(1).AgendarLimpezaAsync(arquivo.ChaveSelada, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
+        await documentos.DidNotReceive().AgendarLimpezaAsync(arquivo.ObjectKey, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
+        await documentos.DidNotReceive().AgendarLimpezaAsync(arquivo.ChaveDefinitivaPrevista, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Com as inscrições encerradas, o rascunho não é descartado")]

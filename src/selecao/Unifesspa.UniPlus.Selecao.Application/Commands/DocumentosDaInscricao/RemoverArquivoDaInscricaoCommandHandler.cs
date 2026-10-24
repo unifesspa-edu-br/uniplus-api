@@ -14,9 +14,9 @@ using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 
 /// <summary>
 /// Handler de <see cref="RemoverArquivoDaInscricaoCommand"/>. Só o rascunho remove: depois do envio da
-/// inscrição o arquivo é retido. Apaga o registro e agenda a limpeza das duas
-/// chaves do armazenamento, na mesma transação: a rotina apaga a selada na próxima execução e a de envio depois do
-/// prazo da URL, nunca antes do commit.
+/// inscrição o arquivo é retido. Apaga o registro e agenda a limpeza das chaves
+/// do armazenamento, na mesma transação: a rotina apaga a definitiva, quando o arquivo já foi promovido, na
+/// próxima execução e a de envio depois do prazo da URL, nunca antes do commit.
 /// </summary>
 public static class RemoverArquivoDaInscricaoCommandHandler
 {
@@ -74,7 +74,7 @@ public static class RemoverArquivoDaInscricaoCommandHandler
         await documentoRepository.RemoverArquivoAsync(arquivo, cancellationToken).ConfigureAwait(false);
 
         // O armazenamento só é tocado pela rotina, depois do commit; a de envio espera o prazo da URL.
-        await AgendaDeLimpezaDoArquivoDoCandidato.AgendarAsync(documentoRepository, arquivo, comSelada: true, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+        await AgendaDeLimpezaDoArquivoDoCandidato.AgendarAsync(documentoRepository, arquivo, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
         return Result.Success();

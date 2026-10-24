@@ -11,8 +11,8 @@ using Microsoft.Extensions.Logging;
 /// Remove os registros de arquivo enviado que ficaram pendentes além do prazo — do documento do
 /// Edital, do modelo de documento e do documento da inscrição — junto dos objetos que as URLs de envio
 /// deles apontavam no armazenamento privado. O confirmado nunca é removido. Apaga também as chaves
-/// agendadas em <c>chaves_a_limpar</c> (envio de arquivo confirmado, removido ou descartado, e selada
-/// órfã), depois do commit de quem as agendou.
+/// agendadas em <c>chaves_a_limpar</c> (envio e definitiva de arquivo do candidato removido ou descartado),
+/// depois do commit de quem as agendou.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -23,10 +23,8 @@ using Microsoft.Extensions.Logging;
 /// voltaria a encontrar.
 /// </para>
 /// <para>
-/// Apagar o objeto de um pendente que é confirmado ao mesmo tempo não perde nada: a confirmação
-/// lê o conteúdo antes de reivindicar o registro e grava a cópia selada numa chave própria, que é
-/// a única que o confirmado usa dali em diante. A remoção do registro é condicionada no banco ao
-/// pendente vencido e não alcança o que a confirmação já reivindicou.
+/// A remoção do registro é condicionada no banco ao pendente vencido. O objeto pendente do candidato não é
+/// removido: o bucket de envio expira sozinho.
 /// </para>
 /// </remarks>
 public sealed partial class RemocaoDeArquivosPendentesVencidos
@@ -42,9 +40,9 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
     /// </summary>
     public static readonly TimeSpan Tolerancia = TimeSpan.FromHours(1);
 
-    private readonly IArquivoEnviadoRepository[] _repositorios;
+    private readonly (IArquivoEnviadoRepository Repositorio, Func<string, CancellationToken, Task>? RemoverObjeto)[] _fontes;
     private readonly IDocumentoDaInscricaoRepository _documentosDaInscricao;
-    private readonly IArquivoArmazenadoStorage _storage;
+    private readonly IArquivoDoCandidatoStorage _armazenamentoDoCandidato;
     private readonly TimeProvider _clock;
     private readonly ILogger<RemocaoDeArquivosPendentesVencidos> _logger;
 
@@ -53,6 +51,7 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
         IModeloDeDocumentoRepository modelosDeDocumento,
         IDocumentoDaInscricaoRepository documentosDaInscricao,
         IArquivoArmazenadoStorage storage,
+        IArquivoDoCandidatoStorage armazenamentoDoCandidato,
         TimeProvider clock,
         ILogger<RemocaoDeArquivosPendentesVencidos> logger)
     {
@@ -60,12 +59,18 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
         ArgumentNullException.ThrowIfNull(modelosDeDocumento);
         ArgumentNullException.ThrowIfNull(documentosDaInscricao);
         ArgumentNullException.ThrowIfNull(storage);
+        ArgumentNullException.ThrowIfNull(armazenamentoDoCandidato);
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentNullException.ThrowIfNull(logger);
 
-        _repositorios = [documentosAPublicar, modelosDeDocumento, documentosDaInscricao];
+        _fontes =
+        [
+            (documentosAPublicar, storage.RemoverAsync),
+            (modelosDeDocumento, storage.RemoverAsync),
+            (documentosDaInscricao, null),
+        ];
         _documentosDaInscricao = documentosDaInscricao;
-        _storage = storage;
+        _armazenamentoDoCandidato = armazenamentoDoCandidato;
         _clock = clock;
         _logger = logger;
     }
@@ -78,9 +83,9 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
     {
         DateTimeOffset agora = _clock.GetUtcNow() - Tolerancia;
         int removidos = 0;
-        foreach (IArquivoEnviadoRepository repositorio in _repositorios)
+        foreach ((IArquivoEnviadoRepository repositorio, Func<string, CancellationToken, Task>? removerObjeto) in _fontes)
         {
-            removidos += await RemoverVencidosAsync(repositorio, agora, cancellationToken).ConfigureAwait(false);
+            removidos += await RemoverVencidosAsync(repositorio, removerObjeto, agora, cancellationToken).ConfigureAwait(false);
         }
 
         await LimparChavesAgendadasAsync(cancellationToken).ConfigureAwait(false);
@@ -99,7 +104,10 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
     /// insistiria contra um armazenamento indisponível em vez de esperar a próxima.
     /// </summary>
     private async Task<int> RemoverVencidosAsync(
-        IArquivoEnviadoRepository repositorio, DateTimeOffset agora, CancellationToken cancellationToken)
+        IArquivoEnviadoRepository repositorio,
+        Func<string, CancellationToken, Task>? removerObjeto,
+        DateTimeOffset agora,
+        CancellationToken cancellationToken)
     {
         int removidos = 0;
         while (true)
@@ -111,7 +119,7 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
             bool houveFalha = false;
             foreach (ArquivoPendenteVencido pendente in lote)
             {
-                if (!await RemoverObjetoAsync(pendente, cancellationToken).ConfigureAwait(false))
+                if (removerObjeto is not null && !await RemoverObjetoAsync(pendente, removerObjeto, cancellationToken).ConfigureAwait(false))
                 {
                     houveFalha = true;
                     continue;
@@ -131,9 +139,8 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
     }
 
     /// <summary>
-    /// Apaga as chaves agendadas cuja hora passou — a chave de envio do arquivo confirmado, removido ou
-    /// descartado, que a URL pré-assinada ainda pode recriar em claro até vencer, e a selada do pendente
-    /// vencido. A chave sai da agenda depois de apagada; a falha fica para a próxima execução.
+    /// Apaga as chaves agendadas cuja hora passou. A chave agendada é sempre a definitiva do arquivo do candidato, no
+    /// bucket definitivo. Ela sai da agenda depois de apagada; a falha fica para a próxima execução.
     /// </summary>
     private async Task LimparChavesAgendadasAsync(CancellationToken cancellationToken)
     {
@@ -147,7 +154,7 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
             bool houveFalha = false;
             foreach (ChaveALimpar chave in lote)
             {
-                if (!await RemoverObjetoAsync(new ArquivoPendenteVencido(chave.Id, chave.ObjectKey), cancellationToken).ConfigureAwait(false))
+                if (!await RemoverObjetoAsync(new ArquivoPendenteVencido(chave.Id, chave.ObjectKey), _armazenamentoDoCandidato.RemoverDefinitivoAsync, cancellationToken).ConfigureAwait(false))
                 {
                     houveFalha = true;
                     continue;
@@ -163,11 +170,12 @@ public sealed partial class RemocaoDeArquivosPendentesVencidos
         }
     }
 
-    private async Task<bool> RemoverObjetoAsync(ArquivoPendenteVencido pendente, CancellationToken cancellationToken)
+    private async Task<bool> RemoverObjetoAsync(
+        ArquivoPendenteVencido pendente, Func<string, CancellationToken, Task> removerObjeto, CancellationToken cancellationToken)
     {
         try
         {
-            await _storage.RemoverAsync(pendente.ObjectKey, cancellationToken).ConfigureAwait(false);
+            await removerObjeto(pendente.ObjectKey, cancellationToken).ConfigureAwait(false);
             return true;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)

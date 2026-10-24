@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
+using Microsoft.Extensions.Options;
+
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
@@ -17,6 +19,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
+using Unifesspa.UniPlus.Verificador.Contratos;
 
 /// <summary>
 /// Os três passos do envio de documento da inscrição: o dono do token, a exigência na árvore congelada da
@@ -37,9 +40,8 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
     private readonly IProcessoSeletivoRepository _processos = Substitute.For<IProcessoSeletivoRepository>();
     private readonly IRegistroCodecsEnvelope _codecs = Substitute.For<IRegistroCodecsEnvelope>();
     private readonly IDocumentoDaInscricaoRepository _documentos = Substitute.For<IDocumentoDaInscricaoRepository>();
-    private readonly IArquivoArmazenadoStorage _storage = Substitute.For<IArquivoArmazenadoStorage>();
+    private readonly IArquivoDoCandidatoStorage _storage = Substitute.For<IArquivoDoCandidatoStorage>();
     private readonly ISelecaoUnitOfWork _unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
-    private readonly IProtecaoDoConteudoSelado _protecao = Substitute.For<IProtecaoDoConteudoSelado>();
     private readonly Guid _versaoId;
     private readonly VersaoConfiguracao _versao;
     private readonly GrafoConfiguracao _grafo;
@@ -71,6 +73,7 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
         _storage.GerarUrlUploadAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
             .Returns("https://armazenamento.exemplo/envio");
         _inscricoes.TentarAvancarRevisaoAsync(Arg.Any<Guid>(), Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>()).Returns(true);
+        _documentos.TentarReivindicarConfirmacaoAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateTimeOffset>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>()).Returns(true);
     }
 
     private static FaseCronograma Fase(int ordem, string codigo, bool coletaInscricao) => FaseCronograma.Criar(
@@ -115,22 +118,22 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
             _inscricoes, _processos, _certame, _codecs, DivulgacaoDeTeste.Fuso(), _documentos, _storage, _unitOfWork, Usuario(),
             new RelogioFixo(agora ?? DivulgacaoDeTeste.DentroDoPeriodo), CancellationToken.None);
 
-    private Task<Result<ArquivoDaApresentacaoDto>> Confirmar(Guid arquivoId) =>
+    private Task<(Result<ArquivoDaApresentacaoDto> Resposta, IEnumerable<object> Mensagens)> Confirmar(Guid arquivoId) =>
         ConfirmarEnvioDeDocumentoDaInscricaoCommandHandler.Handle(
-            new ConfirmarEnvioDeDocumentoDaInscricaoCommand(ProcessoId, arquivoId),
-            _inscricoes, _processos, _certame, _codecs, DivulgacaoDeTeste.Fuso(), _documentos, _storage, _protecao, _unitOfWork, Usuario(),
-            DivulgacaoDeTeste.Relogio, CancellationToken.None);
+            new ConfirmarEnvioDeDocumentoDaInscricaoCommand(ProcessoId, arquivoId, "\"etag-do-put\""),
+            _inscricoes, _processos, _certame, _codecs, DivulgacaoDeTeste.Fuso(), _documentos, _unitOfWork,
+            Options.Create(new ReconciliacaoDaVerificacaoOptions()), Usuario(), DivulgacaoDeTeste.Relogio, CancellationToken.None);
 
     private Task<Result> Remover(Guid arquivoId) =>
         RemoverArquivoDaInscricaoCommandHandler.Handle(
             new RemoverArquivoDaInscricaoCommand(ProcessoId, arquivoId),
-            _inscricoes, _processos, _certame, _codecs, DivulgacaoDeTeste.Fuso(), _documentos, _unitOfWork, Usuario(),
-            DivulgacaoDeTeste.Relogio, CancellationToken.None);
+            _inscricoes, _processos, _certame, _codecs, DivulgacaoDeTeste.Fuso(), _documentos, _unitOfWork,
+            Usuario(), DivulgacaoDeTeste.Relogio, CancellationToken.None);
 
-    private ArquivoDaApresentacao ArquivoPendente(Inscricao inscricao)
+    private ArquivoDaApresentacao ArquivoPendente(Inscricao inscricao, TimeProvider? relogio = null)
     {
         ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(
-            Guid.CreateVersion7(), inscricao.Id, _laudo, "application/pdf", 2048, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+            Guid.CreateVersion7(), inscricao.Id, _laudo, "application/pdf", 2048, relogio ?? TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         _documentos.ObterArquivoAsync(arquivo.Id, Arg.Any<CancellationToken>()).Returns(arquivo);
         _documentos.ObterApresentacaoAsync(arquivo.ApresentacaoId, Arg.Any<CancellationToken>())
             .Returns(ApresentacaoDeDocumento.Criar(inscricao.Id, _laudo.Id, null));
@@ -263,53 +266,91 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
             Guid.CreateVersion7(), Guid.CreateVersion7(), _laudo, "application/pdf", 2048, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         _documentos.ObterArquivoAsync(deOutra.Id, Arg.Any<CancellationToken>()).Returns(deOutra);
 
-        (await Confirmar(deOutra.Id)).Error!.Code.Should().Be(DocumentoDaInscricaoErrorCodes.ArquivoNaoEncontrado);
+        (await Confirmar(deOutra.Id)).Resposta.Error!.Code.Should().Be(DocumentoDaInscricaoErrorCodes.ArquivoNaoEncontrado);
         (await Remover(deOutra.Id)).Error!.Code.Should().Be(DocumentoDaInscricaoErrorCodes.ArquivoNaoEncontrado);
-        alheio.Status.Should().Be(StatusArquivoEnviado.Pendente);
-        await _storage.DidNotReceive().RemoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        alheio.Situacao.Should().Be(SituacaoDoArquivoDoCandidato.Pendente);
+        await _storage.DidNotReceive().RemoverDefinitivoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Inscrição que mudou entre a leitura e a confirmação não recebe o arquivo")]
-    public async Task Confirmar_InscricaoAlterada_NaoGrava()
+    [Fact(DisplayName = "Inscrição que mudou entre a leitura e a confirmação não recebe o arquivo nem o pedido de verificação")]
+    public async Task Confirmar_InscricaoAlterada_NaoGravaNemPublica()
     {
         Inscricao inscricao = Rascunho();
         ArquivoDaApresentacao arquivo = ArquivoPendente(inscricao);
-        byte[] conteudo = [.. "%PDF-1.7"u8];
-        _storage.ObterInfoAsync(arquivo.ObjectKey, Arg.Any<CancellationToken>()).Returns(new InfoObjetoArmazenado(conteudo.Length, "application/pdf"));
-        _storage.AbrirLeituraAsync(arquivo.ObjectKey, Arg.Any<long>(), Arg.Any<CancellationToken>()).Returns(_ => new MemoryStream(conteudo));
-        _protecao.VerificarAsync(Arg.Any<byte[]>(), Arg.Any<CancellationToken>()).Returns(Result.Success());
         _inscricoes.TentarAvancarRevisaoAsync(inscricao.Id, inscricao.Revisao, false, Arg.Any<CancellationToken>()).Returns(false);
 
-        Result<ArquivoDaApresentacaoDto> resultado = await Confirmar(arquivo.Id);
+        (Result<ArquivoDaApresentacaoDto> resposta, IEnumerable<object> mensagens) = await Confirmar(arquivo.Id);
 
-        resultado.Error!.Code.Should().Be(DocumentoDaInscricaoErrorCodes.InscricaoAlterada);
-        arquivo.Status.Should().Be(StatusArquivoEnviado.Pendente);
-        await _storage.DidNotReceive().SalvarConteudoSeladoAsync(Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+        resposta.Error!.Code.Should().Be(DocumentoDaInscricaoErrorCodes.InscricaoAlterada);
+        arquivo.Situacao.Should().Be(SituacaoDoArquivoDoCandidato.Pendente);
+        mensagens.Should().BeEmpty();
+        await _documentos.Received(1).DesfazerReivindicacaoAsync(arquivo.Id, Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Confirmado o arquivo, a chave do envio, em claro, só é agendada para limpeza: o armazenamento não é tocado antes do commit")]
-    public async Task Confirmar_Sucesso_AgendaALimpezaDoEnvio()
+    [Fact(DisplayName = "ETag em branco é recusado pelo domínio antes de reivindicar o arquivo")]
+    public async Task Confirmar_ETagEmBranco_RecusaSemReivindicar()
     {
         Inscricao inscricao = Rascunho();
         ArquivoDaApresentacao arquivo = ArquivoPendente(inscricao);
-        byte[] conteudo = [.. "%PDF-1.7"u8];
-        _storage.ObterInfoAsync(arquivo.ObjectKey, Arg.Any<CancellationToken>()).Returns(new InfoObjetoArmazenado(conteudo.Length, "application/pdf"));
-        _storage.AbrirLeituraAsync(arquivo.ObjectKey, Arg.Any<long>(), Arg.Any<CancellationToken>()).Returns(_ => new MemoryStream(conteudo));
-        _protecao.VerificarAsync(Arg.Any<byte[]>(), Arg.Any<CancellationToken>()).Returns(Result.Success());
-        _protecao.SelarAsync(Arg.Any<byte[]>(), Arg.Any<CancellationToken>()).Returns([1, 2, 3]);
-        _documentos.TentarReivindicarConfirmacaoAsync(arquivo.Id, Arg.Any<CancellationToken>()).Returns(true);
 
-        Result<ArquivoDaApresentacaoDto> resultado = await Confirmar(arquivo.Id);
+        (Result<ArquivoDaApresentacaoDto> resposta, IEnumerable<object> mensagens) = await ConfirmarEnvioDeDocumentoDaInscricaoCommandHandler.Handle(
+            new ConfirmarEnvioDeDocumentoDaInscricaoCommand(ProcessoId, arquivo.Id, "  "),
+            _inscricoes, _processos, _certame, _codecs, DivulgacaoDeTeste.Fuso(), _documentos, _unitOfWork,
+            Options.Create(new ReconciliacaoDaVerificacaoOptions()), Usuario(), DivulgacaoDeTeste.Relogio, CancellationToken.None);
 
-        resultado.IsSuccess.Should().BeTrue();
-        await _storage.DidNotReceive().RemoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
-        await _documentos.Received(1).AgendarLimpezaAsync(
-            arquivo.ObjectKey, arquivo.ExpiraEm + RemocaoDeArquivosPendentesVencidos.Tolerancia, Arg.Any<CancellationToken>());
-        await _documentos.Received(1).AgendarLimpezaAsync(
-            arquivo.ObjectKey, Arg.Is<DateTimeOffset>(d => d < arquivo.ExpiraEm + RemocaoDeArquivosPendentesVencidos.Tolerancia), Arg.Any<CancellationToken>());
+        resposta.Error!.Code.Should().Be(DocumentoDaInscricaoErrorCodes.ETagObrigatorio);
+        mensagens.Should().BeEmpty();
+        await _documentos.DidNotReceiveWithAnyArgs().TentarReivindicarConfirmacaoAsync(default, default!, default, default, default);
     }
 
-    [Fact(DisplayName = "Remover o arquivo do rascunho apaga o registro e só agenda as duas chaves: o armazenamento é da rotina, depois do commit")]
+    [Fact(DisplayName = "Pendente vencido é recusado como expirado, sem disputar a revisão nem publicar pedido")]
+    public async Task Confirmar_PendenteVencido_Recusa()
+    {
+        Inscricao inscricao = Rascunho();
+        ArquivoDaApresentacao arquivo = ArquivoPendente(inscricao, new RelogioFixo(DivulgacaoDeTeste.Relogio.GetUtcNow() - TimeSpan.FromHours(3)));
+
+        (Result<ArquivoDaApresentacaoDto> resposta, IEnumerable<object> mensagens) = await Confirmar(arquivo.Id);
+
+        resposta.Error!.Code.Should().Be(DocumentoDaInscricaoErrorCodes.ObjetoNaoEncontrado);
+        mensagens.Should().BeEmpty();
+        await _inscricoes.DidNotReceiveWithAnyArgs().TentarAvancarRevisaoAsync(default, default, default, default);
+    }
+
+    [Fact(DisplayName = "Confirmação concorrente com a remoção do pendente vencido perde a reivindicação e é recusada, sem pedido")]
+    public async Task Confirmar_ReivindicacaoPerdida_Recusa()
+    {
+        Inscricao inscricao = Rascunho();
+        ArquivoDaApresentacao arquivo = ArquivoPendente(inscricao);
+        _documentos.TentarReivindicarConfirmacaoAsync(arquivo.Id, Arg.Any<string>(), Arg.Any<DateTimeOffset>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>()).Returns(false);
+
+        (Result<ArquivoDaApresentacaoDto> resposta, IEnumerable<object> mensagens) = await Confirmar(arquivo.Id);
+
+        resposta.Error!.Code.Should().Be(DocumentoDaInscricaoErrorCodes.StatusInvalidoParaConfirmacao);
+        mensagens.Should().BeEmpty();
+        await _inscricoes.DidNotReceiveWithAnyArgs().TentarAvancarRevisaoAsync(default, default, default, default);
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Confirmar não lê o objeto: o arquivo fica em verificação e o pedido, com o ETag e o máximo da exigência, sai como mensagem da mesma transação")]
+    public async Task Confirmar_Sucesso_PoeEmVerificacaoEPublicaOPedido()
+    {
+        Inscricao inscricao = Rascunho();
+        ArquivoDaApresentacao arquivo = ArquivoPendente(inscricao);
+
+        (Result<ArquivoDaApresentacaoDto> resposta, IEnumerable<object> mensagens) = await Confirmar(arquivo.Id);
+
+        resposta.IsSuccess.Should().BeTrue();
+        resposta.Value!.Situacao.Should().Be(SituacaoDoArquivoDoCandidato.EmVerificacao);
+        resposta.Value.Mensagem.Should().Be("Arquivo em verificação. Isso costuma levar poucos segundos.");
+        mensagens.Should().ContainSingle().Which.Should().Be(new PedidoDeVerificacaoDeArquivo(
+            arquivo.Id, arquivo.ObjectKey, "\"etag-do-put\"", arquivo.ChaveDefinitivaPrevista, FormatoDoArquivo.Pdf, arquivo.TamanhoMaximoBytes));
+        _documentos.Received(1).Atualizar(arquivo);
+        await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        await _storage.ReceivedWithAnyArgs(0).RemoverDefinitivoAsync(default!, default);
+    }
+
+    [Fact(DisplayName = "Remover o arquivo pendente do rascunho apaga o registro e não agenda nada: o bucket de envio expira sozinho")]
     public async Task Remover_Rascunho_ApagaRegistroEAgendaAsDuasChaves()
     {
         Inscricao inscricao = Rascunho();
@@ -320,10 +361,9 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
         resultado.IsSuccess.Should().BeTrue();
         await _inscricoes.Received(1).TentarAvancarRevisaoAsync(inscricao.Id, inscricao.Revisao, true, Arg.Any<CancellationToken>());
         await _documentos.Received(1).RemoverArquivoAsync(arquivo, Arg.Any<CancellationToken>());
-        await _storage.DidNotReceive().RemoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
-        await _documentos.Received(1).AgendarLimpezaAsync(
-            arquivo.ObjectKey, arquivo.ExpiraEm + RemocaoDeArquivosPendentesVencidos.Tolerancia, Arg.Any<CancellationToken>());
-        await _documentos.Received(1).AgendarLimpezaAsync(arquivo.ChaveSelada, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
+        await _storage.DidNotReceive().RemoverDefinitivoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _documentos.DidNotReceive().AgendarLimpezaAsync(arquivo.ObjectKey, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
+        await _documentos.DidNotReceive().AgendarLimpezaAsync(arquivo.ChaveDefinitivaPrevista, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Depois do envio da inscrição o arquivo é retido: a remoção é recusada e nada é apagado")]
@@ -337,7 +377,7 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
 
         resultado.Error!.Code.Should().Be(DocumentoDaInscricaoErrorCodes.RemocaoSoNoRascunho);
         await _documentos.DidNotReceive().RemoverArquivoAsync(Arg.Any<ArquivoDaApresentacao>(), Arg.Any<CancellationToken>());
-        await _storage.DidNotReceive().RemoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _storage.DidNotReceive().RemoverDefinitivoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Inscrição que virou envio ou cancelamento durante a remoção não perde o arquivo")]
@@ -351,6 +391,6 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
 
         resultado.Error!.Code.Should().Be(DocumentoDaInscricaoErrorCodes.InscricaoAlterada);
         await _documentos.DidNotReceive().RemoverArquivoAsync(Arg.Any<ArquivoDaApresentacao>(), Arg.Any<CancellationToken>());
-        await _storage.DidNotReceive().RemoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _storage.DidNotReceive().RemoverDefinitivoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 }

@@ -31,7 +31,7 @@ public sealed class DocumentosEnviadosDaInscricaoTests
         cenario.Arquivo.ConstouDeEnvio.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "O arquivo confirmado depois de composto o comprovante fica para o envio seguinte")]
+    [Fact(DisplayName = "O arquivo verificado depois de composto o comprovante fica para o envio seguinte")]
     public async Task ArquivoForaDoComprovante_NaoConstaDoEnvio()
     {
         DocumentoExigido laudo = Exigencia();
@@ -43,7 +43,8 @@ public sealed class DocumentosEnviadosDaInscricaoTests
                 new Dictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>>(), []),
         };
 
-        await DocumentosEnviadosDaInscricao.ConciliarNoEnvioAsync(cenario.Repositorio, InscricaoId, avaliacao, [], DateTimeOffset.UnixEpoch, CancellationToken.None);
+        await DocumentosEnviadosDaInscricao.ConciliarNoEnvioAsync(
+            cenario.Repositorio, await Carregar(cenario), avaliacao, [], DateTimeOffset.UnixEpoch, CancellationToken.None);
 
         cenario.Arquivo.ConstouDeEnvio.Should().BeFalse();
         await cenario.Repositorio.DidNotReceiveWithAnyArgs().RemoverArquivoAsync(default!, default);
@@ -58,8 +59,22 @@ public sealed class DocumentosEnviadosDaInscricaoTests
         await Conciliar(cenario, (laudo, SituacaoDoDocumento.NaoExigido, null));
 
         await cenario.Repositorio.Received(1).RemoverArquivoAsync(cenario.Arquivo, Arg.Any<CancellationToken>());
-        await cenario.Repositorio.Received(1).AgendarLimpezaAsync(cenario.Arquivo.ChaveSelada, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
-        await cenario.Repositorio.Received(1).AgendarLimpezaAsync(cenario.Arquivo.ObjectKey, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
+        await cenario.Repositorio.Received(1).AgendarLimpezaAsync(cenario.Arquivo.ChaveDefinitivaPrevista, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
+        await cenario.Repositorio.DidNotReceive().AgendarLimpezaAsync(cenario.Arquivo.ObjectKey, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "O comprovante nunca traz o arquivo em verificação, e a exigência obrigatória nessa situação espera o resultado")]
+    public async Task ArquivoEmVerificacao_NaoEVerificadoNemAtendeAExigencia()
+    {
+        DocumentoExigido laudo = Exigencia();
+        Cenario cenario = Cenario.Com(laudo, ocorrencia: null, verificado: false);
+
+        ArquivosDaInscricao arquivos = await Carregar(cenario);
+
+        arquivos.Verificados().Should().BeEmpty();
+        arquivos.ApresentacoesVerificadas().Should().BeEmpty();
+        arquivos.EmVerificacao()
+            .Should().ContainSingle().Which.Should().Be((laudo.Id, (string?)null));
     }
 
     [Fact(DisplayName = "O arquivo de exigência que a versão fixada não tem mais é removido")]
@@ -106,9 +121,13 @@ public sealed class DocumentosEnviadosDaInscricaoTests
                 new Dictionary<Guid, IReadOnlyList<PendenciaDaAvaliacao>>(),
                 []),
         };
-        IReadOnlyList<ArquivoConfirmado> noComprovante = await DocumentosEnviadosDaInscricao.ConfirmadosAsync(cenario.Repositorio, InscricaoId, CancellationToken.None);
-        await DocumentosEnviadosDaInscricao.ConciliarNoEnvioAsync(cenario.Repositorio, InscricaoId, avaliacao, noComprovante, DateTimeOffset.UnixEpoch, CancellationToken.None);
+        ArquivosDaInscricao arquivos = await Carregar(cenario);
+        await DocumentosEnviadosDaInscricao.ConciliarNoEnvioAsync(
+            cenario.Repositorio, arquivos, avaliacao, arquivos.Verificados(), DateTimeOffset.UnixEpoch, CancellationToken.None);
     }
+
+    private static Task<ArquivosDaInscricao> Carregar(Cenario cenario) =>
+        ArquivosDaInscricao.CarregarAsync(cenario.Repositorio, InscricaoId, CancellationToken.None);
 
     private static DocumentoExigido Exigencia() =>
         DocumentoExigido.Criar(
@@ -117,12 +136,16 @@ public sealed class DocumentosEnviadosDaInscricaoTests
 
     private sealed record Cenario(IDocumentoDaInscricaoRepository Repositorio, ArquivoDaApresentacao Arquivo)
     {
-        public static Cenario Com(DocumentoExigido exigencia, string? ocorrencia)
+        public static Cenario Com(DocumentoExigido exigencia, string? ocorrencia, bool verificado = true)
         {
             ApresentacaoDeDocumento apresentacao = ApresentacaoDeDocumento.Criar(InscricaoId, exigencia.Id, ocorrencia);
             ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(
                 apresentacao.Id, InscricaoId, exigencia, "application/pdf", 1024, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
-            arquivo.Confirmar(1024, new string('a', 64), TimeProvider.System);
+            arquivo.Confirmar("\"etag\"", TimeProvider.System);
+            if (verificado)
+            {
+                arquivo.RegistrarVerificado(1024, new string('a', 64), FormatoPermitido.Pdf);
+            }
 
             IDocumentoDaInscricaoRepository repositorio = Substitute.For<IDocumentoDaInscricaoRepository>();
             repositorio.ListarApresentacoesDaInscricaoAsync(InscricaoId, Arg.Any<CancellationToken>()).Returns([apresentacao]);

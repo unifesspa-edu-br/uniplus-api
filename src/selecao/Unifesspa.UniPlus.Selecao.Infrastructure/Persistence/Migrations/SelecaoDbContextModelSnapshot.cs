@@ -18,7 +18,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("selecao")
-                .HasAnnotation("ProductVersion", "10.0.12")
+                .HasAnnotation("ProductVersion", "10.0.13")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -259,6 +259,12 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("apresentacao_id");
 
+                    b.Property<string>("ChaveDefinitiva")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("chave_definitiva")
+                        .HasComment("A chave do objeto promovido ao bucket definitivo; nula enquanto não verificado.");
+
                     b.Property<DateTimeOffset?>("ConfirmadoEm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("confirmado_em");
@@ -266,11 +272,17 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.Property<bool>("ConstouDeEnvio")
                         .HasColumnType("boolean")
                         .HasColumnName("constou_de_envio")
-                        .HasComment("O arquivo confirmado já constou de um envio da inscrição; a limpeza dos envios seguintes nunca o apaga (UNI-REQ-0168).");
+                        .HasComment("O arquivo verificado já constou de um envio da inscrição; a limpeza dos envios seguintes nunca o apaga (UNI-REQ-0168).");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
+
+                    b.Property<string>("ETag")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("etag")
+                        .HasComment("O ETag que o PUT devolveu ao candidato, enviado na confirmação; fixa a versão do objeto que o verificador confere.");
 
                     b.Property<DateTimeOffset>("ExpiraEm")
                         .HasColumnType("timestamp with time zone")
@@ -285,28 +297,38 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
                         .HasColumnName("hash_sha256")
-                        .HasComment("O SHA-256 do conteúdo em claro, calculado no servidor na confirmação.");
+                        .HasComment("O SHA-256 do conteúdo, calculado pelo verificador; nulo enquanto não verificado.");
 
                     b.Property<Guid>("InscricaoId")
                         .HasColumnType("uuid")
                         .HasColumnName("inscricao_id");
+
+                    b.Property<int?>("MotivoDaRecusa")
+                        .HasColumnType("integer")
+                        .HasColumnName("motivo_da_recusa")
+                        .HasComment("Por que a verificação recusou o arquivo; nulo fora da recusa.");
 
                     b.Property<string>("ObjectKey")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
                         .HasColumnName("object_key")
-                        .HasComment("A chave do objeto do envio, em claro; só o id do arquivo a compõe. Apagada na confirmação.");
+                        .HasComment("A chave do objeto no bucket de envio (quarentena); só o id do arquivo a compõe.");
 
-                    b.Property<string>("ObjectKeyConfirmado")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("object_key_confirmado")
-                        .HasComment("A chave do conteúdo selado cifrado; nula enquanto pendente.");
+                    b.Property<DateTimeOffset?>("ProximaPublicacaoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("proxima_publicacao_em")
+                        .HasComment("Quando a reconciliação pode republicar o pedido: a última publicação mais o prazo, que cresce a cada publicação.");
 
-                    b.Property<int>("Status")
+                    b.Property<int>("Publicacoes")
                         .HasColumnType("integer")
-                        .HasColumnName("status");
+                        .HasColumnName("publicacoes")
+                        .HasComment("Quantas vezes o pedido de verificação foi publicado; o prazo da reconciliação dobra a cada uma.");
+
+                    b.Property<int>("Situacao")
+                        .HasColumnType("integer")
+                        .HasColumnName("situacao")
+                        .HasComment("Pendente (0), em verificação (1), verificado (2), recusado (3) ou reenvio necessário (4). Só o verificado atende a exigência.");
 
                     b.Property<long?>("TamanhoBytes")
                         .HasColumnType("bigint")
@@ -315,7 +337,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.Property<long>("TamanhoMaximoBytes")
                         .HasColumnType("bigint")
                         .HasColumnName("tamanho_maximo_bytes")
-                        .HasComment("O maior tamanho que a exigência admite para o formato; o teto do sistema (10 MB) só quando ela não define limite. Copiado da exigência no início do envio.");
+                        .HasComment("O maior tamanho que a exigência admite para o formato; o teto do sistema (10 MB) só quando ela não define limite, e nunca acima de 20 MB. Copiado da exigência no início do envio.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -330,9 +352,13 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.HasIndex("InscricaoId")
                         .HasDatabaseName("ix_arquivos_da_apresentacao_inscricao");
 
+                    b.HasIndex("ProximaPublicacaoEm")
+                        .HasDatabaseName("ix_arquivos_da_apresentacao_em_verificacao")
+                        .HasFilter("situacao = 1");
+
                     b.ToTable("arquivos_da_apresentacao", "selecao", t =>
                         {
-                            t.HasComment("O arquivo de uma apresentação de documento da inscrição. O conteúdo fica no armazenamento privado, cifrado; o nome original do arquivo não é guardado.");
+                            t.HasComment("O arquivo de uma apresentação de documento da inscrição. O conteúdo fica no armazenamento privado, cifrado pelo próprio armazenamento; o nome original do arquivo não é guardado.");
                         });
                 });
 
