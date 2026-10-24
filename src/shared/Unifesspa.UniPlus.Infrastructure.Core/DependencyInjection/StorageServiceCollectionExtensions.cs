@@ -101,15 +101,7 @@ public static class StorageServiceCollectionExtensions
         services.AddKeyedSingleton<IMinioClient>(StoragePublicClientKey, (sp, _) =>
         {
             StorageOptions opts = sp.GetRequiredService<IOptions<StorageOptions>>().Value;
-            bool endpointIgual = string.IsNullOrWhiteSpace(opts.PublicEndpoint) || opts.PublicEndpoint == opts.Endpoint;
-            bool sslIgual = opts.PublicUseSSL is null || opts.PublicUseSSL == opts.UseSSL;
-            if (endpointIgual && sslIgual)
-            {
-                return sp.GetRequiredKeyedService<IMinioClient>(StorageInternalClientKey);
-            }
-
-            string endpointResolvido = string.IsNullOrWhiteSpace(opts.PublicEndpoint) ? opts.Endpoint : opts.PublicEndpoint;
-            return BuildClient(opts, endpointResolvido, opts.PublicUseSSL ?? opts.UseSSL);
+            return ClienteDeAssinatura(opts, sp.GetRequiredKeyedService<IMinioClient>(StorageInternalClientKey));
         });
 
         // IHttpClientFactory — usado por MinioStorageService.DownloadLimitadoAsync
@@ -125,6 +117,31 @@ public static class StorageServiceCollectionExtensions
         return services;
     }
 
+    /// <summary>
+    /// Registra um <see cref="IStorageService"/> keyed com credenciais próprias, para o armazenamento que não pode usar a
+    /// credencial geral de <see cref="AddUniPlusStorage"/> (que enxerga todos os buckets). Exige que
+    /// <see cref="AddUniPlusStorage"/> tenha sido chamado; <paramref name="opcoes"/> deriva das opções gerais o que muda.
+    /// </summary>
+    public static IServiceCollection AddKeyedUniPlusStorage(
+        this IServiceCollection services, string chave, Func<IServiceProvider, StorageOptions> opcoes)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentException.ThrowIfNullOrWhiteSpace(chave);
+        ArgumentNullException.ThrowIfNull(opcoes);
+
+        return services.AddKeyedSingleton<IStorageService>(chave, (sp, _) =>
+        {
+            StorageOptions opts = opcoes(sp);
+            IMinioClient interno = BuildClient(opts, opts.Endpoint, opts.UseSSL);
+            return new MinioStorageService(
+                interno,
+                ClienteDeAssinatura(opts, interno),
+                sp.GetRequiredService<IHttpClientFactory>(),
+                Options.Create(opts),
+                sp.GetRequiredService<TimeProvider>());
+        });
+    }
+
     /// <summary>Chave do <see cref="IMinioClient"/> keyed usado para assinar URLs devolvidas a clientes externos.</summary>
     public const string StoragePublicClientKey = "storage-public";
 
@@ -136,6 +153,21 @@ public static class StorageServiceCollectionExtensions
     /// inequivocamente identificados — ver a nota em <see cref="AddUniPlusStorage"/>.
     /// </summary>
     public const string StorageInternalClientKey = "storage-internal";
+
+    // O cliente de assinatura só é outro quando o endpoint público difere do interno em host ou esquema (HTTP dentro do
+    // cluster, HTTPS no mesmo hostname por fora): a assinatura SigV4 inclui o Host.
+    private static IMinioClient ClienteDeAssinatura(StorageOptions opts, IMinioClient interno)
+    {
+        bool endpointIgual = string.IsNullOrWhiteSpace(opts.PublicEndpoint) || opts.PublicEndpoint == opts.Endpoint;
+        bool sslIgual = opts.PublicUseSSL is null || opts.PublicUseSSL == opts.UseSSL;
+        if (endpointIgual && sslIgual)
+        {
+            return interno;
+        }
+
+        string endpointResolvido = string.IsNullOrWhiteSpace(opts.PublicEndpoint) ? opts.Endpoint : opts.PublicEndpoint;
+        return BuildClient(opts, endpointResolvido, opts.PublicUseSSL ?? opts.UseSSL);
+    }
 
     [SuppressMessage(
         "Reliability",
