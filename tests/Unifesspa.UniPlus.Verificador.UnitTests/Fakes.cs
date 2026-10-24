@@ -20,6 +20,8 @@ internal sealed class ArmazenamentoFalso : IArmazenamentoDeArquivos
 
     public bool VersaoLegivel { get; set; } = true;
 
+    public ObjetoArmazenado? DefinitivoAoLer { get; set; }
+
     public int Leituras { get; private set; }
 
     public int Promocoes { get; private set; }
@@ -35,6 +37,11 @@ internal sealed class ArmazenamentoFalso : IArmazenamentoDeArquivos
     public async Task<bool> LerEnvioAsync(string chave, string etag, Stream destino, CancellationToken cancellationToken)
     {
         Leituras++;
+        if (DefinitivoAoLer is not null)
+        {
+            Definitivo = DefinitivoAoLer;
+        }
+
         if (!VersaoLegivel)
         {
             return false;
