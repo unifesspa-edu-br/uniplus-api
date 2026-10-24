@@ -1,6 +1,0 @@
-# Executável de POC: relaxa as mesmas regras que o host do spike de Event Sourcing relaxa
-# (ConfigureAwait em minimal API, tipos públicos do host, nomes com sublinhado).
-[*.cs]
-dotnet_diagnostic.CA2007.severity = none
-dotnet_diagnostic.CA1515.severity = none
-dotnet_diagnostic.CA1707.severity = none
