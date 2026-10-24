@@ -1,0 +1,27 @@
+# Sidecar do verificador (ADR-0146 e ADR-0147). A base de partida envelhece: reconstruir a cada release.
+FROM clamav/clamav:1.4.6
+
+USER root
+
+COPY docker/clamd-verificador/clamd.conf /etc/clamav/clamd.conf
+COPY docker/clamd-verificador/freshclam.conf /etc/clamav/freshclam.conf
+COPY docker/clamd-verificador/pua-ignoradas.ign2 /opt/clamav/pua-ignoradas.ign2
+COPY docker/clamd-verificador/iniciar.sh /usr/local/bin/iniciar-clamd.sh
+
+# A base de partida fica fora de /var/lib/clamav, que o pod monta como emptyDir. Se o freshclam
+# falhar no build, segue a base que a imagem de origem já traz.
+RUN mkdir -p /opt/clamav/base \
+    && cp /var/lib/clamav/*.cvd /opt/clamav/base/ \
+    && chown -R clamav:clamav /opt/clamav \
+    && printf 'DatabaseDirectory /opt/clamav/base\nDatabaseMirror database.clamav.net\n' > /tmp/freshclam-build.conf \
+    && { freshclam --config-file=/tmp/freshclam-build.conf --stdout \
+         || echo "AVISO: freshclam falhou no build; a base de partida e a da imagem de origem."; } \
+    && rm -f /tmp/freshclam-build.conf /var/lib/clamav/* \
+    && chmod 0755 /usr/local/bin/iniciar-clamd.sh \
+    && chown -R clamav:clamav /opt/clamav /var/lib/clamav
+
+USER 100:101
+
+EXPOSE 3310
+
+ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/iniciar-clamd.sh"]
