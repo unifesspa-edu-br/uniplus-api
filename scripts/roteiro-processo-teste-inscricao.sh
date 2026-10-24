@@ -439,17 +439,17 @@ definir_algoritmo_contagem_prazo() {
 }
 
 definir_oferta_atendimento() {
-    # Sem prova não há atendimento especializado a ofertar (UNI-REQ-0012).
-    if [ "$MODELO_INSCRICAO_ID" != "$MODELO_COM_PROVA_ID" ]; then
-        ok "processo sem prova: sem oferta de atendimento"
-        return
-    fi
     log "Definir Oferta de Atendimento"
+    # Sem prova não há atendimento especializado a ofertar (UNI-REQ-0012), mas a
+    # publicação cobra a oferta declarada: o processo sem prova a declara vazia.
+    local condicoes="$CONDICAO_ATENDIMENTO_IDS" recursos="$RECURSO_ACESSIBILIDADE_IDS" tipos="$TIPO_DEFICIENCIA_IDS"
+    if [ "$MODELO_INSCRICAO_ID" != "$MODELO_COM_PROVA_ID" ]; then
+        condicoes="[]" recursos="[]" tipos="[]"
+    fi
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/oferta-atendimento" "{
-        \"condicaoIds\": $CONDICAO_ATENDIMENTO_IDS, \"recursoIds\": $RECURSO_ACESSIBILIDADE_IDS,
-        \"tipoDeficienciaIds\": $TIPO_DEFICIENCIA_IDS
+        \"condicaoIds\": $condicoes, \"recursoIds\": $recursos, \"tipoDeficienciaIds\": $tipos
     }" >/dev/null
-    ok "oferta de atendimento definida"
+    ok "oferta de atendimento definida ($(jq length <<< "$condicoes") condições, $(jq length <<< "$recursos") recursos, $(jq length <<< "$tipos") tipos)"
 }
 
 definir_distribuicao_vagas() {
