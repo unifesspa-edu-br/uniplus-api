@@ -18,7 +18,8 @@ name: Publish Images
 # Imagens publicadas: uma por docker/Dockerfile.<módulo>, com a matriz
 # derivada pelo job `discover` (mesma fonte de verdade do trivy.yml):
 #   - ghcr.io/<owner>/uniplus-api-<módulo>
-# Hoje: selecao, ingresso, portal, organizacao, configuracao.
+# Hoje: selecao, ingresso, portal, organizacao, configuracao, verificador e
+# clamd-verificador (sidecar do verificador, sem .NET).
 #
 # Arquitetura: cada tag acima é publicada apenas para linux/amd64, que é
 # o que os clusters do projeto executam. O alvo arm64 saiu daqui porque
@@ -245,6 +246,15 @@ jobs:
               ;;
           esac
           echo "✓ Non-root user: $USER_FIELD"
+
+          # O sidecar do clamd (clamd-verificador) não é uma imagem .NET: o que se confere
+          # nele é o binário do clamd.
+          if [ "${{ matrix.module }}" = "clamd-verificador" ]; then
+            docker rm "smoke-${{ matrix.module }}" >/dev/null
+            docker run --rm --entrypoint clamd "$IMAGE_REF" --version >/dev/null
+            echo "✓ clamd responde"
+            exit 0
+          fi
 
           ENTRYPOINT=$(docker inspect -f '{{.Config.Entrypoint}}' "smoke-${{ matrix.module }}")
           if ! echo "$ENTRYPOINT" | grep -qi "Unifesspa.UniPlus"; then
