@@ -12,6 +12,13 @@ public interface IStorageService
     Task<string> GerarUrlTemporariaAsync(string bucket, string nomeArquivo, TimeSpan expiracao, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// URL pre-assinada de <c>GET</c> que obriga o servidor a responder com <paramref name="contentDisposition"/>
+    /// (<c>response-content-disposition</c>, coberto pela assinatura). Dá ao objeto um nome sem usar o da chave.
+    /// </summary>
+    Task<string> GerarUrlTemporariaComDisposicaoAsync(
+        string bucket, string nomeArquivo, TimeSpan expiracao, string contentDisposition, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gera uma URL pre-assinada de <c>PUT</c> para upload direto do cliente ao bucket,
     /// sem os bytes trafegarem pela API. <paramref name="contentType"/> entra na assinatura
     /// (header <c>Content-Type</c>) — o cliente precisa enviar exatamente esse valor no PUT,

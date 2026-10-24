@@ -163,6 +163,21 @@ public sealed class MinioStorageService : IStorageService
         return await _presignClient.PresignedGetObjectAsync(args).ConfigureAwait(false);
     }
 
+    public async Task<string> GerarUrlTemporariaComDisposicaoAsync(
+        string bucket, string nomeArquivo, TimeSpan expiracao, string contentDisposition, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(contentDisposition);
+
+        PresignedGetObjectArgs args = new PresignedGetObjectArgs()
+            .WithBucket(bucket)
+            .WithObject(nomeArquivo)
+            .WithExpiry((int)expiracao.TotalSeconds)
+            .WithHeaders(new Dictionary<string, string> { ["response-content-disposition"] = contentDisposition });
+
+        // _presignClient: a URL vai para o navegador do candidato, fora do cluster.
+        return await _presignClient.PresignedGetObjectAsync(args).ConfigureAwait(false);
+    }
+
     public async Task<string> GerarUrlUploadTemporariaAsync(string bucket, string nomeArquivo, TimeSpan expiracao, string contentType, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(contentType);
