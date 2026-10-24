@@ -1,0 +1,83 @@
+{"modo": "deteccao", "arquivo": "cifrado-10mb.pdf", "mb": 11.38, "config": "final", "veredicto": "OK", "ms": 720.4}
+{"modo": "deteccao", "arquivo": "cifrado-10mb.pdf", "mb": 11.38, "config": "final-alerta", "veredicto": "OK", "ms": 744.3}
+{"modo": "deteccao", "arquivo": "cifrado-1mb.pdf", "mb": 1.9, "config": "final", "veredicto": "OK", "ms": 138.1}
+{"modo": "deteccao", "arquivo": "cifrado-1mb.pdf", "mb": 1.9, "config": "final-alerta", "veredicto": "OK", "ms": 129.0}
+{"modo": "deteccao", "arquivo": "cifrado-20mb.pdf", "mb": 20.86, "config": "final", "veredicto": "OK", "ms": 1286.5}
+{"modo": "deteccao", "arquivo": "cifrado-20mb.pdf", "mb": 20.86, "config": "final-alerta", "veredicto": "OK", "ms": 1266.7}
+{"modo": "deteccao", "arquivo": "cifrado-5mb.pdf", "mb": 5.69, "config": "final", "veredicto": "OK", "ms": 369.8}
+{"modo": "deteccao", "arquivo": "cifrado-5mb.pdf", "mb": 5.69, "config": "final-alerta", "veredicto": "OK", "ms": 354.9}
+{"modo": "deteccao", "arquivo": "digitalizado-10mb.pdf", "mb": 11.38, "config": "final", "veredicto": "OK", "ms": 763.5}
+{"modo": "deteccao", "arquivo": "digitalizado-10mb.pdf", "mb": 11.38, "config": "final-alerta", "veredicto": "OK", "ms": 765.5}
+{"modo": "deteccao", "arquivo": "digitalizado-1mb.pdf", "mb": 1.9, "config": "final", "veredicto": "OK", "ms": 143.2}
+{"modo": "deteccao", "arquivo": "digitalizado-1mb.pdf", "mb": 1.9, "config": "final-alerta", "veredicto": "OK", "ms": 136.9}
+{"modo": "deteccao", "arquivo": "digitalizado-20mb.pdf", "mb": 20.86, "config": "final", "veredicto": "OK", "ms": 1416.9}
+{"modo": "deteccao", "arquivo": "digitalizado-20mb.pdf", "mb": 20.86, "config": "final-alerta", "veredicto": "OK", "ms": 1374.1}
+{"modo": "deteccao", "arquivo": "digitalizado-5mb.pdf", "mb": 5.69, "config": "final", "veredicto": "OK", "ms": 381.0}
+{"modo": "deteccao", "arquivo": "digitalizado-5mb.pdf", "mb": 5.69, "config": "final-alerta", "veredicto": "OK", "ms": 375.3}
+{"modo": "deteccao", "arquivo": "eicar-anexo.pdf", "mb": 1.9, "config": "final", "veredicto": "Eicar-Test-Signature FOUND", "ms": 130.9}
+{"modo": "deteccao", "arquivo": "eicar-anexo.pdf", "mb": 1.9, "config": "final-alerta", "veredicto": "Eicar-Test-Signature FOUND", "ms": 131.6}
+{"modo": "deteccao", "arquivo": "formulario-js-1mb.pdf", "mb": 1.9, "config": "final", "veredicto": "OK", "ms": 140.6}
+{"modo": "deteccao", "arquivo": "formulario-js-1mb.pdf", "mb": 1.9, "config": "final-alerta", "veredicto": "OK", "ms": 139.2}
+{"modo": "deteccao", "arquivo": "formulario-js-5mb.pdf", "mb": 5.69, "config": "final", "veredicto": "OK", "ms": 393.8}
+{"modo": "deteccao", "arquivo": "formulario-js-5mb.pdf", "mb": 5.69, "config": "final-alerta", "veredicto": "OK", "ms": 391.9}
+{"modo": "deteccao", "arquivo": "formulario-js-em-linha-1mb.pdf", "mb": 1.9, "config": "final", "veredicto": "OK", "ms": 137.8}
+{"modo": "deteccao", "arquivo": "formulario-js-em-linha-1mb.pdf", "mb": 1.9, "config": "final-alerta", "veredicto": "OK", "ms": 138.1}
+{"modo": "deteccao", "arquivo": "jpeg-10mb.jpg", "mb": 9.96, "config": "final", "veredicto": "OK", "ms": 331.0}
+{"modo": "deteccao", "arquivo": "jpeg-10mb.jpg", "mb": 9.96, "config": "final-alerta", "veredicto": "OK", "ms": 323.0}
+{"modo": "deteccao", "arquivo": "jpeg-1mb.jpg", "mb": 1.0, "config": "final", "veredicto": "OK", "ms": 37.5}
+{"modo": "deteccao", "arquivo": "jpeg-1mb.jpg", "mb": 1.0, "config": "final-alerta", "veredicto": "OK", "ms": 37.8}
+{"modo": "deteccao", "arquivo": "jpeg-20mb.jpg", "mb": 19.94, "config": "final", "veredicto": "OK", "ms": 643.6}
+{"modo": "deteccao", "arquivo": "jpeg-20mb.jpg", "mb": 19.94, "config": "final-alerta", "veredicto": "OK", "ms": 642.4}
+{"modo": "deteccao", "arquivo": "jpeg-5mb.jpg", "mb": 4.99, "config": "final", "veredicto": "OK", "ms": 167.2}
+{"modo": "deteccao", "arquivo": "jpeg-5mb.jpg", "mb": 4.99, "config": "final-alerta", "veredicto": "OK", "ms": 166.6}
+{"modo": "deteccao", "arquivo": "png-10mb.png", "mb": 9.98, "config": "final", "veredicto": "OK", "ms": 249.1}
+{"modo": "deteccao", "arquivo": "png-10mb.png", "mb": 9.98, "config": "final-alerta", "veredicto": "OK", "ms": 252.9}
+{"modo": "deteccao", "arquivo": "png-1mb.png", "mb": 2.29, "config": "final", "veredicto": "OK", "ms": 63.3}
+{"modo": "deteccao", "arquivo": "png-1mb.png", "mb": 2.29, "config": "final-alerta", "veredicto": "OK", "ms": 61.8}
+{"modo": "deteccao", "arquivo": "png-20mb.png", "mb": 19.96, "config": "final", "veredicto": "OK", "ms": 494.7}
+{"modo": "deteccao", "arquivo": "png-20mb.png", "mb": 19.96, "config": "final-alerta", "veredicto": "OK", "ms": 491.3}
+{"modo": "deteccao", "arquivo": "png-5mb.png", "mb": 4.99, "config": "final", "veredicto": "OK", "ms": 126.5}
+{"modo": "deteccao", "arquivo": "png-5mb.png", "mb": 4.99, "config": "final-alerta", "veredicto": "OK", "ms": 128.2}
+{"modo": "deteccao", "arquivo": "texto-1mb.pdf", "mb": 1.05, "config": "final", "veredicto": "OK", "ms": 798.2}
+{"modo": "deteccao", "arquivo": "texto-1mb.pdf", "mb": 1.05, "config": "final-alerta", "veredicto": "OK", "ms": 803.5}
+{"modo": "deteccao", "arquivo": "texto-5mb.pdf", "mb": 5.24, "config": "final", "veredicto": "OK", "ms": 3919.6}
+{"modo": "deteccao", "arquivo": "texto-5mb.pdf", "mb": 5.24, "config": "final-alerta", "veredicto": "OK", "ms": 3938.3}
+{"modo": "deteccao", "arquivo": "texto-natural-5mb.pdf", "mb": 5.75, "config": "final", "veredicto": "OK", "ms": 12197.7}
+{"modo": "deteccao", "arquivo": "texto-natural-5mb.pdf", "mb": 5.75, "config": "final-alerta", "veredicto": "OK", "ms": 12110.1}
+{"modo": "deteccao", "arquivo": "cifrado-10mb.pdf", "mb": 11.38, "config": "final-limites", "veredicto": "OK", "ms": 706.6}
+{"modo": "deteccao", "arquivo": "cifrado-1mb.pdf", "mb": 1.9, "config": "final-limites", "veredicto": "OK", "ms": 130.4}
+{"modo": "deteccao", "arquivo": "cifrado-20mb.pdf", "mb": 20.86, "config": "final-limites", "veredicto": "OK", "ms": 1290.4}
+{"modo": "deteccao", "arquivo": "cifrado-5mb.pdf", "mb": 5.69, "config": "final-limites", "veredicto": "OK", "ms": 363.5}
+{"modo": "deteccao", "arquivo": "digitalizado-10mb.pdf", "mb": 11.38, "config": "final-limites", "veredicto": "OK", "ms": 783.2}
+{"modo": "deteccao", "arquivo": "digitalizado-1mb.pdf", "mb": 1.9, "config": "final-limites", "veredicto": "OK", "ms": 134.7}
+{"modo": "deteccao", "arquivo": "digitalizado-20mb.pdf", "mb": 20.86, "config": "final-limites", "veredicto": "OK", "ms": 1435.4}
+{"modo": "deteccao", "arquivo": "digitalizado-5mb.pdf", "mb": 5.69, "config": "final-limites", "veredicto": "OK", "ms": 396.0}
+{"modo": "deteccao", "arquivo": "eicar-anexo.pdf", "mb": 1.9, "config": "final-limites", "veredicto": "Eicar-Test-Signature FOUND", "ms": 130.9}
+{"modo": "deteccao", "arquivo": "formulario-js-1mb.pdf", "mb": 1.9, "config": "final-limites", "veredicto": "OK", "ms": 136.7}
+{"modo": "deteccao", "arquivo": "formulario-js-5mb.pdf", "mb": 5.69, "config": "final-limites", "veredicto": "OK", "ms": 397.9}
+{"modo": "deteccao", "arquivo": "formulario-js-em-linha-1mb.pdf", "mb": 1.9, "config": "final-limites", "veredicto": "OK", "ms": 141.3}
+{"modo": "deteccao", "arquivo": "jpeg-10mb.jpg", "mb": 9.96, "config": "final-limites", "veredicto": "OK", "ms": 332.4}
+{"modo": "deteccao", "arquivo": "jpeg-1mb.jpg", "mb": 1.0, "config": "final-limites", "veredicto": "OK", "ms": 37.5}
+{"modo": "deteccao", "arquivo": "jpeg-20mb.jpg", "mb": 19.94, "config": "final-limites", "veredicto": "OK", "ms": 677.4}
+{"modo": "deteccao", "arquivo": "jpeg-5mb.jpg", "mb": 4.99, "config": "final-limites", "veredicto": "OK", "ms": 166.6}
+{"modo": "deteccao", "arquivo": "png-10mb.png", "mb": 9.98, "config": "final-limites", "veredicto": "OK", "ms": 247.0}
+{"modo": "deteccao", "arquivo": "png-1mb.png", "mb": 2.29, "config": "final-limites", "veredicto": "OK", "ms": 62.7}
+{"modo": "deteccao", "arquivo": "png-20mb.png", "mb": 19.96, "config": "final-limites", "veredicto": "OK", "ms": 496.3}
+{"modo": "deteccao", "arquivo": "png-5mb.png", "mb": 4.99, "config": "final-limites", "veredicto": "OK", "ms": 126.5}
+{"modo": "deteccao", "arquivo": "texto-1mb.pdf", "mb": 1.05, "config": "final-limites", "veredicto": "OK", "ms": 785.4}
+{"modo": "deteccao", "arquivo": "texto-5mb.pdf", "mb": 5.24, "config": "final-limites", "veredicto": "OK", "ms": 3939.9}
+{"modo": "deteccao", "arquivo": "texto-natural-5mb.pdf", "mb": 5.75, "config": "final-limites", "veredicto": "OK", "ms": 12860.2}
+{"modo": "deteccao", "arquivo": "eicar-anexo.pdf", "mb": 1.9, "config": "final", "veredicto": "Eicar-Test-Signature FOUND", "ms": 138.7}
+{"modo": "deteccao", "arquivo": "eicar-anexo.pdf", "mb": 1.9, "config": "final-alerta", "veredicto": "Eicar-Test-Signature FOUND", "ms": 138.2}
+{"modo": "deteccao", "arquivo": "eicar-anexo.pdf", "mb": 1.9, "config": "final-limites", "veredicto": "Eicar-Test-Signature FOUND", "ms": 143.1}
+{"modo": "deteccao", "arquivo": "eicar-depois-de-120mb.pdf", "mb": 2.02, "config": "final", "veredicto": "Eicar-Test-Signature FOUND", "ms": 4443.0}
+{"modo": "deteccao", "arquivo": "eicar-depois-de-120mb.pdf", "mb": 2.02, "config": "final-alerta", "veredicto": "Eicar-Test-Signature FOUND", "ms": 4402.7}
+{"modo": "deteccao", "arquivo": "eicar-depois-de-120mb.pdf", "mb": 2.02, "config": "final-limites", "veredicto": "Eicar-Test-Signature FOUND", "ms": 6682.0}
+{"modo": "deteccao", "arquivo": "eicar-anexo-de-1mb.pdf", "mb": 1.9, "config": "final", "veredicto": "OK", "ms": 191.9}
+{"modo": "deteccao", "arquivo": "eicar-anexo-de-1mb.pdf", "mb": 1.9, "config": "final-alerta", "veredicto": "OK", "ms": 189.3}
+{"modo": "deteccao", "arquivo": "eicar-anexo-de-1mb.pdf", "mb": 1.9, "config": "final-limites", "veredicto": "OK", "ms": 191.5}
+{"modo": "deteccao", "arquivo": "eicar-anexo-de-30mb.pdf", "mb": 1.93, "config": "final", "veredicto": "OK", "ms": 180.2}
+{"modo": "deteccao", "arquivo": "eicar-anexo-de-30mb.pdf", "mb": 1.93, "config": "final-alerta", "veredicto": "Heuristics.Limits.Exceeded.MaxFileSize FOUND", "ms": 175.1}
+{"modo": "deteccao", "arquivo": "eicar-anexo-de-30mb.pdf", "mb": 1.93, "config": "final-limites", "veredicto": "OK", "ms": 1706.6}
+{"modo": "deteccao", "arquivo": "texto-natural-19mb.pdf", "mb": 20.0, "config": "final", "veredicto": "OK", "ms": 37465.3}
+{"modo": "deteccao", "arquivo": "texto-natural-19mb.pdf", "mb": 20.0, "config": "final-limites", "veredicto": "Heuristics.Limits.Exceeded.MaxFiles FOUND", "ms": 39337.3}

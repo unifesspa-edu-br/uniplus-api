@@ -46,6 +46,10 @@ Outras provas, na mesma saída:
 
 As medições estão em `resultados/medicoes-fila.md` e `resultados/medicoes-fila.jsonl`.
 
+### Medição do clamd com PDFs e imagens
+
+`medicao-clamd/` mede o clamd direto, com PDFs e imagens com a estrutura real dos formatos, até 20 MB, e 4 CPUs por instância. Ela compara a configuração de HML com a adotada e testa a recarga da base sob carga. O resumo está no `README.md` dela.
+
 ## Componentes
 
 Fluxo por webhook (primeira parte):
