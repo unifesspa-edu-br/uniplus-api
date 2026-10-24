@@ -79,7 +79,7 @@ A aprovação por etiqueta no próprio bucket de envio, sem cópia, foi recusada
 
 | Quem | Permissões no MinIO |
 |---|---|
-| API | Assina `PutObject` no bucket de envio e `GetObject` no definitivo. Não tem leitura no bucket de envio. |
+| API | Credencial própria dos dois buckets. Assina `PutObject` no bucket de envio e `GetObject` no definitivo, e remove (`DeleteObject`) só no definitivo, quando descarta o arquivo verificado. Não tem leitura no bucket de envio, nem remove nele: a expiração de 1 dia do bucket cuida do que ninguém verificou. |
 | Verificador | Lê e remove no bucket de envio. Grava e lê no definitivo; a leitura serve para reconhecer, na reentrega, o arquivo já promovido. `ListBucket` nos dois, que o SDK exige. |
 | Identidade do MinIO no KES | Só `generate` e `decrypt` da chave dos arquivos. |
 | Pessoas | Nenhuma tem leitura nos buckets. |
@@ -128,7 +128,7 @@ A vazão é limitada pela CPU do clamd: em toda carga, cada clamd ficou perto do
 
 Na POC, uma réplica com o clamd de 2 CPUs verificou ~12 arquivos de 5 MB por segundo; três verificaram ~28 por segundo.
 
-Uma medição complementar foi direto ao clamd, com PDFs e imagens com a estrutura real dos formatos, até 20 MB, e o clamd com 4 CPUs (`spikes/cifra-no-minio/medicao-clamd/`):
+Uma medição complementar foi direto ao clamd, com PDFs e imagens com a estrutura real dos formatos, até 20 MB, e o clamd com 4 CPUs (os resultados estão nos comentários da #2054 e no histórico do PR #2071):
 
 | | clamd com 4 CPUs, 4 verificações simultâneas |
 |---|---|
