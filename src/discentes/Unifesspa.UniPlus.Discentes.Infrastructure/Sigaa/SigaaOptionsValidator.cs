@@ -26,7 +26,8 @@ internal sealed class SigaaOptionsValidator : IValidateOptions<SigaaOptions>
         {
             falhas.Add("Sigaa:BaseUrl precisa ser um endereço absoluto.");
         }
-        else if (endereco.Scheme != Uri.UriSchemeHttps)
+        else if (endereco.Scheme != Uri.UriSchemeHttps
+            && !(options.IgnorarAutenticacao && endereco.IsLoopback))
         {
             // Sem canal cifrado, a senha do usuário de serviço, o token e o CPF de cada
             // vínculo trafegam em texto claro. Nenhum ambiente justifica isso: o que se
@@ -37,12 +38,12 @@ internal sealed class SigaaOptionsValidator : IValidateOptions<SigaaOptions>
                 + "legível na rede.");
         }
 
-        if (string.IsNullOrWhiteSpace(options.Usuario))
+        if (!options.IgnorarAutenticacao && string.IsNullOrWhiteSpace(options.Usuario))
         {
             falhas.Add("Sigaa:Usuario é obrigatório.");
         }
 
-        if (string.IsNullOrWhiteSpace(options.Senha))
+        if (!options.IgnorarAutenticacao && string.IsNullOrWhiteSpace(options.Senha))
         {
             falhas.Add(
                 "Sigaa:Senha é obrigatório e não tem valor padrão. Em execução real vem da "

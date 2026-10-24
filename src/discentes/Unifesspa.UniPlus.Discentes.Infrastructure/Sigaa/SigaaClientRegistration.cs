@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Options;
 
@@ -41,10 +42,12 @@ public static class SigaaClientRegistration
     /// </remarks>
     public static IServiceCollection AddSigaaVinculoDiscenteClient(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IHostEnvironment environment)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
+        ArgumentNullException.ThrowIfNull(environment);
 
         IConfigurationSection secao = configuration.GetSection(SigaaOptions.SectionName);
 
@@ -62,8 +65,24 @@ public static class SigaaClientRegistration
 
         services.TryAddSingleton(TimeProvider.System);
 
-        RegistrarClienteDeAutenticacao(services);
-        RegistrarClienteDeConsulta(services);
+        SigaaOptions opcoes = secao.Get<SigaaOptions>() ?? new SigaaOptions();
+        bool ignorarAutenticacao = opcoes.IgnorarAutenticacao;
+        bool desenvolvimento = environment.IsDevelopment();
+        bool enderecoLocal = Uri.TryCreate(opcoes.BaseUrl, UriKind.Absolute, out Uri? uri)
+            && uri.IsLoopback;
+
+        if (ignorarAutenticacao && (!desenvolvimento || !enderecoLocal))
+        {
+            throw new InvalidOperationException(
+                "Sigaa:IgnorarAutenticacao só pode ser usado no ambiente Development com BaseUrl loopback.");
+        }
+
+        if (!ignorarAutenticacao)
+        {
+            RegistrarClienteDeAutenticacao(services);
+        }
+
+        RegistrarClienteDeConsulta(services, ignorarAutenticacao);
         RegistrarSincronizacao(services, configuration);
 
         return services;
@@ -106,9 +125,13 @@ public static class SigaaClientRegistration
     private static HttpMessageHandler SemSeguirRedirecionamento() =>
         new HttpClientHandler { AllowAutoRedirect = false };
 
-    private static void RegistrarClienteDeConsulta(IServiceCollection services)
+    private static void RegistrarClienteDeConsulta(IServiceCollection services, bool ignorarAutenticacao)
     {
-        services.AddTransient<SigaaAuthenticationHandler>();
+        if (!ignorarAutenticacao)
+        {
+            services.AddTransient<SigaaAuthenticationHandler>();
+        }
+
         services.AddScoped<ISigaaVinculoDiscenteClient, SigaaVinculoDiscenteClient>();
 
         // Usa o cliente gerado em tempo de compilação. A variante que monta a requisição
@@ -132,7 +155,10 @@ public static class SigaaClientRegistration
         // cada nova tentativa reentra na autenticação e relê o token vigente, em vez de
         // reenviar N vezes um cabeçalho carimbado uma única vez com um token vencido.
         cliente.AddResilienceHandler(PoliticaDeConsulta, ConfigurarResilienciaDaConsulta);
-        cliente.AddHttpMessageHandler<SigaaAuthenticationHandler>();
+        if (!ignorarAutenticacao)
+        {
+            cliente.AddHttpMessageHandler<SigaaAuthenticationHandler>();
+        }
     }
 
     /// <summary>
