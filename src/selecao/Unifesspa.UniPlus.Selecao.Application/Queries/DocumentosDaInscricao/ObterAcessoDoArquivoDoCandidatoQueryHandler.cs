@@ -35,16 +35,9 @@ public static partial class ObterAcessoDoArquivoDoCandidatoQueryHandler
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentNullException.ThrowIfNull(logger);
 
-        Result<Inscricao> acesso = await AcessoAoDocumentoDaInscricao
-            .ResolverInscricaoDoDonoAsync(query.ProcessoSeletivoId, userContext, inscricaoRepository, cancellationToken)
-            .ConfigureAwait(false);
-        if (acesso.IsFailure)
-        {
-            return Result<AcessoArquivoDoCandidatoDto>.Failure(acesso.Error!);
-        }
-
         Result<ArquivoDaApresentacao> encontrado = await AcessoAoDocumentoDaInscricao
-            .ResolverArquivoAsync(query.ArquivoId, acesso.Value!, documentoRepository, cancellationToken)
+            .ResolverArquivoDoDonoAsync(
+                query.ProcessoSeletivoId, query.ArquivoId, userContext, inscricaoRepository, documentoRepository, cancellationToken)
             .ConfigureAwait(false);
         if (encontrado.IsFailure)
         {

@@ -96,8 +96,9 @@ public sealed class DocumentosDaInscricaoController : ControllerBase
     }
 
     /// <summary>
-    /// Emite a URL pré-assinada de curta validade do arquivo verificado do próprio candidato. Arquivo de outra
-    /// pessoa responde 404; o não verificado, 422. A URL é credencial de acesso, então a resposta vai com <c>no-store</c>.
+    /// Emite a URL pré-assinada de curta validade para baixar (<c>attachment</c>) o arquivo verificado do próprio
+    /// candidato, mesmo com a inscrição cancelada. Arquivo de outra pessoa responde 404; o não verificado, 422.
+    /// A URL é credencial de acesso, então a resposta vai com <c>no-store</c>.
     /// </summary>
     [HttpGet("arquivos/{arquivoId:guid}/acesso")]
     [Authorize(Policy = "Candidato")]

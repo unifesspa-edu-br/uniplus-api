@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.Inscricoes;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -843,5 +844,53 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             .AdicionarAsync(NovaInscricao(PersonasDeTeste.FernandaDrumond, processo));
         Func<Task> segundaAtiva = async () => await terceiroContexto.SaveChangesAsync();
         await segundaAtiva.Should().ThrowAsync<DbUpdateException>("o índice parcial segue recusando duas inscrições ativas");
+    }
+
+    [Fact(DisplayName = "O dono lê o arquivo da inscrição cancelada, que a busca da ativa não alcança; outra pessoa recebe a recusa do inexistente")]
+    public async Task ArquivoDoDono_AlcancaAInscricaoCancelada()
+    {
+        Guid processo = Guid.CreateVersion7();
+        Inscricao inscricao = NovaInscricao(PersonasDeTeste.FernandaDrumond, processo);
+        inscricao.Submeter(
+            "000778", OfertaDoProcesso, null, Respostas(("NOME_SOCIAL", "Fê")), SemGrupos(), [], Admitidas, FormularioDeTeste.AvaliacaoSemOcultos,
+            Respostas(("UF_RESIDENCIA", "PA")), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([inscricao.ETag]), DateTimeOffset.UtcNow, []).IsSuccess.Should().BeTrue();
+        DocumentoExigido laudo = DocumentoExigido.Criar(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", Aplicabilidade.Geral, false, null,
+            [], [], null, FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null).Value!;
+        ApresentacaoDeDocumento apresentacao = ApresentacaoDeDocumento.Criar(inscricao.Id, laudo.Id, null);
+        ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(
+            apresentacao.Id, inscricao.Id, laudo, "application/pdf", 1024, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+
+        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        {
+            await new InscricaoRepository(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System).AdicionarAsync(inscricao);
+            DocumentoDaInscricaoRepository documentos = new(context);
+            await documentos.AdicionarApresentacaoAsync(apresentacao);
+            await documentos.AdicionarArquivoAsync(arquivo);
+            await context.SaveChangesAsync();
+        }
+
+        await using SelecaoDbContext leitura = _fixture.CreateDbContext();
+        InscricaoRepository inscricoes = new(leitura, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+        Inscricao lida = (await inscricoes.ObterPorIdAsync(inscricao.Id))!;
+        lida.Cancelar(null, "sub-1", DateTimeOffset.UtcNow, PrecondicaoIfMatch.DeTags([lida.ETag])).IsSuccess.Should().BeTrue();
+        await inscricoes.AtualizarAsync(lida);
+        await leitura.SaveChangesAsync();
+
+        await using SelecaoDbContext relida = _fixture.CreateDbContext();
+        inscricoes = new(relida, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+        DocumentoDaInscricaoRepository repositorioDeDocumentos = new(relida);
+
+        Task<Result<ArquivoDaApresentacao>> Resolver(string sub)
+        {
+            IUserContext usuario = Substitute.For<IUserContext>();
+            usuario.UserId.Returns(sub);
+            usuario.Cpf.Returns(PersonasDeTeste.FernandaDrumond.Valor);
+            return AcessoAoDocumentoDaInscricao.ResolverArquivoDoDonoAsync(
+                processo, arquivo.Id, usuario, inscricoes, repositorioDeDocumentos, CancellationToken.None);
+        }
+
+        (await Resolver("sub-1")).Value!.Id.Should().Be(arquivo.Id);
+        (await Resolver("sub-2")).Error.Should().Be(AcessoAoDocumentoDaInscricao.ArquivoNaoEncontrado);
     }
 }

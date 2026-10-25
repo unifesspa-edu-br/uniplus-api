@@ -73,7 +73,7 @@ A aprovação por etiqueta no próprio bucket de envio, sem cópia, foi recusada
 
 **Estado do arquivo.** O arquivo passa por `EM_VERIFICACAO` e termina em `VERIFICADO`, `RECUSADO` ou `REENVIO_NECESSARIO`. O último vale quando a versão confirmada não está na quarentena nem no bucket definitivo: o candidato confirmou sem enviar, regravou o arquivo depois de confirmar, ou o envio expirou antes de ser verificado. Ele não é recusa da verificação, encerra a reconciliação e pede um novo envio. Nenhum arquivo é recusado por indisponibilidade, e a expiração da quarentena precisa ser maior que a indisponibilidade tolerada da verificação. A mesma expiração encerra a falha que não passa com novas tentativas: sem a versão confirmada na quarentena, o arquivo termina em reenvio necessário.
 
-**Leitura pelo candidato.** A API assina uma URL de GET curta no bucket definitivo, com `Content-Disposition` só `inline` ou `attachment` e o nome do arquivo codificado (`filename*`, RFC 5987), para que o nome não injete parâmetros no cabeçalho. O MinIO entrega o conteúdo em claro e aceita `Range`. Adulterar a URL a invalida.
+**Leitura pelo candidato.** A API assina uma URL de GET curta no bucket definitivo, com `Content-Disposition: attachment` e o nome de apresentação codificado (`filename*`, RFC 5987), para que o navegador baixe o arquivo e o nome não injete parâmetros no cabeçalho. O dono lê o arquivo também quando a inscrição foi cancelada. O MinIO entrega o conteúdo em claro e aceita `Range`. Adulterar a URL a invalida.
 
 **Acesso e auditoria.**
 

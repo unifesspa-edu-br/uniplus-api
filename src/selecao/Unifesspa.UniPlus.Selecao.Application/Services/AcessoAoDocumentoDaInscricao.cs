@@ -13,8 +13,8 @@ using Kernel.Results;
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 
 /// <summary>
-/// O que os três passos do envio de documento da inscrição conferem antes de tudo: a inscrição ativa
-/// é a do dono do token e as inscrições estão abertas. Quem não tem inscrição no processo recebe a
+/// O que os passos do documento da inscrição conferem antes de tudo. No envio: a inscrição ativa é a do dono
+/// do token e as inscrições estão abertas. Na leitura do que já foi enviado: o arquivo é do dono do token. Quem não tem inscrição no processo recebe a
 /// mesma recusa de quem pede um arquivo que não é dele: nada revela dado de outra pessoa.
 /// </summary>
 public static class AcessoAoDocumentoDaInscricao
@@ -45,8 +45,7 @@ public static class AcessoAoDocumentoDaInscricao
         return foraDoPeriodo is not null ? Result<Inscricao>.Failure(foraDoPeriodo) : doDono;
     }
 
-    /// <summary>A inscrição do dono do token, sem conferir o período: ler o que já foi enviado não depende dele.</summary>
-    public static async Task<Result<Inscricao>> ResolverInscricaoDoDonoAsync(
+    private static async Task<Result<Inscricao>> ResolverInscricaoDoDonoAsync(
         Guid processoSeletivoId,
         IUserContext userContext,
         IInscricaoRepository inscricaoRepository,
@@ -55,18 +54,10 @@ public static class AcessoAoDocumentoDaInscricao
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(inscricaoRepository);
 
-        if (userContext.Cpf is not { } cpfDoToken)
-        {
-            return Result<Inscricao>.Failure(new DomainError(
-                "Inscricao.CpfAusenteNoToken",
-                "O token não traz o claim cpf — só um candidato autenticado com CPF pode enviar documentos."));
-        }
-
-        Result<Cpf> cpf = Cpf.Criar(cpfDoToken);
+        Result<Cpf> cpf = CpfDoToken(userContext);
         if (cpf.IsFailure)
         {
-            return Result<Inscricao>.Failure(new DomainError(
-                "Inscricao.CpfAusenteNoToken", "O claim cpf do token não é um CPF válido."));
+            return Result<Inscricao>.Failure(cpf.Error!);
         }
 
         Inscricao? inscricao = await inscricaoRepository
@@ -96,6 +87,59 @@ public static class AcessoAoDocumentoDaInscricao
         return arquivo is null || arquivo.InscricaoId != inscricao.Id
             ? Result<ArquivoDaApresentacao>.Failure(ArquivoNaoEncontrado)
             : Result<ArquivoDaApresentacao>.Success(arquivo);
+    }
+
+    /// <summary>
+    /// O arquivo do dono do token, em qualquer situação da inscrição: ler o que já foi enviado não depende do
+    /// período nem de a inscrição estar ativa — o candidato que cancelou continua podendo baixar o que enviou.
+    /// O dono é o <c>sub</c> e o CPF do token juntos, como nas demais leituras. O arquivo inexistente, o de outro
+    /// processo e o de outra pessoa recebem a mesma recusa.
+    /// </summary>
+    public static async Task<Result<ArquivoDaApresentacao>> ResolverArquivoDoDonoAsync(
+        Guid processoSeletivoId,
+        Guid arquivoId,
+        IUserContext userContext,
+        IInscricaoRepository inscricaoRepository,
+        IDocumentoDaInscricaoRepository documentoRepository,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(userContext);
+        ArgumentNullException.ThrowIfNull(inscricaoRepository);
+        ArgumentNullException.ThrowIfNull(documentoRepository);
+
+        Result<Cpf> cpf = CpfDoToken(userContext);
+        if (cpf.IsFailure)
+        {
+            return Result<ArquivoDaApresentacao>.Failure(cpf.Error!);
+        }
+
+        ArquivoDaApresentacao? arquivo = await documentoRepository.ObterArquivoAsync(arquivoId, cancellationToken).ConfigureAwait(false);
+        Inscricao? inscricao = arquivo is null
+            ? null
+            : await inscricaoRepository.ObterPorIdAsync(arquivo.InscricaoId, cancellationToken).ConfigureAwait(false);
+
+        return arquivo is not null
+            && inscricao is not null
+            && inscricao.ProcessoSeletivoId == processoSeletivoId
+            && inscricao.Cpf == cpf.Value
+            && inscricao.ConferirDono(userContext.UserId) is null
+                ? Result<ArquivoDaApresentacao>.Success(arquivo)
+                : Result<ArquivoDaApresentacao>.Failure(ArquivoNaoEncontrado);
+    }
+
+    private static Result<Cpf> CpfDoToken(IUserContext userContext)
+    {
+        if (userContext.Cpf is not { } cpfDoToken)
+        {
+            return Result<Cpf>.Failure(new DomainError(
+                "Inscricao.CpfAusenteNoToken",
+                "O token não traz o claim cpf — só um candidato autenticado com CPF acessa os documentos da inscrição."));
+        }
+
+        Result<Cpf> cpf = Cpf.Criar(cpfDoToken);
+        return cpf.IsFailure
+            ? Result<Cpf>.Failure(new DomainError("Inscricao.CpfAusenteNoToken", "O claim cpf do token não é um CPF válido."))
+            : cpf;
     }
 
     public static DomainError ArquivoNaoEncontrado { get; } = new(
