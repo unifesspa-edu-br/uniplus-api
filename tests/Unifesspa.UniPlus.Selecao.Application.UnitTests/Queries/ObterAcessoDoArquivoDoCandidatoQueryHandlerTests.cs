@@ -32,7 +32,7 @@ public sealed class ObterAcessoDoArquivoDoCandidatoQueryHandlerTests
     public ObterAcessoDoArquivoDoCandidatoQueryHandlerTests()
     {
         _inscricao = Inscricao.Iniciar(ProcessoId, PersonasDeTeste.KevinCarvalho, "sub-1", "https://issuer", Guid.CreateVersion7()).Value!;
-        _inscricoes.ObterAtivaPorProcessoECpfAsync(ProcessoId, PersonasDeTeste.KevinCarvalho, Arg.Any<CancellationToken>()).Returns(_inscricao);
+        _inscricoes.ObterPorIdAsync(_inscricao.Id, Arg.Any<CancellationToken>()).Returns(_inscricao);
         _laudo = DocumentoExigido.Criar(
             Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", Aplicabilidade.Geral, false, null,
             [], [], null, FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null).Value!;
@@ -51,13 +51,13 @@ public sealed class ObterAcessoDoArquivoDoCandidatoQueryHandlerTests
         return arquivo;
     }
 
-    private Task<Result<AcessoArquivoDoCandidatoDto>> Acessar(Guid arquivoId, string sub = "sub-1")
+    private Task<Result<AcessoArquivoDoCandidatoDto>> Acessar(Guid arquivoId, string sub = "sub-1", Guid? processoId = null, string? cpf = null)
     {
         IUserContext usuario = Substitute.For<IUserContext>();
-        usuario.Cpf.Returns(PersonasDeTeste.KevinCarvalho.Valor);
+        usuario.Cpf.Returns(cpf ?? PersonasDeTeste.KevinCarvalho.Valor);
         usuario.UserId.Returns(sub);
         return ObterAcessoDoArquivoDoCandidatoQueryHandler.Handle(
-            new ObterAcessoDoArquivoDoCandidatoQuery(ProcessoId, arquivoId), _inscricoes, _documentos, _storage, usuario,
+            new ObterAcessoDoArquivoDoCandidatoQuery(processoId ?? ProcessoId, arquivoId), _inscricoes, _documentos, _storage, usuario,
             new RelogioFixo(DateTimeOffset.UnixEpoch), NullLogger.Instance, CancellationToken.None);
     }
 
@@ -77,11 +77,26 @@ public sealed class ObterAcessoDoArquivoDoCandidatoQueryHandlerTests
     [Fact(DisplayName = "O arquivo de outra inscrição recebe a recusa de arquivo inexistente, sem chamar o armazenamento")]
     public async Task DeOutraInscricao_NaoEncontrado()
     {
-        ArquivoDaApresentacao arquivo = Arquivo(Guid.CreateVersion7(), a => a.RegistrarVerificado(1024, new string('a', 64), FormatoPermitido.Pdf));
+        Inscricao deOutraPessoa = Inscricao.Iniciar(ProcessoId, PersonasDeTeste.KevinCarvalho, "sub-2", "https://issuer", Guid.CreateVersion7()).Value!;
+        _inscricoes.ObterPorIdAsync(deOutraPessoa.Id, Arg.Any<CancellationToken>()).Returns(deOutraPessoa);
+        ArquivoDaApresentacao arquivo = Arquivo(deOutraPessoa.Id, a => a.RegistrarVerificado(1024, new string('a', 64), FormatoPermitido.Pdf));
 
         Result<AcessoArquivoDoCandidatoDto> resultado = await Acessar(arquivo.Id);
 
         resultado.Error!.Code.Should().Be(DocumentoDaInscricaoErrorCodes.ArquivoNaoEncontrado);
+        _storage.ReceivedCalls().Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "O mesmo sub com outro CPF, ou o arquivo pedido por outro processo, recebe a recusa de arquivo inexistente")]
+    public async Task CpfDivergenteOuOutroProcesso_NaoEncontrado()
+    {
+        ArquivoDaApresentacao arquivo = Arquivo(_inscricao.Id, a => a.RegistrarVerificado(1024, new string('a', 64), FormatoPermitido.Pdf));
+
+        Result<AcessoArquivoDoCandidatoDto> outroCpf = await Acessar(arquivo.Id, cpf: PersonasDeTeste.FernandaDrumond.Valor);
+        Result<AcessoArquivoDoCandidatoDto> outroProcesso = await Acessar(arquivo.Id, processoId: Guid.CreateVersion7());
+
+        outroCpf.Error!.Code.Should().Be(DocumentoDaInscricaoErrorCodes.ArquivoNaoEncontrado);
+        outroProcesso.Error!.Code.Should().Be(DocumentoDaInscricaoErrorCodes.ArquivoNaoEncontrado);
         _storage.ReceivedCalls().Should().BeEmpty();
     }
 
