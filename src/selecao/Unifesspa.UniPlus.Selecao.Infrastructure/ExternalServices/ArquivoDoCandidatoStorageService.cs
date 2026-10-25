@@ -31,7 +31,7 @@ public sealed class ArquivoDoCandidatoStorageService : IArquivoDoCandidatoStorag
         ArgumentException.ThrowIfNullOrWhiteSpace(nomeDeApresentacao);
 
         // filename* (RFC 5987): o nome percent-encoded não injeta parâmetros no cabeçalho.
-        string disposicao = $"inline; filename*=UTF-8''{Uri.EscapeDataString(nomeDeApresentacao)}";
+        string disposicao = $"attachment; filename*=UTF-8''{Uri.EscapeDataString(nomeDeApresentacao)}";
         return _storageService.GerarUrlTemporariaComDisposicaoAsync(_opcoes.BucketDefinitivo, chaveDefinitiva, expiracao, disposicao, cancellationToken);
     }
 
