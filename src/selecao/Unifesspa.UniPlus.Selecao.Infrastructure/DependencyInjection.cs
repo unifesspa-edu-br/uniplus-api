@@ -113,6 +113,7 @@ public static class SelecaoInfrastructureRegistration
                 PublicUseSSL = geral.PublicUseSSL,
                 AccessKey = candidato.AccessKey,
                 SecretKey = candidato.SecretKey,
+                CriaBucketAusente = false,
             }));
         });
         services.AddScoped<IArquivoDoCandidatoStorage, ArquivoDoCandidatoStorageService>();

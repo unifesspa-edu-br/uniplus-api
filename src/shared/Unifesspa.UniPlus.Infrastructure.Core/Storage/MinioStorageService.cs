@@ -347,6 +347,11 @@ public sealed class MinioStorageService : IStorageService
 
     private async Task GarantirBucketExisteAsync(string bucket, CancellationToken cancellationToken)
     {
+        if (!_opcoes.Value.CriaBucketAusente)
+        {
+            return;
+        }
+
         bool existe = await _minioClient.BucketExistsAsync(new BucketExistsArgs().WithBucket(bucket), cancellationToken).ConfigureAwait(false);
         if (!existe)
         {

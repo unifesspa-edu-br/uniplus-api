@@ -49,4 +49,11 @@ public sealed class StorageOptions
     /// handlers que dependem dele devem validar a própria obrigatoriedade.
     /// </summary>
     public string? BucketName { get; init; }
+
+    /// <summary>
+    /// Quando <see langword="true"/> (padrão), a gravação cria o bucket que ainda não existe. Desligado para o bucket
+    /// provisionado pela infra com cifra própria: a credencial restrita não consulta bucket, e um bucket criado aqui
+    /// sairia sem a cifra.
+    /// </summary>
+    public bool CriaBucketAusente { get; init; } = true;
 }
