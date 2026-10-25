@@ -9,7 +9,7 @@ public interface IArquivoDoCandidatoStorage
 {
     Task<string> GerarUrlUploadAsync(string chaveDeEnvio, string contentType, TimeSpan expiracao, CancellationToken cancellationToken = default);
 
-    /// <summary>URL de GET <c>inline</c> no bucket definitivo, com <paramref name="nomeDeApresentacao"/> como nome sugerido.</summary>
+    /// <summary>URL de GET <c>attachment</c> no bucket definitivo: o navegador baixa o arquivo com <paramref name="nomeDeApresentacao"/> como nome.</summary>
     Task<string> GerarUrlLeituraAsync(string chaveDefinitiva, string nomeDeApresentacao, TimeSpan expiracao, CancellationToken cancellationToken = default);
 
     /// <summary>Remove o objeto do bucket definitivo; o que já não existe não é erro.</summary>

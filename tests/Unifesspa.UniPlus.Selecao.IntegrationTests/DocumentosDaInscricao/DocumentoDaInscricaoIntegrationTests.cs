@@ -95,8 +95,8 @@ public sealed class DocumentoDaInscricaoIntegrationTests : IClassFixture<Inscric
         await _bucketes.UploadAsync(bucket, chave, conteudo, "application/pdf");
     }
 
-    [Fact(DisplayName = "A URL de leitura abre o arquivo do bucket definitivo inline, com nome genérico codificado em filename*, sem a chave do objeto")]
-    public async Task Leitura_UrlEntregaInlineComNomeGenerico()
+    [Fact(DisplayName = "A URL de leitura entrega o arquivo do bucket definitivo como download, com nome genérico codificado em filename*, sem a chave do objeto")]
+    public async Task Leitura_UrlEntregaAttachmentComNomeGenerico()
     {
         (SelecaoDbContext context, _, ArquivoDaApresentacao arquivo) = await PendenteAsync();
         await GravarAsync(BucketDefinitivo, arquivo.ChaveDefinitivaPrevista);
@@ -106,9 +106,25 @@ public sealed class DocumentoDaInscricaoIntegrationTests : IClassFixture<Inscric
         using HttpClient http = new();
         using HttpResponseMessage resposta = await http.GetAsync(new Uri(url));
         resposta.EnsureSuccessStatusCode();
-        resposta.Content.Headers.ContentDisposition!.ToString().Should().Be("inline; filename*=UTF-8''Arquivo%201.pdf");
+        resposta.Content.Headers.ContentDisposition!.ToString().Should().Be("attachment; filename*=UTF-8''Arquivo%201.pdf");
         (await resposta.Content.ReadAsByteArrayAsync()).Should().Equal(Pdf);
         resposta.Content.Headers.ContentDisposition.ToString().Should().NotContain(arquivo.Id.ToString("D"));
+        context.Dispose();
+    }
+
+    [Fact(DisplayName = "A disposição vai na assinatura: trocar attachment por inline na URL de leitura é recusado pelo armazenamento")]
+    public async Task Leitura_DisposicaoAdulteradaERecusada()
+    {
+        (SelecaoDbContext context, _, ArquivoDaApresentacao arquivo) = await PendenteAsync();
+        await GravarAsync(BucketDefinitivo, arquivo.ChaveDefinitivaPrevista);
+
+        string url = await _storage.GerarUrlLeituraAsync(arquivo.ChaveDefinitivaPrevista, "Arquivo 1.pdf", TimeSpan.FromMinutes(1));
+        string adulterada = url.Replace("attachment", "inline", StringComparison.Ordinal);
+
+        adulterada.Should().NotBe(url, "a disposição está na query da URL assinada");
+        using HttpClient http = new();
+        using HttpResponseMessage resposta = await http.GetAsync(new Uri(adulterada));
+        resposta.StatusCode.Should().Be(System.Net.HttpStatusCode.Forbidden);
         context.Dispose();
     }
 
