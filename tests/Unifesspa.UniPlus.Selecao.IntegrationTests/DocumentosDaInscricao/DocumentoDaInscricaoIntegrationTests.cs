@@ -79,7 +79,7 @@ public sealed class DocumentoDaInscricaoIntegrationTests : IClassFixture<Inscric
             Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE",
             Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
             [], [], null, FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null).Value!;
-        ApresentacaoDeDocumento apresentacao = ApresentacaoDeDocumento.Criar(inscricao.Id, laudo.Id, null);
+        ApresentacaoDeDocumento apresentacao = ApresentacaoDeDocumento.Criar(inscricao.Id, laudo, null);
         ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(
             apresentacao.Id, inscricao.Id, laudo, "application/pdf", Pdf.Length, TimeProvider.System, PrazosDoArquivoEnviado.Envio).Value!;
         DocumentoDaInscricaoRepository repositorio = new(context);
@@ -126,6 +126,22 @@ public sealed class DocumentoDaInscricaoIntegrationTests : IClassFixture<Inscric
         using HttpResponseMessage resposta = await http.GetAsync(new Uri(adulterada));
         resposta.StatusCode.Should().Be(System.Net.HttpStatusCode.Forbidden);
         context.Dispose();
+    }
+
+    [Fact(DisplayName = "O banco recusa a apresentação sem nome do documento")]
+    public async Task Apresentacao_NomeDoDocumentoVazio_BancoRecusa()
+    {
+        await using SelecaoDbContext context = _db.CreateDbContext();
+
+        Func<Task> inserir = async () => await context.Database.ExecuteSqlRawAsync(
+            "INSERT INTO selecao.apresentacoes_de_documento (id, inscricao_id, exigencia_id, nome_do_documento, created_at) " +
+            "VALUES ({0}, {1}, {2}, ' ', now())",
+            Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7());
+
+        Npgsql.PostgresException erro = (await inserir.Should().ThrowAsync<Exception>()).Which as Npgsql.PostgresException
+            ?? throw new InvalidOperationException("O banco devia recusar com uma violação de CHECK.");
+        erro.SqlState.Should().Be("23514");
+        erro.ConstraintName.Should().Be("ck_apresentacoes_de_documento_nome_do_documento_preenchido");
     }
 
     [Fact(DisplayName = "O pendente vencido sai com a apresentação que ficou sem arquivo, e o arquivo em verificação nunca sai")]

@@ -40,14 +40,27 @@ public sealed class ObterAcessoDoArquivoDoCandidatoQueryHandlerTests
             .Returns("https://armazenamento.exemplo/leitura");
     }
 
+    private readonly Dictionary<Guid, List<ArquivoDaApresentacao>> _arquivosPorInscricao = [];
+    private readonly Dictionary<Guid, List<ApresentacaoDeDocumento>> _apresentacoesPorInscricao = [];
+
     private ArquivoDaApresentacao Arquivo(Guid inscricaoId, Action<ArquivoDaApresentacao>? estado = null)
     {
+        ApresentacaoDeDocumento apresentacao = ApresentacaoDeDocumento.Criar(inscricaoId, _laudo, null);
         ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(
-            Guid.CreateVersion7(), inscricaoId, _laudo, "application/pdf", 1024, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+            apresentacao.Id, inscricaoId, _laudo, "application/pdf", 1024, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         arquivo.Confirmar("\"etag\"", TimeProvider.System);
         estado?.Invoke(arquivo);
         _documentos.ObterArquivoAsync(arquivo.Id, Arg.Any<CancellationToken>()).Returns(arquivo);
-        _documentos.ListarArquivosDaInscricaoAsync(inscricaoId, Arg.Any<CancellationToken>()).Returns([arquivo]);
+        if (!_arquivosPorInscricao.TryGetValue(inscricaoId, out List<ArquivoDaApresentacao>? arquivos))
+        {
+            _arquivosPorInscricao[inscricaoId] = arquivos = [];
+            _apresentacoesPorInscricao[inscricaoId] = [];
+        }
+
+        arquivos.Add(arquivo);
+        _apresentacoesPorInscricao[inscricaoId].Add(apresentacao);
+        _documentos.ListarArquivosDaInscricaoAsync(inscricaoId, Arg.Any<CancellationToken>()).Returns([.. arquivos]);
+        _documentos.ListarApresentacoesDaInscricaoAsync(inscricaoId, Arg.Any<CancellationToken>()).Returns([.. _apresentacoesPorInscricao[inscricaoId]]);
         return arquivo;
     }
 
@@ -61,17 +74,30 @@ public sealed class ObterAcessoDoArquivoDoCandidatoQueryHandlerTests
             new RelogioFixo(DateTimeOffset.UnixEpoch), NullLogger.Instance, CancellationToken.None);
     }
 
-    [Fact(DisplayName = "O arquivo verificado do dono devolve a URL assinada na chave definitiva, com o nome genérico")]
+    [Fact(DisplayName = "O arquivo verificado do dono devolve a URL assinada na chave definitiva, com o nome de download que a listagem informa")]
     public async Task Verificado_DoDono_DevolveAUrl()
     {
-        ArquivoDaApresentacao arquivo = Arquivo(_inscricao.Id, a => a.RegistrarVerificado(1024, new string('a', 64), FormatoPermitido.Pdf));
+        Arquivo(_inscricao.Id, a => a.RegistrarVerificado(1024, "aaaaaaaa" + new string('0', 56), FormatoPermitido.Pdf));
+        ArquivoDaApresentacao segundo = Arquivo(_inscricao.Id, a => a.RegistrarVerificado(1024, "bbbbbbbb" + new string('0', 56), FormatoPermitido.Pdf));
 
-        Result<AcessoArquivoDoCandidatoDto> resultado = await Acessar(arquivo.Id);
+        Result<AcessoArquivoDoCandidatoDto> resultado = await Acessar(segundo.Id);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Url.Should().Be(new Uri("https://armazenamento.exemplo/leitura"));
         await _storage.Received(1).GerarUrlLeituraAsync(
-            arquivo.ChaveDefinitivaPrevista, "Arquivo 1.pdf", Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>());
+            segundo.ChaveDefinitivaPrevista, "Arquivo 2 - Laudo médico - bbbbbbbb.pdf", Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "O arquivo que some entre a busca e a releitura recebe a recusa de arquivo inexistente, e não um erro")]
+    public async Task SomeNaReleitura_NaoEncontrado()
+    {
+        ArquivoDaApresentacao arquivo = Arquivo(_inscricao.Id, a => a.RegistrarVerificado(1024, new string('a', 64), FormatoPermitido.Pdf));
+        _documentos.ListarArquivosDaInscricaoAsync(_inscricao.Id, Arg.Any<CancellationToken>()).Returns([]);
+
+        Result<AcessoArquivoDoCandidatoDto> resultado = await Acessar(arquivo.Id);
+
+        resultado.Error!.Code.Should().Be(DocumentoDaInscricaoErrorCodes.ArquivoNaoEncontrado);
+        _storage.ReceivedCalls().Should().BeEmpty();
     }
 
     [Fact(DisplayName = "O arquivo de outra inscrição recebe a recusa de arquivo inexistente, sem chamar o armazenamento")]

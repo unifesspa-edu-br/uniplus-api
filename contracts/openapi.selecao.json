@@ -11316,7 +11316,9 @@
           "hashSha256",
           "confirmadoEm",
           "situacao",
-          "mensagem"
+          "mensagem",
+          "rotulo",
+          "nomeParaDownload"
         ],
         "type": "object",
         "properties": {
@@ -11364,6 +11366,15 @@
             "$ref": "#/components/schemas/SituacaoDoArquivoDoCandidato"
           },
           "mensagem": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rotulo": {
+            "type": "string"
+          },
+          "nomeParaDownload": {
             "type": [
               "null",
               "string"

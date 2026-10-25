@@ -50,7 +50,13 @@ public static partial class ObterAcessoDoArquivoDoCandidatoQueryHandler
             return Result<AcessoArquivoDoCandidatoDto>.Failure(ArquivoDaApresentacao.NaoVerificado);
         }
 
-        string nome = await NomeDeApresentacaoAsync(arquivo, documentoRepository, cancellationToken).ConfigureAwait(false);
+        string? nome = await NomeParaDownloadAsync(arquivo, documentoRepository, cancellationToken).ConfigureAwait(false);
+        if (nome is null)
+        {
+            // O arquivo saiu da inscrição entre a busca e a releitura: para o candidato é o mesmo que não existir.
+            return Result<AcessoArquivoDoCandidatoDto>.Failure(AcessoAoDocumentoDaInscricao.ArquivoNaoEncontrado);
+        }
+
         DateTimeOffset emitidoEm = clock.GetUtcNow();
         string url = await storage
             .GerarUrlLeituraAsync(arquivo.ChaveDefinitiva, nome, PrazosDoArquivoEnviado.Leitura, cancellationToken)
@@ -61,17 +67,13 @@ public static partial class ObterAcessoDoArquivoDoCandidatoQueryHandler
             new AcessoArquivoDoCandidatoDto(new Uri(url, UriKind.Absolute), emitidoEm.Add(PrazosDoArquivoEnviado.Leitura)));
     }
 
-    /// <summary>"Arquivo 1.pdf": a posição entre os arquivos da mesma apresentação e o formato; o nome original não é guardado.</summary>
-    private static async Task<string> NomeDeApresentacaoAsync(
+    /// <summary>O nome que a listagem da inscrição informa para o arquivo: o download usa o mesmo nome que a tela mostra.</summary>
+    private static async Task<string?> NomeParaDownloadAsync(
         ArquivoDaApresentacao arquivo, IDocumentoDaInscricaoRepository documentoRepository, CancellationToken cancellationToken)
     {
-        IReadOnlyList<ArquivoDaApresentacao> daInscricao = await documentoRepository
-            .ListarArquivosDaInscricaoAsync(arquivo.InscricaoId, cancellationToken).ConfigureAwait(false);
-        int posicao = 1 + daInscricao.Count(a =>
-            a.ApresentacaoId == arquivo.ApresentacaoId
-            && a.ConfirmadoEm is { } confirmadoEm
-            && (confirmadoEm < arquivo.ConfirmadoEm || (confirmadoEm == arquivo.ConfirmadoEm && a.Id.CompareTo(arquivo.Id) < 0)));
-        return $"Arquivo {posicao}.{FormatosDoArquivoDoCandidato.Extensao(arquivo.Formato)}";
+        ArquivosDaInscricao daInscricao = await ArquivosDaInscricao
+            .CarregarAsync(documentoRepository, arquivo.InscricaoId, cancellationToken).ConfigureAwait(false);
+        return daInscricao.ParaOCandidato().SingleOrDefault(a => a.ArquivoId == arquivo.Id)?.NomeParaDownload;
     }
 
     [LoggerMessage(

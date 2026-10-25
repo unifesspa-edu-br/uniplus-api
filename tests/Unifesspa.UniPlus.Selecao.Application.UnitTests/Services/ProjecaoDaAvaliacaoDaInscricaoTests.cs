@@ -103,7 +103,7 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
             consequenciaIndeferimento: null, [], [], null, FormatosPermitidos.Criar(false, [("PDF", 1_000_000), ("JPEG", 3_000_000)]).Value!, 2_000_000,
             finalidade: FinalidadeFormulario.Inscricao).Value!;
         DocumentoExigido outro = Documento(FaseDaInscricao, FinalidadeFormulario.Inscricao);
-        ArquivoDaApresentacaoDto doLaudo = new(Guid.CreateVersion7(), Guid.CreateVersion7(), laudo.Id, null, "application/pdf", 10, new string('a', 64), DateTimeOffset.UnixEpoch, SituacaoDoArquivoDoCandidato.Verificado, null);
+        ArquivoDaApresentacaoDto doLaudo = new(Guid.CreateVersion7(), Guid.CreateVersion7(), laudo.Id, null, "application/pdf", 10, new string('a', 64), DateTimeOffset.UnixEpoch, SituacaoDoArquivoDoCandidato.Verificado, null, "Arquivo 1", null);
         ArquivoDaApresentacaoDto doOutro = doLaudo with { ArquivoId = Guid.CreateVersion7(), ExigenciaId = outro.Id };
 
         IReadOnlyList<DocumentoDaInscricaoDto> documentos = Projetar(

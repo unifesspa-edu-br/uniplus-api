@@ -88,7 +88,7 @@ public sealed class ConciliacaoDosDocumentosIntegrationTests : IClassFixture<Ins
     private static async Task<ApresentacaoDeDocumento> ApresentacaoComArquivosAsync(
         DocumentoDaInscricaoRepository repositorio, Guid inscricaoId, DocumentoExigido laudo, int confirmados, bool verificar = true)
     {
-        ApresentacaoDeDocumento apresentacao = ApresentacaoDeDocumento.Criar(inscricaoId, laudo.Id, null);
+        ApresentacaoDeDocumento apresentacao = ApresentacaoDeDocumento.Criar(inscricaoId, laudo, null);
         await repositorio.AdicionarApresentacaoAsync(apresentacao);
         for (int i = 0; i < Math.Max(confirmados, 1); i++)
         {

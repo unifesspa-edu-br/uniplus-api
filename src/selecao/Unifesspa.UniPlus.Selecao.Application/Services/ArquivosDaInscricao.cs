@@ -69,13 +69,21 @@ public sealed class ArquivosDaInscricao
                 a.Formato, a.TamanhoBytes!.Value, a.HashSha256!, a.ConfirmadoEm!.Value)),
     ];
 
-    /// <summary>Os arquivos confirmados em qualquer situação, como o candidato os enxerga.</summary>
+    /// <summary>
+    /// Os arquivos confirmados em qualquer situação, como o candidato os enxerga, em ordem de confirmação. A posição de cada
+    /// um (o "Arquivo N" do rótulo e do nome de download) conta dentro da mesma exigência e ocorrência.
+    /// </summary>
     public IReadOnlyList<ArquivoDaApresentacaoDto> ParaOCandidato() =>
     [
         .. Arquivos
             .Where(static a => a.Situacao != SituacaoDoArquivoDoCandidato.Pendente)
-            .OrderBy(static a => a.ConfirmadoEm)
-            .Select(a => ArquivoDaApresentacaoDto.De(a, ApresentacaoDe(a))),
+            .GroupBy(a => (ApresentacaoDe(a).ExigenciaId, ApresentacaoDe(a).OcorrenciaId))
+            .SelectMany(grupo => grupo
+                .OrderBy(static a => a.ConfirmadoEm)
+                .ThenBy(static a => a.Id)
+                .Select((a, indice) => ArquivoDaApresentacaoDto.De(a, ApresentacaoDe(a), indice + 1)))
+            .OrderBy(static d => d.ConfirmadoEm)
+            .ThenBy(static d => d.ArquivoId),
     ];
 
     /// <summary>As exigências com arquivo em verificação e nenhum verificado: o envio espera o resultado (UNI-REQ-0028).</summary>
