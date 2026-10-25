@@ -1,28 +1,25 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.ExternalServices;
 
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Storage;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 
 /// <summary>
-/// <see cref="IArquivoDoCandidatoStorage"/> sobre o <see cref="IStorageService"/> compartilhado.
+/// <see cref="IArquivoDoCandidatoStorage"/> sobre o armazenamento com a credencial do candidato.
 /// </summary>
 public sealed class ArquivoDoCandidatoStorageService : IArquivoDoCandidatoStorage
 {
-    public const string ChaveDoArmazenamento = "arquivos-do-candidato";
-
     private readonly IStorageService _storageService;
     private readonly ArquivosDoCandidatoOptions _opcoes;
 
     public ArquivoDoCandidatoStorageService(
-        [FromKeyedServices(ChaveDoArmazenamento)] IStorageService storageService, IOptions<ArquivosDoCandidatoOptions> opcoes)
+        ArmazenamentoDoCandidato armazenamento, IOptions<ArquivosDoCandidatoOptions> opcoes)
     {
-        ArgumentNullException.ThrowIfNull(storageService);
+        ArgumentNullException.ThrowIfNull(armazenamento);
         ArgumentNullException.ThrowIfNull(opcoes);
 
-        _storageService = storageService;
+        _storageService = armazenamento.Storage;
         _opcoes = opcoes.Value;
     }
 

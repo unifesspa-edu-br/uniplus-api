@@ -118,28 +118,25 @@ public static class StorageServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Registra um <see cref="IStorageService"/> keyed com credenciais próprias, para o armazenamento que não pode usar a
-    /// credencial geral de <see cref="AddUniPlusStorage"/> (que enxerga todos os buckets). Exige que
-    /// <see cref="AddUniPlusStorage"/> tenha sido chamado; <paramref name="opcoes"/> deriva das opções gerais o que muda.
+    /// Cria um <see cref="IStorageService"/> com credenciais próprias, FORA do container, para o armazenamento que não
+    /// pode usar a credencial geral de <see cref="AddUniPlusStorage"/> (que enxerga todos os buckets). Não registra
+    /// nenhum <see cref="IStorageService"/> adicional: um segundo registro seria candidato à resolução por tipo de
+    /// qualquer consumidor sem chave. Exige que <see cref="AddUniPlusStorage"/> tenha sido chamado.
     /// </summary>
-    public static IServiceCollection AddKeyedUniPlusStorage(
-        this IServiceCollection services, string chave, Func<IServiceProvider, StorageOptions> opcoes)
+    /// <param name="provider">Provedor de onde saem o <see cref="IHttpClientFactory"/> e o <see cref="TimeProvider"/>.</param>
+    /// <param name="opcoes">Opções completas do armazenamento, já com a credencial própria.</param>
+    public static IStorageService CriarStorageComCredencialPropria(IServiceProvider provider, StorageOptions opcoes)
     {
-        ArgumentNullException.ThrowIfNull(services);
-        ArgumentException.ThrowIfNullOrWhiteSpace(chave);
+        ArgumentNullException.ThrowIfNull(provider);
         ArgumentNullException.ThrowIfNull(opcoes);
 
-        return services.AddKeyedSingleton<IStorageService>(chave, (sp, _) =>
-        {
-            StorageOptions opts = opcoes(sp);
-            IMinioClient interno = BuildClient(opts, opts.Endpoint, opts.UseSSL);
-            return new MinioStorageService(
-                interno,
-                ClienteDeAssinatura(opts, interno),
-                sp.GetRequiredService<IHttpClientFactory>(),
-                Options.Create(opts),
-                sp.GetRequiredService<TimeProvider>());
-        });
+        IMinioClient interno = BuildClient(opcoes, opcoes.Endpoint, opcoes.UseSSL);
+        return new MinioStorageService(
+            interno,
+            ClienteDeAssinatura(opcoes, interno),
+            provider.GetRequiredService<IHttpClientFactory>(),
+            Options.Create(opcoes),
+            provider.GetRequiredService<TimeProvider>());
     }
 
     /// <summary>Chave do <see cref="IMinioClient"/> keyed usado para assinar URLs devolvidas a clientes externos.</summary>

@@ -65,7 +65,7 @@ public sealed class DocumentoDaInscricaoIntegrationTests : IClassFixture<Inscric
         ServiceProvider provider = services.BuildServiceProvider();
         _bucketes = provider.GetRequiredService<IStorageService>();
         _storage = new ArquivoDoCandidatoStorageService(
-            _bucketes, Options.Create(new ArquivosDoCandidatoOptions { BucketDeEnvio = BucketDeEnvio, BucketDefinitivo = BucketDefinitivo }));
+            new ArmazenamentoDoCandidato(_bucketes), Options.Create(new ArquivosDoCandidatoOptions { BucketDeEnvio = BucketDeEnvio, BucketDefinitivo = BucketDefinitivo }));
     }
 
     private async Task<(SelecaoDbContext Context, DocumentoDaInscricaoRepository Repositorio, ArquivoDaApresentacao Arquivo)> PendenteAsync()

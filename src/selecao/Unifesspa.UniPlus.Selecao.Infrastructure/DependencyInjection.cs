@@ -100,11 +100,11 @@ public static class SelecaoInfrastructureRegistration
                     && !string.IsNullOrWhiteSpace(o.AccessKey) && !string.IsNullOrWhiteSpace(o.SecretKey),
                 "ArquivosDoCandidato:BucketDeEnvio, BucketDefinitivo, AccessKey e SecretKey são obrigatórios.")
             .ValidateOnStart();
-        services.AddKeyedUniPlusStorage(ArquivoDoCandidatoStorageService.ChaveDoArmazenamento, static sp =>
+        services.AddSingleton(static sp =>
         {
             StorageOptions geral = sp.GetRequiredService<IOptions<StorageOptions>>().Value;
             ArquivosDoCandidatoOptions candidato = sp.GetRequiredService<IOptions<ArquivosDoCandidatoOptions>>().Value;
-            return new StorageOptions
+            return new ArmazenamentoDoCandidato(StorageServiceCollectionExtensions.CriarStorageComCredencialPropria(sp, new StorageOptions
             {
                 Endpoint = geral.Endpoint,
                 UseSSL = geral.UseSSL,
@@ -113,7 +113,7 @@ public static class SelecaoInfrastructureRegistration
                 PublicUseSSL = geral.PublicUseSSL,
                 AccessKey = candidato.AccessKey,
                 SecretKey = candidato.SecretKey,
-            };
+            }));
         });
         services.AddScoped<IArquivoDoCandidatoStorage, ArquivoDoCandidatoStorageService>();
 
