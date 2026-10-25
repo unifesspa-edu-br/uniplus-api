@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Infrastructure.ExternalServices;
 
 using Wolverine;
 
@@ -54,6 +55,10 @@ public static class SelecaoCodegenRegistration
         // a divulgação de certame sem modelo não toca o armazenamento. A fábrica é opaca ao
         // codegen, e service-locá-la é o opt-in sancionado (ADR-0098).
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IAcervoPublico>();
+
+        // O armazenamento do candidato é registrado por fábrica (credencial própria derivada das opções),
+        // opaca ao codegen.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<ArmazenamentoDoCandidato>();
 
         // Readers de reference data cross-módulo (ADR-0056) consumidos pelo
         // handler de oferta de atendimento especializado (F0). A interface vive
