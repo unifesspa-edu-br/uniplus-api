@@ -115,8 +115,10 @@ public static class ConfirmarEnvioDeDocumentoDaInscricaoCommandHandler
         documentoRepository.Atualizar(arquivo);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
+        ArquivosDaInscricao daInscricao = await ArquivosDaInscricao
+            .CarregarAsync(documentoRepository, arquivo.InscricaoId, cancellationToken).ConfigureAwait(false);
         return (
-            Result<ArquivoDaApresentacaoDto>.Success(ArquivoDaApresentacaoDto.De(arquivo, apresentacao)),
+            Result<ArquivoDaApresentacaoDto>.Success(daInscricao.ParaOCandidato().Single(a => a.ArquivoId == arquivo.Id)),
             [PedidoDeVerificacao.De(arquivo)]);
     }
 

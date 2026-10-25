@@ -132,11 +132,13 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
 
     private ArquivoDaApresentacao ArquivoPendente(Inscricao inscricao, TimeProvider? relogio = null)
     {
+        ApresentacaoDeDocumento apresentacao = ApresentacaoDeDocumento.Criar(inscricao.Id, _laudo, null);
         ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(
-            Guid.CreateVersion7(), inscricao.Id, _laudo, "application/pdf", 2048, relogio ?? TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+            apresentacao.Id, inscricao.Id, _laudo, "application/pdf", 2048, relogio ?? TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         _documentos.ObterArquivoAsync(arquivo.Id, Arg.Any<CancellationToken>()).Returns(arquivo);
-        _documentos.ObterApresentacaoAsync(arquivo.ApresentacaoId, Arg.Any<CancellationToken>())
-            .Returns(ApresentacaoDeDocumento.Criar(inscricao.Id, _laudo.Id, null));
+        _documentos.ObterApresentacaoAsync(arquivo.ApresentacaoId, Arg.Any<CancellationToken>()).Returns(apresentacao);
+        _documentos.ListarApresentacoesDaInscricaoAsync(inscricao.Id, Arg.Any<CancellationToken>()).Returns([apresentacao]);
+        _documentos.ListarArquivosDaInscricaoAsync(inscricao.Id, Arg.Any<CancellationToken>()).Returns([arquivo]);
         return arquivo;
     }
 
@@ -229,7 +231,7 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
     public async Task Iniciar_Apresentacao_SoReaproveitaPorIdExplicito()
     {
         Inscricao inscricao = Rascunho("dep-1");
-        ApresentacaoDeDocumento doLaudo = ApresentacaoDeDocumento.Criar(inscricao.Id, _laudo.Id, null);
+        ApresentacaoDeDocumento doLaudo = ApresentacaoDeDocumento.Criar(inscricao.Id, _laudo, null);
         _documentos.ObterApresentacaoAsync(doLaudo.Id, Arg.Any<CancellationToken>()).Returns(doLaudo);
 
         (await Iniciar(_certidao, "dep-1", doLaudo.Id)).Error!.Code.Should().Be(DocumentoDaInscricaoErrorCodes.ApresentacaoNaoEncontrada);
@@ -343,6 +345,8 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
         resposta.IsSuccess.Should().BeTrue();
         resposta.Value!.Situacao.Should().Be(SituacaoDoArquivoDoCandidato.EmVerificacao);
         resposta.Value.Mensagem.Should().Be("Arquivo em verificação. Isso costuma levar poucos segundos.");
+        resposta.Value.Rotulo.Should().Be("Arquivo 1");
+        resposta.Value.NomeParaDownload.Should().BeNull("o hash só existe depois da verificação");
         mensagens.Should().ContainSingle().Which.Should().Be(new PedidoDeVerificacaoDeArquivo(
             arquivo.Id, arquivo.ObjectKey, "\"etag-do-put\"", arquivo.ChaveDefinitivaPrevista, FormatoDoArquivo.Pdf, arquivo.TamanhoMaximoBytes));
         _documentos.Received(1).Atualizar(arquivo);

@@ -857,7 +857,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         DocumentoExigido laudo = DocumentoExigido.Criar(
             Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", Aplicabilidade.Geral, false, null,
             [], [], null, FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null).Value!;
-        ApresentacaoDeDocumento apresentacao = ApresentacaoDeDocumento.Criar(inscricao.Id, laudo.Id, null);
+        ApresentacaoDeDocumento apresentacao = ApresentacaoDeDocumento.Criar(inscricao.Id, laudo, null);
         ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(
             apresentacao.Id, inscricao.Id, laudo, "application/pdf", 1024, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
 

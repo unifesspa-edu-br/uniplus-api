@@ -162,6 +162,13 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("inscricao_id");
 
+                    b.Property<string>("NomeDoDocumento")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("nome_do_documento")
+                        .HasComment("O nome do documento como a exigência o chamava no envio; dá nome ao arquivo baixado.");
+
                     b.Property<string>("OcorrenciaId")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
@@ -181,6 +188,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.ToTable("apresentacoes_de_documento", "selecao", t =>
                         {
                             t.HasComment("A apresentação de um documento exigido pela inscrição: a unidade que a exigência conta, com um ou mais arquivos.");
+
+                            t.HasCheckConstraint("ck_apresentacoes_de_documento_nome_do_documento_preenchido", "btrim(nome_do_documento) <> ''");
                         });
                 });
 

@@ -19,12 +19,21 @@ public sealed class ApresentacaoDeDocumento : EntityBase
     /// <summary>O id da ocorrência do grupo repetível; nulo quando a exigência não se repete.</summary>
     public string? OcorrenciaId { get; private set; }
 
+    /// <summary>O nome do documento como a exigência o chamava no envio: dá nome ao arquivo baixado sem reler a configuração.</summary>
+    public string NomeDoDocumento { get; private set; } = string.Empty;
+
     private ApresentacaoDeDocumento() { }
 
-    public static ApresentacaoDeDocumento Criar(Guid inscricaoId, Guid exigenciaId, string? ocorrenciaId) => new()
+    public static ApresentacaoDeDocumento Criar(Guid inscricaoId, DocumentoExigido exigencia, string? ocorrenciaId)
     {
-        InscricaoId = inscricaoId,
-        ExigenciaId = exigenciaId,
-        OcorrenciaId = ocorrenciaId,
-    };
+        ArgumentNullException.ThrowIfNull(exigencia);
+
+        return new()
+        {
+            InscricaoId = inscricaoId,
+            ExigenciaId = exigencia.Id,
+            OcorrenciaId = ocorrenciaId,
+            NomeDoDocumento = exigencia.TipoDocumentoNome,
+        };
+    }
 }

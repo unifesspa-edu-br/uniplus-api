@@ -138,7 +138,7 @@ public sealed class DocumentosEnviadosDaInscricaoTests
     {
         public static Cenario Com(DocumentoExigido exigencia, string? ocorrencia, bool verificado = true)
         {
-            ApresentacaoDeDocumento apresentacao = ApresentacaoDeDocumento.Criar(InscricaoId, exigencia.Id, ocorrencia);
+            ApresentacaoDeDocumento apresentacao = ApresentacaoDeDocumento.Criar(InscricaoId, exigencia, ocorrencia);
             ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(
                 apresentacao.Id, InscricaoId, exigencia, "application/pdf", 1024, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
             arquivo.Confirmar("\"etag\"", TimeProvider.System);

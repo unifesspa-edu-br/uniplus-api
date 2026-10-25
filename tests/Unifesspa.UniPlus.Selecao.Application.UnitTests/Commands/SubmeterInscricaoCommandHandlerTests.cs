@@ -437,8 +437,8 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
             DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
 
-            ApresentacaoDeDocumento doLaudo = ApresentacaoDeDocumento.Criar(existente.Id, laudo.Id, null);
-            ApresentacaoDeDocumento doOutro = ApresentacaoDeDocumento.Criar(existente.Id, naoSeAplica.Id, null);
+            ApresentacaoDeDocumento doLaudo = ApresentacaoDeDocumento.Criar(existente.Id, laudo, null);
+            ApresentacaoDeDocumento doOutro = ApresentacaoDeDocumento.Criar(existente.Id, naoSeAplica, null);
             ArquivoDaApresentacao Confirmado(ApresentacaoDeDocumento apresentacao, DocumentoExigido exigencia, bool verificado = true)
             {
                 ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(

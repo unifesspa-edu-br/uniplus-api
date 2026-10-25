@@ -107,7 +107,7 @@ public static class IniciarEnvioDeDocumentoDaInscricaoCommandHandler
             return Result<IniciarEnvioDeDocumentoDaInscricaoDto>.Failure(ocorrenciaInvalida);
         }
 
-        Result<ApresentacaoDeDocumento> apresentacao = await ResolverApresentacaoAsync(command, inscricao, documentoRepository, cancellationToken)
+        Result<ApresentacaoDeDocumento> apresentacao = await ResolverApresentacaoAsync(command, inscricao, localizada.Exigencia, documentoRepository, cancellationToken)
             .ConfigureAwait(false);
         if (apresentacao.IsFailure)
         {
@@ -176,13 +176,14 @@ public static class IniciarEnvioDeDocumentoDaInscricaoCommandHandler
     private static async Task<Result<ApresentacaoDeDocumento>> ResolverApresentacaoAsync(
         IniciarEnvioDeDocumentoDaInscricaoCommand command,
         Inscricao inscricao,
+        DocumentoExigido exigencia,
         IDocumentoDaInscricaoRepository documentoRepository,
         CancellationToken cancellationToken)
     {
         if (command.ApresentacaoId is not { } id)
         {
             return Result<ApresentacaoDeDocumento>.Success(
-                ApresentacaoDeDocumento.Criar(inscricao.Id, command.ExigenciaId, string.IsNullOrWhiteSpace(command.OcorrenciaId) ? null : command.OcorrenciaId));
+                ApresentacaoDeDocumento.Criar(inscricao.Id, exigencia, string.IsNullOrWhiteSpace(command.OcorrenciaId) ? null : command.OcorrenciaId));
         }
 
         ApresentacaoDeDocumento? existente = await documentoRepository.ObterApresentacaoAsync(id, cancellationToken).ConfigureAwait(false);

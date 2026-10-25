@@ -17,8 +17,11 @@ internal sealed class ApresentacaoDeDocumentoConfiguration : IEntityTypeConfigur
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-        builder.ToTable("apresentacoes_de_documento", t => t.HasComment(
-            "A apresentação de um documento exigido pela inscrição: a unidade que a exigência conta, com um ou mais arquivos."));
+        builder.ToTable("apresentacoes_de_documento", t =>
+        {
+            t.HasComment("A apresentação de um documento exigido pela inscrição: a unidade que a exigência conta, com um ou mais arquivos.");
+            t.HasCheckConstraint("ck_apresentacoes_de_documento_nome_do_documento_preenchido", "btrim(nome_do_documento) <> ''");
+        });
 
         builder.HasKey(a => a.Id);
         builder.Property(a => a.Id).ValueGeneratedNever();
@@ -28,6 +31,11 @@ internal sealed class ApresentacaoDeDocumentoConfiguration : IEntityTypeConfigur
         builder.Property(a => a.OcorrenciaId)
             .HasMaxLength(200)
             .HasComment("A ocorrência do grupo repetível a que o documento se refere; nulo quando a exigência não se repete.");
+
+        builder.Property(a => a.NomeDoDocumento)
+            .IsRequired()
+            .HasMaxLength(200)
+            .HasComment("O nome do documento como a exigência o chamava no envio; dá nome ao arquivo baixado.");
 
         // Os arquivos saem junto da inscrição: o descarte do rascunho não deixa linha órfã.
         builder.HasOne<InscricaoRecord>()
