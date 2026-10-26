@@ -26,19 +26,12 @@ public interface ILoteDeNotasDoEnemRepository
     Task<IReadOnlyList<LoteDeNotasDoEnem>> ListarAsync(
         Guid processoSeletivoId, Guid etapaProcessoId, string edicaoCodigo, CancellationToken cancellationToken = default);
 
-    /// <summary>O número de inscrição do Uni+ de cada inscrição pedida, para legendar as ocorrências.</summary>
-    Task<IReadOnlyDictionary<Guid, string>> ObterNumerosDeInscricaoAsync(
-        IReadOnlyCollection<Guid> inscricaoIds, CancellationToken cancellationToken = default);
-
     /// <summary>
-    /// O nome de exibição (nome social quando houver) e o CPF mascarado de cada inscrição pedida, lidos
-    /// num único lote. Inscrição sem nome respondido fica com nome nulo.
+    /// Quem são as inscrições pedidas, lidas de uma vez: número de inscrição, nome de exibição (nome
+    /// social quando houver), CPF mascarado, versão do formulário e cursos escolhidos. Inscrição sem
+    /// nome respondido fica com nome nulo.
     /// </summary>
-    Task<IReadOnlyDictionary<Guid, IdentificacaoDoInscrito>> ObterIdentificacoesAsync(
-        IReadOnlyCollection<Guid> inscricaoIds, CancellationToken cancellationToken = default);
-
-    /// <summary>A versão do formulário e as ofertas de curso (1ª e 2ª opção) de cada inscrição pedida, lidas num único lote.</summary>
-    Task<IReadOnlyDictionary<Guid, OfertasEscolhidasDaInscricao>> ObterOfertasEscolhidasAsync(
+    Task<IReadOnlyDictionary<Guid, InscritoDoLote>> ObterInscritosAsync(
         IReadOnlyCollection<Guid> inscricaoIds, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -53,8 +46,14 @@ public interface ILoteDeNotasDoEnemRepository
         IReadOnlyCollection<Guid> loteIds, CancellationToken cancellationToken = default);
 }
 
-/// <summary>Quem é o inscrito, para o operador reconhecê-lo: nome de exibição e CPF mascarado.</summary>
-public sealed record IdentificacaoDoInscrito(string? Nome, string CpfMascarado);
-
-/// <summary>As ofertas de curso que a inscrição escolheu e a versão do formulário em que os nomes delas estão congelados.</summary>
-public sealed record OfertasEscolhidasDaInscricao(Guid VersaoFormularioId, Guid? Primeira, Guid? Segunda);
+/// <summary>
+/// O inscrito como o operador o reconhece, com a versão do formulário em que os nomes dos cursos
+/// escolhidos (1ª e 2ª opção) estão congelados.
+/// </summary>
+public sealed record InscritoDoLote(
+    string? NumeroDeInscricao,
+    string? Nome,
+    string CpfMascarado,
+    Guid VersaoFormularioId,
+    Guid? PrimeiraOpcao,
+    Guid? SegundaOpcao);

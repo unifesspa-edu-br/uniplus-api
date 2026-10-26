@@ -207,15 +207,12 @@ public static partial class ImportarNotasDoEnemCommandHandler
                 .Distinct(),
         ];
 
-        IReadOnlyDictionary<Guid, string> numeros = await lotes.ObterNumerosDeInscricaoAsync(inscricaoIds, cancellationToken).ConfigureAwait(false);
-        IReadOnlyDictionary<Guid, IdentificacaoDoInscrito> identificacoes = await lotes.ObterIdentificacoesAsync(inscricaoIds, cancellationToken).ConfigureAwait(false);
-
-        IReadOnlyDictionary<Guid, OfertasEscolhidasDaInscricao> escolhidas = await lotes.ObterOfertasEscolhidasAsync(inscricaoIds, cancellationToken).ConfigureAwait(false);
+        IReadOnlyDictionary<Guid, InscritoDoLote> inscritos = await lotes.ObterInscritosAsync(inscricaoIds, cancellationToken).ConfigureAwait(false);
         IReadOnlyDictionary<Guid, IReadOnlyList<OpcaoDeCursoDoLoteDto>> opcoes = await NomesDasOfertasDoLote
-            .ResolverAsync(lote.ProcessoSeletivoId, escolhidas, processoSeletivoRepository, registroCodecs, cancellationToken)
+            .ResolverAsync(lote.ProcessoSeletivoId, inscritos, processoSeletivoRepository, registroCodecs, cancellationToken)
             .ConfigureAwait(false);
 
-        return LoteDeNotasDoEnemDto.De(lote, vigente, new DetalheDoLoteDeNotas(numeros, identificacoes, ausentes, opcoes), ausentes.Count);
+        return LoteDeNotasDoEnemDto.De(lote, vigente, new DetalheDoLoteDeNotas(inscritos, ausentes, opcoes), ausentes.Count);
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Lote {LoteId} de notas do ENEM importado no processo {ProcessoId}: {Linhas} linhas, {ComNota} com nota, {SemLinha} inscritos sem linha, {SemInscrito} linhas sem inscrito, {Conflitos} em conflito; {Apuradas} avaliações apuradas e {SemNota} sem nota")]

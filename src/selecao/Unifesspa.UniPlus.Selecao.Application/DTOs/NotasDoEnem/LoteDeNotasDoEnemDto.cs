@@ -93,7 +93,7 @@ public sealed record OcorrenciaDoLoteDto(
         ArgumentNullException.ThrowIfNull(detalhe);
 
         Guid? inscricaoId = ocorrencia.InscricaoId;
-        IdentificacaoDoInscrito? identificacao = inscricaoId is { } id ? detalhe.Identificar(id) : null;
+        InscritoDoLote? inscrito = inscricaoId is { } id ? detalhe.Inscrito(id) : null;
 
         return new OcorrenciaDoLoteDto(
             ocorrencia.Tipo switch
@@ -103,10 +103,10 @@ public sealed record OcorrenciaDoLoteDto(
                 _ => "CONFLITO",
             },
             inscricaoId,
-            inscricaoId is { } n ? detalhe.NumeroDe(n) : null,
+            inscrito?.NumeroDeInscricao,
             ocorrencia.NumerosDasLinhas,
-            identificacao?.Nome ?? ocorrencia.Nome,
-            identificacao?.CpfMascarado ?? ocorrencia.CpfMascarado,
+            inscrito?.Nome ?? ocorrencia.Nome,
+            inscrito?.CpfMascarado ?? ocorrencia.CpfMascarado,
             ocorrencia.Sexo,
             inscricaoId is { } o ? detalhe.OpcoesDe(o) : null);
     }
@@ -126,27 +126,24 @@ public sealed record AusenteDoLoteDto(
         ArgumentNullException.ThrowIfNull(areas);
         ArgumentNullException.ThrowIfNull(detalhe);
 
-        IdentificacaoDoInscrito? identificacao = detalhe.Identificar(inscricaoId);
+        InscritoDoLote? inscrito = detalhe.Inscrito(inscricaoId);
         return new AusenteDoLoteDto(
-            inscricaoId, detalhe.NumeroDe(inscricaoId) ?? string.Empty, identificacao?.Nome, identificacao?.CpfMascarado, areas, detalhe.OpcoesDe(inscricaoId));
+            inscricaoId, inscrito?.NumeroDeInscricao ?? string.Empty, inscrito?.Nome, inscrito?.CpfMascarado, areas, detalhe.OpcoesDe(inscricaoId));
     }
 }
 
 /// <summary>Um curso escolhido pelo inscrito: a ordem da opção (1ª ou 2ª) e a oferta como o edital a nomeou.</summary>
 public sealed record OpcaoDeCursoDoLoteDto(int Ordem, string Oferta);
 
-/// <summary>O que se lê por inscrição para legendar um lote: número, identificação e ausências.</summary>
+/// <summary>O que se lê por inscrição para legendar um lote: identificação, ausências e cursos.</summary>
 public sealed record DetalheDoLoteDeNotas(
-    IReadOnlyDictionary<Guid, string> NumerosDeInscricao,
-    IReadOnlyDictionary<Guid, IdentificacaoDoInscrito> Identificacoes,
+    IReadOnlyDictionary<Guid, InscritoDoLote> Inscritos,
     IReadOnlyDictionary<Guid, IReadOnlyList<string>> AusentesPorInscricao,
     IReadOnlyDictionary<Guid, IReadOnlyList<OpcaoDeCursoDoLoteDto>> OpcoesDeCursoPorInscricao)
 {
     public IReadOnlyList<OpcaoDeCursoDoLoteDto>? OpcoesDe(Guid inscricaoId) => OpcoesDeCursoPorInscricao.GetValueOrDefault(inscricaoId);
 
-    public string? NumeroDe(Guid inscricaoId) => NumerosDeInscricao.GetValueOrDefault(inscricaoId);
-
-    public IdentificacaoDoInscrito? Identificar(Guid inscricaoId) => Identificacoes.GetValueOrDefault(inscricaoId);
+    public InscritoDoLote? Inscrito(Guid inscricaoId) => Inscritos.GetValueOrDefault(inscricaoId);
 }
 
 /// <summary>O resultado de importar um arquivo: o lote e se ele foi criado agora ou já era o vigente.</summary>

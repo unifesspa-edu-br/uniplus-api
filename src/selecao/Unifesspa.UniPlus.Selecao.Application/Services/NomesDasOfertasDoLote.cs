@@ -25,24 +25,24 @@ public static class NomesDasOfertasDoLote
 
     public static async Task<IReadOnlyDictionary<Guid, IReadOnlyList<OpcaoDeCursoDoLoteDto>>> ResolverAsync(
         Guid processoSeletivoId,
-        IReadOnlyDictionary<Guid, OfertasEscolhidasDaInscricao> escolhidas,
+        IReadOnlyDictionary<Guid, InscritoDoLote> inscritos,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegistroCodecsEnvelope registroCodecs,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(escolhidas);
+        ArgumentNullException.ThrowIfNull(inscritos);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(registroCodecs);
 
         Dictionary<Guid, IReadOnlyList<OpcaoDeCursoDoLoteDto>> resultado = [];
-        if (escolhidas.Count == 0)
+        if (inscritos.Count == 0)
         {
             return resultado;
         }
 
         Dictionary<Guid, IReadOnlyList<OfertaDeCursoCertameDto>> ofertasPorVersao = await ContextoDaVersaoFixadaResolver
             .OfertasDasVersoesAsync(
-                escolhidas.Values.Select(e => (processoSeletivoId, e.VersaoFormularioId)),
+                inscritos.Values.Select(e => (processoSeletivoId, e.VersaoFormularioId)),
                 processoSeletivoRepository,
                 registroCodecs,
                 cancellationToken)
@@ -51,15 +51,15 @@ public static class NomesDasOfertasDoLote
             static v => v.Key,
             static v => v.Value.ToDictionary(static o => o.OfertaCursoOrigemId, Nome));
 
-        foreach ((Guid inscricaoId, OfertasEscolhidasDaInscricao ofertas) in escolhidas)
+        foreach ((Guid inscricaoId, InscritoDoLote inscrito) in inscritos)
         {
-            if (!nomesPorVersao.TryGetValue(ofertas.VersaoFormularioId, out Dictionary<Guid, string>? nomes))
+            if (!nomesPorVersao.TryGetValue(inscrito.VersaoFormularioId, out Dictionary<Guid, string>? nomes))
             {
                 continue;
             }
 
             List<OpcaoDeCursoDoLoteDto> opcoes = [];
-            foreach (Guid? escolhida in new[] { ofertas.Primeira, ofertas.Segunda })
+            foreach (Guid? escolhida in new[] { inscrito.PrimeiraOpcao, inscrito.SegundaOpcao })
             {
                 if (escolhida is not { } id || !nomes.TryGetValue(id, out string? nome))
                 {

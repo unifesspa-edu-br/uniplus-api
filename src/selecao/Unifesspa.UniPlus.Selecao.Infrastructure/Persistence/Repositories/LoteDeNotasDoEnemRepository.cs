@@ -16,8 +16,6 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Cryptography;
 
 public sealed class LoteDeNotasDoEnemRepository : ILoteDeNotasDoEnemRepository
 {
-    private const int GrauDeParalelismo = 16;
-
     private static readonly string[] OrdemDasAreas = [.. AreaDoEnem.Todas];
 
     private readonly SelecaoDbContext _context;
@@ -67,23 +65,7 @@ public sealed class LoteDeNotasDoEnemRepository : ILoteDeNotasDoEnemRepository
             .ConfigureAwait(false);
     }
 
-    public async Task<IReadOnlyDictionary<Guid, string>> ObterNumerosDeInscricaoAsync(
-        IReadOnlyCollection<Guid> inscricaoIds, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(inscricaoIds);
-
-        Guid[] ids = [.. inscricaoIds];
-        var numeros = await _context.Inscricoes
-            .AsNoTracking()
-            .Where(i => ids.Contains(i.Id) && i.NumeroInscricao != null)
-            .Select(i => new { i.Id, Numero = i.NumeroInscricao! })
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        return numeros.ToDictionary(static n => n.Id, static n => n.Numero);
-    }
-
-    public async Task<IReadOnlyDictionary<Guid, IdentificacaoDoInscrito>> ObterIdentificacoesAsync(
+    public async Task<IReadOnlyDictionary<Guid, InscritoDoLote>> ObterInscritosAsync(
         IReadOnlyCollection<Guid> inscricaoIds, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(inscricaoIds);
@@ -91,13 +73,21 @@ public sealed class LoteDeNotasDoEnemRepository : ILoteDeNotasDoEnemRepository
         Guid[] ids = [.. inscricaoIds];
         if (ids.Length == 0)
         {
-            return new Dictionary<Guid, IdentificacaoDoInscrito>();
+            return new Dictionary<Guid, InscritoDoLote>();
         }
 
-        var cpfs = await _context.Inscricoes
+        var inscricoes = await _context.Inscricoes
             .AsNoTracking()
             .Where(i => ids.Contains(i.Id))
-            .Select(i => new { i.Id, i.CpfCiphertext })
+            .Select(i => new
+            {
+                i.Id,
+                i.NumeroInscricao,
+                i.CpfCiphertext,
+                i.VersaoFormularioId,
+                i.OfertaCursoId,
+                i.OfertaCursoSegundaOpcaoId,
+            })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
@@ -119,44 +109,25 @@ public sealed class LoteDeNotasDoEnemRepository : ILoteDeNotasDoEnemRepository
                 static g => (g.FirstOrDefault(static n => n.FatoCodigo == ConjuntoBasicoDaInscricao.NomeSocial && !string.IsNullOrWhiteSpace(n.Texto))
                     ?? g.FirstOrDefault(static n => n.FatoCodigo == ConjuntoBasicoDaInscricao.Nome))?.Texto.Trim() ?? string.Empty);
 
-        string[] mascarados = new string[cpfs.Count];
-        await Parallel.ForEachAsync(
-            Enumerable.Range(0, cpfs.Count),
-            new ParallelOptions { MaxDegreeOfParallelism = GrauDeParalelismo, CancellationToken = cancellationToken },
-            async (indice, ct) =>
-            {
-                byte[] plano = await _encryption
-                    .DecryptAsync(SelecaoEncryptionKeys.IdentificadoresAesGcm, cpfs[indice].CpfCiphertext, ct)
-                    .ConfigureAwait(false);
-                mascarados[indice] = Cpf.Mascarar(Encoding.UTF8.GetString(plano));
-            }).ConfigureAwait(false);
+        string[] cpfs = await DecifradorDeCpfsEmParalelo
+            .DecifrarAsync(_encryption, [.. inscricoes.Select(static i => i.CpfCiphertext)], cancellationToken)
+            .ConfigureAwait(false);
 
-        Dictionary<Guid, IdentificacaoDoInscrito> resultado = [];
-        for (int i = 0; i < cpfs.Count; i++)
+        Dictionary<Guid, InscritoDoLote> resultado = [];
+        for (int i = 0; i < inscricoes.Count; i++)
         {
-            string? nome = nomeDeExibicao.TryGetValue(cpfs[i].Id, out string? n) && n.Length > 0 ? n : null;
-            resultado[cpfs[i].Id] = new IdentificacaoDoInscrito(nome, mascarados[i]);
+            var inscricao = inscricoes[i];
+            string? nome = nomeDeExibicao.TryGetValue(inscricao.Id, out string? n) && n.Length > 0 ? n : null;
+            resultado[inscricao.Id] = new InscritoDoLote(
+                inscricao.NumeroInscricao,
+                nome,
+                Cpf.Mascarar(cpfs[i]),
+                inscricao.VersaoFormularioId,
+                inscricao.OfertaCursoId,
+                inscricao.OfertaCursoSegundaOpcaoId);
         }
 
         return resultado;
-    }
-
-    public async Task<IReadOnlyDictionary<Guid, OfertasEscolhidasDaInscricao>> ObterOfertasEscolhidasAsync(
-        IReadOnlyCollection<Guid> inscricaoIds, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(inscricaoIds);
-
-        Guid[] ids = [.. inscricaoIds];
-        var ofertas = await _context.Inscricoes
-            .AsNoTracking()
-            .Where(i => ids.Contains(i.Id))
-            .Select(i => new { i.Id, i.VersaoFormularioId, i.OfertaCursoId, i.OfertaCursoSegundaOpcaoId })
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        return ofertas.ToDictionary(
-            static o => o.Id,
-            static o => new OfertasEscolhidasDaInscricao(o.VersaoFormularioId, o.OfertaCursoId, o.OfertaCursoSegundaOpcaoId));
     }
 
     public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<string>>> ObterAusentesDoLoteAsync(

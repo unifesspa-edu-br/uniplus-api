@@ -15,8 +15,6 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 /// </summary>
 public sealed class InscritosDaEdicaoDoEnem : IInscritosDaEdicaoDoEnem
 {
-    private const int GrauDeParalelismo = 16;
-
     private readonly SelecaoDbContext _context;
     private readonly IUniPlusEncryptionService _encryption;
 
@@ -51,19 +49,7 @@ public sealed class InscritosDaEdicaoDoEnem : IInscritosDaEdicaoDoEnem
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        string[] cpfs = new string[cifrados.Count];
-        await Parallel.ForEachAsync(
-            Enumerable.Range(0, cifrados.Count),
-            new ParallelOptions { MaxDegreeOfParallelism = GrauDeParalelismo, CancellationToken = cancellationToken },
-            async (indice, ct) =>
-            {
-                byte[] plano = await _encryption
-                    .DecryptAsync(SelecaoEncryptionKeys.IdentificadoresAesGcm, cifrados[indice], ct)
-                    .ConfigureAwait(false);
-                cpfs[indice] = System.Text.Encoding.UTF8.GetString(plano);
-            }).ConfigureAwait(false);
-
-        return cpfs;
+        return await DecifradorDeCpfsEmParalelo.DecifrarAsync(_encryption, cifrados, cancellationToken).ConfigureAwait(false);
     }
 
     private IQueryable<InscricaoRecord> DaEdicao(Guid processoSeletivoId, string edicaoCodigo) =>

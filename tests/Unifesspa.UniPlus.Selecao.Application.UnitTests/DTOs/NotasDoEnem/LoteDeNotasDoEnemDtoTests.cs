@@ -25,11 +25,10 @@ public sealed class LoteDeNotasDoEnemDtoTests
         Guid parcial = Guid.CreateVersion7();
         Guid total = Guid.CreateVersion7();
         DetalheDoLoteDeNotas detalhe = new(
-            new Dictionary<Guid, string> { [parcial] = "UNI-0002", [total] = "UNI-0001" },
-            new Dictionary<Guid, IdentificacaoDoInscrito>
+            new Dictionary<Guid, InscritoDoLote>
             {
-                [parcial] = new("Pessoa Parcial", "***.111.222-**"),
-                [total] = new("Pessoa Total", "***.333.444-**"),
+                [parcial] = new("UNI-0002", "Pessoa Parcial", "***.111.222-**", Guid.CreateVersion7(), null, null),
+                [total] = new("UNI-0001", "Pessoa Total", "***.333.444-**", Guid.CreateVersion7(), null, null),
             },
             new Dictionary<Guid, IReadOnlyList<string>>
             {
