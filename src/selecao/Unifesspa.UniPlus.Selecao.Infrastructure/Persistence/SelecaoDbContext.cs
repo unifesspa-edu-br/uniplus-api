@@ -195,6 +195,18 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     /// <summary>Comprovantes de submissão (issue #1858) — mapeado direto, sem record de tradução (sem campo cifrado).</summary>
     public DbSet<ComprovanteInscricao> ComprovantesInscricao => Set<ComprovanteInscricao>();
 
+    /// <summary>Notas do ENEM importadas do retorno do INEP (ADR-0149): lotes, inscritos do lote, lançamentos e ocorrências — todos append-only.</summary>
+    public DbSet<LoteDeNotasDoEnem> LotesDeNotasDoEnem => Set<LoteDeNotasDoEnem>();
+
+    public DbSet<InscritoDoLoteDeNotas> InscritosDoLoteDeNotas => Set<InscritoDoLoteDeNotas>();
+
+    public DbSet<LancamentoDeNota> LancamentosDeNota => Set<LancamentoDeNota>();
+
+    public DbSet<OcorrenciaDoLoteDeNotas> OcorrenciasDoLoteDeNotas => Set<OcorrenciaDoLoteDeNotas>();
+
+    /// <summary>O registro de cada geração do arquivo de envio ao INEP — sem o arquivo nem os CPFs.</summary>
+    public DbSet<GeracaoDeEnvioAoInep> GeracoesDeEnvioAoInep => Set<GeracaoDeEnvioAoInep>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
