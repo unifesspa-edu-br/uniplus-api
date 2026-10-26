@@ -58,21 +58,27 @@ public static class NomesDasOfertasDoLote
                 continue;
             }
 
-            List<OpcaoDeCursoDoLoteDto> opcoes = [];
-            foreach (Guid? escolhida in new[] { inscrito.PrimeiraOpcao, inscrito.SegundaOpcao })
-            {
-                if (escolhida is not { } id || !nomes.TryGetValue(id, out string? nome))
-                {
-                    break;
-                }
-
-                opcoes.Add(new OpcaoDeCursoDoLoteDto(opcoes.Count + 1, nome));
-            }
-
+            IReadOnlyList<OpcaoDeCursoDoLoteDto> opcoes = Opcoes(inscrito, nomes);
             resultado[inscricaoId] = opcoes;
         }
 
         return resultado;
+    }
+
+    /// <summary>As opções que a versão nomeia, cada uma com a ordem em que o inscrito a escolheu.</summary>
+    internal static List<OpcaoDeCursoDoLoteDto> Opcoes(InscritoDoLote inscrito, IReadOnlyDictionary<Guid, string> nomes)
+    {
+        List<OpcaoDeCursoDoLoteDto> opcoes = [];
+        Guid?[] escolhidas = [inscrito.PrimeiraOpcao, inscrito.SegundaOpcao];
+        for (int posicao = 0; posicao < escolhidas.Length; posicao++)
+        {
+            if (escolhidas[posicao] is { } id && nomes.TryGetValue(id, out string? nome))
+            {
+                opcoes.Add(new OpcaoDeCursoDoLoteDto(posicao + 1, nome));
+            }
+        }
+
+        return opcoes;
     }
 
     private static string Nome(OfertaDeCursoCertameDto oferta) =>
