@@ -15,7 +15,7 @@ public sealed class LeiauteDeEnvioDoInep : ILeiauteDeArquivoDoInep
         Descricao = descricao;
         Ativo = ativo;
         Hash = DefinicaoCanonicaDoLeiaute.Hash(
-            codigo, versao, Tipo, string.Empty, FimDeLinha.ToString(), 1, [ColunaDoRetorno.Cpf(0)]);
+            codigo, versao, Tipo, string.Empty, FimDeLinha.ToString(), QuantidadeDeCampos, [ColunaDoRetorno.Cpf(0)]);
     }
 
     public string Codigo { get; }
@@ -27,6 +27,8 @@ public sealed class LeiauteDeEnvioDoInep : ILeiauteDeArquivoDoInep
     public string Descricao { get; }
 
     public bool Ativo { get; }
+
+    public int QuantidadeDeCampos => 1;
 
     public string Hash { get; }
 

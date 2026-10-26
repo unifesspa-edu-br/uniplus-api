@@ -4699,6 +4699,82 @@
         "x-uniplus-idempotent": true
       }
     },
+    "/api/selecao/leiautes-de-arquivo-do-inep": {
+      "get": {
+        "tags": [
+          "NotasDoEnem"
+        ],
+        "parameters": [
+          {
+            "name": "tipo",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/TipoDeLeiauteDoInep"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.leiaute-de-arquivo-do-inep.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LeiauteDoInepDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Autenticado, mas sem a autoriza\u00E7\u00E3o exigida pela rota (ex.: a role plataforma-admin).",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/selecao/obrigatoriedades-legais": {
       "get": {
         "tags": [
@@ -17013,6 +17089,42 @@
       },
       "JsonElement": {},
       "JsonNode": {},
+      "LeiauteDoInepDto": {
+        "required": [
+          "codigo",
+          "versao",
+          "tipo",
+          "descricao",
+          "hash",
+          "quantidadeDeCampos"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "versao": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "quantidadeDeCampos": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "LimiteDeDataDto": {
         "required": [
           "ancora",
@@ -20597,6 +20709,14 @@
           }
         }
       },
+      "TipoDeLeiauteDoInep": {
+        "enum": [
+          "envio",
+          "retorno",
+          null
+        ],
+        "type": "string"
+      },
       "TipoEtapaSnapshotDto": {
         "required": [
           "origemId",
@@ -20911,6 +21031,9 @@
     },
     {
       "name": "MotivosDecisaoIsencao"
+    },
+    {
+      "name": "NotasDoEnem"
     },
     {
       "name": "ObrigatoriedadeLegal"

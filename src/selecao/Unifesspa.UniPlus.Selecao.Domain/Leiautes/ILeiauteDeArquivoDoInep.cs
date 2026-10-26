@@ -18,6 +18,9 @@ public interface ILeiauteDeArquivoDoInep
     /// <summary>Leiaute desativado sai da escolha do administrador, mas o lote que o usou continua a citá-lo.</summary>
     bool Ativo { get; }
 
+    /// <summary>Quantas colunas cada linha do arquivo tem.</summary>
+    int QuantidadeDeCampos { get; }
+
     /// <summary>SHA-256, em hexadecimal minúsculo, da definição canônica do leiaute.</summary>
     string Hash { get; }
 }
