@@ -25,7 +25,16 @@ public sealed record Cpf
         return Result<Cpf>.Success(new Cpf(apenasDigitos));
     }
 
-    public string Mascarado => $"***.{Valor[3..6]}.{Valor[6..9]}-**";
+    public string Mascarado => Mascarar(Valor);
+
+    /// <summary>Mascara onze dígitos como <c>***.999.999-**</c>, sem exigir dígito verificador válido.</summary>
+    public static string Mascarar(string onzeDigitos)
+    {
+        ArgumentNullException.ThrowIfNull(onzeDigitos);
+        ArgumentOutOfRangeException.ThrowIfNotEqual(onzeDigitos.Length, 11);
+
+        return $"***.{onzeDigitos[3..6]}.{onzeDigitos[6..9]}-**";
+    }
 
     public override string ToString() => Mascarado;
 
