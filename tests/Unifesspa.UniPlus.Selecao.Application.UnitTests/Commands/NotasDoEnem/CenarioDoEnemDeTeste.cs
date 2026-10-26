@@ -2,13 +2,13 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.NotasDoEnem;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Regras.Services;
 
 /// <summary>
 /// Um certame divulgado com uma etapa de nota do ENEM, uma etapa sem ela e as edições declaradas, lido
