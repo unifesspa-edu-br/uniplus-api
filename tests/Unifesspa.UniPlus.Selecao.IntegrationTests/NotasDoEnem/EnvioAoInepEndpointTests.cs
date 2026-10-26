@@ -118,6 +118,7 @@ public sealed class EnvioAoInepEndpointTests
         using JsonDocument doc = JsonDocument.Parse(corpo);
         doc.RootElement[0].GetProperty("totalDeCpfs").GetInt32().Should().Be(2);
         doc.RootElement[0].GetProperty("leiauteCodigo").GetString().Should().Be("INEP_ENEM_ENVIO");
+        doc.RootElement[0].GetProperty("geradoPorNome").GetString().Should().Be("Test User");
         corpo.Should().NotContain(pessoas[0].Cpf).And.NotContain(pessoas[1].Cpf);
     }
 

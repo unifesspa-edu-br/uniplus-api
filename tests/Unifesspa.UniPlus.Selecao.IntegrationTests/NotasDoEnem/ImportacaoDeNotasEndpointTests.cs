@@ -46,19 +46,29 @@ public sealed class ImportacaoDeNotasEndpointTests
         public string Base => $"/api/selecao/processos-seletivos/{Processo.ProcessoId}/etapas/{Processo.EtapaDoEnemId}/edicoes-do-enem/{Edicao}/lotes-de-notas";
     }
 
-    private async Task<Cenario> NovoCenarioAsync(params int[] inscritas)
+    private Task<Cenario> NovoCenarioAsync(params int[] inscritas) => NovoCenarioAsync(inscritas, semSegundaOpcao: []);
+
+    private async Task<Cenario> NovoCenarioAsync(int[] inscritas, int[] semSegundaOpcao)
     {
         Publicado publicado = await SemearEPublicarAsync(_fixture);
         Dictionary<int, Guid> inscricoes = [];
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        Guid versaoId = await db.VersoesConfiguracao.AsNoTracking()
+            .Where(v => v.ProcessoSeletivoId == publicado.ProcessoId)
+            .Select(v => v.Id)
+            .SingleAsync();
         foreach (int i in inscritas)
         {
             inscricoes[i] = await InscricoesDoEnemDeTeste.NovaInscricaoAsync(
-                scope.ServiceProvider.GetRequiredService<SelecaoDbContext>(),
+                db,
                 scope.ServiceProvider.GetRequiredService<IUniPlusEncryptionService>(),
                 scope.ServiceProvider.GetRequiredService<IUniPlusBlindIndexService>(),
                 publicado.ProcessoId, Pessoas[i], SituacaoInscricao.Submetida, Edicao,
-                ofertaCursoId: publicado.OfertaTecnologicaId, ofertaCursoSegundaOpcaoId: publicado.OfertaHumanisticaId);
+                ofertaCursoId: publicado.OfertaTecnologicaId,
+                ofertaCursoSegundaOpcaoId: semSegundaOpcao.Contains(i) ? null : publicado.OfertaHumanisticaId,
+                versaoFormularioId: versaoId,
+                nome: Pessoas[i].Nome);
         }
 
         return new Cenario(publicado, inscricoes);
@@ -213,6 +223,85 @@ public sealed class ImportacaoDeNotasEndpointTests
         volta.StatusCode.Should().Be(HttpStatusCode.Created, "o arquivo de um lote já substituído cria lote novo, que volta a valer");
         (await QuantidadeDeLotesAsync(client, cenario)).Should().Be(3);
     }
+
+    private static string Mascara(PersonasDeTeste.PessoaFicticia pessoa) =>
+        $"***.{pessoa.Cpf[3..6]}.{pessoa.Cpf[6..9]}-**";
+
+    [Fact(DisplayName = "o lote identifica cada inscrito, a linha sem inscrito e os ausentes, e nenhuma coluna guarda CPF completo")]
+    public async Task Obter_IdentificaInscritosLinhasEAusentes_SemCpfCompleto()
+    {
+        // 0: ausente em Matemática; 1: ausente total; 2: com nota; 3: sem linha; 4: conflito e sem 2ª opção; 5: não inscrito na edição.
+        Cenario cenario = await NovoCenarioAsync([0, 1, 2, 3, 4], semSegundaOpcao: [4]);
+        using HttpClient client = _fixture.Factory.CreateClient();
+        string[] outraNota = ["100", "722.2", "833.3", "544.4", "960"];
+        byte[] arquivo = Bytes(
+        [
+            LinhaComMatematicaAusente(Pessoas[0], 1),
+            LinhaDeAusente(Pessoas[1], 2),
+            Linha(Pessoas[2], 3),
+            Linha(Pessoas[4], 4),
+            Linha(Pessoas[4], 4, outraNota),
+            Linha(Pessoas[5], 6),
+        ]);
+
+        HttpResponseMessage importado = await ImportarAsync(client, cenario, arquivo);
+        importado.StatusCode.Should().Be(HttpStatusCode.Created, await importado.Content.ReadAsStringAsync());
+        Guid loteId = await IdDoLoteAsync(importado);
+
+        using HttpRequestMessage consulta = Requisicao(HttpMethod.Get, $"{cenario.Base}/{loteId}");
+        string corpo = await (await client.SendAsync(consulta)).Content.ReadAsStringAsync();
+        corpo.Should().NotContain(Pessoas[5].Cpf);
+        using JsonDocument doc = JsonDocument.Parse(corpo);
+        JsonElement raiz = doc.RootElement;
+        raiz.GetProperty("importadoPorNome").GetString().Should().Be("Test User");
+
+        JsonElement[] ocorrencias = [.. raiz.GetProperty("ocorrencias").EnumerateArray()];
+        JsonElement semLinha = ocorrencias.Single(o => o.GetProperty("tipo").GetString() == "INSCRITO_SEM_LINHA");
+        semLinha.GetProperty("nomeDoCandidato").GetString().Should().Be(Pessoas[3].Nome);
+        semLinha.GetProperty("cpfMascarado").GetString().Should().Be(Mascara(Pessoas[3]));
+        OpcoesDe(semLinha).Should().Equal(
+            "1:Medicina (Bacharelado) — Campus Universitário de Marabá — Matutino e Vespertino",
+            "2:Pedagogia (Licenciatura) — Campus Universitário de Marabá — Noturno");
+
+        JsonElement conflito = ocorrencias.Single(o => o.GetProperty("tipo").GetString() == "CONFLITO");
+        conflito.GetProperty("nomeDoCandidato").GetString().Should().Be(Pessoas[4].Nome);
+        OpcoesDe(conflito).Should().Equal("1:Medicina (Bacharelado) — Campus Universitário de Marabá — Matutino e Vespertino");
+
+        JsonElement semInscrito = ocorrencias.Single(o => o.GetProperty("tipo").GetString() == "LINHA_SEM_INSCRITO");
+        semInscrito.GetProperty("cpfMascarado").GetString().Should().Be(Mascara(Pessoas[5]));
+        semInscrito.GetProperty("nomeDoCandidato").GetString().Should().Be(Pessoas[5].Nome);
+        semInscrito.GetProperty("sexo").GetString().Should().Be(Pessoas[5].Sexo[..1]);
+        semInscrito.GetProperty("opcoesDeCurso").ValueKind.Should().Be(JsonValueKind.Null);
+
+        raiz.GetProperty("totalDeInscritosAusentes").GetInt32().Should().Be(2);
+        JsonElement[] ausentes = [.. raiz.GetProperty("ausentes").EnumerateArray()];
+        JsonElement parcial = ausentes.Single(a => a.GetProperty("inscricaoId").GetGuid() == cenario.Inscricoes[0]);
+        parcial.GetProperty("nomeDoCandidato").GetString().Should().Be(Pessoas[0].Nome);
+        parcial.GetProperty("cpfMascarado").GetString().Should().Be(Mascara(Pessoas[0]));
+        parcial.GetProperty("areas").EnumerateArray().Select(a => a.GetString()).Should().Equal("MATEMATICA");
+        OpcoesDe(parcial).Should().HaveCount(2);
+        JsonElement total = ausentes.Single(a => a.GetProperty("inscricaoId").GetGuid() == cenario.Inscricoes[1]);
+        total.GetProperty("areas").EnumerateArray().Select(a => a.GetString()).Should().HaveCount(5);
+
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        string[] linhasGravadas = await db.Database
+            .SqlQuery<string>($"""
+                SELECT o::text AS "Value" FROM selecao.ocorrencias_do_lote_de_notas o WHERE o.lote_id = {loteId}
+                UNION ALL
+                SELECT l::text AS "Value" FROM selecao.lotes_de_notas_do_enem l WHERE l.id = {loteId}
+                """)
+            .ToArrayAsync();
+        linhasGravadas.Should().NotBeEmpty();
+        foreach (string gravada in linhasGravadas)
+        {
+            gravada.Should().NotContain(Pessoas[5].Cpf).And.NotContain(Pessoas[4].Cpf);
+        }
+    }
+
+    private static string[] OpcoesDe(JsonElement elemento) =>
+        [.. elemento.GetProperty("opcoesDeCurso").EnumerateArray()
+            .Select(o => $"{o.GetProperty("ordem").GetInt32()}:{o.GetProperty("oferta").GetString()}")];
 
     [Fact(DisplayName = "lote inexistente da edição é 404")]
     public async Task Obter_LoteInexistente_NaoEncontrado()

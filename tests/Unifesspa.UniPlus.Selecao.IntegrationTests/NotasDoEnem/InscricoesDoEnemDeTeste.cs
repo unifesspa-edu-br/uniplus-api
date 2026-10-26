@@ -5,6 +5,7 @@ using System.Text;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -74,7 +75,9 @@ internal static class InscricoesDoEnemDeTeste
         string? edicao,
         string? numeroDeInscricao = null,
         Guid? ofertaCursoId = null,
-        Guid? ofertaCursoSegundaOpcaoId = null)
+        Guid? ofertaCursoSegundaOpcaoId = null,
+        Guid? versaoFormularioId = null,
+        string? nome = null)
     {
         byte[] cifrado = await encryption.EncryptAsync(
             SelecaoEncryptionKeys.IdentificadoresAesGcm, Encoding.UTF8.GetBytes(pessoa.Cpf));
@@ -90,7 +93,7 @@ internal static class InscricoesDoEnemDeTeste
             Sub = $"sub-{id:N}",
             EmissorToken = "https://issuer",
             Situacao = situacao,
-            VersaoFormularioId = Guid.CreateVersion7(),
+            VersaoFormularioId = versaoFormularioId ?? Guid.CreateVersion7(),
             NumeroInscricao = numeroDeInscricao ?? $"UNI-{id.ToString("N")[^8..]}",
             Revisao = 1,
             OfertaCursoId = ofertaCursoId,
@@ -100,6 +103,19 @@ internal static class InscricoesDoEnemDeTeste
         if (edicao is not null)
         {
             context.RespostasDaInscricao.Add(RespostaDaEdicao(id, edicao));
+        }
+
+        if (nome is not null)
+        {
+            context.RespostasDaInscricao.Add(new RespostaDaInscricaoRecord
+            {
+                Id = Guid.CreateVersion7(),
+                InscricaoId = id,
+                FatoCodigo = ConjuntoBasicoDaInscricao.Nome,
+                Origem = OrigemDaResposta.Informada,
+                Tipo = TipoDoValorDeResposta.Texto,
+                ValorTexto = nome,
+            });
         }
 
         await context.SaveChangesAsync();

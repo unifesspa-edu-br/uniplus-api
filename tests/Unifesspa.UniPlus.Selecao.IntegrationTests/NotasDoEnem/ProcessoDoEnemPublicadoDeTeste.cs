@@ -100,8 +100,8 @@ internal static class ProcessoDoEnemPublicadoDeTeste
 
         Exigir(processo.DefinirDistribuicaoVagas(
             [
-                DistribuicaoDaOferta(ofertaTecnologica, ("TECNOLOGICA", "Tecnológica")),
-                DistribuicaoDaOferta(ofertaHumanistica, ("HUMANISTICA_I", "Humanística I")),
+                DistribuicaoDaOferta(ofertaTecnologica, ("TECNOLOGICA", "Tecnológica"), OfertaCursoDeTeste.Medicina),
+                DistribuicaoDaOferta(ofertaHumanistica, ("HUMANISTICA_I", "Humanística I"), OfertaCursoDeTeste.Pedagogia),
             ],
             FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Curinga));
 
@@ -114,7 +114,7 @@ internal static class ProcessoDoEnemPublicadoDeTeste
         return etapa.Id;
     }
 
-    private static ConfiguracaoDistribuicaoVagas DistribuicaoDaOferta(Guid ofertaCursoOrigemId, (string? Codigo, string? Rotulo) grupoAreaEnem)
+    private static ConfiguracaoDistribuicaoVagas DistribuicaoDaOferta(Guid ofertaCursoOrigemId, (string? Codigo, string? Rotulo) grupoAreaEnem, OfertaCursoSnapshot ofertaCurso)
     {
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC", "Ampla concorrência", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
@@ -124,7 +124,7 @@ internal static class ProcessoDoEnemPublicadoDeTeste
         return ConfiguracaoDistribuicaoVagas.Criar(
             ofertaCursoOrigemId, 40, 1m,
             ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!,
-            null, null, [modalidade], grupoAreaEnem: grupoAreaEnem, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+            null, null, [modalidade], grupoAreaEnem: grupoAreaEnem, ofertaCurso: ofertaCurso).Value!;
     }
 
     private static void Exigir(Result resultado) => resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
