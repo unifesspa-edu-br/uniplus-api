@@ -24,7 +24,8 @@ public sealed record LinhaDeRetorno(
     /// <summary>
     /// Duas linhas do mesmo CPF com a mesma chave dizem a mesma coisa: contam como uma. Só os
     /// campos que o Uni+ usa participam, então linhas que diferem apenas em colunas ignoradas
-    /// (nome, dados cadastrais) são iguais.
+    /// (nome, dados cadastrais) são iguais. A nota entra pelo valor, numa casa decimal fixa:
+    /// <c>960</c> e <c>960.0</c> são a mesma nota.
     /// </summary>
     public string ChaveDeIgualdade =>
         string.Join(
@@ -32,7 +33,7 @@ public sealed record LinhaDeRetorno(
             [
                 NumeroDeInscricaoNoEnem,
                 .. Areas.Select(a => string.Create(
-                    CultureInfo.InvariantCulture, $"{a.Area}:{a.Nota}:{(int)a.Situacao}")),
+                    CultureInfo.InvariantCulture, $"{a.Area}:{a.Nota:0.0}:{(int)a.Situacao}")),
             ]);
 }
 
