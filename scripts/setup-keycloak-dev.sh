@@ -14,7 +14,7 @@
 #   4b. ensure_geo_m2m_client               — client M2M uniplus-api-selecao, com
 #                                             que a API confere o endereço no Geo
 #   5. reset_test_user_passwords            — 4 users de teste, senha não-temporária
-#   5b. ensure_personas                     — 30 personas fictícias do portal de
+#   5b. ensure_personas                     — 60 personas fictícias do portal de
 #                                             documentação (api#1861), mesma senha
 #   6. configure_ldap_federation_if_available — User Federation contra openldap
 #                                             sintético
@@ -459,7 +459,7 @@ upsert_persona() {
     # persona travou, em vez de o script morrer em silêncio no meio da etapa.
     log "Persona '$username'"
 
-    # O token de admin do master realm costuma durar só 60s — 30 personas,
+    # O token de admin do master realm costuma durar só 60s — 60 personas,
     # cada uma com várias chamadas à Admin API, podem passar disso.
     # Renovado a cada persona para nunca expirar no meio do laço.
     obtain_admin_token
@@ -504,7 +504,7 @@ upsert_persona() {
 ensure_personas() {
     log "Provisionando as personas fictícias do portal no realm '$KC_REALM'"
     # Versionado no próprio repositório — a ausência é erro, não um caso
-    # opcional (sem ele, o ambiente local fica sem as 30 personas, em silêncio).
+    # opcional (sem ele, o ambiente local fica sem as personas, em silêncio).
     [ -f "$PERSONAS_FILE" ] || fail "'$PERSONAS_FILE' não encontrado"
 
     local candidato_roles_json privilegiada_roles_json
