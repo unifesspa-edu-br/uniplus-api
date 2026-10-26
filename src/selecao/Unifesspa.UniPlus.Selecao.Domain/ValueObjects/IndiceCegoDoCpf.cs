@@ -21,5 +21,8 @@ public readonly record struct IndiceCegoDoCpf
     }
 }
 
-/// <summary>Uma inscrição enviada que escolheu a edição do ENEM, identificada pelo índice cego do CPF.</summary>
-public sealed record InscritoDaEdicao(Guid InscricaoId, IndiceCegoDoCpf Indice);
+/// <summary>
+/// Uma inscrição enviada que escolheu a edição do ENEM, identificada pelo índice cego do CPF, com as
+/// ofertas de curso que ela concorre (a 1ª opção e, quando há, a 2ª).
+/// </summary>
+public sealed record InscritoDaEdicao(Guid InscricaoId, IndiceCegoDoCpf Indice, IReadOnlyList<Guid> OfertasConcorridas);

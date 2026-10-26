@@ -34,11 +34,14 @@ public sealed class InscritosDaEdicaoDoEnem : IInscritosDaEdicaoDoEnem
         Guid processoSeletivoId, string edicaoCodigo, CancellationToken cancellationToken = default)
     {
         var inscritos = await DaEdicao(processoSeletivoId, edicaoCodigo)
-            .Select(i => new { i.Id, i.CpfIndice })
+            .Select(i => new { i.Id, i.CpfIndice, i.OfertaCursoId, i.OfertaCursoSegundaOpcaoId })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return [.. inscritos.Select(static i => new InscritoDaEdicao(i.Id, IndiceCegoDoCpf.De(i.CpfIndice)))];
+        return [.. inscritos.Select(static i => new InscritoDaEdicao(
+            i.Id,
+            IndiceCegoDoCpf.De(i.CpfIndice),
+            [.. new[] { i.OfertaCursoId, i.OfertaCursoSegundaOpcaoId }.OfType<Guid>().Distinct()]))];
     }
 
     public async Task<IReadOnlyList<string>> ListarCpfsAsync(

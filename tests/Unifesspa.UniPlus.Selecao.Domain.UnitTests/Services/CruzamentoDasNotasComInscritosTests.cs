@@ -27,7 +27,7 @@ public sealed class CruzamentoDasNotasComInscritosTests
         IReadOnlyList<LinhaDeRetorno> linhas = LeitorDeArquivoDoInep
             .Ler(Bytes(linhasDoArquivo), CatalogoDeLeiautesDoInep.EnemRetornoV1).Value!.Linhas;
         Dictionary<string, IndiceCegoDoCpf> indices = linhas.Select(l => l.Cpf).Distinct().ToDictionary(c => c, Indice);
-        InscritoDaEdicao[] inscritosDaEdicao = [.. inscritos.Select(i => new InscritoDaEdicao(Inscricoes[Pessoas[i].Cpf], Indice(Pessoas[i].Cpf)))];
+        InscritoDaEdicao[] inscritosDaEdicao = [.. inscritos.Select(i => new InscritoDaEdicao(Inscricoes[Pessoas[i].Cpf], Indice(Pessoas[i].Cpf), []))];
 
         return CruzamentoDasNotasComInscritos.Cruzar(linhas, indices, inscritosDaEdicao);
     }
