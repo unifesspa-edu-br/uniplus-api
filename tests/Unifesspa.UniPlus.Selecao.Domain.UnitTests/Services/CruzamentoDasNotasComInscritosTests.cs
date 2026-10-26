@@ -106,4 +106,15 @@ public sealed class CruzamentoDasNotasComInscritosTests
         resultado.ComNota.Should().ContainSingle();
         resultado.Conflitos.Should().BeEmpty();
     }
+
+    [Fact(DisplayName = "linhas do mesmo CPF com a mesma nota escrita com e sem casa decimal não geram conflito")]
+    public void Cruzar_MesmaNotaEmRepresentacoesDiferentes_NaoGeraConflito()
+    {
+        string[] mesmaNotaComCasa = ["611.1", "722.2", "833.3", "544.4", "0960.0"];
+
+        ResultadoDoCruzamento resultado = Cruzar([Linha(Pessoas[0], 1), Linha(Pessoas[0], 1, mesmaNotaComCasa)], 0);
+
+        resultado.ComNota.Should().ContainSingle();
+        resultado.Conflitos.Should().BeEmpty();
+    }
 }
