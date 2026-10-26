@@ -145,14 +145,19 @@ public static class ContextoDaVersaoFixadaResolver
                 avaliavel.Value!, ConfiguracaoAvaliavelDoProcesso.DoCongelado(envelope.Grafo, avaliavel.Value!, ofertasDeCurso)));
     }
 
-    private static List<OfertaDeCursoCertameDto> OfertasDaVersao(GrafoConfiguracao grafo) =>
-    [
-        .. grafo.DistribuicaoVagas
-            .Where(static d => d.OfertaCurso is not null)
-            .OrderBy(static d => d.OfertaCursoOrigemId.ToString(), StringComparer.Ordinal)
-            .Select(static d => new OfertaDeCursoCertameDto(
-                d.OfertaCursoOrigemId, d.OfertaCurso!.CursoNome, d.OfertaCurso.CursoGrau, d.OfertaCurso.UnidadeOfertanteNome, d.OfertaCurso.Turnos)),
-    ];
+    public static List<OfertaDeCursoCertameDto> OfertasDaVersao(GrafoConfiguracao grafo)
+    {
+        ArgumentNullException.ThrowIfNull(grafo);
+
+        return
+        [
+            .. grafo.DistribuicaoVagas
+                .Where(static d => d.OfertaCurso is not null)
+                .OrderBy(static d => d.OfertaCursoOrigemId.ToString(), StringComparer.Ordinal)
+                .Select(static d => new OfertaDeCursoCertameDto(
+                    d.OfertaCursoOrigemId, d.OfertaCurso!.CursoNome, d.OfertaCurso.CursoGrau, d.OfertaCurso.UnidadeOfertanteNome, d.OfertaCurso.Turnos)),
+        ];
+    }
 
     public static RespostasAdmitidas Admitidas(GrafoConfiguracao grafo)
     {

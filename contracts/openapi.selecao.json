@@ -17137,8 +17137,7 @@
           "nomeDoProcesso",
           "numeroInscricao",
           "situacao",
-          "nomePreferido",
-          "cpfMascarado",
+          "opcoesDeCurso",
           "canceladaEm",
           "motivoDoCancelamento",
           "acoes",
@@ -17169,11 +17168,11 @@
           "situacao": {
             "$ref": "#/components/schemas/SituacaoInscricao"
           },
-          "nomePreferido": {
-            "type": "string"
-          },
-          "cpfMascarado": {
-            "type": "string"
+          "opcoesDeCurso": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OpcaoDeCursoDaInscricaoDto"
+            }
           },
           "canceladaEm": {
             "type": [
@@ -17994,6 +17993,30 @@
             "type": "string"
           },
           "rotulo": {
+            "type": "string"
+          }
+        }
+      },
+      "OpcaoDeCursoDaInscricaoDto": {
+        "required": [
+          "ordem",
+          "cursoNome",
+          "cursoGrau"
+        ],
+        "type": "object",
+        "properties": {
+          "ordem": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "cursoNome": {
+            "type": "string"
+          },
+          "cursoGrau": {
             "type": "string"
           }
         }

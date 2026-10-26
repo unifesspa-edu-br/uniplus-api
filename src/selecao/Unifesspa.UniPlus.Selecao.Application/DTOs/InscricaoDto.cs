@@ -186,11 +186,13 @@ public sealed record DocumentoDoComprovanteDto(
 public sealed record ArquivoDoComprovanteDto(string HashSha256, long TamanhoBytes, string Formato);
 
 /// <summary>
-/// Um item de "Minhas inscrições" (issue #1860): o nome preferido é o social, quando o candidato
-/// o declarou, e o CPF vem mascarado — nenhum outro número de documento aparece na lista.
+/// Um item de "Minhas inscrições" (issue #1860). O titular da conta é o único dono das inscrições que
+/// lista, então a lista não repete o nome nem o CPF dele: o que distingue uma inscrição da outra é o
+/// processo e o curso escolhido.
 /// </summary>
 /// <param name="InscricaoId">A identidade da inscrição: o processo pode ter mais de uma, uma cancelada e a ativa, e o comprovante da cancelada se lê por ela.</param>
 /// <param name="NomeDoProcesso">O nome do processo como está divulgado; nulo se ele deixou de ser público.</param>
+/// <param name="OpcoesDeCurso">Os cursos escolhidos, em ordem, como a versão da inscrição os nomeia; vazio enquanto o rascunho não escolheu nenhum.</param>
 /// <param name="Acoes">O que o candidato pode fazer agora com a inscrição, pelo período e pela situação.</param>
 /// <param name="Comprovantes">Os comprovantes emitidos, em ordem de emissão; vazio em rascunho.</param>
 public sealed record MinhaInscricaoDto(
@@ -199,51 +201,54 @@ public sealed record MinhaInscricaoDto(
     string? NomeDoProcesso,
     string? NumeroInscricao,
     SituacaoInscricao Situacao,
-    string NomePreferido,
-    string CpfMascarado,
+    IReadOnlyList<OpcaoDeCursoDaInscricaoDto> OpcoesDeCurso,
     DateTimeOffset? CanceladaEm,
     string? MotivoDoCancelamento,
     AcoesDaInscricaoDto Acoes,
     IReadOnlyList<ComprovanteEmitidoDto> Comprovantes)
 {
-    /// <summary>
-    /// O nome social só prevalece quando o candidato declarou DESEJA_NOME_SOCIAL e preencheu
-    /// NOME_SOCIAL (UNI-REQ-0032) — a ausência de qualquer um dos dois cai no nome civil, nunca
-    /// em branco.
-    /// </summary>
     /// <param name="inscricoesAbertas">Se o processo está no período de inscrição neste instante.</param>
     /// <param name="comprovantes">Os da inscrição, em ordem de emissão.</param>
+    /// <param name="ofertasDaVersao">As ofertas de curso da versão em que a inscrição está, com o nome congelado na publicação.</param>
     public static MinhaInscricaoDto De(
-        Inscricao inscricao, string? nomeDoProcesso, bool inscricoesAbertas, IReadOnlyList<ComprovanteInscricao> comprovantes)
+        Inscricao inscricao,
+        string? nomeDoProcesso,
+        bool inscricoesAbertas,
+        IReadOnlyList<ComprovanteInscricao> comprovantes,
+        IReadOnlyList<OfertaDeCursoCertameDto> ofertasDaVersao)
     {
         ArgumentNullException.ThrowIfNull(inscricao);
         ArgumentNullException.ThrowIfNull(comprovantes);
+        ArgumentNullException.ThrowIfNull(ofertasDaVersao);
         AcoesDaInscricao acoes = inscricao.AcoesPermitidas(inscricoesAbertas);
         return new MinhaInscricaoDto(
             inscricao.Id, inscricao.ProcessoSeletivoId, nomeDoProcesso, inscricao.NumeroInscricao, inscricao.Situacao,
-            ResolverNomePreferido(inscricao.Respostas), inscricao.Cpf.Mascarado,
+            OpcoesDe(inscricao, ofertasDaVersao),
             inscricao.CanceladaEm, inscricao.MotivoDoCancelamento,
             new AcoesDaInscricaoDto(acoes.PodeContinuar, acoes.PodeCorrigir, acoes.PodeCancelar, acoes.PodeDescartar),
             [.. comprovantes.Select(static (c, i) => new ComprovanteEmitidoDto(i + 1, c.Instante))]);
     }
 
-    private static string ResolverNomePreferido(IReadOnlyDictionary<string, JsonElement> respostas)
+    private static List<OpcaoDeCursoDaInscricaoDto> OpcoesDe(Inscricao inscricao, IReadOnlyList<OfertaDeCursoCertameDto> ofertas)
     {
-        bool desejaNomeSocial = respostas.TryGetValue("DESEJA_NOME_SOCIAL", out JsonElement deseja)
-            && deseja.ValueKind == JsonValueKind.True;
-        if (desejaNomeSocial
-            && respostas.TryGetValue("NOME_SOCIAL", out JsonElement nomeSocial)
-            && nomeSocial.ValueKind == JsonValueKind.String
-            && nomeSocial.GetString() is { Length: > 0 } preferido)
+        List<OpcaoDeCursoDaInscricaoDto> opcoes = [];
+        foreach (Guid? escolhida in new[] { inscricao.OfertaCursoId, inscricao.OfertaCursoSegundaOpcaoId })
         {
-            return preferido;
+            OfertaDeCursoCertameDto? oferta = escolhida is { } id
+                ? ofertas.FirstOrDefault(o => o.OfertaCursoOrigemId == id)
+                : null;
+            if (oferta is not null)
+            {
+                opcoes.Add(new OpcaoDeCursoDaInscricaoDto(opcoes.Count + 1, oferta.CursoNome, oferta.CursoGrau));
+            }
         }
 
-        return respostas.TryGetValue("NOME", out JsonElement nome) && nome.ValueKind == JsonValueKind.String
-            ? nome.GetString() ?? string.Empty
-            : string.Empty;
+        return opcoes;
     }
 }
+
+/// <summary>Um curso escolhido na inscrição: a ordem da opção (1ª ou 2ª), o curso e o grau como a versão da inscrição os nomeia.</summary>
+public sealed record OpcaoDeCursoDaInscricaoDto(int Ordem, string CursoNome, string CursoGrau);
 
 /// <summary>O que o candidato pode fazer agora com a inscrição (<see cref="AcoesDaInscricao"/>).</summary>
 public sealed record AcoesDaInscricaoDto(bool PodeContinuar, bool PodeCorrigir, bool PodeCancelar, bool PodeDescartar);

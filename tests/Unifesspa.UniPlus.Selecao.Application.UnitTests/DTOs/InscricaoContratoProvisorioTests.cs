@@ -139,8 +139,8 @@ public sealed class InscricaoContratoProvisorioTests
         json["hashIntegridade"]!.GetValue<string>().Should().Be("sha256-def");
     }
 
-    [Fact(DisplayName = "MinhaInscricaoDto: o exemplo mostra o nome preferido, não o nome civil")]
-    public void MinhaInscricaoDto_Exemplo_MostraNomePreferido()
+    [Fact(DisplayName = "MinhaInscricaoDto: o exemplo mostra os cursos escolhidos e não repete nome nem CPF do titular")]
+    public void MinhaInscricaoDto_Exemplo_MostraOsCursosEscolhidos()
     {
         MinhaInscricaoDto dto = new(
             InscricaoId: Guid.Parse("0199e000-0000-7000-8000-000000000012"),
@@ -148,8 +148,7 @@ public sealed class InscricaoContratoProvisorioTests
             NomeDoProcesso: "PSS Medicina 2027",
             NumeroInscricao: "000123",
             Situacao: SituacaoInscricao.Submetida,
-            NomePreferido: "Ana (nome social)",
-            CpfMascarado: "***.456.789-**",
+            OpcoesDeCurso: [new OpcaoDeCursoDaInscricaoDto(1, "Medicina", "Bacharelado"), new OpcaoDeCursoDaInscricaoDto(2, "Direito", "Bacharelado")],
             CanceladaEm: null,
             MotivoDoCancelamento: null,
             Acoes: new AcoesDaInscricaoDto(PodeContinuar: false, PodeCorrigir: true, PodeCancelar: true, PodeDescartar: false),
@@ -157,6 +156,7 @@ public sealed class InscricaoContratoProvisorioTests
 
         JsonNode json = JsonSerializer.SerializeToNode(dto, Opcoes)!;
 
-        json["nomePreferido"]!.GetValue<string>().Should().Be("Ana (nome social)");
+        json["opcoesDeCurso"]!.AsArray().Select(static o => o!["cursoNome"]!.GetValue<string>()).Should().Equal("Medicina", "Direito");
+        json.AsObject().Should().NotContainKey("nomePreferido").And.NotContainKey("cpfMascarado");
     }
 }
