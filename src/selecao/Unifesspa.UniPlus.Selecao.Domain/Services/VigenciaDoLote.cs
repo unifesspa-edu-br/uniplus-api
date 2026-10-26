@@ -10,9 +10,13 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 public static class VigenciaDoLote
 {
     /// <summary>
-    /// Reimportar o arquivo do lote vigente não cria outro lote. O arquivo de um lote já substituído
-    /// não conta: importá-lo cria um lote novo, que volta a valer.
+    /// Reimportar o arquivo do lote vigente, sob a mesma versão divulgada do edital, não cria outro
+    /// lote. O arquivo de um lote já substituído não conta: importá-lo cria um lote novo, que volta
+    /// a valer. Sob outra versão (uma retificação divulgada) o mesmo arquivo também cria lote novo,
+    /// porque os pesos que apuram a nota podem ter mudado.
     /// </summary>
-    public static bool ArquivoJaVigente(LoteDeNotasDoEnem? vigente, string arquivoHash) =>
-        vigente is not null && string.Equals(vigente.ArquivoHash, arquivoHash, StringComparison.Ordinal);
+    public static bool ArquivoJaVigente(LoteDeNotasDoEnem? vigente, string arquivoHash, Guid versaoConfiguracaoId) =>
+        vigente is not null
+        && vigente.VersaoConfiguracaoId == versaoConfiguracaoId
+        && string.Equals(vigente.ArquivoHash, arquivoHash, StringComparison.Ordinal);
 }

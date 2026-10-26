@@ -17,6 +17,7 @@ using Outbox.Cascading;
 using Unifesspa.UniPlus.Host;
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -56,7 +57,8 @@ public sealed class ImportacaoDeNotasEndpointTests
                 scope.ServiceProvider.GetRequiredService<SelecaoDbContext>(),
                 scope.ServiceProvider.GetRequiredService<IUniPlusEncryptionService>(),
                 scope.ServiceProvider.GetRequiredService<IUniPlusBlindIndexService>(),
-                publicado.ProcessoId, Pessoas[i], SituacaoInscricao.Submetida, Edicao);
+                publicado.ProcessoId, Pessoas[i], SituacaoInscricao.Submetida, Edicao,
+                ofertaCursoId: publicado.OfertaTecnologicaId, ofertaCursoSegundaOpcaoId: publicado.OfertaHumanisticaId);
         }
 
         return new Cenario(publicado, inscricoes);
@@ -314,6 +316,153 @@ public sealed class ImportacaoDeNotasEndpointTests
             (await CodigoAsync(resposta)).Should().Be("uniplus.selecao.notas_do_enem.arquivo_grande_demais");
         }
 
+        (await QuantidadeDeLotesAsync(client, cenario)).Should().Be(0);
+    }
+
+    private async Task<IReadOnlyList<AvaliacaoDaEtapa>> AvaliacoesDoLoteAsync(Guid loteId)
+    {
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        return await db.AvaliacoesDaEtapa.AsNoTracking().Where(a => a.LoteId == loteId).ToListAsync();
+    }
+
+    private static async Task<Guid> IdDoLoteAsync(HttpResponseMessage resposta)
+    {
+        using JsonDocument doc = await LerAsync(resposta);
+        return doc.RootElement.GetProperty("id").GetGuid();
+    }
+
+    // Notas do arquivo sintético por área: CN 611.1, CH 722.2, LC 833.3, MT 544.4, Redação 960. Os
+    // pesos são os do quadro de teste: Redação 2, CN 1,5, CH 2,5, MT 1,5 e Linguagens 1 (Tecnológica) ou 3 (Humanística I).
+    private const decimal SomaPonderadaSemLinguagens = (960m * 2m) + (611.1m * 1.5m) + (722.2m * 2.5m) + (544.4m * 1.5m);
+    private static readonly decimal NotaDeFernandaNaTecnologica = (SomaPonderadaSemLinguagens + (833.3m * 1m)) / 8.5m;
+    private static readonly decimal NotaDeFernandaNaHumanistica = (SomaPonderadaSemLinguagens + (833.3m * 3m)) / 10.5m;
+
+    [Fact(DisplayName = "a importação grava uma avaliação por oferta concorrida, com a nota exata de cada grupo, e sem nota para quem não tem linha")]
+    public async Task Importar_GravaAvaliacaoPorOfertaConcorrida()
+    {
+        Cenario cenario = await NovoCenarioAsync(0, 1);
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage resposta = await ImportarAsync(client, cenario, Bytes([Linha(Pessoas[0], 1)]));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.Created, await resposta.Content.ReadAsStringAsync());
+        IReadOnlyList<AvaliacaoDaEtapa> avaliacoes = await AvaliacoesDoLoteAsync(await IdDoLoteAsync(resposta));
+        avaliacoes.Should().HaveCount(4);
+        AvaliacaoDaEtapa naTecnologica = avaliacoes.Single(a => a.InscricaoId == cenario.Inscricoes[0] && a.OfertaCursoId == cenario.Processo.OfertaTecnologicaId);
+        AvaliacaoDaEtapa naHumanistica = avaliacoes.Single(a => a.InscricaoId == cenario.Inscricoes[0] && a.OfertaCursoId == cenario.Processo.OfertaHumanisticaId);
+        naTecnologica.Situacao.Should().Be(SituacaoDaAvaliacao.Apurada);
+        naTecnologica.GrupoAreaEnemCodigo.Should().Be("TECNOLOGICA");
+        naTecnologica.Nota.Should().Be(NotaDeFernandaNaTecnologica);
+        naHumanistica.GrupoAreaEnemCodigo.Should().Be("HUMANISTICA_I");
+        naHumanistica.Nota.Should().Be(NotaDeFernandaNaHumanistica);
+        avaliacoes.Where(a => a.InscricaoId == cenario.Inscricoes[1]).Should().HaveCount(2)
+            .And.OnlyContain(a => a.Situacao == SituacaoDaAvaliacao.InscritoSemLinha && a.Nota == null);
+    }
+
+    [Fact(DisplayName = "duas linhas diferentes do mesmo CPF deixam a inscrição sem nota, em conflito")]
+    public async Task Importar_Conflito_SemNota()
+    {
+        Cenario cenario = await NovoCenarioAsync(0);
+        using HttpClient client = _fixture.Factory.CreateClient();
+        byte[] arquivo = Bytes([Linha(Pessoas[0], 1), Linha(Pessoas[0], 1, ["100", "722.2", "833.3", "544.4", "960"])]);
+
+        HttpResponseMessage resposta = await ImportarAsync(client, cenario, arquivo);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.Created, await resposta.Content.ReadAsStringAsync());
+        IReadOnlyList<AvaliacaoDaEtapa> avaliacoes = await AvaliacoesDoLoteAsync(await IdDoLoteAsync(resposta));
+        avaliacoes.Should().HaveCount(2).And.OnlyContain(a => a.Situacao == SituacaoDaAvaliacao.EmConflito && a.Nota == null);
+    }
+
+    [Fact(DisplayName = "o lote novo traz as avaliações dele: quem não está no arquivo novo fica sem nota nele, e o lote anterior segue intacto")]
+    public async Task Importar_LoteNovoSemAInscricao_FicaSemNotaNele()
+    {
+        Cenario cenario = await NovoCenarioAsync(0, 1);
+        using HttpClient client = _fixture.Factory.CreateClient();
+        byte[] comFernanda = Bytes([Linha(Pessoas[0], 1), Linha(Pessoas[1], 2)]);
+        byte[] semFernanda = Bytes([Linha(Pessoas[1], 2)]);
+
+        Guid loteA = await IdDoLoteAsync(await ImportarAsync(client, cenario, comFernanda));
+        Guid loteB = await IdDoLoteAsync(await ImportarAsync(client, cenario, semFernanda));
+        Guid loteDeNovoA = await IdDoLoteAsync(await ImportarAsync(client, cenario, comFernanda));
+
+        loteDeNovoA.Should().NotBe(loteA, "o arquivo de um lote substituído cria lote novo");
+        (await AvaliacoesDoLoteAsync(loteB)).Where(a => a.InscricaoId == cenario.Inscricoes[0])
+            .Should().HaveCount(2).And.OnlyContain(a => a.Situacao == SituacaoDaAvaliacao.InscritoSemLinha && a.Nota == null);
+        (await AvaliacoesDoLoteAsync(loteA)).Where(a => a.InscricaoId == cenario.Inscricoes[0])
+            .Should().HaveCount(2).And.OnlyContain(a => a.Situacao == SituacaoDaAvaliacao.Apurada && a.Nota != null);
+        (await AvaliacoesDoLoteAsync(loteDeNovoA)).Where(a => a.InscricaoId == cenario.Inscricoes[0])
+            .Should().OnlyContain(a => a.Situacao == SituacaoDaAvaliacao.Apurada);
+    }
+
+    [Fact(DisplayName = "o mesmo arquivo sob outra versão do edital cria lote novo com a versão divulgada; sob a mesma, devolve o existente")]
+    public async Task Importar_MesmoArquivoSobOutraVersao_CriaLoteNovo()
+    {
+        Cenario cenario = await NovoCenarioAsync(0);
+        using HttpClient client = _fixture.Factory.CreateClient();
+        byte[] arquivo = Bytes([Linha(Pessoas[0], 1)]);
+        Guid versaoDivulgada;
+        await using (AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope())
+        {
+            SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            VersaoConfiguracao divulgada = await db.VersoesConfiguracao.AsNoTracking().SingleAsync(v => v.ProcessoSeletivoId == cenario.Processo.ProcessoId);
+            versaoDivulgada = divulgada.Id;
+            VersaoConfiguracao outra = VersaoConfiguracao.Suceder(
+                divulgada, System.Text.Encoding.UTF8.GetBytes("{}"), "1", "sha256@v1", Guid.CreateVersion7(), new string('a', 64),
+                divulgada.AtoCriadorId, "integration-test-user", DateTimeOffset.UtcNow);
+            db.VersoesConfiguracao.Add(outra);
+            db.LotesDeNotasDoEnem.Add(LoteDeNotasDoEnem.Registrar(
+                cenario.Processo.ProcessoId, cenario.Processo.EtapaDoEnemId, Edicao, "INEP_ENEM_RETORNO", "v1", new string('b', 64),
+                Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(arquivo)), "sub-admin", DateTimeOffset.UtcNow, 0,
+                outra.Id, new Unifesspa.UniPlus.Selecao.Domain.Services.ResultadoDoCruzamento([], [], [], []), []));
+            await db.SaveChangesAsync();
+        }
+
+        HttpResponseMessage sobOutraVersao = await ImportarAsync(client, cenario, arquivo);
+        HttpResponseMessage sobAMesma = await ImportarAsync(client, cenario, arquivo);
+
+        sobOutraVersao.StatusCode.Should().Be(HttpStatusCode.Created, await sobOutraVersao.Content.ReadAsStringAsync());
+        Guid novo = await IdDoLoteAsync(sobOutraVersao);
+        sobAMesma.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await IdDoLoteAsync(sobAMesma)).Should().Be(novo);
+        await using AsyncServiceScope leitura = _fixture.Factory.Services.CreateAsyncScope();
+        SelecaoDbContext contexto = leitura.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        (await contexto.LotesDeNotasDoEnem.AsNoTracking().SingleAsync(l => l.Id == novo)).VersaoConfiguracaoId.Should().Be(versaoDivulgada);
+    }
+
+    [Fact(DisplayName = "inscrição que concorre a curso fora do edital divulgado recusa o lote inteiro, sem gravar nada")]
+    public async Task Importar_OfertaForaDoEdital_RecusaOLote()
+    {
+        Cenario cenario = await NovoCenarioAsync(0);
+        await using (AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope())
+        {
+            await InscricoesDoEnemDeTeste.NovaInscricaoAsync(
+                scope.ServiceProvider.GetRequiredService<SelecaoDbContext>(),
+                scope.ServiceProvider.GetRequiredService<IUniPlusEncryptionService>(),
+                scope.ServiceProvider.GetRequiredService<IUniPlusBlindIndexService>(),
+                cenario.Processo.ProcessoId, Pessoas[1], SituacaoInscricao.Submetida, Edicao,
+                ofertaCursoId: cenario.Processo.OfertaTecnologicaId, ofertaCursoSegundaOpcaoId: Guid.CreateVersion7());
+        }
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage resposta = await ImportarAsync(client, cenario, Bytes([Linha(Pessoas[0], 1), Linha(Pessoas[1], 2)]));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await CodigoAsync(resposta)).Should().Be("uniplus.selecao.notas_do_enem.oferta_de_inscricao_fora_do_edital");
+        (await QuantidadeDeLotesAsync(client, cenario)).Should().Be(0);
+    }
+
+    [Fact(DisplayName = "arquivo com prova ausente e nota diferente de zero é recusado e nenhum lote é criado")]
+    public async Task Importar_AusenteComNota_NaoCriaLote()
+    {
+        Cenario cenario = await NovoCenarioAsync(0);
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage resposta = await ImportarAsync(client, cenario, Bytes([LinhaComMatematicaAusenteEComNota(Pessoas[0], 1)]));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await CodigoAsync(resposta)).Should().Be("uniplus.selecao.notas_do_enem.arquivo_fora_do_leiaute");
         (await QuantidadeDeLotesAsync(client, cenario)).Should().Be(0);
     }
 

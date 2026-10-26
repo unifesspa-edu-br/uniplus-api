@@ -134,15 +134,16 @@ public sealed class LoteDeNotasDoEnemTests
         registrar.Should().Throw<ArgumentException>();
     }
 
-    [Fact(DisplayName = "o arquivo do lote vigente é reconhecido; o de um lote substituído não")]
+    [Fact(DisplayName = "o arquivo do lote vigente é reconhecido só sob a mesma versão do edital; o de um lote substituído não")]
     public void ArquivoJaVigente_SoReconheceOHashDoVigente()
     {
         DateTimeOffset base0 = new(2026, 10, 1, 12, 0, 0, TimeSpan.Zero);
         LoteDeNotasDoEnem antigo = Registrar(Cruzamento(), em: base0, arquivoHash: new string('b', 64));
         LoteDeNotasDoEnem vigente = Registrar(Cruzamento(), em: base0.AddHours(1), arquivoHash: new string('c', 64));
 
-        VigenciaDoLote.ArquivoJaVigente(vigente, vigente.ArquivoHash).Should().BeTrue();
-        VigenciaDoLote.ArquivoJaVigente(vigente, antigo.ArquivoHash).Should().BeFalse();
-        VigenciaDoLote.ArquivoJaVigente(null, vigente.ArquivoHash).Should().BeFalse();
+        VigenciaDoLote.ArquivoJaVigente(vigente, vigente.ArquivoHash, vigente.VersaoConfiguracaoId).Should().BeTrue();
+        VigenciaDoLote.ArquivoJaVigente(vigente, vigente.ArquivoHash, Guid.CreateVersion7()).Should().BeFalse();
+        VigenciaDoLote.ArquivoJaVigente(vigente, antigo.ArquivoHash, vigente.VersaoConfiguracaoId).Should().BeFalse();
+        VigenciaDoLote.ArquivoJaVigente(null, vigente.ArquivoHash, vigente.VersaoConfiguracaoId).Should().BeFalse();
     }
 }

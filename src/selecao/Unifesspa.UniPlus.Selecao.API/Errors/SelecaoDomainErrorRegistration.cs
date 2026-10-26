@@ -1066,5 +1066,6 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new(NotasDoEnemErrorCodes.LoteNaoEncontrado, new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.notas_do_enem.lote_nao_encontrado", "O lote de notas não foi encontrado")),
         new(NotasDoEnemErrorCodes.ArquivoForaDoLeiaute, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.notas_do_enem.arquivo_fora_do_leiaute", "O arquivo não confere com o leiaute escolhido")),
         new(NotasDoEnemErrorCodes.CodigoDeSituacaoDesconhecido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.notas_do_enem.codigo_de_situacao_desconhecido", "O arquivo traz um código de situação que o leiaute não conhece")),
+        new(NotasDoEnemErrorCodes.OfertaDeInscricaoForaDoEdital, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.notas_do_enem.oferta_de_inscricao_fora_do_edital", "Há inscrição que concorre a um curso que não está no edital divulgado")),
     ];
 }
