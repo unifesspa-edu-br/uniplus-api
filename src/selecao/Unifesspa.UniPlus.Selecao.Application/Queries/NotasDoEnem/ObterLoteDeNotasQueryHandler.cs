@@ -12,6 +12,8 @@ using DTOs.NotasDoEnem;
 
 using Kernel.Results;
 
+using Services;
+
 /// <summary>O detalhe de um lote de notas do ENEM, com as ocorrências.</summary>
 public static class ObterLoteDeNotasQueryHandler
 {
@@ -50,8 +52,8 @@ public static class ObterLoteDeNotasQueryHandler
             .ObterVigenteAsync(query.ProcessoSeletivoId, query.EtapaProcessoId, query.Edicao, cancellationToken)
             .ConfigureAwait(false);
 
-        return Result<LoteDeNotasDoEnemDto>.Success(await ImportarNotasDoEnemCommandHandler
-            .DetalheAsync(lotes, lote, vigente?.Id == lote.Id, processoSeletivoRepository, registroCodecs, cancellationToken)
+        return Result<LoteDeNotasDoEnemDto>.Success(await DetalheDoLoteDeNotasMontador
+            .MontarAsync(lotes, lote, vigente?.Id == lote.Id, processoSeletivoRepository, registroCodecs, cancellationToken)
             .ConfigureAwait(false));
     }
 }
