@@ -66,6 +66,19 @@ public sealed class LeitorDeArquivoDoInepTests
         linha.Areas.Should().OnlyContain(a => a.Nota == 0m && a.Situacao == SituacaoDaProvaNoEnem.Ausente);
     }
 
+    [Fact(DisplayName = "prova ausente com nota diferente de zero recusa o arquivo inteiro, citando linha e coluna e nunca a nota")]
+    public void Ler_AusenteComNotaDiferenteDeZero_Recusa()
+    {
+        Result<ArquivoDeRetornoLido> resultado = Ler(Bytes(
+            [Linha(Fernanda, 1), LinhaComMatematicaAusenteEComNota(Fernanda, 2)]));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(NotasDoEnemErrorCodes.ArquivoForaDoLeiaute);
+        resultado.Error.Message.Should().Contain("Linha 2").And.Contain("coluna 7");
+        resultado.Error.Message.Should().NotContain("544");
+        SemConteudoDaLinha(resultado.Error.Message, Fernanda);
+    }
+
     [Fact(DisplayName = "arquivo de 23 campos é recusado pelo leiaute de 20, sem citar CPF, nota nem nome")]
     public void Ler_ArquivoDe23Campos_RecusadoSemConteudo()
     {

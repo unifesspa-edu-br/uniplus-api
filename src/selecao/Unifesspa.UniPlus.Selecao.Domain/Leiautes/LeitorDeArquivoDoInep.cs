@@ -136,6 +136,20 @@ public static class LeitorDeArquivoDoInep
             }
         }
 
+        // Prova ausente não tem nota: um valor diferente de zero ao lado dela é arquivo
+        // inconsistente, e a apuração, que usa a nota do lançamento, não pode adivinhar qual dos
+        // dois campos está certo.
+        foreach (ColunaDoRetorno coluna in leiaute.Colunas)
+        {
+            if (coluna.Campo == CampoDoRetorno.Nota
+                && situacoes[coluna.Area!] == SituacaoDaProvaNoEnem.Ausente
+                && notas[coluna.Area!] != 0m)
+            {
+                return Result<LinhaDeRetorno>.Failure(ForaDoLeiaute(
+                    $"Linha {numeroDaLinha}, coluna {coluna.Posicao + 1} (nota): a prova está ausente e a nota não é zero."));
+            }
+        }
+
         IReadOnlyList<ResultadoDaAreaNoRetorno> areas =
             [.. AreaDoEnem.Todas.Select(a => new ResultadoDaAreaNoRetorno(a, notas[a], situacoes[a]))];
 
