@@ -4,6 +4,7 @@ using System.Text;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -41,12 +42,25 @@ internal static class InscricoesDoEnemDeTeste
         string? edicao,
         string? numeroDeInscricao = null)
     {
-        byte[] cifrado = await fixture.Encryption.EncryptAsync(
+        await using SelecaoDbContext context = fixture.CreateDbContext();
+        return await NovaInscricaoAsync(context, fixture.Encryption, fixture.BlindIndex, processoId, pessoa, situacao, edicao, numeroDeInscricao);
+    }
+
+    public static async Task<Guid> NovaInscricaoAsync(
+        SelecaoDbContext context,
+        IUniPlusEncryptionService encryption,
+        IUniPlusBlindIndexService blindIndex,
+        Guid processoId,
+        PersonasDeTeste.PessoaFicticia pessoa,
+        SituacaoInscricao situacao,
+        string? edicao,
+        string? numeroDeInscricao = null)
+    {
+        byte[] cifrado = await encryption.EncryptAsync(
             SelecaoEncryptionKeys.IdentificadoresAesGcm, Encoding.UTF8.GetBytes(pessoa.Cpf));
-        byte[] indice = await new CalculadorDoIndiceCegoDoCpf(fixture.BlindIndex).ComputarAsync(pessoa.Cpf);
+        byte[] indice = await new CalculadorDoIndiceCegoDoCpf(blindIndex).ComputarAsync(pessoa.Cpf);
 
         Guid id = Guid.CreateVersion7();
-        await using SelecaoDbContext context = fixture.CreateDbContext();
         context.Inscricoes.Add(new InscricaoRecord
         {
             Id = id,

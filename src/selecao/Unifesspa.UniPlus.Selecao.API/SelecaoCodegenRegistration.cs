@@ -155,5 +155,11 @@ public static class SelecaoCodegenRegistration
         // primeiro consumidor real. O concreto ConferenciaEnderecoGeo é internal a
         // Selecao.Infrastructure — mesmo motivo dos demais registros internal acima.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IConferenciaEnderecoGeo>();
+
+        // Envio ao INEP e importação das notas do ENEM (issue #1602): os leitores de inscrição
+        // decifram o CPF e calculam o índice cego via serviços de criptografia, que o codegen não
+        // monta em tempo de compilação. A porta é service-locada em vez de construída.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IInscritosDaEdicaoDoEnem>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IGeracaoDeEnvioAoInepRepository>();
     }
 }
