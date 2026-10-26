@@ -36,6 +36,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
     private readonly SelecaoDbContext _dbContext;
     private readonly IUniPlusEncryptionService _encryption;
     private readonly IUniPlusBlindIndexService _blindIndex;
+    private readonly CalculadorDoIndiceCegoDoCpf _indiceDoCpf;
     private readonly TimeProvider _timeProvider;
 
     public InscricaoRepository(
@@ -52,6 +53,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
         _dbContext = dbContext;
         _encryption = encryption;
         _blindIndex = blindIndex;
+        _indiceDoCpf = new CalculadorDoIndiceCegoDoCpf(blindIndex);
         _timeProvider = timeProvider;
     }
 
@@ -620,8 +622,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
     }
 
     private Task<byte[]> ComputarIndiceAsync(Cpf cpf, CancellationToken cancellationToken) =>
-        _blindIndex.ComputarAsync(
-            SelecaoEncryptionKeys.IdentificadoresHmac, Encoding.UTF8.GetBytes($"cpf:{cpf.Valor}"), cancellationToken);
+        _indiceDoCpf.ComputarAsync(cpf.Valor, cancellationToken);
 
     /// <summary>
     /// Revalida o CPF decifrado contra a regra de domínio — dado corrompido no banco ou chave de
