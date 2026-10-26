@@ -67,7 +67,9 @@ public sealed record LoteDeNotasDoEnemDto(
                 ? null
                 : [.. detalhe.AusentesPorInscricao
                     .Select(a => AusenteDoLoteDto.De(a.Key, a.Value, detalhe))
-                    .OrderBy(static a => a.NumeroDeInscricao, StringComparer.Ordinal)]);
+                    .OrderBy(static a => a.NumeroDeInscricao is null)
+                    .ThenBy(static a => a.NumeroDeInscricao, StringComparer.Ordinal)
+                    .ThenBy(static a => a.InscricaoId)]);
     }
 }
 
