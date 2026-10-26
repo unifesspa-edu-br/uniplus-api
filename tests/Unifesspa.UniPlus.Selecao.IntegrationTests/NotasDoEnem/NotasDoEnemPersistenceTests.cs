@@ -41,9 +41,18 @@ public sealed class NotasDoEnemPersistenceTests : IClassFixture<InscricaoDbFixtu
         [.. AreaDoEnem.Todas.Select(a => new ResultadoDaAreaNoRetorno(a, nota, situacao))];
 
     private static LoteDeNotasDoEnem NovoLote(
-        Guid processoId, Guid etapaId, ResultadoDoCruzamento cruzamento, string arquivoHash, DateTimeOffset em, string edicao = Edicao, string leiaute = "INEP_ENEM_RETORNO") =>
+        Guid processoId,
+        Guid versaoId,
+        Guid etapaId,
+        ResultadoDoCruzamento cruzamento,
+        string arquivoHash,
+        DateTimeOffset em,
+        string edicao = Edicao,
+        string leiaute = "INEP_ENEM_RETORNO",
+        IReadOnlyList<AvaliacaoApurada>? avaliacoes = null) =>
         LoteDeNotasDoEnem.Registrar(
-            processoId, etapaId, edicao, leiaute, "v1", Hash, arquivoHash, "sub-admin", em, cruzamento.ComNota.Count + cruzamento.LinhasSemInscrito.Count, cruzamento);
+            processoId, etapaId, edicao, leiaute, "v1", Hash, arquivoHash, "sub-admin", em,
+            cruzamento.ComNota.Count + cruzamento.LinhasSemInscrito.Count, versaoId, cruzamento, avaliacoes ?? []);
 
     private static ResultadoDoCruzamento ComNota(params (Guid Inscricao, string NumeroEnem, decimal Nota)[] inscritos) =>
         new([.. inscritos.Select(i => new InscritoComNota(i.Inscricao, i.NumeroEnem, Areas(i.Nota)))], [], [], []);
@@ -66,11 +75,12 @@ public sealed class NotasDoEnemPersistenceTests : IClassFixture<InscricaoDbFixtu
     {
         await using SelecaoDbContext semente = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await InscricoesDoEnemDeTeste.NovoProcessoAsync(semente);
+        Guid versao = await InscricoesDoEnemDeTeste.NovaVersaoAsync(_fixture, processo.Id);
         Guid etapa = Guid.CreateVersion7();
         Guid dentro = await InscricoesDoEnemDeTeste.NovaInscricaoAsync(_fixture, processo.Id, Fernanda, SituacaoInscricao.Submetida, Edicao);
         Guid fora = await InscricoesDoEnemDeTeste.NovaInscricaoAsync(_fixture, processo.Id, Kevin, SituacaoInscricao.Submetida, Edicao);
         Guid semLancamento = await InscricoesDoEnemDeTeste.NovaInscricaoAsync(_fixture, processo.Id, Helena, SituacaoInscricao.Submetida, Edicao);
-        LoteDeNotasDoEnem lote = NovoLote(processo.Id, etapa, ComNota((dentro, "240000000001", 600m)), Hash, DateTimeOffset.UtcNow);
+        LoteDeNotasDoEnem lote = NovoLote(processo.Id, versao, etapa, ComNota((dentro, "240000000001", 600m)), Hash, DateTimeOffset.UtcNow);
         await SalvarAsync(lote);
         await ExecutarAsync(
             $"INSERT INTO selecao.inscritos_do_lote_de_notas (id, lote_id, inscricao_id, numero_de_inscricao_no_enem) VALUES ('{Guid.CreateVersion7()}', '{lote.Id}', '{semLancamento}', '240000000003')");
@@ -85,13 +95,60 @@ public sealed class NotasDoEnemPersistenceTests : IClassFixture<InscricaoDbFixtu
         await Recusa(Insere(fora, etapa, "MATEMATICA", "500"), PostgresErrorCodes.ForeignKeyViolation);
     }
 
+    [Fact(DisplayName = "as avaliações do lote são gravadas com a nota exata e a versão, e o banco recusa nota sem situação apurada, avaliação repetida e versão inexistente")]
+    public async Task Avaliacoes_GravamComOLoteEOBancoRecusaIncoerencia()
+    {
+        await using SelecaoDbContext semente = _fixture.CreateDbContext();
+        ProcessoSeletivo processo = await InscricoesDoEnemDeTeste.NovoProcessoAsync(semente);
+        Guid versao = await InscricoesDoEnemDeTeste.NovaVersaoAsync(_fixture, processo.Id);
+        Guid etapa = Guid.CreateVersion7();
+        Guid oferta = Guid.CreateVersion7();
+        Guid fernanda = await InscricoesDoEnemDeTeste.NovaInscricaoAsync(_fixture, processo.Id, Fernanda, SituacaoInscricao.Submetida, Edicao);
+        Guid kevin = await InscricoesDoEnemDeTeste.NovaInscricaoAsync(_fixture, processo.Id, Kevin, SituacaoInscricao.Submetida, Edicao);
+        ResultadoDoCruzamento cruzamento = new([new InscritoComNota(fernanda, "240000000001", Areas(600m))], [kevin], [], []);
+        decimal dizima = 301m / 3m;
+        LoteDeNotasDoEnem lote = NovoLote(
+            processo.Id, versao, etapa, cruzamento, Hash, DateTimeOffset.UtcNow,
+            avaliacoes:
+            [
+                new AvaliacaoApurada(fernanda, oferta, "TECNOLOGICA", SituacaoDaAvaliacao.Apurada, dizima),
+                new AvaliacaoApurada(kevin, oferta, "TECNOLOGICA", SituacaoDaAvaliacao.InscritoSemLinha, null),
+            ]);
+        await SalvarAsync(lote);
+
+        await using (SelecaoDbContext leitura = _fixture.CreateDbContext())
+        {
+            LoteDeNotasDoEnem gravado = await leitura.LotesDeNotasDoEnem.Include(l => l.Avaliacoes).SingleAsync(l => l.Id == lote.Id);
+            gravado.VersaoConfiguracaoId.Should().Be(versao);
+            gravado.Avaliacoes.Single(a => a.InscricaoId == fernanda).Nota.Should().Be(dizima);
+            gravado.Avaliacoes.Single(a => a.InscricaoId == kevin).Nota.Should().BeNull();
+        }
+
+        string Insere(Guid inscricao, Guid etapaDaAvaliacao, Guid ofertaDaAvaliacao, int situacao, string nota) =>
+            $"INSERT INTO selecao.avaliacoes_da_etapa (id, lote_id, etapa_processo_id, inscricao_id, oferta_curso_id, grupo_area_enem_codigo, situacao, nota) VALUES ('{Guid.CreateVersion7()}', '{lote.Id}', '{etapaDaAvaliacao}', '{inscricao}', '{ofertaDaAvaliacao}', 'TECNOLOGICA', {situacao}, {nota})";
+        Guid outraOferta = Guid.CreateVersion7();
+
+        await Recusa(Insere(kevin, etapa, outraOferta, 2, "500"), PostgresErrorCodes.CheckViolation);
+        await Recusa(Insere(kevin, etapa, outraOferta, 1, "NULL"), PostgresErrorCodes.CheckViolation);
+        await Recusa(Insere(kevin, etapa, outraOferta, 1, "1000.001"), PostgresErrorCodes.CheckViolation);
+        await Recusa(Insere(kevin, etapa, outraOferta, 9, "NULL"), PostgresErrorCodes.CheckViolation);
+        await Recusa(Insere(kevin, etapa, oferta, 2, "NULL"), PostgresErrorCodes.UniqueViolation);
+        await Recusa(Insere(kevin, Guid.CreateVersion7(), outraOferta, 2, "NULL"), PostgresErrorCodes.ForeignKeyViolation);
+        await ExecutarAsync(Insere(kevin, etapa, outraOferta, 1, "1000"));
+
+        LoteDeNotasDoEnem semVersao = NovoLote(processo.Id, Guid.CreateVersion7(), etapa, ComNota(), new string('d', 64), DateTimeOffset.UtcNow);
+        Func<Task> salvar = () => SalvarAsync(semVersao);
+        await salvar.Should().ThrowAsync<DbUpdateException>();
+    }
+
     [Fact(DisplayName = "o banco recusa ocorrência cuja forma não bate com o tipo, inclusive com números de linhas nulos")]
     public async Task Constraints_RecusamOcorrenciaForaDeForma()
     {
         await using SelecaoDbContext semente = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await InscricoesDoEnemDeTeste.NovoProcessoAsync(semente);
+        Guid versao = await InscricoesDoEnemDeTeste.NovaVersaoAsync(_fixture, processo.Id);
         Guid inscricao = await InscricoesDoEnemDeTeste.NovaInscricaoAsync(_fixture, processo.Id, Fernanda, SituacaoInscricao.Submetida, Edicao);
-        LoteDeNotasDoEnem lote = NovoLote(processo.Id, Guid.CreateVersion7(), ComNota(), Hash, DateTimeOffset.UtcNow);
+        LoteDeNotasDoEnem lote = NovoLote(processo.Id, versao, Guid.CreateVersion7(), ComNota(), Hash, DateTimeOffset.UtcNow);
         await SalvarAsync(lote);
 
         string Insere(int tipo, string inscricaoId, string linhas) =>
@@ -119,6 +176,7 @@ public sealed class NotasDoEnemPersistenceTests : IClassFixture<InscricaoDbFixtu
     {
         await using SelecaoDbContext semente = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await InscricoesDoEnemDeTeste.NovoProcessoAsync(semente);
+        Guid versao = await InscricoesDoEnemDeTeste.NovaVersaoAsync(_fixture, processo.Id);
         Guid enviada = await InscricoesDoEnemDeTeste.NovaInscricaoAsync(_fixture, processo.Id, Fernanda, SituacaoInscricao.Submetida, Edicao);
         await InscricoesDoEnemDeTeste.NovaInscricaoAsync(_fixture, processo.Id, Kevin, SituacaoInscricao.Rascunho, Edicao);
         await InscricoesDoEnemDeTeste.NovaInscricaoAsync(_fixture, processo.Id, Helena, SituacaoInscricao.Cancelada, Edicao);
@@ -141,13 +199,14 @@ public sealed class NotasDoEnemPersistenceTests : IClassFixture<InscricaoDbFixtu
     {
         await using SelecaoDbContext semente = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await InscricoesDoEnemDeTeste.NovoProcessoAsync(semente);
+        Guid versao = await InscricoesDoEnemDeTeste.NovaVersaoAsync(_fixture, processo.Id);
         Guid etapa = Guid.CreateVersion7();
         Guid fernanda = await InscricoesDoEnemDeTeste.NovaInscricaoAsync(_fixture, processo.Id, Fernanda, SituacaoInscricao.Submetida, Edicao);
         Guid kevin = await InscricoesDoEnemDeTeste.NovaInscricaoAsync(_fixture, processo.Id, Kevin, SituacaoInscricao.Submetida, Edicao);
         DateTimeOffset agora = DateTimeOffset.UtcNow;
 
-        LoteDeNotasDoEnem primeiro = NovoLote(processo.Id, etapa, ComNota((fernanda, "240000000001", 500m), (kevin, "240000000002", 510m)), new string('b', 64), agora.AddMinutes(-10));
-        LoteDeNotasDoEnem segundo = NovoLote(processo.Id, etapa, ComNota((fernanda, "240000000001", 700m)), new string('c', 64), agora);
+        LoteDeNotasDoEnem primeiro = NovoLote(processo.Id, versao, etapa, ComNota((fernanda, "240000000001", 500m), (kevin, "240000000002", 510m)), new string('b', 64), agora.AddMinutes(-10));
+        LoteDeNotasDoEnem segundo = NovoLote(processo.Id, versao, etapa, ComNota((fernanda, "240000000001", 700m)), new string('c', 64), agora);
         await SalvarAsync(primeiro);
         await SalvarAsync(segundo);
 
@@ -166,11 +225,12 @@ public sealed class NotasDoEnemPersistenceTests : IClassFixture<InscricaoDbFixtu
     {
         await using SelecaoDbContext semente = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await InscricoesDoEnemDeTeste.NovoProcessoAsync(semente);
+        Guid versao = await InscricoesDoEnemDeTeste.NovaVersaoAsync(_fixture, processo.Id);
         Guid etapa = Guid.CreateVersion7();
         Guid fernanda = await InscricoesDoEnemDeTeste.NovaInscricaoAsync(_fixture, processo.Id, Fernanda, SituacaoInscricao.Submetida, Edicao);
         Guid kevin = await InscricoesDoEnemDeTeste.NovaInscricaoAsync(_fixture, processo.Id, Kevin, SituacaoInscricao.Submetida, Edicao);
         await SalvarAsync(NovoLote(
-            processo.Id, etapa, ComNota((fernanda, "240000000001", 500m), (kevin, "240000000002", 510m)), Hash, DateTimeOffset.UtcNow, leiaute: "OUTRO_LEIAUTE"));
+            processo.Id, versao, etapa, ComNota((fernanda, "240000000001", 500m), (kevin, "240000000002", 510m)), Hash, DateTimeOffset.UtcNow, leiaute: "OUTRO_LEIAUTE"));
 
         await InscricoesDoEnemDeTeste.TrocarEdicaoAsync(_fixture, kevin, "2024");
 
@@ -184,12 +244,13 @@ public sealed class NotasDoEnemPersistenceTests : IClassFixture<InscricaoDbFixtu
     {
         await using SelecaoDbContext semente = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await InscricoesDoEnemDeTeste.NovoProcessoAsync(semente);
+        Guid versao = await InscricoesDoEnemDeTeste.NovaVersaoAsync(_fixture, processo.Id);
         Guid etapa = Guid.CreateVersion7();
         Guid fernanda = await InscricoesDoEnemDeTeste.NovaInscricaoAsync(_fixture, processo.Id, Fernanda, SituacaoInscricao.Submetida, Edicao);
         Guid kevin = await InscricoesDoEnemDeTeste.NovaInscricaoAsync(_fixture, processo.Id, Kevin, SituacaoInscricao.Submetida, Edicao);
         ResultadoDoCruzamento cruzamento = new(
             [new InscritoComNota(fernanda, "240000000001", Areas(0m, SituacaoDaProvaNoEnem.Ausente))], [kevin], [], []);
-        await SalvarAsync(NovoLote(processo.Id, etapa, cruzamento, Hash, DateTimeOffset.UtcNow));
+        await SalvarAsync(NovoLote(processo.Id, versao, etapa, cruzamento, Hash, DateTimeOffset.UtcNow));
 
         await using SelecaoDbContext leitura = _fixture.CreateDbContext();
         IReadOnlyList<LancamentoVigente> vigentes = await new LancamentosDeNotaReader(leitura).ListarVigentesAsync(etapa, [fernanda, kevin]);

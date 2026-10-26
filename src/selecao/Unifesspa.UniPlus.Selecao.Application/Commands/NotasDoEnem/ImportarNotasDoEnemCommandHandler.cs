@@ -136,7 +136,9 @@ public static partial class ImportarNotasDoEnemCommandHandler
             userContext.UserId ?? string.Empty,
             timeProvider.GetUtcNow(),
             linhas.Count,
-            cruzamento);
+            escopo.Value!.VersaoConfiguracaoId,
+            cruzamento,
+            []);
         await lotes.AdicionarAsync(lote, cancellationToken).ConfigureAwait(false);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 

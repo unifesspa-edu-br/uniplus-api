@@ -486,6 +486,71 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.ToTable("atos_do_processo", "selecao");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.AvaliacaoDaEtapa", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("EtapaProcessoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("etapa_processo_id")
+                        .HasComment("A etapa do lote, repetida para ler a avaliação sem o lote; a chave estrangeira composta com o lote impede que divirja.");
+
+                    b.Property<string>("GrupoAreaEnemCodigo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("grupo_area_enem_codigo")
+                        .HasComment("O código do grupo de área do ENEM cujos pesos apuraram a nota.");
+
+                    b.Property<Guid>("InscricaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inscricao_id")
+                        .HasComment("A inscrição avaliada, guardada por valor: quem não tem linha no arquivo do lote também tem avaliação, sem nota.");
+
+                    b.Property<Guid>("LoteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lote_id");
+
+                    b.Property<decimal?>("Nota")
+                        .HasColumnType("numeric")
+                        .HasColumnName("nota")
+                        .HasComment("Σ(nota × peso) ÷ Σ(pesos) das cinco áreas, sem arredondar. Nulo quando não há nota. Não vai para log.");
+
+                    b.Property<Guid>("OfertaCursoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("oferta_curso_id")
+                        .HasComment("A oferta de curso concorrida (origem da oferta no edital divulgado), guardada por valor e sem chave estrangeira: pertence à configuração do processo.");
+
+                    b.Property<short>("Situacao")
+                        .HasColumnType("smallint")
+                        .HasColumnName("situacao")
+                        .HasComment("1 = apurada, 2 = inscrição sem linha no arquivo, 3 = inscrição com linhas em conflito. Só a apurada tem nota; a falta de nota nunca vira zero.");
+
+                    b.HasKey("Id")
+                        .HasName("pk_avaliacoes_da_etapa");
+
+                    b.HasIndex("InscricaoId", "EtapaProcessoId")
+                        .HasDatabaseName("ix_avaliacoes_da_etapa_inscricao_etapa");
+
+                    b.HasIndex("LoteId", "EtapaProcessoId")
+                        .HasDatabaseName("ix_avaliacoes_da_etapa_lote_id_etapa_processo_id");
+
+                    b.HasIndex("LoteId", "InscricaoId", "OfertaCursoId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_avaliacoes_da_etapa_lote_inscricao_oferta");
+
+                    b.ToTable("avaliacoes_da_etapa", "selecao", t =>
+                        {
+                            t.HasComment("A nota da etapa de uma inscrição numa oferta de curso concorrida (1ª ou 2ª opção), apurada pelos pesos do grupo de área do curso quando o lote foi importado. Append-only; vale com o lote. A nota por área está nos lançamentos do mesmo lote.");
+
+                            t.HasCheckConstraint("ck_avaliacoes_da_etapa_nota", "(situacao = 1) = (nota IS NOT NULL) AND (nota IS NULL OR nota BETWEEN 0 AND 1000)");
+
+                            t.HasCheckConstraint("ck_avaliacoes_da_etapa_situacao", "situacao IN (1, 2, 3)");
+                        });
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.BancaDaEtapa", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2423,11 +2488,19 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("total_de_linhas_sem_inscrito");
 
+                    b.Property<Guid>("VersaoConfiguracaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("versao_configuracao_id")
+                        .HasComment("A versão divulgada do certame cujos pesos apuraram as avaliações do lote.");
+
                     b.HasKey("Id")
                         .HasName("pk_lotes_de_notas_do_enem");
 
                     b.HasAlternateKey("Id", "EtapaProcessoId")
                         .HasName("ak_lotes_de_notas_do_enem_id_etapa");
+
+                    b.HasIndex("VersaoConfiguracaoId")
+                        .HasDatabaseName("ix_lotes_de_notas_do_enem_versao_configuracao_id");
 
                     b.HasIndex("ProcessoSeletivoId", "EtapaProcessoId", "EdicaoCodigo", "ImportadoEm", "Id")
                         .IsDescending(false, false, false, true, true)
@@ -4725,6 +4798,17 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_atos_do_processo_processos_seletivos_processo_seletivo_id");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.AvaliacaoDaEtapa", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.LoteDeNotasDoEnem", null)
+                        .WithMany("Avaliacoes")
+                        .HasForeignKey("LoteId", "EtapaProcessoId")
+                        .HasPrincipalKey("Id", "EtapaProcessoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_avaliacoes_da_etapa_lotes_de_notas_do_enem_lote_id_etapa_pr");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.BancaDaEtapa", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.EtapaProcesso", null)
@@ -5669,6 +5753,13 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_lotes_de_notas_do_enem_processos_seletivos_processo_seletiv");
+
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.VersaoConfiguracao", null)
+                        .WithMany()
+                        .HasForeignKey("VersaoConfiguracaoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_lotes_de_notas_do_enem_versoes_configuracao_versao_configur");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ModalidadeSelecionada", b =>
@@ -6473,6 +6564,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.LoteDeNotasDoEnem", b =>
                 {
+                    b.Navigation("Avaliacoes");
+
                     b.Navigation("Inscritos");
 
                     b.Navigation("Lancamentos");

@@ -33,6 +33,21 @@ internal static class InscricoesDoEnemDeTeste
         return processo;
     }
 
+    /// <summary>
+    /// Grava uma versão divulgada mínima do processo, só o que a chave estrangeira do lote exige: o
+    /// conteúdo congelado não é lido por quem a usa.
+    /// </summary>
+    public static async Task<Guid> NovaVersaoAsync(InscricaoDbFixture fixture, Guid processoId)
+    {
+        await using SelecaoDbContext context = fixture.CreateDbContext();
+        VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
+            processoId, Encoding.UTF8.GetBytes("{}"), "1", "sha256@v1", Guid.CreateVersion7(),
+            new string('a', 64), "integration-test-user", DateTimeOffset.UtcNow);
+        context.VersoesConfiguracao.Add(versao);
+        await context.SaveChangesAsync();
+        return versao.Id;
+    }
+
     /// <summary>Grava a inscrição da persona; <paramref name="edicao"/> nulo deixa a inscrição sem a resposta da edição.</summary>
     public static async Task<Guid> NovaInscricaoAsync(
         InscricaoDbFixture fixture,

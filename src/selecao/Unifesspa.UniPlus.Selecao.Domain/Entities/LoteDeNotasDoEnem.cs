@@ -1,13 +1,14 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Uma importação do retorno do INEP para um processo, uma etapa e uma edição do ENEM (ADR-0149).
 /// Registra quem importou, quando, o hash do arquivo e o leiaute usado, e carrega os lançamentos,
-/// os inscritos com linha e o que não virou nota. O arquivo em si não é guardado: traz nome e CPF de
+/// as avaliações da etapa por oferta concorrida, os inscritos com linha e o que não virou nota. O arquivo em si não é guardado: traz nome e CPF de
 /// todos os candidatos.
 /// </summary>
 /// <remarks>
@@ -18,6 +19,7 @@ public sealed class LoteDeNotasDoEnem : IForensicEntity
 {
     private readonly List<InscritoDoLoteDeNotas> _inscritos = [];
     private readonly List<LancamentoDeNota> _lancamentos = [];
+    private readonly List<AvaliacaoDaEtapa> _avaliacoes = [];
     private readonly List<OcorrenciaDoLoteDeNotas> _ocorrencias = [];
 
     public Guid Id { get; private init; } = Guid.CreateVersion7();
@@ -41,6 +43,9 @@ public sealed class LoteDeNotasDoEnem : IForensicEntity
 
     public DateTimeOffset ImportadoEm { get; private init; }
 
+    /// <summary>A versão divulgada do certame cujos pesos apuraram as avaliações do lote.</summary>
+    public Guid VersaoConfiguracaoId { get; private init; }
+
     public int TotalDeLinhas { get; private init; }
 
     public int TotalDeInscritosComNota { get; private init; }
@@ -57,6 +62,8 @@ public sealed class LoteDeNotasDoEnem : IForensicEntity
 
     public IReadOnlyCollection<LancamentoDeNota> Lancamentos => _lancamentos;
 
+    public IReadOnlyCollection<AvaliacaoDaEtapa> Avaliacoes => _avaliacoes;
+
     public IReadOnlyCollection<OcorrenciaDoLoteDeNotas> Ocorrencias => _ocorrencias;
 
     // Construtor de materialização do EF Core.
@@ -65,8 +72,10 @@ public sealed class LoteDeNotasDoEnem : IForensicEntity
     }
 
     /// <summary>
-    /// Cria o lote com os lançamentos, os inscritos e as ocorrências do cruzamento. Os totais saem
-    /// do cruzamento, e não de quem chama, para não poderem divergir do conteúdo.
+    /// Cria o lote com os lançamentos, os inscritos e as ocorrências do cruzamento, e com as
+    /// avaliações apuradas. Os totais saem do cruzamento, e não de quem chama, para não poderem
+    /// divergir do conteúdo; cada avaliação precisa ser de uma inscrição do cruzamento e ter a
+    /// situação que o cruzamento deu a ela.
     /// </summary>
     public static LoteDeNotasDoEnem Registrar(
         Guid processoSeletivoId,
@@ -79,15 +88,19 @@ public sealed class LoteDeNotasDoEnem : IForensicEntity
         string importadoPor,
         DateTimeOffset importadoEm,
         int totalDeLinhas,
-        ResultadoDoCruzamento cruzamento)
+        Guid versaoConfiguracaoId,
+        ResultadoDoCruzamento cruzamento,
+        IReadOnlyList<AvaliacaoApurada> avaliacoes)
     {
         ArgumentOutOfRangeException.ThrowIfEqual(processoSeletivoId, Guid.Empty);
         ArgumentOutOfRangeException.ThrowIfEqual(etapaProcessoId, Guid.Empty);
+        ArgumentOutOfRangeException.ThrowIfEqual(versaoConfiguracaoId, Guid.Empty);
         ArgumentException.ThrowIfNullOrWhiteSpace(edicaoCodigo);
         ArgumentException.ThrowIfNullOrWhiteSpace(leiauteCodigo);
         ArgumentException.ThrowIfNullOrWhiteSpace(leiauteVersao);
         ArgumentException.ThrowIfNullOrWhiteSpace(importadoPor);
         ArgumentNullException.ThrowIfNull(cruzamento);
+        ArgumentNullException.ThrowIfNull(avaliacoes);
 
         if (!HashCanonicalComputer.IsValidHashShape(leiauteHash))
         {
@@ -107,6 +120,8 @@ public sealed class LoteDeNotasDoEnem : IForensicEntity
             throw new ArgumentException("O total de linhas é menor que o das linhas que o cruzamento explica.", nameof(totalDeLinhas));
         }
 
+        GuardarAvaliacoes(cruzamento, avaliacoes);
+
         LoteDeNotasDoEnem lote = new()
         {
             ProcessoSeletivoId = processoSeletivoId,
@@ -118,6 +133,7 @@ public sealed class LoteDeNotasDoEnem : IForensicEntity
             ArquivoHash = arquivoHash,
             ImportadoPor = importadoPor,
             ImportadoEm = importadoEm,
+            VersaoConfiguracaoId = versaoConfiguracaoId,
             TotalDeLinhas = totalDeLinhas,
             TotalDeInscritosComNota = cruzamento.ComNota.Count,
             TotalDeLancamentos = cruzamento.ComNota.Sum(static i => i.Areas.Count),
@@ -136,10 +152,39 @@ public sealed class LoteDeNotasDoEnem : IForensicEntity
             }
         }
 
+        lote._avaliacoes.AddRange(avaliacoes.Select(a => AvaliacaoDaEtapa.Registrar(lote.Id, etapaProcessoId, a)));
+
         lote._ocorrencias.AddRange(cruzamento.InscritosSemLinha.Select(id => OcorrenciaDoLoteDeNotas.InscritoSemLinha(lote.Id, id)));
         lote._ocorrencias.AddRange(cruzamento.LinhasSemInscrito.Select(linha => OcorrenciaDoLoteDeNotas.LinhaSemInscrito(lote.Id, linha)));
         lote._ocorrencias.AddRange(cruzamento.Conflitos.Select(c => OcorrenciaDoLoteDeNotas.Conflito(lote.Id, c.InscricaoId, c.NumerosDasLinhas)));
 
         return lote;
+    }
+
+    private static void GuardarAvaliacoes(ResultadoDoCruzamento cruzamento, IReadOnlyList<AvaliacaoApurada> avaliacoes)
+    {
+        Dictionary<Guid, SituacaoDaAvaliacao> esperada = [];
+        foreach (InscritoComNota inscrito in cruzamento.ComNota)
+        {
+            esperada[inscrito.InscricaoId] = SituacaoDaAvaliacao.Apurada;
+        }
+
+        foreach (Guid inscricaoId in cruzamento.InscritosSemLinha)
+        {
+            esperada[inscricaoId] = SituacaoDaAvaliacao.InscritoSemLinha;
+        }
+
+        foreach (ConflitoDeLinhas conflito in cruzamento.Conflitos)
+        {
+            esperada[conflito.InscricaoId] = SituacaoDaAvaliacao.EmConflito;
+        }
+
+        foreach (AvaliacaoApurada avaliacao in avaliacoes)
+        {
+            if (!esperada.TryGetValue(avaliacao.InscricaoId, out SituacaoDaAvaliacao situacao) || situacao != avaliacao.Situacao)
+            {
+                throw new ArgumentException("Toda avaliação deve ser de uma inscrição do cruzamento, com a situação que ele deu a ela.", nameof(avaliacoes));
+            }
+        }
     }
 }

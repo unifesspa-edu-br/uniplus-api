@@ -202,6 +202,9 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
 
     public DbSet<LancamentoDeNota> LancamentosDeNota => Set<LancamentoDeNota>();
 
+    /// <summary>A nota da etapa por inscrição e oferta concorrida, apurada junto com o lote — append-only.</summary>
+    public DbSet<AvaliacaoDaEtapa> AvaliacoesDaEtapa => Set<AvaliacaoDaEtapa>();
+
     public DbSet<OcorrenciaDoLoteDeNotas> OcorrenciasDoLoteDeNotas => Set<OcorrenciaDoLoteDeNotas>();
 
     /// <summary>O registro de cada geração do arquivo de envio ao INEP — sem o arquivo nem os CPFs.</summary>

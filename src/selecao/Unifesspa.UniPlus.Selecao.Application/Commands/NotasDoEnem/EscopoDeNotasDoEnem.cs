@@ -14,8 +14,16 @@ using Services;
 
 using Unifesspa.UniPlus.Regras.Services;
 
-/// <summary>O processo, a etapa de nota do ENEM e a edição que a operação alcança.</summary>
-public sealed record EscopoDeNotasDoEnem(Guid ProcessoSeletivoId, Guid EtapaProcessoId, string EdicaoCodigo);
+/// <summary>
+/// O processo, a etapa de nota do ENEM e a edição que a operação alcança, com o edital divulgado que
+/// os confirmou: a versão e o grafo reidratado dela, de onde saem as ofertas e os pesos da apuração.
+/// </summary>
+public sealed record EscopoDeNotasDoEnem(
+    Guid ProcessoSeletivoId,
+    Guid EtapaProcessoId,
+    string EdicaoCodigo,
+    Guid VersaoConfiguracaoId,
+    GrafoConfiguracao Grafo);
 
 /// <summary>
 /// Resolve e confere o escopo do envio ao INEP e da importação das notas pela versão divulgada do
@@ -74,7 +82,7 @@ public static class ResolvedorDoEscopoDeNotasDoEnem
             return Falha<EscopoDeNotasDoEnem>(NotasDoEnemErrorCodes.EdicaoNaoAdmitida, "A edição informada não é uma das edições do ENEM que o processo admite.");
         }
 
-        return Result<EscopoDeNotasDoEnem>.Success(new EscopoDeNotasDoEnem(processoSeletivoId, etapaProcessoId, edicaoCodigo));
+        return Result<EscopoDeNotasDoEnem>.Success(new EscopoDeNotasDoEnem(processoSeletivoId, etapaProcessoId, edicaoCodigo, divulgada.Value!.Versao.Id, grafo));
     }
 
     /// <summary>O leiaute pelo código e versão, que precisa estar ativo e ser do tipo da operação.</summary>
