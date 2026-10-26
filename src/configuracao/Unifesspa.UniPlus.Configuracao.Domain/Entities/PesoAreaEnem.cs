@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Services;
 
 /// <summary>
 /// Pesos por Área do ENEM, por grupo de área — materializa o Anexo I da Resolução
@@ -29,11 +30,11 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </remarks>
 public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
 {
-    public const string CodigoRedacao = "REDACAO";
-    public const string CodigoCienciasDaNatureza = "CIENCIAS_DA_NATUREZA";
-    public const string CodigoCienciasHumanas = "CIENCIAS_HUMANAS";
-    public const string CodigoLinguagens = "LINGUAGENS";
-    public const string CodigoMatematica = "MATEMATICA";
+    public const string CodigoRedacao = AreaDoEnem.Redacao;
+    public const string CodigoCienciasDaNatureza = AreaDoEnem.CienciasDaNatureza;
+    public const string CodigoCienciasHumanas = AreaDoEnem.CienciasHumanas;
+    public const string CodigoLinguagens = AreaDoEnem.Linguagens;
+    public const string CodigoMatematica = AreaDoEnem.Matematica;
 
     /// <summary>
     /// Teto de cada peso de área — limite da precisão persistida (<c>numeric(4,2)</c>).
