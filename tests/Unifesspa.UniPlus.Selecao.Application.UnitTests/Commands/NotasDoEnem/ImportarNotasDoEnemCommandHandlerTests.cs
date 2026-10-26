@@ -55,7 +55,7 @@ public sealed class ImportarNotasDoEnemCommandHandlerTests
 
     private void InscritosDaEdicao(params int[] pessoas) =>
         _inscritos.ListarAsync(_cenario.ProcessoId, Edicao, Arg.Any<CancellationToken>())
-            .Returns([.. pessoas.Select(i => new InscritoDaEdicao(Guid.CreateVersion7(), Indice(Pessoas[i].Cpf)))]);
+            .Returns([.. pessoas.Select(i => new InscritoDaEdicao(Guid.CreateVersion7(), Indice(Pessoas[i].Cpf), []))]);
 
     private Task<Result<ImportacaoDeNotasDto>> Importar(byte[] conteudo, string leiaute = "INEP_ENEM_RETORNO") =>
         ImportarNotasDoEnemCommandHandler.Handle(
