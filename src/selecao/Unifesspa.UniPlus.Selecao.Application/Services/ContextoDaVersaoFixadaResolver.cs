@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services;
 using Abstractions;
 
 using Domain.Entities;
+using Domain.Interfaces;
 using Domain.ValueObjects;
 
 using DTOs;
@@ -143,6 +144,46 @@ public static class ContextoDaVersaoFixadaResolver
             ? Result<ConfiguracaoDaOpcao>.Failure(avaliavel.Error!)
             : Result<ConfiguracaoDaOpcao>.Success(new ConfiguracaoDaOpcao(
                 avaliavel.Value!, ConfiguracaoAvaliavelDoProcesso.DoCongelado(envelope.Grafo, avaliavel.Value!, ofertasDeCurso)));
+    }
+
+    /// <summary>
+    /// As ofertas de curso de cada versão pedida — a da inscrição, nunca a vigente. Cada processo tem
+    /// as versões lidas uma vez e cada versão é reidratada uma vez. Versão que não se lê não derruba o
+    /// resultado: fica de fora.
+    /// </summary>
+    public static async Task<Dictionary<Guid, IReadOnlyList<OfertaDeCursoCertameDto>>> OfertasDasVersoesAsync(
+        IEnumerable<(Guid ProcessoSeletivoId, Guid VersaoFormularioId)> versoesPedidas,
+        IProcessoSeletivoRepository processoSeletivoRepository,
+        IRegistroCodecsEnvelope registroCodecs,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(versoesPedidas);
+        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
+        ArgumentNullException.ThrowIfNull(registroCodecs);
+
+        Dictionary<Guid, IReadOnlyList<OfertaDeCursoCertameDto>> ofertas = [];
+        foreach (IGrouping<Guid, (Guid ProcessoSeletivoId, Guid VersaoFormularioId)> doProcesso in versoesPedidas.Distinct().GroupBy(static v => v.ProcessoSeletivoId))
+        {
+            IReadOnlyList<VersaoConfiguracao> versoes = await processoSeletivoRepository
+                .ObterVersoesAsync(doProcesso.Key, cancellationToken)
+                .ConfigureAwait(false);
+            foreach ((_, Guid versaoId) in doProcesso)
+            {
+                VersaoConfiguracao? versao = versoes.FirstOrDefault(v => v.Id == versaoId);
+                if (versao is null)
+                {
+                    continue;
+                }
+
+                Result<EnvelopeReidratado> reidratado = Reidratar(versao, registroCodecs);
+                if (reidratado.IsSuccess)
+                {
+                    ofertas[versaoId] = OfertasDaVersao(reidratado.Value!.Grafo);
+                }
+            }
+        }
+
+        return ofertas;
     }
 
     public static List<OfertaDeCursoCertameDto> OfertasDaVersao(GrafoConfiguracao grafo)

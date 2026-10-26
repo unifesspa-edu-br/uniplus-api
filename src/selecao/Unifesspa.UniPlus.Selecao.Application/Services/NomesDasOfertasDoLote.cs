@@ -40,28 +40,16 @@ public static class NomesDasOfertasDoLote
             return resultado;
         }
 
-        IReadOnlyList<VersaoConfiguracao> versoes = await processoSeletivoRepository
-            .ObterVersoesAsync(processoSeletivoId, cancellationToken)
+        Dictionary<Guid, IReadOnlyList<OfertaDeCursoCertameDto>> ofertasPorVersao = await ContextoDaVersaoFixadaResolver
+            .OfertasDasVersoesAsync(
+                escolhidas.Values.Select(e => (processoSeletivoId, e.VersaoFormularioId)),
+                processoSeletivoRepository,
+                registroCodecs,
+                cancellationToken)
             .ConfigureAwait(false);
-
-        Dictionary<Guid, Dictionary<Guid, string>> nomesPorVersao = [];
-        foreach (Guid versaoId in escolhidas.Values.Select(static e => e.VersaoFormularioId).Distinct())
-        {
-            VersaoConfiguracao? versao = versoes.FirstOrDefault(v => v.Id == versaoId);
-            if (versao is null)
-            {
-                continue;
-            }
-
-            Result<EnvelopeReidratado> reidratado = ContextoDaVersaoFixadaResolver.Reidratar(versao, registroCodecs);
-            if (reidratado.IsFailure)
-            {
-                continue;
-            }
-
-            nomesPorVersao[versaoId] = ContextoDaVersaoFixadaResolver.OfertasDaVersao(reidratado.Value!.Grafo)
-                .ToDictionary(static o => o.OfertaCursoOrigemId, Nome);
-        }
+        Dictionary<Guid, Dictionary<Guid, string>> nomesPorVersao = ofertasPorVersao.ToDictionary(
+            static v => v.Key,
+            static v => v.Value.ToDictionary(static o => o.OfertaCursoOrigemId, Nome));
 
         foreach ((Guid inscricaoId, OfertasEscolhidasDaInscricao ofertas) in escolhidas)
         {
