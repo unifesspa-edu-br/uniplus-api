@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Readers;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
-using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -72,8 +71,6 @@ public sealed class InscritosDaEdicaoDoEnem : IInscritosDaEdicaoDoEnem
             .AsNoTracking()
             .Where(i => i.ProcessoSeletivoId == processoSeletivoId
                 && i.Situacao == SituacaoInscricao.Submetida
-                && _context.RespostasDaInscricao.Any(r => r.InscricaoId == i.Id
-                    && r.OcorrenciaId == null
-                    && r.FatoCodigo == EdicaoDoEnem.Fato
+                && VigenciaDasNotasDoEnem.EdicoesEscolhidas(_context).Any(r => r.InscricaoId == i.Id
                     && r.ValorCodigo == edicaoCodigo));
 }
