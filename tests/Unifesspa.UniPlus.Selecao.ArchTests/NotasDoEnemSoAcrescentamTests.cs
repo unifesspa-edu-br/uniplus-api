@@ -18,6 +18,7 @@ public sealed class NotasDoEnemSoAcrescentamTests
     [InlineData(typeof(ILoteDeNotasDoEnemRepository))]
     [InlineData(typeof(IGeracaoDeEnvioAoInepRepository))]
     [InlineData(typeof(ILancamentosDeNotaReader))]
+    [InlineData(typeof(IAvaliacoesDaEtapaReader))]
     public void Portas_NaoExpoemMutacao(Type porta)
     {
         ArgumentNullException.ThrowIfNull(porta);
