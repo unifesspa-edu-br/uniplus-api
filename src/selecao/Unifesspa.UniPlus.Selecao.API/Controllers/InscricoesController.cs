@@ -309,7 +309,7 @@ public sealed class InscricoesController : ControllerBase
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
 
-    /// <summary>As inscrições do dono do token em qualquer processo seletivo (issue #1860), com o nome preferido.</summary>
+    /// <summary>As inscrições do dono do token em qualquer processo seletivo (issue #1860), com os cursos que escolheram.</summary>
     [HttpGet("minhas-inscricoes")]
     [Authorize(Policy = "Candidato")]
     [VendorMediaType(Resource = "minhas-inscricoes", Versions = [1])]
