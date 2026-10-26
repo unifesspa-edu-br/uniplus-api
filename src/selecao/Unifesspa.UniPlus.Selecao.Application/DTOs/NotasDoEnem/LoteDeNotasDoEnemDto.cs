@@ -115,7 +115,7 @@ public sealed record OcorrenciaDoLoteDto(
 /// <summary>Um inscrito que faltou à prova de ao menos uma área, com os códigos das áreas, na ordem das áreas.</summary>
 public sealed record AusenteDoLoteDto(
     Guid InscricaoId,
-    string NumeroDeInscricao,
+    string? NumeroDeInscricao,
     string? NomeDoCandidato,
     string? CpfMascarado,
     IReadOnlyList<string> Areas,
@@ -128,7 +128,7 @@ public sealed record AusenteDoLoteDto(
 
         InscritoDoLote? inscrito = detalhe.Inscrito(inscricaoId);
         return new AusenteDoLoteDto(
-            inscricaoId, inscrito?.NumeroDeInscricao ?? string.Empty, inscrito?.Nome, inscrito?.CpfMascarado, areas, detalhe.OpcoesDe(inscricaoId));
+            inscricaoId, inscrito?.NumeroDeInscricao, inscrito?.Nome, inscrito?.CpfMascarado, areas, detalhe.OpcoesDe(inscricaoId));
     }
 }
 
