@@ -20,6 +20,9 @@ public sealed class CruzamentoDasNotasComInscritosTests
     private static readonly IReadOnlyList<PersonasDeTeste.PessoaFicticia> Pessoas = PersonasDeTeste.Candidatas;
     private static readonly Dictionary<string, Guid> Inscricoes = Pessoas.ToDictionary(p => p.Cpf, _ => Guid.CreateVersion7());
 
+    private static string MascaraEsperada(PersonasDeTeste.PessoaFicticia pessoa) =>
+        $"***.{pessoa.Cpf[3..6]}.{pessoa.Cpf[6..9]}-**";
+
     private static IndiceCegoDoCpf Indice(string cpf) => IndiceCegoDoCpf.De(Encoding.UTF8.GetBytes($"indice:{cpf}"));
 
     private static ResultadoDoCruzamento Cruzar(IEnumerable<string> linhasDoArquivo, params int[] inscritos)
@@ -54,12 +57,16 @@ public sealed class CruzamentoDasNotasComInscritosTests
         resultado.InscritosSemLinha.Should().Equal(Inscricoes[Pessoas[1].Cpf]);
     }
 
-    [Fact(DisplayName = "CPF sem inscrito vira ocorrência só com o número da linha")]
-    public void Cruzar_LinhaSemInscrito_SoNumeroDaLinha()
+    [Fact(DisplayName = "CPF sem inscrito vira ocorrência com o número da linha, o CPF mascarado, o nome e o sexo do arquivo")]
+    public void Cruzar_LinhaSemInscrito_IdentificaAPessoaPeloArquivo()
     {
         ResultadoDoCruzamento resultado = Cruzar([Linha(Pessoas[0], 1), Linha(Pessoas[2], 2)], 0);
 
-        resultado.LinhasSemInscrito.Should().Equal(2);
+        LinhaSemInscritoNoCruzamento linha = resultado.LinhasSemInscrito.Should().ContainSingle().Subject;
+        linha.NumeroDaLinha.Should().Be(2);
+        linha.Nome.Should().Be(Pessoas[2].Nome);
+        linha.Sexo.Should().Be("F");
+        linha.CpfMascarado.Should().Be(MascaraEsperada(Pessoas[2]));
         resultado.ComNota.Should().ContainSingle();
     }
 
@@ -93,7 +100,8 @@ public sealed class CruzamentoDasNotasComInscritosTests
 
         ResultadoDoCruzamento resultado = Cruzar([Linha(Pessoas[2], 1), Linha(Pessoas[2], 2, outraNota)], 0);
 
-        resultado.LinhasSemInscrito.Should().Equal(1, 2);
+        resultado.LinhasSemInscrito.Select(l => l.NumeroDaLinha).Should().Equal(1, 2);
+        resultado.LinhasSemInscrito.Should().OnlyContain(l => l.CpfMascarado == MascaraEsperada(Pessoas[2]));
         resultado.Conflitos.Should().BeEmpty();
         resultado.InscritosSemLinha.Should().Equal(Inscricoes[Pessoas[0].Cpf]);
     }

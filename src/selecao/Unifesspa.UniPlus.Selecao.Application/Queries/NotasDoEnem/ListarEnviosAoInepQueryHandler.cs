@@ -43,6 +43,6 @@ public static class ListarEnviosAoInepQueryHandler
             .ConfigureAwait(false);
 
         return Result<IReadOnlyList<GeracaoDeEnvioDto>>.Success([.. historico.Select(g => new GeracaoDeEnvioDto(
-            g.Id, g.EdicaoCodigo, g.LeiauteCodigo, g.LeiauteVersao, g.GeradoPor, g.GeradoEm, g.TotalDeCpfs))]);
+            g.Id, g.EdicaoCodigo, g.LeiauteCodigo, g.LeiauteVersao, g.GeradoPor, g.GeradoPorNome, g.GeradoEm, g.TotalDeCpfs))]);
     }
 }

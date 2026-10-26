@@ -60,7 +60,7 @@ public sealed class NotasDoEnemPersistenceTests : IClassFixture<InscricaoDbFixtu
     private async Task SalvarAsync(LoteDeNotasDoEnem lote)
     {
         await using SelecaoDbContext context = _fixture.CreateDbContext();
-        await new LoteDeNotasDoEnemRepository(context).AdicionarAsync(lote);
+        await new LoteDeNotasDoEnemRepository(context, _fixture.Encryption).AdicionarAsync(lote);
         await context.SaveChangesAsync();
     }
 
@@ -211,7 +211,7 @@ public sealed class NotasDoEnemPersistenceTests : IClassFixture<InscricaoDbFixtu
         await SalvarAsync(segundo);
 
         await using SelecaoDbContext leitura = _fixture.CreateDbContext();
-        LoteDeNotasDoEnemRepository repositorio = new(leitura);
+        LoteDeNotasDoEnemRepository repositorio = new(leitura, _fixture.Encryption);
         (await repositorio.ObterVigenteAsync(processo.Id, etapa, Edicao))!.Id.Should().Be(segundo.Id);
         (await repositorio.ListarAsync(processo.Id, etapa, Edicao)).Select(l => l.Id).Should().Equal(segundo.Id, primeiro.Id);
 

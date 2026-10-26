@@ -41,6 +41,9 @@ public sealed class LoteDeNotasDoEnem : IForensicEntity
 
     public string ImportadoPor { get; private init; } = null!;
 
+    /// <summary>O nome de quem importou, como o token o trazia na ação.</summary>
+    public string? ImportadoPorNome { get; private init; }
+
     public DateTimeOffset ImportadoEm { get; private init; }
 
     /// <summary>A versão divulgada do certame cujos pesos apuraram as avaliações do lote.</summary>
@@ -90,7 +93,8 @@ public sealed class LoteDeNotasDoEnem : IForensicEntity
         int totalDeLinhas,
         Guid versaoConfiguracaoId,
         ResultadoDoCruzamento cruzamento,
-        IReadOnlyList<AvaliacaoApurada> avaliacoes)
+        IReadOnlyList<AvaliacaoApurada> avaliacoes,
+        string? importadoPorNome = null)
     {
         ArgumentOutOfRangeException.ThrowIfEqual(processoSeletivoId, Guid.Empty);
         ArgumentOutOfRangeException.ThrowIfEqual(etapaProcessoId, Guid.Empty);
@@ -132,6 +136,7 @@ public sealed class LoteDeNotasDoEnem : IForensicEntity
             LeiauteHash = leiauteHash,
             ArquivoHash = arquivoHash,
             ImportadoPor = importadoPor,
+            ImportadoPorNome = string.IsNullOrWhiteSpace(importadoPorNome) ? null : importadoPorNome.Trim(),
             ImportadoEm = importadoEm,
             VersaoConfiguracaoId = versaoConfiguracaoId,
             TotalDeLinhas = totalDeLinhas,
@@ -155,7 +160,7 @@ public sealed class LoteDeNotasDoEnem : IForensicEntity
         lote._avaliacoes.AddRange(avaliacoes.Select(a => AvaliacaoDaEtapa.Registrar(lote.Id, etapaProcessoId, a)));
 
         lote._ocorrencias.AddRange(cruzamento.InscritosSemLinha.Select(id => OcorrenciaDoLoteDeNotas.InscritoSemLinha(lote.Id, id)));
-        lote._ocorrencias.AddRange(cruzamento.LinhasSemInscrito.Select(linha => OcorrenciaDoLoteDeNotas.LinhaSemInscrito(lote.Id, linha)));
+        lote._ocorrencias.AddRange(cruzamento.LinhasSemInscrito.Select(linha => OcorrenciaDoLoteDeNotas.LinhaSemInscrito(lote.Id, linha.NumeroDaLinha, linha.CpfMascarado, linha.Nome, linha.Sexo)));
         lote._ocorrencias.AddRange(cruzamento.Conflitos.Select(c => OcorrenciaDoLoteDeNotas.Conflito(lote.Id, c.InscricaoId, c.NumerosDasLinhas)));
 
         return lote;

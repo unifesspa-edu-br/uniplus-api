@@ -25,6 +25,9 @@ public sealed class GeracaoDeEnvioAoInep : IForensicEntity
 
     public string GeradoPor { get; private init; } = null!;
 
+    /// <summary>O nome de quem gerou, como o token o trazia na ação.</summary>
+    public string? GeradoPorNome { get; private init; }
+
     public DateTimeOffset GeradoEm { get; private init; }
 
     public int TotalDeCpfs { get; private init; }
@@ -43,7 +46,8 @@ public sealed class GeracaoDeEnvioAoInep : IForensicEntity
         string leiauteHash,
         string geradoPor,
         DateTimeOffset geradoEm,
-        int totalDeCpfs)
+        int totalDeCpfs,
+        string? geradoPorNome = null)
     {
         ArgumentOutOfRangeException.ThrowIfEqual(processoSeletivoId, Guid.Empty);
         ArgumentOutOfRangeException.ThrowIfEqual(etapaProcessoId, Guid.Empty);
@@ -67,6 +71,7 @@ public sealed class GeracaoDeEnvioAoInep : IForensicEntity
             LeiauteVersao = leiauteVersao,
             LeiauteHash = leiauteHash,
             GeradoPor = geradoPor,
+            GeradoPorNome = string.IsNullOrWhiteSpace(geradoPorNome) ? null : geradoPorNome.Trim(),
             GeradoEm = geradoEm,
             TotalDeCpfs = totalDeCpfs,
         };

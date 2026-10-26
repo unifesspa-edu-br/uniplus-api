@@ -5,7 +5,7 @@ using System.Text;
 
 /// <summary>
 /// Monta arquivos de retorno do INEP sintéticos a partir das personas fictícias do portal. As colunas
-/// que o Uni+ ignora (nome, data de nascimento, dados cadastrais) vêm preenchidas de propósito, para
+/// que o Uni+ ignora (data de nascimento, dados cadastrais) vêm preenchidas de propósito, para
 /// provar que não são lidas. Nenhum arquivo real é usado.
 /// </summary>
 internal static class ArquivoDoInepSintetico
@@ -35,11 +35,11 @@ internal static class ArquivoDoInepSintetico
                 .. notas ?? NotasPadrao,
                 .. situacoes ?? SituacoesPadrao,
                 pessoa.DataDeNascimento,
-                pessoa.Sexo,
-                pessoa.Cidade,
+                pessoa.Sexo[..1],
                 pessoa.Uf,
-                pessoa.Sexo,
                 pessoa.Cidade,
+                "N",
+                "Inglês",
                 string.Empty,
             ]);
 
@@ -54,6 +54,10 @@ internal static class ArquivoDoInepSintetico
     /// <summary>Linha inconsistente: a prova de Matemática consta como ausente, mas com nota diferente de zero.</summary>
     public static string LinhaComMatematicaAusenteEComNota(PersonasDeTeste.PessoaFicticia pessoa, int ordem) =>
         Linha(pessoa, ordem, situacoes: ["7", "7", "7", "6", "7"]);
+
+    /// <summary>Faltou só à prova de Matemática: situação de ausente e nota zero nessa área.</summary>
+    public static string LinhaComMatematicaAusente(PersonasDeTeste.PessoaFicticia pessoa, int ordem) =>
+        Linha(pessoa, ordem, notas: ["611.1", "722.2", "833.3", "0", "960"], situacoes: ["7", "7", "7", "6", "7"]);
 
     public static byte[] Bytes(
         IEnumerable<string> linhas,

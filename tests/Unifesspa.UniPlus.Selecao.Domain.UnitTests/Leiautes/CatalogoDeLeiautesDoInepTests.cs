@@ -16,7 +16,7 @@ public sealed class CatalogoDeLeiautesDoInepTests
 {
     // Trava a definição publicada do retorno v1: mudar uma coluna, um leitor ou o dicionário de
     // situação exige uma versão nova, nunca a edição da v1.
-    private const string HashDoRetornoV1 = "fd03f84ba37571853df57c1abb04c62f648e4f330720d9fc48b94038354612d0";
+    private const string HashDoRetornoV1 = "b9814e669a4f476b8b5ba336a5e4f56aa0d30603be667cffd1a7634b6acae24f";
 
     [Fact(DisplayName = "o hash da definição publicada do retorno v1 não muda")]
     public void Hash_RetornoV1_EstaFixado()

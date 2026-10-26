@@ -41,7 +41,7 @@ public sealed class LeiauteDeRetornoDoInep : ILeiauteDeArquivoDoInep
 
     /// <summary>
     /// Monta o leiaute conferindo a definição: posições contíguas desde zero, uma coluna de CPF, uma
-    /// de número de inscrição e a nota e a situação de cada uma das cinco áreas, cada uma uma só vez.
+    /// de nome, uma de sexo, uma de número de inscrição e a nota e a situação de cada uma das cinco áreas, cada uma uma só vez.
     /// Uma definição incoerente é erro de programação do catálogo, não de quem importa o arquivo.
     /// </summary>
     public static LeiauteDeRetornoDoInep Criar(
@@ -63,6 +63,8 @@ public sealed class LeiauteDeRetornoDoInep : ILeiauteDeArquivoDoInep
 
         ConferirCampoUnico(ordenadas, CampoDoRetorno.Cpf, area: null);
         ConferirCampoUnico(ordenadas, CampoDoRetorno.NumeroDeInscricaoNoEnem, area: null);
+        ConferirCampoUnico(ordenadas, CampoDoRetorno.Nome, area: null);
+        ConferirCampoUnico(ordenadas, CampoDoRetorno.Sexo, area: null);
         foreach (string area in AreaDoEnem.Todas)
         {
             ConferirCampoUnico(ordenadas, CampoDoRetorno.Nota, area);

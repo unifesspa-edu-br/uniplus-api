@@ -46,6 +46,18 @@ internal sealed class OcorrenciaDoLoteDeNotasConfiguration : IEntityTypeConfigur
             .HasColumnType("integer[]")
             .HasComment("Os números das linhas do arquivo, a partir de 1.");
 
+        builder.Property(o => o.CpfMascarado)
+            .HasMaxLength(14)
+            .HasComment("O CPF mascarado da linha sem inscrito (***.999.999-**); nunca o CPF puro.");
+
+        builder.Property(o => o.Nome)
+            .HasMaxLength(200)
+            .HasComment("O nome que o arquivo traz para a linha sem inscrito.");
+
+        builder.Property(o => o.Sexo)
+            .HasMaxLength(1)
+            .HasComment("O sexo (F ou M) que o arquivo traz para a linha sem inscrito.");
+
         builder.HasOne<InscricaoRecord>()
             .WithMany()
             .HasForeignKey(o => o.InscricaoId)

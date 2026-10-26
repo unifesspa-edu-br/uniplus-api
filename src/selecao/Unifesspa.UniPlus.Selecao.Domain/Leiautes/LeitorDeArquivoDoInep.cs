@@ -105,6 +105,8 @@ public static class LeitorDeArquivoDoInep
         }
 
         string cpf = string.Empty;
+        string? nome = null;
+        string? sexo = null;
         string numeroDeInscricao = string.Empty;
         Dictionary<string, decimal> notas = [];
         Dictionary<string, SituacaoDaProvaNoEnem> situacoes = [];
@@ -121,6 +123,12 @@ public static class LeitorDeArquivoDoInep
             {
                 case CampoDoRetorno.Cpf:
                     cpf = (string)leitura.Valor!;
+                    break;
+                case CampoDoRetorno.Nome:
+                    nome = (string?)leitura.Valor;
+                    break;
+                case CampoDoRetorno.Sexo:
+                    sexo = (string?)leitura.Valor;
                     break;
                 case CampoDoRetorno.NumeroDeInscricaoNoEnem:
                     numeroDeInscricao = (string)leitura.Valor!;
@@ -153,7 +161,7 @@ public static class LeitorDeArquivoDoInep
         IReadOnlyList<ResultadoDaAreaNoRetorno> areas =
             [.. AreaDoEnem.Todas.Select(a => new ResultadoDaAreaNoRetorno(a, notas[a], situacoes[a]))];
 
-        return Result<LinhaDeRetorno>.Success(new LinhaDeRetorno(numeroDaLinha, cpf, numeroDeInscricao, areas));
+        return Result<LinhaDeRetorno>.Success(new LinhaDeRetorno(numeroDaLinha, cpf, nome, sexo, numeroDeInscricao, areas));
     }
 
     private static Result<LinhaDeRetorno> RecusaDaCelula(FalhaDeCelula falha, int numeroDaLinha, ColunaDoRetorno coluna)

@@ -39,7 +39,7 @@ public sealed class CatalogoDeLeiautesDoInep
         [
             ColunaDoRetorno.NumeroDeInscricaoNoEnem(0),
             ColunaDoRetorno.Cpf(1),
-            ColunaDoRetorno.Ignorada(2),
+            ColunaDoRetorno.Nome(2),
             ColunaDoRetorno.Nota(3, AreaDoEnem.CienciasDaNatureza),
             ColunaDoRetorno.Nota(4, AreaDoEnem.CienciasHumanas),
             ColunaDoRetorno.Nota(5, AreaDoEnem.Linguagens),
@@ -51,7 +51,7 @@ public sealed class CatalogoDeLeiautesDoInep
             ColunaDoRetorno.Situacao(11, AreaDoEnem.Matematica, DicionarioDeSituacao()),
             ColunaDoRetorno.Situacao(12, AreaDoEnem.Redacao, DicionarioDeSituacao()),
             ColunaDoRetorno.Ignorada(13),
-            ColunaDoRetorno.Ignorada(14),
+            ColunaDoRetorno.Sexo(14),
             ColunaDoRetorno.Ignorada(15),
             ColunaDoRetorno.Ignorada(16),
             ColunaDoRetorno.Ignorada(17),

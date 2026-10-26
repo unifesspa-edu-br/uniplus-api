@@ -40,6 +40,7 @@ internal sealed class GeracaoDeEnvioAoInepConfiguration : IEntityTypeConfigurati
         builder.Property(g => g.LeiauteVersao).HasMaxLength(VersaoMaxLength).IsRequired();
         builder.Property(g => g.LeiauteHash).HasMaxLength(HashHexLength).IsFixedLength().IsRequired();
         builder.Property(g => g.GeradoPor).HasMaxLength(GeradoPorMaxLength).IsRequired().HasComment("O sub do token de quem gerou.");
+        builder.Property(g => g.GeradoPorNome).HasMaxLength(GeradoPorMaxLength).HasComment("O nome de quem gerou, gravado no momento da ação.");
         builder.Property(g => g.GeradoEm).IsRequired();
         builder.Property(g => g.TotalDeCpfs).IsRequired();
 

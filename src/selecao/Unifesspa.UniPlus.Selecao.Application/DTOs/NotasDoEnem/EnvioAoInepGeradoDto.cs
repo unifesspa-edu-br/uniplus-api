@@ -10,5 +10,6 @@ public sealed record GeracaoDeEnvioDto(
     string LeiauteCodigo,
     string LeiauteVersao,
     string GeradoPor,
+    string? GeradoPorNome,
     DateTimeOffset GeradoEm,
     int TotalDeCpfs);

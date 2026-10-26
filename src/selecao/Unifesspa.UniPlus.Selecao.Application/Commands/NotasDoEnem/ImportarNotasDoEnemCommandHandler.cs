@@ -18,6 +18,8 @@ using Kernel.Results;
 
 using Microsoft.Extensions.Logging;
 
+using Services;
+
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 
 /// <summary>
@@ -132,7 +134,7 @@ public static partial class ImportarNotasDoEnemCommandHandler
             LogLoteJaVigente(logger, existente.Id, command.ProcessoSeletivoId);
 
             return Result<ImportacaoDeNotasDto>.Success(new ImportacaoDeNotasDto(
-                LoteDeNotasDoEnemDto.De(existente, vigente: true, await NumerosAsync(lotes, existente, cancellationToken).ConfigureAwait(false)),
+                await DetalheAsync(lotes, existente, vigente: true, processoSeletivoRepository, registroCodecs, cancellationToken).ConfigureAwait(false),
                 Criado: false));
         }
 
@@ -166,7 +168,8 @@ public static partial class ImportarNotasDoEnemCommandHandler
             linhas.Count,
             versaoConfiguracaoId,
             cruzamento,
-            avaliacoes);
+            avaliacoes,
+            userContext.NomeCompleto);
         await lotes.AdicionarAsync(lote, cancellationToken).ConfigureAwait(false);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
@@ -177,15 +180,43 @@ public static partial class ImportarNotasDoEnemCommandHandler
             apuradas, avaliacoes.Count - apuradas);
 
         return Result<ImportacaoDeNotasDto>.Success(new ImportacaoDeNotasDto(
-            LoteDeNotasDoEnemDto.De(lote, vigente: true, await NumerosAsync(lotes, lote, cancellationToken).ConfigureAwait(false)),
+            await DetalheAsync(lotes, lote, vigente: true, processoSeletivoRepository, registroCodecs, cancellationToken).ConfigureAwait(false),
             Criado: true));
     }
 
-    internal static Task<IReadOnlyDictionary<Guid, string>> NumerosAsync(
-        ILoteDeNotasDoEnemRepository lotes, LoteDeNotasDoEnem lote, CancellationToken cancellationToken) =>
-        lotes.ObterNumerosDeInscricaoAsync(
-            [.. lote.Ocorrencias.Where(static o => o.InscricaoId is not null).Select(static o => o.InscricaoId!.Value).Distinct()],
-            cancellationToken);
+    /// <summary>
+    /// O lote com as ocorrências e os ausentes. Número, nome e CPF mascarado de todos os inscritos citados
+    /// saem de uma leitura por inscrição, não de uma por ocorrência.
+    /// </summary>
+    internal static async Task<LoteDeNotasDoEnemDto> DetalheAsync(
+        ILoteDeNotasDoEnemRepository lotes,
+        LoteDeNotasDoEnem lote,
+        bool vigente,
+        IProcessoSeletivoRepository processoSeletivoRepository,
+        IRegistroCodecsEnvelope registroCodecs,
+        CancellationToken cancellationToken)
+    {
+        IReadOnlyDictionary<Guid, IReadOnlyList<string>> ausentes = await lotes
+            .ObterAusentesDoLoteAsync(lote.Id, cancellationToken)
+            .ConfigureAwait(false);
+
+        Guid[] inscricaoIds =
+        [
+            .. lote.Ocorrencias.Where(static o => o.InscricaoId is not null).Select(static o => o.InscricaoId!.Value)
+                .Concat(ausentes.Keys)
+                .Distinct(),
+        ];
+
+        IReadOnlyDictionary<Guid, string> numeros = await lotes.ObterNumerosDeInscricaoAsync(inscricaoIds, cancellationToken).ConfigureAwait(false);
+        IReadOnlyDictionary<Guid, IdentificacaoDoInscrito> identificacoes = await lotes.ObterIdentificacoesAsync(inscricaoIds, cancellationToken).ConfigureAwait(false);
+
+        IReadOnlyDictionary<Guid, OfertasEscolhidasDaInscricao> escolhidas = await lotes.ObterOfertasEscolhidasAsync(inscricaoIds, cancellationToken).ConfigureAwait(false);
+        IReadOnlyDictionary<Guid, IReadOnlyList<OpcaoDeCursoDoLoteDto>> opcoes = await NomesDasOfertasDoLote
+            .ResolverAsync(lote.ProcessoSeletivoId, escolhidas, processoSeletivoRepository, registroCodecs, cancellationToken)
+            .ConfigureAwait(false);
+
+        return LoteDeNotasDoEnemDto.De(lote, vigente, new DetalheDoLoteDeNotas(numeros, identificacoes, ausentes, opcoes), ausentes.Count);
+    }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Lote {LoteId} de notas do ENEM importado no processo {ProcessoId}: {Linhas} linhas, {ComNota} com nota, {SemLinha} inscritos sem linha, {SemInscrito} linhas sem inscrito, {Conflitos} em conflito; {Apuradas} avaliações apuradas e {SemNota} sem nota")]
     private static partial void LogLoteImportado(

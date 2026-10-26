@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Services;
 
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -24,14 +25,15 @@ public static class CruzamentoDasNotasComInscritos
 
         List<InscritoComNota> comNota = [];
         List<ConflitoDeLinhas> conflitos = [];
-        List<int> linhasSemInscrito = [];
+        List<LinhaSemInscritoNoCruzamento> linhasSemInscrito = [];
         HashSet<Guid> comLinha = [];
 
         foreach (IGrouping<string, LinhaDeRetorno> grupo in linhas.GroupBy(static l => l.Cpf, StringComparer.Ordinal))
         {
             if (!inscricaoPorIndice.TryGetValue(indicePorCpf[grupo.Key], out Guid inscricaoId))
             {
-                linhasSemInscrito.AddRange(grupo.Select(static l => l.NumeroDaLinha));
+                string mascarado = Cpf.Mascarar(grupo.Key);
+                linhasSemInscrito.AddRange(grupo.Select(l => new LinhaSemInscritoNoCruzamento(l.NumeroDaLinha, mascarado, l.Nome, l.Sexo)));
                 continue;
             }
 
@@ -52,7 +54,7 @@ public static class CruzamentoDasNotasComInscritos
         return new ResultadoDoCruzamento(
             comNota,
             [.. inscritosDaEdicao.Select(static i => i.InscricaoId).Where(id => !comLinha.Contains(id)).Order()],
-            [.. linhasSemInscrito.Order()],
+            [.. linhasSemInscrito.OrderBy(static l => l.NumeroDaLinha)],
             [.. conflitos.OrderBy(static c => c.NumerosDasLinhas[0])]);
     }
 }

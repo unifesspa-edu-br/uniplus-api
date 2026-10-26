@@ -12300,6 +12300,53 @@
           }
         }
       },
+      "AusenteDoLoteDto": {
+        "required": [
+          "inscricaoId",
+          "numeroDeInscricao",
+          "nomeDoCandidato",
+          "cpfMascarado",
+          "areas",
+          "opcoesDeCurso"
+        ],
+        "type": "object",
+        "properties": {
+          "inscricaoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "numeroDeInscricao": {
+            "type": "string"
+          },
+          "nomeDoCandidato": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cpfMascarado": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "areas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "opcoesDeCurso": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/OpcaoDeCursoDoLoteDto"
+            }
+          }
+        }
+      },
       "AuthenticatedUserResponse": {
         "required": [
           "userId",
@@ -16586,6 +16633,7 @@
           "leiauteCodigo",
           "leiauteVersao",
           "geradoPor",
+          "geradoPorNome",
           "geradoEm",
           "totalDeCpfs"
         ],
@@ -16606,6 +16654,12 @@
           },
           "geradoPor": {
             "type": "string"
+          },
+          "geradoPorNome": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "geradoEm": {
             "type": "string",
@@ -17961,6 +18015,7 @@
           "leiauteHash",
           "arquivoHash",
           "importadoPor",
+          "importadoPorNome",
           "importadoEm",
           "totalDeLinhas",
           "totalDeInscritosComNota",
@@ -17969,7 +18024,9 @@
           "totalDeLinhasSemInscrito",
           "totalDeInscritosEmConflito",
           "vigente",
-          "ocorrencias"
+          "ocorrencias",
+          "totalDeInscritosAusentes",
+          "ausentes"
         ],
         "type": "object",
         "properties": {
@@ -17994,6 +18051,12 @@
           },
           "importadoPor": {
             "type": "string"
+          },
+          "importadoPorNome": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "importadoEm": {
             "type": "string",
@@ -18057,6 +18120,23 @@
             ],
             "items": {
               "$ref": "#/components/schemas/OcorrenciaDoLoteDto"
+            }
+          },
+          "totalDeInscritosAusentes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "ausentes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/AusenteDoLoteDto"
             }
           }
         }
@@ -18744,7 +18824,11 @@
           "tipo",
           "inscricaoId",
           "numeroDeInscricao",
-          "numerosDasLinhas"
+          "numerosDasLinhas",
+          "nomeDoCandidato",
+          "cpfMascarado",
+          "sexo",
+          "opcoesDeCurso"
         ],
         "type": "object",
         "properties": {
@@ -18776,6 +18860,33 @@
                 "string"
               ],
               "format": "int32"
+            }
+          },
+          "nomeDoCandidato": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cpfMascarado": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sexo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "opcoesDeCurso": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/OpcaoDeCursoDoLoteDto"
             }
           }
         }
@@ -18989,6 +19100,26 @@
             "type": "string"
           },
           "cursoGrau": {
+            "type": "string"
+          }
+        }
+      },
+      "OpcaoDeCursoDoLoteDto": {
+        "required": [
+          "ordem",
+          "oferta"
+        ],
+        "type": "object",
+        "properties": {
+          "ordem": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "oferta": {
             "type": "string"
           }
         }

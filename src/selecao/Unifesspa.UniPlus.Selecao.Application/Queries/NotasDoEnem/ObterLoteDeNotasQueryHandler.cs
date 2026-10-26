@@ -50,9 +50,8 @@ public static class ObterLoteDeNotasQueryHandler
             .ObterVigenteAsync(query.ProcessoSeletivoId, query.EtapaProcessoId, query.Edicao, cancellationToken)
             .ConfigureAwait(false);
 
-        return Result<LoteDeNotasDoEnemDto>.Success(LoteDeNotasDoEnemDto.De(
-            lote,
-            vigente?.Id == lote.Id,
-            await ImportarNotasDoEnemCommandHandler.NumerosAsync(lotes, lote, cancellationToken).ConfigureAwait(false)));
+        return Result<LoteDeNotasDoEnemDto>.Success(await ImportarNotasDoEnemCommandHandler
+            .DetalheAsync(lotes, lote, vigente?.Id == lote.Id, processoSeletivoRepository, registroCodecs, cancellationToken)
+            .ConfigureAwait(false));
     }
 }

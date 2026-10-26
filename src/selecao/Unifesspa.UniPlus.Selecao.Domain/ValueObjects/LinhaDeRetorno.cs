@@ -13,18 +13,22 @@ public sealed record ResultadoDaAreaNoRetorno(string Area, decimal Nota, Situaca
 /// </summary>
 /// <param name="NumeroDaLinha">Posição da linha no arquivo, a partir de 1.</param>
 /// <param name="Cpf">Os onze dígitos; existe só em memória durante a importação.</param>
+/// <param name="Nome">O nome que o arquivo traz para o CPF; nulo se a célula veio vazia.</param>
+/// <param name="Sexo"><c>F</c> ou <c>M</c>, como o arquivo traz; nulo se a célula veio vazia.</param>
 /// <param name="NumeroDeInscricaoNoEnem">Os doze dígitos do INEP.</param>
 /// <param name="Areas">Uma entrada por área, na ordem canônica de <c>AreaDoEnem.Todas</c>.</param>
 public sealed record LinhaDeRetorno(
     int NumeroDaLinha,
     string Cpf,
+    string? Nome,
+    string? Sexo,
     string NumeroDeInscricaoNoEnem,
     IReadOnlyList<ResultadoDaAreaNoRetorno> Areas)
 {
     /// <summary>
     /// Duas linhas do mesmo CPF com a mesma chave dizem a mesma coisa: contam como uma. Só os
-    /// campos que o Uni+ usa participam, então linhas que diferem apenas em colunas ignoradas
-    /// (nome, dados cadastrais) são iguais. A nota entra pelo valor, numa casa decimal fixa:
+    /// campos que a avaliação usa participam, então linhas que diferem apenas no nome, no sexo ou em colunas
+    /// ignoradas (dados cadastrais) são iguais. A nota entra pelo valor, numa casa decimal fixa:
     /// <c>960</c> e <c>960.0</c> são a mesma nota.
     /// </summary>
     public string ChaveDeIgualdade =>
