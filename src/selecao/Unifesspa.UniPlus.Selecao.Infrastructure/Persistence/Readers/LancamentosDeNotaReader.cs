@@ -2,8 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Readers;
 
 using Microsoft.EntityFrameworkCore;
 
-using Unifesspa.UniPlus.Regras.Services;
-using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
@@ -30,17 +28,10 @@ public sealed class LancamentosDeNotaReader : ILancamentosDeNotaReader
 
         return await (
             from lancamento in _context.LancamentosDeNota.AsNoTracking()
-            join lote in _context.LotesDeNotasDoEnem on lancamento.LoteId equals lote.Id
+            join lote in VigenciaDasNotasDoEnem.LotesVigentes(_context) on lancamento.LoteId equals lote.Id
             where lancamento.EtapaProcessoId == etapaProcessoId
                 && ids.Contains(lancamento.InscricaoId)
-                && !_context.LotesDeNotasDoEnem.Any(mais => mais.ProcessoSeletivoId == lote.ProcessoSeletivoId
-                    && mais.EtapaProcessoId == lote.EtapaProcessoId
-                    && mais.EdicaoCodigo == lote.EdicaoCodigo
-                    && (mais.ImportadoEm > lote.ImportadoEm
-                        || (mais.ImportadoEm == lote.ImportadoEm && mais.Id.CompareTo(lote.Id) > 0)))
-                && _context.RespostasDaInscricao.Any(r => r.InscricaoId == lancamento.InscricaoId
-                    && r.OcorrenciaId == null
-                    && r.FatoCodigo == EdicaoDoEnem.Fato
+                && VigenciaDasNotasDoEnem.EdicoesEscolhidas(_context).Any(r => r.InscricaoId == lancamento.InscricaoId
                     && r.ValorCodigo == lote.EdicaoCodigo)
             select new LancamentoVigente(
                 lancamento.InscricaoId,
