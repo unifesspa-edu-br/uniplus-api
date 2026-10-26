@@ -2055,6 +2055,77 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.ToTable("formularios_processo", "selecao");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.GeracaoDeEnvioAoInep", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("EdicaoCodigo")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("edicao_codigo");
+
+                    b.Property<Guid>("EtapaProcessoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("etapa_processo_id");
+
+                    b.Property<DateTimeOffset>("GeradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("gerado_em");
+
+                    b.Property<string>("GeradoPor")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("gerado_por")
+                        .HasComment("O sub do token de quem gerou.");
+
+                    b.Property<string>("LeiauteCodigo")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("leiaute_codigo");
+
+                    b.Property<string>("LeiauteHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character(64)")
+                        .HasColumnName("leiaute_hash")
+                        .IsFixedLength();
+
+                    b.Property<string>("LeiauteVersao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("leiaute_versao");
+
+                    b.Property<Guid>("ProcessoSeletivoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("processo_seletivo_id");
+
+                    b.Property<int>("TotalDeCpfs")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_de_cpfs");
+
+                    b.HasKey("Id")
+                        .HasName("pk_geracoes_de_envio_ao_inep");
+
+                    b.HasIndex("ProcessoSeletivoId", "EtapaProcessoId", "EdicaoCodigo", "GeradoEm")
+                        .IsDescending(false, false, false, true)
+                        .HasDatabaseName("ix_geracoes_de_envio_ao_inep_escopo");
+
+                    b.ToTable("geracoes_de_envio_ao_inep", "selecao", t =>
+                        {
+                            t.HasComment("O registro de que o arquivo de envio ao INEP foi gerado para uma edição do ENEM. Append-only; o arquivo e os CPFs não são guardados.");
+
+                            t.HasCheckConstraint("ck_geracoes_de_envio_ao_inep_leiaute_hash", "leiaute_hash ~ '^[0-9a-f]{64}$'");
+
+                            t.HasCheckConstraint("ck_geracoes_de_envio_ao_inep_total", "total_de_cpfs >= 0");
+                        });
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.GrupoColetado", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2167,6 +2238,210 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.ToTable("grupos_peso_area_enem_congelados", "selecao", t =>
                         {
                             t.HasComment("Quadro de pesos por área do ENEM congelado na classificação do processo seletivo: uma linha por grupo de área, copiada por valor da resolução de Pesos por Área declarada. Substituída por inteiro quando a classificação é redefinida.");
+                        });
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.InscritoDoLoteDeNotas", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("InscricaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inscricao_id");
+
+                    b.Property<Guid>("LoteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lote_id");
+
+                    b.Property<string>("NumeroDeInscricaoNoEnem")
+                        .IsRequired()
+                        .HasMaxLength(12)
+                        .HasColumnType("character varying(12)")
+                        .HasColumnName("numero_de_inscricao_no_enem")
+                        .HasComment("O número de inscrição do INEP, guardado para a conferência de um recurso.");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inscritos_do_lote_de_notas");
+
+                    b.HasAlternateKey("LoteId", "InscricaoId")
+                        .HasName("ak_inscritos_do_lote_de_notas_lote_inscricao");
+
+                    b.HasIndex("InscricaoId")
+                        .HasDatabaseName("ix_inscritos_do_lote_de_notas_inscricao");
+
+                    b.ToTable("inscritos_do_lote_de_notas", "selecao", t =>
+                        {
+                            t.HasComment("A inscrição com linha válida em um lote de notas, com o número de inscrição que o INEP lhe deu. Append-only.");
+
+                            t.HasCheckConstraint("ck_inscritos_do_lote_de_notas_numero_enem", "numero_de_inscricao_no_enem ~ '^[0-9]{12}$'");
+                        });
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.LancamentoDeNota", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("EtapaProcessoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("etapa_processo_id")
+                        .HasComment("A etapa do lote, repetida para ler o lançamento sem o lote; a chave estrangeira composta com o lote impede que divirja.");
+
+                    b.Property<Guid>("InscricaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inscricao_id");
+
+                    b.Property<string>("ItemCodigo")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("item_codigo")
+                        .HasComment("A área do ENEM. Só o domínio enumera as áreas: o banco não carrega o vocabulário, para que acrescentar um item não exija migration.");
+
+                    b.Property<Guid>("LoteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lote_id");
+
+                    b.Property<decimal>("Nota")
+                        .HasPrecision(7, 3)
+                        .HasColumnType("numeric(7,3)")
+                        .HasColumnName("nota");
+
+                    b.Property<short>("Situacao")
+                        .HasColumnType("smallint")
+                        .HasColumnName("situacao")
+                        .HasComment("1 = presente, 2 = ausente. Quem faltou tem nota zero, que não vale como nota obtida.");
+
+                    b.HasKey("Id")
+                        .HasName("pk_lancamentos_de_nota");
+
+                    b.HasIndex("InscricaoId", "EtapaProcessoId")
+                        .HasDatabaseName("ix_lancamentos_de_nota_inscricao_etapa");
+
+                    b.HasIndex("LoteId", "EtapaProcessoId")
+                        .HasDatabaseName("ix_lancamentos_de_nota_lote_id_etapa_processo_id");
+
+                    b.HasIndex("LoteId", "InscricaoId", "ItemCodigo")
+                        .IsUnique()
+                        .HasDatabaseName("ux_lancamentos_de_nota_lote_inscricao_item");
+
+                    b.ToTable("lancamentos_de_nota", "selecao", t =>
+                        {
+                            t.HasComment("Uma nota individual de uma inscrição numa etapa: uma área do ENEM, com a nota e a situação. Append-only; corrigir é importar outro lote.");
+
+                            t.HasCheckConstraint("ck_lancamentos_de_nota_nota", "nota BETWEEN 0 AND 1000");
+
+                            t.HasCheckConstraint("ck_lancamentos_de_nota_situacao", "situacao IN (1, 2)");
+                        });
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.LoteDeNotasDoEnem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ArquivoHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character(64)")
+                        .HasColumnName("arquivo_hash")
+                        .IsFixedLength()
+                        .HasComment("SHA-256 dos bytes do arquivo importado.");
+
+                    b.Property<string>("EdicaoCodigo")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("edicao_codigo")
+                        .HasComment("O código da opção do fato EDICAO_ENEM, como o processo a declara.");
+
+                    b.Property<Guid>("EtapaProcessoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("etapa_processo_id")
+                        .HasComment("A etapa de nota do ENEM, guardada por valor e sem chave estrangeira: pertence à configuração do processo, que a retificação recria.");
+
+                    b.Property<DateTimeOffset>("ImportadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("importado_em");
+
+                    b.Property<string>("ImportadoPor")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("importado_por")
+                        .HasComment("O sub do token de quem importou.");
+
+                    b.Property<string>("LeiauteCodigo")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("leiaute_codigo");
+
+                    b.Property<string>("LeiauteHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character(64)")
+                        .HasColumnName("leiaute_hash")
+                        .IsFixedLength()
+                        .HasComment("SHA-256 da definição do leiaute com que o arquivo foi lido.");
+
+                    b.Property<string>("LeiauteVersao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("leiaute_versao");
+
+                    b.Property<Guid>("ProcessoSeletivoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("processo_seletivo_id");
+
+                    b.Property<int>("TotalDeInscritosComNota")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_de_inscritos_com_nota");
+
+                    b.Property<int>("TotalDeInscritosEmConflito")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_de_inscritos_em_conflito");
+
+                    b.Property<int>("TotalDeInscritosSemLinha")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_de_inscritos_sem_linha");
+
+                    b.Property<int>("TotalDeLancamentos")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_de_lancamentos");
+
+                    b.Property<int>("TotalDeLinhas")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_de_linhas");
+
+                    b.Property<int>("TotalDeLinhasSemInscrito")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_de_linhas_sem_inscrito");
+
+                    b.HasKey("Id")
+                        .HasName("pk_lotes_de_notas_do_enem");
+
+                    b.HasAlternateKey("Id", "EtapaProcessoId")
+                        .HasName("ak_lotes_de_notas_do_enem_id_etapa");
+
+                    b.HasIndex("ProcessoSeletivoId", "EtapaProcessoId", "EdicaoCodigo", "ImportadoEm", "Id")
+                        .IsDescending(false, false, false, true, true)
+                        .HasDatabaseName("ix_lotes_de_notas_do_enem_escopo");
+
+                    b.ToTable("lotes_de_notas_do_enem", "selecao", t =>
+                        {
+                            t.HasComment("Uma importação do retorno do INEP para um processo, uma etapa e uma edição do ENEM. Append-only; vale o lote mais recente do escopo, por inteiro. O arquivo não é guardado, só o hash.");
+
+                            t.HasCheckConstraint("ck_lotes_de_notas_do_enem_edicao", "edicao_codigo <> ''");
+
+                            t.HasCheckConstraint("ck_lotes_de_notas_do_enem_hashes", "arquivo_hash ~ '^[0-9a-f]{64}$' AND leiaute_hash ~ '^[0-9a-f]{64}$'");
+
+                            t.HasCheckConstraint("ck_lotes_de_notas_do_enem_totais", "total_de_linhas >= 0 AND total_de_inscritos_com_nota >= 0 AND total_de_lancamentos >= 0 AND total_de_inscritos_sem_linha >= 0 AND total_de_linhas_sem_inscrito >= 0 AND total_de_inscritos_em_conflito >= 0");
                         });
                 });
 
@@ -2704,6 +2979,47 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_obrigatoriedade_legal_historico_regra_snapshot_at");
 
                     b.ToTable("obrigatoriedade_legal_historico", "selecao");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.OcorrenciaDoLoteDeNotas", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("InscricaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inscricao_id");
+
+                    b.Property<Guid>("LoteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lote_id");
+
+                    b.PrimitiveCollection<int[]>("NumerosDasLinhas")
+                        .HasColumnType("integer[]")
+                        .HasColumnName("numeros_das_linhas")
+                        .HasComment("Os números das linhas do arquivo, a partir de 1.");
+
+                    b.Property<short>("Tipo")
+                        .HasColumnType("smallint")
+                        .HasColumnName("tipo")
+                        .HasComment("1 = inscrito sem linha, 2 = linha sem inscrito, 3 = conflito.");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ocorrencias_do_lote_de_notas");
+
+                    b.HasIndex("InscricaoId")
+                        .HasDatabaseName("ix_ocorrencias_do_lote_de_notas_inscricao_id");
+
+                    b.HasIndex("LoteId")
+                        .HasDatabaseName("ix_ocorrencias_do_lote_de_notas_lote");
+
+                    b.ToTable("ocorrencias_do_lote_de_notas", "selecao", t =>
+                        {
+                            t.HasComment("O que não virou nota ao importar um lote: inscrito sem linha, linha de CPF sem inscrito e inscrito em conflito. Nunca guarda o CPF.");
+
+                            t.HasCheckConstraint("ck_ocorrencias_do_lote_de_notas_forma", "(tipo = 1 AND inscricao_id IS NOT NULL AND numeros_das_linhas IS NULL) OR (tipo = 2 AND inscricao_id IS NULL AND numeros_das_linhas IS NOT NULL AND cardinality(numeros_das_linhas) = 1) OR (tipo = 3 AND inscricao_id IS NOT NULL AND numeros_das_linhas IS NOT NULL AND cardinality(numeros_das_linhas) >= 2)");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.OfertaAtendimentoEspecializado", b =>
@@ -5247,6 +5563,16 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_formularios_processo_processos_seletivos_processo_seletivo_");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.GeracaoDeEnvioAoInep", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
+                        .WithMany()
+                        .HasForeignKey("ProcessoSeletivoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_geracoes_de_envio_ao_inep_processos_seletivos_processo_sele");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.GrupoColetado", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
@@ -5297,6 +5623,52 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
                     b.Navigation("GrupoAreaEnem")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.InscritoDoLoteDeNotas", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records.InscricaoRecord", null)
+                        .WithMany()
+                        .HasForeignKey("InscricaoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_inscritos_do_lote_de_notas_inscricoes_inscricao_id");
+
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.LoteDeNotasDoEnem", null)
+                        .WithMany("Inscritos")
+                        .HasForeignKey("LoteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_inscritos_do_lote_de_notas_lotes_de_notas_do_enem_lote_id");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.LancamentoDeNota", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.LoteDeNotasDoEnem", null)
+                        .WithMany("Lancamentos")
+                        .HasForeignKey("LoteId", "EtapaProcessoId")
+                        .HasPrincipalKey("Id", "EtapaProcessoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_lancamentos_de_nota_lotes_de_notas_do_enem_lote_id_etapa_pr");
+
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.InscritoDoLoteDeNotas", null)
+                        .WithMany()
+                        .HasForeignKey("LoteId", "InscricaoId")
+                        .HasPrincipalKey("LoteId", "InscricaoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_lancamentos_de_nota_inscritos_do_lote_de_notas_lote_id_insc");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.LoteDeNotasDoEnem", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
+                        .WithMany()
+                        .HasForeignKey("ProcessoSeletivoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_lotes_de_notas_do_enem_processos_seletivos_processo_seletiv");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ModalidadeSelecionada", b =>
@@ -5361,6 +5733,22 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_obrigatoriedade_legal_historico_regra_id");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.OcorrenciaDoLoteDeNotas", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records.InscricaoRecord", null)
+                        .WithMany()
+                        .HasForeignKey("InscricaoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_ocorrencias_do_lote_de_notas_inscricoes_inscricao_id");
+
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.LoteDeNotasDoEnem", null)
+                        .WithMany("Ocorrencias")
+                        .HasForeignKey("LoteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_ocorrencias_do_lote_de_notas_lotes_de_notas_do_enem_lote_id");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.OfertaAtendimentoEspecializado", b =>
@@ -6081,6 +6469,15 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.GrupoPesoAreaEnemCongelado", b =>
                 {
                     b.Navigation("Areas");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.LoteDeNotasDoEnem", b =>
+                {
+                    b.Navigation("Inscritos");
+
+                    b.Navigation("Lancamentos");
+
+                    b.Navigation("Ocorrencias");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.NoExigencia", b =>

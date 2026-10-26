@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 using Persistence;
+using Persistence.Cryptography;
 using Persistence.Interceptors;
 using Persistence.Readers;
 using Persistence.Repositories;
@@ -81,6 +82,11 @@ public static class SelecaoInfrastructureRegistration
         services.AddScoped<IRascunhoDePublicacaoRepository, RascunhoDePublicacaoRepository>();
         services.AddScoped<IInscricaoRepository, InscricaoRepository>();
         services.AddScoped<IGeradorDeNumeroInscricao, GeradorDeNumeroInscricao>();
+        services.AddScoped<ILoteDeNotasDoEnemRepository, LoteDeNotasDoEnemRepository>();
+        services.AddScoped<IGeracaoDeEnvioAoInepRepository, GeracaoDeEnvioAoInepRepository>();
+        services.AddScoped<IInscritosDaEdicaoDoEnem, InscritosDaEdicaoDoEnem>();
+        services.AddScoped<ILancamentosDeNotaReader, LancamentosDeNotaReader>();
+        services.AddScoped<IIndiceCegoDoCpf, CalculadorDoIndiceCegoDoCpf>();
         services.AddGeoClient();
         services.AddScoped<IRegraCatalogoReader, RegraCatalogoReader>();
         services.AddScoped<IRetificacaoEmCursoReader, RetificacaoEmCursoReader>();
