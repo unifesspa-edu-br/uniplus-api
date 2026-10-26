@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.Leiautes;
+namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using System.Globalization;
 
