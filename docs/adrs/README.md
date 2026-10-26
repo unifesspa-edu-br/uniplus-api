@@ -176,8 +176,11 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0145](0145-recurso-por-etapa.md) | O recurso também pertence à etapa, e cada janela declara se admite instância superior | accepted | 2026-10-18 |
 | [0146](0146-cifra-e-verificacao-dos-arquivos-do-candidato-no-armazenamento.md) | O arquivo do candidato é cifrado pelo armazenamento (SSE-KMS no MinIO, chave do KES no Vault, chave de dados por objeto) e verificado por um processo fora da API, que lê direto do MinIO e é acionado por fila no RabbitMQ — emenda a ADR-0121 | accepted | 2026-10-22 |
 | [0147](0147-base-de-assinaturas-do-antivirus-por-espelho-interno.md) | A base de assinaturas do antivírus chega aos clamd sidecar do verificador por um espelho interno no cluster; o verificador não tem saída para a internet | accepted | 2026-10-23 |
+| [0148](0148-leiautes-versionados-dos-arquivos-do-inep.md) | Os arquivos de notas, a começar pelos do INEP, seguem leiautes versionados no código, compostos de colunas; o administrador escolhe o leiaute na importação, o arquivo de outra estrutura é recusado e o lote registra a versão usada | accepted | 2026-10-26 |
+| [0149](0149-nota-da-etapa-por-inscricao.md) | A nota de cada etapa é apurada por inscrição a partir de lançamentos que só são acrescentados, qualquer que seja a origem (arquivo, banca, corretores); a classificação lê só a avaliação apurada; notas sem cifra individual | accepted | 2026-10-26 |
+| [0150](0150-parametros-de-avaliacao-da-etapa.md) | A etapa declara a forma de avaliação (objetiva ou humana) e, na humana, a regra de consolidação do catálogo de regras; os itens de avaliação têm id congelado no envelope — emenda a ADR-0110 D2 | accepted | 2026-10-26 |
 
-> **Nota de numeração:** a sequência de `0001` a `0147` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0148+`.
+> **Nota de numeração:** a sequência de `0001` a `0150` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0151+`.
 
 ## Como adicionar um novo ADR
 
