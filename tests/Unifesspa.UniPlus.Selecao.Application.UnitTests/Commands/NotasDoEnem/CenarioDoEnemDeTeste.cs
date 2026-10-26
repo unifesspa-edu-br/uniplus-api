@@ -3,12 +3,14 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.NotasDoEnem;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Regras.Services;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Um certame divulgado com uma etapa de nota do ENEM, uma etapa sem ela e as edições declaradas, lido
@@ -29,6 +31,15 @@ internal sealed class CenarioDoEnemDeTeste
 
     public IRegistroCodecsEnvelope Codecs { get; } = Substitute.For<IRegistroCodecsEnvelope>();
 
+    /// <summary>A versão divulgada do certame, a que apura as notas.</summary>
+    public Guid VersaoId { get; }
+
+    /// <summary>Oferta do edital no grupo Tecnológica, a 1ª opção dos inscritos de teste.</summary>
+    public Guid OfertaTecnologica { get; } = Guid.CreateVersion7();
+
+    /// <summary>Oferta do edital no grupo Humanística I, a 2ª opção dos inscritos de teste.</summary>
+    public Guid OfertaHumanistica { get; } = Guid.CreateVersion7();
+
     public CenarioDoEnemDeTeste(params string[] edicoesDivulgadas)
     {
         EtapaDoEnem = Etapa("Nota do ENEM", "NOTA_ENEM", notaDeOrigemNoEnem: true);
@@ -40,15 +51,31 @@ internal sealed class CenarioDoEnemDeTeste
             .. edicoesDivulgadas.Select((e, i) => OpcaoDeclaradaFato.Criar(EdicaoDoEnem.Fato, e, $"ENEM {e}", i + 1).Value!),
         ];
         GrafoConfiguracao grafo = new(
-            [EtapaDoEnem, EtapaSemEnem], modelo.OfertaAtendimento, [.. modelo.DistribuicaoVagas], modelo.BonusRegional,
-            [.. modelo.CriteriosDesempate], modelo.Classificacao, [.. modelo.CronogramaFases], [.. modelo.DocumentosExigidos], [], null,
+            [EtapaDoEnem, EtapaSemEnem], modelo.OfertaAtendimento,
+            [
+                ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(grupoAreaEnem: ("TECNOLOGICA", "Tecnológica"), ofertaCursoOrigemId: OfertaTecnologica),
+                ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(grupoAreaEnem: ("HUMANISTICA_I", "Humanística I"), ofertaCursoOrigemId: OfertaHumanistica),
+            ],
+            modelo.BonusRegional, [.. modelo.CriteriosDesempate], ClassificacaoPelosPesosDoEnem(), [.. modelo.CronogramaFases], [.. modelo.DocumentosExigidos], [], null,
             fatosColetados: [.. modelo.FatosColetados], formularios: [.. modelo.Formularios], gruposColetados: [.. modelo.GruposColetados],
             opcoesDeclaradas: opcoes, numeroDeOpcoesDeCurso: 1);
 
         (VersaoConfiguracao versao, _) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
+        VersaoId = versao.Id;
         Certame = DivulgacaoDeTeste.Certame(ProcessoId);
         DivulgacaoDeTeste.ConfigurarDivulgada(Processos, Codecs, versao, grafo);
     }
+
+    private static ConfiguracaoClassificacao ClassificacaoPelosPesosDoEnem() =>
+        ConfiguracaoClassificacao.Criar(
+            regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", ProcessoSeletivoConformeBuilder.HashFixo).Value!,
+            regraArredondamento: ReferenciaRegra.Criar(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", ProcessoSeletivoConformeBuilder.HashFixo).Value!,
+            casasArredondamento: 2,
+            regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", ProcessoSeletivoConformeBuilder.HashFixo).Value!,
+            regrasEliminacao: [],
+            baseadoEmEnem: true,
+            resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,
+            quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo()).Value!;
 
     /// <summary>O processo vivo não pode ser lido: o escopo é o da versão divulgada.</summary>
     public void ProcessoVivoNaoFoiConsultado() =>

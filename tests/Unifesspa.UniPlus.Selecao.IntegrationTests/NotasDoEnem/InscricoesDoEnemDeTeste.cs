@@ -55,10 +55,13 @@ internal static class InscricoesDoEnemDeTeste
         PersonasDeTeste.PessoaFicticia pessoa,
         SituacaoInscricao situacao,
         string? edicao,
-        string? numeroDeInscricao = null)
+        string? numeroDeInscricao = null,
+        Guid? ofertaCursoId = null,
+        Guid? ofertaCursoSegundaOpcaoId = null)
     {
         await using SelecaoDbContext context = fixture.CreateDbContext();
-        return await NovaInscricaoAsync(context, fixture.Encryption, fixture.BlindIndex, processoId, pessoa, situacao, edicao, numeroDeInscricao);
+        return await NovaInscricaoAsync(
+            context, fixture.Encryption, fixture.BlindIndex, processoId, pessoa, situacao, edicao, numeroDeInscricao, ofertaCursoId, ofertaCursoSegundaOpcaoId);
     }
 
     public static async Task<Guid> NovaInscricaoAsync(
@@ -69,7 +72,9 @@ internal static class InscricoesDoEnemDeTeste
         PersonasDeTeste.PessoaFicticia pessoa,
         SituacaoInscricao situacao,
         string? edicao,
-        string? numeroDeInscricao = null)
+        string? numeroDeInscricao = null,
+        Guid? ofertaCursoId = null,
+        Guid? ofertaCursoSegundaOpcaoId = null)
     {
         byte[] cifrado = await encryption.EncryptAsync(
             SelecaoEncryptionKeys.IdentificadoresAesGcm, Encoding.UTF8.GetBytes(pessoa.Cpf));
@@ -88,6 +93,8 @@ internal static class InscricoesDoEnemDeTeste
             VersaoFormularioId = Guid.CreateVersion7(),
             NumeroInscricao = numeroDeInscricao ?? $"UNI-{id.ToString("N")[^8..]}",
             Revisao = 1,
+            OfertaCursoId = ofertaCursoId,
+            OfertaCursoSegundaOpcaoId = ofertaCursoSegundaOpcaoId,
             CreatedAt = DateTimeOffset.UtcNow,
         });
         if (edicao is not null)

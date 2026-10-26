@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using Abstractions;
 
 using Domain.Entities;
+using Domain.Enums;
 using Domain.Errors;
 using Domain.Interfaces;
 using Domain.Leiautes;
@@ -26,10 +27,13 @@ using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 /// </summary>
 /// <remarks>
 /// <para>A ordem importa. O Wolverine chama <c>SaveChangesAsync</c> também quando o handler devolve
-/// falha, então tudo o que pode recusar o arquivo acontece antes de rastrear qualquer entidade.</para>
-/// <para>O índice cego de cada CPF é uma chamada ao cofre de chaves, lenta e sem relação com o banco;
-/// por isso é calculado antes da trava da linha do processo, que bloquearia publicações e retificações
-/// pelo tempo todo. Dentro da trava só há consulta, cruzamento em memória e inserção.</para>
+/// falha, então tudo o que pode recusar o arquivo ou o lote acontece antes de rastrear qualquer entidade.</para>
+/// <para>O escopo é conferido antes de tudo, para não gastar o cofre com um pedido inválido. O índice
+/// cego de cada CPF é uma chamada ao cofre de chaves, lenta e sem relação com o banco; por isso é
+/// calculado antes da trava da linha do processo, que bloquearia publicações e retificações pelo tempo
+/// todo. A trava serializa o processo contra a publicação: o edital divulgado é resolvido de novo
+/// dentro dela, e a apuração e a vigência do lote usam essa resolução, não a primeira, que uma
+/// retificação divulgada no intervalo teria deixado velha.</para>
 /// <para>Nada que venha do arquivo (CPF, nota, valor de célula) entra em log ou mensagem de erro.</para>
 /// </remarks>
 public static partial class ImportarNotasDoEnemCommandHandler
@@ -101,13 +105,26 @@ public static partial class ImportarNotasDoEnemCommandHandler
             .CalcularAsync([.. linhas.Select(static l => l.Cpf).Distinct(StringComparer.Ordinal)], cancellationToken)
             .ConfigureAwait(false);
 
-        // Serializa as importações do processo: o lote vigente é lido depois da trava.
+        // Serializa as importações do processo e as publicações: o lote vigente e o edital divulgado
+        // são lidos depois da trava.
         await processoSeletivoRepository.TravarAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
+
+        Result<EscopoDeNotasDoEnem> escopoNaTrava = await ResolvedorDoEscopoDeNotasDoEnem
+            .ResolverAsync(
+                command.ProcessoSeletivoId, command.EtapaProcessoId, command.Edicao, exigeNotaDoEnem: true,
+                certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, cancellationToken)
+            .ConfigureAwait(false);
+        if (escopoNaTrava.IsFailure)
+        {
+            return Result<ImportacaoDeNotasDto>.Failure(escopoNaTrava.Error!);
+        }
+
+        Guid versaoConfiguracaoId = escopoNaTrava.Value!.VersaoConfiguracaoId;
 
         LoteDeNotasDoEnem? vigente = await lotes
             .ObterVigenteAsync(command.ProcessoSeletivoId, command.EtapaProcessoId, command.Edicao, cancellationToken)
             .ConfigureAwait(false);
-        if (VigenciaDoLote.ArquivoJaVigente(vigente, arquivoHash))
+        if (VigenciaDoLote.ArquivoJaVigente(vigente, arquivoHash, versaoConfiguracaoId))
         {
             LoteDeNotasDoEnem existente = (await lotes
                 .ObterComOcorrenciasAsync(command.ProcessoSeletivoId, command.EtapaProcessoId, command.Edicao, vigente!.Id, cancellationToken)
@@ -123,7 +140,18 @@ public static partial class ImportarNotasDoEnemCommandHandler
             .ListarAsync(command.ProcessoSeletivoId, command.Edicao, cancellationToken)
             .ConfigureAwait(false);
 
+        EditalParaApuracaoDaNota edital = EditalParaApuracaoDaNota.De(escopoNaTrava.Value.Grafo);
+        int comOfertaForaDoEdital = inscritosDaEdicao.Count(i => i.OfertasConcorridas.Any(o => !edital.GrupoPorOferta.ContainsKey(o)));
+        if (comOfertaForaDoEdital > 0)
+        {
+            return Result<ImportacaoDeNotasDto>.Failure(new DomainError(
+                NotasDoEnemErrorCodes.OfertaDeInscricaoForaDoEdital,
+                $"{comOfertaForaDoEdital} inscrição(ões) da edição concorre(m) a um curso que não está no edital divulgado. Confira a retificação do edital e a situação dessas inscrições antes de importar."));
+        }
+
         ResultadoDoCruzamento cruzamento = CruzamentoDasNotasComInscritos.Cruzar(linhas, indicePorCpf, inscritosDaEdicao);
+        IReadOnlyList<AvaliacaoApurada> avaliacoes = ApuracaoDaNotaDoEnem.ApurarDoLote(
+            cruzamento, inscritosDaEdicao, edital.GrupoPorOferta, edital.Quadro);
 
         LoteDeNotasDoEnem lote = LoteDeNotasDoEnem.Registrar(
             command.ProcessoSeletivoId,
@@ -136,15 +164,17 @@ public static partial class ImportarNotasDoEnemCommandHandler
             userContext.UserId ?? string.Empty,
             timeProvider.GetUtcNow(),
             linhas.Count,
-            escopo.Value!.VersaoConfiguracaoId,
+            versaoConfiguracaoId,
             cruzamento,
-            []);
+            avaliacoes);
         await lotes.AdicionarAsync(lote, cancellationToken).ConfigureAwait(false);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
+        int apuradas = avaliacoes.Count(static a => a.Situacao == SituacaoDaAvaliacao.Apurada);
         LogLoteImportado(
             logger, lote.Id, command.ProcessoSeletivoId, lote.TotalDeLinhas, lote.TotalDeInscritosComNota,
-            lote.TotalDeInscritosSemLinha, lote.TotalDeLinhasSemInscrito, lote.TotalDeInscritosEmConflito);
+            lote.TotalDeInscritosSemLinha, lote.TotalDeLinhasSemInscrito, lote.TotalDeInscritosEmConflito,
+            apuradas, avaliacoes.Count - apuradas);
 
         return Result<ImportacaoDeNotasDto>.Success(new ImportacaoDeNotasDto(
             LoteDeNotasDoEnemDto.De(lote, vigente: true, await NumerosAsync(lotes, lote, cancellationToken).ConfigureAwait(false)),
@@ -157,9 +187,9 @@ public static partial class ImportarNotasDoEnemCommandHandler
             [.. lote.Ocorrencias.Where(static o => o.InscricaoId is not null).Select(static o => o.InscricaoId!.Value).Distinct()],
             cancellationToken);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Lote {LoteId} de notas do ENEM importado no processo {ProcessoId}: {Linhas} linhas, {ComNota} com nota, {SemLinha} inscritos sem linha, {SemInscrito} linhas sem inscrito, {Conflitos} em conflito")]
+    [LoggerMessage(Level = LogLevel.Information, Message = "Lote {LoteId} de notas do ENEM importado no processo {ProcessoId}: {Linhas} linhas, {ComNota} com nota, {SemLinha} inscritos sem linha, {SemInscrito} linhas sem inscrito, {Conflitos} em conflito; {Apuradas} avaliações apuradas e {SemNota} sem nota")]
     private static partial void LogLoteImportado(
-        ILogger logger, Guid loteId, Guid processoId, int linhas, int comNota, int semLinha, int semInscrito, int conflitos);
+        ILogger logger, Guid loteId, Guid processoId, int linhas, int comNota, int semLinha, int semInscrito, int conflitos, int apuradas, int semNota);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Arquivo já é o do lote vigente {LoteId} no processo {ProcessoId}; nenhum lote novo foi criado")]
     private static partial void LogLoteJaVigente(ILogger logger, Guid loteId, Guid processoId);

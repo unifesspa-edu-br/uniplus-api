@@ -32,7 +32,11 @@ internal static class ProcessoDoEnemPublicadoDeTeste
 
     private static readonly string HashFixo = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
 
-    public sealed record Publicado(Guid ProcessoId, Guid EtapaDoEnemId);
+    /// <summary>
+    /// O processo publicado: a etapa de nota do ENEM e as duas ofertas do edital, uma no grupo
+    /// Tecnológica e outra no grupo Humanística I, que as inscrições de teste concorrem como 1ª e 2ª opção.
+    /// </summary>
+    public sealed record Publicado(Guid ProcessoId, Guid EtapaDoEnemId, Guid OfertaTecnologicaId, Guid OfertaHumanisticaId);
 
     public static async Task<Publicado> SemearEPublicarAsync(CascadingFixture fixture)
     {
@@ -41,6 +45,8 @@ internal static class ProcessoDoEnemPublicadoDeTeste
         await TiposDeAtoSeeder.SemearAsync(fixture.Factory.Services);
 
         Guid etapaDoEnem = Guid.Empty;
+        Guid ofertaTecnologica = Guid.CreateVersion7();
+        Guid ofertaHumanistica = Guid.CreateVersion7();
         ProcessoSeletivo processo;
         DocumentoAPublicar documento;
         await using (AsyncServiceScope scope = fixture.Factory.Services.CreateAsyncScope())
@@ -49,7 +55,7 @@ internal static class ProcessoDoEnemPublicadoDeTeste
             (processo, documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
                 db,
                 $"PS Medicina notas do ENEM {Guid.CreateVersion7()}",
-                complementar: p => etapaDoEnem = ConfigurarEnem(p));
+                complementar: p => etapaDoEnem = ConfigurarEnem(p, ofertaTecnologica, ofertaHumanistica));
         }
 
         using HttpClient client = fixture.Factory.CreateClient();
@@ -69,10 +75,10 @@ internal static class ProcessoDoEnemPublicadoDeTeste
         }
 
         await AguardarDivulgacaoAsync(client, processo.Id);
-        return new Publicado(processo.Id, etapaDoEnem);
+        return new Publicado(processo.Id, etapaDoEnem, ofertaTecnologica, ofertaHumanistica);
     }
 
-    private static Guid ConfigurarEnem(ProcessoSeletivo processo)
+    private static Guid ConfigurarEnem(ProcessoSeletivo processo, Guid ofertaTecnologica, Guid ofertaHumanistica)
     {
         EtapaProcesso etapa = EtapaProcesso.Criar(
             "Nota do ENEM", CaraterEtapa.Classificatoria,
@@ -92,15 +98,11 @@ internal static class ProcessoDoEnemPublicadoDeTeste
 
         Exigir(processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Curinga));
 
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", "Ampla concorrência", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null,
-            RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!;
         Exigir(processo.DefinirDistribuicaoVagas(
-            [ConfiguracaoDistribuicaoVagas.Criar(
-                Guid.CreateVersion7(), 40, 1m,
-                ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!,
-                null, null, [modalidade], grupoAreaEnem: ("TECNOLOGICA", "Tecnológica"), ofertaCurso: OfertaCursoDeTeste.Medicina).Value!],
+            [
+                DistribuicaoDaOferta(ofertaTecnologica, ("TECNOLOGICA", "Tecnológica")),
+                DistribuicaoDaOferta(ofertaHumanistica, ("HUMANISTICA_I", "Humanística I")),
+            ],
             FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Curinga));
 
         Exigir(processo.DefinirOpcoesDeclaradas(
@@ -110,6 +112,19 @@ internal static class ProcessoDoEnemPublicadoDeTeste
         Exigir(processo.DefinirItens([.. basicos, FormularioDeTeste.CampoDaEdicaoDoEnem(basicos.Max(static f => f.Ordem) + 1)], PrecondicaoIfMatch.Curinga));
 
         return etapa.Id;
+    }
+
+    private static ConfiguracaoDistribuicaoVagas DistribuicaoDaOferta(Guid ofertaCursoOrigemId, (string? Codigo, string? Rotulo) grupoAreaEnem)
+    {
+        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
+            Guid.CreateVersion7(), "AC", "Ampla concorrência", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null,
+            RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!;
+
+        return ConfiguracaoDistribuicaoVagas.Criar(
+            ofertaCursoOrigemId, 40, 1m,
+            ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!,
+            null, null, [modalidade], grupoAreaEnem: grupoAreaEnem, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
     }
 
     private static void Exigir(Result resultado) => resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);

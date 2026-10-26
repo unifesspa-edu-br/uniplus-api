@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.NotasDoEnem;
 using Unifesspa.UniPlus.Selecao.Application.DTOs.NotasDoEnem;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
@@ -55,7 +56,8 @@ public sealed class ImportarNotasDoEnemCommandHandlerTests
 
     private void InscritosDaEdicao(params int[] pessoas) =>
         _inscritos.ListarAsync(_cenario.ProcessoId, Edicao, Arg.Any<CancellationToken>())
-            .Returns([.. pessoas.Select(i => new InscritoDaEdicao(Guid.CreateVersion7(), Indice(Pessoas[i].Cpf), []))]);
+            .Returns([.. pessoas.Select(i => new InscritoDaEdicao(
+                Guid.CreateVersion7(), Indice(Pessoas[i].Cpf), [_cenario.OfertaTecnologica, _cenario.OfertaHumanistica]))]);
 
     private Task<Result<ImportacaoDeNotasDto>> Importar(byte[] conteudo, string leiaute = "INEP_ENEM_RETORNO") =>
         ImportarNotasDoEnemCommandHandler.Handle(
@@ -65,10 +67,10 @@ public sealed class ImportarNotasDoEnemCommandHandlerTests
 
     private static byte[] Arquivo(params int[] pessoas) => Bytes([.. pessoas.Select(i => Linha(Pessoas[i], i + 1))]);
 
-    private static LoteDeNotasDoEnem LoteComHash(string hash, Guid processo, Guid etapa) =>
+    private LoteDeNotasDoEnem LoteComHash(string hash, Guid processo, Guid etapa, Guid? versao = null) =>
         LoteDeNotasDoEnem.Registrar(
             processo, etapa, Edicao, "INEP_ENEM_RETORNO", "v1", new string('a', 64), hash, "sub", DateTimeOffset.UtcNow, 0,
-            Guid.CreateVersion7(), new ResultadoDoCruzamento([], [], [], []), []);
+            versao ?? _cenario.VersaoId, new ResultadoDoCruzamento([], [], [], []), []);
 
     [Fact(DisplayName = "arquivo fora do leiaute é recusado sem calcular índice, sem travar o processo e sem gravar")]
     public async Task Importar_EstruturaInvalida_NaoToca()
@@ -105,6 +107,8 @@ public sealed class ImportarNotasDoEnemCommandHandlerTests
             TimeProvider.System, NullLogger.Instance, CancellationToken.None);
         outraEtapa.Error!.Code.Should().Be(NotasDoEnemErrorCodes.EtapaSemNotaDoEnem);
 
+        await _indices.DidNotReceiveWithAnyArgs().CalcularAsync(default!, default);
+        await _cenario.Processos.DidNotReceiveWithAnyArgs().TravarAsync(default, default);
         await _lotes.DidNotReceiveWithAnyArgs().AdicionarAsync(default!, default);
     }
 
@@ -163,5 +167,54 @@ public sealed class ImportarNotasDoEnemCommandHandlerTests
         resultado.Value!.Criado.Should().BeTrue();
         resultado.Value.Lote.Id.Should().NotBe(vigente.Id);
         await _lotes.Received(1).AdicionarAsync(Arg.Any<LoteDeNotasDoEnem>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "o mesmo arquivo sob outra versão divulgada do edital cria lote novo, porque os pesos podem ter mudado")]
+    public async Task Importar_MesmoArquivoSobOutraVersao_CriaLoteNovo()
+    {
+        byte[] arquivo = Arquivo(0, 1);
+        LoteDeNotasDoEnem vigente = LoteComHash(
+            Convert.ToHexStringLower(SHA256.HashData(arquivo)), _cenario.ProcessoId, _cenario.EtapaDoEnem.Id, versao: Guid.CreateVersion7());
+        _lotes.ObterVigenteAsync(_cenario.ProcessoId, _cenario.EtapaDoEnem.Id, Edicao, Arg.Any<CancellationToken>()).Returns(vigente);
+
+        Result<ImportacaoDeNotasDto> resultado = await Importar(arquivo);
+
+        resultado.Value!.Criado.Should().BeTrue();
+        resultado.Value.Lote.Id.Should().NotBe(vigente.Id);
+        await _lotes.Received(1).AdicionarAsync(
+            Arg.Is<LoteDeNotasDoEnem>(l => l.VersaoConfiguracaoId == _cenario.VersaoId), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "o lote grava uma avaliação por oferta concorrida de cada inscrição, com a nota exata de quem tem linha")]
+    public async Task Importar_ArquivoNovo_GravaUmaAvaliacaoPorOfertaConcorrida()
+    {
+        LoteDeNotasDoEnem? gravado = null;
+        await _lotes.AdicionarAsync(Arg.Do<LoteDeNotasDoEnem>(l => gravado = l), Arg.Any<CancellationToken>());
+
+        await Importar(Arquivo(0));
+
+        gravado.Should().NotBeNull();
+        gravado!.Avaliacoes.Should().HaveCount(4);
+        gravado.Avaliacoes.Where(a => a.Situacao == SituacaoDaAvaliacao.Apurada).Should().HaveCount(2);
+        gravado.Avaliacoes.Where(a => a.Situacao == SituacaoDaAvaliacao.InscritoSemLinha).Should().HaveCount(2)
+            .And.OnlyContain(a => a.Nota == null);
+        gravado.Avaliacoes.Select(a => a.OfertaCursoId).Distinct().Should().BeEquivalentTo([_cenario.OfertaTecnologica, _cenario.OfertaHumanistica]);
+    }
+
+    [Fact(DisplayName = "inscrição que concorre a curso fora do edital divulgado recusa o lote inteiro, sem gravar nada")]
+    public async Task Importar_OfertaForaDoEdital_RecusaOLote()
+    {
+        _inscritos.ListarAsync(_cenario.ProcessoId, Edicao, Arg.Any<CancellationToken>())
+            .Returns([
+                new InscritoDaEdicao(Guid.CreateVersion7(), Indice(Pessoas[0].Cpf), [_cenario.OfertaTecnologica]),
+                new InscritoDaEdicao(Guid.CreateVersion7(), Indice(Pessoas[1].Cpf), [_cenario.OfertaTecnologica, Guid.CreateVersion7()]),
+            ]);
+
+        Result<ImportacaoDeNotasDto> resultado = await Importar(Arquivo(0, 1));
+
+        resultado.Error!.Code.Should().Be(NotasDoEnemErrorCodes.OfertaDeInscricaoForaDoEdital);
+        resultado.Error.Message.Should().StartWith("1 ");
+        await _lotes.DidNotReceiveWithAnyArgs().AdicionarAsync(default!, default);
+        await _unitOfWork.DidNotReceiveWithAnyArgs().SalvarAlteracoesAsync(default);
     }
 }

@@ -84,7 +84,10 @@ internal static class ProcessoSeletivoConformeBuilder
 
     /// <summary>Uma oferta com as 40 vagas na ampla concorrência (AC).</summary>
     /// <summary>A distribuição só com a ampla concorrência, com a regra de aplicabilidade dada ou incondicional.</summary>
-    public static ConfiguracaoDistribuicaoVagas DistribuicaoAmplaConcorrencia(PredicadoDnf? regraDeAplicabilidade = null)
+    public static ConfiguracaoDistribuicaoVagas DistribuicaoAmplaConcorrencia(
+        PredicadoDnf? regraDeAplicabilidade = null,
+        (string? Codigo, string? Rotulo)? grupoAreaEnem = null,
+        Guid? ofertaCursoOrigemId = null)
     {
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
             modalidadeOrigemId: Guid.CreateVersion7(),
@@ -103,12 +106,12 @@ internal static class ProcessoSeletivoConformeBuilder
             quantidadeDeclarada: 40).Value!;
 
         return ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoOrigemId: Guid.CreateVersion7(),
+            ofertaCursoOrigemId: ofertaCursoOrigemId ?? Guid.CreateVersion7(),
             voBase: 40,
             pr: 1m,
             regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!,
             regraAjuste: null,
             referenciaDemografica: null,
-            modalidades: [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+            modalidades: [modalidade], grupoAreaEnem: grupoAreaEnem, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
     }
 }
