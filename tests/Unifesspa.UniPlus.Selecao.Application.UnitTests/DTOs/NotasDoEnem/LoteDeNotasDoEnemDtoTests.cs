@@ -47,4 +47,19 @@ public sealed class LoteDeNotasDoEnemDtoTests
         dto.Ausentes![1].NomeDoCandidato.Should().Be("Pessoa Parcial");
         dto.Ausentes![1].CpfMascarado.Should().Be("***.111.222-**");
     }
+
+    [Fact(DisplayName = "ausente sem número de inscrição lido vai para o fim da lista")]
+    public void De_AusenteSemNumero_VaiParaOFim()
+    {
+        Guid semNumero = Guid.CreateVersion7();
+        Guid comNumero = Guid.CreateVersion7();
+        DetalheDoLoteDeNotas detalhe = new(
+            new Dictionary<Guid, InscritoDoLote> { [comNumero] = new("UNI-0001", "Pessoa", "***.333.444-**", Guid.CreateVersion7(), null, null) },
+            new Dictionary<Guid, IReadOnlyList<string>> { [semNumero] = [AreaDoEnem.Redacao], [comNumero] = [AreaDoEnem.Redacao] },
+            new Dictionary<Guid, IReadOnlyList<OpcaoDeCursoDoLoteDto>>());
+
+        LoteDeNotasDoEnemDto dto = LoteDeNotasDoEnemDto.De(LoteVazio(), vigente: true, detalhe, totalDeInscritosAusentes: 2);
+
+        dto.Ausentes!.Select(a => a.InscricaoId).Should().Equal(comNumero, semNumero);
+    }
 }
