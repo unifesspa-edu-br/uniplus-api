@@ -174,12 +174,10 @@ public sealed class MinhasInscricoesQueryHandlerTests
 
     private const string SchemaVersion = "0.0.22";
 
-    /// <summary>A versão do processo cujas ofertas são as dadas — o que a inscrição fixa ao ser iniciada.</summary>
-    private static (VersaoConfiguracao Versao, IRegistroCodecsEnvelope Registro) VersaoComOfertas(
-        Guid processoId, params ConfiguracaoDistribuicaoVagas[] distribuicao)
+    private static EnvelopeReidratado EnvelopeComOfertas(params ConfiguracaoDistribuicaoVagas[] distribuicao)
     {
         ProcessoSeletivo processoBase = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Lista");
-        EnvelopeReidratado envelope = new(
+        return new EnvelopeReidratado(
             new GrafoConfiguracao(
                 [.. processoBase.Etapas], processoBase.OfertaAtendimento!, distribuicao,
                 processoBase.BonusRegional, [.. processoBase.CriteriosDesempate], processoBase.Classificacao!,
@@ -187,13 +185,21 @@ public sealed class MinhasInscricoesQueryHandlerTests
             DadosEdital.Criar(
                 "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), Guid.CreateVersion7()).Value!,
             new string('a', 64), "America/Belem", retificacao: null, conformidade: null);
-        VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
+    }
+
+    private static VersaoConfiguracao NovaVersao(Guid processoId) =>
+        VersaoConfiguracao.Abrir(
             processoId, Encoding.UTF8.GetBytes("{}"), SchemaVersion, "canonical-json/sha256@v1",
             Guid.CreateVersion7(), new string('a', 64), "user-sub-1", new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero));
+
+    /// <summary>Um registro de codecs que reidrata cada versão no envelope dela.</summary>
+    private static IRegistroCodecsEnvelope RegistroDas(params (VersaoConfiguracao Versao, EnvelopeReidratado Envelope)[] versoes)
+    {
         IRegistroCodecsEnvelope registro = Substitute.For<IRegistroCodecsEnvelope>();
         registro.Capacidades.Returns([new CapacidadeCodec(SchemaVersion, TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null)]);
-        registro.Reidratar(Arg.Any<VersaoConfiguracao>()).Returns(Result<EnvelopeReidratado>.Success(envelope));
-        return (versao, registro);
+        registro.Reidratar(Arg.Any<VersaoConfiguracao>()).Returns(chamada =>
+            Result<EnvelopeReidratado>.Success(versoes.Single(v => v.Versao.Id == chamada.Arg<VersaoConfiguracao>().Id).Envelope));
+        return registro;
     }
 
     private static Inscricao ComOpcoes(Cpf cpf, Guid processoId, Guid versaoId, Guid? primeira, Guid? segunda) =>
@@ -210,8 +216,9 @@ public sealed class MinhasInscricoesQueryHandlerTests
         Guid processoId = Guid.CreateVersion7();
         Guid medicina = Guid.CreateVersion7();
         Guid direito = Guid.CreateVersion7();
-        (VersaoConfiguracao versao, IRegistroCodecsEnvelope registro) = VersaoComOfertas(
-            processoId, OfertasDeTeste.DistribuicaoDoCurso(medicina, "Medicina", "AC"), OfertasDeTeste.DistribuicaoDoCurso(direito, "Direito", "AC"));
+        VersaoConfiguracao versao = NovaVersao(processoId);
+        IRegistroCodecsEnvelope registro = RegistroDas((versao, EnvelopeComOfertas(
+            OfertasDeTeste.DistribuicaoDoCurso(medicina, "Medicina", "AC"), OfertasDeTeste.DistribuicaoDoCurso(direito, "Direito", "AC"))));
         // A 1ª opção é a que tem o maior id: a ordem sai da escolha, não da ordem das ofertas na versão.
         Inscricao inscricao = ComOpcoes(cpf, processoId, versao.Id, primeira: direito, segunda: medicina);
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
@@ -232,8 +239,8 @@ public sealed class MinhasInscricoesQueryHandlerTests
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         Guid processoId = Guid.CreateVersion7();
         Guid medicina = Guid.CreateVersion7();
-        (VersaoConfiguracao versao, IRegistroCodecsEnvelope registro) = VersaoComOfertas(
-            processoId, OfertasDeTeste.DistribuicaoDoCurso(medicina, "Medicina", "AC"));
+        VersaoConfiguracao versao = NovaVersao(processoId);
+        IRegistroCodecsEnvelope registro = RegistroDas((versao, EnvelopeComOfertas(OfertasDeTeste.DistribuicaoDoCurso(medicina, "Medicina", "AC"))));
         Inscricao semCurso = ComOpcoes(cpf, processoId, versao.Id, primeira: null, segunda: null);
         Inscricao versaoSumida = ComOpcoes(cpf, processoId, Guid.CreateVersion7(), primeira: medicina, segunda: null);
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
@@ -246,5 +253,48 @@ public sealed class MinhasInscricoesQueryHandlerTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Should().HaveCount(2).And.OnlyContain(static i => i.OpcoesDeCurso.Count == 0);
+    }
+
+    [Fact(DisplayName = "O nome do curso vem da versão em que a inscrição está, não da versão mais recente do processo")]
+    public async Task Handle_NomeDoCursoEhODaVersaoDaInscricao()
+    {
+        Cpf cpf = PersonasDeTeste.FernandaDrumond;
+        Guid processoId = Guid.CreateVersion7();
+        Guid medicina = Guid.CreateVersion7();
+        VersaoConfiguracao daInscricao = NovaVersao(processoId);
+        VersaoConfiguracao retificada = NovaVersao(processoId);
+        IRegistroCodecsEnvelope registro = RegistroDas(
+            (daInscricao, EnvelopeComOfertas(OfertasDeTeste.DistribuicaoDoCurso(medicina, "Medicina", "AC"))),
+            (retificada, EnvelopeComOfertas(OfertasDeTeste.DistribuicaoDoCurso(medicina, "Medicina (retificado)", "AC"))));
+        Inscricao inscricao = ComOpcoes(cpf, processoId, daInscricao.Id, primeira: medicina, segunda: null);
+        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
+        inscricaoRepository.ObterTodasPorCpfAsync(cpf, Arg.Any<CancellationToken>()).Returns((IReadOnlyList<Inscricao>)[inscricao]);
+        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        processoRepository.ObterVersoesAsync(processoId, Arg.Any<CancellationToken>()).Returns([daInscricao, retificada]);
+
+        Result<IReadOnlyList<MinhaInscricaoDto>> resultado = await MinhasInscricoesQueryHandler.Handle(
+            new MinhasInscricoesQuery(), inscricaoRepository, CertamesDivulgados(), processoRepository, registro, Substitute.For<IResolvedorFusoInstitucional>(), TimeProvider.System, UsuarioComCpf(cpf), CancellationToken.None);
+
+        resultado.Value!.Single().OpcoesDeCurso.Should().Equal(new OpcaoDeCursoDaInscricaoDto(1, "Medicina", "Bacharelado"));
+    }
+
+    [Fact(DisplayName = "Sem a 1ª opção nomeada pela versão, a 2ª não sobe para o lugar dela")]
+    public async Task Handle_SemAPrimeiraOpcaoNaVersao_NaoListaASegundaComoPrimeira()
+    {
+        Cpf cpf = PersonasDeTeste.FernandaDrumond;
+        Guid processoId = Guid.CreateVersion7();
+        Guid direito = Guid.CreateVersion7();
+        VersaoConfiguracao versao = NovaVersao(processoId);
+        IRegistroCodecsEnvelope registro = RegistroDas((versao, EnvelopeComOfertas(OfertasDeTeste.DistribuicaoDoCurso(direito, "Direito", "AC"))));
+        Inscricao inscricao = ComOpcoes(cpf, processoId, versao.Id, primeira: Guid.CreateVersion7(), segunda: direito);
+        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
+        inscricaoRepository.ObterTodasPorCpfAsync(cpf, Arg.Any<CancellationToken>()).Returns((IReadOnlyList<Inscricao>)[inscricao]);
+        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        processoRepository.ObterVersoesAsync(processoId, Arg.Any<CancellationToken>()).Returns([versao]);
+
+        Result<IReadOnlyList<MinhaInscricaoDto>> resultado = await MinhasInscricoesQueryHandler.Handle(
+            new MinhasInscricoesQuery(), inscricaoRepository, CertamesDivulgados(), processoRepository, registro, Substitute.For<IResolvedorFusoInstitucional>(), TimeProvider.System, UsuarioComCpf(cpf), CancellationToken.None);
+
+        resultado.Value!.Single().OpcoesDeCurso.Should().BeEmpty();
     }
 }
