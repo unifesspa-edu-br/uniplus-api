@@ -180,6 +180,8 @@ public static class LeitorDeArquivoDoInep
     private static string Descrever(CampoDoRetorno campo) => campo switch
     {
         CampoDoRetorno.Cpf => "CPF",
+        CampoDoRetorno.Nome => "nome",
+        CampoDoRetorno.Sexo => "sexo (F ou M)",
         CampoDoRetorno.NumeroDeInscricaoNoEnem => "número de inscrição no ENEM",
         CampoDoRetorno.Nota => "nota",
         CampoDoRetorno.Situacao => "situação da prova",
