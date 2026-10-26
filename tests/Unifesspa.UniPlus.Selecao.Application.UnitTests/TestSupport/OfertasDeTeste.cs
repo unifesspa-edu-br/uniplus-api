@@ -23,11 +23,14 @@ internal static class OfertasDeTeste
     public const string ValorDaAcaoAfirmativa = "FEMININO";
 
     public static ConfiguracaoDistribuicaoVagas Distribuicao(Guid ofertaCursoId, params string[] codigos) =>
+        DistribuicaoDoCurso(ofertaCursoId, "Medicina", codigos);
+
+    public static ConfiguracaoDistribuicaoVagas DistribuicaoDoCurso(Guid ofertaCursoId, string cursoNome, params string[] codigos) =>
         ConfiguracaoDistribuicaoVagas.Criar(
             ofertaCursoId, voBase: 10 * codigos.Length, pr: 1m,
             ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!,
             regraAjuste: null, referenciaDemografica: null, [.. codigos.Select(Modalidade)],
-            ofertaCurso: OfertaCursoSnapshot.Criar("Medicina", "Bacharelado", "Campus Universitário de Marabá", ["MATUTINO"]).Value!).Value!;
+            ofertaCurso: OfertaCursoSnapshot.Criar(cursoNome, "Bacharelado", "Campus Universitário de Marabá", ["MATUTINO"]).Value!).Value!;
 
     /// <summary>O mesmo grafo, com a distribuição de vagas dada no lugar da que ele tinha.</summary>
     public static GrafoConfiguracao ComDistribuicao(GrafoConfiguracao grafo, params ConfiguracaoDistribuicaoVagas[] distribuicao) =>

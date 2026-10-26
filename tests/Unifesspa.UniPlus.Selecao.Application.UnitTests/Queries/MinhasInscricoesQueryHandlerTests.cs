@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries;
 
+using System.Text;
 using System.Text.Json;
 
 using AwesomeAssertions;
@@ -12,6 +13,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.Inscricoes;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -21,7 +24,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// "Minhas inscrições" (issue #1860, <c>GET /api/selecao/minhas-inscricoes</c>): todas as do dono
-/// do token, em qualquer processo, com o nome preferido — o social, só quando declarado.
+/// do token, em qualquer processo, com os cursos que escolheram na versão em que estão.
 /// </summary>
 public sealed class MinhasInscricoesQueryHandlerTests
 {
@@ -108,25 +111,6 @@ public sealed class MinhasInscricoesQueryHandlerTests
         resultado.Value!.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Sem desejar nome social, o nome preferido é o civil")]
-    public async Task Handle_SemDesejarNomeSocial_NomePreferidoEhOCivil()
-    {
-        Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        Inscricao inscricao = ComRespostas(cpf, "sub-1", Guid.CreateVersion7(), new Dictionary<string, JsonElement>(StringComparer.Ordinal)
-        {
-            ["NOME"] = JsonSerializer.SerializeToElement(PersonasDeTeste.NomeFernandaDrumond),
-            ["DESEJA_NOME_SOCIAL"] = JsonSerializer.SerializeToElement(false),
-        });
-
-        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
-        inscricaoRepository.ObterTodasPorCpfAsync(cpf, Arg.Any<CancellationToken>()).Returns((IReadOnlyList<Inscricao>)[inscricao]);
-
-        Result<IReadOnlyList<MinhaInscricaoDto>> resultado = await MinhasInscricoesQueryHandler.Handle(
-            new MinhasInscricoesQuery(), inscricaoRepository, CertamesDivulgados(), Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(), Substitute.For<IResolvedorFusoInstitucional>(), TimeProvider.System, UsuarioComCpf(cpf), CancellationToken.None);
-
-        resultado.Value!.Should().ContainSingle(i => i.NomePreferido == PersonasDeTeste.NomeFernandaDrumond && i.CpfMascarado == cpf.Mascarado);
-    }
-
     [Fact(DisplayName = "Cada inscrição vem com o nome divulgado do processo e os comprovantes numerados na ordem de emissão")]
     public async Task Handle_TrazONomeDoProcessoEOsComprovantes()
     {
@@ -188,42 +172,79 @@ public sealed class MinhasInscricoesQueryHandlerTests
         daCancelada.Acoes.Should().Be(new AcoesDaInscricaoDto(false, false, false, false));
     }
 
-    [Fact(DisplayName = "Desejando nome social e com NOME_SOCIAL preenchido, o nome preferido é o social (UNI-REQ-0032)")]
-    public async Task Handle_ComNomeSocialDeclarado_NomePreferidoEhOSocial()
+    private const string SchemaVersion = "0.0.22";
+
+    /// <summary>A versão do processo cujas ofertas são as dadas — o que a inscrição fixa ao ser iniciada.</summary>
+    private static (VersaoConfiguracao Versao, IRegistroCodecsEnvelope Registro) VersaoComOfertas(
+        Guid processoId, params ConfiguracaoDistribuicaoVagas[] distribuicao)
     {
-        Cpf cpf = PersonasDeTeste.KevinCarvalho;
-        Inscricao inscricao = ComRespostas(cpf, "sub-1", Guid.CreateVersion7(), new Dictionary<string, JsonElement>(StringComparer.Ordinal)
-        {
-            ["NOME"] = JsonSerializer.SerializeToElement(PersonasDeTeste.NomeKevinCarvalho),
-            ["DESEJA_NOME_SOCIAL"] = JsonSerializer.SerializeToElement(true),
-            ["NOME_SOCIAL"] = JsonSerializer.SerializeToElement("Kéfera"),
-        });
-
-        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
-        inscricaoRepository.ObterTodasPorCpfAsync(cpf, Arg.Any<CancellationToken>()).Returns((IReadOnlyList<Inscricao>)[inscricao]);
-
-        Result<IReadOnlyList<MinhaInscricaoDto>> resultado = await MinhasInscricoesQueryHandler.Handle(
-            new MinhasInscricoesQuery(), inscricaoRepository, CertamesDivulgados(), Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(), Substitute.For<IResolvedorFusoInstitucional>(), TimeProvider.System, UsuarioComCpf(cpf), CancellationToken.None);
-
-        resultado.Value!.Should().ContainSingle(i => i.NomePreferido == "Kéfera");
+        ProcessoSeletivo processoBase = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Lista");
+        EnvelopeReidratado envelope = new(
+            new GrafoConfiguracao(
+                [.. processoBase.Etapas], processoBase.OfertaAtendimento!, distribuicao,
+                processoBase.BonusRegional, [.. processoBase.CriteriosDesempate], processoBase.Classificacao!,
+                [.. processoBase.CronogramaFases], [.. processoBase.DocumentosExigidos], [], null, numeroDeOpcoesDeCurso: 2),
+            DadosEdital.Criar(
+                "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), Guid.CreateVersion7()).Value!,
+            new string('a', 64), "America/Belem", retificacao: null, conformidade: null);
+        VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
+            processoId, Encoding.UTF8.GetBytes("{}"), SchemaVersion, "canonical-json/sha256@v1",
+            Guid.CreateVersion7(), new string('a', 64), "user-sub-1", new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero));
+        IRegistroCodecsEnvelope registro = Substitute.For<IRegistroCodecsEnvelope>();
+        registro.Capacidades.Returns([new CapacidadeCodec(SchemaVersion, TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null)]);
+        registro.Reidratar(Arg.Any<VersaoConfiguracao>()).Returns(Result<EnvelopeReidratado>.Success(envelope));
+        return (versao, registro);
     }
 
-    [Fact(DisplayName = "Desejando nome social sem NOME_SOCIAL preenchido, cai no nome civil, nunca em branco")]
-    public async Task Handle_DesejaNomeSocialSemPreencher_CaiNoCivil()
+    private static Inscricao ComOpcoes(Cpf cpf, Guid processoId, Guid versaoId, Guid? primeira, Guid? segunda) =>
+        Inscricao.Reidratar(
+            Guid.CreateVersion7(), processoId, cpf, "sub-1", "https://issuer", SituacaoInscricao.Rascunho, versaoId, primeira, segunda,
+            null, null, null, null,
+            new Dictionary<string, JsonElement>(), new Dictionary<string, JsonElement>(),
+            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), [], new Dictionary<string, DefinicaoDaResposta>(), 1, DateTimeOffset.UtcNow, null);
+
+    [Fact(DisplayName = "As opções de curso saem na ordem da inscrição, com o nome que a versão dela congelou")]
+    public async Task Handle_TrazOsCursosEscolhidosEmOrdem()
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        Inscricao inscricao = ComRespostas(cpf, "sub-1", Guid.CreateVersion7(), new Dictionary<string, JsonElement>(StringComparer.Ordinal)
-        {
-            ["NOME"] = JsonSerializer.SerializeToElement(PersonasDeTeste.NomeFernandaDrumond),
-            ["DESEJA_NOME_SOCIAL"] = JsonSerializer.SerializeToElement(true),
-        });
-
+        Guid processoId = Guid.CreateVersion7();
+        Guid medicina = Guid.CreateVersion7();
+        Guid direito = Guid.CreateVersion7();
+        (VersaoConfiguracao versao, IRegistroCodecsEnvelope registro) = VersaoComOfertas(
+            processoId, OfertasDeTeste.DistribuicaoDoCurso(medicina, "Medicina", "AC"), OfertasDeTeste.DistribuicaoDoCurso(direito, "Direito", "AC"));
+        // A 1ª opção é a que tem o maior id: a ordem sai da escolha, não da ordem das ofertas na versão.
+        Inscricao inscricao = ComOpcoes(cpf, processoId, versao.Id, primeira: direito, segunda: medicina);
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterTodasPorCpfAsync(cpf, Arg.Any<CancellationToken>()).Returns((IReadOnlyList<Inscricao>)[inscricao]);
+        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        processoRepository.ObterVersoesAsync(processoId, Arg.Any<CancellationToken>()).Returns([versao]);
 
         Result<IReadOnlyList<MinhaInscricaoDto>> resultado = await MinhasInscricoesQueryHandler.Handle(
-            new MinhasInscricoesQuery(), inscricaoRepository, CertamesDivulgados(), Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(), Substitute.For<IResolvedorFusoInstitucional>(), TimeProvider.System, UsuarioComCpf(cpf), CancellationToken.None);
+            new MinhasInscricoesQuery(), inscricaoRepository, CertamesDivulgados(), processoRepository, registro, Substitute.For<IResolvedorFusoInstitucional>(), TimeProvider.System, UsuarioComCpf(cpf), CancellationToken.None);
 
-        resultado.Value!.Should().ContainSingle(i => i.NomePreferido == PersonasDeTeste.NomeFernandaDrumond);
+        resultado.Value!.Single().OpcoesDeCurso.Should().Equal(
+            new OpcaoDeCursoDaInscricaoDto(1, "Direito", "Bacharelado"), new OpcaoDeCursoDaInscricaoDto(2, "Medicina", "Bacharelado"));
+    }
+
+    [Fact(DisplayName = "Rascunho que ainda não escolheu curso vem sem opções, e uma versão que não se lê não derruba a lista")]
+    public async Task Handle_SemCursoEscolhidoOuVersaoIlegivel_VemSemOpcoes()
+    {
+        Cpf cpf = PersonasDeTeste.FernandaDrumond;
+        Guid processoId = Guid.CreateVersion7();
+        Guid medicina = Guid.CreateVersion7();
+        (VersaoConfiguracao versao, IRegistroCodecsEnvelope registro) = VersaoComOfertas(
+            processoId, OfertasDeTeste.DistribuicaoDoCurso(medicina, "Medicina", "AC"));
+        Inscricao semCurso = ComOpcoes(cpf, processoId, versao.Id, primeira: null, segunda: null);
+        Inscricao versaoSumida = ComOpcoes(cpf, processoId, Guid.CreateVersion7(), primeira: medicina, segunda: null);
+        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
+        inscricaoRepository.ObterTodasPorCpfAsync(cpf, Arg.Any<CancellationToken>()).Returns((IReadOnlyList<Inscricao>)[semCurso, versaoSumida]);
+        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        processoRepository.ObterVersoesAsync(processoId, Arg.Any<CancellationToken>()).Returns([versao]);
+
+        Result<IReadOnlyList<MinhaInscricaoDto>> resultado = await MinhasInscricoesQueryHandler.Handle(
+            new MinhasInscricoesQuery(), inscricaoRepository, CertamesDivulgados(), processoRepository, registro, Substitute.For<IResolvedorFusoInstitucional>(), TimeProvider.System, UsuarioComCpf(cpf), CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.Should().HaveCount(2).And.OnlyContain(static i => i.OpcoesDeCurso.Count == 0);
     }
 }

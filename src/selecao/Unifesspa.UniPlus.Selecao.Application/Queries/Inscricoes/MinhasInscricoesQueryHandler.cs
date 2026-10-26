@@ -93,7 +93,48 @@ public static class MinhasInscricoesQueryHandler
                 .ConfigureAwait(false) is null;
         }
 
+        Dictionary<Guid, IReadOnlyList<OfertaDeCursoCertameDto>> ofertasPorVersao = await OfertasDasVersoesAsync(
+            doDono, processoSeletivoRepository, registroCodecs, cancellationToken).ConfigureAwait(false);
+
         return Result<IReadOnlyList<MinhaInscricaoDto>>.Success(
-            [.. doDono.Select(i => MinhaInscricaoDto.De(i, nomes[i.ProcessoSeletivoId], abertas[i.ProcessoSeletivoId], [.. comprovantes[i.Id]]))]);
+            [.. doDono.Select(i => MinhaInscricaoDto.De(
+                i, nomes[i.ProcessoSeletivoId], abertas[i.ProcessoSeletivoId], [.. comprovantes[i.Id]],
+                ofertasPorVersao.GetValueOrDefault(i.VersaoFormularioId, [])))]);
+    }
+
+    /// <summary>
+    /// As ofertas de curso de cada versão em que alguma inscrição está — a dela, nunca a vigente. Versão
+    /// que não se lê não derruba a lista: a inscrição segue sem os cursos, como o processo sem divulgação
+    /// segue sem nome.
+    /// </summary>
+    private static async Task<Dictionary<Guid, IReadOnlyList<OfertaDeCursoCertameDto>>> OfertasDasVersoesAsync(
+        List<Inscricao> inscricoes,
+        IProcessoSeletivoRepository processoSeletivoRepository,
+        IRegistroCodecsEnvelope registroCodecs,
+        CancellationToken cancellationToken)
+    {
+        Dictionary<Guid, IReadOnlyList<OfertaDeCursoCertameDto>> ofertas = [];
+        foreach (IGrouping<Guid, Inscricao> doProcesso in inscricoes.GroupBy(static i => i.ProcessoSeletivoId))
+        {
+            IReadOnlyList<VersaoConfiguracao> versoes = await processoSeletivoRepository
+                .ObterVersoesAsync(doProcesso.Key, cancellationToken)
+                .ConfigureAwait(false);
+            foreach (Guid versaoId in doProcesso.Select(static i => i.VersaoFormularioId).Distinct())
+            {
+                VersaoConfiguracao? versao = versoes.FirstOrDefault(v => v.Id == versaoId);
+                if (versao is null)
+                {
+                    continue;
+                }
+
+                Result<EnvelopeReidratado> reidratado = Services.ContextoDaVersaoFixadaResolver.Reidratar(versao, registroCodecs);
+                if (reidratado.IsSuccess)
+                {
+                    ofertas[versaoId] = Services.ContextoDaVersaoFixadaResolver.OfertasDaVersao(reidratado.Value!.Grafo);
+                }
+            }
+        }
+
+        return ofertas;
     }
 }
