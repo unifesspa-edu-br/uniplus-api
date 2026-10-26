@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 
@@ -47,11 +48,11 @@ internal sealed class OcorrenciaDoLoteDeNotasConfiguration : IEntityTypeConfigur
             .HasComment("Os números das linhas do arquivo, a partir de 1.");
 
         builder.Property(o => o.CpfMascarado)
-            .HasMaxLength(14)
+            .HasMaxLength(Cpf.TamanhoMascarado)
             .HasComment("O CPF mascarado da linha sem inscrito (***.999.999-**); nunca o CPF puro.");
 
         builder.Property(o => o.Nome)
-            .HasMaxLength(200)
+            .HasMaxLength(OcorrenciaDoLoteDeNotas.TamanhoMaximoDoNome)
             .HasComment("O nome que o arquivo traz para a linha sem inscrito.");
 
         builder.Property(o => o.Sexo)

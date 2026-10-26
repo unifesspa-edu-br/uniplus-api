@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Leiautes;
 
+using Entities;
+
 /// <summary>
 /// O nome do candidato como o arquivo o traz, sem espaços nas pontas. Célula vazia dá nome nulo, e o
 /// que passa de <see cref="TamanhoMaximo"/> caracteres é cortado, sem partir um par substituto: o nome só identifica a linha na
@@ -7,7 +9,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Leiautes;
 /// </summary>
 public sealed class LeitorDeNome : ILeitorDeColuna
 {
-    public const int TamanhoMaximo = 200;
+    public const int TamanhoMaximo = OcorrenciaDoLoteDeNotas.TamanhoMaximoDoNome;
 
     public string Codigo => "nome";
 
