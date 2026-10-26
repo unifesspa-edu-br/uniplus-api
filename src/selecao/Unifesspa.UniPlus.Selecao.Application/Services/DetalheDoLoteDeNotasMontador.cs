@@ -11,8 +11,8 @@ using DTOs.NotasDoEnem;
 public static class DetalheDoLoteDeNotasMontador
 {
     /// <summary>
-    /// O lote com as ocorrências e os ausentes. Número, nome e CPF mascarado de todos os inscritos citados
-    /// saem de uma leitura por inscrição, não de uma por ocorrência.
+    /// O lote com as ocorrências e os ausentes. Todos os inscritos citados saem de uma só leitura das
+    /// inscrições do lote, sem consulta por ocorrência nem por inscrito.
     /// </summary>
     public static async Task<LoteDeNotasDoEnemDto> MontarAsync(
         ILoteDeNotasDoEnemRepository lotes,
