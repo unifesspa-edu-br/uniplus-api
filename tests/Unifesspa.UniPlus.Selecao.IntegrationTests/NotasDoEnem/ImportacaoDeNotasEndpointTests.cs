@@ -360,6 +360,33 @@ public sealed class ImportacaoDeNotasEndpointTests
             .And.OnlyContain(a => a.Situacao == SituacaoDaAvaliacao.InscritoSemLinha && a.Nota == null);
     }
 
+    [Fact(DisplayName = "a leitura das avaliações vigentes traz só o lote vigente e esconde a inscrição que trocou de edição ou de oferta depois da importação")]
+    public async Task Leitor_AvaliacoesVigentes_EscondeOQueNaoBate()
+    {
+        Cenario cenario = await NovoCenarioAsync(0, 1, 2);
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage resposta = await ImportarAsync(client, cenario, Bytes([Linha(Pessoas[0], 1), LinhaDeAusente(Pessoas[1], 2), Linha(Pessoas[2], 3)]));
+        resposta.StatusCode.Should().Be(HttpStatusCode.Created, await resposta.Content.ReadAsStringAsync());
+        Guid lote = await IdDoLoteAsync(resposta);
+
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        await db.RespostasDaInscricao
+            .Where(r => r.InscricaoId == cenario.Inscricoes[2] && r.FatoCodigo == Unifesspa.UniPlus.Regras.Services.EdicaoDoEnem.Fato)
+            .ExecuteUpdateAsync(s => s.SetProperty(r => r.ValorCodigo, "2024"));
+        await db.Inscricoes.Where(i => i.Id == cenario.Inscricoes[1])
+            .ExecuteUpdateAsync(s => s.SetProperty(i => i.OfertaCursoSegundaOpcaoId, (Guid?)null));
+        IAvaliacoesDaEtapaReader leitor = scope.ServiceProvider.GetRequiredService<IAvaliacoesDaEtapaReader>();
+
+        IReadOnlyList<AvaliacaoVigente> vigentes = await leitor.ListarVigentesAsync(
+            cenario.Processo.EtapaDoEnemId, [.. cenario.Inscricoes.Values]);
+
+        vigentes.Should().OnlyContain(a => a.LoteId == lote && a.InscricaoId != cenario.Inscricoes[2]);
+        vigentes.Where(a => a.InscricaoId == cenario.Inscricoes[0]).Should().HaveCount(2).And.OnlyContain(a => a.Nota != null);
+        vigentes.Where(a => a.InscricaoId == cenario.Inscricoes[1]).Should().ContainSingle()
+            .Which.OfertaCursoId.Should().Be(cenario.Processo.OfertaTecnologicaId);
+    }
+
     [Fact(DisplayName = "duas linhas diferentes do mesmo CPF deixam a inscrição sem nota, em conflito")]
     public async Task Importar_Conflito_SemNota()
     {

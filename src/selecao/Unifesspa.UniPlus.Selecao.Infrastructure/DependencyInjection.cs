@@ -86,6 +86,7 @@ public static class SelecaoInfrastructureRegistration
         services.AddScoped<IGeracaoDeEnvioAoInepRepository, GeracaoDeEnvioAoInepRepository>();
         services.AddScoped<IInscritosDaEdicaoDoEnem, InscritosDaEdicaoDoEnem>();
         services.AddScoped<ILancamentosDeNotaReader, LancamentosDeNotaReader>();
+        services.AddScoped<IAvaliacoesDaEtapaReader, AvaliacoesDaEtapaReader>();
         services.AddScoped<IIndiceCegoDoCpf, CalculadorDoIndiceCegoDoCpf>();
         services.AddGeoClient();
         services.AddScoped<IRegraCatalogoReader, RegraCatalogoReader>();
