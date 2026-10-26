@@ -118,6 +118,12 @@ public sealed class CpfTests
     }
 
     [Fact]
+    public void Mascarar_DeveMascararOnzeDigitosMesmoComVerificadorInvalido()
+    {
+        Cpf.Mascarar("11111111111").Should().Be("***.111.111-**");
+    }
+
+    [Fact]
     public void ToString_DeveRetornarFormatoMascarado()
     {
         Cpf cpf = Cpf.Criar("529.982.247-25").Value!;
