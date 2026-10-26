@@ -6,16 +6,15 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-
-using Unifesspa.UniPlus.Host;
 
 using Outbox.Cascading;
 
+using Unifesspa.UniPlus.Host;
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;

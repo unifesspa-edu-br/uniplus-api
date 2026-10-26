@@ -17,8 +17,8 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
-using Unifesspa.UniPlus.Selecao.API.Http;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.API.Http;
 
 /// <summary>
 /// Envio dos CPFs da edição do ENEM ao INEP e importação das notas que o INEP devolve. Restrito a
