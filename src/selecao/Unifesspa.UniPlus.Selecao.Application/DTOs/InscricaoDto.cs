@@ -229,6 +229,7 @@ public sealed record MinhaInscricaoDto(
             [.. comprovantes.Select(static (c, i) => new ComprovanteEmitidoDto(i + 1, c.Instante))]);
     }
 
+    /// <summary>A 2ª opção só conta com a 1ª escolhida, como no agregado: sem a 1ª nomeada pela versão, não há opções a listar.</summary>
     private static List<OpcaoDeCursoDaInscricaoDto> OpcoesDe(Inscricao inscricao, IReadOnlyList<OfertaDeCursoCertameDto> ofertas)
     {
         List<OpcaoDeCursoDaInscricaoDto> opcoes = [];
@@ -237,10 +238,12 @@ public sealed record MinhaInscricaoDto(
             OfertaDeCursoCertameDto? oferta = escolhida is { } id
                 ? ofertas.FirstOrDefault(o => o.OfertaCursoOrigemId == id)
                 : null;
-            if (oferta is not null)
+            if (oferta is null)
             {
-                opcoes.Add(new OpcaoDeCursoDaInscricaoDto(opcoes.Count + 1, oferta.CursoNome, oferta.CursoGrau));
+                break;
             }
+
+            opcoes.Add(new OpcaoDeCursoDaInscricaoDto(opcoes.Count + 1, oferta.CursoNome, oferta.CursoGrau));
         }
 
         return opcoes;
