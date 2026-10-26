@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
@@ -10,6 +11,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 public sealed class OcorrenciaDoLoteDeNotas : IForensicEntity
 {
+    /// <summary>O tamanho máximo do nome gravado na linha sem inscrito.</summary>
+    public const int TamanhoMaximoDoNome = 200;
+
     public Guid Id { get; private init; } = Guid.CreateVersion7();
 
     public Guid LoteId { get; private init; }
@@ -89,5 +93,5 @@ public sealed class OcorrenciaDoLoteDeNotas : IForensicEntity
     }
 
     private static bool EstaMascarado(string cpf) =>
-        cpf.Length == 14 && cpf.StartsWith("***.", StringComparison.Ordinal) && cpf.EndsWith("-**", StringComparison.Ordinal);
+        cpf.Length == Cpf.TamanhoMascarado && cpf.StartsWith("***.", StringComparison.Ordinal) && cpf.EndsWith("-**", StringComparison.Ordinal);
 }

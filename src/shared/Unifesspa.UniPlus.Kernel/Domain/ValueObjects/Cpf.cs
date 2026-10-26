@@ -4,6 +4,9 @@ using Results;
 
 public sealed record Cpf
 {
+    /// <summary>O tamanho do CPF mascarado, <c>***.999.999-**</c>.</summary>
+    public const int TamanhoMascarado = 14;
+
     public string Valor { get; }
 
     private Cpf(string valor) => Valor = valor;
