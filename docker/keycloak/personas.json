@@ -210,5 +210,219 @@
     "perfil": "candidato",
     "cpf": "596.269.048-60",
     "email": "jessica_jaqueline_costa@uniplus-test.local"
+  },
+  {
+    "nome": "Paulo Luís Rodrigues",
+    "nome_social": "Paula Rodrigues",
+    "username": "paulo.rodrigues",
+    "perfil": "candidato",
+    "cpf": "112.754.468-33",
+    "email": "paulo_rodrigues@uniplus-test.local"
+  },
+  {
+    "nome": "Bárbara Sônia Porto",
+    "username": "barbara.porto",
+    "perfil": "candidato",
+    "cpf": "436.060.934-54",
+    "email": "barbara_porto@uniplus-test.local"
+  },
+  {
+    "nome": "Luana Marlene Rosa Figueiredo",
+    "nome_social": "Luan Figueiredo",
+    "username": "luana.figueiredo",
+    "perfil": "candidato",
+    "cpf": "279.252.923-77",
+    "email": "luanamarlenefigueiredo@uniplus-test.local"
+  },
+  {
+    "nome": "Mariane Manuela da Cruz",
+    "nome_social": "Alex Cruz",
+    "username": "mariane.cruz",
+    "perfil": "candidato",
+    "cpf": "746.100.574-09",
+    "email": "marianemanueladacruz@uniplus-test.local"
+  },
+  {
+    "nome": "Thiago Joaquim Enzo da Silva",
+    "username": "thiago.silva",
+    "perfil": "candidato",
+    "cpf": "129.052.872-17",
+    "email": "thiago-dasilva90@uniplus-test.local"
+  },
+  {
+    "nome": "Roberto Ian Alves",
+    "username": "roberto.alves",
+    "perfil": "candidato",
+    "cpf": "192.592.683-46",
+    "email": "robertoianalves@uniplus-test.local"
+  },
+  {
+    "nome": "Sara Laura Marlene Farias",
+    "username": "sara.farias",
+    "perfil": "candidato",
+    "cpf": "989.776.239-60",
+    "email": "sara_laura_farias@uniplus-test.local"
+  },
+  {
+    "nome": "Lara Isadora Aragão",
+    "username": "lara.aragao",
+    "perfil": "candidato",
+    "cpf": "596.002.016-50",
+    "email": "laraisadoraaragao@uniplus-test.local"
+  },
+  {
+    "nome": "Sérgio Theo Dias",
+    "username": "sergio.dias",
+    "perfil": "candidato",
+    "cpf": "562.423.114-88",
+    "email": "sergiotheodias@uniplus-test.local"
+  },
+  {
+    "nome": "Antônia Isabel Silveira",
+    "username": "antonia.silveira",
+    "perfil": "candidato",
+    "cpf": "844.556.256-82",
+    "email": "antoniaisabelsilveira@uniplus-test.local"
+  },
+  {
+    "nome": "Clarice Giovanna Ribeiro",
+    "username": "clarice.ribeiro",
+    "perfil": "candidato",
+    "cpf": "486.789.668-31",
+    "email": "clarice-ribeiro94@uniplus-test.local"
+  },
+  {
+    "nome": "Ayla Malu Olivia da Luz",
+    "username": "ayla.luz",
+    "perfil": "candidato",
+    "cpf": "979.396.689-00",
+    "email": "ayla-daluz93@uniplus-test.local"
+  },
+  {
+    "nome": "Luiz Marcos Vinicius Elias Araújo",
+    "username": "luiz.araujo",
+    "perfil": "candidato",
+    "cpf": "717.112.782-62",
+    "email": "luizmarcosaraujo@uniplus-test.local"
+  },
+  {
+    "nome": "André Severino Barbosa",
+    "username": "andre.barbosa",
+    "perfil": "candidato",
+    "cpf": "547.048.279-09",
+    "email": "andre_severino_barbosa@uniplus-test.local"
+  },
+  {
+    "nome": "Sara Juliana Cardoso",
+    "username": "sara.cardoso",
+    "perfil": "candidato",
+    "cpf": "462.856.522-87",
+    "email": "sara.juliana.cardoso@uniplus-test.local"
+  },
+  {
+    "nome": "Roberto Alexandre Luiz de Paula",
+    "username": "roberto.paula",
+    "perfil": "candidato",
+    "cpf": "120.266.989-10",
+    "email": "robertoalexandredepaula@uniplus-test.local"
+  },
+  {
+    "nome": "Gustavo Juan Caio Vieira",
+    "nome_social": "Dani Vieira",
+    "username": "gustavo.vieira",
+    "perfil": "candidato",
+    "cpf": "389.964.281-32",
+    "email": "gustavojuanvieira@uniplus-test.local"
+  },
+  {
+    "nome": "Vicente Elias Leonardo Sales",
+    "username": "vicente.sales",
+    "perfil": "candidato",
+    "cpf": "885.009.870-73",
+    "email": "vicente-sales97@uniplus-test.local"
+  },
+  {
+    "nome": "Benjamin Márcio Anderson Drumond",
+    "username": "benjamin.drumond",
+    "perfil": "candidato",
+    "cpf": "259.855.163-00",
+    "email": "benjamin_marcio_drumond@uniplus-test.local"
+  },
+  {
+    "nome": "Esther Lara Peixoto",
+    "username": "esther.peixoto",
+    "perfil": "candidato",
+    "cpf": "991.642.123-43",
+    "email": "esther_peixoto@uniplus-test.local"
+  },
+  {
+    "nome": "Victor Henry Almada",
+    "username": "victor.almada",
+    "perfil": "candidato",
+    "cpf": "858.713.623-20",
+    "email": "victor.henry.almada@uniplus-test.local"
+  },
+  {
+    "nome": "Lucas Nicolas Murilo Viana",
+    "username": "lucas.viana",
+    "perfil": "candidato",
+    "cpf": "703.670.707-07",
+    "email": "lucas-viana89@uniplus-test.local"
+  },
+  {
+    "nome": "Luiza Maya Pinto",
+    "username": "luiza.pinto",
+    "perfil": "candidato",
+    "cpf": "507.820.889-53",
+    "email": "luiza_maya_pinto@uniplus-test.local"
+  },
+  {
+    "nome": "Manuel Enzo Galvão",
+    "username": "manuel.galvao",
+    "perfil": "candidato",
+    "cpf": "998.385.869-00",
+    "email": "manuel_galvao@uniplus-test.local"
+  },
+  {
+    "nome": "Regina Lívia Patrícia Cavalcanti",
+    "username": "regina.cavalcanti",
+    "perfil": "candidato",
+    "cpf": "680.348.752-01",
+    "email": "reginaliviacavalcanti@uniplus-test.local"
+  },
+  {
+    "nome": "Olivia Antonella Malu Baptista",
+    "username": "olivia.baptista",
+    "perfil": "candidato",
+    "cpf": "011.859.584-95",
+    "email": "olivia.antonella.baptista@uniplus-test.local"
+  },
+  {
+    "nome": "Tatiane Mariah Antonella Duarte",
+    "username": "tatiane.duarte",
+    "perfil": "candidato",
+    "cpf": "975.832.261-39",
+    "email": "tatiane-duarte92@uniplus-test.local"
+  },
+  {
+    "nome": "Vera Bruna Pereira",
+    "username": "vera.pereira",
+    "perfil": "candidato",
+    "cpf": "766.452.662-00",
+    "email": "vera_pereira@uniplus-test.local"
+  },
+  {
+    "nome": "Eduarda Isadora Alessandra Assunção",
+    "username": "eduarda.assuncao",
+    "perfil": "candidato",
+    "cpf": "086.833.587-80",
+    "email": "eduarda-assuncao91@uniplus-test.local"
+  },
+  {
+    "nome": "Calebe Igor Souza",
+    "username": "calebe.souza",
+    "perfil": "candidato",
+    "cpf": "577.372.014-08",
+    "email": "calebe-souza78@uniplus-test.local"
   }
 ]
