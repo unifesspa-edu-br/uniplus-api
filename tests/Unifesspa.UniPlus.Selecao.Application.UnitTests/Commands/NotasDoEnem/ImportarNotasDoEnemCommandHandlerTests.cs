@@ -47,8 +47,8 @@ public sealed class ImportarNotasDoEnemCommandHandlerTests
         _indices.CalcularAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>())
             .Returns(chamada => (IReadOnlyDictionary<string, IndiceCegoDoCpf>)chamada.Arg<IReadOnlyCollection<string>>()
                 .ToDictionary(c => c, Indice));
-        _lotes.ObterNumerosDeInscricaoAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
-            .Returns(new Dictionary<Guid, string>());
+        _lotes.ObterInscritosAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<Guid, InscritoDoLote>());
         InscritosDaEdicao(0, 1);
     }
 
