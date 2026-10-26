@@ -73,7 +73,7 @@ public sealed class LeitorDeArquivoDoInepTests
         Result<ArquivoDeRetornoLido> resultado = Ler(Bytes([linha]));
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Message.Should().NotContain("Feminino");
+        resultado.Error!.Message.Should().Contain("sexo (F ou M)").And.NotContain("Feminino");
     }
 
     [Fact(DisplayName = "cada situação vai para a sua área: presente nas demais e ausente só na escolhida")]
