@@ -51,6 +51,10 @@ internal static class ArquivoDoInepSintetico
     public static string LinhaDeAusente(PersonasDeTeste.PessoaFicticia pessoa, int ordem) =>
         Linha(pessoa, ordem, notas: ["0", "0", "0", "0", "0"], situacoes: ["6", "6", "6", "6", "6"]);
 
+    /// <summary>Linha inconsistente: a prova de Matemática consta como ausente, mas com nota diferente de zero.</summary>
+    public static string LinhaComMatematicaAusenteEComNota(PersonasDeTeste.PessoaFicticia pessoa, int ordem) =>
+        Linha(pessoa, ordem, situacoes: ["7", "7", "7", "6", "7"]);
+
     public static byte[] Bytes(
         IEnumerable<string> linhas,
         string fimDeLinha = "\n",
