@@ -73,6 +73,10 @@ internal sealed class LoteDeNotasDoEnemConfiguration : IEntityTypeConfiguration<
             .HasComment("O sub do token de quem importou.");
 
         builder.Property(l => l.ImportadoEm).IsRequired();
+
+        builder.Property(l => l.VersaoConfiguracaoId)
+            .IsRequired()
+            .HasComment("A versão divulgada do certame cujos pesos apuraram as avaliações do lote.");
         builder.Property(l => l.TotalDeLinhas).IsRequired();
         builder.Property(l => l.TotalDeInscritosComNota).IsRequired();
         builder.Property(l => l.TotalDeLancamentos).IsRequired();
@@ -83,6 +87,11 @@ internal sealed class LoteDeNotasDoEnemConfiguration : IEntityTypeConfiguration<
         builder.HasOne<ProcessoSeletivo>()
             .WithMany()
             .HasForeignKey(l => l.ProcessoSeletivoId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<VersaoConfiguracao>()
+            .WithMany()
+            .HasForeignKey(l => l.VersaoConfiguracaoId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasMany(l => l.Inscritos)
@@ -97,6 +106,13 @@ internal sealed class LoteDeNotasDoEnemConfiguration : IEntityTypeConfiguration<
             .HasPrincipalKey(l => new { l.Id, l.EtapaProcessoId })
             .OnDelete(DeleteBehavior.Restrict);
         builder.Navigation(l => l.Lancamentos).UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.HasMany(l => l.Avaliacoes)
+            .WithOne()
+            .HasForeignKey(a => new { a.LoteId, a.EtapaProcessoId })
+            .HasPrincipalKey(l => new { l.Id, l.EtapaProcessoId })
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.Navigation(l => l.Avaliacoes).UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.HasMany(l => l.Ocorrencias)
             .WithOne()

@@ -27,10 +27,11 @@ public sealed class LoteDeNotasDoEnemTests
         [5, 6, 7],
         [new ConflitoDeLinhas(Guid.CreateVersion7(), [3, 4])]);
 
-    private static LoteDeNotasDoEnem Registrar(ResultadoDoCruzamento cruzamento, int totalDeLinhas = 20, DateTimeOffset? em = null, string arquivoHash = "") =>
+    private static LoteDeNotasDoEnem Registrar(ResultadoDoCruzamento cruzamento, int totalDeLinhas = 20, DateTimeOffset? em = null, string arquivoHash = "", IReadOnlyList<AvaliacaoApurada>? avaliacoes = null) =>
         LoteDeNotasDoEnem.Registrar(
             Guid.CreateVersion7(), Guid.CreateVersion7(), "2025", "INEP_ENEM_RETORNO", "v1", Hash,
-            arquivoHash.Length == 0 ? Hash : arquivoHash, "sub-admin", em ?? DateTimeOffset.UtcNow, totalDeLinhas, cruzamento);
+            arquivoHash.Length == 0 ? Hash : arquivoHash, "sub-admin", em ?? DateTimeOffset.UtcNow, totalDeLinhas,
+            Guid.CreateVersion7(), cruzamento, avaliacoes ?? []);
 
     [Fact(DisplayName = "os totais saem do cruzamento e cada inscrito com nota gera cinco lançamentos")]
     public void Registrar_TotaisBatemComOCruzamento()
@@ -82,6 +83,53 @@ public sealed class LoteDeNotasDoEnemTests
     public void OcorrenciaConflito_ComUmaLinha_Recusa()
     {
         Action registrar = () => OcorrenciaDoLoteDeNotas.Conflito(Guid.CreateVersion7(), Guid.CreateVersion7(), [3]);
+
+        registrar.Should().Throw<ArgumentException>();
+    }
+
+    [Fact(DisplayName = "o lote guarda a versão e as avaliações, cada uma na situação que o cruzamento deu à inscrição")]
+    public void Registrar_ComAvaliacoes_GuardaAsDoCruzamento()
+    {
+        ResultadoDoCruzamento cruzamento = Cruzamento();
+        Guid oferta = Guid.CreateVersion7();
+        IReadOnlyList<AvaliacaoApurada> avaliacoes =
+        [
+            new(cruzamento.ComNota[0].InscricaoId, oferta, "TECNOLOGICA", SituacaoDaAvaliacao.Apurada, 674.5m),
+            new(cruzamento.InscritosSemLinha[0], oferta, "TECNOLOGICA", SituacaoDaAvaliacao.InscritoSemLinha, null),
+            new(cruzamento.Conflitos[0].InscricaoId, oferta, "TECNOLOGICA", SituacaoDaAvaliacao.EmConflito, null),
+        ];
+
+        LoteDeNotasDoEnem lote = Registrar(cruzamento, avaliacoes: avaliacoes);
+
+        lote.VersaoConfiguracaoId.Should().NotBeEmpty();
+        lote.Avaliacoes.Should().HaveCount(3).And.OnlyContain(a => a.LoteId == lote.Id && a.EtapaProcessoId == lote.EtapaProcessoId);
+    }
+
+    [Fact(DisplayName = "avaliação de inscrição fora do cruzamento, ou com situação que o cruzamento não deu, é recusada")]
+    public void Registrar_AvaliacaoIncoerenteComOCruzamento_Recusa()
+    {
+        ResultadoDoCruzamento cruzamento = Cruzamento();
+        Guid oferta = Guid.CreateVersion7();
+        AvaliacaoApurada deQuemNaoEDoCruzamento = new(Guid.CreateVersion7(), oferta, "TECNOLOGICA", SituacaoDaAvaliacao.InscritoSemLinha, null);
+        AvaliacaoApurada comSituacaoErrada = new(cruzamento.InscritosSemLinha[0], oferta, "TECNOLOGICA", SituacaoDaAvaliacao.Apurada, 600m);
+
+        Action fora = () => Registrar(cruzamento, avaliacoes: [deQuemNaoEDoCruzamento]);
+        Action errada = () => Registrar(cruzamento, avaliacoes: [comSituacaoErrada]);
+
+        fora.Should().Throw<ArgumentException>();
+        errada.Should().Throw<ArgumentException>();
+    }
+
+    [Theory(DisplayName = "só a avaliação apurada tem nota, e a nota fica entre 0 e 1000")]
+    [InlineData(SituacaoDaAvaliacao.Apurada, null)]
+    [InlineData(SituacaoDaAvaliacao.EmConflito, 0.0)]
+    [InlineData(SituacaoDaAvaliacao.Apurada, 1000.1)]
+    [InlineData(SituacaoDaAvaliacao.Apurada, -0.1)]
+    public void AvaliacaoDaEtapa_NotaIncoerenteComASituacao_Recusa(SituacaoDaAvaliacao situacao, double? nota)
+    {
+        AvaliacaoApurada apurada = new(Guid.CreateVersion7(), Guid.CreateVersion7(), "TECNOLOGICA", situacao, (decimal?)nota);
+
+        Action registrar = () => AvaliacaoDaEtapa.Registrar(Guid.CreateVersion7(), Guid.CreateVersion7(), apurada);
 
         registrar.Should().Throw<ArgumentException>();
     }

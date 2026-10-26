@@ -68,7 +68,7 @@ public sealed class ImportarNotasDoEnemCommandHandlerTests
     private static LoteDeNotasDoEnem LoteComHash(string hash, Guid processo, Guid etapa) =>
         LoteDeNotasDoEnem.Registrar(
             processo, etapa, Edicao, "INEP_ENEM_RETORNO", "v1", new string('a', 64), hash, "sub", DateTimeOffset.UtcNow, 0,
-            new ResultadoDoCruzamento([], [], [], []));
+            Guid.CreateVersion7(), new ResultadoDoCruzamento([], [], [], []), []);
 
     [Fact(DisplayName = "arquivo fora do leiaute é recusado sem calcular índice, sem travar o processo e sem gravar")]
     public async Task Importar_EstruturaInvalida_NaoToca()
