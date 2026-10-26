@@ -51,6 +51,13 @@
 #                 PSR_INSCRICAO_COM_PROVA)
 #   EDITAL_PDF    (default: scripts/edital-de-teste.pdf) — PDF enviado como
 #                 documento do edital, por exemplo a minuta
+#   NOME_PROCESSO (default: o nome do processo da Medicina 2027)
+#   IDENTIFICADOR_PROCESSO (default: psm-2027) — o identificador legível é único:
+#                 outro processo na mesma base precisa de outro valor
+#
+# O arquivo também pode ser lido com `source` por um roteiro irmão (ver
+# roteiro-processo-teste-notas-do-enem.sh): as funções ficam disponíveis e o
+# `main` só roda quando o arquivo é executado.
 
 set -euo pipefail
 
@@ -66,6 +73,15 @@ MODELO_COM_PROVA_ID="5e3d0006-0000-7000-8000-000000000003"
 # Um PDF de verdade: o portal abre o edital no navegador, e bytes que só começam
 # com %PDF- abririam uma aba em branco.
 EDITAL_PDF="${EDITAL_PDF:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/edital-de-teste.pdf}"
+NOME_PROCESSO="${NOME_PROCESSO:-Processo Seletivo para o Curso de Medicina Unifesspa 2027}"
+IDENTIFICADOR_PROCESSO="${IDENTIFICADOR_PROCESSO:-psm-2027}"
+# As ofertas de curso da distribuição de vagas e o número de opções que o
+# candidato escolhe. O processo da Medicina tem uma só oferta e uma só opção.
+OFERTAS_DISTRIBUIDAS=()
+NUMERO_OPCOES_DE_CURSO=1
+# A fase de classificação só entra no cronograma quando o roteiro das notas do
+# ENEM a obtém; nunca vem do ambiente.
+FASE_CLASSIFICACAO_ID=""
 TOKEN=""
 
 log()  { printf '\033[1;36m==> %s\033[0m\n' "$*" >&2; }
@@ -418,12 +434,12 @@ criar_processo() {
     log "Criar ProcessoSeletivo"
     local resp
     resp=$(api POST "/api/selecao/processos-seletivos" "{
-        \"nome\": \"Processo Seletivo para o Curso de Medicina Unifesspa 2027\",
+        \"nome\": \"$NOME_PROCESSO\",
         \"tipoProcessoOrigemId\": \"$TIPO_PROCESSO_ID\",
         \"origemCandidatos\": \"inscricaoPropria\",
         \"unidadeAdministradoraOrigemId\": \"$UNIDADE_ID\",
         \"localidadeCodigoIbge\": \"1504208\", \"localidadeNome\": \"Marabá\", \"localidadeUf\": \"PA\",
-        \"identificadorLegivel\": \"psm-2027\"
+        \"identificadorLegivel\": \"$IDENTIFICADOR_PROCESSO\"
     }")
     PROCESSO_ID=$(jq -r 'if type == "object" then .id else . end' <<< "$resp")
     [ -n "$PROCESSO_ID" ] && [ "$PROCESSO_ID" != "null" ] || fail "Criar ProcessoSeletivo falhou: $resp"
@@ -470,23 +486,28 @@ definir_distribuicao_vagas() {
         "70da1000-0000-7000-8000-000000000009",
         "70da1000-0000-7000-8000-000000000010"
     ]'
-    api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/distribuicao-vagas" "[{
-        \"ofertaCursoId\": \"$OFERTA_CURSO_ID\", \"voBase\": 30, \"pr\": 0.5,
-        \"regraDistribuicaoCodigo\": \"DISTRIB-VAGAS-LEI-12711-COM-AC-PCD\", \"regraDistribuicaoVersao\": \"v1\",
-        \"regraAjusteCodigo\": \"RECONCILIACAO-VAGAS-ART11-PU\", \"regraAjusteVersao\": \"v1\",
-        \"referenciaReservaDemograficaId\": \"$RESERVA_DEMOGRAFICA_ID\",
-        \"modalidadeIds\": $modalidades,
-        \"quadro\": [{\"modalidadeId\": \"70da1000-0000-7000-8000-000000000010\", \"quantidade\": 2}]
-    }]" >/dev/null
+    local ofertas=("${OFERTAS_DISTRIBUIDAS[@]:-$OFERTA_CURSO_ID}")
+    api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/distribuicao-vagas" "$(jq -nc \
+        --argjson ofertas "$(printf '%s\n' "${ofertas[@]}" | jq -R . | jq -sc .)" \
+        --arg reserva "$RESERVA_DEMOGRAFICA_ID" --argjson modalidades "$modalidades" '
+        [$ofertas[] | {
+            ofertaCursoId: ., voBase: 30, pr: 0.5,
+            regraDistribuicaoCodigo: "DISTRIB-VAGAS-LEI-12711-COM-AC-PCD", regraDistribuicaoVersao: "v1",
+            regraAjusteCodigo: "RECONCILIACAO-VAGAS-ART11-PU", regraAjusteVersao: "v1",
+            referenciaReservaDemograficaId: $reserva,
+            modalidadeIds: $modalidades,
+            quadro: [{modalidadeId: "70da1000-0000-7000-8000-000000000010", quantidade: 2}]
+        }]')" >/dev/null
     ok "distribuição de vagas definida"
 }
 
 definir_opcoes_de_curso() {
-    log "Definir o Número de Opções de Curso (1)"
-    # O processo tem um só curso (Medicina), então o candidato escolhe uma opção:
-    # a segunda exigiria ao menos dois cursos na distribuição de vagas.
-    api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/opcoes-de-curso" '{ "numero": 1 }' >/dev/null
-    ok "número de opções de curso definido"
+    log "Definir o Número de Opções de Curso ($NUMERO_OPCOES_DE_CURSO)"
+    # Uma opção por padrão, porque este processo tem um só curso (Medicina): a
+    # segunda exigiria ao menos dois cursos na distribuição de vagas. O roteiro das
+    # notas do ENEM, com duas ofertas, define duas.
+    api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/opcoes-de-curso" "{ \"numero\": $NUMERO_OPCOES_DE_CURSO }" >/dev/null
+    ok "número de opções de curso definido ($NUMERO_OPCOES_DE_CURSO)"
 }
 
 definir_cascata_remanejamento() {
@@ -607,7 +628,8 @@ definir_cronograma_fases() {
     inicio_habilitacao=$(na_data 2027-01-25 00:00:00)
     fim_habilitacao=$(na_data 2027-01-29 23:59:59)
 
-    api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/cronograma-fases" "[
+    local fases
+    fases="[
         {
             \"ordem\": 1, \"faseCanonicaId\": \"$FASE_INSCRICAO_ID\",
             \"inicio\": \"$inicio_inscricao\", \"fim\": \"$fim_inscricao\",
@@ -627,7 +649,17 @@ definir_cronograma_fases() {
             \"produtos\": [], \"faseConcluinteCodigo\": null,
             \"emiteParecerIndividual\": false, \"bancasRequeridas\": [], \"regraRecurso\": null
         }
-    ]" >/dev/null
+    ]"
+    # A fase de classificação, quando o roteiro declara uma etapa nela, ocupa o
+    # intervalo entre o fim da inscrição e o resultado.
+    if [ -n "${FASE_CLASSIFICACAO_ID:-}" ]; then
+        fases=$(jq -c --arg fase "$FASE_CLASSIFICACAO_ID" --arg inicio "$(na_data 2027-01-11 00:00:00)" --arg fim "$(na_data 2027-01-12 23:59:59)" '
+            [.[0], {ordem: 2, faseCanonicaId: $fase, inicio: $inicio, fim: $fim, produtos: [], faseConcluinteCodigo: null,
+                emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null}]
+            + (.[1:] | map(.ordem += 1))' <<< "$fases")
+        fases=$(jq -c --arg inicio "$(na_data 2027-01-13 00:00:00)" '.[2].inicio = $inicio' <<< "$fases")
+    fi
+    api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/cronograma-fases" "$fases" >/dev/null
     ok "cronograma definido — inscrição de $inicio_inscricao a $fim_inscricao"
 }
 
@@ -740,7 +772,7 @@ definir_documentos_exigidos() {
 documento_do_edital() {
     log "Documento do Edital — iniciar upload"
     local resp url_upload content_type
-    resp=$(api POST "/api/selecao/processos-seletivos/$PROCESSO_ID/documentos-a-publicar" '{"nomeArquivo":"edital.pdf","tipoDeMidia":"application/pdf"}')
+    resp=$(api POST "/api/selecao/processos-seletivos/$PROCESSO_ID/documentos-a-publicar" '{"finalidade":"documentoDoEdital","nomeArquivo":"edital.pdf","tipoDeMidia":"application/pdf"}')
     DOCUMENTO_EDITAL_ID=$(jq -r '.documentoAPublicarId' <<< "$resp")
     url_upload=$(jq -r '.urlUpload' <<< "$resp")
     content_type=$(jq -r '.contentTypeExigido' <<< "$resp")
@@ -847,4 +879,7 @@ main() {
     conferir_resultado
 }
 
-main "$@"
+# Executado direto, roda o roteiro; lido com `source`, só expõe as funções.
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@"
+fi
