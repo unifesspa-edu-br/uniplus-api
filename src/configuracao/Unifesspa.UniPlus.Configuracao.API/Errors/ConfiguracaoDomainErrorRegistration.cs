@@ -204,6 +204,12 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.peso_area_enem.peso_negativo",
                 "Peso de área não pode ser negativo")),
 
+        new(PesoAreaEnemErrorCodes.PesosSomamZero,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.peso_area_enem.pesos_somam_zero",
+                "Os pesos das áreas não podem somar zero")),
+
         new(PesoAreaEnemErrorCodes.PesoExcedeMaximo,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,

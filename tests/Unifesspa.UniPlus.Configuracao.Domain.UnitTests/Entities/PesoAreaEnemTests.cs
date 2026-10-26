@@ -305,6 +305,24 @@ public sealed class PesoAreaEnemTests
         Criar(ComArea(4, new(PesoAreaEnem.CodigoMatematica, (decimal)peso, null))).IsSuccess.Should().BeTrue();
     }
 
+    [Theory(DisplayName = "Pesos das cinco áreas que somam zero, mesmo depois de arredondar, são recusados")]
+    [InlineData(0)]
+    [InlineData(0.004)]
+    public void Criar_PesosSomamZero_Falha(double peso)
+    {
+        List<AreaInformada> areas =
+        [
+            .. PesoAreaEnem.Areas.Select(a => new AreaInformada(a.Codigo, (decimal)peso, null)),
+        ];
+
+        Result<PesoAreaEnem> resultado = Criar(areas);
+
+        resultado.IsFailure.Should().BeTrue();
+        FieldError erro = resultado.Errors.Single();
+        erro.Field.Should().Be("areas");
+        erro.Error.Code.Should().Be(PesoAreaEnemErrorCodes.PesosSomamZero);
+    }
+
     [Theory(DisplayName = "Corte fora da faixa é recusado no campo do corte da área")]
     [InlineData(-1, PesoAreaEnemErrorCodes.CorteNegativo)]
     [InlineData(1000.001, PesoAreaEnemErrorCodes.CorteExcedeMaximo)]

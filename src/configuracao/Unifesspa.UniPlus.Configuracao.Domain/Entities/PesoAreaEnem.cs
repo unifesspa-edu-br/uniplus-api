@@ -288,6 +288,15 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
                 $"Informe o peso das cinco áreas; faltam: {string.Join(", ", faltando)}.")));
         }
 
+        // A nota da etapa divide pela soma dos pesos: com tudo zerado (inclusive o que só zera
+        // depois de arredondar à escala gravada) não há média a calcular.
+        if (faltando.Length == 0 && validas.Count == Areas.Count && validas.All(static a => a.Peso == 0m))
+        {
+            erros.Add(new("areas", new DomainError(
+                PesoAreaEnemErrorCodes.PesosSomamZero,
+                "Informe ao menos uma área com peso maior que zero; a nota da etapa é a média ponderada por esses pesos.")));
+        }
+
         string? baseLegalNormalizada = ValidarBaseLegal(erros, baseLegal);
 
         return erros.Count == 0
