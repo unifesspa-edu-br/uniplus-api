@@ -1059,6 +1059,10 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new(NotasDoEnemErrorCodes.EdicaoNaoAdmitida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.notas_do_enem.edicao_nao_admitida", "A edição do ENEM não é uma das aceitas pelo processo")),
         new(NotasDoEnemErrorCodes.LeiauteIndisponivel, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.notas_do_enem.leiaute_indisponivel", "O leiaute escolhido não está disponível")),
         new(NotasDoEnemErrorCodes.EdicaoSemInscritos, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.notas_do_enem.edicao_sem_inscritos", "Nenhuma inscrição enviada escolheu esta edição")),
+        new(NotasDoEnemErrorCodes.ArquivoVazio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.notas_do_enem.arquivo_vazio", "O arquivo não foi enviado ou está vazio")),
+        new(NotasDoEnemErrorCodes.ArquivoGrandeDemais, new DomainErrorMapping(StatusCodes.Status413PayloadTooLarge, "uniplus.selecao.notas_do_enem.arquivo_grande_demais", "O arquivo passa do tamanho aceito")),
+        new(NotasDoEnemErrorCodes.TipoDeArquivoNaoAceito, new DomainErrorMapping(StatusCodes.Status415UnsupportedMediaType, "uniplus.selecao.notas_do_enem.tipo_de_arquivo_nao_aceito", "O tipo do arquivo não é aceito")),
+        new(NotasDoEnemErrorCodes.LoteNaoEncontrado, new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.notas_do_enem.lote_nao_encontrado", "O lote de notas não foi encontrado")),
         new(NotasDoEnemErrorCodes.ArquivoForaDoLeiaute, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.notas_do_enem.arquivo_fora_do_leiaute", "O arquivo não confere com o leiaute escolhido")),
         new(NotasDoEnemErrorCodes.CodigoDeSituacaoDesconhecido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.notas_do_enem.codigo_de_situacao_desconhecido", "O arquivo traz um código de situação que o leiaute não conhece")),
     ];

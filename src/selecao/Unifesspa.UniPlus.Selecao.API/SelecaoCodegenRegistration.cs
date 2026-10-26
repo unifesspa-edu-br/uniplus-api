@@ -161,5 +161,7 @@ public static class SelecaoCodegenRegistration
         // monta em tempo de compilação. A porta é service-locada em vez de construída.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IInscritosDaEdicaoDoEnem>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IGeracaoDeEnvioAoInepRepository>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<ILoteDeNotasDoEnemRepository>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IIndiceCegoDoCpf>();
     }
 }
