@@ -218,6 +218,31 @@ public sealed class DefinirEtapasCommandValidatorTests
         result.Errors.Should().Contain(e => e.PropertyName == "Etapas[0].NotaMinima");
     }
 
+    [Theory(DisplayName = "Validator falha quando a nota máxima ou o passo têm mais de 4 casas, e aceita 4")]
+    [InlineData(10.00001, null, "Etapas[0].NotaMaxima")]
+    [InlineData(null, 0.00001, "Etapas[0].PassoDoLancamento")]
+    public void Rejeita_EscalaComCasasExcessivas(double? notaMaxima, double? passo, string propriedade)
+    {
+        EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaOrigemIdValido, 1m, null, 1,
+            Produtos: [], Bancas: [], Recursos: [], NotaMaxima: (decimal?)notaMaxima, PassoDoLancamento: (decimal?)passo);
+
+        ValidationResult result = new DefinirEtapasCommandValidator()
+            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa], PrecondicaoIfMatch.Ausente));
+
+        result.Errors.Should().ContainSingle().Which.PropertyName.Should().Be(propriedade);
+    }
+
+    [Fact(DisplayName = "Validator aceita a nota máxima e o passo com 4 casas")]
+    public void Aceita_EscalaComQuatroCasas()
+    {
+        EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaOrigemIdValido, 1m, null, 1,
+            Produtos: [], Bancas: [], Recursos: [], NotaMaxima: 10.0001m, PassoDoLancamento: 0.0001m);
+
+        new DefinirEtapasCommandValidator()
+            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa], PrecondicaoIfMatch.Ausente))
+            .IsValid.Should().BeTrue();
+    }
+
     [Fact(DisplayName = "Validator falha (sem estourar) quando o array de etapas tem item nulo")]
     public void Rejeita_ItemNulo()
     {

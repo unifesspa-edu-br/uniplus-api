@@ -15443,6 +15443,8 @@
           "tipoEtapa",
           "peso",
           "notaMinima",
+          "notaMaxima",
+          "passoDoLancamento",
           "ordem",
           "faseCodigo",
           "produtos",
@@ -15477,6 +15479,24 @@
             "format": "double"
           },
           "notaMinima": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "notaMaxima": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "passoDoLancamento": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
             "type": [
               "null",
@@ -15636,6 +15656,24 @@
             "items": {
               "$ref": "#/components/schemas/RecursoDaEtapaInput"
             }
+          },
+          "notaMaxima": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "passoDoLancamento": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
           }
         }
       },

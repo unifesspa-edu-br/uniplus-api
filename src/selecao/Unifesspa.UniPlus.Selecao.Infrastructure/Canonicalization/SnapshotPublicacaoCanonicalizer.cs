@@ -324,8 +324,12 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// e se congela a configuração —, como o catálogo de Publicações a dizia na publicação. Sempre
     /// presente, vazio quando o cronograma não declara ato, e com uma entrada por tipo declarado.
     /// Sem produção em ambiente nenhum: fixture nova, <c>0.0.31</c> deixa de ser reconhecida.
+    /// O bump para <c>0.0.33</c> acrescenta a cada etapa as chaves <c>notaMaxima</c> e
+    /// <c>passoDoLancamento</c>: a escala em que a nota da etapa é lançada. Sempre presentes, nulas
+    /// quando a etapa não as declara. Sem novo bloco de topo. Sem produção em ambiente nenhum:
+    /// fixture nova, <c>0.0.32</c> deixa de ser reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.32";
+    internal const string SchemaVersionAtual = "0.0.33";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -613,6 +617,8 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ["tipoEtapa"] = SerializarTipoEtapa(etapa),
         ["peso"] = etapa.Peso is { } peso ? HashCanonicalComputer.SerializeDecimalCanonical(peso, EscalaPadrao) : null,
         ["notaMinima"] = etapa.NotaMinima is { } notaMinima ? HashCanonicalComputer.SerializeDecimalCanonical(notaMinima, EscalaPadrao) : null,
+        ["notaMaxima"] = etapa.NotaMaxima is { } notaMaxima ? HashCanonicalComputer.SerializeDecimalCanonical(notaMaxima, EscalaPadrao) : null,
+        ["passoDoLancamento"] = etapa.PassoDoLancamento is { } passo ? HashCanonicalComputer.SerializeDecimalCanonical(passo, EscalaPadrao) : null,
         ["ordem"] = etapa.Ordem,
         ["faseCodigo"] = etapa.FaseCodigo,
         ["inicio"] = etapa.Inicio is { } ini ? HashCanonicalComputer.SerializeInstantCanonical(ini) : null,

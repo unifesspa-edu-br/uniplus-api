@@ -58,6 +58,14 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// construir o record em código — teste, fixture, qualquer chamador futuro — precisa declarar
 /// as três explicitamente; nenhum diagnóstico avisa se esquecer, e o handler desreferencia.
 /// </para>
+/// <para>
+/// <c>NotaMaxima</c> e <c>PassoDoLancamento</c> são opcionais e, de propósito, sem
+/// <c>[JsonRequired]</c>. Como a gravação substitui a etapa, um cliente que omite os campos
+/// apaga a escala em silêncio; isso é aceito até a tela do editor passar a enviá-los. Para a
+/// nota máxima a perda aparece no gate da publicação, que a exige da etapa com nota; para o
+/// passo não aparece em lugar nenhum, porque ele nunca é obrigatório. Ficam no fim da lista
+/// posicional para não deslocar quem constrói o record por posição.
+/// </para>
 /// </remarks>
 public sealed record EtapaProcessoInput(
     string Nome,
@@ -73,7 +81,9 @@ public sealed record EtapaProcessoInput(
     DateTimeOffset? Fim = null,
     bool EmiteParecerIndividual = false,
     [property: JsonRequired] IReadOnlyList<BancaDaEtapaInput> Bancas = null!,
-    [property: JsonRequired] IReadOnlyList<RecursoDaEtapaInput> Recursos = null!);
+    [property: JsonRequired] IReadOnlyList<RecursoDaEtapaInput> Recursos = null!,
+    decimal? NotaMaxima = null,
+    decimal? PassoDoLancamento = null);
 
 /// <summary>Uma banca requerida pela etapa — o id do tipo no cadastro de Configuração.</summary>
 public sealed record BancaDaEtapaInput(Guid TipoBancaId);

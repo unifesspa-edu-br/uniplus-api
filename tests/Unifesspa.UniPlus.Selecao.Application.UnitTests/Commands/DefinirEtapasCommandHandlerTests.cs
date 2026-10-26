@@ -779,6 +779,56 @@ public sealed class DefinirEtapasCommandHandlerTests
         etapaNova.Nome.Should().Be("Entrevista");
     }
 
+    [Fact(DisplayName = "A nota máxima e o passo chegam à etapa criada e à etapa atualizada")]
+    public async Task Handle_Escala_ChegaACriadaEAAtualizada()
+    {
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+        EtapaProcesso existente = EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva(), peso: 1m, ordem: 1).Value!;
+        processo.DefinirEtapas([existente], PrecondicaoIfMatch.Ausente);
+
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+
+        DefinirEtapasCommand command = new(
+            processo.Id,
+            [
+                new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, existente.Id,
+                    Produtos: [], Bancas: [], Recursos: [], NotaMaxima: 10m, PassoDoLancamento: 0.25m),
+                new EtapaProcessoInput("Redação", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 2,
+                    Produtos: [], Bancas: [], Recursos: [], NotaMaxima: 1000m, PassoDoLancamento: 20m),
+            ], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> result = await Executar(command, repository, Substitute.For<ISelecaoUnitOfWork>(), ReaderPadrao());
+
+        result.IsSuccess.Should().BeTrue();
+        processo.Etapas.Single(e => e.Id == existente.Id).Should().Match<EtapaProcesso>(
+            e => e.NotaMaxima == 10m && e.PassoDoLancamento == 0.25m);
+        processo.Etapas.Single(e => e.Nome == "Redação").Should().Match<EtapaProcesso>(
+            e => e.NotaMaxima == 1000m && e.PassoDoLancamento == 20m);
+    }
+
+    [Fact(DisplayName = "Defeitos de escala em etapas diferentes saem numa só resposta, cada um no seu campo")]
+    public async Task Handle_DefeitosDeEscalaEmEtapasDiferentes_Acumula()
+    {
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+
+        DefinirEtapasCommand command = new(
+            processo.Id,
+            [
+                new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1,
+                    Produtos: [], Bancas: [], Recursos: [], NotaMaxima: 0m),
+                new EtapaProcessoInput("Entrevista", CaraterEtapa.Eliminatoria, TipoProvaObjetivaOrigemId, null, 12m, 2,
+                    Produtos: [], Bancas: [], Recursos: [], NotaMaxima: 10m),
+            ], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> result = await Executar(command, repository, Substitute.For<ISelecaoUnitOfWork>(), ReaderPadrao());
+
+        result.IsFailure.Should().BeTrue();
+        result.Errors.Select(e => e.Field).Should().BeEquivalentTo(["etapas[0].notaMaxima", "etapas[1].notaMinima"]);
+    }
+
     [Fact(DisplayName = "Handle com o mesmo Id de etapa repetido no payload é recusado")]
     public async Task Handle_ComIdEtapaRepetido_Recusa()
     {

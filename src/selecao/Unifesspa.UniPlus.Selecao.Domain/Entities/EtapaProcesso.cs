@@ -9,8 +9,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Etapa <em>pontuada</em> do <see cref="ProcessoSeletivo"/> (peso, caráter e
-/// nota mínima) — distinta de fase do cronograma, que é o eixo temporal do
+/// Etapa <em>pontuada</em> do <see cref="ProcessoSeletivo"/> (peso, caráter, nota
+/// mínima e escala do lançamento) — distinta de fase do cronograma, que é o eixo temporal do
 /// certame. Entidade interna do agregado: criada, substituída e persistida
 /// exclusivamente pela raiz.
 /// </summary>
@@ -33,6 +33,11 @@ public sealed class EtapaProcesso : EntityBase
     /// <see cref="ValidarCaraterAdmitido"/>.
     /// </summary>
     public const string CaraterNaoAdmitidoPeloTipo = "EtapaProcesso.CaraterNaoAdmitidoPeloTipo";
+
+    public const string NotaMaximaInvalida = "EtapaProcesso.NotaMaximaInvalida";
+    public const string PassoDoLancamentoInvalido = "EtapaProcesso.PassoDoLancamentoInvalido";
+    public const string NotaMinimaAcimaDaNotaMaxima = "EtapaProcesso.NotaMinimaAcimaDaNotaMaxima";
+    public const string NotaMaximaForaDoPasso = "EtapaProcesso.NotaMaximaForaDoPasso";
 
     public Guid ProcessoSeletivoId { get; private set; }
 
@@ -59,6 +64,17 @@ public sealed class EtapaProcesso : EntityBase
     public Guid TipoEtapaOrigemId => TipoEtapa.OrigemId;
     public decimal? Peso { get; private set; }
     public decimal? NotaMinima { get; private set; }
+
+    /// <summary>
+    /// Teto da escala em que a nota da etapa é lançada. Sem ele a nota lançada não tem como ser
+    /// recusada por estar fora da escala, e a nota mínima de uma regra não tem contra o que ser
+    /// conferida. Ausente na etapa sem nota e na de nota do ENEM, cuja escala vem do INEP.
+    /// </summary>
+    public decimal? NotaMaxima { get; private set; }
+
+    /// <summary>De quanto em quanto a nota pode ser lançada; vale só para a nota digitada.</summary>
+    public decimal? PassoDoLancamento { get; private set; }
+
     public int? Ordem { get; private set; }
 
     /// <summary>Início da janela própria da etapa, em UTC; ausente quando ela herda a da fase.</summary>
@@ -164,10 +180,10 @@ public sealed class EtapaProcesso : EntityBase
 
     /// <summary>
     /// Acumula toda violação independente em vez de retornar na primeira (ADR-0125). Precisão/
-    /// escala de <see cref="Peso"/>/<see cref="NotaMinima"/> (<c>numeric(18,4)</c>) permanecem
-    /// só no validator — não há ainda um helper de domínio para limite decimal (achado B2 do
-    /// mapeamento da rolagem), então checar aqui duplicaria uma regra de forma de wire/coluna
-    /// sem trazer nenhum ganho de correção.
+    /// escala de <see cref="Peso"/>, <see cref="NotaMinima"/>, <see cref="NotaMaxima"/> e
+    /// <see cref="PassoDoLancamento"/> (<c>numeric(18,4)</c>) permanecem
+    /// só no validator — não há ainda um helper de domínio para limite decimal, então checar
+    /// aqui duplicaria uma regra de forma de wire/coluna sem trazer nenhum ganho de correção.
     /// </summary>
     public static Result<EtapaProcesso> Criar(
         string nome,
@@ -176,11 +192,14 @@ public sealed class EtapaProcesso : EntityBase
         decimal? peso = null,
         decimal? notaMinima = null,
         int? ordem = null,
-        string? faseCodigo = null)
+        string? faseCodigo = null,
+        decimal? notaMaxima = null,
+        decimal? passoDoLancamento = null)
     {
         ArgumentNullException.ThrowIfNull(tipoEtapa);
 
-        List<FieldError> erros = ValidarFormaBasica(nome, carater, peso, notaMinima, ordem);
+        List<FieldError> erros = ValidarFormaBasica(
+            nome, carater, peso, notaMinima, ordem, notaMaxima, passoDoLancamento);
         if (erros.Count > 0)
         {
             return Result<EtapaProcesso>.ValidationFailure(erros);
@@ -193,13 +212,15 @@ public sealed class EtapaProcesso : EntityBase
             TipoEtapa = tipoEtapa,
             Peso = peso,
             NotaMinima = notaMinima,
+            NotaMaxima = notaMaxima,
+            PassoDoLancamento = passoDoLancamento,
             Ordem = ordem,
             FaseCodigo = string.IsNullOrWhiteSpace(faseCodigo) ? null : faseCodigo.Trim(),
         });
     }
 
     /// <summary>
-    /// Nome/Carater/Peso/NotaMinima/Ordem não dependem de nenhum cadastro cross-módulo —
+    /// Nome/Carater/Peso/NotaMinima/Ordem e a escala (nota máxima e passo) não dependem de nenhum cadastro cross-módulo —
     /// diferente de <see cref="TipoEtapa"/> (resolvido à parte, contra o cadastro vivo de
     /// Configuração, por quem chama). Compartilhada entre <see cref="Criar"/> e
     /// <see cref="AtualizarDados"/> (mesmas checagens) e exposta para o handler poder
@@ -208,7 +229,13 @@ public sealed class EtapaProcesso : EntityBase
     /// <c>FormaDoItem.ValidarFormaBasica</c>, PR #1214).
     /// </summary>
     public static List<FieldError> ValidarFormaBasica(
-        string? nome, CaraterEtapa carater, decimal? peso, decimal? notaMinima, int? ordem)
+        string? nome,
+        CaraterEtapa carater,
+        decimal? peso,
+        decimal? notaMinima,
+        int? ordem,
+        decimal? notaMaxima = null,
+        decimal? passoDoLancamento = null)
     {
         List<FieldError> erros = [];
 
@@ -257,6 +284,10 @@ public sealed class EtapaProcesso : EntityBase
                 "Nota mínima só se aplica a etapa cujo caráter elimina; etapa apenas classificatória pontua sem reprovar.")));
         }
 
+        ValidarEscala(
+            erros, notaMinima, notaMaxima, passoDoLancamento,
+            notaMinimaJaRecusada: erros.Exists(static e => e.Field == "notaMinima"));
+
         if (ordem is <= 0)
         {
             erros.Add(new("ordem", new DomainError(
@@ -264,6 +295,45 @@ public sealed class EtapaProcesso : EntityBase
         }
 
         return erros;
+    }
+
+    /// <summary>
+    /// Recusa a contradição entre valores declarados da escala, em rascunho também: a falta é
+    /// tolerada (o gate de publicação a cobra), mas dois valores que não convivem não são falta.
+    /// Quem já recusou o valor isolado não o repete nas regras que o comparam, o que também
+    /// evita dividir por zero no múltiplo do passo.
+    /// </summary>
+    private static void ValidarEscala(
+        List<FieldError> erros, decimal? notaMinima, decimal? notaMaxima, decimal? passo, bool notaMinimaJaRecusada)
+    {
+        if (notaMaxima is <= 0)
+        {
+            erros.Add(new("notaMaxima", new DomainError(
+                NotaMaximaInvalida, "A nota máxima da etapa, quando informada, deve ser maior que zero.")));
+        }
+
+        if (passo is <= 0)
+        {
+            erros.Add(new("passoDoLancamento", new DomainError(
+                PassoDoLancamentoInvalido, "O passo do lançamento, quando informado, deve ser maior que zero.")));
+        }
+
+        if (notaMaxima is not > 0)
+        {
+            return;
+        }
+
+        if (!notaMinimaJaRecusada && notaMinima > notaMaxima)
+        {
+            erros.Add(new("notaMinima", new DomainError(
+                NotaMinimaAcimaDaNotaMaxima, "A nota mínima da etapa não pode passar da nota máxima.")));
+        }
+
+        if (passo > 0 && notaMaxima % passo != 0)
+        {
+            erros.Add(new("notaMaxima", new DomainError(
+                NotaMaximaForaDoPasso, "A nota máxima da etapa deve ser múltipla do passo do lançamento.")));
+        }
     }
 
     /// <summary>
@@ -296,7 +366,9 @@ public sealed class EtapaProcesso : EntityBase
         bool emiteParecerIndividual,
         IReadOnlyList<ProdutoDaEtapa> produtos,
         IReadOnlyList<BancaDaEtapa> bancas,
-        IReadOnlyList<RecursoDaEtapa> recursos)
+        IReadOnlyList<RecursoDaEtapa> recursos,
+        decimal? notaMaxima,
+        decimal? passoDoLancamento)
     {
         ArgumentNullException.ThrowIfNull(nome);
         ArgumentNullException.ThrowIfNull(tipoEtapa);
@@ -309,6 +381,8 @@ public sealed class EtapaProcesso : EntityBase
         TipoEtapa = tipoEtapa;
         Peso = peso;
         NotaMinima = notaMinima;
+        NotaMaxima = notaMaxima;
+        PassoDoLancamento = passoDoLancamento;
         Ordem = ordem;
         FaseCodigo = string.IsNullOrWhiteSpace(faseCodigo) ? null : faseCodigo.Trim();
         Inicio = inicio?.ToUniversalTime();
@@ -511,7 +585,9 @@ public sealed class EtapaProcesso : EntityBase
         decimal? peso,
         decimal? notaMinima,
         int? ordem,
-        string? faseCodigo = null)
+        string? faseCodigo = null,
+        decimal? notaMaxima = null,
+        decimal? passoDoLancamento = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(nome);
         ArgumentNullException.ThrowIfNull(tipoEtapa);
@@ -535,6 +611,8 @@ public sealed class EtapaProcesso : EntityBase
             TipoEtapa = tipoEtapa,
             Peso = peso,
             NotaMinima = notaMinima,
+            NotaMaxima = notaMaxima,
+            PassoDoLancamento = passoDoLancamento,
             Ordem = ordem,
             FaseCodigo = string.IsNullOrWhiteSpace(faseCodigo) ? null : faseCodigo.Trim(),
         };
@@ -568,11 +646,14 @@ public sealed class EtapaProcesso : EntityBase
         decimal? peso,
         decimal? notaMinima,
         int? ordem,
-        string? faseCodigo = null)
+        string? faseCodigo = null,
+        decimal? notaMaxima = null,
+        decimal? passoDoLancamento = null)
     {
         ArgumentNullException.ThrowIfNull(tipoEtapa);
 
-        List<FieldError> erros = ValidarFormaBasica(nome, carater, peso, notaMinima, ordem);
+        List<FieldError> erros = ValidarFormaBasica(
+            nome, carater, peso, notaMinima, ordem, notaMaxima, passoDoLancamento);
         if (erros.Count > 0)
         {
             return Result.ValidationFailure(erros);
@@ -583,6 +664,8 @@ public sealed class EtapaProcesso : EntityBase
         TipoEtapa = tipoEtapa;
         Peso = peso;
         NotaMinima = notaMinima;
+        NotaMaxima = notaMaxima;
+        PassoDoLancamento = passoDoLancamento;
         Ordem = ordem;
         FaseCodigo = string.IsNullOrWhiteSpace(faseCodigo) ? null : faseCodigo.Trim();
 

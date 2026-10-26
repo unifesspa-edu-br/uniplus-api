@@ -11,7 +11,14 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-        builder.ToTable("etapas_processo");
+        builder.ToTable("etapas_processo", t =>
+        {
+            // Só a positividade fica no banco: numeric(18,4) arredonda 0,00001 para zero em
+            // silêncio, e o EF hidrata sem passar pelo domínio. A coerência entre os valores
+            // (mínima até a máxima, máxima no passo) é regra de gravação, não de armazenamento.
+            t.HasCheckConstraint("ck_etapas_processo_nota_maxima_positiva", "nota_maxima IS NULL OR nota_maxima > 0");
+            t.HasCheckConstraint("ck_etapas_processo_passo_positivo", "passo_do_lancamento IS NULL OR passo_do_lancamento > 0");
+        });
         builder.HasKey(e => e.Id);
         // Chave Guid v7 do domínio (EntityBase) — ValueGeneratedNever para o EF
         // tratar a chave como fornecida pela aplicação (evita UPDATE de filho novo
@@ -77,6 +84,10 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
 
         builder.Property(e => e.Peso).HasPrecision(18, 4);
         builder.Property(e => e.NotaMinima).HasPrecision(18, 4);
+        builder.Property(e => e.NotaMaxima).HasPrecision(18, 4)
+            .HasComment("Nota máxima da escala da etapa com nota; ausente na etapa sem nota e na do ENEM.");
+        builder.Property(e => e.PassoDoLancamento).HasPrecision(18, 4)
+            .HasComment("De quanto em quanto a nota pode ser lançada; vale só para a nota digitada.");
 
         // Ordem única por processo quando informada (colunas nulas não
         // colidem em unique index no Postgres).

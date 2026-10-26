@@ -7459,7 +7459,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     congelada.EmiteParecerIndividual,
                     [.. congelada.Produtos],
                     [.. congelada.Bancas],
-                    [.. congelada.Recursos]);
+                    [.. congelada.Recursos],
+                    congelada.NotaMaxima,
+                    congelada.PassoDoLancamento);
                 etapas.Add(viva);
             }
             else

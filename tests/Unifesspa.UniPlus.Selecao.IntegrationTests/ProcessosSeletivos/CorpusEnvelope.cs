@@ -223,7 +223,7 @@ internal static class CorpusEnvelope
         // envelope recusar a si mesmo na volta. Sem isto no corpus, o round-trip passava
         // exatamente por não exercitar recurso de etapa nenhum.
         EtapaProcesso etapaObjetiva = EtapaProcesso.Reidratar(
-            objetiva, "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 3.5000m, notaMinima: 40.0000m, ordem: 1);
+            objetiva, "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 3.5000m, notaMinima: 40.0000m, ordem: 1, notaMaxima: 100.0000m, passoDoLancamento: 0.2500m);
         etapaObjetiva.DefinirJanelaEParecer(null, null, emiteParecerIndividual: true).IsSuccess.Should().BeTrue();
         // A MESMA matéria nos dois papéis: é o par que a ordenação canônica precisa desempatar,
         // e é o único caso em que o código do ato não basta para fixar a posição no envelope.
@@ -295,8 +295,8 @@ internal static class CorpusEnvelope
 
         processo.DefinirEtapas(Ordem([
             etapaObjetiva,
-            EtapaProcesso.Reidratar(redacao, "Redação", CaraterEtapa.Classificatoria, TipoEtapaRedacao(), peso: 2.2500m, notaMinima: null, ordem: 2),
-            EtapaProcesso.Reidratar(entrevista, "Entrevista", CaraterEtapa.Eliminatoria, TipoEtapaEntrevista(), peso: null, notaMinima: 60.0000m, ordem: 3),
+            EtapaProcesso.Reidratar(redacao, "Redação", CaraterEtapa.Classificatoria, TipoEtapaRedacao(), peso: 2.2500m, notaMinima: null, ordem: 2, notaMaxima: 10.0000m, passoDoLancamento: null),
+            EtapaProcesso.Reidratar(entrevista, "Entrevista", CaraterEtapa.Eliminatoria, TipoEtapaEntrevista(), peso: null, notaMinima: 60.0000m, ordem: 3, notaMaxima: 100.0000m),
         ], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar(

@@ -186,6 +186,96 @@ public sealed class EtapaProcessoTests
         resultado.Errors.Select(e => e.Error.Code).Should().Contain("EtapaProcesso.NotaMinimaInvalida");
     }
 
+    [Theory(DisplayName = "Nota máxima e passo não positivos são recusados, cada um no seu campo")]
+    [InlineData(0.0, null, "EtapaProcesso.NotaMaximaInvalida", "notaMaxima")]
+    [InlineData(-1.0, null, "EtapaProcesso.NotaMaximaInvalida", "notaMaxima")]
+    [InlineData(null, 0.0, "EtapaProcesso.PassoDoLancamentoInvalido", "passoDoLancamento")]
+    [InlineData(null, -0.5, "EtapaProcesso.PassoDoLancamentoInvalido", "passoDoLancamento")]
+    public void ValidarFormaBasica_EscalaNaoPositiva_Recusa(double? notaMaxima, double? passo, string codigo, string campo)
+    {
+        List<FieldError> erros = EtapaProcesso.ValidarFormaBasica(
+            "Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, notaMinima: null, ordem: 1,
+            notaMaxima: (decimal?)notaMaxima, passoDoLancamento: (decimal?)passo);
+
+        erros.Should().ContainSingle().Which.Error.Code.Should().Be(codigo);
+        erros[0].Field.Should().Be(campo);
+    }
+
+    [Fact(DisplayName = "Nota mínima acima da nota máxima é recusada, e igual é aceita")]
+    public void ValidarFormaBasica_NotaMinimaContraNotaMaxima_RecusaSoAcima()
+    {
+        List<FieldError> acima = EtapaProcesso.ValidarFormaBasica(
+            "Entrevista", CaraterEtapa.Eliminatoria, peso: null, notaMinima: 10.5m, ordem: 1, notaMaxima: 10m);
+        List<FieldError> igual = EtapaProcesso.ValidarFormaBasica(
+            "Entrevista", CaraterEtapa.Eliminatoria, peso: null, notaMinima: 10m, ordem: 1, notaMaxima: 10m);
+
+        acima.Should().ContainSingle().Which.Error.Code.Should().Be("EtapaProcesso.NotaMinimaAcimaDaNotaMaxima");
+        acima[0].Field.Should().Be("notaMinima");
+        igual.Should().BeEmpty();
+    }
+
+    [Theory(DisplayName = "A nota máxima precisa ser múltipla do passo")]
+    [InlineData(10, 0.25, true)]
+    [InlineData(10, 0.5, true)]
+    [InlineData(10, 1, true)]
+    [InlineData(10, 0.01, true)]
+    [InlineData(10, 0.3, false)]
+    [InlineData(10, 4, false)]
+    public void ValidarFormaBasica_NotaMaximaContraPasso_RecusaForaDoMultiplo(double notaMaxima, double passo, bool aceita)
+    {
+        List<FieldError> erros = EtapaProcesso.ValidarFormaBasica(
+            "Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, notaMinima: null, ordem: 1,
+            notaMaxima: (decimal)notaMaxima, passoDoLancamento: (decimal)passo);
+
+        if (aceita)
+        {
+            erros.Should().BeEmpty();
+            return;
+        }
+
+        erros.Should().ContainSingle().Which.Error.Code.Should().Be("EtapaProcesso.NotaMaximaForaDoPasso");
+        erros[0].Field.Should().Be("notaMaxima");
+    }
+
+    [Fact(DisplayName = "Escala parcial é aceita na gravação: sem passo, ou sem nota máxima")]
+    public void ValidarFormaBasica_EscalaParcial_Aceita()
+    {
+        EtapaProcesso.ValidarFormaBasica(
+            "Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, notaMinima: null, ordem: 1, notaMaxima: 10m)
+            .Should().BeEmpty();
+        EtapaProcesso.ValidarFormaBasica(
+            "Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, notaMinima: null, ordem: 1, passoDoLancamento: 0.5m)
+            .Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "A nota mínima não precisa ser múltipla do passo")]
+    public void ValidarFormaBasica_NotaMinimaForaDoPasso_Aceita()
+    {
+        EtapaProcesso.ValidarFormaBasica(
+            "Entrevista", CaraterEtapa.Eliminatoria, peso: null, notaMinima: 5.1m, ordem: 1,
+            notaMaxima: 10m, passoDoLancamento: 0.5m)
+            .Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Nota mínima já recusada por outro motivo não é comparada de novo com a nota máxima")]
+    public void ValidarFormaBasica_NotaMinimaJaRecusada_NaoRepeteAComparacao()
+    {
+        List<FieldError> erros = EtapaProcesso.ValidarFormaBasica(
+            "Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, notaMinima: 12m, ordem: 1, notaMaxima: 10m);
+
+        erros.Should().ContainSingle().Which.Error.Code.Should().Be("EtapaProcesso.NotaMinimaSemCaraterQueElimina");
+    }
+
+    [Fact(DisplayName = "A contradição da escala acumula com as demais recusas, cada uma no seu campo")]
+    public void ValidarFormaBasica_ContradicaoDaEscala_AcumulaComAsDemais()
+    {
+        List<FieldError> erros = EtapaProcesso.ValidarFormaBasica(
+            "Prova Objetiva", CaraterEtapa.Ambas, peso: 0m, notaMinima: 12m, ordem: 1,
+            notaMaxima: 10m, passoDoLancamento: 0.3m);
+
+        erros.Select(e => e.Field).Should().BeEquivalentTo(["peso", "notaMinima", "notaMaxima"]);
+    }
+
     [Fact(DisplayName = "Criar com ordem não positiva falha com OrdemInvalida")]
     public void Criar_OrdemInvalida_Falha()
     {
