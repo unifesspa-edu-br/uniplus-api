@@ -24,6 +24,12 @@ public static class DimensaoConformidade
     public const string DistribuicaoVagas = "distribuicao_vagas";
     public const string Classificacao = "classificacao";
     public const string Cronograma = "cronograma";
+
+    /// <summary>
+    /// As etapas pontuadas do processo: o que a etapa declara de si mesma, como a escala em que
+    /// a nota dela é lançada. Distinta do cronograma, que diz quando a etapa acontece.
+    /// </summary>
+    public const string Etapas = "etapas";
     public const string TaxaInscricao = "taxa_inscricao";
     public const string ExigenciasDocumentais = "exigencias_documentais";
     public const string CascataRemanejamento = "cascata_remanejamento";

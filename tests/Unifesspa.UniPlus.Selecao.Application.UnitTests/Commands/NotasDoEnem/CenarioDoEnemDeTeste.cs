@@ -88,5 +88,5 @@ internal sealed class CenarioDoEnemDeTeste
             TipoEtapaSnapshot.Criar(
                 CadastrosVivos.IdentidadeDe(tipo), tipo, nome, admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: notaDeOrigemNoEnem).Value!,
             peso: 1m,
-            ordem: 1).Value!;
+            ordem: 1, notaMaxima: 10m).Value!;
 }

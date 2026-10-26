@@ -2024,10 +2024,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </summary>
     private bool EtapaReferenciadaPorClassificacaoOuDesempate(Guid etapaId) =>
         _criteriosDesempate.Any(c => c.Args is ArgsDesempateMaiorNotaEtapa args && args.EtapaRef == etapaId)
-        || (Classificacao?.RegrasEliminacao
-            .Select(static r => r.Args)
+        || EliminacoesPorNotaMinimaDaEtapa(etapaId).Any();
+
+    /// <summary>As regras de eliminação por nota mínima que citam a etapa.</summary>
+    private IEnumerable<ArgsElimNotaMinimaEtapa> EliminacoesPorNotaMinimaDaEtapa(Guid etapaId) =>
+        (Classificacao?.RegrasEliminacao ?? [])
+            .Select(static regra => regra.Args)
             .OfType<ArgsElimNotaMinimaEtapa>()
-            .Any(args => args.EtapaRef == etapaId) ?? false);
+            .Where(args => args.EtapaRef == etapaId);
 
     /// <summary>
     /// As fases indexadas pelo código canônico, resolvendo a primeira quando duas o
@@ -3559,6 +3563,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             new ItemConformidade("criterios_desempate_ausentes", DimensaoConformidade.Desempate, "Critérios de desempate (inscrição própria)", OrigemCandidatos != OrigemCandidatos.InscricaoPropria || _criteriosDesempate.Count > 0),
         ];
 
+        itens.AddRange(ItensDaEscalaDasEtapas());
+
         if (Classificacao is { RegraCalculo.Codigo: RegraCalculoCodigo.FormulaMediaPonderada })
         {
             itens.Add(new ItemConformidade("classificacao_divisor_media_invalido", DimensaoConformidade.Classificacao, "Divisor da média (fórmula local)", CalcularDivisorMedia() > 0));
@@ -3583,6 +3589,78 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         return itens;
     }
+
+    /// <summary>
+    /// A escala em que a nota de cada etapa é lançada: a etapa com nota a declara, a que não tem
+    /// nota e a do ENEM não. Depende do grafo (o que compõe a média, o que a classificação e o
+    /// desempate citam), por isso é gate de publicação e não recusa de gravação.
+    /// </summary>
+    /// <remarks>
+    /// Cada item lista todas as etapas que reprovam, e os itens são independentes: uma tentativa
+    /// de publicar devolve de uma vez tudo o que falta. A etapa de nota do ENEM que declara escala
+    /// aparece só no item do ENEM, para a mesma causa não render dois vermelhos.
+    /// </remarks>
+    private List<ItemConformidade> ItensDaEscalaDasEtapas()
+    {
+        static bool DeclaraEscala(EtapaProcesso etapa) => etapa.NotaMaxima.HasValue || etapa.PassoDoLancamento.HasValue;
+
+        // Uma avaliação por etapa: o predicado percorre a classificação e o desempate, e três
+        // dos quatro itens o consultam.
+        List<(EtapaProcesso Etapa, bool TemNota)> avaliadas = [.. _etapas.Select(etapa => (etapa, EtapaTemNota(etapa)))];
+
+        return
+        [
+            ItemDasEtapas(
+                "etapa_com_nota_sem_nota_maxima",
+                "Nota máxima de cada etapa com nota que não é do ENEM",
+                [.. avaliadas.Where(a => !a.Etapa.DeclaraNotaDoEnem && a.TemNota && !a.Etapa.NotaMaxima.HasValue).Select(static a => a.Etapa)]),
+            ItemDasEtapas(
+                "etapa_sem_nota_com_escala",
+                "Nota máxima e passo só em etapa com nota",
+                [.. avaliadas.Where(a => !a.Etapa.DeclaraNotaDoEnem && !a.TemNota && DeclaraEscala(a.Etapa)).Select(static a => a.Etapa)]),
+            ItemDasEtapas(
+                "etapa_do_enem_com_escala",
+                "Etapa de nota do ENEM sem nota máxima nem passo",
+                [.. _etapas.Where(etapa => etapa.DeclaraNotaDoEnem && DeclaraEscala(etapa))]),
+            ItemDasEtapas(
+                "nota_minima_da_regra_acima_da_nota_maxima",
+                "Nota mínima da regra de eliminação até a nota máxima da etapa",
+                [.. _etapas.Where(NotaMinimaDaRegraPassaDaNotaMaxima)]),
+        ];
+    }
+
+    /// <summary>
+    /// A etapa tem nota quando entra na média, tem nota mínima ou é citada pela eliminação por
+    /// nota mínima da etapa ou pelo desempate pela maior nota da etapa. Quem enxerga as quatro
+    /// coisas é a raiz: a etapa sozinha não vê a classificação nem o desempate.
+    /// </summary>
+    private bool EtapaTemNota(EtapaProcesso etapa) =>
+        etapa.ComponeNota || etapa.NotaMinima.HasValue || EtapaReferenciadaPorClassificacaoOuDesempate(etapa.Id);
+
+    /// <summary>
+    /// Só confere quando a etapa declara a nota máxima: a falta dela já é o item próprio, e dois
+    /// vermelhos pela mesma causa fariam o operador procurar dois problemas.
+    /// </summary>
+    private bool NotaMinimaDaRegraPassaDaNotaMaxima(EtapaProcesso etapa) =>
+        etapa.NotaMaxima is { } notaMaxima
+        && EliminacoesPorNotaMinimaDaEtapa(etapa.Id).Any(args => args.NotaMinima > notaMaxima);
+
+    /// <summary>
+    /// Item que identifica as etapas pendentes, em ordem estável, pelo mesmo motivo de
+    /// <see cref="ItemDasOfertas"/>. O nome é texto livre do operador e sai ecoado.
+    /// </summary>
+    private static ItemConformidade ItemDasEtapas(string codigo, string mensagem, List<EtapaProcesso> pendentes) =>
+        new(
+            codigo,
+            DimensaoConformidade.Etapas,
+            pendentes.Count == 0
+                ? mensagem
+                : $"{mensagem} (etapas: {string.Join("; ", pendentes
+                    .OrderBy(static etapa => etapa.Ordem ?? int.MaxValue)
+                    .ThenBy(static etapa => etapa.Nome, StringComparer.Ordinal)
+                    .ThenBy(static etapa => etapa.Id)
+                    .Select(static etapa => $"\"{CaracteresInvisiveis.ParaEco(etapa.Nome, TextoCongelado.TamanhoMaximoEcoado)}\""))})",
+            pendentes.Count == 0);
 
     /// <summary>
     /// A resolução de Pesos por Área, o quadro congelado dela e o grupo de área de cada oferta,

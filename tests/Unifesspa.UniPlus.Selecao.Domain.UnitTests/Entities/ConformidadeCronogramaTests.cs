@@ -149,7 +149,7 @@ public sealed class ConformidadeCronogramaTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         processo.DefinirEtapas(
-            [EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!], PrecondicaoIfMatch.Ausente);
+            [EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, notaMaxima: 10m).Value!], PrecondicaoIfMatch.Ausente);
         processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
         processo.DefinirDistribuicaoVagas([Distribuicao(40)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
@@ -196,7 +196,7 @@ public sealed class ConformidadeCronogramaTests
         // cenário aqui prova a MESMA classe de defeito por outro caminho: guard "vivo" via
         // reflection para simular um estado que hoje só seria alcançável por dado legado.
         Result definirEtapas = processo.DefinirEtapas(
-            [EtapaProcesso.Criar("Entrevista", CaraterEtapa.Eliminatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: null, notaMinima: 5m, ordem: 1).Value!],
+            [EtapaProcesso.Criar("Entrevista", CaraterEtapa.Eliminatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: null, notaMinima: 5m, ordem: 1, notaMaxima: 10m).Value!],
             PrecondicaoIfMatch.Ausente);
         definirEtapas.IsFailure.Should().BeTrue(
             "pré-condição: DefinirEtapas já recusa uma lista sem NENHUMA etapa que componha a nota — " +
@@ -309,7 +309,7 @@ public sealed class ConformidadeCronogramaTests
         EtapaProcesso etapa = EtapaProcesso.Criar(
             "Prova Objetiva", CaraterEtapa.Classificatoria,
             TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-            peso: 3m, ordem: 1).Value!;
+            peso: 3m, ordem: 1, notaMaxima: 10m).Value!;
         etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)]).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -373,7 +373,7 @@ public sealed class ConformidadeCronogramaTests
             EtapaProcesso etapa = EtapaProcesso.Criar(
                 "Prova", CaraterEtapa.Classificatoria,
                 TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-                peso: 3m, ordem: ordem).Value!;
+                peso: 3m, ordem: ordem, notaMaxima: 10m).Value!;
             etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)]).IsSuccess.Should().BeTrue();
             return etapa;
         }
@@ -453,7 +453,7 @@ public sealed class ConformidadeCronogramaTests
         EtapaProcesso etapa = EtapaProcesso.Criar(
             "Prova Objetiva", CaraterEtapa.Classificatoria,
             TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-            peso: 3m, ordem: 1).Value!;
+            peso: 3m, ordem: 1, notaMaxima: 10m).Value!;
         etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)]).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 

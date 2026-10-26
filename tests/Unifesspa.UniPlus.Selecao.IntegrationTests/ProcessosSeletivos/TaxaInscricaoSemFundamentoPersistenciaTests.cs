@@ -135,7 +135,7 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
             EtapaProcesso.Criar(
                 "Prova Objetiva", CaraterEtapa.Classificatoria,
                 TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-                peso: 1m, notaMinima: null, ordem: 1).Value!,
+                peso: 1m, notaMinima: null, ordem: 1, notaMaxima: 10m).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirOfertaAtendimento(

@@ -295,7 +295,7 @@ internal static class CorpusEnvelope
 
         processo.DefinirEtapas(Ordem([
             etapaObjetiva,
-            EtapaProcesso.Reidratar(redacao, "Redação", CaraterEtapa.Classificatoria, TipoEtapaRedacao(), peso: 2.2500m, notaMinima: null, ordem: 2, notaMaxima: 10.0000m, passoDoLancamento: null),
+            EtapaProcesso.Reidratar(redacao, "Redação", CaraterEtapa.Classificatoria, TipoEtapaRedacao(), peso: 2.2500m, notaMinima: null, ordem: 2, notaMaxima: 100.0000m, passoDoLancamento: null),
             EtapaProcesso.Reidratar(entrevista, "Entrevista", CaraterEtapa.Eliminatoria, TipoEtapaEntrevista(), peso: null, notaMinima: 60.0000m, ordem: 3, notaMaxima: 100.0000m),
         ], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -1082,7 +1082,7 @@ internal static class CorpusEnvelope
                 TipoEtapaProvaObjetiva(),
                 peso: 9.9999m,
                 notaMinima: null,
-                ordem: 7)],
+                ordem: 7, notaMaxima: 10m)],
             ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
             distribuicaoVagas: [DistribuicaoInstitucional()],
             bonusRegional: null,
@@ -1104,7 +1104,7 @@ internal static class CorpusEnvelope
 
     /// <summary>Um grafo mínimo e conforme — a "sessão editorial" que o descarte terá de desfazer.</summary>
     internal static GrafoConfiguracao GrafoPobre(int variante = 0) => new(
-        etapas: [EtapaProcesso.Reidratar(new Guid($"9999fff{variante:x}-0000-4000-8000-000000000001"), "Etapa Única", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva(), 1.0000m, null, 1)],
+        etapas: [EtapaProcesso.Reidratar(new Guid($"9999fff{variante:x}-0000-4000-8000-000000000001"), "Etapa Única", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva(), 1.0000m, null, 1, notaMaxima: 10m)],
         ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
         distribuicaoVagas: [DistribuicaoInstitucional()],
         bonusRegional: null,

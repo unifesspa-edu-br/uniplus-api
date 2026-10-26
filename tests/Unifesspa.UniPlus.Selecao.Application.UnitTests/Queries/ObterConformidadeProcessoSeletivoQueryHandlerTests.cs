@@ -68,7 +68,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
     public async Task Handle_EtapasSemAtendimento_ChecklistParcial()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-        processo.DefinirEtapas([EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 3m, ordem: 1).Value!], PrecondicaoIfMatch.Ausente);
+        processo.DefinirEtapas([EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 3m, ordem: 1, notaMaxima: 10m).Value!], PrecondicaoIfMatch.Ausente);
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
@@ -82,7 +82,8 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         // código, e não pela frase que o item tinha, para continuar pegando a reintrodução
         // sob qualquer redação nova. O que continua obrigatório e ainda não satisfeito aqui
         // é atendimento, distribuição, classificação e cronograma de fases.
-        result!.Itens.Should().NotContain(i => i.Codigo.StartsWith("etapa", StringComparison.Ordinal));
+        // Os itens da escala das etapas existem sempre, mas sem etapa nenhum deles reprova.
+        result!.Itens.Where(i => i.Codigo.StartsWith("etapa", StringComparison.Ordinal)).Should().OnlyContain(i => i.Ok);
         result.Itens.Should().Contain(i => i.Codigo == "atendimento_especializado_ausente" && !i.Ok);
         result.Itens.Should().Contain(i => i.Codigo == "cronograma_fases_ausente" && !i.Ok);
     }
@@ -159,7 +160,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
     public async Task Handle_TodosOsItens_SemPendencia()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-        processo.DefinirEtapas([EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 3m, ordem: 1).Value!], PrecondicaoIfMatch.Ausente);
+        processo.DefinirEtapas([EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 3m, ordem: 1, notaMaxima: 10m).Value!], PrecondicaoIfMatch.Ausente);
         processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
 
         ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(
