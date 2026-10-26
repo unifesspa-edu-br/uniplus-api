@@ -148,6 +148,14 @@ public sealed class GrupoPesoAreaEnemCongelado : EntityBase
                 "GrupoPesoAreaEnemCongelado.SemAreas",
                 "Cada grupo do quadro de pesos por área precisa de ao menos uma área.")));
         }
+        else if (areasValidas.Count == indice && areasValidas.All(static a => a.Peso == 0m))
+        {
+            // A nota da etapa divide pela soma dos pesos do grupo: sem peso positivo em
+            // nenhuma área não há média a calcular.
+            erros.Add(new("areas", new DomainError(
+                "GrupoPesoAreaEnemCongelado.PesosSomamZero",
+                "Os pesos das áreas do grupo do quadro de pesos por área não podem somar zero.")));
+        }
 
         if (erros.Count > 0)
         {

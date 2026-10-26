@@ -94,6 +94,19 @@ public sealed class GrupoPesoAreaEnemCongeladoTests
         ]);
     }
 
+    [Fact(DisplayName = "Grupo cujos pesos somam zero é recusado")]
+    public void Criar_PesosSomamZero_Recusa()
+    {
+        Result<GrupoPesoAreaEnemCongelado> resultado = GrupoPesoAreaEnemCongelado.Criar(
+            "TECNOLOGICA", "Tecnológica", BaseLegal,
+            [("REDACAO", "Redação", 0m, 400m), ("MATEMATICA", "Matemática e suas Tecnologias", 0m, null)]);
+
+        resultado.IsFailure.Should().BeTrue();
+        FieldError erro = resultado.Errors.Single();
+        erro.Field.Should().Be("areas");
+        erro.Error.Code.Should().Be("GrupoPesoAreaEnemCongelado.PesosSomamZero");
+    }
+
     [Theory(DisplayName = "Base legal ou rótulo de área acima da coluna, ou com caractere nulo, são recusados")]
     [InlineData(true, false)]
     [InlineData(false, true)]
