@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Leiautes;
 
 /// <summary>
 /// O nome do candidato como o arquivo o traz, sem espaços nas pontas. Célula vazia dá nome nulo, e o
-/// que passa de <see cref="TamanhoMaximo"/> caracteres é cortado: o nome só identifica a linha na
+/// que passa de <see cref="TamanhoMaximo"/> caracteres é cortado, sem partir um par substituto: o nome só identifica a linha na
 /// conferência, não participa da avaliação.
 /// </summary>
 public sealed class LeitorDeNome : ILeitorDeColuna
@@ -24,6 +24,12 @@ public sealed class LeitorDeNome : ILeitorDeColuna
             return LeituraDeCelula.Com(null);
         }
 
-        return LeituraDeCelula.Com(nome[..Math.Min(nome.Length, TamanhoMaximo)].ToString());
+        int tamanho = Math.Min(nome.Length, TamanhoMaximo);
+        if (tamanho < nome.Length && char.IsHighSurrogate(nome[tamanho - 1]))
+        {
+            tamanho--;
+        }
+
+        return LeituraDeCelula.Com(nome[..tamanho].ToString());
     }
 }
