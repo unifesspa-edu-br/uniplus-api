@@ -48,7 +48,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
 
         Result etapasResult = processo.DefinirEtapas(
         [
-            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 3m, ordem: 1).Value!,
+            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 3m, ordem: 1, notaMaxima: 10m, passoDoLancamento: 0.25m).Value!,
             EtapaProcesso.Criar("Redação", CaraterEtapa.Ambas, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 2m, notaMinima: 5m, ordem: 2).Value!,
         ], PrecondicaoIfMatch.Ausente);
         etapasResult.IsSuccess.Should().BeTrue();
@@ -82,6 +82,10 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         recarregado.TipoProcesso.Codigo.Should().Be("SiSU");
         recarregado.Etapas.Should().HaveCount(2);
         recarregado.CalcularDivisorMedia().Should().Be(5m);
+        recarregado.Etapas.Single(e => e.Ordem == 1).Should().Match<EtapaProcesso>(
+            e => e.NotaMaxima == 10m && e.PassoDoLancamento == 0.25m);
+        recarregado.Etapas.Single(e => e.Ordem == 2).Should().Match<EtapaProcesso>(
+            e => e.NotaMaxima == null && e.PassoDoLancamento == null);
 
         recarregado.OfertaAtendimento.Should().NotBeNull();
         recarregado.OfertaAtendimento!.Condicoes.Single().CondicaoOrigemId.Should().Be(condicaoOrigemId);
@@ -179,6 +183,35 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
 
         await act.Should().ThrowAsync<PostgresException>(
             "o CHECK ck_processos_seletivos_unidade_administradora_cidade_completa exige o trio de cidade completo ou ausente");
+    }
+
+    [Theory(DisplayName = "CHECKs de positividade da etapa rejeitam UPDATE cru com nota máxima ou passo zerados")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ChecksDaEscalaDaEtapa_RejeitamValorNaoPositivo(bool notaMaxima)
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Escala", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        processo.DefinirEtapas(
+        [
+            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, notaMaxima: 10m, passoDoLancamento: 0.5m).Value!,
+        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        {
+            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            await repository.AdicionarAsync(processo, CancellationToken.None);
+            await writeContext.SaveChangesAsync(CancellationToken.None);
+        }
+
+        await using SelecaoDbContext rawContext = _fixture.CreateDbContext();
+        Func<Task> act = async () => _ = notaMaxima
+            ? await rawContext.Database.ExecuteSqlAsync(
+                $"UPDATE selecao.etapas_processo SET nota_maxima = 0 WHERE processo_seletivo_id = {processo.Id}")
+            : await rawContext.Database.ExecuteSqlAsync(
+                $"UPDATE selecao.etapas_processo SET passo_do_lancamento = 0 WHERE processo_seletivo_id = {processo.Id}");
+
+        await act.Should().ThrowAsync<PostgresException>(
+            "numeric(18,4) arredonda em silêncio, e o EF hidrata sem passar pelo domínio");
     }
 
     [Fact(DisplayName = "Inserir sem Unidade administradora viola a constraint NOT NULL da coluna (issue #849, CA-05)")]

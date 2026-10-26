@@ -6,12 +6,12 @@ using FluentValidation;
 
 /// <summary>
 /// Trimado pela ADR-0125: Nome (obrigatoriedade + tamanho), Carater (obrigatoriedade +
-/// enum válido), Peso (positividade), NotaMinima (não negatividade) e Ordem (positividade)
-/// saíram daqui — <see cref="Unifesspa.UniPlus.Selecao.Domain.Entities.EtapaProcesso.ValidarFormaBasica"/>
+/// enum válido), Peso (positividade), NotaMinima (não negatividade), Ordem (positividade) e a
+/// coerência da escala (nota máxima, passo) saíram daqui — <see cref="Unifesspa.UniPlus.Selecao.Domain.Entities.EtapaProcesso.ValidarFormaBasica"/>
 /// os cobre, acumulando, na primeira passada do <c>DefinirEtapasCommandHandler</c>. O que
-/// permanece é checagem de forma/rota sem equivalente de domínio: <c>PrecisionScale</c> (limite
-/// de escala do wire/coluna <c>numeric(18,4)</c>, sem helper de domínio ainda — achado B2 do
-/// mapeamento da rolagem) e <see cref="EtapaProcessoInput.TipoEtapaOrigemId"/> (Guid de rota,
+/// permanece é checagem de forma/rota sem equivalente de domínio: <c>PrecisionScale</c> de Peso,
+/// NotaMinima, NotaMaxima e PassoDoLancamento (limite de escala do wire/coluna
+/// <c>numeric(18,4)</c>, que o domínio não conhece) e <see cref="EtapaProcessoInput.TipoEtapaOrigemId"/> (Guid de rota,
 /// nunca chega bruto em <see cref="Unifesspa.UniPlus.Selecao.Domain.Entities.EtapaProcesso.Criar"/> —
 /// só o <c>TipoEtapaSnapshot</c> já resolvido é passado).
 /// </summary>
@@ -61,6 +61,19 @@ public sealed class DefinirEtapasCommandValidator : AbstractValidator<DefinirEta
                 .PrecisionScale(18, 4, ignoreTrailingZeros: false)
                 .When(e => e.NotaMinima.HasValue)
                 .WithMessage("Nota mínima deve ter no máximo 4 casas decimais.");
+
+            // Nota máxima e passo do lançamento também são numeric(18,4): sem o limite, um
+            // passo de 0,00001 passa pela positividade do domínio e o banco o arredonda para
+            // zero.
+            etapa.RuleFor(e => e.NotaMaxima)
+                .PrecisionScale(18, 4, ignoreTrailingZeros: false)
+                .When(e => e.NotaMaxima.HasValue)
+                .WithMessage("Nota máxima deve ter no máximo 4 casas decimais.");
+
+            etapa.RuleFor(e => e.PassoDoLancamento)
+                .PrecisionScale(18, 4, ignoreTrailingZeros: false)
+                .When(e => e.PassoDoLancamento.HasValue)
+                .WithMessage("Passo do lançamento deve ter no máximo 4 casas decimais.");
 
             // A COLEÇÃO em si não pode ser nula. `[JsonRequired]` recusa a carga que omite a
             // chave, mas `"produtos": null` atravessa a desserialização e chega até aqui — o

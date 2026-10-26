@@ -1841,6 +1841,12 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(300)")
                         .HasColumnName("nome");
 
+                    b.Property<decimal?>("NotaMaxima")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("nota_maxima")
+                        .HasComment("Nota máxima da escala da etapa com nota; ausente na etapa sem nota e na do ENEM.");
+
                     b.Property<decimal?>("NotaMinima")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
@@ -1849,6 +1855,12 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.Property<int?>("Ordem")
                         .HasColumnType("integer")
                         .HasColumnName("ordem");
+
+                    b.Property<decimal?>("PassoDoLancamento")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("passo_do_lancamento")
+                        .HasComment("De quanto em quanto a nota pode ser lançada; vale só para a nota digitada.");
 
                     b.Property<decimal?>("Peso")
                         .HasPrecision(18, 4)
@@ -1870,7 +1882,12 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_etapas_processo_processo_seletivo_id_ordem");
 
-                    b.ToTable("etapas_processo", "selecao");
+                    b.ToTable("etapas_processo", "selecao", t =>
+                        {
+                            t.HasCheckConstraint("ck_etapas_processo_nota_maxima_positiva", "nota_maxima IS NULL OR nota_maxima > 0");
+
+                            t.HasCheckConstraint("ck_etapas_processo_passo_positivo", "passo_do_lancamento IS NULL OR passo_do_lancamento > 0");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.FaseCronograma", b =>

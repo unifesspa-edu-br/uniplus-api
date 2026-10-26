@@ -64,7 +64,7 @@ internal static class VersaoPublicadaDeTeste
     private static VersaoConfiguracao Abrir(ProcessoSeletivo processo, IProcessoSeletivoRepository repositorio)
     {
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
-            processo.Id, [1], "0.0.32", "canonical-json/sha256@v1", Guid.CreateVersion7(), new string('a', 64), "sub", DateTimeOffset.UnixEpoch);
+            processo.Id, [1], "0.0.33", "canonical-json/sha256@v1", Guid.CreateVersion7(), new string('a', 64), "sub", DateTimeOffset.UnixEpoch);
         repositorio.ObterVersaoAtualAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(versao);
         return versao;
     }

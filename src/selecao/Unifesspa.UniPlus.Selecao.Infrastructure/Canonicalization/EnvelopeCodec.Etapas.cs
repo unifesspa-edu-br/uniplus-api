@@ -28,7 +28,7 @@ public sealed partial class EnvelopeCodec
         {
             string path = $"etapas[{i}]";
             JsonObject item = leitor.ItemObjeto(array, i, "etapas");
-            leitor.ExigirChaves(item, path, "id", "nome", "carater", "tipoEtapa", "peso", "notaMinima", "ordem", "faseCodigo", "produtos",
+            leitor.ExigirChaves(item, path, "id", "nome", "carater", "tipoEtapa", "peso", "notaMinima", "notaMaxima", "passoDoLancamento", "ordem", "faseCodigo", "produtos",
                 "inicio", "fim", "emiteParecerIndividual", "bancas", "recursos");
 
             Guid id = leitor.Identificador(item, "id", path);
@@ -37,6 +37,8 @@ public sealed partial class EnvelopeCodec
             TipoEtapaSnapshot? tipoEtapa = LerTipoEtapaDaEtapa(leitor, item, path);
             decimal? peso = leitor.DecimalOpcional(item, "peso", EscalaPadrao, path, LimitesDoEnvelope.PrecisaoEtapa);
             decimal? notaMinima = leitor.DecimalOpcional(item, "notaMinima", EscalaPadrao, path, LimitesDoEnvelope.PrecisaoEtapa);
+            decimal? notaMaxima = leitor.DecimalOpcional(item, "notaMaxima", EscalaPadrao, path, LimitesDoEnvelope.PrecisaoEtapa);
+            decimal? passoDoLancamento = leitor.DecimalOpcional(item, "passoDoLancamento", EscalaPadrao, path, LimitesDoEnvelope.PrecisaoEtapa);
             int? ordem = leitor.InteiroOpcional(item, "ordem", path);
             string? faseCodigo = leitor.TextoOpcional(item, "faseCodigo", path, LimitesDoEnvelope.FaseCodigo);
 
@@ -57,14 +59,16 @@ public sealed partial class EnvelopeCodec
             if (carater == CaraterEtapa.Nenhum
                 || peso is <= 0
                 || notaMinima is < 0
+                || notaMaxima is <= 0
+                || passoDoLancamento is <= 0
                 || ordem is <= 0)
             {
                 return leitor.Propagar<IReadOnlyList<EtapaProcesso>>(new DomainError(
                     ErrosCodecEnvelope.EnvelopeMalformado,
-                    $"Envelope malformado em '{path}': peso e ordem devem ser maiores que zero e a nota mínima não negativa.")) ?? [];
+                    $"Envelope malformado em '{path}': peso, ordem, nota máxima e passo do lançamento devem ser maiores que zero e a nota mínima não negativa.")) ?? [];
             }
 
-            EtapaProcesso reidratada = EtapaProcesso.Reidratar(id, nome, carater, tipoEtapa!, peso, notaMinima, ordem, faseCodigo);
+            EtapaProcesso reidratada = EtapaProcesso.Reidratar(id, nome, carater, tipoEtapa!, peso, notaMinima, ordem, faseCodigo, notaMaxima, passoDoLancamento);
 
             JsonArray? arrayProdutos = leitor.Array(item, "produtos", path);
             string pathProdutos = $"{path}.produtos";

@@ -17,6 +17,8 @@ public sealed record EtapaProcessoDto(
     TipoEtapaSnapshotDto TipoEtapa,
     decimal? Peso,
     decimal? NotaMinima,
+    decimal? NotaMaxima,
+    decimal? PassoDoLancamento,
     int? Ordem,
     string? FaseCodigo,
     IReadOnlyList<ProdutoDaEtapaDto> Produtos,

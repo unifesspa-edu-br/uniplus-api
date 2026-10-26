@@ -121,6 +121,24 @@ public sealed class EnvelopeCodecTiposTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
+    /// <summary>
+    /// Nota máxima e passo não positivos são limite, e só limite: o envelope que os traz não
+    /// descreve escala nenhuma. A coerência entre eles não é conferida na leitura.
+    /// </summary>
+    [Theory(DisplayName = "Nota máxima ou passo do lançamento não positivos no envelope são recusados")]
+    [InlineData("notaMaxima", "0.0000")]
+    [InlineData("notaMaxima", "-1.0000")]
+    [InlineData("passoDoLancamento", "0.0000")]
+    [InlineData("passoDoLancamento", "-0.2500")]
+    public void EscalaNaoPositivaNoEnvelope_Recusa(string chave, string valor)
+    {
+        Result<EnvelopeReidratado> resultado = Reidratar(envelope =>
+            envelope["etapas"]!.AsArray()[0]![chave] = valor);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
     [Fact(DisplayName = "Decimal como NÚMERO JSON (e não string) é recusado")]
     public void DecimalComoNumero_Recusa()
     {

@@ -63,6 +63,8 @@ public static class ObterProcessoSeletivoQueryHandler
                 new TipoEtapaSnapshotDto(e.TipoEtapa.OrigemId, e.TipoEtapa.Codigo, e.TipoEtapa.Nome, e.TipoEtapa.NotaDeOrigemNoEnem),
                 e.Peso,
                 e.NotaMinima,
+                e.NotaMaxima,
+                e.PassoDoLancamento,
                 e.Ordem,
                 e.FaseCodigo,
                 [.. e.Produtos.Select(pr => new ProdutoDaEtapaDto(pr.Id, pr.AtoCodigo, pr.Papel.ToCodigo()))],

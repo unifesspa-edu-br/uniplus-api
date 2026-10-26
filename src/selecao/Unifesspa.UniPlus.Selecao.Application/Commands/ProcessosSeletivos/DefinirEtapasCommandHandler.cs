@@ -109,7 +109,9 @@ public static class DefinirEtapasCommandHandler
         {
             EtapaProcessoInput itemForma = command.Etapas[indice];
             formaErros.AddRange(EtapaProcesso
-                .ValidarFormaBasica(itemForma.Nome, itemForma.Carater, itemForma.Peso, itemForma.NotaMinima, itemForma.Ordem)
+                .ValidarFormaBasica(
+                    itemForma.Nome, itemForma.Carater, itemForma.Peso, itemForma.NotaMinima, itemForma.Ordem,
+                    itemForma.NotaMaxima, itemForma.PassoDoLancamento)
                 .Select(erro => erro.Field is null ? erro : erro with { Field = $"etapas[{indice}].{erro.Field}" }));
         }
 
@@ -256,7 +258,7 @@ public static class DefinirEtapasCommandHandler
                 // checagens, nunca pelo payload em si.
                 Result atualizarResult = etapaExistente.AtualizarDados(
                     input.Nome, input.Carater, tipoEtapa, input.Peso, input.NotaMinima, input.Ordem,
-                    input.FaseCodigo);
+                    input.FaseCodigo, input.NotaMaxima, input.PassoDoLancamento);
                 if (atualizarResult.IsFailure)
                 {
                     unitOfWork.DescartarAlteracoesNaoSalvas();
@@ -269,7 +271,7 @@ public static class DefinirEtapasCommandHandler
             {
                 Result<EtapaProcesso> criarResult = EtapaProcesso.Criar(
                     input.Nome, input.Carater, tipoEtapa, input.Peso, input.NotaMinima, input.Ordem,
-                    input.FaseCodigo);
+                    input.FaseCodigo, input.NotaMaxima, input.PassoDoLancamento);
                 if (criarResult.IsFailure)
                 {
                     unitOfWork.DescartarAlteracoesNaoSalvas();
