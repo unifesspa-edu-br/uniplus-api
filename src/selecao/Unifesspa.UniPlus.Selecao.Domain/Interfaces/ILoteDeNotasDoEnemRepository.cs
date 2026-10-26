@@ -29,4 +29,32 @@ public interface ILoteDeNotasDoEnemRepository
     /// <summary>O número de inscrição do Uni+ de cada inscrição pedida, para legendar as ocorrências.</summary>
     Task<IReadOnlyDictionary<Guid, string>> ObterNumerosDeInscricaoAsync(
         IReadOnlyCollection<Guid> inscricaoIds, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// O nome de exibição (nome social quando houver) e o CPF mascarado de cada inscrição pedida, lidos
+    /// num único lote. Inscrição sem nome respondido fica com nome nulo.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, IdentificacaoDoInscrito>> ObterIdentificacoesAsync(
+        IReadOnlyCollection<Guid> inscricaoIds, CancellationToken cancellationToken = default);
+
+    /// <summary>A versão do formulário e as ofertas de curso (1ª e 2ª opção) de cada inscrição pedida, lidas num único lote.</summary>
+    Task<IReadOnlyDictionary<Guid, OfertasEscolhidasDaInscricao>> ObterOfertasEscolhidasAsync(
+        IReadOnlyCollection<Guid> inscricaoIds, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Por inscrição do lote, os códigos das áreas em que o candidato faltou, na ordem canônica das áreas.
+    /// Só aparecem inscrições com ao menos uma área ausente.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, IReadOnlyList<string>>> ObterAusentesDoLoteAsync(
+        Guid loteId, CancellationToken cancellationToken = default);
+
+    /// <summary>Quantos inscritos têm ao menos uma área ausente, por lote.</summary>
+    Task<IReadOnlyDictionary<Guid, int>> ContarAusentesPorLoteAsync(
+        IReadOnlyCollection<Guid> loteIds, CancellationToken cancellationToken = default);
 }
+
+/// <summary>Quem é o inscrito, para o operador reconhecê-lo: nome de exibição e CPF mascarado.</summary>
+public sealed record IdentificacaoDoInscrito(string? Nome, string CpfMascarado);
+
+/// <summary>As ofertas de curso que a inscrição escolheu e a versão do formulário em que os nomes delas estão congelados.</summary>
+public sealed record OfertasEscolhidasDaInscricao(Guid VersaoFormularioId, Guid? Primeira, Guid? Segunda);

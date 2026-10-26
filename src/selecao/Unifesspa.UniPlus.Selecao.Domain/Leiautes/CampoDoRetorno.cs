@@ -14,4 +14,10 @@ public enum CampoDoRetorno
 
     /// <summary>Coluna que o Uni+ não usa.</summary>
     Ignorado = 5,
+
+    /// <summary>O nome que o INEP associa ao CPF; só identifica a linha de quem não é inscrito.</summary>
+    Nome = 6,
+
+    /// <summary>O sexo que o INEP associa ao CPF (<c>F</c> ou <c>M</c>); só identifica a linha de quem não é inscrito.</summary>
+    Sexo = 7,
 }

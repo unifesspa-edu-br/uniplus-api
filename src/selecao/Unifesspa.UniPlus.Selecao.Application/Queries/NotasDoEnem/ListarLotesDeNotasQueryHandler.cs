@@ -40,8 +40,12 @@ public static class ListarLotesDeNotasQueryHandler
             .ListarAsync(query.ProcessoSeletivoId, query.EtapaProcessoId, query.Edicao, cancellationToken)
             .ConfigureAwait(false);
 
+        IReadOnlyDictionary<Guid, int> ausentes = await lotes
+            .ContarAusentesPorLoteAsync([.. historico.Select(static l => l.Id)], cancellationToken)
+            .ConfigureAwait(false);
+
         // O repositório devolve do mais recente para o mais antigo: o primeiro é o vigente.
         return Result<IReadOnlyList<LoteDeNotasDoEnemDto>>.Success(
-            [.. historico.Select((lote, posicao) => LoteDeNotasDoEnemDto.De(lote, vigente: posicao == 0, numerosDeInscricao: null))]);
+            [.. historico.Select((lote, posicao) => LoteDeNotasDoEnemDto.De(lote, vigente: posicao == 0, detalhe: null, ausentes.GetValueOrDefault(lote.Id)))]);
     }
 }

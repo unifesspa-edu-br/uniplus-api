@@ -72,6 +72,10 @@ internal sealed class LoteDeNotasDoEnemConfiguration : IEntityTypeConfiguration<
             .IsRequired()
             .HasComment("O sub do token de quem importou.");
 
+        builder.Property(l => l.ImportadoPorNome)
+            .HasMaxLength(ImportadoPorMaxLength)
+            .HasComment("O nome de quem importou, gravado no momento da ação.");
+
         builder.Property(l => l.ImportadoEm).IsRequired();
 
         builder.Property(l => l.VersaoConfiguracaoId)

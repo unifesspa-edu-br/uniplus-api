@@ -2164,6 +2164,12 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnName("gerado_por")
                         .HasComment("O sub do token de quem gerou.");
 
+                    b.Property<string>("GeradoPorNome")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("gerado_por_nome")
+                        .HasComment("O nome de quem gerou, gravado no momento da ação.");
+
                     b.Property<string>("LeiauteCodigo")
                         .IsRequired()
                         .HasMaxLength(60)
@@ -2456,6 +2462,12 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(255)")
                         .HasColumnName("importado_por")
                         .HasComment("O sub do token de quem importou.");
+
+                    b.Property<string>("ImportadoPorNome")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("importado_por_nome")
+                        .HasComment("O nome de quem importou, gravado no momento da ação.");
 
                     b.Property<string>("LeiauteCodigo")
                         .IsRequired()
@@ -3077,6 +3089,12 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("CpfMascarado")
+                        .HasMaxLength(14)
+                        .HasColumnType("character varying(14)")
+                        .HasColumnName("cpf_mascarado")
+                        .HasComment("O CPF mascarado da linha sem inscrito (***.999.999-**); nunca o CPF puro.");
+
                     b.Property<Guid?>("InscricaoId")
                         .HasColumnType("uuid")
                         .HasColumnName("inscricao_id");
@@ -3085,10 +3103,22 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("lote_id");
 
+                    b.Property<string>("Nome")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("nome")
+                        .HasComment("O nome que o arquivo traz para a linha sem inscrito.");
+
                     b.PrimitiveCollection<int[]>("NumerosDasLinhas")
                         .HasColumnType("integer[]")
                         .HasColumnName("numeros_das_linhas")
                         .HasComment("Os números das linhas do arquivo, a partir de 1.");
+
+                    b.Property<string>("Sexo")
+                        .HasMaxLength(1)
+                        .HasColumnType("character varying(1)")
+                        .HasColumnName("sexo")
+                        .HasComment("O sexo (F ou M) que o arquivo traz para a linha sem inscrito.");
 
                     b.Property<short>("Tipo")
                         .HasColumnType("smallint")

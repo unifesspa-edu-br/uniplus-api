@@ -87,7 +87,8 @@ public static partial class GerarEnvioAoInepCommandHandler
             leiaute.Value.Hash,
             userContext.UserId ?? string.Empty,
             timeProvider.GetUtcNow(),
-            cpfs.Count);
+            cpfs.Count,
+            userContext.NomeCompleto);
         await geracoes.AdicionarAsync(geracao, cancellationToken).ConfigureAwait(false);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 

@@ -9,6 +9,10 @@ public sealed record ColunaDoRetorno(int Posicao, CampoDoRetorno Campo, string? 
 {
     public static ColunaDoRetorno Cpf(int posicao) => new(posicao, CampoDoRetorno.Cpf, null, new LeitorDeCpf());
 
+    public static ColunaDoRetorno Nome(int posicao) => new(posicao, CampoDoRetorno.Nome, null, new LeitorDeNome());
+
+    public static ColunaDoRetorno Sexo(int posicao) => new(posicao, CampoDoRetorno.Sexo, null, new LeitorDeSexo());
+
     public static ColunaDoRetorno NumeroDeInscricaoNoEnem(int posicao) =>
         new(posicao, CampoDoRetorno.NumeroDeInscricaoNoEnem, null, new LeitorDeNumeroDeInscricaoNoEnem());
 

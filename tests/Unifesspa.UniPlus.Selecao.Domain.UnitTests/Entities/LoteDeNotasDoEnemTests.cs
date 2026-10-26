@@ -24,7 +24,7 @@ public sealed class LoteDeNotasDoEnemTests
     private static ResultadoDoCruzamento Cruzamento() => new(
         [new InscritoComNota(Guid.CreateVersion7(), "240000000001", Areas()), new InscritoComNota(Guid.CreateVersion7(), "240000000002", Areas())],
         [Guid.CreateVersion7()],
-        [5, 6, 7],
+        [new(5, "***.456.789-**", null, null), new(6, "***.456.789-**", null, null), new(7, "***.456.789-**", null, null)],
         [new ConflitoDeLinhas(Guid.CreateVersion7(), [3, 4])]);
 
     private static LoteDeNotasDoEnem Registrar(ResultadoDoCruzamento cruzamento, int totalDeLinhas = 20, DateTimeOffset? em = null, string arquivoHash = "", IReadOnlyList<AvaliacaoApurada>? avaliacoes = null) =>

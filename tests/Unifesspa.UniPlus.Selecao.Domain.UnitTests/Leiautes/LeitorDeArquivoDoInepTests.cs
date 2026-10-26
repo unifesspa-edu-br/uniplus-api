@@ -45,6 +45,37 @@ public sealed class LeitorDeArquivoDoInepTests
         NotaDe(linha, AreaDoEnem.Redacao).Should().Be(960m);
     }
 
+    [Fact(DisplayName = "o nome e o sexo da linha vêm do arquivo, sem espaços nas pontas")]
+    public void Ler_NomeESexo_VemDoArquivo()
+    {
+        LinhaDeRetorno linha = Ler(Bytes([Linha(Fernanda, 1, nome: $"  {Fernanda.Nome} ")])).Value!.Linhas.Single();
+
+        linha.Nome.Should().Be(Fernanda.Nome);
+        linha.Sexo.Should().Be("F");
+    }
+
+    [Fact(DisplayName = "nome e sexo em branco viram nulos sem recusar a linha")]
+    public void Ler_NomeESexoEmBranco_ViramNulos()
+    {
+        string linhaSemOsDois = string.Join(';', Linha(Fernanda, 1).Split(';').Select((c, i) => i is 2 or 14 ? string.Empty : c));
+
+        LinhaDeRetorno linha = Ler(Bytes([linhaSemOsDois])).Value!.Linhas.Single();
+
+        linha.Nome.Should().BeNull();
+        linha.Sexo.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "sexo diferente de F e M recusa o arquivo sem citar o conteúdo da célula")]
+    public void Ler_SexoInvalido_RecusaSemConteudo()
+    {
+        string linha = string.Join(';', Linha(Fernanda, 1).Split(';').Select((c, i) => i == 14 ? "Feminino" : c));
+
+        Result<ArquivoDeRetornoLido> resultado = Ler(Bytes([linha]));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Message.Should().NotContain("Feminino");
+    }
+
     [Fact(DisplayName = "cada situação vai para a sua área: presente nas demais e ausente só na escolhida")]
     public void Ler_CadaSituacaoVaiParaASuaArea()
     {
