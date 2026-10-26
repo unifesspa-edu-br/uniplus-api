@@ -24,4 +24,19 @@ internal static class PersonasDeTeste
 
     /// <summary>Kevin Anderson Carvalho — RG 25.062.156-3.</summary>
     public static Cpf KevinCarvalho => Cpf.Criar("332.573.503-76").Value!;
+
+    /// <summary>Uma persona do portal, com os dados que um arquivo do INEP traz de cada candidato.</summary>
+    public sealed record PessoaFicticia(string Nome, string Cpf, string Sexo, string DataDeNascimento, string Cidade, string Uf);
+
+    /// <summary>As personas candidatas usadas onde um teste precisa de várias identidades distintas.</summary>
+    public static IReadOnlyList<PessoaFicticia> Candidatas { get; } =
+    [
+        new("Fernanda Laura Nicole Drumond", "69959836371", "Feminino", "02/02/1970", "Campo Grande", "MS"),
+        new("Kevin Anderson Carvalho", "33257350376", "Masculino", "17/03/1984", "Rio Branco", "AC"),
+        new("Helena Bianca Sueli Rezende", "16328793014", "Feminino", "12/05/1954", "Porto Alegre", "RS"),
+        new("Erick Isaac Ramos", "33434225927", "Masculino", "13/02/1969", "Salvador", "BA"),
+        new("Leandro Caleb Viana", "03784991300", "Masculino", "16/05/1947", "Paragominas", "PA"),
+        new("Breno Lucca Samuel Novaes", "04428488700", "Masculino", "21/04/1960", "São Bernardo do Campo", "SP"),
+        new("Marlene Márcia Emily Martins", "97150972438", "Feminino", "06/01/1949", "Aracruz", "ES"),
+    ];
 }

@@ -38,6 +38,7 @@
     <Compile Include="../Shared/FormularioDeTeste.cs" Link="FormularioDeTeste.cs" />
     <Compile Include="../Shared/VersoesPublicadasDeTeste.cs" Link="VersoesPublicadasDeTeste.cs" />
     <Compile Include="../Shared/PersonasDeTeste.cs" Link="PersonasDeTeste.cs" />
+    <Compile Include="../Shared/ArquivoDoInepSintetico.cs" Link="ArquivoDoInepSintetico.cs" />
   </ItemGroup>
 
 </Project>
