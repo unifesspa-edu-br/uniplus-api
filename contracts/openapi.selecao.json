@@ -12316,7 +12316,10 @@
             "format": "uuid"
           },
           "numeroDeInscricao": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "nomeDoCandidato": {
             "type": [
