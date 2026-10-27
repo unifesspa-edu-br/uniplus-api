@@ -6,7 +6,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
-using Outbox.Cascading;
+using Infrastructure;
 
 /// <summary>
 /// Smoke + drift check do endpoint <c>/openapi/selecao.json</c>:
@@ -20,24 +20,22 @@ using Outbox.Cascading;
 ///   teste passa.</description></item>
 /// </list>
 /// </summary>
-[Collection(CascadingCollection.Name)]
-[Trait("Category", "OutboxCapability")]
-public sealed class OpenApiEndpointTests
+public sealed class OpenApiEndpointTests : IClassFixture<SelecaoApiFactory>
 {
     private const string BaselineRelativePath = "contracts/openapi.selecao.json";
     private const string UpdateBaselineEnvVar = "UPDATE_OPENAPI_BASELINE";
 
-    private readonly CascadingFixture _fixture;
+    private readonly SelecaoApiFactory _factory;
 
-    public OpenApiEndpointTests(CascadingFixture fixture)
+    public OpenApiEndpointTests(SelecaoApiFactory factory)
     {
-        _fixture = fixture;
+        _factory = factory;
     }
 
     [Fact(DisplayName = "GET /openapi/selecao.json retorna 200 com documento OpenAPI válido e metadata Uni+")]
     public async Task GetOpenApiDocument_RetornaSpecJsonComMetadataInjetada()
     {
-        using HttpClient client = _fixture.Factory.CreateClient();
+        using HttpClient client = _factory.CreateClient();
 
         HttpResponseMessage response = await client.GetAsync(new Uri("/openapi/selecao.json", UriKind.Relative));
 
@@ -64,7 +62,7 @@ public sealed class OpenApiEndpointTests
     [Fact(DisplayName = "Spec runtime de Selecao bate com baseline committed em contracts/")]
     public async Task SpecRuntime_DeveCasarComBaselineCommitted()
     {
-        using HttpClient client = _fixture.Factory.CreateClient();
+        using HttpClient client = _factory.CreateClient();
         HttpResponseMessage response = await client.GetAsync(new Uri("/openapi/selecao.json", UriKind.Relative));
         response.EnsureSuccessStatusCode();
 
