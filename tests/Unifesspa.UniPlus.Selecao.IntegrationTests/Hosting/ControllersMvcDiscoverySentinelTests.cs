@@ -30,6 +30,7 @@ public sealed class ControllersMvcDiscoverySentinelTests : IClassFixture<Selecao
 
     [Theory(DisplayName = "Controller MVC do módulo expõe ao menos uma rota no test host")]
     [InlineData("ProcessoSeletivoController")]
+    [InlineData("AcompanhamentoProcessosSeletivosController")]
     public void Controller_RegistrouRotas_NoEndpointDataSource(string controllerName)
     {
         // CreateClient força WebApplicationFactory a buildar o test host,

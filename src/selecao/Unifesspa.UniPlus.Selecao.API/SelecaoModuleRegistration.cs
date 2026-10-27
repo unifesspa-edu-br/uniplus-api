@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.API;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -43,6 +44,11 @@ public static class SelecaoModuleRegistration
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
+
+        services.AddSingleton<IValidateOptions<AcompanhamentoOptions>, AcompanhamentoOptionsValidator>();
+        services.AddOptions<AcompanhamentoOptions>()
+            .Bind(configuration.GetSection(AcompanhamentoOptions.SectionName))
+            .ValidateOnStart();
 
         // OpenAPI 3.1 (ADR-0030) — documento nomeado por módulo + transformers
         // Uni+ (info, operation, schema). Spec exposto em /openapi/selecao.json.
