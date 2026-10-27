@@ -646,6 +646,82 @@ public sealed class DefinirEtapasCommandHandlerTests
         resultado.Errors[0].Error.Code.Should().Be(EtapaProcesso.FormaDeAvaliacaoDesconhecida);
     }
 
+    private static EtapaProcessoInput EntrevistaComItens(
+        Guid? id, IReadOnlyList<ItemDeAvaliacaoInput> itens, IReadOnlyList<NivelDeAtendimentoInput>? escala = null) => new(
+        "Entrevista", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 1m, null, 1,
+        Id: id, Produtos: [], Bancas: [], Recursos: [], NotaMaxima: 10m,
+        FormaDeAvaliacao: FormaDeAvaliacaoCodigo.Humana, ItensDeAvaliacao: itens, EscalaDeAtendimento: escala);
+
+    [Fact(DisplayName = "O item reenviado com o id é a mesma linha: o rótulo muda e o id continua; o item sem id é novo")]
+    public async Task Handle_ItemComIdExistente_PreservaOIdQuandoORotuloMuda()
+    {
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+
+        (await Executar(
+            new DefinirEtapasCommand(processo.Id, [EntrevistaComItens(null, [new(null, "Clareza", 4m), new(null, "Domínio", 6m)])], PrecondicaoIfMatch.Ausente),
+            repository, unitOfWork)).IsSuccess.Should().BeTrue();
+        EtapaProcesso etapa = processo.Etapas.Single();
+        Guid idDaClareza = etapa.ItensDeAvaliacao.Single(static i => i.Rotulo == "Clareza").Id;
+
+        (await Executar(
+            new DefinirEtapasCommand(
+                processo.Id,
+                [EntrevistaComItens(etapa.Id, [new(idDaClareza, "Objetividade", 4m), new(null, "Postura", 6m)])],
+                PrecondicaoIfMatch.Ausente),
+            repository, unitOfWork)).IsSuccess.Should().BeTrue();
+
+        processo.Etapas.Single().ItensDeAvaliacao.Should().HaveCount(2)
+            .And.Contain(i => i.Id == idDaClareza && i.Rotulo == "Objetividade");
+    }
+
+    [Fact(DisplayName = "Itens e escala inválidos acumulam entre as etapas, antes de qualquer mutação")]
+    public async Task Handle_ItensInvalidosEmDuasEtapas_AcumulaUmErroPorEtapa()
+    {
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+
+        Result<MutacaoAceita> resultado = await Executar(
+            new DefinirEtapasCommand(
+                processo.Id,
+                [
+                    EntrevistaComItens(null, [new(null, " ", 10m)]),
+                    EntrevistaComItens(null, [new(null, "Clareza", 10m)], [new("Atendeu parcialmente", 0.5m)]),
+                ],
+                PrecondicaoIfMatch.Ausente),
+            repository, unitOfWork);
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
+        [
+            ("etapas[0].itensDeAvaliacao[0].rotulo", ItemDeAvaliacao.RotuloInvalido),
+            ("etapas[1].escalaDeAtendimento", NiveisDeAtendimento.SemNivelCompleto),
+        ]);
+        processo.Etapas.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "A etapa de nota do ENEM recusa itens e escala na gravação, lidos do tipo congelado")]
+    public async Task Handle_ItensNaEtapaDoEnem_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoSemEtapas();
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        ITipoEtapaReader reader = Substitute.For<ITipoEtapaReader>();
+        reader.ObterAtivoPorIdAsync(TipoRedacaoOrigemId, Arg.Any<CancellationToken>())
+            .Returns(new TipoEtapaView(TipoRedacaoOrigemId, "NOTA_ENEM", "Nota do ENEM", null, AdmitePontuacao: true, AdmiteEliminacao: true, NotaDeOrigemNoEnem: true));
+        EtapaProcessoInput etapa = EntrevistaComItens(null, [new(null, "Clareza", 10m)]) with { FormaDeAvaliacao = null };
+
+        Result<MutacaoAceita> resultado = await Executar(
+            new DefinirEtapasCommand(processo.Id, [etapa], PrecondicaoIfMatch.Ausente),
+            repository, Substitute.For<ISelecaoUnitOfWork>(), reader);
+
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("etapas[0].itensDeAvaliacao");
+        resultado.Errors[0].Error.Code.Should().Be(EtapaProcesso.ItensNaEtapaDoEnem);
+    }
+
     private static DefinirEtapasCommand ComUmProdutoDefinitivo(ProcessoSeletivo processo) => new(
         processo.Id,
         [

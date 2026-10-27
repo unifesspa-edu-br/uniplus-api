@@ -11,6 +11,14 @@ using Domain.Enums;
 /// <param name="RegraConsolidacao">
 /// A regra do catálogo que combina as notas dos avaliadores; só existe na forma humana.
 /// </param>
+/// <param name="ItensDeAvaliacao">
+/// Os critérios ou blocos em que a nota se divide, com o id que o lançamento e o recurso usam;
+/// o cliente devolve o id para manter o mesmo item.
+/// </param>
+/// <param name="EscalaDeAtendimento">
+/// Os níveis entre os quais a banca escolhe em cada item, do que mais vale ao que menos vale; nulo
+/// quando a etapa lança nota digitada.
+/// </param>
 /// <param name="TipoEtapa">
 /// Snapshot congelado do tipo (issue #1071) — fecha o round-trip GET→PUT: um cliente que
 /// reler a etapa precisa de <c>OrigemId</c> para reenviar o mesmo vínculo em
@@ -34,7 +42,15 @@ public sealed record EtapaProcessoDto(
     IReadOnlyList<BancaDaEtapaDto> Bancas,
     IReadOnlyList<RecursoDaEtapaDto> Recursos,
     string? FormaDeAvaliacao,
-    ReferenciaRegraDto? RegraConsolidacao);
+    ReferenciaRegraDto? RegraConsolidacao,
+    IReadOnlyList<ItemDeAvaliacaoDto> ItensDeAvaliacao,
+    IReadOnlyList<NivelDeAtendimentoDto>? EscalaDeAtendimento);
+
+/// <summary>Projeção de leitura de <c>ItemDeAvaliacao</c>.</summary>
+public sealed record ItemDeAvaliacaoDto(Guid Id, string Rotulo, decimal PontuacaoMaxima);
+
+/// <summary>Projeção de leitura de um nível da escala de atendimento.</summary>
+public sealed record NivelDeAtendimentoDto(string Rotulo, decimal Fracao);
 
 /// <summary>Projeção de leitura de <c>BancaDaEtapa</c>.</summary>
 public sealed record BancaDaEtapaDto(Guid Id, Guid TipoBancaOrigemId, string Codigo);

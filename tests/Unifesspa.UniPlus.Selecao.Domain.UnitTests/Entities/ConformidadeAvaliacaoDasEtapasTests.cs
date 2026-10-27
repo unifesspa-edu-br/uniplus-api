@@ -29,14 +29,17 @@ public sealed class ConformidadeAvaliacaoDasEtapasTests
         CaraterEtapa carater = CaraterEtapa.Classificatoria,
         decimal? passo = null,
         bool comRegra = false,
-        bool comBanca = false)
+        bool comBanca = false,
+        IReadOnlyList<ItemDeAvaliacaoDeclarado>? itens = null,
+        IReadOnlyList<NivelDeAtendimento>? escala = null)
     {
         EtapaProcesso etapa = EtapaProcesso.Criar(
             nome, carater, Tipo(), carater == CaraterEtapa.Classificatoria ? 1m : null, null, ordem,
             notaMaxima: carater == CaraterEtapa.Classificatoria ? 10m : null, passoDoLancamento: passo, formaDeAvaliacao: forma,
             regraConsolidacao: comRegra
                 ? ProcessoConformeFactory.Regra(RegraConsolidacaoCodigo.AvaliacaoUnica, "b")
-                : null).Value!;
+                : null,
+            itensDeAvaliacao: itens, escalaDeAtendimento: escala).Value!;
         if (comBanca)
         {
             etapa.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_AVALIADORA")]).IsSuccess.Should().BeTrue();
@@ -113,5 +116,51 @@ public sealed class ConformidadeAvaliacaoDasEtapasTests
 
         Vermelhos(processo).Should().BeEmpty();
         Publicar(processo).IsSuccess.Should().BeTrue();
+    }
+
+    private static readonly NivelDeAtendimento[] Escala = [new("Atendeu", 1m), new("Atendeu parcialmente", 0.5m), new("Não atendeu", 0m)];
+
+    [Fact(DisplayName = "A soma das pontuações dos itens diferente da nota máxima recusa a publicação; igual publica")]
+    public void ItensForaDaNotaMaxima_RecusaPublicacao()
+    {
+        ProcessoSeletivo divergente = ProcessoCom(Etapa(
+            "Prova", 1, FormaDeAvaliacao.Objetiva, itens: [new(null, "Bloco A", 4m), new(null, "Bloco B", 5m)]));
+
+        Vermelhos(divergente).Should().ContainSingle().Which.Should().Match<ItemConformidade>(
+            i => i.Codigo == "etapa_com_itens_fora_da_nota_maxima" && i.Mensagem.Contains("\"Prova\"", StringComparison.Ordinal));
+        Publicar(divergente).IsFailure.Should().BeTrue();
+
+        ProcessoSeletivo igual = ProcessoCom(Etapa(
+            "Prova", 1, FormaDeAvaliacao.Objetiva, itens: [new(null, "Bloco A", 4m), new(null, "Bloco B", 6m)]));
+        Vermelhos(igual).Should().BeEmpty();
+        Publicar(igual).IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "A etapa sem nota recusa a publicação se declara itens ou escala, e só essa pendência é listada")]
+    public void EtapaSemNotaComItens_RecusaPublicacao()
+    {
+        ProcessoSeletivo processo = ProcessoCom(
+            Etapa("Prova", 1, FormaDeAvaliacao.Objetiva),
+            Etapa("Análise", 2, forma: null, CaraterEtapa.Eliminatoria, itens: [new(null, "Documentação", 10m)]));
+
+        Vermelhos(processo).Should().ContainSingle().Which.Should().Match<ItemConformidade>(
+            i => i.Codigo == "etapa_sem_nota_com_itens_de_avaliacao" && i.Mensagem.Contains("\"Análise\"", StringComparison.Ordinal));
+    }
+
+    [Fact(DisplayName = "Com escala de atendimento a etapa humana publica sem passo do lançamento; sem escala o passo continua exigido")]
+    public void EtapaHumanaComEscala_DispensaOPasso()
+    {
+        ProcessoSeletivo comEscala = ProcessoCom(Etapa(
+            "Entrevista", 1, FormaDeAvaliacao.Humana, comRegra: true, comBanca: true,
+            itens: [new(null, "Postura", 5m), new(null, "Domínio", 5m)], escala: Escala));
+
+        Vermelhos(comEscala).Should().BeEmpty();
+        Publicar(comEscala).IsSuccess.Should().BeTrue();
+
+        ProcessoSeletivo semEscala = ProcessoCom(Etapa(
+            "Entrevista", 1, FormaDeAvaliacao.Humana, comRegra: true, comBanca: true,
+            itens: [new(null, "Postura", 5m), new(null, "Domínio", 5m)]));
+
+        Vermelhos(semEscala).Should().ContainSingle().Which.Codigo.Should().Be("etapa_humana_sem_passo_do_lancamento");
     }
 }

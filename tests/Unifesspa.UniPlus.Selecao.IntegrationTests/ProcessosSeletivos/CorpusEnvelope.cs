@@ -71,6 +71,11 @@ internal static class CorpusEnvelope
     private static Guid ProdutoDaObjetivaId(int ordem, int variante) =>
         new($"aaab000{variante:x}-0000-4000-8000-00000000000{ordem:x}");
 
+    // Itens de avaliação: o id é congelado no envelope, então varia pela mesma razão das filhas
+    // acima — dois processos no mesmo Postgres não podem repetir a chave primária.
+    private static Guid ItemDeAvaliacaoId(int ordem, int variante) =>
+        new($"aaad000{variante:x}-0000-4000-8000-00000000000{ordem:x}");
+
     private static readonly Guid TipoBancaExaminadora = new("dddd2222-0000-4000-8000-000000000001");
     private static readonly Guid TipoBancaRecursal = new("dddd2222-0000-4000-8000-000000000002");
     private static readonly Guid TipoBancaAnulacao = new("dddd2222-0000-4000-8000-000000000003");
@@ -200,6 +205,7 @@ internal static class CorpusEnvelope
         Guid objetiva = EtapaId(1, variante);
         Guid redacao = EtapaId(2, variante);
         Guid entrevista = EtapaId(3, variante);
+        Guid defesa = EtapaId(4, variante);
 
         // SiSU é baseado em ENEM — é o que admite ELIM-CORTE-REDACAO e ELIM-ZERO-EM-AREA.
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
@@ -223,7 +229,11 @@ internal static class CorpusEnvelope
         // envelope recusar a si mesmo na volta. Sem isto no corpus, o round-trip passava
         // exatamente por não exercitar recurso de etapa nenhum.
         EtapaProcesso etapaObjetiva = EtapaProcesso.Reidratar(
-            objetiva, "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 3.5000m, notaMinima: 40.0000m, ordem: 1, notaMaxima: 100.0000m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva);
+            objetiva, "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 3.5000m, notaMinima: 40.0000m, ordem: 1, notaMaxima: 100.0000m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva,
+            itensDeAvaliacao: Ordem([
+                ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(2, variante), "Bloco de Matemática", 40.0000m),
+                ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(1, variante), "Bloco de Linguagens", 60.0000m),
+            ], permutar));
         etapaObjetiva.DefinirJanelaEParecer(null, null, emiteParecerIndividual: true).IsSuccess.Should().BeTrue();
         // A MESMA matéria nos dois papéis: é o par que a ordenação canônica precisa desempatar,
         // e é o único caso em que o código do ato não basta para fixar a posição no envelope.
@@ -298,13 +308,34 @@ internal static class CorpusEnvelope
 
         // A etapa de avaliação humana exige ao menos uma banca para publicar.
         EtapaProcesso etapaEntrevista = EtapaProcesso.Reidratar(entrevista, "Entrevista", CaraterEtapa.Eliminatoria, TipoEtapaEntrevista(), peso: null, notaMinima: 60.0000m, ordem: 3, notaMaxima: 100.0000m, passoDoLancamento: 0.5000m,
-            formaDeAvaliacao: FormaDeAvaliacao.Humana, regraConsolidacao: Regra(RegraConsolidacaoCodigo.AvaliacaoUnica, 'f'));
+            formaDeAvaliacao: FormaDeAvaliacao.Humana, regraConsolidacao: Regra(RegraConsolidacaoCodigo.AvaliacaoUnica, 'f'),
+            itensDeAvaliacao: Ordem([
+                ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(5, variante), "Primeiro acesso ao ensino superior", 20.5000m),
+                ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(6, variante), "Domínio do conteúdo", 79.5000m),
+            ], permutar));
         etapaEntrevista.DefinirBancas([BancaDaEtapa.Criar(TipoBancaExaminadora, "BANCA_EXAMINADORA")]).IsSuccess.Should().BeTrue();
+
+        // A banca escolhe o nível de cada critério, sem digitar a nota: é o caso que congela a
+        // escala de atendimento e dispensa o passo do lançamento.
+        EtapaProcesso etapaDefesa = EtapaProcesso.Reidratar(
+            defesa, "Defesa oral", CaraterEtapa.Eliminatoria, TipoEtapaEntrevista(), peso: null, notaMinima: 50.0000m, ordem: 4, notaMaxima: 100.0000m,
+            formaDeAvaliacao: FormaDeAvaliacao.Humana, regraConsolidacao: Regra(RegraConsolidacaoCodigo.CorrecaoIndependente, 'e'),
+            itensDeAvaliacao: Ordem([
+                ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(4, variante), "Coesão da exposição", 30.0000m),
+                ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(3, variante), "Argumentação", 70.0000m),
+            ], permutar),
+            escalaDeAtendimento: Ordem([
+                new NivelDeAtendimento("Atendeu parcialmente", 0.5000m),
+                new NivelDeAtendimento("Atendeu", 1.0000m),
+                new NivelDeAtendimento("Não atendeu", 0.0000m),
+            ], permutar));
+        etapaDefesa.DefinirBancas([BancaDaEtapa.Criar(TipoBancaExaminadora, "BANCA_EXAMINADORA")]).IsSuccess.Should().BeTrue();
 
         processo.DefinirEtapas(Ordem([
             etapaObjetiva,
             etapaRedacao,
             etapaEntrevista,
+            etapaDefesa,
         ], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar(

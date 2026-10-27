@@ -111,7 +111,8 @@ public static class DefinirEtapasCommandHandler
             formaErros.AddRange(ComIndice(
                 EtapaProcesso.ValidarFormaBasica(
                     itemForma.Nome, itemForma.Carater, itemForma.Peso, itemForma.NotaMinima, itemForma.Ordem,
-                    itemForma.NotaMaxima, itemForma.PassoDoLancamento),
+                    itemForma.NotaMaxima, itemForma.PassoDoLancamento,
+                    ItensDeclarados(itemForma), NiveisDeclarados(itemForma)),
                 indice));
         }
 
@@ -288,7 +289,9 @@ public static class DefinirEtapasCommandHandler
                     NotaDeOrigemNoEnemDe(itemAvaliacao),
                     itemAvaliacao.PassoDoLancamento,
                     forma,
-                    temCodigo && temVersao ? codigo : null));
+                    temCodigo && temVersao ? codigo : null,
+                    declaraItens: itemAvaliacao.ItensDeAvaliacao is { Count: > 0 },
+                    declaraEscala: itemAvaliacao.EscalaDeAtendimento is { Count: > 0 }));
             }
 
             avaliacaoErros.AddRange(ComIndice(errosDaEtapa, indice));
@@ -374,7 +377,8 @@ public static class DefinirEtapasCommandHandler
                 Result atualizarResult = etapaExistente.AtualizarDados(
                     input.Nome, input.Carater, tipoEtapa, input.Peso, input.NotaMinima, input.Ordem,
                     input.FaseCodigo, input.NotaMaxima, input.PassoDoLancamento,
-                    formasDeAvaliacao[indice], regrasDeConsolidacao.GetValueOrDefault(indice));
+                    formasDeAvaliacao[indice], regrasDeConsolidacao.GetValueOrDefault(indice),
+                    ItensDeclarados(input), NiveisDeclarados(input));
                 if (atualizarResult.IsFailure)
                 {
                     unitOfWork.DescartarAlteracoesNaoSalvas();
@@ -388,7 +392,8 @@ public static class DefinirEtapasCommandHandler
                 Result<EtapaProcesso> criarResult = EtapaProcesso.Criar(
                     input.Nome, input.Carater, tipoEtapa, input.Peso, input.NotaMinima, input.Ordem,
                     input.FaseCodigo, input.NotaMaxima, input.PassoDoLancamento,
-                    formasDeAvaliacao[indice], regrasDeConsolidacao.GetValueOrDefault(indice));
+                    formasDeAvaliacao[indice], regrasDeConsolidacao.GetValueOrDefault(indice),
+                    ItensDeclarados(input), NiveisDeclarados(input));
                 if (criarResult.IsFailure)
                 {
                     unitOfWork.DescartarAlteracoesNaoSalvas();
@@ -749,6 +754,12 @@ public static class DefinirEtapasCommandHandler
 
     private static IReadOnlyList<FieldError> ComIndice(IEnumerable<FieldError> erros, int indice) =>
         [.. erros.Select(erro => erro.Field is null ? erro : erro with { Field = $"etapas[{indice}].{erro.Field}" })];
+
+    private static List<ItemDeAvaliacaoDeclarado> ItensDeclarados(EtapaProcessoInput input) =>
+        [.. (input.ItensDeAvaliacao ?? []).Select(static i => new ItemDeAvaliacaoDeclarado(i.Id, i.Rotulo, i.PontuacaoMaxima))];
+
+    private static List<NivelDeAtendimento> NiveisDeclarados(EtapaProcessoInput input) =>
+        [.. (input.EscalaDeAtendimento ?? []).Select(static n => new NivelDeAtendimento(n.Rotulo, n.Fracao))];
 
     private static IReadOnlyList<FieldError> ErrosDeCarater(
         CaraterEtapa carater, bool admitePontuacao, bool admiteEliminacao, string nomeDoTipo, int indice) =>

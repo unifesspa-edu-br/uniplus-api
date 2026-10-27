@@ -15,6 +15,86 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>Leitura do bloco <c>etapas</c> do envelope.</summary>
 public sealed partial class EnvelopeCodec
 {
+    /// <summary>
+    /// Só limites, e só limites: a coerência entre os itens, a nota máxima e o passo é regra de
+    /// gravação e gate, e uma regra criada depois do congelamento não pode tornar ilegível um
+    /// envelope que era válido quando nasceu.
+    /// </summary>
+    private static List<ItemDeAvaliacao> LerItensDeAvaliacao(LeitorEnvelope leitor, JsonObject etapa, string path)
+    {
+        JsonArray array = leitor.Array(etapa, "itensDeAvaliacao", path);
+        string pathItens = $"{path}.itensDeAvaliacao";
+        List<ItemDeAvaliacao> itens = [];
+        for (int j = 0; !leitor.Falhou && j < array.Count; j++)
+        {
+            string pathItem = $"{pathItens}[{j}]";
+            JsonObject objeto = leitor.ItemObjeto(array, j, pathItens);
+            leitor.ExigirChaves(objeto, pathItem, "id", "rotulo", "pontuacaoMaxima");
+            Guid id = leitor.Identificador(objeto, "id", pathItem);
+            string rotulo = leitor.TextoNaoVazio(objeto, "rotulo", pathItem, LimitesDoEnvelope.ItemDeAvaliacaoRotulo);
+            decimal pontuacao = leitor.Decimal(objeto, "pontuacaoMaxima", EscalaPadrao, pathItem, LimitesDoEnvelope.PrecisaoEtapa);
+            if (leitor.Falhou)
+            {
+                break;
+            }
+
+            if (pontuacao <= 0)
+            {
+                leitor.Propagar<IReadOnlyList<ItemDeAvaliacao>>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado,
+                    $"Envelope malformado em '{pathItem}.pontuacaoMaxima': a pontuação do item deve ser maior que zero."));
+                break;
+            }
+
+            itens.Add(ItemDeAvaliacao.Reidratar(id, rotulo, pontuacao));
+        }
+
+        return itens;
+    }
+
+    private static List<NivelDeAtendimento>? LerEscalaDeAtendimento(LeitorEnvelope leitor, JsonObject etapa, string path)
+    {
+        JsonArray? array = leitor.ArrayOpcional(etapa, "escalaDeAtendimento", path);
+        if (array is null)
+        {
+            return null;
+        }
+
+        string pathEscala = $"{path}.escalaDeAtendimento";
+        List<NivelDeAtendimento> niveis = [];
+        for (int j = 0; !leitor.Falhou && j < array.Count; j++)
+        {
+            string pathNivel = $"{pathEscala}[{j}]";
+            JsonObject objeto = leitor.ItemObjeto(array, j, pathEscala);
+            leitor.ExigirChaves(objeto, pathNivel, "rotulo", "fracao");
+            string rotulo = leitor.TextoNaoVazio(objeto, "rotulo", pathNivel, LimitesDoEnvelope.NivelDeAtendimentoRotulo);
+            decimal fracao = leitor.Decimal(objeto, "fracao", EscalaPadrao, pathNivel, LimitesDoEnvelope.PrecisaoFracaoDeAtendimento);
+            if (leitor.Falhou)
+            {
+                break;
+            }
+
+            if (fracao is < 0m or > 1m)
+            {
+                leitor.Propagar<IReadOnlyList<NivelDeAtendimento>>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado,
+                    $"Envelope malformado em '{pathNivel}.fracao': a fração do nível deve estar entre 0 e 1."));
+                break;
+            }
+
+            niveis.Add(new NivelDeAtendimento(rotulo, fracao));
+        }
+
+        if (!leitor.Falhou && niveis.Count == 0)
+        {
+            leitor.Propagar<IReadOnlyList<NivelDeAtendimento>>(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado,
+                $"Envelope malformado em '{pathEscala}': a escala sem níveis deve ser null."));
+        }
+
+        return niveis;
+    }
+
     private static IReadOnlyList<EtapaProcesso> LerEtapas(LeitorEnvelope leitor, JsonObject payload)
     {
         JsonArray array = leitor.Array(payload, "etapas", "$");
@@ -28,7 +108,7 @@ public sealed partial class EnvelopeCodec
         {
             string path = $"etapas[{i}]";
             JsonObject item = leitor.ItemObjeto(array, i, "etapas");
-            leitor.ExigirChaves(item, path, "id", "nome", "carater", "tipoEtapa", "peso", "notaMinima", "notaMaxima", "passoDoLancamento", "formaDeAvaliacao", "regraConsolidacao", "ordem", "faseCodigo", "produtos",
+            leitor.ExigirChaves(item, path, "id", "nome", "carater", "tipoEtapa", "peso", "notaMinima", "notaMaxima", "passoDoLancamento", "formaDeAvaliacao", "regraConsolidacao", "itensDeAvaliacao", "escalaDeAtendimento", "ordem", "faseCodigo", "produtos",
                 "inicio", "fim", "emiteParecerIndividual", "bancas", "recursos");
 
             Guid id = leitor.Identificador(item, "id", path);
@@ -42,6 +122,8 @@ public sealed partial class EnvelopeCodec
             FormaDeAvaliacao? formaDeAvaliacao = leitor.EnumeracaoOpcional<FormaDeAvaliacao>(item, "formaDeAvaliacao", path);
             ReferenciaRegra? regraConsolidacao = leitor.RegraOpcional(
                 item, "regraConsolidacao", path, [.. RegraConsolidacaoCodigo.Rol]);
+            List<ItemDeAvaliacao> itensDeAvaliacao = LerItensDeAvaliacao(leitor, item, path);
+            List<NivelDeAtendimento>? escalaDeAtendimento = LerEscalaDeAtendimento(leitor, item, path);
             int? ordem = leitor.InteiroOpcional(item, "ordem", path);
             string? faseCodigo = leitor.TextoOpcional(item, "faseCodigo", path, LimitesDoEnvelope.FaseCodigo);
 
@@ -71,7 +153,7 @@ public sealed partial class EnvelopeCodec
                     $"Envelope malformado em '{path}': peso, ordem, nota máxima e passo do lançamento devem ser maiores que zero e a nota mínima não negativa.")) ?? [];
             }
 
-            EtapaProcesso reidratada = EtapaProcesso.Reidratar(id, nome, carater, tipoEtapa!, peso, notaMinima, ordem, faseCodigo, notaMaxima, passoDoLancamento, formaDeAvaliacao, regraConsolidacao);
+            EtapaProcesso reidratada = EtapaProcesso.Reidratar(id, nome, carater, tipoEtapa!, peso, notaMinima, ordem, faseCodigo, notaMaxima, passoDoLancamento, formaDeAvaliacao, regraConsolidacao, itensDeAvaliacao, escalaDeAtendimento);
 
             JsonArray? arrayProdutos = leitor.Array(item, "produtos", path);
             string pathProdutos = $"{path}.produtos";

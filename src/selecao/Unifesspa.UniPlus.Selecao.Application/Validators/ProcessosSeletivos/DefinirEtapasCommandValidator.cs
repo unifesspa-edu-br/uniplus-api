@@ -75,6 +75,33 @@ public sealed class DefinirEtapasCommandValidator : AbstractValidator<DefinirEta
                 .When(e => e.PassoDoLancamento.HasValue)
                 .WithMessage("Passo do lançamento deve ter no máximo 4 casas decimais.");
 
+            // A pontuação do item é numeric(18,4) como a nota máxima que ela compõe, e a fração do
+            // nível vive em json: sem o limite, o que passa de 4 casas seria arredondado ou
+            // truncado em silêncio, e a soma dos itens deixaria de bater com o que o edital declarou.
+            // Item e nível nulos no array passam incólumes pelo ChildRules e o handler os
+            // desreferenciaria.
+            etapa.RuleForEach(e => e.ItensDeAvaliacao)
+                .NotNull()
+                .WithMessage("Item de avaliação da etapa não pode ser nulo.");
+
+            etapa.RuleForEach(e => e.ItensDeAvaliacao).ChildRules(item =>
+            {
+                item.RuleFor(i => i.PontuacaoMaxima)
+                    .PrecisionScale(18, 4, ignoreTrailingZeros: false)
+                    .WithMessage("A pontuação máxima do item deve ter no máximo 4 casas decimais.");
+            });
+
+            etapa.RuleForEach(e => e.EscalaDeAtendimento)
+                .NotNull()
+                .WithMessage("Nível da escala de atendimento não pode ser nulo.");
+
+            etapa.RuleForEach(e => e.EscalaDeAtendimento).ChildRules(nivel =>
+            {
+                nivel.RuleFor(n => n.Fracao)
+                    .PrecisionScale(5, 4, ignoreTrailingZeros: false)
+                    .WithMessage("A fração do nível deve ter no máximo 4 casas decimais e ficar entre 0 e 1.");
+            });
+
             // A COLEÇÃO em si não pode ser nula. `[JsonRequired]` recusa a carga que omite a
             // chave, mas `"produtos": null` atravessa a desserialização e chega até aqui — o
             // tipo não-anulável não a barra, e a exigência implícita do `[ApiController]` não

@@ -83,6 +83,7 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         ("FaseCodigo", LimitesDoEnvelope.FaseCodigo, typeof(EtapaProcesso), nameof(EtapaProcesso.FaseCodigo)),
         ("TipoAtoCodigo", LimitesDoEnvelope.TipoAtoCodigo, typeof(ProdutoDaEtapa), nameof(ProdutoDaEtapa.AtoCodigo)),
         ("TipoBancaCodigo", LimitesDoEnvelope.TipoBancaCodigo, typeof(BancaDaEtapa), nameof(BancaDaEtapa.Codigo)),
+        ("ItemDeAvaliacaoRotulo", LimitesDoEnvelope.ItemDeAvaliacaoRotulo, typeof(ItemDeAvaliacao), nameof(ItemDeAvaliacao.Rotulo)),
 
         // Story #554 (PR #903) — exigencias[] real.
         ("TipoDocumentoCodigo", LimitesDoEnvelope.TipoDocumentoCodigo, typeof(DocumentoExigido), nameof(DocumentoExigido.TipoDocumentoCodigo)),
@@ -141,6 +142,7 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
     [
         ("PrecisaoEtapa", LimitesDoEnvelope.PrecisaoEtapa, 4, typeof(EtapaProcesso), nameof(EtapaProcesso.Peso)),
         ("PrecisaoEtapa", LimitesDoEnvelope.PrecisaoEtapa, 4, typeof(EtapaProcesso), nameof(EtapaProcesso.NotaMinima)),
+        ("PrecisaoEtapa", LimitesDoEnvelope.PrecisaoEtapa, 4, typeof(ItemDeAvaliacao), nameof(ItemDeAvaliacao.PontuacaoMaxima)),
         ("PrecisaoBonus", LimitesDoEnvelope.PrecisaoBonus, 4, typeof(ConfiguracaoBonusRegional), nameof(ConfiguracaoBonusRegional.Fator)),
         ("PrecisaoBonus", LimitesDoEnvelope.PrecisaoBonus, 4, typeof(ConfiguracaoBonusRegional), nameof(ConfiguracaoBonusRegional.Teto)),
         ("PrecisaoPr", LimitesDoEnvelope.PrecisaoPr, 4, typeof(ConfiguracaoDistribuicaoVagas), nameof(ConfiguracaoDistribuicaoVagas.Pr)),
@@ -415,6 +417,11 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
             // limite é o da forma do item, que o domínio confere ao criar o campo, e a constante
             // é definida pela mesma constante da forma — não há segunda cópia que possa divergir.
             "MensagemDoImpedimento",
+
+            // Os níveis da escala de atendimento também vivem em jsonb: o teto do rótulo é o do
+            // domínio (definido pela mesma constante), e a fração cabe em numeric(5,4) por
+            // construção, já que o domínio a limita ao intervalo de 0 a 1.
+            "NivelDeAtendimentoRotulo", "PrecisaoFracaoDeAtendimento",
         ];
 
         declaradas.Except(confrontadas).Should().BeEmpty(

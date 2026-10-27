@@ -334,8 +334,15 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// avaliadores viram a nota da etapa. Sempre presentes, nulas quando a etapa não as declara. Sem
     /// novo bloco de topo. Sem produção em ambiente nenhum: fixture nova, <c>0.0.33</c> deixa de ser
     /// reconhecida.
+    /// O bump para <c>0.0.35</c> acrescenta a cada etapa as chaves <c>itensDeAvaliacao</c> (os
+    /// critérios ou blocos da nota, cada um com o <c>id</c> a que lançamento e recurso apontam, o
+    /// rótulo e a pontuação máxima) e <c>escalaDeAtendimento</c> (os níveis com rótulo e fração da
+    /// pontuação do item). Sempre presentes: a lista vazia e o nulo dizem que a etapa não declara.
+    /// O id do item entra nos bytes e no hash como o da etapa; a ordem dos itens sai do conteúdo
+    /// (rótulo e pontuação), nunca do id. Sem novo bloco de topo. Sem produção em ambiente nenhum:
+    /// fixture nova, <c>0.0.34</c> deixa de ser reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.34";
+    internal const string SchemaVersionAtual = "0.0.35";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -627,6 +634,19 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ["passoDoLancamento"] = etapa.PassoDoLancamento is { } passo ? HashCanonicalComputer.SerializeDecimalCanonical(passo, EscalaPadrao) : null,
         ["formaDeAvaliacao"] = etapa.FormaDeAvaliacao?.ToString(),
         ["regraConsolidacao"] = etapa.RegraConsolidacao is { } consolidacao ? SerializarReferenciaRegra(consolidacao) : null,
+        ["itensDeAvaliacao"] = new JsonArray([.. etapa.ItensDeAvaliacao.Select(static i => (JsonNode)new JsonObject
+        {
+            ["id"] = JsonValue.Create(i.Id),
+            ["rotulo"] = HashCanonicalComputer.NormalizeNfc(i.Rotulo),
+            ["pontuacaoMaxima"] = HashCanonicalComputer.SerializeDecimalCanonical(i.PontuacaoMaxima, EscalaPadrao),
+        })]),
+        ["escalaDeAtendimento"] = etapa.EscalaDeAtendimento is { } escala
+            ? new JsonArray([.. escala.Select(static n => (JsonNode)new JsonObject
+            {
+                ["rotulo"] = HashCanonicalComputer.NormalizeNfc(n.Rotulo),
+                ["fracao"] = HashCanonicalComputer.SerializeDecimalCanonical(n.Fracao, EscalaPadrao),
+            })])
+            : null,
         ["ordem"] = etapa.Ordem,
         ["faseCodigo"] = etapa.FaseCodigo,
         ["inicio"] = etapa.Inicio is { } ini ? HashCanonicalComputer.SerializeInstantCanonical(ini) : null,

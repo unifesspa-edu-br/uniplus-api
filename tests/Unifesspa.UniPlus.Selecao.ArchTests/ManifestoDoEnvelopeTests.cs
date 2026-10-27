@@ -55,7 +55,7 @@ public sealed class ManifestoDoEnvelopeTests
             [("EtapaProcessoId", "FK interna — reconstruída junto com o grafo.")]),
 
         [typeof(EtapaProcesso)] = (
-            ["Nome", "Carater", "TipoEtapa", "Peso", "NotaMinima", "NotaMaxima", "PassoDoLancamento", "FormaDeAvaliacao", "RegraConsolidacao", "Ordem", "FaseCodigo", "Produtos",
+            ["Nome", "Carater", "TipoEtapa", "Peso", "NotaMinima", "NotaMaxima", "PassoDoLancamento", "FormaDeAvaliacao", "RegraConsolidacao", "ItensDeAvaliacao", "EscalaDeAtendimento", "Ordem", "FaseCodigo", "Produtos",
              "Inicio", "Fim", "EmiteParecerIndividual", "Bancas", "Recursos"],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
@@ -64,6 +64,13 @@ public sealed class ManifestoDoEnvelopeTests
                 ("DeclaraNotaDoEnem", "Derivada de TipoEtapa.NotaDeOrigemNoEnem — o atributo congelado já é a declaração."),
                 ("TipoEtapaOrigemId", "Derivada de TipoEtapa.OrigemId (issue #1071) — congelá-la duplicaria a fonte de verdade."),
             ]),
+
+        // O id do item ENTRA no envelope, como o da etapa: o lançamento e o recurso apontam para ele.
+        [typeof(ItemDeAvaliacao)] = (
+            ["Rotulo", "PontuacaoMaxima"],
+            [("EtapaProcessoId", "FK interna — reconstruída junto com o grafo.")]),
+
+        [typeof(NivelDeAtendimento)] = (["Rotulo", "Fracao"], []),
 
         [typeof(OfertaAtendimentoEspecializado)] = (
             ["Condicoes", "Recursos", "TiposDeficiencia"],

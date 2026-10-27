@@ -43,6 +43,10 @@ public sealed class EtapaProcesso : EntityBase
     public const string RegraDeConsolidacaoInvalida = "EtapaProcesso.RegraDeConsolidacaoInvalida";
     public const string PassoNaFormaObjetiva = "EtapaProcesso.PassoNaFormaObjetiva";
     public const string FormaDeAvaliacaoDesconhecida = "EtapaProcesso.FormaDeAvaliacaoDesconhecida";
+    public const string ItensNaEtapaDoEnem = "EtapaProcesso.ItensNaEtapaDoEnem";
+    public const string EscalaSemItens = "EtapaProcesso.EscalaSemItens";
+    public const string EscalaNaFormaObjetiva = "EtapaProcesso.EscalaNaFormaObjetiva";
+    public const string PassoComEscalaDeAtendimento = "EtapaProcesso.PassoComEscalaDeAtendimento";
 
     public Guid ProcessoSeletivoId { get; private set; }
 
@@ -93,6 +97,12 @@ public sealed class EtapaProcesso : EntityBase
     /// </summary>
     public ReferenciaRegra? RegraConsolidacao { get; private set; }
 
+    /// <summary>
+    /// Os níveis entre os quais a banca escolhe em cada item, em vez de digitar a nota; ausente
+    /// quando a etapa lança nota digitada. Do nível de maior fração ao de menor.
+    /// </summary>
+    public IReadOnlyList<NivelDeAtendimento>? EscalaDeAtendimento { get; private set; }
+
     public int? Ordem { get; private set; }
 
     /// <summary>Início da janela própria da etapa, em UTC; ausente quando ela herda a da fase.</summary>
@@ -110,6 +120,16 @@ public sealed class EtapaProcesso : EntityBase
     private readonly List<ProdutoDaEtapa> _produtos = [];
     private readonly List<BancaDaEtapa> _bancas = [];
     private readonly List<RecursoDaEtapa> _recursos = [];
+    private readonly List<ItemDeAvaliacao> _itensDeAvaliacao = [];
+
+    /// <summary>
+    /// Os itens de avaliação (critérios ou blocos) em que a nota da etapa se divide (0..*), em
+    /// ordem canônica: pelo conteúdo, nunca pelo id.
+    /// </summary>
+    public IReadOnlyList<ItemDeAvaliacao> ItensDeAvaliacao => [.. _itensDeAvaliacao
+        .OrderBy(static i => HashCanonicalComputer.NormalizeNfc(i.Rotulo), StringComparer.Ordinal)
+        .ThenBy(static i => i.PontuacaoMaxima)
+        .ThenBy(static i => i.Id)];
 
     /// <summary>As bancas que a etapa requer (0..*).</summary>
     public IReadOnlyCollection<BancaDaEtapa> Bancas => _bancas.AsReadOnly();
@@ -214,19 +234,23 @@ public sealed class EtapaProcesso : EntityBase
         decimal? notaMaxima = null,
         decimal? passoDoLancamento = null,
         FormaDeAvaliacao? formaDeAvaliacao = null,
-        ReferenciaRegra? regraConsolidacao = null)
+        ReferenciaRegra? regraConsolidacao = null,
+        IReadOnlyList<ItemDeAvaliacaoDeclarado>? itensDeAvaliacao = null,
+        IReadOnlyList<NivelDeAtendimento>? escalaDeAtendimento = null)
     {
         ArgumentNullException.ThrowIfNull(tipoEtapa);
 
         List<FieldError> erros = ValidarFormaBasica(
-            nome, carater, peso, notaMinima, ordem, notaMaxima, passoDoLancamento);
-        erros.AddRange(ValidarAvaliacao(tipoEtapa.NotaDeOrigemNoEnem, passoDoLancamento, formaDeAvaliacao, regraConsolidacao?.Codigo));
+            nome, carater, peso, notaMinima, ordem, notaMaxima, passoDoLancamento, itensDeAvaliacao, escalaDeAtendimento);
+        erros.AddRange(ValidarAvaliacao(
+            tipoEtapa.NotaDeOrigemNoEnem, passoDoLancamento, formaDeAvaliacao, regraConsolidacao?.Codigo,
+            itensDeAvaliacao?.Count > 0, escalaDeAtendimento?.Count > 0));
         if (erros.Count > 0)
         {
             return Result<EtapaProcesso>.ValidationFailure(erros);
         }
 
-        return Result<EtapaProcesso>.Success(new EtapaProcesso
+        EtapaProcesso etapa = new()
         {
             Nome = nome.Trim(),
             Carater = carater,
@@ -237,9 +261,13 @@ public sealed class EtapaProcesso : EntityBase
             PassoDoLancamento = passoDoLancamento,
             FormaDeAvaliacao = formaDeAvaliacao,
             RegraConsolidacao = regraConsolidacao,
+            EscalaDeAtendimento = NiveisDeAtendimento.EmOrdemCanonica(escalaDeAtendimento),
             Ordem = ordem,
             FaseCodigo = string.IsNullOrWhiteSpace(faseCodigo) ? null : faseCodigo.Trim(),
-        });
+        };
+        etapa.ReconciliarItens(itensDeAvaliacao);
+
+        return Result<EtapaProcesso>.Success(etapa);
     }
 
     /// <summary>
@@ -258,7 +286,9 @@ public sealed class EtapaProcesso : EntityBase
         decimal? notaMinima,
         int? ordem,
         decimal? notaMaxima = null,
-        decimal? passoDoLancamento = null)
+        decimal? passoDoLancamento = null,
+        IReadOnlyList<ItemDeAvaliacaoDeclarado?>? itensDeAvaliacao = null,
+        IReadOnlyList<NivelDeAtendimento?>? escalaDeAtendimento = null)
     {
         List<FieldError> erros = [];
 
@@ -316,6 +346,9 @@ public sealed class EtapaProcesso : EntityBase
             erros.Add(new("ordem", new DomainError(
                 "EtapaProcesso.OrdemInvalida", "A ordem da etapa, quando informada, deve ser maior que zero.")));
         }
+
+        erros.AddRange(ItemDeAvaliacao.Validar(itensDeAvaliacao, passoDoLancamento));
+        erros.AddRange(NiveisDeAtendimento.Validar(escalaDeAtendimento));
 
         return erros;
     }
@@ -393,9 +426,12 @@ public sealed class EtapaProcesso : EntityBase
         decimal? notaMaxima,
         decimal? passoDoLancamento,
         FormaDeAvaliacao? formaDeAvaliacao,
-        ReferenciaRegra? regraConsolidacao)
+        ReferenciaRegra? regraConsolidacao,
+        IReadOnlyList<ItemDeAvaliacao> itensDeAvaliacao,
+        IReadOnlyList<NivelDeAtendimento>? escalaDeAtendimento)
     {
         ArgumentNullException.ThrowIfNull(nome);
+        ArgumentNullException.ThrowIfNull(itensDeAvaliacao);
         ArgumentNullException.ThrowIfNull(tipoEtapa);
         ArgumentNullException.ThrowIfNull(produtos);
         ArgumentNullException.ThrowIfNull(bancas);
@@ -410,9 +446,11 @@ public sealed class EtapaProcesso : EntityBase
         PassoDoLancamento = passoDoLancamento;
         FormaDeAvaliacao = formaDeAvaliacao;
         RegraConsolidacao = regraConsolidacao;
+        EscalaDeAtendimento = NiveisDeAtendimento.EmOrdemCanonica(escalaDeAtendimento);
         Ordem = ordem;
         FaseCodigo = string.IsNullOrWhiteSpace(faseCodigo) ? null : faseCodigo.Trim();
         Inicio = inicio?.ToUniversalTime();
+        ReporItensCongelados(itensDeAvaliacao);
         Fim = fim?.ToUniversalTime();
         EmiteParecerIndividual = emiteParecerIndividual;
 
@@ -589,13 +627,14 @@ public sealed class EtapaProcesso : EntityBase
     /// </summary>
     /// <remarks>
     /// <para>
-    /// O <c>id</c> da etapa é o <b>único</b> id de entidade-filha que o envelope congela
-    /// (ADR-0110 D2), porque <c>criteriosDesempate.args.etapaRef</c> e
-    /// <c>regrasEliminacao.args.etapaRef</c> apontam para ele: sem preservá-lo, o
-    /// snapshot reidratado teria referências que não resolvem, e o desempate e a
-    /// eliminação do certame ficariam inexecutáveis. Os ids das demais filhas são
-    /// regenerados — nenhuma referência de negócio exige estabilidade deles, e as FKs
-    /// internas são reconstruídas junto com o grafo.
+    /// O <c>id</c> da etapa é congelado no envelope (ADR-0110 D2), porque
+    /// <c>criteriosDesempate.args.etapaRef</c> e <c>regrasEliminacao.args.etapaRef</c>
+    /// apontam para ele: sem preservá-lo, o snapshot reidratado teria referências que
+    /// não resolvem, e o desempate e a eliminação do certame ficariam inexecutáveis. O
+    /// mesmo vale para o id de cada item de avaliação (ADR-0150), a que o lançamento e o
+    /// recurso apontam, e que chega por <paramref name="itensDeAvaliacao"/>. Os ids das
+    /// demais filhas são regenerados — nenhuma referência de negócio exige estabilidade
+    /// deles, e as FKs internas são reconstruídas junto com o grafo.
     /// </para>
     /// <para>
     /// Reidratar não é criar: os dados vêm de um documento com peso jurídico, já
@@ -616,7 +655,9 @@ public sealed class EtapaProcesso : EntityBase
         decimal? notaMaxima = null,
         decimal? passoDoLancamento = null,
         FormaDeAvaliacao? formaDeAvaliacao = null,
-        ReferenciaRegra? regraConsolidacao = null)
+        ReferenciaRegra? regraConsolidacao = null,
+        IReadOnlyList<ItemDeAvaliacao>? itensDeAvaliacao = null,
+        IReadOnlyList<NivelDeAtendimento>? escalaDeAtendimento = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(nome);
         ArgumentNullException.ThrowIfNull(tipoEtapa);
@@ -632,7 +673,7 @@ public sealed class EtapaProcesso : EntityBase
                 nameof(carater));
         }
 
-        return new EtapaProcesso
+        EtapaProcesso etapa = new()
         {
             Id = id,
             Nome = nome.Trim(),
@@ -644,9 +685,13 @@ public sealed class EtapaProcesso : EntityBase
             PassoDoLancamento = passoDoLancamento,
             FormaDeAvaliacao = formaDeAvaliacao,
             RegraConsolidacao = regraConsolidacao,
+            EscalaDeAtendimento = NiveisDeAtendimento.EmOrdemCanonica(escalaDeAtendimento),
             Ordem = ordem,
             FaseCodigo = string.IsNullOrWhiteSpace(faseCodigo) ? null : faseCodigo.Trim(),
         };
+        etapa.ReporItensCongelados(itensDeAvaliacao ?? []);
+
+        return etapa;
     }
 
     /// <summary>
@@ -681,13 +726,17 @@ public sealed class EtapaProcesso : EntityBase
         decimal? notaMaxima = null,
         decimal? passoDoLancamento = null,
         FormaDeAvaliacao? formaDeAvaliacao = null,
-        ReferenciaRegra? regraConsolidacao = null)
+        ReferenciaRegra? regraConsolidacao = null,
+        IReadOnlyList<ItemDeAvaliacaoDeclarado>? itensDeAvaliacao = null,
+        IReadOnlyList<NivelDeAtendimento>? escalaDeAtendimento = null)
     {
         ArgumentNullException.ThrowIfNull(tipoEtapa);
 
         List<FieldError> erros = ValidarFormaBasica(
-            nome, carater, peso, notaMinima, ordem, notaMaxima, passoDoLancamento);
-        erros.AddRange(ValidarAvaliacao(tipoEtapa.NotaDeOrigemNoEnem, passoDoLancamento, formaDeAvaliacao, regraConsolidacao?.Codigo));
+            nome, carater, peso, notaMinima, ordem, notaMaxima, passoDoLancamento, itensDeAvaliacao, escalaDeAtendimento);
+        erros.AddRange(ValidarAvaliacao(
+            tipoEtapa.NotaDeOrigemNoEnem, passoDoLancamento, formaDeAvaliacao, regraConsolidacao?.Codigo,
+            itensDeAvaliacao?.Count > 0, escalaDeAtendimento?.Count > 0));
         if (erros.Count > 0)
         {
             return Result.ValidationFailure(erros);
@@ -702,14 +751,77 @@ public sealed class EtapaProcesso : EntityBase
         PassoDoLancamento = passoDoLancamento;
         FormaDeAvaliacao = formaDeAvaliacao;
         RegraConsolidacao = regraConsolidacao;
+        EscalaDeAtendimento = NiveisDeAtendimento.EmOrdemCanonica(escalaDeAtendimento);
         Ordem = ordem;
         FaseCodigo = string.IsNullOrWhiteSpace(faseCodigo) ? null : faseCodigo.Trim();
+        ReconciliarItens(itensDeAvaliacao);
 
         return Result.Success();
     }
 
     internal void VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
+
+    /// <summary>
+    /// Substitui os itens reconciliando pelo id: o item declarado com o id de um existente é a
+    /// mesma linha com rótulo e pontuação novos, e é isso que mantém o id estável para quem aponta
+    /// para ele. Sem id, ou com um que a etapa não conhece, é item novo.
+    /// </summary>
+    private void ReconciliarItens(IReadOnlyList<ItemDeAvaliacaoDeclarado>? declarados)
+    {
+        List<ItemDeAvaliacao> vivos = [.. _itensDeAvaliacao];
+        List<ItemDeAvaliacao> finais = [];
+        foreach (ItemDeAvaliacaoDeclarado declarado in declarados ?? [])
+        {
+            ItemDeAvaliacao? existente = declarado.Id is { } id ? vivos.Find(i => i.Id == id) : null;
+            if (existente is null)
+            {
+                finais.Add(ItemDeAvaliacao.Criar(declarado));
+                continue;
+            }
+
+            vivos.Remove(existente);
+            existente.Atualizar(declarado.Rotulo, declarado.PontuacaoMaxima);
+            finais.Add(existente);
+        }
+
+        SubstituirItens(finais);
+    }
+
+    /// <summary>
+    /// Repõe os itens congelados preservando o id: o item vivo de mesmo id é reaproveitado, e o
+    /// congelado que a linha viva não tem entra com o id do envelope.
+    /// </summary>
+    private void ReporItensCongelados(IReadOnlyList<ItemDeAvaliacao> congelados)
+    {
+        List<ItemDeAvaliacao> vivos = [.. _itensDeAvaliacao];
+        List<ItemDeAvaliacao> finais = [];
+        foreach (ItemDeAvaliacao congelado in congelados)
+        {
+            ItemDeAvaliacao? existente = vivos.Find(i => i.Id == congelado.Id);
+            if (existente is null)
+            {
+                finais.Add(congelado);
+                continue;
+            }
+
+            vivos.Remove(existente);
+            existente.Atualizar(congelado.Rotulo, congelado.PontuacaoMaxima);
+            finais.Add(existente);
+        }
+
+        SubstituirItens(finais);
+    }
+
+    private void SubstituirItens(List<ItemDeAvaliacao> itens)
+    {
+        _itensDeAvaliacao.Clear();
+        foreach (ItemDeAvaliacao item in itens)
+        {
+            item.VincularEtapa(Id);
+            _itensDeAvaliacao.Add(item);
+        }
+    }
 
 
     /// <summary>
@@ -730,7 +842,9 @@ public sealed class EtapaProcesso : EntityBase
         bool notaDeOrigemNoEnem,
         decimal? passoDoLancamento,
         FormaDeAvaliacao? forma,
-        string? regraConsolidacaoCodigo)
+        string? regraConsolidacaoCodigo,
+        bool declaraItens = false,
+        bool declaraEscala = false)
     {
         List<FieldError> erros = [];
 
@@ -748,6 +862,20 @@ public sealed class EtapaProcesso : EntityBase
                 erros.Add(new("regraConsolidacao", new DomainError(
                     AvaliacaoNaEtapaDoEnem,
                     "A etapa de nota do ENEM não declara regra de consolidação: a nota vem do INEP.")));
+            }
+
+            if (declaraItens)
+            {
+                erros.Add(new("itensDeAvaliacao", new DomainError(
+                    ItensNaEtapaDoEnem,
+                    "A etapa de nota do ENEM não declara itens de avaliação: a nota vem do INEP.")));
+            }
+
+            if (declaraEscala)
+            {
+                erros.Add(new("escalaDeAtendimento", new DomainError(
+                    ItensNaEtapaDoEnem,
+                    "A etapa de nota do ENEM não declara escala de atendimento: a nota vem do INEP.")));
             }
 
             return erros;
@@ -774,6 +902,30 @@ public sealed class EtapaProcesso : EntityBase
             erros.Add(new("passoDoLancamento", new DomainError(
                 PassoNaFormaObjetiva,
                 "O passo do lançamento só se aplica à avaliação humana: na avaliação objetiva ninguém lança a nota.")));
+        }
+
+        if (declaraEscala)
+        {
+            if (!declaraItens)
+            {
+                erros.Add(new("escalaDeAtendimento", new DomainError(
+                    EscalaSemItens,
+                    "A escala de atendimento é aplicada a cada item: sem itens de avaliação, não há o que atender.")));
+            }
+
+            if (forma == Enums.FormaDeAvaliacao.Objetiva)
+            {
+                erros.Add(new("escalaDeAtendimento", new DomainError(
+                    EscalaNaFormaObjetiva,
+                    "A escala de atendimento só se aplica à avaliação humana: na avaliação objetiva ninguém escolhe o nível.")));
+            }
+
+            if (passoDoLancamento is not null)
+            {
+                erros.Add(new("passoDoLancamento", new DomainError(
+                    PassoComEscalaDeAtendimento,
+                    "Com escala de atendimento a banca escolhe o nível e não digita a nota, então a etapa não declara passo do lançamento.")));
+            }
         }
 
         return erros;

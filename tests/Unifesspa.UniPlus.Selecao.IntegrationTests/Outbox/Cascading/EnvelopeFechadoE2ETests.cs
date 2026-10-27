@@ -306,6 +306,8 @@ public sealed class EnvelopeFechadoE2ETests
                 "nota_minima_da_regra_acima_da_nota_maxima",
                 "etapa_com_nota_sem_forma_de_avaliacao",
                 "etapa_sem_nota_com_forma_de_avaliacao",
+                "etapa_sem_nota_com_itens_de_avaliacao",
+                "etapa_com_itens_fora_da_nota_maxima",
                 "etapa_humana_sem_regra_de_consolidacao",
                 "etapa_humana_sem_passo_do_lancamento",
                 "etapa_humana_sem_banca",

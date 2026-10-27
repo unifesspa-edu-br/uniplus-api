@@ -116,6 +116,21 @@ internal sealed class LeitorEnvelope
             : Malformado<JsonArray>($"{path}.{chave}", "esperado um array.");
     }
 
+    public JsonArray? ArrayOpcional(JsonObject pai, string chave, string path)
+    {
+        if (Falhou)
+        {
+            return null;
+        }
+
+        return pai[chave] switch
+        {
+            null => null,
+            JsonArray array => array,
+            _ => Malformado<JsonArray?>($"{path}.{chave}", "esperado um array ou null."),
+        };
+    }
+
     public JsonObject ItemObjeto(JsonArray array, int indice, string path)
     {
         if (Falhou)

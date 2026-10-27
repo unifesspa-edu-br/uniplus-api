@@ -69,7 +69,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
         await using (SelecaoDbContext leitura = fixture.CreateDbContext())
         {
             ProcessoSeletivo sujo = await CarregarAsync(leitura, processoId);
-            sujo.Etapas.Should().ContainSingle("pré-condição: a sessão editorial trocou as 3 etapas por 1");
+            sujo.Etapas.Should().ContainSingle("pré-condição: a sessão editorial trocou as 4 etapas por 1");
             sujo.BonusRegional.Should().BeNull("pré-condição: a sessão editorial removeu o bônus");
         }
 
@@ -116,7 +116,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
             .OnlyContain(c => c.OfertaAtendimentoEspecializadoId == reposto.OfertaAtendimento.Id);
 
         // (b) As filhas da sessão editorial saíram — sem órfãs.
-        reposto.Etapas.Should().HaveCount(3);
+        reposto.Etapas.Should().HaveCount(4);
         reposto.DistribuicaoVagas.Should().HaveCount(2);
         reposto.CriteriosDesempate.Should().HaveCount(6);
         reposto.Classificacao.RegrasEliminacao.Should().HaveCount(5);
@@ -292,12 +292,22 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
                 new DateTimeOffset(2027, 5, 2, 0, 0, 0, TimeSpan.Zero),
                 emiteParecerIndividual: false).IsSuccess.Should().BeTrue();
 
+            // Troca o rótulo de um item, mantendo o id, e acrescenta um item novo no lugar do outro.
+            ItemDeAvaliacao matematica = objetiva.ItensDeAvaliacao.Single(i => i.Rotulo == "Bloco de Matemática");
+            objetiva.AtualizarDados(
+                objetiva.Nome, objetiva.Carater, objetiva.TipoEtapa, objetiva.Peso, objetiva.NotaMinima, objetiva.Ordem,
+                objetiva.FaseCodigo, objetiva.NotaMaxima, objetiva.PassoDoLancamento,
+                objetiva.FormaDeAvaliacao, objetiva.RegraConsolidacao,
+                [new(matematica.Id, "Bloco de Exatas", 40m), new(null, "Bloco de Humanidades", 60m)],
+                escalaDeAtendimento: null).IsSuccess.Should().BeTrue();
+
             await sessao.SaveChangesAsync();
         }
 
         await using (SelecaoDbContext leitura = fixture.CreateDbContext())
         {
             EtapaProcesso suja = (await CarregarAsync(leitura, processoId)).Etapas.Single(e => e.Id == objetivaId);
+            suja.ItensDeAvaliacao.Select(i => i.Rotulo).Should().BeEquivalentTo("Bloco de Exatas", "Bloco de Humanidades");
             suja.Produtos.Should().BeEmpty("pré-condição: a sessão editorial esvaziou a etapa");
             suja.Recursos.Should().BeEmpty("pré-condição: a sessão editorial esvaziou a etapa");
             suja.EmiteParecerIndividual.Should().BeFalse("pré-condição: a sessão editorial retirou a promessa de parecer");
@@ -322,6 +332,10 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
         EtapaProcesso objetivaReposta = reposto.Etapas.Single(e => e.Id == objetivaId);
         EtapaProcesso congeladaOriginal = CorpusEnvelope.ProcessoRico(Variante).Etapas.Single(e => e.Id == objetivaId);
 
+        // O item volta pelo id que o envelope congela: lançamento e recurso apontam para ele, e a
+        // linha da sessão editorial que trocou de rótulo é a mesma que recupera o rótulo original.
+        objetivaReposta.ItensDeAvaliacao.Select(i => (i.Id, i.Rotulo, i.PontuacaoMaxima))
+            .Should().BeEquivalentTo(congeladaOriginal.ItensDeAvaliacao.Select(i => (i.Id, i.Rotulo, i.PontuacaoMaxima)));
         objetivaReposta.Inicio.Should().Be(congeladaOriginal.Inicio);
         objetivaReposta.Fim.Should().Be(congeladaOriginal.Fim);
         objetivaReposta.EmiteParecerIndividual.Should().Be(congeladaOriginal.EmiteParecerIndividual);
@@ -372,6 +386,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
             .Include(p => p.Etapas).ThenInclude(e => e.Produtos)
             .Include(p => p.Etapas).ThenInclude(e => e.Bancas)
             .Include(p => p.Etapas).ThenInclude(e => e.Recursos)
+            .Include(p => p.Etapas).ThenInclude(e => e.ItensDeAvaliacao)
             .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.Condicoes)
             .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.Recursos)
             .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.TiposDeficiencia)

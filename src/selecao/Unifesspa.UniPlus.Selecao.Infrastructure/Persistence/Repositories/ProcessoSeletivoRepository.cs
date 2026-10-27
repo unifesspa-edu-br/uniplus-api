@@ -102,6 +102,7 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             .Include(p => p.Etapas).ThenInclude(e => e.Produtos)
             .Include(p => p.Etapas).ThenInclude(e => e.Bancas)
             .Include(p => p.Etapas).ThenInclude(e => e.Recursos)
+            .Include(p => p.Etapas).ThenInclude(e => e.ItensDeAvaliacao)
             .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.Condicoes)
             .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.Recursos)
             .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.TiposDeficiencia)
