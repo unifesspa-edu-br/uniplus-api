@@ -72,6 +72,12 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// publicação. A regra é declarada por código e versão do catálogo; o hash nunca vem do
 /// payload.
 /// </para>
+/// <para>
+/// <c>ItensDeAvaliacao</c> e <c>EscalaDeAtendimento</c> seguem a mesma política: omitidos, são
+/// apagados, e a lista vazia vale por ausência. O item com <c>Id</c> de um item existente da
+/// etapa atualiza a mesma linha, preservando a identidade para quem aponta para ela; sem id é
+/// item novo.
+/// </para>
 /// </remarks>
 public sealed record EtapaProcessoInput(
     string Nome,
@@ -92,7 +98,15 @@ public sealed record EtapaProcessoInput(
     decimal? PassoDoLancamento = null,
     string? FormaDeAvaliacao = null,
     string? RegraConsolidacaoCodigo = null,
-    string? RegraConsolidacaoVersao = null);
+    string? RegraConsolidacaoVersao = null,
+    IReadOnlyList<ItemDeAvaliacaoInput>? ItensDeAvaliacao = null,
+    IReadOnlyList<NivelDeAtendimentoInput>? EscalaDeAtendimento = null);
+
+/// <summary>Um item de avaliação (critério ou bloco) da etapa e a pontuação máxima que ele vale.</summary>
+public sealed record ItemDeAvaliacaoInput(Guid? Id, string Rotulo, decimal PontuacaoMaxima);
+
+/// <summary>Um nível da escala de atendimento: o rótulo e a fração da pontuação do item que ele vale.</summary>
+public sealed record NivelDeAtendimentoInput(string Rotulo, decimal Fracao);
 
 /// <summary>Uma banca requerida pela etapa — o id do tipo no cadastro de Configuração.</summary>
 public sealed record BancaDaEtapaInput(Guid TipoBancaId);

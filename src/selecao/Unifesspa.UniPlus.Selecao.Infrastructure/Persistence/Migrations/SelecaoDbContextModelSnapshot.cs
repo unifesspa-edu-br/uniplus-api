@@ -1821,6 +1821,11 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("emite_parecer_individual");
 
+                    b.Property<string>("EscalaDeAtendimento")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("escala_de_atendimento")
+                        .HasComment("Níveis de atendimento (rótulo e fração da pontuação do item), do que mais vale ao que menos vale; ausente quando a banca digita a nota.");
+
                     b.Property<string>("FaseCodigo")
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
@@ -2371,6 +2376,50 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                             t.HasComment("A inscrição com linha válida em um lote de notas, com o número de inscrição que o INEP lhe deu. Append-only.");
 
                             t.HasCheckConstraint("ck_inscritos_do_lote_de_notas_numero_enem", "numero_de_inscricao_no_enem ~ '^[0-9]{12}$'");
+                        });
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ItemDeAvaliacao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("EtapaProcessoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("etapa_processo_id");
+
+                    b.Property<decimal>("PontuacaoMaxima")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("pontuacao_maxima")
+                        .HasComment("O quanto o item vale da nota máxima da etapa.");
+
+                    b.Property<string>("Rotulo")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("rotulo");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_itens_de_avaliacao_da_etapa");
+
+                    b.HasIndex("EtapaProcessoId")
+                        .HasDatabaseName("ix_itens_de_avaliacao_da_etapa_etapa_processo_id");
+
+                    b.ToTable("itens_de_avaliacao_da_etapa", "selecao", t =>
+                        {
+                            t.HasComment("Itens de avaliação (critérios ou blocos) da etapa; o id é a identidade a que lançamento e recurso apontam.");
+
+                            t.HasCheckConstraint("ck_itens_de_avaliacao_da_etapa_pontuacao_positiva", "pontuacao_maxima > 0");
                         });
                 });
 
@@ -5840,6 +5889,16 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_inscritos_do_lote_de_notas_lotes_de_notas_do_enem_lote_id");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ItemDeAvaliacao", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.EtapaProcesso", null)
+                        .WithMany("ItensDeAvaliacao")
+                        .HasForeignKey("EtapaProcessoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_itens_de_avaliacao_da_etapa_etapas_processo_etapa_processo_");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.LancamentoDeNota", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.LoteDeNotasDoEnem", null)
@@ -6641,6 +6700,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.EtapaProcesso", b =>
                 {
                     b.Navigation("Bancas");
+
+                    b.Navigation("ItensDeAvaliacao");
 
                     b.Navigation("Produtos");
 

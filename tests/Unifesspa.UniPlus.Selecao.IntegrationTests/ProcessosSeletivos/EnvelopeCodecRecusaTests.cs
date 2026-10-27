@@ -1357,6 +1357,40 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
+    // ── itens de avaliação e escala de atendimento da etapa ──
+
+    [Theory(DisplayName = "Item ou nível adulterado no envelope é recusado: pontuação não positiva, fração fora de 0 a 1, escala vazia, item sem chave")]
+    [InlineData("pontuacao")]
+    [InlineData("fracao")]
+    [InlineData("escalaVazia")]
+    [InlineData("itemSemRotulo")]
+    public void ItensEEscala_Adulterados_Recusa(string adulteracao)
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonObject objetiva = envelope["etapas"]!.AsArray()[0]!.AsObject();
+            JsonObject defesa = envelope["etapas"]!.AsArray()[3]!.AsObject();
+            switch (adulteracao)
+            {
+                case "pontuacao":
+                    objetiva["itensDeAvaliacao"]![0]!["pontuacaoMaxima"] = "0.0000";
+                    break;
+                case "fracao":
+                    defesa["escalaDeAtendimento"]![0]!["fracao"] = "1.5000";
+                    break;
+                case "escalaVazia":
+                    defesa["escalaDeAtendimento"] = new JsonArray();
+                    break;
+                default:
+                    objetiva["itensDeAvaliacao"]![0]!.AsObject().Remove("rotulo");
+                    break;
+            }
+        });
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
     // ── issue #1071 — etapas[].tipoEtapa: snapshot congelado do tipo de etapa ──
 
     [Fact(DisplayName = "etapas[].tipoEtapa ausente é recusado")]

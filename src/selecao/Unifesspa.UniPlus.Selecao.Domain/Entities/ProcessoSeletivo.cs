@@ -3633,7 +3633,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>
     /// Como a nota de cada etapa é obtida: a etapa com nota declara a forma de avaliação, a que não
     /// tem nota não declara, e a forma humana exige a regra que consolida as notas dos avaliadores,
-    /// o passo do lançamento e ao menos uma banca. Depende do grafo (o que compõe a média, o que a
+    /// o passo do lançamento (salvo quando a banca escolhe o nível de uma escala de atendimento) e
+    /// ao menos uma banca. Os itens de avaliação só existem na etapa com nota e somam a nota máxima
+    /// dela. Depende do grafo (o que compõe a média, o que a
     /// classificação e o desempate citam), por isso é gate de publicação e não recusa de gravação.
     /// </summary>
     /// <remarks>
@@ -3663,13 +3665,23 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "Forma de avaliação e regra de consolidação só em etapa com nota",
                 [.. semNota.Where(static etapa => etapa.FormaDeAvaliacao is not null || etapa.RegraConsolidacao is not null)]),
             ItemDasEtapas(
+                "etapa_sem_nota_com_itens_de_avaliacao",
+                "Itens de avaliação e escala de atendimento só em etapa com nota",
+                [.. semNota.Where(static etapa => etapa.ItensDeAvaliacao.Count > 0 || etapa.EscalaDeAtendimento is not null)]),
+            ItemDasEtapas(
+                "etapa_com_itens_fora_da_nota_maxima",
+                "Soma das pontuações dos itens igual à nota máxima de cada etapa com itens",
+                [.. comNota.Where(static etapa => etapa.ItensDeAvaliacao.Count > 0
+                    && etapa.NotaMaxima is { } notaMaxima
+                    && etapa.ItensDeAvaliacao.Sum(static item => item.PontuacaoMaxima) != notaMaxima)]),
+            ItemDasEtapas(
                 "etapa_humana_sem_regra_de_consolidacao",
                 "Regra de consolidação de cada etapa de avaliação humana",
                 [.. humanas.Where(static etapa => etapa.RegraConsolidacao is null)]),
             ItemDasEtapas(
                 "etapa_humana_sem_passo_do_lancamento",
-                "Passo do lançamento de cada etapa de avaliação humana",
-                [.. humanas.Where(static etapa => etapa.PassoDoLancamento is null)]),
+                "Passo do lançamento de cada etapa de avaliação humana sem escala de atendimento",
+                [.. humanas.Where(static etapa => etapa.PassoDoLancamento is null && etapa.EscalaDeAtendimento is null)]),
             ItemDasEtapas(
                 "etapa_humana_sem_banca",
                 "Ao menos uma banca em cada etapa de avaliação humana",
@@ -7589,7 +7601,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     congelada.NotaMaxima,
                     congelada.PassoDoLancamento,
                     congelada.FormaDeAvaliacao,
-                    congelada.RegraConsolidacao);
+                    congelada.RegraConsolidacao,
+                    congelada.ItensDeAvaliacao,
+                    congelada.EscalaDeAtendimento);
                 etapas.Add(viva);
             }
             else

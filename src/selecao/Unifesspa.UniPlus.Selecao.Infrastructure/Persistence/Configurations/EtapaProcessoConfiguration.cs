@@ -1,12 +1,36 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
+using System.Text.Json;
+
 using Domain.Entities;
+using Domain.ValueObjects;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaProcesso>
 {
+    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+    private static readonly ValueConverter<IReadOnlyList<NivelDeAtendimento>?, string> EscalaConverter =
+        new(
+            escala => SerializarEscala(escala),
+            json => DesserializarEscala(json));
+
+    private static readonly ValueComparer<IReadOnlyList<NivelDeAtendimento>?> EscalaComparer =
+        new(
+            (a, b) => SerializarEscala(a) == SerializarEscala(b),
+            escala => SerializarEscala(escala).GetHashCode(StringComparison.Ordinal),
+            escala => DesserializarEscala(SerializarEscala(escala)));
+
+    private static string SerializarEscala(IReadOnlyList<NivelDeAtendimento>? escala) =>
+        JsonSerializer.Serialize(escala ?? [], JsonOptions);
+
+    private static List<NivelDeAtendimento> DesserializarEscala(string json) =>
+        JsonSerializer.Deserialize<List<NivelDeAtendimento>>(json, JsonOptions) ?? [];
+
     public void Configure(EntityTypeBuilder<EtapaProcesso> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -77,6 +101,11 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
         builder.Metadata.FindNavigation(nameof(EtapaProcesso.Recursos))!
             .SetPropertyAccessMode(PropertyAccessMode.Field);
 
+        builder.HasMany(e => e.ItensDeAvaliacao).WithOne()
+            .HasForeignKey(i => i.EtapaProcessoId).OnDelete(DeleteBehavior.Cascade);
+        builder.Metadata.FindNavigation(nameof(EtapaProcesso.ItensDeAvaliacao))!
+            .SetPropertyAccessMode(PropertyAccessMode.Field);
+
         // A janela própria da etapa: ausente quando ela herda a da fase.
         builder.Property(e => e.Inicio).HasColumnName("inicio");
         builder.Property(e => e.Fim).HasColumnName("fim");
@@ -99,6 +128,14 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
         // domínio, não de armazenamento: a coluna não a repete.
         builder.OwnsOne(e => e.RegraConsolidacao, regra => regra.ConfigurarReferenciaRegra("regra_consolidacao"));
         builder.Navigation(e => e.RegraConsolidacao).IsRequired(false);
+
+        // Os níveis são um valor pequeno, sem identidade e sempre lidos e gravados junto com a
+        // etapa: uma coluna jsonb evita uma tabela cujas linhas ninguém referencia.
+        builder.Property(e => e.EscalaDeAtendimento)
+            .HasColumnName("escala_de_atendimento")
+            .HasConversion(EscalaConverter, EscalaComparer)
+            .HasColumnType("jsonb")
+            .HasComment("Níveis de atendimento (rótulo e fração da pontuação do item), do que mais vale ao que menos vale; ausente quando a banca digita a nota.");
 
         // Ordem única por processo quando informada (colunas nulas não
         // colidem em unique index no Postgres).

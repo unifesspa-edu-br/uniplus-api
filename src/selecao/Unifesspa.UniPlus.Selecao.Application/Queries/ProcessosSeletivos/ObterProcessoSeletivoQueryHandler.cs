@@ -91,6 +91,10 @@ public static class ObterProcessoSeletivoQueryHandler
                 e.FormaDeAvaliacao.ToCodigo(),
                 e.RegraConsolidacao is { } consolidacao
                     ? new ReferenciaRegraDto(consolidacao.Codigo, consolidacao.Versao, consolidacao.Hash)
+                    : null,
+                [.. e.ItensDeAvaliacao.Select(i => new ItemDeAvaliacaoDto(i.Id, i.Rotulo, i.PontuacaoMaxima))],
+                e.EscalaDeAtendimento is { } escala
+                    ? [.. escala.Select(n => new NivelDeAtendimentoDto(n.Rotulo, n.Fracao))]
                     : null))],
         ProjectOfertaAtendimento(processo.OfertaAtendimento),
         [.. processo.DistribuicaoVagas.Select(ProjectDistribuicaoVagas)],

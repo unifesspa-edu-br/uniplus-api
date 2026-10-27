@@ -251,4 +251,31 @@ public sealed class DefinirEtapasCommandValidatorTests
 
         result.IsValid.Should().BeFalse();
     }
+
+    [Theory(DisplayName = "Validator recusa pontuação do item e fração do nível com mais de 4 casas decimais")]
+    [InlineData("item", "Etapas[0].ItensDeAvaliacao[0].PontuacaoMaxima")]
+    [InlineData("nivel", "Etapas[0].EscalaDeAtendimento[0].Fracao")]
+    public void Rejeita_DecimalComCasasAMais(string alvo, string propriedadeEsperada)
+    {
+        EtapaProcessoInput etapa = alvo == "item"
+            ? EtapaValida() with { ItensDeAvaliacao = [new(null, "Clareza", 1.00001m)] }
+            : EtapaValida() with { EscalaDeAtendimento = [new("Atendeu", 0.99999m)] };
+
+        ValidationResult result = new DefinirEtapasCommandValidator()
+            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa], PrecondicaoIfMatch.Ausente));
+
+        result.Errors.Should().ContainSingle().Which.PropertyName.Should().Be(propriedadeEsperada);
+    }
+
+    [Fact(DisplayName = "Validator recusa item e nível nulos nas listas, em vez de deixar o handler estourar")]
+    public void Rejeita_ItemENivelNulos()
+    {
+        EtapaProcessoInput etapa = EtapaValida() with { ItensDeAvaliacao = [null!], EscalaDeAtendimento = [null!] };
+
+        ValidationResult result = new DefinirEtapasCommandValidator()
+            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa], PrecondicaoIfMatch.Ausente));
+
+        result.Errors.Select(static e => e.PropertyName).Should().BeEquivalentTo(
+            "Etapas[0].ItensDeAvaliacao[0]", "Etapas[0].EscalaDeAtendimento[0]");
+    }
 }

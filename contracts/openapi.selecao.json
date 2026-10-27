@@ -15504,7 +15504,9 @@
           "bancas",
           "recursos",
           "formaDeAvaliacao",
-          "regraConsolidacao"
+          "regraConsolidacao",
+          "itensDeAvaliacao",
+          "escalaDeAtendimento"
         ],
         "type": "object",
         "properties": {
@@ -15622,6 +15624,21 @@
                 "$ref": "#/components/schemas/ReferenciaRegraDto"
               }
             ]
+          },
+          "itensDeAvaliacao": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemDeAvaliacaoDto"
+            }
+          },
+          "escalaDeAtendimento": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/NivelDeAtendimentoDto"
+            }
           }
         }
       },
@@ -15760,6 +15777,24 @@
               "null",
               "string"
             ]
+          },
+          "itensDeAvaliacao": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ItemDeAvaliacaoInput"
+            }
+          },
+          "escalaDeAtendimento": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/NivelDeAtendimentoInput"
+            }
           }
         }
       },
@@ -17662,6 +17697,59 @@
           }
         }
       },
+      "ItemDeAvaliacaoDto": {
+        "required": [
+          "id",
+          "rotulo",
+          "pontuacaoMaxima"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "rotulo": {
+            "type": "string"
+          },
+          "pontuacaoMaxima": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "ItemDeAvaliacaoInput": {
+        "required": [
+          "id",
+          "rotulo",
+          "pontuacaoMaxima"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "rotulo": {
+            "type": "string"
+          },
+          "pontuacaoMaxima": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
       "ItemDocumentoExigidoInput": {
         "required": [
           "exigidoNaFaseId",
@@ -18556,6 +18644,46 @@
             "additionalProperties": {
               "type": "string"
             }
+          }
+        }
+      },
+      "NivelDeAtendimentoDto": {
+        "required": [
+          "rotulo",
+          "fracao"
+        ],
+        "type": "object",
+        "properties": {
+          "rotulo": {
+            "type": "string"
+          },
+          "fracao": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "NivelDeAtendimentoInput": {
+        "required": [
+          "rotulo",
+          "fracao"
+        ],
+        "type": "object",
+        "properties": {
+          "rotulo": {
+            "type": "string"
+          },
+          "fracao": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
           }
         }
       },

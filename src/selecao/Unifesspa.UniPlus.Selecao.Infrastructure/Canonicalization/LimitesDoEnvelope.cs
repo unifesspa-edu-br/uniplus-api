@@ -113,6 +113,12 @@ public static class LimitesDoEnvelope
     /// </summary>
     public const int TipoBancaCodigo = 60;
 
+    /// <summary><c>ItemDeAvaliacao.Rotulo</c>.</summary>
+    public const int ItemDeAvaliacaoRotulo = Domain.Entities.ItemDeAvaliacao.RotuloMaxLength;
+
+    /// <summary><c>NivelDeAtendimento.Rotulo</c> — vive em coluna jsonb, então o teto é o do domínio.</summary>
+    public const int NivelDeAtendimentoRotulo = Domain.ValueObjects.NivelDeAtendimento.RotuloMaxLength;
+
     /// <summary><c>CategoriaJulgada.Codigo</c> — snapshot-copy do código classificatório de <c>CategoriaDocumento</c>.</summary>
     public const int CategoriaDocumentoCodigo = 50;
 
@@ -136,6 +142,9 @@ public static class LimitesDoEnvelope
     public const int PrecisaoEtapa = 18;
     public const int PrecisaoBonus = 6;
     public const int PrecisaoPr = 5;
+
+    /// <summary>Fração de um nível de atendimento: entre 0 e 1, com 4 casas — cinco dígitos no total.</summary>
+    public const int PrecisaoFracaoDeAtendimento = 5;
     public const int PrecisaoPercentual = 5;
 
     /// <summary>
