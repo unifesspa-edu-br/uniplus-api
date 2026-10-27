@@ -13,8 +13,8 @@ public sealed class AcompanhamentoOptionsValidatorTests
 {
     [Theory]
     [InlineData("Development", true)]
-    [InlineData("Testing", true)]
-    [InlineData("Staging", true)]
+    [InlineData("Testing", false)]
+    [InlineData("Staging", false)]
     [InlineData("Production", false)]
     [InlineData("Custom", false)]
     public void Validate_ValidacaoHabilitada_RestringeAmbientes(string environmentName, bool permitido)

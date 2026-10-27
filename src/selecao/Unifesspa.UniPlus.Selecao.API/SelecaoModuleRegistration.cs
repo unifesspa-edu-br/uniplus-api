@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.API;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -45,10 +46,17 @@ public static class SelecaoModuleRegistration
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
-        services.AddSingleton<IValidateOptions<AcompanhamentoOptions>, AcompanhamentoOptionsValidator>();
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<IValidateOptions<AcompanhamentoOptions>, AcompanhamentoOptionsValidator>());
         services.AddOptions<AcompanhamentoOptions>()
             .Bind(configuration.GetSection(AcompanhamentoOptions.SectionName))
             .ValidateOnStart();
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<IAuthorizationHandler, AcompanhamentoValidacaoHabilitadaHandler>());
+        services.AddAuthorizationBuilder()
+            .AddPolicy(AcompanhamentoValidacaoHabilitadaRequirement.PolicyName, policy => policy
+                .RequireAuthenticatedUser()
+                .AddRequirements(new AcompanhamentoValidacaoHabilitadaRequirement()));
 
         // OpenAPI 3.1 (ADR-0030) — documento nomeado por módulo + transformers
         // Uni+ (info, operation, schema). Spec exposto em /openapi/selecao.json.

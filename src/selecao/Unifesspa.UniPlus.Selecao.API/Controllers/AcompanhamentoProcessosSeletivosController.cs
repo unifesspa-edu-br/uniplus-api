@@ -7,7 +7,6 @@ using Application.Queries.Acompanhamento;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
@@ -16,7 +15,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 
 [ApiController]
 [Route("acompanhamento/processos-seletivos")]
-[Authorize]
+[Authorize(Policy = AcompanhamentoValidacaoHabilitadaRequirement.PolicyName)]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
@@ -25,14 +24,11 @@ public sealed class AcompanhamentoProcessosSeletivosController : ControllerBase
 {
     private const string ResourceTag = "acompanhamento-processos-seletivos";
     private readonly IQueryBus _queryBus;
-    private readonly AcompanhamentoOptions _options;
 
-    public AcompanhamentoProcessosSeletivosController(IQueryBus queryBus, IOptions<AcompanhamentoOptions> options)
+    public AcompanhamentoProcessosSeletivosController(IQueryBus queryBus)
     {
         ArgumentNullException.ThrowIfNull(queryBus);
-        ArgumentNullException.ThrowIfNull(options);
         _queryBus = queryBus;
-        _options = options.Value;
     }
 
     [HttpGet]
@@ -49,8 +45,6 @@ public sealed class AcompanhamentoProcessosSeletivosController : ControllerBase
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(page);
-        if (!_options.ValidacaoHabilitada)
-            return Forbid();
 
         ListarProcessosAcompanhamentoResult resultado = await _queryBus.Send(
             new ListarProcessosAcompanhamentoQuery(page.AfterId, page.Limit, page.Direction), cancellationToken);
@@ -69,9 +63,6 @@ public sealed class AcompanhamentoProcessosSeletivosController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
-        if (!_options.ValidacaoHabilitada)
-            return Forbid();
-
         ProcessoAcompanhamentoResumoDto? processo = await _queryBus.Send(
             new ObterProcessoAcompanhamentoQuery(id), cancellationToken);
         return processo is null ? NotFound() : Ok(processo);
