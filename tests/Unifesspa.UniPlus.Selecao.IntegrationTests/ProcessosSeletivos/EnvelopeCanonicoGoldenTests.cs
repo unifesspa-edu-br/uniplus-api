@@ -159,7 +159,7 @@ public sealed class EnvelopeCanonicoGoldenTests
             EtapaProcesso.Criar(
                 "Prova Objetiva", CaraterEtapa.Classificatoria,
                 TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-                peso: 1m, ordem: 1, notaMaxima: 10m, passoDoLancamento: 0.25m).Value!,
+                peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirOfertaAtendimento(

@@ -11,11 +11,13 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Onze dos doze tipos vêm da modelagem do CEPS para distribuição de vagas e
+/// Onze dos treze tipos vêm da modelagem do CEPS para distribuição de vagas e
 /// para classificação (com desempate e bônus), validada contra Postgres real.
 /// O décimo segundo (<see cref="AlgoritmoContagemPrazo"/>) veio da revisão do
 /// UNI-REQ-0112, que deixou de eleger uma leitura universal para a contagem do
 /// prazo de recurso e passou a exigir que o edital declare qual convenção usa.
+/// O décimo terceiro (<see cref="RegraConsolidacao"/>) é a regra que a etapa de
+/// avaliação humana declara para transformar as notas dos avaliadores na nota da etapa.
 /// O sentinela <see cref="Nenhuma"/> garante que <c>default(TipoRegra)</c>
 /// nunca colida com um tipo real — a factory o rejeita explicitamente.
 /// </para>
@@ -76,4 +78,12 @@ public enum TipoRegra
     /// (<c>esquema_args</c> vazio).
     /// </summary>
     AlgoritmoContagemPrazo = 12,
+
+    /// <summary>
+    /// Como as notas lançadas pelos avaliadores de uma etapa de avaliação humana viram a nota
+    /// da etapa (ex.: <c>CONSOLIDACAO-AVALIACAO-UNICA</c>,
+    /// <c>CONSOLIDACAO-CORRECAO-INDEPENDENTE</c>). A entrada descreve e congela a regra; quem
+    /// executa a consolidação é a apuração, que a consome pelo par código e versão.
+    /// </summary>
+    RegraConsolidacao = 13,
 }

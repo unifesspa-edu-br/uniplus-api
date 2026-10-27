@@ -15502,7 +15502,9 @@
           "fim",
           "emiteParecerIndividual",
           "bancas",
-          "recursos"
+          "recursos",
+          "formaDeAvaliacao",
+          "regraConsolidacao"
         ],
         "type": "object",
         "properties": {
@@ -15604,6 +15606,22 @@
             "items": {
               "$ref": "#/components/schemas/RecursoDaEtapaDto"
             }
+          },
+          "formaDeAvaliacao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "regraConsolidacao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReferenciaRegraDto"
+              }
+            ]
           }
         }
       },
@@ -15724,6 +15742,24 @@
               "string"
             ],
             "format": "double"
+          },
+          "formaDeAvaliacao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "regraConsolidacaoCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "regraConsolidacaoVersao": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

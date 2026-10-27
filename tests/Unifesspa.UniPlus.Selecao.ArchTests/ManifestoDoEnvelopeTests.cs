@@ -55,7 +55,7 @@ public sealed class ManifestoDoEnvelopeTests
             [("EtapaProcessoId", "FK interna — reconstruída junto com o grafo.")]),
 
         [typeof(EtapaProcesso)] = (
-            ["Nome", "Carater", "TipoEtapa", "Peso", "NotaMinima", "NotaMaxima", "PassoDoLancamento", "Ordem", "FaseCodigo", "Produtos",
+            ["Nome", "Carater", "TipoEtapa", "Peso", "NotaMinima", "NotaMaxima", "PassoDoLancamento", "FormaDeAvaliacao", "RegraConsolidacao", "Ordem", "FaseCodigo", "Produtos",
              "Inicio", "Fim", "EmiteParecerIndividual", "Bancas", "Recursos"],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),

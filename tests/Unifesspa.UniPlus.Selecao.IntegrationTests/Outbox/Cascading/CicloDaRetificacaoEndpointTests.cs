@@ -318,7 +318,7 @@ public sealed class CicloDaRetificacaoEndpointTests
                     {
                         nome = "Prova Objetiva", carater = 1,
                         tipoEtapaOrigemId = new Guid("019fee1e-7000-7000-8000-000000000001"),
-                        peso, notaMinima = (decimal?)null, notaMaxima = 100m, ordem = 1,
+                        peso, notaMinima = (decimal?)null, notaMaxima = 100m, formaDeAvaliacao = "OBJETIVA", ordem = 1,
                         produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>(),
                     },
                 },

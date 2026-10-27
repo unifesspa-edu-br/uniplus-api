@@ -320,7 +320,7 @@ public sealed class RestauradorDeConfiguracaoTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Restaurador FAIXA_ETARIA", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
         processo.DefinirEtapas([
-            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, notaMaxima: 10m).Value!,
+            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirOfertaAtendimento(
@@ -508,7 +508,7 @@ public sealed class RestauradorDeConfiguracaoTests
             CalendarioDiasUteis: CorpusEnvelope.CalendarioRico(),
             TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo));
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.33", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.34", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,

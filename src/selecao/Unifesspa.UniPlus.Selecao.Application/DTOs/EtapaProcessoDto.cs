@@ -5,6 +5,12 @@ using Domain.Enums;
 /// <summary>
 /// Projeção de leitura de <c>EtapaProcesso</c> (Story #758).
 /// </summary>
+/// <param name="FormaDeAvaliacao">
+/// Token canônico UPPER_SNAKE (<c>OBJETIVA</c>/<c>HUMANA</c>); nulo enquanto a etapa não declara.
+/// </param>
+/// <param name="RegraConsolidacao">
+/// A regra do catálogo que combina as notas dos avaliadores; só existe na forma humana.
+/// </param>
 /// <param name="TipoEtapa">
 /// Snapshot congelado do tipo (issue #1071) — fecha o round-trip GET→PUT: um cliente que
 /// reler a etapa precisa de <c>OrigemId</c> para reenviar o mesmo vínculo em
@@ -26,7 +32,9 @@ public sealed record EtapaProcessoDto(
     DateTimeOffset? Fim,
     bool EmiteParecerIndividual,
     IReadOnlyList<BancaDaEtapaDto> Bancas,
-    IReadOnlyList<RecursoDaEtapaDto> Recursos);
+    IReadOnlyList<RecursoDaEtapaDto> Recursos,
+    string? FormaDeAvaliacao,
+    ReferenciaRegraDto? RegraConsolidacao);
 
 /// <summary>Projeção de leitura de <c>BancaDaEtapa</c>.</summary>
 public sealed record BancaDaEtapaDto(Guid Id, Guid TipoBancaOrigemId, string Codigo);

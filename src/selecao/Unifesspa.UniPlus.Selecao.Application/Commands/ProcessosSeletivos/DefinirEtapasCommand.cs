@@ -66,6 +66,12 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// passo não aparece em lugar nenhum, porque ele nunca é obrigatório. Ficam no fim da lista
 /// posicional para não deslocar quem constrói o record por posição.
 /// </para>
+/// <para>
+/// <c>FormaDeAvaliacao</c> (<c>OBJETIVA</c> ou <c>HUMANA</c>) e a regra de consolidação seguem a
+/// mesma política dos dois campos anteriores: omitidos, são apagados, e a falta só é cobrada na
+/// publicação. A regra é declarada por código e versão do catálogo; o hash nunca vem do
+/// payload.
+/// </para>
 /// </remarks>
 public sealed record EtapaProcessoInput(
     string Nome,
@@ -83,7 +89,10 @@ public sealed record EtapaProcessoInput(
     [property: JsonRequired] IReadOnlyList<BancaDaEtapaInput> Bancas = null!,
     [property: JsonRequired] IReadOnlyList<RecursoDaEtapaInput> Recursos = null!,
     decimal? NotaMaxima = null,
-    decimal? PassoDoLancamento = null);
+    decimal? PassoDoLancamento = null,
+    string? FormaDeAvaliacao = null,
+    string? RegraConsolidacaoCodigo = null,
+    string? RegraConsolidacaoVersao = null);
 
 /// <summary>Uma banca requerida pela etapa — o id do tipo no cadastro de Configuração.</summary>
 public sealed record BancaDaEtapaInput(Guid TipoBancaId);

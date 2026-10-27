@@ -1831,6 +1831,11 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("fim");
 
+                    b.Property<int?>("FormaDeAvaliacao")
+                        .HasColumnType("integer")
+                        .HasColumnName("forma_de_avaliacao")
+                        .HasComment("Como a nota da etapa é obtida (1 objetiva, 2 humana); ausente em rascunho, na etapa sem nota e na do ENEM.");
+
                     b.Property<DateTimeOffset?>("Inicio")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("inicio");
@@ -1884,6 +1889,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
                     b.ToTable("etapas_processo", "selecao", t =>
                         {
+                            t.HasCheckConstraint("ck_etapas_processo_forma_de_avaliacao_valida", "forma_de_avaliacao IS NULL OR forma_de_avaliacao IN (1, 2)");
+
                             t.HasCheckConstraint("ck_etapas_processo_nota_maxima_positiva", "nota_maxima IS NULL OR nota_maxima > 0");
 
                             t.HasCheckConstraint("ck_etapas_processo_passo_positivo", "passo_do_lancamento IS NULL OR passo_do_lancamento > 0");
@@ -4050,6 +4057,30 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                             Invariantes = "[\"quadro fixo por edital (não recalculado pelo art. 10)\",\"certame sem as cotas da Lei 12.711\",\"AC_PCD retira de AC: o par fecha no VO_base\"]",
                             Tipo = "regra_distribuicao_vagas",
                             Versao = "v1"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0a00000-0000-7000-8000-000000000030"),
+                            BaseLegal = "Decisão institucional da Unifesspa",
+                            Codigo = "CONSOLIDACAO-AVALIACAO-UNICA",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            EsquemaArgs = "{}",
+                            Hash = "0fdac8b1bc6a5f9f7e4d2f257d695e5028210d6c8cb16876157755e36c6b05b0",
+                            Invariantes = "[\"um só avaliador lança a nota de cada candidato na etapa\",\"a nota lançada é a nota da etapa, sem combinação com outra\"]",
+                            Tipo = "regra_consolidacao",
+                            Versao = "v1"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0a00000-0000-7000-8000-000000000031"),
+                            BaseLegal = "UNI-REQ-0097 (dupla correção) e edital do processo seletivo",
+                            Codigo = "CONSOLIDACAO-CORRECAO-INDEPENDENTE",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            EsquemaArgs = "{}",
+                            Hash = "376e2e3ace2ba3302fb7d2a957e390e4eeeceb2bdc0102d65db688dd744a67c3",
+                            Invariantes = "[\"mais de um avaliador corrige cada candidato na etapa, cada um sem conhecer a nota do outro\",\"a nota da etapa é a combinação das correções independentes, na forma que o edital determina\"]",
+                            Tipo = "regra_consolidacao",
+                            Versao = "v1"
                         });
                 });
 
@@ -5609,6 +5640,40 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_etapas_processo_processos_seletivos_processo_seletivo_id");
 
+                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ReferenciaRegra", "RegraConsolidacao", b1 =>
+                        {
+                            b1.Property<Guid>("EtapaProcessoId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Codigo")
+                                .IsRequired()
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
+                                .HasColumnName("regra_consolidacao_codigo");
+
+                            b1.Property<string>("Hash")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("character(64)")
+                                .HasColumnName("regra_consolidacao_hash")
+                                .IsFixedLength();
+
+                            b1.Property<string>("Versao")
+                                .IsRequired()
+                                .HasMaxLength(16)
+                                .HasColumnType("character varying(16)")
+                                .HasColumnName("regra_consolidacao_versao");
+
+                            b1.HasKey("EtapaProcessoId");
+
+                            b1.ToTable("etapas_processo", "selecao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("EtapaProcessoId")
+                                .HasConstraintName("fk_etapas_processo_etapas_processo_id");
+                        });
+
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.TipoEtapaSnapshot", "TipoEtapa", b1 =>
                         {
                             b1.Property<Guid>("EtapaProcessoId")
@@ -5653,6 +5718,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                                 .HasForeignKey("EtapaProcessoId")
                                 .HasConstraintName("fk_etapas_processo_etapas_processo_id");
                         });
+
+                    b.Navigation("RegraConsolidacao");
 
                     b.Navigation("TipoEtapa")
                         .IsRequired();

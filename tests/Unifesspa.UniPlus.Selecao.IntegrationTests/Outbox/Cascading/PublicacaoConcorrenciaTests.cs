@@ -69,7 +69,7 @@ public sealed class PublicacaoConcorrenciaTests
                 "Prova Discursiva (revisada)", CaraterEtapa.Classificatoria,
                 TipoEtapaOrigemId: new Guid("019fee1e-7000-7000-8000-000000000001"),
                 Peso: 1m, NotaMinima: null, Ordem: 1,
-                Produtos: [], Bancas: [], Recursos: [], NotaMaxima: 10m)], PrecondicaoIfMatch.Ausente);
+                Produtos: [], Bancas: [], Recursos: [], NotaMaxima: 10m, FormaDeAvaliacao: "OBJETIVA")], PrecondicaoIfMatch.Ausente);
         var publicarCommand = new PublicarProcessoSeletivoCommand(
             processoId,
             Numero: null,

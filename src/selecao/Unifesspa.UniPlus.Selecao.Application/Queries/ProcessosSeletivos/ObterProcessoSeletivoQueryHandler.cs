@@ -87,7 +87,11 @@ public static class ObterProcessoSeletivoQueryHandler
                         r.Args.SuspensividadeSegundaInstanciaValor,
                         r.Args.SuspensividadeSegundaInstanciaUnidade),
                     r.ProdutoAncoraId,
-                    e.Produtos.FirstOrDefault(pr => pr.Id == r.ProdutoAncoraId)?.AtoCodigo))]))],
+                    e.Produtos.FirstOrDefault(pr => pr.Id == r.ProdutoAncoraId)?.AtoCodigo))],
+                e.FormaDeAvaliacao.ToCodigo(),
+                e.RegraConsolidacao is { } consolidacao
+                    ? new ReferenciaRegraDto(consolidacao.Codigo, consolidacao.Versao, consolidacao.Hash)
+                    : null))],
         ProjectOfertaAtendimento(processo.OfertaAtendimento),
         [.. processo.DistribuicaoVagas.Select(ProjectDistribuicaoVagas)],
         ProjectBonusRegional(processo.BonusRegional),

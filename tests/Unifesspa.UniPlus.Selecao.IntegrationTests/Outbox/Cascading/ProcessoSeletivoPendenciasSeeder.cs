@@ -244,7 +244,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
             EtapaProcesso.Criar(
                 "Prova Objetiva", CaraterEtapa.Classificatoria,
                 TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-                peso: 1m, notaMinima: null, ordem: 1, notaMaxima: 10m).Value!,
+                peso: 1m, notaMinima: null, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva).Value!,
         ], PrecondicaoIfMatch.Ausente);
         etapasResult.IsSuccess.Should().BeTrue(etapasResult.Error?.Message);
 

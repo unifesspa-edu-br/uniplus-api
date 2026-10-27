@@ -281,6 +281,19 @@ public static class RegraCatalogoSeed
             ["quadro fixo por edital (não recalculado pelo art. 10)","certame sem as cotas da Lei 12.711","AC_PCD retira de AC: o par fecha no VO_base"]
             """,
             "Res. Unifesspa 532/2021-CONSEPE, art. 1º (reserva de vaga para pessoa com deficiência); Portaria MEC 18/2012 art. 12"),
+
+        // regra_consolidacao — como as notas lançadas pelos avaliadores de uma etapa de avaliação
+        // humana viram a nota da etapa. A entrada descreve e congela a regra; quem a executa é a
+        // apuração. Escolhida pelo edital, não parametrizada: esquema_args vazio.
+        new(SeedId(30), RegraConsolidacaoCodigo.AvaliacaoUnica, VersaoV1, TipoRegra.RegraConsolidacao,
+            "{}",
+            """["um só avaliador lança a nota de cada candidato na etapa","a nota lançada é a nota da etapa, sem combinação com outra"]""",
+            "Decisão institucional da Unifesspa"),
+
+        new(SeedId(31), RegraConsolidacaoCodigo.CorrecaoIndependente, VersaoV1, TipoRegra.RegraConsolidacao,
+            "{}",
+            """["mais de um avaliador corrige cada candidato na etapa, cada um sem conhecer a nota do outro","a nota da etapa é a combinação das correções independentes, na forma que o edital determina"]""",
+            "UNI-REQ-0097 (dupla correção) e edital do processo seletivo"),
     ];
 }
 
