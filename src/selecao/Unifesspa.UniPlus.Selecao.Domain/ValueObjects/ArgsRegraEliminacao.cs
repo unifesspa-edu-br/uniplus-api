@@ -13,13 +13,15 @@ using System.Text.Json.Serialization;
 /// <remarks>
 /// Forma fechada por design: as variantes espelham as regras de eliminação semeadas em
 /// <c>rol_de_regras</c> — <c>ELIM-NOTA-MINIMA-ETAPA</c>, <c>ELIM-CORTE-EM-AREA</c>,
-/// <c>ELIM-ZERO-EM-AREA</c> e <c>ELIM-FALTA-EM-DIA-DE-PROVA-ENEM</c>.
+/// <c>ELIM-ZERO-EM-AREA</c>, <c>ELIM-FALTA-EM-DIA-DE-PROVA-ENEM</c> e
+/// <c>ELIM-AUSENCIA-NA-ETAPA</c>.
 /// </remarks>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "$tipo")]
 [JsonDerivedType(typeof(ArgsElimNotaMinimaEtapa), "notaMinimaEtapa")]
 [JsonDerivedType(typeof(ArgsElimCorteEmArea), "corteEmArea")]
 [JsonDerivedType(typeof(ArgsElimZeroEmArea), "zeroEmArea")]
 [JsonDerivedType(typeof(ArgsElimFaltaEmDiaDeProvaEnem), "faltaEmDiaDeProvaEnem")]
+[JsonDerivedType(typeof(ArgsElimAusenciaNaEtapa), "ausenciaNaEtapa")]
 public abstract record ArgsRegraEliminacao
 {
     /// <summary>
@@ -29,12 +31,33 @@ public abstract record ArgsRegraEliminacao
     /// comportamento do tipo, não dado declarado.
     /// </summary>
     public abstract bool ExigeEnem();
+
+    /// <summary>
+    /// A etapa do processo que a regra cita, quando cita: é dela que dependem a remoção da
+    /// etapa, a existência no grafo e a conferência da etapa citada. Método pelo mesmo motivo
+    /// de <see cref="ExigeEnem"/>.
+    /// </summary>
+    public virtual Guid? EtapaReferenciada() => null;
 }
 
 /// <summary>Elimina quando a nota da etapa referenciada é menor que <see cref="NotaMinima"/>. A etapa deve existir no mesmo processo (INV-B4).</summary>
 public sealed record ArgsElimNotaMinimaEtapa(Guid EtapaRef, decimal NotaMinima) : ArgsRegraEliminacao
 {
     public override bool ExigeEnem() => false;
+
+    public override Guid? EtapaReferenciada() => EtapaRef;
+}
+
+/// <summary>
+/// Elimina quem faltou à etapa referenciada, tenha ela nota ou não. A etapa deve existir no
+/// mesmo processo e não pode ser a do ENEM, cuja ausência é a
+/// <see cref="ArgsElimFaltaEmDiaDeProvaEnem"/>.
+/// </summary>
+public sealed record ArgsElimAusenciaNaEtapa(Guid EtapaRef) : ArgsRegraEliminacao
+{
+    public override bool ExigeEnem() => false;
+
+    public override Guid? EtapaReferenciada() => EtapaRef;
 }
 
 /// <summary>

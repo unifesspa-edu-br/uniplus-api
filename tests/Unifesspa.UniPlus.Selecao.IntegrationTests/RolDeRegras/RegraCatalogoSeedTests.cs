@@ -193,6 +193,23 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         antiga.Should().BeNull("o corte em área substitui o de Redação, sem convivência das duas");
     }
 
+    [Fact(DisplayName = "A eliminação por ausência na etapa é semeada com a etapa como único parâmetro e a base legal do edital")]
+    public async Task Seed_EliminacaoPorAusenciaNaEtapa()
+    {
+        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        RegraCatalogoReader reader = new(context);
+
+        RegraCatalogo? regra = await reader.ObterAsync(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, "v1", CancellationToken.None);
+
+        regra.Should().NotBeNull();
+        regra!.Tipo.Should().Be(TipoRegra.RegraEliminacao);
+        regra.EsquemaArgs.EnumerateObject().Select(p => p.Name).Should().Equal("etapa_ref");
+        regra.Invariantes.EnumerateArray().Select(i => i.GetString()).Should().Equal(
+            "falta à etapa referenciada → elimina",
+            "não se aplica à etapa de nota do ENEM");
+        regra.BaseLegal.Should().NotBeNullOrWhiteSpace();
+    }
+
     [Theory(DisplayName = "Código ou versão com o caractere nulo não é encontrado, sem erro do banco")]
     [InlineData("FORMULA-MEDIA-PONDERADA\0", "v1")]
     [InlineData("FORMULA-MEDIA-PONDERADA", "v\01")]

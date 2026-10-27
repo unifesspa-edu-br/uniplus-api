@@ -341,8 +341,12 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// O id do item entra nos bytes e no hash como o da etapa; a ordem dos itens sai do conteúdo
     /// (rótulo e pontuação), nunca do id. Sem novo bloco de topo. Sem produção em ambiente nenhum:
     /// fixture nova, <c>0.0.34</c> deixa de ser reconhecida.
+    /// O bump para <c>0.0.36</c> admite em <c>classificacao.regrasEliminacao[]</c> a regra
+    /// <c>ELIM-AUSENCIA-NA-ETAPA</c>, cujos <c>args</c> são <c>{etapaRef}</c>: elimina quem faltou
+    /// à etapa referenciada, que existe no próprio envelope e não é a do ENEM. Sem produção em
+    /// ambiente nenhum: fixture nova, <c>0.0.35</c> deixa de ser reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.35";
+    internal const string SchemaVersionAtual = "0.0.36";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -1319,6 +1323,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
 
     private static JsonObject SerializarArgsRegraEliminacao(ArgsRegraEliminacao args) => args switch
     {
+        ArgsElimAusenciaNaEtapa ausencia => new JsonObject { ["etapaRef"] = ausencia.EtapaRef },
         ArgsElimNotaMinimaEtapa notaMinima => new JsonObject
         {
             ["etapaRef"] = notaMinima.EtapaRef,

@@ -3881,6 +3881,18 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         },
                         new
                         {
+                            Id = new Guid("d0a00000-0000-7000-8000-000000000032"),
+                            BaseLegal = "Edital (eliminação do candidato que faltar à etapa)",
+                            Codigo = "ELIM-AUSENCIA-NA-ETAPA",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            EsquemaArgs = "{\"etapa_ref\":\"text\"}",
+                            Hash = "679d25bb9ac2d0948473cb183f5b8063a5caf3955a903980d6f3ed2af750035c",
+                            Invariantes = "[\"falta à etapa referenciada → elimina\",\"não se aplica à etapa de nota do ENEM\"]",
+                            Tipo = "regra_eliminacao",
+                            Versao = "v1"
+                        },
+                        new
+                        {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000008"),
                             BaseLegal = "Bônus multiplicativo aplicado à nota final após os pesos das áreas do ENEM, sem teto por padrão",
                             Codigo = "BONUS-MULTIPLICATIVO",

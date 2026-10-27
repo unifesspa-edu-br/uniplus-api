@@ -79,6 +79,36 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemSemClassificacaoEnem");
     }
 
+    [Fact(DisplayName = "Restaurar eliminação por ausência que cita etapa fora do grafo é recusado, como na gravação")]
+    public void Restaurar_AusenciaNaEtapaInexistente_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.PSIQ);
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(
+            VersaoDo(processo),
+            Grafo(eliminacoes: [RegraEliminacao.Criar(
+                Regra(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, 'e'),
+                new ArgsElimAusenciaNaEtapa(Guid.NewGuid())).Value!]));
+
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaRefEliminacaoInexistente");
+    }
+
+    [Fact(DisplayName = "Restaurar eliminação por ausência que cita a etapa do ENEM é recusado, como na gravação")]
+    public void Restaurar_AusenciaNaEtapaDoEnem_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.PSIQ);
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(
+            VersaoDo(processo),
+            Grafo(
+                etapas: [EtapaNotaEnemCongelada(EtapaCongelada, 1)],
+                classificacao: ClassificacaoEnemMediaPonderada([RegraEliminacao.Criar(
+                    Regra(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, 'e'),
+                    new ArgsElimAusenciaNaEtapa(EtapaCongelada)).Value!])));
+
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.AusenciaNaEtapaDoEnem");
+    }
+
     [Fact(DisplayName = "Restaurar duas etapas de nota do ENEM é recusado, como na gravação")]
     public void Restaurar_DuasEtapasNotaEnem_Recusa()
     {
@@ -1512,13 +1542,13 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             resolucaoPesoAreaEnem: null,
             quadroPesoAreaEnem: []).Value!;
 
-    private static ConfiguracaoClassificacao ClassificacaoEnemMediaPonderada() =>
+    private static ConfiguracaoClassificacao ClassificacaoEnemMediaPonderada(IReadOnlyList<RegraEliminacao>? eliminacoes = null) =>
         ConfiguracaoClassificacao.Criar(
             regraCalculo: Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'b'),
             regraArredondamento: Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'c'),
             casasArredondamento: 2,
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'd'),
-            regrasEliminacao: [],
+            regrasEliminacao: eliminacoes ?? [],
             baseadoEmEnem: true,
             resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,
             quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo()).Value!;

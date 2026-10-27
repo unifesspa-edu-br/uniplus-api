@@ -244,6 +244,25 @@ public sealed class ConfiguracaoClassificacaoTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
+    private static RegraEliminacao AusenciaNaEtapa(Guid etapaId) =>
+        RegraEliminacao.Criar(
+            ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, "v1", new string('a', 64)).Value!,
+            new ArgsElimAusenciaNaEtapa(etapaId)).Value!;
+
+    [Fact(DisplayName = "A eliminação por ausência repetida para a mesma etapa é recusada no próprio item; etapas distintas valem")]
+    public void Criar_AusenciaNaMesmaEtapaRepetida_Recusa()
+    {
+        Guid etapa = Guid.CreateVersion7();
+
+        Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(
+            RegraCalculoMediaPonderada(), RegraArredondamento(), 2, RegraOrdemAlocacao(),
+            [AusenciaNaEtapa(etapa), AusenciaNaEtapa(Guid.CreateVersion7()), AusenciaNaEtapa(etapa)],
+            baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []);
+
+        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
+            [("regrasEliminacao[2]", "ConfiguracaoClassificacao.AusenciaNaEtapaRepetida")]);
+    }
+
     [Fact(DisplayName = "ADR-0125: ArredondamentoObrigatorio e CasasArredondamentoObrigatorio acumulam no mesmo lote")]
     public void Criar_SemArredondamento_AcumulaAsDuasViolacoes()
     {

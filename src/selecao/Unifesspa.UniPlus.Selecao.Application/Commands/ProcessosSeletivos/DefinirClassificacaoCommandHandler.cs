@@ -328,6 +328,12 @@ public static class DefinirClassificacaoCommandHandler
 
             RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem => SemArgs(input, new ArgsElimFaltaEmDiaDeProvaEnem()),
 
+            RegraEliminacaoCodigo.ElimAusenciaNaEtapa => input.EtapaRef is { } etapaRefAusencia && input.NotaMinima is null && input.Minimo is null && input.AreaCodigo is null
+                ? Result<ArgsRegraEliminacao>.Success(new ArgsElimAusenciaNaEtapa(etapaRefAusencia))
+                : Result<ArgsRegraEliminacao>.Failure(new DomainError(
+                    "RegraEliminacao.EtapaRefObrigatorio",
+                    $"EtapaRef é obrigatório (e NotaMinima/Minimo/AreaCodigo não se aplicam) para a regra {RegraEliminacaoCodigo.ElimAusenciaNaEtapa}.")),
+
             _ => Result<ArgsRegraEliminacao>.Failure(new DomainError(
                 "RegraEliminacao.RegraTipoInvalido",
                 $"Código de regra de eliminação desconhecido: {input.RegraCodigo}.")),

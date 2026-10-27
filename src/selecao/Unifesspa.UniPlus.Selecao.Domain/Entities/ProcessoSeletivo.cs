@@ -510,21 +510,26 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             }
         }
 
-        // INV-B4 sobrevive à reconfiguração de etapas: uma classificação já
-        // definida referenciando ELIM-NOTA-MINIMA-ETAPA não pode ficar órfã
-        // se a etapa referenciada for removida (mesma proteção do INV-B6
-        // para critérios de desempate).
+        // INV-B4 sobrevive à reconfiguração de etapas: uma classificação já definida
+        // referenciando uma etapa numa regra de eliminação não pode ficar órfã se a etapa
+        // referenciada for removida (mesma proteção do INV-B6 para critérios de desempate).
         if (Classificacao is not null)
         {
-            ArgsElimNotaMinimaEtapa? eliminacaoOrfa = Classificacao.RegrasEliminacao
-                .Select(r => r.Args)
-                .OfType<ArgsElimNotaMinimaEtapa>()
-                .FirstOrDefault(args => !novosIdsEtapas.Contains(args.EtapaRef));
-            if (eliminacaoOrfa is not null)
+            Guid? etapaOrfa = Classificacao.RegrasEliminacao
+                .Select(static r => r.Args.EtapaReferenciada())
+                .FirstOrDefault(etapaRef => etapaRef is { } id && !novosIdsEtapas.Contains(id));
+            if (etapaOrfa is not null)
             {
                 return Result.Failure(new DomainError(
                     "ProcessoSeletivo.EtapaReferenciadaPorClassificacao",
-                    $"A etapa {eliminacaoOrfa.EtapaRef} é referenciada por uma regra de eliminação da classificação e não pode ser removida sem antes reconfigurar a classificação."));
+                    $"A etapa {etapaOrfa} é referenciada por uma regra de eliminação da classificação e não pode ser removida sem antes reconfigurar a classificação."));
+            }
+
+            // A etapa que continua existindo pode passar a ser a do ENEM, onde a ausência já
+            // é a falta em dia de prova.
+            if (Classificacao.RegrasEliminacao.Any(r => AusenciaNaEtapaDoEnem(r.Args, etapas)))
+            {
+                return Result.Failure(AusenciaNaEtapaDoEnemRecusada());
             }
         }
 
@@ -1054,11 +1059,15 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         foreach ((RegraEliminacao regra, int indice) in classificacao.RegrasEliminacao.Select(static (regra, indice) => (regra, indice)))
         {
-            if (regra.Args is ArgsElimNotaMinimaEtapa notaMinima && !_etapas.Any(e => e.Id == notaMinima.EtapaRef))
+            if (regra.Args.EtapaReferenciada() is { } etapaRef && !_etapas.Any(e => e.Id == etapaRef))
             {
                 erros.Add(new($"regrasEliminacao[{indice}].etapaRef", new DomainError(
                     "ProcessoSeletivo.EtapaRefEliminacaoInexistente",
-                    $"A regra de eliminação referencia a etapa {notaMinima.EtapaRef}, que não existe neste processo (INV-B4).")));
+                    $"A regra de eliminação referencia a etapa {etapaRef}, que não existe neste processo (INV-B4).")));
+            }
+            else if (AusenciaNaEtapaDoEnem(regra.Args, _etapas))
+            {
+                erros.Add(new($"regrasEliminacao[{indice}].etapaRef", AusenciaNaEtapaDoEnemRecusada()));
             }
         }
 
@@ -2020,11 +2029,26 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>
     /// A etapa é referenciada por configuração que não pertence à fase dela — critério de
-    /// desempate por nota de etapa ou regra de eliminação por nota mínima.
+    /// desempate por nota de etapa ou regra de eliminação que a cita.
     /// </summary>
     private bool EtapaReferenciadaPorClassificacaoOuDesempate(Guid etapaId) =>
-        _criteriosDesempate.Any(c => c.Args is ArgsDesempateMaiorNotaEtapa args && args.EtapaRef == etapaId)
-        || EliminacoesPorNotaMinimaDaEtapa(etapaId).Any();
+        EtapaReferenciadaPorDesempate(etapaId)
+        || (Classificacao?.RegrasEliminacao ?? []).Any(regra => regra.Args.EtapaReferenciada() == etapaId);
+
+    private bool EtapaReferenciadaPorDesempate(Guid etapaId) =>
+        _criteriosDesempate.Any(c => c.Args is ArgsDesempateMaiorNotaEtapa args && args.EtapaRef == etapaId);
+
+    /// <summary>
+    /// A ausência à etapa do ENEM já é a falta em dia de prova do ENEM: a regra por etapa só
+    /// vale para as demais.
+    /// </summary>
+    private static bool AusenciaNaEtapaDoEnem(ArgsRegraEliminacao args, IEnumerable<EtapaProcesso> etapas) =>
+        args is ArgsElimAusenciaNaEtapa ausencia
+        && etapas.Any(e => e.Id == ausencia.EtapaRef && e.DeclaraNotaDoEnem);
+
+    private static DomainError AusenciaNaEtapaDoEnemRecusada() => new(
+        "ProcessoSeletivo.AusenciaNaEtapaDoEnem",
+        "A eliminação por ausência não se aplica à etapa de nota do ENEM, cuja falta é tratada pela eliminação por falta em dia de prova do ENEM.");
 
     /// <summary>As regras de eliminação por nota mínima que citam a etapa.</summary>
     private IEnumerable<ArgsElimNotaMinimaEtapa> EliminacoesPorNotaMinimaDaEtapa(Guid etapaId) =>
@@ -3692,10 +3716,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>
     /// A etapa tem nota quando entra na média, tem nota mínima ou é citada pela eliminação por
     /// nota mínima da etapa ou pelo desempate pela maior nota da etapa. Quem enxerga as quatro
-    /// coisas é a raiz: a etapa sozinha não vê a classificação nem o desempate.
+    /// coisas é a raiz: a etapa sozinha não vê a classificação nem o desempate. A eliminação
+    /// por ausência não conta: vale para etapa com ou sem nota.
     /// </summary>
     private bool EtapaTemNota(EtapaProcesso etapa) =>
-        etapa.ComponeNota || etapa.NotaMinima.HasValue || EtapaReferenciadaPorClassificacaoOuDesempate(etapa.Id);
+        etapa.ComponeNota
+        || etapa.NotaMinima.HasValue
+        || EtapaReferenciadaPorDesempate(etapa.Id)
+        || EliminacoesPorNotaMinimaDaEtapa(etapa.Id).Any();
 
     /// <summary>
     /// Só confere quando a etapa declara a nota máxima: a falta dela já é o item próprio, e dois
@@ -7220,12 +7248,17 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // ValidarGrafo ser chamado.
         foreach (RegraEliminacao regra in grafo.Classificacao.RegrasEliminacao)
         {
-            // INV-B4 — mesma proteção do INV-B6, para a eliminação por nota mínima.
-            if (regra.Args is ArgsElimNotaMinimaEtapa notaMinima && !idsEtapas.Contains(notaMinima.EtapaRef))
+            // INV-B4 — mesma proteção do INV-B6, para a eliminação que cita uma etapa.
+            if (regra.Args.EtapaReferenciada() is { } etapaRef && !idsEtapas.Contains(etapaRef))
             {
                 return new DomainError(
                     "ProcessoSeletivo.EtapaRefEliminacaoInexistente",
-                    $"A regra de eliminação referencia a etapa {notaMinima.EtapaRef}, que não existe na configuração restaurada (INV-B4).");
+                    $"A regra de eliminação referencia a etapa {etapaRef}, que não existe na configuração restaurada (INV-B4).");
+            }
+
+            if (AusenciaNaEtapaDoEnem(regra.Args, grafo.Etapas))
+            {
+                return AusenciaNaEtapaDoEnemRecusada();
             }
         }
 
