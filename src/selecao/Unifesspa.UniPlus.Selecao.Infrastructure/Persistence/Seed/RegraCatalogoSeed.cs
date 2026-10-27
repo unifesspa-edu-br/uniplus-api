@@ -110,6 +110,12 @@ public static class RegraCatalogoSeed
             """["falta em pelo menos um dia de prova da edição do ENEM usada no processo → elimina","sem participação registrada na edição do ENEM indicada pelo candidato equivale a falta"]""",
             "Edital (falta em dia de prova do ENEM)"),
 
+        // Vale para etapa com ou sem nota; a do ENEM tem a falta em dia de prova.
+        new(SeedId(32), RegraEliminacaoCodigo.ElimAusenciaNaEtapa, VersaoV1, TipoRegra.RegraEliminacao,
+            """{"etapa_ref":"text"}""",
+            """["falta à etapa referenciada → elimina","não se aplica à etapa de nota do ENEM"]""",
+            "Edital (eliminação do candidato que faltar à etapa)"),
+
         // regra_bonus — bônus sobre a nota final
         new(SeedId(8), "BONUS-MULTIPLICATIVO", VersaoV1, TipoRegra.RegraBonus,
             """{"fator":"numeric","teto":"numeric|null"}""",

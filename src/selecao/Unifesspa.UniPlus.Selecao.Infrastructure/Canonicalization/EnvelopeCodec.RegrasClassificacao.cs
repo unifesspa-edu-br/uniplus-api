@@ -331,7 +331,8 @@ public sealed partial class EnvelopeCodec
                 RegraEliminacaoCodigo.ElimNotaMinimaEtapa,
                 RegraEliminacaoCodigo.ElimCorteEmArea,
                 RegraEliminacaoCodigo.ElimZeroEmArea,
-                RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem);
+                RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem,
+                RegraEliminacaoCodigo.ElimAusenciaNaEtapa);
             JsonObject args = leitor.Objeto(item, "args", path);
             if (leitor.Falhou)
             {
@@ -458,6 +459,11 @@ public sealed partial class EnvelopeCodec
             case RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem:
                 leitor.ExigirChaves(args, path);
                 return leitor.Falhou ? null : new ArgsElimFaltaEmDiaDeProvaEnem();
+
+            case RegraEliminacaoCodigo.ElimAusenciaNaEtapa:
+                leitor.ExigirChaves(args, path, "etapaRef");
+                Guid etapaRefAusencia = leitor.Identificador(args, "etapaRef", path);
+                return leitor.Falhou ? null : new ArgsElimAusenciaNaEtapa(etapaRefAusencia);
 
             default:
                 return leitor.Propagar<ArgsRegraEliminacao>(new DomainError(

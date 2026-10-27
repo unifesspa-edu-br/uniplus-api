@@ -18,4 +18,7 @@ public static class RegraEliminacaoCodigo
 
     /// <summary>Falta em pelo menos um dia de prova da edição do ENEM usada no processo elimina; sem participação registrada na edição indicada equivale a falta (sem args). Só em processo baseado em ENEM.</summary>
     public const string ElimFaltaEmDiaDeProvaEnem = "ELIM-FALTA-EM-DIA-DE-PROVA-ENEM";
+
+    /// <summary>Falta à etapa referenciada elimina o candidato (args: <c>etapa_ref</c>). Vale para etapa com ou sem nota, exceto a do ENEM, que já tem a falta em dia de prova.</summary>
+    public const string ElimAusenciaNaEtapa = "ELIM-AUSENCIA-NA-ETAPA";
 }

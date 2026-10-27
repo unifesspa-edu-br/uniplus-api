@@ -181,7 +181,7 @@ internal static class CorpusEnvelope
     /// <summary>
     /// O agregado mais rico que o modelo permite: três etapas (uma de cada caráter),
     /// atendimento povoado, bônus com teto, <b>as quatro</b> variantes de desempate,
-    /// classificação local com <b>três</b> regras de eliminação — duas delas do
+    /// classificação local com regras de eliminação de <b>todas</b> as variantes — duas delas do
     /// <b>mesmo</b> código — e duas ofertas de curso, uma sob a Lei 12.711 (com
     /// referência demográfica e as nove modalidades federais) e outra institucional.
     /// </summary>
@@ -397,6 +397,7 @@ internal static class CorpusEnvelope
                 RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimCorteEmArea, '5'), new ArgsElimCorteEmArea("REDACAO", 400.0000m)).Value!,
                 RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimZeroEmArea, '6'), new ArgsElimZeroEmArea()).Value!,
                 RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, '0'), new ArgsElimFaltaEmDiaDeProvaEnem()).Value!,
+                RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, '7'), new ArgsElimAusenciaNaEtapa(entrevista)).Value!,
             ],
             baseadoEmEnem: true,
             resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,

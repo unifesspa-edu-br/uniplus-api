@@ -50,8 +50,8 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             "ELIM-", "um comentário que lista os códigos exigiria alterar a coluna a cada regra nova do ENEM");
     }
 
-    [Fact(DisplayName = "Persiste e recarrega classificação com as 4 variantes de eliminação (prova a coluna json polimórfica)")]
-    public async Task PersisteERecarrega_ComQuatroVariantesDeEliminacao()
+    [Fact(DisplayName = "Persiste e recarrega classificação com as 5 variantes de eliminação (prova a coluna json polimórfica)")]
+    public async Task PersisteERecarrega_ComCincoVariantesDeEliminacao()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         EtapaProcesso etapa = EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!;
@@ -69,13 +69,16 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
         RegraEliminacao faltaEmDiaDeProva = RegraEliminacao.Criar(
             Regra(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "0"),
             new ArgsElimFaltaEmDiaDeProvaEnem()).Value!;
+        RegraEliminacao ausenciaNaEtapa = RegraEliminacao.Criar(
+            Regra(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, "7"),
+            new ArgsElimAusenciaNaEtapa(etapa.Id)).Value!;
 
         Result<ConfiguracaoClassificacao> configResult = ConfiguracaoClassificacao.Criar(
             Regra(RegraCalculoCodigo.FormulaMediaPonderada, "d"),
             Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "e"),
             2,
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "f"),
-            [notaMinima, corteRedacao, zeroEmArea, faltaEmDiaDeProva],
+            [notaMinima, corteRedacao, zeroEmArea, faltaEmDiaDeProva, ausenciaNaEtapa],
             baseadoEmEnem: true,
             QuadroPesoAreaEnemDeTeste.Resolucao,
             QuadroPesoAreaEnemDeTeste.Completo());
@@ -100,7 +103,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
         classificacao.RegraArredondamento!.Codigo.Should().Be(RegraArredondamentoCodigo.PrecisaoTruncar);
         classificacao.CasasArredondamento.Should().Be(2);
         classificacao.RegraOrdemAlocacao.Codigo.Should().Be(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria);
-        classificacao.RegrasEliminacao.Should().HaveCount(4);
+        classificacao.RegrasEliminacao.Should().HaveCount(5);
 
         ArgsElimNotaMinimaEtapa argsNotaMinima = (ArgsElimNotaMinimaEtapa)classificacao.RegrasEliminacao
             .Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimNotaMinimaEtapa).Args;
@@ -115,6 +118,9 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             .Args.Should().BeOfType<ArgsElimZeroEmArea>();
         classificacao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem)
             .Args.Should().BeOfType<ArgsElimFaltaEmDiaDeProvaEnem>();
+
+        classificacao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimAusenciaNaEtapa)
+            .Args.Should().Be(new ArgsElimAusenciaNaEtapa(etapa.Id));
 
         string argsGravados = await readContext.Database.SqlQuery<string>($"""
             SELECT args::text AS "Value" FROM selecao.regras_eliminacao WHERE id = {faltaEmDiaDeProva.Id}

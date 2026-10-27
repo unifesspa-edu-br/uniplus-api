@@ -44,6 +44,7 @@ public sealed class RegraEliminacao : EntityBase
             RegraEliminacaoCodigo.ElimCorteEmArea => args is ArgsElimCorteEmArea,
             RegraEliminacaoCodigo.ElimZeroEmArea => args is ArgsElimZeroEmArea,
             RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem => args is ArgsElimFaltaEmDiaDeProvaEnem,
+            RegraEliminacaoCodigo.ElimAusenciaNaEtapa => args is ArgsElimAusenciaNaEtapa,
             _ => false,
         };
 

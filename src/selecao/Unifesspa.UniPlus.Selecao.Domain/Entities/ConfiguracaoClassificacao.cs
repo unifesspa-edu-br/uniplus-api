@@ -233,6 +233,20 @@ public sealed class ConfiguracaoClassificacao : EntityBase
 
                 faltaJaDeclarada = true;
             }
+
+            // A ausência é por etapa: duas etapas distintas são válidas, a mesma duas vezes não
+            // elimina ninguém a mais.
+            HashSet<Guid> etapasComAusenciaDeclarada = [];
+            for (int indice = 0; indice < regrasEliminacao.Count; indice++)
+            {
+                if (regrasEliminacao[indice].Args is ArgsElimAusenciaNaEtapa ausencia
+                    && !etapasComAusenciaDeclarada.Add(ausencia.EtapaRef))
+                {
+                    erros.Add(new($"regrasEliminacao[{indice}]", new DomainError(
+                        "ConfiguracaoClassificacao.AusenciaNaEtapaRepetida",
+                        "A eliminação por ausência só pode ser declarada uma vez para cada etapa.")));
+                }
+            }
         }
 
         if (!ehImportada)

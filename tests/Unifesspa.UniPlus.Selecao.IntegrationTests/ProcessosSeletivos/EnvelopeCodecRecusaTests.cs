@@ -1777,15 +1777,15 @@ public sealed class EnvelopeCodecRecusaTests
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
         {
-            JsonObject falta = Navegar(envelope, "classificacao.regrasEliminacao.3");
+            JsonObject falta = Navegar(envelope, "classificacao.regrasEliminacao.4");
             falta["regra"]!["codigo"]!.GetValue<string>().Should().Be(
-                RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "pré-condição: o índice 3 é a eliminação por falta em dia de prova");
+                RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "pré-condição: o índice 4 é a eliminação por falta em dia de prova");
             falta["args"]!.AsObject()["chaveIntrusa"] = "x";
         });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
-        resultado.Error.Message.Should().Contain("classificacao.regrasEliminacao[3].args");
+        resultado.Error.Message.Should().Contain("classificacao.regrasEliminacao[4].args");
     }
 
     [Fact(DisplayName = "classificacao.regrasEliminacao[] com a falta em dia de prova do ENEM repetida é recusada pela mesma regra da gravação")]
@@ -1794,14 +1794,42 @@ public sealed class EnvelopeCodecRecusaTests
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
         {
             JsonArray regras = Navegar(envelope, "classificacao")["regrasEliminacao"]!.AsArray();
-            JsonNode falta = regras[3]!;
+            JsonNode falta = regras[4]!;
             falta["regra"]!["codigo"]!.GetValue<string>().Should().Be(
-                RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "pré-condição: o índice 3 é a eliminação por falta em dia de prova");
-            regras.Insert(3, falta.DeepClone());
+                RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "pré-condição: o índice 4 é a eliminação por falta em dia de prova");
+            regras.Insert(4, falta.DeepClone());
         });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoClassificacao.FaltaEmDiaDeProvaEnemRepetida");
+    }
+
+    private static JsonNode AusenciaNaEtapaDoEnvelope(JsonObject envelope) =>
+        Navegar(envelope, "classificacao")["regrasEliminacao"]!.AsArray()
+            .Single(regra => regra!["regra"]!["codigo"]!.GetValue<string>() == RegraEliminacaoCodigo.ElimAusenciaNaEtapa)!;
+
+    [Fact(DisplayName = "classificacao.regrasEliminacao[].args da ausência na etapa com chave intrusa é recusado")]
+    public void EliminacaoPorAusenciaNaEtapa_ChaveIntrusaNosArgs_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            AusenciaNaEtapaDoEnvelope(envelope)["args"]!.AsObject()["chaveIntrusa"] = "x");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error.Message.Should().Contain(".args");
+    }
+
+    [Fact(DisplayName = "classificacao.regrasEliminacao[] com a ausência na mesma etapa repetida é recusada pela mesma regra da gravação")]
+    public void EliminacaoPorAusenciaNaEtapa_Repetida_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonNode ausencia = AusenciaNaEtapaDoEnvelope(envelope);
+            Navegar(envelope, "classificacao")["regrasEliminacao"]!.AsArray().Add(ausencia.DeepClone());
+        });
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ConfiguracaoClassificacao.AusenciaNaEtapaRepetida");
     }
 
     [Fact(DisplayName = "classificacao.regrasEliminacao[] com corte em área fora do quadro é recusado pela mesma regra da gravação")]

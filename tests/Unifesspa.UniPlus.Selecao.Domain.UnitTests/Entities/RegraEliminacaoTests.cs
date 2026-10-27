@@ -68,6 +68,27 @@ public sealed class RegraEliminacaoTests
         resultado.IsSuccess.Should().BeTrue();
     }
 
+    [Fact(DisplayName = "Criar ELIM-AUSENCIA-NA-ETAPA com a etapa citada tem sucesso")]
+    public void Criar_AusenciaNaEtapa_Sucesso()
+    {
+        Guid etapaId = Guid.CreateVersion7();
+
+        Result<RegraEliminacao> resultado = RegraEliminacao.Criar(
+            Regra(RegraEliminacaoCodigo.ElimAusenciaNaEtapa), new ArgsElimAusenciaNaEtapa(etapaId));
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Args.EtapaReferenciada().Should().Be(etapaId);
+    }
+
+    [Fact(DisplayName = "Args de nota mínima não servem à ELIM-AUSENCIA-NA-ETAPA")]
+    public void Criar_AusenciaNaEtapaComArgsDeNotaMinima_Falha()
+    {
+        Result<RegraEliminacao> resultado = RegraEliminacao.Criar(
+            Regra(RegraEliminacaoCodigo.ElimAusenciaNaEtapa), new ArgsElimNotaMinimaEtapa(Guid.CreateVersion7(), 4m));
+
+        resultado.Error!.Code.Should().Be("RegraEliminacao.ArgsIncompativeisComRegra");
+    }
+
     [Theory(DisplayName = "Falta em dia de prova e zero em área não trocam de args entre si")]
     [InlineData(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, false)]
     [InlineData(RegraEliminacaoCodigo.ElimZeroEmArea, true)]
@@ -87,6 +108,7 @@ public sealed class RegraEliminacaoTests
         { new ArgsElimCorteEmArea("REDACAO", 400m), true },
         { new ArgsElimZeroEmArea(), true },
         { new ArgsElimFaltaEmDiaDeProvaEnem(), true },
+        { new ArgsElimAusenciaNaEtapa(Guid.CreateVersion7()), false },
     };
 
     [Theory(DisplayName = "Cada variante declara se exige classificação baseada em ENEM")]

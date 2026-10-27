@@ -237,6 +237,7 @@ public sealed class ManifestoDoEnvelopeTests
         [typeof(ArgsElimCorteEmArea)] = (["AreaCodigo", "Minimo"], []),
         [typeof(ArgsElimZeroEmArea)] = ([], []),
         [typeof(ArgsElimFaltaEmDiaDeProvaEnem)] = ([], []),
+        [typeof(ArgsElimAusenciaNaEtapa)] = (["EtapaRef"], []),
 
         // Cronograma de fases (Story #851) — o eixo temporal do certame.
         [typeof(FaseCronograma)] = (

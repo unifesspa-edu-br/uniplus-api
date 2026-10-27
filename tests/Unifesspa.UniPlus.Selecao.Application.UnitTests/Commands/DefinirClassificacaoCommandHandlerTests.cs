@@ -191,6 +191,56 @@ public sealed class DefinirClassificacaoCommandHandlerTests
         result.Error!.Code.Should().Be("RegraEliminacao.EtapaRefENotaMinimaObrigatorios");
     }
 
+    [Fact(DisplayName = "Handle com ELIM-AUSENCIA-NA-ETAPA e a etapa citada grava a regra")]
+    public async Task Handle_AusenciaNaEtapa_GravaARegra()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Convênios 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        EtapaProcesso etapa = EtapaProcesso.Criar("Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!;
+        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        MockRegrasBasicas(mocks);
+        mocks.RegraCatalogoReader.ObterAsync(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, "v1", Arg.Any<CancellationToken>())
+            .Returns(Regra(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, TipoRegra.RegraEliminacao));
+
+        DefinirClassificacaoCommand command = new(
+            processo.Id,
+            RegraCalculoCodigo.FormulaMediaPonderada, "v1",
+            RegraArredondamentoCodigo.PrecisaoTruncar, "v1", 2,
+            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1",
+            [new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, "v1", etapa.Id, null, null, null)], false, null, PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error?.Message);
+        processo.Classificacao!.RegrasEliminacao.Single().Args.Should().Be(new ArgsElimAusenciaNaEtapa(etapa.Id));
+    }
+
+    [Theory(DisplayName = "Handle com ELIM-AUSENCIA-NA-ETAPA sem EtapaRef ou com arg alheio recusa")]
+    [InlineData(false, false)]
+    [InlineData(true, true)]
+    public async Task Handle_AusenciaNaEtapaComArgsErrados_Recusa(bool comEtapaRef, bool comNotaMinima)
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        MockRegrasBasicas(mocks);
+        mocks.RegraCatalogoReader.ObterAsync(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, "v1", Arg.Any<CancellationToken>())
+            .Returns(Regra(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, TipoRegra.RegraEliminacao));
+
+        DefinirClassificacaoCommand command = new(
+            processo.Id,
+            RegraCalculoCodigo.FormulaMediaPonderada, "v1",
+            RegraArredondamentoCodigo.PrecisaoTruncar, "v1", 2,
+            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1",
+            [new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, "v1", comEtapaRef ? Guid.CreateVersion7() : null, comNotaMinima ? 4m : null, null, null)], false, null, PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> result = await DefinirClassificacaoCommandHandler.Handle(
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.PesoAreaEnemReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("RegraEliminacao.EtapaRefObrigatorio");
+    }
+
     [Fact(DisplayName = "Handle com ELIM-ZERO-EM-AREA e Minimo estranho ao args recusa (payload contraditório)")]
     public async Task Handle_ZeroEmAreaComArgsEstranhos_Recusa()
     {
