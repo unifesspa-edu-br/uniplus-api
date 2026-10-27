@@ -328,8 +328,14 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// <c>passoDoLancamento</c>: a escala em que a nota da etapa é lançada. Sempre presentes, nulas
     /// quando a etapa não as declara. Sem novo bloco de topo. Sem produção em ambiente nenhum:
     /// fixture nova, <c>0.0.32</c> deixa de ser reconhecida.
+    /// O bump para <c>0.0.34</c> acrescenta a cada etapa as chaves <c>formaDeAvaliacao</c> (o nome do
+    /// enum, <c>Objetiva</c> ou <c>Humana</c>) e <c>regraConsolidacao</c> (a referência inteira ao
+    /// catálogo, com hash): como a nota da etapa é obtida e, na avaliação humana, como as notas dos
+    /// avaliadores viram a nota da etapa. Sempre presentes, nulas quando a etapa não as declara. Sem
+    /// novo bloco de topo. Sem produção em ambiente nenhum: fixture nova, <c>0.0.33</c> deixa de ser
+    /// reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.33";
+    internal const string SchemaVersionAtual = "0.0.34";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -619,6 +625,8 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ["notaMinima"] = etapa.NotaMinima is { } notaMinima ? HashCanonicalComputer.SerializeDecimalCanonical(notaMinima, EscalaPadrao) : null,
         ["notaMaxima"] = etapa.NotaMaxima is { } notaMaxima ? HashCanonicalComputer.SerializeDecimalCanonical(notaMaxima, EscalaPadrao) : null,
         ["passoDoLancamento"] = etapa.PassoDoLancamento is { } passo ? HashCanonicalComputer.SerializeDecimalCanonical(passo, EscalaPadrao) : null,
+        ["formaDeAvaliacao"] = etapa.FormaDeAvaliacao?.ToString(),
+        ["regraConsolidacao"] = etapa.RegraConsolidacao is { } consolidacao ? SerializarReferenciaRegra(consolidacao) : null,
         ["ordem"] = etapa.Ordem,
         ["faseCodigo"] = etapa.FaseCodigo,
         ["inicio"] = etapa.Inicio is { } ini ? HashCanonicalComputer.SerializeInstantCanonical(ini) : null,

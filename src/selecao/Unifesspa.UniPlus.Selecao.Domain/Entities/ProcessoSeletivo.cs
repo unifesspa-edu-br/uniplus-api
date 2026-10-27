@@ -3564,6 +3564,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         ];
 
         itens.AddRange(ItensDaEscalaDasEtapas());
+        itens.AddRange(ItensDaAvaliacaoDasEtapas());
 
         if (Classificacao is { RegraCalculo.Codigo: RegraCalculoCodigo.FormulaMediaPonderada })
         {
@@ -3626,6 +3627,53 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "nota_minima_da_regra_acima_da_nota_maxima",
                 "Nota mínima da regra de eliminação até a nota máxima da etapa",
                 [.. _etapas.Where(NotaMinimaDaRegraPassaDaNotaMaxima)]),
+        ];
+    }
+
+    /// <summary>
+    /// Como a nota de cada etapa é obtida: a etapa com nota declara a forma de avaliação, a que não
+    /// tem nota não declara, e a forma humana exige a regra que consolida as notas dos avaliadores,
+    /// o passo do lançamento e ao menos uma banca. Depende do grafo (o que compõe a média, o que a
+    /// classificação e o desempate citam), por isso é gate de publicação e não recusa de gravação.
+    /// </summary>
+    /// <remarks>
+    /// A etapa de nota do ENEM fica de fora: a recusa de forma e regra nela é da gravação, que
+    /// conhece o tipo congelado. Os itens são independentes e cada um lista todas as etapas que
+    /// reprovam.
+    /// </remarks>
+    private List<ItemConformidade> ItensDaAvaliacaoDasEtapas()
+    {
+        // Uma avaliação de EtapaTemNota por etapa, que percorre a classificação e o desempate. A
+        // etapa humana sem nota só reprova o item da forma: sem nota não há o que consolidar, lançar
+        // ou avaliar, e listá-la nos itens da forma humana mandaria o operador a outra pendência.
+        List<(EtapaProcesso Etapa, bool TemNota)> avaliadas =
+            [.. _etapas.Where(static etapa => !etapa.DeclaraNotaDoEnem).Select(etapa => (etapa, EtapaTemNota(etapa)))];
+        List<EtapaProcesso> comNota = [.. avaliadas.Where(static a => a.TemNota).Select(static a => a.Etapa)];
+        List<EtapaProcesso> semNota = [.. avaliadas.Where(static a => !a.TemNota).Select(static a => a.Etapa)];
+        List<EtapaProcesso> humanas = [.. comNota.Where(static etapa => etapa.FormaDeAvaliacao == FormaDeAvaliacao.Humana)];
+
+        return
+        [
+            ItemDasEtapas(
+                "etapa_com_nota_sem_forma_de_avaliacao",
+                "Forma de avaliação de cada etapa com nota que não é do ENEM",
+                [.. comNota.Where(static etapa => etapa.FormaDeAvaliacao is null)]),
+            ItemDasEtapas(
+                "etapa_sem_nota_com_forma_de_avaliacao",
+                "Forma de avaliação e regra de consolidação só em etapa com nota",
+                [.. semNota.Where(static etapa => etapa.FormaDeAvaliacao is not null || etapa.RegraConsolidacao is not null)]),
+            ItemDasEtapas(
+                "etapa_humana_sem_regra_de_consolidacao",
+                "Regra de consolidação de cada etapa de avaliação humana",
+                [.. humanas.Where(static etapa => etapa.RegraConsolidacao is null)]),
+            ItemDasEtapas(
+                "etapa_humana_sem_passo_do_lancamento",
+                "Passo do lançamento de cada etapa de avaliação humana",
+                [.. humanas.Where(static etapa => etapa.PassoDoLancamento is null)]),
+            ItemDasEtapas(
+                "etapa_humana_sem_banca",
+                "Ao menos uma banca em cada etapa de avaliação humana",
+                [.. humanas.Where(static etapa => etapa.Bancas.Count == 0)]),
         ];
     }
 
@@ -7539,7 +7587,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     [.. congelada.Bancas],
                     [.. congelada.Recursos],
                     congelada.NotaMaxima,
-                    congelada.PassoDoLancamento);
+                    congelada.PassoDoLancamento,
+                    congelada.FormaDeAvaliacao,
+                    congelada.RegraConsolidacao);
                 etapas.Add(viva);
             }
             else

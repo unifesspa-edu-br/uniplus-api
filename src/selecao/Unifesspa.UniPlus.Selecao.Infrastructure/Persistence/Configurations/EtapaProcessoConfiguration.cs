@@ -18,6 +18,7 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
             // (mínima até a máxima, máxima no passo) é regra de gravação, não de armazenamento.
             t.HasCheckConstraint("ck_etapas_processo_nota_maxima_positiva", "nota_maxima IS NULL OR nota_maxima > 0");
             t.HasCheckConstraint("ck_etapas_processo_passo_positivo", "passo_do_lancamento IS NULL OR passo_do_lancamento > 0");
+            t.HasCheckConstraint("ck_etapas_processo_forma_de_avaliacao_valida", "forma_de_avaliacao IS NULL OR forma_de_avaliacao IN (1, 2)");
         });
         builder.HasKey(e => e.Id);
         // Chave Guid v7 do domínio (EntityBase) — ValueGeneratedNever para o EF
@@ -88,6 +89,16 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
             .HasComment("Nota máxima da escala da etapa com nota; ausente na etapa sem nota e na do ENEM.");
         builder.Property(e => e.PassoDoLancamento).HasPrecision(18, 4)
             .HasComment("De quanto em quanto a nota pode ser lançada; vale só para a nota digitada.");
+
+        builder.Property(e => e.FormaDeAvaliacao)
+            .HasColumnName("forma_de_avaliacao")
+            .HasConversion<int>()
+            .HasComment("Como a nota da etapa é obtida (1 objetiva, 2 humana); ausente em rascunho, na etapa sem nota e na do ENEM.");
+
+        // Só a forma humana tem regra de consolidação, mas a coerência é regra de gravação do
+        // domínio, não de armazenamento: a coluna não a repete.
+        builder.OwnsOne(e => e.RegraConsolidacao, regra => regra.ConfigurarReferenciaRegra("regra_consolidacao"));
+        builder.Navigation(e => e.RegraConsolidacao).IsRequired(false);
 
         // Ordem única por processo quando informada (colunas nulas não
         // colidem em unique index no Postgres).

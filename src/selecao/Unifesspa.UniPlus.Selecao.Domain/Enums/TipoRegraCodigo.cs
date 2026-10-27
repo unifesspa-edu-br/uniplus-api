@@ -21,6 +21,7 @@ public static class TipoRegraCodigo
     public const string RegraAjusteDistribuicaoVagas = "regra_ajuste_distribuicao_vagas";
     public const string RegraPrazoRecurso = "regra_prazo_recurso";
     public const string AlgoritmoContagemPrazo = "algoritmo_contagem_prazo";
+    public const string RegraConsolidacao = "regra_consolidacao";
 
     /// <summary>
     /// Converte o tipo para o código canônico. O <c>switch</c> nomeia todas as
@@ -42,6 +43,7 @@ public static class TipoRegraCodigo
         TipoRegra.RegraAjusteDistribuicaoVagas => RegraAjusteDistribuicaoVagas,
         TipoRegra.RegraPrazoRecurso => RegraPrazoRecurso,
         TipoRegra.AlgoritmoContagemPrazo => AlgoritmoContagemPrazo,
+        TipoRegra.RegraConsolidacao => RegraConsolidacao,
         TipoRegra.Nenhuma => throw new ArgumentOutOfRangeException(
             nameof(tipo), tipo, "TipoRegra.Nenhuma é sentinela e não tem código canônico."),
         _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, "TipoRegra desconhecido."),
@@ -65,6 +67,7 @@ public static class TipoRegraCodigo
         RegraAjusteDistribuicaoVagas => TipoRegra.RegraAjusteDistribuicaoVagas,
         RegraPrazoRecurso => TipoRegra.RegraPrazoRecurso,
         AlgoritmoContagemPrazo => TipoRegra.AlgoritmoContagemPrazo,
+        RegraConsolidacao => TipoRegra.RegraConsolidacao,
         _ => throw new ArgumentOutOfRangeException(
             nameof(codigo), codigo, "Código de tipo de regra desconhecido."),
     };

@@ -28,7 +28,7 @@ public sealed partial class EnvelopeCodec
         {
             string path = $"etapas[{i}]";
             JsonObject item = leitor.ItemObjeto(array, i, "etapas");
-            leitor.ExigirChaves(item, path, "id", "nome", "carater", "tipoEtapa", "peso", "notaMinima", "notaMaxima", "passoDoLancamento", "ordem", "faseCodigo", "produtos",
+            leitor.ExigirChaves(item, path, "id", "nome", "carater", "tipoEtapa", "peso", "notaMinima", "notaMaxima", "passoDoLancamento", "formaDeAvaliacao", "regraConsolidacao", "ordem", "faseCodigo", "produtos",
                 "inicio", "fim", "emiteParecerIndividual", "bancas", "recursos");
 
             Guid id = leitor.Identificador(item, "id", path);
@@ -39,6 +39,9 @@ public sealed partial class EnvelopeCodec
             decimal? notaMinima = leitor.DecimalOpcional(item, "notaMinima", EscalaPadrao, path, LimitesDoEnvelope.PrecisaoEtapa);
             decimal? notaMaxima = leitor.DecimalOpcional(item, "notaMaxima", EscalaPadrao, path, LimitesDoEnvelope.PrecisaoEtapa);
             decimal? passoDoLancamento = leitor.DecimalOpcional(item, "passoDoLancamento", EscalaPadrao, path, LimitesDoEnvelope.PrecisaoEtapa);
+            FormaDeAvaliacao? formaDeAvaliacao = leitor.EnumeracaoOpcional<FormaDeAvaliacao>(item, "formaDeAvaliacao", path);
+            ReferenciaRegra? regraConsolidacao = leitor.RegraOpcional(
+                item, "regraConsolidacao", path, [.. RegraConsolidacaoCodigo.Rol]);
             int? ordem = leitor.InteiroOpcional(item, "ordem", path);
             string? faseCodigo = leitor.TextoOpcional(item, "faseCodigo", path, LimitesDoEnvelope.FaseCodigo);
 
@@ -68,7 +71,7 @@ public sealed partial class EnvelopeCodec
                     $"Envelope malformado em '{path}': peso, ordem, nota máxima e passo do lançamento devem ser maiores que zero e a nota mínima não negativa.")) ?? [];
             }
 
-            EtapaProcesso reidratada = EtapaProcesso.Reidratar(id, nome, carater, tipoEtapa!, peso, notaMinima, ordem, faseCodigo, notaMaxima, passoDoLancamento);
+            EtapaProcesso reidratada = EtapaProcesso.Reidratar(id, nome, carater, tipoEtapa!, peso, notaMinima, ordem, faseCodigo, notaMaxima, passoDoLancamento, formaDeAvaliacao, regraConsolidacao);
 
             JsonArray? arrayProdutos = leitor.Array(item, "produtos", path);
             string pathProdutos = $"{path}.produtos";

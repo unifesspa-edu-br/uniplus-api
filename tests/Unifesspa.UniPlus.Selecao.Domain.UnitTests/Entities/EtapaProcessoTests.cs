@@ -104,6 +104,74 @@ public sealed class EtapaProcessoTests
     private static TipoEtapaSnapshot TipoEtapaProvaObjetiva() =>
         TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
 
+    // ── Como a nota da etapa é obtida ──
+
+    private static ReferenciaRegra RegraDeConsolidacao(string codigo = RegraConsolidacaoCodigo.AvaliacaoUnica) =>
+        ReferenciaRegra.Criar(codigo, "v1", new string('c', 64)).Value!;
+
+    private static TipoEtapaSnapshot TipoEtapaDoEnem() =>
+        TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!;
+
+    [Theory(DisplayName = "A regra de consolidação só vale na forma humana: na objetiva, e sem forma, é recusada")]
+    [InlineData(null)]
+    [InlineData(FormaDeAvaliacao.Objetiva)]
+    public void Criar_RegraDeConsolidacaoForaDaFormaHumana_Recusa(FormaDeAvaliacao? forma)
+    {
+        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
+            "Redação", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva(), peso: 1m,
+            formaDeAvaliacao: forma, regraConsolidacao: RegraDeConsolidacao());
+
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EtapaProcesso.RegraDeConsolidacaoForaDaFormaHumana);
+        resultado.Errors[0].Field.Should().Be("regraConsolidacao");
+    }
+
+    [Fact(DisplayName = "O passo do lançamento é recusado na forma objetiva, onde ninguém lança a nota")]
+    public void Criar_PassoNaFormaObjetiva_Recusa()
+    {
+        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
+            "Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva(), peso: 1m,
+            notaMaxima: 10m, passoDoLancamento: 0.5m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva);
+
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EtapaProcesso.PassoNaFormaObjetiva);
+        resultado.Errors[0].Field.Should().Be("passoDoLancamento");
+    }
+
+    [Fact(DisplayName = "A etapa de nota do ENEM recusa forma e regra, cada uma no seu campo")]
+    public void Criar_FormaERegraNaEtapaDoEnem_Recusa()
+    {
+        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
+            "Nota do ENEM", CaraterEtapa.Classificatoria, TipoEtapaDoEnem(), peso: 1m,
+            formaDeAvaliacao: FormaDeAvaliacao.Humana, regraConsolidacao: RegraDeConsolidacao());
+
+        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
+        [
+            ("formaDeAvaliacao", EtapaProcesso.AvaliacaoNaEtapaDoEnem),
+            ("regraConsolidacao", EtapaProcesso.AvaliacaoNaEtapaDoEnem),
+        ]);
+    }
+
+    [Fact(DisplayName = "A forma humana só aceita regra que seja do rol de consolidação")]
+    public void Criar_RegraForaDoRolDeConsolidacao_Recusa()
+    {
+        Result<EtapaProcesso> resultado = EtapaProcesso.Criar(
+            "Redação", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva(), peso: 1m,
+            formaDeAvaliacao: FormaDeAvaliacao.Humana, regraConsolidacao: RegraDeConsolidacao("PRECISAO-TRUNCAR"));
+
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EtapaProcesso.RegraDeConsolidacaoInvalida);
+    }
+
+    [Fact(DisplayName = "Em rascunho, a forma humana sem regra e sem passo é gravada: a falta só recusa a publicação")]
+    public void Criar_FormaHumanaSemRegraESemPasso_Grava()
+    {
+        EtapaProcesso.Criar(
+            "Redação", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva(), peso: 1m,
+            formaDeAvaliacao: FormaDeAvaliacao.Humana).IsSuccess.Should().BeTrue();
+        EtapaProcesso.Criar(
+            "Redação", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva(), peso: 1m,
+            notaMaxima: 10m, passoDoLancamento: 0.5m, formaDeAvaliacao: FormaDeAvaliacao.Humana,
+            regraConsolidacao: RegraDeConsolidacao(RegraConsolidacaoCodigo.CorrecaoIndependente)).IsSuccess.Should().BeTrue();
+    }
+
     [Fact(DisplayName = "Criar com dados válidos tem sucesso")]
     public void Criar_DadosValidos_Sucesso()
     {

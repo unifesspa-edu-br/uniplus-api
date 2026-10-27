@@ -901,7 +901,7 @@ public sealed class EnvelopeCodecRoundTripTests
             ValoresSelecionaveisCongelados: valoresSelecionaveis,
             TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo));
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.33", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.34", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             entrada.Dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -954,7 +954,7 @@ public sealed class EnvelopeCodecRoundTripTests
             EtapaProcesso.Criar(
                 "Prova Objetiva", CaraterEtapa.Classificatoria,
                 TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-                peso: 1m, ordem: 1, notaMaxima: 10m).Value!,
+                peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirOfertaAtendimento(
@@ -1061,7 +1061,7 @@ public sealed class EnvelopeCodecRoundTripTests
 
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(
             new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
-        congelado.SchemaVersion.Should().Be("0.0.33", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.34", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -1146,7 +1146,7 @@ public sealed class EnvelopeCodecRoundTripTests
             EtapaProcesso.Criar(
                 "Prova Objetiva", CaraterEtapa.Classificatoria,
                 TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-                peso: 1m, ordem: 1, notaMaxima: 10m).Value!,
+                peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirOfertaAtendimento(
@@ -1280,7 +1280,7 @@ public sealed class EnvelopeCodecRoundTripTests
             ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(),
             TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo));
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.33", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.34", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -1644,7 +1644,8 @@ public sealed class EnvelopeCodecRoundTripTests
             EtapaProcesso.Criar(
                 "Prova Objetiva", CaraterEtapa.Classificatoria,
                 TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: etapaDeNotaDoEnem).Value!,
-                peso: 1m, ordem: 1, notaMaxima: etapaDeNotaDoEnem ? null : 10m).Value!,
+                peso: 1m, ordem: 1, notaMaxima: etapaDeNotaDoEnem ? null : 10m,
+            formaDeAvaliacao: etapaDeNotaDoEnem ? null : FormaDeAvaliacao.Objetiva).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirOfertaAtendimento(

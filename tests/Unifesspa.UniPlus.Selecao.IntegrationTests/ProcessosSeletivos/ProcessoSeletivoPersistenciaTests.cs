@@ -48,7 +48,8 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
 
         Result etapasResult = processo.DefinirEtapas(
         [
-            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 3m, ordem: 1, notaMaxima: 10m, passoDoLancamento: 0.25m).Value!,
+            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 3m, ordem: 1, notaMaxima: 10m, passoDoLancamento: 0.25m, formaDeAvaliacao: FormaDeAvaliacao.Humana,
+                regraConsolidacao: ReferenciaRegra.Criar(RegraConsolidacaoCodigo.AvaliacaoUnica, "v1", new string('c', 64)).Value!).Value!,
             EtapaProcesso.Criar("Redação", CaraterEtapa.Ambas, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 2m, notaMinima: 5m, ordem: 2).Value!,
         ], PrecondicaoIfMatch.Ausente);
         etapasResult.IsSuccess.Should().BeTrue();
@@ -83,9 +84,12 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         recarregado.Etapas.Should().HaveCount(2);
         recarregado.CalcularDivisorMedia().Should().Be(5m);
         recarregado.Etapas.Single(e => e.Ordem == 1).Should().Match<EtapaProcesso>(
-            e => e.NotaMaxima == 10m && e.PassoDoLancamento == 0.25m);
+            e => e.NotaMaxima == 10m && e.PassoDoLancamento == 0.25m
+                && e.FormaDeAvaliacao == FormaDeAvaliacao.Humana
+                && e.RegraConsolidacao!.Codigo == RegraConsolidacaoCodigo.AvaliacaoUnica);
         recarregado.Etapas.Single(e => e.Ordem == 2).Should().Match<EtapaProcesso>(
-            e => e.NotaMaxima == null && e.PassoDoLancamento == null);
+            e => e.NotaMaxima == null && e.PassoDoLancamento == null
+                && e.FormaDeAvaliacao == null && e.RegraConsolidacao == null);
 
         recarregado.OfertaAtendimento.Should().NotBeNull();
         recarregado.OfertaAtendimento!.Condicoes.Single().CondicaoOrigemId.Should().Be(condicaoOrigemId);

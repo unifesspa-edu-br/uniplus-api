@@ -108,11 +108,11 @@ public static class DefinirEtapasCommandHandler
         for (int indice = 0; indice < command.Etapas.Count; indice++)
         {
             EtapaProcessoInput itemForma = command.Etapas[indice];
-            formaErros.AddRange(EtapaProcesso
-                .ValidarFormaBasica(
+            formaErros.AddRange(ComIndice(
+                EtapaProcesso.ValidarFormaBasica(
                     itemForma.Nome, itemForma.Carater, itemForma.Peso, itemForma.NotaMinima, itemForma.Ordem,
-                    itemForma.NotaMaxima, itemForma.PassoDoLancamento)
-                .Select(erro => erro.Field is null ? erro : erro with { Field = $"etapas[{indice}].{erro.Field}" }));
+                    itemForma.NotaMaxima, itemForma.PassoDoLancamento),
+                indice));
         }
 
         if (formaErros.Count > 0)
@@ -219,6 +219,121 @@ public static class DefinirEtapasCommandHandler
             return Result<MutacaoAceita>.ValidationFailure(caraterErros);
         }
 
+        Dictionary<(string Codigo, string Versao), RegraCatalogo?> regrasResolvidas = [];
+
+        async Task<RegraCatalogo?> ResolverRegraAsync(string codigo, string versao)
+        {
+            if (regrasResolvidas.TryGetValue((codigo, versao), out RegraCatalogo? memoizada))
+            {
+                return memoizada;
+            }
+
+            RegraCatalogo? resolvida = await regraCatalogoReader
+                .ObterAsync(codigo, versao, cancellationToken)
+                .ConfigureAwait(false);
+            regrasResolvidas[(codigo, versao)] = resolvida;
+            return resolvida;
+        }
+
+        // Se a nota da etapa vem do ENEM: o snapshot congelado quando o vínculo com o tipo não mudou,
+        // e o tipo lido na passada do caráter quando é vínculo novo ou alterado.
+        bool NotaDeOrigemNoEnemDe(EtapaProcessoInput item) =>
+            item.Id is { } id
+            && existentes.TryGetValue(id, out EtapaProcesso? atual)
+            && atual.TipoEtapaOrigemId == item.TipoEtapaOrigemId
+                ? atual.TipoEtapa.NotaDeOrigemNoEnem
+                : tiposEmCache[item.TipoEtapaOrigemId].NotaDeOrigemNoEnem;
+
+        // A forma de avaliação e a regra de consolidação são resolvidas numa passada própria,
+        // ANTES de qualquer mutação, como o caráter: a forma é um token do contrato, e o token
+        // desconhecido é RECUSADO em vez de lido como ausente (um erro de digitação viraria etapa
+        // sem forma, e só o gate de publicação o acusaria, longe de quem o cometeu); a regra é
+        // montada a partir dos valores RESOLVIDOS do catálogo, nunca ecoados do payload, para o
+        // hash bater por construção. As coerências que independem do catálogo rodam para TODAS
+        // as etapas antes de qualquer leitura dele, e acumulam entre as etapas (ADR-0125).
+        Dictionary<int, FormaDeAvaliacao?> formasDeAvaliacao = [];
+        Dictionary<int, (string Codigo, string Versao)> regrasDeclaradas = [];
+        List<FieldError> avaliacaoErros = [];
+        for (int indice = 0; indice < command.Etapas.Count; indice++)
+        {
+            EtapaProcessoInput itemAvaliacao = command.Etapas[indice];
+            List<FieldError> errosDaEtapa = [];
+
+            if (FormaDeAvaliacaoCodigo.TentarConverter(itemAvaliacao.FormaDeAvaliacao, out FormaDeAvaliacao? forma))
+            {
+                formasDeAvaliacao[indice] = forma;
+            }
+            else
+            {
+                errosDaEtapa.Add(new("formaDeAvaliacao", new DomainError(
+                    EtapaProcesso.FormaDeAvaliacaoDesconhecida,
+                    $"A forma de avaliação '{itemAvaliacao.FormaDeAvaliacao}', declarada pela etapa '{itemAvaliacao.Nome}', não existe — use '{FormaDeAvaliacaoCodigo.Objetiva}' ou '{FormaDeAvaliacaoCodigo.Humana}'.")));
+            }
+
+            string? codigo = itemAvaliacao.RegraConsolidacaoCodigo?.Trim();
+            string? versao = itemAvaliacao.RegraConsolidacaoVersao?.Trim();
+            bool temCodigo = !string.IsNullOrEmpty(codigo);
+            bool temVersao = !string.IsNullOrEmpty(versao);
+            if (temCodigo != temVersao)
+            {
+                errosDaEtapa.Add(new("regraConsolidacao", new DomainError(
+                    EtapaProcesso.RegraDeConsolidacaoInvalida,
+                    $"A regra de consolidação da etapa '{itemAvaliacao.Nome}' precisa de código e versão juntos: falta {(temCodigo ? "a versão" : "o código")}.")));
+            }
+
+            // Só com a forma já entendida: forma desconhecida não vira também "regra fora da forma humana".
+            if (formasDeAvaliacao.ContainsKey(indice))
+            {
+                errosDaEtapa.AddRange(EtapaProcesso.ValidarAvaliacao(
+                    NotaDeOrigemNoEnemDe(itemAvaliacao),
+                    itemAvaliacao.PassoDoLancamento,
+                    forma,
+                    temCodigo && temVersao ? codigo : null));
+            }
+
+            avaliacaoErros.AddRange(ComIndice(errosDaEtapa, indice));
+
+            if (errosDaEtapa.Count == 0 && temCodigo && temVersao)
+            {
+                regrasDeclaradas[indice] = (codigo!, versao!);
+            }
+        }
+
+        if (avaliacaoErros.Count > 0)
+        {
+            return Result<MutacaoAceita>.ValidationFailure(avaliacaoErros);
+        }
+
+        Dictionary<int, ReferenciaRegra> regrasDeConsolidacao = [];
+        foreach ((int indice, (string codigo, string versao)) in regrasDeclaradas)
+        {
+            EtapaProcessoInput itemAvaliacao = command.Etapas[indice];
+            RegraCatalogo? regraDeConsolidacao = await ResolverRegraAsync(codigo, versao).ConfigureAwait(false);
+            if (regraDeConsolidacao is null || regraDeConsolidacao.Tipo != TipoRegra.RegraConsolidacao)
+            {
+                avaliacaoErros.Add(new($"etapas[{indice}].regraConsolidacao", new DomainError(
+                    EtapaProcesso.RegraDeConsolidacaoInvalida,
+                    $"A regra {codigo}/{versao}, declarada pela etapa '{itemAvaliacao.Nome}', não é uma regra de consolidação do catálogo.")));
+                continue;
+            }
+
+            Result<ReferenciaRegra> consolidacaoResult = ReferenciaRegra.Criar(
+                regraDeConsolidacao.Codigo, regraDeConsolidacao.Versao, regraDeConsolidacao.Hash);
+            if (consolidacaoResult.IsFailure)
+            {
+                avaliacaoErros.AddRange(ComIndice(
+                    consolidacaoResult.Errors.Select(erro => new FieldError("regraConsolidacao", erro.Error)), indice));
+                continue;
+            }
+
+            regrasDeConsolidacao[indice] = consolidacaoResult.Value!;
+        }
+
+        if (avaliacaoErros.Count > 0)
+        {
+            return Result<MutacaoAceita>.ValidationFailure(avaliacaoErros);
+        }
+
         List<EtapaProcesso> etapas = [];
         for (int indice = 0; indice < command.Etapas.Count; indice++)
         {
@@ -258,11 +373,12 @@ public static class DefinirEtapasCommandHandler
                 // checagens, nunca pelo payload em si.
                 Result atualizarResult = etapaExistente.AtualizarDados(
                     input.Nome, input.Carater, tipoEtapa, input.Peso, input.NotaMinima, input.Ordem,
-                    input.FaseCodigo, input.NotaMaxima, input.PassoDoLancamento);
+                    input.FaseCodigo, input.NotaMaxima, input.PassoDoLancamento,
+                    formasDeAvaliacao[indice], regrasDeConsolidacao.GetValueOrDefault(indice));
                 if (atualizarResult.IsFailure)
                 {
                     unitOfWork.DescartarAlteracoesNaoSalvas();
-                    return Result<MutacaoAceita>.ValidationFailure(atualizarResult.Errors);
+                    return Result<MutacaoAceita>.ValidationFailure(ComIndice(atualizarResult.Errors, indice));
                 }
 
                 etapas.Add(etapaExistente);
@@ -271,11 +387,12 @@ public static class DefinirEtapasCommandHandler
             {
                 Result<EtapaProcesso> criarResult = EtapaProcesso.Criar(
                     input.Nome, input.Carater, tipoEtapa, input.Peso, input.NotaMinima, input.Ordem,
-                    input.FaseCodigo, input.NotaMaxima, input.PassoDoLancamento);
+                    input.FaseCodigo, input.NotaMaxima, input.PassoDoLancamento,
+                    formasDeAvaliacao[indice], regrasDeConsolidacao.GetValueOrDefault(indice));
                 if (criarResult.IsFailure)
                 {
                     unitOfWork.DescartarAlteracoesNaoSalvas();
-                    return Result<MutacaoAceita>.ValidationFailure(criarResult.Errors);
+                    return Result<MutacaoAceita>.ValidationFailure(ComIndice(criarResult.Errors, indice));
                 }
 
                 etapas.Add(criarResult.Value!);
@@ -333,22 +450,6 @@ public static class DefinirEtapasCommandHandler
                 .ConfigureAwait(false);
             tiposDeBancaResolvidos[tipoBancaId] = resolvido;
             return resolvido;
-        }
-
-        Dictionary<(string Codigo, string Versao), RegraCatalogo?> regrasResolvidas = [];
-
-        async Task<RegraCatalogo?> ResolverRegraAsync(string codigo, string versao)
-        {
-            if (regrasResolvidas.TryGetValue((codigo, versao), out RegraCatalogo? memoizada))
-            {
-                return memoizada;
-            }
-
-            RegraCatalogo? resolvida = await regraCatalogoReader
-                .ObterAsync(codigo, versao, cancellationToken)
-                .ConfigureAwait(false);
-            regrasResolvidas[(codigo, versao)] = resolvida;
-            return resolvida;
         }
 
         // Os produtos são declarados por etapa, depois que a etapa existe: é ela quem os
@@ -646,9 +747,10 @@ public static class DefinirEtapasCommandHandler
         return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
     }
 
-    private static IEnumerable<FieldError> ErrosDeCarater(
+    private static IReadOnlyList<FieldError> ComIndice(IEnumerable<FieldError> erros, int indice) =>
+        [.. erros.Select(erro => erro.Field is null ? erro : erro with { Field = $"etapas[{indice}].{erro.Field}" })];
+
+    private static IReadOnlyList<FieldError> ErrosDeCarater(
         CaraterEtapa carater, bool admitePontuacao, bool admiteEliminacao, string nomeDoTipo, int indice) =>
-        EtapaProcesso
-            .ValidarCaraterAdmitido(carater, admitePontuacao, admiteEliminacao, nomeDoTipo)
-            .Select(erro => erro with { Field = $"etapas[{indice}].{erro.Field}" });
+        ComIndice(EtapaProcesso.ValidarCaraterAdmitido(carater, admitePontuacao, admiteEliminacao, nomeDoTipo), indice);
 }

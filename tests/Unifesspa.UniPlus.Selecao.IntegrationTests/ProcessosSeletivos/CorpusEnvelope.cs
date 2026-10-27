@@ -223,7 +223,7 @@ internal static class CorpusEnvelope
         // envelope recusar a si mesmo na volta. Sem isto no corpus, o round-trip passava
         // exatamente por não exercitar recurso de etapa nenhum.
         EtapaProcesso etapaObjetiva = EtapaProcesso.Reidratar(
-            objetiva, "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 3.5000m, notaMinima: 40.0000m, ordem: 1, notaMaxima: 100.0000m, passoDoLancamento: 0.2500m);
+            objetiva, "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 3.5000m, notaMinima: 40.0000m, ordem: 1, notaMaxima: 100.0000m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva);
         etapaObjetiva.DefinirJanelaEParecer(null, null, emiteParecerIndividual: true).IsSuccess.Should().BeTrue();
         // A MESMA matéria nos dois papéis: é o par que a ordenação canônica precisa desempatar,
         // e é o único caso em que o código do ato não basta para fixar a posição no envelope.
@@ -293,10 +293,18 @@ internal static class CorpusEnvelope
                 Guid.Empty).Value!,
         ]).IsSuccess.Should().BeTrue();
 
+        EtapaProcesso etapaRedacao = EtapaProcesso.Reidratar(redacao, "Redação", CaraterEtapa.Classificatoria, TipoEtapaRedacao(), peso: 2.2500m, notaMinima: null, ordem: 2, notaMaxima: 100.0000m,
+            formaDeAvaliacao: FormaDeAvaliacao.Objetiva);
+
+        // A etapa de avaliação humana exige ao menos uma banca para publicar.
+        EtapaProcesso etapaEntrevista = EtapaProcesso.Reidratar(entrevista, "Entrevista", CaraterEtapa.Eliminatoria, TipoEtapaEntrevista(), peso: null, notaMinima: 60.0000m, ordem: 3, notaMaxima: 100.0000m, passoDoLancamento: 0.5000m,
+            formaDeAvaliacao: FormaDeAvaliacao.Humana, regraConsolidacao: Regra(RegraConsolidacaoCodigo.AvaliacaoUnica, 'f'));
+        etapaEntrevista.DefinirBancas([BancaDaEtapa.Criar(TipoBancaExaminadora, "BANCA_EXAMINADORA")]).IsSuccess.Should().BeTrue();
+
         processo.DefinirEtapas(Ordem([
             etapaObjetiva,
-            EtapaProcesso.Reidratar(redacao, "Redação", CaraterEtapa.Classificatoria, TipoEtapaRedacao(), peso: 2.2500m, notaMinima: null, ordem: 2, notaMaxima: 100.0000m, passoDoLancamento: null),
-            EtapaProcesso.Reidratar(entrevista, "Entrevista", CaraterEtapa.Eliminatoria, TipoEtapaEntrevista(), peso: null, notaMinima: 60.0000m, ordem: 3, notaMaxima: 100.0000m),
+            etapaRedacao,
+            etapaEntrevista,
         ], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar(
@@ -1082,7 +1090,7 @@ internal static class CorpusEnvelope
                 TipoEtapaProvaObjetiva(),
                 peso: 9.9999m,
                 notaMinima: null,
-                ordem: 7, notaMaxima: 10m)],
+                ordem: 7, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva)],
             ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
             distribuicaoVagas: [DistribuicaoInstitucional()],
             bonusRegional: null,
@@ -1104,7 +1112,7 @@ internal static class CorpusEnvelope
 
     /// <summary>Um grafo mínimo e conforme — a "sessão editorial" que o descarte terá de desfazer.</summary>
     internal static GrafoConfiguracao GrafoPobre(int variante = 0) => new(
-        etapas: [EtapaProcesso.Reidratar(new Guid($"9999fff{variante:x}-0000-4000-8000-000000000001"), "Etapa Única", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva(), 1.0000m, null, 1, notaMaxima: 10m)],
+        etapas: [EtapaProcesso.Reidratar(new Guid($"9999fff{variante:x}-0000-4000-8000-000000000001"), "Etapa Única", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva(), 1.0000m, null, 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva)],
         ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
         distribuicaoVagas: [DistribuicaoInstitucional()],
         bonusRegional: null,

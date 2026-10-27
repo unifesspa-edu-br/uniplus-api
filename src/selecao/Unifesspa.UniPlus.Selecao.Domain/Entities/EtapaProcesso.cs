@@ -38,6 +38,11 @@ public sealed class EtapaProcesso : EntityBase
     public const string PassoDoLancamentoInvalido = "EtapaProcesso.PassoDoLancamentoInvalido";
     public const string NotaMinimaAcimaDaNotaMaxima = "EtapaProcesso.NotaMinimaAcimaDaNotaMaxima";
     public const string NotaMaximaForaDoPasso = "EtapaProcesso.NotaMaximaForaDoPasso";
+    public const string AvaliacaoNaEtapaDoEnem = "EtapaProcesso.AvaliacaoNaEtapaDoEnem";
+    public const string RegraDeConsolidacaoForaDaFormaHumana = "EtapaProcesso.RegraDeConsolidacaoForaDaFormaHumana";
+    public const string RegraDeConsolidacaoInvalida = "EtapaProcesso.RegraDeConsolidacaoInvalida";
+    public const string PassoNaFormaObjetiva = "EtapaProcesso.PassoNaFormaObjetiva";
+    public const string FormaDeAvaliacaoDesconhecida = "EtapaProcesso.FormaDeAvaliacaoDesconhecida";
 
     public Guid ProcessoSeletivoId { get; private set; }
 
@@ -74,6 +79,19 @@ public sealed class EtapaProcesso : EntityBase
 
     /// <summary>De quanto em quanto a nota pode ser lançada; vale só para a nota digitada.</summary>
     public decimal? PassoDoLancamento { get; private set; }
+
+    /// <summary>
+    /// Como a nota da etapa é obtida. Declarada pela etapa, e não pelo tipo de etapa: o edital
+    /// decide, e o tipo não restringe a forma. Ausente em rascunho, na etapa sem nota e na de nota
+    /// do ENEM.
+    /// </summary>
+    public FormaDeAvaliacao? FormaDeAvaliacao { get; private set; }
+
+    /// <summary>
+    /// Como as notas dos avaliadores viram a nota da etapa; só existe na forma humana. É referência
+    /// ao catálogo (código, versão e hash), congelada no snapshot como as regras da classificação.
+    /// </summary>
+    public ReferenciaRegra? RegraConsolidacao { get; private set; }
 
     public int? Ordem { get; private set; }
 
@@ -194,12 +212,15 @@ public sealed class EtapaProcesso : EntityBase
         int? ordem = null,
         string? faseCodigo = null,
         decimal? notaMaxima = null,
-        decimal? passoDoLancamento = null)
+        decimal? passoDoLancamento = null,
+        FormaDeAvaliacao? formaDeAvaliacao = null,
+        ReferenciaRegra? regraConsolidacao = null)
     {
         ArgumentNullException.ThrowIfNull(tipoEtapa);
 
         List<FieldError> erros = ValidarFormaBasica(
             nome, carater, peso, notaMinima, ordem, notaMaxima, passoDoLancamento);
+        erros.AddRange(ValidarAvaliacao(tipoEtapa.NotaDeOrigemNoEnem, passoDoLancamento, formaDeAvaliacao, regraConsolidacao?.Codigo));
         if (erros.Count > 0)
         {
             return Result<EtapaProcesso>.ValidationFailure(erros);
@@ -214,6 +235,8 @@ public sealed class EtapaProcesso : EntityBase
             NotaMinima = notaMinima,
             NotaMaxima = notaMaxima,
             PassoDoLancamento = passoDoLancamento,
+            FormaDeAvaliacao = formaDeAvaliacao,
+            RegraConsolidacao = regraConsolidacao,
             Ordem = ordem,
             FaseCodigo = string.IsNullOrWhiteSpace(faseCodigo) ? null : faseCodigo.Trim(),
         });
@@ -368,7 +391,9 @@ public sealed class EtapaProcesso : EntityBase
         IReadOnlyList<BancaDaEtapa> bancas,
         IReadOnlyList<RecursoDaEtapa> recursos,
         decimal? notaMaxima,
-        decimal? passoDoLancamento)
+        decimal? passoDoLancamento,
+        FormaDeAvaliacao? formaDeAvaliacao,
+        ReferenciaRegra? regraConsolidacao)
     {
         ArgumentNullException.ThrowIfNull(nome);
         ArgumentNullException.ThrowIfNull(tipoEtapa);
@@ -383,6 +408,8 @@ public sealed class EtapaProcesso : EntityBase
         NotaMinima = notaMinima;
         NotaMaxima = notaMaxima;
         PassoDoLancamento = passoDoLancamento;
+        FormaDeAvaliacao = formaDeAvaliacao;
+        RegraConsolidacao = regraConsolidacao;
         Ordem = ordem;
         FaseCodigo = string.IsNullOrWhiteSpace(faseCodigo) ? null : faseCodigo.Trim();
         Inicio = inicio?.ToUniversalTime();
@@ -587,7 +614,9 @@ public sealed class EtapaProcesso : EntityBase
         int? ordem,
         string? faseCodigo = null,
         decimal? notaMaxima = null,
-        decimal? passoDoLancamento = null)
+        decimal? passoDoLancamento = null,
+        FormaDeAvaliacao? formaDeAvaliacao = null,
+        ReferenciaRegra? regraConsolidacao = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(nome);
         ArgumentNullException.ThrowIfNull(tipoEtapa);
@@ -613,6 +642,8 @@ public sealed class EtapaProcesso : EntityBase
             NotaMinima = notaMinima,
             NotaMaxima = notaMaxima,
             PassoDoLancamento = passoDoLancamento,
+            FormaDeAvaliacao = formaDeAvaliacao,
+            RegraConsolidacao = regraConsolidacao,
             Ordem = ordem,
             FaseCodigo = string.IsNullOrWhiteSpace(faseCodigo) ? null : faseCodigo.Trim(),
         };
@@ -648,12 +679,15 @@ public sealed class EtapaProcesso : EntityBase
         int? ordem,
         string? faseCodigo = null,
         decimal? notaMaxima = null,
-        decimal? passoDoLancamento = null)
+        decimal? passoDoLancamento = null,
+        FormaDeAvaliacao? formaDeAvaliacao = null,
+        ReferenciaRegra? regraConsolidacao = null)
     {
         ArgumentNullException.ThrowIfNull(tipoEtapa);
 
         List<FieldError> erros = ValidarFormaBasica(
             nome, carater, peso, notaMinima, ordem, notaMaxima, passoDoLancamento);
+        erros.AddRange(ValidarAvaliacao(tipoEtapa.NotaDeOrigemNoEnem, passoDoLancamento, formaDeAvaliacao, regraConsolidacao?.Codigo));
         if (erros.Count > 0)
         {
             return Result.ValidationFailure(erros);
@@ -666,6 +700,8 @@ public sealed class EtapaProcesso : EntityBase
         NotaMinima = notaMinima;
         NotaMaxima = notaMaxima;
         PassoDoLancamento = passoDoLancamento;
+        FormaDeAvaliacao = formaDeAvaliacao;
+        RegraConsolidacao = regraConsolidacao;
         Ordem = ordem;
         FaseCodigo = string.IsNullOrWhiteSpace(faseCodigo) ? null : faseCodigo.Trim();
 
@@ -675,6 +711,73 @@ public sealed class EtapaProcesso : EntityBase
     internal void VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
 
+
+    /// <summary>
+    /// Recusa a contradição entre o que a etapa declara sobre como a nota é obtida, em rascunho
+    /// também: a falta (de forma, de regra, de passo, de banca) é tolerada, porque o gate de
+    /// publicação a cobra, e a recusa que depende do grafo — a etapa sem nota não declara forma —
+    /// também é do gate.
+    /// </summary>
+    /// <remarks>
+    /// A etapa de nota do ENEM não declara forma nem regra: a nota vem do INEP. Quando recusa por
+    /// isso, não repete as demais recusas, que seriam consequência da mesma causa. Recebe só o
+    /// código da regra, para a Application poder rodar a coerência de todas as etapas antes de ler
+    /// o catálogo (ADR-0125); que a regra exista nele e seja do tipo de consolidação é conferido
+    /// por ela (ADR-0042). O código ser do rol conhecido é a defesa do domínio, a mesma que o
+    /// decodificador do envelope aplica ao reidratar.
+    /// </remarks>
+    public static List<FieldError> ValidarAvaliacao(
+        bool notaDeOrigemNoEnem,
+        decimal? passoDoLancamento,
+        FormaDeAvaliacao? forma,
+        string? regraConsolidacaoCodigo)
+    {
+        List<FieldError> erros = [];
+
+        if (notaDeOrigemNoEnem)
+        {
+            if (forma is not null)
+            {
+                erros.Add(new("formaDeAvaliacao", new DomainError(
+                    AvaliacaoNaEtapaDoEnem,
+                    "A etapa de nota do ENEM não declara forma de avaliação: a nota vem do INEP.")));
+            }
+
+            if (regraConsolidacaoCodigo is not null)
+            {
+                erros.Add(new("regraConsolidacao", new DomainError(
+                    AvaliacaoNaEtapaDoEnem,
+                    "A etapa de nota do ENEM não declara regra de consolidação: a nota vem do INEP.")));
+            }
+
+            return erros;
+        }
+
+        if (regraConsolidacaoCodigo is not null)
+        {
+            if (forma != Enums.FormaDeAvaliacao.Humana)
+            {
+                erros.Add(new("regraConsolidacao", new DomainError(
+                    RegraDeConsolidacaoForaDaFormaHumana,
+                    "A regra de consolidação só se aplica à avaliação humana: com mais de um avaliador é que as notas precisam ser combinadas.")));
+            }
+            else if (!RegraConsolidacaoCodigo.Rol.Contains(regraConsolidacaoCodigo))
+            {
+                erros.Add(new("regraConsolidacao", new DomainError(
+                    RegraDeConsolidacaoInvalida,
+                    $"A regra '{regraConsolidacaoCodigo}' não é uma regra de consolidação do catálogo.")));
+            }
+        }
+
+        if (forma == Enums.FormaDeAvaliacao.Objetiva && passoDoLancamento is not null)
+        {
+            erros.Add(new("passoDoLancamento", new DomainError(
+                PassoNaFormaObjetiva,
+                "O passo do lançamento só se aplica à avaliação humana: na avaliação objetiva ninguém lança a nota.")));
+        }
+
+        return erros;
+    }
 
     /// <summary>Declara a janela própria da etapa, normalizada para UTC, e o parecer individual.</summary>
     public Result DefinirJanelaEParecer(DateTimeOffset? inicio, DateTimeOffset? fim, bool emiteParecerIndividual)
