@@ -30,9 +30,15 @@ public static partial class SincronizarVinculosDiscentesHandler
         ArgumentNullException.ThrowIfNull(execucoes);
         ArgumentNullException.ThrowIfNull(logger);
 
-        Guid execucaoId = await execucoes
+        Guid? execucaoId = await execucoes
             .IniciarAsync(mensagem.DataDeReferencia, cancellationToken)
             .ConfigureAwait(false);
+
+        if (execucaoId is null)
+        {
+            LogIgnorada(logger, mensagem.DataDeReferencia);
+            return;
+        }
 
         ResumoDaSincronizacao resumo = await orquestrador
             .ExecutarAsync(mensagem.DataDeReferencia, cancellationToken)
@@ -43,19 +49,33 @@ public static partial class SincronizarVinculosDiscentesHandler
         // abortaria justamente a gravação que tira a execução de "em andamento", e ela
         // ficaria assim para sempre — sendo que é ela que a próxima execução consulta.
         await execucoes
-            .ConcluirAsync(execucaoId, resumo.EmContagens(), resumo.Situacao, CancellationToken.None)
+            .ConcluirAsync(execucaoId.Value, resumo.EmContagens(), resumo.Situacao, CancellationToken.None)
             .ConfigureAwait(false);
 
         if (resumo.FalhaQueInterrompeu is { } falha)
         {
             // As contagens já refletem o que a execução alcançou antes de parar; a falha
             // sobe para que a mensageria saiba que a sincronização não completou.
-            LogFalhou(logger, execucaoId, falha);
+            LogFalhou(logger, execucaoId.Value, falha);
             throw falha;
         }
 
-        LogConcluida(logger, execucaoId, resumo.Situacao, resumo.Escritos, resumo.DescartadosForaDoContrato);
+        if (resumo.Situacao is not SyncRunStatus.Completed)
+        {
+            InvalidOperationException falhaParcial = new(
+                $"A sincronização de {mensagem.DataDeReferencia:yyyy-MM-dd} terminou como "
+                + $"'{resumo.Situacao}' e não pode ser considerada concluída.");
+            LogFalhou(logger, execucaoId.Value, falhaParcial);
+            throw falhaParcial;
+        }
+
+        LogConcluida(logger, execucaoId.Value, resumo.Situacao, resumo.Escritos, resumo.DescartadosForaDoContrato);
     }
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Sincronização diária já alcançou estado terminal; mensagem ignorada. Data={DataDeReferencia}")]
+    private static partial void LogIgnorada(ILogger logger, DateOnly dataDeReferencia);
 
     [LoggerMessage(
         Level = LogLevel.Information,

@@ -101,7 +101,7 @@ builder.Services.AddPublicacoesModule(builder.Configuration);
 // Discentes ainda é só réplica de dados (sem endpoints públicos) — traz apenas
 // Infrastructure + migrations on startup; OpenAPI/HATEOAS/idempotência/Application
 // entram quando o módulo ganhar endpoints/handlers.
-builder.Services.AddDiscentesModule(builder.Configuration);
+builder.Services.AddDiscentesModule(builder.Configuration, builder.Environment);
 
 // Health checks: os 6 módulos compartilham o banco `uniplus`, então um
 // único check de banco + infra (Redis/MinIO/Kafka/OIDC) cobre o processo.
@@ -158,8 +158,14 @@ builder.Host.UseWolverineOutboxCascading(
 
         // fila PG durável dos atos (mesmo transporte de domain-events).
         PublicacoesMessagingRegistration.ConfigurarRouting(opts);
+
+        // As policies são fixas no host, inclusive em ApplyAndExit: o Job de
+        // migrations precisa provisionar o mesmo armazenamento usado pelo pod em Skip,
+        // mesmo que a configuração SIGAA do processo de deploy seja diferente.
+        DiscentesMessagingRegistration.ConfigurarRouting(opts, builder.Configuration);
     });
 builder.Services.AddWolverineMessaging();
+builder.Services.AddGatilhoDiarioDiscentes(builder.Configuration);
 
 // Papel deste processo quanto às migrations (ADR-0127). Sem a chave, o
 // comportamento é o de sempre: aplicar no boot. O Job de deploy sobe a mesma

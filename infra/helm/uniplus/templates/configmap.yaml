@@ -25,3 +25,13 @@ data:
   Selecao__ReconciliacaoDaVerificacao__Prazo: {{ .Values.reconciliacaoDaVerificacao.prazo | quote }}
   Selecao__ReconciliacaoDaVerificacao__Intervalo: {{ .Values.reconciliacaoDaVerificacao.intervalo | quote }}
   Selecao__ReconciliacaoDaVerificacao__TamanhoDoLote: {{ .Values.reconciliacaoDaVerificacao.tamanhoDoLote | quote }}
+  Sigaa__BaseUrl: {{ .Values.sigaa.baseUrl | quote }}
+  Discentes__GatilhoDiario__Horario: {{ .Values.discentes.gatilhoDiario.horario | quote }}
+  Discentes__GatilhoDiario__FusoHorarioId: {{ .Values.discentes.gatilhoDiario.fusoHorarioId | quote }}
+  Discentes__GatilhoDiario__HorarioLimiteAlerta: {{ .Values.discentes.gatilhoDiario.horarioLimiteAlerta | quote }}
+  Discentes__GatilhoDiario__FusoHorarioAlertaId: {{ .Values.discentes.gatilhoDiario.fusoHorarioAlertaId | quote }}
+  Discentes__GatilhoDiario__CanalAlerta: {{ .Values.discentes.gatilhoDiario.canalAlerta | quote }}
+  Discentes__GatilhoDiario__PrazoReatribuicaoSegundos: {{ .Values.discentes.gatilhoDiario.prazoReatribuicaoSegundos | quote }}
+  {{- range $index, $segundos := .Values.discentes.gatilhoDiario.retryAposSegundos }}
+  Discentes__GatilhoDiario__RetryAposSegundos__{{ $index }}: {{ $segundos | quote }}
+  {{- end }}

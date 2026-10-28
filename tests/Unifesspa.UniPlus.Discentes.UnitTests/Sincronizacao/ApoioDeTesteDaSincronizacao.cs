@@ -135,14 +135,14 @@ internal sealed class ExecucoesEmMemoria : IRegistroDeExecucoes
 {
     public List<SyncRun> Registradas { get; } = [];
 
-    public Task<Guid> IniciarAsync(DateOnly dataDeReferencia, CancellationToken cancellationToken = default)
+    public Task<Guid?> IniciarAsync(DateOnly dataDeReferencia, CancellationToken cancellationToken = default)
     {
         SyncRun execucao = SyncRun.Iniciar(
             dataDeReferencia,
             new RelogioControlado(new DateTimeOffset(2026, 9, 2, 3, 0, 0, TimeSpan.Zero)));
 
         Registradas.Add(execucao);
-        return Task.FromResult(execucao.Id);
+        return Task.FromResult<Guid?>(execucao.Id);
     }
 
     public Task ConcluirAsync(

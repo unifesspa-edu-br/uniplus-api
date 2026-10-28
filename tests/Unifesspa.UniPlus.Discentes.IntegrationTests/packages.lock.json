@@ -45,6 +45,15 @@
           "Microsoft.Extensions.Logging.Abstractions": "10.0.0"
         }
       },
+      "NSubstitute": {
+        "type": "Direct",
+        "requested": "[5.3.0, )",
+        "resolved": "5.3.0",
+        "contentHash": "lJ47Cps5Qzr86N99lcwd+OUvQma7+fBgr8+Mn+aOC0WrlqMNkdivaYD9IvnZ5Mqo6Ky3LS7ZI+tUq1/s9ERd0Q==",
+        "dependencies": {
+          "Castle.Core": "5.1.1"
+        }
+      },
       "SSH.NET": {
         "type": "Direct",
         "requested": "[2026.0.0, )",
@@ -98,6 +107,14 @@
         "type": "Transitive",
         "resolved": "2.7.0",
         "contentHash": "U+12df8UEWHgBi04YVf/Lgi2dy3SItlIYvHjjEVa/BngCQIzDCDRBk50DDByCfDvSbe5pRNFr3b7UrVK2kMcLw=="
+      },
+      "Castle.Core": {
+        "type": "Transitive",
+        "resolved": "5.1.1",
+        "contentHash": "rpYtIczkzGpf+EkZgDr9CClTdemhsrwA/W5hMoPjLkRFnXzH44zDLoovXeKtmxb1ykXK9aJVODSpiJml8CTw2g==",
+        "dependencies": {
+          "System.Diagnostics.EventLog": "6.0.0"
+        }
       },
       "CommunityToolkit.HighPerformance": {
         "type": "Transitive",
@@ -1316,6 +1333,13 @@
         "dependencies": {
           "Unifesspa.UniPlus.Application.Abstractions": "[1.0.0, )",
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
+        }
+      },
+      "unifesspa.uniplus.discentes.api": {
+        "type": "Project",
+        "dependencies": {
+          "Unifesspa.UniPlus.Discentes.Application": "[1.0.0, )",
+          "Unifesspa.UniPlus.Discentes.Infrastructure": "[1.0.0, )"
         }
       },
       "unifesspa.uniplus.discentes.application": {
