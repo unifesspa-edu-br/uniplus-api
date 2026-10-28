@@ -12,8 +12,8 @@ using Microsoft.Net.Http.Headers;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Contracts;
-using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Authorization.Enums;
+using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 
 /// <summary>Endpoints de consulta do catálogo de permissões (ADR-0151).</summary>
 public static class AutorizacaoEndpointsExtensions
