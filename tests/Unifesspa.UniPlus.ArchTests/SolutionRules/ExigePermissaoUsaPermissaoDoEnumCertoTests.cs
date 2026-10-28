@@ -38,12 +38,14 @@ public sealed class ExigePermissaoUsaPermissaoDoEnumCertoTests
                     .Count(static a => a.GetType().IsGenericType
                         && a.GetType().GetGenericTypeDefinition() == typeof(ExigePermissaoAttribute<>));
             }
-            catch (Exception ex)
+            catch (TargetInvocationException ex) when (ex.InnerException is not null)
             {
-                // A reflexão embrulha a falha do construtor em TargetInvocationException;
-                // qualquer falha ao construir o atributo é um uso inválido.
-                Exception causa = ex is TargetInvocationException { InnerException: { } interna } ? interna : ex;
-                falhas.Add($"{membro.DeclaringType?.Name}.{membro.Name}: {causa.GetType().Name} — {causa.Message}");
+                // A reflexão embrulha a falha do construtor do atributo.
+                falhas.Add($"{membro.DeclaringType?.Name}.{membro.Name}: {ex.InnerException.GetType().Name} — {ex.InnerException.Message}");
+            }
+            catch (ArgumentException ex)
+            {
+                falhas.Add($"{membro.DeclaringType?.Name}.{membro.Name}: {ex.GetType().Name} — {ex.Message}");
             }
         }
 

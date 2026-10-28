@@ -138,24 +138,37 @@ public static class AutorizacaoEndpointsExtensions
             return false;
         }
 
-        // q=0 exclui a representação (RFC 9110 §12.5.1) e prevalece sobre um curinga
-        // que a aceitaria: a exclusão explícita é a faixa mais específica.
-        if (aceitos.Any(a => a.Quality is 0 && Alcanca(a, mediaType)))
-        {
-            return true;
-        }
+        // A qualidade da representação é a da faixa mais específica que a alcança
+        // (RFC 9110 §12.5.1): q=0 numa faixa específica exclui mesmo com um curinga
+        // aceito, e q=0 num curinga não anula uma faixa específica aceita.
+        MediaTypeHeaderValue? maisEspecifica = aceitos
+            .Where(a => Especificidade(a, mediaType) >= 0)
+            .MaxBy(a => Especificidade(a, mediaType));
 
-        return !aceitos.Any(a => a.Quality is not 0 && Alcanca(a, mediaType));
+        return maisEspecifica is null || maisEspecifica.Quality is 0;
     }
 
-    private static bool Alcanca(MediaTypeHeaderValue faixa, string mediaType)
-        => faixa.MediaType.Equals("*/*", StringComparison.OrdinalIgnoreCase)
-            || faixa.MediaType.Equals("application/*", StringComparison.OrdinalIgnoreCase)
-            || faixa.MediaType.Equals("application/json", StringComparison.OrdinalIgnoreCase)
-            || faixa.MediaType.Equals(mediaType, StringComparison.OrdinalIgnoreCase);
+    // -1 quando a faixa não alcança a representação; quanto maior, mais específica.
+    private static int Especificidade(MediaTypeHeaderValue faixa, string mediaType)
+    {
+        if (faixa.MediaType.Equals(mediaType, StringComparison.OrdinalIgnoreCase))
+        {
+            return 3;
+        }
 
-    // Mesmo contrato do 406 de VendorMediaTypeAttribute (ADR-0028): código estável e a
-    // lista de versões servidas, para o cliente descobrir o que pode pedir.
+        if (faixa.MediaType.Equals("application/json", StringComparison.OrdinalIgnoreCase))
+        {
+            return 2;
+        }
+
+        if (faixa.MediaType.Equals("application/*", StringComparison.OrdinalIgnoreCase))
+        {
+            return 1;
+        }
+
+        return faixa.MediaType.Equals("*/*", StringComparison.OrdinalIgnoreCase) ? 0 : -1;
+    }
+
     private static IResult NaoAceitavel(HttpContext http, string recurso)
     {
         const string codigo = "uniplus.contract.versao_nao_suportada";
