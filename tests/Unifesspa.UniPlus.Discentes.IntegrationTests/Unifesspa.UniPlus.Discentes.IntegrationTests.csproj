@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../../src/discentes/Unifesspa.UniPlus.Discentes.API/Unifesspa.UniPlus.Discentes.API.csproj" />
     <ProjectReference Include="../../src/discentes/Unifesspa.UniPlus.Discentes.Infrastructure/Unifesspa.UniPlus.Discentes.Infrastructure.csproj" />
     <ProjectReference Include="../../src/shared/Unifesspa.UniPlus.Infrastructure.Core/Unifesspa.UniPlus.Infrastructure.Core.csproj" />
     <ProjectReference Include="..\..\src\discentes\Unifesspa.UniPlus.Discentes.Domain\Unifesspa.UniPlus.Discentes.Domain.csproj" />
