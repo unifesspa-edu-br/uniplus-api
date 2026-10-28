@@ -44,6 +44,13 @@ O formato que ficou em código também não escala. Cada permissão eram dois me
 - **Dois endpoints de consulta**, em `/api/autorizacao/permissoes`: o catálogo agrupado por módulo e recurso, protegido por permissão própria (`autorizacao:permissoes:consultar-catalogo`), e as permissões efetivas do usuário logado, para o frontend montar menu e ações. A resposta das efetivas informa o que pode aparecer na interface; a decisão continua em cada requisição, porque a concessão pode depender do recurso. O frontend não conhece o catálogo: recebe da API.
 - **Posse da permissão dos motivos de decisão de isenção.** O recurso, o controller e a rota (`/api/selecao/admin/motivos-decisao-isencao`) são do módulo Seleção, então a permissão de manutenção pertence ao `PermissaoSelecao`. O prefixo `configuracao:` que ela tinha era do nome do papel, e não do módulo dono, e o recurso se chamava "recursal" sem corresponder à rota; como ainda não há produção, o código passa a `selecao:motivos-decisao-isencao:manter`, e o papel do *client* no Keycloak é renomeado nos ambientes local e de homologação. A regra do prefixo vale sem exceção a partir daqui. A permissão de consultar a auditoria dos motivos, que existia sem uso, sai do catálogo: quem a declarar é a issue que criar a justificativa de inclusão em processo publicado. Configuração e Permissão são módulos distintos no frontend, com deploys separados; o catálogo não pertence a nenhum dos dois.
 
+**Nomeação da ação.** A conferência na subida valida só o formato do código; a escolha do verbo é revisão humana.
+
+- A ação é verbo de negócio (publicar, retificar, cancelar, julgar, homologar, exportar), não verbo de CRUD.
+- Uma permissão separada só existe quando há quem deva ter uma ação e não a outra, ou quando o risco é diferente. Configurar o rascunho do processo e publicá-lo são permissões distintas, porque publicar tem efeito público.
+- `manter` cobre a manutenção de cadastro de baixo risco, em que criar, alterar, ativar e desativar são feitos pela mesma pessoa.
+- `consultar` só existe quando a leitura é restrita (dado pessoal, rascunho, justificativa interna). Leitura aberta não tem permissão.
+
 A migração dos `[Authorize(Roles = …)]` existentes é feita por módulo, em issues próprias. Um teste de arquitetura trava a linha de base: nenhum `[Authorize(Roles)]` novo, e a lista só diminui.
 
 ## Consequências
