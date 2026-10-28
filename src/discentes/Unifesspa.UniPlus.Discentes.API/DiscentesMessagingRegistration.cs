@@ -195,6 +195,7 @@ public sealed partial class AlertaDeAusenciaDaSincronizacaoDiaria : BackgroundSe
             try
             {
                 await VerificarDiaAsync(dataLocal, stoppingToken).ConfigureAwait(false);
+                await RecuperarGatilhoAsync(stoppingToken).ConfigureAwait(false);
             }
             catch (Exception excecao) when (excecao is not OperationCanceledException)
             {
@@ -205,6 +206,15 @@ public sealed partial class AlertaDeAusenciaDaSincronizacaoDiaria : BackgroundSe
 
             verificarDiaAtual = false;
         }
+    }
+
+    // Um gatilho que esgotou as tentativas e foi para a dead letter deixa a reserva pendente e
+    // interrompe a cadeia; reemitir o início recupera a reserva vencida sem esperar a próxima subida.
+    private async Task RecuperarGatilhoAsync(CancellationToken cancellationToken)
+    {
+        await using AsyncServiceScope escopo = _escopos.CreateAsyncScope();
+        IMessageBus bus = escopo.ServiceProvider.GetRequiredService<IMessageBus>();
+        await bus.InvokeAsync(new InicializarGatilhoDiarioDiscentes(), cancellationToken).ConfigureAwait(false);
     }
 
     private async Task VerificarDiaAsync(DateOnly dataDeReferencia, CancellationToken cancellationToken)

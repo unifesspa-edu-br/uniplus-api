@@ -11,9 +11,13 @@ using Microsoft.Extensions.Options;
 
 using Npgsql;
 
+using NSubstitute;
+
 using Unifesspa.UniPlus.Discentes.API;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Sincronizacao;
+
+using Wolverine;
 
 [Trait("Category", "Integration")]
 public sealed class AlertaDeAusenciaDaSincronizacaoDiariaTests : IClassFixture<VinculoDiscenteDbFixture>
@@ -34,7 +38,8 @@ public sealed class AlertaDeAusenciaDaSincronizacaoDiariaTests : IClassFixture<V
     {
         await using DiscentesDbContext banco = _fixture.CreateDbContext();
         await banco.Database.ExecuteSqlRawAsync("TRUNCATE discentes.alerta_sincronizacao_diaria");
-        using ServiceProvider provedor = Provedor(() => _fixture.CreateDbContext());
+        IMessageBus bus = Substitute.For<IMessageBus>();
+        using ServiceProvider provedor = Provedor(() => _fixture.CreateDbContext(), bus);
         ListaDeLogs logs = new();
 
         using AlertaDeAusenciaDaSincronizacaoDiaria servico = Criar(provedor, logs);
@@ -44,6 +49,10 @@ public sealed class AlertaDeAusenciaDaSincronizacaoDiariaTests : IClassFixture<V
 
         (await ContarAlertasAsync(banco)).Should().Be(1);
         logs.Niveis.Should().Contain(LogLevel.Error);
+        await bus.Received(1).InvokeAsync(
+            Arg.Any<InicializarGatilhoDiarioDiscentes>(),
+            Arg.Any<CancellationToken>(),
+            Arg.Any<TimeSpan?>());
     }
 
     [Fact]
@@ -54,7 +63,7 @@ public sealed class AlertaDeAusenciaDaSincronizacaoDiariaTests : IClassFixture<V
             new DbContextOptionsBuilder<DiscentesDbContext>()
                 .UseNpgsql(semBanco.ConnectionString)
                 .UseSnakeCaseNamingConvention()
-                .Options));
+                .Options), Substitute.For<IMessageBus>());
         ListaDeLogs logs = new();
 
         using AlertaDeAusenciaDaSincronizacaoDiaria servico = Criar(provedor, logs);
@@ -77,9 +86,10 @@ public sealed class AlertaDeAusenciaDaSincronizacaoDiariaTests : IClassFixture<V
             new RelogioFixo(Agora),
             logs);
 
-    private static ServiceProvider Provedor(Func<DiscentesDbContext> criarBanco)
+    private static ServiceProvider Provedor(Func<DiscentesDbContext> criarBanco, IMessageBus bus)
     {
         ServiceCollection servicos = new();
+        servicos.AddSingleton(bus);
         servicos.AddScoped(_ => criarBanco());
         return servicos.BuildServiceProvider();
     }
