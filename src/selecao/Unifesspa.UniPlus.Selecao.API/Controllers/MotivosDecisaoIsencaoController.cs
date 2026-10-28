@@ -37,7 +37,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// O <c>[Authorize]</c> sem papel na classe é o que separa os dois desfechos:
 /// quem não se autenticou recebe <c>401</c> da própria pipeline, antes de
 /// qualquer decisão; quem se autenticou e não tem a concessão recebe
-/// <c>403</c> da decisão. Colapsar os dois faria o não-identificado parecer
+/// <c>403</c> do <c>[ExigePermissao]</c> de cada ação de manutenção. Colapsar os dois faria o não-identificado parecer
 /// não-autorizado.
 /// </para>
 /// </remarks>
@@ -51,16 +51,11 @@ public sealed class MotivosDecisaoIsencaoController : ControllerBase
 {
     private const string ResourceTag = "motivos-decisao-isencao";
     /// <summary>
-    /// Tipo de recurso que a decisão de acesso enxerga. Diverge de propósito do
-    /// nome da entidade: é o vocabulário já em uso por esta permissão, e a
-    /// restrição de tipo de uma concessão é comparada por igualdade exata
-    /// (<c>GrantEfetivoAplicavelCheck</c>). Uma concessão escopada a
-    /// <c>MotivoDecisaoRecursal</c> deixaria de alcançar este endpoint se ele
-    /// se anunciasse com outro nome — e a negativa apareceria como 403 sem
-    /// explicação, já que as concessões do token não trazem restrição de tipo
-    /// e mascaram a divergência.
+    /// Tipo de recurso que a decisão de acesso enxerga. A restrição de tipo de uma
+    /// concessão é comparada por igualdade exata (<c>GrantEfetivoAplicavelCheck</c>),
+    /// então este valor é o contrato com quem restringe uma concessão por tipo.
     /// </summary>
-    private const string RecursoTipo = "MotivoDecisaoRecursal";
+    private const string RecursoTipo = "MotivoDecisaoIsencao";
 
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
