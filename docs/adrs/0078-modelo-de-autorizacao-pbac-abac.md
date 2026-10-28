@@ -87,7 +87,7 @@ Cada permissão declara as verificações de contexto obrigatórias (por exemplo
 
 ### O que esta ADR não decide
 
-Em respeito à regra "1 ADR = 1 decisão", esta ADR fixa **apenas** o modelo de decisão (PBAC + ABAC, ponto único, sujeito explícito, concessão efetiva). Decisões correlatas têm ADR própria desta frente de autorização: o catálogo declarativo de permissões e a geração de artefatos; a **hierarquia institucional sem herança de permissão** (ADR seguinte); a proteção de dado por permissão (LGPD-by-design); os grupos OIDC e seu provisionamento; a concessão excepcional e a sessão delegada; o cache e a revogação de concessões; a trilha de auditoria de autorização; e o banco isolado de autorização.
+Em respeito à regra "1 ADR = 1 decisão", esta ADR fixa **apenas** o modelo de decisão (PBAC + ABAC, ponto único, sujeito explícito, concessão efetiva). Decisões correlatas têm ADR própria desta frente de autorização: o catálogo de permissões (ADR-0151, que superou o catálogo declarativo da ADR-0080); a **hierarquia institucional sem herança de permissão** (ADR seguinte); a proteção de dado por permissão (LGPD-by-design); os grupos OIDC e seu provisionamento; a concessão excepcional e a sessão delegada; o cache e a revogação de concessões; a trilha de auditoria de autorização; e o banco isolado de autorização.
 
 ## Consequências
 

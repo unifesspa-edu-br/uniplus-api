@@ -1,5 +1,5 @@
 ---
-status: "proposed"
+status: "superseded by ADR-0151"
 date: "2026-06-02"
 decision-makers:
   - "Tech Lead (CTIC)"
@@ -9,6 +9,8 @@ informed:
 ---
 
 # ADR-0088: Versionamento e publicação cross-repo do contrato de permissões
+
+> **Superada.** Não há artefato gerado para versionar entre repositórios: o frontend não conhece o catálogo e recebe da API as permissões efetivas do usuário (**[ADR-0151](0151-catalogo-de-permissoes-em-codigo-por-modulo.md)**). Leia esta ADR como registro histórico do raciocínio, não como contrato.
 
 ## Contexto e enunciado do problema
 

@@ -1,5 +1,5 @@
 ---
-status: "accepted"
+status: "superseded by ADR-0151"
 date: "2026-06-02"
 decision-makers:
   - "Tech Lead (CTIC)"
@@ -9,6 +9,8 @@ informed:
 ---
 
 # ADR-0080: Catálogo declarativo de permissões como fonte única e geração de artefatos
+
+> **Superada.** O catálogo ficou em código, sem arquivo declarativo nem gerador: a decisão vigente está na **[ADR-0151](0151-catalogo-de-permissoes-em-codigo-por-modulo.md)**. A necessidade de uma fonte única com metadados ricos (sensibilidade, base legal, escopo, verificações) continua valendo e é atendida pelo enum de permissões de cada módulo. Leia esta ADR como registro histórico do raciocínio, não como contrato.
 
 ## Contexto e enunciado do problema
 
