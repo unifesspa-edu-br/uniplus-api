@@ -39,7 +39,7 @@ using Unifesspa.UniPlus.Selecao.API.Permissoes;
 public sealed class PdpMinimoNoHostTests
 {
     private const string Emissor = "https://idp.exemplo/realms/unifesspa";
-    private static readonly string Permissao = PermissaoSelecao.MotivosDecisaoRecursalManter.Codigo;
+    private static readonly string Permissao = PermissaoSelecao.MotivosDecisaoIsencaoManter.Codigo;
 
     private readonly MonolitoPostgresFixture _fixture;
 
@@ -74,31 +74,6 @@ public sealed class PdpMinimoNoHostTests
         decisao.GrantUsed!.Fonte.Should().Be(FonteGrant.Token);
     }
 
-    [Fact(DisplayName = "Concede a consulta auditável quando o token traz essa permissão")]
-    public async Task Decide_ComPapelDeConsultaAuditavel_Concede()
-    {
-        AuthorizationDecision decisao = await DecidirComPapeis(
-            PermissaoSelecao.MotivosDecisaoRecursalConsultarAuditoria.Requisito,
-            PermissaoSelecao.MotivosDecisaoRecursalConsultarAuditoria.Codigo);
-
-        decisao.Allowed.Should().BeTrue(
-            "a consulta é concedida pelo mesmo caminho da manutenção — um papel do client da API, "
-            + "atribuível a qualquer perfil institucional sem mudança de código");
-        decisao.GrantUsed!.Fonte.Should().Be(FonteGrant.Token);
-    }
-
-    [Fact(DisplayName = "O papel de manutenção não concede a consulta auditável no host")]
-    public async Task Decide_ComPapelDeManutencao_NaoConcedeConsultaAuditavel()
-    {
-        AuthorizationDecision decisao = await DecidirComPapeis(
-            PermissaoSelecao.MotivosDecisaoRecursalConsultarAuditoria.Requisito,
-            Permissao);
-
-        decisao.Allowed.Should().BeFalse(
-            "escrita e leitura protegida são concessões distintas — uma não implica a outra");
-        decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.SemConcessaoAplicavel);
-    }
-
     [Fact(DisplayName = "Nega quando o token não traz a permissão")]
     public async Task Decide_SemPapel_Nega()
     {
@@ -129,7 +104,7 @@ public sealed class PdpMinimoNoHostTests
             .GetRequiredService<IAuthorizationDecisionService>()
             .DecideAsync(
                 sujeito.Value!,
-                PermissaoSelecao.MotivosDecisaoRecursalManter.Requisito,
+                PermissaoSelecao.MotivosDecisaoIsencaoManter.Requisito,
                 ResourceContext.From("MotivoDecisaoRecursal", Sensibilidade.Interna).Value!,
                 Requisicao(),
                 CancellationToken.None);
@@ -159,7 +134,7 @@ public sealed class PdpMinimoNoHostTests
 
         ResultadoDoAcesso resultado = await scope.ServiceProvider
             .GetRequiredService<IVerificadorDeAcesso>()
-            .VerificarAsync(PermissaoSelecao.MotivosDecisaoRecursalManter.Requisito);
+            .VerificarAsync(PermissaoSelecao.MotivosDecisaoIsencaoManter.Requisito);
 
         resultado.Should().Be(ResultadoDoAcesso.IdentidadeIncompleta,
             "responder como negativa faria a borda devolver 403 a quem sequer pôde ser identificado");
@@ -180,7 +155,7 @@ public sealed class PdpMinimoNoHostTests
 
     private Task<AuthorizationDecision> DecidirComPapeis(params string[] papeis) =>
         DecidirComPapeis(
-            PermissaoSelecao.MotivosDecisaoRecursalManter.Requisito,
+            PermissaoSelecao.MotivosDecisaoIsencaoManter.Requisito,
             papeis);
 
     private async Task<AuthorizationDecision> DecidirComPapeis(

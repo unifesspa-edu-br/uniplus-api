@@ -67,8 +67,7 @@ public sealed class CatalogoDePermissoesNoHostTests
 
         catalogo.Definicoes.Select(static d => d.Codigo).Should().Contain(
         [
-            "selecao:motivos-decisao-recursal:manter",
-            "selecao:motivos-decisao-recursal:consultar-auditoria",
+            "selecao:motivos-decisao-isencao:manter",
             "autorizacao:permissoes:consultar-catalogo",
         ]);
     }
@@ -101,7 +100,7 @@ public sealed class CatalogoDePermissoesNoHostTests
     [Fact(DisplayName = "GET do catálogo sem a permissão responde 403")]
     public async Task Catalogo_SemPermissao_403()
     {
-        using HttpClient client = ClienteComPermissoes(PermissaoSelecao.MotivosDecisaoRecursalManter.Codigo);
+        using HttpClient client = ClienteComPermissoes(PermissaoSelecao.MotivosDecisaoIsencaoManter.Codigo);
 
         using HttpResponseMessage resposta = await client.GetAsync(new Uri(Catalogo, UriKind.Relative));
 
@@ -121,13 +120,11 @@ public sealed class CatalogoDePermissoesNoHostTests
         JsonElement corpo = await resposta.Content.ReadFromJsonAsync<JsonElement>();
         JsonElement selecao = corpo.EnumerateArray().Single(m => m.GetProperty("modulo").GetString() == "selecao");
         JsonElement recurso = selecao.GetProperty("recursos").EnumerateArray()
-            .Single(r => r.GetProperty("recurso").GetString() == "motivos-decisao-recursal");
+            .Single(r => r.GetProperty("recurso").GetString() == "motivos-decisao-isencao");
 
         recurso.GetProperty("permissoes").EnumerateArray()
             .Select(p => p.GetProperty("codigo").GetString())
-            .Should().BeEquivalentTo(
-                "selecao:motivos-decisao-recursal:manter",
-                "selecao:motivos-decisao-recursal:consultar-auditoria");
+            .Should().BeEquivalentTo("selecao:motivos-decisao-isencao:manter");
         recurso.GetProperty("permissoes")[0].GetProperty("nome").GetString().Should().NotBeNullOrWhiteSpace();
         recurso.GetProperty("permissoes")[0].GetProperty("sensibilidade").GetString().Should().Be("interna");
     }
@@ -157,7 +154,7 @@ public sealed class CatalogoDePermissoesNoHostTests
     public async Task Efetivas_DevolveSoAsConcedidas()
     {
         using HttpClient client = ClienteComPermissoes(
-            PermissaoSelecao.MotivosDecisaoRecursalManter.Codigo,
+            PermissaoSelecao.MotivosDecisaoIsencaoManter.Codigo,
             "papel-que-nao-e-permissao");
 
         using HttpResponseMessage resposta = await client.GetAsync(new Uri(Efetivas, UriKind.Relative));
@@ -167,8 +164,8 @@ public sealed class CatalogoDePermissoesNoHostTests
 
         JsonElement corpo = await resposta.Content.ReadFromJsonAsync<JsonElement>();
         corpo.GetArrayLength().Should().Be(1);
-        corpo[0].GetProperty("codigo").GetString().Should().Be("selecao:motivos-decisao-recursal:manter");
-        corpo[0].GetProperty("nome").GetString().Should().Be("Manter motivos de decisão recursal");
+        corpo[0].GetProperty("codigo").GetString().Should().Be("selecao:motivos-decisao-isencao:manter");
+        corpo[0].GetProperty("nome").GetString().Should().Be("Manter motivos de decisão de isenção");
     }
 
     [Fact(DisplayName = "GET das efetivas devolve lista vazia quando o token não concede nenhuma")]

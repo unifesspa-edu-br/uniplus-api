@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Authorization.ValueObjects;
 /// </summary>
 internal static class CenariosDeDecisao
 {
-    public const string Permissao = "selecao:motivos-decisao-recursal:manter";
+    public const string Permissao = "selecao:motivos-decisao-isencao:manter";
     public const string RecursoTipo = "MotivoDecisaoRecursal";
 
     /// <summary>Instante fixo do acesso — a decisão inteira se explica por ele.</summary>

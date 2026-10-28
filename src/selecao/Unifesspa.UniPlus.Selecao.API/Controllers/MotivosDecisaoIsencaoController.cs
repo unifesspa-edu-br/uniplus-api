@@ -29,7 +29,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <para>
 /// <b>A autorização é por permissão, não por nome de perfil.</b> Toda escrita
 /// passa pelo ponto de decisão único (ADR-0078) exigindo
-/// <c>selecao:motivos-decisao-recursal:manter</c>. Qualquer perfil
+/// <c>selecao:motivos-decisao-isencao:manter</c>. Qualquer perfil
 /// institucional pode recebê-la sem mudança de código, e participar de banca
 /// não a concede.
 /// </para>
@@ -175,7 +175,7 @@ public sealed class MotivosDecisaoIsencaoController : ControllerBase
     /// <c>Idempotency-Key</c> obrigatório (ADR-0027).
     /// </summary>
     [HttpPost("admin/motivos-decisao-isencao")]
-    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.MotivosDecisaoRecursalManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.MotivosDecisaoIsencaoManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -201,7 +201,7 @@ public sealed class MotivosDecisaoIsencaoController : ControllerBase
     /// não são editáveis (UNI-REQ-0121). <c>Idempotency-Key</c> obrigatório.
     /// </summary>
     [HttpPut("admin/motivos-decisao-isencao/{id:guid}")]
-    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.MotivosDecisaoRecursalManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.MotivosDecisaoIsencaoManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -232,7 +232,7 @@ public sealed class MotivosDecisaoIsencaoController : ControllerBase
 
     /// <summary>Reativa um motivo, devolvendo-o às novas publicações.</summary>
     [HttpPost("admin/motivos-decisao-isencao/{id:guid}/ativacao")]
-    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.MotivosDecisaoRecursalManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.MotivosDecisaoIsencaoManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -254,7 +254,7 @@ public sealed class MotivosDecisaoIsencaoController : ControllerBase
     /// inclusive nas decisões já proferidas.
     /// </summary>
     [HttpDelete("admin/motivos-decisao-isencao/{id:guid}/ativacao")]
-    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.MotivosDecisaoRecursalManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.MotivosDecisaoIsencaoManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

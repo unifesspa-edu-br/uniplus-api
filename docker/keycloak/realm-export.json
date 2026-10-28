@@ -437,15 +437,8 @@
       ],
       "uniplus-api": [
         {
-          "name": "selecao:motivos-decisao-recursal:manter",
-          "description": "Manter os motivos de decisao recursal",
-          "composite": false,
-          "clientRole": true,
-          "attributes": {}
-        },
-        {
-          "name": "selecao:motivos-decisao-recursal:consultar-auditoria",
-          "description": "Consultar a trilha protegida dos motivos de decisao recursal",
+          "name": "selecao:motivos-decisao-isencao:manter",
+          "description": "Manter os motivos de decisao de isencao",
           "composite": false,
           "clientRole": true,
           "attributes": {}
@@ -657,8 +650,7 @@
       {
         "client": "configuracao-web",
         "roles": [
-          "selecao:motivos-decisao-recursal:manter",
-          "selecao:motivos-decisao-recursal:consultar-auditoria",
+          "selecao:motivos-decisao-isencao:manter",
           "autorizacao:permissoes:consultar-catalogo"
         ]
       }
@@ -3136,8 +3128,7 @@
           "manage-account"
         ],
         "uniplus-api": [
-          "selecao:motivos-decisao-recursal:manter",
-          "selecao:motivos-decisao-recursal:consultar-auditoria",
+          "selecao:motivos-decisao-isencao:manter",
           "autorizacao:permissoes:consultar-catalogo"
         ]
       },
