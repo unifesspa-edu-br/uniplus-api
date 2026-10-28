@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -46,6 +47,13 @@ public static class DiscentesMessagingRegistration
         services.AddOptions<GatilhoDiarioOptions>().ValidateOnStart();
         services.AddHostedService<InicializadorDoGatilhoDiarioDiscentes>();
         services.AddHostedService<AlertaDeAusenciaDaSincronizacaoDiaria>();
+
+        // Fora da tag `ready`: a carga é auxiliar, e degradada o /health responde 200 sem tirar o pod do Service.
+        services.AddHealthChecks().AddCheck<SincronizacaoDiariaHealthCheck>(
+            name: "sincronizacao-discentes",
+            failureStatus: HealthStatus.Degraded,
+            tags: ["discentes"],
+            timeout: TimeSpan.FromSeconds(2));
 
         return services;
     }
@@ -94,16 +102,31 @@ public static class DiscentesMessagingRegistration
     "Design",
     "CA1515:Consider making public types internal",
     Justification = "Registrado como IHostedService pelo composition root do host.")]
-public sealed class InicializadorDoGatilhoDiarioDiscentes(IServiceScopeFactory escopos) : IHostedService
+public sealed partial class InicializadorDoGatilhoDiarioDiscentes(
+    IServiceScopeFactory escopos,
+    ILogger<InicializadorDoGatilhoDiarioDiscentes> logger) : IHostedService
 {
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        await using AsyncServiceScope escopo = escopos.CreateAsyncScope();
-        IMessageBus bus = escopo.ServiceProvider.GetRequiredService<IMessageBus>();
-        await bus.InvokeAsync(new InicializarGatilhoDiarioDiscentes(), cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await using AsyncServiceScope escopo = escopos.CreateAsyncScope();
+            IMessageBus bus = escopo.ServiceProvider.GetRequiredService<IMessageBus>();
+            await bus.InvokeAsync(new InicializarGatilhoDiarioDiscentes(), cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception excecao) when (excecao is not OperationCanceledException)
+        {
+            // A sincronização é auxiliar: falhar ao agendar não pode impedir a subida dos demais módulos.
+            LogFalhaAoInicializar(logger, excecao);
+        }
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "Falha ao inicializar o gatilho diário de discentes; o agendamento ocorrerá na próxima subida.")]
+    private static partial void LogFalhaAoInicializar(ILogger logger, Exception excecao);
 }
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
