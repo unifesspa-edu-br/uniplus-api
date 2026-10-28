@@ -27,7 +27,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 [Trait("Category", "OutboxCapability")]
 public sealed class MotivoDecisaoIsencaoAdminEndpointTests : IAsyncLifetime
 {
-    private static readonly string PermissaoManter = PermissaoSelecao.MotivosDecisaoRecursalManter.Codigo;
+    private static readonly string PermissaoManter = PermissaoSelecao.MotivosDecisaoIsencaoManter.Codigo;
     private const string AdminPlataforma = "plataforma-admin";
     private const string PrefixoDeTeste = "TEST_MDI_";
 

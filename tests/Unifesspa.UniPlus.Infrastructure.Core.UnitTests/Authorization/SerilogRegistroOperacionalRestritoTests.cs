@@ -106,7 +106,7 @@ public sealed class SerilogRegistroOperacionalRestritoTests
     private static RegistroDecisaoAcesso RegistroNegado()
         => RegistroDecisaoAcesso.De(
             PermissionRequirement.From(
-                "selecao:motivos-decisao-recursal:manter",
+                "selecao:motivos-decisao-isencao:manter",
                 Sensibilidade.Interna).Value!,
             ResourceContext.From("MotivoDecisaoRecursal", Sensibilidade.Interna).Value!,
             AuthorizationRequestContext.From("req-1", DateTimeOffset.UnixEpoch, OrigemRequisicao.Api).Value!,

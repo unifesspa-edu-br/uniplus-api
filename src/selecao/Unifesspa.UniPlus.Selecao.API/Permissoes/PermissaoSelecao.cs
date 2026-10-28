@@ -21,19 +21,11 @@ using Unifesspa.UniPlus.Authorization.Enums;
     Justification = "Referenciado pelos testes e pelo composition root fora deste assembly.")]
 public enum PermissaoSelecao
 {
-    /// <summary>Manter os motivos de decisão recursal.</summary>
+    /// <summary>Manter os motivos de decisão de isenção.</summary>
     [Permissao(
-        "selecao:motivos-decisao-recursal:manter",
-        "Manter motivos de decisão recursal",
+        "selecao:motivos-decisao-isencao:manter",
+        "Manter motivos de decisão de isenção",
         "Cria, edita, ativa e desativa os motivos institucionais de decisão de isenção.",
         Sensibilidade.Interna)]
-    MotivosDecisaoRecursalManter = 1,
-
-    /// <summary>Consultar a trilha protegida dos motivos de decisão recursal.</summary>
-    [Permissao(
-        "selecao:motivos-decisao-recursal:consultar-auditoria",
-        "Consultar auditoria dos motivos de decisão recursal",
-        "Consulta a trilha protegida de quem manteve os motivos de decisão de isenção e por quê.",
-        Sensibilidade.Interna)]
-    MotivosDecisaoRecursalConsultarAuditoria = 2,
+    MotivosDecisaoIsencaoManter = 1,
 }

@@ -29,7 +29,7 @@ public sealed class HttpAuthorizationSubjectResolverTests
     private const string ClientDaApi = "uniplus-api";
     private const string AudienciaDoToken = "uniplus";
     private const string Emissor = "https://idp.exemplo/realms/unifesspa";
-    private const string Permissao = "selecao:motivos-decisao-recursal:manter";
+    private const string Permissao = "selecao:motivos-decisao-isencao:manter";
 
     [Fact]
     public async Task Resolve_ComTokenCompleto_MontaSujeitoComConcessoesDoClient()
