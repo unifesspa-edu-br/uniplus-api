@@ -35,8 +35,14 @@ public static partial class CatalogoDePermissoes<TPermissao>
 
     /// <summary>Definição de um membro.</summary>
     /// <exception cref="CatalogoDePermissoesInvalidoException">O enum é inválido.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">O valor não é membro do enum, como num cast de inteiro.</exception>
     public static DefinicaoDePermissao Obter(TPermissao permissao)
-        => Carregado.Value[permissao];
+        => Carregado.Value.TryGetValue(permissao, out DefinicaoDePermissao? definicao)
+            ? definicao
+            : throw new ArgumentOutOfRangeException(
+                nameof(permissao),
+                permissao,
+                $"O valor '{permissao}' ({Convert.ToInt64(permissao, System.Globalization.CultureInfo.InvariantCulture)}) não é membro de {typeof(TPermissao).Name}.");
 
     private static string? ModuloDoEnum()
         => typeof(TPermissao).GetCustomAttribute<ModuloDePermissoesAttribute>()?.Modulo;

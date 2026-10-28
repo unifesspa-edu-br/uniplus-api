@@ -31,6 +31,15 @@ public sealed class CatalogoDePermissoesTests
     public void Obter_CodigoNaoEDerivadoDoNomeDoMembro() =>
         CatalogoDePermissoes<Valido>.Obter(Valido.Consultar).Codigo.Should().Be("teste:itens:ler");
 
+    [Fact(DisplayName = "Valor que não é membro do enum falha nomeando o enum e o valor recebido")]
+    public void Obter_ValorIndefinido_NomeiaOEnumEOValor()
+    {
+        Action obter = () => CatalogoDePermissoes<Valido>.Obter((Valido)99);
+
+        obter.Should().Throw<ArgumentOutOfRangeException>()
+            .WithMessage("*99*Valido*");
+    }
+
     [Fact(DisplayName = "Membro sem atributo derruba o catálogo e é nomeado")]
     public void Todas_MembroSemAtributo_Falha() =>
         Falha<SemAtributo>().Should().ContainSingle(p => p.Contains("SemAtributo.Orfao") && p.Contains("falta [PermissaoAttribute]"));
