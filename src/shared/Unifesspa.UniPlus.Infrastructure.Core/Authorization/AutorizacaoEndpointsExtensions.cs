@@ -1,13 +1,18 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 
+using System.Diagnostics;
+
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Net.Http.Headers;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Contracts;
+using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Authorization.Enums;
 
 /// <summary>Endpoints de consulta do catálogo de permissões (ADR-0151).</summary>
@@ -52,6 +57,8 @@ public static class AutorizacaoEndpointsExtensions
         return endpoints;
     }
 
+    private static readonly int[] VersoesServidas = [1];
+
     private static async Task<IResult> ConsultarCatalogoAsync(
         HttpContext http,
         IVerificadorDeAcesso acesso,
@@ -60,7 +67,7 @@ public static class AutorizacaoEndpointsExtensions
     {
         if (NaoAceita(http, MediaTypeCatalogo))
         {
-            return NaoAceitavel(MediaTypeCatalogo);
+            return NaoAceitavel(http, "permissao-catalogo");
         }
 
         DefinicaoDePermissao exigida = CatalogoDePermissoes<PermissaoAutorizacao>.Obter(PermissaoAutorizacao.ConsultarCatalogo);
@@ -90,6 +97,8 @@ public static class AutorizacaoEndpointsExtensions
                                 ValoresCanonicos.De(d.Requisito.Sensibilidade)))]))])),
         ];
 
+        http.Response.Headers.Append(HeaderNames.Vary, "Accept");
+
         return Results.Json(corpo, contentType: MediaTypeCatalogo);
     }
 
@@ -100,7 +109,7 @@ public static class AutorizacaoEndpointsExtensions
     {
         if (NaoAceita(http, MediaTypePermissoesEfetivas))
         {
-            return NaoAceitavel(MediaTypePermissoesEfetivas);
+            return NaoAceitavel(http, "permissao-efetiva");
         }
 
         IReadOnlyList<DefinicaoDePermissao>? permissoes = await efetivas
@@ -111,6 +120,8 @@ public static class AutorizacaoEndpointsExtensions
         {
             return Results.Challenge();
         }
+
+        http.Response.Headers.Append(HeaderNames.Vary, "Accept");
 
         return Results.Json(
             permissoes.Select(static d => new PermissaoEfetivaResponse(d.Codigo, d.Nome)).ToArray(),
@@ -143,11 +154,28 @@ public static class AutorizacaoEndpointsExtensions
             || faixa.MediaType.Equals("application/json", StringComparison.OrdinalIgnoreCase)
             || faixa.MediaType.Equals(mediaType, StringComparison.OrdinalIgnoreCase);
 
-    private static IResult NaoAceitavel(string mediaType)
-        => Results.Problem(
-            title: "Representação não disponível",
-            detail: $"Este recurso só é servido como {mediaType}.",
-            statusCode: StatusCodes.Status406NotAcceptable);
+    // Mesmo contrato do 406 de VendorMediaTypeAttribute (ADR-0028): código estável e a
+    // lista de versões servidas, para o cliente descobrir o que pode pedir.
+    private static IResult NaoAceitavel(HttpContext http, string recurso)
+    {
+        const string codigo = "uniplus.contract.versao_nao_suportada";
+
+        IProblemTypeUriFactory tipos = http.RequestServices.GetRequiredService<IProblemTypeUriFactory>();
+        ProblemDetails problema = new()
+        {
+            Status = StatusCodes.Status406NotAcceptable,
+            Type = tipos.Build(codigo),
+            Title = "Versão de mídia não suportada",
+            Detail = $"Nenhuma versão suportada pelo recurso '{recurso}' foi aceita pelo cliente.",
+            Instance = $"urn:uuid:{Guid.CreateVersion7()}",
+        };
+
+        problema.Extensions["code"] = codigo;
+        problema.Extensions["available_versions"] = VersoesServidas;
+        problema.Extensions["traceId"] = Activity.Current?.TraceId.ToHexString() ?? Guid.CreateVersion7().ToString("N");
+
+        return Results.Problem(problema);
+    }
 }
 
 /// <summary>Permissões de um módulo no catálogo.</summary>

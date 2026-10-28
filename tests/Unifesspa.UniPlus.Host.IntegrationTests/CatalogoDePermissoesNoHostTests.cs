@@ -140,6 +140,20 @@ public sealed class CatalogoDePermissoesNoHostTests
         resposta.StatusCode.Should().Be(HttpStatusCode.NotAcceptable);
     }
 
+    [Fact(DisplayName = "Versão não suportada responde 406 com o código canônico e as versões servidas")]
+    public async Task Catalogo_VersaoNaoSuportada_406CanonicoComVersoes()
+    {
+        using HttpClient client = ClienteComPermissoes(CodigoDoCatalogo);
+        client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.uniplus.permissao-catalogo.v99+json");
+
+        using HttpResponseMessage resposta = await client.GetAsync(new Uri(Catalogo, UriKind.Relative));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.NotAcceptable);
+        JsonElement corpo = await resposta.Content.ReadFromJsonAsync<JsonElement>();
+        corpo.GetProperty("code").GetString().Should().Be("uniplus.contract.versao_nao_suportada");
+        corpo.GetProperty("available_versions").EnumerateArray().Select(v => v.GetInt32()).Should().Equal(1);
+    }
+
     [Fact(DisplayName = "Exclusão explícita da representação (q=0) prevalece sobre o curinga e responde 406")]
     public async Task Catalogo_ExclusaoExplicitaComCuringa_406()
     {
