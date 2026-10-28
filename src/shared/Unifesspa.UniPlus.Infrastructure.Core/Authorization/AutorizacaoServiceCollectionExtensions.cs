@@ -3,8 +3,10 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
+using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Decisao;
 using Unifesspa.UniPlus.Infrastructure.Core.Observability;
 
@@ -48,7 +50,7 @@ public static class AutorizacaoServiceCollectionExtensions
         services.TryAddScoped<IAuthorizationSubjectResolver, HttpAuthorizationSubjectResolver>();
 
         // A verificação de concessão é o núcleo da decisão, não um item da lista
-        // declarativa (ADR-0080) — entra pelo tipo concreto, e não como mais um
+        // de verificações contextuais — entra pelo tipo concreto, e não como mais um
         // IPermissaoCheck, para que nenhum registro adicional a substitua.
         services.TryAddSingleton<GrantEfetivoAplicavelCheck>();
         services.TryAddScoped<IAuthorizationDecisionService, AuthorizationDecisionService>();
@@ -56,6 +58,12 @@ public static class AutorizacaoServiceCollectionExtensions
         // A porta que os endpoints usam: uma pergunta, uma resposta.
         services.TryAddScoped<IVerificadorDeAcesso, VerificadorDeAcessoHttp>();
         services.TryAddSingleton(TimeProvider.System);
+        services.TryAddScoped<IPermissoesEfetivas, PermissoesEfetivasHttp>();
+
+        // O módulo de autorização declara as próprias permissões no mesmo formato dos
+        // demais; a conferência do conjunto roda na subida (ADR-0151).
+        services.AddCatalogoDePermissoes<PermissaoAutorizacao>();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, ConferenciaDoCatalogoNaSubida>());
 
         return services;
     }

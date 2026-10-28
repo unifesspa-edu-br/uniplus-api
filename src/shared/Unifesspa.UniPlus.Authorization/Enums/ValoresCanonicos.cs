@@ -56,7 +56,7 @@ public static class ValoresCanonicos
 
     /// <summary>
     /// Valor canônico da sensibilidade. Igual ao vocabulário aceito no campo
-    /// <c>sensibilidade</c> do catálogo declarativo (ADR-0080).
+    /// <c>sensibilidade</c> do catálogo de permissões (ADR-0151).
     /// </summary>
     public static string De(Sensibilidade sensibilidade) => sensibilidade switch
     {

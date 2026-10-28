@@ -4,12 +4,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
+using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 using Unifesspa.UniPlus.Infrastructure.Core.Routing;
 using Unifesspa.UniPlus.Selecao.API.Errors;
 using Unifesspa.UniPlus.Selecao.API.Hateoas;
+using Unifesspa.UniPlus.Selecao.API.Permissoes;
 using Unifesspa.UniPlus.Selecao.API.Rotinas;
 using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosDaInscricao;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -62,6 +64,10 @@ public static class SelecaoModuleRegistration
         // Idempotency-Key (ADR-0027) — store EF adjacente ao SelecaoDbContext, filter
         // global que se ativa apenas em endpoints com [RequiresIdempotencyKey].
         services.AddIdempotency<SelecaoDbContext, SelecaoApiAssemblyMarker>(configuration);
+
+        // Permissões do módulo (ADR-0151): o enum entra no catálogo da aplicação e é
+        // conferido aqui, na subida.
+        services.AddCatalogoDePermissoes<PermissaoSelecao>();
 
         services.AddSelecaoApplication();
         // AddSelecaoInfrastructure resolve a connection string via IConfiguration

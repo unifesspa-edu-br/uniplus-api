@@ -4,7 +4,7 @@ using Unifesspa.UniPlus.Authorization.Contracts;
 
 /// <summary>
 /// Verificação de contexto declarada por uma permissão do catálogo (ADR-0078,
-/// ADR-0080). Cada verificação é uma unidade testável, não código espalhado: o
+/// ADR-0151). Cada verificação é uma unidade testável, não código espalhado: o
 /// serviço de decisão orquestra a sequência que a permissão declara em
 /// <see cref="PermissionRequirement.VerificacoesDeContexto"/>.
 /// </summary>

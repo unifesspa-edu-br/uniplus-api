@@ -6,10 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
-using Unifesspa.UniPlus.Authorization;
-using Unifesspa.UniPlus.Authorization.Abstractions;
-using Unifesspa.UniPlus.Authorization.Contracts;
-using Unifesspa.UniPlus.Authorization.Enums;
+using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
@@ -17,6 +14,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.API.Permissoes;
 using Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDecisaoIsencao;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.MotivosDecisaoIsencao;
@@ -31,7 +29,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <para>
 /// <b>A autorização é por permissão, não por nome de perfil.</b> Toda escrita
 /// passa pelo ponto de decisão único (ADR-0078) exigindo
-/// <c>configuracao:motivos-decisao-recursal:manter</c>. Qualquer perfil
+/// <c>selecao:motivos-decisao-recursal:manter</c>. Qualquer perfil
 /// institucional pode recebê-la sem mudança de código, e participar de banca
 /// não a concede.
 /// </para>
@@ -68,20 +66,17 @@ public sealed class MotivosDecisaoIsencaoController : ControllerBase
     private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;
     private readonly IResourceLinksBuilder<MotivoDecisaoIsencaoDto> _linksBuilder;
-    private readonly IVerificadorDeAcesso _acesso;
 
     public MotivosDecisaoIsencaoController(
         ICommandBus commandBus,
         IQueryBus queryBus,
         IDomainErrorMapper mapper,
-        IResourceLinksBuilder<MotivoDecisaoIsencaoDto> linksBuilder,
-        IVerificadorDeAcesso acesso)
+        IResourceLinksBuilder<MotivoDecisaoIsencaoDto> linksBuilder)
     {
         _commandBus = commandBus;
         _queryBus = queryBus;
         _mapper = mapper;
         _linksBuilder = linksBuilder;
-        _acesso = acesso;
     }
 
     /// <summary>
@@ -180,6 +175,7 @@ public sealed class MotivosDecisaoIsencaoController : ControllerBase
     /// <c>Idempotency-Key</c> obrigatório (ADR-0027).
     /// </summary>
     [HttpPost("admin/motivos-decisao-isencao")]
+    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.MotivosDecisaoRecursalManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -193,11 +189,6 @@ public sealed class MotivosDecisaoIsencaoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        if (await NegarSemPermissaoDeManutencao(cancellationToken).ConfigureAwait(false) is { } negativa)
-        {
-            return negativa;
-        }
-
         Result<Guid> resultado = await _commandBus.Send(command, cancellationToken).ConfigureAwait(false);
 
         return resultado.IsSuccess
@@ -210,6 +201,7 @@ public sealed class MotivosDecisaoIsencaoController : ControllerBase
     /// não são editáveis (UNI-REQ-0121). <c>Idempotency-Key</c> obrigatório.
     /// </summary>
     [HttpPut("admin/motivos-decisao-isencao/{id:guid}")]
+    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.MotivosDecisaoRecursalManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -223,11 +215,6 @@ public sealed class MotivosDecisaoIsencaoController : ControllerBase
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-
-        if (await NegarSemPermissaoDeManutencao(cancellationToken).ConfigureAwait(false) is { } negativa)
-        {
-            return negativa;
-        }
 
         if (command.Id != id)
         {
@@ -245,6 +232,7 @@ public sealed class MotivosDecisaoIsencaoController : ControllerBase
 
     /// <summary>Reativa um motivo, devolvendo-o às novas publicações.</summary>
     [HttpPost("admin/motivos-decisao-isencao/{id:guid}/ativacao")]
+    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.MotivosDecisaoRecursalManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -253,11 +241,6 @@ public sealed class MotivosDecisaoIsencaoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Ativar(Guid id, CancellationToken cancellationToken)
     {
-        if (await NegarSemPermissaoDeManutencao(cancellationToken).ConfigureAwait(false) is { } negativa)
-        {
-            return negativa;
-        }
-
         Result resultado = await _commandBus
             .Send(new AtivarMotivoDecisaoIsencaoCommand(id), cancellationToken)
             .ConfigureAwait(false);
@@ -271,6 +254,7 @@ public sealed class MotivosDecisaoIsencaoController : ControllerBase
     /// inclusive nas decisões já proferidas.
     /// </summary>
     [HttpDelete("admin/motivos-decisao-isencao/{id:guid}/ativacao")]
+    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.MotivosDecisaoRecursalManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -279,46 +263,10 @@ public sealed class MotivosDecisaoIsencaoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Desativar(Guid id, CancellationToken cancellationToken)
     {
-        if (await NegarSemPermissaoDeManutencao(cancellationToken).ConfigureAwait(false) is { } negativa)
-        {
-            return negativa;
-        }
-
         Result resultado = await _commandBus
             .Send(new DesativarMotivoDecisaoIsencaoCommand(id), cancellationToken)
             .ConfigureAwait(false);
 
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
-    }
-
-    /// <summary>
-    /// Devolve a resposta de recusa quando o solicitante não pode manter o
-    /// catálogo, e <see langword="null"/> quando pode seguir.
-    /// </summary>
-    /// <remarks>
-    /// A decisão distingue "não pôde ser identificado" de "não tem a
-    /// concessão": o primeiro é <c>401</c>, e responder <c>403</c> a ele diria
-    /// que a identidade foi lida e recusada, quando não foi.
-    /// </remarks>
-    private async Task<IActionResult?> NegarSemPermissaoDeManutencao(CancellationToken cancellationToken)
-    {
-        ResultadoDoAcesso resultado = await _acesso.VerificarAsync(
-            UniPlusPermissions.ConfiguracaoMotivosDecisaoRecursalManterRequirement,
-            ResourceContext.From(RecursoTipo, Sensibilidade.Interna).Value!,
-            cancellationToken).ConfigureAwait(false);
-
-        return resultado switch
-        {
-            ResultadoDoAcesso.Permitido => null,
-
-            // Challenge, e não Unauthorized: o 401 canônico desta API carrega
-            // o header WWW-Authenticate e um corpo problem+json, ambos escritos
-            // pelo OnChallenge do esquema configurado. Um 401 devolvido direto
-            // do controller sai sem os dois e não se parece com nenhuma outra
-            // falha de autenticação da API — o cliente perde justamente o sinal
-            // de que precisa renovar a credencial.
-            ResultadoDoAcesso.IdentidadeIncompleta => Challenge(),
-            _ => Forbid(),
-        };
     }
 }

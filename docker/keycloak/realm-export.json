@@ -437,15 +437,22 @@
       ],
       "uniplus-api": [
         {
-          "name": "configuracao:motivos-decisao-recursal:manter",
+          "name": "selecao:motivos-decisao-recursal:manter",
           "description": "Manter os motivos de decisao recursal",
           "composite": false,
           "clientRole": true,
           "attributes": {}
         },
         {
-          "name": "configuracao:motivos-decisao-recursal:consultar-auditoria",
+          "name": "selecao:motivos-decisao-recursal:consultar-auditoria",
           "description": "Consultar a trilha protegida dos motivos de decisao recursal",
+          "composite": false,
+          "clientRole": true,
+          "attributes": {}
+        },
+        {
+          "name": "autorizacao:permissoes:consultar-catalogo",
+          "description": "Consultar o catalogo de permissoes",
           "composite": false,
           "clientRole": true,
           "attributes": {}
@@ -650,8 +657,9 @@
       {
         "client": "configuracao-web",
         "roles": [
-          "configuracao:motivos-decisao-recursal:manter",
-          "configuracao:motivos-decisao-recursal:consultar-auditoria"
+          "selecao:motivos-decisao-recursal:manter",
+          "selecao:motivos-decisao-recursal:consultar-auditoria",
+          "autorizacao:permissoes:consultar-catalogo"
         ]
       }
     ]
@@ -3128,8 +3136,9 @@
           "manage-account"
         ],
         "uniplus-api": [
-          "configuracao:motivos-decisao-recursal:manter",
-          "configuracao:motivos-decisao-recursal:consultar-auditoria"
+          "selecao:motivos-decisao-recursal:manter",
+          "selecao:motivos-decisao-recursal:consultar-auditoria",
+          "autorizacao:permissoes:consultar-catalogo"
         ]
       },
       "attributes": {
