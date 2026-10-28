@@ -21,7 +21,7 @@ public sealed partial class AutorizacaoPorPapelTests
     public void AuthorizeComRoles_NaoSaiDaLinhaDeBase()
     {
         string raiz = SolutionRootLocator.Locate();
-        Dictionary<string, int> base_ = LerBaseline(Path.Combine(raiz, Baseline));
+        Dictionary<string, int> base_ = LerBaseline(Path.Join(raiz, Baseline));
         Dictionary<string, int> atual = ContarNoCodigo(raiz);
 
         List<string> novos = [.. atual
@@ -47,7 +47,7 @@ public sealed partial class AutorizacaoPorPapelTests
     private static Dictionary<string, int> ContarNoCodigo(string raiz)
     {
         Dictionary<string, int> contagem = new(StringComparer.Ordinal);
-        string src = Path.Combine(raiz, "src");
+        string src = Path.Join(raiz, "src");
 
         foreach (string arquivo in Directory.EnumerateFiles(src, "*.cs", SearchOption.AllDirectories))
         {

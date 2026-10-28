@@ -140,6 +140,17 @@ public sealed class CatalogoDePermissoesNoHostTests
         resposta.StatusCode.Should().Be(HttpStatusCode.NotAcceptable);
     }
 
+    [Fact(DisplayName = "Exclusão explícita da representação (q=0) prevalece sobre o curinga e responde 406")]
+    public async Task Catalogo_ExclusaoExplicitaComCuringa_406()
+    {
+        using HttpClient client = ClienteComPermissoes(CodigoDoCatalogo);
+        client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.uniplus.permissao-catalogo.v1+json;q=0, */*;q=1");
+
+        using HttpResponseMessage resposta = await client.GetAsync(new Uri(Catalogo, UriKind.Relative));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.NotAcceptable);
+    }
+
     [Fact(DisplayName = "GET das efetivas sem token responde 401")]
     public async Task Efetivas_SemToken_401()
     {

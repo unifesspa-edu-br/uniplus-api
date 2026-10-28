@@ -6,7 +6,6 @@ using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Contracts;
-using Unifesspa.UniPlus.Authorization.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -68,14 +67,9 @@ public sealed class PermissoesEfetivasHttp : IPermissoesEfetivas
         }
 
         DateTimeOffset agora = contexto.Value!.DataAcesso;
-        HashSet<string> vigentes = new(StringComparer.Ordinal);
-        foreach (EffectiveGrant concessao in sujeito.Value!.ConcessoesEfetivas)
-        {
-            if (concessao.ValidoAte is not { } validade || validade >= agora)
-            {
-                vigentes.Add(concessao.PermissaoCodigo);
-            }
-        }
+        HashSet<string> vigentes = [.. sujeito.Value!.ConcessoesEfetivas
+            .Where(concessao => concessao.ValidoAte is not { } validade || validade >= agora)
+            .Select(static concessao => concessao.PermissaoCodigo)];
 
         return [.. _catalogo.Definicoes.Where(d => vigentes.Contains(d.Codigo))];
     }
