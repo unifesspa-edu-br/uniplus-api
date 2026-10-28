@@ -4,6 +4,7 @@ using System.Reflection;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 
 /// <summary>
@@ -37,14 +38,25 @@ public sealed class ExigePermissaoUsaPermissaoDoEnumCertoTests
                     .Count(static a => a.GetType().IsGenericType
                         && a.GetType().GetGenericTypeDefinition() == typeof(ExigePermissaoAttribute<>));
             }
-            catch (Exception ex) when (ex is TargetInvocationException or ArgumentException)
+            catch (Exception ex)
             {
-                falhas.Add($"{membro.DeclaringType?.Name}.{membro.Name}: {(ex.InnerException ?? ex).Message}");
+                // A reflexão embrulha a falha do construtor em TargetInvocationException;
+                // qualquer falha ao construir o atributo é um uso inválido.
+                Exception causa = ex is TargetInvocationException { InnerException: { } interna } ? interna : ex;
+                falhas.Add($"{membro.DeclaringType?.Name}.{membro.Name}: {causa.GetType().Name} — {causa.Message}");
             }
         }
 
         falhas.Should().BeEmpty();
         usos.Should().BeGreaterThan(0, "a varredura precisa alcançar os usos para valer como conferência");
+    }
+
+    [Fact(DisplayName = "Valor que não é membro do enum falha ao construir o atributo, e não em requisição")]
+    public void ExigePermissao_ValorIndefinido_FalhaNaConstrucao()
+    {
+        Func<ExigePermissaoAttribute<PermissaoAutorizacao>> criar = () => new((PermissaoAutorizacao)999);
+
+        criar.Should().Throw<ArgumentOutOfRangeException>().WithMessage("*999*PermissaoAutorizacao*");
     }
 
     private static IEnumerable<Type> TiposCarregaveis(Assembly assembly)
