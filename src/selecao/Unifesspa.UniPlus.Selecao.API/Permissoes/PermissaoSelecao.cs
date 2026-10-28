@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.API.Permissoes;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Enums;
 
@@ -15,10 +13,6 @@ using Unifesspa.UniPlus.Authorization.Enums;
 /// resposta da API e frontend é sempre o código.
 /// </remarks>
 [ModuloDePermissoes("selecao")]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "Referenciado pelos testes e pelo composition root fora deste assembly.")]
 public enum PermissaoSelecao
 {
     /// <summary>Manter os motivos de decisão de isenção.</summary>

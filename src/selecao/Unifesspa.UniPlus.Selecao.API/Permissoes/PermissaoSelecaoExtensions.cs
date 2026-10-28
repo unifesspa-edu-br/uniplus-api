@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.API.Permissoes;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Contracts;
 
@@ -10,10 +8,6 @@ using Unifesspa.UniPlus.Authorization.Contracts;
 /// não uma genérica sobre <see cref="Enum"/>: enum não implementa interface, e a
 /// genérica alcançaria todos os enums do sistema (ADR-0151).
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "Referenciado pelos testes fora deste assembly.")]
 public static class PermissaoSelecaoExtensions
 {
     extension(PermissaoSelecao permissao)
