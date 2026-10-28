@@ -165,12 +165,10 @@ public static partial class CatalogoDePermissoes<TPermissao>
 
     private static void ConferirEscopo(string quem, PermissaoAttribute atributo, List<string> problemas)
     {
-        foreach (string campo in atributo.EscopoContextoObrigatorio ?? [])
+        foreach (string campo in (atributo.EscopoContextoObrigatorio ?? [])
+            .Where(static campo => !CamposDeContexto.NomesConhecidos.Contains(campo)))
         {
-            if (!CamposDeContexto.NomesConhecidos.Contains(campo))
-            {
-                problemas.Add($"{quem}: o campo de contexto '{campo}' não é verificável pela decisão.");
-            }
+            problemas.Add($"{quem}: o campo de contexto '{campo}' não é verificável pela decisão.");
         }
     }
 

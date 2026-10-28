@@ -127,13 +127,21 @@ public static class AutorizacaoEndpointsExtensions
             return false;
         }
 
-        return !aceitos.Any(a =>
-            a.Quality is not 0
-            && (a.MediaType.Equals("*/*", StringComparison.OrdinalIgnoreCase)
-                || a.MediaType.Equals("application/*", StringComparison.OrdinalIgnoreCase)
-                || a.MediaType.Equals("application/json", StringComparison.OrdinalIgnoreCase)
-                || a.MediaType.Equals(mediaType, StringComparison.OrdinalIgnoreCase)));
+        // q=0 exclui a representação (RFC 9110 §12.5.1) e prevalece sobre um curinga
+        // que a aceitaria: a exclusão explícita é a faixa mais específica.
+        if (aceitos.Any(a => a.Quality is 0 && Alcanca(a, mediaType)))
+        {
+            return true;
+        }
+
+        return !aceitos.Any(a => a.Quality is not 0 && Alcanca(a, mediaType));
     }
+
+    private static bool Alcanca(MediaTypeHeaderValue faixa, string mediaType)
+        => faixa.MediaType.Equals("*/*", StringComparison.OrdinalIgnoreCase)
+            || faixa.MediaType.Equals("application/*", StringComparison.OrdinalIgnoreCase)
+            || faixa.MediaType.Equals("application/json", StringComparison.OrdinalIgnoreCase)
+            || faixa.MediaType.Equals(mediaType, StringComparison.OrdinalIgnoreCase);
 
     private static IResult NaoAceitavel(string mediaType)
         => Results.Problem(
