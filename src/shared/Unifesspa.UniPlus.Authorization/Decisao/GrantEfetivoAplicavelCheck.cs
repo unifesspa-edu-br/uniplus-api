@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Authorization.ValueObjects;
 /// <para>
 /// É a verificação <b>canônica</b>: o ponto de decisão sempre a executa, e ela
 /// não se declara em <c>decision_checks</c> — o catálogo só lista as
-/// verificações contextuais adicionais (ADR-0080).
+/// verificações contextuais adicionais (ADR-0151).
 /// </para>
 /// <para>
 /// A concessão é comparada contra a lista do <b>sujeito</b>, não contra o token

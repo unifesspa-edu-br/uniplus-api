@@ -187,6 +187,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapSharedAuthEndpoints();
 app.MapSharedProfileEndpoints();
+app.MapSharedAutorizacaoEndpoints();
 app.MapControllers();
 app.MapOpenApi("/openapi/{documentName}.json");
 

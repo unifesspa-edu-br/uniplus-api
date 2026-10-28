@@ -11,8 +11,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Outbox.Cascading;
 
-using Unifesspa.UniPlus.Authorization;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Selecao.API.Permissoes;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
@@ -27,7 +27,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 [Trait("Category", "OutboxCapability")]
 public sealed class MotivoDecisaoIsencaoAdminEndpointTests : IAsyncLifetime
 {
-    private const string PermissaoManter = UniPlusPermissions.ConfiguracaoMotivosDecisaoRecursalManter;
+    private static readonly string PermissaoManter = PermissaoSelecao.MotivosDecisaoRecursalManter.Codigo;
     private const string AdminPlataforma = "plataforma-admin";
     private const string PrefixoDeTeste = "TEST_MDI_";
 

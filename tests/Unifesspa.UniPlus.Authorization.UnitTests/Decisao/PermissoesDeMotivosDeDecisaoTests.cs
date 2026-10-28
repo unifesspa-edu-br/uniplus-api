@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Authorization.UnitTests.Decisao;
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.Authorization;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Decisao;
@@ -17,72 +16,33 @@ using static Unifesspa.UniPlus.Authorization.UnitTests.Decisao.CenariosDeDecisao
 /// protegida.
 /// </summary>
 /// <remarks>
-/// <para>
-/// As conferências gerais do vocabulário percorrem <see cref="UniPlusPermissions.Todas"/>,
-/// que é derivada das propriedades da classe — uma permissão apagada sai da
-/// lista e sai junto de toda conferência, sem nada acusar. Estes testes nomeiam
-/// as duas permissões, de modo que remover ou renomear qualquer uma delas falhe
-/// aqui.
-/// </para>
-/// <para>
 /// A independência entre manutenção e consulta é hoje consequência da
 /// comparação por código em <see cref="GrantEfetivoAplicavelCheck"/>, e não de
 /// uma regra escrita para ela. É justamente por ser consequência que precisa de
 /// teste: qualquer hierarquia entre permissões que venha a ser introduzida — um
 /// prefixo que englobe, uma permissão que implique outra — passaria a conceder
 /// leitura protegida a quem só recebeu escrita, e o contrário.
-/// </para>
 /// </remarks>
 public sealed class PermissoesDeMotivosDeDecisaoTests
 {
-    private const string Manter = UniPlusPermissions.ConfiguracaoMotivosDecisaoRecursalManter;
+    private const string Manter = "selecao:motivos-decisao-recursal:manter";
 
-    private const string ConsultarAuditoria =
-        UniPlusPermissions.ConfiguracaoMotivosDecisaoRecursalConsultarAuditoria;
+    private const string ConsultarAuditoria = "selecao:motivos-decisao-recursal:consultar-auditoria";
+
+    private static readonly PermissionRequirement RequisitoDeManutencao =
+        PermissionRequirement.From(Manter, Sensibilidade.Interna).Value!;
+
+    private static readonly PermissionRequirement RequisitoDeConsulta =
+        PermissionRequirement.From(ConsultarAuditoria, Sensibilidade.Interna).Value!;
 
     private readonly RegistroEmMemoria _registro = new();
-
-    [Theory(DisplayName = "As permissões de manutenção e de consulta estão declaradas no catálogo")]
-    [InlineData(Manter)]
-    [InlineData(ConsultarAuditoria)]
-    public void Catalogo_DeclaraAsDuasPermissoes(string codigo) =>
-        UniPlusPermissions.Todas.Select(static permissao => permissao.Permissao)
-            .Should().Contain(codigo);
-
-    [Theory(DisplayName = "As duas permissões declaram apenas metadados que a decisão sabe verificar")]
-    [InlineData(Manter)]
-    [InlineData(ConsultarAuditoria)]
-    public void Requisitos_DeclaramMetadadosVerificaveis(string codigo)
-    {
-        // O requisito conferido é o que o catálogo publica, e não a propriedade
-        // lida direto: é o que está em Todas que a decisão alcança.
-        PermissionRequirement requisito = UniPlusPermissions.Todas
-            .Should().ContainSingle(permissao => permissao.Permissao == codigo).Subject;
-
-        // Uma permissão que exigisse multifator ou dupla aprovação seria negada
-        // em toda requisição, porque não há quem os verifique — declará-los aqui
-        // não protegeria nada, apenas tornaria a operação inalcançável. O escopo
-        // de contexto obrigatório fica vazio porque o catálogo é institucional:
-        // não pertence a unidade, processo nem chamada, e exigir um desses
-        // campos negaria por contexto ausente todo acesso legítimo.
-        requisito.RequerMfa.Should().BeFalse();
-        requisito.RequerDuplaAprovacao.Should().BeFalse();
-        requisito.EscopoContextoObrigatorio.Should().BeEmpty();
-        requisito.VerificacoesDeContexto.Should().BeEmpty();
-
-        // Interna, e não pessoal nem sensível: o catálogo guarda código,
-        // descrição e fundamento institucionais — nada de candidato. Classificar
-        // como pessoal exigiria base legal declarada e negaria as duas operações.
-        requisito.Sensibilidade.Should().Be(Sensibilidade.Interna);
-        requisito.BaseLegalPadrao.Should().BeEmpty();
-    }
 
     [Fact(DisplayName = "Quem só tem a manutenção não consulta a trilha protegida")]
     public async Task Decide_ComManutencao_NaoConcedeConsultaDeAuditoria()
     {
         AuthorizationDecision decisao = await Decidir(
             Sujeito(concessoes: Concessao(Manter)),
-            UniPlusPermissions.ConfiguracaoMotivosDecisaoRecursalConsultarAuditoriaRequirement);
+            RequisitoDeConsulta);
 
         decisao.Allowed.Should().BeFalse(
             "manter o catálogo é escrever nele, e não ler a justificativa de quem o manteve");
@@ -94,7 +54,7 @@ public sealed class PermissoesDeMotivosDeDecisaoTests
     {
         AuthorizationDecision decisao = await Decidir(
             Sujeito(concessoes: Concessao(ConsultarAuditoria)),
-            UniPlusPermissions.ConfiguracaoMotivosDecisaoRecursalManterRequirement);
+            RequisitoDeManutencao);
 
         decisao.Allowed.Should().BeFalse(
             "a consulta auditável existe para o auditor que não escreve — conceder escrita por ela "
@@ -107,7 +67,7 @@ public sealed class PermissoesDeMotivosDeDecisaoTests
     {
         await Decidir(
             Sujeito(concessoes: Concessao(Manter)),
-            UniPlusPermissions.ConfiguracaoMotivosDecisaoRecursalConsultarAuditoriaRequirement);
+            RequisitoDeConsulta);
 
         RegistroDecisaoAcesso registro = _registro.Registrados.Should().ContainSingle().Subject;
         registro.Permitido.Should().BeFalse();
@@ -124,7 +84,7 @@ public sealed class PermissoesDeMotivosDeDecisaoTests
                 ConsultarAuditoria,
                 fonte: FonteGrant.OidcGroupBinding,
                 validoAte: Agora.AddSeconds(-1))),
-            UniPlusPermissions.ConfiguracaoMotivosDecisaoRecursalConsultarAuditoriaRequirement);
+            RequisitoDeConsulta);
 
         decisao.Allowed.Should().BeFalse();
         decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.ConcessaoExpirada);
@@ -137,7 +97,7 @@ public sealed class PermissoesDeMotivosDeDecisaoTests
             Sujeito(concessoes: Concessao(
                 ConsultarAuditoria,
                 escopoProcessoId: Guid.CreateVersion7())),
-            UniPlusPermissions.ConfiguracaoMotivosDecisaoRecursalConsultarAuditoriaRequirement,
+            RequisitoDeConsulta,
             Recurso(processoId: Guid.CreateVersion7()));
 
         decisao.Allowed.Should().BeFalse(
@@ -151,12 +111,12 @@ public sealed class PermissoesDeMotivosDeDecisaoTests
         AuthorizationSubject sujeito = Sujeito(
             concessoes: [Concessao(Manter), Concessao(ConsultarAuditoria)]);
 
-        (await Decidir(sujeito, UniPlusPermissions.ConfiguracaoMotivosDecisaoRecursalManterRequirement))
+        (await Decidir(sujeito, RequisitoDeManutencao))
             .Allowed.Should().BeTrue();
 
         (await Decidir(
             sujeito,
-            UniPlusPermissions.ConfiguracaoMotivosDecisaoRecursalConsultarAuditoriaRequirement))
+            RequisitoDeConsulta))
             .Allowed.Should().BeTrue(
                 "acumular as duas é decisão de quem concede, e nada nas permissões impede");
     }

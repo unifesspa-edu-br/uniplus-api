@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Authorization.Contracts;
 
 /// <summary>
 /// Vocabulário fechado dos campos de contexto que uma permissão pode exigir
-/// presentes (<c>context_scope</c> no catálogo declarativo, ADR-0080) e a
+/// presentes (<c>EscopoContextoObrigatorio</c> do atributo de cada permissão, ADR-0151) e a
 /// verificação de presença de cada um no <see cref="ResourceContext"/>.
 /// </summary>
 /// <remarks>
@@ -30,7 +30,7 @@ internal static class CamposDeContexto
             ["chamadaId"] = static resource => resource.ChamadaId is not null,
         }.ToFrozenDictionary(StringComparer.Ordinal);
 
-    /// <summary>Nomes aceitos, para o teste que os amarra ao catálogo declarativo.</summary>
+    /// <summary>Nomes aceitos, que a conferência do catálogo na subida usa.</summary>
     public static IReadOnlySet<string> NomesConhecidos { get; } =
         Presenca.Keys.ToFrozenSet(StringComparer.Ordinal);
 

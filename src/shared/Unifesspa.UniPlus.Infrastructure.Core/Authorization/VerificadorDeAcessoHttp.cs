@@ -62,22 +62,8 @@ public sealed class VerificadorDeAcessoHttp : IVerificadorDeAcesso
 
         HttpContext? http = _httpContextAccessor.HttpContext;
 
-        // A correlação é a que o middleware propagou (X-Correlation-Id, quando a
-        // requisição participa de um fluxo entre serviços), e não o identificador
-        // local do ASP.NET: usá-lo daria ao registro da decisão um valor diferente
-        // do que sai nos logs da aplicação e nas mensagens seguintes, justamente
-        // impedindo a correlação que o campo existe para permitir.
-        //
-        // O instante do acesso é lido uma vez e acompanha a decisão inteira, de
-        // modo que validade de concessão e registro falem do mesmo momento.
-        Result<AuthorizationRequestContext> contexto = AuthorizationRequestContext.From(
-            _correlationId.CorrelationId
-                ?? http?.TraceIdentifier
-                ?? Guid.CreateVersion7().ToString(),
-            _relogio.GetUtcNow(),
-            OrigemRequisicao.Api,
-            ipOrigem: http?.Connection.RemoteIpAddress?.ToString(),
-            userAgent: http?.Request.Headers.UserAgent.ToString());
+        Result<AuthorizationRequestContext> contexto = ContextoDaRequisicaoHttp.Montar(
+            http, _correlationId, _relogio);
 
         if (contexto.IsFailure)
         {

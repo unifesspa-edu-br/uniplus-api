@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// dado, base legal padrão, exigência de multifator e de dupla aprovação, os
 /// campos de contexto obrigatórios e as verificações contextuais adicionais.
 /// Este tipo é apenas o <b>shape</b> que a decisão recebe; os <b>valores</b>
-/// vêm do catálogo declarativo de permissões (story irmã).
+/// vêm do atributo de cada permissão no catálogo em código (ADR-0151).
 /// </summary>
 /// <remarks>
 /// <see cref="VerificacoesDeContexto"/> traz <b>somente</b> os checks

@@ -99,6 +99,116 @@
         ]
       }
     },
+    "/api/autorizacao/permissoes": {
+      "get": {
+        "tags": [
+          "Autoriza\u00E7\u00E3o"
+        ],
+        "summary": "Lista o cat\u00E1logo de permiss\u00F5es",
+        "description": "Permiss\u00F5es da plataforma agrupadas por m\u00F3dulo e recurso, com c\u00F3digo, nome, descri\u00E7\u00E3o e sensibilidade. Exige a permiss\u00E3o autorizacao:permissoes:consultar-catalogo.",
+        "operationId": "ConsultarCatalogoDePermissoes",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.permissao-catalogo.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ModuloDoCatalogoResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/autorizacao/permissoes/efetivas": {
+      "get": {
+        "tags": [
+          "Autoriza\u00E7\u00E3o"
+        ],
+        "summary": "Lista as permiss\u00F5es efetivas do usu\u00E1rio logado",
+        "description": "C\u00F3digo e nome de cada permiss\u00E3o que o token concede. Informa o que pode aparecer na interface; a decis\u00E3o de acesso continua sendo tomada em cada requisi\u00E7\u00E3o.",
+        "operationId": "ConsultarPermissoesEfetivas",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.permissao-efetiva.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PermissaoEfetivaResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/organizacao/instituicao": {
       "get": {
         "tags": [
@@ -1869,6 +1979,62 @@
           }
         }
       },
+      "ModuloDoCatalogoResponse": {
+        "required": [
+          "modulo",
+          "recursos"
+        ],
+        "type": "object",
+        "properties": {
+          "modulo": {
+            "type": "string"
+          },
+          "recursos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecursoDoCatalogoResponse"
+            }
+          }
+        }
+      },
+      "PermissaoDoCatalogoResponse": {
+        "required": [
+          "codigo",
+          "nome",
+          "descricao",
+          "sensibilidade"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "sensibilidade": {
+            "type": "string"
+          }
+        }
+      },
+      "PermissaoEfetivaResponse": {
+        "required": [
+          "codigo",
+          "nome"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          }
+        }
+      },
       "ProblemDetails": {
         "type": "object",
         "properties": {
@@ -1908,6 +2074,24 @@
           "retryable": {
             "type": "boolean",
             "description": "Presente e \u0060true\u0060 quando o conflito descreve uma corrida que j\u00E1 passou: a mesma requisi\u00E7\u00E3o, repetida sem altera\u00E7\u00E3o, pode agora ser aceita. A aus\u00EAncia \u00E9 o default conservador do servidor \u2014 diz que o conflito n\u00E3o foi declarado retent\u00E1vel, n\u00E3o que repetir esteja descartado; nesse caso vale a descri\u00E7\u00E3o da pr\u00F3pria resposta."
+          }
+        }
+      },
+      "RecursoDoCatalogoResponse": {
+        "required": [
+          "recurso",
+          "permissoes"
+        ],
+        "type": "object",
+        "properties": {
+          "recurso": {
+            "type": "string"
+          },
+          "permissoes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PermissaoDoCatalogoResponse"
+            }
           }
         }
       },
@@ -2099,6 +2283,9 @@
     },
     {
       "name": "Profile"
+    },
+    {
+      "name": "Autoriza\u00E7\u00E3o"
     },
     {
       "name": "Instituicao"
