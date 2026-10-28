@@ -169,7 +169,17 @@ public sealed partial class AlertaDeAusenciaDaSincronizacaoDiaria : BackgroundSe
                 await Task.Delay(espera, _relogio, stoppingToken).ConfigureAwait(false);
             }
 
-            await VerificarDiaAsync(dataLocal, stoppingToken).ConfigureAwait(false);
+            try
+            {
+                await VerificarDiaAsync(dataLocal, stoppingToken).ConfigureAwait(false);
+            }
+            catch (Exception excecao) when (excecao is not OperationCanceledException)
+            {
+                // Uma falha transitória do banco não pode derrubar o host: exceção não tratada
+                // em BackgroundService encerra o processo, e com ele todos os módulos.
+                LogFalhaAoVerificarDia(_logger, dataLocal, excecao);
+            }
+
             verificarDiaAtual = false;
         }
     }
@@ -202,6 +212,14 @@ public sealed partial class AlertaDeAusenciaDaSincronizacaoDiaria : BackgroundSe
                 _opcoes.Value.FusoHorarioAlertaId);
         }
     }
+
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "Falha ao verificar a sincronização diária de discentes. Data={DataDeReferencia}")]
+    private static partial void LogFalhaAoVerificarDia(
+        ILogger logger,
+        DateOnly dataDeReferencia,
+        Exception excecao);
 
     [LoggerMessage(
         Level = LogLevel.Error,
