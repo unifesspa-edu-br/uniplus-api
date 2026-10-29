@@ -90,7 +90,7 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
     {
         IDocumentoDaInscricaoRepository documentos = Substitute.For<IDocumentoDaInscricaoRepository>();
         DocumentoExigido laudo = DocumentoExigido.Criar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo", "SAUDE", Aplicabilidade.Geral, false, null,
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, false, null,
             [], [], null, FormatosPermitidos.Criar(true, null).Value!, null).Value!;
         ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(
             Guid.CreateVersion7(), Guid.CreateVersion7(), laudo, "application/pdf", 10, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;

@@ -618,7 +618,7 @@ internal static class CorpusEnvelope
             tipoDocumentoOrigemId: tipoDocumentoOrigemId,
             tipoDocumentoCodigo: tipoDocumentoCodigo,
             tipoDocumentoNome: tipoDocumentoNome,
-            tipoDocumentoCategoria: tipoDocumentoCategoria,
+            tipoDocumentoCategoria: tipoDocumentoCategoria, ProtecaoDoDocumentoDeTeste.Pessoal,
             aplicabilidade: Aplicabilidade.Geral,
             obrigatorio: obrigatorio,
             consequenciaIndeferimento: null,

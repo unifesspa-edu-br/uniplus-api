@@ -1191,7 +1191,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             tipoDocumentoOrigemId: Guid.CreateVersion7(),
             tipoDocumentoCodigo: "IDENTIDADE",
             tipoDocumentoNome: "Documento de identidade",
-            tipoDocumentoCategoria: "PESSOAL",
+            tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             aplicabilidade: Aplicabilidade.Geral,
             obrigatorio: true,
             consequenciaIndeferimento: null,
@@ -1338,7 +1338,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         DocumentoExigido documentoCongelado = DocumentoExigido.Reidratar(
             Guid.CreateVersion7(), exigidoNaFaseId: faseCongeladaId, tipoDocumentoOrigemId: Guid.CreateVersion7(),
             tipoDocumentoCodigo: "IDENTIDADE", tipoDocumentoNome: "Documento de identidade",
-            tipoDocumentoCategoria: "PESSOAL", aplicabilidade: Aplicabilidade.Geral, obrigatorio: true,
+            tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal, aplicabilidade: Aplicabilidade.Geral, obrigatorio: true,
             consequenciaIndeferimento: null, condicoes: [], basesLegais: [],
             idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null);
 
@@ -1493,7 +1493,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             numeroDeOpcoesDeCurso: 1);
 
     private static DocumentoExigido DocumentoQualquer(Guid faseId) => DocumentoExigido.Criar(
-        faseId, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL",
+        faseId, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
         Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, [], [], null,
         FormatosPermitidos.Criar(true, null).Value!, null).Value!;
 

@@ -142,7 +142,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
         // AvaliadorConformidadeLegal exigem nada além do gatilho em si (mesmo raciocínio já
         // documentado em EnvelopeCodecRoundTripTests.RoundTrip14_ArvoreComGrupoCardinalidadeERepeticao).
         DocumentoExigido documento = DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL",
+            fase.Id, Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Condicional, obrigatorio: false, consequenciaIndeferimento: null,
             condicoes, [], null, qualquer, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
 

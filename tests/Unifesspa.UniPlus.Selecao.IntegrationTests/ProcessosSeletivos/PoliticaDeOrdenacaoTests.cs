@@ -545,7 +545,7 @@ public sealed class PoliticaDeOrdenacaoTests
         FaseCronograma fase = FaseMinima();
 
         DocumentoExigido docRaizFolha = DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "RAIZ_ZETA", "Documento raiz solteira", "PESSOAL",
+            fase.Id, Guid.CreateVersion7(), "RAIZ_ZETA", "Documento raiz solteira", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, [], [], null,
             FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
 
@@ -554,12 +554,12 @@ public sealed class PoliticaDeOrdenacaoTests
         // esperada): o filho ZETA (Ordem 0, deve vir PRIMEIRO) recebe o Id MAIOR; o filho ALFA
         // (Ordem 1, deve vir SEGUNDO) recebe o Id MENOR, tanto na exigência quanto no nó.
         DocumentoExigido docFilhoZeta = DocumentoExigido.Reidratar(
-            IdFixo(2), fase.Id, Guid.CreateVersion7(), "FILHO_ZETA", "Documento filho zeta", "PESSOAL",
+            IdFixo(2), fase.Id, Guid.CreateVersion7(), "FILHO_ZETA", "Documento filho zeta", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
             condicoes: [], basesLegais: [], idadeMaximaEmissao: null,
             formatosPermitidos: FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao);
         DocumentoExigido docFilhoAlfa = DocumentoExigido.Reidratar(
-            IdFixo(1), fase.Id, Guid.CreateVersion7(), "FILHO_ALFA", "Documento filho alfa", "PESSOAL",
+            IdFixo(1), fase.Id, Guid.CreateVersion7(), "FILHO_ALFA", "Documento filho alfa", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
             condicoes: [], basesLegais: [], idadeMaximaEmissao: null,
             formatosPermitidos: FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao);
@@ -721,12 +721,12 @@ public sealed class PoliticaDeOrdenacaoTests
         FaseCronograma fase = FaseMinima();
 
         DocumentoExigido exigenciaComOrigemMenor = DocumentoExigido.Reidratar(
-            Guid.CreateVersion7(), fase.Id, IdFixo(1), "TIPO_COMUM", "Zeta Documento", "PESSOAL",
+            Guid.CreateVersion7(), fase.Id, IdFixo(1), "TIPO_COMUM", "Zeta Documento", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
             condicoes: [], basesLegais: [], idadeMaximaEmissao: null,
             formatosPermitidos: FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao);
         DocumentoExigido exigenciaComOrigemMaior = DocumentoExigido.Reidratar(
-            Guid.CreateVersion7(), fase.Id, IdFixo(2), "TIPO_COMUM", "Alfa Documento", "PESSOAL",
+            Guid.CreateVersion7(), fase.Id, IdFixo(2), "TIPO_COMUM", "Alfa Documento", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
             condicoes: [], basesLegais: [], idadeMaximaEmissao: null,
             formatosPermitidos: FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao);
@@ -756,12 +756,12 @@ public sealed class PoliticaDeOrdenacaoTests
         Guid tipoDocumentoOrigemComum = Guid.CreateVersion7();
 
         DocumentoExigido exigenciaComIdMaior = DocumentoExigido.Reidratar(
-            IdFixo(2), fase.Id, tipoDocumentoOrigemComum, "TIPO_COMUM", "Alfa Documento", "PESSOAL",
+            IdFixo(2), fase.Id, tipoDocumentoOrigemComum, "TIPO_COMUM", "Alfa Documento", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
             condicoes: [], basesLegais: [], idadeMaximaEmissao: null,
             formatosPermitidos: FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao);
         DocumentoExigido exigenciaComIdMenor = DocumentoExigido.Reidratar(
-            IdFixo(1), fase.Id, tipoDocumentoOrigemComum, "TIPO_COMUM", "Zeta Documento", "PESSOAL",
+            IdFixo(1), fase.Id, tipoDocumentoOrigemComum, "TIPO_COMUM", "Zeta Documento", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
             condicoes: [], basesLegais: [], idadeMaximaEmissao: null,
             formatosPermitidos: FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao);

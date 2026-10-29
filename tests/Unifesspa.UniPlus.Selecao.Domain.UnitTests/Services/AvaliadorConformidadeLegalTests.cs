@@ -607,7 +607,7 @@ public sealed class AvaliadorConformidadeLegalTests
     /// <summary>Exigência geral com a identidade do tipo escolhida pelo cenário.</summary>
     private static DocumentoExigido ExigenciaGeralDe(Guid exigidoNaFaseId, Guid tipoDocumentoOrigemId, string tipoDocumentoCodigo) =>
         DocumentoExigido.Criar(
-            exigidoNaFaseId, tipoDocumentoOrigemId, tipoDocumentoCodigo, "Documento de teste", "CATEGORIA",
+            exigidoNaFaseId, tipoDocumentoOrigemId, tipoDocumentoCodigo, "Documento de teste", "CATEGORIA", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null,
             condicoes: [], basesLegais: [], idadeMaximaEmissao: null,
             formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
@@ -618,7 +618,7 @@ public sealed class AvaliadorConformidadeLegalTests
 
     private static DocumentoExigido ExigenciaGeral(Guid exigidoNaFaseId, string tipoDocumentoCodigo) =>
         DocumentoExigido.Criar(
-            exigidoNaFaseId, Guid.CreateVersion7(), tipoDocumentoCodigo, "Documento de teste", "CATEGORIA",
+            exigidoNaFaseId, Guid.CreateVersion7(), tipoDocumentoCodigo, "Documento de teste", "CATEGORIA", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null,
             condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
 
@@ -636,7 +636,7 @@ public sealed class AvaliadorConformidadeLegalTests
         }
 
         return DocumentoExigido.Criar(
-            exigidoNaFaseId, tipoDocumentoOrigemId ?? Guid.CreateVersion7(), tipoDocumentoCodigo, "Documento de teste", "CATEGORIA",
+            exigidoNaFaseId, tipoDocumentoOrigemId ?? Guid.CreateVersion7(), tipoDocumentoCodigo, "Documento de teste", "CATEGORIA", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
             condicoes: condicoes, basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
     }
@@ -701,7 +701,7 @@ public sealed class AvaliadorConformidadeLegalTests
 
     private static DocumentoExigido ExigenciaGeralOpcional(Guid exigidoNaFaseId, string tipoDocumentoCodigo) =>
         DocumentoExigido.Criar(
-            exigidoNaFaseId, Guid.CreateVersion7(), tipoDocumentoCodigo, "Documento de teste", "CATEGORIA",
+            exigidoNaFaseId, Guid.CreateVersion7(), tipoDocumentoCodigo, "Documento de teste", "CATEGORIA", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
             condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
 

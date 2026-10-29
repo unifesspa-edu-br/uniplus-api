@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 public sealed class PerfilMappingTests
 {
@@ -20,7 +21,7 @@ public sealed class PerfilMappingTests
             CriarPerfil("teste:itens:ler", "teste:itens:manter", "teste:laudos:consultar"),
             Catalogo);
 
-        dto.Sensibilidade.Should().Be(ValoresCanonicos.De(Sensibilidade.Sensivel));
+        dto.Sensibilidade.Should().Be(ValoresCanonicos.De(ClassificacaoDeProtecao.Sensivel));
     }
 
     [Fact]
@@ -30,7 +31,7 @@ public sealed class PerfilMappingTests
 
         PerfilDto dto = PerfilMapping.ToDto(perfil, new CatalogoDaAplicacao([]));
 
-        dto.Sensibilidade.Should().Be(ValoresCanonicos.De(Sensibilidade.Sensivel));
+        dto.Sensibilidade.Should().Be(ValoresCanonicos.De(ClassificacaoDeProtecao.Sensivel));
     }
 
     private static Perfil CriarPerfil(params string[] codigos) =>
@@ -55,14 +56,14 @@ public sealed class PerfilMappingTests
     [ModuloDePermissoes("teste")]
     private enum PermissaoDeTeste
     {
-        [Permissao("teste:itens:ler", "Consultar itens", "Lista itens.", Sensibilidade.Interna)]
+        [Permissao("teste:itens:ler", "Consultar itens", "Lista itens.", ClassificacaoDeProtecao.Interno)]
         Ler = 1,
 
-        [Permissao("teste:itens:manter", "Manter itens", "Cria e edita itens.", Sensibilidade.Pessoal,
+        [Permissao("teste:itens:manter", "Manter itens", "Cria e edita itens.", ClassificacaoDeProtecao.Pessoal,
             BaseLegal = "LGPD art. 7º, III")]
         Manter = 2,
 
-        [Permissao("teste:laudos:consultar", "Consultar laudos", "Lista laudos médicos.", Sensibilidade.Sensivel,
+        [Permissao("teste:laudos:consultar", "Consultar laudos", "Lista laudos médicos.", ClassificacaoDeProtecao.Sensivel,
             BaseLegal = "LGPD art. 11, II, a")]
         ConsultarLaudos = 3,
     }

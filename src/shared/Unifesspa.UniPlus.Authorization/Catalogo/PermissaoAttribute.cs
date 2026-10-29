@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Authorization.Catalogo;
 
 using Unifesspa.UniPlus.Authorization.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Qualifica um membro de enum de permissões: o código que é o contrato, o texto
@@ -18,7 +19,7 @@ public sealed class PermissaoAttribute : Attribute
     /// <param name="nome">Nome legível, em pt-BR.</param>
     /// <param name="descricao">Descrição do que a permissão autoriza, em pt-BR.</param>
     /// <param name="sensibilidade">Sensibilidade do dado que a operação retorna.</param>
-    public PermissaoAttribute(string codigo, string nome, string descricao, Sensibilidade sensibilidade)
+    public PermissaoAttribute(string codigo, string nome, string descricao, ClassificacaoDeProtecao sensibilidade)
     {
         Codigo = codigo;
         Nome = nome;
@@ -36,7 +37,7 @@ public sealed class PermissaoAttribute : Attribute
     public string Descricao { get; }
 
     /// <summary>Sensibilidade do dado que a operação retorna.</summary>
-    public Sensibilidade Sensibilidade { get; }
+    public ClassificacaoDeProtecao Sensibilidade { get; }
 
     /// <summary>Base legal padrão. Vazia quando o dado é público.</summary>
     public string? BaseLegal { get; init; }

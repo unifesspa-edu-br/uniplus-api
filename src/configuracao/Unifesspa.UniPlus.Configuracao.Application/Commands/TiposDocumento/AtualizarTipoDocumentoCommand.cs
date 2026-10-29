@@ -6,12 +6,12 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Atualiza um tipo de documento existente. O <c>Codigo</c> é editável (diferente
 /// da Modalidade), com nova checagem de unicidade entre vivos; os demais atributos
-/// (nome, descrição, categoria, formatos, tamanho máximo, tipo equivalente) também
-/// podem ser editados. O <c>Id</c> é imutável. O ator (<c>updated_by</c>) é
+/// (nome, descrição, categoria, formatos, tamanho máximo, tipo equivalente e proteção do
+/// documento) também podem ser editados. O <c>Id</c> é imutável. O ator (<c>updated_by</c>) é
 /// carimbado server-side via <c>IUserContext</c>.
 /// </summary>
 /// <remarks>
-/// <c>Codigo</c>, <c>Nome</c> e <c>Categoria</c> são <c>string?</c>, não
+/// <c>Codigo</c>, <c>Nome</c>, <c>Categoria</c> e os três campos da proteção são <c>string?</c>, não
 /// <c>string</c> (ADR-0125) — ver justificativa equivalente em
 /// <see cref="CriarTipoDocumentoCommand"/>.
 /// </remarks>
@@ -23,4 +23,7 @@ public sealed record AtualizarTipoDocumentoCommand(
     string? Descricao = null,
     string? FormatosAceitos = null,
     int? TamanhoMaximoMb = null,
-    string? TipoEquivalente = null) : ICommand<Result>;
+    string? TipoEquivalente = null,
+    string? ClassificacaoProtecao = null,
+    string? FinalidadeTratamento = null,
+    string? HipoteseLegal = null) : ICommand<Result>;

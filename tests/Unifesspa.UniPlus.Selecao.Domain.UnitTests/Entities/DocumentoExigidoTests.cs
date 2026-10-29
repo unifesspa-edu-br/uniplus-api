@@ -32,7 +32,7 @@ public sealed class DocumentoExigidoTests
             tipoDocumentoOrigemId: Guid.CreateVersion7(),
             tipoDocumentoCodigo: "LAUDO_MEDICO",
             tipoDocumentoNome: "Laudo médico",
-            tipoDocumentoCategoria: "SAUDE",
+            tipoDocumentoCategoria: "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal,
             aplicabilidade: aplicabilidade,
             obrigatorio: obrigatorio,
             consequenciaIndeferimento: consequenciaIndeferimento,

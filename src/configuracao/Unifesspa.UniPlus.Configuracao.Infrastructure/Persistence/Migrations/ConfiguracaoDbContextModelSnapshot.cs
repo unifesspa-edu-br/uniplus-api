@@ -4513,6 +4513,12 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("categoria");
 
+                    b.Property<string>("ClassificacaoProtecao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("classificacao_protecao");
+
                     b.Property<string>("Codigo")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -4541,10 +4547,22 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(1000)")
                         .HasColumnName("descricao");
 
+                    b.Property<string>("FinalidadeTratamento")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("finalidade_tratamento");
+
                     b.Property<string>("FormatosAceitos")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("formatos_aceitos");
+
+                    b.Property<string>("HipoteseLegal")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("hipotese_legal");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
@@ -4601,8 +4619,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000001"),
                             Categoria = "IDENTIFICACAO",
+                            ClassificacaoProtecao = "IDENTIFICADOR",
                             Codigo = "RG",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "RG"
                         },
@@ -4610,8 +4631,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000002"),
                             Categoria = "IDENTIFICACAO",
+                            ClassificacaoProtecao = "IDENTIFICADOR",
                             Codigo = "CPF",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "CPF"
                         },
@@ -4619,8 +4643,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000003"),
                             Categoria = "IDENTIFICACAO",
+                            ClassificacaoProtecao = "IDENTIFICADOR",
                             Codigo = "TITULO_ELEITOR",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Título de eleitor"
                         },
@@ -4628,8 +4655,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000004"),
                             Categoria = "IDENTIFICACAO",
+                            ClassificacaoProtecao = "IDENTIFICADOR",
                             Codigo = "QUITACAO_ELEITORAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Comprovante de quitação eleitoral"
                         },
@@ -4637,8 +4667,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000005"),
                             Categoria = "IDENTIFICACAO",
+                            ClassificacaoProtecao = "IDENTIFICADOR",
                             Codigo = "QUITACAO_SERVICO_MILITAR",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Quitação com o serviço militar"
                         },
@@ -4646,8 +4679,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000006"),
                             Categoria = "IDENTIFICACAO",
+                            ClassificacaoProtecao = "IDENTIFICADOR",
                             Codigo = "CERTIDAO_NASCIMENTO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Certidão de nascimento"
                         },
@@ -4655,8 +4691,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000007"),
                             Categoria = "IDENTIFICACAO",
+                            ClassificacaoProtecao = "IDENTIFICADOR",
                             Codigo = "CERTIDAO_CASAMENTO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Certidão de casamento"
                         },
@@ -4664,8 +4703,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000008"),
                             Categoria = "IDENTIFICACAO",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "FOTO_3X4",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Foto 3x4"
                         },
@@ -4673,8 +4715,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000009"),
                             Categoria = "IDENTIFICACAO",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "FOTO_FRENTE",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Foto de frente"
                         },
@@ -4682,8 +4727,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000010"),
                             Categoria = "IDENTIFICACAO",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "FOTO_PERFIL_DIREITO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Foto de perfil do lado direito"
                         },
@@ -4691,8 +4739,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000011"),
                             Categoria = "IDENTIFICACAO",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "FOTO_PERFIL_ESQUERDO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Foto de perfil do lado esquerdo"
                         },
@@ -4700,8 +4751,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000012"),
                             Categoria = "ESCOLARIDADE",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "HISTORICO_ENSINO_FUNDAMENTAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Histórico do ensino fundamental"
                         },
@@ -4709,8 +4763,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000013"),
                             Categoria = "ESCOLARIDADE",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "HISTORICO_ENSINO_MEDIO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Histórico do ensino médio"
                         },
@@ -4718,8 +4775,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000014"),
                             Categoria = "ESCOLARIDADE",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "CERTIFICADO_ENSINO_MEDIO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Certificado de conclusão do ensino médio"
                         },
@@ -4727,8 +4787,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000015"),
                             Categoria = "ESCOLARIDADE",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "HISTORICO_GRADUACAO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Histórico de graduação"
                         },
@@ -4736,8 +4799,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000016"),
                             Categoria = "ESCOLARIDADE",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "DIPLOMA_GRADUACAO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Diploma de graduação"
                         },
@@ -4745,8 +4811,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000017"),
                             Categoria = "ESCOLARIDADE",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "DIPLOMA_POS_GRADUACAO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Diploma de mestrado ou doutorado"
                         },
@@ -4754,8 +4823,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000018"),
                             Categoria = "ESCOLARIDADE",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "MATRIZ_CURRICULAR",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Matriz curricular"
                         },
@@ -4763,8 +4835,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000019"),
                             Categoria = "ESCOLARIDADE",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "DECLARACAO_VINCULO_INSTITUCIONAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Declaração de vínculo institucional"
                         },
@@ -4772,8 +4847,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000020"),
                             Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "CONTRACHEQUE",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Contracheque"
                         },
@@ -4781,8 +4859,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000021"),
                             Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "CARTEIRA_TRABALHO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Carteira de trabalho"
                         },
@@ -4790,8 +4871,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000022"),
                             Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "EXTRATO_FGTS",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Extrato do FGTS"
                         },
@@ -4799,8 +4883,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000023"),
                             Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "EXTRATO_BANCARIO_PF",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Extrato bancário de pessoa física"
                         },
@@ -4808,8 +4895,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000024"),
                             Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "EXTRATO_BANCARIO_PJ",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Extrato bancário de pessoa jurídica"
                         },
@@ -4817,8 +4907,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000025"),
                             Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "EXTRATO_PAGAMENTO_BENEFICIO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Extrato de pagamento de benefício"
                         },
@@ -4826,8 +4919,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000026"),
                             Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "NOTA_FISCAL_VENDAS",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Nota fiscal de vendas"
                         },
@@ -4835,8 +4931,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000027"),
                             Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "GUIA_RECOLHIMENTO_INSS",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Guia de recolhimento ao INSS"
                         },
@@ -4844,8 +4943,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000028"),
                             Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "CONTRATO_LOCACAO_ARRENDAMENTO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Contrato de locação ou arrendamento"
                         },
@@ -4853,8 +4955,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000029"),
                             Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "REGISTRATO_BACEN",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Registrato do Banco Central"
                         },
@@ -4862,8 +4967,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000030"),
                             Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "CADASTRO_UNICO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Cadastro Único"
                         },
@@ -4871,8 +4979,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000031"),
                             Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "DECLARACAO_IRPF",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Declaração de IRPF"
                         },
@@ -4880,8 +4991,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000032"),
                             Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "DECLARACAO_ISENCAO_IRPF",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Declaração de isenção de IRPF"
                         },
@@ -4889,8 +5003,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000033"),
                             Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "DECLARACAO_TRIBUTARIA_PJ",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Declaração tributária de pessoa jurídica"
                         },
@@ -4898,8 +5015,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000034"),
                             Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "DECLARACAO_TRABALHADOR_RURAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Declaração de trabalhador rural"
                         },
@@ -4907,8 +5027,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000035"),
                             Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "DECLARACAO_TRABALHADOR_AUTONOMO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Declaração de trabalhador autônomo"
                         },
@@ -4916,8 +5039,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000036"),
                             Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "DECLARACAO_ATIVIDADE_DO_LAR",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Declaração de atividade do lar"
                         },
@@ -4925,8 +5051,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000037"),
                             Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "DECLARACAO_AUSENCIA_RENDIMENTOS",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Declaração de ausência de rendimentos"
                         },
@@ -4934,8 +5063,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000038"),
                             Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "DECLARACAO_PENSAO_ALIMENTICIA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Declaração de recebimento de pensão alimentícia"
                         },
@@ -4943,8 +5075,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000039"),
                             Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "DECLARACAO_RENDIMENTO_ALUGUEL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Declaração de rendimentos de aluguel"
                         },
@@ -4952,8 +5087,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000040"),
                             Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "DECLARACAO_SEM_CONTA_BANCARIA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Declaração de que não possui conta bancária"
                         },
@@ -4961,8 +5099,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000041"),
                             Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "COMPROVANTE_PAGAMENTO_TAXA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Comprovante de pagamento da taxa de inscrição"
                         },
@@ -4970,8 +5111,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000042"),
                             Categoria = "RACA_ETNIA",
+                            ClassificacaoProtecao = "SENSIVEL",
                             Codigo = "AUTODECLARACAO_ETNICO_RACIAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Autodeclaração étnico-racial justificada"
                         },
@@ -4979,8 +5123,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000043"),
                             Categoria = "RACA_ETNIA",
+                            ClassificacaoProtecao = "SENSIVEL",
                             Codigo = "AUTODECLARACAO_INDIGENA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Autodeclaração indígena"
                         },
@@ -4988,8 +5135,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000044"),
                             Categoria = "RACA_ETNIA",
+                            ClassificacaoProtecao = "SENSIVEL",
                             Codigo = "AUTODECLARACAO_QUILOMBOLA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Autodeclaração quilombola"
                         },
@@ -4997,8 +5147,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000045"),
                             Categoria = "RACA_ETNIA",
+                            ClassificacaoProtecao = "SENSIVEL",
                             Codigo = "DECLARACAO_PERTENCIMENTO_INDIGENA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Declaração de pertencimento indígena"
                         },
@@ -5006,8 +5159,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000046"),
                             Categoria = "RACA_ETNIA",
+                            ClassificacaoProtecao = "SENSIVEL",
                             Codigo = "DECLARACAO_PERTENCIMENTO_QUILOMBOLA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Declaração de pertencimento quilombola"
                         },
@@ -5015,8 +5171,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000047"),
                             Categoria = "SAUDE",
+                            ClassificacaoProtecao = "SENSIVEL",
                             Codigo = "LAUDO_MEDICO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Laudo médico"
                         },
@@ -5024,8 +5183,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000048"),
                             Categoria = "SAUDE",
+                            ClassificacaoProtecao = "SENSIVEL",
                             Codigo = "COMPROVANTE_VACINACAO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Comprovante de vacinação"
                         },
@@ -5033,8 +5195,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000049"),
                             Categoria = "RESIDENCIA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "COMPROVANTE_RESIDENCIA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Comprovante de residência"
                         },
@@ -5042,8 +5207,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000050"),
                             Categoria = "RESIDENCIA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "DECLARACAO_RESIDENCIA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Declaração de residência"
                         },
@@ -5051,8 +5219,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000051"),
                             Categoria = "DOCUMENTO_PROCESSUAL",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "REQUERIMENTO_INSCRICAO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Requerimento de inscrição"
                         },
@@ -5060,8 +5231,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000052"),
                             Categoria = "DOCUMENTO_PROCESSUAL",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "REQUERIMENTO_NOME_SOCIAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Requerimento de inclusão de nome social"
                         },
@@ -5069,8 +5243,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000053"),
                             Categoria = "DOCUMENTO_PROCESSUAL",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "REQUERIMENTO_DESISTENCIA_VAGA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Requerimento de desistência de vaga"
                         },
@@ -5078,8 +5255,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000054"),
                             Categoria = "DOCUMENTO_PROCESSUAL",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "RECURSO_ADMINISTRATIVO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Recurso administrativo"
                         },
@@ -5087,8 +5267,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000055"),
                             Categoria = "DOCUMENTO_PROCESSUAL",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "PROCURACAO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Procuração"
                         },
@@ -5096,8 +5279,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000056"),
                             Categoria = "DOCUMENTO_PROCESSUAL",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "TERMO_ACEITE",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Termo de aceite"
                         },
@@ -5105,8 +5291,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000057"),
                             Categoria = "DOCUMENTO_PROCESSUAL",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "TERMO_COMPROMISSO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Termo de compromisso"
                         },
@@ -5114,8 +5303,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000058"),
                             Categoria = "DOCUMENTO_PROCESSUAL",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "DECLARACAO_AUTENTICIDADE",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Declaração de autenticidade dos documentos"
                         },
@@ -5123,8 +5315,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000059"),
                             Categoria = "DOCUMENTO_PROCESSUAL",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "DECLARACAO_DISPONIBILIDADE",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Declaração de disponibilidade"
                         },
@@ -5132,8 +5327,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000060"),
                             Categoria = "DOCUMENTO_PROCESSUAL",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "FORMULARIO_OPCAO_ENTREVISTA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Formulário de escolha do formato de entrevista"
                         },
@@ -5141,8 +5339,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000061"),
                             Categoria = "TITULACAO_EXPERIENCIA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "DECLARACAO_FUNCIONAL_SIG",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Declaração funcional emitida pelo SIG"
                         },
@@ -5150,8 +5351,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000062"),
                             Categoria = "TITULACAO_EXPERIENCIA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "COMPROVACAO_EXPERIENCIA_PROFISSIONAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Comprovação de experiência profissional"
                         },
@@ -5159,8 +5363,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000063"),
                             Categoria = "TITULACAO_EXPERIENCIA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "COMPROVACAO_EXPERIENCIA_ESCOLA_CAMPO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Comprovação de experiência profissional em escola do campo"
                         },
@@ -5168,8 +5375,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000064"),
                             Categoria = "TITULACAO_EXPERIENCIA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "COMPROVACAO_ATIVIDADE_POVOS_TRADICIONAIS",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Comprovação de atividade junto a povos tradicionais"
                         },
@@ -5177,8 +5387,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000065"),
                             Categoria = "TITULACAO_EXPERIENCIA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "COMPROVACAO_VINCULO_DOCENTE_REDE_PUBLICA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Comprovação de vínculo docente na rede pública"
                         },
@@ -5186,8 +5399,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000066"),
                             Categoria = "TITULACAO_EXPERIENCIA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "COMPROVACAO_ATUACAO_APOIO_EDUCACAO_ESPECIAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Comprovação de atuação como profissional de apoio da educação especial"
                         },
@@ -5195,8 +5411,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000067"),
                             Categoria = "TITULACAO_EXPERIENCIA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "COMPROVACAO_LATTES_PESQUISA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Comprovação de pesquisa concluída no currículo Lattes"
                         },
@@ -5204,8 +5423,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000068"),
                             Categoria = "TITULACAO_EXPERIENCIA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "COMPROVACAO_LATTES_EXTENSAO_ENSINO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Comprovação de extensão e ensino no currículo Lattes"
                         },
@@ -5213,8 +5435,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000069"),
                             Categoria = "PRODUCAO_AVALIATIVA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "CARTA_INTENCAO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Carta de intenção"
                         },
@@ -5222,8 +5447,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("d0c00000-0000-7000-8000-000000000070"),
                             Categoria = "PRODUCAO_AVALIATIVA",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "RELATO_HISTORIA_VIDA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Relato de história de vida"
                         });

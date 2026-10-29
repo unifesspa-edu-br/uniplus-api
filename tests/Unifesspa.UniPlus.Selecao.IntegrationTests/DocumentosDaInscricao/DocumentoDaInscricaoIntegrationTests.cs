@@ -76,7 +76,7 @@ public sealed class DocumentoDaInscricaoIntegrationTests : IClassFixture<Inscric
         await inscricoes.AdicionarAsync(inscricao);
 
         DocumentoExigido laudo = DocumentoExigido.Criar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE",
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
             [], [], null, FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null).Value!;
         ApresentacaoDeDocumento apresentacao = ApresentacaoDeDocumento.Criar(inscricao.Id, laudo, null);

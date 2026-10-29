@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
@@ -145,7 +146,7 @@ public sealed class ConferenciaDaRegraDeAplicabilidadeTests
     private static FatoCandidato Derivado(string codigo, DominioFato dominio = DominioFato.Booleano) =>
         FatoCandidato.CriarDerivadoDoAdministrador(
             codigo, codigo, null, dominio, "INSCRICAO", EscopoFato.Candidato,
-            ClassificacaoProtecaoDado.Sensivel, Finalidade, Hipotese).Value!;
+            ClassificacaoDeProtecao.Sensivel, Finalidade, Hipotese).Value!;
 
     private static FatoCandidato Declarado(
         string codigo,
@@ -155,7 +156,7 @@ public sealed class ConferenciaDaRegraDeAplicabilidadeTests
         FatoCandidato.CriarDoAdministrador(
             codigo, codigo, null, dominio, CardinalidadeFato.Escalar,
             dominio == DominioFato.Categorico ? FonteValoresFato.Global : null, formato, ponto, EscopoFato.Candidato,
-            ClassificacaoProtecaoDado.Sensivel, Finalidade, Hipotese).Value!;
+            ClassificacaoDeProtecao.Sensivel, Finalidade, Hipotese).Value!;
 
     private static CatalogoDeFatos Catalogo(params FatoCandidato[] fatos) => new(fatos, []);
 

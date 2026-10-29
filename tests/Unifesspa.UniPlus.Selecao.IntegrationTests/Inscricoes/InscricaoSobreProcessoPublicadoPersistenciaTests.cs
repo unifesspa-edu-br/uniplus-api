@@ -1035,7 +1035,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
     private static DocumentoExigido Exigencia(Guid fase, string tipo, (string Fato, JsonElement Valor)[] gatilho) =>
         DocumentoExigido.Criar(
-            fase, Guid.CreateVersion7(), tipo, $"Documento {tipo}", "PESSOAL",
+            fase, Guid.CreateVersion7(), tipo, $"Documento {tipo}", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             gatilho.Length == 0 ? Aplicabilidade.Geral : Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
             condicoes: [.. gatilho.Select(static g => CondicaoGatilho.Criar(0, g.Fato, Operador.Igual, g.Valor).Value!)],
             basesLegais: [DocumentoExigidoBaseLegal.Criar("Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!],

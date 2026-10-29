@@ -99,7 +99,7 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
     public void Documento_TrazOQueOPortalPrecisaParaEnviar()
     {
         DocumentoExigido laudo = DocumentoExigido.Criar(
-            FaseDaInscricao.Id, Guid.CreateVersion7(), "LAUDO", "Laudo", "CAT", Aplicabilidade.Geral, obrigatorio: true,
+            FaseDaInscricao.Id, Guid.CreateVersion7(), "LAUDO", "Laudo", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, obrigatorio: true,
             consequenciaIndeferimento: null, [], [], null, FormatosPermitidos.Criar(false, [("PDF", 1_000_000), ("JPEG", 3_000_000)]).Value!, 2_000_000,
             finalidade: FinalidadeFormulario.Inscricao).Value!;
         DocumentoExigido outro = Documento(FaseDaInscricao, FinalidadeFormulario.Inscricao);
@@ -151,7 +151,7 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
 
     private static DocumentoExigido Documento(FaseCronograma fase, FinalidadeFormulario finalidade, ModeloDaExigencia? modelo = null) =>
         DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "COMPROVANTE", "Comprovante", "CAT", Aplicabilidade.Geral, obrigatorio: true,
+            fase.Id, Guid.CreateVersion7(), "COMPROVANTE", "Comprovante", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, obrigatorio: true,
             consequenciaIndeferimento: null, [], [], null, FormatosPermitidos.Criar(true, null).Value!, null,
             modelo: modelo, finalidade: finalidade).Value!;
 

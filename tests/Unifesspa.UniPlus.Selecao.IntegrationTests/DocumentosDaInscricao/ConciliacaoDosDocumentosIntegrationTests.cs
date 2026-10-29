@@ -79,7 +79,7 @@ public sealed class ConciliacaoDosDocumentosIntegrationTests : IClassFixture<Ins
         await context.SaveChangesAsync();
 
         DocumentoExigido laudo = DocumentoExigido.Criar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE",
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null,
             [], [], null, FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null).Value!;
         return (context, inscricao.Id, laudo);

@@ -20,7 +20,7 @@ public sealed class ArquivoDaApresentacaoTests
 
     private static DocumentoExigido Exigencia(
         IReadOnlyList<(string Formato, int? Teto)>? formatos = null, int? tamanhoMaximoBytes = null) => DocumentoExigido.Criar(
-        Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE",
+        Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal,
         Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
         [], [], null, FormatosPermitidos.Criar(formatos is null, formatos).Value!, tamanhoMaximoBytes).Value!;
 

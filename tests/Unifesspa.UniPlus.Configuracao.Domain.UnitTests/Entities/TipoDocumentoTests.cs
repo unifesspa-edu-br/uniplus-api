@@ -3,7 +3,9 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class TipoDocumentoTests
@@ -20,7 +22,7 @@ public sealed class TipoDocumentoTests
         string? formatosAceitos = "pdf,jpg",
         int? tamanhoMaximoMb = 10,
         string? tipoEquivalente = null) =>
-        TipoDocumento.Criar(codigo, nome, descricao, categoria, formatosAceitos, tamanhoMaximoMb, tipoEquivalente);
+        TipoDocumento.Criar(codigo, nome, descricao, categoria, formatosAceitos, tamanhoMaximoMb, tipoEquivalente, classificacaoProtecao: ClassificacaoDeProtecao.Pessoal, finalidadeTratamento: "Comprovação documental do candidato.", hipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal);
 
     [Fact(DisplayName = "Criar com dados válidos preenche os campos e fica ativo com Guid v7")]
     public void Criar_DadosValidos_Preenche()
@@ -201,7 +203,7 @@ public sealed class TipoDocumentoTests
     public void Criar_CodigoAusenteComTipoEquivalentePresente_NaoDisparaAutoEquivalencia()
     {
         Result<TipoDocumento> resultado = TipoDocumento.Criar(
-            "", Nome, null, Categoria, null, null, "RG");
+            "", Nome, null, Categoria, null, null, "RG", classificacaoProtecao: ClassificacaoDeProtecao.Pessoal, finalidadeTratamento: "Comprovação documental do candidato.", hipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle();
@@ -219,7 +221,7 @@ public sealed class TipoDocumentoTests
     public void Criar_QuatroCamposInvalidos_AcumulaAsQuatroViolacoesRotuladas()
     {
         Result<TipoDocumento> resultado = TipoDocumento.Criar(
-            "", "", null, "1", null, 0, null);
+            "", "", null, "1", null, 0, null, classificacaoProtecao: ClassificacaoDeProtecao.Pessoal, finalidadeTratamento: "Comprovação documental do candidato.", hipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(4);
@@ -237,7 +239,7 @@ public sealed class TipoDocumentoTests
     public void Criar_NomeAusenteEEquivalenteIgualCodigo_AcumulaAsDuasViolacoes()
     {
         Result<TipoDocumento> resultado = TipoDocumento.Criar(
-            "RG", "", null, Categoria, null, null, "RG");
+            "RG", "", null, Categoria, null, null, "RG", classificacaoProtecao: ClassificacaoDeProtecao.Pessoal, finalidadeTratamento: "Comprovação documental do candidato.", hipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(2);
@@ -250,7 +252,7 @@ public sealed class TipoDocumentoTests
     public void Criar_CamposObrigatoriosNulos_NaoLancaEDevolveViolacaoDeDominio()
     {
         Result<TipoDocumento> resultado = TipoDocumento.Criar(
-            null, null, null, null, null, null, null);
+            null, null, null, null, null, null, null, classificacaoProtecao: ClassificacaoDeProtecao.Pessoal, finalidadeTratamento: "Comprovação documental do candidato.", hipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(3);
@@ -284,12 +286,72 @@ public sealed class TipoDocumentoTests
         Guid idOriginal = tipo.Id;
 
         Result resultado = tipo.Atualizar(
-            "CIN_NOVO", "Carteira de Identidade Nacional", "Documento unificado", "IDENTIFICACAO", "pdf", 5, null);
+            "CIN_NOVO", "Carteira de Identidade Nacional", "Documento unificado", "IDENTIFICACAO", "pdf", 5, null, classificacaoProtecao: ClassificacaoDeProtecao.Pessoal, finalidadeTratamento: "Comprovação documental do candidato.", hipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal);
 
         resultado.IsSuccess.Should().BeTrue();
         tipo.Codigo.Valor.Should().Be("CIN_NOVO");
         tipo.Nome.Should().Be("Carteira de Identidade Nacional");
         tipo.Categoria.Should().Be("IDENTIFICACAO");
         tipo.Id.Should().Be(idOriginal, "o Id é imutável mesmo com o código editável");
+    }
+
+    // ── Proteção do documento ──────────────────────────────────────────────────
+
+    private static Result<TipoDocumento> CriarComProtecao(
+        ClassificacaoDeProtecao classificacao, string? finalidade, HipoteseLegalTratamento hipotese) =>
+        TipoDocumento.Criar(Codigo, Nome, null, Categoria, null, null, null, classificacao, finalidade, hipotese);
+
+    [Fact(DisplayName = "Criar sem classificação, finalidade e hipótese legal recusa os três como proteção obrigatória")]
+    public void Criar_SemProtecao_RecusaOsTresCampos()
+    {
+        Result<TipoDocumento> resultado = CriarComProtecao(ClassificacaoDeProtecao.Nenhuma, null, HipoteseLegalTratamento.Nenhuma);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => e.Field).Should().Equal("classificacaoProtecao", "finalidadeTratamento", "hipoteseLegal");
+        resultado.Errors.Should().AllSatisfy(e => e.Error.Code.Should().Be(TipoDocumentoErrorCodes.ProtecaoObrigatoria));
+    }
+
+    [Fact(DisplayName = "Criar com a proteção declarada guarda a classificação, a finalidade aparada e a hipótese")]
+    public void Criar_ComProtecao_Guarda()
+    {
+        TipoDocumento tipo = CriarComProtecao(
+            ClassificacaoDeProtecao.Sensivel, "  Comprovação do atendimento especializado.  ", HipoteseLegalTratamento.TutelaDaSaude).Value!;
+
+        tipo.ClassificacaoProtecao.Should().Be(ClassificacaoDeProtecao.Sensivel);
+        tipo.FinalidadeTratamento.Should().Be("Comprovação do atendimento especializado.");
+        tipo.HipoteseLegal.Should().Be(HipoteseLegalTratamento.TutelaDaSaude);
+    }
+
+    [Theory(DisplayName = "Hipótese que não cabe na classificação é recusada: art. 11 para sensível, art. 7º para os demais")]
+    [InlineData(ClassificacaoDeProtecao.Sensivel, HipoteseLegalTratamento.InteresseLegitimo)]
+    [InlineData(ClassificacaoDeProtecao.Pessoal, HipoteseLegalTratamento.PrevencaoAFraude)]
+    public void Criar_HipoteseIncompativel_Recusa(ClassificacaoDeProtecao classificacao, HipoteseLegalTratamento hipotese)
+    {
+        Result<TipoDocumento> resultado = CriarComProtecao(classificacao, "Comprovação documental.", hipotese);
+
+        resultado.Errors.Should().ContainSingle();
+        resultado.Errors[0].Field.Should().Be("hipoteseLegal");
+        resultado.Errors[0].Error.Code.Should().Be(TipoDocumentoErrorCodes.HipoteseLegalIncompativelComClassificacao);
+    }
+
+    [Fact(DisplayName = "Finalidade acima do limite é recusada")]
+    public void Criar_FinalidadeAcimaDoLimite_Recusa()
+    {
+        Result<TipoDocumento> resultado = CriarComProtecao(
+            ClassificacaoDeProtecao.Pessoal, new string('a', 501), HipoteseLegalTratamento.CumprimentoObrigacaoLegal);
+
+        resultado.Errors.Should().ContainSingle();
+        resultado.Errors[0].Error.Code.Should().Be(TipoDocumentoErrorCodes.FinalidadeTratamentoTamanho);
+    }
+
+    [Fact(DisplayName = "Classificação e hipótese fora do vocabulário fechado são recusadas, cada uma no seu campo")]
+    public void Criar_ForaDoVocabulario_Recusa()
+    {
+        Result<TipoDocumento> resultado = CriarComProtecao(
+            (ClassificacaoDeProtecao)(-1), "Comprovação documental.", (HipoteseLegalTratamento)(-1));
+
+        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
+            ("classificacaoProtecao", TipoDocumentoErrorCodes.ClassificacaoProtecaoInvalida),
+            ("hipoteseLegal", TipoDocumentoErrorCodes.HipoteseLegalInvalida));
     }
 }

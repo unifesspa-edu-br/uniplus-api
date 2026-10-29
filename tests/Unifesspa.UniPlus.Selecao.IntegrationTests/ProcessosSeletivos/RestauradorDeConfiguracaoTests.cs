@@ -392,7 +392,7 @@ public sealed class RestauradorDeConfiguracaoTests
             tipoDocumentoOrigemId: Guid.CreateVersion7(),
             tipoDocumentoCodigo: "DECLARACAO_MAIORIDADE",
             tipoDocumentoNome: "Declaração de maioridade",
-            tipoDocumentoCategoria: "PESSOAL",
+            tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             aplicabilidade: Aplicabilidade.Condicional,
             obrigatorio: true,
             consequenciaIndeferimento: null,
@@ -467,7 +467,7 @@ public sealed class RestauradorDeConfiguracaoTests
             tipoDocumentoOrigemId: Guid.CreateVersion7(),
             tipoDocumentoCodigo: "LAUDO_MEDICO",
             tipoDocumentoNome: "Laudo médico",
-            tipoDocumentoCategoria: "SAUDE",
+            tipoDocumentoCategoria: "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal,
             aplicabilidade: Aplicabilidade.Condicional,
             obrigatorio: true,
             consequenciaIndeferimento: null,
@@ -508,7 +508,7 @@ public sealed class RestauradorDeConfiguracaoTests
             CalendarioDiasUteis: CorpusEnvelope.CalendarioRico(),
             TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo));
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.36", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.37", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,

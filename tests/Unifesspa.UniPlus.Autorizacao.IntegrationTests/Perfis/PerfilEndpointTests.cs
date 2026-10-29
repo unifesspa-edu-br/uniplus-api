@@ -61,7 +61,7 @@ public sealed class PerfilEndpointTests
         using JsonDocument perfil = JsonDocument.Parse(await lida.Content.ReadAsStringAsync());
         perfil.RootElement.GetProperty("ativo").GetBoolean().Should().BeTrue();
         perfil.RootElement.GetProperty("governanca").ValueKind.Should().Be(JsonValueKind.Null);
-        perfil.RootElement.GetProperty("sensibilidade").GetString().Should().Be("interna");
+        perfil.RootElement.GetProperty("sensibilidade").GetString().Should().Be("interno");
         perfil.RootElement.GetProperty("permissoes").EnumerateArray()
             .Select(p => p.GetProperty("codigo").GetString())
             .Should().Equal(ConsultarCatalogo, ManterMotivos);

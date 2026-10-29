@@ -343,7 +343,7 @@ public static class DefinirDocumentosExigidosCommandHandler
                 };
                 erros.AddRange(DocumentoExigido.ValidarFormaBasica(
                     aplicabilidade, documentoInput.ConsequenciaIndeferimento, documentoInput.TamanhoMaximoBytes, documentoInput.Condicoes.Count,
-                    FinalidadeDoInput(documentoInput.Finalidade)));
+                    FinalidadeDoInput(documentoInput.Finalidade), documentoInput.FatosComprovados));
             }
 
             IReadOnlyList<BaseLegalInput> basesLegais = ehFolha
@@ -476,6 +476,7 @@ public static class DefinirDocumentosExigidosCommandHandler
             tipoDocumento.Codigo,
             tipoDocumento.Nome,
             tipoDocumento.Categoria,
+            new ProtecaoDoDocumento(tipoDocumento.ClassificacaoProtecao, tipoDocumento.FinalidadeTratamento, tipoDocumento.HipoteseLegal),
             aplicabilidade,
             input.Obrigatorio,
             input.ConsequenciaIndeferimento,
@@ -486,7 +487,8 @@ public static class DefinirDocumentosExigidosCommandHandler
             input.TamanhoMaximoBytes,
             input.ExigidoNaEtapaId,
             modeloResult.Value,
-            FinalidadeDoInput(input.Finalidade));
+            FinalidadeDoInput(input.Finalidade),
+            input.FatosComprovados);
     }
 
     /// <summary>

@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Services;
@@ -213,7 +214,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
     private static FatoCandidato Fato(string codigo) =>
         FatoCandidato.CriarDoAdministrador(
             codigo, codigo, null, DominioFato.Booleano, CardinalidadeFato.Escalar, null, null, "INSCRICAO",
-            EscopoFato.Candidato, ClassificacaoProtecaoDado.Sensivel, "Enquadramento na reserva de vagas.",
+            EscopoFato.Candidato, ClassificacaoDeProtecao.Sensivel, "Enquadramento na reserva de vagas.",
             HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
 
     private static FatoCandidato FatoDesativado(string codigo)

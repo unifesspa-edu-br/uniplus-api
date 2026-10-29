@@ -6,6 +6,7 @@ using System.Text.Json;
 using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -27,6 +28,13 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </remarks>
 public sealed class DocumentoExigido : EntityBase
 {
+    /// <summary>O tamanho de um código de fato (o mesmo do fato citado por uma condição de gatilho).</summary>
+    public const int FatoComprovadoMaxLength = 60;
+
+    public const string FatosComprovadosInvalidos = "DocumentoExigido.FatosComprovadosInvalidos";
+
+    /// <summary>A exigência comprova um fato que nenhum formulário do processo coleta.</summary>
+    public const string FatoComprovadoForaDoProcesso = "DocumentoExigido.FatoComprovadoForaDoProcesso";
 
     public Guid ProcessoSeletivoId { get; private set; }
 
@@ -63,6 +71,25 @@ public sealed class DocumentoExigido : EntityBase
 
     /// <summary>Categoria classificatória congelada — snapshot-copy.</summary>
     public string TipoDocumentoCategoria { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// Classificação de proteção do tipo de documento, congelada na cópia. É o piso da proteção
+    /// do arquivo que responde à exigência, e nunca fica abaixo da dos fatos que a exigência
+    /// comprova.
+    /// </summary>
+    public ClassificacaoDeProtecao ClassificacaoProtecao { get; private set; }
+
+    /// <summary>Finalidade do tratamento do tipo de documento, congelada na cópia.</summary>
+    public string FinalidadeTratamento { get; private set; } = string.Empty;
+
+    /// <summary>Hipótese legal do tratamento do tipo de documento (token canônico), congelada na cópia.</summary>
+    public string HipoteseLegal { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// Códigos dos fatos do próprio processo que o documento comprova. Vazia quando a exigência não
+    /// declara fato comprovado. O fato que só aciona a exigência pelo gatilho não entra aqui.
+    /// </summary>
+    public string[] FatosComprovados { get; private set; } = [];
 
     public Aplicabilidade Aplicabilidade { get; private set; }
 
@@ -121,7 +148,7 @@ public sealed class DocumentoExigido : EntityBase
     /// </summary>
     public static List<FieldError> ValidarFormaBasica(
         Aplicabilidade aplicabilidade, string? consequenciaIndeferimento, int? tamanhoMaximoBytes, int quantidadeCondicoes,
-        FinalidadeFormulario? finalidade = null)
+        FinalidadeFormulario? finalidade = null, IReadOnlyList<string>? fatosComprovados = null)
     {
         // A finalidade da exigência é a do formulário em que o documento é apresentado: o
         // vocabulário é o mesmo, e a recusa também.
@@ -151,6 +178,15 @@ public sealed class DocumentoExigido : EntityBase
                 "O tamanho máximo em bytes, quando presente, deve ser maior que zero.")));
         }
 
+        if (fatosComprovados is { Count: > 0 }
+            && (fatosComprovados.Any(static f => string.IsNullOrWhiteSpace(f) || f.Trim().Length > FatoComprovadoMaxLength)
+                || fatosComprovados.Select(static f => f.Trim()).Distinct(StringComparer.Ordinal).Count() != fatosComprovados.Count))
+        {
+            erros.Add(new("fatosComprovados", new DomainError(
+                FatosComprovadosInvalidos,
+                $"Os fatos comprovados são códigos de fato não repetidos, de até {FatoComprovadoMaxLength} caracteres.")));
+        }
+
         // CA-01 (Story #554, issue #547/#892): GERAL nunca convive com condição viva.
         if (aplicabilidade == Aplicabilidade.Geral && quantidadeCondicoes > 0)
         {
@@ -176,6 +212,7 @@ public sealed class DocumentoExigido : EntityBase
         string tipoDocumentoCodigo,
         string tipoDocumentoNome,
         string tipoDocumentoCategoria,
+        ProtecaoDoDocumento protecao,
         Aplicabilidade aplicabilidade,
         bool obrigatorio,
         string? consequenciaIndeferimento,
@@ -186,7 +223,8 @@ public sealed class DocumentoExigido : EntityBase
         int? tamanhoMaximoBytes,
         Guid? exigidoNaEtapaId = null,
         ModeloDaExigencia? modelo = null,
-        FinalidadeFormulario? finalidade = null)
+        FinalidadeFormulario? finalidade = null,
+        IReadOnlyList<string>? fatosComprovados = null)
     {
         ArgumentNullException.ThrowIfNull(condicoes);
         ArgumentNullException.ThrowIfNull(basesLegais);
@@ -194,6 +232,7 @@ public sealed class DocumentoExigido : EntityBase
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoDocumentoCodigo);
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoDocumentoNome);
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoDocumentoCategoria);
+        ExigirProtecao(protecao);
 
         if (exigidoNaFaseId == Guid.Empty)
         {
@@ -205,7 +244,7 @@ public sealed class DocumentoExigido : EntityBase
             throw new ArgumentException("O id de origem do tipo de documento é obrigatório.", nameof(tipoDocumentoOrigemId));
         }
 
-        List<FieldError> erros = ValidarFormaBasica(aplicabilidade, consequenciaIndeferimento, tamanhoMaximoBytes, condicoes.Count, finalidade);
+        List<FieldError> erros = ValidarFormaBasica(aplicabilidade, consequenciaIndeferimento, tamanhoMaximoBytes, condicoes.Count, finalidade, fatosComprovados);
         if (erros.Count > 0)
         {
             return Result<DocumentoExigido>.ValidationFailure(erros);
@@ -220,6 +259,10 @@ public sealed class DocumentoExigido : EntityBase
             TipoDocumentoCodigo = tipoDocumentoCodigo.Trim(),
             TipoDocumentoNome = tipoDocumentoNome.Trim(),
             TipoDocumentoCategoria = tipoDocumentoCategoria.Trim(),
+            ClassificacaoProtecao = protecao.Classificacao,
+            FinalidadeTratamento = protecao.Finalidade.Trim(),
+            HipoteseLegal = protecao.HipoteseLegal.Trim(),
+            FatosComprovados = [.. fatosComprovados?.Select(static f => f.Trim()) ?? []],
             Aplicabilidade = aplicabilidade,
             Obrigatorio = obrigatorio,
             ConsequenciaIndeferimento = NormalizarConsequencia(consequenciaIndeferimento),
@@ -277,6 +320,7 @@ public sealed class DocumentoExigido : EntityBase
         string tipoDocumentoCodigo,
         string tipoDocumentoNome,
         string tipoDocumentoCategoria,
+        ProtecaoDoDocumento protecao,
         Aplicabilidade aplicabilidade,
         bool obrigatorio,
         string? consequenciaIndeferimento,
@@ -287,7 +331,8 @@ public sealed class DocumentoExigido : EntityBase
         int? tamanhoMaximoBytes,
         Guid? exigidoNaEtapaId = null,
         ModeloDaExigencia? modelo = null,
-        FinalidadeFormulario? finalidade = null)
+        FinalidadeFormulario? finalidade = null,
+        IReadOnlyList<string>? fatosComprovados = null)
     {
         ArgumentNullException.ThrowIfNull(condicoes);
         ArgumentNullException.ThrowIfNull(basesLegais);
@@ -295,6 +340,7 @@ public sealed class DocumentoExigido : EntityBase
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoDocumentoCodigo);
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoDocumentoNome);
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoDocumentoCategoria);
+        ExigirProtecao(protecao);
         if (id == Guid.Empty)
         {
             throw new ArgumentException("A exigência reidratada deve declarar o Id congelado no envelope (CA-09).", nameof(id));
@@ -310,6 +356,10 @@ public sealed class DocumentoExigido : EntityBase
             TipoDocumentoCodigo = tipoDocumentoCodigo.Trim(),
             TipoDocumentoNome = tipoDocumentoNome.Trim(),
             TipoDocumentoCategoria = tipoDocumentoCategoria.Trim(),
+            ClassificacaoProtecao = protecao.Classificacao,
+            FinalidadeTratamento = protecao.Finalidade.Trim(),
+            HipoteseLegal = protecao.HipoteseLegal.Trim(),
+            FatosComprovados = [.. fatosComprovados?.Select(static f => f.Trim()) ?? []],
             Aplicabilidade = aplicabilidade,
             Obrigatorio = obrigatorio,
             ConsequenciaIndeferimento = consequenciaIndeferimento,
@@ -332,6 +382,34 @@ public sealed class DocumentoExigido : EntityBase
         }
 
         return documento;
+    }
+
+    /// <summary>
+    /// A proteção vem de um tipo de documento que a Configuração já validou: as guardas aqui são a
+    /// última linha contra erro de programação, não revalidação de negócio.
+    /// </summary>
+    private static void ExigirProtecao(ProtecaoDoDocumento protecao)
+    {
+        ArgumentNullException.ThrowIfNull(protecao);
+        ArgumentException.ThrowIfNullOrWhiteSpace(protecao.Finalidade);
+        ArgumentException.ThrowIfNullOrWhiteSpace(protecao.HipoteseLegal);
+        if (protecao.Classificacao == ClassificacaoDeProtecao.Nenhuma || !Enum.IsDefined(protecao.Classificacao))
+        {
+            throw new ArgumentException("A classificação de proteção do tipo de documento é obrigatória.", nameof(protecao));
+        }
+    }
+
+    /// <summary>
+    /// Troca a proteção copiada pela vigente no tipo de documento. A exigência copia a proteção ao ser
+    /// gravada, e o tipo pode ser reclassificado até a publicação: é o valor vigente na publicação ou
+    /// na retificação que se congela.
+    /// </summary>
+    internal void RecongelarProtecao(ProtecaoDoDocumento protecao)
+    {
+        ExigirProtecao(protecao);
+        ClassificacaoProtecao = protecao.Classificacao;
+        FinalidadeTratamento = protecao.Finalidade.Trim();
+        HipoteseLegal = protecao.HipoteseLegal.Trim();
     }
 
     internal void VincularProcesso(Guid processoSeletivoId) =>

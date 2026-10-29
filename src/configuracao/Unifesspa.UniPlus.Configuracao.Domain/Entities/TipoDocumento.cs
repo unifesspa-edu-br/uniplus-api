@@ -2,9 +2,11 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
 using System.Text;
 
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -36,8 +38,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// único guarda é não ser equivalente a si mesmo. Por ser rótulo e não FK,
 /// remover um tipo apontado como equivalente por outro <b>não</b> é bloqueado
 /// (CA-04) — o rótulo do outro fica apontando para um código sem alvo vivo.</para>
-/// <para>Dado institucional sem PII (LGPD inaplicável). A remoção é sempre
-/// soft-delete e nunca bloqueada por referência.</para>
+/// <para>O tipo declara a proteção do documento que descreve — classificação, finalidade e hipótese
+/// legal, obrigatórias, com as mesmas regras do fato do candidato. O cadastro em si é dado
+/// institucional sem PII. A remoção é sempre soft-delete e nunca bloqueada por referência.</para>
 /// </remarks>
 public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
 {
@@ -57,8 +60,27 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
     public int? TamanhoMaximoMb { get; private set; }
     public string? TipoEquivalente { get; private set; }
 
+    /// <summary>
+    /// Proteção que o documento exige: o tipo diz o que o documento contém, e a exigência de um
+    /// processo congela esta cópia ao ser definida (ADR-0061).
+    /// </summary>
+    public ClassificacaoDeProtecao ClassificacaoProtecao { get; private set; }
+
+    public string FinalidadeTratamento { get; private set; } = string.Empty;
+    public HipoteseLegalTratamento HipoteseLegal { get; private set; }
+
     public string? CreatedBy { get; private set; }
     public string? UpdatedBy { get; private set; }
+
+    private static readonly RecusasDaProtecao RecusasDaProtecaoDoTipo = new(
+        "do tipo de documento",
+        TipoDocumentoErrorCodes.ProtecaoObrigatoria,
+        TipoDocumentoErrorCodes.ClassificacaoProtecaoInvalida,
+        TipoDocumentoErrorCodes.ProtecaoObrigatoria,
+        TipoDocumentoErrorCodes.FinalidadeTratamentoTamanho,
+        TipoDocumentoErrorCodes.ProtecaoObrigatoria,
+        TipoDocumentoErrorCodes.HipoteseLegalInvalida,
+        TipoDocumentoErrorCodes.HipoteseLegalIncompativelComClassificacao);
 
     // EF Core materialization
     private TipoDocumento()
@@ -83,14 +105,18 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
         string Categoria,
         string? FormatosAceitos,
         int? TamanhoMaximoMb,
-        string? TipoEquivalente)> ValidarCampos(
+        string? TipoEquivalente,
+        ProtecaoDeDados Protecao)> ValidarCampos(
         string? codigo,
         string? nome,
         string? descricao,
         string? categoria,
         string? formatosAceitos,
         int? tamanhoMaximoMb,
-        string? tipoEquivalente)
+        string? tipoEquivalente,
+        ClassificacaoDeProtecao classificacaoProtecao,
+        string? finalidadeTratamento,
+        HipoteseLegalTratamento hipoteseLegal)
     {
         List<FieldError> erros = [];
 
@@ -193,13 +219,19 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
                 "Um tipo de documento não pode declarar-se equivalente a si mesmo.")));
         }
 
+        // Vocabulário, limite da finalidade e coerência entre classificação e hipótese são os do
+        // fato do candidato (ProtecaoDeDados): o tipo só dá o código de cada recusa.
+        Result<ProtecaoDeDados> protecao = ProtecaoDeDados.Validar(
+            classificacaoProtecao, finalidadeTratamento, hipoteseLegal, RecusasDaProtecaoDoTipo);
+        erros.AddRange(protecao.Errors);
+
         if (erros.Count > 0)
         {
-            return Result<(CodigoTipoDocumento, string, string?, string, string?, int?, string?)>.ValidationFailure(erros);
+            return Result<(CodigoTipoDocumento, string, string?, string, string?, int?, string?, ProtecaoDeDados)>.ValidationFailure(erros);
         }
 
-        return Result<(CodigoTipoDocumento, string, string?, string, string?, int?, string?)>.Success((
-            codigoVo!, nomeNorm!, descricaoNorm, categoriaNorm!, formatosAceitosNorm, tamanhoMaximoMb, tipoEquivalenteNorm));
+        return Result<(CodigoTipoDocumento, string, string?, string, string?, int?, string?, ProtecaoDeDados)>.Success((
+            codigoVo!, nomeNorm!, descricaoNorm, categoriaNorm!, formatosAceitosNorm, tamanhoMaximoMb, tipoEquivalenteNorm, protecao.Value));
     }
 
     /// <summary>
@@ -214,10 +246,13 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
         string? categoria,
         string? formatosAceitos,
         int? tamanhoMaximoMb,
-        string? tipoEquivalente)
+        string? tipoEquivalente,
+        ClassificacaoDeProtecao classificacaoProtecao,
+        string? finalidadeTratamento,
+        HipoteseLegalTratamento hipoteseLegal)
     {
-        Result<(CodigoTipoDocumento Codigo, string Nome, string? Descricao, string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente)> validacao =
-            ValidarCampos(codigo, nome, descricao, categoria, formatosAceitos, tamanhoMaximoMb, tipoEquivalente);
+        Result<(CodigoTipoDocumento Codigo, string Nome, string? Descricao, string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente, ProtecaoDeDados Protecao)> validacao =
+            ValidarCampos(codigo, nome, descricao, categoria, formatosAceitos, tamanhoMaximoMb, tipoEquivalente, classificacaoProtecao, finalidadeTratamento, hipoteseLegal);
         if (validacao.IsFailure)
         {
             return Result<TipoDocumento>.ValidationFailure(validacao.Errors);
@@ -242,10 +277,13 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
         string? categoria,
         string? formatosAceitos,
         int? tamanhoMaximoMb,
-        string? tipoEquivalente)
+        string? tipoEquivalente,
+        ClassificacaoDeProtecao classificacaoProtecao,
+        string? finalidadeTratamento,
+        HipoteseLegalTratamento hipoteseLegal)
     {
-        Result<(CodigoTipoDocumento Codigo, string Nome, string? Descricao, string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente)> validacao =
-            ValidarCampos(codigo, nome, descricao, categoria, formatosAceitos, tamanhoMaximoMb, tipoEquivalente);
+        Result<(CodigoTipoDocumento Codigo, string Nome, string? Descricao, string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente, ProtecaoDeDados Protecao)> validacao =
+            ValidarCampos(codigo, nome, descricao, categoria, formatosAceitos, tamanhoMaximoMb, tipoEquivalente, classificacaoProtecao, finalidadeTratamento, hipoteseLegal);
         if (validacao.IsFailure)
         {
             return Result.ValidationFailure(validacao.Errors);
@@ -257,7 +295,7 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
     }
 
     private void AplicarCampos(
-        (CodigoTipoDocumento Codigo, string Nome, string? Descricao, string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente) campos)
+        (CodigoTipoDocumento Codigo, string Nome, string? Descricao, string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente, ProtecaoDeDados Protecao) campos)
     {
         Codigo = campos.Codigo;
         Nome = campos.Nome;
@@ -266,6 +304,9 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
         FormatosAceitos = campos.FormatosAceitos;
         TamanhoMaximoMb = campos.TamanhoMaximoMb;
         TipoEquivalente = campos.TipoEquivalente;
+        ClassificacaoProtecao = campos.Protecao.Classificacao;
+        FinalidadeTratamento = campos.Protecao.Finalidade;
+        HipoteseLegal = campos.Protecao.Hipotese;
     }
 
     private static string? NormalizarOpcional(string? valor) =>

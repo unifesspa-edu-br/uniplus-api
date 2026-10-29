@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -398,7 +399,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         ModeloFormularioView modelo = ModeloComDocumentos(
             DocumentoDoModelo("LAUDO_MEDICO", "PCD"), DocumentoDoModelo("LAUDO_MEDICO", "LACTANTE"), DocumentoDoModelo("CERTIDAO_NASCIMENTO", "LACTANTE"));
         DocumentoExigido daHabilitacao = DocumentoExigido.Criar(
-            _processo.CronogramaFases.Single(static f => f.Codigo == "RESULTADO_FINAL").Id, Guid.CreateVersion7(), "HISTORICO_ENSINO_MEDIO", "Histórico", "ESCOLARIDADE",
+            _processo.CronogramaFases.Single(static f => f.Codigo == "RESULTADO_FINAL").Id, Guid.CreateVersion7(), "HISTORICO_ENSINO_MEDIO", "Histórico", "ESCOLARIDADE", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Geral, obrigatorio: true, null, [], [], null, FormatosPermitidos.Criar(true, null).Value!, null).Value!;
         _processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(daHabilitacao, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -516,7 +517,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         _catalogo.Add(Declarado("SOLICITA_ATENDIMENTO_ESPECIALIZADO"));
         _catalogo.Add(new FatoCandidatoView(Guid.CreateVersion7(), "CONDICAO_ATENDIMENTO", "Condição", null, "CATEGORICO", "DECLARADO", "MULTIVALORADO", ["PCD", "LACTANTE"], "INSCRICAO",
             "CAMPO_FORMULARIO:CONDICAO_ATENDIMENTO", [new("PCD", "PcD", 0, true), new("LACTANTE", "Lactante", 1, true)], "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL"));
-        List<TipoDocumentoView> tipos = [.. new[] { "LAUDO_MEDICO", "CERTIDAO_NASCIMENTO" }.Select(static codigo => new TipoDocumentoView(Guid.CreateVersion7(), codigo, codigo, "SAUDE"))];
+        List<TipoDocumentoView> tipos = [.. new[] { "LAUDO_MEDICO", "CERTIDAO_NASCIMENTO" }.Select(static codigo => new TipoDocumentoView(Guid.CreateVersion7(), codigo, codigo, "SAUDE", ClassificacaoDeProtecao.Pessoal, "Comprovação documental do candidato.", "CUMPRIMENTO_OBRIGACAO_LEGAL"))];
         _tiposDocumento.ObterVivoPorCodigoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(call => tipos.Single(t => t.Codigo == call.Arg<string>()));
         _tiposDocumento.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(call => tipos.Single(t => t.Id == call.Arg<Guid>()));
     }

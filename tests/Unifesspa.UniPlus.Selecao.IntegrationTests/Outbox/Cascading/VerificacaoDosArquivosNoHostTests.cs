@@ -41,7 +41,7 @@ public sealed class VerificacaoDosArquivosNoHostTests
         await inscricoes.AdicionarAsync(inscricao);
 
         DocumentoExigido laudo = DocumentoExigido.Criar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", Aplicabilidade.Geral, false, null,
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, false, null,
             [], [], null, FormatosPermitidos.Criar(true, null).Value!, null).Value!;
         ApresentacaoDeDocumento apresentacao = ApresentacaoDeDocumento.Criar(inscricao.Id, laudo, null);
         ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(

@@ -3,7 +3,9 @@ namespace Unifesspa.UniPlus.ArchTests.SolutionRules;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Guarda o seed do catálogo de tipos de documento contra o que o caminho de
@@ -25,7 +27,7 @@ public sealed class CatalogoDeTiposDocumentoTests
         // Coleta os recusados em vez de asserir item a item: a falha nomeia quais
         // códigos a factory rejeitou, em vez de dizer só que "algum" item falhou.
         string[] recusados = [.. TipoDocumentoSeed.Itens
-            .Where(item => TipoDocumento.Criar(item.Codigo, item.Nome, null, item.Categoria, null, null, null).IsFailure)
+            .Where(item => TipoDocumento.Criar(item.Codigo, item.Nome, null, item.Categoria, null, null, null, item.ClassificacaoProtecao, TipoDocumentoSeed.FinalidadeTratamento, TipoDocumentoSeed.HipoteseLegal).IsFailure)
             .Select(item => item.Codigo)];
 
         recusados.Should().BeEmpty(

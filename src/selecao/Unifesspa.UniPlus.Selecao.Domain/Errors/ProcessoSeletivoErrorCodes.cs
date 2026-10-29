@@ -39,4 +39,10 @@ public static class ProcessoSeletivoErrorCodes
     public const string RetificacaoDesfazCicloRecursalAberto = "ProcessoSeletivo.RetificacaoDesfazCicloRecursalAberto";
     public const string EtapaComPreliminarSemDefinitivo = "ProcessoSeletivo.EtapaComPreliminarSemDefinitivo";
     public const string RemanejamentoIncoerenteComANatureza = "ProcessoSeletivo.RemanejamentoIncoerenteComANatureza";
+
+    /// <summary>
+    /// O tipo de documento congelado na exigência é menos protegido que o mais protegido dos fatos
+    /// que ela comprova, na classificação congelada de cada fato no processo.
+    /// </summary>
+    public const string ExigenciaMenosProtegidaQueFatoComprovado = "ProcessoSeletivo.ExigenciaMenosProtegidaQueFatoComprovado";
 }

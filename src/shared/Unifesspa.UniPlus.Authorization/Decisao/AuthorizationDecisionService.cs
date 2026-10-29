@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Enums;
 using Unifesspa.UniPlus.Authorization.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Ponto de decisão único (ADR-0078) na sua forma mínima: decide por concessão
@@ -141,8 +142,8 @@ public sealed class AuthorizationDecisionService : IAuthorizationDecisionService
         return AuthorizationDecision.Permitir(concessao.GrantSelecionado!);
     }
 
-    private static bool ExigeBaseLegal(Sensibilidade sensibilidade) =>
-        sensibilidade is Sensibilidade.Pessoal or Sensibilidade.Sensivel;
+    private static bool ExigeBaseLegal(ClassificacaoDeProtecao sensibilidade) =>
+        sensibilidade >= ClassificacaoDeProtecao.Pessoal;
 
     // Uma verificação declarada e não registrada é erro de composição, não
     // decisão de acesso: o catálogo recusa nome não registrado no build e o

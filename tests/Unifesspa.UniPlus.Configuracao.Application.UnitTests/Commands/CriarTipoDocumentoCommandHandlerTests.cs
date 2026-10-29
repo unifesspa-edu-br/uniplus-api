@@ -27,7 +27,8 @@ public sealed class CriarTipoDocumentoCommandHandlerTests
     }
 
     private static CriarTipoDocumentoCommand ComandoValido() =>
-        new("LAUDO_MEDICO", "Laudo médico", "SAUDE", "Documento de saúde", "pdf,jpg", 10, null);
+        new("LAUDO_MEDICO", "Laudo médico", "SAUDE", "Documento de saúde", "pdf,jpg", 10, null,
+            "SENSIVEL", "Comprovação do atendimento especializado.", "TUTELA_DA_SAUDE");
 
     [Fact(DisplayName = "Código livre cria o tipo, persiste e retorna o Id")]
     public async Task Handle_CodigoLivre_CriaEPersiste()
@@ -107,4 +108,34 @@ public sealed class CriarTipoDocumentoCommandHandlerTests
     /// que recebe `CodigoTipoDocumento` — não a string crua.
     private static CodigoTipoDocumento Codigo(string valor) => CodigoTipoDocumento.Criar(valor).Value!;
 
+    [Fact(DisplayName = "Comando sem a proteção é recusado como proteção obrigatória, sem consultar nem persistir")]
+    public async Task Handle_SemProtecao_RecusaSemPersistir()
+    {
+        CriarTipoDocumentoCommand comando = ComandoValido() with
+        {
+            ClassificacaoProtecao = null,
+            FinalidadeTratamento = null,
+            HipoteseLegal = null,
+        };
+
+        Result<Guid> resultado = await CriarTipoDocumentoCommandHandler.Handle(
+            comando, _repository, _categoriaRepository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(3);
+        resultado.Errors.Should().AllSatisfy(e => e.Error.Code.Should().Be(TipoDocumentoErrorCodes.ProtecaoObrigatoria));
+        await _repository.DidNotReceive().AdicionarAsync(Arg.Any<TipoDocumento>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Token de classificação fora do vocabulário é recusado como inválido, não como ausente")]
+    public async Task Handle_ClassificacaoForaDoVocabulario_RecusaComoInvalida()
+    {
+        CriarTipoDocumentoCommand comando = ComandoValido() with { ClassificacaoProtecao = "ALTISSIMA" };
+
+        Result<Guid> resultado = await CriarTipoDocumentoCommandHandler.Handle(
+            comando, _repository, _categoriaRepository, _unitOfWork, CancellationToken.None);
+
+        resultado.Errors.Should().ContainSingle();
+        resultado.Errors[0].Error.Code.Should().Be(TipoDocumentoErrorCodes.ClassificacaoProtecaoInvalida);
+    }
 }

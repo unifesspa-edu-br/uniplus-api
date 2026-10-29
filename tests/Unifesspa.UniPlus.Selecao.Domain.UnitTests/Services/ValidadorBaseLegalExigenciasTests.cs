@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura de <see cref="ValidadorBaseLegalExigencias"/> (Story #554, PR #898, issue #549,
@@ -23,7 +24,7 @@ public sealed class ValidadorBaseLegalExigenciasTests
             tipoDocumentoOrigemId: Guid.CreateVersion7(),
             tipoDocumentoCodigo: "IDENTIDADE",
             tipoDocumentoNome: "Documento de identidade",
-            tipoDocumentoCategoria: "PESSOAL",
+            tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             aplicabilidade: Aplicabilidade.Geral,
             obrigatorio: obrigatorio,
             consequenciaIndeferimento: consequenciaIndeferimento,

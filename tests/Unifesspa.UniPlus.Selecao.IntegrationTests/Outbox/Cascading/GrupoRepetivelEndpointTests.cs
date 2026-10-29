@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
@@ -164,7 +165,7 @@ public sealed class GrupoRepetivelEndpointTests
         string sobGuarda = $"SOB_GUARDA_{sufixo}";
         FatoCandidato campoDeMembro = FatoCandidato.CriarDoAdministrador(
             sobGuarda, "Sob guarda", null, DominioFato.Booleano, CardinalidadeFato.Escalar, fonteValores: null, formato: null,
-            "RESULTADO_FINAL", EscopoFato.MembroGrupo, ClassificacaoProtecaoDado.Pessoal, "Composição familiar",
+            "RESULTADO_FINAL", EscopoFato.MembroGrupo, ClassificacaoDeProtecao.Pessoal, "Composição familiar",
             HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
         Guid tipoDocumentoId = await SemearNoCatalogoAsync(campoDeMembro, $"CERT_GUARDA_{sufixo}", "Certidão de guarda");
         await TiposDeAtoSeeder.SemearAsync(_fixture.Factory.Services);
@@ -228,7 +229,7 @@ public sealed class GrupoRepetivelEndpointTests
     {
         TipoDocumento tipoDocumento = TipoDocumento.Criar(
             codigoDoDocumento, nomeDoDocumento, descricao: null, categoria: "IDENTIFICACAO",
-            formatosAceitos: null, tamanhoMaximoMb: null, tipoEquivalente: null).Value!;
+            formatosAceitos: null, tamanhoMaximoMb: null, tipoEquivalente: null, classificacaoProtecao: ClassificacaoDeProtecao.Pessoal, finalidadeTratamento: "Comprovação documental do candidato.", hipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
         db.AddRange([fato, .. outros]);
@@ -241,11 +242,11 @@ public sealed class GrupoRepetivelEndpointTests
     {
         FatoCandidato fatoDeMembro = FatoCandidato.CriarDoAdministrador(
             membro, "Categoria de renda", null, DominioFato.Categorico, CardinalidadeFato.Escalar, FonteValoresFato.Processo, formato: null,
-            "RESULTADO_FINAL", EscopoFato.MembroGrupo, ClassificacaoProtecaoDado.Pessoal, "Composição familiar",
+            "RESULTADO_FINAL", EscopoFato.MembroGrupo, ClassificacaoDeProtecao.Pessoal, "Composição familiar",
             HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
         FatoCandidato fatoAgregado = FatoCandidato.CriarAgregadoDoAdministrador(
             agregado, "Categorias de renda da família", null, membro, new CatalogoDeFatos([fatoDeMembro], []),
-            "RESULTADO_FINAL", ClassificacaoProtecaoDado.Pessoal, "Composição familiar", HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+            "RESULTADO_FINAL", ClassificacaoDeProtecao.Pessoal, "Composição familiar", HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
         return await SemearNoCatalogoAsync(fatoDeMembro, $"DECL_RURAL_{sufixo}", "Declaração de trabalhador rural", fatoAgregado);
     }
 
@@ -275,7 +276,7 @@ public sealed class GrupoRepetivelEndpointTests
         string codigo = $"MEMBRO_{Guid.NewGuid():N}"[..30].ToUpperInvariant();
         FatoCandidato fato = FatoCandidato.CriarDoAdministrador(
             codigo, "Trabalha no campo", null, DominioFato.Booleano, CardinalidadeFato.Escalar, fonteValores: null, formato: null,
-            "INSCRICAO", EscopoFato.MembroGrupo, ClassificacaoProtecaoDado.Pessoal, "Composição familiar",
+            "INSCRICAO", EscopoFato.MembroGrupo, ClassificacaoDeProtecao.Pessoal, "Composição familiar",
             HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();

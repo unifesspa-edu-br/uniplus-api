@@ -47,7 +47,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             tipoDocumentoOrigemId: Guid.CreateVersion7(),
             tipoDocumentoCodigo: "IDENTIDADE",
             tipoDocumentoNome: "Documento de identidade",
-            tipoDocumentoCategoria: "PESSOAL",
+            tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             aplicabilidade,
             obrigatorio: consequenciaIndeferimento is null,
             consequenciaIndeferimento,
@@ -85,7 +85,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             tipoDocumentoOrigemId: Guid.CreateVersion7(),
             tipoDocumentoCodigo: "IDENTIDADE",
             tipoDocumentoNome: "Documento de identidade",
-            tipoDocumentoCategoria: "PESSOAL",
+            tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Geral,
             obrigatorio: true,
             consequenciaIndeferimento: null,
@@ -285,7 +285,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             tipoDocumentoOrigemId: Guid.CreateVersion7(),
             tipoDocumentoCodigo: "COMPROVANTE_RESIDENCIA",
             tipoDocumentoNome: "Comprovante de residência",
-            tipoDocumentoCategoria: "PESSOAL",
+            tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Geral,
             obrigatorio: true,
             consequenciaIndeferimento: null,
@@ -727,7 +727,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             tipoDocumentoOrigemId: Guid.CreateVersion7(),
             tipoDocumentoCodigo: "COMPROVANTE_RESIDENCIA",
             tipoDocumentoNome: "Comprovante de residência",
-            tipoDocumentoCategoria: "PESSOAL",
+            tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             aplicabilidade: Aplicabilidade.Geral,
             obrigatorio: true,
             consequenciaIndeferimento: null,
@@ -853,7 +853,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             tipoDocumentoOrigemId: Guid.CreateVersion7(),
             tipoDocumentoCodigo: "COMPROVANTE_RESIDENCIA",
             tipoDocumentoNome: "Comprovante de residência",
-            tipoDocumentoCategoria: "PESSOAL",
+            tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             aplicabilidade: Aplicabilidade.Geral,
             obrigatorio: true,
             consequenciaIndeferimento: null,
@@ -992,7 +992,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         processo.DefinirDistribuicaoVagas([DistribuicaoCom("LB_PPI", "AC")], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         DocumentoExigido exigencia = DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL",
+            fase.Id, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
             condicoes: [CondicaoDe("MODALIDADE", "LB_PPI")], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -1012,7 +1012,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         processo.DefinirDistribuicaoVagas([DistribuicaoCom("LB_PPI", "AC")], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         DocumentoExigido exigencia = DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "AUTODECLARACAO_PPI", "Autodeclaração étnico-racial", "PESSOAL",
+            fase.Id, Guid.CreateVersion7(), "AUTODECLARACAO_PPI", "Autodeclaração étnico-racial", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
             condicoes: [CondicaoDe("MODALIDADE_CONVOCACAO", "LB_PPI")], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -1031,7 +1031,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         processo.DefinirDistribuicaoVagas([DistribuicaoCom("LB_PPI", "AC")], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         DocumentoExigido exigencia = DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL",
+            fase.Id, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
             condicoes: [CondicaoDe("MODALIDADE", "LB_PPI")], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -1053,7 +1053,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             .IsSuccess.Should().BeTrue();
 
         DocumentoExigido exigencia = DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "SAUDE",
+            fase.Id, Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
             condicoes: [CondicaoDe("CONDICAO_ATENDIMENTO", "PCD")], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -1077,7 +1077,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             .IsSuccess.Should().BeTrue();
 
         DocumentoExigido exigencia = DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "CERTIDAO_NASCIMENTO", "Certidão de nascimento da criança", "PESSOAL",
+            fase.Id, Guid.CreateVersion7(), "CERTIDAO_NASCIMENTO", "Certidão de nascimento da criança", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
             condicoes: [CondicaoDe("RECURSO_ACESSIBILIDADE", "SALA_AMAMENTACAO")], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -1101,7 +1101,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             .IsSuccess.Should().BeTrue();
 
         DocumentoExigido exigencia = DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "SAUDE",
+            fase.Id, Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
             condicoes: [CondicaoDe("CONDICAO_ATENDIMENTO", "PCD")], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();

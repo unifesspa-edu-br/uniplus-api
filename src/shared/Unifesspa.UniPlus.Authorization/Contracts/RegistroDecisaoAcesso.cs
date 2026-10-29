@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Authorization.Contracts;
 
 using Unifesspa.UniPlus.Authorization.Enums;
 using Unifesspa.UniPlus.Authorization.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Evento do registro operacional restrito: o que fica gravado sobre <b>um uso</b>
@@ -147,8 +148,8 @@ public sealed record RegistroDecisaoAcesso
             grant?.EscopoUnidadeId);
     }
 
-    // A escala de Sensibilidade é crescente por construção (Publica < Interna <
-    // Pessoal < Sensivel), então a mais restritiva é a de maior valor.
-    private static Sensibilidade MaisRestritiva(Sensibilidade primeira, Sensibilidade segunda)
-        => (Sensibilidade)Math.Max((int)primeira, (int)segunda);
+    // A escala é crescente por construção (Publico < Interno < Pessoal <
+    // Identificador < Sensivel), então a mais restritiva é a de maior valor.
+    private static ClassificacaoDeProtecao MaisRestritiva(ClassificacaoDeProtecao primeira, ClassificacaoDeProtecao segunda)
+        => (ClassificacaoDeProtecao)Math.Max((int)primeira, (int)segunda);
 }

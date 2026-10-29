@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Authorization.Contracts;
 
 using Unifesspa.UniPlus.Authorization.Enums;
 using Unifesspa.UniPlus.Authorization.Errors;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -26,7 +27,7 @@ public sealed record PermissionRequirement
     public string Permissao { get; }
 
     /// <summary>Sensibilidade do dado que a operação retorna.</summary>
-    public Sensibilidade Sensibilidade { get; }
+    public ClassificacaoDeProtecao Sensibilidade { get; }
 
     /// <summary>Base legal padrão da permissão. Vazia quando o dado é público.</summary>
     public string BaseLegalPadrao { get; }
@@ -45,7 +46,7 @@ public sealed record PermissionRequirement
 
     private PermissionRequirement(
         string permissao,
-        Sensibilidade sensibilidade,
+        ClassificacaoDeProtecao sensibilidade,
         string baseLegalPadrao,
         bool requerMfa,
         bool requerDuplaAprovacao,
@@ -69,7 +70,7 @@ public sealed record PermissionRequirement
     /// </summary>
     public static Result<PermissionRequirement> From(
         string? permissao,
-        Sensibilidade sensibilidade,
+        ClassificacaoDeProtecao sensibilidade,
         string? baseLegalPadrao = null,
         bool requerMfa = false,
         bool requerDuplaAprovacao = false,
@@ -81,6 +82,13 @@ public sealed record PermissionRequirement
             return Result<PermissionRequirement>.Failure(new DomainError(
                 AuthorizationErrorCodes.PermissionRequirementPermissaoObrigatoria,
                 "Código da permissão é obrigatório."));
+        }
+
+        if (sensibilidade == ClassificacaoDeProtecao.Nenhuma || !Enum.IsDefined(sensibilidade))
+        {
+            return Result<PermissionRequirement>.Failure(new DomainError(
+                AuthorizationErrorCodes.PermissionRequirementSensibilidadeInvalida,
+                "A sensibilidade da permissão é obrigatória: informe um nível da escala de proteção (publico a sensivel)."));
         }
 
         return Result<PermissionRequirement>.Success(new PermissionRequirement(

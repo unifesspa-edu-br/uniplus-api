@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <c>IUserContext</c>, não no payload.
 /// </summary>
 /// <remarks>
-/// <c>Codigo</c>, <c>Nome</c> e <c>Categoria</c> são <c>string?</c>, não
+/// <c>Codigo</c>, <c>Nome</c>, <c>Categoria</c> e os três campos da proteção são <c>string?</c>, não
 /// <c>string</c> (ADR-0125): sem validator FluentValidation garantindo não-nulo a
 /// montante, o model binding automático do <c>[ApiController]</c> interceptaria um
 /// campo ausente/nulo com um 400 genérico do ASP.NET, antes de o domínio rodar.
@@ -23,4 +23,7 @@ public sealed record CriarTipoDocumentoCommand(
     string? Descricao = null,
     string? FormatosAceitos = null,
     int? TamanhoMaximoMb = null,
-    string? TipoEquivalente = null) : ICommand<Result<Guid>>;
+    string? TipoEquivalente = null,
+    string? ClassificacaoProtecao = null,
+    string? FinalidadeTratamento = null,
+    string? HipoteseLegal = null) : ICommand<Result<Guid>>;

@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>Handler da edição de perfil: substitui nome, descrição e permissões.</summary>
@@ -100,7 +101,7 @@ public static class AtualizarPerfilCommandHandler
         bool amplia = perfil.Permissoes
             .Select(static p => p.Codigo)
             .Where(codigo => !permissoesAnteriores.Contains(codigo, StringComparer.Ordinal))
-            .Any(codigo => PerfilMapping.SensibilidadeDe(codigo, catalogoDaAplicacao) >= Sensibilidade.Pessoal);
+            .Any(codigo => PerfilMapping.SensibilidadeDe(codigo, catalogoDaAplicacao) >= ClassificacaoDeProtecao.Pessoal);
 
         return amplia ? PerfilHandlerErros.AmpliacaoExigeEncarregada() : null;
     }

@@ -15,6 +15,7 @@ using Testcontainers.PostgreSql;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Prova que a migration que fecha o formato do código atravessa um banco que já
@@ -149,9 +150,10 @@ public sealed class MigracaoCodigoTipoDocumentoTests : IAsyncLifetime
         {
             List<TipoDocumento> todos = await leitura.TiposDocumento.AsNoTracking().ToListAsync();
 
-            todos.Should().ContainSingle(t => t.Id == idDoOperador)
-                .Which.Nome.Should().Be("Cadastrado pelo operador",
-                    "o que o operador cadastrou não é sobrescrito pela carga");
+            TipoDocumento doOperador = todos.Should().ContainSingle(t => t.Id == idDoOperador).Which;
+            doOperador.Nome.Should().Be("Cadastrado pelo operador", "o que o operador cadastrou não é sobrescrito pela carga");
+            doOperador.ClassificacaoProtecao.Should().Be(ClassificacaoDeProtecao.Pessoal,
+                "o tipo cadastrado antes da migration recebe o padrão provisório, e a leitura não falha");
 
             // Os outros 69 entram normalmente: a tolerância pula a linha em conflito,
             // não a carga inteira.

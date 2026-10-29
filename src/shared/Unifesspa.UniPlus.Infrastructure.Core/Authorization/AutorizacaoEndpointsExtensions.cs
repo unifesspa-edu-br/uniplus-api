@@ -205,7 +205,7 @@ public sealed record RecursoDoCatalogoResponse(string Recurso, IReadOnlyList<Per
 /// <param name="Codigo">Código da permissão.</param>
 /// <param name="Nome">Nome legível.</param>
 /// <param name="Descricao">Descrição do que autoriza.</param>
-/// <param name="Sensibilidade">Sensibilidade do dado (publica, interna, pessoal, sensivel).</param>
+/// <param name="Sensibilidade">Sensibilidade do dado (publico, interno, pessoal, identificador, sensivel).</param>
 public sealed record PermissaoDoCatalogoResponse(string Codigo, string Nome, string Descricao, string Sensibilidade);
 
 /// <summary>Uma permissão que o usuário logado possui.</summary>

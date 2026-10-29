@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Enums;
 using Unifesspa.UniPlus.Authorization.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Fábricas dos contratos que toda decisão recebe, com os valores neutros do
@@ -27,7 +28,7 @@ internal static class CenariosDeDecisao
             userAgent: "uniplus-web/1.0").Value!;
 
     public static ResourceContext Recurso(
-        Sensibilidade sensibilidade = Sensibilidade.Interna,
+        ClassificacaoDeProtecao sensibilidade = ClassificacaoDeProtecao.Interno,
         Guid? unidadeProprietariaId = null,
         Guid? processoId = null,
         Guid? chamadaId = null)
@@ -39,7 +40,7 @@ internal static class CenariosDeDecisao
             chamadaId).Value!;
 
     public static PermissionRequirement Requisito(
-        Sensibilidade sensibilidade = Sensibilidade.Interna,
+        ClassificacaoDeProtecao sensibilidade = ClassificacaoDeProtecao.Interno,
         string? baseLegalPadrao = null,
         bool requerMfa = false,
         bool requerDuplaAprovacao = false,

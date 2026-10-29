@@ -27,4 +27,17 @@ public static class TipoDocumentoErrorCodes
     public const string TipoEquivalenteTamanho = "TipoDocumento.TipoEquivalenteTamanho";
     public const string TipoEquivalenteIgualCodigo = "TipoDocumento.TipoEquivalenteIgualCodigo";
     public const string NaoEncontrado = "TipoDocumento.NaoEncontrado";
+
+    /// <summary>
+    /// Classificação, finalidade do tratamento ou hipótese legal ausentes: os três são obrigatórios
+    /// e a recusa traz um erro por campo ausente.
+    /// </summary>
+    public const string ProtecaoObrigatoria = "TipoDocumento.ProtecaoObrigatoria";
+
+    public const string ClassificacaoProtecaoInvalida = "TipoDocumento.ClassificacaoProtecaoInvalida";
+    public const string FinalidadeTratamentoTamanho = "TipoDocumento.FinalidadeTratamentoTamanho";
+    public const string HipoteseLegalInvalida = "TipoDocumento.HipoteseLegalInvalida";
+
+    /// <summary>Hipótese do art. 7º em tipo sensível, ou do art. 11 em tipo não sensível.</summary>
+    public const string HipoteseLegalIncompativelComClassificacao = "TipoDocumento.HipoteseLegalIncompativelComClassificacao";
 }

@@ -7,6 +7,7 @@ using Enums;
 using Events;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -3875,7 +3876,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// pendência que vai bloquear a publicação antes das que só apareceriam depois dela.
     /// </para>
     /// </remarks>
-    public IReadOnlyList<ItemConformidade> AvaliarConformidade(ContextoDeContagemDePrazos contexto, FatosDeModalidade fatosDeModalidade, TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos)
+    public IReadOnlyList<ItemConformidade> AvaliarConformidade(
+        ContextoDeContagemDePrazos contexto, FatosDeModalidade fatosDeModalidade, TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos,
+        ProtecaoVigenteDasExigencias? protecao = null)
     {
         ArgumentNullException.ThrowIfNull(contexto);
         ArgumentNullException.ThrowIfNull(tiposDeAtoUnicos);
@@ -3929,6 +3932,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // ── PendenciaPreCanonicalizacao, na mesma ordem do gate (Story #554/#920/#927/#928) ──
         new ItemConformidade("exigencia_condicional_vazia_determina_resultado", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: sem CONDICIONAL vazia que determina resultado", PendenciaDasExigenciasDocumentais() is null),
         new ItemConformidade("exigencia_finalidade_incoerente_com_a_fase", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: declara o formulário a que pertence, entre os que a sua fase responde", PendenciaDaFinalidadeDasExigencias() is null),
+        new ItemConformidade("exigencia_fato_comprovado_fora_do_processo", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: comprova só fatos que o processo coleta ou que constam do catálogo", PendenciaDoFatoComprovadoForaDoProcesso(protecao) is null),
+        new ItemConformidade("exigencia_menos_protegida_que_fato_comprovado", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: o tipo de documento é tão protegido quanto o mais protegido dos fatos que a exigência comprova", PendenciaDaProtecaoDasExigencias(protecao) is null),
         new ItemConformidade("exigencia_remove_vantagem_sem_vantagem_viva", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: REMOVE_VANTAGEM com vantagem viva (exigência)", !ExisteExigenciaRemoveVantagemSemVantagemViva()),
         new ItemConformidade("exigencia_consequencia_incoerente_com_acao_da_vaga", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: coerente com a ação da vaga (exigência)", !ExisteExigenciaConsequenciaIncoerenteComAcaoDaVaga(fatosDeModalidade)),
         new ItemConformidade("grupo_remove_vantagem_sem_vantagem_viva", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: REMOVE_VANTAGEM com vantagem viva (grupo)", !ExisteGrupoRemoveVantagemSemVantagemViva()),
@@ -4968,7 +4973,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <see cref="Publicar"/>/<see cref="SucederVersao"/> devolveriam depois, se a
     /// exceção não tivesse interrompido o fluxo antes.
     /// </remarks>
-    public DomainError? PendenciaPreCanonicalizacao(FatosDeModalidade fatosDeModalidade)
+    public DomainError? PendenciaPreCanonicalizacao(FatosDeModalidade fatosDeModalidade, ProtecaoVigenteDasExigencias? protecao = null)
     {
         ArgumentNullException.ThrowIfNull(fatosDeModalidade);
 
@@ -4980,6 +4985,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         if (PendenciaDaFinalidadeDasExigencias() is { } finalidadeDaExigencia)
         {
             return finalidadeDaExigencia;
+        }
+
+        if (PendenciaDoFatoComprovadoForaDoProcesso(protecao) is { } fatoComprovadoForaDoProcesso)
+        {
+            return fatoComprovadoForaDoProcesso;
+        }
+
+        if (PendenciaDaProtecaoDasExigencias(protecao) is { } protecaoDaExigencia)
+        {
+            return protecaoDaExigencia;
         }
 
         if (PendenciaDeCoerenciaDaConsequenciaDeIndeferimento(fatosDeModalidade) is { } coerencia)
@@ -5647,6 +5662,107 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 ? Services.ValidadorVinculoDaExigencia.RecusaDaFinalidade(exigencia.Finalidade, fase)
                 : null)
             .FirstOrDefault(static recusa => recusa is not null);
+
+    /// <summary>
+    /// Congela em cada exigência a proteção efetiva calculada pelo contexto (a da versão vigente, quando
+    /// a exigência é a mesma, ou a vigente no cadastro), antes do snapshot. A exigência que o contexto
+    /// não traz mantém a cópia.
+    /// </summary>
+    public void AplicarProtecaoVigente(ProtecaoVigenteDasExigencias protecao)
+    {
+        ArgumentNullException.ThrowIfNull(protecao);
+
+        foreach (DocumentoExigido exigencia in _documentosExigidos)
+        {
+            if (protecao.PorExigencia.TryGetValue(exigencia.Id, out ProtecaoDoDocumento? efetiva))
+            {
+                exigencia.RecongelarProtecao(efetiva);
+            }
+        }
+    }
+
+    private static ClassificacaoDeProtecao ClassificacaoEfetiva(DocumentoExigido exigencia, ProtecaoVigenteDasExigencias? protecao) =>
+        protecao is not null && protecao.PorExigencia.TryGetValue(exigencia.Id, out ProtecaoDoDocumento? efetiva)
+            ? efetiva.Classificacao
+            : exigencia.ClassificacaoProtecao;
+
+    /// <summary>
+    /// Cada fato que uma exigência diz comprovar é coletado por algum formulário do processo ou é fato do
+    /// catálogo, como o derivado: só assim tem classificação congelada com que comparar.
+    /// </summary>
+    private DomainError? PendenciaDoFatoComprovadoForaDoProcesso(ProtecaoVigenteDasExigencias? protecao)
+    {
+        foreach (DocumentoExigido exigencia in _documentosExigidos)
+        {
+            foreach (string codigo in exigencia.FatosComprovados.Order(StringComparer.Ordinal))
+            {
+                if (protecao is not null
+                    && !protecao.ClassificacaoDosFatosDoCatalogo.ContainsKey(codigo)
+                    && !_campos.Any(f => string.Equals(f.FatoCodigo, codigo, StringComparison.Ordinal)))
+                {
+                    return new DomainError(
+                        DocumentoExigido.FatoComprovadoForaDoProcesso,
+                        $"A exigência do tipo de documento '{exigencia.TipoDocumentoCodigo}' comprova o fato '{codigo}', que o processo não coleta e que não consta do catálogo de fatos.");
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// O tipo de documento congelado na exigência é tão protegido quanto o mais protegido dos fatos
+    /// que ela comprova, na classificação que cada fato tem congelada no processo: um laudo
+    /// classificado como pessoal não comprova um fato sensível, porque o arquivo do laudo carrega
+    /// o dado do fato. O fato que só aciona a exigência pelo gatilho não entra na conferência, e a
+    /// exigência sem fato comprovado vale pela classificação do tipo. O fato que o processo não
+    /// coleta é outra pendência (<see cref="PendenciaDoFatoComprovadoForaDoProcesso"/>) e não conta aqui.
+    /// </summary>
+    private DomainError? PendenciaDaProtecaoDasExigencias(ProtecaoVigenteDasExigencias? protecao)
+    {
+        foreach (DocumentoExigido exigencia in _documentosExigidos.Where(static e => e.FatosComprovados.Length > 0))
+        {
+            (string Codigo, ClassificacaoDeProtecao Nivel)? maisProtegido = null;
+            foreach (string codigo in exigencia.FatosComprovados.Order(StringComparer.Ordinal))
+            {
+                ClassificacaoDeProtecao[] daColeta =
+                [
+                    .. _campos.Where(f => string.Equals(f.FatoCodigo, codigo, StringComparison.Ordinal))
+                        .Select(static f => ClassificacoesDeProtecao.Analisar(f.ClassificacaoProtecao)),
+                ];
+                ClassificacaoDeProtecao nivel;
+                if (daColeta.Length > 0)
+                {
+                    nivel = daColeta.Max();
+                }
+                else if (protecao?.ClassificacaoDosFatosDoCatalogo.TryGetValue(codigo, out ClassificacaoDeProtecao doCatalogo) == true)
+                {
+                    nivel = doCatalogo;
+                }
+                else
+                {
+                    continue;
+                }
+
+                if (maisProtegido is not { } atual || nivel > atual.Nivel)
+                {
+                    maisProtegido = (codigo, nivel);
+                }
+            }
+
+            ClassificacaoDeProtecao doTipo = ClassificacaoEfetiva(exigencia, protecao);
+            if (maisProtegido is { } decisivo && doTipo < decisivo.Nivel)
+            {
+                return new DomainError(
+                    ProcessoSeletivoErrorCodes.ExigenciaMenosProtegidaQueFatoComprovado,
+                    $"A exigência do tipo de documento '{exigencia.TipoDocumentoCodigo}' ({exigencia.TipoDocumentoNome}) é {ClassificacoesDeProtecao.ParaTokenCanonico(doTipo)} "
+                    + $"e comprova o fato '{decisivo.Codigo}', que é {ClassificacoesDeProtecao.ParaTokenCanonico(decisivo.Nivel)}. "
+                    + "Exija um tipo de documento com ao menos essa proteção ou retire o fato da exigência.");
+            }
+        }
+
+        return null;
+    }
 
     /// <summary>
     /// Pendências dos documentos exigidos (Story #554). Chamado por

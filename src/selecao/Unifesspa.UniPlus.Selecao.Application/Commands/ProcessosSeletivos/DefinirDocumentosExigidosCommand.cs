@@ -65,6 +65,13 @@ public sealed record IdadeMaximaEmissaoInput(
 /// formulários o candidato apresenta o documento.
 /// </remarks>
 /// <remarks>
+/// <see cref="FatosComprovados"/> são os códigos dos fatos do próprio processo que o documento
+/// comprova, e só eles contam para conferir a proteção do tipo de documento: o fato que apenas
+/// aciona a exigência pelo gatilho não entra. A exigência copia a proteção do tipo no momento em
+/// que é gravada, e a publicação recusa a que ficar menos protegida que o fato mais protegido
+/// entre os comprovados.
+/// </remarks>
+/// <remarks>
 /// <see cref="FormatosPermitidos"/> (Story #918) é um valor JSON polimórfico — o mesmo
 /// tratamento já usado por <see cref="CondicaoGatilhoInput.Valor"/>/<c>CondicaoDnf.Valor</c>
 /// (ADR-0111): a string <c>"QUALQUER"</c> OU um array de <c>{formato, tamanhoMaximoBytesMax}</c>,
@@ -86,7 +93,8 @@ public sealed record ItemDocumentoExigidoInput(
     int? TamanhoMaximoBytes,
     Guid? ExigidoNaEtapaId = null,
     Guid? ModeloId = null,
-    string? Finalidade = null);
+    string? Finalidade = null,
+    IReadOnlyList<string>? FatosComprovados = null);
 
 /// <summary>
 /// Entrada de um nó da árvore de satisfação (Story #920) — substitui o antigo

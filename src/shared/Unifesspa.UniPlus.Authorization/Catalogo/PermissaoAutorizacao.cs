@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Authorization.Catalogo;
 
 using Unifesspa.UniPlus.Authorization.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>Permissões do próprio módulo de autorização.</summary>
 [ModuloDePermissoes("autorizacao")]
@@ -11,7 +12,7 @@ public enum PermissaoAutorizacao
         "autorizacao:permissoes:consultar-catalogo",
         "Consultar o catálogo de permissões",
         "Lista todas as permissões da plataforma, agrupadas por módulo e recurso, para quem administra concessões.",
-        Sensibilidade.Interna)]
+        ClassificacaoDeProtecao.Interno)]
     ConsultarCatalogo = 1,
 
     /// <summary>Manter os perfis de acesso.</summary>
@@ -19,7 +20,7 @@ public enum PermissaoAutorizacao
         "autorizacao:perfis:manter",
         "Manter perfis de acesso",
         "Cria, edita, ativa, desativa e consulta os perfis de acesso, que reúnem permissões do catálogo.",
-        Sensibilidade.Interna,
+        ClassificacaoDeProtecao.Interno,
         ReservadaAGovernanca = true)]
     PerfisManter = 2,
 
@@ -28,7 +29,7 @@ public enum PermissaoAutorizacao
         "autorizacao:concessoes:administrar",
         "Administrar concessões de acesso",
         "Consulta as concessões e a trilha de cada uma e revoga concessões, o que expõe quem tem acesso a quê, por pessoa.",
-        Sensibilidade.Pessoal,
+        ClassificacaoDeProtecao.Pessoal,
         BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
         ReservadaAGovernanca = true)]
     ConcessoesAdministrar = 3,
@@ -38,7 +39,7 @@ public enum PermissaoAutorizacao
         "autorizacao:pedidos:aprovar-funcional",
         "Aprovar a adequação funcional dos pedidos de concessão",
         "Consulta a fila da primeira etapa dos pedidos de concessão, com o nome e o e-mail de quem pede e de quem recebe o acesso, e aprova ou recusa a adequação funcional.",
-        Sensibilidade.Pessoal,
+        ClassificacaoDeProtecao.Pessoal,
         BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
         ReservadaAGovernanca = true)]
     PedidosAprovarFuncional = 4,
@@ -48,7 +49,7 @@ public enum PermissaoAutorizacao
         "autorizacao:pedidos:aprovar-protecao-de-dados",
         "Aprovar a adequação dos pedidos de concessão à proteção de dados",
         "Consulta a fila da segunda etapa dos pedidos de concessão, os de perfil com permissão pessoal ou sensível, e aprova ou recusa a adequação à proteção de dados.",
-        Sensibilidade.Pessoal,
+        ClassificacaoDeProtecao.Pessoal,
         BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
         ReservadaAGovernanca = true)]
     PedidosAprovarProtecaoDeDados = 5,

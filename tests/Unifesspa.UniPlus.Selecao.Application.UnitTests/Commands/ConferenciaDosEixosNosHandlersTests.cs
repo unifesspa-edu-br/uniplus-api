@@ -406,7 +406,7 @@ public sealed class ConferenciaDosEixosNosHandlersTests
 
         private static DocumentoExigido ExigenciaComGatilho(Guid faseId) =>
             DocumentoExigido.Criar(
-                faseId, Guid.CreateVersion7(), "DECLARACAO", "Declaração", "PESSOAL",
+                faseId, Guid.CreateVersion7(), "DECLARACAO", "Declaração", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
                 Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
                 condicoes: [CondicaoGatilho.Criar(0, Fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!],
                 basesLegais: [DocumentoExigidoBaseLegal.Criar("Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!],

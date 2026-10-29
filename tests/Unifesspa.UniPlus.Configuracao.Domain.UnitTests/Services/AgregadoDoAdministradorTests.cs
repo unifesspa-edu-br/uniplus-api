@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
@@ -55,7 +56,7 @@ public sealed class AgregadoDoAdministradorTests
     {
         FatoCandidato doCandidato = FatoCandidato.CriarDoAdministrador(
             "RENDA_DECLARADA", "Renda", null, DominioFato.Booleano, CardinalidadeFato.Escalar, null, null, "INSCRICAO",
-            EscopoFato.Candidato, ClassificacaoProtecaoDado.Pessoal, Finalidade, Hipotese).Value!;
+            EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
         FatoCandidato numerico = DeMembro("IDADE_DO_MEMBRO", DominioFato.Numerico);
 
         Result<FatoCandidato> agregado = Criar("AGREGADO", fatoDeMembro, doCandidato, numerico);
@@ -68,7 +69,7 @@ public sealed class AgregadoDoAdministradorTests
     {
         FatoCandidato doCandidato = FatoCandidato.CriarDoAdministrador(
             "RENDA_DECLARADA", "Renda", null, DominioFato.Booleano, CardinalidadeFato.Escalar, null, null, "HABILITACAO",
-            EscopoFato.Candidato, ClassificacaoProtecaoDado.Sensivel, Finalidade, Hipotese).Value!;
+            EscopoFato.Candidato, ClassificacaoDeProtecao.Sensivel, Finalidade, Hipotese).Value!;
 
         Criar("AGREGADO", "RENDA_DECLARADA", doCandidato).Errors.Select(static e => e.Error.Code)
             .Should().Equal(FatoCandidatoErrorCodes.AgregadoSobreFatoQueNaoEhCampoDeGrupo);
@@ -87,7 +88,7 @@ public sealed class AgregadoDoAdministradorTests
     [Fact]
     public void CriarAgregado_ProtecaoMaisFracaQueADoFatoDeMembro_Recusa()
     {
-        FatoCandidato membro = DeMembro("MENOR_SOB_GUARDA", classificacao: ClassificacaoProtecaoDado.Sensivel);
+        FatoCandidato membro = DeMembro("MENOR_SOB_GUARDA", classificacao: ClassificacaoDeProtecao.Sensivel);
 
         Criar("EXISTE_MENOR", "MENOR_SOB_GUARDA", membro).Errors.Select(static e => e.Error.Code)
             .Should().Equal(FatoCandidatoErrorCodes.ClassificacaoAbaixoDaDependencia);
@@ -101,7 +102,7 @@ public sealed class AgregadoDoAdministradorTests
 
         Result<FatoCandidato> agregado = FatoCandidato.CriarAgregadoDoAdministrador(
             "EXISTE_MENOR", "Existe menor", null, "MENOR_SOB_GUARDA", new CatalogoDeFatos([membro], precedencias), "INSCRICAO",
-            ClassificacaoProtecaoDado.Pessoal, Finalidade, Hipotese);
+            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese);
 
         agregado.Errors.Select(static e => e.Error.Code).Should().Equal(FatoCandidatoErrorCodes.PontoResolucaoAnteriorADependencia);
     }
@@ -111,7 +112,7 @@ public sealed class AgregadoDoAdministradorTests
     {
         Result<FatoCandidato> agregado = FatoCandidato.CriarAgregadoDoAdministrador(
             "AGREGADO", " ", null, "INEXISTENTE", new CatalogoDeFatos([], []), "INSCRICAO",
-            ClassificacaoProtecaoDado.Pessoal, Finalidade, Hipotese);
+            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese);
 
         agregado.Errors.Select(static e => e.Field).Should().BeEquivalentTo(["fatoDeMembro", "nome"]);
     }
@@ -119,12 +120,12 @@ public sealed class AgregadoDoAdministradorTests
     [Fact]
     public void CriarAgregado_NomeVazioEDependenciasIncoerentes_AcumulaTodas()
     {
-        FatoCandidato membro = DeMembro("MENOR_SOB_GUARDA", ponto: "HABILITACAO", classificacao: ClassificacaoProtecaoDado.Sensivel);
+        FatoCandidato membro = DeMembro("MENOR_SOB_GUARDA", ponto: "HABILITACAO", classificacao: ClassificacaoDeProtecao.Sensivel);
         PrecedenciaFase[] precedencias = [PrecedenciaFase.Criar("INSCRICAO", "HABILITACAO", permiteSobreposicao: false, []).Value!];
 
         Result<FatoCandidato> agregado = FatoCandidato.CriarAgregadoDoAdministrador(
             "EXISTE_MENOR", " ", null, "MENOR_SOB_GUARDA", new CatalogoDeFatos([membro], precedencias), "INSCRICAO",
-            ClassificacaoProtecaoDado.Pessoal, Finalidade, Hipotese);
+            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese);
 
         agregado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Contain(
         [
@@ -159,10 +160,10 @@ public sealed class AgregadoDoAdministradorTests
         membro.AdicionarValorDominio("RURAL", "Trabalho rural", 0, ativo: true).IsSuccess.Should().BeTrue();
         FatoCandidato agregado = FatoCandidato.CriarAgregadoDoAdministrador(
             "CATEGORIAS_RENDA_FAMILIA", "Categorias de renda", null, "CATEGORIA_RENDA", new CatalogoDeFatos([membro], []), "INSCRICAO",
-            ClassificacaoProtecaoDado.Pessoal, Finalidade, Hipotese).Value!;
+            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
         FatoCandidato derivado = FatoCandidato.CriarDerivadoDoAdministrador(
             "TEM_RENDA_RURAL", "Tem renda rural", null, DominioFato.Booleano, "INSCRICAO", EscopoFato.Candidato,
-            ClassificacaoProtecaoDado.Pessoal, Finalidade, Hipotese).Value!;
+            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
         RegraDerivacao regra = RegraDerivacao.CriarBooleana(PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(0, CondicaoDnf.Criar("CATEGORIAS_RENDA_FAMILIA", Operador.Em, System.Text.Json.JsonSerializer.SerializeToElement(new[] { "RURAL" })).Value!)]).Value!);
 
@@ -180,10 +181,10 @@ public sealed class AgregadoDoAdministradorTests
         membro.DesativarValor("RURAL").IsSuccess.Should().BeTrue();
         FatoCandidato agregado = FatoCandidato.CriarAgregadoDoAdministrador(
             "CATEGORIAS_RENDA_FAMILIA", "Categorias de renda", null, "CATEGORIA_RENDA", new CatalogoDeFatos([membro], []), "INSCRICAO",
-            ClassificacaoProtecaoDado.Pessoal, Finalidade, Hipotese).Value!;
+            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
         FatoCandidato derivado = FatoCandidato.CriarDerivadoDoAdministrador(
             "TEM_RENDA_RURAL", "Tem renda rural", null, DominioFato.Booleano, "INSCRICAO", EscopoFato.Candidato,
-            ClassificacaoProtecaoDado.Pessoal, Finalidade, Hipotese).Value!;
+            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
         RegraDerivacao regra = RegraDerivacao.CriarBooleana(PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(0, CondicaoDnf.Criar("CATEGORIAS_RENDA_FAMILIA", Operador.Em, System.Text.Json.JsonSerializer.SerializeToElement(new[] { "RURAL" })).Value!)]).Value!);
 
@@ -213,13 +214,13 @@ public sealed class AgregadoDoAdministradorTests
     private static Result<FatoCandidato> Criar(string codigo, string fatoDeMembro, params FatoCandidato[] catalogo) =>
         FatoCandidato.CriarAgregadoDoAdministrador(
             codigo, codigo, null, fatoDeMembro, new CatalogoDeFatos(catalogo, []), "HABILITACAO",
-            ClassificacaoProtecaoDado.Pessoal, Finalidade, Hipotese);
+            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese);
 
     private static FatoCandidato DeMembro(
         string codigo,
         DominioFato dominio = DominioFato.Booleano,
         string ponto = "HABILITACAO",
-        ClassificacaoProtecaoDado classificacao = ClassificacaoProtecaoDado.Pessoal,
+        ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Pessoal,
         FonteValoresFato fonte = FonteValoresFato.Processo) =>
         FatoCandidato.CriarDoAdministrador(
             codigo, codigo, null, dominio, CardinalidadeFato.Escalar, dominio == DominioFato.Categorico ? fonte : null, null, ponto,

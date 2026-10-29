@@ -21,6 +21,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
@@ -347,6 +348,8 @@ public sealed class EnvelopeFechadoE2ETests
                 // ── PendenciaPreCanonicalizacao ──
                 "exigencia_condicional_vazia_determina_resultado",
                 "exigencia_finalidade_incoerente_com_a_fase",
+                "exigencia_fato_comprovado_fora_do_processo",
+                "exigencia_menos_protegida_que_fato_comprovado",
                 "exigencia_remove_vantagem_sem_vantagem_viva",
                 "exigencia_consequencia_incoerente_com_acao_da_vaga",
                 "grupo_remove_vantagem_sem_vantagem_viva",
@@ -1116,7 +1119,7 @@ public sealed class EnvelopeFechadoE2ETests
             Result<TipoDocumento> tipoDocumentoResult = TipoDocumento.Criar(
                 $"DOC_LIMPEZA_{sufixo.ToUpperInvariant()}", "Documento — Limpeza 1421",
                 descricao: null, categoria: "IDENTIFICACAO", formatosAceitos: null,
-                tamanhoMaximoMb: null, tipoEquivalente: null);
+                tamanhoMaximoMb: null, tipoEquivalente: null, classificacaoProtecao: ClassificacaoDeProtecao.Pessoal, finalidadeTratamento: "Comprovação documental do candidato.", hipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal);
             tipoDocumentoResult.IsSuccess.Should().BeTrue(tipoDocumentoResult.Error?.Message);
             TipoDocumento tipoDocumento = tipoDocumentoResult.Value!;
 

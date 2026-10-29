@@ -34,7 +34,7 @@ public sealed class ObterAcessoDoArquivoDoCandidatoQueryHandlerTests
         _inscricao = Inscricao.Iniciar(ProcessoId, PersonasDeTeste.KevinCarvalho, "sub-1", "https://issuer", Guid.CreateVersion7()).Value!;
         _inscricoes.ObterPorIdAsync(_inscricao.Id, Arg.Any<CancellationToken>()).Returns(_inscricao);
         _laudo = DocumentoExigido.Criar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", Aplicabilidade.Geral, false, null,
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, false, null,
             [], [], null, FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null).Value!;
         _storage.GerarUrlLeituraAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
             .Returns("https://armazenamento.exemplo/leitura");

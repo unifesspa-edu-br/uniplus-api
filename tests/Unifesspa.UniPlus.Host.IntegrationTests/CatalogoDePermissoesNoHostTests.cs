@@ -128,7 +128,7 @@ public sealed class CatalogoDePermissoesNoHostTests
             .Select(p => p.GetProperty("codigo").GetString())
             .Should().BeEquivalentTo("selecao:motivos-decisao-isencao:manter");
         recurso.GetProperty("permissoes")[0].GetProperty("nome").GetString().Should().NotBeNullOrWhiteSpace();
-        recurso.GetProperty("permissoes")[0].GetProperty("sensibilidade").GetString().Should().Be("interna");
+        recurso.GetProperty("permissoes")[0].GetProperty("sensibilidade").GetString().Should().Be("interno");
     }
 
     [Fact(DisplayName = "GET do catálogo com Accept de outro tipo responde 406")]

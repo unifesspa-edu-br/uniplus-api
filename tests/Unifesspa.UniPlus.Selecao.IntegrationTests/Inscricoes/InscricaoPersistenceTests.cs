@@ -571,7 +571,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         Guid processo = Guid.CreateVersion7();
         Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, processo);
         DocumentoExigido laudo = DocumentoExigido.Criar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "CAT", Aplicabilidade.Geral, true,
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, true,
             ConsequenciaIndeferimentoCodigo.RemoveVantagem, [], [], null, FormatosPermitidos.Criar(true, null).Value!, null,
             finalidade: Unifesspa.UniPlus.Regras.Formularios.FinalidadeFormulario.Inscricao).Value!;
         ResultadoDaAvaliacaoDaInscricao avaliacao = FormularioDeTeste.AvaliacaoSemOcultos with
@@ -855,7 +855,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             "000778", OfertaDoProcesso, null, Respostas(("NOME_SOCIAL", "Fê")), SemGrupos(), [], Admitidas, FormularioDeTeste.AvaliacaoSemOcultos,
             Respostas(("UF_RESIDENCIA", "PA")), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([inscricao.ETag]), DateTimeOffset.UtcNow, []).IsSuccess.Should().BeTrue();
         DocumentoExigido laudo = DocumentoExigido.Criar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", Aplicabilidade.Geral, false, null,
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, false, null,
             [], [], null, FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null).Value!;
         ApresentacaoDeDocumento apresentacao = ApresentacaoDeDocumento.Criar(inscricao.Id, laudo, null);
         ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(

@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura de <see cref="ResolvedorArvoreSatisfacao"/> (Story #920) — álgebra ternária de 5
@@ -27,12 +28,12 @@ public sealed class ResolvedorArvoreSatisfacaoTests
 
     private static DocumentoExigido DocumentoGeral(string? consequencia = null) =>
         DocumentoExigido.Criar(
-            FaseId, Guid.CreateVersion7(), "COD", "Nome", "CAT",
+            FaseId, Guid.CreateVersion7(), "COD", "Nome", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Geral, obrigatorio: true, consequencia, [], [], null, Qualquer, null).Value!;
 
     private static DocumentoExigido DocumentoCondicional(string fato, string? consequencia = null) =>
         DocumentoExigido.Criar(
-            FaseId, Guid.CreateVersion7(), "COD", "Nome", "CAT",
+            FaseId, Guid.CreateVersion7(), "COD", "Nome", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Condicional, obrigatorio: false, consequencia,
             [CondicaoGatilho.Criar(0, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!],
             [], null, Qualquer, null).Value!;
@@ -280,7 +281,7 @@ public sealed class ResolvedorArvoreSatisfacaoTests
         bool solicita, string condicao, EstadoSatisfacao laudo, EstadoSatisfacao certidao)
     {
         static DocumentoExigido Documento(string tipo, params string[] condicoes) => DocumentoExigido.Criar(
-            FaseId, Guid.CreateVersion7(), tipo, tipo, "SAUDE", Aplicabilidade.Condicional, obrigatorio: true, "REMOVE_VANTAGEM",
+            FaseId, Guid.CreateVersion7(), tipo, tipo, "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Condicional, obrigatorio: true, "REMOVE_VANTAGEM",
             [.. condicoes.SelectMany(static (c, clausula) => new[]
             {
                 CondicaoGatilho.Criar(clausula, "SOLICITA_ATENDIMENTO_ESPECIALIZADO", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!,
@@ -673,7 +674,7 @@ public sealed class ResolvedorArvoreSatisfacaoTests
     public void RepeticaoPorEntidade_GatilhoPorAtributoDaEntidade()
     {
         DocumentoExigido declaracaoIsento = DocumentoExigido.Criar(
-            FaseId, Guid.CreateVersion7(), "DECL_ISENTO", "Declaração de isento", "CAT",
+            FaseId, Guid.CreateVersion7(), "DECL_ISENTO", "Declaração de isento", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Condicional, obrigatorio: false, "ELIMINA",
             [
                 CondicaoGatilho.Criar(0, "MAIOR_IDADE", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!,

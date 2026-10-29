@@ -59,6 +59,7 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
         IResolvedorFusoInstitucional resolvedorFuso,
         IFatoCandidatoReader fatoCandidatoReader,
         ITipoAtoPublicadoReader tipoAtoPublicadoReader,
+        ITipoDocumentoReader tipoDocumentoReader,
         IRegistroCodecsEnvelope registroCodecs,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
@@ -70,6 +71,7 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
         ArgumentNullException.ThrowIfNull(resolvedorFuso);
         ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
         ArgumentNullException.ThrowIfNull(tipoAtoPublicadoReader);
+        ArgumentNullException.ThrowIfNull(tipoDocumentoReader);
         ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
@@ -132,10 +134,15 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
                 cancellationToken)
             .ConfigureAwait(false);
 
-        FatosDeModalidade fatosDeModalidade = VocabularioDeFatos.ComValoresDeModalidade(
-            await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false));
+        IReadOnlyList<FatoCandidatoView> catalogoDeFatos = await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false);
+        FatosDeModalidade fatosDeModalidade = VocabularioDeFatos.ComValoresDeModalidade(catalogoDeFatos);
 
-        ItemConformidadeDto[] itens = [.. processo.AvaliarConformidade(contexto, fatosDeModalidade, tiposDeAtoUnicos)
+        // A mesma proteção que a publicação e a retificação avaliam: o painel não aprova o que elas recusam.
+        ProtecaoVigenteDasExigencias protecaoDasExigencias = await ProtecaoVigenteDasExigenciasDoProcesso
+            .MontarAsync(processo, tipoDocumentoReader, catalogoDeFatos, ProtecaoVigenteDasExigenciasDoProcesso.DaVersao(registroCodecs, versaoAtual), cancellationToken)
+            .ConfigureAwait(false);
+
+        ItemConformidadeDto[] itens = [.. processo.AvaliarConformidade(contexto, fatosDeModalidade, tiposDeAtoUnicos, protecaoDasExigencias)
             .Select(static item => new ItemConformidadeDto(item.Codigo, item.Dimensao, item.Mensagem, item.Ok))];
         if (falhaDaVersaoPublicada is not null)
         {

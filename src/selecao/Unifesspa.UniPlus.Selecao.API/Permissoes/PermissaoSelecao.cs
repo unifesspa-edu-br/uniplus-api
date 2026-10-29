@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.API.Permissoes;
 
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Permissões do módulo Seleção (ADR-0078, ADR-0151). Acrescentar uma permissão é
@@ -20,6 +21,6 @@ public enum PermissaoSelecao
         "selecao:motivos-decisao-isencao:manter",
         "Manter motivos de decisão de isenção",
         "Cria, edita, ativa e desativa os motivos institucionais de decisão de isenção.",
-        Sensibilidade.Interna)]
+        ClassificacaoDeProtecao.Interno)]
     MotivosDecisaoIsencaoManter = 1,
 }

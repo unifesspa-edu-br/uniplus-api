@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -34,7 +35,7 @@ public sealed class FatoCandidatoTests
         FormatoTexto? formato = null,
         string pontoResolucao = PontoResolucaoInscricao,
         string binding = BindingCorRaca,
-        ClassificacaoProtecaoDado classificacao = ClassificacaoProtecaoDado.Sensivel,
+        ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Sensivel,
         string finalidade = Finalidade,
         HipoteseLegalTratamento hipotese = HipoteseLegalTratamento.CumprimentoObrigacaoLegal,
         bool sistema = false,
@@ -53,7 +54,7 @@ public sealed class FatoCandidatoTests
     public void Criar_BooleanoComFonte_Recusa() =>
         FatoCandidato.Criar("PCD", "Pessoa com deficiência", null, DominioFato.Booleano, OrigemFato.Declarado,
             CardinalidadeFato.Escalar, FonteValoresFato.Processo, formato: null, PontoResolucaoInscricao, "CAMPO_FORMULARIO:PCD",
-            EscopoFato.Candidato, ClassificacaoProtecaoDado.Sensivel, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal,
+            EscopoFato.Candidato, ClassificacaoDeProtecao.Sensivel, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal,
             sistema: false)
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.FonteValoresForaDeCategorico);
 
@@ -81,10 +82,10 @@ public sealed class FatoCandidatoTests
             .Error!.Code.Should().Be(codigoEsperado);
 
     [Theory(DisplayName = "Texto, data e endereço não aceitam classificação abaixo de pessoal")]
-    [InlineData(DominioFato.Texto, ClassificacaoProtecaoDado.Interno)]
-    [InlineData(DominioFato.Data, ClassificacaoProtecaoDado.Publico)]
-    [InlineData(DominioFato.Endereco, ClassificacaoProtecaoDado.Interno)]
-    public void Criar_ClassificacaoAbaixoDoMinimo_Recusa(DominioFato dominio, ClassificacaoProtecaoDado classificacao) =>
+    [InlineData(DominioFato.Texto, ClassificacaoDeProtecao.Interno)]
+    [InlineData(DominioFato.Data, ClassificacaoDeProtecao.Publico)]
+    [InlineData(DominioFato.Endereco, ClassificacaoDeProtecao.Interno)]
+    public void Criar_ClassificacaoAbaixoDoMinimo_Recusa(DominioFato dominio, ClassificacaoDeProtecao classificacao) =>
         Criar(
             codigo: "DADO", dominio: dominio, formato: dominio == DominioFato.Texto ? FormatoTexto.Livre : null,
             binding: "CAMPO_FORMULARIO:DADO", classificacao: classificacao, hipotese: HipoteseLegalTratamento.ExecucaoPoliticasPublicas)
@@ -94,7 +95,7 @@ public sealed class FatoCandidatoTests
     public void Criar_TextoComIdentificador_Aceita() =>
         Criar(
             codigo: "CPF", dominio: DominioFato.Texto, formato: FormatoTexto.Cpf, binding: "CAMPO_FORMULARIO:CPF",
-            classificacao: ClassificacaoProtecaoDado.Identificador, hipotese: HipoteseLegalTratamento.CumprimentoObrigacaoLegal)
+            classificacao: ClassificacaoDeProtecao.Identificador, hipotese: HipoteseLegalTratamento.CumprimentoObrigacaoLegal)
             .IsSuccess.Should().BeTrue();
 
     [Theory(DisplayName = "Identificador é classificação mínima só para texto — data e endereço continuam exigindo Pessoal ou Sensível")]
@@ -103,7 +104,7 @@ public sealed class FatoCandidatoTests
     public void Criar_DataOuEnderecoComIdentificador_Recusa(DominioFato dominio) =>
         Criar(
             codigo: "DADO", dominio: dominio, binding: "CAMPO_FORMULARIO:DADO",
-            classificacao: ClassificacaoProtecaoDado.Identificador, hipotese: HipoteseLegalTratamento.ExecucaoPoliticasPublicas)
+            classificacao: ClassificacaoDeProtecao.Identificador, hipotese: HipoteseLegalTratamento.ExecucaoPoliticasPublicas)
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio);
 
     [Theory(DisplayName = "Identificador nunca é aceito fora do domínio texto — categórico, booleano e numérico também recusam")]
@@ -113,15 +114,15 @@ public sealed class FatoCandidatoTests
     public void Criar_DominioQueNaoEhTextoComIdentificador_Recusa(DominioFato dominio) =>
         Criar(
             codigo: "DADO", dominio: dominio, binding: "CAMPO_FORMULARIO:DADO",
-            classificacao: ClassificacaoProtecaoDado.Identificador, hipotese: HipoteseLegalTratamento.ExecucaoPoliticasPublicas)
+            classificacao: ClassificacaoDeProtecao.Identificador, hipotese: HipoteseLegalTratamento.ExecucaoPoliticasPublicas)
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio);
 
     [Theory(DisplayName = "Só o nome social de sistema é texto público; outro texto de sistema, o nome social do administrador ou outra classificação abaixo de pessoal, não")]
-    [InlineData(FatoCandidato.CodigoDoNomeSocial, true, ClassificacaoProtecaoDado.Publico, true)]
-    [InlineData(FatoCandidato.CodigoDoNomeSocial, false, ClassificacaoProtecaoDado.Publico, false)]
-    [InlineData(FatoCandidato.CodigoDoNomeSocial, true, ClassificacaoProtecaoDado.Interno, false)]
-    [InlineData("NOME", true, ClassificacaoProtecaoDado.Publico, false)]
-    public void Criar_TextoAbaixoDePessoal_SoONomeSocialPublicoDeSistema(string codigo, bool sistema, ClassificacaoProtecaoDado classificacao, bool aceito) =>
+    [InlineData(FatoCandidato.CodigoDoNomeSocial, true, ClassificacaoDeProtecao.Publico, true)]
+    [InlineData(FatoCandidato.CodigoDoNomeSocial, false, ClassificacaoDeProtecao.Publico, false)]
+    [InlineData(FatoCandidato.CodigoDoNomeSocial, true, ClassificacaoDeProtecao.Interno, false)]
+    [InlineData("NOME", true, ClassificacaoDeProtecao.Publico, false)]
+    public void Criar_TextoAbaixoDePessoal_SoONomeSocialPublicoDeSistema(string codigo, bool sistema, ClassificacaoDeProtecao classificacao, bool aceito) =>
         Criar(
             codigo: codigo, dominio: DominioFato.Texto, formato: FormatoTexto.NomePessoa, binding: $"CAMPO_FORMULARIO:{codigo}",
             classificacao: classificacao, hipotese: HipoteseLegalTratamento.ExecucaoPoliticasPublicas, sistema: sistema)
@@ -131,7 +132,7 @@ public sealed class FatoCandidatoTests
     public void Criar_ViolacoesIndependentes_Acumula()
     {
         Result<FatoCandidato> resultado = Criar(
-            codigo: "codigo invalido", nome: " ", classificacao: ClassificacaoProtecaoDado.Nenhuma, finalidade: " ");
+            codigo: "codigo invalido", nome: " ", classificacao: ClassificacaoDeProtecao.Nenhuma, finalidade: " ");
 
         resultado.Errors.Select(static e => e.Field).Should().BeEquivalentTo(
             ["codigo", "nome", "classificacaoProtecao", "finalidadeTratamento"]);
@@ -142,7 +143,7 @@ public sealed class FatoCandidatoTests
     {
         FatoCandidato fato = FatoCandidato.CriarDoAdministrador(
             " ANO_CONCLUSAO ", "Ano de conclusão", null, DominioFato.Numerico, CardinalidadeFato.Escalar, null, null,
-            PontoResolucaoInscricao, EscopoFato.Candidato, ClassificacaoProtecaoDado.Pessoal, Finalidade,
+            PontoResolucaoInscricao, EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade,
             HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
 
         fato.Origem.Should().Be(OrigemFato.Declarado);
@@ -269,19 +270,19 @@ public sealed class FatoCandidatoTests
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.FatoDeSistemaSoEditaNomeEDescricao);
 
     [Theory(DisplayName = "Proteção de dados incompleta é recusada")]
-    [InlineData(ClassificacaoProtecaoDado.Nenhuma, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal, FatoCandidatoErrorCodes.ClassificacaoProtecaoObrigatoria)]
-    [InlineData(ClassificacaoProtecaoDado.Pessoal, "  ", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, FatoCandidatoErrorCodes.FinalidadeTratamentoObrigatoria)]
-    [InlineData(ClassificacaoProtecaoDado.Pessoal, Finalidade, HipoteseLegalTratamento.Nenhuma, FatoCandidatoErrorCodes.HipoteseLegalObrigatoria)]
+    [InlineData(ClassificacaoDeProtecao.Nenhuma, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal, FatoCandidatoErrorCodes.ClassificacaoProtecaoObrigatoria)]
+    [InlineData(ClassificacaoDeProtecao.Pessoal, "  ", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, FatoCandidatoErrorCodes.FinalidadeTratamentoObrigatoria)]
+    [InlineData(ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.Nenhuma, FatoCandidatoErrorCodes.HipoteseLegalObrigatoria)]
     public void Criar_ProtecaoIncompleta_Recusa(
-        ClassificacaoProtecaoDado classificacao, string finalidade, HipoteseLegalTratamento hipotese, string codigoEsperado) =>
+        ClassificacaoDeProtecao classificacao, string finalidade, HipoteseLegalTratamento hipotese, string codigoEsperado) =>
         Criar(classificacao: classificacao, finalidade: finalidade, hipotese: hipotese)
             .Error!.Code.Should().Be(codigoEsperado);
 
     [Theory(DisplayName = "Hipótese legal fora do artigo da classificação é recusada: art. 11 para sensível, art. 7º para os demais")]
-    [InlineData(ClassificacaoProtecaoDado.Sensivel, HipoteseLegalTratamento.InteresseLegitimo)]
-    [InlineData(ClassificacaoProtecaoDado.Sensivel, HipoteseLegalTratamento.ExecucaoContrato)]
-    [InlineData(ClassificacaoProtecaoDado.Pessoal, HipoteseLegalTratamento.PrevencaoAFraude)]
-    public void Criar_HipoteseForaDoArtigo_Recusa(ClassificacaoProtecaoDado classificacao, HipoteseLegalTratamento hipotese) =>
+    [InlineData(ClassificacaoDeProtecao.Sensivel, HipoteseLegalTratamento.InteresseLegitimo)]
+    [InlineData(ClassificacaoDeProtecao.Sensivel, HipoteseLegalTratamento.ExecucaoContrato)]
+    [InlineData(ClassificacaoDeProtecao.Pessoal, HipoteseLegalTratamento.PrevencaoAFraude)]
+    public void Criar_HipoteseForaDoArtigo_Recusa(ClassificacaoDeProtecao classificacao, HipoteseLegalTratamento hipotese) =>
         Criar(classificacao: classificacao, hipotese: hipotese)
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.HipoteseLegalIncompativelComClassificacao);
 

@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Os documentos obrigatórios que faltam no envio da inscrição (UNI-REQ-0028): a decisão parte do
@@ -117,7 +118,7 @@ public sealed class DocumentosAusentesDaInscricaoTests
 
     private static DocumentoExigido Documento(string nome, bool obrigatorio = true, FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao, bool gatilhoFalso = false) =>
         DocumentoExigido.Criar(
-            Fase, Guid.CreateVersion7(), nome.ToUpperInvariant().Replace(' ', '_'), nome, "CAT",
+            Fase, Guid.CreateVersion7(), nome.ToUpperInvariant().Replace(' ', '_'), nome, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal,
             gatilhoFalso ? Aplicabilidade.Condicional : Aplicabilidade.Geral, obrigatorio, consequenciaIndeferimento: null,
             gatilhoFalso ? [CondicaoGatilho.Criar(0, "NUNCA", Operador.Igual, System.Text.Json.JsonSerializer.SerializeToElement(true)).Value!] : [], [], null, Qualquer, null, finalidade: finalidade).Value!;
 

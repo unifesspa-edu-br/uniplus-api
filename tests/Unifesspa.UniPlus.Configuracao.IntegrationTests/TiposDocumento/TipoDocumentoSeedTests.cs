@@ -33,7 +33,7 @@ public sealed class TipoDocumentoSeedTests
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "Os setenta tipos do seed existem no banco migrado, com id, código, nome e categoria da fonte única")]
+    [Fact(DisplayName = "Os setenta tipos do seed existem no banco migrado, com id, código, nome, categoria e proteção da fonte única")]
     public async Task Seed_MaterializadoNoBanco_BateComAFonteUnica()
     {
         Guid[] idsDoSeed = [.. TipoDocumentoSeed.Itens.Select(item => item.Id)];
@@ -53,6 +53,9 @@ public sealed class TipoDocumentoSeedTests
             persistido.Codigo.Valor.Should().Be(item.Codigo);
             persistido.Nome.Should().Be(item.Nome);
             persistido.Categoria.Should().Be(item.Categoria);
+            persistido.ClassificacaoProtecao.Should().Be(item.ClassificacaoProtecao);
+            persistido.FinalidadeTratamento.Should().Be(TipoDocumentoSeed.FinalidadeTratamento);
+            persistido.HipoteseLegal.Should().Be(TipoDocumentoSeed.HipoteseLegal);
             persistido.IsDeleted.Should().BeFalse();
         }
     }

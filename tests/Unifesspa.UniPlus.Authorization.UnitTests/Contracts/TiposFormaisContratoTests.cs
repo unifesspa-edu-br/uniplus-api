@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Enums;
 using Unifesspa.UniPlus.Authorization.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Cobre o CA-01 da Story #608 (records imutáveis, igualdade por valor) para os
@@ -26,10 +27,10 @@ public sealed class TiposFormaisContratoTests
 
         // ResourceContext — igualdade por valor dos atributos.
         Guid unidade = Guid.CreateVersion7();
-        ResourceContext recursoA = ResourceContext.From("Edital", Sensibilidade.Pessoal, unidadeProprietariaId: unidade).Value!;
-        ResourceContext recursoB = ResourceContext.From("Edital", Sensibilidade.Pessoal, unidadeProprietariaId: unidade).Value!;
+        ResourceContext recursoA = ResourceContext.From("Edital", ClassificacaoDeProtecao.Pessoal, unidadeProprietariaId: unidade).Value!;
+        ResourceContext recursoB = ResourceContext.From("Edital", ClassificacaoDeProtecao.Pessoal, unidadeProprietariaId: unidade).Value!;
         recursoA.Should().Be(recursoB);
-        recursoA.Should().NotBe(ResourceContext.From("Inscricao", Sensibilidade.Pessoal, unidadeProprietariaId: unidade).Value!);
+        recursoA.Should().NotBe(ResourceContext.From("Inscricao", ClassificacaoDeProtecao.Pessoal, unidadeProprietariaId: unidade).Value!);
 
         // AuthorizationRequestContext — igualdade por valor (sem dupla aprovação).
         var instante = new DateTimeOffset(2026, 6, 15, 12, 0, 0, TimeSpan.Zero);
@@ -58,7 +59,7 @@ public sealed class TiposFormaisContratoTests
     {
         PermissionRequirement Criar() => PermissionRequirement.From(
             "selecao.resultado.homologar",
-            Sensibilidade.Sensivel,
+            ClassificacaoDeProtecao.Sensivel,
             baseLegalPadrao: "LGPD art. 7º, II",
             requerMfa: true,
             escopoContextoObrigatorio: ["processoId"],
@@ -72,7 +73,7 @@ public sealed class TiposFormaisContratoTests
 
         PermissionRequirement diferente = PermissionRequirement.From(
             "selecao.resultado.homologar",
-            Sensibilidade.Sensivel,
+            ClassificacaoDeProtecao.Sensivel,
             verificacoesDeContexto: ["fase_aberta"]).Value!;
         a.Should().NotBe(diferente, "conteúdo de coleção distinto torna os contratos desiguais");
     }

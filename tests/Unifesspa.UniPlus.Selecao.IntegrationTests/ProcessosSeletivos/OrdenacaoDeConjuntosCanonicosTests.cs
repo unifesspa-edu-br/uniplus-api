@@ -149,7 +149,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
                 : FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!;
 
             DocumentoExigido documento = DocumentoExigido.Criar(
-                fase.Id, Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL",
+                fase.Id, Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
                 Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
                 [], [], null, fp, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
 

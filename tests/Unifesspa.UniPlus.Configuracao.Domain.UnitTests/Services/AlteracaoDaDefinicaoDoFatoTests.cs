@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -32,7 +33,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
 
         Result resultado = fato.AlterarDefinicao(
             Definicao(DominioFato.Categorico, CardinalidadeFato.Multivalorado, FonteValoresFato.Global, ponto: "HABILITACAO",
-                escopo: EscopoFato.MembroGrupo, classificacao: ClassificacaoProtecaoDado.Sensivel, finalidade: " Nova finalidade "),
+                escopo: EscopoFato.MembroGrupo, classificacao: ClassificacaoDeProtecao.Sensivel, finalidade: " Nova finalidade "),
             Catalogo(fato));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -46,7 +47,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
             FonteValores = FonteValoresFato.Global,
             PontoResolucao = "HABILITACAO",
             Escopo = EscopoFato.MembroGrupo,
-            ClassificacaoProtecao = ClassificacaoProtecaoDado.Sensivel,
+            ClassificacaoProtecao = ClassificacaoDeProtecao.Sensivel,
             FinalidadeTratamento = "Nova finalidade",
         });
     }
@@ -77,7 +78,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
         FatoCandidato agregado = Agregado("CATEGORIAS_RENDA", membro);
 
         Result resultado = agregado.AlterarDefinicao(
-            Definicao(dominio: null, ponto: "HABILITACAO", classificacao: ClassificacaoProtecaoDado.Sensivel, escopo: null), Catalogo(membro, agregado));
+            Definicao(dominio: null, ponto: "HABILITACAO", classificacao: ClassificacaoDeProtecao.Sensivel, escopo: null), Catalogo(membro, agregado));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         agregado.Should().BeEquivalentTo(new
@@ -87,7 +88,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
             FonteValores = FonteValoresFato.Global,
             Escopo = EscopoFato.Candidato,
             PontoResolucao = "HABILITACAO",
-            ClassificacaoProtecao = ClassificacaoProtecaoDado.Sensivel,
+            ClassificacaoProtecao = ClassificacaoDeProtecao.Sensivel,
             Binding = "AGREGACAO_GRUPO:CATEGORIA_RENDA",
         });
     }
@@ -97,7 +98,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
     {
         FatoCandidato sistema = FatoCandidato.Criar(
             "COR_RACA", "Cor ou raça", null, DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Global,
-            null, "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", EscopoFato.Candidato, ClassificacaoProtecaoDado.Sensivel, Finalidade, Hipotese,
+            null, "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", EscopoFato.Candidato, ClassificacaoDeProtecao.Sensivel, Finalidade, Hipotese,
             sistema: true).Value!;
 
         sistema.AlterarDefinicao(Definicao(DominioFato.Booleano), Catalogo(sistema))
@@ -112,7 +113,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
         Result resultado = fato.AlterarDefinicao(
             new DefinicaoDoFato(
                 DominioFato.Texto, CardinalidadeFato.Escalar, FonteValoresFato.Global, FormatoTexto.Nenhum, "INSCRICAO", EscopoFato.Candidato,
-                ClassificacaoProtecaoDado.Publico, Finalidade, HipoteseLegalTratamento.Consentimento),
+                ClassificacaoDeProtecao.Publico, Finalidade, HipoteseLegalTratamento.Consentimento),
             Catalogo(fato));
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
@@ -121,7 +122,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
             ("formato", FatoCandidatoErrorCodes.FormatoObrigatorio),
             ("classificacaoProtecao", FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio),
         ]);
-        fato.Should().BeEquivalentTo(new { Dominio = DominioFato.Booleano, FonteValores = (FonteValoresFato?)null, ClassificacaoProtecao = ClassificacaoProtecaoDado.Pessoal });
+        fato.Should().BeEquivalentTo(new { Dominio = DominioFato.Booleano, FonteValores = (FonteValoresFato?)null, ClassificacaoProtecao = ClassificacaoDeProtecao.Pessoal });
     }
 
     [Fact(DisplayName = "Hipótese legal que não cabe na classificação e formato fora de texto são recusados")]
@@ -130,7 +131,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
         FatoCandidato fato = Declarado("TEM_RENDA");
 
         Result resultado = fato.AlterarDefinicao(
-            DeDeclarado(DominioFato.Booleano, FormatoTexto.Cpf, ClassificacaoProtecaoDado.Sensivel, HipoteseLegalTratamento.ExecucaoContrato),
+            DeDeclarado(DominioFato.Booleano, FormatoTexto.Cpf, ClassificacaoDeProtecao.Sensivel, HipoteseLegalTratamento.ExecucaoContrato),
             Catalogo(fato));
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
@@ -145,7 +146,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
     {
         FatoCandidato fato = Derivado("PERFIL");
 
-        fato.AlterarDefinicao(Definicao(DominioFato.Texto, classificacao: ClassificacaoProtecaoDado.Pessoal), Catalogo(fato))
+        fato.AlterarDefinicao(Definicao(DominioFato.Texto, classificacao: ClassificacaoDeProtecao.Pessoal), Catalogo(fato))
             .Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
             {
                 Field = "dominio",
@@ -207,15 +208,15 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
     [Fact(DisplayName = "Classificação mais fraca que a de uma dependência é recusada na classificação, no derivado e no agregado")]
     public void ClassificacaoAbaixoDaDependencia_Recusa()
     {
-        FatoCandidato renda = Declarado("TEM_RENDA", classificacao: ClassificacaoProtecaoDado.Pessoal);
-        FatoCandidato derivado = Derivado("PERFIL", classificacao: ClassificacaoProtecaoDado.Pessoal);
+        FatoCandidato renda = Declarado("TEM_RENDA", classificacao: ClassificacaoDeProtecao.Pessoal);
+        FatoCandidato derivado = Derivado("PERFIL", classificacao: ClassificacaoDeProtecao.Pessoal);
         derivado.DefinirRegrasPadrao([Booleana(("TEM_RENDA", true))], Catalogo(renda, derivado)).IsSuccess.Should().BeTrue();
-        FatoCandidato membro = DeMembro("CATEGORIA_RENDA", classificacao: ClassificacaoProtecaoDado.Sensivel);
-        FatoCandidato agregado = Agregado("CATEGORIAS_RENDA", membro, ClassificacaoProtecaoDado.Sensivel);
+        FatoCandidato membro = DeMembro("CATEGORIA_RENDA", classificacao: ClassificacaoDeProtecao.Sensivel);
+        FatoCandidato agregado = Agregado("CATEGORIAS_RENDA", membro, ClassificacaoDeProtecao.Sensivel);
 
-        derivado.AlterarDefinicao(Definicao(DominioFato.Booleano, classificacao: ClassificacaoProtecaoDado.Publico), Catalogo(renda, derivado))
+        derivado.AlterarDefinicao(Definicao(DominioFato.Booleano, classificacao: ClassificacaoDeProtecao.Publico), Catalogo(renda, derivado))
             .Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("classificacaoProtecao", FatoCandidatoErrorCodes.ClassificacaoAbaixoDaDependencia));
-        agregado.AlterarDefinicao(Definicao(dominio: null, escopo: null, classificacao: ClassificacaoProtecaoDado.Pessoal), Catalogo(membro, agregado))
+        agregado.AlterarDefinicao(Definicao(dominio: null, escopo: null, classificacao: ClassificacaoDeProtecao.Pessoal), Catalogo(membro, agregado))
             .Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("classificacaoProtecao", FatoCandidatoErrorCodes.ClassificacaoAbaixoDaDependencia));
     }
 
@@ -273,11 +274,11 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
         FatoCandidato declarado = Declarado("TEM_RENDA");
         const DominioFato foraDoVocabulario = (DominioFato)(-1);
 
-        derivado.AlterarDefinicao(Definicao(foraDoVocabulario, classificacao: ClassificacaoProtecaoDado.Publico), Catalogo(derivado))
+        derivado.AlterarDefinicao(Definicao(foraDoVocabulario, classificacao: ClassificacaoDeProtecao.Publico), Catalogo(derivado))
             .Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("dominio", FatoCandidatoErrorCodes.DominioInvalido));
-        derivado.AlterarDefinicao(Definicao(DominioFato.Texto, classificacao: ClassificacaoProtecaoDado.Publico), Catalogo(derivado))
+        derivado.AlterarDefinicao(Definicao(DominioFato.Texto, classificacao: ClassificacaoDeProtecao.Publico), Catalogo(derivado))
             .Errors.Select(static e => e.Field).Should().Equal("dominio");
-        declarado.AlterarDefinicao(Definicao(foraDoVocabulario, CardinalidadeFato.Escalar, classificacao: ClassificacaoProtecaoDado.Publico), Catalogo(declarado))
+        declarado.AlterarDefinicao(Definicao(foraDoVocabulario, CardinalidadeFato.Escalar, classificacao: ClassificacaoDeProtecao.Publico), Catalogo(declarado))
             .Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("dominio", FatoCandidatoErrorCodes.DominioInvalido));
     }
 
@@ -359,10 +360,10 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
         FatoCandidato derivado = Derivado("PERFIL");
         derivado.DefinirRegrasPadrao([Booleana(("FATO_A", true), ("FATO_B", true))], Catalogo(a, b, derivado)).IsSuccess.Should().BeTrue();
         CatalogoDeFatos catalogo = Catalogo(a, b, derivado);
-        a.AlterarDefinicao(DeDeclarado(DominioFato.Booleano, classificacao: ClassificacaoProtecaoDado.Sensivel), catalogo).IsSuccess.Should().BeTrue();
+        a.AlterarDefinicao(DeDeclarado(DominioFato.Booleano, classificacao: ClassificacaoDeProtecao.Sensivel), catalogo).IsSuccess.Should().BeTrue();
         List<FieldError> antes = [.. ValidadorRegrasPadrao.Validar(derivado, derivado.RegrasPadrao, catalogo).Errors];
 
-        b.AlterarDefinicao(DeDeclarado(DominioFato.Booleano, classificacao: ClassificacaoProtecaoDado.Sensivel), catalogo).IsSuccess.Should().BeTrue();
+        b.AlterarDefinicao(DeDeclarado(DominioFato.Booleano, classificacao: ClassificacaoDeProtecao.Sensivel), catalogo).IsSuccess.Should().BeTrue();
         List<FieldError> depois = [.. ValidadorRegrasPadrao.Validar(derivado, derivado.RegrasPadrao, catalogo).Errors];
 
         DiferencaDeRecusas.Novas(depois, antes).Should().ContainSingle()
@@ -471,7 +472,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
         FatoCandidato declarado = Declarado("TEM_RENDA");
 
         declarado.AlterarDefinicao(
-                DeDeclarado(DominioFato.Booleano, classificacao: (ClassificacaoProtecaoDado)(-1), hipotese: (HipoteseLegalTratamento)(-1)),
+                DeDeclarado(DominioFato.Booleano, classificacao: (ClassificacaoDeProtecao)(-1), hipotese: (HipoteseLegalTratamento)(-1)),
                 Catalogo(declarado))
             .Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
             [
@@ -487,7 +488,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
         FormatoTexto? formato = null,
         string ponto = "INSCRICAO",
         EscopoFato? escopo = EscopoFato.Candidato,
-        ClassificacaoProtecaoDado classificacao = ClassificacaoProtecaoDado.Pessoal,
+        ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Pessoal,
         string finalidade = Finalidade,
         HipoteseLegalTratamento hipotese = Hipotese) =>
         new(dominio, cardinalidade, fonte, formato, ponto, escopo, classificacao, finalidade, hipotese);
@@ -496,7 +497,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
     private static DefinicaoDoFato DeDeclarado(
         DominioFato dominio,
         FormatoTexto? formato = null,
-        ClassificacaoProtecaoDado classificacao = ClassificacaoProtecaoDado.Pessoal,
+        ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Pessoal,
         HipoteseLegalTratamento hipotese = Hipotese,
         string ponto = "INSCRICAO") =>
         Definicao(dominio, CardinalidadeFato.Escalar, formato: formato, ponto: ponto, classificacao: classificacao, hipotese: hipotese);
@@ -506,7 +507,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
         DominioFato dominio = DominioFato.Booleano,
         FonteValoresFato? fonte = null,
         string ponto = "INSCRICAO",
-        ClassificacaoProtecaoDado classificacao = ClassificacaoProtecaoDado.Pessoal) =>
+        ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Pessoal) =>
         FatoCandidato.CriarDoAdministrador(
             codigo, codigo, null, dominio, CardinalidadeFato.Escalar, fonte, null, ponto, EscopoFato.Candidato,
             classificacao, Finalidade, Hipotese).Value!;
@@ -516,7 +517,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
         DominioFato dominio = DominioFato.Categorico,
         FonteValoresFato fonte = FonteValoresFato.Global,
         string ponto = "INSCRICAO",
-        ClassificacaoProtecaoDado classificacao = ClassificacaoProtecaoDado.Pessoal) =>
+        ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Pessoal) =>
         FatoCandidato.CriarDoAdministrador(
             codigo, codigo, null, dominio, CardinalidadeFato.Escalar, dominio == DominioFato.Categorico ? fonte : null, null, ponto,
             EscopoFato.MembroGrupo, classificacao, Finalidade, Hipotese).Value!;
@@ -524,7 +525,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
     private static FatoCandidato Agregado(
         string codigo,
         FatoCandidato membro,
-        ClassificacaoProtecaoDado classificacao = ClassificacaoProtecaoDado.Pessoal,
+        ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Pessoal,
         string ponto = "INSCRICAO",
         PrecedenciaFase[]? precedencias = null) =>
         FatoCandidato.CriarAgregadoDoAdministrador(
@@ -534,7 +535,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
         string codigo,
         DominioFato dominio = DominioFato.Booleano,
         string ponto = "INSCRICAO",
-        ClassificacaoProtecaoDado classificacao = ClassificacaoProtecaoDado.Pessoal) =>
+        ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Pessoal) =>
         FatoCandidato.CriarDerivadoDoAdministrador(
             codigo, codigo, null, dominio, ponto, EscopoFato.Candidato, classificacao, Finalidade, Hipotese).Value!;
 

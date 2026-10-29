@@ -289,7 +289,7 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
     }
 
     private static DocumentoExigido Documento(Guid fase, string codigo, params CondicaoGatilho[] condicoes) => DocumentoExigido.Criar(
-        fase, Guid.CreateVersion7(), codigo, codigo, "PESSOAL", Aplicabilidade.Condicional,
+        fase, Guid.CreateVersion7(), codigo, codigo, "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Condicional,
         obrigatorio: true, consequenciaIndeferimento: null, condicoes,
         [DocumentoExigidoBaseLegal.Criar("Edital, Anexo III", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!],
         null, FormatosPermitidos.Criar(true, null).Value!, null, finalidade: FinalidadeFormulario.Inscricao).Value!;

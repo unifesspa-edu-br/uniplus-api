@@ -8,8 +8,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
@@ -41,8 +44,6 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
     private const int EnumTokenMaxLength = 20;
     private const int PontoResolucaoMaxLength = 50;
     private const int BindingMaxLength = 200;
-    private const int FinalidadeTratamentoMaxLength = 500;
-    private const int HipoteseLegalMaxLength = 40;
 
     public void Configure(EntityTypeBuilder<FatoCandidato> builder)
     {
@@ -94,13 +95,13 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
         // Proteção de dados (ADR-0136): classificação na escala da ADR-0081, finalidade e
         // hipótese legal do tratamento, obrigatórias em todo fato.
         builder.Property(f => f.ClassificacaoProtecao)
-            .HasConversion(ClassificacaoProtecaoConverter)
-            .HasMaxLength(EnumTokenMaxLength)
+            .HasConversion<ClassificacaoDeProtecaoValueConverter>()
+            .HasMaxLength(ClassificacaoDeProtecaoValueConverter.MaxLength)
             .IsRequired();
-        builder.Property(f => f.FinalidadeTratamento).HasMaxLength(FinalidadeTratamentoMaxLength).IsRequired();
+        builder.Property(f => f.FinalidadeTratamento).HasMaxLength(ProtecaoDeDados.FinalidadeMaxLength).IsRequired();
         builder.Property(f => f.HipoteseLegal)
-            .HasConversion(HipoteseLegalConverter)
-            .HasMaxLength(HipoteseLegalMaxLength)
+            .HasConversion(ProtecaoDeDadosConversores.HipoteseLegal)
+            .HasMaxLength(ProtecaoDeDadosConversores.HipoteseLegalMaxLength)
             .IsRequired();
 
         builder.Property(f => f.Sistema).IsRequired();
@@ -196,7 +197,7 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
 
         table.HasCheckConstraint(
             "ck_rol_de_fatos_candidato_classificacao_protecao",
-            $"classificacao_protecao IN ({TokensSql(ClassificacoesProtecaoDado.TokensCanonicos)})");
+            $"classificacao_protecao IN ({TokensSql(ClassificacoesDeProtecao.TokensCanonicos)})");
 
         table.HasCheckConstraint(
             "ck_rol_de_fatos_candidato_hipotese_legal",
@@ -262,10 +263,4 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
 
     private static readonly ValueConverter<EscopoFato, string> EscopoConverter =
         new(escopo => EscoposFato.ParaTokenCanonico(escopo), token => EscoposFato.Analisar(token));
-
-    private static readonly ValueConverter<ClassificacaoProtecaoDado, string> ClassificacaoProtecaoConverter =
-        new(classificacao => ClassificacoesProtecaoDado.ParaTokenCanonico(classificacao), token => ClassificacoesProtecaoDado.Analisar(token));
-
-    private static readonly ValueConverter<HipoteseLegalTratamento, string> HipoteseLegalConverter =
-        new(hipotese => HipotesesLegaisTratamento.ParaTokenCanonico(hipotese), token => HipotesesLegaisTratamento.Analisar(token));
 }

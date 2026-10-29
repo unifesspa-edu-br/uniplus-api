@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Decisao;
 using Unifesspa.UniPlus.Authorization.Enums;
 using Unifesspa.UniPlus.Authorization.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 using static Unifesspa.UniPlus.Authorization.UnitTests.Decisao.CenariosDeDecisao;
 
@@ -123,9 +124,9 @@ public sealed class AuthorizationDecisionServiceTests
     }
 
     [Theory(DisplayName = "Nega por base_legal_ausente quando o dado é pessoal ou sensível sem base legal")]
-    [InlineData(Sensibilidade.Pessoal)]
-    [InlineData(Sensibilidade.Sensivel)]
-    public async Task Decide_DadoPessoalSemBaseLegal_Nega(Sensibilidade sensibilidade)
+    [InlineData(ClassificacaoDeProtecao.Pessoal)]
+    [InlineData(ClassificacaoDeProtecao.Sensivel)]
+    public async Task Decide_DadoPessoalSemBaseLegal_Nega(ClassificacaoDeProtecao sensibilidade)
     {
         AuthorizationDecision decisao = await Decidir(
             Sujeito(concessoes: Concessao()),
@@ -140,8 +141,8 @@ public sealed class AuthorizationDecisionServiceTests
     {
         AuthorizationDecision decisao = await Decidir(
             Sujeito(concessoes: Concessao()),
-            Requisito(Sensibilidade.Sensivel, baseLegalPadrao: null),
-            Recurso(Sensibilidade.Interna));
+            Requisito(ClassificacaoDeProtecao.Sensivel, baseLegalPadrao: null),
+            Recurso(ClassificacaoDeProtecao.Interno));
 
         decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.BaseLegalAusente,
             "a sensibilidade é declarada em dois lugares e vale a maior — olhar só o contexto "
@@ -153,8 +154,8 @@ public sealed class AuthorizationDecisionServiceTests
     {
         AuthorizationDecision decisao = await Decidir(
             Sujeito(concessoes: Concessao()),
-            Requisito(Sensibilidade.Interna, baseLegalPadrao: null),
-            Recurso(Sensibilidade.Pessoal));
+            Requisito(ClassificacaoDeProtecao.Interno, baseLegalPadrao: null),
+            Recurso(ClassificacaoDeProtecao.Pessoal));
 
         decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.BaseLegalAusente);
     }
@@ -164,8 +165,8 @@ public sealed class AuthorizationDecisionServiceTests
     {
         AuthorizationDecision decisao = await Decidir(
             Sujeito(concessoes: Concessao()),
-            Requisito(Sensibilidade.Pessoal, baseLegalPadrao: "LGPD art. 7º, II"),
-            Recurso(Sensibilidade.Pessoal));
+            Requisito(ClassificacaoDeProtecao.Pessoal, baseLegalPadrao: "LGPD art. 7º, II"),
+            Recurso(ClassificacaoDeProtecao.Pessoal));
 
         decisao.Allowed.Should().BeTrue();
     }
@@ -213,8 +214,8 @@ public sealed class AuthorizationDecisionServiceTests
 
         AuthorizationDecision decisao = await Decidir(
             Sujeito(concessoes: Concessao()),
-            Requisito(Sensibilidade.Pessoal, verificacoesDeContexto: ["fase-aberta"]),
-            Recurso(Sensibilidade.Pessoal),
+            Requisito(ClassificacaoDeProtecao.Pessoal, verificacoesDeContexto: ["fase-aberta"]),
+            Recurso(ClassificacaoDeProtecao.Pessoal),
             checks: [check]);
 
         decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.FaseFechada);
@@ -332,8 +333,8 @@ public sealed class AuthorizationDecisionServiceTests
     {
         await Decidir(
             Sujeito(concessoes: Concessao()),
-            Requisito(Sensibilidade.Sensivel, baseLegalPadrao: "LGPD art. 11, II"),
-            Recurso(Sensibilidade.Interna));
+            Requisito(ClassificacaoDeProtecao.Sensivel, baseLegalPadrao: "LGPD art. 11, II"),
+            Recurso(ClassificacaoDeProtecao.Interno));
 
         _registro.Registrados.Should().ContainSingle().Which.Sensibilidade.Should().Be(
             "sensivel",

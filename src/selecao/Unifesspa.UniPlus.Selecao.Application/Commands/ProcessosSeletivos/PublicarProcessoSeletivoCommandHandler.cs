@@ -169,6 +169,13 @@ public static class PublicarProcessoSeletivoCommandHandler
             return (copiasDoItem, []);
         }
 
+        // O tipo de documento é editável depois que a exigência copiou dele a proteção: o valor
+        // vigente é o que se congela, antes da conferência contra os fatos e do snapshot.
+        ProtecaoVigenteDasExigencias protecaoDasExigencias = await ProtecaoVigenteDasExigenciasDoProcesso
+            .MontarAsync(processo, tipoDocumentoReader, catalogoDeFatos, null, cancellationToken)
+            .ConfigureAwait(false);
+        processo.AplicarProtecaoVigente(protecaoDasExigencias);
+
         // O gate precede a canonicalização (ADR-0109 D5): um processo não conforme
         // não chega a ser projetado. Sem isso, a canonicalização de uma dimensão
         // obrigatória ausente falharia alto (D8) em vez de devolver o DomainError
@@ -256,7 +263,7 @@ public static class PublicarProcessoSeletivoCommandHandler
         // fatos. A canonicalização abaixo resolve dataReferenciaFatos internamente e LANÇA
         // quando a política não resolve — sem este guard antes dela, um processo inválido
         // vira exceção não tratada em vez do DomainError que o contrato HTTP promete.
-        if (processo.PendenciaPreCanonicalizacao(fatosDeModalidade) is { } pendenciaPreCanonicalizacao)
+        if (processo.PendenciaPreCanonicalizacao(fatosDeModalidade, protecaoDasExigencias) is { } pendenciaPreCanonicalizacao)
         {
             return (Result.Failure(pendenciaPreCanonicalizacao), []);
         }

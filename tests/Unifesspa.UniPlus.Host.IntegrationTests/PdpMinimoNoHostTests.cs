@@ -25,6 +25,7 @@ using Unifesspa.UniPlus.Host.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.API.Permissoes;
 
@@ -318,7 +319,7 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
     }
 
     private static ResourceContext Recurso(Guid? unidadeProprietariaId = null) =>
-        ResourceContext.From(RecursoTipo, Sensibilidade.Interna, unidadeProprietariaId).Value!;
+        ResourceContext.From(RecursoTipo, ClassificacaoDeProtecao.Interno, unidadeProprietariaId).Value!;
 
     private static DateTimeOffset Agora() => DateTimeOffset.UtcNow;
 

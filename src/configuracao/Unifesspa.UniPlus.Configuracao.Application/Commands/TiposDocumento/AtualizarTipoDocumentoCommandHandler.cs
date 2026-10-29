@@ -1,10 +1,13 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.TiposDocumento;
 
 using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -34,7 +37,10 @@ public static class AtualizarTipoDocumentoCommandHandler
         ArgumentNullException.ThrowIfNull(categoriaRepository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        Result<(CodigoTipoDocumento Codigo, string Nome, string? Descricao, string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente)> validacao =
+        ClassificacaoDeProtecao classificacao = TokensDoFato.Classificacao(command.ClassificacaoProtecao) ?? ClassificacaoDeProtecao.Nenhuma;
+        HipoteseLegalTratamento hipotese = TokensDoFato.HipoteseLegal(command.HipoteseLegal) ?? HipoteseLegalTratamento.Nenhuma;
+
+        Result<(CodigoTipoDocumento Codigo, string Nome, string? Descricao, string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente, ProtecaoDeDados Protecao)> validacao =
             TipoDocumento.ValidarCampos(
                 command.Codigo,
                 command.Nome,
@@ -42,7 +48,10 @@ public static class AtualizarTipoDocumentoCommandHandler
                 command.Categoria,
                 command.FormatosAceitos,
                 command.TamanhoMaximoMb,
-                command.TipoEquivalente);
+                command.TipoEquivalente,
+                classificacao,
+                command.FinalidadeTratamento,
+                hipotese);
         if (validacao.IsFailure)
         {
             return Result.ValidationFailure(validacao.Errors);
@@ -89,7 +98,10 @@ public static class AtualizarTipoDocumentoCommandHandler
             command.Categoria,
             command.FormatosAceitos,
             command.TamanhoMaximoMb,
-            command.TipoEquivalente);
+            command.TipoEquivalente,
+            classificacao,
+            command.FinalidadeTratamento,
+            hipotese);
 
         try
         {

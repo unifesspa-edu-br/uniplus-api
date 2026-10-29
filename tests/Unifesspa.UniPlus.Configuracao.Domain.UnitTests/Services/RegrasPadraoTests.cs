@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -43,7 +44,7 @@ public sealed class RegrasPadraoTests
     public void CriarDerivado_Texto_Recusa() =>
         FatoCandidato.CriarDerivadoDoAdministrador(
                 "NOME_DERIVADO", "Nome", null, DominioFato.Texto, "INSCRICAO", EscopoFato.Candidato,
-                ClassificacaoProtecaoDado.Pessoal, Finalidade, Hipotese)
+                ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese)
             .Errors.Should().ContainSingle()
             .Which.Error.Code.Should().Be(FatoCandidatoErrorCodes.DerivadoPorRegraSoBooleanoOuCategorico);
 
@@ -53,7 +54,7 @@ public sealed class RegrasPadraoTests
     public void CriarDerivado_DominioAusenteOuInvalido_RecusaComOCodigoDoDominio(DominioFato dominio, string codigo) =>
         FatoCandidato.CriarDerivadoDoAdministrador(
                 "DERIVADO", "Derivado", null, dominio, "INSCRICAO", EscopoFato.Candidato,
-                ClassificacaoProtecaoDado.Pessoal, Finalidade, Hipotese)
+                ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese)
             .Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("dominio", codigo));
 
     [Fact(DisplayName = "Fato declarado não tem regras padrão")]
@@ -131,8 +132,8 @@ public sealed class RegrasPadraoTests
     [Fact(DisplayName = "O derivado não protege menos que um fato que ele cita")]
     public void Definir_ClassificacaoMaisFraca_Recusa()
     {
-        FatoCandidato pcd = Declarado("PCD", classificacao: ClassificacaoProtecaoDado.Sensivel);
-        FatoCandidato derivado = Derivado("ATENDIMENTO_PRIORITARIO", classificacao: ClassificacaoProtecaoDado.Pessoal);
+        FatoCandidato pcd = Declarado("PCD", classificacao: ClassificacaoDeProtecao.Sensivel);
+        FatoCandidato derivado = Derivado("ATENDIMENTO_PRIORITARIO", classificacao: ClassificacaoDeProtecao.Pessoal);
 
         derivado.DefinirRegrasPadrao([Booleana(("PCD", true))], Catalogo(pcd, derivado))
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.ClassificacaoAbaixoDaDependencia);
@@ -211,9 +212,9 @@ public sealed class RegrasPadraoTests
     [Fact(DisplayName = "As recusas de regras distintas se acumulam, cada uma no índice da sua regra")]
     public void Definir_RecusasAcumuladas()
     {
-        FatoCandidato pcd = Declarado("PCD", classificacao: ClassificacaoProtecaoDado.Sensivel);
+        FatoCandidato pcd = Declarado("PCD", classificacao: ClassificacaoDeProtecao.Sensivel);
         FatoCandidato nome = Declarado("NOME", DominioFato.Texto, formato: FormatoTexto.NomePessoa);
-        FatoCandidato derivado = Derivado("DERIVADO", classificacao: ClassificacaoProtecaoDado.Pessoal);
+        FatoCandidato derivado = Derivado("DERIVADO", classificacao: ClassificacaoDeProtecao.Pessoal);
 
         Result resultado = derivado.DefinirRegrasPadrao(
             [Booleana(("PCD", true)), Booleana(("NOME", "MARIA"))], Catalogo(pcd, nome, derivado));
@@ -229,7 +230,7 @@ public sealed class RegrasPadraoTests
         string codigo,
         DominioFato dominio = DominioFato.Booleano,
         string ponto = "INSCRICAO",
-        ClassificacaoProtecaoDado classificacao = ClassificacaoProtecaoDado.Sensivel) =>
+        ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Sensivel) =>
         FatoCandidato.CriarDerivadoDoAdministrador(
             codigo, codigo, null, dominio, ponto, EscopoFato.Candidato, classificacao, Finalidade, Hipotese).Value!;
 
@@ -237,7 +238,7 @@ public sealed class RegrasPadraoTests
         string codigo,
         DominioFato dominio = DominioFato.Booleano,
         string ponto = "INSCRICAO",
-        ClassificacaoProtecaoDado classificacao = ClassificacaoProtecaoDado.Pessoal,
+        ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Pessoal,
         FormatoTexto? formato = null,
         EscopoFato escopo = EscopoFato.Candidato) =>
         FatoCandidato.CriarDoAdministrador(

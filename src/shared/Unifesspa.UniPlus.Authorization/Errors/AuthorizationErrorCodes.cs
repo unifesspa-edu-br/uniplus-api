@@ -34,8 +34,10 @@ public static class AuthorizationErrorCodes
     public const string AuthorizationSubjectJtiObrigatorio = "Authorization.AuthorizationSubject.JtiObrigatorio";
 
     public const string PermissionRequirementPermissaoObrigatoria = "Authorization.PermissionRequirement.PermissaoObrigatoria";
+    public const string PermissionRequirementSensibilidadeInvalida = "Authorization.PermissionRequirement.SensibilidadeInvalida";
 
     public const string ResourceContextRecursoTipoObrigatorio = "Authorization.ResourceContext.RecursoTipoObrigatorio";
+    public const string ResourceContextSensibilidadeInvalida = "Authorization.ResourceContext.SensibilidadeInvalida";
     public const string ResourceContextEscopoInvalido = "Authorization.ResourceContext.EscopoInvalido";
 
     public const string AuthorizationRequestContextRequestIdObrigatorio = "Authorization.AuthorizationRequestContext.RequestIdObrigatorio";

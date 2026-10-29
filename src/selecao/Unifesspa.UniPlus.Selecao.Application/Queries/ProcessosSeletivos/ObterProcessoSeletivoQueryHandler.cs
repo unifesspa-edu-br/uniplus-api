@@ -11,6 +11,7 @@ using DTOs;
 
 using Mappings;
 
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 
@@ -429,7 +430,11 @@ public static class ObterProcessoSeletivoQueryHandler
         documento.Modelo is { } modelo
             ? new ModeloDaExigenciaDto(modelo.ModeloId, modelo.NomeArquivo, ModeloDeDocumento.TokenDe(modelo.Formato), modelo.HashSha256)
             : null,
-        documento.Finalidade is { } finalidade ? EstruturaFormulario.ParaToken(finalidade) : null);
+        documento.Finalidade is { } finalidade ? EstruturaFormulario.ParaToken(finalidade) : null,
+        ClassificacoesDeProtecao.ParaTokenCanonico(documento.ClassificacaoProtecao),
+        documento.FinalidadeTratamento,
+        documento.HipoteseLegal,
+        [.. documento.FatosComprovados]);
 
     /// <summary>Projeta um nó da árvore de satisfação (<see cref="NoExigencia"/>, Story #920) recursivamente — mesmo formato de <c>NoExigenciaInput</c> (comando de escrita).</summary>
     private static NoExigenciaDto ProjectNoExigencia(NoExigencia no) => new(

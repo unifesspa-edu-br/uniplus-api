@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
 public static class CriarFatoAgregadoCommandHandler
@@ -26,7 +27,7 @@ public static class CriarFatoAgregadoCommandHandler
         Result<FatoCandidato> criar = FatoCandidato.CriarAgregadoDoAdministrador(
             command.Codigo, command.Nome, command.Descricao, command.FatoDeMembro, new CatalogoDeFatos(fatos, precedencias),
             command.PontoResolucao,
-            TokensDoFato.Classificacao(command.ClassificacaoProtecao) ?? ClassificacaoProtecaoDado.Nenhuma,
+            TokensDoFato.Classificacao(command.ClassificacaoProtecao) ?? ClassificacaoDeProtecao.Nenhuma,
             command.FinalidadeTratamento,
             TokensDoFato.HipoteseLegal(command.HipoteseLegal) ?? HipoteseLegalTratamento.Nenhuma);
         if (criar.IsFailure)

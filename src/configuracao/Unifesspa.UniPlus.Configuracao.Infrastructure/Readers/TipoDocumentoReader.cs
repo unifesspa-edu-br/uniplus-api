@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -85,5 +86,8 @@ internal sealed class TipoDocumentoReader : ITipoDocumentoReader
             t.Id,
             t.Codigo.Valor,
             t.Nome,
-            t.Categoria);
+            t.Categoria,
+            t.ClassificacaoProtecao,
+            t.FinalidadeTratamento,
+            HipotesesLegaisTratamento.ParaTokenCanonico(t.HipoteseLegal));
 }
