@@ -8,7 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.LocaisOferta;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
+using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.LocaisOferta;
+using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
@@ -19,16 +21,19 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Endpoints públicos de leitura (<c>GET /api/configuracao/locais-oferta</c>,
 /// <c>GET /api/configuracao/locais-oferta/{id}</c>) e endpoints admin
-/// (<c>POST/PUT/DELETE /api/configuracao/admin/locais-oferta</c>) restritos a
-/// <c>plataforma-admin</c> (UNI-REQ #587).
+/// (<c>POST/PUT/DELETE /api/configuracao/admin/locais-oferta</c>) restritos à
+/// permissão de manutenção (UNI-REQ #587).
 /// </summary>
 [ApiController]
+[Authorize]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class LocaisOfertaController : ControllerBase
 {
+    private const string RecursoTipo = "LocaisOferta";
+
     private const string ResourceTag = "locais-oferta";
 
     private readonly ICommandBus _commandBus;
@@ -100,9 +105,9 @@ public sealed class LocaisOfertaController : ControllerBase
         return Ok(comLinks);
     }
 
-    /// <summary>Cria um novo local de oferta. Restrito a <c>plataforma-admin</c>. Idempotency-Key obrigatório (ADR-0027).</summary>
+    /// <summary>Cria um novo local de oferta. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/locais-oferta")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.LocaisOfertaManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -130,9 +135,9 @@ public sealed class LocaisOfertaController : ControllerBase
         return resultado.ToActionResult(_mapper);
     }
 
-    /// <summary>Atualiza um local de oferta existente. Restrito a <c>plataforma-admin</c>.</summary>
+    /// <summary>Atualiza um local de oferta existente. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/locais-oferta/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.LocaisOfertaManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -164,9 +169,9 @@ public sealed class LocaisOfertaController : ControllerBase
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
-    /// <summary>Remove (soft-delete) um local de oferta. Restrito a <c>plataforma-admin</c>.</summary>
+    /// <summary>Remove (soft-delete) um local de oferta. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/locais-oferta/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.LocaisOfertaManter, RecursoTipo = RecursoTipo)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

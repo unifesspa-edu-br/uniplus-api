@@ -9,7 +9,9 @@ using Microsoft.AspNetCore.Mvc;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TermosConsentimento;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
+using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.TermosConsentimento;
+using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
@@ -21,15 +23,18 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Endpoints públicos de leitura (<c>GET /api/configuracao/termos-consentimento</c>,
 /// <c>GET /api/configuracao/termos-consentimento/{id}</c>) e endpoints admin
 /// (<c>POST/PUT/DELETE /api/configuracao/admin/termos-consentimento</c>, revisar e
-/// promover) restritos a <c>plataforma-admin</c> (UNI-REQ-0086, catálogo — issue #1018).
+/// promover) restritos à permissão de manutenção (UNI-REQ-0086, catálogo — issue #1018).
 /// </summary>
 [ApiController]
+[Authorize]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class TermosConsentimentoController : ControllerBase
 {
+    private const string RecursoTipo = "TermosConsentimento";
+
     private const string ResourceTag = "termos-consentimento";
 
     /// <summary>Limite defensivo do termo de busca — igual ao <c>Nome</c> máximo da entidade.</summary>
@@ -138,9 +143,9 @@ public sealed class TermosConsentimentoController : ControllerBase
         return Ok(comLinks);
     }
 
-    /// <summary>Cria um novo termo (rascunho vazio ou com campos iniciais). Restrito a <c>plataforma-admin</c>. Idempotency-Key obrigatório (ADR-0027).</summary>
+    /// <summary>Cria um novo termo (rascunho vazio ou com campos iniciais). Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/termos-consentimento")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TermosConsentimentoManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -171,10 +176,10 @@ public sealed class TermosConsentimentoController : ControllerBase
     /// <summary>
     /// Edita o rascunho corrente (texto, base legal, forma de aceite). Se o
     /// rascunho já estava revisado, a edição reverte o status para
-    /// <c>EM_ELABORACAO</c> e limpa a marca de revisão. Restrito a <c>plataforma-admin</c>.
+    /// <c>EM_ELABORACAO</c> e limpa a marca de revisão. Exige a permissão de manutenção.
     /// </summary>
     [HttpPut("admin/termos-consentimento/{id:guid}/rascunho")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TermosConsentimentoManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -208,10 +213,10 @@ public sealed class TermosConsentimentoController : ControllerBase
 
     /// <summary>
     /// Marca o rascunho corrente como revisado — portão distinto da edição
-    /// comum, grava o ator explícito da chamada. Restrito a <c>plataforma-admin</c>.
+    /// comum, grava o ator explícito da chamada. Exige a permissão de manutenção.
     /// </summary>
     [HttpPost("admin/termos-consentimento/{id:guid}/revisar")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TermosConsentimentoManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -228,11 +233,11 @@ public sealed class TermosConsentimentoController : ControllerBase
     }
 
     /// <summary>
-    /// Promove o rascunho revisado a uma nova versão imutável. Restrito a
-    /// <c>plataforma-admin</c>.
+    /// Promove o rascunho revisado a uma nova versão imutável. Exige a permissão de
+    /// manutenção.
     /// </summary>
     [HttpPost("admin/termos-consentimento/{id:guid}/promover")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TermosConsentimentoManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -248,9 +253,9 @@ public sealed class TermosConsentimentoController : ControllerBase
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
-    /// <summary>Remove (soft-delete) um termo sem nenhuma versão promovida. Restrito a <c>plataforma-admin</c>.</summary>
+    /// <summary>Remove (soft-delete) um termo sem nenhuma versão promovida. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/termos-consentimento/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TermosConsentimentoManter, RecursoTipo = RecursoTipo)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

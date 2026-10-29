@@ -8,7 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.PrecedenciasFase;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
+using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.PrecedenciasFase;
+using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
@@ -19,17 +21,20 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Endpoints públicos de leitura (<c>GET /api/configuracao/precedencias-fase</c>,
 /// <c>GET /api/configuracao/precedencias-fase/{id}</c>) e endpoints admin
-/// (<c>POST/PUT/DELETE /api/configuracao/admin/precedencias-fase</c>) restritos a
-/// <c>plataforma-admin</c> (UNI-REQ-0064) — espelha <see cref="FasesCanonicasController"/>
+/// (<c>POST/PUT/DELETE /api/configuracao/admin/precedencias-fase</c>) restritos à
+/// permissão de manutenção (UNI-REQ-0064) — espelha <see cref="FasesCanonicasController"/>
 /// em rota, autenticação, HATEOAS, vendor media type e idempotência.
 /// </summary>
 [ApiController]
+[Authorize]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class PrecedenciasFaseController : ControllerBase
 {
+    private const string RecursoTipo = "PrecedenciasFase";
+
     private const string ResourceTag = "precedencias-fase";
 
     private readonly ICommandBus _commandBus;
@@ -102,9 +107,9 @@ public sealed class PrecedenciasFaseController : ControllerBase
         return Ok(comLinks);
     }
 
-    /// <summary>Cria uma nova aresta de precedência. Restrito a <c>plataforma-admin</c>. Idempotency-Key obrigatório (ADR-0027).</summary>
+    /// <summary>Cria uma nova aresta de precedência. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/precedencias-fase")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.PrecedenciasFaseManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -132,9 +137,9 @@ public sealed class PrecedenciasFaseController : ControllerBase
         return resultado.ToActionResult(_mapper);
     }
 
-    /// <summary>Atualiza a permissão de sobreposição de uma aresta existente. Restrito a <c>plataforma-admin</c>.</summary>
+    /// <summary>Atualiza a permissão de sobreposição de uma aresta existente. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/precedencias-fase/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.PrecedenciasFaseManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -166,9 +171,9 @@ public sealed class PrecedenciasFaseController : ControllerBase
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
-    /// <summary>Remove (soft-delete) uma aresta de precedência. Restrito a <c>plataforma-admin</c>.</summary>
+    /// <summary>Remove (soft-delete) uma aresta de precedência. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/precedencias-fase/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.PrecedenciasFaseManter, RecursoTipo = RecursoTipo)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

@@ -36,23 +36,23 @@ public sealed class FatoCandidatoCatalogoTests
         "principalTable:\\s*\"rol_de_fatos_candidato\"",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-    [Fact(DisplayName = "Toda escrita no catálogo de fatos exige o papel plataforma-admin")]
-    public void Controller_EscritaSoDoAdministrador()
+    [Fact(DisplayName = "Toda escrita no catálogo de fatos exige a permissão de manter")]
+    public void Controller_EscritaExigeAPermissaoDeManter()
     {
         string controller = CaminhoDoController();
         File.Exists(controller).Should().BeTrue($"o controller do catálogo vive em {controller}");
 
         // Comentários C# removidos antes do match: uma nota que cite um verbo não pode ser lida
-        // como uma rota real. Cada verbo de escrita tem de vir acompanhado da exigência do papel
-        // no mesmo bloco de atributos (ADR-0136: o catálogo é cadastrado pelo administrador).
+        // como uma rota real. Cada verbo de escrita tem de vir acompanhado da exigência da permissão
+        // de manter no mesmo bloco de atributos (ADR-0136: o catálogo é mantido por quem tem a permissão).
         string codigo = SemComentarios(controller);
         MatchCollection verbos = VerboDeEscrita.Matches(codigo);
         verbos.Should().NotBeEmpty("o administrador cadastra e mantém o catálogo por HTTP");
         foreach (Match verbo in verbos)
         {
             string blocoDeAtributos = codigo.Substring(verbo.Index, Math.Min(200, codigo.Length - verbo.Index));
-            blocoDeAtributos.Should().Contain("[Authorize(Roles = \"plataforma-admin\")]",
-                $"a rota de escrita em {verbo.Value} é exclusiva do administrador");
+            blocoDeAtributos.Should().Contain("PermissaoConfiguracao.FatosCandidatoManter",
+                $"a rota de escrita em {verbo.Value} exige a permissão de manter o catálogo");
         }
     }
 

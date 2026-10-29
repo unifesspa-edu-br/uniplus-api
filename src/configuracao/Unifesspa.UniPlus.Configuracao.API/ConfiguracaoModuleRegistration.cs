@@ -3,10 +3,12 @@ namespace Unifesspa.UniPlus.Configuracao.API;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Configuracao.API.Errors;
 using Unifesspa.UniPlus.Configuracao.API.Hateoas;
 using Unifesspa.UniPlus.Configuracao.Application;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
+using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.Infrastructure;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
@@ -72,6 +74,10 @@ public static class ConfiguracaoModuleRegistration
 
         // Idempotency-Key (ADR-0027) sobre o DbContext do módulo.
         services.AddIdempotency<ConfiguracaoDbContext, ConfiguracaoApiAssemblyMarker>(configuration);
+
+        // Permissões do módulo (ADR-0151): o enum entra no catálogo da aplicação e é
+        // conferido na subida.
+        services.AddCatalogoDePermissoes<PermissaoConfiguracao>();
 
         services.AddConfiguracaoApplication();
         services.AddConfiguracaoInfrastructure();

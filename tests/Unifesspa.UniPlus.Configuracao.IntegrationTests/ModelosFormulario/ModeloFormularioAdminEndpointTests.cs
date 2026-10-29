@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
-/// Contrato HTTP da manutenção dos modelos de formulário pelo papel <c>plataforma-admin</c>
+/// Contrato HTTP da manutenção dos modelos de formulário pela permissão de manter
 /// (UNI-REQ-0144): cadastro conferido contra o catálogo, leitura no formato da escrita, edição,
 /// desativação e reativação.
 /// </summary>
@@ -36,15 +36,6 @@ public sealed class ModeloFormularioAdminEndpointTests
     public ModeloFormularioAdminEndpointTests(ConfiguracaoEndpointFixture fixture)
     {
         _fixture = fixture;
-    }
-
-    [Fact(DisplayName = "Cadastrar modelo sem o papel plataforma-admin é proibido")]
-    public async Task Criar_SemPapel_Retorna403()
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-
-        (await EnviarAsync(client, HttpMethod.Post, Base, Modelo(CodigoUnico()), papel: "candidato"))
-            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact(DisplayName = "Cadastro desativado, ativação, leitura no formato da escrita, regravação do lido, desativação e reativação; a lista filtra")]
@@ -237,7 +228,7 @@ public sealed class ModeloFormularioAdminEndpointTests
         lista.RootElement.GetArrayLength().Should().Be(0);
     }
 
-    [Fact(DisplayName = "A pré-visualização avalia o modelo com as respostas simuladas; modelo inexistente é 404, e sem o papel, 403")]
+    [Fact(DisplayName = "A pré-visualização avalia o modelo com as respostas simuladas; modelo inexistente é 404")]
     public async Task PreVisualizar_RespostasSimuladas_AvaliaOModelo()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -253,10 +244,9 @@ public sealed class ModeloFormularioAdminEndpointTests
         JsonNode baixaRenda = resultado["itens"]!.AsArray().Single(static i => i!["fatoCodigo"]!.GetValue<string>() == "BAIXA_RENDA")!;
         baixaRenda["visivel"]!.GetValue<string>().Should().Be("FALSO");
         (await EnviarAsync(client, HttpMethod.Post, $"{Base}/{Guid.NewGuid()}/pre-visualizacao", simulacao)).StatusCode.Should().Be(HttpStatusCode.NotFound);
-        (await EnviarAsync(client, HttpMethod.Post, $"{Base}/{id}/pre-visualizacao", simulacao, papel: "candidato")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
-    [Fact(DisplayName = "O renderizável do modelo traz a apresentação e as regras no formato do formulário; modelo inexistente é 404, e sem o papel, 403")]
+    [Fact(DisplayName = "O renderizável do modelo traz a apresentação e as regras no formato do formulário; modelo inexistente é 404")]
     public async Task ObterRenderizavel_DevolveOFormulario()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -272,7 +262,6 @@ public sealed class ModeloFormularioAdminEndpointTests
         formulario["regras"]!["etapas"]!.AsArray().SelectMany(static e => e!["itens"]!.AsArray())
             .Select(static i => i!["fatoCodigo"]!.GetValue<string>()).Should().Contain("BAIXA_RENDA", "as regras vão com a apresentação");
         (await EnviarAsync(client, HttpMethod.Get, $"{Base}/{Guid.NewGuid()}/renderizavel", null)).StatusCode.Should().Be(HttpStatusCode.NotFound);
-        (await EnviarAsync(client, HttpMethod.Get, $"{Base}/{id}/renderizavel", null, papel: "candidato")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact(DisplayName = "O renderizável do modelo de habilitação semeado traz o grupo repetível com os campos de cada ocorrência")]
@@ -586,7 +575,7 @@ public sealed class ModeloFormularioAdminEndpointTests
             [.. lista.AsArray().Select(e => $"{e![chave]!.GetValue<string>()}={e[valor]!.GetValue<string>()}")];
     }
 
-    [Fact(DisplayName = "A avaliação sem cadastro recusa regras que não formam formulário com a causa, e sem o papel é 403")]
+    [Fact(DisplayName = "A avaliação sem cadastro recusa regras que não formam formulário com a causa")]
     public async Task AvaliarSemCadastro_RegrasMalformadas_Recusa()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -602,8 +591,6 @@ public sealed class ModeloFormularioAdminEndpointTests
 
         recusa.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await recusa.Content.ReadAsStringAsync()).Should().Contain("uniplus.formulario_portavel.operacao_de_agregado_invalida");
-        (await EnviarAsync(client, HttpMethod.Post, "/api/configuracao/admin/avaliacoes-de-formulario", new { regras }, papel: "candidato"))
-            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact(DisplayName = "Código já usado por outro modelo é recusado com conflito")]
@@ -809,11 +796,11 @@ public sealed class ModeloFormularioAdminEndpointTests
     }
 
     private static async Task<HttpResponseMessage> EnviarAsync(
-        HttpClient client, HttpMethod metodo, string url, object? corpo, string papel = "plataforma-admin")
+        HttpClient client, HttpMethod metodo, string url, object? corpo)
     {
         using HttpRequestMessage request = new(metodo, new Uri(url, UriKind.Relative));
         request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.Add(TestAuthHandler.RolesHeader, papel);
+        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
         if (metodo != HttpMethod.Get)
         {
             request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());

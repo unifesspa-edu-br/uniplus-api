@@ -8,7 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposBanca;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
+using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.TiposBanca;
+using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
@@ -19,16 +21,19 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Endpoints públicos de leitura (<c>GET /api/configuracao/tipos-banca</c>,
 /// <c>GET /api/configuracao/tipos-banca/{id}</c>) e endpoints admin
-/// (<c>POST/PUT/DELETE /api/configuracao/admin/tipos-banca</c>) restritos a
-/// <c>plataforma-admin</c> (UNI-REQ-0064).
+/// (<c>POST/PUT/DELETE /api/configuracao/admin/tipos-banca</c>) restritos à
+/// permissão de manutenção (UNI-REQ-0064).
 /// </summary>
 [ApiController]
+[Authorize]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class TiposBancaController : ControllerBase
 {
+    private const string RecursoTipo = "TiposBanca";
+
     private const string ResourceTag = "tipos-banca";
 
     private readonly ICommandBus _commandBus;
@@ -101,9 +106,9 @@ public sealed class TiposBancaController : ControllerBase
         return Ok(comLinks);
     }
 
-    /// <summary>Cria um novo tipo de banca. Restrito a <c>plataforma-admin</c>. Idempotency-Key obrigatório (ADR-0027).</summary>
+    /// <summary>Cria um novo tipo de banca. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/tipos-banca")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposBancaManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -132,9 +137,9 @@ public sealed class TiposBancaController : ControllerBase
         return resultado.ToActionResult(_mapper);
     }
 
-    /// <summary>Atualiza um tipo de banca existente. O código é imutável. Restrito a <c>plataforma-admin</c>.</summary>
+    /// <summary>Atualiza um tipo de banca existente. O código é imutável. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/tipos-banca/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposBancaManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -166,9 +171,9 @@ public sealed class TiposBancaController : ControllerBase
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
-    /// <summary>Remove (soft-delete) um tipo de banca. Restrito a <c>plataforma-admin</c>.</summary>
+    /// <summary>Remove (soft-delete) um tipo de banca. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/tipos-banca/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposBancaManter, RecursoTipo = RecursoTipo)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

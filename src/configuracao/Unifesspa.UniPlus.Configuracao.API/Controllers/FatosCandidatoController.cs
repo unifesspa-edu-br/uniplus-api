@@ -8,8 +8,10 @@ using Microsoft.AspNetCore.Mvc;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
+using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.FatosCandidato;
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
@@ -19,16 +21,19 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Endpoints públicos de leitura do catálogo <c>rol_de_fatos_candidato</c> — o
 /// catálogo de fatos do candidato (UNI-REQ-0077, UNI-REQ-0143, ADR-0136), e a manutenção pelo
-/// papel <c>plataforma-admin</c>: cadastro de fato declarado e de derivado por regra, edição de
+/// permissão de manter: cadastro de fato declarado e de derivado por regra, edição de
 /// nome e descrição, desativação, valores de domínio e regras padrão do derivado.
 /// </summary>
 [ApiController]
+[Authorize]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class FatosCandidatoController : ControllerBase
 {
+    private const string RecursoTipo = "FatosCandidato";
+
     private const string ResourceTagAdmin = "admin-fatos-candidato";
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
@@ -80,7 +85,7 @@ public sealed class FatosCandidatoController : ControllerBase
 
     /// <summary>Lista de manutenção, paginada, com filtro opcional por origem e por estado ativo.</summary>
     [HttpGet("admin/fatos-candidato")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoConsultar, RecursoTipo = RecursoTipo)]
     [VendorMediaType(Resource = "fato-candidato", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<FatoCandidatoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -106,7 +111,7 @@ public sealed class FatosCandidatoController : ControllerBase
 
     /// <summary>O fato para manutenção, ativo ou desativado.</summary>
     [HttpGet("admin/fatos-candidato/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoConsultar, RecursoTipo = RecursoTipo)]
     [VendorMediaType(Resource = "fato-candidato", Versions = [1])]
     [ProducesResponseType(typeof(FatoCandidatoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -125,7 +130,7 @@ public sealed class FatosCandidatoController : ControllerBase
     /// formulário é gerado a partir dele.
     /// </summary>
     [HttpPost("admin/fatos-candidato")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -146,7 +151,7 @@ public sealed class FatosCandidatoController : ControllerBase
     /// depois, quando o categórico já tem os valores que elas contribuem.
     /// </summary>
     [HttpPost("admin/fatos-candidato/derivados")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -167,7 +172,7 @@ public sealed class FatosCandidatoController : ControllerBase
     /// responderam no fato de membro informado.
     /// </summary>
     [HttpPost("admin/fatos-candidato/agregados")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -188,7 +193,7 @@ public sealed class FatosCandidatoController : ControllerBase
     /// Lista vazia remove as regras.
     /// </summary>
     [HttpPut("admin/fatos-candidato/{id:guid}/regras-padrao")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -211,7 +216,7 @@ public sealed class FatosCandidatoController : ControllerBase
     /// lista do que deixaria de valer. A versão publicada de um processo não muda.
     /// </summary>
     [HttpPut("admin/fatos-candidato/{id:guid}/definicao")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -228,7 +233,7 @@ public sealed class FatosCandidatoController : ControllerBase
 
     /// <summary>Edita o nome e a descrição; os eixos têm a alteração própria, em <c>/definicao</c>.</summary>
     [HttpPut("admin/fatos-candidato/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -245,7 +250,7 @@ public sealed class FatosCandidatoController : ControllerBase
 
     /// <summary>Reativa o fato do administrador, que volta a aceitar vínculos novos.</summary>
     [HttpPost("admin/fatos-candidato/{id:guid}/ativacao")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -261,7 +266,7 @@ public sealed class FatosCandidatoController : ControllerBase
     /// continua com ele. O fato não é apagado.
     /// </summary>
     [HttpDelete("admin/fatos-candidato/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, RecursoTipo = RecursoTipo)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -273,7 +278,7 @@ public sealed class FatosCandidatoController : ControllerBase
 
     /// <summary>Acrescenta um valor a um fato de fonte global do administrador.</summary>
     [HttpPost("admin/fatos-candidato/{id:guid}/valores")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -293,7 +298,7 @@ public sealed class FatosCandidatoController : ControllerBase
     /// não muda: mudar o sentido de uma opção é acrescentar outro valor e desativar o antigo.
     /// </summary>
     [HttpPut("admin/fatos-candidato/{id:guid}/valores/{codigo}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -313,7 +318,7 @@ public sealed class FatosCandidatoController : ControllerBase
     /// desativados. Fica fora de <c>valores/</c> porque colidiria com um valor de código ORDEM.
     /// </summary>
     [HttpPut("admin/fatos-candidato/{id:guid}/ordem-dos-valores")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -330,7 +335,7 @@ public sealed class FatosCandidatoController : ControllerBase
 
     /// <summary>Reativa um valor do fato do administrador.</summary>
     [HttpPost("admin/fatos-candidato/{id:guid}/valores/{codigo}/ativacao")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -346,7 +351,7 @@ public sealed class FatosCandidatoController : ControllerBase
     /// citava continua. O código do valor nunca é removido nem renomeado.
     /// </summary>
     [HttpDelete("admin/fatos-candidato/{id:guid}/valores/{codigo}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, RecursoTipo = RecursoTipo)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

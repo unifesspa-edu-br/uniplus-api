@@ -8,7 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ReferenciasReservaDemografica;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
+using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.ReferenciasReservaDemografica;
+using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
@@ -19,16 +21,19 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Endpoints públicos de leitura (<c>GET /api/configuracao/referencias-reserva-demografica</c>,
 /// <c>GET /api/configuracao/referencias-reserva-demografica/{id}</c>) e endpoints admin
-/// (<c>POST/PUT/DELETE /api/configuracao/admin/referencias-reserva-demografica</c>) restritos a
-/// <c>plataforma-admin</c> (UNI-REQ-0065).
+/// (<c>POST/PUT/DELETE /api/configuracao/admin/referencias-reserva-demografica</c>) restritos à
+/// permissão de manutenção (UNI-REQ-0065).
 /// </summary>
 [ApiController]
+[Authorize]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class ReferenciasReservaDemograficaController : ControllerBase
 {
+    private const string RecursoTipo = "ReferenciasReservaDemografica";
+
     private const string ResourceTag = "referencias-reserva-demografica";
 
     private readonly ICommandBus _commandBus;
@@ -101,9 +106,9 @@ public sealed class ReferenciasReservaDemograficaController : ControllerBase
         return Ok(comLinks);
     }
 
-    /// <summary>Cria uma nova referência. Restrito a <c>plataforma-admin</c>. Idempotency-Key obrigatório (ADR-0027).</summary>
+    /// <summary>Cria uma nova referência. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/referencias-reserva-demografica")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ReferenciasReservaDemograficaManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -132,9 +137,9 @@ public sealed class ReferenciasReservaDemograficaController : ControllerBase
         return resultado.ToActionResult(_mapper);
     }
 
-    /// <summary>Atualiza uma referência existente. Restrito a <c>plataforma-admin</c>.</summary>
+    /// <summary>Atualiza uma referência existente. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/referencias-reserva-demografica/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ReferenciasReservaDemograficaManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -167,9 +172,9 @@ public sealed class ReferenciasReservaDemograficaController : ControllerBase
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
-    /// <summary>Remove (soft-delete) uma referência. Restrito a <c>plataforma-admin</c>.</summary>
+    /// <summary>Remove (soft-delete) uma referência. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/referencias-reserva-demografica/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ReferenciasReservaDemograficaManter, RecursoTipo = RecursoTipo)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

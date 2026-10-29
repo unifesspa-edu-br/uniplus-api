@@ -8,7 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposEtapa;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
+using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.TiposEtapa;
+using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
@@ -16,11 +18,14 @@ using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 
-/// <summary>Leitura pública de itens ativos e manutenção por plataforma-admin (UNI-REQ-0015, UNI-REQ-0087).</summary>
+/// <summary>Leitura pública de itens ativos e manutenção por permissão (UNI-REQ-0015, UNI-REQ-0087).</summary>
 [ApiController]
+[Authorize]
 [SuppressMessage("Performance", "CA1515:Consider making public types internal", Justification = "Controllers MVC são descobertos por reflection.")]
 public sealed class TiposEtapaController : ControllerBase
 {
+    private const string RecursoTipo = "TiposEtapa";
+
     private const string ResourceTag = "tipos-etapa";
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
@@ -65,7 +70,7 @@ public sealed class TiposEtapaController : ControllerBase
     }
 
     [HttpPost("admin/tipos-etapa")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposEtapaManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -80,7 +85,7 @@ public sealed class TiposEtapaController : ControllerBase
     }
 
     [HttpPut("admin/tipos-etapa/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposEtapaManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -101,7 +106,7 @@ public sealed class TiposEtapaController : ControllerBase
     }
 
     [HttpDelete("admin/tipos-etapa/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposEtapaManter, RecursoTipo = RecursoTipo)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

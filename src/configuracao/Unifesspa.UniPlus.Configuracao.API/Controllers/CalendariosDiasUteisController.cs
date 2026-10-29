@@ -8,7 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUteis;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
+using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.CalendariosDiasUteis;
+using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
@@ -20,15 +22,18 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Endpoints públicos de leitura (<c>GET /api/configuracao/calendarios-dias-uteis</c>,
 /// <c>GET /api/configuracao/calendarios-dias-uteis/{id}</c>) e endpoints admin
 /// (<c>POST/DELETE /api/configuracao/admin/calendarios-dias-uteis</c>,
-/// <c>POST .../{id}/vigente</c>) restritos a <c>plataforma-admin</c> (UNI-REQ-0116).
+/// <c>POST .../{id}/vigente</c>) restritos à permissão de manutenção (UNI-REQ-0116).
 /// </summary>
 [ApiController]
+[Authorize]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class CalendariosDiasUteisController : ControllerBase
 {
+    private const string RecursoTipo = "CalendariosDiasUteis";
+
     private const string ResourceTag = "calendarios-dias-uteis";
 
     private readonly ICommandBus _commandBus;
@@ -104,9 +109,9 @@ public sealed class CalendariosDiasUteisController : ControllerBase
         return Ok(comLinks);
     }
 
-    /// <summary>Cria um novo dataset (nasce não vigente). Restrito a <c>plataforma-admin</c>. Idempotency-Key obrigatório (ADR-0027).</summary>
+    /// <summary>Cria um novo dataset (nasce não vigente). Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/calendarios-dias-uteis")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CalendariosDiasUteisManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -134,9 +139,9 @@ public sealed class CalendariosDiasUteisController : ControllerBase
         return resultado.ToActionResult(_mapper);
     }
 
-    /// <summary>Torna o dataset o vigente, desmarcando o anterior. Restrito a <c>plataforma-admin</c>.</summary>
+    /// <summary>Torna o dataset o vigente, desmarcando o anterior. Exige a permissão de manutenção.</summary>
     [HttpPost("admin/calendarios-dias-uteis/{id:guid}/vigente")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CalendariosDiasUteisManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -155,11 +160,11 @@ public sealed class CalendariosDiasUteisController : ControllerBase
     /// <summary>
     /// Inclui uma data não útil num dataset já existente (vigente ou rascunho),
     /// preservando id, versão e as datas já cadastradas — sem criar um novo dataset
-    /// (api#1458). Restrito a <c>plataforma-admin</c>. Idempotency-Key obrigatório
+    /// (api#1458). Exige a permissão de manutenção. Idempotency-Key obrigatório
     /// (ADR-0027).
     /// </summary>
     [HttpPost("admin/calendarios-dias-uteis/{id:guid}/dias-nao-uteis")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CalendariosDiasUteisManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(CalendarioDiasUteisDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -186,9 +191,9 @@ public sealed class CalendariosDiasUteisController : ControllerBase
         return resultado.ToActionResult(_mapper);
     }
 
-    /// <summary>Remove (soft-delete) um dataset não vigente. Restrito a <c>plataforma-admin</c>.</summary>
+    /// <summary>Remove (soft-delete) um dataset não vigente. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/calendarios-dias-uteis/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CalendariosDiasUteisManter, RecursoTipo = RecursoTipo)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

@@ -8,7 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.PesosAreaEnem;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
+using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.PesosAreaEnem;
+using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
@@ -20,16 +22,19 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Endpoints públicos de leitura (<c>GET /api/configuracao/pesos-area-enem</c>,
 /// <c>GET /api/configuracao/pesos-area-enem/{id}</c>, <c>GET
 /// /api/configuracao/pesos-area-enem/areas</c>) e endpoints admin
-/// (<c>POST/PUT/DELETE /api/configuracao/admin/pesos-area-enem</c>) restritos a
-/// <c>plataforma-admin</c>.
+/// (<c>POST/PUT/DELETE /api/configuracao/admin/pesos-area-enem</c>) restritos à
+/// permissão de manutenção.
 /// </summary>
 [ApiController]
+[Authorize]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class PesosAreaEnemController : ControllerBase
 {
+    private const string RecursoTipo = "PesosAreaEnem";
+
     private const string ResourceTag = "pesos-area-enem";
 
     private readonly ICommandBus _commandBus;
@@ -121,9 +126,9 @@ public sealed class PesosAreaEnemController : ControllerBase
         return Ok(comLinks);
     }
 
-    /// <summary>Cria uma nova linha de pesos. Restrito a <c>plataforma-admin</c>. Idempotency-Key obrigatório (ADR-0027).</summary>
+    /// <summary>Cria uma nova linha de pesos. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/pesos-area-enem")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.PesosAreaEnemManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -152,9 +157,9 @@ public sealed class PesosAreaEnemController : ControllerBase
         return resultado.ToActionResult(_mapper);
     }
 
-    /// <summary>Atualiza uma linha de pesos existente. Restrito a <c>plataforma-admin</c>.</summary>
+    /// <summary>Atualiza uma linha de pesos existente. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/pesos-area-enem/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.PesosAreaEnemManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -186,9 +191,9 @@ public sealed class PesosAreaEnemController : ControllerBase
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
-    /// <summary>Remove (soft-delete) uma linha de pesos. Restrito a <c>plataforma-admin</c>.</summary>
+    /// <summary>Remove (soft-delete) uma linha de pesos. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/pesos-area-enem/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.PesosAreaEnemManter, RecursoTipo = RecursoTipo)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
