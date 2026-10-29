@@ -49,7 +49,6 @@ public sealed class CancelarInscricaoEndpointTests
             Content = new StringContent(string.Empty, System.Text.Encoding.UTF8, "application/json"),
         };
         request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "candidato");
         request.Headers.TryAddWithoutValidation(TestAuthHandler.CpfHeader, PersonasDeTeste.KevinCarvalho.Valor);
         request.Headers.TryAddWithoutValidation("If-Match", "\"qualquer\"");
         request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.NewGuid().ToString());
