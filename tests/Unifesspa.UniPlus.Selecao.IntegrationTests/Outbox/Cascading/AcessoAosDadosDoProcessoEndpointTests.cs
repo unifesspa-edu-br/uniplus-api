@@ -93,31 +93,7 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         leitura.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
-    [Fact(DisplayName = "A listagem traz só os processos das unidades em que a pessoa acompanha; plataforma-admin sem concessão recebe lista vazia")]
-    public async Task Listagem_SoDasUnidadesQueAcompanha()
-    {
-        Guid dele = await SemearRascunhoAsync(nameof(Listagem_SoDasUnidadesQueAcompanha) + " dele");
-        Guid dosOutros = await SemearRascunhoAsync(nameof(Listagem_SoDasUnidadesQueAcompanha) + " dos outros");
-
-        using HttpResponseMessage semConcessao = await GetAsync(Diogo, "/api/selecao/processos-seletivos?limit=100", papel: "plataforma-admin");
-        (await IdsAsync(semConcessao)).Should().BeEmpty("o papel do token não concede nada");
-
-        await ConcederAsync(Diogo, await UnidadeDoProcessoAsync(dele), PermissaoSelecao.ProcessosAcompanhar);
-        using HttpResponseMessage comConcessao = await GetAsync(Diogo, "/api/selecao/processos-seletivos?limit=100", papel: "plataforma-admin");
-
-        List<Guid> ids = await IdsAsync(comConcessao);
-        ids.Should().Contain(dele).And.NotContain(dosOutros);
-    }
-
-    private static async Task<List<Guid>> IdsAsync(HttpResponseMessage resposta)
-    {
-        string corpo = await resposta.Content.ReadAsStringAsync();
-        resposta.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
-        using JsonDocument json = JsonDocument.Parse(corpo);
-        return [.. json.RootElement.EnumerateArray().Select(i => i.GetProperty("id").GetGuid())];
-    }
-
-    [Fact(DisplayName = "Acompanhar lê o processo mas não publica nem configura")]
+    [Fact(DisplayName = "Acompanhar não lê o rascunho, nem as telas de trabalho, e não publica nem configura")]
     public async Task Acompanhar_NaoPublicaNemConfigura()
     {
         Guid processoId = await SemearRascunhoAsync(nameof(Acompanhar_NaoPublicaNemConfigura));
@@ -126,9 +102,11 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         using HttpResponseMessage leitura = await GetAsync(Leandro, $"/api/selecao/processos-seletivos/{processoId}");
         using HttpResponseMessage publicar = await SendAsync(
             Leandro, HttpMethod.Post, $"/api/selecao/processos-seletivos/{processoId}/publicacao", new { });
+        using HttpResponseMessage conformidade = await GetAsync(Leandro, $"/api/selecao/processos-seletivos/{processoId}/conformidade");
         using HttpResponseMessage configurar = await PutTaxaAsync(Leandro, processoId);
 
-        leitura.StatusCode.Should().Be(HttpStatusCode.OK);
+        leitura.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        conformidade.StatusCode.Should().Be(HttpStatusCode.NotFound);
         publicar.StatusCode.Should().Be(HttpStatusCode.NotFound);
         configurar.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }

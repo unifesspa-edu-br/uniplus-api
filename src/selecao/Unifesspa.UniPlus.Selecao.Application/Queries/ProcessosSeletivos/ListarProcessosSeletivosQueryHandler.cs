@@ -21,9 +21,9 @@ using Wolverine.Attributes;
 /// <see cref="ProcessoSeletivoResumoDto"/> — omitir as coleções de configuração
 /// evita que um processo já configurado pareça incompleto na lista. O detalhe
 /// completo vive em <c>GET /{id}</c> (<see cref="ObterProcessoSeletivoQuery"/>).
-/// Só entram os processos das unidades em que a pessoa tem concessão ativa de
-/// <see cref="PermissaoSelecao.ProcessosAcompanhar"/>, lidas a cada requisição, sem cache: quem recebe 404 no
-/// acesso individual não descobre o processo pela lista, e sem concessão a lista vem vazia.
+/// Os processos publicados ou encerrados são abertos a todos. Os demais só entram para quem tem concessão ativa de
+/// <see cref="PermissaoSelecao.ProcessosConfigurar"/> na unidade dona, lida a cada requisição, sem cache: quem recebe
+/// 404 no acesso individual não descobre o rascunho pela lista.
 /// </summary>
 public static class ListarProcessosSeletivosQueryHandler
 {
@@ -46,10 +46,10 @@ public static class ListarProcessosSeletivosQueryHandler
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(verificador);
 
-        Guid[] unidades = await UnidadesQueAcompanhaAsync(concessoes, verificador, userContext, cancellationToken).ConfigureAwait(false);
+        Guid[] unidadesDoRascunho = await UnidadesOndeConfiguraAsync(concessoes, verificador, userContext, cancellationToken).ConfigureAwait(false);
 
         (IReadOnlyList<ProcessoSeletivo> itens, Guid? anteriorAfterId, Guid? proximoAfterId) = await processoSeletivoRepository
-            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, unidades, cancellationToken)
+            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, unidadesDoRascunho, cancellationToken)
             .ConfigureAwait(false);
 
         ProcessoSeletivoResumoDto[] items = [.. itens.Select(Project)];
@@ -67,10 +67,10 @@ public static class ListarProcessosSeletivosQueryHandler
         processo.CreatedAt);
 
     /// <summary>
-    /// As unidades das concessões da pessoa em que o ponto de decisão permite acompanhar. As concessões só indicam onde
+    /// As unidades das concessões da pessoa em que o ponto de decisão permite configurar. As concessões só indicam onde
     /// olhar; escopo, vigência e código da permissão são regras da decisão, que cada unidade candidata consulta.
     /// </summary>
-    private static async Task<Guid[]> UnidadesQueAcompanhaAsync(
+    private static async Task<Guid[]> UnidadesOndeConfiguraAsync(
         IConcessoesAtivasDoSujeito concessoes, IVerificadorDeAcesso verificador, IUserContext userContext, CancellationToken cancellationToken)
     {
         if (!userContext.IsAuthenticated
@@ -85,7 +85,7 @@ public static class ListarProcessosSeletivosQueryHandler
         {
             ResultadoDoAcesso acesso = await AcessoAoProcesso
                 .VerificarNaUnidadeAsync(
-                    verificador, unidade, processoId: null, PermissaoSelecao.ProcessosAcompanhar,
+                    verificador, unidade, processoId: null, PermissaoSelecao.ProcessosConfigurar,
                     AcessoAoProcesso.RecursoProcesso, sensibilidadeDoRecurso: null, cancellationToken)
                 .ConfigureAwait(false);
             if (acesso == ResultadoDoAcesso.Permitido)

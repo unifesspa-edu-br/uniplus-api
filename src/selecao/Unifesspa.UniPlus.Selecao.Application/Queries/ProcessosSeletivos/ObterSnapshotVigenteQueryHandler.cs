@@ -68,17 +68,22 @@ public static class ObterSnapshotVigenteQueryHandler
                     $"Processo Seletivo {query.ProcessoSeletivoId} não encontrado."));
         }
 
-        // O identificador forense devolvido é o da VERSÃO congelada — a mesma
-        // referência durável que o ProcessoPublicadoEvent carrega. O ato entra por
-        // VALOR, com o par {id, hash} que a versão já guarda: nenhuma consulta a
-        // Publicações, e portanto nenhuma espera pela drenagem do outbox (ADR-0108).
-        return Result<SnapshotVigenteDto>.Success(new SnapshotVigenteDto(
+        return Result<SnapshotVigenteDto>.Success(Projetar(versao));
+    }
+
+    /// <summary>
+    /// Projeta a versão congelada no DTO. O identificador forense devolvido é o da VERSÃO — a mesma
+    /// referência durável que o <c>ProcessoPublicadoEvent</c> carrega. O ato entra por VALOR, com o par
+    /// <c>{id, hash}</c> que a versão já guarda: nenhuma consulta a Publicações, e portanto nenhuma
+    /// espera pela drenagem do outbox (ADR-0108).
+    /// </summary>
+    internal static SnapshotVigenteDto Projetar(VersaoConfiguracao versao) =>
+        new(
             versao.Id,
             versao.AtoCriadorId,
             versao.SchemaVersion,
             versao.AlgoritmoHash,
             versao.HashConfiguracao,
             versao.AtoCriadorHash,
-            JsonNode.Parse(versao.ConfiguracaoCongelada)!));
-    }
+            JsonNode.Parse(versao.ConfiguracaoCongelada)!);
 }
