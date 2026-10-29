@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
@@ -14,26 +15,30 @@ using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Unidades;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.DTOs;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Permissoes;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Queries.Unidades;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 
 /// <summary>
 /// Endpoints públicos de leitura (<c>GET /api/organizacao/unidades</c>,
 /// <c>GET /api/organizacao/unidades/{id}</c>) e endpoints admin
-/// (<c>POST/PUT/DELETE /api/organizacao/admin/unidades</c>) restritos a
-/// <c>plataforma-admin</c>.
+/// (<c>POST/PUT/DELETE /api/organizacao/admin/unidades</c>) restritos à
+/// permissão de manutenção.
 /// </summary>
 /// <remarks>
 /// O prefixo da rota é aplicado automaticamente por convenção.
 /// e cada action especifica seu caminho.
 /// </remarks>
 [ApiController]
+[Authorize]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class UnidadesController : ControllerBase
 {
+    private const string RecursoTipo = "Unidades";
+
     private const string ResourceTag = "unidades";
 
     /// <summary>Limite defensivo de comprimento do termo de busca (cobre o Nome máximo + margem).</summary>
@@ -179,11 +184,11 @@ public sealed class UnidadesController : ControllerBase
     }
 
     /// <summary>
-    /// Cria uma nova unidade organizacional. Restrito a <c>plataforma-admin</c>.
+    /// Cria uma nova unidade organizacional. Exige a permissão de manutenção.
     /// Idempotency-Key obrigatório (ADR-0027).
     /// </summary>
     [HttpPost("admin/unidades")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoOrganizacao>(PermissaoOrganizacao.UnidadesManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -213,11 +218,11 @@ public sealed class UnidadesController : ControllerBase
     }
 
     /// <summary>
-    /// Atualiza uma unidade organizacional existente. Restrito a
-    /// <c>plataforma-admin</c>.
+    /// Atualiza uma unidade organizacional existente. Exige a permissão de
+    /// manutenção.
     /// </summary>
     [HttpPut("admin/unidades/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoOrganizacao>(PermissaoOrganizacao.UnidadesManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -251,11 +256,11 @@ public sealed class UnidadesController : ControllerBase
     }
 
     /// <summary>
-    /// Remove (soft-delete) uma unidade organizacional. Restrito a
-    /// <c>plataforma-admin</c>.
+    /// Remove (soft-delete) uma unidade organizacional. Exige a permissão de
+    /// manutenção.
     /// </summary>
     [HttpDelete("admin/unidades/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoOrganizacao>(PermissaoOrganizacao.UnidadesManter, RecursoTipo = RecursoTipo)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

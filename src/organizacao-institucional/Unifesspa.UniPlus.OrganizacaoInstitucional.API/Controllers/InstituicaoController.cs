@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
@@ -13,22 +14,26 @@ using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Instituicoes;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.DTOs;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Permissoes;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Queries.Instituicoes;
 
 /// <summary>
 /// Endpoint público de leitura (<c>GET /api/organizacao/instituicao</c>) e endpoints admin
-/// (<c>POST/PUT/DELETE /api/organizacao/admin/instituicao</c>) restritos a
-/// <c>plataforma-admin</c>. A Instituição é singleton (ADR-0055) — não há
+/// (<c>POST/PUT/DELETE /api/organizacao/admin/instituicao</c>) restritos à
+/// permissão de manutenção. A Instituição é singleton (ADR-0055) — não há
 /// listagem nem seletor: há a Instituição, criada uma vez e editada ao longo do
 /// tempo.
 /// </summary>
 [ApiController]
+[Authorize]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class InstituicaoController : ControllerBase
 {
+    private const string RecursoTipo = "Instituicao";
+
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;
@@ -72,12 +77,12 @@ public sealed class InstituicaoController : ControllerBase
     }
 
     /// <summary>
-    /// Cria a Instituição. Restrito a <c>plataforma-admin</c>. Idempotency-Key
+    /// Cria a Instituição. Exige a permissão de manutenção. Idempotency-Key
     /// obrigatório (ADR-0027). Retorna 409 se já existe uma Instituição viva —
     /// a plataforma atende uma única instituição por deployment (ADR-0055).
     /// </summary>
     [HttpPost("admin/instituicao")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoOrganizacao>(PermissaoOrganizacao.InstituicaoManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -104,10 +109,10 @@ public sealed class InstituicaoController : ControllerBase
     }
 
     /// <summary>
-    /// Atualiza a Instituição existente. Restrito a <c>plataforma-admin</c>.
+    /// Atualiza a Instituição existente. Exige a permissão de manutenção.
     /// </summary>
     [HttpPut("admin/instituicao/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoOrganizacao>(PermissaoOrganizacao.InstituicaoManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -140,10 +145,10 @@ public sealed class InstituicaoController : ControllerBase
     }
 
     /// <summary>
-    /// Remove (soft-delete) a Instituição. Restrito a <c>plataforma-admin</c>.
+    /// Remove (soft-delete) a Instituição. Exige a permissão de manutenção.
     /// </summary>
     [HttpDelete("admin/instituicao/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoOrganizacao>(PermissaoOrganizacao.InstituicaoManter, RecursoTipo = RecursoTipo)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

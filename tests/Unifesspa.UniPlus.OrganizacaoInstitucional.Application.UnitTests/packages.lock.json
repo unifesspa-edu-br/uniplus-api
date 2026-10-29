@@ -135,6 +135,13 @@
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
         }
       },
+      "unifesspa.uniplus.authorization": {
+        "type": "Project",
+        "dependencies": {
+          "Unifesspa.UniPlus.Application.Abstractions": "[1.0.0, )",
+          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
+        }
+      },
       "unifesspa.uniplus.governance.contracts": {
         "type": "Project",
         "dependencies": {
@@ -150,6 +157,7 @@
           "FluentValidation": "[12.1.1, )",
           "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
           "Unifesspa.UniPlus.Application.Abstractions": "[1.0.0, )",
+          "Unifesspa.UniPlus.Authorization": "[1.0.0, )",
           "Unifesspa.UniPlus.Governance.Contracts": "[1.0.0, )",
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
           "Unifesspa.UniPlus.OrganizacaoInstitucional.Domain": "[1.0.0, )"

@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.API;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
@@ -11,6 +12,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.API.Errors;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.API.Hateoas;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.DTOs;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Permissoes;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 
@@ -54,6 +56,10 @@ public static class OrganizacaoInstitucionalModuleRegistration
         // ativa-se em endpoints com [RequiresIdempotencyKey], persistindo entries
         // cifradas at-rest.
         services.AddIdempotency<OrganizacaoInstitucionalDbContext, OrganizacaoApiAssemblyMarker>(configuration);
+
+        // Permissões do módulo (ADR-0151): o enum entra no catálogo da aplicação e é
+        // conferido na subida.
+        services.AddCatalogoDePermissoes<PermissaoOrganizacao>();
 
         // Application + Infrastructure — registram validators, DbContext, repositórios,
         // readers cross-módulo (ADR-0056) e cache invalidators.
