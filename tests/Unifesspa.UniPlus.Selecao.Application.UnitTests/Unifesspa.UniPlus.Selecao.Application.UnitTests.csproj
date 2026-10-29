@@ -35,6 +35,7 @@
     <Compile Include="../Shared/InstanteEmBelem.cs" Link="InstanteEmBelem.cs" />
     <Compile Include="../Shared/RelogioFixo.cs" Link="RelogioFixo.cs" />
     <Compile Include="../Shared/IdentificadoresDeTeste.cs" Link="IdentificadoresDeTeste.cs" />
+    <Compile Include="../Shared/UnidadesDeTeste.cs" Link="UnidadesDeTeste.cs" />
     <Compile Include="../Shared/DeclaracoesObrigatoriasDeTeste.cs" Link="DeclaracoesObrigatoriasDeTeste.cs" />
     <Compile Include="../Shared/QuadroPesoAreaEnemDeTeste.cs" Link="QuadroPesoAreaEnemDeTeste.cs" />
     <Compile Include="../Shared/OfertaCursoDeTeste.cs" Link="OfertaCursoDeTeste.cs" />

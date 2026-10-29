@@ -157,7 +157,7 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
 
     private static FaseCronograma Fase(int ordem, string codigo) =>
         FaseCronograma.Reidratar(
-            Guid.CreateVersion7(), ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.Delegada,
+            Guid.CreateVersion7(), ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.NaExecucao,
             agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: ordem == 1, coletaSolicitacaoIsencao: false,
-            inicio: null, fim: null, [], faseConcluinteCodigo: null, emiteParecerIndividual: false, [], regraRecurso: null);
+            inicio: null, fim: null, [], faseConcluinteCodigo: null, emiteParecerIndividual: false, [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps);
 }

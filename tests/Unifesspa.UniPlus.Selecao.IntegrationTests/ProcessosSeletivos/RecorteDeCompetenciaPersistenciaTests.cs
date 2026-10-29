@@ -172,7 +172,7 @@ public sealed class RecorteDeCompetenciaPersistenciaTests : IClassFixture<Proces
             faseCanonicaOrigemId: faseCanonicaOrigemId,
             codigo: "ANALISE_DOCUMENTAL",
             donoInstitucional: "CEPS",
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             agrupaEtapas: false,
             permiteComplementacao: false,
             coletaInscricao: false,
@@ -183,7 +183,8 @@ public sealed class RecorteDeCompetenciaPersistenciaTests : IClassFixture<Proces
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,
             bancasRequeridas: bancas,
-            regraRecurso: null).Value!;
+            regraRecurso: null,
+            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     private static async Task<ProcessoSeletivo> CarregarAsync(SelecaoDbContext db, Guid processoId) =>
         await db.ProcessosSeletivos

@@ -329,6 +329,7 @@ public sealed class EnvelopeFechadoE2ETests
                 "cronograma_etapa_pontuada_sem_fase_agrupadora",
                 "cronograma_inscricao_propria_sem_fase_de_coleta",
                 "cronograma_fase_que_coleta_inscricao_sem_janela",
+                "cronograma_fase_sem_unidade_responsavel",
                 "cronograma_janela_de_isencao",
                 "cronograma_vagas_sem_fase_que_produz_resultado",
                 "cronograma_conclusao_do_ciclo_recursal",
@@ -718,6 +719,7 @@ public sealed class EnvelopeFechadoE2ETests
                     emiteParecerIndividual = false,
                     bancasRequeridas = Array.Empty<object>(),
                     regraRecurso = (object?)null,
+                    unidadeResponsavelId = Catalogos.UnidadeId,
                 },
                 new
                 {
@@ -738,6 +740,7 @@ public sealed class EnvelopeFechadoE2ETests
                     emiteParecerIndividual = true,
                     bancasRequeridas = new object[] { new { tipoBancaId = Catalogos.TipoBancaId, categoriasDocumentoIds = Array.Empty<Guid>() } },
                     regraRecurso = (object?)null,
+                    unidadeResponsavelId = Catalogos.UnidadeId,
                 },
                 new
                 {
@@ -753,6 +756,7 @@ public sealed class EnvelopeFechadoE2ETests
                     emiteParecerIndividual = false,
                     bancasRequeridas = Array.Empty<object>(),
                     regraRecurso = (object?)null,
+                    unidadeResponsavelId = Catalogos.UnidadeId,
                 },
             ];
 

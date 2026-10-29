@@ -23,7 +23,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirCronogramaFases(
             [FaseCronograma.Criar(
-                1, Guid.CreateVersion7(), "CLASSIFICACAO", "CEPS", OrigemDataFase.Delegada,
+                1, Guid.CreateVersion7(), "CLASSIFICACAO", "CEPS", OrigemDataFase.NaExecucao,
                 agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
                 inicio: null, fim: null,
                 produtos:
@@ -31,7 +31,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
                     ProdutoDaFase.Criar("ATO_QUE_O_CATALOGO_DECLARA_UNICO", PapelProdutoFase.Definitivo),
                     ProdutoDaFase.Criar("ATO_QUE_O_CATALOGO_NAO_DECLARA_UNICO", PapelProdutoFase.Definitivo),
                 ],
-                faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!],
+                faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!],
             [],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -74,7 +74,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirCronogramaFases(
             [FaseCronograma.Criar(
-                1, Guid.CreateVersion7(), "CLASSIFICACAO", "CEPS", OrigemDataFase.Delegada,
+                1, Guid.CreateVersion7(), "CLASSIFICACAO", "CEPS", OrigemDataFase.NaExecucao,
                 agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
                 inicio: null, fim: null,
                 produtos:
@@ -82,7 +82,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
                     ProdutoDaFase.Criar("RESULTADO_X", PapelProdutoFase.Definitivo),
                     ProdutoDaFase.Criar("AVISO_X", papel: null),
                 ],
-                faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!],
+                faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!],
             [],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -108,7 +108,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirCronogramaFases(
             [FaseCronograma.Criar(
-                1, Guid.CreateVersion7(), "CLASSIFICACAO", "CEPS", OrigemDataFase.Delegada,
+                1, Guid.CreateVersion7(), "CLASSIFICACAO", "CEPS", OrigemDataFase.NaExecucao,
                 agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
                 inicio: null, fim: null,
                 produtos:
@@ -117,7 +117,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
                     ProdutoDaFase.Criar("RESULTADO_X", PapelProdutoFase.Definitivo),
                     ProdutoDaFase.Criar("AVISO_UNICO", null),
                 ],
-                faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!],
+                faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!],
             [],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         var classificacoes = new Dictionary<string, ClassificacaoDoTipoDeAto>(StringComparer.Ordinal)
@@ -146,7 +146,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirCronogramaFases(
             [FaseCronograma.Criar(
-                1, Guid.CreateVersion7(), "CLASSIFICACAO", "CEPS", OrigemDataFase.Delegada,
+                1, Guid.CreateVersion7(), "CLASSIFICACAO", "CEPS", OrigemDataFase.NaExecucao,
                 agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
                 inicio: null, fim: null,
                 produtos:
@@ -155,7 +155,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
                     ProdutoDaFase.Criar("RESULTADO_X", PapelProdutoFase.Definitivo),
                     ProdutoDaFase.Criar("TIPO_NOVO", null),
                 ],
-                faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!],
+                faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!],
             [],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -196,7 +196,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirCronogramaFases(
             [FaseCronograma.Criar(
-                1, Guid.CreateVersion7(), "CLASSIFICACAO", "CEPS", OrigemDataFase.Delegada,
+                1, Guid.CreateVersion7(), "CLASSIFICACAO", "CEPS", OrigemDataFase.NaExecucao,
                 agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
                 inicio: null, fim: null,
                 produtos:
@@ -204,7 +204,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
                     ProdutoDaFase.Criar("RESULTADO_X", PapelProdutoFase.Preliminar),
                     ProdutoDaFase.Criar("RESULTADO_X", PapelProdutoFase.Definitivo),
                 ],
-                faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!],
+                faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!],
             [],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         var congelados = new Dictionary<string, Application.Abstractions.TipoDeAtoCongelado>(StringComparer.Ordinal)

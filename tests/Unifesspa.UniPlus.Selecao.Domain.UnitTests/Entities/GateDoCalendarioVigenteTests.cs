@@ -67,28 +67,28 @@ public sealed class GateDoCalendarioVigenteTests
     private static FaseCronograma[] CronogramaComRecurso(UnidadePrazo unidade) =>
     [
         FaseCronograma.Criar(
-            1, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.Delegada,
+            1, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.NaExecucao,
             agrupaEtapas: false, permiteComplementacao: false,             // A fase que coleta inscrição precisa de janela para publicar, mesmo com origem
-            // DELEGADA (issue #1350) — as demais fases deste cronograma seguem sem data.
+            // NA_EXECUCAO (issue #1350) — as demais fases deste cronograma seguem sem data.
             coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
             fim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
             produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null).Value!,
+            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!,
         FaseCronograma.Criar(
-            2, Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", "CEPS", OrigemDataFase.Delegada,
+            2, Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", "CEPS", OrigemDataFase.NaExecucao,
             agrupaEtapas: true, permiteComplementacao: false,             coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
             produtos: [ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)],
             faseConcluinteCodigo: "RESULTADO_FINAL",
             emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: Recurso(unidade)).Value!,
+            bancasRequeridas: [], regraRecurso: Recurso(unidade), unidadeResponsavel: UnidadesDeTeste.Ceps).Value!,
         FaseCronograma.Criar(
-            3, Guid.CreateVersion7(), "RESULTADO_FINAL", "CEPS", OrigemDataFase.Delegada,
+            3, Guid.CreateVersion7(), "RESULTADO_FINAL", "CEPS", OrigemDataFase.NaExecucao,
             agrupaEtapas: false, permiteComplementacao: false,             coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
             produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null).Value!,
+            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!,
     ];
 
     /// <summary>Processo conforme, com uma fase que aceita recurso e a convenção já declarada.</summary>

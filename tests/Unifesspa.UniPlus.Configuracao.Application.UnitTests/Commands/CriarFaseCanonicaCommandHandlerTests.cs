@@ -17,7 +17,7 @@ public sealed class CriarFaseCanonicaCommandHandlerTests
     private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
     private static CriarFaseCanonicaCommand Comando() =>
-        new("INSCRICAO", Nome: "Inscrição", DonoTipico: "CEPS", OrigemData: "PROPRIA");
+        new("INSCRICAO", Nome: "Inscrição", DonoTipico: "CEPS", OrigemData: "NO_EDITAL");
 
     [Fact(DisplayName = "Código livre cria a fase, persiste e retorna o Id")]
     public async Task Handle_CodigoLivre_CriaEPersiste()
@@ -49,7 +49,7 @@ public sealed class CriarFaseCanonicaCommandHandlerTests
     [Fact(DisplayName = "Código fora do conjunto canônico propaga o erro sem consultar unicidade nem persistir")]
     public async Task Handle_ForaDoCanonico_RetornaErroSemConsultarUnicidadeNemPersistir()
     {
-        var comando = new CriarFaseCanonicaCommand("ENTREVISTA_FINAL", Nome: "x", DonoTipico: "CEPS", OrigemData: "PROPRIA");
+        var comando = new CriarFaseCanonicaCommand("ENTREVISTA_FINAL", Nome: "x", DonoTipico: "CEPS", OrigemData: "NO_EDITAL");
 
         Result<Guid> resultado = await CriarFaseCanonicaCommandHandler.Handle(
             comando, _repository, _unitOfWork, CancellationToken.None);
@@ -66,7 +66,7 @@ public sealed class CriarFaseCanonicaCommandHandlerTests
     {
         _repository.CodigoExisteEntreVivosAsync(Arg.Any<string>(), null, Arg.Any<CancellationToken>()).Returns(false);
 
-        var comando = new CriarFaseCanonicaCommand("HOMOLOGACAO", Nome: "Homologação", DonoTipico: "CEPS", AgrupaEtapas: true, OrigemData: "PROPRIA");
+        var comando = new CriarFaseCanonicaCommand("HOMOLOGACAO", Nome: "Homologação", DonoTipico: "CEPS", AgrupaEtapas: true, OrigemData: "NO_EDITAL");
 
         Result<Guid> resultado = await CriarFaseCanonicaCommandHandler.Handle(
             comando, _repository, _unitOfWork, CancellationToken.None);
@@ -79,7 +79,7 @@ public sealed class CriarFaseCanonicaCommandHandlerTests
     [Fact(DisplayName = "Código ausente e nome ausente no mesmo payload acumulam as duas violações")]
     public async Task Handle_CodigoENomeAusentes_AcumulaAsDuasViolacoes()
     {
-        var comando = new CriarFaseCanonicaCommand(null, Nome: "", DonoTipico: "CEPS", OrigemData: "PROPRIA");
+        var comando = new CriarFaseCanonicaCommand(null, Nome: "", DonoTipico: "CEPS", OrigemData: "NO_EDITAL");
 
         Result<Guid> resultado = await CriarFaseCanonicaCommandHandler.Handle(
             comando, _repository, _unitOfWork, CancellationToken.None);

@@ -199,7 +199,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
             faseCanonicaOrigemId: faseCanonicaOrigemId,
             codigo: "HOMOLOGACAO",
             donoInstitucional: "CEPS",
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             agrupaEtapas: false,
             permiteComplementacao: false,
             coletaInscricao: false,
@@ -210,7 +210,8 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,
             bancasRequeridas: [],
-            regraRecurso: null).Value!;
+            regraRecurso: null,
+            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     private static async Task<ProcessoSeletivo> CarregarAsync(SelecaoDbContext db, Guid processoId) =>
         await db.ProcessosSeletivos

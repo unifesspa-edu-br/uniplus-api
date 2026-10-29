@@ -100,9 +100,9 @@ public sealed class FaseOrdemPermutacaoPersistenciaTests(ProcessoSeletivoDbFixtu
     }
 
     private static FaseCronograma Fase(int ordem, string codigo) => FaseCronograma.Criar(
-        ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.Delegada,
+        ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.NaExecucao,
         agrupaEtapas: false, permiteComplementacao: false,
         coletaInscricao: false, coletaSolicitacaoIsencao: false,
         inicio: null, fim: null, produtos: [], faseConcluinteCodigo: null,
-        emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!;
+        emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 }

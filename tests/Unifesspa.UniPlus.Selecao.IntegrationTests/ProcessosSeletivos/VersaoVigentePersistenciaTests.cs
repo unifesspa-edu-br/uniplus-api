@@ -86,7 +86,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
         faseCanonicaOrigemId: Guid.CreateVersion7(),
         codigo: "RESULTADO_FINAL",
         donoInstitucional: "CEPS",
-        origemData: OrigemDataFase.Propria,
+        origemData: OrigemDataFase.NoEdital,
         agrupaEtapas: true,
         permiteComplementacao: false,
         coletaInscricao: true, coletaSolicitacaoIsencao: false,
@@ -96,7 +96,8 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
         faseConcluinteCodigo: null,
         emiteParecerIndividual: false,
         bancasRequeridas: [],
-        regraRecurso: null).Value!;
+        regraRecurso: null,
+        unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     private static DocumentoAPublicar DocumentoConfirmado(Guid processoId)
     {

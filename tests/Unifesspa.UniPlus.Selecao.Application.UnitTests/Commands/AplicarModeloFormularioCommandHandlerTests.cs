@@ -503,10 +503,10 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         FaseCronograma[] fases =
         [
             .. codigos.Select((codigo, i) => FaseCronograma.Criar(
-                i + 1, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.Delegada,
+                i + 1, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.NaExecucao,
                 agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: codigo == "INSCRICAO", coletaSolicitacaoIsencao: false, inicio: null, fim: null,
                 produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-                bancasRequeridas: [], regraRecurso: null).Value!),
+                bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!),
         ];
         _processo.DefinirCronogramaFases(fases, [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         return fases[0];

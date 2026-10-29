@@ -119,11 +119,11 @@ public sealed class RetificacaoEixoDoFatoColetadoTests
 
     private static FaseCronograma Fase(int ordem, string codigo, bool coletaInscricao = false) =>
         FaseCronograma.Criar(
-            ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.Propria,
+            ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.NoEdital,
             agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: coletaInscricao, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, ordem, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, ordem + 1, 0, 0, 0, TimeSpan.Zero),
             produtos: [ProdutoDaFase.Criar(codigo, PapelProdutoFase.Definitivo)],
-            faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!;
+            faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     private static FatoColetado Fato(string codigo, int ordem, TipoRenderizacao tipo = TipoRenderizacao.Booleano, string classificacao = "PESSOAL") =>
         FatoColetado.Criar(codigo, ordem, codigo, tipo, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: classificacao).Value!;

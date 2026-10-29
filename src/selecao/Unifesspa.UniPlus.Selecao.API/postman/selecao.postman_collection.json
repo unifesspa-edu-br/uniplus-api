@@ -1000,7 +1000,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"codigo\": \"AVALIACAO\",\n  \"nome\": \"Avaliação (smoke)\",\n  \"descricao\": null,\n  \"donoTipico\": \"CEPS\",\n  \"agrupaEtapas\": true,\n  \"permiteComplementacao\": false,\n  \"baseLegal\": null,\n  \"produzResultado\": true,\n  \"resultadoDefinitivo\": true,\n  \"coletaInscricao\": true,\n  \"origemData\": \"PROPRIA\"\n}",
+              "raw": "{\n  \"codigo\": \"AVALIACAO\",\n  \"nome\": \"Avaliação (smoke)\",\n  \"descricao\": null,\n  \"donoTipico\": \"CEPS\",\n  \"agrupaEtapas\": true,\n  \"permiteComplementacao\": false,\n  \"baseLegal\": null,\n  \"produzResultado\": true,\n  \"resultadoDefinitivo\": true,\n  \"coletaInscricao\": true,\n  \"origemData\": \"NO_EDITAL\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1114,7 +1114,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"codigo\": \"INSCRICAO\",\n  \"nome\": \"Inscrição (smoke)\",\n  \"descricao\": null,\n  \"donoTipico\": \"CEPS\",\n  \"agrupaEtapas\": false,\n  \"permiteComplementacao\": false,\n  \"baseLegal\": null,\n  \"produzResultado\": false,\n  \"resultadoDefinitivo\": false,\n  \"coletaInscricao\": false,\n  \"origemData\": \"PROPRIA\"\n}",
+              "raw": "{\n  \"codigo\": \"INSCRICAO\",\n  \"nome\": \"Inscrição (smoke)\",\n  \"descricao\": null,\n  \"donoTipico\": \"CEPS\",\n  \"agrupaEtapas\": false,\n  \"permiteComplementacao\": false,\n  \"baseLegal\": null,\n  \"produzResultado\": false,\n  \"resultadoDefinitivo\": false,\n  \"coletaInscricao\": false,\n  \"origemData\": \"NO_EDITAL\"\n}",
               "options": {
                 "raw": {
                   "language": "json"

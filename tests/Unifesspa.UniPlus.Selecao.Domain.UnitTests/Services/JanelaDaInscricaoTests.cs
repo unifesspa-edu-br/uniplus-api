@@ -32,10 +32,10 @@ public sealed class JanelaDaInscricaoTests
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseCronograma.Criar(
             ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "INSCRICAO", donoInstitucional: "CEPS",
-            origemData: OrigemDataFase.Propria, agrupaEtapas: false, permiteComplementacao: false,
+            origemData: OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false,
             coletaInscricao: true, coletaSolicitacaoIsencao: false, inicio: Abertura, fim: Encerramento,
             produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null).Value!;
+            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
 

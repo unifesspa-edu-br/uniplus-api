@@ -19,7 +19,7 @@ public sealed class FaseCanonicaTests
         string? baseLegal = null,
         bool coletaInscricao = false,
         bool? coletaSolicitacaoIsencao = null,
-        string? origemData = "PROPRIA") =>
+        string? origemData = "NO_EDITAL") =>
         FaseCanonica.Criar(
             codigo, nome, descricao, dono, agrupaEtapas, permiteComplementacao, baseLegal,
             coletaInscricao,
@@ -207,8 +207,8 @@ public sealed class FaseCanonicaTests
     // ── Origem da data ─────────────────────────────────────────────────────────
 
     [Theory(DisplayName = "Origem da data em domínio é aceita")]
-    [InlineData("PROPRIA", OrigemDataFase.Propria)]
-    [InlineData("DELEGADA", OrigemDataFase.Delegada)]
+    [InlineData("NO_EDITAL", OrigemDataFase.NoEdital)]
+    [InlineData("NA_EXECUCAO", OrigemDataFase.NaExecucao)]
     public void Criar_OrigemDataValida_Aceita(string token, OrigemDataFase esperado)
     {
         FaseCanonica f = Criar(codigo: "MATRICULA", nome: "Matrícula", origemData: token).Value!;
@@ -227,10 +227,12 @@ public sealed class FaseCanonicaTests
         r.Error!.Code.Should().Be(FaseCanonicaErrorCodes.OrigemDataObrigatoria);
     }
 
-    [Theory(DisplayName = "Origem da data fora do domínio (incl. numérico e minúsculo) é rejeitada")]
+    [Theory(DisplayName = "Origem da data fora do domínio (incl. numérico, minúsculo e o vocabulário anterior) é rejeitada")]
     [InlineData("EXTERNA")]
     [InlineData("1")]
-    [InlineData("propria")]
+    [InlineData("no_edital")]
+    [InlineData("PROPRIA")]
+    [InlineData("DELEGADA")]
     public void Criar_OrigemDataInvalida_Falha(string origemData)
     {
         Result<FaseCanonica> r = Criar(origemData: origemData);
@@ -326,14 +328,14 @@ public sealed class FaseCanonicaTests
             nome: "Ensalamento (novo)", descricao: "Nova descrição", donoTipico: "CRCA",
             agrupaEtapas: false, permiteComplementacao: false, baseLegal: null,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            origemData: "DELEGADA");
+            origemData: "NA_EXECUCAO");
 
         r.IsSuccess.Should().BeTrue();
         f.Codigo.Valor.Should().Be("ENSALAMENTO", "o código é imutável");
         f.Id.Should().Be(idOriginal, "o Id é imutável");
         f.Nome.Should().Be("Ensalamento (novo)");
         f.DonoTipico.Should().Be(DonoTipico.Crca);
-        f.OrigemData.Should().Be(OrigemDataFase.Delegada);
+        f.OrigemData.Should().Be(OrigemDataFase.NaExecucao);
     }
 
     [Fact(DisplayName = "Atualizar revalida coerência de agrupar etapas contra o código congelado")]
@@ -345,7 +347,7 @@ public sealed class FaseCanonicaTests
             nome: "Homologação", descricao: null, donoTipico: "CEPS",
             agrupaEtapas: true, permiteComplementacao: false, baseLegal: null,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            origemData: "PROPRIA");
+            origemData: "NO_EDITAL");
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(FaseCanonicaErrorCodes.AgrupaEtapasApenasAvaliacao);
@@ -357,7 +359,7 @@ public sealed class FaseCanonicaTests
     public void Criar_CodigoNuloENomeAusente_NaoLancaEAcumulaAsDuasViolacoes()
     {
         Result<FaseCanonica> resultado = FaseCanonica.Criar(
-            null, "", null, "CEPS", false, false, null, false, false, "PROPRIA");
+            null, "", null, "CEPS", false, false, null, false, false, "NO_EDITAL");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(2);

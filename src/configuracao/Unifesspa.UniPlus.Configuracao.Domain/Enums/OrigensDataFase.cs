@@ -16,8 +16,8 @@ public static class OrigensDataFase
 {
     private static readonly Dictionary<OrigemDataFase, string> ParaToken = new()
     {
-        [OrigemDataFase.Propria] = "PROPRIA",
-        [OrigemDataFase.Delegada] = "DELEGADA",
+        [OrigemDataFase.NoEdital] = "NO_EDITAL",
+        [OrigemDataFase.NaExecucao] = "NA_EXECUCAO",
     };
 
     private static readonly Dictionary<string, OrigemDataFase> DeToken =

@@ -139,6 +139,15 @@ public sealed class PublicarProcessoSeletivoEndpointTests
             nameof(Publicar_QuandoCronogramaNaoConforme_Retorna422ComPendencias));
 
     [Fact(DisplayName =
+        "POST /processos-seletivos/{id}/publicacao com fase sem unidade responsável — 422 inclui pendencias e cita a fase")]
+    public async Task Publicar_QuandoFaseSemUnidadeResponsavel_Retorna422ComPendencias() =>
+        await AssertGateEstruturalNaoConformeAsync(
+            ProcessoSeletivoPendenciasSeeder.SemearComFaseSemUnidadeResponsavelAsync,
+            "uniplus.selecao.processo_seletivo.fase_sem_unidade_responsavel",
+            "cronograma_fase_sem_unidade_responsavel",
+            nameof(Publicar_QuandoFaseSemUnidadeResponsavel_Retorna422ComPendencias));
+
+    [Fact(DisplayName =
         "POST /processos-seletivos/{id}/publicacao com cascata não conforme (fora do regime federal) — 422 inclui pendencias (issue #1096 CA-02)")]
     public async Task Publicar_QuandoCascataNaoConforme_Retorna422ComPendencias() =>
         await AssertGateEstruturalNaoConformeAsync(

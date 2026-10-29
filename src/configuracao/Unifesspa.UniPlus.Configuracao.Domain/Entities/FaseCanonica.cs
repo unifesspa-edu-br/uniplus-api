@@ -31,8 +31,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// homologação sai preliminar, definitiva ou as duas. <see cref="ColetaInscricao"/>
 /// decide o piso mínimo do cronograma quando a origem dos candidatos é inscrição
 /// própria; <see cref="OrigemData"/>
-/// decide se a janela da fase é obrigatória (<c>PROPRIA</c>) ou opcional
-/// (<c>DELEGADA</c>). O cadastro <b>nasce semeado</b> com as fases do vocabulário
+/// decide se a janela da fase é obrigatória (<c>NO_EDITAL</c>) ou opcional
+/// (<c>NA_EXECUCAO</c>). O cadastro <b>nasce semeado</b> com as fases do vocabulário
 /// (ADR-0113, Emenda 1): elas existem porque o ciclo do certame as tem, e não há
 /// autor a registrar — daí <c>CreatedBy</c> nulo nas linhas do seed. O CRUD admin
 /// continua sendo o caminho para editar o que se administra de fato: nome,
@@ -65,7 +65,7 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
     /// </remarks>
     public bool ColetaSolicitacaoIsencao { get; private set; }
 
-    /// <summary>Quem controla a data da fase: <see cref="OrigemDataFase.Propria"/> (janela obrigatória) ou <see cref="OrigemDataFase.Delegada"/> (janela opcional).</summary>
+    /// <summary>Quando a data da fase é fixada: <see cref="OrigemDataFase.NoEdital"/> (janela obrigatória) ou <see cref="OrigemDataFase.NaExecucao"/> (janela opcional).</summary>
     public OrigemDataFase OrigemData { get; private set; }
 
     public string? CreatedBy { get; private set; }

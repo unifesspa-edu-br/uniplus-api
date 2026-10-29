@@ -129,7 +129,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
             faseCanonicaOrigemId: Guid.CreateVersion7(),
             codigo: "INSCRICAO",
             donoInstitucional: "CEPS",
-            origemData: OrigemDataFase.Propria,
+            origemData: OrigemDataFase.NoEdital,
             agrupaEtapas: true,
             permiteComplementacao: true,
             coletaInscricao: true, coletaSolicitacaoIsencao: false,
@@ -139,7 +139,8 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,
             bancasRequeridas: [],
-            regraRecurso: null).Value!;
+            regraRecurso: null,
+            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         if (ocorrenciasEsperadas is not null || formatosPermitidos is not null)

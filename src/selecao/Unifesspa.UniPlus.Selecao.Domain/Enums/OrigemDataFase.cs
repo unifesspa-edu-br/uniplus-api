@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
-/// Quem controla a data de uma <see cref="Entities.FaseCronograma"/> — snapshot-copy
+/// Quando a data de uma <see cref="Entities.FaseCronograma"/> é fixada — snapshot-copy
 /// (ADR-0061) do <c>OrigemData</c> vigente na <c>FaseCanonica</c> de origem (módulo
 /// Configuração) no momento em que a fase entrou no cronograma.
 /// </summary>
@@ -11,7 +11,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// tokens/padrão, dois tipos distintos.
 /// <para>
 /// A janela obrigatória/opcional da fase decorre <b>apenas</b> deste atributo (CA-07):
-/// <see cref="Propria"/> exige <c>Inicio</c>/<c>Fim</c>; <see cref="Delegada"/> aceita
+/// <see cref="NoEdital"/> exige <c>Inicio</c>/<c>Fim</c>; <see cref="NaExecucao"/> aceita
 /// "sem data" como estado válido.
 /// </para>
 /// </remarks>
@@ -19,9 +19,9 @@ public enum OrigemDataFase
 {
     Nenhuma = 0,
 
-    /// <summary>O setor responsável pelo processo controla e congela a data — janela obrigatória.</summary>
-    Propria = 1,
+    /// <summary>A data é fixada no edital — janela obrigatória.</summary>
+    NoEdital = 1,
 
-    /// <summary>Um agente externo (MEC, calendário acadêmico) controla a data — janela opcional.</summary>
-    Delegada = 2,
+    /// <summary>A data não é fixada no edital: a unidade responsável pela fase a define na execução — janela opcional.</summary>
+    NaExecucao = 2,
 }

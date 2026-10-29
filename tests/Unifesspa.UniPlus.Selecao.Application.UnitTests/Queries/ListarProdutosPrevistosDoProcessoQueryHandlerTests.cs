@@ -82,10 +82,10 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
 
     private static FaseCronograma FaseDeOrigem(Guid origem, string codigo, int ordem, string? faseConcluinteCodigo, params ProdutoDaFase[] produtos) =>
         FaseCronograma.Criar(
-            ordem, origem, codigo, "CEPS", OrigemDataFase.Propria,
+            ordem, origem, codigo, "CEPS", OrigemDataFase.NoEdital,
             agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: Agora, fim: Agora.AddDays(10), produtos: produtos,
-            faseConcluinteCodigo: faseConcluinteCodigo, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!;
+            faseConcluinteCodigo: faseConcluinteCodigo, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     private static EtapaProcesso Etapa(string nome, string? faseCodigo, params ProdutoDaEtapa[] produtos)
     {

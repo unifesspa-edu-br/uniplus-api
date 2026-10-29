@@ -104,23 +104,23 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
         FaseCronograma faseDaInscricao = FaseCronograma.Criar(
             ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "RESULTADO_FINAL", donoInstitucional: "CEPS",
-            origemData: OrigemDataFase.Propria, agrupaEtapas: true, permiteComplementacao: false,
+            origemData: OrigemDataFase.NoEdital, agrupaEtapas: true, permiteComplementacao: false,
             coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
-            faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!;
+            faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
         List<FaseCronograma> fases = [faseDaInscricao];
         if (comIsencao)
         {
             // A janela de isenção abre com a inscrição e fecha antes dela: é fase à parte.
             fases.Add(FaseCronograma.Criar(
                 ordem: 2, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "ISENCAO_DA_TAXA", donoInstitucional: "CEPS",
-                origemData: OrigemDataFase.Propria, agrupaEtapas: false, permiteComplementacao: false,
+                origemData: OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false,
                 coletaInscricao: false, coletaSolicitacaoIsencao: true,
                 inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
                 fim: new DateTimeOffset(2026, 1, 15, 0, 0, 0, TimeSpan.Zero),
-                produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!);
+                produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!);
         }
 
         processo.DefinirCronogramaFases(fases, [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();

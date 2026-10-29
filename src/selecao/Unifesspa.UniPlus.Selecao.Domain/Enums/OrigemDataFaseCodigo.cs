@@ -5,13 +5,13 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// exposto por <c>FaseCanonicaView.OrigemData</c> (Configuracao.Contracts,
 /// ADR-0056). Fonte única do parsing no snapshot-copy (ADR-0061) e da projeção
 /// de leitura — nunca comparar a string crua no handler nem emitir
-/// <c>enum.ToString()</c>, que produziria <c>Propria</c> onde a origem publica
-/// <c>PROPRIA</c>.
+/// <c>enum.ToString()</c>, que produziria <c>NoEdital</c> onde a origem publica
+/// <c>NO_EDITAL</c>.
 /// </summary>
 public static class OrigemDataFaseCodigo
 {
-    public const string Propria = "PROPRIA";
-    public const string Delegada = "DELEGADA";
+    public const string NoEdital = "NO_EDITAL";
+    public const string NaExecucao = "NA_EXECUCAO";
 
     /// <summary>
     /// Converte o token cross-módulo para o enum local. Um token não reconhecido
@@ -21,8 +21,8 @@ public static class OrigemDataFaseCodigo
     /// </summary>
     public static OrigemDataFase FromCodigo(string? codigo) => codigo switch
     {
-        Propria => OrigemDataFase.Propria,
-        Delegada => OrigemDataFase.Delegada,
+        NoEdital => OrigemDataFase.NoEdital,
+        NaExecucao => OrigemDataFase.NaExecucao,
         _ => OrigemDataFase.Nenhuma,
     };
 
@@ -38,8 +38,8 @@ public static class OrigemDataFaseCodigo
     /// </exception>
     public static string ToCodigo(this OrigemDataFase origem) => origem switch
     {
-        OrigemDataFase.Propria => Propria,
-        OrigemDataFase.Delegada => Delegada,
+        OrigemDataFase.NoEdital => NoEdital,
+        OrigemDataFase.NaExecucao => NaExecucao,
         OrigemDataFase.Nenhuma => throw new ArgumentOutOfRangeException(
             nameof(origem), origem, "OrigemDataFase.Nenhuma é sentinela e não tem token canônico."),
         _ => throw new ArgumentOutOfRangeException(nameof(origem), origem, "OrigemDataFase desconhecida."),

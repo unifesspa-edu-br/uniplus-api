@@ -646,7 +646,7 @@ internal static class CorpusEnvelope
         faseCanonicaOrigemId: new Guid("4444dddd-0000-4000-8000-000000000001"),
         codigo: "INSCRICAO",
         donoInstitucional: "CRCA",
-        origemData: OrigemDataFase.Propria,
+        origemData: OrigemDataFase.NoEdital,
         agrupaEtapas: false,
         permiteComplementacao: true,
         coletaInscricao: true, coletaSolicitacaoIsencao: false,
@@ -656,7 +656,8 @@ internal static class CorpusEnvelope
         faseConcluinteCodigo: null,
         emiteParecerIndividual: false,
         bancasRequeridas: [],
-        regraRecurso: null);
+        regraRecurso: null,
+        unidadeResponsavel: UnidadesDeTeste.Ceps);
 
     /// <summary>
     /// Fase 2: agrupa as três etapas, publica DOIS produtos preliminares — gabarito e
@@ -675,7 +676,7 @@ internal static class CorpusEnvelope
         faseCanonicaOrigemId: new Guid("4444dddd-0000-4000-8000-000000000002"),
         codigo: "RESULTADO_PRELIMINAR",
         donoInstitucional: "CEPS",
-        origemData: OrigemDataFase.Propria,
+        origemData: OrigemDataFase.NoEdital,
         agrupaEtapas: true,
         permiteComplementacao: false,
         coletaInscricao: false, coletaSolicitacaoIsencao: false,
@@ -720,7 +721,8 @@ internal static class CorpusEnvelope
                 SuspensividadeSegundaInstanciaUnidade: null),
             // Ancora no resultado preliminar, não no gabarito preliminar: os dois têm o
             // mesmo papel, e é a identidade do produto que diz qual publicação abre a janela.
-            ProdutoId(2, 2, variante)).Value!);
+            ProdutoId(2, 2, variante)).Value!,
+        unidadeResponsavel: UnidadesDeTeste.Ceps);
 
     /// <summary>
     /// Fase 3: conclui o ciclo recursal aberto pela fase 2 — publica a definitiva de cada
@@ -733,7 +735,7 @@ internal static class CorpusEnvelope
         faseCanonicaOrigemId: new Guid("4444dddd-0000-4000-8000-000000000003"),
         codigo: "RESULTADO_FINAL",
         donoInstitucional: "CEPS",
-        origemData: OrigemDataFase.Propria,
+        origemData: OrigemDataFase.NoEdital,
         agrupaEtapas: false,
         permiteComplementacao: false,
         coletaInscricao: false, coletaSolicitacaoIsencao: false,
@@ -747,7 +749,8 @@ internal static class CorpusEnvelope
         faseConcluinteCodigo: null,
         emiteParecerIndividual: false,
         bancasRequeridas: [],
-        regraRecurso: null);
+        regraRecurso: null,
+        unidadeResponsavel: UnidadesDeTeste.Ceps);
 
     private static PredicadoDnf RegraDaCotaIndependenteDeRenda => PredicadoDnf.CriarDeCondicoesAgrupadas(
     [
@@ -1169,7 +1172,7 @@ internal static class CorpusEnvelope
         faseCanonicaOrigemId: new Guid($"9999eee{variante:x}-0000-4000-8000-000000000001"),
         codigo: "RESULTADO_FINAL",
         donoInstitucional: "CEPS",
-        origemData: OrigemDataFase.Propria,
+        origemData: OrigemDataFase.NoEdital,
         agrupaEtapas: true,
         permiteComplementacao: false,
         coletaInscricao: false, coletaSolicitacaoIsencao: false,
@@ -1179,7 +1182,8 @@ internal static class CorpusEnvelope
         faseConcluinteCodigo: null,
         emiteParecerIndividual: false,
         bancasRequeridas: [],
-        regraRecurso: null).Value!;
+        regraRecurso: null,
+        unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     /// <summary>Um termo exigido com versão fixa, para envelope determinístico.</summary>
     internal static TermoExigidoFormulario Termo(

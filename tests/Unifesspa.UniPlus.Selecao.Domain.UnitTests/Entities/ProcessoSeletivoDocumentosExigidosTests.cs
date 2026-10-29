@@ -29,7 +29,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         faseCanonicaOrigemId ?? Guid.CreateVersion7(),
         codigo,
         "CEPS",
-        OrigemDataFase.Delegada,
+        OrigemDataFase.NaExecucao,
         agrupaEtapas: false,
         permiteComplementacao: false,
         coletaInscricao: false, coletaSolicitacaoIsencao: false,
@@ -37,7 +37,8 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         fim: null,
         produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
         bancasRequeridas: [],
-        regraRecurso: null).Value!;
+        regraRecurso: null,
+        unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     private static DocumentoExigido Exigencia(
         Guid exigidoNaFaseId, Aplicabilidade aplicabilidade = Aplicabilidade.Geral, string? consequenciaIndeferimento = null,
@@ -60,7 +61,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         faseCanonicaOrigemId ?? Guid.CreateVersion7(),
         codigo,
         "CEPS",
-        OrigemDataFase.Delegada,
+        OrigemDataFase.NaExecucao,
         agrupaEtapas: false,
         permiteComplementacao: permiteComplementacao,
         coletaInscricao: false, coletaSolicitacaoIsencao: false,
@@ -68,7 +69,8 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         fim: null,
         produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
         bancasRequeridas: [],
-        regraRecurso: null).Value!;
+        regraRecurso: null,
+        unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     private static EtapaProcesso Etapa(string nome, string faseCodigo, int ordem) =>
         EtapaProcesso.Criar(
@@ -100,7 +102,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         Guid.CreateVersion7(),
         "INSCRICAO",
         "CEPS",
-        OrigemDataFase.Delegada,
+        OrigemDataFase.NaExecucao,
         agrupaEtapas: false,
         permiteComplementacao: false,
         coletaInscricao: inscricao, coletaSolicitacaoIsencao: isencao,
@@ -108,7 +110,8 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         fim: null,
         produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
         bancasRequeridas: [],
-        regraRecurso: null).Value!;
+        regraRecurso: null,
+        unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     private static Result DefinirNaFase(FaseCronograma fase, FinalidadeFormulario? finalidade)
     {
@@ -269,7 +272,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         Guid.CreateVersion7(),
         codigo,
         "CEPS",
-        OrigemDataFase.Propria,
+        OrigemDataFase.NoEdital,
         agrupaEtapas: false,
         permiteComplementacao: false,
         coletaInscricao: false, coletaSolicitacaoIsencao: false,
@@ -277,7 +280,8 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         fim: fim,
         produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
         bancasRequeridas: [],
-        regraRecurso: null).Value!;
+        regraRecurso: null,
+        unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     private static DocumentoExigido ExigenciaComIdade(Guid exigidoNaFaseId, IdadeMaximaEmissao idade, FinalidadeFormulario? finalidade = null) =>
         DocumentoExigido.Criar(
@@ -708,7 +712,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         faseCanonicaOrigemId ?? Guid.CreateVersion7(),
         codigo,
         "CEPS",
-        OrigemDataFase.Delegada,
+        OrigemDataFase.NaExecucao,
         agrupaEtapas: false,
         permiteComplementacao: false,
         coletaInscricao: false, coletaSolicitacaoIsencao: false,
@@ -716,7 +720,8 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         fim: fim,
         produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
         bancasRequeridas: [],
-        regraRecurso: null).Value!;
+        regraRecurso: null,
+        unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     private static DocumentoExigido ExigenciaComIdadeAncoradaEmFase(
         Guid exigidoNaFaseId, Guid referenciaFaseId, ReferenciaTipoIdadeEmissao referenciaTipo)
@@ -835,7 +840,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         faseCanonicaOrigemId ?? Guid.CreateVersion7(),
         codigo,
         "CEPS",
-        OrigemDataFase.Delegada,
+        OrigemDataFase.NaExecucao,
         agrupaEtapas: false,
         permiteComplementacao: false,
         coletaInscricao: true, coletaSolicitacaoIsencao: false,
@@ -843,7 +848,8 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         fim: fim,
         produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
         bancasRequeridas: [],
-        regraRecurso: null).Value!;
+        regraRecurso: null,
+        unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     private static DocumentoExigido ExigenciaComIdadeFimInscricao(Guid exigidoNaFaseId, FinalidadeFormulario? finalidade = null)
     {

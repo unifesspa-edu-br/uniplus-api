@@ -16,7 +16,7 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// <param name="PermiteComplementacao">Se a fase admite reenvio/complementação documental.</param>
 /// <param name="BaseLegal">Base legal opcional.</param>
 /// <param name="ColetaInscricao">Se a fase coleta inscrição (decide o piso mínimo quando a origem é inscrição própria).</param>
-/// <param name="OrigemData">Quem controla a data da fase (token; "PROPRIA" ou "DELEGADA").</param>
+/// <param name="OrigemData">Quando a data da fase é fixada (token; "NO_EDITAL" ou "NA_EXECUCAO").</param>
 public sealed record FaseCanonicaView(
     Guid Id,
     string Codigo,

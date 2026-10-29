@@ -341,11 +341,11 @@ public sealed class ConferenciaDosEixosNosHandlersTests
         {
             ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_PROVA", PapelProdutoFase.Preliminar);
             FaseCronograma fase = FaseCronograma.Criar(
-                1, Guid.CreateVersion7(), "PROVA", "CEPS", OrigemDataFase.Propria,
+                1, Guid.CreateVersion7(), "PROVA", "CEPS", OrigemDataFase.NoEdital,
                 agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
                 inicio: Agora, fim: Agora.AddDays(10),
                 produtos: [preliminar, ProdutoDaFase.Criar("RESULTADO_PROVA", PapelProdutoFase.Definitivo)],
-                faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!;
+                faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
             GrafoConfiguracao grafo = new(
                 [.. Processo.Etapas], Processo.OfertaAtendimento!, [.. Processo.DistribuicaoVagas], Processo.BonusRegional,
                 [.. Processo.CriteriosDesempate], Processo.Classificacao!, [fase], [.. Processo.DocumentosExigidos], [], null,

@@ -215,14 +215,15 @@ internal static class FormularioDeTeste
     }
 
     private static FaseCronograma FaseDeInscricao(int ordem) => FaseCronograma.Criar(
-        ordem, Guid.CreateVersion7(), "INSCRICAO", "CEPS", Unifesspa.UniPlus.Selecao.Domain.Enums.OrigemDataFase.Propria,
+        ordem, Guid.CreateVersion7(), "INSCRICAO", "CEPS", Unifesspa.UniPlus.Selecao.Domain.Enums.OrigemDataFase.NoEdital,
         agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false,
         inicio: new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 3, 20, 12, 0, 0, TimeSpan.Zero),
         produtos: [ProdutoDaFase.Criar("INSCRICAO", Unifesspa.UniPlus.Selecao.Domain.Enums.PapelProdutoFase.Definitivo)],
         faseConcluinteCodigo: null,
         emiteParecerIndividual: false,
         bancasRequeridas: [],
-        regraRecurso: null).Value!;
+        regraRecurso: null,
+        unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     private static Guid? FaseDe(ProcessoSeletivo processo, FinalidadeFormulario finalidade) =>
         processo.CronogramaFases.FirstOrDefault(f => finalidade switch

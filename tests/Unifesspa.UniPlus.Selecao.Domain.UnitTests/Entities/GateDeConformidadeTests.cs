@@ -111,6 +111,54 @@ public sealed class GateDeConformidadeTests
             "as duas transições recusam com o MESMO DomainError — fonte única (ADR-0109 D5)");
     }
 
+    [Fact(DisplayName = "Publicar com fase sem unidade responsável recusa e cita a fase")]
+    public void Publicar_FaseSemUnidadeResponsavel_RecusaCitandoAFase()
+    {
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar(
+            fase: ProcessoConformeFactory.FaseConforme(semUnidadeResponsavel: true));
+
+        Result<VersaoConfiguracao> publicar = processo.Publicar(
+            Dados(),
+            configuracaoCongeladaCanonica: "{}"u8.ToArray(),
+            schemaVersion: "1.1",
+            algoritmoHash: "canonical-json/sha256@v1",
+            hashDocumento: HashFixo,
+            atorUsuarioSub: "teste",
+            TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+
+        publicar.IsFailure.Should().BeTrue();
+        publicar.Error!.Code.Should().Be("ProcessoSeletivo.FaseSemUnidadeResponsavel");
+        publicar.Error.Message.Should().Contain("RESULTADO_FINAL");
+        processo.Status.Should().Be(StatusProcesso.Rascunho, "a recusa não congela nada");
+    }
+
+    [Fact(DisplayName = "Retificar com fase sem unidade responsável recusa com o mesmo erro da publicação")]
+    public void Retificar_FaseSemUnidadeResponsavel_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+        VersaoConfiguracao versaoAtual = Publicar(processo);
+
+        // A unidade é retirada direto da fase gravada: depois de publicado, nenhum Definir* a
+        // retira, e o gate da retificação tem de pegar o estado qualquer que seja o caminho.
+        typeof(FaseCronograma)
+            .GetProperty(nameof(FaseCronograma.UnidadeResponsavelOrigemId))!
+            .SetValue(processo.CronogramaFases.Single(), null);
+
+        Result<VersaoConfiguracao> retificar = processo.Retificar(
+            Dados(),
+            versaoAtual,
+            configuracaoCongeladaCanonica: "{}"u8.ToArray(),
+            schemaVersion: "1.1",
+            algoritmoHash: "canonical-json/sha256@v1",
+            hashDocumento: HashFixo,
+            atorUsuarioSub: "teste",
+            motivo: "Correção do prazo",
+            TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+
+        retificar.IsFailure.Should().BeTrue();
+        retificar.Error!.Code.Should().Be("ProcessoSeletivo.FaseSemUnidadeResponsavel");
+    }
+
     [Fact(DisplayName = "Publicar_ProcessoNaoConforme_Recusa — o gate da publicação continua valendo")]
     public void Publicar_ProcessoNaoConforme_Recusa()
     {

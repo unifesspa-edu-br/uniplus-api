@@ -777,7 +777,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_fase_canonica_dono_tipico", "dono_tipico IN ('CEPS', 'CRCA', 'MEC', 'CONSEPE')");
 
-                            t.HasCheckConstraint("ck_fase_canonica_origem_data", "origem_data IN ('PROPRIA', 'DELEGADA')");
+                            t.HasCheckConstraint("ck_fase_canonica_origem_data", "origem_data IN ('NO_EDITAL', 'NA_EXECUCAO')");
                         });
 
                     b.HasData(
@@ -793,7 +793,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             DonoTipico = "CEPS",
                             IsDeleted = false,
                             Nome = "Inscrição",
-                            OrigemData = "PROPRIA",
+                            OrigemData = "NO_EDITAL",
                             PermiteComplementacao = false
                         },
                         new
@@ -809,7 +809,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             DonoTipico = "CEPS",
                             IsDeleted = false,
                             Nome = "Solicitação de isenção",
-                            OrigemData = "PROPRIA",
+                            OrigemData = "NO_EDITAL",
                             PermiteComplementacao = false
                         },
                         new
@@ -824,7 +824,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             DonoTipico = "CEPS",
                             IsDeleted = false,
                             Nome = "Homologação das inscrições",
-                            OrigemData = "PROPRIA",
+                            OrigemData = "NO_EDITAL",
                             PermiteComplementacao = true
                         },
                         new
@@ -839,7 +839,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             DonoTipico = "CEPS",
                             IsDeleted = false,
                             Nome = "Ensalamento",
-                            OrigemData = "PROPRIA",
+                            OrigemData = "NO_EDITAL",
                             PermiteComplementacao = false
                         },
                         new
@@ -854,7 +854,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             DonoTipico = "CEPS",
                             IsDeleted = false,
                             Nome = "Avaliação",
-                            OrigemData = "PROPRIA",
+                            OrigemData = "NO_EDITAL",
                             PermiteComplementacao = false
                         },
                         new
@@ -869,7 +869,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             DonoTipico = "CEPS",
                             IsDeleted = false,
                             Nome = "Classificação",
-                            OrigemData = "PROPRIA",
+                            OrigemData = "NO_EDITAL",
                             PermiteComplementacao = false
                         },
                         new
@@ -884,7 +884,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             DonoTipico = "CEPS",
                             IsDeleted = false,
                             Nome = "Resultado preliminar",
-                            OrigemData = "PROPRIA",
+                            OrigemData = "NO_EDITAL",
                             PermiteComplementacao = false
                         },
                         new
@@ -899,7 +899,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             DonoTipico = "CEPS",
                             IsDeleted = false,
                             Nome = "Recursos",
-                            OrigemData = "PROPRIA",
+                            OrigemData = "NO_EDITAL",
                             PermiteComplementacao = true
                         },
                         new
@@ -914,7 +914,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             DonoTipico = "CEPS",
                             IsDeleted = false,
                             Nome = "Resultado final",
-                            OrigemData = "PROPRIA",
+                            OrigemData = "NO_EDITAL",
                             PermiteComplementacao = false
                         },
                         new
@@ -930,7 +930,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             DonoTipico = "CEPS",
                             IsDeleted = false,
                             Nome = "Heteroidentificação",
-                            OrigemData = "PROPRIA",
+                            OrigemData = "NO_EDITAL",
                             PermiteComplementacao = false
                         },
                         new
@@ -946,7 +946,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             DonoTipico = "CEPS",
                             IsDeleted = false,
                             Nome = "Avaliação biopsicossocial",
-                            OrigemData = "PROPRIA",
+                            OrigemData = "NO_EDITAL",
                             PermiteComplementacao = false
                         },
                         new
@@ -961,7 +961,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             DonoTipico = "CRCA",
                             IsDeleted = false,
                             Nome = "Habilitação",
-                            OrigemData = "PROPRIA",
+                            OrigemData = "NO_EDITAL",
                             PermiteComplementacao = false
                         },
                         new
@@ -976,7 +976,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             DonoTipico = "CONSEPE",
                             IsDeleted = false,
                             Nome = "Homologação do resultado final",
-                            OrigemData = "PROPRIA",
+                            OrigemData = "NO_EDITAL",
                             PermiteComplementacao = false
                         },
                         new
@@ -991,7 +991,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             DonoTipico = "CRCA",
                             IsDeleted = false,
                             Nome = "Matrícula",
-                            OrigemData = "PROPRIA",
+                            OrigemData = "NO_EDITAL",
                             PermiteComplementacao = false
                         },
                         new
@@ -1006,7 +1006,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             DonoTipico = "MEC",
                             IsDeleted = false,
                             Nome = "Lista de espera",
-                            OrigemData = "DELEGADA",
+                            OrigemData = "NA_EXECUCAO",
                             PermiteComplementacao = false
                         },
                         new
@@ -1021,7 +1021,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             DonoTipico = "MEC",
                             IsDeleted = false,
                             Nome = "Chamada",
-                            OrigemData = "DELEGADA",
+                            OrigemData = "NA_EXECUCAO",
                             PermiteComplementacao = false
                         });
                 });

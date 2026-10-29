@@ -25,6 +25,7 @@ using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Os modelos de inscrição (com e sem prova) e de habilitação do PSR, semeados pela migration da
@@ -222,10 +223,10 @@ public sealed class AplicarModelosPsrMedicina2027Tests
 
         // O modelo exige os documentos do atendimento na fase de inscrição do cronograma.
         FaseCronograma inscricao = FaseCronograma.Criar(
-            2, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.Delegada,
+            2, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.NaExecucao,
             agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
             produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null).Value!;
+            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
         Result cronograma = processo.DefinirCronogramaFases([.. processo.CronogramaFases, inscricao], [], PrecondicaoIfMatch.Ausente);
         cronograma.IsSuccess.Should().BeTrue(string.Join("; ", cronograma.Errors.Select(static e => e.Error.Code)) + cronograma.Error?.Message);
     }

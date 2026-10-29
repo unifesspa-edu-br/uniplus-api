@@ -37,13 +37,15 @@ internal static class ProcessoSeletivoPublicavelSeeder
     /// <param name="complementar">Configuração a mais do cenário, aplicada antes de gravar.</param>
     /// <param name="tipo">O tipo do processo; sem ele, SiSU.</param>
     /// <param name="produtosDaFase">O que a fase única declara publicar; sem isso, o resultado definitivo da classificação.</param>
+    /// <param name="unidadeResponsavel">A unidade que responde pela fase única; sem ela, o CEPS de teste.</param>
     public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearAsync(
         SelecaoDbContext db,
         string nome,
         bool coletaSolicitacaoIsencao = false,
         Action<ProcessoSeletivo>? complementar = null,
         TipoProcessoSnapshot? tipo = null,
-        IReadOnlyList<ProdutoDaFase>? produtosDaFase = null)
+        IReadOnlyList<ProdutoDaFase>? produtosDaFase = null,
+        UnidadeResponsavelSnapshot? unidadeResponsavel = null)
     {
         ArgumentNullException.ThrowIfNull(db);
         ArgumentException.ThrowIfNullOrWhiteSpace(nome);
@@ -110,7 +112,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
             faseCanonicaOrigemId: Guid.CreateVersion7(),
             codigo: "RESULTADO_FINAL",
             donoInstitucional: "CEPS",
-            origemData: OrigemDataFase.Propria,
+            origemData: OrigemDataFase.NoEdital,
             agrupaEtapas: true,
             permiteComplementacao: false,
             coletaInscricao: true, coletaSolicitacaoIsencao: coletaSolicitacaoIsencao,
@@ -120,7 +122,8 @@ internal static class ProcessoSeletivoPublicavelSeeder
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,
             bancasRequeridas: [],
-            regraRecurso: null).Value!;
+            regraRecurso: null,
+            unidadeResponsavel: unidadeResponsavel ?? UnidadesDeTeste.Ceps).Value!;
         Result cronogramaResult = processo.DefinirCronogramaFases([faseConforme], [], PrecondicaoIfMatch.Ausente);
         cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);

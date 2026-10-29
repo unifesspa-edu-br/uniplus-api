@@ -108,7 +108,7 @@ public sealed class ProcessoSeletivoPublicarTests
         faseCanonicaOrigemId: Guid.CreateVersion7(),
         codigo: "RESULTADO_FINAL",
         donoInstitucional: "CEPS",
-        origemData: OrigemDataFase.Propria,
+        origemData: OrigemDataFase.NoEdital,
         agrupaEtapas: true,
         permiteComplementacao: false,
         coletaInscricao: true, coletaSolicitacaoIsencao: false,
@@ -118,7 +118,8 @@ public sealed class ProcessoSeletivoPublicarTests
         faseConcluinteCodigo: null,
         emiteParecerIndividual: false,
         bancasRequeridas: [],
-        regraRecurso: null).Value!;
+        regraRecurso: null,
+        unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     [Fact(DisplayName = "Publicacao_AtomicaStatusESnapshot — processo conforme publica, congela a versão 1 e transita status")]
     public void Publicar_ProcessoConforme_TransitaStatusECongelaVersao()
@@ -438,7 +439,7 @@ public sealed class ProcessoSeletivoPublicarTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
-    /// <summary>Acrescenta ao cronograma conforme uma segunda fase DELEGADA (sem janela) — a única forma de ter uma fase sem Fim, já que PROPRIA exige janela (CA-07).</summary>
+    /// <summary>Acrescenta ao cronograma conforme uma segunda fase NA_EXECUCAO (sem janela) — a única forma de ter uma fase sem Fim, já que NO_EDITAL exige janela (CA-07).</summary>
     private static Guid AcrescentarFaseSemExtremo(ProcessoSeletivo processo)
     {
         FaseCronograma semExtremo = FaseCronograma.Criar(
@@ -446,7 +447,7 @@ public sealed class ProcessoSeletivoPublicarTests
             faseCanonicaOrigemId: Guid.CreateVersion7(),
             codigo: "HOMOLOGACAO",
             donoInstitucional: "CEPS",
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             agrupaEtapas: false,
             permiteComplementacao: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
@@ -454,7 +455,8 @@ public sealed class ProcessoSeletivoPublicarTests
             fim: null,
             produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
             bancasRequeridas: [],
-            regraRecurso: null).Value!;
+            regraRecurso: null,
+            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
         FormularioDeTeste.TrocarCronograma(processo, [FaseConforme(), semExtremo], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         return semExtremo.Id;
     }
@@ -479,10 +481,10 @@ public sealed class ProcessoSeletivoPublicarTests
     }
 
     /// <summary>
-    /// Cronograma SEM nenhuma fase que colete inscrição, com o resultado numa fase PROPRIA.
+    /// Cronograma SEM nenhuma fase que colete inscrição, com o resultado numa fase NO_EDITAL.
     /// </summary>
     /// <remarks>
-    /// Era, antes da issue #1350, um cronograma com a coleta numa fase DELEGADA sem janela — "a
+    /// Era, antes da issue #1350, um cronograma com a coleta numa fase NA_EXECUCAO sem janela — "a
     /// única forma de ter uma fase ColetaInscricao=true sem Fim". Aquele estado deixou de ser
     /// publicável: a fase que coleta inscrição passou a exigir janela, e a recusa dela roda no
     /// gate do cronograma, ANTES do B-03. O teste continuaria verde recusando pelo motivo errado.
@@ -500,7 +502,7 @@ public sealed class ProcessoSeletivoPublicarTests
             faseCanonicaOrigemId: Guid.CreateVersion7(),
             codigo: "RESULTADO_FINAL",
             donoInstitucional: "CEPS",
-            origemData: OrigemDataFase.Propria,
+            origemData: OrigemDataFase.NoEdital,
             agrupaEtapas: true,
             permiteComplementacao: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
@@ -510,7 +512,8 @@ public sealed class ProcessoSeletivoPublicarTests
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,
             bancasRequeridas: [],
-            regraRecurso: null).Value!;
+            regraRecurso: null,
+            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
         processo.DefinirCronogramaFases([resultado], [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         return resultado.Id;
     }
@@ -555,7 +558,7 @@ public sealed class ProcessoSeletivoPublicarTests
             faseCanonicaOrigemId: Guid.CreateVersion7(),
             codigo: "INSCRICAO_AC",
             donoInstitucional: "CEPS",
-            origemData: OrigemDataFase.Propria,
+            origemData: OrigemDataFase.NoEdital,
             agrupaEtapas: false,
             permiteComplementacao: false,
             coletaInscricao: true, coletaSolicitacaoIsencao: false,
@@ -563,13 +566,14 @@ public sealed class ProcessoSeletivoPublicarTests
             fim: new DateTimeOffset(2026, 1, 15, 12, 0, 0, TimeSpan.Zero),
             produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
             bancasRequeridas: [],
-            regraRecurso: null).Value!;
+            regraRecurso: null,
+            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
         FaseCronograma coletaOrdem2 = FaseCronograma.Criar(
             ordem: 2,
             faseCanonicaOrigemId: Guid.CreateVersion7(),
             codigo: "INSCRICAO_REMANEJAMENTO",
             donoInstitucional: "CEPS",
-            origemData: OrigemDataFase.Propria,
+            origemData: OrigemDataFase.NoEdital,
             agrupaEtapas: true,
             permiteComplementacao: false,
             coletaInscricao: true, coletaSolicitacaoIsencao: false,
@@ -579,7 +583,8 @@ public sealed class ProcessoSeletivoPublicarTests
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,
             bancasRequeridas: [],
-            regraRecurso: null).Value!;
+            regraRecurso: null,
+            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
         // Insere a fase de Ordem 2 ANTES da de Ordem 1 — _cronogramaFases preserva a ordem
         // de ENTRADA de DefinirCronogramaFases, diferente do envelope (sempre ordenado por
@@ -613,7 +618,7 @@ public sealed class ProcessoSeletivoPublicarTests
             faseCanonicaOrigemId: Guid.CreateVersion7(),
             codigo: "RESULTADO_PRELIMINAR",
             donoInstitucional: "CEPS",
-            origemData: OrigemDataFase.Propria,
+            origemData: OrigemDataFase.NoEdital,
             agrupaEtapas: false,
             permiteComplementacao: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
@@ -621,7 +626,8 @@ public sealed class ProcessoSeletivoPublicarTests
             fim: new DateTimeOffset(2026, 3, 2, 1, 30, 0, TimeSpan.Zero),
             produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
             bancasRequeridas: [],
-            regraRecurso: null).Value!;
+            regraRecurso: null,
+            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
         // A segunda fase precisa entrar ANTES de configurar a exigência: uma vez que a
         // exigência referencia a fase 1 (ExigidoNaFaseId), redefinir o cronograma depois
         // recriaria a fase 1 com outra FaseCanonicaOrigemId e o guard

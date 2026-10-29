@@ -28,17 +28,17 @@ public sealed class EtapaVinculadaAFaseTests
     /// <summary>
     /// Fase do cronograma, com ou sem janela. A origem da data acompanha o que foi declarado
     /// porque é ela que decide se a janela é obrigatória: só a fase com os dois extremos pode
-    /// ser PROPRIA, e é DELEGADA que torna a janela meia ou ausente exprimível.
+    /// ser NO_EDITAL, e é NA_EXECUCAO que torna a janela meia ou ausente exprimível.
     /// </summary>
     private static FaseCronograma Fase(
         int ordem, string codigo, DateTimeOffset? inicio = null, DateTimeOffset? fim = null) =>
         FaseCronograma.Criar(
             ordem, Guid.CreateVersion7(), codigo, "CEPS",
-            inicio is not null && fim is not null ? OrigemDataFase.Propria : OrigemDataFase.Delegada,
+            inicio is not null && fim is not null ? OrigemDataFase.NoEdital : OrigemDataFase.NaExecucao,
             agrupaEtapas: false, permiteComplementacao: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: inicio, fim: fim, produtos: [], faseConcluinteCodigo: null,
-            emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!;
+            emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     private static EtapaProcesso Etapa(string nome, string? faseCodigo) => EtapaProcesso.Criar(
         nome, CaraterEtapa.Classificatoria, Tipo(), peso: 1m, notaMinima: null, ordem: null,
@@ -390,11 +390,11 @@ public sealed class EtapaVinculadaAFaseTests
     {
         ProcessoSeletivo processo = Processo();
         FaseCronograma avaliacao = FaseCronograma.Criar(
-            1, Guid.CreateVersion7(), "AVALIACAO", "CEPS", OrigemDataFase.Delegada,
+            1, Guid.CreateVersion7(), "AVALIACAO", "CEPS", OrigemDataFase.NaExecucao,
             agrupaEtapas: true, permiteComplementacao: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: null, fim: null, produtos: [], faseConcluinteCodigo: null,
-            emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!;
+            emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
         // A ordem que o vínculo impõe: a fase entra primeiro, e só então a etapa pode
         // declará-la. É por isso que a guarda eager de "agrupadora sem etapa" saiu da

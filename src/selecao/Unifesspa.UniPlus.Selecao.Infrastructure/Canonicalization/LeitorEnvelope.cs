@@ -378,7 +378,7 @@ internal sealed class LeitorEnvelope
     /// Instante opcional na forma canônica (RFC 3339, UTC, sem fração —
     /// <see cref="HashCanonicalComputer.SerializeInstantCanonical"/>), usado pela janela da
     /// <c>FaseCronograma</c> (Story #851, CA-07). <see langword="null"/> quando a chave é
-    /// <c>null</c> — "sem data" é estado válido para fase de origem delegada.
+    /// <c>null</c> — "sem data" é estado válido para fase cuja data é definida na execução.
     /// </summary>
     public DateTimeOffset? InstanteOpcional(JsonObject pai, string chave, string path)
     {

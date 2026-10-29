@@ -116,6 +116,12 @@ public static class SelecaoCodegenRegistration
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoBancaReader>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IPrecedenciaFaseReader>();
 
+        // Unidade responsável por fase: o cronograma a congela por snapshot-copy a partir do cadastro
+        // da Organização Institucional (ADR-0056). O resolvedor interno à infraestrutura impede que o
+        // detector de transação enxergue o DbContext da Organização no handler, que segue
+        // transacional por causa do lock pessimista do processo.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IResolvedorDaUnidadeResponsavel>();
+
         // Recorte de competência da banca requerida: a categoria de documento que cada
         // banca julga é snapshot-copy do cadastro de Configuração. Mesmo motivo dos demais
         // readers cross-módulo acima — o concreto é internal a Configuracao.Infrastructure.

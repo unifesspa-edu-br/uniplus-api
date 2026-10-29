@@ -557,12 +557,12 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
         string? faseConcluinteCodigo = null,
         RegraRecursoFase? regraRecurso = null) =>
         FaseCronograma.Criar(
-            ordem, faseCanonicaOrigemId, codigo, "CEPS", OrigemDataFase.Delegada,
+            ordem, faseCanonicaOrigemId, codigo, "CEPS", OrigemDataFase.NaExecucao,
             agrupaEtapas: false, permiteComplementacao: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: null, fim: null,
             produtos, faseConcluinteCodigo, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso).Value!;
+            bancasRequeridas: [], regraRecurso, UnidadesDeTeste.Ceps).Value!;
 
     private static FaseCronograma FaseReidratada(
         int ordem,
@@ -572,12 +572,12 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
         string? faseConcluinteCodigo,
         RegraRecursoFase? regraRecurso = null) =>
         FaseCronograma.Reidratar(
-            Guid.CreateVersion7(), ordem, faseCanonicaOrigemId, codigo, "CEPS", OrigemDataFase.Delegada,
+            Guid.CreateVersion7(), ordem, faseCanonicaOrigemId, codigo, "CEPS", OrigemDataFase.NaExecucao,
             agrupaEtapas: false, permiteComplementacao: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: null, fim: null,
             produtos, faseConcluinteCodigo, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso);
+            bancasRequeridas: [], regraRecurso, UnidadesDeTeste.Ceps);
 
     private static RegraRecursoFase Recurso(Guid produtoAncoraId) => RegraRecursoFase.Criar(
         Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, 'e'),

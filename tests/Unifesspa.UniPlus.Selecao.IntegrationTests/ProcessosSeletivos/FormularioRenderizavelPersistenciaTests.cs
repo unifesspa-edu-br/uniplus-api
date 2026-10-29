@@ -110,7 +110,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
                 faseCanonicaOrigemId: Guid.CreateVersion7(),
                 codigo: "RESULTADO_FINAL",
                 donoInstitucional: "CEPS",
-                origemData: OrigemDataFase.Propria,
+                origemData: OrigemDataFase.NoEdital,
                 agrupaEtapas: true,
                 permiteComplementacao: false,
                 coletaInscricao: true, coletaSolicitacaoIsencao: false,
@@ -120,7 +120,8 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
                 faseConcluinteCodigo: null,
                 emiteParecerIndividual: false,
                 bancasRequeridas: [],
-                regraRecurso: null).Value!],
+                regraRecurso: null,
+                unidadeResponsavel: UnidadesDeTeste.Ceps).Value!],
             [],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -460,10 +461,10 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico(variante: 10);
         FaseCronograma habilitacao = FaseCronograma.Criar(
             processo.CronogramaFases.Max(static f => f.Ordem) + 1, Guid.CreateVersion7(), FormularioProcesso.CodigoFaseHabilitacao, "CEPS",
-            OrigemDataFase.Propria, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
+            OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 5, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 5, 10, 18, 0, 0, TimeSpan.Zero),
             produtos: [ProdutoDaFase.Criar(FormularioProcesso.CodigoFaseHabilitacao, PapelProdutoFase.Definitivo)],
-            faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!;
+            faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
         processo.DefinirCronogramaFases([.. processo.CronogramaFases, habilitacao], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, habilitacao.Id, "Habilitação", FormularioDeTeste.Etapas(), PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();

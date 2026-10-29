@@ -15,6 +15,8 @@ public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseC
 {
     private const int CodigoMaxLength = 60;
     private const int DonoInstitucionalMaxLength = 60;
+    private const int UnidadeSiglaMaxLength = 50;
+    private const int UnidadeNomeMaxLength = 250;
 
     public void Configure(EntityTypeBuilder<FaseCronograma> builder)
     {
@@ -32,6 +34,13 @@ public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseC
         builder.Property(f => f.Codigo).HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(f => f.DonoInstitucional).HasMaxLength(DonoInstitucionalMaxLength).IsRequired();
         builder.Property(f => f.OrigemData).HasConversion<int>().IsRequired();
+
+        // Snapshot-copy (ADR-0061) da unidade responsável: o id sem FK e a cópia de sigla e
+        // nome, que o domínio grava e lê juntos — nulos enquanto o rascunho não a definiu.
+        builder.Property(f => f.UnidadeResponsavelOrigemId);
+        builder.Property(f => f.UnidadeResponsavelSigla).HasMaxLength(UnidadeSiglaMaxLength);
+        builder.Property(f => f.UnidadeResponsavelNome).HasMaxLength(UnidadeNomeMaxLength);
+        builder.Ignore(f => f.UnidadeResponsavel);
 
         // Referência por CÓDIGO canônico, não por FK: a fase concluinte é outra linha do
         // MESMO cronograma, e uma FK autorreferente exigiria ordenar os INSERTs de uma

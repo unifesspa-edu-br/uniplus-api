@@ -331,13 +331,13 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
         // janela é estado válido de cadastro, e a divergência apareceria exatamente aí.
         ProcessoSeletivo processo = ProcessoBase();
         FaseCronograma meiaJanela = FaseCronograma.Criar(
-            1, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.Delegada,
+            1, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.NaExecucao,
             agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: true,
             coletaSolicitacaoIsencao: false,
             inicio: temInicio ? InstanteEmBelem.Em(2026, 1, 1) : null,
             fim: temFim ? InstanteEmBelem.Em(2026, 2, 1) : null,
             produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null).Value!;
+            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
         processo.DefinirCronogramaFases([meiaJanela], [], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
@@ -367,16 +367,16 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
     [Fact(DisplayName = "#1456 — fase que coleta inscrição sem janela recusa com FaseQueColetaInscricaoSemJanela (422), nunca com 404")]
     public async Task FaseDeColetaSemJanela_RecusaComOCodigoDoGate()
     {
-        // A fase DELEGADA pode ficar sem janela no cadastro (§3.2), e o rascunho chega assim à
+        // A fase NA_EXECUCAO pode ficar sem janela no cadastro (§3.2), e o rascunho chega assim à
         // Revisão. O gate recusa a publicação com este código; a consulta tem de dizer o mesmo,
         // para a tela apontar o cronograma em vez de mandar tentar de novo.
         ProcessoSeletivo processo = ProcessoBase();
         FaseCronograma faseSemJanela = FaseCronograma.Criar(
-            1, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.Delegada,
+            1, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.NaExecucao,
             agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: true,
             coletaSolicitacaoIsencao: false, inicio: null, fim: null,
             produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null).Value!;
+            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
         processo.DefinirCronogramaFases([faseSemJanela], [], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 

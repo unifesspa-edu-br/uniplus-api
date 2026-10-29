@@ -48,7 +48,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed class CronogramaFasesJanelaComOffsetEndpointTests
 {
     /// <summary>
-    /// Fase de origem de data PROPRIA — a que exige janela (CA-07 da Story #851) e, por
+    /// Fase de origem de data NO_EDITAL — a que exige janela (CA-07 da Story #851) e, por
     /// isso, a que exercita a gravação de <c>inicio</c>/<c>fim</c>. Não produz resultado,
     /// então não arrasta a exigência de ato produzido para o arranjo.
     /// </summary>
@@ -231,7 +231,7 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
             CodigoFaseComJanela, "Ensalamento", null, "CEPS",
             agrupaEtapas: false, permiteComplementacao: false, baseLegal: null,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            origemData: "PROPRIA");
+            origemData: "NO_EDITAL");
         criada.IsSuccess.Should().BeTrue(criada.Error?.Message);
 
         config.FasesCanonicas.Add(criada.Value!);

@@ -16364,7 +16364,8 @@
           "faseConcluinteCodigo",
           "emiteParecerIndividual",
           "bancasRequeridas",
-          "regraRecurso"
+          "regraRecurso",
+          "unidadeResponsavel"
         ],
         "type": "object",
         "properties": {
@@ -16452,6 +16453,16 @@
                 "$ref": "#/components/schemas/RegraRecursoFaseDto"
               }
             ]
+          },
+          "unidadeResponsavel": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UnidadeResponsavelDto"
+              }
+            ]
           }
         }
       },
@@ -16525,6 +16536,13 @@
                 "$ref": "#/components/schemas/RegraRecursoFaseInput"
               }
             ]
+          },
+          "unidadeResponsavelId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
@@ -22560,6 +22578,26 @@
           "diasUteis"
         ],
         "type": "string"
+      },
+      "UnidadeResponsavelDto": {
+        "required": [
+          "origemId",
+          "sigla",
+          "nome"
+        ],
+        "type": "object",
+        "properties": {
+          "origemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sigla": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          }
+        }
       },
       "UserProfileResponse": {
         "required": [

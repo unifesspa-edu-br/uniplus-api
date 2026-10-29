@@ -10,12 +10,12 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Os DOIS pares de suspensividade, cada um independente e anulável.</b> A
-/// suspensividade não é a mesma nos dois módulos (PO, 14/07): na Seleção as duas
-/// instâncias bloqueiam; no Ingresso/Habilitação a 1ª bloqueia e a 2ª (judicial, prazo
-/// indeterminado) não. Isso <b>não vira</b> <c>if (modulo == Ingresso)</c> — é
-/// configuração: para o Ingresso, <c>SuspensividadeSegundaInstancia*</c> é simplesmente
-/// <see langword="null"/>. A ausência <b>é</b> a desativação.
+/// <b>Os DOIS pares de suspensividade, cada um independente e anulável.</b> O recurso
+/// contra um ato da fase fica sob a unidade responsável pela fase de origem do ato, inclusive
+/// quando chega à instância superior, administrativa ou judicial, e qualquer das duas pode
+/// surgir em qualquer fase. A suspensividade pode ser distinta em cada instância: a
+/// configuração diz se a 1ª e a instância superior bloqueiam, e a ausência do par <b>é</b> a
+/// desativação — não há <c>if</c> por módulo nem por tipo de instância.
 /// </para>
 /// <para>
 /// Não é uma discriminated union: <see cref="Entities.RegraRecursoFase"/> só admite a
@@ -28,7 +28,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <param name="SuspensividadePrimeiraInstanciaValor">Magnitude da janela de suspensividade da 1ª instância, ou <see langword="null"/> — não bloqueia.</param>
 /// <param name="SuspensividadePrimeiraInstanciaUnidade">Unidade da suspensividade da 1ª instância.</param>
 /// <param name="AdmiteInstanciaSuperior">Se a janela admite recurso em instância superior. Obrigatória e sem valor padrão: quem configura decide, para que nenhum edital seja congelado sem dizer se o recurso termina na 1ª instância.</param>
-/// <param name="SuspensividadeSegundaInstanciaValor">Magnitude da janela de suspensividade da instância superior, ou <see langword="null"/> — não bloqueia (caso normal do Ingresso via judicial). Só pode ser declarada quando a janela admite instância superior.</param>
+/// <param name="SuspensividadeSegundaInstanciaValor">Magnitude da janela de suspensividade da instância superior, ou <see langword="null"/> — não bloqueia. Só pode ser declarada quando a janela admite instância superior.</param>
 /// <param name="SuspensividadeSegundaInstanciaUnidade">Unidade da suspensividade da instância superior.</param>
 public sealed record ArgsRegraPrazoRecurso(
     decimal PrazoValor,
@@ -172,7 +172,7 @@ public static class ValidacaoDeArgsDeRecurso
     /// Valida um dos dois pares de suspensividade. UNI-REQ-0080 congela a suspensividade como
     /// par valor-unidade, nunca um valor numérico sozinho: um lado sem o outro não descreve
     /// janela alguma. A ausência dos dois é legítima e significa que aquela instância não
-    /// bloqueia — é assim que o Ingresso desativa a 2ª instância, sem <c>if</c> por módulo.
+    /// bloqueia — é assim que se desativa a suspensão da instância superior, sem <c>if</c> por módulo.
     /// </summary>
     private static RecusaDeArgsDeRecurso? ValidarParDeSuspensividade(
         decimal? valor,

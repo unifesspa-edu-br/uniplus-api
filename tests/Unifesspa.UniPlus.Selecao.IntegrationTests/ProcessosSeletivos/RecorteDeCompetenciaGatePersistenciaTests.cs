@@ -275,7 +275,7 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
             faseCanonicaOrigemId: Guid.CreateVersion7(),
             codigo: "RESULTADO_FINAL",
             donoInstitucional: "CEPS",
-            origemData: OrigemDataFase.Propria,
+            origemData: OrigemDataFase.NoEdital,
             agrupaEtapas: true,
             permiteComplementacao: false,
             coletaInscricao: true,
@@ -300,6 +300,7 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
                     AdmiteInstanciaSuperior: false,
                     SuspensividadeSegundaInstanciaValor: null,
                     SuspensividadeSegundaInstanciaUnidade: null),
-                preliminar.Id).Value!).Value!;
+                preliminar.Id).Value!,
+            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
     }
 }

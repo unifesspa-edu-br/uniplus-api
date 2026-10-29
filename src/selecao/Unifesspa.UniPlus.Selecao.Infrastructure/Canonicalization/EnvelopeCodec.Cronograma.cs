@@ -57,7 +57,7 @@ public sealed partial class EnvelopeCodec
                 "agrupaEtapas", "permiteComplementacao",
                 "coletaInscricao", "coletaSolicitacaoIsencao", "inicio", "fim",
                 "produtos", "faseConcluinteCodigo", "emiteParecerIndividual",
-                "bancasRequeridas", "regraRecurso",
+                "bancasRequeridas", "regraRecurso", "unidadeResponsavel",
             ];
             leitor.ExigirChaves(item, path, comId ? [.. chavesBase, "id"] : chavesBase);
 
@@ -99,6 +99,12 @@ public sealed partial class EnvelopeCodec
                 return [];
             }
 
+            UnidadeResponsavelSnapshot? unidadeResponsavel = LerUnidadeResponsavel(leitor, item, path);
+            if (leitor.Falhou)
+            {
+                return [];
+            }
+
             // A âncora do recurso é a única referência cruzada dentro da fase, e a
             // reidratação a repõe como estava em vez de rederivá-la. Conferi-la aqui, pelo
             // MESMO predicado do agregado, é o que faz um envelope incoerente virar recusa
@@ -121,11 +127,11 @@ public sealed partial class EnvelopeCodec
                 ? Result<FaseCronograma>.Success(FaseCronograma.Reidratar(
                     id!.Value, ordem, faseCanonicaOrigemId, codigo, donoInstitucional, origemData,
                     agrupaEtapas, permiteComplementacao, coletaInscricao, coletaSolicitacaoIsencao,
-                    inicio, fim, produtos, faseConcluinteCodigo, emiteParecerIndividual, bancas, regraRecurso))
+                    inicio, fim, produtos, faseConcluinteCodigo, emiteParecerIndividual, bancas, regraRecurso, unidadeResponsavel))
                 : FaseCronograma.Criar(
                     ordem, faseCanonicaOrigemId, codigo, donoInstitucional, origemData,
                     agrupaEtapas, permiteComplementacao, coletaInscricao, coletaSolicitacaoIsencao,
-                    inicio, fim, produtos, faseConcluinteCodigo, emiteParecerIndividual, bancas, regraRecurso);
+                    inicio, fim, produtos, faseConcluinteCodigo, emiteParecerIndividual, bancas, regraRecurso, unidadeResponsavel);
             if (fase.IsFailure)
             {
                 return leitor.Propagar<IReadOnlyList<FaseCronograma>>(fase.Error!) ?? [];
@@ -135,6 +141,26 @@ public sealed partial class EnvelopeCodec
         }
 
         return fases;
+    }
+
+    /// <summary>
+    /// A unidade que responde pela fase, congelada por valor: <c>null</c> enquanto a fase não a
+    /// definiu, ou o objeto <c>{origemId, sigla, nome}</c>.
+    /// </summary>
+    private static UnidadeResponsavelSnapshot? LerUnidadeResponsavel(LeitorEnvelope leitor, JsonObject faseItem, string pathPai)
+    {
+        JsonObject? unidade = leitor.ObjetoOpcional(faseItem, "unidadeResponsavel", pathPai);
+        if (unidade is null || leitor.Falhou)
+        {
+            return null;
+        }
+
+        string path = $"{pathPai}.unidadeResponsavel";
+        leitor.ExigirChaves(unidade, path, "origemId", "sigla", "nome");
+        Guid origemId = leitor.Identificador(unidade, "origemId", path);
+        string sigla = leitor.TextoNaoVazio(unidade, "sigla", path, LimitesDoEnvelope.UnidadeAdministradoraSigla);
+        string nome = leitor.TextoNaoVazio(unidade, "nome", path, LimitesDoEnvelope.UnidadeAdministradoraNome);
+        return leitor.Falhou ? null : new UnidadeResponsavelSnapshot(origemId, sigla, nome);
     }
 
     /// <summary>

@@ -127,7 +127,7 @@ public sealed class ProcessoSeletivoRetificarTests
         faseCanonicaOrigemId: Guid.CreateVersion7(),
         codigo: "RESULTADO_FINAL",
         donoInstitucional: "CEPS",
-        origemData: OrigemDataFase.Propria,
+        origemData: OrigemDataFase.NoEdital,
         agrupaEtapas: true,
         permiteComplementacao: false,
         coletaInscricao: true, coletaSolicitacaoIsencao: false,
@@ -137,7 +137,8 @@ public sealed class ProcessoSeletivoRetificarTests
         faseConcluinteCodigo: null,
         emiteParecerIndividual: false,
         bancasRequeridas: [],
-        regraRecurso: null).Value!;
+        regraRecurso: null,
+        unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     private static ProcessoSeletivo NovoProcessoPublicado(RelogioManual clock, out VersaoConfiguracao versaoAbertura)
     {
@@ -398,6 +399,39 @@ public sealed class ProcessoSeletivoRetificarTests
         resultado.IsSuccess.Should().BeTrue(
             resultado.Error?.Message ?? "o bloco documentosExigidos.exigencias deixou de ser stub — nada mais bloqueia este fechamento");
         processo.Rascunho.Should().BeNull("o fechamento aceito encerra a sessão editorial");
+    }
+
+    [Fact(DisplayName = "Fechar a retificação com uma fase sem unidade responsável recusa e a sessão segue aberta")]
+    public void FecharRetificacao_FaseSemUnidadeResponsavel_RecusaESessaoSegueAberta()
+    {
+        RelogioManual clock = Relogio();
+        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out VersaoConfiguracao versaoAbertura);
+        clock.Avancar(TimeSpan.FromMinutes(1));
+
+        processo.AbrirRetificacao(
+            "Trocar a unidade responsável pela matrícula", versaoAbertura, identificadorDaVersaoBase: null,
+            VersoesPublicadasDeTeste.SoAVigente(processo), "user-sub-123", clock.GetUtcNow())
+            .IsSuccess.Should().BeTrue();
+
+        // Trocar a unidade depois de publicar é retificação, e a sessão aceita o rascunho sem ela:
+        // quem recusa é o fechamento, que congela a versão nova.
+        FaseCronograma atual = processo.CronogramaFases.Single();
+        FaseCronograma semUnidade = FaseCronograma.Criar(
+            atual.Ordem, atual.FaseCanonicaOrigemId, atual.Codigo, atual.DonoInstitucional, atual.OrigemData,
+            atual.AgrupaEtapas, atual.PermiteComplementacao, atual.ColetaInscricao, atual.ColetaSolicitacaoIsencao,
+            atual.Inicio, atual.Fim, [.. atual.Produtos], atual.FaseConcluinteCodigo, atual.EmiteParecerIndividual,
+            [.. atual.BancasRequeridas], atual.RegraRecurso, unidadeResponsavel: null).Value!;
+        Result cronograma = processo.DefinirCronogramaFases([semUnidade], [], PrecondicaoIfMatch.Curinga);
+        cronograma.IsSuccess.Should().BeTrue(cronograma.Error?.Message);
+
+        clock.Avancar(TimeSpan.FromMinutes(1));
+        Result<VersaoConfiguracao> resultado = processo.FecharRetificacao(
+            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            PrecondicaoIfMatch.Curinga, clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.FaseSemUnidadeResponsavel");
+        processo.Rascunho.Should().NotBeNull("a recusa não destrói a sessão editorial");
     }
 
     // ── Story #554 (PR #903, issue #548) — CA-05 (5/5): reavaliação após mudança de gatilho ──
