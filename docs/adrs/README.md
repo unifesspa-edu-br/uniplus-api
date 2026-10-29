@@ -106,7 +106,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0075](0075-snapshot-do-ato-resolvido-no-instante.md) | O snapshot que governa um ato é resolvido deterministicamente no instante do ato e gravado nele | accepted | 2026-05-31 |
 | [0076](0076-contrato-snapshot-runtime-espelha-publicacao.md) | A validação do snapshot lido em runtime reproduz, integralmente, a validação aplicada à configuração na publicação | accepted | 2026-05-31 |
 | [0077](0077-identidade-institucional-canonica-de-unidade.md) | Identidade institucional canônica de `Unidade` (`Id` Guid v7 estável; `Slug`/`Sigla`/`Codigo` únicos entre vivos; `Alias` não-único; histórico de identificadores; cadastro aberto e hierárquico) — refina 0055 | accepted | 2026-06-15 |
-| [0078](0078-modelo-de-autorizacao-pbac-abac.md) | Modelo de autorização PBAC + ABAC com ponto de decisão único — sucede o modelo de decisão contextual da 0057 | accepted | 2026-06-02 |
+| [0078](0078-modelo-de-autorizacao-pbac-abac.md) | Modelo de autorização PBAC + ABAC com ponto de decisão único — sucede o modelo de decisão contextual da 0057 — emendada pela ADR-0152 (o token deixa de ser fonte de concessão) | accepted | 2026-06-02 |
 | [0079](0079-hierarquia-institucional-sem-heranca-de-permissao.md) | Hierarquia institucional sem herança de permissão (unidades irmãs; visibilidade por escopo de auditoria explícito) — refina 0055 | proposed | 2026-06-02 |
 | [0080](0080-catalogo-declarativo-de-permissoes-e-codegen.md) | Catálogo declarativo de permissões como fonte única + geração de artefatos (codegen, fitness contra deriva) | superseded by ADR-0151 | 2026-06-02 |
 | [0081](0081-lgpd-by-design-dto-por-permissao.md) | LGPD-by-design — projeção por permissão como controle primário de proteção de dado pessoal (mascaramento secundário; BOPLA) — **classificação/base legal pendente de validação DPO**; emendada em 2026-10-10: quinto nível `IDENTIFICADOR` projeta tão pouco quanto `SENSIVEL`; marco de imutabilidade dos eixos do fato de sistema conta da publicação em produção | proposed | 2026-06-02 |
@@ -180,8 +180,9 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0149](0149-nota-da-etapa-por-inscricao.md) | A nota de cada etapa é apurada por inscrição a partir de lançamentos que só são acrescentados, qualquer que seja a origem (arquivo, banca, corretores); a classificação lê só a avaliação apurada; notas sem cifra individual | accepted | 2026-10-26 |
 | [0150](0150-parametros-de-avaliacao-da-etapa.md) | A etapa declara a forma de avaliação (objetiva ou humana) e, na humana, a regra de consolidação do catálogo de regras; os itens de avaliação têm id congelado no envelope — emenda a ADR-0110 D2 | accepted | 2026-10-26 |
 | [0151](0151-catalogo-de-permissoes-em-codigo-por-modulo.md) | Catálogo de permissões em código, um enum por módulo qualificado por atributo, com conferência na subida e endpoints de consulta — supera a 0080 | accepted | 2026-10-27 |
+| [0152](0152-governanca-das-concessoes-de-acesso.md) | Toda concessão nasce de pedido no Uni+, aprovado pelo gestor de acessos e, havendo permissão pessoal ou sensível, também pela encarregada de dados; o token identifica e não concede; fora a transição, só o papel de instalação vem do token — emenda a ADR-0078 | proposed | 2026-10-28 |
 
-> **Nota de numeração:** a sequência de `0001` a `0151` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0152+`.
+> **Nota de numeração:** a sequência de `0001` a `0152` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0153+`.
 
 ## Como adicionar um novo ADR
 
