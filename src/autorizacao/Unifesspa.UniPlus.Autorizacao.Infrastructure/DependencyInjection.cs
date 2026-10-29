@@ -32,6 +32,7 @@ public static class AutorizacaoInfrastructureRegistration
             serviceProvider.GetRequiredService<AutorizacaoDbContext>());
 
         services.AddScoped<IPerfilRepository, PerfilRepository>();
+        services.AddScoped<IConcessaoRepository, ConcessaoRepository>();
         services.AddSingleton<ICatalogoDePermissoesConsultavel, CatalogoDePermissoesDaAplicacao>();
 
         return services;
