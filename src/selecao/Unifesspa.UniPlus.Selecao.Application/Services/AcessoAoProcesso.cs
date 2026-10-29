@@ -48,6 +48,39 @@ public static class AcessoAoProcesso
     }
 
     /// <summary>
+    /// Decide a leitura do processo: o que já saiu de rascunho é aberto a qualquer pessoa, inclusive sem identificação,
+    /// e não registra decisão; o rascunho só abre com <see cref="PermissaoSelecao.ProcessosConfigurar"/> na unidade
+    /// dona. O processo que não existe nunca é permitido, e a resposta é a de quem não pode ler.
+    /// </summary>
+    public static async Task<ResultadoDoAcesso> VerificarLeituraAsync(
+        IVerificadorDeAcesso verificador,
+        IProcessoSeletivoRepository processos,
+        Guid processoId,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(processos);
+
+        EstadoDoProcesso? estado = await processos.ObterEstadoAsync(processoId, cancellationToken).ConfigureAwait(false);
+        if (estado is { LeituraAberta: true })
+        {
+            return ResultadoDoAcesso.Permitido;
+        }
+
+        return await VerificarNaUnidadeAsync(
+                verificador, estado?.UnidadeId, processoId, PermissaoSelecao.ProcessosConfigurar, RecursoProcesso,
+                sensibilidadeDoRecurso: null, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>Se quem lê configura o processo na unidade dona: o que separa o administrativo do que é público.</summary>
+    public static async Task<bool> ConfiguraAsync(
+        IVerificadorDeAcesso verificador, Guid unidadeId, Guid processoId, CancellationToken cancellationToken) =>
+        await VerificarNaUnidadeAsync(
+                verificador, unidadeId, processoId, PermissaoSelecao.ProcessosConfigurar, RecursoProcesso,
+                sensibilidadeDoRecurso: null, cancellationToken)
+            .ConfigureAwait(false) == ResultadoDoAcesso.Permitido;
+
+    /// <summary>
     /// Decide a permissão sobre a unidade. Sem unidade (processo inexistente) não há decisão a tomar sobre o recurso:
     /// a consulta sem recurso serve só para distinguir quem não foi identificado, e o resto é negado.
     /// </summary>

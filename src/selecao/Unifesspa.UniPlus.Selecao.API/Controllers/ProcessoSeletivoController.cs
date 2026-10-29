@@ -42,9 +42,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 [Route("processos-seletivos")]
 // Configuração administrativa: cada ação exige a permissão da sua operação na unidade dona do processo
 // (ExigePermissaoNoProcesso), decidida pela concessão e não pelo papel no token. [Authorize] mantém anônimo
-// quem não se autenticou, porque não há fallback policy. Um processo em rascunho é dado administrativo: a
-// leitura também exige permissão, e a abertura da leitura do publicado cabe à #2140. A listagem não tem processo
-// para decidir: devolve só os processos das unidades em que a pessoa acompanha.
+// quem não se autenticou, porque não há fallback policy. A leitura do processo é aberta depois da publicação e
+// restrita a quem configura enquanto é rascunho (ExigeLeituraDoProcesso, anônima). A listagem não tem processo
+// para decidir: devolve os processos publicados e os rascunhos das unidades em que a pessoa configura.
 [Authorize]
 [SuppressMessage(
     "Performance",
@@ -86,6 +86,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
         return resultado.ToActionResult(_mapper);
     }
 
+    [AllowAnonymous]
     [HttpGet]
     [VendorMediaType(Resource = "processo-seletivo", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<ProcessoSeletivoResumoDto>), StatusCodes.Status200OK)]
@@ -107,15 +108,17 @@ public sealed class ProcessoSeletivoController : ControllerBase
             cancellationToken: cancellationToken);
     }
 
-    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosAcompanhar)]
+    [AllowAnonymous]
+    [ExigeLeituraDoProcesso]
     [HttpGet("{id:guid}")]
     [VendorMediaType(Resource = "processo-seletivo", Versions = [1])]
     [ProducesResponseType(typeof(ProcessoSeletivoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
-        ProcessoSeletivoDto? processo = await _queryBus.Send(new ObterProcessoSeletivoQuery(id), cancellationToken);
+        ProcessoSeletivoDto? processo = await _queryBus.Send(new LerProcessoSeletivoQuery(id), cancellationToken);
         if (processo is null)
         {
             return NotFound();
@@ -1058,7 +1061,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// Consulta a sessão editorial em curso — é por aqui que o cliente <b>relê o ETag</b>
     /// depois de um 412.
     /// </summary>
-    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosAcompanhar)]
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpGet("{id:guid}/retificacao-em-curso")]
     [VendorMediaType(Resource = "retificacao-em-curso", Versions = [1])]
     [ProducesResponseType(typeof(RetificacaoEmCursoDto), StatusCodes.Status200OK)]
@@ -1228,7 +1231,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// itens com os gates não muda.
     /// </para>
     /// </remarks>
-    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosAcompanhar)]
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpGet("{id:guid}/conformidade")]
     [VendorMediaType(Resource = "conformidade-processo-seletivo", Versions = [1])]
     [ProducesResponseType(typeof(ConformidadeProcessoSeletivoDto), StatusCodes.Status200OK)]
@@ -1261,7 +1264,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// o preflight da tela não tinha como distinguir a pendência de uma falha de rede (issue #1456).
     /// </para>
     /// </summary>
-    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosAcompanhar)]
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpGet("{id:guid}/conformidade-legal")]
     [VendorMediaType(Resource = "conformidade-legal-processo-seletivo", Versions = [1])]
     [ProducesResponseType(typeof(ConformidadeLegalProcessoSeletivoDto), StatusCodes.Status200OK)]
@@ -1363,7 +1366,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// 404 quando não há rascunho, inclusive quando o que havia já venceu. É a leitura que
     /// cobra o prazo: sem tarefa recorrente varrendo a tabela, quem lê é quem descarta.
     /// </remarks>
-    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosAcompanhar)]
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpGet("{id:guid}/rascunho-da-publicacao")]
     [VendorMediaType(Resource = "rascunho-da-publicacao", Versions = [1])]
     [ProducesResponseType(typeof(RascunhoDaPublicacaoDto), StatusCodes.Status200OK)]
@@ -1431,10 +1434,12 @@ public sealed class ProcessoSeletivoController : ControllerBase
         return resultado.IsFailure ? resultado.ToActionResult(_mapper) : NoContent();
     }
 
-    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosAcompanhar)]
+    [AllowAnonymous]
+    [ExigeLeituraDoProcesso]
     [HttpGet("{id:guid}/snapshot-vigente")]
     [VendorMediaType(Resource = "snapshot-vigente-processo-seletivo", Versions = [1])]
     [ProducesResponseType(typeof(SnapshotVigenteDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
@@ -1444,7 +1449,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
         CancellationToken cancellationToken)
     {
         Result<SnapshotVigenteDto> resultado = await _queryBus
-            .Send(new ObterSnapshotVigenteQuery(id, instante), cancellationToken)
+            .Send(new LerSnapshotVigenteQuery(id, instante), cancellationToken)
             .ConfigureAwait(false);
 
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);

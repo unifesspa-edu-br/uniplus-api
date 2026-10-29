@@ -82,13 +82,13 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
     /// <paramref name="afterId"/> (ou a primeira janela quando <c>null</c>),
     /// sempre em ordem ascendente, junto das âncoras de <c>prev</c>/<c>next</c>
     /// (nulas quando não há aquele lado). Implementações aplicam <c>AsNoTracking</c>.
-    /// Só entram os processos das <paramref name="unidades"/>; sem unidade, a lista é vazia.
+    /// Entram os processos publicados ou encerrados e, dos demais, só os das <paramref name="unidadesDoRascunho"/>.
     /// </summary>
     Task<(IReadOnlyList<ProcessoSeletivo> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
         Guid? afterId,
         int limit,
         PaginationDirection direction,
-        IReadOnlyCollection<Guid> unidades,
+        IReadOnlyCollection<Guid> unidadesDoRascunho,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -192,6 +192,13 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
     /// </summary>
     /// <remarks>Projeção estreita, pelo mesmo motivo de <see cref="ObterNomeAsync"/>.</remarks>
     Task<Guid?> ObterUnidadeAdministradoraAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// A unidade dona, o status e a existência de retificação em curso do processo: o que a decisão de leitura precisa
+    /// saber, numa consulta só. <see langword="null"/> quando o processo não existe.
+    /// </summary>
+    /// <remarks>Projeção estreita, pelo mesmo motivo de <see cref="ObterNomeAsync"/>.</remarks>
+    Task<EstadoDoProcesso?> ObterEstadoAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// <see langword="true"/> se existe um Processo Seletivo com este id

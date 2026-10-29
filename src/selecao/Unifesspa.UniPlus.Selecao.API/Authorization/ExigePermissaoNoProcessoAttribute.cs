@@ -6,8 +6,6 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
-using Unifesspa.UniPlus.Infrastructure.Core.Errors;
-using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -39,7 +37,7 @@ public sealed class ExigePermissaoNoProcessoAttribute : Attribute, IAsyncAuthori
         ArgumentNullException.ThrowIfNull(context);
 
         IServiceProvider servicos = context.HttpContext.RequestServices;
-        Guid processoId = ProcessoDaRota(context);
+        Guid processoId = RotaDoProcesso.Id(context);
 
         ResultadoDoAcesso resultado = await AcessoAoProcesso
             .VerificarAsync(
@@ -58,15 +56,7 @@ public sealed class ExigePermissaoNoProcessoAttribute : Attribute, IAsyncAuthori
         {
             ResultadoDoAcesso.Permitido => null,
             ResultadoDoAcesso.IdentidadeIncompleta => new ChallengeResult(),
-            _ => Result.Failure(new DomainError(
-                    "ProcessoSeletivo.NaoEncontrado", $"Processo Seletivo {processoId} não encontrado."))
-                .ToActionResult(servicos.GetRequiredService<IDomainErrorMapper>()),
+            _ => RotaDoProcesso.NaoEncontrado(servicos, processoId),
         };
     }
-
-    // A rota exige {id:guid}: um valor que não seja Guid nem chega a este filtro. Guid.Empty nunca existe, e cai na recusa.
-    private static Guid ProcessoDaRota(AuthorizationFilterContext context) =>
-        context.RouteData.Values.TryGetValue("id", out object? id) && Guid.TryParse(id?.ToString(), out Guid processoId)
-            ? processoId
-            : Guid.Empty;
 }

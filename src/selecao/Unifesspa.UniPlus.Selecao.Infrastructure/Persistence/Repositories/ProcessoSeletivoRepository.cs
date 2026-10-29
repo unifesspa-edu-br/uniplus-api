@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
 using Domain.Entities;
+using Domain.Enums;
 using Domain.Interfaces;
 using Domain.ValueObjects;
 
@@ -323,6 +324,16 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             .Select(p => (Guid?)p.UnidadeAdministradoraOrigemId)
             .FirstOrDefaultAsync(cancellationToken);
 
+    public Task<EstadoDoProcesso?> ObterEstadoAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default) =>
+        _context.ProcessosSeletivos
+            .AsNoTracking()
+            .Where(p => p.Id == processoSeletivoId)
+            .Select(p => new EstadoDoProcesso(
+                p.UnidadeAdministradoraOrigemId,
+                p.Status,
+                _context.VersoesConfiguracao.Any(v => v.ProcessoSeletivoId == p.Id)))
+            .FirstOrDefaultAsync(cancellationToken);
+
     public async Task<bool> ExisteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _context.ProcessosSeletivos
@@ -349,15 +360,18 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
         Guid? afterId,
         int limit,
         PaginationDirection direction,
-        IReadOnlyCollection<Guid> unidades,
+        IReadOnlyCollection<Guid> unidadesDoRascunho,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(unidades);
+        ArgumentNullException.ThrowIfNull(unidadesDoRascunho);
 
         // Keyset bidirecional (ADR-0089): ordenação, âncora, probe n+1, reversão
         // e flags ficam no helper. Com Guid v7 (ADR-0032) a ordem por Id é cronológica.
         IQueryable<ProcessoSeletivo> query = _context.ProcessosSeletivos.AsNoTracking()
-            .Where(p => unidades.Contains(p.UnidadeAdministradoraOrigemId));
+            .Where(p => EstadoDoProcesso.StatusDeLeituraAberta.Contains(p.Status)
+                || (p.Status == StatusProcesso.Cancelado
+                    && _context.VersoesConfiguracao.Any(v => v.ProcessoSeletivoId == p.Id))
+                || unidadesDoRascunho.Contains(p.UnidadeAdministradoraOrigemId));
 
         CursorKeysetPage<ProcessoSeletivo> page = await CursorKeyset
             .ApplyAsync(query, afterId, limit, direction, cancellationToken)
