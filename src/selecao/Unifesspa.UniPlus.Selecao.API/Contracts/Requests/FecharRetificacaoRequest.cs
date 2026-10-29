@@ -12,10 +12,15 @@ using Controllers;
 /// nome) mantém a identidade; o trocado ou renomeado ganha outra. Cada versão publica os anexos nos
 /// seus próprios endereços, e a versão anterior conserva os dela.
 /// </param>
+/// <param name="PeriodoInscricaoInicio">
+/// Informado só quando o processo não tem fase do cronograma que colete inscrição, e então obrigatório.
+/// Quando há essa fase, o período vem da janela dela e o valor informado é recusado.
+/// </param>
+/// <param name="PeriodoInscricaoFim">Idem <paramref name="PeriodoInscricaoInicio"/>.</param>
 public sealed record FecharRetificacaoRequest(
     string? Numero,
-    DateTimeOffset? PeriodoInscricaoInicio,
-    DateTimeOffset? PeriodoInscricaoFim,
     Guid DocumentoEditalId,
     DadosDoAtoRequest Ato,
-    IReadOnlyList<AnexoDoEditalRequest>? Anexos = null);
+    IReadOnlyList<AnexoDoEditalRequest>? Anexos = null,
+    DateTimeOffset? PeriodoInscricaoInicio = null,
+    DateTimeOffset? PeriodoInscricaoFim = null);

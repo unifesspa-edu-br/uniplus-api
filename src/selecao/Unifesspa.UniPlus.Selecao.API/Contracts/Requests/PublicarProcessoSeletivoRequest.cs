@@ -9,10 +9,15 @@ using Controllers;
 /// <param name="Anexos">
 /// Os anexos do edital, na ordem em que ele os apresenta, até 20. Ausente ou vazio quando o edital não tem anexo.
 /// </param>
+/// <param name="PeriodoInscricaoInicio">
+/// Informado só quando o processo não tem fase do cronograma que colete inscrição, e então obrigatório.
+/// Quando há essa fase, o período vem da janela dela e o valor informado é recusado.
+/// </param>
+/// <param name="PeriodoInscricaoFim">Idem <paramref name="PeriodoInscricaoInicio"/>.</param>
 public sealed record PublicarProcessoSeletivoRequest(
     string? Numero,
-    DateTimeOffset? PeriodoInscricaoInicio,
-    DateTimeOffset? PeriodoInscricaoFim,
     Guid DocumentoEditalId,
     DadosDoAtoRequest Ato,
-    IReadOnlyList<AnexoDoEditalRequest>? Anexos = null);
+    IReadOnlyList<AnexoDoEditalRequest>? Anexos = null,
+    DateTimeOffset? PeriodoInscricaoInicio = null,
+    DateTimeOffset? PeriodoInscricaoFim = null);

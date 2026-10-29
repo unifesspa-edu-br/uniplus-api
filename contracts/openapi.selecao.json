@@ -16796,8 +16796,6 @@
       "FecharRetificacaoRequest": {
         "required": [
           "numero",
-          "periodoInscricaoInicio",
-          "periodoInscricaoFim",
           "documentoEditalId",
           "ato"
         ],
@@ -16808,20 +16806,6 @@
               "null",
               "string"
             ]
-          },
-          "periodoInscricaoInicio": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
-          },
-          "periodoInscricaoFim": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
           },
           "documentoEditalId": {
             "type": "string",
@@ -16838,6 +16822,20 @@
             "items": {
               "$ref": "#/components/schemas/AnexoDoEditalRequest"
             }
+          },
+          "periodoInscricaoInicio": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "periodoInscricaoFim": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },
@@ -20888,8 +20886,6 @@
       "PublicarProcessoSeletivoRequest": {
         "required": [
           "numero",
-          "periodoInscricaoInicio",
-          "periodoInscricaoFim",
           "documentoEditalId",
           "ato"
         ],
@@ -20900,20 +20896,6 @@
               "null",
               "string"
             ]
-          },
-          "periodoInscricaoInicio": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
-          },
-          "periodoInscricaoFim": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
           },
           "documentoEditalId": {
             "type": "string",
@@ -20930,6 +20912,20 @@
             "items": {
               "$ref": "#/components/schemas/AnexoDoEditalRequest"
             }
+          },
+          "periodoInscricaoInicio": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "periodoInscricaoFim": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },
@@ -21942,8 +21938,6 @@
         "required": [
           "motivo",
           "numero",
-          "periodoInscricaoInicio",
-          "periodoInscricaoFim",
           "documentoEditalId",
           "ato"
         ],
@@ -21957,20 +21951,6 @@
               "null",
               "string"
             ]
-          },
-          "periodoInscricaoInicio": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
-          },
-          "periodoInscricaoFim": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
           },
           "documentoEditalId": {
             "type": "string",
@@ -21987,6 +21967,20 @@
             "items": {
               "$ref": "#/components/schemas/AnexoDoEditalRequest"
             }
+          },
+          "periodoInscricaoInicio": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "periodoInscricaoFim": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },
