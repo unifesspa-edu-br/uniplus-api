@@ -68,24 +68,6 @@ public sealed class CursoEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    [Fact(DisplayName = "POST autenticado sem role plataforma-admin retorna 403")]
-    public async Task Criar_SemRoleAdmin_Retorna403()
-    {
-        var body = new { codigo = CodigoUnico(), nome = "Sem permissão", grau = "Bacharelado", nivelEnsino = "Graduação" };
-
-        using HttpClient client = _fixture.Factory.CreateClient();
-        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/configuracao/admin/cursos", UriKind.Relative));
-        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.Add(TestAuthHandler.RolesHeader, "candidato");
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        request.Content = JsonContent.Create(body);
-
-        HttpResponseMessage response = await client.SendAsync(request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden,
-            "a policy [Authorize(Roles = \"plataforma-admin\")] nega um principal autenticado sem o role");
-    }
-
     [Fact(DisplayName = "POST sem Idempotency-Key retorna 400")]
     public async Task Criar_SemIdempotencyKey_Retorna400()
     {

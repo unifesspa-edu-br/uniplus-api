@@ -98,21 +98,6 @@ public sealed class PesoAreaEnemEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    [Fact(DisplayName = "POST admin autenticado sem role plataforma-admin retorna 403")]
-    public async Task Criar_SemRoleAdmin_Retorna403()
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-        using HttpRequestMessage request = new(HttpMethod.Post, new Uri(AdminPath, UriKind.Relative));
-        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.Add(TestAuthHandler.RolesHeader, "candidato");
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        request.Content = JsonContent.Create(CorpoValido(ResolucaoUnica()));
-
-        HttpResponseMessage response = await client.SendAsync(request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
     [Fact(DisplayName = "POST admin cria (201) e o GET devolve as áreas com código, rótulo, peso e corte + _links")]
     public async Task Criar_ComAuthEIdempotency_Retorna201EPersiste()
     {

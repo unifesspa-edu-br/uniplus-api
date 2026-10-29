@@ -9,7 +9,9 @@ using Microsoft.AspNetCore.Mvc;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.OfertasCurso;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
+using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.OfertasCurso;
+using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
@@ -21,16 +23,19 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Endpoints públicos de leitura (<c>GET /api/configuracao/ofertas-curso</c>,
 /// <c>GET /api/configuracao/ofertas-curso/{id}</c>) e endpoints admin
-/// (<c>POST/PUT/DELETE /api/configuracao/admin/ofertas-curso</c>) restritos a
-/// <c>plataforma-admin</c> (story #588, issue #749, ADR-0066).
+/// (<c>POST/PUT/DELETE /api/configuracao/admin/ofertas-curso</c>) restritos à
+/// permissão de manutenção (story #588, issue #749, ADR-0066).
 /// </summary>
 [ApiController]
+[Authorize]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class OfertasCursoController : ControllerBase
 {
+    private const string RecursoTipo = "OfertasCurso";
+
     private const string ResourceTag = "ofertas-curso";
 
     private readonly ICommandBus _commandBus;
@@ -148,11 +153,11 @@ public sealed class OfertasCursoController : ControllerBase
 
     /// <summary>
     /// Cria uma nova oferta de curso, congelando a unidade ofertante por
-    /// snapshot-copy (ADR-0061). Restrito a <c>plataforma-admin</c>.
+    /// snapshot-copy (ADR-0061). Exige a permissão de manutenção.
     /// Idempotency-Key obrigatório (ADR-0027).
     /// </summary>
     [HttpPost("admin/ofertas-curso")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.OfertasCursoManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -183,10 +188,10 @@ public sealed class OfertasCursoController : ControllerBase
     /// <summary>
     /// Atualiza os atributos regulatórios editáveis de uma oferta de curso.
     /// Curso, local e unidade ofertante são imutáveis (mudá-los é outra oferta).
-    /// Restrito a <c>plataforma-admin</c>.
+    /// Exige a permissão de manutenção.
     /// </summary>
     [HttpPut("admin/ofertas-curso/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.OfertasCursoManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -219,12 +224,12 @@ public sealed class OfertasCursoController : ControllerBase
     }
 
     /// <summary>
-    /// Remove (soft-delete) uma oferta de curso. Restrito a
-    /// <c>plataforma-admin</c>. Sem 409: a remoção não é bloqueada por snapshots
+    /// Remove (soft-delete) uma oferta de curso. Exige a permissão de
+    /// manutenção. Sem 409: a remoção não é bloqueada por snapshots
     /// congelados em outros módulos (cópias desacopladas — ADR-0061).
     /// </summary>
     [HttpDelete("admin/ofertas-curso/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.OfertasCursoManter, RecursoTipo = RecursoTipo)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

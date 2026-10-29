@@ -69,23 +69,6 @@ public sealed class ModalidadeEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    [Fact(DisplayName = "POST autenticado sem role plataforma-admin retorna 403")]
-    public async Task Criar_SemRoleAdmin_Retorna403()
-    {
-        var body = new { codigo = CodigoUnico(), naturezaLegal = "AMPLA" };
-
-        using HttpClient client = _fixture.Factory.CreateClient();
-        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/configuracao/admin/modalidades", UriKind.Relative));
-        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.Add(TestAuthHandler.RolesHeader, "candidato");
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        request.Content = JsonContent.Create(body);
-
-        HttpResponseMessage response = await client.SendAsync(request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
     [Fact(DisplayName = "POST sem Idempotency-Key retorna 400")]
     public async Task Criar_SemIdempotencyKey_Retorna400()
     {

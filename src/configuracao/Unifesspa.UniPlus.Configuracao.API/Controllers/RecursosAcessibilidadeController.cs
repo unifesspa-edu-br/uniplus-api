@@ -8,7 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.RecursosAcessibilidade;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
+using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.RecursosAcessibilidade;
+using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
@@ -19,16 +21,19 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Endpoints públicos de leitura (<c>GET /api/configuracao/recursos-acessibilidade</c>,
 /// <c>GET /api/configuracao/recursos-acessibilidade/{id}</c>) e endpoints admin
-/// (<c>POST/PUT/DELETE /api/configuracao/admin/recursos-acessibilidade</c>) restritos a
-/// <c>plataforma-admin</c> (UNI-REQ-0012).
+/// (<c>POST/PUT/DELETE /api/configuracao/admin/recursos-acessibilidade</c>) restritos à
+/// permissão de manutenção (UNI-REQ-0012).
 /// </summary>
 [ApiController]
+[Authorize]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class RecursosAcessibilidadeController : ControllerBase
 {
+    private const string RecursoTipo = "RecursosAcessibilidade";
+
     private const string ResourceTag = "recursos-acessibilidade";
 
     private readonly ICommandBus _commandBus;
@@ -101,9 +106,9 @@ public sealed class RecursosAcessibilidadeController : ControllerBase
         return Ok(comLinks);
     }
 
-    /// <summary>Cria um novo recurso de acessibilidade. Restrito a <c>plataforma-admin</c>. Idempotency-Key obrigatório (ADR-0027).</summary>
+    /// <summary>Cria um novo recurso de acessibilidade. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/recursos-acessibilidade")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.RecursosAcessibilidadeManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -132,9 +137,9 @@ public sealed class RecursosAcessibilidadeController : ControllerBase
         return resultado.ToActionResult(_mapper);
     }
 
-    /// <summary>Atualiza um recurso de acessibilidade existente. Restrito a <c>plataforma-admin</c>.</summary>
+    /// <summary>Atualiza um recurso de acessibilidade existente. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/recursos-acessibilidade/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.RecursosAcessibilidadeManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -167,9 +172,9 @@ public sealed class RecursosAcessibilidadeController : ControllerBase
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
-    /// <summary>Remove (soft-delete) um recurso de acessibilidade. Restrito a <c>plataforma-admin</c>.</summary>
+    /// <summary>Remove (soft-delete) um recurso de acessibilidade. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/recursos-acessibilidade/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.RecursosAcessibilidadeManter, RecursoTipo = RecursoTipo)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

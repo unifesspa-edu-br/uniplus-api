@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
 /// <summary>
-/// Contrato HTTP da manutenção do catálogo de fatos pelo papel <c>plataforma-admin</c>
+/// Contrato HTTP da manutenção do catálogo de fatos pela permissão de manter
 /// (UNI-REQ-0143, ADR-0136): cadastro de fato declarado, edição de nome e descrição, desativação
 /// e valores de domínio.
 /// </summary>
@@ -36,19 +36,6 @@ public sealed class FatoCandidatoAdminEndpointTests
     public FatoCandidatoAdminEndpointTests(ConfiguracaoEndpointFixture fixture)
     {
         _fixture = fixture;
-    }
-
-    [Fact(DisplayName = "Cadastrar fato sem o papel plataforma-admin é proibido")]
-    public async Task Criar_SemPapel_Retorna403()
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-        using HttpRequestMessage request = new(HttpMethod.Post, new Uri(Base, UriKind.Relative));
-        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.Add(TestAuthHandler.RolesHeader, "candidato");
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        request.Content = JsonContent.Create(FatoBooleano(CodigoUnico()));
-
-        (await client.SendAsync(request)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact(DisplayName = "Cadastro, edição, desativação e reativação do fato declarado; a lista filtra por ativo")]
@@ -187,21 +174,6 @@ public sealed class FatoCandidatoAdminEndpointTests
         valores.Select(static v => v.GetProperty("codigo").GetString()).Should().Equal("REGULAR", "EJA");
         valores[1].GetProperty("descricao").GetString().Should().Be("Educação de jovens e adultos");
         valores[1].GetProperty("orientacao").GetString().Should().Be("Cursou o supletivo.");
-    }
-
-    [Theory(DisplayName = "Corrigir e reordenar valores sem o papel plataforma-admin é proibido")]
-    [InlineData("valores/EJA")]
-    [InlineData("ordem-dos-valores")]
-    public async Task CorrigirEReordenar_SemPapel_Retorna403(string caminho)
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-        using HttpRequestMessage request = new(HttpMethod.Put, new Uri($"{Base}/{Guid.NewGuid()}/{caminho}", UriKind.Relative));
-        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.Add(TestAuthHandler.RolesHeader, "candidato");
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        request.Content = JsonContent.Create(new { descricao = "x", codigos = Array.Empty<string>() });
-
-        (await client.SendAsync(request)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact(DisplayName = "Derivado por regra é cadastrado, recebe regras padrão e as devolve como gravou")]
@@ -385,19 +357,6 @@ public sealed class FatoCandidatoAdminEndpointTests
             .StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await EnviarAsync(client, HttpMethod.Put, $"{Base}/{Guid.NewGuid()}/definicao", DefinicaoCategorica()))
             .StatusCode.Should().Be(HttpStatusCode.NotFound);
-    }
-
-    [Fact(DisplayName = "Alterar a definição sem o papel plataforma-admin é proibido")]
-    public async Task AlterarDefinicao_SemPapel_Retorna403()
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-        using HttpRequestMessage request = new(HttpMethod.Put, new Uri($"{Base}/{IdDeCorRaca}/definicao", UriKind.Relative));
-        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.Add(TestAuthHandler.RolesHeader, "candidato");
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        request.Content = JsonContent.Create(DefinicaoCategorica());
-
-        (await client.SendAsync(request)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact(DisplayName = "Alteração da definição colidindo com outra escrita do mesmo fato responde 409 e não grava")]

@@ -48,9 +48,7 @@ public sealed class CascadingApiFactory : MonolitoApiFactory
         {
             services.AddSingleton<DomainEventCollector>();
             services.AdicionarAdministradorDeProcessosDeTeste();
-            services.RemoveAll<IRegistroOperacionalRestrito>();
-            services.AddSingleton<RegistroDeDecisoesDeTeste>();
-            services.AddSingleton<IRegistroOperacionalRestrito>(sp => sp.GetRequiredService<RegistroDeDecisoesDeTeste>());
+            services.AdicionarRegistroDeDecisoesDeTeste();
             services.RemoveAll<IAcervoPublico>();
             services.AddSingleton<IAcervoPublico, AcervoPublicoEmMemoria>();
         });

@@ -8,7 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.CondicoesAtendimento;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
+using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.CondicoesAtendimento;
+using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
@@ -20,15 +22,18 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Endpoints públicos de leitura (<c>GET /api/configuracao/condicoes-atendimento</c>,
 /// <c>GET /api/configuracao/condicoes-atendimento/{id}</c>) e endpoints admin
 /// (<c>POST/PUT/DELETE /api/configuracao/admin/condicoes-atendimento</c>) restritos
-/// a <c>plataforma-admin</c> (UNI-REQ-0012).
+/// à permissão de manutenção (UNI-REQ-0012).
 /// </summary>
 [ApiController]
+[Authorize]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class CondicoesAtendimentoController : ControllerBase
 {
+    private const string RecursoTipo = "CondicoesAtendimento";
+
     private const string ResourceTag = "condicoes-atendimento";
 
     private readonly ICommandBus _commandBus;
@@ -101,9 +106,9 @@ public sealed class CondicoesAtendimentoController : ControllerBase
         return Ok(comLinks);
     }
 
-    /// <summary>Cria uma nova condição. Restrito a <c>plataforma-admin</c>. Idempotency-Key obrigatório (ADR-0027).</summary>
+    /// <summary>Cria uma nova condição. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/condicoes-atendimento")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CondicoesAtendimentoManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -132,9 +137,9 @@ public sealed class CondicoesAtendimentoController : ControllerBase
         return resultado.ToActionResult(_mapper);
     }
 
-    /// <summary>Atualiza uma condição existente. Restrito a <c>plataforma-admin</c>.</summary>
+    /// <summary>Atualiza uma condição existente. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/condicoes-atendimento/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CondicoesAtendimentoManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -167,9 +172,9 @@ public sealed class CondicoesAtendimentoController : ControllerBase
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
-    /// <summary>Remove (soft-delete) uma condição. Restrito a <c>plataforma-admin</c>.</summary>
+    /// <summary>Remove (soft-delete) uma condição. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/condicoes-atendimento/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CondicoesAtendimentoManter, RecursoTipo = RecursoTipo)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

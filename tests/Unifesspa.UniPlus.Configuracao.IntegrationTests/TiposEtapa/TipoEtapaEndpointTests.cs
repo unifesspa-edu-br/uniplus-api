@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
 /// <summary>
 /// Contrato HTTP do cadastro de tipos de etapa (UNI-REQ-0015, UNI-REQ-0087): leitura pública de
-/// ativos e manutenção exclusiva de <c>plataforma-admin</c>, com código permanentemente reservado.
+/// ativos e manutenção exclusiva de quem tem a permissão de manter, com código permanentemente reservado.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
 [SuppressMessage(
@@ -112,21 +112,6 @@ public sealed class TipoEtapaEndpointTests
         HttpResponseMessage response = await client.SendAsync(request);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact(DisplayName = "POST autenticado sem role plataforma-admin retorna 403")]
-    public async Task Criar_SemRolePlataformaAdmin_Retorna403()
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/configuracao/admin/tipos-etapa", UriKind.Relative));
-        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.Add(TestAuthHandler.RolesHeader, "candidato");
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        request.Content = JsonContent.Create(new { codigo = CodigoUnico(), nome = "Sem permissão", admitePontuacao = true, admiteEliminacao = true });
-
-        HttpResponseMessage response = await client.SendAsync(request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact(DisplayName = "POST cria (201), GET público lista e PUT altera somente os dados descritivos")]

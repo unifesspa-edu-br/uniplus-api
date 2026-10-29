@@ -22,7 +22,7 @@ public sealed partial class PapelFixoPorUnidadeTests
 
     private const string PastaDaAutenticacao = "src/shared/Unifesspa.UniPlus.Infrastructure.Core/Authentication/";
 
-    private static readonly string[] ModulosSemPapel = ["Selecao", "Ingresso", "Autorizacao", "Portal", "Discentes"];
+    private static readonly string[] ModulosSemPapel = ["Selecao", "Configuracao", "Ingresso", "Autorizacao", "Portal", "Discentes"];
 
     [Fact(DisplayName = "Fitness_PapelFixoPorUnidadeEmCodigoNovo_Falha")]
     public void Fitness_PapelFixoPorUnidadeEmCodigoNovo_Falha()

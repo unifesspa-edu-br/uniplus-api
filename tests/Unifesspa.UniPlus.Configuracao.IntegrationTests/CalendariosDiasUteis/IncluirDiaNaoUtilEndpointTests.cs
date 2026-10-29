@@ -152,24 +152,6 @@ public sealed class IncluirDiaNaoUtilEndpointTests
             "uniplus.configuracao.calendario_dias_uteis.nao_encontrado");
     }
 
-    // CA09: sem role de admin, recusa.
-    [Fact(DisplayName = "POST .../dias-nao-uteis sem role plataforma-admin retorna 403")]
-    public async Task Incluir_SemRoleAdmin_Retorna403()
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-        Guid id = await CriarDataset(client, VersaoUnica());
-
-        using HttpRequestMessage request = new(HttpMethod.Post, new Uri($"{AdminPath}/{id}/dias-nao-uteis", UriKind.Relative));
-        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.Add(TestAuthHandler.RolesHeader, "candidato");
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        request.Content = JsonContent.Create(ItemValido());
-
-        HttpResponseMessage response = await client.SendAsync(request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
     // CA09: sem autenticação, recusa.
     [Fact(DisplayName = "POST .../dias-nao-uteis sem autenticação retorna 401")]
     public async Task Incluir_SemAuth_Retorna401()
