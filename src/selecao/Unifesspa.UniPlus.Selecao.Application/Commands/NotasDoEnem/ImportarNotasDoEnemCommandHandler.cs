@@ -50,6 +50,7 @@ public static partial class ImportarNotasDoEnemCommandHandler
         ILoteDeNotasDoEnemRepository lotes,
         ISelecaoUnitOfWork unitOfWork,
         IUserContext userContext,
+        IResolvedorFusoInstitucional resolvedorFuso,
         TimeProvider timeProvider,
         ILogger logger,
         CancellationToken cancellationToken)
@@ -63,6 +64,7 @@ public static partial class ImportarNotasDoEnemCommandHandler
         ArgumentNullException.ThrowIfNull(lotes);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(userContext);
+        ArgumentNullException.ThrowIfNull(resolvedorFuso);
         ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(logger);
 
@@ -74,6 +76,11 @@ public static partial class ImportarNotasDoEnemCommandHandler
         if (escopo.IsFailure)
         {
             return Result<ImportacaoDeNotasDto>.Failure(escopo.Error!);
+        }
+
+        if (ResolvedorDoEscopoDeNotasDoEnem.ConferirInscricoesEncerradas(escopo.Value!, timeProvider.GetUtcNow(), resolvedorFuso) is { } inscricoesAbertas)
+        {
+            return Result<ImportacaoDeNotasDto>.Failure(inscricoesAbertas);
         }
 
         Result<ILeiauteDeArquivoDoInep> leiaute = ResolvedorDoEscopoDeNotasDoEnem
@@ -111,6 +118,10 @@ public static partial class ImportarNotasDoEnemCommandHandler
         // são lidos depois da trava.
         await processoSeletivoRepository.TravarAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
 
+        // O instante é lido sob a trava: o lote vigente é o de maior ImportadoEm, e a importação que
+        // espera a trava grava por último.
+        DateTimeOffset agora = timeProvider.GetUtcNow();
+
         Result<EscopoDeNotasDoEnem> escopoNaTrava = await ResolvedorDoEscopoDeNotasDoEnem
             .ResolverAsync(
                 command.ProcessoSeletivoId, command.EtapaProcessoId, command.Edicao, exigeNotaDoEnem: true,
@@ -119,6 +130,12 @@ public static partial class ImportarNotasDoEnemCommandHandler
         if (escopoNaTrava.IsFailure)
         {
             return Result<ImportacaoDeNotasDto>.Failure(escopoNaTrava.Error!);
+        }
+
+        // Conferência definitiva: a de fora da trava só poupa a leitura do arquivo, e uma retificação divulgada até aqui pode ter prorrogado as inscrições.
+        if (ResolvedorDoEscopoDeNotasDoEnem.ConferirInscricoesEncerradas(escopoNaTrava.Value!, agora, resolvedorFuso) is { } prorrogadas)
+        {
+            return Result<ImportacaoDeNotasDto>.Failure(prorrogadas);
         }
 
         Guid versaoConfiguracaoId = escopoNaTrava.Value!.VersaoConfiguracaoId;
@@ -164,7 +181,7 @@ public static partial class ImportarNotasDoEnemCommandHandler
             leiauteDeRetorno.Hash,
             arquivoHash,
             userContext.UserId ?? string.Empty,
-            timeProvider.GetUtcNow(),
+            agora,
             linhas.Count,
             versaoConfiguracaoId,
             cruzamento,

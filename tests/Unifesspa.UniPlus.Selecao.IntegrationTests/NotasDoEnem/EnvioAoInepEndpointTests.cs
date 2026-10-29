@@ -123,6 +123,24 @@ public sealed class EnvioAoInepEndpointTests
         corpo.Should().NotContain(pessoas[0].Cpf).And.NotContain(pessoas[1].Cpf);
     }
 
+    [Fact(DisplayName = "com as inscrições abertas o envio é 422 e nenhuma geração é registrada")]
+    public async Task Gerar_InscricoesAbertas_Recusa()
+    {
+        Publicado p = await SemearEPublicarAsync(_fixture, new DateTimeOffset(2099, 12, 20, 15, 0, 0, TimeSpan.Zero));
+        await InscreverAsync(p, PersonasDeTeste.Candidatas[0], SituacaoInscricao.Submetida, Edicao);
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        using HttpRequestMessage gerar = Requisicao(HttpMethod.Post, Base(p), corpo: new { leiauteCodigo = "INEP_ENEM_ENVIO", leiauteVersao = "v1" });
+        HttpResponseMessage resposta = await client.SendAsync(gerar);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await CodigoAsync(resposta)).Should().Be("uniplus.selecao.notas_do_enem.inscricoes_em_andamento");
+        (await resposta.Content.ReadAsStringAsync()).Should().Contain("20/12/2099 às 12h00");
+        using HttpRequestMessage historico = Requisicao(HttpMethod.Get, Base(p));
+        using JsonDocument doc = JsonDocument.Parse(await (await client.SendAsync(historico)).Content.ReadAsStringAsync());
+        doc.RootElement.GetArrayLength().Should().Be(0);
+    }
+
     [Fact(DisplayName = "edição não admitida e leiaute de retorno no envio são 422; etapa de outro processo é 404 o mesmo")]
     public async Task Gerar_EscopoInvalido_Recusa()
     {

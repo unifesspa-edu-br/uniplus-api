@@ -38,7 +38,8 @@ internal static class ProcessoDoEnemPublicadoDeTeste
     /// </summary>
     public sealed record Publicado(Guid ProcessoId, Guid EtapaDoEnemId, Guid OfertaTecnologicaId, Guid OfertaHumanisticaId);
 
-    public static async Task<Publicado> SemearEPublicarAsync(CascadingFixture fixture)
+    /// <param name="fimDasInscricoes">O fim das inscrições; sem ele, o período já terminou.</param>
+    public static async Task<Publicado> SemearEPublicarAsync(CascadingFixture fixture, DateTimeOffset? fimDasInscricoes = null)
     {
         ArgumentNullException.ThrowIfNull(fixture);
 
@@ -55,7 +56,8 @@ internal static class ProcessoDoEnemPublicadoDeTeste
             (processo, documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
                 db,
                 $"PS Medicina notas do ENEM {Guid.CreateVersion7()}",
-                complementar: p => etapaDoEnem = ConfigurarEnem(p, ofertaTecnologica, ofertaHumanistica));
+                complementar: p => etapaDoEnem = ConfigurarEnem(p, ofertaTecnologica, ofertaHumanistica),
+                fimDasInscricoes: fimDasInscricoes);
         }
 
         using HttpClient client = fixture.Factory.CreateClient();
