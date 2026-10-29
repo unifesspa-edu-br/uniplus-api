@@ -362,8 +362,12 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// O bump para <c>0.0.39</c> retira de cada fase do cronograma o rótulo textual de dono:
     /// quem responde pela fase é a <c>unidadeResponsavel</c>. Sem novo bloco de topo. Sem produção
     /// em ambiente nenhum: fixture nova, <c>0.0.38</c> deixa de ser reconhecida.
+    /// O bump para <c>0.0.40</c> acrescenta a <c>classificacao</c> a chave <c>escalaNotaFinal</c>: a
+    /// escala em que a nota final é publicada, decimal positivo. Sempre presente, nula na
+    /// classificação importada. Sem novo bloco de topo. Sem produção em ambiente nenhum: fixture
+    /// nova, <c>0.0.39</c> deixa de ser reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.39";
+    internal const string SchemaVersionAtual = "0.0.40";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -1291,6 +1295,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 ? SerializarReferenciaRegra(arredondamento)
                 : null,
             ["casasArredondamento"] = classificacao.CasasArredondamento,
+            ["escalaNotaFinal"] = classificacao.EscalaNotaFinal is { } escalaNotaFinal ? HashCanonicalComputer.SerializeDecimalCanonical(escalaNotaFinal, ConfiguracaoClassificacao.EscalaNotaFinalEscala) : null,
             ["regraOrdemAlocacao"] = SerializarReferenciaRegra(classificacao.RegraOrdemAlocacao),
             ["baseadoEmEnem"] = classificacao.BaseadoEmEnem,
             // RegrasEliminacao não tem chave de negócio única (cardinalidade

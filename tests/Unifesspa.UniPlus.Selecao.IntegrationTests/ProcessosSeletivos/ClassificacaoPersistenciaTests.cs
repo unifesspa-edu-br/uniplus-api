@@ -81,7 +81,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             [notaMinima, corteRedacao, zeroEmArea, faltaEmDiaDeProva, ausenciaNaEtapa],
             baseadoEmEnem: true,
             QuadroPesoAreaEnemDeTeste.Resolucao,
-            QuadroPesoAreaEnemDeTeste.Completo());
+            QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m);
         configResult.IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(configResult.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -144,7 +144,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             [],
             baseadoEmEnem: false,
             resolucaoPesoAreaEnem: null,
-            quadroPesoAreaEnem: []);
+            quadroPesoAreaEnem: [], escalaNotaFinal: null);
         configResult.IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(configResult.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -183,7 +183,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             [],
             baseadoEmEnem: false,
             resolucaoPesoAreaEnem: null,
-            quadroPesoAreaEnem: []).Value!;
+            quadroPesoAreaEnem: [], escalaNotaFinal: 100m).Value!;
         processo.DefinirClassificacao(original, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
@@ -209,7 +209,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
                 [eliminacao],
                 baseadoEmEnem: true,
                 QuadroPesoAreaEnemDeTeste.Resolucao,
-                QuadroPesoAreaEnemDeTeste.Completo()).Value!;
+                QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m).Value!;
 
             Result result = carregado.DefinirClassificacao(nova, PrecondicaoIfMatch.Ausente);
             result.IsSuccess.Should().BeTrue();
@@ -292,7 +292,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
                 [],
                 baseadoEmEnem: false,
                 resolucaoPesoAreaEnem: null,
-                quadroPesoAreaEnem: []).Value!;
+                quadroPesoAreaEnem: [], escalaNotaFinal: 100m).Value!;
             carregado.DefinirClassificacao(semEnem, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
             await configureContext.SaveChangesAsync(CancellationToken.None);
@@ -362,7 +362,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             [],
             baseadoEmEnem: true,
             QuadroPesoAreaEnemDeTeste.Resolucao,
-            QuadroPesoAreaEnemDeTeste.Completo()).Value!;
+            QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m).Value!;
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         return processo;
@@ -407,7 +407,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             [eliminacao],
             baseadoEmEnem: false,
             resolucaoPesoAreaEnem: null,
-            quadroPesoAreaEnem: []).Value!;
+            quadroPesoAreaEnem: [], escalaNotaFinal: 100m).Value!;
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
@@ -467,7 +467,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             [],
             baseadoEmEnem: baseadoEmEnem,
             baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
-            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : []);
+            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : [], escalaNotaFinal: 100m);
         configResult.IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(configResult.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 

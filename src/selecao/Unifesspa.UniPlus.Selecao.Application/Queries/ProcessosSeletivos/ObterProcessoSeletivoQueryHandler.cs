@@ -356,7 +356,8 @@ public static class ObterProcessoSeletivoQueryHandler
                     g.BaseLegal,
                     [.. g.Areas
                         .OrderBy(static a => a.Codigo, StringComparer.Ordinal)
-                        .Select(static a => new AreaPesoAreaEnemCongeladaDto(a.Codigo, a.Rotulo, a.Peso, a.Corte))]))]);
+                        .Select(static a => new AreaPesoAreaEnemCongeladaDto(a.Codigo, a.Rotulo, a.Peso, a.Corte))]))],
+            classificacao.EscalaNotaFinal);
     }
 
     private static RegraEliminacaoDto ProjectRegraEliminacao(RegraEliminacao regra)

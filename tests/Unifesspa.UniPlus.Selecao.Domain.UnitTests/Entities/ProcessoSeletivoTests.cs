@@ -508,7 +508,7 @@ public sealed class ProcessoSeletivoTests
             regrasEliminacao ?? [],
             baseadoEmEnem,
             baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
-            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : []).Value!;
+            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : [], escalaNotaFinal: 100m).Value!;
 
     [Fact(DisplayName = "DefinirClassificacao vincula a configuração à raiz")]
     public void DefinirClassificacao_Vincula()

@@ -93,7 +93,7 @@ internal sealed class CenarioDoEnemDeTeste
             regrasEliminacao: [],
             baseadoEmEnem: true,
             resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,
-            quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo()).Value!;
+            quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m).Value!;
 
     /// <summary>O processo vivo não pode ser lido: o escopo é o da versão divulgada.</summary>
     public void ProcessoVivoNaoFoiConsultado() =>

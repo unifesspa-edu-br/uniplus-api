@@ -29,7 +29,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
         ConfiguracaoClassificacao.Criar(
             ProcessoConformeFactory.Regra(RegraCalculoCodigo.ClassificacaoImportada, "a"), null, null,
             ProcessoConformeFactory.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"), [],
-            baseadoEmEnem: true, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!;
+            baseadoEmEnem: true, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
 
     private static ProcessoSeletivo ProcessoDoEnem()
     {
@@ -128,7 +128,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
         ConfiguracaoClassificacao.Criar(
             ProcessoConformeFactory.Regra(RegraCalculoCodigo.ClassificacaoImportada, "a"), null, null,
             ProcessoConformeFactory.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"), [],
-            baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!;
+            baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
 
     [Fact(DisplayName = "A classificação que deixa de ser baseada em ENEM retira as edições do ENEM declaradas")]
     public void DefinirClassificacao_DeixaDeSerEnem_RetiraAsEdicoes()

@@ -37,7 +37,7 @@ public sealed class ProcessoSeletivoEliminacaoPorAusenciaTests
                 new ArgsElimAusenciaNaEtapa(etapaId)).Value!],
             baseadoEmEnem,
             baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
-            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : []).Value!;
+            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : [], escalaNotaFinal: 100m).Value!;
 
     [Fact(DisplayName = "Eliminação por ausência em etapa sem nota é aceita")]
     public void DefinirClassificacao_AusenciaEmEtapaSemNota_Sucesso()

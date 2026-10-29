@@ -3613,6 +3613,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         if (Classificacao is { RegraCalculo.Codigo: RegraCalculoCodigo.FormulaMediaPonderada })
         {
             itens.Add(new ItemConformidade("classificacao_divisor_media_invalido", DimensaoConformidade.Classificacao, "Divisor da média (fórmula local)", CalcularDivisorMedia() > 0));
+            itens.Add(new ItemConformidade("classificacao_escala_nota_final_nao_declarada", DimensaoConformidade.Classificacao, "Escala da nota final (fórmula local)", Classificacao.EscalaNotaFinal is not null));
         }
 
         if (Classificacao is { CalculaPelosPesosPorAreaDoEnem: true } classificacaoEnem)

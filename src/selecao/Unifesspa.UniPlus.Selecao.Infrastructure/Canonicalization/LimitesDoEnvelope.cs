@@ -168,6 +168,9 @@ public static class LimitesDoEnvelope
     /// <summary>Precisão de <c>ConfiguracaoTaxaInscricao.Valor</c> (issue #1112) — <c>numeric(12,2)</c>, monetário.</summary>
     public const int PrecisaoTaxaInscricao = ConfiguracaoTaxaInscricao.ValorPrecisao;
 
+    /// <summary>Precisão da escala da nota final da classificação — <c>numeric(9,4)</c>, a da <c>NotaFinal</c>.</summary>
+    public const int PrecisaoEscalaNotaFinal = ConfiguracaoClassificacao.EscalaNotaFinalPrecisao;
+
     // Issue #849 (CA-04 da Feature #40) — identidadesUnidade real.
     /// <summary><c>UnidadeAdministradoraSnapshot.Sigla</c> — espelha <c>UnidadeConfiguration.Sigla</c>.</summary>
     public const int UnidadeAdministradoraSigla = 50;

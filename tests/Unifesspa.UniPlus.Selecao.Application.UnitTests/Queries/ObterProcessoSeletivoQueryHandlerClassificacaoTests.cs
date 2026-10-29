@@ -51,6 +51,14 @@ public sealed class ObterProcessoSeletivoQueryHandlerClassificacaoTests
             new AreaPesoAreaEnemCongeladaDto("REDACAO", "Redação", 2.00m, 400m));
     }
 
+    [Fact(DisplayName = "Handle projeta a escala da nota final declarada na classificação")]
+    public async Task Handle_ProjetaAEscalaDaNotaFinal()
+    {
+        ConfiguracaoClassificacaoDto? dto = await ObterDtoComClassificacaoAsync(baseadoEmEnem: false);
+
+        dto!.EscalaNotaFinal.Should().Be(100m);
+    }
+
     [Fact(DisplayName = "Handle projeta classificação sem resolução com quadro vazio")]
     public async Task Handle_SemResolucao_ProjetaQuadroVazio()
     {
@@ -83,7 +91,8 @@ public sealed class ObterProcessoSeletivoQueryHandlerClassificacaoTests
             regraCalculo, regraArredondamento, casasArredondamento: 2, regraOrdemAlocacao, [],
             baseadoEmEnem,
             baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
-            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : []).Value!;
+            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : [],
+            escalaNotaFinal: 100m).Value!;
 
         Result resultado = processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente);
         resultado.IsSuccess.Should().BeTrue();

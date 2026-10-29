@@ -95,7 +95,7 @@ internal static class ProcessoDoEnemPublicadoDeTeste
                 regrasEliminacao: [],
                 baseadoEmEnem: true,
                 resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,
-                quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo()).Value!,
+                quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m).Value!,
             PrecondicaoIfMatch.Curinga));
 
         Exigir(processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Curinga));

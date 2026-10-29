@@ -96,6 +96,30 @@ public sealed class DefinirClassificacaoEndpointTests
         classificacao.BaseadoEmEnem.Should().BeTrue();
     }
 
+    [Fact(DisplayName = "A escala da nota final declarada é aceita, persiste, e o rascunho a aceita ausente")]
+    public async Task EscalaDaNotaFinal_AceitaPersisteEToleraAusenteNoRascunho()
+    {
+        Contexto ctx = await SemearRascunhoAsync(nameof(EscalaDaNotaFinal_AceitaPersisteEToleraAusenteNoRascunho));
+
+        (await ctx.PutClassificacaoAsync(CorpoMediaPonderada(escalaNotaFinal: null))).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await EscalaPersistidaAsync(ctx)).Should().BeNull();
+
+        (await ctx.PutClassificacaoAsync(CorpoMediaPonderada(escalaNotaFinal: 1000m))).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await EscalaPersistidaAsync(ctx)).Should().Be(1000m);
+    }
+
+    [Fact(DisplayName = "A escala da nota final igual a zero é recusada na gravação com 422 e o código da escala")]
+    public async Task EscalaDaNotaFinal_Zero_422()
+    {
+        Contexto ctx = await SemearRascunhoAsync(nameof(EscalaDaNotaFinal_Zero_422));
+
+        HttpResponseMessage resposta = await ctx.PutClassificacaoAsync(CorpoMediaPonderada(escalaNotaFinal: 0m));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        Textos(problema.RootElement).Should().Contain("uniplus.selecao.configuracao_classificacao.escala_nota_final_invalida");
+    }
+
     [Fact(DisplayName = "Resolução completa congela os quatro grupos, e editar o cadastro depois não altera o processo")]
     public async Task ResolucaoCompleta_CongelaEEdicaoPosteriorDoCadastroNaoAlcancaOProcesso()
     {
@@ -258,6 +282,29 @@ public sealed class DefinirClassificacaoEndpointTests
         baseadoEmEnem = true,
         resolucaoPesoAreaEnem = resolucao,
     };
+
+    private static object CorpoMediaPonderada(decimal? escalaNotaFinal) => new
+    {
+        regraCalculoCodigo = RegraCalculoCodigo.FormulaMediaPonderada,
+        regraCalculoVersao = "v1",
+        regraArredondamentoCodigo = RegraArredondamentoCodigo.PrecisaoTruncar,
+        regraArredondamentoVersao = "v1",
+        casasArredondamento = 2,
+        regraOrdemAlocacaoCodigo = RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria,
+        regraOrdemAlocacaoVersao = "v1",
+        regrasEliminacao = Array.Empty<object>(),
+        baseadoEmEnem = false,
+        escalaNotaFinal,
+    };
+
+    private static async Task<decimal?> EscalaPersistidaAsync(Contexto ctx)
+    {
+        await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
+        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        ConfiguracaoClassificacao classificacao = await db.Set<ConfiguracaoClassificacao>().AsNoTracking()
+            .SingleAsync(c => c.ProcessoSeletivoId == ctx.ProcessoId);
+        return classificacao.EscalaNotaFinal;
+    }
 
     private static object CorpoImportadaSemEliminacao(bool baseadoEmEnem) => new
     {

@@ -125,7 +125,7 @@ public sealed class SubstituiCorteDeRedacaoPeloCorteEmAreaTests : IClassFixture<
             [eliminacao],
             baseadoEmEnem: true,
             QuadroPesoAreaEnemDeTeste.Resolucao,
-            QuadroPesoAreaEnemDeTeste.Completo());
+            QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m);
         classificacao.IsSuccess.Should().BeTrue(classificacao.Error?.Message);
         processo.DefinirClassificacao(classificacao.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 

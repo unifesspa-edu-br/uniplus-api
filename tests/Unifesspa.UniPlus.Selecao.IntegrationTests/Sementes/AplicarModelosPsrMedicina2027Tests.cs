@@ -208,7 +208,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
                 ReferenciaRegra.Criar(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('d', 64)).Value!,
                 2,
                 ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('f', 64)).Value!,
-                [], baseadoEmEnem: true, Testes.Compartilhado.QuadroPesoAreaEnemDeTeste.Resolucao, Testes.Compartilhado.QuadroPesoAreaEnemDeTeste.Completo()).Value!,
+                [], baseadoEmEnem: true, Testes.Compartilhado.QuadroPesoAreaEnemDeTeste.Resolucao, Testes.Compartilhado.QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m).Value!,
             PrecondicaoIfMatch.Ausente);
         classificada.IsSuccess.Should().BeTrue(classificada.Error?.Message);
         Result edicoes = processo.DefinirOpcoesDeclaradas(

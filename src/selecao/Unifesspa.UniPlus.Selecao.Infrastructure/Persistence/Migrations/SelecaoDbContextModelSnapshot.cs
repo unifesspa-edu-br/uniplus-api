@@ -1221,6 +1221,12 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<decimal?>("EscalaNotaFinal")
+                        .HasPrecision(9, 4)
+                        .HasColumnType("numeric(9,4)")
+                        .HasColumnName("escala_nota_final")
+                        .HasComment("Escala em que a nota final é publicada (10, 100, 1.000...); a média ponderada das notas convertidas é multiplicada por ela. Nula na classificação importada e no rascunho que ainda não a declarou.");
+
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
                         .HasColumnName("processo_seletivo_id");
