@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
@@ -16,12 +17,13 @@ using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
 using Unifesspa.UniPlus.Publicacoes.Application.DTOs;
+using Unifesspa.UniPlus.Publicacoes.Application.Permissoes;
 using Unifesspa.UniPlus.Publicacoes.Application.Queries.AtosNormativos;
 
 /// <summary>
 /// Endpoints públicos de leitura (<c>GET /api/publicacoes/atos</c>) e o endpoint
-/// admin de registro (<c>POST /api/publicacoes/admin/atos</c>) restrito a
-/// <c>plataforma-admin</c>.
+/// admin de registro (<c>POST /api/publicacoes/admin/atos</c>) restrito à
+/// permissão de registro.
 /// </summary>
 /// <remarks>
 /// A leitura é pública: um ato publicado é, por definição, um documento tornado
@@ -31,12 +33,15 @@ using Unifesspa.UniPlus.Publicacoes.Application.Queries.AtosNormativos;
 /// remoção via HTTP (o ato é prova, o passado documental não se muta).
 /// </remarks>
 [ApiController]
+[Authorize]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed partial class AtosNormativosController : ControllerBase
 {
+    private const string RecursoTipo = "AtosNormativos";
+
     private const string ResourceTag = "atos";
     private const string ResourceTagEntidade = "entidade-atos";
     private const string RouteEntidadeTipo = "entidadeTipo";
@@ -196,7 +201,7 @@ public sealed partial class AtosNormativosController : ControllerBase
     /// <summary>
     /// Registra um ato publicado — publicação nova ou retificação de outro ato,
     /// quando o corpo traz o par <c>atoRetificadoId</c>/<c>motivoRetificacao</c>
-    /// (ADR-0103). Restrito a <c>plataforma-admin</c>. <c>Idempotency-Key</c>
+    /// (ADR-0103). Exige a permissão de registro. <c>Idempotency-Key</c>
     /// obrigatório (ADR-0027). A resposta traz o Id, o instante forense de registro
     /// e eventuais avisos de numeração (AC4). Uma retificação que quebra a cadeia
     /// linear (o ato-alvo já foi retificado) responde 409. Um vínculo com objeto cujos
@@ -205,7 +210,7 @@ public sealed partial class AtosNormativosController : ControllerBase
     /// objeto é publicado pelo domínio dono.
     /// </summary>
     [HttpPost("admin/atos")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoPublicacoes>(PermissaoPublicacoes.AtosNormativosRegistrar, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(RegistrarAtoNormativoResult), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

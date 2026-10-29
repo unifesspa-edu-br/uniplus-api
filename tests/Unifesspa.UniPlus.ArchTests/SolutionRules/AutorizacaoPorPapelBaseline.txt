@@ -1,2 +1,0 @@
-src/publicacoes/Unifesspa.UniPlus.Publicacoes.API/Controllers/AtosNormativosController.cs	1
-src/publicacoes/Unifesspa.UniPlus.Publicacoes.API/Controllers/TiposAtoController.cs	3

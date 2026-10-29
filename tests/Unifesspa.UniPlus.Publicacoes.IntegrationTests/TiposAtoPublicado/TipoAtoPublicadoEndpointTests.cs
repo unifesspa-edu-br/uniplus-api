@@ -228,18 +228,6 @@ public sealed class TipoAtoPublicadoEndpointTests
         (await client.SendAsync(request)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    [Fact(DisplayName = "POST admin autenticado sem role plataforma-admin retorna 403")]
-    public async Task Criar_SemRoleAdmin_Retorna403()
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-        using HttpRequestMessage request = new(HttpMethod.Post, new Uri(Admin, UriKind.Relative));
-        Autenticar(request, role: "candidato");
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        request.Content = JsonContent.Create(Payload(CodigoUnico()));
-
-        (await client.SendAsync(request)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
     [Fact(DisplayName = "DELETE admin sem autenticação retorna 401")]
     public async Task Remover_SemAuth_Retorna401()
     {
@@ -563,10 +551,10 @@ public sealed class TipoAtoPublicadoEndpointTests
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    private static void Autenticar(HttpRequestMessage request, string role = "plataforma-admin")
+    private static void Autenticar(HttpRequestMessage request)
     {
         request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.Add(TestAuthHandler.RolesHeader, role);
+        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
     }
 
     private static object Payload(

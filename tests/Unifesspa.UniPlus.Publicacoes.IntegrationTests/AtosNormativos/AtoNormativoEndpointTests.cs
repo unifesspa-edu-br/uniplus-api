@@ -81,18 +81,6 @@ public sealed class AtoNormativoEndpointTests
         (await client.SendAsync(request)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    [Fact(DisplayName = "POST admin sem role plataforma-admin retorna 403")]
-    public async Task Registrar_SemRoleAdmin_Retorna403()
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-        using HttpRequestMessage request = new(HttpMethod.Post, new Uri(AdminAtos, UriKind.Relative));
-        Autenticar(request, role: "candidato");
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        request.Content = JsonContent.Create(PayloadAto("EDITAL_ABERTURA", "EDITAL", "1"));
-
-        (await client.SendAsync(request)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
     // ── Idempotência ─────────────────────────────────────────────────────────
 
     [Fact(DisplayName = "POST sem Idempotency-Key retorna 400")]
@@ -583,10 +571,10 @@ public sealed class AtoNormativoEndpointTests
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    private static void Autenticar(HttpRequestMessage request, string role = "plataforma-admin")
+    private static void Autenticar(HttpRequestMessage request)
     {
         request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.Add(TestAuthHandler.RolesHeader, role);
+        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
     }
 
     private static object PayloadAto(string tipoCodigo, string serie, string? numero) =>

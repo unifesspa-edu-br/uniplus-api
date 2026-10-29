@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Publicacoes.API;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
@@ -11,6 +12,7 @@ using Unifesspa.UniPlus.Publicacoes.API.Errors;
 using Unifesspa.UniPlus.Publicacoes.API.Hateoas;
 using Unifesspa.UniPlus.Publicacoes.Application;
 using Unifesspa.UniPlus.Publicacoes.Application.DTOs;
+using Unifesspa.UniPlus.Publicacoes.Application.Permissoes;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 
@@ -53,6 +55,10 @@ public static class PublicacoesModuleRegistration
         // [RequiresIdempotencyKey] do POST compila e não faz nada: a requisição sem
         // header alcança o handler, e o replay reexecuta em vez de devolver o cache.
         services.AddIdempotency<PublicacoesDbContext, PublicacoesApiAssemblyMarker>(configuration);
+
+        // Permissões do módulo (ADR-0151): o enum entra no catálogo da aplicação e é
+        // conferido na subida.
+        services.AddCatalogoDePermissoes<PermissaoPublicacoes>();
 
         services.AddPublicacoesApplication();
         services.AddPublicacoesInfrastructure();

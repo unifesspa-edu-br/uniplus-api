@@ -562,10 +562,10 @@ public sealed class AtosDaEntidadeEndpointTests
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
-    private static void Autenticar(HttpRequestMessage request, string role = "plataforma-admin")
+    private static void Autenticar(HttpRequestMessage request)
     {
         request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.Add(TestAuthHandler.RolesHeader, role);
+        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
     }
 
     private static object PayloadAto(
