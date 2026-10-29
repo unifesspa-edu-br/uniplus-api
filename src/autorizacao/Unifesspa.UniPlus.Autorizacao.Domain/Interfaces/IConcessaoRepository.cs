@@ -71,6 +71,12 @@ public interface IConcessaoRepository : IRepository<Concessao>
         PaginationDirection direction,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Indica se o perfil tem alguma concessão não revogada, vigente ou vencida: é o que torna a
+    /// edição do perfil uma alteração do acesso de quem o recebeu.
+    /// </summary>
+    Task<bool> ExisteNaoRevogadaDoPerfilAsync(Guid perfilId, CancellationToken cancellationToken = default);
+
     /// <summary>Governança do perfil da concessão, para saber se a revogação conta gestores.</summary>
     Task<TipoDeGovernanca?> ObterGovernancaDoPerfilAsync(Guid perfilId, CancellationToken cancellationToken = default);
 

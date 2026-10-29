@@ -13,7 +13,7 @@ public sealed class PerfilTests
     private const string Manter = "autorizacao:perfis:manter";
 
     private static readonly FakeCatalogo Catalogo = new(
-        existentes: [Consultar, "selecao:processos:publicar", Manter],
+        existentes: [Consultar, "selecao:processos:publicar", Manter, "unidade:inscricoes:operar"],
         reservadas: [Manter]);
 
     [Fact(DisplayName = "Perfil comum nasce ativo, sem governança, com as permissões consolidadas")]
@@ -62,6 +62,36 @@ public sealed class PerfilTests
     public void Criar_NomeComCaractereNulo_Recusa() =>
         CodigosDaRecusa(Perfil.Criar("Ana\0lista", "Descrição válida.", [Consultar], Catalogo))
             .Should().Equal(PerfilErrorCodes.NomeInvalido);
+
+    [Fact(DisplayName = "Perfil que mistura permissão de unidade e institucional é recusado na criação e na edição")]
+    public void AlcanceMisto_Recusa()
+    {
+        CodigosDaRecusa(Perfil.Criar("Analista", "Descrição válida.", [Consultar, "unidade:inscricoes:operar"], Catalogo))
+            .Should().Equal(PerfilErrorCodes.AlcanceMisto);
+
+        Perfil perfil = Perfil.Criar("Analista", "Descrição válida.", [Consultar], Catalogo).Value!;
+        CodigosDaRecusa(perfil.Atualizar("Analista", "Descrição válida.", [Consultar, "unidade:inscricoes:operar"], Catalogo))
+            .Should().Equal(PerfilErrorCodes.AlcanceMisto);
+    }
+
+    [Fact(DisplayName = "O alcance do perfil é o das permissões que ele reúne")]
+    public void Alcance_DerivaDoCatalogo()
+    {
+        Perfil.Criar("Analista", "Descrição válida.", [Consultar], Catalogo).Value!
+            .Alcance(Catalogo).Should().Be(Enums.TipoDeEscopo.Instituicao);
+        Perfil.Criar("Operador", "Descrição válida.", ["unidade:inscricoes:operar"], Catalogo).Value!
+            .Alcance(Catalogo).Should().Be(Enums.TipoDeEscopo.Unidade);
+    }
+
+    [Fact(DisplayName = "Permissão retirada do catálogo não muda o alcance das demais")]
+    public void Alcance_IgnoraPermissaoRetiradaDoCatalogo()
+    {
+        FakeCatalogo antes = new(existentes: ["unidade:inscricoes:operar", "unidade:laudos:consultar"], reservadas: []);
+        FakeCatalogo depois = new(existentes: ["unidade:inscricoes:operar"], reservadas: []);
+        Perfil perfil = Perfil.Criar("Operador", "Descrição válida.", ["unidade:inscricoes:operar", "unidade:laudos:consultar"], antes).Value!;
+
+        perfil.Alcance(depois).Should().Be(Enums.TipoDeEscopo.Unidade);
+    }
 
     [Fact(DisplayName = "Atualizar substitui nome, descrição e permissões")]
     public void Atualizar_Valido_SubstituiOConjunto()
@@ -117,5 +147,7 @@ public sealed class PerfilTests
         public bool Existe(string codigo) => existentes.Contains(codigo);
 
         public bool ReservadaAGovernanca(string codigo) => reservadas.Contains(codigo);
+
+        public bool DeUnidade(string codigo) => Existe(codigo) && codigo.StartsWith("unidade:", StringComparison.Ordinal);
     }
 }

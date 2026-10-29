@@ -34,6 +34,8 @@ public sealed class CatalogoDePermissoesNoHostTests
     private const string Efetivas = "/api/autorizacao/permissoes/efetivas";
 
     private const string CodigoDoCatalogo = "autorizacao:permissoes:consultar-catalogo";
+    private const string Leandro = "leandro.viana";
+    private const string Betina = "betina.neves";
 
     private readonly MonolitoPostgresFixture _fixture;
 
@@ -100,7 +102,7 @@ public sealed class CatalogoDePermissoesNoHostTests
     [Fact(DisplayName = "GET do catálogo sem a permissão responde 403")]
     public async Task Catalogo_SemPermissao_403()
     {
-        using HttpClient client = ClienteComPermissoes(PermissaoSelecao.MotivosDecisaoIsencaoManter.Codigo);
+        using HttpClient client = await ClienteComConcessaoAsync(PermissaoSelecao.MotivosDecisaoIsencaoManter.Codigo);
 
         using HttpResponseMessage resposta = await client.GetAsync(new Uri(Catalogo, UriKind.Relative));
 
@@ -110,7 +112,7 @@ public sealed class CatalogoDePermissoesNoHostTests
     [Fact(DisplayName = "GET do catálogo com a permissão lista as permissões agrupadas por módulo e recurso")]
     public async Task Catalogo_ComPermissao_ListaAgrupada()
     {
-        using HttpClient client = ClienteComPermissoes(CodigoDoCatalogo);
+        using HttpClient client = await ClienteComConcessaoAsync(CodigoDoCatalogo);
 
         using HttpResponseMessage resposta = await client.GetAsync(new Uri(Catalogo, UriKind.Relative));
 
@@ -132,7 +134,7 @@ public sealed class CatalogoDePermissoesNoHostTests
     [Fact(DisplayName = "GET do catálogo com Accept de outro tipo responde 406")]
     public async Task Catalogo_AcceptIncompativel_406()
     {
-        using HttpClient client = ClienteComPermissoes(CodigoDoCatalogo);
+        using HttpClient client = await ClienteComConcessaoAsync(CodigoDoCatalogo);
         client.DefaultRequestHeaders.Accept.ParseAdd("text/csv");
 
         using HttpResponseMessage resposta = await client.GetAsync(new Uri(Catalogo, UriKind.Relative));
@@ -143,7 +145,7 @@ public sealed class CatalogoDePermissoesNoHostTests
     [Fact(DisplayName = "Versão não suportada responde 406 com o código canônico e as versões servidas")]
     public async Task Catalogo_VersaoNaoSuportada_406CanonicoComVersoes()
     {
-        using HttpClient client = ClienteComPermissoes(CodigoDoCatalogo);
+        using HttpClient client = await ClienteComConcessaoAsync(CodigoDoCatalogo);
         client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.uniplus.permissao-catalogo.v99+json");
 
         using HttpResponseMessage resposta = await client.GetAsync(new Uri(Catalogo, UriKind.Relative));
@@ -157,7 +159,7 @@ public sealed class CatalogoDePermissoesNoHostTests
     [Fact(DisplayName = "Exclusão explícita da representação (q=0) prevalece sobre o curinga e responde 406")]
     public async Task Catalogo_ExclusaoExplicitaComCuringa_406()
     {
-        using HttpClient client = ClienteComPermissoes(CodigoDoCatalogo);
+        using HttpClient client = await ClienteComConcessaoAsync(CodigoDoCatalogo);
         client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.uniplus.permissao-catalogo.v1+json;q=0, */*;q=1");
 
         using HttpResponseMessage resposta = await client.GetAsync(new Uri(Catalogo, UriKind.Relative));
@@ -168,7 +170,7 @@ public sealed class CatalogoDePermissoesNoHostTests
     [Fact(DisplayName = "Faixa específica aceita prevalece sobre curinga excluído")]
     public async Task Catalogo_FaixaEspecificaComCuringaExcluido_200()
     {
-        using HttpClient client = ClienteComPermissoes(CodigoDoCatalogo);
+        using HttpClient client = await ClienteComConcessaoAsync(CodigoDoCatalogo);
         client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.uniplus.permissao-catalogo.v1+json;q=1, */*;q=0");
 
         using HttpResponseMessage resposta = await client.GetAsync(new Uri(Catalogo, UriKind.Relative));
@@ -186,12 +188,13 @@ public sealed class CatalogoDePermissoesNoHostTests
         resposta.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    [Fact(DisplayName = "GET das efetivas devolve exatamente as permissões que o token concede")]
-    public async Task Efetivas_DevolveSoAsConcedidas()
+    [Fact(DisplayName = "GET das efetivas devolve exatamente as permissões das concessões ativas, e o papel no token não entra")]
+    public async Task Efetivas_DevolveSoAsDasConcessoes()
     {
-        using HttpClient client = ClienteComPermissoes(
-            PermissaoSelecao.MotivosDecisaoIsencaoManter.Codigo,
-            "papel-que-nao-e-permissao");
+        await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, Leandro);
+        await ConcessoesDeTeste.ConcederPermissoesAsync(
+            _fixture.Factory.Services, Leandro, PermissaoSelecao.MotivosDecisaoIsencaoManter.Codigo);
+        using HttpClient client = Cliente(Leandro, papeisDeRealm: CodigoDoCatalogo);
 
         using HttpResponseMessage resposta = await client.GetAsync(new Uri(Efetivas, UriKind.Relative));
 
@@ -204,10 +207,11 @@ public sealed class CatalogoDePermissoesNoHostTests
         corpo[0].GetProperty("nome").GetString().Should().Be("Manter motivos de decisão de isenção");
     }
 
-    [Fact(DisplayName = "GET das efetivas devolve lista vazia quando o token não concede nenhuma")]
+    [Fact(DisplayName = "GET das efetivas devolve lista vazia sem concessão, ainda que o token traga o papel mais amplo")]
     public async Task Efetivas_SemConcessao_ListaVazia()
     {
-        using HttpClient client = ClienteComPermissoes();
+        await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, Betina);
+        using HttpClient client = Cliente(Betina, papeisDeRealm: "plataforma-admin");
 
         using HttpResponseMessage resposta = await client.GetAsync(new Uri(Efetivas, UriKind.Relative));
 
@@ -215,16 +219,27 @@ public sealed class CatalogoDePermissoesNoHostTests
         (await resposta.Content.ReadFromJsonAsync<JsonElement>()).GetArrayLength().Should().Be(0);
     }
 
-    private HttpClient ClienteComPermissoes(params string[] permissoes)
+    // O token só identifica a pessoa; a permissão vem da concessão gravada do perfil que a reúne.
+    private async Task<HttpClient> ClienteComConcessaoAsync(params string[] permissoes)
+    {
+        await ConcessoesDeTeste.ConcederPermissoesAsync(_fixture.Factory.Services, Leandro, permissoes);
+        return Cliente(Leandro);
+    }
+
+    private HttpClient Cliente(string sub, string? papeisDeRealm = null)
     {
         HttpClient client = _fixture.Factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             TestAuthHandler.AuthorizationScheme,
             TestAuthHandler.TokenValue);
-        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, $"user-{Guid.NewGuid():N}"[..16]);
-        client.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, "Usuario Teste");
-        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, "usuario@unifesspa.edu.br");
-        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, string.Join(',', permissoes));
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, sub);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, "Pessoa de teste");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, "pessoa@uniplus-test.local");
+        if (papeisDeRealm is not null)
+        {
+            client.DefaultRequestHeaders.Add(TestAuthHandler.RolesHeader, papeisDeRealm);
+        }
+
         return client;
     }
 }

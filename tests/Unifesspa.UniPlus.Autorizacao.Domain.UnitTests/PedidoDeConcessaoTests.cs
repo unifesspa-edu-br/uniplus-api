@@ -103,7 +103,7 @@ public sealed class PedidoDeConcessaoTests
         perfil.Desativar();
 
         Result<PedidoDeConcessao> resultado = PedidoDeConcessao.Criar(
-            Betina, "leandro@gmail.com", perfil, EscopoDaConcessao.DaInstituicao(), "curta", Dominios, Agora);
+            Betina, "leandro@gmail.com", perfil, EscopoDaConcessao.DaInstituicao(), "curta", Dominios, Catalogo, Agora);
 
         Codigos(resultado).Should().BeEquivalentTo(
             PedidoErrorCodes.PerfilInativo,
@@ -119,20 +119,33 @@ public sealed class PedidoDeConcessaoTests
     [InlineData("Justificativa com caractere\0 nulo")]
     public void Criar_JustificativaInvalida_Recusa(string? justificativa) =>
         Codigos(PedidoDeConcessao.Criar(
-            Betina, "leandro-viana84@uniplus-test.local", PerfilComum(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), justificativa, Dominios, Agora))
+            Betina, "leandro-viana84@uniplus-test.local", PerfilComum(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), justificativa, Dominios, Catalogo, Agora))
             .Should().Equal(PedidoErrorCodes.JustificativaInvalida);
 
     [Fact(DisplayName = "Justificativa com mais de 2000 caracteres é recusada")]
     public void Criar_JustificativaLonga_Recusa() =>
         Codigos(PedidoDeConcessao.Criar(
-            Betina, "leandro-viana84@uniplus-test.local", PerfilComum(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), new string('a', 2001), Dominios, Agora))
+            Betina, "leandro-viana84@uniplus-test.local", PerfilComum(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), new string('a', 2001), Dominios, Catalogo, Agora))
             .Should().Equal(PedidoErrorCodes.JustificativaInvalida);
 
     [Fact(DisplayName = "Perfil de governança só se pede no escopo da instituição")]
     public void Criar_GovernancaNaUnidade_Recusa() =>
         Codigos(PedidoDeConcessao.Criar(
-            Betina, "isabellapriscilafigueiredo@uniplus-test.local", PerfilDeGovernanca(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Justificativa, Dominios, Agora))
+            Betina, "isabellapriscilafigueiredo@uniplus-test.local", PerfilDeGovernanca(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Justificativa, Dominios, Catalogo, Agora))
             .Should().Equal(PedidoErrorCodes.EscopoInvalido);
+
+    [Fact(DisplayName = "Perfil de permissões institucionais só se pede no escopo da instituição")]
+    public void Criar_PerfilInstitucionalNaUnidade_Recusa()
+    {
+        Perfil perfil = Perfil.Criar("Manutenção de motivos", "Mantém os motivos de isenção.", ["selecao:motivos:manter"], Catalogo).Value!;
+
+        Codigos(PedidoDeConcessao.Criar(
+            Betina, "leandro-viana84@uniplus-test.local", perfil, EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Justificativa, Dominios, Catalogo, Agora))
+            .Should().Equal(PedidoErrorCodes.EscopoInvalido);
+        PedidoDeConcessao.Criar(
+            Betina, "leandro-viana84@uniplus-test.local", perfil, EscopoDaConcessao.DaInstituicao(), Justificativa, Dominios, Catalogo, Agora)
+            .IsSuccess.Should().BeTrue();
+    }
 
     [Fact(DisplayName = "O aceite do beneficiário grava a identidade e o nome do token e libera o gestor")]
     public void Aceitar_PeloBeneficiario_GravaIdentidade()
@@ -494,7 +507,7 @@ public sealed class PedidoDeConcessaoTests
     private static PedidoDeConcessao PedidoAguardandoGestor(Perfil? perfil = null)
     {
         PedidoDeConcessao pedido = PedidoDeConcessao.Criar(
-            Betina, Leandro.Email, perfil ?? PerfilComum(), EscopoOf(perfil), Justificativa, Dominios, Agora).Value!;
+            Betina, Leandro.Email, perfil ?? PerfilComum(), EscopoOf(perfil), Justificativa, Dominios, Catalogo, Agora).Value!;
         pedido.Aceitar(Leandro, Agora).IsSuccess.Should().BeTrue();
         return pedido;
     }
@@ -511,7 +524,7 @@ public sealed class PedidoDeConcessaoTests
 
     private static Result<PedidoDeConcessao> CriarResultado(PessoaNoToken solicitante, string? email) =>
         PedidoDeConcessao.Criar(
-            solicitante, email, PerfilComum(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Justificativa, Dominios, Agora);
+            solicitante, email, PerfilComum(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Justificativa, Dominios, Catalogo, Agora);
 
     private static EscopoDaConcessao EscopoOf(Perfil? perfil) =>
         perfil?.Governanca is null ? EscopoDaConcessao.DaUnidade(Guid.NewGuid()) : EscopoDaConcessao.DaInstituicao();
@@ -524,7 +537,7 @@ public sealed class PedidoDeConcessaoTests
 
     private static Perfil PerfilDeGovernanca(TipoDeGovernanca governanca = TipoDeGovernanca.GestorDeAcessos)
     {
-        Perfil perfil = PerfilComum();
+        Perfil perfil = Perfil.Criar("Gestão de acessos", "Opera as concessões de acesso.", ["autorizacao:concessoes:administrar"], Catalogo).Value!;
         typeof(Perfil).GetProperty(nameof(Perfil.Governanca))!.SetValue(perfil, governanca);
         return perfil;
     }
@@ -538,6 +551,8 @@ public sealed class PedidoDeConcessaoTests
         public bool Existe(string codigo) => true;
 
         public bool ReservadaAGovernanca(string codigo) => false;
+
+        public bool DeUnidade(string codigo) => codigo.StartsWith("selecao:processos:", StringComparison.Ordinal);
     }
 
     private sealed class FakeDominios : IDominiosInstitucionais

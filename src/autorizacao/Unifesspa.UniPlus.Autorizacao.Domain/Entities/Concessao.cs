@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
+using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -90,6 +91,7 @@ public sealed class Concessao : EntityBase
         OrigemDaConcessao origem,
         Identidade concedidaPor,
         DateTimeOffset instante,
+        ICatalogoDePermissoesConsultavel catalogo,
         DateTimeOffset? validaAte = null,
         string? beneficiarioEmail = null)
     {
@@ -98,6 +100,7 @@ public sealed class Concessao : EntityBase
         ArgumentNullException.ThrowIfNull(escopo);
         ArgumentNullException.ThrowIfNull(origem);
         ArgumentNullException.ThrowIfNull(concedidaPor);
+        ArgumentNullException.ThrowIfNull(catalogo);
 
         List<FieldError> erros = [];
 
@@ -108,7 +111,7 @@ public sealed class Concessao : EntityBase
                 "O perfil de acesso está desativado e não aceita concessão nova.")));
         }
 
-        string? incoerencia = ConferirEscopo(perfil, escopo);
+        string? incoerencia = ConferirEscopo(perfil, escopo, catalogo);
         if (incoerencia is not null)
         {
             erros.Add(new("escopo", new DomainError(ConcessaoErrorCodes.EscopoInvalido, incoerencia)));
@@ -197,11 +200,11 @@ public sealed class Concessao : EntityBase
         return Result.Success();
     }
 
-    // Também confere o escopo do pedido, que não pode pedir o que a concessão recusaria.
-    // Perfil de governança só vale na instituição: perfis e concessões são recursos dela, e a
-    // concessão numa unidade não alcança nada acima (ADR-0079). O perfil comum, nesta etapa, só
-    // aceita a unidade; qual perfil comum admite escopo institucional é decisão à parte.
-    internal static string? ConferirEscopo(Perfil perfil, EscopoDaConcessao escopo)
+    // Também confere o escopo do pedido, que não pode pedir o que a concessão recusaria. O escopo
+    // admitido é o alcance do perfil, derivado do catálogo: o perfil de permissões institucionais só
+    // vale na instituição, e o de permissões de unidade só numa unidade, sem herança entre as duas
+    // (ADR-0079).
+    internal static string? ConferirEscopo(Perfil perfil, EscopoDaConcessao escopo, ICatalogoDePermissoesConsultavel catalogo)
     {
         bool coerente = escopo.Tipo switch
         {
@@ -215,13 +218,13 @@ public sealed class Concessao : EntityBase
             return "O escopo da unidade exige a unidade, e o escopo da instituição não admite unidade.";
         }
 
-        TipoDeEscopo admitido = perfil.Governanca is null ? TipoDeEscopo.Unidade : TipoDeEscopo.Instituicao;
-
-        return escopo.Tipo == admitido
-            ? null
-            : admitido == TipoDeEscopo.Instituicao
-                ? "O perfil de governança só pode ser concedido no escopo da instituição."
-                : "O perfil comum só pode ser concedido no escopo de uma unidade.";
+        return perfil.Alcance(catalogo) switch
+        {
+            null => "O perfil mistura permissões de unidade e institucionais e não tem escopo que o conceda.",
+            TipoDeEscopo admitido when admitido == escopo.Tipo => null,
+            TipoDeEscopo.Instituicao => "O perfil só pode ser concedido no escopo da instituição.",
+            _ => "O perfil só pode ser concedido no escopo de uma unidade.",
+        };
     }
 
     // O caractere nulo cabe no tamanho, mas a coluna textual do banco não o armazena: sem esta

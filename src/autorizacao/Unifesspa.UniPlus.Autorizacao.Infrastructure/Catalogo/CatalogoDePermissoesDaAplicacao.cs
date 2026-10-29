@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Catalogo;
 
 using Unifesspa.UniPlus.Authorization.Catalogo;
+using Unifesspa.UniPlus.Authorization.Decisao;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 
 /// <summary>
@@ -21,4 +22,8 @@ public sealed class CatalogoDePermissoesDaAplicacao : ICatalogoDePermissoesConsu
 
     public bool ReservadaAGovernanca(string codigo) =>
         _catalogo.TentarObter(codigo, out DefinicaoDePermissao? definicao) && definicao!.ReservadaAGovernanca;
+
+    public bool DeUnidade(string codigo) =>
+        _catalogo.TentarObter(codigo, out DefinicaoDePermissao? definicao)
+        && definicao!.Requisito.EscopoContextoObrigatorio.Contains(CamposDeContexto.UnidadeProprietariaId, StringComparer.Ordinal);
 }

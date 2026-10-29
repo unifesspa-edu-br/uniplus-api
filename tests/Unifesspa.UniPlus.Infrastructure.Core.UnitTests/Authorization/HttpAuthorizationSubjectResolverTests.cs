@@ -7,88 +7,136 @@ using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Enums;
 using Unifesspa.UniPlus.Authorization.Errors;
+using Unifesspa.UniPlus.Authorization.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Montagem do sujeito da decisão a partir do token: identidade, sessão e as
-/// concessões derivadas dos papéis do <i>client</i> da API.
+/// Montagem do sujeito da decisão: identidade e sessão vêm do token; as concessões vêm só das
+/// gravadas no Uni+. Nenhum papel do token vira concessão.
 /// </summary>
 public sealed class HttpAuthorizationSubjectResolverTests
 {
-    // Os dois valores são distintos de propósito (ADR-0010): confundi-los faz o
-    // resolver procurar os papéis sob uma chave que o token não usa.
     private const string ClientDaApi = "uniplus-api";
-    private const string AudienciaDoToken = "uniplus";
     private const string Emissor = "https://idp.exemplo/realms/unifesspa";
     private const string Permissao = "selecao:motivos-decisao-isencao:manter";
 
+    private static readonly Guid Unidade = Guid.CreateVersion7();
+
     [Fact]
-    public async Task Resolve_ComTokenCompleto_MontaSujeitoComConcessoesDoClient()
+    public async Task Resolve_ComTokenCompleto_MontaSujeitoComAsConcessoesGravadas()
     {
+        Guid concessaoId = Guid.CreateVersion7();
+        Guid perfilId = Guid.CreateVersion7();
+        DateTimeOffset validade = DateTimeOffset.UnixEpoch.AddDays(30);
+
         Result<AuthorizationSubject> resultado = await Resolver(
+            [
+                new ConcessaoAtiva(concessaoId, perfilId, Unidade, false, validade, [Permissao, "selecao:outra-coisa:ler"]),
+            ],
             new Claim("iss", Emissor),
             new Claim("sub", "sub-opaco-1"),
-            new Claim("jti", "jti-1"),
-            ResourceAccess((ClientDaApi, [Permissao])));
+            new Claim("jti", "jti-1"));
 
         AuthorizationSubject sujeito = resultado.Value!;
         sujeito.Usuario.Emissor.Should().Be(Emissor);
         sujeito.Usuario.Subject.Should().Be("sub-opaco-1");
         sujeito.Jti.Should().Be("jti-1");
-        sujeito.ConcessoesEfetivas.Should().ContainSingle()
-            .Which.Should().Match<Unifesspa.UniPlus.Authorization.ValueObjects.EffectiveGrant>(
-                concessao => concessao.PermissaoCodigo == Permissao && concessao.Fonte == FonteGrant.Token);
+        sujeito.ConcessoesEfetivas.Select(c => c.PermissaoCodigo).Should().Equal(Permissao, "selecao:outra-coisa:ler");
+        sujeito.ConcessoesEfetivas.Should().AllSatisfy(concessao =>
+        {
+            concessao.Fonte.Should().Be(FonteGrant.Concessao);
+            concessao.GrantId.Should().Be(concessaoId);
+            concessao.PerfilId.Should().Be(perfilId);
+            concessao.EscopoUnidadeId.Should().Be(Unidade);
+            concessao.EscopoInstitucional.Should().BeFalse();
+            concessao.ValidoAte.Should().Be(validade);
+        });
     }
 
     [Fact]
-    public async Task Resolve_PapeisSobAAudiencia_NaoViramConcessao()
+    public async Task Resolve_ConcessaoInstitucional_NaoTemUnidade()
     {
-        // A audiência é a claim compartilhada da plataforma; os papéis desta API
-        // ficam sob o clientId. Procurar sob a audiência não acha nada — e o
-        // efeito, em ambiente real, é negar toda decisão em silêncio (ADR-0010).
         Result<AuthorizationSubject> resultado = await Resolver(
+            [new ConcessaoAtiva(Guid.CreateVersion7(), Guid.CreateVersion7(), null, true, null, [Permissao])],
+            new Claim("iss", Emissor),
+            new Claim("sub", "sub-opaco-1"),
+            new Claim("jti", "jti-1"));
+
+        EffectiveGrant concessao = resultado.Value!.ConcessoesEfetivas.Should().ContainSingle().Subject;
+        concessao.EscopoInstitucional.Should().BeTrue();
+        concessao.EscopoUnidadeId.Should().BeNull();
+        concessao.ValidoAte.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Resolve_ConcessaoVencida_ContinuaNoSujeitoParaADecisaoRecusarComoExpirada()
+    {
+        DateTimeOffset vencida = DateTimeOffset.UnixEpoch.AddDays(-1);
+
+        Result<AuthorizationSubject> resultado = await Resolver(
+            [new ConcessaoAtiva(Guid.CreateVersion7(), Guid.CreateVersion7(), null, true, vencida, [Permissao])],
+            new Claim("iss", Emissor),
+            new Claim("sub", "sub-opaco-1"),
+            new Claim("jti", "jti-1"));
+
+        resultado.Value!.ConcessoesEfetivas.Should().ContainSingle().Which.ValidoAte.Should().Be(vencida);
+    }
+
+    [Fact]
+    public async Task Resolve_PermissaoEmBrancoNoPerfil_NaoInvalidaAsDemais()
+    {
+        Result<AuthorizationSubject> resultado = await Resolver(
+            [new ConcessaoAtiva(Guid.CreateVersion7(), Guid.CreateVersion7(), null, true, null, [" ", Permissao])],
+            new Claim("iss", Emissor),
+            new Claim("sub", "sub-opaco-1"),
+            new Claim("jti", "jti-1"));
+
+        resultado.Value!.ConcessoesEfetivas.Should().ContainSingle().Which.PermissaoCodigo.Should().Be(Permissao);
+    }
+
+    [Fact]
+    public async Task Resolve_PapeisNoToken_NaoViramConcessao()
+    {
+        // Papel de client, de realm e o papel mais amplo da plataforma: nenhum concede, porque o
+        // token identifica a pessoa e a permissão vem da concessão gravada.
+        Result<AuthorizationSubject> resultado = await Resolver(
+            [],
             new Claim("iss", Emissor),
             new Claim("sub", "sub-opaco-1"),
             new Claim("jti", "jti-1"),
-            ResourceAccess((AudienciaDoToken, [Permissao])));
+            new Claim("resource_access", JsonSerializer.Serialize(new Dictionary<string, object>
+            {
+                [ClientDaApi] = new { roles = new[] { Permissao, "uniplus-instalacao" } },
+            })),
+            new Claim("realm_access", JsonSerializer.Serialize(new { roles = new[] { Permissao, "plataforma-admin" } })));
 
         resultado.Value!.ConcessoesEfetivas.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task Resolve_PapeisDeOutroClient_NaoViramConcessao()
+    public async Task Resolve_ConsultaAsConcessoesDaPessoaDoToken()
     {
-        Result<AuthorizationSubject> resultado = await Resolver(
+        IConcessoesAtivasDoSujeito concessoes = Substitute.For<IConcessoesAtivasDoSujeito>();
+        concessoes.ListarAsync(Arg.Any<UsuarioRef>(), Arg.Any<CancellationToken>()).Returns([]);
+
+        await Resolver(
+            concessoes,
             new Claim("iss", Emissor),
             new Claim("sub", "sub-opaco-1"),
-            new Claim("jti", "jti-1"),
-            ResourceAccess(("outro-sistema", [Permissao])));
+            new Claim("jti", "jti-1"));
 
-        resultado.Value!.ConcessoesEfetivas.Should().BeEmpty(
-            "permissão concedida no client de outro sistema não vale nesta API");
-    }
-
-    [Fact]
-    public async Task Resolve_PapeisDeRealm_NaoViramConcessao()
-    {
-        Result<AuthorizationSubject> resultado = await Resolver(
-            new Claim("iss", Emissor),
-            new Claim("sub", "sub-opaco-1"),
-            new Claim("jti", "jti-1"),
-            new Claim("realm_access", JsonSerializer.Serialize(new { roles = new[] { Permissao } })));
-
-        resultado.Value!.ConcessoesEfetivas.Should().BeEmpty(
-            "papel de realm representa responsabilidade institucional ampla, não permissão "
-            + "— misturar as listas faria um papel administrativo conceder qualquer permissão homônima");
+        await concessoes.Received(1).ListarAsync(
+            Arg.Is<UsuarioRef>(u => u.Emissor == Emissor && u.Subject == "sub-opaco-1"),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -137,31 +185,18 @@ public sealed class HttpAuthorizationSubjectResolverTests
         resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.SujeitoNaoAutenticado);
     }
 
-    [Fact]
-    public async Task Resolve_ResourceAccessMalformado_FalhaSemConcessoes()
-    {
-        Result<AuthorizationSubject> resultado = await Resolver(
-            new Claim("iss", Emissor),
-            new Claim("sub", "sub-opaco-1"),
-            new Claim("jti", "jti-1"),
-            new Claim("resource_access", "isto-nao-e-json"));
+    private static Task<Result<AuthorizationSubject>> Resolver(params Claim[] claims) =>
+        Resolver([], claims);
 
-        resultado.IsSuccess.Should().BeTrue("um claim ilegível não invalida a identidade");
-        resultado.Value!.ConcessoesEfetivas.Should().BeEmpty(
-            "sem conseguir ler os papéis, nenhuma concessão pode ser afirmada");
+    private static Task<Result<AuthorizationSubject>> Resolver(IReadOnlyList<ConcessaoAtiva> gravadas, params Claim[] claims)
+    {
+        IConcessoesAtivasDoSujeito concessoes = Substitute.For<IConcessoesAtivasDoSujeito>();
+        concessoes.ListarAsync(Arg.Any<UsuarioRef>(), Arg.Any<CancellationToken>()).Returns(gravadas);
+
+        return Resolver(concessoes, claims);
     }
 
-    private static Claim ResourceAccess(params (string Client, string[] Roles)[] clients)
-    {
-        Dictionary<string, object> mapa = clients.ToDictionary(
-            static item => item.Client,
-            static object (item) => new { roles = item.Roles },
-            StringComparer.Ordinal);
-
-        return new Claim("resource_access", JsonSerializer.Serialize(mapa));
-    }
-
-    private static Task<Result<AuthorizationSubject>> Resolver(params Claim[] claims)
+    private static Task<Result<AuthorizationSubject>> Resolver(IConcessoesAtivasDoSujeito concessoes, params Claim[] claims)
     {
         DefaultHttpContext httpContext = new()
         {
@@ -171,17 +206,12 @@ public sealed class HttpAuthorizationSubjectResolverTests
         IHttpContextAccessor accessor = Substitute.For<IHttpContextAccessor>();
         accessor.HttpContext.Returns(httpContext);
 
-        return Resolver(new HttpUserContext(accessor, NullLogger<HttpUserContext>.Instance));
+        return Resolver(new HttpUserContext(accessor, NullLogger<HttpUserContext>.Instance), concessoes);
     }
 
-    private static Task<Result<AuthorizationSubject>> Resolver(HttpUserContext userContext)
+    private static Task<Result<AuthorizationSubject>> Resolver(HttpUserContext userContext, IConcessoesAtivasDoSujeito? concessoes = null)
     {
-        HttpAuthorizationSubjectResolver resolver = new(Options.Create(new AuthOptions
-        {
-            Authority = "https://idp.exemplo/realms/unifesspa",
-            Audience = AudienciaDoToken,
-            ClientId = ClientDaApi,
-        }));
+        HttpAuthorizationSubjectResolver resolver = new(concessoes ?? Substitute.For<IConcessoesAtivasDoSujeito>());
 
         return resolver.ResolveAsync(
             userContext,

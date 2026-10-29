@@ -35,7 +35,7 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         Guid unidade = await SemearUnidadeAsync();
         using HttpClient betina = Cliente(Betina);
         using HttpClient leandro = Cliente(Leandro);
-        using HttpClient diogo = ClienteComPermissoes(Diogo, AprovarFuncional);
+        using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
 
         Guid id = await CriarAsync(betina, perfil, unidade, Leandro);
         (await SituacaoAsync(betina, id)).Should().Be("aguardando_beneficiario");
@@ -66,7 +66,7 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         JsonElement trilhaDoPedido = await LerAsync(diogo, $"{Rota}/{id}/trilha");
         trilhaDoPedido.EnumerateArray().Select(e => e.GetProperty("autor").GetProperty("nome").GetString()).Should()
             .Equal(Betina.Nome, Leandro.Nome, Diogo.Nome);
-        using HttpClient administrador = ClienteComPermissoes(Diogo, Administrar);
+        using HttpClient administrador = await ClienteComPermissoesAsync(Diogo, Administrar);
         JsonElement daConcessao = await LerAsync(administrador, $"/api/autorizacao/concessoes/{concessao.Id}/trilha");
         daConcessao.EnumerateArray().Select(e => e.GetProperty("tipo").GetString()).Should()
             .Contain(["concedida", "pedido_criado", "beneficiario_aceitou", "aprovado"]);
@@ -81,8 +81,8 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         Guid unidade = await SemearUnidadeAsync();
         using HttpClient betina = Cliente(Betina);
         using HttpClient leandro = Cliente(Leandro);
-        using HttpClient diogo = ClienteComPermissoes(Diogo, AprovarFuncional);
-        using HttpClient marlene = ClienteComPermissoes(Marlene, AprovarProtecaoDeDados);
+        using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
+        using HttpClient marlene = await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados);
         Guid id = await CriarAsync(betina, perfil, unidade, Leandro);
         (await EnviarAsync(leandro, HttpMethod.Post, $"{Rota}/{id}/aceite")).StatusCode.Should().Be(HttpStatusCode.OK);
 
@@ -112,8 +112,8 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         Guid unidade = await SemearUnidadeAsync();
         using HttpClient betina = Cliente(Betina);
         using HttpClient leandro = Cliente(Leandro);
-        using HttpClient diogo = ClienteComPermissoes(Diogo, AprovarFuncional);
-        using HttpClient marlene = ClienteComPermissoes(Marlene, AprovarProtecaoDeDados);
+        using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
+        using HttpClient marlene = await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados);
         Guid id = await CriarAsync(betina, perfil, unidade, Leandro);
         await EnviarAsync(leandro, HttpMethod.Post, $"{Rota}/{id}/aceite");
 
@@ -136,7 +136,7 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         Guid unidade = await SemearUnidadeAsync();
         using HttpClient betina = Cliente(Betina);
         Guid id = await CriarAsync(betina, perfil, unidade, null);
-        using HttpClient semJti = Cliente(Diogo, null, "true", true, AprovarFuncional);
+        using HttpClient semJti = await ClienteSemJtiAsync(Diogo, AprovarFuncional);
 
         using HttpResponseMessage resposta = await EnviarAsync(semJti, HttpMethod.Post, $"{Rota}/{id}/aprovacoes");
 
@@ -152,12 +152,12 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         await ResetarAsync();
         Guid perfil = await SemearPerfilSensivelAsync();
         Guid unidade = await SemearUnidadeAsync();
-        using HttpClient solicitante = parte == "solicitante" ? ClienteComPermissoes(Diogo, AprovarFuncional) : Cliente(Betina);
-        using HttpClient beneficiario = parte == "solicitante" ? Cliente(Leandro) : ClienteComPermissoes(Diogo, AprovarFuncional);
+        using HttpClient solicitante = parte == "solicitante" ? await ClienteComPermissoesAsync(Diogo, AprovarFuncional) : Cliente(Betina);
+        using HttpClient beneficiario = parte == "solicitante" ? Cliente(Leandro) : await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
         Persona quemRecebe = parte == "solicitante" ? Leandro : Diogo;
         Guid id = await CriarAsync(solicitante, perfil, unidade, quemRecebe);
         (await EnviarAsync(beneficiario, HttpMethod.Post, $"{Rota}/{id}/aceite")).StatusCode.Should().Be(HttpStatusCode.OK);
-        using HttpClient aprovador = ClienteComPermissoes(Diogo, AprovarFuncional);
+        using HttpClient aprovador = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
 
         await ConferirRecusaAsync(await EnviarAsync(aprovador, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.UnprocessableEntity, "decisor_e_parte");
         await ConferirRecusaAsync(await EnviarAsync(aprovador, HttpMethod.Post, $"{Rota}/{id}/recusa", new { motivo = "Sou parte." }), HttpStatusCode.UnprocessableEntity, "decisor_e_parte");
@@ -172,7 +172,7 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         Guid unidade = await SemearUnidadeAsync();
         using HttpClient betina = Cliente(Betina);
         using HttpClient leandro = Cliente(Leandro);
-        using HttpClient isabella = ClienteComPermissoes(Isabella, AprovarFuncional, AprovarProtecaoDeDados);
+        using HttpClient isabella = await ClienteComPermissoesAsync(Isabella, AprovarFuncional, AprovarProtecaoDeDados);
         Guid id = await CriarAsync(betina, perfil, unidade, Leandro);
         await EnviarAsync(leandro, HttpMethod.Post, $"{Rota}/{id}/aceite");
         (await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
@@ -190,7 +190,7 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         Guid perfil = await SemearPerfilSensivelAsync();
         Guid unidade = await SemearUnidadeAsync();
         using HttpClient betina = Cliente(Betina);
-        using HttpClient diogo = ClienteComPermissoes(Diogo, AprovarFuncional);
+        using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
         Guid id = await CriarAsync(betina, perfil, unidade, null);
 
         await ConferirRecusaAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/recusa", new { motivo = "  " }), HttpStatusCode.UnprocessableEntity, "motivo_invalido");
@@ -218,7 +218,7 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         Guid unidade = await SemearUnidadeAsync();
         using HttpClient betina = Cliente(Betina);
         using HttpClient leandro = Cliente(Leandro);
-        using HttpClient diogo = ClienteComPermissoes(Diogo, AprovarFuncional);
+        using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
         Guid cancelado = await CriarAsync(betina, perfil, unidade, null);
         (await ListarFilaAsync(diogo, "gestor")).Should().Contain(cancelado);
 
@@ -323,6 +323,32 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         (await CriarBrutoAsync(institucional, perfil, unidade, Leandro.Email)).StatusCode.Should().Be(HttpStatusCode.Created);
     }
 
+    [Fact(DisplayName = "A lista de perfis para pedir é do institucional ou de quem mantém perfis, só ativos e sem a composição administrativa")]
+    public async Task PerfisDisponiveis_ExigemEmailInstitucionalOuPermissao()
+    {
+        await ResetarAsync();
+        Guid ativo = await SemearPerfilInternoAsync();
+        Guid inativo = await SemearPerfilInternoAsync();
+        await ExecutarSqlAsync("UPDATE autorizacao.perfis SET ativo = false WHERE id = {0}", inativo);
+        const string Rota = "/api/autorizacao/perfis-para-pedido";
+        using HttpClient externa = Cliente(Betina, "betina@gmail.com");
+        using HttpClient institucional = Cliente(Betina);
+        using HttpClient gestorExterno = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
+        using HttpClient gestorComEmailExterno = Cliente(Diogo, "diogo@gmail.com");
+
+        await ConferirRecusaAsync(await externa.GetAsync(new Uri(Rota, UriKind.Relative)), HttpStatusCode.Forbidden, "solicitante_nao_institucional");
+
+        foreach (HttpClient cliente in new[] { institucional, gestorComEmailExterno })
+        {
+            JsonElement lista = await LerAsync(cliente, Rota + "?limit=100");
+            JsonElement[] itens = [.. lista.EnumerateArray()];
+            itens.Select(i => i.GetProperty("id").GetGuid()).Should().Contain(ativo).And.NotContain(inativo);
+            JsonElement item = itens.Single(i => i.GetProperty("id").GetGuid() == ativo);
+            item.EnumerateObject().Select(p => p.Name).Should()
+                .BeEquivalentTo("id", "nome", "descricao", "escopo", "exigeEncarregada");
+        }
+    }
+
     [Fact(DisplayName = "As filas listam só a etapa de cada aprovador e exigem a permissão dela; a lista de quem pergunta mostra os próprios pedidos")]
     public async Task Filas_ExigemAPermissaoDaEtapa()
     {
@@ -331,8 +357,8 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         Guid unidade = await SemearUnidadeAsync();
         using HttpClient betina = Cliente(Betina);
         using HttpClient leandro = Cliente(Leandro);
-        using HttpClient diogo = ClienteComPermissoes(Diogo, AprovarFuncional);
-        using HttpClient marlene = ClienteComPermissoes(Marlene, AprovarProtecaoDeDados);
+        using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
+        using HttpClient marlene = await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados);
         Guid esperando = await CriarAsync(betina, perfil, unidade, Leandro);
         Guid noGestor = await CriarAsync(leandro, perfil, await SemearUnidadeAsync(), null);
 
@@ -380,7 +406,7 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         using HttpClient betina = Cliente(Betina);
         Guid id = await CriarAsync(betina, perfil, unidade, Leandro);
 
-        foreach (HttpClient quemVe in new[] { Cliente(Betina), Cliente(Leandro), ClienteComPermissoes(Diogo, AprovarFuncional), ClienteComPermissoes(Marlene, AprovarProtecaoDeDados), ClienteComPermissoes(Isabella, Administrar) })
+        foreach (HttpClient quemVe in new[] { Cliente(Betina), Cliente(Leandro), await ClienteComPermissoesAsync(Diogo, AprovarFuncional), await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados), await ClienteComPermissoesAsync(Isabella, Administrar) })
         {
             using (quemVe)
             {
@@ -389,7 +415,7 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
             }
         }
 
-        using HttpClient estranho = Cliente(Diogo);
+        using HttpClient estranho = Cliente(new Persona("paulo.conceicao", "Paulo Conceição", "paulo-daconceicao93@uniplus-test.local"));
         using HttpClient comEmailNaoVerificado = Cliente(Leandro, null, "false");
         foreach (HttpClient semAcesso in new[] { estranho, comEmailNaoVerificado })
         {

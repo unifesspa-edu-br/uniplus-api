@@ -104,6 +104,7 @@ public sealed class InstalacaoHandlersTests
             instalacoes,
             new ConcessoesComGestorAtivo(),
             new ResumoFixo(),
+            new CatalogoInstitucional(),
             unidade,
             new Usuario(executor),
             TimeProvider.System,
@@ -239,6 +240,15 @@ public sealed class InstalacaoHandlersTests
             Task.FromResult("https://armazenamento.test/leitura");
     }
 
+    private sealed class CatalogoInstitucional : ICatalogoDePermissoesConsultavel
+    {
+        public bool Existe(string codigo) => true;
+
+        public bool ReservadaAGovernanca(string codigo) => false;
+
+        public bool DeUnidade(string codigo) => false;
+    }
+
     private sealed class ConcessoesSemGestor : IConcessaoRepository
     {
         public Task TravarGovernancaParaEscritaAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
@@ -260,6 +270,7 @@ public sealed class InstalacaoHandlersTests
             FiltroDeConcessoes filtro, Guid? afterId, int limit, PaginationDirection direction, CancellationToken cancellationToken = default) =>
             throw new InvalidOperationException();
 
+        public Task<bool> ExisteNaoRevogadaDoPerfilAsync(Guid perfilId, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<TipoDeGovernanca?> ObterGovernancaDoPerfilAsync(Guid perfilId, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
     }
 
@@ -320,6 +331,7 @@ public sealed class InstalacaoHandlersTests
             FiltroDeConcessoes filtro, Guid? afterId, int limit, PaginationDirection direction, CancellationToken cancellationToken = default) =>
             throw new InvalidOperationException();
 
+        public Task<bool> ExisteNaoRevogadaDoPerfilAsync(Guid perfilId, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<TipoDeGovernanca?> ObterGovernancaDoPerfilAsync(Guid perfilId, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
     }
 

@@ -28,7 +28,7 @@ public sealed class ConcessaoTests
         Guid unidade = Guid.NewGuid();
 
         Result<Concessao> resultado = Concessao.Conceder(
-            Leandro, PerfilComum(), EscopoDaConcessao.DaUnidade(unidade), Origem, Diogo, Agora);
+            Leandro, PerfilComum(), EscopoDaConcessao.DaUnidade(unidade), Origem, Diogo, Agora, Catalogo);
 
         resultado.IsSuccess.Should().BeTrue();
         Concessao concessao = resultado.Value!;
@@ -45,36 +45,48 @@ public sealed class ConcessaoTests
         perfil.Desativar();
 
         CodigosDaRecusa(Concessao.Conceder(
-            Leandro, perfil, EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, Diogo, Agora))
+            Leandro, perfil, EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, Diogo, Agora, Catalogo))
             .Should().Equal(ConcessaoErrorCodes.PerfilInativo);
     }
 
     [Fact(DisplayName = "Perfil de governança com escopo de unidade é recusado")]
     public void Conceder_GovernancaNaUnidade_Recusa() =>
         CodigosDaRecusa(Concessao.Conceder(
-            Isabella, PerfilDeGovernanca(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, Diogo, Agora))
+            Isabella, PerfilDeGovernanca(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, Diogo, Agora, Catalogo))
             .Should().Equal(ConcessaoErrorCodes.EscopoInvalido);
 
     [Fact(DisplayName = "Perfil de governança aceita o escopo da instituição")]
     public void Conceder_GovernancaNaInstituicao_Aceita() =>
         Concessao.Conceder(
-            Isabella, PerfilDeGovernanca(), EscopoDaConcessao.DaInstituicao(), Origem, Diogo, Agora)
+            Isabella, PerfilDeGovernanca(), EscopoDaConcessao.DaInstituicao(), Origem, Diogo, Agora, Catalogo)
             .IsSuccess.Should().BeTrue();
+
+    [Fact(DisplayName = "Perfil de permissões institucionais só se concede na instituição")]
+    public void Conceder_PerfilInstitucional_SoNaInstituicao()
+    {
+        Perfil perfil = Perfil.Criar("Motivos", "Descrição válida.", ["selecao:motivos:manter"], Catalogo).Value!;
+
+        Concessao.Conceder(Leandro, perfil, EscopoDaConcessao.DaInstituicao(), Origem, Diogo, Agora, Catalogo)
+            .IsSuccess.Should().BeTrue();
+        CodigosDaRecusa(Concessao.Conceder(
+            Leandro, perfil, EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, Diogo, Agora, Catalogo))
+            .Should().Equal(ConcessaoErrorCodes.EscopoInvalido);
+    }
 
     [Fact(DisplayName = "Perfil comum com escopo da instituição é recusado")]
     public void Conceder_PerfilComumNaInstituicao_Recusa() =>
         CodigosDaRecusa(Concessao.Conceder(
-            Leandro, PerfilComum(), EscopoDaConcessao.DaInstituicao(), Origem, Diogo, Agora))
+            Leandro, PerfilComum(), EscopoDaConcessao.DaInstituicao(), Origem, Diogo, Agora, Catalogo))
             .Should().Equal(ConcessaoErrorCodes.EscopoInvalido);
 
     [Fact(DisplayName = "Escopo de unidade sem unidade e escopo da instituição com unidade são incoerentes")]
     public void Conceder_EscopoIncoerente_Recusa()
     {
         CodigosDaRecusa(Concessao.Conceder(
-            Leandro, PerfilComum(), new EscopoDaConcessao(TipoDeEscopo.Unidade, null), Origem, Diogo, Agora))
+            Leandro, PerfilComum(), new EscopoDaConcessao(TipoDeEscopo.Unidade, null), Origem, Diogo, Agora, Catalogo))
             .Should().Equal(ConcessaoErrorCodes.EscopoInvalido);
         CodigosDaRecusa(Concessao.Conceder(
-            Isabella, PerfilDeGovernanca(), new EscopoDaConcessao(TipoDeEscopo.Instituicao, Guid.NewGuid()), Origem, Diogo, Agora))
+            Isabella, PerfilDeGovernanca(), new EscopoDaConcessao(TipoDeEscopo.Instituicao, Guid.NewGuid()), Origem, Diogo, Agora, Catalogo))
             .Should().Equal(ConcessaoErrorCodes.EscopoInvalido);
     }
 
@@ -83,14 +95,14 @@ public sealed class ConcessaoTests
     [InlineData(-1)]
     public void Conceder_ValidadeNaoPosterior_Recusa(int minutos) =>
         CodigosDaRecusa(Concessao.Conceder(
-            Leandro, PerfilComum(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, Diogo, Agora, Agora.AddMinutes(minutos)))
+            Leandro, PerfilComum(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, Diogo, Agora, Catalogo, Agora.AddMinutes(minutos)))
             .Should().Equal(ConcessaoErrorCodes.ValidadeInvalida);
 
     [Fact(DisplayName = "Perfil de governança não aceita concessão com prazo")]
     public void Conceder_GovernancaComValidade_Recusa()
     {
         Result<Concessao> resultado = Concessao.Conceder(
-            Isabella, PerfilDeGovernanca(), EscopoDaConcessao.DaInstituicao(), Origem, Diogo, Agora, Agora.AddDays(30));
+            Isabella, PerfilDeGovernanca(), EscopoDaConcessao.DaInstituicao(), Origem, Diogo, Agora, Catalogo, Agora.AddDays(30));
 
         CodigosDaRecusa(resultado).Should().Equal(ConcessaoErrorCodes.ValidadeInvalida);
         resultado.Errors.Single().Error.Message.Should().Contain("governança");
@@ -103,7 +115,7 @@ public sealed class ConcessaoTests
         perfil.Desativar();
 
         CodigosDaRecusa(Concessao.Conceder(
-            Leandro, perfil, EscopoDaConcessao.DaInstituicao(), Origem, Diogo, Agora, Agora))
+            Leandro, perfil, EscopoDaConcessao.DaInstituicao(), Origem, Diogo, Agora, Catalogo, Agora))
             .Should().BeEquivalentTo(
                 ConcessaoErrorCodes.PerfilInativo, ConcessaoErrorCodes.EscopoInvalido, ConcessaoErrorCodes.ValidadeInvalida);
     }
@@ -177,21 +189,21 @@ public sealed class ConcessaoTests
     public void ConfirmaEmailDoBeneficiario_SemEmailGravado_NaoConfirma()
     {
         Concessao antiga = Concessao.Conceder(
-            Leandro, PerfilComum(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, Diogo, Agora).Value!;
+            Leandro, PerfilComum(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, Diogo, Agora, Catalogo).Value!;
 
         antiga.ConfirmaEmailDoBeneficiario(Email).Should().BeFalse();
     }
 
     private static Concessao Concedida(DateTimeOffset? validaAte = null) =>
         Concessao.Conceder(
-            Leandro, PerfilComum(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, Diogo, Agora, validaAte, Email).Value!;
+            Leandro, PerfilComum(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, Diogo, Agora, Catalogo, validaAte, Email).Value!;
 
     private static Perfil PerfilComum() =>
         Perfil.Criar("Analista", "Descrição válida.", ["selecao:processos:consultar"], Catalogo).Value!;
 
     private static Perfil PerfilDeGovernanca()
     {
-        Perfil perfil = PerfilComum();
+        Perfil perfil = Perfil.Criar("Gestão de acessos", "Opera as concessões de acesso.", ["autorizacao:concessoes:administrar"], Catalogo).Value!;
         typeof(Perfil).GetProperty(nameof(Perfil.Governanca))!.SetValue(perfil, TipoDeGovernanca.GestorDeAcessos);
         return perfil;
     }
@@ -205,5 +217,7 @@ public sealed class ConcessaoTests
         public bool Existe(string codigo) => true;
 
         public bool ReservadaAGovernanca(string codigo) => false;
+
+        public bool DeUnidade(string codigo) => codigo.StartsWith("selecao:processos:", StringComparison.Ordinal);
     }
 }

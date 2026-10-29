@@ -41,6 +41,8 @@ public sealed class PerfilMappingTests
         public bool Existe(string codigo) => true;
 
         public bool ReservadaAGovernanca(string codigo) => false;
+
+        public bool DeUnidade(string codigo) => false;
     }
 
     private sealed class Fonte : IFonteDeCatalogo

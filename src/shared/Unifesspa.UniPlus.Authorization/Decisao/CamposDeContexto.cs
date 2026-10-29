@@ -15,8 +15,11 @@ using Unifesspa.UniPlus.Authorization.Contracts;
 /// exigiu um contexto que esta versão do backend não sabe verificar, e a
 /// verificação não realizada nunca deve virar acesso concedido.
 /// </remarks>
-internal static class CamposDeContexto
+public static class CamposDeContexto
 {
+    /// <summary>Campo do contexto que identifica a unidade dona do recurso.</summary>
+    public const string UnidadeProprietariaId = "unidadeProprietariaId";
+
     private static readonly FrozenDictionary<string, Func<ResourceContext, bool>> Presenca =
         new Dictionary<string, Func<ResourceContext, bool>>(StringComparer.Ordinal)
         {
@@ -25,7 +28,7 @@ internal static class CamposDeContexto
             // declarável — e continua verdadeiro.
             ["recursoTipo"] = static resource => !string.IsNullOrWhiteSpace(resource.RecursoTipo),
             ["sensibilidade"] = static _ => true,
-            ["unidadeProprietariaId"] = static resource => resource.UnidadeProprietariaId is not null,
+            [UnidadeProprietariaId] = static resource => resource.UnidadeProprietariaId is not null,
             ["processoId"] = static resource => resource.ProcessoId is not null,
             ["chamadaId"] = static resource => resource.ChamadaId is not null,
         }.ToFrozenDictionary(StringComparer.Ordinal);
@@ -39,7 +42,7 @@ internal static class CamposDeContexto
     /// — ou quando o nome exigido é desconhecido, que é a mesma coisa do ponto de
     /// vista de quem decide: não há como afirmar que o contexto foi satisfeito.
     /// </summary>
-    public static bool AlgumAusente(IReadOnlyList<string> exigidos, ResourceContext resource)
+    internal static bool AlgumAusente(IReadOnlyList<string> exigidos, ResourceContext resource)
     {
         foreach (string nome in exigidos)
         {

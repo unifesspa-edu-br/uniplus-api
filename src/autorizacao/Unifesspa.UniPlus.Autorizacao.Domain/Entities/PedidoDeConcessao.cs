@@ -125,9 +125,11 @@ public sealed class PedidoDeConcessao : EntityBase
         EscopoDaConcessao escopo,
         string? justificativa,
         IDominiosInstitucionais dominios,
+        ICatalogoDePermissoesConsultavel catalogo,
         DateTimeOffset instante)
     {
         ArgumentNullException.ThrowIfNull(solicitante);
+        ArgumentNullException.ThrowIfNull(catalogo);
         ArgumentNullException.ThrowIfNull(perfil);
         ArgumentNullException.ThrowIfNull(escopo);
         ArgumentNullException.ThrowIfNull(dominios);
@@ -148,7 +150,7 @@ public sealed class PedidoDeConcessao : EntityBase
                 "O perfil de acesso está desativado e não aceita pedido novo.")));
         }
 
-        string? incoerencia = Concessao.ConferirEscopo(perfil, escopo);
+        string? incoerencia = Concessao.ConferirEscopo(perfil, escopo, catalogo);
         if (incoerencia is not null)
         {
             erros.Add(new("escopo", new DomainError(PedidoErrorCodes.EscopoInvalido, incoerencia)));

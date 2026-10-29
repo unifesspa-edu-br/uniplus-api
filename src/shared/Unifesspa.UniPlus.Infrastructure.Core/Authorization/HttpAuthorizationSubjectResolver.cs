@@ -1,64 +1,40 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 
-using Microsoft.Extensions.Options;
-
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Enums;
 using Unifesspa.UniPlus.Authorization.Errors;
 using Unifesspa.UniPlus.Authorization.ValueObjects;
-using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Monta o sujeito da decisão a partir do token OIDC autenticado (ADR-0078,
-/// ADR-0033): identidade pelo par emissor + <i>subject</i>, sessão pelo
-/// <c>jti</c>, e uma concessão efetiva de fonte <see cref="FonteGrant.Token"/>
-/// para cada papel atribuído ao <i>client</i> da API.
+/// Monta o sujeito da decisão (ADR-0078, ADR-0033): identidade pelo par emissor
+/// + <i>subject</i> do token OIDC autenticado, sessão pelo <c>jti</c>, e uma
+/// concessão efetiva de fonte <see cref="FonteGrant.Concessao"/> para cada
+/// permissão de cada concessão gravada e não revogada da pessoa.
 /// </summary>
 /// <remarks>
-/// <para>
-/// A fonte de permissão é <b>uma só</b>: <c>resource_access.{client}.roles</c>,
-/// pelo <see cref="IUserContext.GetResourceRoles"/>. Os papéis de <i>realm</i>
-/// (<see cref="IUserContext.Roles"/>) ficam reservados a responsabilidades
-/// institucionais amplas e não viram permissão — misturar as duas listas faria um
-/// papel administrativo geral conceder qualquer permissão de mesmo nome.
-/// </para>
-/// <para>
-/// O <i>client</i> é o <c>clientId</c> deste resource server
-/// (<c>Auth:ClientId</c>, <c>uniplus-api</c>), <b>não</b> a audiência
-/// (<c>uniplus</c>). A ADR-0010 separa os dois de propósito: a audiência é a
-/// claim compartilhada por todos os tokens da plataforma, enquanto o
-/// <c>clientId</c> é a chave sob a qual o token aninha os papéis desta API. Ler
-/// os papéis sob a audiência não encontra nada — e negar tudo em silêncio é
-/// exatamente o modo de falhar que a ADR-0010 antecipou ao listar a confusão
-/// entre os dois como risco.
-/// </para>
-/// <para>
-/// A opção é lida por <see cref="IOptions{TOptions}"/>, a mesma forma fixa com
-/// que a validação do token é configurada, e não por
-/// <c>IOptionsMonitor</c>. Sob recarga de configuração, a leitura monitorada
-/// mudaria aqui sem mudar lá: a autenticação seguiria aceitando tokens da
-/// audiência antiga enquanto a decisão passaria a colher papéis da nova — e um
-/// token emitido para um <i>client</i> que também carregue papéis de outro
-/// obteria permissões que não lhe cabem.
-/// </para>
+/// O token identifica a pessoa e não concede acesso (ADR-0152): papel de
+/// <i>client</i> ou de <i>realm</i>, inclusive <c>plataforma-admin</c>, não vira
+/// concessão. Quem recebe um papel direto no provedor de identidade não ganha
+/// permissão alguma do catálogo, e a revogação da concessão gravada vale na
+/// requisição seguinte, sem esperar o token expirar.
 /// </remarks>
 public sealed class HttpAuthorizationSubjectResolver : IAuthorizationSubjectResolver
 {
-    private readonly IOptions<AuthOptions> _authOptions;
+    private readonly IConcessoesAtivasDoSujeito _concessoes;
 
     /// <summary>Cria o agregador do sujeito.</summary>
-    public HttpAuthorizationSubjectResolver(IOptions<AuthOptions> authOptions)
+    public HttpAuthorizationSubjectResolver(IConcessoesAtivasDoSujeito concessoes)
     {
-        ArgumentNullException.ThrowIfNull(authOptions);
+        ArgumentNullException.ThrowIfNull(concessoes);
 
-        _authOptions = authOptions;
+        _concessoes = concessoes;
     }
 
     /// <inheritdoc />
-    public Task<Result<AuthorizationSubject>> ResolveAsync(
+    public async Task<Result<AuthorizationSubject>> ResolveAsync(
         IUserContext userContext,
         AuthorizationRequestContext request,
         CancellationToken cancellationToken)
@@ -66,10 +42,10 @@ public sealed class HttpAuthorizationSubjectResolver : IAuthorizationSubjectReso
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(request);
 
-        return Task.FromResult(Resolver(userContext));
+        return await ResolverAsync(userContext, cancellationToken).ConfigureAwait(false);
     }
 
-    private Result<AuthorizationSubject> Resolver(IUserContext userContext)
+    private async Task<Result<AuthorizationSubject>> ResolverAsync(IUserContext userContext, CancellationToken cancellationToken)
     {
         if (!userContext.IsAuthenticated)
         {
@@ -108,16 +84,30 @@ public sealed class HttpAuthorizationSubjectResolver : IAuthorizationSubjectReso
             return Result<AuthorizationSubject>.Failure(usuario.Error!);
         }
 
-        List<EffectiveGrant> concessoes = [];
-        foreach (string papel in userContext.GetResourceRoles(_authOptions.Value.ClientId))
-        {
-            Result<EffectiveGrant> concessao = EffectiveGrant.From(papel, FonteGrant.Token);
+        IReadOnlyList<ConcessaoAtiva> gravadas = await _concessoes
+            .ListarAsync(usuario.Value!, cancellationToken)
+            .ConfigureAwait(false);
 
-            // Um papel em branco no token não invalida os demais: a concessão que
-            // ele descreveria não existe, e as outras continuam legítimas.
-            if (concessao.IsSuccess)
+        List<EffectiveGrant> concessoes = [];
+        foreach (ConcessaoAtiva gravada in gravadas)
+        {
+            foreach (string permissao in gravada.Permissoes)
             {
-                concessoes.Add(concessao.Value!);
+                Result<EffectiveGrant> concessao = EffectiveGrant.From(
+                    permissao,
+                    FonteGrant.Concessao,
+                    grantId: gravada.ConcessaoId,
+                    escopoUnidadeId: gravada.UnidadeId,
+                    validoAte: gravada.ValidaAte,
+                    escopoInstitucional: gravada.Institucional,
+                    perfilId: gravada.PerfilId);
+
+                // Uma permissão em branco no perfil não invalida as demais: a concessão que ela
+                // descreveria não existe, e as outras continuam legítimas.
+                if (concessao.IsSuccess)
+                {
+                    concessoes.Add(concessao.Value!);
+                }
             }
         }
 

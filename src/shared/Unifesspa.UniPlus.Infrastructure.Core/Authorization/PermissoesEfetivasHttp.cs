@@ -68,7 +68,7 @@ public sealed class PermissoesEfetivasHttp : IPermissoesEfetivas
 
         DateTimeOffset agora = contexto.Value!.DataAcesso;
         HashSet<string> vigentes = [.. sujeito.Value!.ConcessoesEfetivas
-            .Where(concessao => concessao.ValidoAte is not { } validade || validade >= agora)
+            .Where(concessao => concessao.ValidoAte is not { } validade || validade > agora)
             .Select(static concessao => concessao.PermissaoCodigo)];
 
         return [.. _catalogo.Definicoes.Where(d => vigentes.Contains(d.Codigo))];

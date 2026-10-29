@@ -41,8 +41,8 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
         Guid perfil = PerfisDeSistema.GestorDeAcessosId;
         using HttpClient betina = Cliente(Betina);
         using HttpClient leandro = Cliente(Leandro);
-        using HttpClient diogo = ClienteComPermissoes(Diogo, AprovarFuncional);
-        using HttpClient marlene = ClienteComPermissoes(Marlene, AprovarProtecaoDeDados);
+        using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
+        using HttpClient marlene = await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados);
         Guid id = await CriarAsync(betina, perfil, null, Leandro);
         await EnviarAsync(leandro, HttpMethod.Post, $"{Rota}/{id}/aceite");
 
@@ -91,7 +91,7 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
         await ResetarAsync();
         using HttpClient betina = Cliente(Betina);
         using HttpClient leandro = Cliente(Leandro);
-        using HttpClient diogo = ClienteComPermissoes(Diogo, AprovarFuncional);
+        using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
         Guid id = await CriarAsync(betina, PerfisDeSistema.GestorDeAcessosId, null, Leandro);
         await EnviarAsync(leandro, HttpMethod.Post, $"{Rota}/{id}/aceite");
         Guid anexo = await AnexarEmVerificacaoAsync(betina, id);
@@ -112,7 +112,7 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
         Guid unidade = await SemearUnidadeAsync();
         using HttpClient betina = Cliente(Betina);
         using HttpClient leandro = Cliente(Leandro);
-        using HttpClient diogo = ClienteComPermissoes(Diogo, AprovarFuncional);
+        using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
         Guid id = await CriarAsync(betina, perfil, unidade, Leandro);
         await EnviarAsync(leandro, HttpMethod.Post, $"{Rota}/{id}/aceite");
 
@@ -138,7 +138,7 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
         Guid perfil = PerfisDeSistema.EncarregadaDeDadosId;
         using HttpClient betina = Cliente(Betina);
         using HttpClient marlene = Cliente(Marlene);
-        using HttpClient diogo = ClienteComPermissoes(Diogo, AprovarFuncional);
+        using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
         Guid id = await CriarAsync(betina, perfil, null, Marlene);
         await EnviarAsync(marlene, HttpMethod.Post, $"{Rota}/{id}/aceite");
         await ConferirRecusaAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.UnprocessableEntity, "documento_obrigatorio");
@@ -162,7 +162,7 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
         Guid unidade = await SemearUnidadeAsync();
         using HttpClient betina = Cliente(Betina);
         using HttpClient marlene = Cliente(Marlene);
-        using HttpClient diogo = ClienteComPermissoes(Diogo, AprovarFuncional);
+        using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
         Guid id = await CriarAsync(betina, perfil, unidade, Marlene);
         await EnviarAsync(marlene, HttpMethod.Post, $"{Rota}/{id}/aceite");
 
@@ -183,14 +183,14 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
         Guid unidade = await SemearUnidadeAsync();
         using HttpClient betina = Cliente(Betina);
         using HttpClient leandro = Cliente(Leandro);
-        using HttpClient diogo = ClienteComPermissoes(Diogo, AprovarFuncional);
-        using HttpClient isabella = ClienteComPermissoes(Isabella, AprovarFuncional);
-        using HttpClient marlene = ClienteComPermissoes(Marlene, AprovarProtecaoDeDados);
+        using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
+        using HttpClient isabella = await ClienteComPermissoesAsync(Isabella, AprovarFuncional);
+        using HttpClient marlene = await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados);
         Guid id = await CriarAsync(betina, perfil, unidade, Leandro);
         await EnviarAsync(leandro, HttpMethod.Post, $"{Rota}/{id}/aceite");
         (await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
         await ExecutarSqlAsync(
-            "INSERT INTO autorizacao.perfil_permissoes (perfil_id, codigo) VALUES ({0}, 'selecao:inscricoes:exportar')", perfil);
+            "INSERT INTO autorizacao.perfil_permissoes (perfil_id, codigo) VALUES ({0}, 'teste:inscricoes:operar')", perfil);
 
         await ConferirRecusaAsync(await EnviarAsync(marlene, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.Conflict, "perfil_alterado");
 
@@ -219,7 +219,7 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
             "UPDATE autorizacao.concessoes SET concedida_em = now() - interval '3 days', valida_ate = now() - interval '1 day' WHERE perfil_id = {0}", perfil);
         using HttpClient betina = Cliente(Betina);
         using HttpClient leandro = Cliente(Leandro);
-        using HttpClient diogo = ClienteComPermissoes(Diogo, AprovarFuncional);
+        using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
         Guid id = await CriarAsync(betina, perfil, unidade, Leandro);
         await EnviarAsync(leandro, HttpMethod.Post, $"{Rota}/{id}/aceite");
 
@@ -246,7 +246,7 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
             "UPDATE autorizacao.concessoes SET concedida_em = now() - interval '3 days', valida_ate = now() - interval '1 day' WHERE perfil_id = {0}", perfil);
         using HttpClient betina = Cliente(Betina);
         using HttpClient leandro = Cliente(Leandro);
-        using HttpClient diogo = ClienteComPermissoes(Diogo, AprovarFuncional);
+        using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
         Guid id = await CriarAsync(betina, perfil, unidade, Leandro);
         await EnviarAsync(leandro, HttpMethod.Post, $"{Rota}/{id}/aceite");
         // Uma concessão revogada da mesma origem faz a inserção da nova violar o índice de origem.
@@ -256,7 +256,8 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
             Perfil entidade = (await repositorio.ObterParaConcederAsync(perfil))!;
             Concessao revogada = Concessao.Conceder(
                 IdentidadeDe(Leandro), entidade, EscopoDaConcessao.DaUnidade(Guid.NewGuid()),
-                new OrigemDaConcessao(Autorizacao.Domain.Enums.TipoDeOrigem.Pedido, id), IdentidadeDe(Diogo), DateTimeOffset.UtcNow).Value!;
+                new OrigemDaConcessao(Autorizacao.Domain.Enums.TipoDeOrigem.Pedido, id), IdentidadeDe(Diogo), DateTimeOffset.UtcNow,
+                scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>()).Value!;
             revogada.Revogar(IdentidadeDe(Diogo), "Semente do teste.", DateTimeOffset.UtcNow);
             await repositorio.AdicionarAsync(revogada);
             await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
@@ -279,7 +280,7 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
         await SemearConcessaoAsync(Leandro, perfil, EscopoDaConcessao.DaUnidade(unidade));
         using HttpClient betina = Cliente(Betina);
         using HttpClient leandro = Cliente(Leandro);
-        using HttpClient diogo = ClienteComPermissoes(Diogo, AprovarFuncional);
+        using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
         Guid id = await CriarAsync(betina, perfil, unidade, Leandro);
         await EnviarAsync(leandro, HttpMethod.Post, $"{Rota}/{id}/aceite");
 
@@ -302,7 +303,7 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
             "UPDATE autorizacao.concessoes SET concedida_em = now() - interval '3 days', valida_ate = now() - interval '1 day' WHERE perfil_id = {0}", perfil);
         using HttpClient betina = Cliente(Betina);
         using HttpClient leandro = Cliente(Leandro);
-        using HttpClient diogo = ClienteComPermissoes(Diogo, AprovarFuncional);
+        using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
         Guid id = await CriarAsync(betina, perfil, unidade, Leandro);
         await EnviarAsync(leandro, HttpMethod.Post, $"{Rota}/{id}/aceite");
         await ExecutarSqlAsync("UPDATE autorizacao.perfis SET ativo = false WHERE id = {0}", perfil);
@@ -319,7 +320,7 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
     {
         await ResetarAsync();
         using HttpClient betina = Cliente(Betina);
-        using HttpClient diogo = ClienteComPermissoes(Diogo, AprovarFuncional);
+        using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
         Guid id = await CriarAsync(betina, PerfisDeSistema.GestorDeAcessosId, null, Leandro);
         await AnexarVerificadoAsync(betina, id);
 
@@ -339,7 +340,7 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
         Guid unidade = await SemearUnidadeAsync();
         using HttpClient betina = Cliente(Betina);
         using HttpClient leandro = Cliente(Leandro);
-        using HttpClient diogo = ClienteComPermissoes(Diogo, AprovarFuncional);
+        using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
         Guid id = await CriarAsync(betina, perfil, unidade, Leandro);
         await EnviarAsync(leandro, HttpMethod.Post, $"{Rota}/{id}/aceite");
 

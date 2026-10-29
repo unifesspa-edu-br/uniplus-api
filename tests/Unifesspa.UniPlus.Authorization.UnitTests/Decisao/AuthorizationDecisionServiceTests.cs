@@ -12,15 +12,15 @@ using static Unifesspa.UniPlus.Authorization.UnitTests.Decisao.CenariosDeDecisao
 
 /// <summary>
 /// Cenários de aceite da Task #1244 sobre o ponto de decisão único: concede pela
-/// concessão do token, nega com o motivo correto em cada situação e registra
+/// concessão gravada, nega com o motivo correto em cada situação e registra
 /// toda decisão.
 /// </summary>
 public sealed class AuthorizationDecisionServiceTests
 {
     private readonly RegistroEmMemoria _registro = new();
 
-    [Fact(DisplayName = "Concede quando a permissão está entre as concessões do token, registrando a fonte")]
-    public async Task Decide_ComConcessaoDoToken_Concede()
+    [Fact(DisplayName = "Concede quando a permissão está entre as concessões gravadas, registrando a fonte")]
+    public async Task Decide_ComConcessaoGravada_Concede()
     {
         AuthorizationDecision decisao = await Decidir(
             Sujeito(concessoes: Concessao()),
@@ -28,7 +28,7 @@ public sealed class AuthorizationDecisionServiceTests
 
         decisao.Allowed.Should().BeTrue();
         decisao.DenyReason.Should().BeNull();
-        decisao.GrantUsed!.Fonte.Should().Be(FonteGrant.Token,
+        decisao.GrantUsed!.Fonte.Should().Be(FonteGrant.Concessao,
             "a auditoria precisa saber de qual fonte veio a concessão que autorizou");
     }
 
@@ -57,9 +57,7 @@ public sealed class AuthorizationDecisionServiceTests
     public async Task Decide_ConcessaoVencida_NegaPorConcessaoExpirada()
     {
         AuthorizationDecision decisao = await Decidir(
-            Sujeito(concessoes: Concessao(
-                fonte: FonteGrant.OidcGroupBinding,
-                validoAte: Agora.AddSeconds(-1))),
+            Sujeito(concessoes: Concessao(validoAte: Agora.AddSeconds(-1))),
             Requisito());
 
         decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.ConcessaoExpirada,
@@ -257,8 +255,54 @@ public sealed class AuthorizationDecisionServiceTests
         registro.Permissao.Should().Be(Permissao);
         registro.RequestId.Should().Be("req-1244");
         registro.Instante.Should().Be(Agora);
-        registro.FonteGrant.Should().Be("token");
+        registro.FonteGrant.Should().Be("concessao");
         registro.MotivoNegativa.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "O registro identifica a concessão usada: identificador, perfil e unidade")]
+    public async Task Decide_Permitida_RegistraConcessaoPerfilEUnidade()
+    {
+        Guid unidade = Guid.CreateVersion7();
+        Guid concessao = Guid.CreateVersion7();
+        Guid perfil = Guid.CreateVersion7();
+
+        await Decidir(
+            Sujeito(concessoes: Concessao(grantId: concessao, escopoUnidadeId: unidade, perfilId: perfil)),
+            Requisito(),
+            Recurso(unidadeProprietariaId: unidade));
+
+        RegistroDecisaoAcesso registro = _registro.Registrados.Should().ContainSingle().Subject;
+        registro.GrantId.Should().Be(concessao);
+        registro.PerfilId.Should().Be(perfil);
+        registro.EscopoUnidadeId.Should().Be(unidade);
+    }
+
+    [Fact(DisplayName = "A concessão na unidade A concede sobre recurso de A e nega sobre recurso de B")]
+    public async Task Decide_ConcessaoDeUnidade_SoAlcancaARecursoDaUnidade()
+    {
+        Guid unidadeA = Guid.CreateVersion7();
+        Guid unidadeB = Guid.CreateVersion7();
+        AuthorizationSubject sujeito = Sujeito(concessoes: Concessao(escopoUnidadeId: unidadeA));
+
+        (await Decidir(sujeito, Requisito(), Recurso(unidadeProprietariaId: unidadeA))).Allowed.Should().BeTrue();
+
+        AuthorizationDecision emB = await Decidir(sujeito, Requisito(), Recurso(unidadeProprietariaId: unidadeB));
+        emB.Allowed.Should().BeFalse();
+        emB.DenyReason!.Codigo.Should().Be(MotivoNegativa.SemConcessaoAplicavel);
+    }
+
+    [Fact(DisplayName = "A concessão institucional nega sobre recurso de unidade, e a de unidade nega sobre recurso institucional")]
+    public async Task Decide_InstitucionalEUnidade_NaoSeHerdam()
+    {
+        Guid unidade = Guid.CreateVersion7();
+
+        AuthorizationDecision institucionalEmUnidade = await Decidir(
+            Sujeito(concessoes: Concessao()), Requisito(), Recurso(unidadeProprietariaId: unidade));
+        AuthorizationDecision unidadeEmInstitucional = await Decidir(
+            Sujeito(concessoes: Concessao(escopoUnidadeId: unidade)), Requisito(), Recurso());
+
+        institucionalEmUnidade.DenyReason!.Codigo.Should().Be(MotivoNegativa.SemConcessaoAplicavel);
+        unidadeEmInstitucional.DenyReason!.Codigo.Should().Be(MotivoNegativa.SemConcessaoAplicavel);
     }
 
     [Fact(DisplayName = "Registra também a decisão negada, com o motivo em valor canônico")]

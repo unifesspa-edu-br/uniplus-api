@@ -6,8 +6,8 @@ using Unifesspa.UniPlus.Authorization.ValueObjects;
 /// <summary>
 /// Evento do registro operacional restrito: o que fica gravado sobre <b>um uso</b>
 /// de permissão — ator, instante, origem, permissão exigida, recurso alvo,
-/// resultado e, conforme o caso, o motivo da negativa ou a fonte da concessão
-/// que autorizou (CA-07 de <c>uniplus-api#1197</c>).
+/// resultado e, conforme o caso, o motivo da negativa ou a concessão que
+/// autorizou (fonte, identificador, perfil e unidade) (CA-07 de <c>uniplus-api#1197</c>).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -70,6 +70,12 @@ public sealed record RegistroDecisaoAcesso
     /// <summary>Identificador da concessão usada, quando ela o possui.</summary>
     public Guid? GrantId { get; }
 
+    /// <summary>Perfil de acesso da concessão usada, quando ela é de perfil.</summary>
+    public Guid? PerfilId { get; }
+
+    /// <summary>Unidade do escopo da concessão usada; nula quando o escopo é a instituição.</summary>
+    public Guid? EscopoUnidadeId { get; }
+
     private RegistroDecisaoAcesso(
         DateTimeOffset instante,
         string requestId,
@@ -83,7 +89,9 @@ public sealed record RegistroDecisaoAcesso
         bool permitido,
         string? motivoNegativa,
         string? fonteGrant,
-        Guid? grantId)
+        Guid? grantId,
+        Guid? perfilId,
+        Guid? escopoUnidadeId)
     {
         Instante = instante;
         RequestId = requestId;
@@ -98,6 +106,8 @@ public sealed record RegistroDecisaoAcesso
         MotivoNegativa = motivoNegativa;
         FonteGrant = fonteGrant;
         GrantId = grantId;
+        PerfilId = perfilId;
+        EscopoUnidadeId = escopoUnidadeId;
     }
 
     /// <summary>
@@ -132,7 +142,9 @@ public sealed record RegistroDecisaoAcesso
             decision.Allowed,
             decision.DenyReason is { } motivo ? ValoresCanonicos.De(motivo.Codigo) : null,
             grant is not null ? ValoresCanonicos.De(grant.Fonte) : null,
-            grant?.GrantId);
+            grant?.GrantId,
+            grant?.PerfilId,
+            grant?.EscopoUnidadeId);
     }
 
     // A escala de Sensibilidade é crescente por construção (Publica < Interna <

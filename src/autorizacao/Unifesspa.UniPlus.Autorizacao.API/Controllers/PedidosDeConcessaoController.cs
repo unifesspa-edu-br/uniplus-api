@@ -39,6 +39,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed class PedidosDeConcessaoController : ControllerBase
 {
     private const string ResourceTag = "pedidos-de-concessao";
+    private const string PerfisParaPedidoTag = "perfis-para-pedido";
 
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
@@ -140,6 +141,42 @@ public sealed class PedidosDeConcessaoController : ControllerBase
             resultado.Value.Proximo,
             page,
             ResourceTag,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Os perfis ativos que se podem pedir, só com o necessário para escolher, paginados por cursor opaco bidirecional
+    /// (ADR-0026 + ADR-0089). Lê quem tem e-mail institucional verificado ou a permissão de manter perfis; o usuário
+    /// externo sem ela recebe 403.
+    /// </summary>
+    [HttpGet("perfis-para-pedido")]
+    [VendorMediaType(Resource = "perfil-para-pedido", Versions = [1])]
+    [ProducesResponseType(typeof(IEnumerable<PerfilParaPedidoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
+    public async Task<IActionResult> PerfisParaPedir(
+        [FromCursor(PerfisParaPedidoTag)] PageRequest page,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(page);
+
+        Result<ListarPerfisParaPedirResult> resultado = await _queryBus
+            .Send(new ListarPerfisParaPedirQuery(page.AfterId, page.Limit, page.Direction), cancellationToken)
+            .ConfigureAwait(false);
+        if (resultado.IsFailure)
+        {
+            return resultado.ToActionResult(_mapper);
+        }
+
+        return await this.OkPaginatedAsync(
+            resultado.Value!.Items,
+            resultado.Value.AnteriorAfterId,
+            resultado.Value.ProximoAfterId,
+            page,
+            PerfisParaPedidoTag,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

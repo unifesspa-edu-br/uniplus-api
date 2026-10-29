@@ -13,7 +13,7 @@ public sealed class AuthorizationDecisionTests
     private const string Permissao = "selecao.editais.publicar";
 
     private static EffectiveGrant Grant()
-        => EffectiveGrant.From(Permissao, FonteGrant.Token).Value!;
+        => EffectiveGrant.From(Permissao, FonteGrant.Concessao, escopoInstitucional: true).Value!;
 
     // ─── CA-03: permitida registra o grant usado (contraprova) ─────────────
 

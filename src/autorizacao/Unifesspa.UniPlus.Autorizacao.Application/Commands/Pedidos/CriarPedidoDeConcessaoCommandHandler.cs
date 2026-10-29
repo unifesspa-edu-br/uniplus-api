@@ -31,6 +31,7 @@ public static class CriarPedidoDeConcessaoCommandHandler
         IPerfilRepository perfis,
         IUnidadeReader unidades,
         IDominiosInstitucionais dominios,
+        ICatalogoDePermissoesConsultavel catalogo,
         IAutorizacaoUnitOfWork unitOfWork,
         IUserContext userContext,
         TimeProvider timeProvider,
@@ -41,6 +42,7 @@ public static class CriarPedidoDeConcessaoCommandHandler
         ArgumentNullException.ThrowIfNull(perfis);
         ArgumentNullException.ThrowIfNull(unidades);
         ArgumentNullException.ThrowIfNull(dominios);
+        ArgumentNullException.ThrowIfNull(catalogo);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -62,7 +64,7 @@ public static class CriarPedidoDeConcessaoCommandHandler
             : EscopoDaConcessao.DaInstituicao();
 
         Result<PedidoDeConcessao> criado = PedidoDeConcessao.Criar(
-            solicitante, command.BeneficiarioEmail, perfil, escopo, command.Justificativa, dominios, timeProvider.GetUtcNow());
+            solicitante, command.BeneficiarioEmail, perfil, escopo, command.Justificativa, dominios, catalogo, timeProvider.GetUtcNow());
         if (criado.IsFailure)
         {
             return Result<PedidoDeConcessaoDto>.ValidationFailure(criado.Errors);

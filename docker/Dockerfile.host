@@ -1,6 +1,6 @@
 # Composition root do monólito modular. Empacota o host
-# (Unifesspa.UniPlus.Host) que compõe os 6 módulos internos — Selecao, Ingresso,
-# Configuracao, OrganizacaoInstitucional, Publicacoes, Discentes — num processo
+# (Unifesspa.UniPlus.Host) que compõe os 7 módulos internos — Selecao, Ingresso,
+# Configuracao, OrganizacaoInstitucional, Publicacoes, Discentes, Autorizacao — num processo
 # único. Geo e Portal seguem deploy separado e NÃO entram na imagem.
 
 # ---- Restore + Build ----
@@ -15,7 +15,7 @@ COPY Directory.Build.props Directory.Packages.props global.json UniPlus.slnx .ed
 # EmbeddedResource — sem esta árvore no contexto, o publish falha em CS1566.
 COPY seeds/ seeds/
 
-# Apenas as árvores que o host referencia (shared + 6 módulos internos + contratos do verificador + host).
+# Apenas as árvores que o host referencia (shared + 7 módulos internos + contratos do verificador + host).
 COPY src/shared/ src/shared/
 COPY src/selecao/ src/selecao/
 COPY src/ingresso/ src/ingresso/
@@ -23,6 +23,7 @@ COPY src/configuracao/ src/configuracao/
 COPY src/organizacao-institucional/ src/organizacao-institucional/
 COPY src/publicacoes/ src/publicacoes/
 COPY src/discentes/ src/discentes/
+COPY src/autorizacao/ src/autorizacao/
 COPY src/verificador/Unifesspa.UniPlus.Verificador.Contratos/ src/verificador/Unifesspa.UniPlus.Verificador.Contratos/
 COPY src/host/ src/host/
 
