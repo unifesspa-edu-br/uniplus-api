@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
@@ -44,6 +45,17 @@ public interface IConcessaoRepository : IRepository<Concessao>
     /// sozinha e, enquanto não revogada, o índice único recusa a nova.
     /// </summary>
     Task<Perfil?> ObterParaConcederAsync(Guid perfilId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// A concessão não revogada, vigente ou vencida, igual à que se concederia (mesmo beneficiário, perfil e
+    /// escopo), rastreada; nula quando não há. É a que o índice único barra.
+    /// </summary>
+    Task<Concessao?> ObterNaoRevogadaIgualAsync(
+        Identidade beneficiario, Guid perfilId, EscopoDaConcessao escopo, CancellationToken cancellationToken = default);
+
+    /// <summary>Indica se a pessoa tem concessão ativa do perfil, no escopo da instituição.</summary>
+    Task<bool> TemConcessaoAtivaDoPerfilAsync(
+        Identidade pessoa, Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default);
 
     /// <summary>Lê a concessão com o nome do perfil, sem rastreamento.</summary>
     Task<ConcessaoComPerfil?> ObterComPerfilAsync(Guid id, CancellationToken cancellationToken = default);

@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Instalacoes;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -50,8 +51,8 @@ public sealed class InstalacaoHandlersTests
     {
         ResultadoDaVerificacaoDeArquivo resultado = new(Guid.NewGuid(), veredicto, MotivoDaRecusa.NaoSeAplica, hash, null, null);
 
-        Func<Task> acao = () => RegistrarResultadoDaVerificacaoDoDocumentoDaInstalacaoHandler.Handle(
-            resultado, new RepositorioSemInstalacao(), new UnidadeDeTrabalhoIntocavel(), TimeProvider.System, NullLogger.Instance, CancellationToken.None);
+        Func<Task> acao = () => RegistrarResultadoDaVerificacaoDoDocumentoDaAutorizacaoHandler.Handle(
+            resultado, new RepositorioSemInstalacao(), new PedidosComAnexo(null), new UnidadeDeTrabalhoIntocavel(), TimeProvider.System, NullLogger.Instance, CancellationToken.None);
 
         await acao.Should().ThrowAsync<ResultadoDaVerificacaoInvalidoException>();
     }
@@ -62,8 +63,8 @@ public sealed class InstalacaoHandlersTests
         ResultadoDaVerificacaoDeArquivo resultado = new(
             Guid.NewGuid(), VeredictoDaVerificacao.Recusado, MotivoDaRecusa.PdfComSenha, null, null, null);
 
-        await RegistrarResultadoDaVerificacaoDoDocumentoDaInstalacaoHandler.Handle(
-            resultado, new RepositorioSemInstalacao(), new UnidadeDeTrabalhoIntocavel(), TimeProvider.System, NullLogger.Instance, CancellationToken.None);
+        await RegistrarResultadoDaVerificacaoDoDocumentoDaAutorizacaoHandler.Handle(
+            resultado, new RepositorioSemInstalacao(), new PedidosComAnexo(null), new UnidadeDeTrabalhoIntocavel(), TimeProvider.System, NullLogger.Instance, CancellationToken.None);
     }
 
     [Fact(DisplayName = "Resultado repetido de instalação que já saiu da verificação é ignorado sem gravar")]
@@ -71,13 +72,13 @@ public sealed class InstalacaoHandlersTests
     {
         Instalacao instalacao = Instalacao.Iniciar(
             new Identidade(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0001"),
-            [new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0002"), new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0003")],
+            [new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0002", "gestor2@uniplus-test.local"), new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0003", "gestor3@uniplus-test.local")],
             Emissor, "123", 1024, DateTimeOffset.UtcNow).Value!;
         ResultadoDaVerificacaoDeArquivo resultado = new(
             instalacao.Id, VeredictoDaVerificacao.Recusado, MotivoDaRecusa.PdfComSenha, null, null, null);
 
-        await RegistrarResultadoDaVerificacaoDoDocumentoDaInstalacaoHandler.Handle(
-            resultado, new RepositorioComInstalacao(instalacao), new UnidadeDeTrabalhoIntocavel(), TimeProvider.System, NullLogger.Instance, CancellationToken.None);
+        await RegistrarResultadoDaVerificacaoDoDocumentoDaAutorizacaoHandler.Handle(
+            resultado, new RepositorioComInstalacao(instalacao), new PedidosComAnexo(null), new UnidadeDeTrabalhoIntocavel(), TimeProvider.System, NullLogger.Instance, CancellationToken.None);
 
         instalacao.Situacao.Should().Be(Domain.Enums.SituacaoDaInstalacao.AguardandoDocumento);
     }
@@ -90,7 +91,7 @@ public sealed class InstalacaoHandlersTests
         Identidade executor = new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0001");
         Instalacao instalacao = Instalacao.Iniciar(
             executor,
-            [new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0002"), new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0003")],
+            [new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0002", "gestor2@uniplus-test.local"), new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0003", "gestor3@uniplus-test.local")],
             Emissor, "123", 1024, DateTimeOffset.UtcNow).Value!;
         instalacao.ConfirmarDocumento("etag");
         instalacao.RegistrarDocumentoVerificado("sha", DateTimeOffset.UtcNow);
@@ -122,7 +123,7 @@ public sealed class InstalacaoHandlersTests
         Identidade executor = new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0001");
         Instalacao instalacao = Instalacao.Iniciar(
             executor,
-            [new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0002"), new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0003")],
+            [new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0002", "gestor2@uniplus-test.local"), new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0003", "gestor3@uniplus-test.local")],
             Emissor, "123", 2048, DateTimeOffset.UtcNow).Value!;
 
         (Result<InstalacaoDto> resposta, IEnumerable<object> mensagens) = await ConfirmarDocumentoDaInstalacaoCommandHandler.Handle(
@@ -143,19 +144,20 @@ public sealed class InstalacaoHandlersTests
         Identidade executor = new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0001");
         Instalacao anterior = Instalacao.Iniciar(
             executor,
-            [new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0002"), new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0003")],
+            [new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0002", "gestor2@uniplus-test.local"), new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0003", "gestor3@uniplus-test.local")],
             Emissor, "123", 1024, DateTimeOffset.UtcNow).Value!;
         RepositorioComPendencia instalacoes = new(anterior);
         UnidadeDeTrabalhoContadora unidade = new();
 
         Result<InstalacaoIniciadaDto> resultado = await IniciarInstalacaoCommandHandler.Handle(
             new IniciarInstalacaoCommand(
-                [new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0002"), new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0003")],
+                [new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0002", "gestor2@uniplus-test.local"), new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0003", "gestor3@uniplus-test.local")],
                 "456",
                 2048),
             instalacoes,
             new ConcessoesSemGestor(),
             new UrlFixa(),
+            new DominiosDeTeste(),
             unidade,
             new Usuario(executor),
             TimeProvider.System,
@@ -165,6 +167,33 @@ public sealed class InstalacaoHandlersTests
         anterior.Situacao.Should().Be(SituacaoDaInstalacao.Cancelada);
         instalacoes.Adicionada.Should().NotBeNull();
         unidade.Gravacoes.Should().Be(1);
+    }
+
+    [Fact(DisplayName = "Gestor com e-mail fora do domínio institucional recusa o início, sem gravar nada")]
+    public async Task Iniciar_GestorComEmailNaoInstitucional_Recusa()
+    {
+        Identidade executor = new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0001");
+        UnidadeDeTrabalhoContadora unidade = new();
+
+        Result<InstalacaoIniciadaDto> resultado = await IniciarInstalacaoCommandHandler.Handle(
+            new IniciarInstalacaoCommand(
+                [
+                    new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0002", "gestor2@gmail.com"),
+                    new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0003", "gestor3@uniplus-test.local"),
+                ],
+                "456",
+                2048),
+            new RepositorioComPendencia(null!),
+            new ConcessoesSemGestor(),
+            new UrlFixa(),
+            new DominiosDeTeste(),
+            unidade,
+            new Usuario(executor),
+            TimeProvider.System,
+            CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Single().Error.Code.Should().Be(InstalacaoErrorCodes.GestoresInvalidos);
     }
 
     private sealed class RepositorioComPendencia(Instalacao anterior) : RepositorioSemInstalacao
@@ -196,10 +225,18 @@ public sealed class InstalacaoHandlersTests
         }
     }
 
-    private sealed class UrlFixa : IArmazenamentoDoDocumentoDaInstalacao
+    private sealed class DominiosDeTeste : IDominiosInstitucionais
+    {
+        public bool Contem(string dominio) => dominio == "uniplus-test.local";
+    }
+
+    private sealed class UrlFixa : IArmazenamentoDosDocumentosDaAutorizacao
     {
         public Task<string> GerarUrlDeEnvioAsync(string chaveDeEnvio, string contentType, TimeSpan expiracao, CancellationToken cancellationToken = default) =>
             Task.FromResult("https://armazenamento.test/envio");
+
+        public Task<string> GerarUrlDeLeituraAsync(string chaveDefinitiva, string nomeDoArquivo, TimeSpan expiracao, CancellationToken cancellationToken = default) =>
+            Task.FromResult("https://armazenamento.test/leitura");
     }
 
     private sealed class ConcessoesSemGestor : IConcessaoRepository
@@ -216,6 +253,8 @@ public sealed class InstalacaoHandlersTests
         public void Remover(Concessao entity) => throw new InvalidOperationException();
         public Task<Perfil?> ObterParaConcederAsync(Guid perfilId, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<ConcessaoComPerfil?> ObterComPerfilAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+        public Task<Concessao?> ObterNaoRevogadaIgualAsync(Identidade beneficiario, Guid perfilId, EscopoDaConcessao escopo, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+        public Task<bool> TemConcessaoAtivaDoPerfilAsync(Identidade pessoa, Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
 
         public Task<(IReadOnlyList<ConcessaoComPerfil> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
             FiltroDeConcessoes filtro, Guid? afterId, int limit, PaginationDirection direction, CancellationToken cancellationToken = default) =>
@@ -274,6 +313,8 @@ public sealed class InstalacaoHandlersTests
         public void Remover(Concessao entity) => throw new InvalidOperationException();
         public Task<Perfil?> ObterParaConcederAsync(Guid perfilId, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<ConcessaoComPerfil?> ObterComPerfilAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+        public Task<Concessao?> ObterNaoRevogadaIgualAsync(Identidade beneficiario, Guid perfilId, EscopoDaConcessao escopo, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+        public Task<bool> TemConcessaoAtivaDoPerfilAsync(Identidade pessoa, Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
 
         public Task<(IReadOnlyList<ConcessaoComPerfil> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
             FiltroDeConcessoes filtro, Guid? afterId, int limit, PaginationDirection direction, CancellationToken cancellationToken = default) =>

@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.ExternalServices;
 
 using Microsoft.Extensions.Options;
 
-using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
+using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 
 /// <summary><see cref="IDominiosInstitucionais"/> sobre <c>Autorizacao:Instalacao:DominiosInstitucionais</c>.</summary>
 public sealed class DominiosInstitucionais : IDominiosInstitucionais

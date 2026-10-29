@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
@@ -58,6 +59,41 @@ public sealed class ConcessaoRepository : IConcessaoRepository
         return await _context.Perfis
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == perfilId, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<Concessao?> ObterNaoRevogadaIgualAsync(
+        Identidade beneficiario, Guid perfilId, EscopoDaConcessao escopo, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(beneficiario);
+        ArgumentNullException.ThrowIfNull(escopo);
+
+        return await _context.Concessoes
+            .Where(c => c.BeneficiarioEmissor == beneficiario.Emissor
+                && c.BeneficiarioSub == beneficiario.Sub
+                && c.PerfilId == perfilId
+                && c.EscopoTipo == escopo.Tipo
+                && c.UnidadeId == escopo.UnidadeId
+                && c.RevogadaEm == null)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<bool> TemConcessaoAtivaDoPerfilAsync(
+        Identidade pessoa, Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(pessoa);
+
+        return await _context.Concessoes
+            .AsNoTracking()
+            .AnyAsync(
+                c => c.BeneficiarioEmissor == pessoa.Emissor
+                    && c.BeneficiarioSub == pessoa.Sub
+                    && c.PerfilId == perfilId
+                    && c.EscopoTipo == TipoDeEscopo.Instituicao
+                    && c.RevogadaEm == null
+                    && (c.ValidaAte == null || c.ValidaAte > agora),
+                cancellationToken)
             .ConfigureAwait(false);
     }
 

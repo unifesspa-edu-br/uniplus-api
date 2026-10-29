@@ -39,6 +39,7 @@ public static class AutorizacaoInfrastructureRegistration
         services.AddScoped<IPerfilRepository, PerfilRepository>();
         services.AddScoped<IConcessaoRepository, ConcessaoRepository>();
         services.AddScoped<IInstalacaoRepository, InstalacaoRepository>();
+        services.AddScoped<IPedidoDeConcessaoRepository, PedidoDeConcessaoRepository>();
         services.AddSingleton<ICatalogoDePermissoesConsultavel, CatalogoDePermissoesDaAplicacao>();
 
         services.AddScoped<IResumoDeCodigoDeConfirmacao, ResumoDeCodigoDeConfirmacao>();
@@ -48,17 +49,17 @@ public static class AutorizacaoInfrastructureRegistration
         services.AddSingleton<IDominiosInstitucionais, DominiosInstitucionais>();
 
         // Os nomes dos buckets e a credencial são obrigatórios: sem eles o pod falha no startup, e não no primeiro envio.
-        services.AddOptions<ArquivosDaInstalacaoOptions>()
-            .BindConfiguration(ArquivosDaInstalacaoOptions.SectionName)
+        services.AddOptions<ArquivosDaAutorizacaoOptions>()
+            .BindConfiguration(ArquivosDaAutorizacaoOptions.SectionName)
             .Validate(
-                static o => !string.IsNullOrWhiteSpace(o.BucketDeEnvio)
+                static o => !string.IsNullOrWhiteSpace(o.BucketDeEnvio) && !string.IsNullOrWhiteSpace(o.BucketDefinitivo)
                     && !string.IsNullOrWhiteSpace(o.AccessKey) && !string.IsNullOrWhiteSpace(o.SecretKey),
-                "ArquivosDoCandidato:BucketDeEnvio, AccessKey e SecretKey são obrigatórios.")
+                "ArquivosDoCandidato:BucketDeEnvio, BucketDefinitivo, AccessKey e SecretKey são obrigatórios.")
             .ValidateOnStart();
-        services.AddSingleton<IArmazenamentoDoDocumentoDaInstalacao>(static sp =>
+        services.AddSingleton<IArmazenamentoDosDocumentosDaAutorizacao>(static sp =>
         {
-            IOptions<ArquivosDaInstalacaoOptions> instalacao = sp.GetRequiredService<IOptions<ArquivosDaInstalacaoOptions>>();
-            return new ArmazenamentoDaInstalacao(
+            IOptions<ArquivosDaAutorizacaoOptions> instalacao = sp.GetRequiredService<IOptions<ArquivosDaAutorizacaoOptions>>();
+            return new ArmazenamentoDosDocumentosDaAutorizacao(
                 StorageServiceCollectionExtensions.CriarStorageComCredencialPropria(
                     sp, instalacao.Value.AccessKey, instalacao.Value.SecretKey),
                 instalacao);

@@ -111,7 +111,8 @@ public static partial class ConfirmarInstalacaoCommandHandler
         foreach (GestorDaInstalacao gestor in instalacao.Gestores)
         {
             Result<Concessao> concessao = Concessao.Conceder(
-                new Identidade(gestor.Emissor, gestor.Sub), perfil, EscopoDaConcessao.DaInstituicao(), origem, autor, agora);
+                new Identidade(gestor.Emissor, gestor.Sub, gestor.Nome), perfil, EscopoDaConcessao.DaInstituicao(), origem, autor, agora,
+                beneficiarioEmail: gestor.Email);
             if (concessao.IsFailure)
             {
                 erros.AddRange(concessao.Errors);

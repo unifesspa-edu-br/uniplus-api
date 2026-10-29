@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Autorizacao.API;
 using JasperFx;
 using JasperFx.CodeGeneration;
 
+using Unifesspa.UniPlus.Autorizacao.Application.Commands;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Instalacoes;
 using Unifesspa.UniPlus.Verificador.Contratos;
 
@@ -11,13 +12,13 @@ using Wolverine.ErrorHandling;
 using Wolverine.Runtime.Handlers;
 
 /// <summary>
-/// Política de falha do consumo do resultado da verificação do documento da instalação. Sem regra, a primeira
+/// Política de falha do consumo do resultado da verificação dos PDFs da Autorização. Sem regra, a primeira
 /// exceção manda o resultado para a fila morta. A falha provável é transiente (banco, deadlock, entregas
 /// concorrentes), e insistir resolve; o resultado sem veredicto é defeito do contrato e vai direto para a fila
 /// morta. O mesmo tipo de mensagem tem uma cadeia por handler preso à fila, então a política só alcança a cadeia
 /// do handler da Autorização.
 /// </summary>
-internal sealed class ReentregaDoResultadoDaVerificacaoDaInstalacao : IHandlerPolicy
+internal sealed class ReentregaDoResultadoDaVerificacaoDaAutorizacao : IHandlerPolicy
 {
     public void Apply(IReadOnlyList<HandlerChain> chains, GenerationRules rules, IServiceContainer container)
     {
@@ -26,7 +27,7 @@ internal sealed class ReentregaDoResultadoDaVerificacaoDaInstalacao : IHandlerPo
         foreach (HandlerChain chain in chains)
         {
             if (chain.MessageType != typeof(ResultadoDaVerificacaoDeArquivo)
-                || !chain.Handlers.Any(h => h.HandlerType == typeof(RegistrarResultadoDaVerificacaoDoDocumentoDaInstalacaoHandler)))
+                || !chain.Handlers.Any(h => h.HandlerType == typeof(RegistrarResultadoDaVerificacaoDoDocumentoDaAutorizacaoHandler)))
             {
                 continue;
             }

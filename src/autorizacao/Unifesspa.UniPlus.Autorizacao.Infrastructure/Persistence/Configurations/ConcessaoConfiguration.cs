@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
 /// <summary>Configuração EF Core da concessão de acesso.</summary>
 [SuppressMessage(
@@ -51,6 +52,10 @@ internal sealed class ConcessaoConfiguration : IEntityTypeConfiguration<Concessa
 
         builder.Property(c => c.BeneficiarioEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(c => c.BeneficiarioSub).HasMaxLength(IdentidadeMaxLength).IsRequired();
+        builder.Property(c => c.BeneficiarioNome).HasMaxLength(NomeDeExibicao.MaxLength);
+        builder.Property(c => c.BeneficiarioEmail).HasMaxLength(PedidoDeConcessao.EmailMaxLength);
+        builder.Property(c => c.ConcedidaPorNome).HasMaxLength(NomeDeExibicao.MaxLength);
+        builder.Property(c => c.RevogadaPorNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(c => c.ConcedidaPorEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(c => c.ConcedidaPorSub).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(c => c.RevogadaPorEmissor).HasMaxLength(IdentidadeMaxLength);

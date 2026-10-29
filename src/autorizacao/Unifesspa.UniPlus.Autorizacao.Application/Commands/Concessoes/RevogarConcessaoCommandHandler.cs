@@ -43,6 +43,12 @@ public static class RevogarConcessaoCommandHandler
             return Result.Failure(ConcessaoHandlerErros.NaoEncontrada(command.Id));
         }
 
+        // A concessão já revogada responde antes: confirmar a pessoa de algo encerrado não leva a nada.
+        if (concessao.RevogadaEm is null && !concessao.ConfirmaEmailDoBeneficiario(command.ConfirmacaoEmail))
+        {
+            return Result.ValidationFailure([new FieldError("confirmacaoEmail", ConcessaoHandlerErros.ConfirmacaoDivergente())]);
+        }
+
         DateTimeOffset agora = timeProvider.GetUtcNow();
 
         // Só a concessão que hoje conta como gestor reduz o número de gestores; revogar uma

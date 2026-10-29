@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
+using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -24,7 +25,8 @@ public static class IniciarInstalacaoCommandHandler
         IniciarInstalacaoCommand command,
         IInstalacaoRepository instalacaoRepository,
         IConcessaoRepository concessaoRepository,
-        IArmazenamentoDoDocumentoDaInstalacao armazenamento,
+        IArmazenamentoDosDocumentosDaAutorizacao armazenamento,
+        IDominiosInstitucionais dominios,
         IAutorizacaoUnitOfWork unitOfWork,
         IUserContext userContext,
         TimeProvider timeProvider,
@@ -34,6 +36,7 @@ public static class IniciarInstalacaoCommandHandler
         ArgumentNullException.ThrowIfNull(instalacaoRepository);
         ArgumentNullException.ThrowIfNull(concessaoRepository);
         ArgumentNullException.ThrowIfNull(armazenamento);
+        ArgumentNullException.ThrowIfNull(dominios);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -41,6 +44,15 @@ public static class IniciarInstalacaoCommandHandler
         if (IdentidadeDoToken.De(userContext) is not { } executor)
         {
             return Result<InstalacaoIniciadaDto>.Failure(InstalacaoHandlerErros.AutorNaoIdentificado());
+        }
+
+        // O e-mail do gestor é o que a revogação da concessão pede de volta: o que não é do domínio institucional não vale.
+        if (command.Gestores.Any(g => PedidoDeConcessao.EmailNormalizado(g.Email) is { } email
+            && !dominios.Contem(email[(email.LastIndexOf('@') + 1)..])))
+        {
+            return Result<InstalacaoIniciadaDto>.ValidationFailure([new FieldError("gestores", new DomainError(
+                InstalacaoErrorCodes.GestoresInvalidos,
+                "O e-mail de cada gestor deve ser institucional."))]);
         }
 
         DateTimeOffset agora = timeProvider.GetUtcNow();

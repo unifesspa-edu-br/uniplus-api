@@ -18,6 +18,7 @@ using Microsoft.Extensions.Options;
 
 using Minio;
 
+using Unifesspa.UniPlus.Autorizacao.Application.Commands;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Instalacoes;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
@@ -88,6 +89,14 @@ public sealed partial class InstalacaoDosGestoresTests
 
         confirmada.StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await ListarGestoresAtivosAsync()).Should().BeEquivalentTo(Diogo.Sub.ToString(), Isabella.Sub.ToString());
+        await using (AsyncServiceScope escopoDaConcessao = _fixture.Factory.Services.CreateAsyncScope())
+        {
+            Concessao deDiogo = await escopoDaConcessao.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Concessoes
+                .AsNoTracking().SingleAsync(c => c.PerfilId == PerfisDeSistema.GestorDeAcessosId && c.BeneficiarioSub == Diogo.Sub.ToString());
+            deDiogo.BeneficiarioEmail.Should().Be(Diogo.Email, "a revogação do gestor pede o e-mail dele de volta");
+            deDiogo.ConfirmaEmailDoBeneficiario(Diogo.Email.ToUpperInvariant()).Should().BeTrue();
+        }
+
         using (IServiceScope escopoDoArmazenamento = _fixture.Factory.Services.CreateScope())
         {
             (await escopoDoArmazenamento.ServiceProvider.GetRequiredService<IStorageService>()
@@ -405,7 +414,7 @@ public sealed partial class InstalacaoDosGestoresTests
 
         // O handler da Seleção processou o resultado (não achou o arquivo): é o sinal de que a mensagem foi consumida.
         await AguardarLogAsync($"Resultado da verificação do arquivo {id} descartado");
-        LerLog().Should().NotContain($"documento da instalação {id}");
+        LerLog().Should().NotContain($"documento {id} da Autorização");
         (await LerAsync(paulo, $"{Rota}/{id}")).GetProperty("situacao").GetString().Should().Be("documento_em_verificacao");
     }
 
@@ -416,7 +425,7 @@ public sealed partial class InstalacaoDosGestoresTests
 
         await InjetarResultadoAsync(desconhecido, VeredictoDaVerificacao.Verificado, fila: FilasDaVerificacao.ResultadosAutorizacao);
 
-        await AguardarLogAsync($"documento da instalação {desconhecido} descartado");
+        await AguardarLogAsync($"documento {desconhecido} da Autorização descartado");
         LerLog().Should().NotContain($"Resultado da verificação do arquivo {desconhecido}");
     }
 
@@ -426,7 +435,7 @@ public sealed partial class InstalacaoDosGestoresTests
         HandlerGraph grafo = _fixture.Factory.Services.GetRequiredService<HandlerGraph>();
         HandlerChain[] cadeias = [.. grafo.AllChains().Where(c => c.MessageType == typeof(ResultadoDaVerificacaoDeArquivo))];
 
-        HandlerChain daInstalacao = cadeias.Single(c => c.Handlers.Any(h => h.HandlerType == typeof(RegistrarResultadoDaVerificacaoDoDocumentoDaInstalacaoHandler)));
+        HandlerChain daInstalacao = cadeias.Single(c => c.Handlers.Any(h => h.HandlerType == typeof(RegistrarResultadoDaVerificacaoDoDocumentoDaAutorizacaoHandler)));
         HandlerChain daSelecao = cadeias.Single(c => c.Handlers.Any(h => h.HandlerType == typeof(RegistrarResultadoDaVerificacaoDoArquivoHandler)));
 
         // Duas regras por cadeia: o resultado inválido direto para a fila de erro, e a reentrega com cooldown.
@@ -563,7 +572,7 @@ public sealed partial class InstalacaoDosGestoresTests
             tamanhoDoPdf = tamanho ?? Pdf.Length,
         });
 
-    private static object Identidade(Persona p) => new { emissor = TestAuthHandler.DefaultIssuer, sub = p.Sub.ToString() };
+    private static object Identidade(Persona p) => new { emissor = TestAuthHandler.DefaultIssuer, sub = p.Sub.ToString(), email = p.Email, nome = p.Username };
 
     private static async Task<(Guid Id, Uri UrlDeEnvio)> IniciarAsync(HttpClient client, Persona primeiro, Persona segundo, long? tamanho = null)
     {

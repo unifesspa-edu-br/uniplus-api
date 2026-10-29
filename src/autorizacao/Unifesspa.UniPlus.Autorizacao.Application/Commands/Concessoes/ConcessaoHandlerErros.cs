@@ -13,6 +13,9 @@ internal static class ConcessaoHandlerErros
         new(ConcessaoErrorCodes.AutorNaoIdentificado,
             "Não foi possível identificar quem executa a operação; a revogação não foi registrada.");
 
+    public static DomainError ConfirmacaoDivergente() =>
+        new(ConcessaoErrorCodes.ConfirmacaoDivergente, "O e-mail informado não é o do beneficiário da concessão.");
+
     public static DomainError MinimoDeGestores() =>
         new(ConcessaoErrorCodes.MinimoDeGestores,
             "A revogação deixaria a plataforma com menos de dois gestores de acessos ativos. Designe outro gestor antes de revogar.");

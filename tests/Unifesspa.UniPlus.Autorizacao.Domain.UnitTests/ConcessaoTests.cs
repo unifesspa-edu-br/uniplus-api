@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed class ConcessaoTests
 {
     private const string Emissor = "https://idp.test/realms/unifesspa";
+    private const string Email = "leandro.viana@uniplus-test.local";
 
     private static readonly DateTimeOffset Agora = new(2026, 10, 28, 12, 0, 0, TimeSpan.Zero);
     private static readonly Identidade Leandro = new(Emissor, "leandro.viana");
@@ -163,9 +164,27 @@ public sealed class ConcessaoTests
         CodigosDaRecusa(Concedida().Revogar(Diogo, new string('a', 501), Agora))
             .Should().Equal(ConcessaoErrorCodes.MotivoInvalido);
 
+    [Theory(DisplayName = "O e-mail do beneficiário confirma sem diferenciar maiúsculas nem espaços nas pontas")]
+    [InlineData("leandro.viana@uniplus-test.local", true)]
+    [InlineData("  Leandro.Viana@UNIPLUS-test.local ", true)]
+    [InlineData("isabella.figueiredo@uniplus-test.local", false)]
+    [InlineData("", false)]
+    [InlineData(null, false)]
+    public void ConfirmaEmailDoBeneficiario_ComparaSemCaixaNemEspacos(string? informado, bool esperado) =>
+        Concedida().ConfirmaEmailDoBeneficiario(informado).Should().Be(esperado);
+
+    [Fact(DisplayName = "Concessão sem e-mail gravado nunca confirma: não há com o que conferir")]
+    public void ConfirmaEmailDoBeneficiario_SemEmailGravado_NaoConfirma()
+    {
+        Concessao antiga = Concessao.Conceder(
+            Leandro, PerfilComum(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, Diogo, Agora).Value!;
+
+        antiga.ConfirmaEmailDoBeneficiario(Email).Should().BeFalse();
+    }
+
     private static Concessao Concedida(DateTimeOffset? validaAte = null) =>
         Concessao.Conceder(
-            Leandro, PerfilComum(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, Diogo, Agora, validaAte).Value!;
+            Leandro, PerfilComum(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, Diogo, Agora, validaAte, Email).Value!;
 
     private static Perfil PerfilComum() =>
         Perfil.Criar("Analista", "Descrição válida.", ["selecao:processos:consultar"], Catalogo).Value!;

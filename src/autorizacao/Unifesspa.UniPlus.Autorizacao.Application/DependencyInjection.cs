@@ -19,8 +19,9 @@ public static class AutorizacaoApplicationServiceRegistration
 
         services.AddValidatorsFromAssembly(typeof(AutorizacaoApplicationServiceRegistration).Assembly);
 
-        // A origem "instalação" acrescenta os eventos dela à trilha da concessão que gerou.
+        // As origens "instalação" e "pedido" acrescentam os eventos delas à trilha da concessão que gerou.
         services.AddScoped<IEventosDaOrigem, EventosDaInstalacao>();
+        services.AddScoped<IEventosDaOrigem, EventosDoPedido>();
 
         return services;
     }

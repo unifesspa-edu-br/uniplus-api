@@ -20,7 +20,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// (<see cref="EstaAtiva"/>): gravar o resultado o deixaria envelhecer quando a vigência vence.
 /// </para>
 /// <para>
-/// <b>Só a identidade do token é gravada</b>, nunca nome nem CPF do beneficiário.
+/// <b>Só a identidade do token e o nome de exibição de quem age são gravados</b>, nunca o CPF. O nome é o que a trilha
+/// mostra, gravado no instante da ação.
 /// </para>
 /// </remarks>
 public sealed class Concessao : EntityBase
@@ -30,6 +31,15 @@ public sealed class Concessao : EntityBase
     public string BeneficiarioEmissor { get; private set; } = string.Empty;
 
     public string BeneficiarioSub { get; private set; } = string.Empty;
+
+    /// <summary>Nome do beneficiário no instante da concessão; nulo quando a origem não o tinha.</summary>
+    public string? BeneficiarioNome { get; private set; }
+
+    /// <summary>
+    /// E-mail institucional do beneficiário, em minúsculas, que a revogação pede de volta para confirmar a pessoa; nulo
+    /// quando a origem não o tinha. Nunca sai na listagem.
+    /// </summary>
+    public string? BeneficiarioEmail { get; private set; }
 
     public Guid PerfilId { get; private set; }
 
@@ -48,6 +58,8 @@ public sealed class Concessao : EntityBase
 
     public string ConcedidaPorSub { get; private set; } = string.Empty;
 
+    public string? ConcedidaPorNome { get; private set; }
+
     /// <summary>Fim da vigência, quando a concessão é por prazo; nulo quando não expira.</summary>
     public DateTimeOffset? ValidaAte { get; private set; }
 
@@ -56,6 +68,8 @@ public sealed class Concessao : EntityBase
     public string? RevogadaPorEmissor { get; private set; }
 
     public string? RevogadaPorSub { get; private set; }
+
+    public string? RevogadaPorNome { get; private set; }
 
     public string? MotivoRevogacao { get; private set; }
 
@@ -76,7 +90,8 @@ public sealed class Concessao : EntityBase
         OrigemDaConcessao origem,
         Identidade concedidaPor,
         DateTimeOffset instante,
-        DateTimeOffset? validaAte = null)
+        DateTimeOffset? validaAte = null,
+        string? beneficiarioEmail = null)
     {
         ArgumentNullException.ThrowIfNull(beneficiario);
         ArgumentNullException.ThrowIfNull(perfil);
@@ -123,6 +138,8 @@ public sealed class Concessao : EntityBase
         {
             BeneficiarioEmissor = beneficiario.Emissor,
             BeneficiarioSub = beneficiario.Sub,
+            BeneficiarioNome = beneficiario.Nome,
+            BeneficiarioEmail = PedidoDeConcessao.EmailNormalizado(beneficiarioEmail),
             PerfilId = perfil.Id,
             EscopoTipo = escopo.Tipo,
             UnidadeId = escopo.UnidadeId,
@@ -131,9 +148,18 @@ public sealed class Concessao : EntityBase
             ConcedidaEm = instante,
             ConcedidaPorEmissor = concedidaPor.Emissor,
             ConcedidaPorSub = concedidaPor.Sub,
+            ConcedidaPorNome = concedidaPor.Nome,
             ValidaAte = validaAte,
         });
     }
+
+    /// <summary>
+    /// O e-mail digitado para confirmar a revogação é o do beneficiário: compara sem diferenciar maiúsculas nem espaços nas
+    /// pontas. A concessão sem e-mail gravado não tem com o que conferir e nunca confirma.
+    /// </summary>
+    public bool ConfirmaEmailDoBeneficiario(string? confirmacaoEmail) =>
+        BeneficiarioEmail is not null
+        && string.Equals(BeneficiarioEmail, confirmacaoEmail?.Trim(), StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Ativa quando não foi revogada e a vigência, se houver, ainda não venceu.</summary>
     public bool EstaAtiva(DateTimeOffset agora) =>
@@ -165,15 +191,17 @@ public sealed class Concessao : EntityBase
         RevogadaEm = instante;
         RevogadaPorEmissor = revogadaPor.Emissor;
         RevogadaPorSub = revogadaPor.Sub;
+        RevogadaPorNome = revogadaPor.Nome;
         MotivoRevogacao = motivoNormalizado;
 
         return Result.Success();
     }
 
+    // Também confere o escopo do pedido, que não pode pedir o que a concessão recusaria.
     // Perfil de governança só vale na instituição: perfis e concessões são recursos dela, e a
     // concessão numa unidade não alcança nada acima (ADR-0079). O perfil comum, nesta etapa, só
     // aceita a unidade; qual perfil comum admite escopo institucional é decisão à parte.
-    private static string? ConferirEscopo(Perfil perfil, EscopoDaConcessao escopo)
+    internal static string? ConferirEscopo(Perfil perfil, EscopoDaConcessao escopo)
     {
         bool coerente = escopo.Tipo switch
         {

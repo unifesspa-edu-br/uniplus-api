@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
 /// <summary>Configuração EF Core da instalação dos primeiros gestores de acessos.</summary>
 [SuppressMessage(
@@ -42,6 +43,7 @@ internal sealed class InstalacaoConfiguration : IEntityTypeConfiguration<Instala
 
         builder.Property(i => i.ExecutorEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(i => i.ExecutorSub).HasMaxLength(IdentidadeMaxLength).IsRequired();
+        builder.Property(i => i.ExecutorNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(i => i.NumeroDoDocumento).HasMaxLength(Instalacao.NumeroDoDocumentoMaxLength).IsRequired();
         builder.Property(i => i.TamanhoDoPdf).IsRequired();
         builder.Property(i => i.Situacao).HasConversion(SituacaoConverter).HasMaxLength(SituacaoMaxLength).IsRequired();
@@ -66,6 +68,8 @@ internal sealed class InstalacaoConfiguration : IEntityTypeConfiguration<Instala
             gestor.Property<Guid>("InstalacaoId");
             gestor.Property(g => g.Emissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
             gestor.Property(g => g.Sub).HasMaxLength(IdentidadeMaxLength).IsRequired();
+            gestor.Property(g => g.Email).HasMaxLength(PedidoDeConcessao.EmailMaxLength);
+            gestor.Property(g => g.Nome).HasMaxLength(NomeDeExibicao.MaxLength);
             gestor.HasKey("InstalacaoId", nameof(GestorDaInstalacao.Emissor), nameof(GestorDaInstalacao.Sub));
         });
 

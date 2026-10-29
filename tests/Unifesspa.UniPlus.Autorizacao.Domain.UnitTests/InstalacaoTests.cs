@@ -62,7 +62,7 @@ public sealed class InstalacaoTests
     public void Iniciar_GravaOTamanhoDeclaradoDoPdf()
     {
         Instalacao instalacao = Instalacao.Iniciar(
-            Paulo, [new(Emissor, SubDiogo), new(Emissor, SubIsabella)], Emissor, "123", 2048, Agora).Value!;
+            Paulo, Gestores(SubDiogo, SubIsabella), Emissor, "123", 2048, Agora).Value!;
 
         instalacao.TamanhoDoPdf.Should().Be(2048);
     }
@@ -75,10 +75,38 @@ public sealed class InstalacaoTests
     [InlineData(SubDiogo, null)]
     public void Iniciar_GestorMalFormado_Recusa(string? sub, string? emissor)
     {
-        IdentidadeInformada[] gestores = [new(emissor, sub), new(Emissor, SubIsabella)];
+        IdentidadeInformada[] gestores = [new(emissor, sub, "gestor@uniplus-test.local"), .. Gestores(SubIsabella)];
 
         CodigosDaRecusa(Instalacao.Iniciar(Paulo, gestores, Emissor, "123", 1024, Agora))
             .Should().Equal(InstalacaoErrorCodes.GestoresInvalidos);
+    }
+
+    [Theory(DisplayName = "Gestor sem e-mail ou com e-mail inválido é recusado: sem ele a concessão ficaria irrevogável")]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("sem-arroba")]
+    public void Iniciar_GestorSemEmail_Recusa(string? email)
+    {
+        IdentidadeInformada[] gestores = [new(Emissor, SubDiogo, email), .. Gestores(SubIsabella)];
+
+        CodigosDaRecusa(Instalacao.Iniciar(Paulo, gestores, Emissor, "123", 1024, Agora))
+            .Should().Equal(InstalacaoErrorCodes.GestoresInvalidos);
+    }
+
+    [Fact(DisplayName = "O e-mail e o nome do gestor ficam gravados em minúsculas e aparados para a concessão")]
+    public void Iniciar_GravaEmailENomeDoGestor()
+    {
+        IdentidadeInformada[] gestores =
+        [
+            new(Emissor, SubDiogo, "  Diogo.Souza@Uniplus-Test.local ", "  Diogo Bruno Filipe Souza "),
+            new(Emissor, SubIsabella, "isabella@uniplus-test.local"),
+        ];
+
+        Instalacao instalacao = Instalacao.Iniciar(Paulo, gestores, Emissor, "123", 1024, Agora).Value!;
+
+        instalacao.Gestores[0].Email.Should().Be("diogo.souza@uniplus-test.local");
+        instalacao.Gestores[0].Nome.Should().Be("Diogo Bruno Filipe Souza");
+        instalacao.Gestores[1].Nome.Should().BeNull();
     }
 
     [Theory(DisplayName = "Número do documento ausente, em branco, longo ou com caractere nulo é recusado")]
@@ -289,7 +317,7 @@ public sealed class InstalacaoTests
     }
 
     private static IdentidadeInformada[] Gestores(params string[] subs) =>
-        [.. subs.Select(sub => new IdentidadeInformada(Emissor, sub))];
+        [.. subs.Select(sub => new IdentidadeInformada(Emissor, sub, $"{sub}@uniplus-test.local"))];
 
     private static Instalacao Iniciada() =>
         Instalacao.Iniciar(Paulo, Gestores(SubDiogo, SubIsabella), Emissor, "123", 1024, Agora).Value!;

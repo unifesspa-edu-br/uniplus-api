@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Authorization.Enums;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
 /// <summary>Mapeamento <see cref="Perfil"/> para <see cref="PerfilDto"/>.</summary>
 public static class PerfilMapping
@@ -21,11 +22,7 @@ public static class PerfilMapping
                 .OrderBy(static p => p.Codigo, StringComparer.Ordinal),
         ];
 
-        // A sensibilidade do perfil é a mais alta entre as permissões; a escala é crescente.
-        Sensibilidade sensibilidade = perfil.Permissoes
-            .Select(p => SensibilidadeDe(p.Codigo, catalogo))
-            .DefaultIfEmpty(Sensibilidade.Publica)
-            .Max();
+        Sensibilidade sensibilidade = SensibilidadeDoPerfil(perfil, catalogo);
 
         return new PerfilDto(
             perfil.Id,
@@ -36,6 +33,32 @@ public static class PerfilMapping
             ValoresCanonicos.De(sensibilidade),
             permissoes);
     }
+
+    /// <summary>
+    /// O perfil como o aprovador o avalia agora: as permissões que reúne e a sensibilidade que o catálogo lhes atribui.
+    /// Pessoal ou sensível exige também a encarregada de dados.
+    /// </summary>
+    public static PerfilAvaliado Avaliar(Perfil perfil, CatalogoDaAplicacao catalogo)
+    {
+        ArgumentNullException.ThrowIfNull(perfil);
+        ArgumentNullException.ThrowIfNull(catalogo);
+
+        Sensibilidade sensibilidade = SensibilidadeDoPerfil(perfil, catalogo);
+
+        return new PerfilAvaliado(
+            perfil.Permissoes.Select(p => p.Codigo),
+            ValoresCanonicos.De(sensibilidade),
+            sensibilidade >= Sensibilidade.Pessoal,
+            perfil.Governanca,
+            perfil.Ativo);
+    }
+
+    // A sensibilidade do perfil é a mais alta entre as permissões; a escala é crescente. Nunca se grava: deriva do catálogo.
+    private static Sensibilidade SensibilidadeDoPerfil(Perfil perfil, CatalogoDaAplicacao catalogo) =>
+        perfil.Permissoes
+            .Select(p => SensibilidadeDe(p.Codigo, catalogo))
+            .DefaultIfEmpty(Sensibilidade.Publica)
+            .Max();
 
     private static PermissaoDoPerfilDto Descrever(string codigo, CatalogoDaAplicacao catalogo) =>
         catalogo.TentarObter(codigo, out DefinicaoDePermissao? definicao)

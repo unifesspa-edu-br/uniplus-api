@@ -16,14 +16,14 @@ public static class ConcessaoMapping
 
         return new ConcessaoDto(
             c.Id,
-            new IdentidadeDto(c.BeneficiarioEmissor, c.BeneficiarioSub),
+            new IdentidadeDto(c.BeneficiarioEmissor, c.BeneficiarioSub, c.BeneficiarioNome),
             new PerfilResumoDto(c.PerfilId, item.PerfilNome),
             new EscopoDto(c.EscopoTipo.ToCodigo(), c.UnidadeId),
             new OrigemDto(c.OrigemTipo.ToCodigo(), c.OrigemId),
             c.ConcedidaEm,
             c.ValidaAte,
             c.RevogadaEm,
-            c.RevogadaEm is null ? null : new IdentidadeDto(c.RevogadaPorEmissor!, c.RevogadaPorSub!),
+            c.RevogadaEm is null ? null : new IdentidadeDto(c.RevogadaPorEmissor!, c.RevogadaPorSub!, c.RevogadaPorNome),
             c.MotivoRevogacao,
             c.EstaAtiva(agora));
     }
@@ -36,7 +36,7 @@ public static class ConcessaoMapping
         yield return new EventoDaTrilhaDto(
             "concedida",
             c.ConcedidaEm,
-            new IdentidadeDto(c.ConcedidaPorEmissor, c.ConcedidaPorSub),
+            new IdentidadeDto(c.ConcedidaPorEmissor, c.ConcedidaPorSub, c.ConcedidaPorNome),
             $"Origem: {c.OrigemTipo.ToCodigo()} {c.OrigemId}.");
 
         if (c.RevogadaEm is { } revogadaEm)
@@ -44,7 +44,7 @@ public static class ConcessaoMapping
             yield return new EventoDaTrilhaDto(
                 "revogada",
                 revogadaEm,
-                new IdentidadeDto(c.RevogadaPorEmissor!, c.RevogadaPorSub!),
+                new IdentidadeDto(c.RevogadaPorEmissor!, c.RevogadaPorSub!, c.RevogadaPorNome),
                 c.MotivoRevogacao);
         }
     }

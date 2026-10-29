@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Concessoes;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Concessoes;
+using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -83,13 +84,13 @@ public sealed class ConcessoesController : ControllerBase
 
         if ((pessoa is null) != (emissor is null))
         {
-            return Recusar("A pessoa é identificada pelo par emissor e pessoa (sub); informe os dois.");
+            return Recusar(ConcessaoErrorCodes.FiltroDePessoaInvalido, "A pessoa é identificada pelo par emissor e pessoa (sub); informe os dois.");
         }
 
         SituacaoDaConcessao? situacaoLida = LerSituacao(situacao);
         if (situacaoLida is null)
         {
-            return Recusar("Situação inválida. Use ativa, revogada, vencida ou todas.");
+            return Recusar(ConcessaoErrorCodes.FiltroDeSituacaoInvalido, "Situação inválida. Use ativa, revogada, vencida ou todas.");
         }
 
         ListarConcessoesResult resultado = await _queryBus.Send(
@@ -164,7 +165,7 @@ public sealed class ConcessoesController : ControllerBase
         ArgumentNullException.ThrowIfNull(request);
 
         Result resultado = await _commandBus
-            .Send(new RevogarConcessaoCommand(id, request.Motivo), cancellationToken)
+            .Send(new RevogarConcessaoCommand(id, request.Motivo, request.ConfirmacaoEmail), cancellationToken)
             .ConfigureAwait(false);
 
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
@@ -182,9 +183,6 @@ public sealed class ConcessoesController : ControllerBase
                 _ => null,
             };
 
-    private BadRequestObjectResult Recusar(string titulo) => BadRequest(new ProblemDetails
-    {
-        Title = titulo,
-        Status = StatusCodes.Status400BadRequest,
-    });
+    private IActionResult Recusar(string codigo, string mensagem) =>
+        Result.Failure(new DomainError(codigo, mensagem)).ToActionResult(_mapper);
 }
