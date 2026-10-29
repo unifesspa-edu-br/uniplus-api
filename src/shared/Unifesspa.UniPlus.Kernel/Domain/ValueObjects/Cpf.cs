@@ -30,6 +30,9 @@ public sealed record Cpf
 
     public string Mascarado => Mascarar(Valor);
 
+    /// <summary>Os onze dígitos com a pontuação usual, <c>999.999.999-99</c>.</summary>
+    public string Formatado => $"{Valor[..3]}.{Valor[3..6]}.{Valor[6..9]}-{Valor[9..]}";
+
     /// <summary>Mascara onze dígitos como <c>***.999.999-**</c>, sem exigir dígito verificador válido.</summary>
     public static string Mascarar(string onzeDigitos)
     {
