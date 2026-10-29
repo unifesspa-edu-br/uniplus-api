@@ -6,11 +6,14 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
 /// Fixture de coleção que provisiona Postgres efêmero e sobe a API UniPlus com
-/// Wolverine habilitado — exercita os endpoints de OrganizacaoInstitucional (via
-/// query/command bus) no monólito real. Herda a infra de <see cref="MonolitoPostgresFixture"/>.
+/// Wolverine habilitado — exercita os endpoints de OrganizacaoInstitucional (via query/command
+/// bus) no monólito real. Herda a infra de <see cref="MonolitoPostgresFixtureBase{TFactory}"/>.
 /// </summary>
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "xUnit ICollectionFixture<T> requires the fixture type to be public.")]
-public sealed class OrganizacaoEndpointFixture : MonolitoPostgresFixture;
+public sealed class OrganizacaoEndpointFixture : MonolitoPostgresFixtureBase<MonolitoApiFactory>
+{
+    protected override MonolitoApiFactory CreateFactory(string connectionString) => new OrganizacaoEndpointFactory(connectionString);
+}

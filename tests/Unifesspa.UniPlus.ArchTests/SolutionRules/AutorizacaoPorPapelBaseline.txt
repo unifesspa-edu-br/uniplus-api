@@ -1,4 +1,2 @@
-src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.API/Controllers/InstituicaoController.cs	3
-src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.API/Controllers/UnidadesController.cs	3
 src/publicacoes/Unifesspa.UniPlus.Publicacoes.API/Controllers/AtosNormativosController.cs	1
 src/publicacoes/Unifesspa.UniPlus.Publicacoes.API/Controllers/TiposAtoController.cs	3
