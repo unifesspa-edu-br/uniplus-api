@@ -5444,6 +5444,271 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
                             IsDeleted = false,
                             Nome = "Relato de história de vida"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0c00000-0000-7000-8000-000000000071"),
+                            Categoria = "IDENTIFICACAO",
+                            ClassificacaoProtecao = "IDENTIFICADOR",
+                            Codigo = "CIN",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            IsDeleted = false,
+                            Nome = "Carteira de Identidade Nacional",
+                            TipoEquivalente = "RG"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0c00000-0000-7000-8000-000000000072"),
+                            Categoria = "IDENTIFICACAO",
+                            ClassificacaoProtecao = "IDENTIFICADOR",
+                            Codigo = "CNH",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            IsDeleted = false,
+                            Nome = "Carteira Nacional de Habilitação"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0c00000-0000-7000-8000-000000000073"),
+                            Categoria = "IDENTIFICACAO",
+                            ClassificacaoProtecao = "IDENTIFICADOR",
+                            Codigo = "PASSAPORTE",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            IsDeleted = false,
+                            Nome = "Passaporte"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0c00000-0000-7000-8000-000000000074"),
+                            Categoria = "IDENTIFICACAO",
+                            ClassificacaoProtecao = "IDENTIFICADOR",
+                            Codigo = "RNM",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            IsDeleted = false,
+                            Nome = "Registro Nacional Migratório"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0c00000-0000-7000-8000-000000000075"),
+                            Categoria = "IDENTIFICACAO",
+                            ClassificacaoProtecao = "SENSIVEL",
+                            Codigo = "BOLETIM_OCORRENCIA",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            IsDeleted = false,
+                            Nome = "Boletim de ocorrência"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0c00000-0000-7000-8000-000000000076"),
+                            Categoria = "IDENTIFICACAO",
+                            ClassificacaoProtecao = "SENSIVEL",
+                            Codigo = "DOCUMENTO_JUDICIAL_GUARDA",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            IsDeleted = false,
+                            Nome = "Documento judicial de guarda"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0c00000-0000-7000-8000-000000000077"),
+                            Categoria = "ESCOLARIDADE",
+                            ClassificacaoProtecao = "PESSOAL",
+                            Codigo = "DECLARACAO_CONCLUSAO_ENSINO_MEDIO",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            IsDeleted = false,
+                            Nome = "Atestado ou declaração de conclusão do ensino médio"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0c00000-0000-7000-8000-000000000078"),
+                            Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
+                            Codigo = "CNIS",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            IsDeleted = false,
+                            Nome = "Extrato do Cadastro Nacional de Informações Sociais (CNIS)"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0c00000-0000-7000-8000-000000000079"),
+                            Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
+                            Codigo = "DECLARACAO_IRPJ",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            IsDeleted = false,
+                            Nome = "Declaração de IRPJ"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0c00000-0000-7000-8000-000000000080"),
+                            Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
+                            Codigo = "ECF",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            IsDeleted = false,
+                            Nome = "Escrituração Contábil Fiscal (ECF)"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0c00000-0000-7000-8000-000000000081"),
+                            Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
+                            Codigo = "DECORE",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            IsDeleted = false,
+                            Nome = "Declaração Comprobatória de Percepção de Rendimentos (DECORE)"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0c00000-0000-7000-8000-000000000082"),
+                            Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
+                            Codigo = "DEFIS",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            IsDeleted = false,
+                            Nome = "Declaração de Informações Socioeconômicas e Fiscais (DEFIS)"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0c00000-0000-7000-8000-000000000083"),
+                            Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
+                            Codigo = "DASN_SIMEI",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            IsDeleted = false,
+                            Nome = "Declaração Anual do Simples Nacional do MEI (DASN-SIMEI)"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0c00000-0000-7000-8000-000000000084"),
+                            Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
+                            Codigo = "DECLARACAO_INATIVIDADE_EMPRESA",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            IsDeleted = false,
+                            Nome = "Declaração de inatividade da empresa"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0c00000-0000-7000-8000-000000000085"),
+                            Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
+                            Codigo = "DECLARACAO_RENDIMENTOS_AUFERIDOS",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            IsDeleted = false,
+                            Nome = "Declaração de rendimentos auferidos"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0c00000-0000-7000-8000-000000000086"),
+                            Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
+                            Codigo = "DECLARACAO_AUSENCIA_RENDIMENTOS_ALUGUEL",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            IsDeleted = false,
+                            Nome = "Declaração de ausência de rendimentos de aluguel"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0c00000-0000-7000-8000-000000000087"),
+                            Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
+                            Codigo = "EXTRATO_PREVIDENCIA_PRIVADA",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            IsDeleted = false,
+                            Nome = "Extrato de benefício de previdência privada"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0c00000-0000-7000-8000-000000000088"),
+                            Categoria = "RENDA",
+                            ClassificacaoProtecao = "PESSOAL",
+                            Codigo = "TRCT",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            IsDeleted = false,
+                            Nome = "Termo de rescisão do contrato de trabalho (TRCT)"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0c00000-0000-7000-8000-000000000089"),
+                            Categoria = "SAUDE",
+                            ClassificacaoProtecao = "SENSIVEL",
+                            Codigo = "LAUDO_PSICOLOGICO",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            IsDeleted = false,
+                            Nome = "Laudo psicológico"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0c00000-0000-7000-8000-000000000090"),
+                            Categoria = "SAUDE",
+                            ClassificacaoProtecao = "SENSIVEL",
+                            Codigo = "EXAME_AUDIOMETRIA",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            IsDeleted = false,
+                            Nome = "Exame de audiometria"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0c00000-0000-7000-8000-000000000091"),
+                            Categoria = "SAUDE",
+                            ClassificacaoProtecao = "SENSIVEL",
+                            Codigo = "EXAME_OFTALMOLOGICO",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            IsDeleted = false,
+                            Nome = "Exame oftalmológico com acuidade visual"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0c00000-0000-7000-8000-000000000092"),
+                            Categoria = "DOCUMENTO_PROCESSUAL",
+                            ClassificacaoProtecao = "PESSOAL",
+                            Codigo = "TERMO_RESPONSABILIDADE_CERTIFICADO",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            FinalidadeTratamento = "Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.",
+                            HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+                            IsDeleted = false,
+                            Nome = "Termo de responsabilidade pela entrega do certificado de conclusão"
                         });
                 });
 

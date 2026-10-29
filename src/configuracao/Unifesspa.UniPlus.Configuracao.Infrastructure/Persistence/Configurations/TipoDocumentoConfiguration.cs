@@ -6,8 +6,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
-using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",
@@ -147,7 +147,7 @@ internal sealed class TipoDocumentoConfiguration
             item.Categoria,
             FormatosAceitos = (string?)null,
             TamanhoMaximoMb = (int?)null,
-            TipoEquivalente = (string?)null,
+            item.TipoEquivalente,
             item.ClassificacaoProtecao,
             FinalidadeTratamento = TipoDocumentoSeed.FinalidadeTratamento,
             HipoteseLegal = TipoDocumentoSeed.HipoteseLegal,
