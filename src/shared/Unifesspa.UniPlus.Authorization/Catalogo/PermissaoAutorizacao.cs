@@ -32,4 +32,24 @@ public enum PermissaoAutorizacao
         BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
         ReservadaAGovernanca = true)]
     ConcessoesAdministrar = 3,
+
+    /// <summary>Aprovar, como gestor de acessos, a adequação funcional do pedido de concessão.</summary>
+    [Permissao(
+        "autorizacao:pedidos:aprovar-funcional",
+        "Aprovar a adequação funcional dos pedidos de concessão",
+        "Consulta a fila da primeira etapa dos pedidos de concessão, com o nome e o e-mail de quem pede e de quem recebe o acesso, e aprova ou recusa a adequação funcional.",
+        Sensibilidade.Pessoal,
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
+        ReservadaAGovernanca = true)]
+    PedidosAprovarFuncional = 4,
+
+    /// <summary>Aprovar, como encarregada de dados, a adequação do pedido de concessão à proteção de dados.</summary>
+    [Permissao(
+        "autorizacao:pedidos:aprovar-protecao-de-dados",
+        "Aprovar a adequação dos pedidos de concessão à proteção de dados",
+        "Consulta a fila da segunda etapa dos pedidos de concessão, os de perfil com permissão pessoal ou sensível, e aprova ou recusa a adequação à proteção de dados.",
+        Sensibilidade.Pessoal,
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
+        ReservadaAGovernanca = true)]
+    PedidosAprovarProtecaoDeDados = 5,
 }

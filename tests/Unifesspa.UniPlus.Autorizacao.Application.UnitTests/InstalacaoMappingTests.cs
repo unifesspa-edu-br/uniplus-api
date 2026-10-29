@@ -16,7 +16,7 @@ public sealed class InstalacaoMappingTests
     {
         Instalacao instalacao = Instalacao.Iniciar(
             new Identidade(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0001"),
-            [new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0002"), new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0003")],
+            [new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0002", "gestor2@uniplus-test.local"), new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0003", "gestor3@uniplus-test.local")],
             Emissor, "123", 1024, DateTimeOffset.UtcNow).Value!;
         InstalacaoMapping.ToDto(instalacao).TentativasRestantes.Should().BeNull();
 

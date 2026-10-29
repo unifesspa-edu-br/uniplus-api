@@ -41,7 +41,7 @@ public sealed class EventosDaInstalacao : IEventosDaOrigem
         ArgumentNullException.ThrowIfNull(instalacao);
         ArgumentNullException.ThrowIfNull(tentativas);
 
-        IdentidadeDto executor = new(instalacao.ExecutorEmissor, instalacao.ExecutorSub);
+        IdentidadeDto executor = new(instalacao.ExecutorEmissor, instalacao.ExecutorSub, instalacao.ExecutorNome);
         List<EventoDaTrilhaDto> eventos =
         [
             new("instalacao_iniciada", instalacao.IniciadaEm, executor, $"Documento de designação nº {instalacao.NumeroDoDocumento}."),

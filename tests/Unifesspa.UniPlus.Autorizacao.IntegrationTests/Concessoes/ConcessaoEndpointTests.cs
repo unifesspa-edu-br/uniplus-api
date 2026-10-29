@@ -41,6 +41,7 @@ public sealed class ConcessaoEndpointTests
     private const string ManterPerfis = "autorizacao:perfis:manter";
     private const string ConsultarCatalogo = "autorizacao:permissoes:consultar-catalogo";
     private const string Motivo = "Mudou de função na unidade.";
+    private const string EmailDoBeneficiario = "beneficiario@uniplus-test.local";
 
     private static readonly Guid GestorDeAcessosId = new("019a0000-0000-7000-8000-000000000001");
     private static readonly Guid EncarregadaDeDadosId = new("019a0000-0000-7000-8000-000000000002");
@@ -84,7 +85,7 @@ public sealed class ConcessaoEndpointTests
         Guid unidade = Guid.NewGuid();
         Guid primeira = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(unidade));
         using HttpClient diogo = Cliente(Diogo, Administrar);
-        using HttpResponseMessage revogada = await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{primeira}/revogacao", new { motivo = Motivo });
+        using HttpResponseMessage revogada = await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{primeira}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario });
         revogada.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         Guid segunda = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(unidade));
@@ -105,7 +106,7 @@ public sealed class ConcessaoEndpointTests
         ConcessaoViolacoes.EhConcessaoDuplicada(falha).Should().BeTrue();
 
         using HttpClient diogo = Cliente(Diogo, Administrar);
-        using HttpResponseMessage revogada = await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{vencida}/revogacao", new { motivo = Motivo });
+        using HttpResponseMessage revogada = await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{vencida}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario });
         revogada.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         Guid nova = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(unidade));
@@ -119,7 +120,7 @@ public sealed class ConcessaoEndpointTests
         Guid ativa = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
         Guid revogada = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
         using HttpClient diogo = Cliente(Diogo, Administrar);
-        (await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{revogada}/revogacao", new { motivo = Motivo }))
+        (await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{revogada}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario }))
             .StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         string filtro = $"?pessoa={Leandro.Sub}&emissor={Uri.EscapeDataString(Leandro.Emissor)}&perfil={perfil}";
@@ -161,8 +162,9 @@ public sealed class ConcessaoEndpointTests
     {
         using HttpClient diogo = Cliente(Diogo, Administrar);
 
-        (await diogo.GetAsync(new Uri($"{Rota}?pessoa={Leandro.Sub}", UriKind.Relative)))
-            .StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        using HttpResponseMessage semEmissor = await diogo.GetAsync(new Uri($"{Rota}?pessoa={Leandro.Sub}", UriKind.Relative));
+        semEmissor.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await semEmissor.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.concessao.filtro_de_pessoa_invalido");
         (await diogo.GetAsync(new Uri($"{Rota}?emissor={Uri.EscapeDataString(Leandro.Emissor)}", UriKind.Relative)))
             .StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
@@ -172,8 +174,9 @@ public sealed class ConcessaoEndpointTests
     {
         using HttpClient diogo = Cliente(Diogo, Administrar);
 
-        (await diogo.GetAsync(new Uri($"{Rota}?situacao=expirada", UriKind.Relative)))
-            .StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        using HttpResponseMessage resposta = await diogo.GetAsync(new Uri($"{Rota}?situacao=expirada", UriKind.Relative));
+        resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.concessao.filtro_de_situacao_invalido");
     }
 
     [Fact(DisplayName = "O detalhe devolve beneficiário, perfil, escopo e origem sem nome nem CPF")]
@@ -215,13 +218,39 @@ public sealed class ConcessaoEndpointTests
         Guid id = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
         using HttpClient diogo = Cliente(Diogo, Administrar);
 
-        using HttpResponseMessage resposta = await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/revogacao", new { motivo = Motivo });
+        using HttpResponseMessage resposta = await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario });
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent, await resposta.Content.ReadAsStringAsync());
 
         using JsonDocument concessao = await LerAsync(diogo, $"{Rota}/{id}");
         concessao.RootElement.GetProperty("ativa").GetBoolean().Should().BeFalse();
         concessao.RootElement.GetProperty("revogadaPor").GetProperty("sub").GetString().Should().Be(Diogo.Sub);
         concessao.RootElement.GetProperty("motivoRevogacao").GetString().Should().Be(Motivo);
+    }
+
+    [Fact(DisplayName = "O e-mail errado ou ausente recusa a revogação com o código da confirmação e a concessão segue ativa")]
+    public async Task Revogar_EmailDivergente_RecusaENaoRevoga()
+    {
+        Guid perfil = await CriarPerfilComumAsync();
+        Guid id = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
+        using HttpClient diogo = Cliente(Diogo, Administrar);
+
+        foreach (object corpo in new object[]
+        {
+            new { motivo = Motivo, confirmacaoEmail = "outra.pessoa@uniplus-test.local" },
+            new { motivo = Motivo },
+        })
+        {
+            using HttpResponseMessage recusada = await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/revogacao", corpo);
+            recusada.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+            (await recusada.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.concessao.confirmacao_divergente");
+        }
+
+        using JsonDocument concessao = await LerAsync(diogo, $"{Rota}/{id}");
+        concessao.RootElement.GetProperty("ativa").GetBoolean().Should().BeTrue();
+
+        using HttpResponseMessage certa = await EnviarAsync(
+            diogo, HttpMethod.Post, $"{Rota}/{id}/revogacao", new { motivo = Motivo, confirmacaoEmail = $"  {EmailDoBeneficiario.ToUpperInvariant()} " });
+        certa.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
     [Fact(DisplayName = "A encarregada de dados também revoga")]
@@ -231,7 +260,7 @@ public sealed class ConcessaoEndpointTests
         Guid id = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
         using HttpClient isabella = Cliente(Isabella, Administrar);
 
-        using HttpResponseMessage resposta = await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{id}/revogacao", new { motivo = Motivo });
+        using HttpResponseMessage resposta = await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{id}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario });
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
         using JsonDocument concessao = await LerAsync(isabella, $"{Rota}/{id}");
@@ -258,7 +287,7 @@ public sealed class ConcessaoEndpointTests
         Guid id = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
         using HttpClient diogo = Cliente(Diogo, Administrar);
         using HttpClient isabella = Cliente(Isabella, Administrar);
-        (await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/revogacao", new { motivo = Motivo }))
+        (await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario }))
             .StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         using HttpResponseMessage segunda = await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{id}/revogacao", new { motivo = "Outro motivo." });
@@ -276,7 +305,7 @@ public sealed class ConcessaoEndpointTests
         Guid id = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
         using HttpClient diogo = Cliente(Diogo, Administrar);
 
-        using HttpResponseMessage resposta = await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/revogacao", new { motivo = "  " });
+        using HttpResponseMessage resposta = await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/revogacao", new { motivo = "  ", confirmacaoEmail = EmailDoBeneficiario });
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.concessao.motivo_invalido");
@@ -291,7 +320,7 @@ public sealed class ConcessaoEndpointTests
         await ConcederAsync(GestorDeAcessosId, Isabella, EscopoDaConcessao.DaInstituicao());
         using HttpClient isabella = Cliente(Isabella, Administrar);
 
-        using HttpResponseMessage resposta = await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{diogoId}/revogacao", new { motivo = Motivo });
+        using HttpResponseMessage resposta = await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{diogoId}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario });
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.concessao.minimo_de_gestores");
@@ -307,7 +336,7 @@ public sealed class ConcessaoEndpointTests
         await ConcederAsync(GestorDeAcessosId, Betina, EscopoDaConcessao.DaInstituicao());
         using HttpClient isabella = Cliente(Isabella, Administrar);
 
-        using HttpResponseMessage resposta = await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{diogoId}/revogacao", new { motivo = Motivo });
+        using HttpResponseMessage resposta = await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{diogoId}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario });
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent, await resposta.Content.ReadAsStringAsync());
     }
@@ -323,8 +352,8 @@ public sealed class ConcessaoEndpointTests
         using HttpClient clienteB = Cliente(Betina, Administrar);
 
         HttpResponseMessage[] respostas = await Task.WhenAll(
-            EnviarAsync(clienteA, HttpMethod.Post, $"{Rota}/{diogoId}/revogacao", new { motivo = Motivo }),
-            EnviarAsync(clienteB, HttpMethod.Post, $"{Rota}/{isabellaId}/revogacao", new { motivo = Motivo }));
+            EnviarAsync(clienteA, HttpMethod.Post, $"{Rota}/{diogoId}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario }),
+            EnviarAsync(clienteB, HttpMethod.Post, $"{Rota}/{isabellaId}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario }));
 
         try
         {
@@ -349,8 +378,8 @@ public sealed class ConcessaoEndpointTests
         using HttpClient clienteB = Cliente(Isabella, Administrar);
 
         HttpResponseMessage[] respostas = await Task.WhenAll(
-            EnviarAsync(clienteA, HttpMethod.Post, $"{Rota}/{id}/revogacao", new { motivo = Motivo }),
-            EnviarAsync(clienteB, HttpMethod.Post, $"{Rota}/{id}/revogacao", new { motivo = Motivo }));
+            EnviarAsync(clienteA, HttpMethod.Post, $"{Rota}/{id}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario }),
+            EnviarAsync(clienteB, HttpMethod.Post, $"{Rota}/{id}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario }));
 
         try
         {
@@ -373,7 +402,7 @@ public sealed class ConcessaoEndpointTests
         Guid perfil = await CriarPerfilComumAsync();
         Guid id = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
         using HttpClient isabella = Cliente(Isabella, Administrar);
-        (await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{id}/revogacao", new { motivo = Motivo }))
+        (await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{id}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario }))
             .StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         using JsonDocument trilha = await LerAsync(isabella, $"{Rota}/{id}/trilha");
@@ -397,7 +426,7 @@ public sealed class ConcessaoEndpointTests
         using HttpClient leandro = Cliente(Leandro, ConsultarCatalogo, ManterPerfis);
 
         using HttpResponseMessage resposta = await EnviarAsync(
-            leandro, new HttpMethod(metodo), Rota + sufixo, metodo == "POST" ? new { motivo = Motivo } : null);
+            leandro, new HttpMethod(metodo), Rota + sufixo, metodo == "POST" ? new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario } : null);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -411,7 +440,7 @@ public sealed class ConcessaoEndpointTests
     {
         using HttpClient diogo = Cliente(Diogo, Administrar);
 
-        using HttpResponseMessage resposta = await EnviarAsync(diogo, new HttpMethod(metodo), Rota + sufixo, new { motivo = Motivo });
+        using HttpResponseMessage resposta = await EnviarAsync(diogo, new HttpMethod(metodo), Rota + sufixo, new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario });
 
         resposta.StatusCode.Should().BeOneOf(HttpStatusCode.MethodNotAllowed, HttpStatusCode.NotFound);
     }
@@ -519,7 +548,8 @@ public sealed class ConcessaoEndpointTests
             new OrigemDaConcessao(TipoDeOrigem.Pedido, Guid.NewGuid()),
             Diogo,
             relogio.GetUtcNow(),
-            validaAteDaquiAMinutos is { } minutos ? relogio.GetUtcNow().AddMinutes(minutos) : null);
+            validaAteDaquiAMinutos is { } minutos ? relogio.GetUtcNow().AddMinutes(minutos) : null,
+            EmailDoBeneficiario);
 
         concessao.IsSuccess.Should().BeTrue(string.Join("; ", concessao.Errors.Select(e => e.Error.Message)));
         return concessao.Value!;

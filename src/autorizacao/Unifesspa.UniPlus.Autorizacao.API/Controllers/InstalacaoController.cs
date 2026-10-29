@@ -73,7 +73,7 @@ public sealed class InstalacaoController : ControllerBase
 
         IdentidadeInformada[] gestores =
         [
-            .. (request.Gestores ?? []).Select(g => new IdentidadeInformada(g?.Emissor, g?.Sub)),
+            .. (request.Gestores ?? []).Select(g => new IdentidadeInformada(g?.Emissor, g?.Sub, g?.Email, g?.Nome)),
         ];
 
         Result<InstalacaoIniciadaDto> resultado = await _commandBus

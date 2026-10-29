@@ -85,9 +85,11 @@ internal sealed class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
 
             permissao.HasData(
                 new { PerfilId = GestorDeAcessosId, Codigo = "autorizacao:concessoes:administrar" },
+                new { PerfilId = GestorDeAcessosId, Codigo = "autorizacao:pedidos:aprovar-funcional" },
                 new { PerfilId = GestorDeAcessosId, Codigo = "autorizacao:perfis:manter" },
                 new { PerfilId = GestorDeAcessosId, Codigo = "autorizacao:permissoes:consultar-catalogo" },
                 new { PerfilId = EncarregadaDeDadosId, Codigo = "autorizacao:concessoes:administrar" },
+                new { PerfilId = EncarregadaDeDadosId, Codigo = "autorizacao:pedidos:aprovar-protecao-de-dados" },
                 new { PerfilId = EncarregadaDeDadosId, Codigo = "autorizacao:permissoes:consultar-catalogo" });
         });
 

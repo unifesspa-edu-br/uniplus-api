@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Autorizacao.API;
 
 using System.Diagnostics.CodeAnalysis;
 
+using Unifesspa.UniPlus.Autorizacao.Application.Commands;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Instalacoes;
 using Unifesspa.UniPlus.Verificador.Contratos;
 
@@ -30,8 +31,8 @@ public static class AutorizacaoMessagingRegistration
         ArgumentNullException.ThrowIfNull(opts);
 
         opts.ListenToRabbitQueue(FilasDaVerificacao.ResultadosAutorizacao, fila => fila.QueueType = QueueType.quorum)
-            .AddStickyHandler(typeof(RegistrarResultadoDaVerificacaoDoDocumentoDaInstalacaoHandler));
+            .AddStickyHandler(typeof(RegistrarResultadoDaVerificacaoDoDocumentoDaAutorizacaoHandler));
 
-        opts.Policies.Add<ReentregaDoResultadoDaVerificacaoDaInstalacao>();
+        opts.Policies.Add<ReentregaDoResultadoDaVerificacaoDaAutorizacao>();
     }
 }

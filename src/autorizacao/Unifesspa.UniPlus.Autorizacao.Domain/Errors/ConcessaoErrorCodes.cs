@@ -16,4 +16,7 @@ public static class ConcessaoErrorCodes
     public const string EscopoInvalido = "Concessao.EscopoInvalido";
     public const string AutorNaoIdentificado = "Concessao.AutorNaoIdentificado";
     public const string ConflitoDeConcorrencia = "Concessao.ConflitoDeConcorrencia";
+    public const string ConfirmacaoDivergente = "Concessao.ConfirmacaoDivergente";
+    public const string FiltroDePessoaInvalido = "Concessao.FiltroDePessoaInvalido";
+    public const string FiltroDeSituacaoInvalido = "Concessao.FiltroDeSituacaoInvalido";
 }
