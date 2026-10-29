@@ -66,6 +66,7 @@ public sealed class FatoColetavelDeEscopoGateTests
             CadastrosVivos.RegrasDesempate(),
             Substitute.For<IFatoCandidatoReader>(),
             Substitute.For<ICalendarioVigenteReader>(),
+            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 
@@ -124,6 +125,7 @@ public sealed class FatoColetavelDeEscopoGateTests
             CadastrosVivos.RegrasDesempate(),
             Substitute.For<IFatoCandidatoReader>(),
             Substitute.For<ICalendarioVigenteReader>(),
+            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
             CodecsDeTeste.QueReidrataSemTiposDeAto(),
             new RelogioFixo(Agora),
             CancellationToken.None);

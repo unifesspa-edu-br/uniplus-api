@@ -277,6 +277,7 @@ public sealed class ValoresSelecionaveisResolverTests
             CadastrosVivos.RegrasDesempate(),
             mocks.FatoCandidatoReader,
             CalendarioVigenteReaderDeTeste.SemVigente(),
+            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
             TimeProvider.System,
             CancellationToken.None);
     }

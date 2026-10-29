@@ -59,6 +59,7 @@ public sealed class FatoDeElegibilidadeGateTests
             CadastrosVivos.RegrasDesempate(),
             CatalogoQueResolveNaHabilitacao(),
             CalendarioVigenteReaderDeTeste.SemVigente(),
+            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 
@@ -97,6 +98,7 @@ public sealed class FatoDeElegibilidadeGateTests
             CadastrosVivos.RegrasDesempate(),
             CatalogoQueResolveNaHabilitacao(),
             CalendarioVigenteReaderDeTeste.SemVigente(),
+            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
             CodecsDeTeste.QueReidrataSemTiposDeAto(),
             new RelogioFixo(Agora),
             CancellationToken.None);
@@ -139,6 +141,7 @@ public sealed class FatoDeElegibilidadeGateTests
             CadastrosVivos.RegrasDesempate(),
             CatalogoQueResolveNaHabilitacao(),
             CalendarioVigenteReaderDeTeste.SemVigente(),
+            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
             CodecsDeTeste.QueReidrataSemTiposDeAto(),
             new RelogioFixo(Agora),
             CancellationToken.None);

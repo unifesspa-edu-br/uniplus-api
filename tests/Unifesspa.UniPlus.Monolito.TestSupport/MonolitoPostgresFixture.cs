@@ -90,7 +90,7 @@ public abstract class MonolitoPostgresFixtureBase<TFactory> : IAsyncLifetime
 
     protected virtual Task EncerrarDependenciasAsync() => Task.CompletedTask;
 
-    public async Task InitializeAsync()
+    public virtual async Task InitializeAsync()
     {
         await Task.WhenAll(_postgres.StartAsync(), _rabbitMq.StartAsync(), IniciarDependenciasAsync()).ConfigureAwait(false);
 
