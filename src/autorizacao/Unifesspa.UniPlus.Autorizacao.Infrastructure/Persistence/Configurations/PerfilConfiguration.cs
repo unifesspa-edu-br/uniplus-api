@@ -32,8 +32,8 @@ internal sealed class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
         codigo => TipoDeGovernancaCodigo.FromCodigo(codigo));
 
     // Perfis de sistema, com identificador fixo para que as migrations seguintes os alcancem.
-    private static readonly Guid GestorDeAcessosId = new("019a0000-0000-7000-8000-000000000001");
-    private static readonly Guid EncarregadaDeDadosId = new("019a0000-0000-7000-8000-000000000002");
+    private static readonly Guid GestorDeAcessosId = PerfisDeSistema.GestorDeAcessosId;
+    private static readonly Guid EncarregadaDeDadosId = PerfisDeSistema.EncarregadaDeDadosId;
     private static readonly DateTimeOffset CargaInicial = new(2026, 10, 28, 0, 0, 0, TimeSpan.Zero);
 
     public void Configure(EntityTypeBuilder<Perfil> builder)

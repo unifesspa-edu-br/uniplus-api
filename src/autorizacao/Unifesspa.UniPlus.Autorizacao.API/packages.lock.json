@@ -42,6 +42,16 @@
           "WolverineFx.RDBMS": "5.41.0"
         }
       },
+      "WolverineFx.RabbitMQ": {
+        "type": "Direct",
+        "requested": "[5.41.0, )",
+        "resolved": "5.41.0",
+        "contentHash": "FEzP/EozvI6fxLl1MT5CtbtDE82Dz0q1FetDnOucAcszqsTQgmZR2/Kre4zRnXS9C2GujvIljVFeg9Z0iXYfjA==",
+        "dependencies": {
+          "RabbitMQ.Client": "7.1.2",
+          "WolverineFx": "5.41.0"
+        }
+      },
       "BouncyCastle.Cryptography": {
         "type": "Transitive",
         "resolved": "2.7.0",
@@ -484,6 +494,11 @@
         "resolved": "8.6.5",
         "contentHash": "t+sUVrIwvo7UmsgHGgOG9F0GDZSRIm47u2ylH17Gvcv1q5hNEwgD5GoBlFyc0kh/pebmPyrAgvGsR/65ZBaXlg=="
       },
+      "RabbitMQ.Client": {
+        "type": "Transitive",
+        "resolved": "7.1.2",
+        "contentHash": "y3c6ulgULScWthHw5PLM1ShHRLhxg0vCtzX/hh61gRgNecL3ZC3WoBW2HYHoXOVRqTl99Br9E7CZEytGZEsCyQ=="
+      },
       "Serilog": {
         "type": "Transitive",
         "resolved": "4.3.0",
@@ -697,7 +712,8 @@
           "Unifesspa.UniPlus.Application.Abstractions": "[1.0.0, )",
           "Unifesspa.UniPlus.Authorization": "[1.0.0, )",
           "Unifesspa.UniPlus.Autorizacao.Domain": "[1.0.0, )",
-          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
+          "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
+          "Unifesspa.UniPlus.Verificador.Contratos": "[1.0.0, )"
         }
       },
       "unifesspa.uniplus.autorizacao.domain": {
@@ -772,6 +788,9 @@
         "dependencies": {
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
         }
+      },
+      "unifesspa.uniplus.verificador.contratos": {
+        "type": "Project"
       },
       "Apache.Avro": {
         "type": "CentralTransitive",

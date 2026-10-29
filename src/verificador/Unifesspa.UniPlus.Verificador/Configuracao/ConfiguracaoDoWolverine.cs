@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Verificador.Armazenamento;
 using Unifesspa.UniPlus.Verificador.Contratos;
 
 using Wolverine;
+using Wolverine.Configuration;
 using Wolverine.ErrorHandling;
 using Wolverine.RabbitMQ;
 using Wolverine.RabbitMQ.Internal;
@@ -22,7 +23,7 @@ public static class ConfiguracaoDoWolverine
         ArgumentNullException.ThrowIfNull(verificador);
 
         RabbitMqOptions rabbit = verificador.RabbitMq;
-        opcoes.UseRabbitMq(fabrica =>
+        RabbitMqTransportExpression transporte = opcoes.UseRabbitMq(fabrica =>
         {
             if (!string.IsNullOrWhiteSpace(rabbit.Uri))
             {
@@ -44,10 +45,15 @@ public static class ConfiguracaoDoWolverine
             .PreFetchCount(1);
 
         // No modo inline, a concorrência vem de um listener por slot de paralelismo, cada um com um pedido por vez.
-        // Inline: o pedido só é confirmado depois de o RabbitMQ confirmar a publicação do resultado.
-        opcoes.PublishMessage<ResultadoDaVerificacaoDeArquivo>()
-            .ToRabbitQueue(FilasDaVerificacao.Resultados, fila => fila.QueueType = QueueType.quorum)
-            .SendInline();
+        // O resultado vai para a fila do destino do pedido (VerificarArquivoHandler escolhe), e as duas são declaradas
+        // aqui, sem regra de publicação por tipo: uma regra por tipo entregaria o resultado às duas. Inline: o pedido
+        // só é confirmado depois de o RabbitMQ confirmar a publicação do resultado.
+        foreach (DestinoDoResultado destino in Enum.GetValues<DestinoDoResultado>())
+        {
+            string nome = FilasDaVerificacao.ResultadosDe(destino);
+            transporte.DeclareQueue(nome, fila => fila.QueueType = QueueType.quorum);
+            opcoes.Transports.GetOrCreate<RabbitMqTransport>().Queues[nome].Mode = EndpointMode.Inline;
+        }
 
         // O erro permanente do clamd não passa por aqui: o verificador o converte em recusa.
         opcoes.OnException<ClamdIndisponivelException>()

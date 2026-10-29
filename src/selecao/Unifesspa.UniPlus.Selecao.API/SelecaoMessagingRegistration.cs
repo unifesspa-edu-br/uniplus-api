@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using Serilog;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging.SchemaRegistry;
+using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosDaInscricao;
 using Unifesspa.UniPlus.Selecao.Domain.Events;
 using Unifesspa.UniPlus.Verificador.Contratos;
 
@@ -142,7 +143,11 @@ public static partial class SelecaoMessagingRegistration
 
         opts.PublishMessage<PedidoDeVerificacaoDeArquivo>()
             .ToRabbitQueue(FilasDaVerificacao.Pedidos, fila => fila.QueueType = QueueType.quorum);
-        opts.ListenToRabbitQueue(FilasDaVerificacao.Resultados, fila => fila.QueueType = QueueType.quorum);
+
+        // O handler é preso à fila: o resultado do documento de designação, que chega pela fila da Autorização,
+        // não pode executar o da Seleção, e o contrário, porque os dois tratam o mesmo tipo de mensagem.
+        opts.ListenToRabbitQueue(FilasDaVerificacao.Resultados, fila => fila.QueueType = QueueType.quorum)
+            .AddStickyHandler(typeof(RegistrarResultadoDaVerificacaoDoArquivoHandler));
 
         opts.Policies.Add<ReentregaDoResultadoDaVerificacao>();
     }

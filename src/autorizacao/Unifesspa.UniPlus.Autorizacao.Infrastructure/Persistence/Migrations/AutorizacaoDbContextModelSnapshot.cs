@@ -147,6 +147,117 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Instalacao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("CanceladaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cancelada_em");
+
+                    b.Property<DateTimeOffset?>("CodigoEnviadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("codigo_enviado_em");
+
+                    b.Property<DateTimeOffset?>("CodigoExpiraEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("codigo_expira_em");
+
+                    b.Property<byte[]>("CodigoResumo")
+                        .HasColumnType("bytea")
+                        .HasColumnName("codigo_resumo");
+
+                    b.Property<DateTimeOffset?>("ConfirmadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("confirmada_em");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DocumentoETag")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("documento_etag");
+
+                    b.Property<DateTimeOffset?>("DocumentoRecusadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("documento_recusado_em");
+
+                    b.Property<string>("DocumentoSha256")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("documento_sha256");
+
+                    b.Property<DateTimeOffset?>("DocumentoVerificadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("documento_verificado_em");
+
+                    b.Property<string>("ExecutorEmissor")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("executor_emissor");
+
+                    b.Property<string>("ExecutorSub")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("executor_sub");
+
+                    b.Property<DateTimeOffset>("IniciadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("iniciada_em");
+
+                    b.Property<string>("NumeroDoDocumento")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("numero_do_documento");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("situacao");
+
+                    b.Property<long>("TamanhoDoPdf")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tamanho_do_pdf");
+
+                    b.Property<int>("Tentativas")
+                        .HasColumnType("integer")
+                        .HasColumnName("tentativas");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_instalacoes");
+
+                    b.HasIndex("ExecutorEmissor", "ExecutorSub")
+                        .IsUnique()
+                        .HasDatabaseName("ux_instalacoes_executor_pendente")
+                        .HasFilter("situacao IN ('aguardando_documento', 'documento_em_verificacao', 'documento_verificado', 'aguardando_codigo')");
+
+                    b.ToTable("instalacoes", "autorizacao", t =>
+                        {
+                            t.HasCheckConstraint("ck_instalacoes_codigo_completo", "(codigo_enviado_em IS NULL) = (codigo_expira_em IS NULL)");
+
+                            t.HasCheckConstraint("ck_instalacoes_tentativas", "tentativas >= 0 AND tentativas <= 5");
+                        });
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Perfil", b =>
                 {
                     b.Property<Guid>("Id")
@@ -230,6 +341,48 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.TentativaDeInstalacao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AutorEmissor")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("autor_emissor");
+
+                    b.Property<string>("AutorSub")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("autor_sub");
+
+                    b.Property<Guid?>("InstalacaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("instalacao_id");
+
+                    b.Property<DateTimeOffset>("Instante")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("instante");
+
+                    b.Property<string>("Resultado")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("resultado");
+
+                    b.HasKey("Id")
+                        .HasName("pk_instalacao_tentativas");
+
+                    b.HasIndex("InstalacaoId")
+                        .HasDatabaseName("ix_instalacao_tentativas_instalacao");
+
+                    b.ToTable("instalacao_tentativas", "autorizacao");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Infrastructure.Core.Idempotency.IdempotencyEntry", b =>
                 {
                     b.Property<Guid>("Id")
@@ -309,6 +462,37 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_concessoes_perfis_perfil_id");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Instalacao", b =>
+                {
+                    b.OwnsMany("Unifesspa.UniPlus.Autorizacao.Domain.Entities.GestorDaInstalacao", "Gestores", b1 =>
+                        {
+                            b1.Property<Guid>("InstalacaoId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("instalacao_id");
+
+                            b1.Property<string>("Emissor")
+                                .HasMaxLength(255)
+                                .HasColumnType("character varying(255)")
+                                .HasColumnName("emissor");
+
+                            b1.Property<string>("Sub")
+                                .HasMaxLength(255)
+                                .HasColumnType("character varying(255)")
+                                .HasColumnName("sub");
+
+                            b1.HasKey("InstalacaoId", "Emissor", "Sub")
+                                .HasName("pk_instalacao_gestores");
+
+                            b1.ToTable("instalacao_gestores", "autorizacao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("InstalacaoId")
+                                .HasConstraintName("fk_instalacao_gestores_instalacoes_instalacao_id");
+                        });
+
+                    b.Navigation("Gestores");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Perfil", b =>
                 {
                     b.OwnsMany("Unifesspa.UniPlus.Autorizacao.Domain.Entities.PermissaoDoPerfil", "Permissoes", b1 =>
@@ -360,6 +544,15 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         });
 
                     b.Navigation("Permissoes");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.TentativaDeInstalacao", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Instalacao", null)
+                        .WithMany()
+                        .HasForeignKey("InstalacaoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_instalacao_tentativas_instalacoes_instalacao_id");
                 });
 #pragma warning restore 612, 618
         }

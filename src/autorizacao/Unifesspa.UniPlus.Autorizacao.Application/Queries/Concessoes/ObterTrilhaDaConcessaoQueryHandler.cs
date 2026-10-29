@@ -36,7 +36,7 @@ public static class ObterTrilhaDaConcessaoQueryHandler
         IEventosDaOrigem? origem = origens.FirstOrDefault(o => o.Tipo == concessao.OrigemTipo);
         if (origem is not null)
         {
-            eventos.AddRange(await origem.ListarAsync(concessao.OrigemId, cancellationToken).ConfigureAwait(false));
+            eventos.AddRange(await origem.ObterAsync(concessao.OrigemId, cancellationToken).ConfigureAwait(false) ?? []);
         }
 
         IReadOnlyList<EventoDaTrilhaDto> ordenados = [.. eventos.OrderBy(e => e.Instante)];

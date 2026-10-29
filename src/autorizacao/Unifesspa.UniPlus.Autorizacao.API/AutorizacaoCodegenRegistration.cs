@@ -30,5 +30,9 @@ public static class AutorizacaoCodegenRegistration
         ArgumentNullException.ThrowIfNull(opts);
 
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IAutorizacaoUnitOfWork>();
+
+        // O armazenamento do PDF de designação é registrado por fábrica (credencial própria derivada das opções),
+        // opaca ao codegen.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IArmazenamentoDoDocumentoDaInstalacao>();
     }
 }

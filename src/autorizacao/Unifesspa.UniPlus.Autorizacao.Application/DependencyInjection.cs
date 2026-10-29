@@ -4,6 +4,9 @@ using FluentValidation;
 
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
+using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
+
 /// <summary>
 /// Registra a camada Application do módulo Autorização. O CQRS roda sobre Wolverine, então
 /// só os validators FluentValidation, consumidos pelo middleware do Wolverine, são registrados.
@@ -15,6 +18,9 @@ public static class AutorizacaoApplicationServiceRegistration
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddValidatorsFromAssembly(typeof(AutorizacaoApplicationServiceRegistration).Assembly);
+
+        // A origem "instalação" acrescenta os eventos dela à trilha da concessão que gerou.
+        services.AddScoped<IEventosDaOrigem, EventosDaInstalacao>();
 
         return services;
     }

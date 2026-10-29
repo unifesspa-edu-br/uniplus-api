@@ -163,6 +163,10 @@ builder.Host.UseWolverineOutboxCascading(
         // religa a mensageria externa antes deferida no monólito.
         configurarSelecaoRouting(opts);
 
+        // Resultado da verificação do PDF de designação dos gestores: usa o transporte RabbitMQ que a
+        // Seleção acabou de ligar.
+        AutorizacaoMessagingRegistration.ConfigurarRouting(opts);
+
         // fila PG durável dos atos (mesmo transporte de domain-events).
         PublicacoesMessagingRegistration.ConfigurarRouting(opts);
 

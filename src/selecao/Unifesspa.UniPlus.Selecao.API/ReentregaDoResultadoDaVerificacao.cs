@@ -24,7 +24,10 @@ internal sealed class ReentregaDoResultadoDaVerificacao : IHandlerPolicy
 
         foreach (HandlerChain chain in chains)
         {
-            if (chain.MessageType != typeof(ResultadoDaVerificacaoDeArquivo))
+            // O mesmo tipo de mensagem tem uma cadeia por handler preso à fila; só a da Seleção recebe esta política,
+            // senão o retry genérico engoliria a política própria da cadeia da Autorização.
+            if (chain.MessageType != typeof(ResultadoDaVerificacaoDeArquivo)
+                || !chain.Handlers.Any(h => h.HandlerType == typeof(RegistrarResultadoDaVerificacaoDoArquivoHandler)))
             {
                 continue;
             }

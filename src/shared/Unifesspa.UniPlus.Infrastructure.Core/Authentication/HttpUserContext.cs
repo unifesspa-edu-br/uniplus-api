@@ -54,6 +54,8 @@ public sealed partial class HttpUserContext : IUserContext
 
     public string? Email => GetFirstClaimValue(EmailClaimCandidates);
 
+    public bool EmailVerificado => bool.TryParse(GetSingleClaimValue(OidcClaims.EmailVerified), out bool verificado) && verificado;
+
     public string? Cpf => GetSingleClaimValue(UniPlusClaims.Cpf);
 
     public string? NomeSocial => GetSingleClaimValue(UniPlusClaims.NomeSocial);

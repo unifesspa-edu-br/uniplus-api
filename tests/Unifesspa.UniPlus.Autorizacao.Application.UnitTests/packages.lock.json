@@ -128,7 +128,8 @@
           "Unifesspa.UniPlus.Application.Abstractions": "[1.0.0, )",
           "Unifesspa.UniPlus.Authorization": "[1.0.0, )",
           "Unifesspa.UniPlus.Autorizacao.Domain": "[1.0.0, )",
-          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
+          "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
+          "Unifesspa.UniPlus.Verificador.Contratos": "[1.0.0, )"
         }
       },
       "unifesspa.uniplus.autorizacao.domain": {
@@ -144,6 +145,9 @@
         }
       },
       "unifesspa.uniplus.kernel": {
+        "type": "Project"
+      },
+      "unifesspa.uniplus.verificador.contratos": {
         "type": "Project"
       },
       "FluentValidation": {

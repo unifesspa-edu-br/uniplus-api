@@ -139,6 +139,32 @@ public static class StorageServiceCollectionExtensions
             provider.GetRequiredService<TimeProvider>());
     }
 
+    /// <summary>
+    /// Cria o <see cref="IStorageService"/> de um módulo com a credencial própria dele: o endpoint, o TLS, a região e o
+    /// endereço público são os de <c>Storage</c>, e o bucket nunca é criado — é provisionado à parte, com política de
+    /// acesso mínima. Exige que <see cref="AddUniPlusStorage"/> tenha sido chamado.
+    /// </summary>
+    public static IStorageService CriarStorageComCredencialPropria(IServiceProvider provider, string accessKey, string secretKey)
+    {
+        ArgumentNullException.ThrowIfNull(provider);
+        ArgumentException.ThrowIfNullOrWhiteSpace(accessKey);
+        ArgumentException.ThrowIfNullOrWhiteSpace(secretKey);
+
+        StorageOptions geral = provider.GetRequiredService<IOptions<StorageOptions>>().Value;
+
+        return CriarStorageComCredencialPropria(provider, new StorageOptions
+        {
+            Endpoint = geral.Endpoint,
+            UseSSL = geral.UseSSL,
+            Region = geral.Region,
+            PublicEndpoint = geral.PublicEndpoint,
+            PublicUseSSL = geral.PublicUseSSL,
+            AccessKey = accessKey,
+            SecretKey = secretKey,
+            CriaBucketAusente = false,
+        });
+    }
+
     /// <summary>Chave do <see cref="IMinioClient"/> keyed usado para assinar URLs devolvidas a clientes externos.</summary>
     public const string StoragePublicClientKey = "storage-public";
 

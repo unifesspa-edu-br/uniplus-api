@@ -41,6 +41,26 @@ public sealed class HttpUserContextTests
         context.Issuer.Should().BeNull();
     }
 
+    [Theory]
+    [InlineData("true", true)]
+    [InlineData("TRUE", true)]
+    [InlineData("false", false)]
+    [InlineData("1", false)]
+    public void EmailVerificado_Should_ReflectEmailVerifiedClaim(string valor, bool esperado)
+    {
+        HttpUserContext context = CreateContext(new Claim("email_verified", valor));
+
+        context.EmailVerificado.Should().Be(esperado);
+    }
+
+    [Fact]
+    public void EmailVerificado_Should_BeFalse_WhenClaimAbsent()
+    {
+        HttpUserContext context = CreateContext(new Claim("sub", "user-42"));
+
+        context.EmailVerificado.Should().BeFalse();
+    }
+
     [Fact]
     public void Jti_Should_ReturnJtiClaim_WhenPresent()
     {

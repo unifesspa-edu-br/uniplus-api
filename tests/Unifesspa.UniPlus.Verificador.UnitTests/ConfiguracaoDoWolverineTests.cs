@@ -33,4 +33,23 @@ public sealed class ConfiguracaoDoWolverineTests
         fila.ListenerCount.Should().Be(4);
         fila.Mode.Should().Be(EndpointMode.Inline);
     }
+
+    [Theory(DisplayName = "As duas filas de resultados são quorum com envio inline")]
+    [InlineData(FilasDaVerificacao.Resultados)]
+    [InlineData(FilasDaVerificacao.ResultadosAutorizacao)]
+    public void FilasDeResultados_SaoQuorumComEnvioInline(string nome)
+    {
+        using IHost host = Host.CreateDefaultBuilder()
+            .UseWolverine(opcoes =>
+            {
+                ConfiguracaoDoWolverine.Configurar(opcoes, new VerificadorOptions { RabbitMq = { Host = "rabbit" } });
+            })
+            .Build();
+
+        IWolverineRuntime runtime = host.Services.GetRequiredService<IWolverineRuntime>();
+        RabbitMqQueue fila = runtime.Options.Transports.GetOrCreate<RabbitMqTransport>().Queues[nome];
+
+        fila.QueueType.Should().Be(QueueType.quorum);
+        fila.Mode.Should().Be(EndpointMode.Inline);
+    }
 }

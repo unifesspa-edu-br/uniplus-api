@@ -109,19 +109,9 @@ public static class SelecaoInfrastructureRegistration
             .ValidateOnStart();
         services.AddSingleton(static sp =>
         {
-            StorageOptions geral = sp.GetRequiredService<IOptions<StorageOptions>>().Value;
             ArquivosDoCandidatoOptions candidato = sp.GetRequiredService<IOptions<ArquivosDoCandidatoOptions>>().Value;
-            return new ArmazenamentoDoCandidato(StorageServiceCollectionExtensions.CriarStorageComCredencialPropria(sp, new StorageOptions
-            {
-                Endpoint = geral.Endpoint,
-                UseSSL = geral.UseSSL,
-                Region = geral.Region,
-                PublicEndpoint = geral.PublicEndpoint,
-                PublicUseSSL = geral.PublicUseSSL,
-                AccessKey = candidato.AccessKey,
-                SecretKey = candidato.SecretKey,
-                CriaBucketAusente = false,
-            }));
+            return new ArmazenamentoDoCandidato(
+                StorageServiceCollectionExtensions.CriarStorageComCredencialPropria(sp, candidato.AccessKey, candidato.SecretKey));
         });
         services.AddScoped<IArquivoDoCandidatoStorage, ArquivoDoCandidatoStorageService>();
 

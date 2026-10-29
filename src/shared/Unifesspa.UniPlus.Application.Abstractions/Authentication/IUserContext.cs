@@ -47,6 +47,12 @@ public interface IUserContext
     string? Email { get; }
 
     /// <summary>
+    /// Gets a value indicating whether the IdP vouches for <see cref="Email"/> (<c>email_verified</c>
+    /// claim). Absent or malformed claim is <see langword="false"/>.
+    /// </summary>
+    bool EmailVerificado { get; }
+
+    /// <summary>
     /// Gets the authenticated user's CPF, when exposed by the IdP via the <c>uniplus-profile</c> scope.
     /// </summary>
     string? Cpf { get; }
