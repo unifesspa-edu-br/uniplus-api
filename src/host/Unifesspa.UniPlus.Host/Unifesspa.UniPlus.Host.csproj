@@ -17,8 +17,8 @@
   </ItemGroup>
 
   <!--
-    Composition root do monólito modular. Referencia os 5 módulos internos
-    (Selecao, Ingresso, Configuracao, OrganizacaoInstitucional e Publicações) e os compõe num
+    Composition root do monólito modular. Referencia os módulos internos
+    (Selecao, Ingresso, Configuracao, OrganizacaoInstitucional, Publicações, Discentes e Autorização) e os compõe num
     processo único. Portal permanece deploy separado. Este assembly é o
     único autorizado a depender de múltiplos módulos — fica FORA do ModulesRoster
     do fitness R8 (CrossModuleReadIsolationTests).
@@ -29,6 +29,7 @@
     <ProjectReference Include="..\..\publicacoes\Unifesspa.UniPlus.Publicacoes.API\Unifesspa.UniPlus.Publicacoes.API.csproj" />
     <ProjectReference Include="..\..\configuracao\Unifesspa.UniPlus.Configuracao.API\Unifesspa.UniPlus.Configuracao.API.csproj" />
     <ProjectReference Include="..\..\organizacao-institucional\Unifesspa.UniPlus.OrganizacaoInstitucional.API\Unifesspa.UniPlus.OrganizacaoInstitucional.API.csproj" />
+    <ProjectReference Include="..\..\autorizacao\Unifesspa.UniPlus.Autorizacao.API\Unifesspa.UniPlus.Autorizacao.API.csproj" />
     <ProjectReference Include="..\..\discentes\Unifesspa.UniPlus.Discentes.API\Unifesspa.UniPlus.Discentes.API.csproj" />
   </ItemGroup>
 

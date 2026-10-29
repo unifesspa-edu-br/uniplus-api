@@ -13,4 +13,13 @@ public enum PermissaoAutorizacao
         "Lista todas as permissões da plataforma, agrupadas por módulo e recurso, para quem administra concessões.",
         Sensibilidade.Interna)]
     ConsultarCatalogo = 1,
+
+    /// <summary>Manter os perfis de acesso.</summary>
+    [Permissao(
+        "autorizacao:perfis:manter",
+        "Manter perfis de acesso",
+        "Cria, edita, ativa, desativa e consulta os perfis de acesso, que reúnem permissões do catálogo.",
+        Sensibilidade.Interna,
+        ReservadaAGovernanca = true)]
+    PerfisManter = 2,
 }

@@ -103,7 +103,8 @@ public static partial class CatalogoDePermissoes<TPermissao>
                     segmentos[0],
                     segmentos[1],
                     segmentos[2],
-                    requisito.Value!);
+                    requisito.Value!,
+                    atributo.ReservadaAGovernanca);
             }
         }
 

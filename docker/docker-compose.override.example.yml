@@ -53,6 +53,7 @@ services:
       ConnectionStrings__SelecaoDb: "Host=postgres;Port=5432;Database=uniplus;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       ConnectionStrings__IngressoDb: "Host=postgres;Port=5432;Database=uniplus;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       ConnectionStrings__PublicacoesDb: "Host=postgres;Port=5432;Database=uniplus;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      ConnectionStrings__AutorizacaoDb: "Host=postgres;Port=5432;Database=uniplus;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       ConnectionStrings__DiscentesDb: "Host=postgres;Port=5432;Database=uniplus;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       Redis__ConnectionString: "redis:6379"
       Kafka__BootstrapServers: "kafka:29092"

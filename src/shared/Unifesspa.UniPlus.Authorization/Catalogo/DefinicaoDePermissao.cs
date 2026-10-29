@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Authorization.Contracts;
 /// <param name="Recurso">Recurso sobre o qual a permissão age.</param>
 /// <param name="Acao">Ação que a permissão autoriza.</param>
 /// <param name="Requisito">Requisito que o ponto de decisão avalia.</param>
+/// <param name="ReservadaAGovernanca">Só perfis de governança podem reunir a permissão.</param>
 public sealed record DefinicaoDePermissao(
     string Codigo,
     string Nome,
@@ -17,4 +18,5 @@ public sealed record DefinicaoDePermissao(
     string Modulo,
     string Recurso,
     string Acao,
-    PermissionRequirement Requisito);
+    PermissionRequirement Requisito,
+    bool ReservadaAGovernanca = false);

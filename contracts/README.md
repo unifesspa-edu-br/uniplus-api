@@ -6,6 +6,7 @@ Specs OpenAPI 3.1 versionados como **fonte de verdade do contrato V1** da `unipl
 
 - `openapi.selecao.json` — spec do módulo Seleção (endpoints `/api/selecao/processos-seletivos`, `/api/selecao/obrigatoriedades-legais`, `/api/auth/me`, `/api/profile/me`).
 - `openapi.ingresso.json` — spec do módulo Ingresso (stub atual; endpoints próprios chegam em sprints posteriores).
+- `openapi.autorizacao.json` — spec do módulo Autorização (perfis de acesso, sob o prefixo `/api/autorizacao/*`).
 - `openapi.organizacao.json` — spec do módulo Organização Institucional (Instituição e Unidades, sob o prefixo de módulo `/api/organizacao/*`, incluindo as variantes administrativas `/api/organizacao/admin/*`). Áreas Organizacionais ficam fora do contrato — em aposentadoria (issue #625), o controller foi removido.
 - `openapi.configuracao.json` — spec do módulo Configuração (Campus e Local de Oferta, sob o prefixo de módulo `/api/configuracao/*`, incluindo as variantes administrativas `/api/configuracao/admin/*`). A Cidade é referenciada por código IBGE + display cache (ADR-0090) — não há endpoint de cidade aqui.
 - `openapi.publicacoes.json` — spec do módulo Publicações (atos normativos e catálogo de tipos de ato, sob o prefixo `/api/publicacoes/*`, incluindo `/api/publicacoes/admin/*`).
@@ -25,7 +26,7 @@ Endpoint runtime: `GET /openapi/{modulo}.json`.
 
 ## Drift check
 
-A integração `OpenApiEndpointTests` nos módulos com baseline (`tests/Unifesspa.UniPlus.{Selecao,Ingresso,OrganizacaoInstitucional,Configuracao,Publicacoes,Portal}.IntegrationTests/OpenApiEndpointTests.cs`) compara o spec emitido em runtime com o baseline committed nesta pasta. **Qualquer mudança no contrato faz o teste falhar** — clientes externos (frontend, integradores, `uniplus-developers`) ficam protegidos contra breaking changes acidentais.
+A integração `OpenApiEndpointTests` nos módulos com baseline (`tests/Unifesspa.UniPlus.{Selecao,Ingresso,OrganizacaoInstitucional,Autorizacao,Configuracao,Publicacoes,Portal}.IntegrationTests/OpenApiEndpointTests.cs`) compara o spec emitido em runtime com o baseline committed nesta pasta. **Qualquer mudança no contrato faz o teste falhar** — clientes externos (frontend, integradores, `uniplus-developers`) ficam protegidos contra breaking changes acidentais.
 
 ### Como regerar o baseline
 
@@ -33,6 +34,7 @@ A integração `OpenApiEndpointTests` nos módulos com baseline (`tests/Unifessp
 UPDATE_OPENAPI_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.Selecao.IntegrationTests --filter "FullyQualifiedName~SpecRuntime"
 UPDATE_OPENAPI_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.Ingresso.IntegrationTests --filter "FullyQualifiedName~SpecRuntime"
 UPDATE_OPENAPI_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests --filter "FullyQualifiedName~SpecRuntime"
+UPDATE_OPENAPI_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.Autorizacao.IntegrationTests --filter "FullyQualifiedName~SpecRuntime"
 UPDATE_OPENAPI_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.Configuracao.IntegrationTests --filter "FullyQualifiedName~SpecRuntime"
 UPDATE_OPENAPI_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.Publicacoes.IntegrationTests --filter "FullyQualifiedName~SpecRuntime"
 UPDATE_OPENAPI_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.Portal.IntegrationTests --filter "FullyQualifiedName~SpecRuntime"
