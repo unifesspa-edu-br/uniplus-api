@@ -31,6 +31,13 @@ public sealed class CatalogoDePermissoesTests
     public void Obter_CodigoNaoEDerivadoDoNomeDoMembro() =>
         CatalogoDePermissoes<Valido>.Obter(Valido.Consultar).Codigo.Should().Be("teste:itens:ler");
 
+    [Fact(DisplayName = "A reserva à governança vem do atributo e é falsa quando omitida")]
+    public void Obter_ReservaAGovernanca_VemDoAtributo()
+    {
+        CatalogoDePermissoes<Valido>.Obter(Valido.Reservada).ReservadaAGovernanca.Should().BeTrue();
+        CatalogoDePermissoes<Valido>.Obter(Valido.Consultar).ReservadaAGovernanca.Should().BeFalse();
+    }
+
     [Fact(DisplayName = "Valor que não é membro do enum falha nomeando o enum e o valor recebido")]
     public void Obter_ValorIndefinido_NomeiaOEnumEOValor()
     {
@@ -92,7 +99,7 @@ public sealed class CatalogoDePermissoesTests
     {
         CatalogoDaAplicacao catalogo = new([new FonteFalsa(typeof(Valido), CatalogoDePermissoes<Valido>.Todas())]);
 
-        catalogo.Definicoes.Select(static d => d.Codigo).Should().Equal("teste:itens:ler", "teste:itens:manter");
+        catalogo.Definicoes.Select(static d => d.Codigo).Should().Equal("teste:itens:governar", "teste:itens:ler", "teste:itens:manter");
         catalogo.TentarObter("teste:itens:ler", out DefinicaoDePermissao? achada).Should().BeTrue();
         achada!.Nome.Should().Be("Consultar itens");
         catalogo.TentarObter("teste:itens:inexistente", out _).Should().BeFalse();
@@ -122,6 +129,10 @@ public sealed class CatalogoDePermissoesTests
 
         [Permissao("teste:itens:ler", "Consultar itens", "Lista itens.", Sensibilidade.Interna)]
         Consultar = 2,
+
+        [Permissao("teste:itens:governar", "Governar itens", "Só a governança reúne.", Sensibilidade.Interna,
+            ReservadaAGovernanca = true)]
+        Reservada = 3,
     }
 
     [ModuloDePermissoes("teste")]

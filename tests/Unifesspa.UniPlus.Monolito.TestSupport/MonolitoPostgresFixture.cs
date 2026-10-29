@@ -42,6 +42,7 @@ public abstract class MonolitoPostgresFixtureBase<TFactory> : IAsyncLifetime
         "ConnectionStrings__IngressoDb",
         "ConnectionStrings__PublicacoesDb",
         "ConnectionStrings__DiscentesDb",
+        "ConnectionStrings__AutorizacaoDb",
     ];
 
     private const string KafkaBootstrapEnvVar = "Kafka__BootstrapServers";

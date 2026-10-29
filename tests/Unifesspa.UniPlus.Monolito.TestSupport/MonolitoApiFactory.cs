@@ -68,6 +68,7 @@ public class MonolitoApiFactory : ApiFactoryBase<HostAssemblyMarker>
             ["ConnectionStrings:SelecaoDb"] = _connectionString,
             ["ConnectionStrings:IngressoDb"] = _connectionString,
             ["ConnectionStrings:DiscentesDb"] = _connectionString,
+            ["ConnectionStrings:AutorizacaoDb"] = _connectionString,
             ["ArquivosDoCandidato:AccessKey"] = "teste",
             ["ArquivosDoCandidato:SecretKey"] = "teste",
             ["RabbitMq:Uri"] = Environment.GetEnvironmentVariable("RabbitMq__Uri") is { Length: > 0 } uri ? uri : "amqp://guest:guest@localhost:5672",

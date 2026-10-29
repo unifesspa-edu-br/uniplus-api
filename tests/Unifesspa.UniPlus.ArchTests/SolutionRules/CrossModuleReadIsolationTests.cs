@@ -55,6 +55,7 @@ public sealed class CrossModuleReadIsolationTests
         "Configuracao",
         "Publicacoes",
         "Discentes",
+        "Autorizacao",
     ];
 
     private static readonly Architecture SolutionArchitecture = LoadSolutionArchitecture();
@@ -190,15 +191,15 @@ public sealed class CrossModuleReadIsolationTests
             .Select(nome => nome.Name ?? string.Empty)
             .ToHashSet(StringComparer.Ordinal);
 
-        string[] modulosInternos = ["Selecao", "Ingresso", "Configuracao", "OrganizacaoInstitucional", "Publicacoes", "Discentes"];
+        string[] modulosInternos = ["Selecao", "Ingresso", "Configuracao", "OrganizacaoInstitucional", "Publicacoes", "Discentes", "Autorizacao"];
         List<string> naoCompostos =
         [
             .. modulosInternos.Where(modulo => !referenciados.Contains($"Unifesspa.UniPlus.{modulo}.API")),
         ];
 
         naoCompostos.Should().BeEmpty(
-            "o host do monólito modular deve compor os 6 módulos internos (Selecao, Ingresso, "
-            + "Configuracao, OrganizacaoInstitucional, Publicacoes, Discentes) via Add<Modulo>Module no .API de cada um. "
+            "o host do monólito modular deve compor os 7 módulos internos (Selecao, Ingresso, "
+            + "Configuracao, OrganizacaoInstitucional, Publicacoes, Discentes, Autorizacao) via Add<Modulo>Module no .API de cada um. "
             + $"Módulos não compostos: {string.Join(", ", naoCompostos)}");
 
         // Negativa: o Portal é deployable AUTÔNOMO (sua própria API executável),
@@ -332,6 +333,12 @@ public sealed class CrossModuleReadIsolationTests
             typeof(global::Unifesspa.UniPlus.Discentes.Application.Abstractions.IDiscentesUnitOfWork).Assembly,
             typeof(global::Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.DiscentesDbContext).Assembly,
             typeof(global::Unifesspa.UniPlus.Discentes.API.DiscentesModuleRegistration).Assembly,
+
+            // Autorizacao
+            typeof(global::Unifesspa.UniPlus.Autorizacao.Domain.Entities.Perfil).Assembly,
+            typeof(global::Unifesspa.UniPlus.Autorizacao.Application.Abstractions.IAutorizacaoUnitOfWork).Assembly,
+            typeof(global::Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.AutorizacaoDbContext).Assembly,
+            typeof(global::Unifesspa.UniPlus.Autorizacao.API.AutorizacaoApiAssemblyMarker).Assembly,
         ];
 
         return new ArchLoader().LoadAssemblies(productAssemblies).Build();
