@@ -22,6 +22,11 @@ data:
   Geo__OAuth__ClientId: {{ .Values.geo.oauthClientId | quote }}
   ArquivosDoCandidato__BucketDeEnvio: {{ .Values.arquivosDoCandidato.bucketDeEnvio | quote }}
   ArquivosDoCandidato__BucketDefinitivo: {{ .Values.arquivosDoCandidato.bucketDefinitivo | quote }}
+  Email__Smtp__Host: {{ .Values.email.smtp.host | quote }}
+  Email__Smtp__Porta: {{ .Values.email.smtp.porta | quote }}
+  Email__Smtp__Seguranca: {{ .Values.email.smtp.seguranca | quote }}
+  Email__Smtp__Remetente: {{ .Values.email.smtp.remetente | quote }}
+  Email__Smtp__NomeRemetente: {{ .Values.email.smtp.nomeRemetente | quote }}
   Selecao__ReconciliacaoDaVerificacao__Prazo: {{ .Values.reconciliacaoDaVerificacao.prazo | quote }}
   Selecao__ReconciliacaoDaVerificacao__Intervalo: {{ .Values.reconciliacaoDaVerificacao.intervalo | quote }}
   Selecao__ReconciliacaoDaVerificacao__TamanhoDoLote: {{ .Values.reconciliacaoDaVerificacao.tamanhoDoLote | quote }}

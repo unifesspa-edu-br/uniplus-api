@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Cors;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
+using Unifesspa.UniPlus.Infrastructure.Core.Email;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Logging;
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
@@ -91,6 +92,7 @@ builder.Services.AddUniPlusStorage(builder.Configuration, builder.Environment);
 // Acervo público (ADR-0132): só o host, que hospeda Seleção, publica documento de ato nele.
 builder.Services.AddUniPlusAcervoPublico(builder.Configuration, builder.Environment);
 builder.Services.AddUniPlusCache(builder.Configuration, builder.Environment);
+builder.Services.AddEnvioDeEmail(builder.Configuration);
 
 // --- Módulos do monólito (self-describing; cada um traz seu OpenAPI doc, erros,
 // HATEOAS, idempotência, Application+Infrastructure e migrations on startup) ---
@@ -163,6 +165,9 @@ builder.Host.UseWolverineOutboxCascading(
 
         // fila PG durável dos atos (mesmo transporte de domain-events).
         PublicacoesMessagingRegistration.ConfigurarRouting(opts);
+
+        // fila PG durável dos pedidos de e-mail (capacidade compartilhada, sem módulo dono).
+        EnvioDeEmailServiceCollectionExtensions.ConfigurarRoutingDeEmail(opts);
     });
 builder.Services.AddWolverineMessaging();
 
