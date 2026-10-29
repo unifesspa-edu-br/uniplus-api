@@ -53,7 +53,7 @@ public sealed partial class EnvelopeCodec
             JsonObject item = leitor.ItemObjeto(array, i, "cronogramaFases.fases");
             string[] chavesBase =
             [
-                "ordem", "faseCanonicaOrigemId", "codigo", "donoInstitucional", "origemData",
+                "ordem", "faseCanonicaOrigemId", "codigo", "origemData",
                 "agrupaEtapas", "permiteComplementacao",
                 "coletaInscricao", "coletaSolicitacaoIsencao", "inicio", "fim",
                 "produtos", "faseConcluinteCodigo", "emiteParecerIndividual",
@@ -65,7 +65,6 @@ public sealed partial class EnvelopeCodec
             int ordem = leitor.Inteiro(item, "ordem", path);
             Guid faseCanonicaOrigemId = leitor.Identificador(item, "faseCanonicaOrigemId", path);
             string codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.FaseCodigo);
-            string donoInstitucional = leitor.TextoNaoVazio(item, "donoInstitucional", path, LimitesDoEnvelope.DonoInstitucional);
             OrigemDataFase origemData = leitor.Enumeracao<OrigemDataFase>(item, "origemData", path);
             bool agrupaEtapas = leitor.Booleano(item, "agrupaEtapas", path);
             bool permiteComplementacao = leitor.Booleano(item, "permiteComplementacao", path);
@@ -125,11 +124,11 @@ public sealed partial class EnvelopeCodec
 
             Result<FaseCronograma> fase = comId
                 ? Result<FaseCronograma>.Success(FaseCronograma.Reidratar(
-                    id!.Value, ordem, faseCanonicaOrigemId, codigo, donoInstitucional, origemData,
+                    id!.Value, ordem, faseCanonicaOrigemId, codigo, origemData,
                     agrupaEtapas, permiteComplementacao, coletaInscricao, coletaSolicitacaoIsencao,
                     inicio, fim, produtos, faseConcluinteCodigo, emiteParecerIndividual, bancas, regraRecurso, unidadeResponsavel))
                 : FaseCronograma.Criar(
-                    ordem, faseCanonicaOrigemId, codigo, donoInstitucional, origemData,
+                    ordem, faseCanonicaOrigemId, codigo, origemData,
                     agrupaEtapas, permiteComplementacao, coletaInscricao, coletaSolicitacaoIsencao,
                     inicio, fim, produtos, faseConcluinteCodigo, emiteParecerIndividual, bancas, regraRecurso, unidadeResponsavel);
             if (fase.IsFailure)

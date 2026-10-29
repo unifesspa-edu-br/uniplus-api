@@ -71,7 +71,7 @@ public sealed class AtoNormativo : IForensicEntity
 
     public Guid Id { get; private init; } = Guid.CreateVersion7();
 
-    /// <summary>Órgão publicador que emitiu o ato (ex.: CEPS, CRCA).</summary>
+    /// <summary>Órgão publicador que emitiu o ato (ex.: CEPS, CGA).</summary>
     public string Orgao { get; private init; } = null!;
 
     /// <summary>Série de numeração do ato (ex.: EDITAL, AVISO) — atravessa certames.</summary>

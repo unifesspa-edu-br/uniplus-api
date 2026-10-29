@@ -126,7 +126,6 @@ public sealed class ProcessoSeletivoRetificarTests
         ordem: 1,
         faseCanonicaOrigemId: Guid.CreateVersion7(),
         codigo: "RESULTADO_FINAL",
-        donoInstitucional: "CEPS",
         origemData: OrigemDataFase.NoEdital,
         agrupaEtapas: true,
         permiteComplementacao: false,
@@ -417,7 +416,7 @@ public sealed class ProcessoSeletivoRetificarTests
         // quem recusa é o fechamento, que congela a versão nova.
         FaseCronograma atual = processo.CronogramaFases.Single();
         FaseCronograma semUnidade = FaseCronograma.Criar(
-            atual.Ordem, atual.FaseCanonicaOrigemId, atual.Codigo, atual.DonoInstitucional, atual.OrigemData,
+            atual.Ordem, atual.FaseCanonicaOrigemId, atual.Codigo, atual.OrigemData,
             atual.AgrupaEtapas, atual.PermiteComplementacao, atual.ColetaInscricao, atual.ColetaSolicitacaoIsencao,
             atual.Inicio, atual.Fim, [.. atual.Produtos], atual.FaseConcluinteCodigo, atual.EmiteParecerIndividual,
             [.. atual.BancasRequeridas], atual.RegraRecurso, unidadeResponsavel: null).Value!;

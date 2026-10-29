@@ -76,7 +76,7 @@ public sealed class AtualizarUnidadeCommandHandlerTests
         repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
         repo.SlugExisteEntreLivosAsync(Arg.Any<Slug>(), existente.Id, Arg.Any<CancellationToken>()).Returns(true);
 
-        AtualizarUnidadeCommand command = CommandSemMudancaDeIdentificador(existente.Id) with { Slug = "crca" };
+        AtualizarUnidadeCommand command = CommandSemMudancaDeIdentificador(existente.Id) with { Slug = "cga" };
 
         Result resultado = await AtualizarUnidadeCommandHandler.Handle(
             command, repo, uow, cache, TimeProvider.System, CancellationToken.None);
@@ -92,9 +92,9 @@ public sealed class AtualizarUnidadeCommandHandlerTests
         (IUnidadeRepository repo, IOrganizacaoInstitucionalUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
         Unidade existente = UnidadeExistente();
         repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
-        repo.SiglaExisteEntreLivosAsync("CRCA", existente.Id, Arg.Any<CancellationToken>()).Returns(true);
+        repo.SiglaExisteEntreLivosAsync("CGA", existente.Id, Arg.Any<CancellationToken>()).Returns(true);
 
-        AtualizarUnidadeCommand command = CommandSemMudancaDeIdentificador(existente.Id) with { Sigla = "CRCA" };
+        AtualizarUnidadeCommand command = CommandSemMudancaDeIdentificador(existente.Id) with { Sigla = "CGA" };
 
         Result resultado = await AtualizarUnidadeCommandHandler.Handle(
             command, repo, uow, cache, TimeProvider.System, CancellationToken.None);

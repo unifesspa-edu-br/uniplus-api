@@ -79,12 +79,12 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
             CancellationToken.None);
 
     private static FaseCanonicaView FaseCanonicaResultado(Guid id) => new(
-        id, "RESULTADO_FINAL", "Resultado Final", null, "CEPS",
+        id, "RESULTADO_FINAL", "Resultado Final", null,
         AgrupaEtapas: false, PermiteComplementacao: false, BaseLegal: null,
         ColetaInscricao: false, ColetaSolicitacaoIsencao: false, OrigemData: "NO_EDITAL");
 
     private static FaseCanonicaView FaseCanonicaRecorrivel(Guid id) => new(
-        id, "RESULTADO_PRELIMINAR", "Resultado preliminar", null, "CEPS",
+        id, "RESULTADO_PRELIMINAR", "Resultado preliminar", null,
         AgrupaEtapas: false, PermiteComplementacao: false, BaseLegal: null,
         ColetaInscricao: false, ColetaSolicitacaoIsencao: false, OrigemData: "NO_EDITAL");
 
@@ -222,7 +222,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS unidade gravada", out _);
         FaseCronograma conforme = processo.CronogramaFases.Single();
         FaseCronograma comCga = FaseCronograma.Criar(
-            conforme.Ordem, conforme.FaseCanonicaOrigemId, conforme.Codigo, conforme.DonoInstitucional, conforme.OrigemData,
+            conforme.Ordem, conforme.FaseCanonicaOrigemId, conforme.Codigo, conforme.OrigemData,
             conforme.AgrupaEtapas, conforme.PermiteComplementacao, conforme.ColetaInscricao, conforme.ColetaSolicitacaoIsencao,
             conforme.Inicio, conforme.Fim, [.. conforme.Produtos], conforme.FaseConcluinteCodigo, conforme.EmiteParecerIndividual,
             [.. conforme.BancasRequeridas], conforme.RegraRecurso, UnidadesDeTeste.Cga).Value!;

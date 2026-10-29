@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 /// <summary>
 /// Integração ponta-a-ponta da FaseCanonica contra Postgres real (UNI-REQ-0064):
 /// persistência, UNIQUE parcial do código vivo, liberação do slot por soft-delete,
-/// CHECKs de domínio (formato, conjunto canônico, dono típico, coerência de
+/// CHECKs de domínio (formato, conjunto canônico, coerência de
 /// agrupar etapas e complementação) e leitura cross-módulo ordenada por código.
 /// Cada teste usa códigos canônicos distintos (o conjunto é fechado).
 /// </summary>
@@ -44,7 +44,7 @@ public sealed class FaseCanonicaPersistenceTests
     public async Task Insert_PersisteEFicaVisivelPeloReader()
     {
         await LiberarSlotDoSeedAsync("INSCRICAO");
-        FaseCanonica fase = Fase("INSCRICAO", "Inscrição", "CEPS");
+        FaseCanonica fase = Fase("INSCRICAO", "Inscrição");
 
         await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
@@ -56,7 +56,6 @@ public sealed class FaseCanonicaPersistenceTests
         FaseCanonica persistida = await readCtx.FasesCanonicas.SingleAsync(f => f.Id == fase.Id);
 
         persistida.Codigo.Valor.Should().Be("INSCRICAO");
-        persistida.DonoTipico.Should().Be(DonoTipico.Ceps);
         persistida.CreatedBy.Should().Be(AdminA);
         persistida.IsDeleted.Should().BeFalse();
 
@@ -64,7 +63,6 @@ public sealed class FaseCanonicaPersistenceTests
         FaseCanonicaView? view = await reader.ObterPorIdAsync(fase.Id);
         view.Should().NotBeNull();
         view!.Codigo.Should().Be("INSCRICAO");
-        view.DonoTipico.Should().Be("CEPS");
     }
 
     [Fact(DisplayName = "UNIQUE parcial do código rejeita segunda fase viva com mesmo código")]
@@ -74,12 +72,12 @@ public sealed class FaseCanonicaPersistenceTests
 
         await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
-            ctx.FasesCanonicas.Add(Fase("ENSALAMENTO", "Ensalamento", "CEPS"));
+            ctx.FasesCanonicas.Add(Fase("ENSALAMENTO", "Ensalamento"));
             await ctx.SaveChangesAsync();
         }
 
         await using ConfiguracaoDbContext ctx2 = _fixture.CreateDbContext(AdminA);
-        ctx2.FasesCanonicas.Add(Fase("ENSALAMENTO", "Ensalamento", "CEPS"));
+        ctx2.FasesCanonicas.Add(Fase("ENSALAMENTO", "Ensalamento"));
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
 
@@ -93,7 +91,7 @@ public sealed class FaseCanonicaPersistenceTests
     public async Task SoftDelete_LiberaSlot()
     {
         await LiberarSlotDoSeedAsync("CLASSIFICACAO");
-        FaseCanonica fase = Fase("CLASSIFICACAO", "Classificação", "CEPS");
+        FaseCanonica fase = Fase("CLASSIFICACAO", "Classificação");
         await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.FasesCanonicas.Add(fase);
@@ -116,7 +114,7 @@ public sealed class FaseCanonicaPersistenceTests
         }
 
         await using ConfiguracaoDbContext ctx3 = _fixture.CreateDbContext(AdminA);
-        ctx3.FasesCanonicas.Add(Fase("CLASSIFICACAO", "Classificação", "CEPS"));
+        ctx3.FasesCanonicas.Add(Fase("CLASSIFICACAO", "Classificação"));
 
         Func<Task> act = async () => await ctx3.SaveChangesAsync();
         await act.Should().NotThrowAsync("o slot do código foi liberado pelo soft-delete");
@@ -128,7 +126,7 @@ public sealed class FaseCanonicaPersistenceTests
         await LiberarSlotDoSeedAsync(FaseCanonicaCatalogo.CodigoSolicitacaoIsencao);
 
         FaseCanonica fase = Fase(
-            FaseCanonicaCatalogo.CodigoSolicitacaoIsencao, "Solicitação de isenção", "CEPS");
+            FaseCanonicaCatalogo.CodigoSolicitacaoIsencao, "Solicitação de isenção");
 
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA);
         ctx.FasesCanonicas.Add(fase);
@@ -145,7 +143,7 @@ public sealed class FaseCanonicaPersistenceTests
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.fase_canonica (id, codigo, nome, dono_tipico, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"FASE_INVALIDA"}, {"Fase"}, {"CEPS"}, {false}, {false}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.fase_canonica (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"FASE_INVALIDA"}, {"Fase"}, {false}, {false}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK de conjunto canônico impede o INSERT direto");
@@ -157,22 +155,10 @@ public sealed class FaseCanonicaPersistenceTests
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.fase_canonica (id, codigo, nome, dono_tipico, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"lista-espera"}, {"Fase"}, {"CEPS"}, {false}, {false}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.fase_canonica (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"lista-espera"}, {"Fase"}, {false}, {false}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK codigo ~ '^[A-Z_]+$' impede o INSERT direto");
-    }
-
-    [Fact(DisplayName = "CHECK de banco rejeita dono típico fora do domínio via SQL cru")]
-    public async Task Check_RejeitaDonoTipicoForaDoDominioViaSqlCru()
-    {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
-
-        Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.fase_canonica (id, codigo, nome, dono_tipico, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"RESULTADO_PRELIMINAR"}, {"Resultado preliminar"}, {"DTI"}, {false}, {false}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
-
-        await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK de domínio de dono_tipico impede o INSERT direto");
     }
 
     [Fact(DisplayName = "CHECK de banco rejeita agrupar etapas fora da avaliação via SQL cru")]
@@ -181,7 +167,7 @@ public sealed class FaseCanonicaPersistenceTests
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.fase_canonica (id, codigo, nome, dono_tipico, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"HABILITACAO"}, {"Habilitação"}, {"MEC"}, {true}, {false}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.fase_canonica (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"HABILITACAO"}, {"Habilitação"}, {true}, {false}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK de coerência agrupa_etapas ⇒ avaliação impede o INSERT direto");
@@ -193,7 +179,7 @@ public sealed class FaseCanonicaPersistenceTests
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.fase_canonica (id, codigo, nome, dono_tipico, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"RESULTADO_FINAL"}, {"Resultado final"}, {"CEPS"}, {false}, {true}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.fase_canonica (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"RESULTADO_FINAL"}, {"Resultado final"}, {false}, {true}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK de coerência permite_complementacao ⇒ fases permitidas impede o INSERT direto");
@@ -205,7 +191,7 @@ public sealed class FaseCanonicaPersistenceTests
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.fase_canonica (id, codigo, nome, dono_tipico, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"MATRICULA"}, {"Matrícula"}, {"CRCA"}, {false}, {false}, {"EXTERNA"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.fase_canonica (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"MATRICULA"}, {"Matrícula"}, {false}, {false}, {"EXTERNA"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK de domínio de origem_data impede o INSERT direto");
@@ -218,9 +204,9 @@ public sealed class FaseCanonicaPersistenceTests
 
         await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
-            ctx.FasesCanonicas.Add(Fase("MATRICULA", "Matrícula", "CRCA"));
-            ctx.FasesCanonicas.Add(Fase("HETEROIDENTIFICACAO", "Heteroidentificação", "CEPS"));
-            ctx.FasesCanonicas.Add(Fase("CHAMADA", "Chamada", "CEPS"));
+            ctx.FasesCanonicas.Add(Fase("MATRICULA", "Matrícula"));
+            ctx.FasesCanonicas.Add(Fase("HETEROIDENTIFICACAO", "Heteroidentificação"));
+            ctx.FasesCanonicas.Add(Fase("CHAMADA", "Chamada"));
             await ctx.SaveChangesAsync();
         }
 
@@ -242,9 +228,9 @@ public sealed class FaseCanonicaPersistenceTests
         codigos.Should().NotContain("CHAMADA", "a fase soft-deleted não aparece no leitor de vivos");
     }
 
-    private static FaseCanonica Fase(string codigo, string nome, string dono) =>
+    private static FaseCanonica Fase(string codigo, string nome) =>
         FaseCanonica.Criar(
-            codigo, nome, null, dono, false, false, null, coletaInscricao: false,
+            codigo, nome, null, false, false, null, coletaInscricao: false,
             // A marca acompanha o código: a factory recusa a fase de isenção sem ela.
             coletaSolicitacaoIsencao: codigo == FaseCanonicaCatalogo.CodigoSolicitacaoIsencao,
             "NO_EDITAL").Value!;

@@ -180,7 +180,7 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
     // A mesma fase, em versões diferentes do cronograma, tem a mesma fase canônica de origem.
     private FaseCronograma Fase(string codigo, int ordem, string? faseConcluinteCodigo, params ProdutoDaFase[] produtos) =>
         FaseCronograma.Criar(
-            ordem, OrigemDe(codigo), codigo, "CEPS", OrigemDataFase.NoEdital,
+            ordem, OrigemDe(codigo), codigo, OrigemDataFase.NoEdital,
             agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: Agora, fim: Agora.AddDays(10), produtos: produtos,
             faseConcluinteCodigo: faseConcluinteCodigo, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;

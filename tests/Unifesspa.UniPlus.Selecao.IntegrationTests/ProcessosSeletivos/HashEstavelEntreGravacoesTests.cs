@@ -229,7 +229,7 @@ public sealed class HashEstavelEntreGravacoesTests
     /// <summary>A fase única do certame, sob a unidade dada, sempre por instância nova.</summary>
     private static FaseCronograma FaseDoCertame(UnidadeResponsavelSnapshot unidadeResponsavel) => FaseCronograma.Criar(
         ordem: 1, faseCanonicaOrigemId: FaseOrigem, codigo: "RESULTADO_FINAL",
-        donoInstitucional: "CEPS", origemData: OrigemDataFase.NoEdital, agrupaEtapas: true,
+        origemData: OrigemDataFase.NoEdital, agrupaEtapas: true,
         permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false,
         inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
         fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),

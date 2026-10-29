@@ -13811,12 +13811,6 @@
               "string"
             ]
           },
-          "donoTipico": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
           "agrupaEtapas": {
             "type": "boolean",
             "default": false
@@ -13844,6 +13838,13 @@
               "null",
               "string"
             ]
+          },
+          "unidadeSugeridaId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
@@ -15463,12 +15464,6 @@
               "string"
             ]
           },
-          "donoTipico": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
           "agrupaEtapas": {
             "type": "boolean",
             "default": false
@@ -15496,6 +15491,13 @@
               "null",
               "string"
             ]
+          },
+          "unidadeSugeridaId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
@@ -17025,13 +17027,13 @@
           "codigo",
           "nome",
           "descricao",
-          "donoTipico",
           "agrupaEtapas",
           "permiteComplementacao",
           "baseLegal",
           "coletaInscricao",
           "coletaSolicitacaoIsencao",
           "origemData",
+          "unidadeSugerida",
           "criadoEm"
         ],
         "type": "object",
@@ -17051,9 +17053,6 @@
               "null",
               "string"
             ]
-          },
-          "donoTipico": {
-            "type": "string"
           },
           "agrupaEtapas": {
             "type": "boolean"
@@ -17075,6 +17074,16 @@
           },
           "origemData": {
             "type": "string"
+          },
+          "unidadeSugerida": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UnidadeSugeridaDto"
+              }
+            ]
           },
           "criadoEm": {
             "type": "string",
@@ -19939,6 +19948,26 @@
             "type": "string"
           },
           "tipo": {
+            "type": "string"
+          }
+        }
+      },
+      "UnidadeSugeridaDto": {
+        "required": [
+          "origemId",
+          "sigla",
+          "nome"
+        ],
+        "type": "object",
+        "properties": {
+          "origemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sigla": {
+            "type": "string"
+          },
+          "nome": {
             "type": "string"
           }
         }

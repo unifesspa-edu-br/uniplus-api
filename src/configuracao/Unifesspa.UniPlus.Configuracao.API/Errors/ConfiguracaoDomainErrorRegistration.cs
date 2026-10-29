@@ -1275,18 +1275,6 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.fase_canonica.descricao_tamanho",
                 "Tamanho da descrição da fase canônica inválido")),
 
-        new(FaseCanonicaErrorCodes.DonoTipicoObrigatorio,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.fase_canonica.dono_tipico_obrigatorio",
-                "Dono típico da fase canônica é obrigatório")),
-
-        new(FaseCanonicaErrorCodes.DonoTipicoInvalido,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.fase_canonica.dono_tipico_invalido",
-                "Dono típico da fase canônica fora do domínio fechado")),
-
         new(FaseCanonicaErrorCodes.AgrupaEtapasApenasAvaliacao,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
@@ -1328,6 +1316,12 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.fase_canonica.origem_data_invalida",
                 "Origem da data da fase canônica fora do domínio fechado")),
+
+        new(FaseCanonicaErrorCodes.UnidadeSugeridaNaoEncontrada,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fase_canonica.unidade_sugerida_nao_encontrada",
+                "Unidade sugerida da fase canônica não encontrada ou não está mais viva")),
 
         new(FaseCanonicaErrorCodes.NaoEncontrada,
             new DomainErrorMapping(

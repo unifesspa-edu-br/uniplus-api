@@ -96,9 +96,6 @@ public static class LimitesDoEnvelope
     /// </summary>
     public const int FaseCodigo = 60;
 
-    /// <summary><c>FaseCronograma.DonoInstitucional</c> — snapshot-copy do dono típico.</summary>
-    public const int DonoInstitucional = 60;
-
     /// <summary>
     /// Código de tipo de ato de Publicações — <c>ProdutoDaFase.AtoCodigo</c> e, um nível
     /// abaixo, <c>ProdutoDaEtapa.AtoCodigo</c>: a etapa publica por conta própria, na mesma

@@ -58,7 +58,6 @@ internal sealed class FaseCanonicaReader : IFaseCanonicaReader
             f.Codigo.Valor,
             f.Nome,
             f.Descricao,
-            DonosTipicos.ParaTokenCanonico(f.DonoTipico),
             f.AgrupaEtapas,
             f.PermiteComplementacao,
             f.BaseLegal,

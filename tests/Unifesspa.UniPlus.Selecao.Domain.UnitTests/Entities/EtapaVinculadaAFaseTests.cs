@@ -33,7 +33,7 @@ public sealed class EtapaVinculadaAFaseTests
     private static FaseCronograma Fase(
         int ordem, string codigo, DateTimeOffset? inicio = null, DateTimeOffset? fim = null) =>
         FaseCronograma.Criar(
-            ordem, Guid.CreateVersion7(), codigo, "CEPS",
+            ordem, Guid.CreateVersion7(), codigo,
             inicio is not null && fim is not null ? OrigemDataFase.NoEdital : OrigemDataFase.NaExecucao,
             agrupaEtapas: false, permiteComplementacao: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
@@ -390,7 +390,7 @@ public sealed class EtapaVinculadaAFaseTests
     {
         ProcessoSeletivo processo = Processo();
         FaseCronograma avaliacao = FaseCronograma.Criar(
-            1, Guid.CreateVersion7(), "AVALIACAO", "CEPS", OrigemDataFase.NaExecucao,
+            1, Guid.CreateVersion7(), "AVALIACAO", OrigemDataFase.NaExecucao,
             agrupaEtapas: true, permiteComplementacao: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: null, fim: null, produtos: [], faseConcluinteCodigo: null,

@@ -51,7 +51,6 @@ public sealed record FaseCronogramaDto(
     int Ordem,
     Guid FaseCanonicaOrigemId,
     string Codigo,
-    string DonoInstitucional,
     // Token canônico UPPER_SNAKE (`NO_EDITAL`/`NA_EXECUCAO`), o mesmo que o catálogo de fases
     // canônicas publica — a origem deste campo é aquele cadastro, não a escrita daqui.
     string OrigemData,

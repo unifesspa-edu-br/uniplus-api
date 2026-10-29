@@ -331,7 +331,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
         // janela é estado válido de cadastro, e a divergência apareceria exatamente aí.
         ProcessoSeletivo processo = ProcessoBase();
         FaseCronograma meiaJanela = FaseCronograma.Criar(
-            1, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.NaExecucao,
+            1, Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao,
             agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: true,
             coletaSolicitacaoIsencao: false,
             inicio: temInicio ? InstanteEmBelem.Em(2026, 1, 1) : null,
@@ -372,7 +372,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
         // para a tela apontar o cronograma em vez de mandar tentar de novo.
         ProcessoSeletivo processo = ProcessoBase();
         FaseCronograma faseSemJanela = FaseCronograma.Criar(
-            1, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.NaExecucao,
+            1, Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao,
             agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: true,
             coletaSolicitacaoIsencao: false, inicio: null, fim: null,
             produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,

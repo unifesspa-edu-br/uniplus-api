@@ -47,7 +47,6 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
     public CodigoFase Codigo { get; private set; } = null!;
     public string Nome { get; private set; } = null!;
     public string? Descricao { get; private set; }
-    public DonoTipico DonoTipico { get; private set; }
     public bool AgrupaEtapas { get; private set; }
     public bool PermiteComplementacao { get; private set; }
     public string? BaseLegal { get; private set; }
@@ -67,6 +66,21 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
 
     /// <summary>Quando a data da fase é fixada: <see cref="OrigemDataFase.NoEdital"/> (janela obrigatória) ou <see cref="OrigemDataFase.NaExecucao"/> (janela opcional).</summary>
     public OrigemDataFase OrigemData { get; private set; }
+
+    /// <summary>Id da unidade que costuma responder pela fase, copiado sem FK (ADR-0061); nulo quando não há sugestão.</summary>
+    public Guid? UnidadeSugeridaOrigemId { get; private set; }
+
+    /// <summary>Sigla da unidade sugerida, copiada ao cadastrar ou editar a fase.</summary>
+    public string? UnidadeSugeridaSigla { get; private set; }
+
+    /// <summary>Nome da unidade sugerida, copiado ao cadastrar ou editar a fase.</summary>
+    public string? UnidadeSugeridaNome { get; private set; }
+
+    /// <summary>A unidade sugerida como valor, ou <see langword="null"/> quando a fase não a tem.</summary>
+    public UnidadeSugerida? UnidadeSugerida =>
+        UnidadeSugeridaOrigemId is { } origemId
+            ? new UnidadeSugerida(origemId, UnidadeSugeridaSigla!, UnidadeSugeridaNome!)
+            : null;
 
     public string? CreatedBy { get; private set; }
     public string? UpdatedBy { get; private set; }
@@ -103,16 +117,15 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
     }
 
     /// <summary>
-    /// Valida e normaliza os cinco campos editáveis que <b>não</b> dependem do
-    /// código da fase (nome, descrição, dono típico, base legal e origem da data),
+    /// Valida e normaliza os quatro campos editáveis que <b>não</b> dependem do
+    /// código da fase (nome, descrição, base legal e origem da data),
     /// acumulando toda violação independente em vez de parar na primeira. Sem
     /// mutar nada e sem depender de I/O — existe para o handler de atualização
     /// falhar rápido antes de buscar a fase por Id, quando a causa da violação já
     /// é determinável só pelo payload.
     /// </summary>
-    public static Result<(string Nome, string? Descricao, DonoTipico DonoTipico, string? BaseLegal,
-        OrigemDataFase OrigemData)> ValidarCamposComuns(
-        string? nome, string? descricao, string? donoTipico, string? baseLegal, string? origemData)
+    public static Result<(string Nome, string? Descricao, string? BaseLegal, OrigemDataFase OrigemData)> ValidarCamposComuns(
+        string? nome, string? descricao, string? baseLegal, string? origemData)
     {
         List<FieldError> erros = [];
 
@@ -143,19 +156,6 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
             descricaoNormalizada = null;
         }
 
-        DonoTipico dono = DonoTipico.Nenhum;
-        if (string.IsNullOrWhiteSpace(donoTipico))
-        {
-            erros.Add(new("donoTipico", new DomainError(
-                FaseCanonicaErrorCodes.DonoTipicoObrigatorio, "Dono típico da fase é obrigatório.")));
-        }
-        else if (!DonosTipicos.TryAnalisar(donoTipico, out dono))
-        {
-            erros.Add(new("donoTipico", new DomainError(
-                FaseCanonicaErrorCodes.DonoTipicoInvalido,
-                $"Dono típico deve ser um de: {string.Join(", ", DonosTipicos.TokensCanonicos)}.")));
-        }
-
         string? baseLegalNormalizada = NormalizarOpcional(baseLegal);
         if (baseLegalNormalizada is not null && baseLegalNormalizada.Length > BaseLegalMaxLength)
         {
@@ -180,11 +180,11 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
 
         if (erros.Count > 0)
         {
-            return Result<(string, string?, DonoTipico, string?, OrigemDataFase)>.ValidationFailure(erros);
+            return Result<(string, string?, string?, OrigemDataFase)>.ValidationFailure(erros);
         }
 
-        return Result<(string, string?, DonoTipico, string?, OrigemDataFase)>.Success(
-            (nomeNormalizado!, descricaoNormalizada, dono, baseLegalNormalizada, origem));
+        return Result<(string, string?, string?, OrigemDataFase)>.Success(
+            (nomeNormalizado!, descricaoNormalizada, baseLegalNormalizada, origem));
     }
 
     /// <summary>
@@ -238,7 +238,7 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
 
     /// <summary>
     /// Cria uma nova fase canônica. Valida o código (formato + pertença ao conjunto
-    /// canônico), os cinco campos comuns e — só quando o código é válido — as
+    /// canônico), os quatro campos comuns e — só quando o código é válido — as
     /// coerências que dependem dele, acumulando toda violação no mesmo lote. A
     /// unicidade do código entre vivos é responsabilidade do handler.
     /// </summary>
@@ -246,7 +246,6 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
         string? codigo,
         string? nome,
         string? descricao,
-        string? donoTipico,
         bool agrupaEtapas,
         bool permiteComplementacao,
         string? baseLegal,
@@ -262,9 +261,8 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
             erros.AddRange(codigoResult.Errors);
         }
 
-        Result<(string Nome, string? Descricao, DonoTipico DonoTipico, string? BaseLegal,
-            OrigemDataFase OrigemData)> comunsResult =
-            ValidarCamposComuns(nome, descricao, donoTipico, baseLegal, origemData);
+        Result<(string Nome, string? Descricao, string? BaseLegal, OrigemDataFase OrigemData)> comunsResult =
+            ValidarCamposComuns(nome, descricao, baseLegal, origemData);
         if (comunsResult.IsFailure)
         {
             erros.AddRange(comunsResult.Errors);
@@ -291,7 +289,7 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
 
         var fase = new FaseCanonica { Codigo = codigoResult.Value! };
         fase.AplicarCampos(
-            comunsResult.Value.Nome, comunsResult.Value.Descricao, comunsResult.Value.DonoTipico,
+            comunsResult.Value.Nome, comunsResult.Value.Descricao,
             agrupaEtapas, permiteComplementacao, comunsResult.Value.BaseLegal,
             coletaInscricao, coletaSolicitacaoIsencao, comunsResult.Value.OrigemData);
 
@@ -300,7 +298,7 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
 
     /// <summary>
     /// Atualiza os atributos editáveis da fase. O <c>Codigo</c> e o <c>Id</c> são
-    /// <b>imutáveis</b> — este método não os recebe. Revalida os cinco campos comuns
+    /// <b>imutáveis</b> — este método não os recebe. Revalida os quatro campos comuns
     /// e as coerências contra o código congelado da fase, acumulando toda
     /// violação no mesmo lote — é a rede de segurança que cobre as duas regras que
     /// o pré-check do handler não consegue avaliar sem o código persistido.
@@ -308,7 +306,6 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
     public Result Atualizar(
         string? nome,
         string? descricao,
-        string? donoTipico,
         bool agrupaEtapas,
         bool permiteComplementacao,
         string? baseLegal,
@@ -318,9 +315,8 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
     {
         List<FieldError> erros = [];
 
-        Result<(string Nome, string? Descricao, DonoTipico DonoTipico, string? BaseLegal,
-            OrigemDataFase OrigemData)> comunsResult =
-            ValidarCamposComuns(nome, descricao, donoTipico, baseLegal, origemData);
+        Result<(string Nome, string? Descricao, string? BaseLegal, OrigemDataFase OrigemData)> comunsResult =
+            ValidarCamposComuns(nome, descricao, baseLegal, origemData);
         if (comunsResult.IsFailure)
         {
             erros.AddRange(comunsResult.Errors);
@@ -339,7 +335,7 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
         }
 
         AplicarCampos(
-            comunsResult.Value.Nome, comunsResult.Value.Descricao, comunsResult.Value.DonoTipico,
+            comunsResult.Value.Nome, comunsResult.Value.Descricao,
             agrupaEtapas, permiteComplementacao, comunsResult.Value.BaseLegal,
             coletaInscricao, coletaSolicitacaoIsencao, comunsResult.Value.OrigemData);
 
@@ -347,18 +343,28 @@ public sealed class FaseCanonica : SoftDeletableEntity, IAuditableEntity
     }
 
     private void AplicarCampos(
-        string nome, string? descricao, DonoTipico donoTipico, bool agrupaEtapas, bool permiteComplementacao,
+        string nome, string? descricao, bool agrupaEtapas, bool permiteComplementacao,
         string? baseLegal, bool coletaInscricao, bool coletaSolicitacaoIsencao, OrigemDataFase origemData)
     {
         Nome = nome;
         Descricao = descricao;
-        DonoTipico = donoTipico;
         AgrupaEtapas = agrupaEtapas;
         PermiteComplementacao = permiteComplementacao;
         BaseLegal = baseLegal;
         ColetaInscricao = coletaInscricao;
         ColetaSolicitacaoIsencao = coletaSolicitacaoIsencao;
         OrigemData = origemData;
+    }
+
+    /// <summary>
+    /// Define a unidade sugerida já resolvida no cadastro de unidades pelo handler, ou a retira
+    /// quando <paramref name="unidade"/> é <see langword="null"/>.
+    /// </summary>
+    public void DefinirUnidadeSugerida(UnidadeSugerida? unidade)
+    {
+        UnidadeSugeridaOrigemId = unidade?.OrigemId;
+        UnidadeSugeridaSigla = unidade?.Sigla;
+        UnidadeSugeridaNome = unidade?.Nome;
     }
 
     private static string? NormalizarOpcional(string? valor) =>

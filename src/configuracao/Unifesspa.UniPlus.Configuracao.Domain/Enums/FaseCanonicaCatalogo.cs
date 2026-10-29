@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 /// Tratar o vocabulário de fases como catálogo (e não como enumerado compilado)
 /// segue a diretriz do Tech Lead: é dado institucional configurável. Os códigos
 /// aqui são o <b>domínio fechado</b> — cada <c>FaseCanonica</c> viva referencia um
-/// deles, mas seus demais atributos (nome, dono típico, sinalizadores) são editáveis.
+/// deles, mas seus demais atributos (nome, sinalizadores) são editáveis.
 /// </remarks>
 public static class FaseCanonicaCatalogo
 {

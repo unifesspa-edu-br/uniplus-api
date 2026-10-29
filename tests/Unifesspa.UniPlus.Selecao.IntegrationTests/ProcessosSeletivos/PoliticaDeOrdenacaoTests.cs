@@ -126,7 +126,6 @@ public sealed class PoliticaDeOrdenacaoTests
         ordem: 1,
         faseCanonicaOrigemId: Guid.CreateVersion7(),
         codigo: "INSCRICAO",
-        donoInstitucional: "CEPS",
         origemData: OrigemDataFase.NoEdital,
         agrupaEtapas: true,
         permiteComplementacao: true,
@@ -296,7 +295,7 @@ public sealed class PoliticaDeOrdenacaoTests
         // recusa uma fase que agrupa etapas quando o processo não tem etapa pontuada nenhuma; o
         // padrão de Montar() (FaseMinima, agrupaEtapas: true) pressupõe ao menos uma.
         FaseCronograma faseSemAgruparEtapas = FaseCronograma.Criar(
-            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "INSCRICAO", donoInstitucional: "CEPS",
+            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "INSCRICAO",
             origemData: OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: true, coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)], faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
@@ -339,13 +338,13 @@ public sealed class PoliticaDeOrdenacaoTests
         // "errado" que o código (proxy de conteúdo) daria.
         FaseCronograma faseZeta = FaseCronograma.Reidratar(
             id: IdFixo(2), ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "ZETA_FASE",
-            donoInstitucional: "CEPS", origemData: OrigemDataFase.NoEdital, agrupaEtapas: true,
+            origemData: OrigemDataFase.NoEdital, agrupaEtapas: true,
             permiteComplementacao: true, coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             produtos: [ProdutoDaFase.Criar("ZETA_FASE", PapelProdutoFase.Definitivo)], faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps);
         FaseCronograma faseAlfa = FaseCronograma.Reidratar(
             id: IdFixo(1), ordem: 2, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "ALFA_FASE",
-            donoInstitucional: "CEPS", origemData: OrigemDataFase.NoEdital, agrupaEtapas: true,
+            origemData: OrigemDataFase.NoEdital, agrupaEtapas: true,
             permiteComplementacao: true, coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 2, 28, 0, 0, 0, TimeSpan.Zero),
             produtos: [ProdutoDaFase.Criar("ALFA_FASE", PapelProdutoFase.Definitivo)], faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps);
@@ -374,7 +373,7 @@ public sealed class PoliticaDeOrdenacaoTests
             .Should().Equal(["ALFA_BANCA", "ZETA_BANCA"], "pré-condição: ordenar pelo código (proxy de conteúdo) dá o oposto do oráculo de identidade abaixo");
 
         FaseCronograma fase = FaseCronograma.Criar(
-            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "INSCRICAO", donoInstitucional: "CEPS",
+            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "INSCRICAO",
             origemData: OrigemDataFase.NoEdital, agrupaEtapas: true, permiteComplementacao: true, coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)],
@@ -406,7 +405,7 @@ public sealed class PoliticaDeOrdenacaoTests
             tipoUnico, "BANCA_ANALISE_DOCUMENTAL", [CategoriaJulgada.Criar(IdFixo(8), "ETNICO_RACIAL")]);
 
         FaseCronograma fase = FaseCronograma.Criar(
-            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "ANALISE", donoInstitucional: "CEPS",
+            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "ANALISE",
             origemData: OrigemDataFase.NoEdital, agrupaEtapas: true, permiteComplementacao: true, coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)],
@@ -438,7 +437,7 @@ public sealed class PoliticaDeOrdenacaoTests
             ]);
 
         FaseCronograma fase = FaseCronograma.Criar(
-            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "ANALISE", donoInstitucional: "CEPS",
+            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "ANALISE",
             origemData: OrigemDataFase.NoEdital, agrupaEtapas: true, permiteComplementacao: true, coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)],

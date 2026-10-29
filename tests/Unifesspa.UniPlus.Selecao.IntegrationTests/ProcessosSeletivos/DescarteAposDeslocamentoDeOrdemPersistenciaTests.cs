@@ -557,7 +557,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
         string? faseConcluinteCodigo = null,
         RegraRecursoFase? regraRecurso = null) =>
         FaseCronograma.Criar(
-            ordem, faseCanonicaOrigemId, codigo, "CEPS", OrigemDataFase.NaExecucao,
+            ordem, faseCanonicaOrigemId, codigo, OrigemDataFase.NaExecucao,
             agrupaEtapas: false, permiteComplementacao: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: null, fim: null,
@@ -572,7 +572,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
         string? faseConcluinteCodigo,
         RegraRecursoFase? regraRecurso = null) =>
         FaseCronograma.Reidratar(
-            Guid.CreateVersion7(), ordem, faseCanonicaOrigemId, codigo, "CEPS", OrigemDataFase.NaExecucao,
+            Guid.CreateVersion7(), ordem, faseCanonicaOrigemId, codigo, OrigemDataFase.NaExecucao,
             agrupaEtapas: false, permiteComplementacao: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: null, fim: null,

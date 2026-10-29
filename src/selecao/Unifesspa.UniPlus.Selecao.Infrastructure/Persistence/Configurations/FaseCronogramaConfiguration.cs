@@ -14,7 +14,6 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseCronograma>
 {
     private const int CodigoMaxLength = 60;
-    private const int DonoInstitucionalMaxLength = 60;
     private const int UnidadeSiglaMaxLength = 50;
     private const int UnidadeNomeMaxLength = 250;
 
@@ -32,7 +31,6 @@ public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseC
         builder.Property(f => f.Ordem).IsRequired();
         builder.Property(f => f.FaseCanonicaOrigemId).IsRequired();
         builder.Property(f => f.Codigo).HasMaxLength(CodigoMaxLength).IsRequired();
-        builder.Property(f => f.DonoInstitucional).HasMaxLength(DonoInstitucionalMaxLength).IsRequired();
         builder.Property(f => f.OrigemData).HasConversion<int>().IsRequired();
 
         // Snapshot-copy (ADR-0061) da unidade responsável: o id sem FK e a cópia de sigla e

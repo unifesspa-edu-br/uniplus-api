@@ -5,11 +5,15 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
+
+using Wolverine.Attributes;
 
 /// <summary>
 /// Handler do <see cref="AtualizarFaseCanonicaCommand"/>. Valida antes de I/O só o
-/// que é determinável sem o código persistido (os cinco campos comuns) — as
+/// que é determinável sem o código persistido (os quatro campos comuns) — as
 /// coerências que dependem do código (<c>AgrupaEtapas</c>,
 /// <c>PermiteComplementacao</c>) só podem ser avaliadas depois do fetch, porque o
 /// comando não carrega o código (imutável). Carrega a fase (404), então chama
@@ -19,20 +23,26 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public static class AtualizarFaseCanonicaCommandHandler
 {
+    /// <summary>
+    /// <c>[NonTransactional]</c> porque o handler injeta o reader de Organização e o unit of work de
+    /// Configuração, e o detector de transação do Wolverine falha por ambiguidade de <c>DbContext</c>.
+    /// </summary>
+    [NonTransactional]
     public static async Task<Result> Handle(
         AtualizarFaseCanonicaCommand command,
         IFaseCanonicaRepository repository,
+        IUnidadeReader unidadeReader,
         IConfiguracaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(repository);
+        ArgumentNullException.ThrowIfNull(unidadeReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        Result<(string Nome, string? Descricao, DonoTipico DonoTipico, string? BaseLegal,
-            OrigemDataFase OrigemData)> comuns =
+        Result<(string Nome, string? Descricao, string? BaseLegal, OrigemDataFase OrigemData)> comuns =
             FaseCanonica.ValidarCamposComuns(
-                command.Nome, command.Descricao, command.DonoTipico, command.BaseLegal, command.OrigemData);
+                command.Nome, command.Descricao, command.BaseLegal, command.OrigemData);
         if (comuns.IsFailure)
         {
             return Result.ValidationFailure(comuns.Errors);
@@ -49,7 +59,6 @@ public static class AtualizarFaseCanonicaCommandHandler
         Result atualizarResult = fase.Atualizar(
             command.Nome,
             command.Descricao,
-            command.DonoTipico,
             command.AgrupaEtapas,
             command.PermiteComplementacao,
             command.BaseLegal,
@@ -60,6 +69,21 @@ public static class AtualizarFaseCanonicaCommandHandler
         if (atualizarResult.IsFailure)
         {
             return atualizarResult;
+        }
+
+        // Reenviar a unidade já gravada preserva a cópia: a unidade pode ter sido desativada
+        // depois, e isso não deve impedir a edição dos outros campos. Só a troca é conferida.
+        if (command.UnidadeSugeridaId != fase.UnidadeSugeridaOrigemId)
+        {
+            Result<UnidadeSugerida?> unidade = await UnidadeSugeridaResolver
+                .ResolverAsync(command.UnidadeSugeridaId, unidadeReader, cancellationToken)
+                .ConfigureAwait(false);
+            if (unidade.IsFailure)
+            {
+                return Result.ValidationFailure(unidade.Errors);
+            }
+
+            fase.DefinirUnidadeSugerida(unidade.Value);
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);

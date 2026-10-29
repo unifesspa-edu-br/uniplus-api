@@ -27,7 +27,7 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
     private static readonly FormatosPermitidos Qualquer = FormatosPermitidos.Criar(true, null).Value!;
 
     private static FaseCronograma Inscricao() => FaseCronograma.Criar(
-        1, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.NoEdital,
+        1, Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NoEdital,
         agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false,
         inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero),
         produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)],

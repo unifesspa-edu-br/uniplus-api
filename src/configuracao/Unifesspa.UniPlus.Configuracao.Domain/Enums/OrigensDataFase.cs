@@ -7,8 +7,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// <remarks>
 /// <para>O parsing é por <b>allowlist textual explícita</b> (<see cref="TryAnalisar"/>):
 /// só os dois tokens canônicos são aceitos. Deliberadamente <b>não</b> usa
-/// <c>Enum.TryParse</c>, que aceitaria tokens numéricos e nomes PascalCase do enum —
-/// mesmo molde de <see cref="DonosTipicos"/>.</para>
+/// <c>Enum.TryParse</c>, que aceitaria tokens numéricos e nomes PascalCase do enum.</para>
 /// <para>É o vocabulário fonte do CHECK de domínio em <c>fase_canonica.origem_data</c>
 /// (<see cref="TokensCanonicos"/>) e do value converter de persistência.</para>
 /// </remarks>

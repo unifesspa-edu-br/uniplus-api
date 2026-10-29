@@ -720,12 +720,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(300)")
                         .HasColumnName("descricao");
 
-                    b.Property<string>("DonoTipico")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasColumnName("dono_tipico");
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")
                         .HasColumnName("is_deleted");
@@ -747,6 +741,20 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(false)
                         .HasColumnName("permite_complementacao");
+
+                    b.Property<string>("UnidadeSugeridaNome")
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)")
+                        .HasColumnName("unidade_sugerida_nome");
+
+                    b.Property<Guid?>("UnidadeSugeridaOrigemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("unidade_sugerida_origem_id");
+
+                    b.Property<string>("UnidadeSugeridaSigla")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("unidade_sugerida_sigla");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -775,8 +783,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_fase_canonica_complementacao", "permite_complementacao = false OR codigo IN ('HOMOLOGACAO', 'RECURSOS')");
 
-                            t.HasCheckConstraint("ck_fase_canonica_dono_tipico", "dono_tipico IN ('CEPS', 'CRCA', 'MEC', 'CONSEPE')");
-
                             t.HasCheckConstraint("ck_fase_canonica_origem_data", "origem_data IN ('NO_EDITAL', 'NA_EXECUCAO')");
                         });
 
@@ -790,7 +796,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Período em que o candidato se inscreve no processo seletivo.",
-                            DonoTipico = "CEPS",
                             IsDeleted = false,
                             Nome = "Inscrição",
                             OrigemData = "NO_EDITAL",
@@ -806,7 +811,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             ColetaSolicitacaoIsencao = true,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Janela em que o candidato pede isenção da taxa de inscrição. Abre junto com as inscrições e termina antes delas.",
-                            DonoTipico = "CEPS",
                             IsDeleted = false,
                             Nome = "Solicitação de isenção",
                             OrigemData = "NO_EDITAL",
@@ -821,7 +825,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Conferência das inscrições recebidas e publicação de quais foram homologadas.",
-                            DonoTipico = "CEPS",
                             IsDeleted = false,
                             Nome = "Homologação das inscrições",
                             OrigemData = "NO_EDITAL",
@@ -836,7 +839,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Distribuição dos candidatos pelos locais de prova.",
-                            DonoTipico = "CEPS",
                             IsDeleted = false,
                             Nome = "Ensalamento",
                             OrigemData = "NO_EDITAL",
@@ -851,7 +853,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Fase que agrupa as etapas pontuadas do certame.",
-                            DonoTipico = "CEPS",
                             IsDeleted = false,
                             Nome = "Avaliação",
                             OrigemData = "NO_EDITAL",
@@ -866,7 +867,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Apuração das notas e ordenação dos candidatos por modalidade.",
-                            DonoTipico = "CEPS",
                             IsDeleted = false,
                             Nome = "Classificação",
                             OrigemData = "NO_EDITAL",
@@ -881,7 +881,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Publicação do resultado que ainda admite recurso.",
-                            DonoTipico = "CEPS",
                             IsDeleted = false,
                             Nome = "Resultado preliminar",
                             OrigemData = "NO_EDITAL",
@@ -896,7 +895,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Interposição e análise dos recursos contra o resultado preliminar.",
-                            DonoTipico = "CEPS",
                             IsDeleted = false,
                             Nome = "Recursos",
                             OrigemData = "NO_EDITAL",
@@ -911,7 +909,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Publicação do resultado depois de julgados os recursos.",
-                            DonoTipico = "CEPS",
                             IsDeleted = false,
                             Nome = "Resultado final",
                             OrigemData = "NO_EDITAL",
@@ -927,7 +924,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Procedimento de heteroidentificação étnico-racial dos candidatos que concorrem por cota.",
-                            DonoTipico = "CEPS",
                             IsDeleted = false,
                             Nome = "Heteroidentificação",
                             OrigemData = "NO_EDITAL",
@@ -943,7 +939,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Avaliação multiprofissional e interdisciplinar que verifica se o candidato com deficiência atende aos requisitos legais para concorrer às vagas reservadas às pessoas com deficiência.",
-                            DonoTipico = "CEPS",
                             IsDeleted = false,
                             Nome = "Avaliação biopsicossocial",
                             OrigemData = "NO_EDITAL",
@@ -958,7 +953,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Comprovação documental dos requisitos declarados pelo candidato.",
-                            DonoTipico = "CRCA",
                             IsDeleted = false,
                             Nome = "Habilitação",
                             OrigemData = "NO_EDITAL",
@@ -973,7 +967,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Ato do conselho que homologa o resultado final do processo seletivo.",
-                            DonoTipico = "CONSEPE",
                             IsDeleted = false,
                             Nome = "Homologação do resultado final",
                             OrigemData = "NO_EDITAL",
@@ -988,7 +981,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Efetivação do vínculo do candidato aprovado com a instituição.",
-                            DonoTipico = "CRCA",
                             IsDeleted = false,
                             Nome = "Matrícula",
                             OrigemData = "NO_EDITAL",
@@ -1003,7 +995,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Fila de candidatos classificados além das vagas, convocados conforme as vagas são liberadas.",
-                            DonoTipico = "MEC",
                             IsDeleted = false,
                             Nome = "Lista de espera",
                             OrigemData = "NA_EXECUCAO",
@@ -1018,7 +1009,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Convocação dos candidatos da lista de espera para ocupar vagas remanescentes.",
-                            DonoTipico = "MEC",
                             IsDeleted = false,
                             Nome = "Chamada",
                             OrigemData = "NA_EXECUCAO",

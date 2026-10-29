@@ -215,7 +215,6 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
         ordem: 1,
         faseCanonicaOrigemId: Guid.CreateVersion7(),
         codigo: "RESULTADO_FINAL",
-        donoInstitucional: "CEPS",
         origemData: OrigemDataFase.NoEdital,
         agrupaEtapas: true,
         permiteComplementacao: false,

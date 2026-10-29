@@ -92,8 +92,8 @@ public sealed class TiposFormaisContratoTests
             unidadesAdministradas: [unidade],
             concessoesEfetivas: [grant]).Value!;
 
-        AuthorizationSubject a = Criar(["ceps-admin", "crca-leitor"]);
-        AuthorizationSubject b = Criar(["crca-leitor", "ceps-admin"]); // mesma composição, ordem distinta
+        AuthorizationSubject a = Criar(["ceps-admin", "proeg-leitor"]);
+        AuthorizationSubject b = Criar(["proeg-leitor", "ceps-admin"]); // mesma composição, ordem distinta
 
         a.Should().Be(b, "conjuntos comparam-se por conteúdo, não por ordem nem referência");
         a.GetHashCode().Should().Be(b.GetHashCode());

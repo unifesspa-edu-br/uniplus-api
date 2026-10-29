@@ -13,7 +13,6 @@ public sealed class FaseCanonicaTests
         string codigo = "INSCRICAO",
         string? nome = "Inscrição",
         string? descricao = null,
-        string? dono = "CEPS",
         bool agrupaEtapas = false,
         bool permiteComplementacao = false,
         string? baseLegal = null,
@@ -21,7 +20,7 @@ public sealed class FaseCanonicaTests
         bool? coletaSolicitacaoIsencao = null,
         string? origemData = "NO_EDITAL") =>
         FaseCanonica.Criar(
-            codigo, nome, descricao, dono, agrupaEtapas, permiteComplementacao, baseLegal,
+            codigo, nome, descricao, agrupaEtapas, permiteComplementacao, baseLegal,
             coletaInscricao,
             // A marca acompanha o código por definição: os testes só a informam quando querem
             // exercitar a divergência.
@@ -34,12 +33,11 @@ public sealed class FaseCanonicaTests
     public void Criar_Valida_Aceita()
     {
         FaseCanonica f = Criar(
-            codigo: "AVALIACAO", nome: "Avaliação", dono: "CEPS", agrupaEtapas: true).Value!;
+            codigo: "AVALIACAO", nome: "Avaliação", agrupaEtapas: true).Value!;
 
         f.Id.Should().NotBe(Guid.Empty);
         f.Codigo.Valor.Should().Be("AVALIACAO");
         f.Nome.Should().Be("Avaliação");
-        f.DonoTipico.Should().Be(DonoTipico.Ceps);
         f.AgrupaEtapas.Should().BeTrue();
         f.PermiteComplementacao.Should().BeFalse();
         f.IsDeleted.Should().BeFalse();
@@ -167,43 +165,6 @@ public sealed class FaseCanonicaTests
         r.Error!.Code.Should().Be(FaseCanonicaErrorCodes.NomeTamanho);
     }
 
-    // ── Dono típico ────────────────────────────────────────────────────────────
-
-    [Theory(DisplayName = "Dono típico em domínio é aceito")]
-    [InlineData("CEPS", DonoTipico.Ceps)]
-    [InlineData("CRCA", DonoTipico.Crca)]
-    [InlineData("MEC", DonoTipico.Mec)]
-    [InlineData("CONSEPE", DonoTipico.Consepe)]
-    public void Criar_DonoTipicoValido_Aceita(string token, DonoTipico esperado)
-    {
-        FaseCanonica f = Criar(codigo: "MATRICULA", nome: "Matrícula", dono: token).Value!;
-
-        f.DonoTipico.Should().Be(esperado);
-    }
-
-    [Theory(DisplayName = "Dono típico ausente é rejeitado (obrigatório)")]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void Criar_SemDonoTipico_Falha(string dono)
-    {
-        Result<FaseCanonica> r = Criar(dono: dono);
-
-        r.IsFailure.Should().BeTrue();
-        r.Error!.Code.Should().Be(FaseCanonicaErrorCodes.DonoTipicoObrigatorio);
-    }
-
-    [Theory(DisplayName = "Dono típico fora do domínio (incl. numérico e PascalCase) é rejeitado")]
-    [InlineData("DTI")]
-    [InlineData("1")]
-    [InlineData("Ceps")]
-    public void Criar_DonoTipicoInvalido_Falha(string dono)
-    {
-        Result<FaseCanonica> r = Criar(dono: dono);
-
-        r.IsFailure.Should().BeTrue();
-        r.Error!.Code.Should().Be(FaseCanonicaErrorCodes.DonoTipicoInvalido);
-    }
-
     // ── Origem da data ─────────────────────────────────────────────────────────
 
     [Theory(DisplayName = "Origem da data em domínio é aceita")]
@@ -325,7 +286,7 @@ public sealed class FaseCanonicaTests
         Guid idOriginal = f.Id;
 
         Result r = f.Atualizar(
-            nome: "Ensalamento (novo)", descricao: "Nova descrição", donoTipico: "CRCA",
+            nome: "Ensalamento (novo)", descricao: "Nova descrição",
             agrupaEtapas: false, permiteComplementacao: false, baseLegal: null,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
             origemData: "NA_EXECUCAO");
@@ -334,7 +295,6 @@ public sealed class FaseCanonicaTests
         f.Codigo.Valor.Should().Be("ENSALAMENTO", "o código é imutável");
         f.Id.Should().Be(idOriginal, "o Id é imutável");
         f.Nome.Should().Be("Ensalamento (novo)");
-        f.DonoTipico.Should().Be(DonoTipico.Crca);
         f.OrigemData.Should().Be(OrigemDataFase.NaExecucao);
     }
 
@@ -344,7 +304,7 @@ public sealed class FaseCanonicaTests
         FaseCanonica f = Criar(codigo: "HOMOLOGACAO", nome: "Homologação").Value!;
 
         Result r = f.Atualizar(
-            nome: "Homologação", descricao: null, donoTipico: "CEPS",
+            nome: "Homologação", descricao: null,
             agrupaEtapas: true, permiteComplementacao: false, baseLegal: null,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
             origemData: "NO_EDITAL");
@@ -359,7 +319,7 @@ public sealed class FaseCanonicaTests
     public void Criar_CodigoNuloENomeAusente_NaoLancaEAcumulaAsDuasViolacoes()
     {
         Result<FaseCanonica> resultado = FaseCanonica.Criar(
-            null, "", null, "CEPS", false, false, null, false, false, "NO_EDITAL");
+            null, "", null, false, false, null, false, false, "NO_EDITAL");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(2);
@@ -382,16 +342,14 @@ public sealed class FaseCanonicaTests
     }
 
     [Fact(DisplayName = "ValidarCamposComuns isolado acumula violações independentes do código, sem I/O")]
-    public void ValidarCamposComuns_TresCamposInvalidos_AcumulaAsTresViolacoes()
+    public void ValidarCamposComuns_DoisCamposInvalidos_AcumulaAsDuasViolacoes()
     {
-        Result<(string Nome, string? Descricao, DonoTipico DonoTipico, string? BaseLegal,
-            OrigemDataFase OrigemData)> resultado =
-            FaseCanonica.ValidarCamposComuns(null, null, null, null, null);
+        Result<(string Nome, string? Descricao, string? BaseLegal, OrigemDataFase OrigemData)> resultado =
+            FaseCanonica.ValidarCamposComuns(null, null, null, null);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Errors.Should().HaveCount(3);
+        resultado.Errors.Should().HaveCount(2);
         resultado.Errors[0].Field.Should().Be("nome");
-        resultado.Errors[1].Field.Should().Be("donoTipico");
-        resultado.Errors[2].Field.Should().Be("origemData");
+        resultado.Errors[1].Field.Should().Be("origemData");
     }
 }

@@ -42,7 +42,6 @@ public sealed class CatalogoDeFasesCanonicasTests
                 item.Codigo,
                 item.Nome,
                 item.Descricao,
-                DonosTipicos.ParaTokenCanonico(item.DonoTipico),
                 item.AgrupaEtapas,
                 item.PermiteComplementacao,
                 item.BaseLegal,
@@ -98,10 +97,6 @@ public sealed class CatalogoDeFasesCanonicasTests
         FaseCanonicaSeed.Itens.Where(item => item.OrigemData == OrigemDataFase.NaExecucao)
             .Select(item => item.Codigo)
             .Should().BeEquivalentTo("LISTA_ESPERA", "CHAMADA");
-
-        FaseCanonicaSeed.Itens.Where(item => item.DonoTipico == DonoTipico.Mec)
-            .Select(item => item.Codigo)
-            .Should().BeEquivalentTo("LISTA_ESPERA", "CHAMADA");
     }
 
     [Fact(DisplayName = "A avaliação biopsicossocial tem os atributos publicados em UNI-REQ-0139")]
@@ -117,7 +112,6 @@ public sealed class CatalogoDeFasesCanonicasTests
 
         item.Id.Should().Be(Guid.Parse("f45e0000-0000-7000-8000-000000000016"));
         item.Nome.Should().Be("Avaliação biopsicossocial");
-        item.DonoTipico.Should().Be(DonoTipico.Ceps);
         item.OrigemData.Should().Be(OrigemDataFase.NoEdital);
         item.ColetaInscricao.Should().BeFalse();
         item.ColetaSolicitacaoIsencao.Should().BeFalse();

@@ -197,7 +197,6 @@ public sealed class SubstituicaoDaRegraDeRecursoFronteiraTests : IClassFixture<R
             ordem: 2,
             faseCanonicaOrigemId: Guid.CreateVersion7(),
             codigo: "RESULTADO_PRELIMINAR",
-            donoInstitucional: "CEPS",
             origemData: OrigemDataFase.NoEdital,
             agrupaEtapas: false,
             permiteComplementacao: false,
