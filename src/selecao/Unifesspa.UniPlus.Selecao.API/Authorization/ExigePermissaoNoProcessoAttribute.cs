@@ -16,7 +16,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// válido, nem a resposta de um corpo inválido revelar que o processo existe.
 /// </summary>
 /// <remarks>
-/// Negado e inexistente respondem o mesmo <c>404</c> do recurso, e a identidade incompleta responde <c>401</c>. O filtro
+/// Negado e inexistente respondem o mesmo <c>404</c> do recurso, a identidade incompleta responde <c>401</c> e o
+/// impedimento por inscrição no processo responde <c>403</c>: quem tem a concessão já sabe que o processo existe. O filtro
 /// do catálogo (<c>ExigePermissao</c>) não serve a estas permissões porque não conhece a unidade dona do processo.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
@@ -56,6 +57,7 @@ public sealed class ExigePermissaoNoProcessoAttribute : Attribute, IAsyncAuthori
         {
             ResultadoDoAcesso.Permitido => null,
             ResultadoDoAcesso.IdentidadeIncompleta => new ChallengeResult(),
+            ResultadoDoAcesso.Impedido => RotaDoProcesso.Impedido(servicos),
             _ => RotaDoProcesso.NaoEncontrado(servicos, processoId),
         };
     }

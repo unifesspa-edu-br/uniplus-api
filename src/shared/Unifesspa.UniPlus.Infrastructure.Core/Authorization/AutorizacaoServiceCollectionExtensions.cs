@@ -53,6 +53,11 @@ public static class AutorizacaoServiceCollectionExtensions
         // de verificações contextuais — entra pelo tipo concreto, e não como mais um
         // IPermissaoCheck, para que nenhum registro adicional a substitua.
         services.TryAddSingleton<GrantEfetivoAplicavelCheck>();
+
+        // O impedimento por inscrição pergunta ao módulo dono das inscrições. Onde não há inscrição, a pergunta
+        // tem sempre a mesma resposta; o módulo que as guarda substitui esta porta pela dele.
+        services.TryAddSingleton<IInscricaoDoSujeitoNoProcesso, SemInscricaoNoProcesso>();
+        services.TryAddScoped<ImpedimentoPorInscricaoCheck>();
         services.TryAddScoped<IAuthorizationDecisionService, AuthorizationDecisionService>();
 
         // A porta que os endpoints usam: uma pergunta, uma resposta.

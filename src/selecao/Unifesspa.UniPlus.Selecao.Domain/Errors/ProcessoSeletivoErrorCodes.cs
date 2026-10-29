@@ -12,6 +12,9 @@ public static class ProcessoSeletivoErrorCodes
     /// <summary>O token não identifica o solicitante por completo, então nenhuma decisão de acesso foi tomada; responde 401.</summary>
     public const string IdentidadeIncompleta = "ProcessoSeletivo.IdentidadeIncompleta";
 
+    /// <summary>A pessoa tem a permissão, mas está inscrita no processo e não pode atuar nele; responde 403.</summary>
+    public const string ImpedidoPorInscricaoNoProcesso = "ProcessoSeletivo.ImpedidoPorInscricaoNoProcesso";
+
     public const string CriteriosDesempateEmExcesso = "ProcessoSeletivo.CriteriosDesempateEmExcesso";
 
     public const string IdentificadorLegivelTamanho = "ProcessoSeletivo.IdentificadorLegivelTamanho";

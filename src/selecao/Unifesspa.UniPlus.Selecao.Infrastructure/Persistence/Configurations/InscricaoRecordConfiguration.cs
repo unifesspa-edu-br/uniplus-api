@@ -100,5 +100,10 @@ internal sealed class InscricaoRecordConfiguration : IEntityTypeConfiguration<In
         // composto acima não serve essa consulta, porque não filtra por ProcessoSeletivoId.
         builder.HasIndex(i => i.CpfIndice)
             .HasDatabaseName("ix_inscricoes_cpf_indice");
+
+        // O impedimento do servidor inscrito pergunta, em toda decisão de acesso ao processo, se a pessoa tem nele uma
+        // inscrição enviada: processo e identidade do candidato, sem o CPF.
+        builder.HasIndex(i => new { i.ProcessoSeletivoId, i.Sub })
+            .HasDatabaseName("ix_inscricoes_processo_sub");
     }
 }

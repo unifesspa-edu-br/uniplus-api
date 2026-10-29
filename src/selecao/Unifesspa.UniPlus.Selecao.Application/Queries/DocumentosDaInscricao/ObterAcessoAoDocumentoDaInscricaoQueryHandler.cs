@@ -93,7 +93,7 @@ public static partial class ObterAcessoAoDocumentoDaInscricaoQueryHandler
                 verificador, unidade, query.ProcessoSeletivoId, permissao, AcessoAoProcesso.RecursoDocumento,
                 classificacao, cancellationToken)
             .ConfigureAwait(false);
-        if (acesso == ResultadoDoAcesso.IdentidadeIncompleta)
+        if (acesso is ResultadoDoAcesso.IdentidadeIncompleta or ResultadoDoAcesso.Impedido)
         {
             return Result<AcessoArquivoDoCandidatoDto>.Failure(AcessoAoProcesso.Recusa(acesso));
         }

@@ -342,14 +342,79 @@ public sealed class AuthorizationDecisionServiceTests
             + "consultas de conformidade sobre o registro deixariam de encontrá-la");
     }
 
+    [Fact(DisplayName = "Nega por impedido_por_inscricao_no_processo quem tem a concessão e está inscrito no processo do recurso")]
+    public async Task Decide_InscritoNoProcesso_NegaPorImpedimento()
+    {
+        Guid processo = Guid.CreateVersion7();
+        InscricoesEmMemoria inscricoes = new(processo);
+
+        AuthorizationDecision decisao = await Decidir(
+            Sujeito(concessoes: Concessao()), Requisito(), Recurso(processoId: processo), inscricoes: inscricoes);
+
+        decisao.Allowed.Should().BeFalse();
+        decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.ImpedidoPorInscricaoNoProcesso);
+        _registro.Registrados.Should().ContainSingle().Which.MotivoNegativa.Should().Be("impedido_por_inscricao_no_processo");
+    }
+
+    [Fact(DisplayName = "O impedimento vale para a concessão de processo, que também não o supera")]
+    public async Task Decide_InscritoComConcessaoDoProprioProcesso_NegaPorImpedimento()
+    {
+        Guid processo = Guid.CreateVersion7();
+
+        AuthorizationDecision decisao = await Decidir(
+            Sujeito(concessoes: Concessao(escopoProcessoId: processo, escopoUnidadeId: null)),
+            Requisito(),
+            Recurso(processoId: processo),
+            inscricoes: new InscricoesEmMemoria(processo));
+
+        decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.ImpedidoPorInscricaoNoProcesso);
+    }
+
+    [Fact(DisplayName = "Quem não tem concessão segue recusado por sem_concessao_aplicavel, ainda que esteja inscrito")]
+    public async Task Decide_InscritoSemConcessao_MantemMotivoDaConcessao()
+    {
+        Guid processo = Guid.CreateVersion7();
+
+        AuthorizationDecision decisao = await Decidir(
+            Sujeito(), Requisito(), Recurso(processoId: processo), inscricoes: new InscricoesEmMemoria(processo));
+
+        decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.SemConcessaoAplicavel);
+    }
+
+    [Fact(DisplayName = "Inscrição em outro processo não impede a operação")]
+    public async Task Decide_InscritoEmOutroProcesso_Permite()
+    {
+        AuthorizationDecision decisao = await Decidir(
+            Sujeito(concessoes: Concessao()),
+            Requisito(),
+            Recurso(processoId: Guid.CreateVersion7()),
+            inscricoes: new InscricoesEmMemoria(Guid.CreateVersion7()));
+
+        decisao.Allowed.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Recurso sem processo não passa pela verificação de impedimento")]
+    public async Task Decide_RecursoSemProcesso_NaoConsultaInscricoes()
+    {
+        InscricoesEmMemoria inscricoes = new(Guid.CreateVersion7());
+
+        AuthorizationDecision decisao = await Decidir(
+            Sujeito(concessoes: Concessao()), Requisito(), Recurso(), inscricoes: inscricoes);
+
+        decisao.Allowed.Should().BeTrue();
+        inscricoes.Consultas.Should().Be(0);
+    }
+
     private Task<AuthorizationDecision> Decidir(
         AuthorizationSubject sujeito,
         PermissionRequirement requisito,
         ResourceContext? recurso = null,
-        IEnumerable<IPermissaoCheck>? checks = null)
+        IEnumerable<IPermissaoCheck>? checks = null,
+        IInscricaoDoSujeitoNoProcesso? inscricoes = null)
     {
         AuthorizationDecisionService servico = new(
             new GrantEfetivoAplicavelCheck(),
+            new ImpedimentoPorInscricaoCheck(inscricoes ?? new InscricoesEmMemoria()),
             checks ?? [],
             _registro);
 

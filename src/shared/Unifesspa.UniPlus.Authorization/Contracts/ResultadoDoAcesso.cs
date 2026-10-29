@@ -19,4 +19,10 @@ public enum ResultadoDoAcesso
     /// <c>401</c>: dizer <c>403</c> afirmaria uma decisão que não foi tomada.
     /// </summary>
     IdentidadeIncompleta = 2,
+
+    /// <summary>
+    /// Identificado e com a permissão, mas impedido de atuar no processo por ter nele uma inscrição enviada. A borda
+    /// responde <c>403</c> com o código próprio do impedimento: quem tem a concessão já sabe que o processo existe.
+    /// </summary>
+    Impedido = 3,
 }

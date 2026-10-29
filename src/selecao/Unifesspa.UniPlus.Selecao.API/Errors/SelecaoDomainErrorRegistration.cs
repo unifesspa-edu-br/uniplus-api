@@ -20,6 +20,8 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
     [
         // Acesso às operações do processo, decidido por concessão na unidade dona (ADR-0078, ADR-0151).
         new(ProcessoSeletivoErrorCodes.SemPermissaoNaUnidade, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.auth.forbidden", "Acesso negado")),
+        // Tem a permissão, mas está inscrita no processo (Lei nº 9.784/1999, art. 18, I): atua nele só como candidata.
+        new(ProcessoSeletivoErrorCodes.ImpedidoPorInscricaoNoProcesso, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.auth.impedido_por_inscricao_no_processo", "Impedido de atuar no processo seletivo")),
         // O token não traz o que identifica o solicitante: não houve decisão de acesso a tomar, e a borda responde 401.
         new(ProcessoSeletivoErrorCodes.IdentidadeIncompleta, new DomainErrorMapping(StatusCodes.Status401Unauthorized, "uniplus.selecao.processo_seletivo.identidade_incompleta", "Identidade do solicitante incompleta")),
         // Catálogo de motivos de decisão de isenção (UNI-REQ-0120 a UNI-REQ-0122).

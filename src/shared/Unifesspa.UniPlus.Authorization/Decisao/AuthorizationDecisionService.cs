@@ -26,24 +26,28 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 public sealed class AuthorizationDecisionService : IAuthorizationDecisionService
 {
     private readonly GrantEfetivoAplicavelCheck _concessaoAplicavel;
+    private readonly ImpedimentoPorInscricaoCheck _impedimento;
     private readonly FrozenDictionary<string, IPermissaoCheck> _verificacoesDeContexto;
     private readonly IRegistroOperacionalRestrito _registro;
 
     /// <summary>
-    /// Compõe o serviço com a verificação canônica de concessão (sempre
-    /// executada) e as verificações contextuais registradas, indexadas pelo nome
-    /// com que o catálogo as declara.
+    /// Compõe o serviço com as verificações canônicas — de concessão e de
+    /// impedimento por inscrição, sempre executadas — e as verificações
+    /// contextuais registradas, indexadas pelo nome com que o catálogo as declara.
     /// </summary>
     public AuthorizationDecisionService(
         GrantEfetivoAplicavelCheck concessaoAplicavel,
+        ImpedimentoPorInscricaoCheck impedimento,
         IEnumerable<IPermissaoCheck> verificacoesDeContexto,
         IRegistroOperacionalRestrito registro)
     {
         ArgumentNullException.ThrowIfNull(concessaoAplicavel);
+        ArgumentNullException.ThrowIfNull(impedimento);
         ArgumentNullException.ThrowIfNull(verificacoesDeContexto);
         ArgumentNullException.ThrowIfNull(registro);
 
         _concessaoAplicavel = concessaoAplicavel;
+        _impedimento = impedimento;
         _registro = registro;
         _verificacoesDeContexto = verificacoesDeContexto.ToFrozenDictionary(
             static check => check.Nome,
@@ -114,6 +118,17 @@ public sealed class AuthorizationDecisionService : IAuthorizationDecisionService
         if (!concessao.Passou)
         {
             return AuthorizationDecision.Negar(concessao.Motivo!.Value);
+        }
+
+        // Depois da concessão, para que quem não tem concessão siga recusado pelo motivo de sempre, e antes das
+        // verificações contextuais: o impedimento vale para toda permissão com processo no recurso, e nenhuma
+        // concessão o supera.
+        CheckResult impedimento = await _impedimento.CheckAsync(
+            subject, requirement, resource, request, cancellationToken);
+
+        if (!impedimento.Passou)
+        {
+            return AuthorizationDecision.Negar(impedimento.Motivo!.Value);
         }
 
         foreach (string nome in requirement.VerificacoesDeContexto)
