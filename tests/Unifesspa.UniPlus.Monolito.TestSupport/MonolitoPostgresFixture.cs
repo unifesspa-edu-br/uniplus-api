@@ -82,9 +82,17 @@ public abstract class MonolitoPostgresFixtureBase<TFactory> : IAsyncLifetime
     /// </summary>
     protected abstract TFactory CreateFactory(string connectionString);
 
+    /// <summary>
+    /// Sobe dependências extras (ex.: servidor de captura de e-mail) ANTES de o host existir,
+    /// para que <see cref="CreateFactory"/> já conheça os endereços delas.
+    /// </summary>
+    protected virtual Task IniciarDependenciasAsync() => Task.CompletedTask;
+
+    protected virtual Task EncerrarDependenciasAsync() => Task.CompletedTask;
+
     public async Task InitializeAsync()
     {
-        await Task.WhenAll(_postgres.StartAsync(), _rabbitMq.StartAsync()).ConfigureAwait(false);
+        await Task.WhenAll(_postgres.StartAsync(), _rabbitMq.StartAsync(), IniciarDependenciasAsync()).ConfigureAwait(false);
 
         _rabbitMqEnvVarPrevio = Environment.GetEnvironmentVariable(RabbitMqUriEnvVar);
         _kafkaEnvVarPrevio = Environment.GetEnvironmentVariable(KafkaBootstrapEnvVar);
@@ -122,15 +130,24 @@ public abstract class MonolitoPostgresFixtureBase<TFactory> : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        if (_factory is not null)
+        // Dependências extras (ex.: Mailpit) são liberadas mesmo se um dos Dispose anteriores lançar:
+        // contêiner órfão sobrevive à suíte.
+        try
         {
-            await _factory.DisposeAsync().ConfigureAwait(false);
+            if (_factory is not null)
+            {
+                await _factory.DisposeAsync().ConfigureAwait(false);
+            }
+
+            RestaurarEnvVars();
+
+            await _postgres.DisposeAsync().ConfigureAwait(false);
+            await _rabbitMq.DisposeAsync().ConfigureAwait(false);
         }
-
-        RestaurarEnvVars();
-
-        await _postgres.DisposeAsync().ConfigureAwait(false);
-        await _rabbitMq.DisposeAsync().ConfigureAwait(false);
+        finally
+        {
+            await EncerrarDependenciasAsync().ConfigureAwait(false);
+        }
     }
 
     private void RestaurarEnvVars()
