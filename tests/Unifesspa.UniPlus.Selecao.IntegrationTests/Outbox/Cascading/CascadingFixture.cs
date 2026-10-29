@@ -21,4 +21,10 @@ public sealed class CascadingFixture : MonolitoPostgresFixtureBase<CascadingApiF
 {
     protected override CascadingApiFactory CreateFactory(string connectionString) =>
         new(connectionString);
+
+    public override async Task InitializeAsync()
+    {
+        await base.InitializeAsync().ConfigureAwait(false);
+        await UnidadesDeTesteNoCadastro.SemearAsync(Factory.Services).ConfigureAwait(false);
+    }
 }

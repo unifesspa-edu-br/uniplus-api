@@ -142,6 +142,36 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
         reader.Leituras.Should().Be(1);
     }
 
+    [Fact(DisplayName = "A unidade responsável que o cadastro excluiu depois do cronograma recusa a publicação")]
+    public async Task Handle_UnidadeExcluidaDepoisDoCronograma_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme(out _);
+        (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo);
+
+        (Result resposta, IEnumerable<object> eventos) = await HandleAsync(
+            mocks, processo, documento, unidades: ResolvedorDeUnidadeDeTeste.Com());
+
+        resposta.Error!.Code.Should().Be("FaseCronograma.UnidadeResponsavelNaoEncontrada");
+        resposta.Errors.Should().ContainSingle().Which.Field.Should().Be("fases[0].unidadeResponsavelId");
+        eventos.Should().BeEmpty();
+        mocks.Canonicalizer.DidNotReceiveWithAnyArgs().Canonicalizar(default!);
+    }
+
+    [Fact(DisplayName = "A unidade responsável renomeada depois do cronograma entra no snapshot com o nome de agora")]
+    public async Task Handle_UnidadeRenomeadaDepoisDoCronograma_CongelaONomeNovo()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme(out _);
+        EntradaCanonicalizacao? entrada = null;
+        (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo, e => entrada = e);
+        var renomeada = new UnidadeResponsavelSnapshot(UnidadesDeTeste.Ceps.OrigemId, "CEPS", "Centro de Processos Seletivos e Concursos");
+
+        (Result resposta, IEnumerable<object> _) = await HandleAsync(
+            mocks, processo, documento, unidades: ResolvedorDeUnidadeDeTeste.Com(renomeada));
+
+        resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
+        entrada!.Processo.CronogramaFases.Should().OnlyContain(f => f.UnidadeResponsavelNome == renomeada.Nome);
+    }
+
     [Theory(DisplayName = "O documento do edital que não é PDF é recusado antes de qualquer escrita")]
     [InlineData(TiposDeMidiaDeDocumento.Docx)]
     [InlineData(TiposDeMidiaDeDocumento.Odt)]
@@ -163,7 +193,8 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
     private static Task<(Result Resposta, IEnumerable<object> Eventos)> HandleAsync(
         Mocks mocks, ProcessoSeletivo processo, DocumentoAPublicar documento,
         ICalendarioVigenteReader? calendarioReader = null,
-        ISelecaoUnitOfWork? unitOfWork = null)
+        ISelecaoUnitOfWork? unitOfWork = null,
+        IResolvedorDaUnidadeResponsavel? unidades = null)
     {
         IUserContext userContext = Substitute.For<IUserContext>();
         userContext.UserId.Returns("user-sub-1");
@@ -192,6 +223,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
             CadastrosVivos.RegrasDesempate(),
             mocks.FatoCandidatoReader,
             calendarioReader ?? CalendarioVigenteReaderDeTeste.SemVigente(),
+            unidades ?? ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
             TimeProvider.System,
             CancellationToken.None);
     }

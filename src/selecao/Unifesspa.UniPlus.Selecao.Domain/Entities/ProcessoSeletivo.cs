@@ -2608,6 +2608,25 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
+    /// Refaz nas fases do cronograma a cópia de sigla e nome da unidade responsável ao congelar uma
+    /// versão: o cadastro da unidade é editável depois que o cronograma foi definido, e o
+    /// congelamento é da publicação. A fase sem unidade, ou cuja unidade não veio em
+    /// <paramref name="vivas"/>, fica como está.
+    /// </summary>
+    public void RecopiarUnidadesDasFases(IReadOnlyDictionary<Guid, UnidadeResponsavelSnapshot> vivas)
+    {
+        ArgumentNullException.ThrowIfNull(vivas);
+
+        foreach (FaseCronograma fase in _cronogramaFases)
+        {
+            if (fase.UnidadeResponsavelOrigemId is { } origemId && vivas.TryGetValue(origemId, out UnidadeResponsavelSnapshot? viva))
+            {
+                fase.RecopiarUnidadeResponsavel(viva);
+            }
+        }
+    }
+
+    /// <summary>
     /// Confere os itens e os grupos que o formulário passa a coletar, sem mutar o processo: o teto,
     /// o grafo, as citações, o código e o produtor únicos e as seções.
     /// </summary>

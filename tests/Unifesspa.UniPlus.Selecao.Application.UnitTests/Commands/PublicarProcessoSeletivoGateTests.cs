@@ -123,6 +123,7 @@ public sealed class PublicarProcessoSeletivoGateTests
             CadastrosVivos.RegrasDesempate(),
             Substitute.For<IFatoCandidatoReader>(),
             Substitute.For<ICalendarioVigenteReader>(),
+            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
             TimeProvider.System,
             CancellationToken.None);
 
@@ -247,6 +248,7 @@ public sealed class PublicarProcessoSeletivoGateTests
             CadastrosVivos.RegrasDesempate(),
             Substitute.For<IFatoCandidatoReader>(),
             Substitute.For<ICalendarioVigenteReader>(),
+            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
             TimeProvider.System,
             CancellationToken.None);
 
@@ -326,6 +328,7 @@ public sealed class PublicarProcessoSeletivoGateTests
             CadastrosVivos.RegrasDesempate(),
             Substitute.For<IFatoCandidatoReader>(),
             Substitute.For<ICalendarioVigenteReader>(),
+            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
             TimeProvider.System,
             CancellationToken.None);
 

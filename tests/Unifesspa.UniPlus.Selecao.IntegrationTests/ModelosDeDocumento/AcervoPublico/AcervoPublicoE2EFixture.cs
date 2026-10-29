@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ModelosDeDocumento.AcervoPu
 using System.Diagnostics.CodeAnalysis;
 
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
 /// <summary>
 /// Sobe o MinIO com o acervo público provisionado e, só depois, a API apontada para ele — a ordem
@@ -27,6 +28,7 @@ public sealed class AcervoPublicoE2EFixture : IAsyncLifetime
 
         _api = new ApiComPostgres(_minio);
         await _api.InitializeAsync().ConfigureAwait(false);
+        await UnidadesDeTesteNoCadastro.SemearAsync(_api.Factory.Services).ConfigureAwait(false);
     }
 
     public async Task DisposeAsync()

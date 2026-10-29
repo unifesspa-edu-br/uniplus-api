@@ -62,6 +62,7 @@ public static class FecharRetificacaoCommandHandler
         IRegraCatalogoReader regraCatalogoReader,
         IFatoCandidatoReader fatoCandidatoReader,
         ICalendarioVigenteReader calendarioVigenteReader,
+        IResolvedorDaUnidadeResponsavel unidadeResponsavelResolvedor,
         IRegistroCodecsEnvelope registroCodecs,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
@@ -72,7 +73,7 @@ public static class FecharRetificacaoCommandHandler
         // recusa não devolve exceção, então o que ela mudou não pode ir para o banco.
         return ReconferenciaDasCopiasDoItem.SemPersistirEmRecusaAsync(
             unitOfWork,
-            () => Executar(command, processoSeletivoRepository, documentoAPublicarRepository, rascunhoDePublicacaoRepository, atoDoProcessoRepository, canonicalizer, resolvedorFuso, unitOfWork, userContext, tipoDeAtoReader, vagaDeLinhagemReader, obrigatoriedadeLegalRepository, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, fatoCandidatoReader, calendarioVigenteReader, registroCodecs, timeProvider, cancellationToken));
+            () => Executar(command, processoSeletivoRepository, documentoAPublicarRepository, rascunhoDePublicacaoRepository, atoDoProcessoRepository, canonicalizer, resolvedorFuso, unitOfWork, userContext, tipoDeAtoReader, vagaDeLinhagemReader, obrigatoriedadeLegalRepository, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, fatoCandidatoReader, calendarioVigenteReader, unidadeResponsavelResolvedor, registroCodecs, timeProvider, cancellationToken));
     }
 
     private static async Task<(Result Resposta, IEnumerable<object> Eventos)> Executar(
@@ -95,6 +96,7 @@ public static class FecharRetificacaoCommandHandler
         IRegraCatalogoReader regraCatalogoReader,
         IFatoCandidatoReader fatoCandidatoReader,
         ICalendarioVigenteReader calendarioVigenteReader,
+        IResolvedorDaUnidadeResponsavel unidadeResponsavelResolvedor,
         IRegistroCodecsEnvelope registroCodecs,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
@@ -115,6 +117,7 @@ public static class FecharRetificacaoCommandHandler
         ArgumentNullException.ThrowIfNull(tipoEtapaReader);
         ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
         ArgumentNullException.ThrowIfNull(calendarioVigenteReader);
+        ArgumentNullException.ThrowIfNull(unidadeResponsavelResolvedor);
         ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -233,8 +236,12 @@ public static class FecharRetificacaoCommandHandler
         FatosDeModalidade fatosDeModalidade = VocabularioDeFatos.ComValoresDeModalidade(catalogoDeFatos);
 
         // O catálogo é editável depois que o item copiou dele a origem dos valores, o formato e a
-        // proteção, e os gates abaixo avaliam a cópia: ela é reconferida e recopiada antes deles.
-        Result copiasDoItem = ReconferenciaDasCopiasDoItem.Aplicar(processo, catalogoDeFatos, processo.Rascunho.FatosDasVersoesPublicadas.FatosJaColetados);
+        // proteção, e os gates abaixo avaliam a cópia: ela é reconferida e recopiada antes deles. A unidade
+        // responsável de cada fase é conferida no cadastro vivo e recopiada no mesmo passo, porque o
+        // congelamento é da publicação.
+        Result copiasDoItem = ReconferenciaDasUnidadesDasFases.Combinar(
+            ReconferenciaDasCopiasDoItem.Aplicar(processo, catalogoDeFatos, processo.Rascunho.FatosDasVersoesPublicadas.FatosJaColetados),
+            await ReconferenciaDasUnidadesDasFases.AplicarAsync(processo, unidadeResponsavelResolvedor, cancellationToken).ConfigureAwait(false));
         if (copiasDoItem.IsFailure)
         {
             return (copiasDoItem, []);

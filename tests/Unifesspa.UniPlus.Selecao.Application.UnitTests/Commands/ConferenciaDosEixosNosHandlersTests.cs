@@ -211,6 +211,60 @@ public sealed class ConferenciaDosEixosNosHandlersTests
             new TipoDeAtoCongelado(Resultado, UnicoPorObjeto: false, EhResultado: true, CongelaConfiguracao: false));
     }
 
+    private static readonly UnidadeResponsavelSnapshot CepsRenomeada = new(UnidadesDeTeste.Ceps.OrigemId, "CEPS", "Centro de Processos Seletivos e Concursos");
+
+    [Fact(DisplayName = "Retificar recusa a unidade responsável que o cadastro excluiu depois do cronograma")]
+    public async Task Retificar_UnidadeExcluida_Recusa()
+    {
+        Cenario cenario = Cenario.Publicado(dominioCongelado: "BOOLEANO");
+        cenario.Unidades = ResolvedorDeUnidadeDeTeste.Com();
+
+        (Result resposta, IEnumerable<object> eventos) = await cenario.RetificarAsync();
+
+        resposta.Error!.Code.Should().Be("FaseCronograma.UnidadeResponsavelNaoEncontrada");
+        resposta.Errors.Should().ContainSingle().Which.Field.Should().Be("fases[0].unidadeResponsavelId");
+        eventos.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Retificar congela a unidade responsável com a sigla e o nome de agora")]
+    public async Task Retificar_UnidadeRenomeada_CongelaONomeNovo()
+    {
+        Cenario cenario = Cenario.Publicado(dominioCongelado: "BOOLEANO");
+        cenario.Unidades = ResolvedorDeUnidadeDeTeste.Com(CepsRenomeada);
+
+        (Result resposta, IEnumerable<object> _) = await cenario.RetificarAsync();
+
+        resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
+        cenario.EntradaCanonicalizada!.Processo.CronogramaFases.Should().OnlyContain(f => f.UnidadeResponsavelNome == CepsRenomeada.Nome);
+    }
+
+    [Fact(DisplayName = "Fechar a retificação recusa a unidade responsável que o cadastro excluiu depois do cronograma")]
+    public async Task Fechar_UnidadeExcluida_Recusa()
+    {
+        Cenario cenario = Cenario.Publicado(dominioCongelado: "BOOLEANO");
+        cenario.AbrirSessao();
+        cenario.Unidades = ResolvedorDeUnidadeDeTeste.Com();
+
+        (Result resposta, IEnumerable<object> eventos) = await cenario.FecharAsync();
+
+        resposta.Error!.Code.Should().Be("FaseCronograma.UnidadeResponsavelNaoEncontrada");
+        eventos.Should().BeEmpty();
+        cenario.Processo.Rascunho.Should().NotBeNull("a recusa não destrói a sessão editorial");
+    }
+
+    [Fact(DisplayName = "Fechar a retificação congela a unidade responsável com a sigla e o nome de agora")]
+    public async Task Fechar_UnidadeRenomeada_CongelaONomeNovo()
+    {
+        Cenario cenario = Cenario.Publicado(dominioCongelado: "BOOLEANO");
+        cenario.AbrirSessao();
+        cenario.Unidades = ResolvedorDeUnidadeDeTeste.Com(CepsRenomeada);
+
+        (Result resposta, IEnumerable<object> _) = await cenario.FecharAsync();
+
+        resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
+        cenario.EntradaCanonicalizada!.Processo.CronogramaFases.Should().OnlyContain(f => f.UnidadeResponsavelNome == CepsRenomeada.Nome);
+    }
+
     private sealed class Cenario
     {
         private readonly IProcessoSeletivoRepository _repositorio = Substitute.For<IProcessoSeletivoRepository>();
@@ -232,6 +286,9 @@ public sealed class ConferenciaDosEixosNosHandlersTests
         }
 
         public ProcessoSeletivo Processo { get; }
+
+        /// <summary>O cadastro vivo das unidades; por padrão, as de teste estão todas vivas.</summary>
+        public IResolvedorDaUnidadeResponsavel Unidades { get; set; } = ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste();
 
         /// <summary>A entrada que o handler entregou ao canonicalizador na última chamada.</summary>
         public EntradaCanonicalizacao? EntradaCanonicalizada { get; private set; }
@@ -305,6 +362,7 @@ public sealed class ConferenciaDosEixosNosHandlersTests
             CadastrosVivos.RegrasDesempate(),
             _catalogo,
             CalendarioVigenteReaderDeTeste.SemVigente(),
+            Unidades,
             _registro,
             new RelogioFixo(),
             CancellationToken.None);
@@ -329,6 +387,7 @@ public sealed class ConferenciaDosEixosNosHandlersTests
             CadastrosVivos.RegrasDesempate(),
             _catalogo,
             CalendarioVigenteReaderDeTeste.SemVigente(),
+            Unidades,
             _registro,
             new RelogioFixo(),
             CancellationToken.None);

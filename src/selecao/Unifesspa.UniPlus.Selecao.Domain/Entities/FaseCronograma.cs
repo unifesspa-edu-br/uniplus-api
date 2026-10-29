@@ -590,6 +590,17 @@ public sealed class FaseCronograma : EntityBase
     internal IReadOnlyList<FieldError> ViolacoesDoRecorteDeCompetencia() =>
         ViolacoesDoRecorteDeCompetencia(Codigo, _bancasRequeridas);
 
+    /// <summary>Refaz a cópia de sigla e nome da unidade que a fase já tem, pelo valor vivo do cadastro.</summary>
+    internal void RecopiarUnidadeResponsavel(UnidadeResponsavelSnapshot viva)
+    {
+        ArgumentNullException.ThrowIfNull(viva);
+
+        if (UnidadeResponsavelOrigemId == viva.OrigemId)
+        {
+            DefinirUnidadeResponsavel(viva);
+        }
+    }
+
     private void DefinirUnidadeResponsavel(UnidadeResponsavelSnapshot? unidade)
     {
         UnidadeResponsavelOrigemId = unidade?.OrigemId;
