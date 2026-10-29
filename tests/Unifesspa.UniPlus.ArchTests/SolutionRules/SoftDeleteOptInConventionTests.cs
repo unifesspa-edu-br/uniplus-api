@@ -8,6 +8,7 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
+using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence;
@@ -123,6 +124,7 @@ public sealed class SoftDeleteOptInConventionTests
         yield return Criar<PortalDbContext>();
         yield return Criar<OrganizacaoInstitucionalDbContext>();
         yield return Criar<ConfiguracaoDbContext>();
+        yield return Criar<AutorizacaoDbContext>();
     }
 
     private static TContext Criar<TContext>()

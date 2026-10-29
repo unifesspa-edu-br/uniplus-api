@@ -83,6 +83,7 @@ public sealed class MigrationBeforeWolverineRuntimeOrderTests : IClassFixture<Mi
             "OrganizacaoInstitucionalDbContext",
             "PublicacoesDbContext",
             "DiscentesDbContext",
+            "AutorizacaoDbContext",
         ],
         [MigrationOrderFixture.PortalKey] = ["PortalDbContext"],
     };
@@ -185,6 +186,7 @@ public sealed class MigrationOrderFixture : IDisposable
         Environment.SetEnvironmentVariable("ConnectionStrings__PublicacoesDb", fake);
         Environment.SetEnvironmentVariable("ConnectionStrings__ConfiguracaoDb", fake);
         Environment.SetEnvironmentVariable("ConnectionStrings__OrganizacaoDb", fake);
+        Environment.SetEnvironmentVariable("ConnectionStrings__AutorizacaoDb", fake);
         Environment.SetEnvironmentVariable("ConnectionStrings__PortalDb", fake);
 
         // Desliga Kafka — sem isto Wolverine tenta iniciar transporte.
