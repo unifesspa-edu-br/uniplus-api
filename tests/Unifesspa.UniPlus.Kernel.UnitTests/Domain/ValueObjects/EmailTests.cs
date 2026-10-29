@@ -66,4 +66,12 @@ public sealed class EmailTests
 
         email.ToString().Should().Be("usuario@exemplo.com");
     }
+
+    [Fact]
+    public void Mascarado_DeveManterPrimeiraLetraEODominio()
+    {
+        Email email = Email.Criar("candidato@unifesspa.edu.br").Value!;
+
+        email.Mascarado.Should().Be("c***@unifesspa.edu.br");
+    }
 }
