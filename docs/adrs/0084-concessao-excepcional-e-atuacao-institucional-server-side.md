@@ -1,5 +1,5 @@
 ---
-status: "proposed"
+status: "accepted"
 date: "2026-06-02"
 decision-makers:
   - "Tech Lead (CTIC)"
@@ -86,6 +86,7 @@ O problema é conceder permissões fora do perfil padrão e operar sessão deleg
 
 ## Mais informações
 
+- **Aceita em 2026-10-28, com uma distinção:** a dupla aprovação desta ADR é de **operação**, exigida a cada execução de uma operação sensível em sessão delegada. Ela não se confunde com a aprovação da **concessão** (gestor de acessos e, havendo dado pessoal ou sensível, encarregada de dados), decidida na [ADR-0152](0152-governanca-das-concessoes-de-acesso.md), que acontece uma vez, antes de a concessão valer. A própria concessão excepcional nasce de pedido aprovado por aquele fluxo. As menções aos grupos da [ADR-0083](0083-grupos-oidc-governados-pela-aplicacao.md), superada pela 0152, valem só como contraste: o perfil padrão é concessão gravada no Uni+, não grupo do provedor.
 - Ancora no modelo de decisão da [ADR-0078](0078-modelo-de-autorizacao-pbac-abac.md): a concessão excepcional é fonte de concessão efetiva e a atuação institucional é contexto de sessão delegada, ambas com origem/uso rastreável.
 - Contrasta com os grupos da [ADR-0083](0083-grupos-oidc-governados-pela-aplicacao.md): estas concessões são **dinâmicas** e **não** viram grupo no provedor.
 - O **cache e a revogação imediata** (como o efeito imediato é garantido sob cache) são decididos em ADR própria desta frente.

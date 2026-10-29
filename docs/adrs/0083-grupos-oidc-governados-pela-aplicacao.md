@@ -1,5 +1,5 @@
 ---
-status: "proposed"
+status: "superseded by ADR-0152"
 date: "2026-06-02"
 decision-makers:
   - "Tech Lead (CTIC)"
@@ -85,6 +85,7 @@ O problema é a aplicação governar **apenas os grupos que ela define**, manten
 
 ## Mais informações
 
+- **Superada pela [ADR-0152](0152-governanca-das-concessoes-de-acesso.md) em 2026-10-28:** incluir alguém num grupo do provedor de identidade abriria acesso sem pedido nem aprovação, o que contraria a regra de que o token identifica e não concede. Quando houver grupos, o pertencimento será concessão do Uni+, nascida de pedido aprovado, e o provedor não governa grupos para conceder acesso.
 - Ancora no modelo de decisão da [ADR-0078](0078-modelo-de-autorizacao-pbac-abac.md): um grupo é uma das fontes de concessão efetiva consideradas na decisão.
 - O **manifesto de provisionamento** dos grupos é mantido pela aplicação a partir do catálogo de permissões em código ([ADR-0151](0151-catalogo-de-permissoes-em-codigo-por-modulo.md)); não é mais um artefato gerado.
 - A hierarquia institucional **não** se reflete em grupos aninhados ([ADR-0079](0079-hierarquia-institucional-sem-heranca-de-permissao.md)): a árvore de unidades não propaga concessão.
