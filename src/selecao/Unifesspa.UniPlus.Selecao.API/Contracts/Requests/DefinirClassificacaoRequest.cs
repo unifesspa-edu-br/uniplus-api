@@ -23,6 +23,10 @@ using Controllers;
 /// decide se ela era obrigatória (classificação baseada em ENEM com cálculo local) ou
 /// indevida (as demais).
 /// </para>
+/// <para>
+/// <c>EscalaNotaFinal</c> é opcional no corpo: o rascunho a tolera ausente, e é o gate de
+/// publicação que a cobra na classificação por cálculo local.
+/// </para>
 /// </remarks>
 public sealed record DefinirClassificacaoRequest(
     string RegraCalculoCodigo,
@@ -34,4 +38,5 @@ public sealed record DefinirClassificacaoRequest(
     string RegraOrdemAlocacaoVersao,
     IReadOnlyList<RegraEliminacaoInput> RegrasEliminacao,
     [property: JsonRequired] bool BaseadoEmEnem,
-    string? ResolucaoPesoAreaEnem = null);
+    string? ResolucaoPesoAreaEnem = null,
+    decimal? EscalaNotaFinal = null);

@@ -55,7 +55,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
             [],
             baseadoEmEnem,
             baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
-            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : []).Value!;
+            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : [], escalaNotaFinal: 100m).Value!;
 
     private static ConfiguracaoClassificacao ClassificacaoImportadaDoEnem() =>
         ConfiguracaoClassificacao.Criar(
@@ -66,7 +66,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
             [],
             baseadoEmEnem: true,
             resolucaoPesoAreaEnem: null,
-            quadroPesoAreaEnem: []).Value!;
+            quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
 
     [Fact(DisplayName = "A etapa declara nota do ENEM pelo atributo do tipo congelado")]
     public void DeclaraNotaDoEnem_PeloAtributoDoTipo()

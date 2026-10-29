@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -64,6 +65,27 @@ public sealed class ConfiguracaoClassificacao : EntityBase
     public int? CasasArredondamento { get; private set; }
 
     /// <summary>
+    /// A escala é o teto da nota final, que o sistema grava como <see cref="NotaFinal"/>: não
+    /// pode passar do que ela comporta.
+    /// </summary>
+    public const int EscalaNotaFinalPrecisao = NotaFinal.Precisao;
+
+    /// <summary>Casas decimais da escala da nota final, as da <see cref="NotaFinal"/>.</summary>
+    public const int EscalaNotaFinalEscala = NotaFinal.Escala;
+
+    /// <summary>Campo das recusas que dizem respeito à escala da nota final.</summary>
+    public const string CampoEscalaNotaFinal = "escalaNotaFinal";
+
+    /// <summary>
+    /// Escala em que a nota final é publicada (10, 100, 1.000...): a média ponderada das notas já
+    /// convertidas para a escala comum é multiplicada por ela. Obrigatória para publicar com
+    /// cálculo local (<c>FORMULA-MEDIA-PONDERADA</c>), cobrada pelo gate de conformidade — o
+    /// rascunho a tolera ausente —, e ausente na classificação importada, cujo resultado vem
+    /// pronto de fora (INV-B8). Congelada na publicação (UNI-REQ-0175).
+    /// </summary>
+    public decimal? EscalaNotaFinal { get; private set; }
+
+    /// <summary>
     /// Ordem de alocação (<c>ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA</c>, UNI-REQ-0045): todas as 1ªs
     /// opções do curso, depois o remanejamento entre modalidades dentro do curso, e só a vaga que
     /// sobra vai à 2ª opção; quem não entra em nenhuma opção vai para a lista de espera.
@@ -88,6 +110,12 @@ public sealed class ConfiguracaoClassificacao : EntityBase
     /// <summary>Campo das recusas que dizem respeito à resolução de Pesos por Área e ao quadro congelado dela.</summary>
     public const string CampoResolucaoPesoAreaEnem = "resolucaoPesoAreaEnem";
 
+    private static bool CabeNaNotaFinal(decimal escala) =>
+        Math.Round(escala, EscalaNotaFinalEscala) == escala
+        && escala < (decimal)Math.Pow(10, EscalaNotaFinalPrecisao - EscalaNotaFinalEscala);
+
+    private const string ErroEscalaNotaFinalInvalida = "ConfiguracaoClassificacao.EscalaNotaFinalInvalida";
+    private const string ErroEscalaNotaFinalIndevida = "ConfiguracaoClassificacao.EscalaNotaFinalIndevida";
     private const string ErroResolucaoPesoAreaEnemInvalida = "ConfiguracaoClassificacao.ResolucaoPesoAreaEnemInvalida";
     private const string ErroQuadroPesoAreaEnemVazio = "ConfiguracaoClassificacao.QuadroPesoAreaEnemVazio";
 
@@ -136,7 +164,8 @@ public sealed class ConfiguracaoClassificacao : EntityBase
         IReadOnlyList<RegraEliminacao> regrasEliminacao,
         bool baseadoEmEnem,
         string? resolucaoPesoAreaEnem,
-        IReadOnlyList<GrupoPesoAreaEnemCongelado> quadroPesoAreaEnem)
+        IReadOnlyList<GrupoPesoAreaEnemCongelado> quadroPesoAreaEnem,
+        decimal? escalaNotaFinal)
     {
         ArgumentNullException.ThrowIfNull(regraCalculo);
         ArgumentNullException.ThrowIfNull(regraOrdemAlocacao);
@@ -197,6 +226,28 @@ public sealed class ConfiguracaoClassificacao : EntityBase
                     "ConfiguracaoClassificacao.CasasArredondamentoObrigatorio",
                     "Cálculo local exige casas decimais de arredondamento maior que zero (INV-B8).")));
             }
+        }
+
+        // A falta da escala é tolerada (o gate de publicação a cobra), mas o valor que não é
+        // positivo não é falta, e na importada não há média a escalar. O que não cabe na NotaFinal
+        // (numeric(9,4)) o banco recusaria ou arredondaria em silêncio, e o positivo 0,00001 viraria zero.
+        if (escalaNotaFinal is <= 0)
+        {
+            erros.Add(new(CampoEscalaNotaFinal, new DomainError(
+                ErroEscalaNotaFinalInvalida,
+                "A escala da nota final, quando informada, deve ser maior que zero.")));
+        }
+        else if (escalaNotaFinal is { } escala && !CabeNaNotaFinal(escala))
+        {
+            erros.Add(new(CampoEscalaNotaFinal, new DomainError(
+                ErroEscalaNotaFinalInvalida,
+                $"A escala da nota final deve ter no máximo {EscalaNotaFinalPrecisao - EscalaNotaFinalEscala} dígitos inteiros e {EscalaNotaFinalEscala} casas decimais.")));
+        }
+        else if (escalaNotaFinal is not null && ehImportada)
+        {
+            erros.Add(new(CampoEscalaNotaFinal, new DomainError(
+                ErroEscalaNotaFinalIndevida,
+                "A escala da nota final não se aplica quando a classificação é importada.")));
         }
 
         // Eixo ortogonal a RegraCalculo (que só distingue cálculo local de classificação
@@ -271,6 +322,7 @@ public sealed class ConfiguracaoClassificacao : EntityBase
             CasasArredondamento = casasArredondamento,
             RegraOrdemAlocacao = regraOrdemAlocacao,
             BaseadoEmEnem = baseadoEmEnem,
+            EscalaNotaFinal = escalaNotaFinal,
             // NFC, como o cadastro de Pesos por Área a grava e o envelope canônico a emite: o
             // vínculo com o cadastro é pelo valor, e a forma não muda num ciclo de retificação.
             // A normalização vem depois da validação, que recusa o que ela não conseguiria tratar.

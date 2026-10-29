@@ -285,6 +285,7 @@ public sealed partial class EnvelopeCodec
             "regraCalculo",
             "regraArredondamento",
             "casasArredondamento",
+            "escalaNotaFinal",
             "regraOrdemAlocacao",
             "regrasEliminacao",
             "baseadoEmEnem",
@@ -304,6 +305,8 @@ public sealed partial class EnvelopeCodec
             RegraArredondamentoCodigo.PrecisaoTruncar,
             RegraArredondamentoCodigo.PrecisaoArredondarCima);
         int? casas = leitor.InteiroOpcional(bloco, "casasArredondamento", "classificacao");
+        decimal? escalaNotaFinal = leitor.DecimalOpcional(
+            bloco, "escalaNotaFinal", ConfiguracaoClassificacao.EscalaNotaFinalEscala, "classificacao", LimitesDoEnvelope.PrecisaoEscalaNotaFinal);
         ReferenciaRegra regraOrdem = leitor.Regra(
             bloco,
             "regraOrdemAlocacao",
@@ -364,7 +367,7 @@ public sealed partial class EnvelopeCodec
 
         Result<ConfiguracaoClassificacao> classificacao = ConfiguracaoClassificacao.Criar(
             regraCalculo, regraArredondamento, casas, regraOrdem, eliminacoes, baseadoEmEnem,
-            resolucaoPesoAreaEnem, quadro!);
+            resolucaoPesoAreaEnem, quadro!, escalaNotaFinal);
 
         return classificacao.IsFailure
             ? leitor.Propagar<ConfiguracaoClassificacao>(classificacao.Error!)

@@ -130,7 +130,7 @@ definir_classificacao() {
             {regraCodigo: "ELIM-CORTE-EM-AREA", regraVersao: "v1", etapaRef: null, notaMinima: null, minimo: 400, areaCodigo: "REDACAO"},
             {regraCodigo: "ELIM-ZERO-EM-AREA", regraVersao: "v1", etapaRef: null, notaMinima: null, minimo: null, areaCodigo: null}
         ],
-        baseadoEmEnem: true, resolucaoPesoAreaEnem: $r
+        baseadoEmEnem: true, resolucaoPesoAreaEnem: $r, escalaNotaFinal: 1000
     }')" >/dev/null
     ok "classificação definida, com o quadro de pesos congelado"
 }

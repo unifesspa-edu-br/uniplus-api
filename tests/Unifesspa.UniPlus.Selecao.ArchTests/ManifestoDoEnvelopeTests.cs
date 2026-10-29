@@ -162,7 +162,7 @@ public sealed class ManifestoDoEnvelopeTests
             [
                 "RegraCalculo", "RegraArredondamento", "CasasArredondamento",
                 "RegraOrdemAlocacao", "RegrasEliminacao", "BaseadoEmEnem",
-                "ResolucaoPesoAreaEnem", "QuadroPesoAreaEnem",
+                "ResolucaoPesoAreaEnem", "QuadroPesoAreaEnem", "EscalaNotaFinal",
             ],
             [("ProcessoSeletivoId", "FK interna.")]),
 

@@ -37,6 +37,13 @@ internal sealed class ConfiguracaoClassificacaoConfiguration : IEntityTypeConfig
 
         builder.Property(c => c.CasasArredondamento);
 
+        builder.Property(c => c.EscalaNotaFinal)
+            .HasColumnName("escala_nota_final")
+            .HasPrecision(ConfiguracaoClassificacao.EscalaNotaFinalPrecisao, ConfiguracaoClassificacao.EscalaNotaFinalEscala)
+            .HasComment(
+                "Escala em que a nota final é publicada (10, 100, 1.000...); a média ponderada das notas " +
+                "convertidas é multiplicada por ela. Nula na classificação importada e no rascunho que ainda não a declarou.");
+
         builder.OwnsOne(c => c.RegraOrdemAlocacao, regra => regra.ConfigurarReferenciaRegra("regra_ordem_alocacao"));
         builder.Navigation(c => c.RegraOrdemAlocacao).IsRequired();
 

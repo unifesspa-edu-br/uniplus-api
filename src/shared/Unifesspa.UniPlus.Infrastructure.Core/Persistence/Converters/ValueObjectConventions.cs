@@ -36,11 +36,6 @@ public static class ValueObjectConventions
     // Postgres 11 (sem diferença de armazenamento).
     private const int CpfLength = 11;
 
-    // (9,4) acomoda notas até 99.999,9999 com 4 casas de precisão — escala
-    // alinhada ao Math.Round(valor, 4) aplicado no construtor do VO.
-    private const int NotaFinalPrecision = 9;
-    private const int NotaFinalScale = 4;
-
     public static void ConfigureValueObjectConverters(this ModelConfigurationBuilder configurationBuilder)
     {
         ArgumentNullException.ThrowIfNull(configurationBuilder);
@@ -60,6 +55,6 @@ public static class ValueObjectConventions
 
         configurationBuilder.Properties<NotaFinal>()
             .HaveConversion<NotaFinalValueConverter>()
-            .HavePrecision(NotaFinalPrecision, NotaFinalScale);
+            .HavePrecision(NotaFinal.Precisao, NotaFinal.Escala);
     }
 }

@@ -134,7 +134,7 @@ public sealed class EliminacaoPorAusenciaNaEtapaRascunhoVivoPrecondicaoTests : I
             [eliminacao],
             baseadoEmEnem: true,
             QuadroPesoAreaEnemDeTeste.Resolucao,
-            QuadroPesoAreaEnemDeTeste.Completo());
+            QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m);
         classificacao.IsSuccess.Should().BeTrue(classificacao.Error?.Message);
 
         Result definir = processo.DefinirClassificacao(classificacao.Value!, PrecondicaoIfMatch.Ausente);

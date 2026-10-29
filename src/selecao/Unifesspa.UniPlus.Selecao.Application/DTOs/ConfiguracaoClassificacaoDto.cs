@@ -35,6 +35,7 @@ public sealed record GrupoPesoAreaEnemCongeladoDto(
 /// próprias do agregado (Story #774).
 /// </summary>
 /// <param name="ResolucaoPesoAreaEnem">Resolução de Pesos por Área declarada; nula fora da classificação baseada em ENEM com cálculo local.</param>
+/// <param name="EscalaNotaFinal">Escala em que a nota final é publicada; nula enquanto o rascunho não a declara e na classificação importada.</param>
 /// <param name="QuadroPesoAreaEnem">Cópia por valor da resolução declarada, um item por grupo de área, ordenada pelo código do grupo; vazia sem resolução.</param>
 public sealed record ConfiguracaoClassificacaoDto(
     Guid Id,
@@ -46,4 +47,5 @@ public sealed record ConfiguracaoClassificacaoDto(
     bool ConcorrenciaDuplaAplicavel,
     bool BaseadoEmEnem,
     string? ResolucaoPesoAreaEnem,
-    IReadOnlyList<GrupoPesoAreaEnemCongeladoDto> QuadroPesoAreaEnem);
+    IReadOnlyList<GrupoPesoAreaEnemCongeladoDto> QuadroPesoAreaEnem,
+    decimal? EscalaNotaFinal);

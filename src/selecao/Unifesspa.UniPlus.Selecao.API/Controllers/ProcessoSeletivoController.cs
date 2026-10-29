@@ -602,6 +602,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
                 request.RegrasEliminacao,
                 request.BaseadoEmEnem,
                 request.ResolucaoPesoAreaEnem,
+                request.EscalaNotaFinal,
                 precondicao),
             cancellationToken);
         return ResponderMutacao(resultado);

@@ -138,6 +138,16 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error!.Code.Should().Be("NoExigencia.TipoEntidadeInvalido");
     }
 
+    [Fact(DisplayName = "Escala da nota final que não é positiva é recusada na reidratação, como na gravação")]
+    public void EscalaDaNotaFinalNaoPositiva_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["classificacao"]!["escalaNotaFinal"] = "0.0000");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ConfiguracaoClassificacao.EscalaNotaFinalInvalida");
+    }
+
     [Fact(DisplayName = "Algoritmo de hash que o codec não emite é recusado")]
     public void AlgoritmoNaoSuportado_Recusa()
     {
@@ -693,7 +703,7 @@ public sealed class EnvelopeCodecRecusaTests
         ConfiguracaoClassificacao semEnem = ConfiguracaoClassificacao.Criar(
             CorpusEnvelope.Regra(RegraCalculoCodigo.ClassificacaoImportada, 'a'), null, null,
             CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '3'), [],
-            baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!;
+            baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
         Result definir = processo.DefinirClassificacao(semEnem, PrecondicaoIfMatch.Ausente);
         definir.IsSuccess.Should().BeTrue(string.Join("; ", definir.Errors.Select(static e => e.Error.Message)) + definir.Error?.Message);
 
@@ -1018,7 +1028,7 @@ public sealed class EnvelopeCodecRecusaTests
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)).Value!,
             regraArredondamento: null, casasArredondamento: null,
-            regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)).Value!, regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)).Value!, regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         FaseCronograma fase = FaseCronograma.Criar(
             1, Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NoEdital,

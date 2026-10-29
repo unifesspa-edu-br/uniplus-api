@@ -301,6 +301,7 @@ public sealed class EnvelopeFechadoE2ETests
                 "bonus_regional_fato_de_elegibilidade",
                 "criterios_desempate_ausentes",
                 "classificacao_divisor_media_invalido",
+                "classificacao_escala_nota_final_nao_declarada",
                 "etapa_com_nota_sem_nota_maxima",
                 "etapa_sem_nota_com_escala",
                 "etapa_do_enem_com_escala",
@@ -503,6 +504,7 @@ public sealed class EnvelopeFechadoE2ETests
         // item por grupo, ordenado pelo código do grupo.
         JsonNode classificacaoCongelada = snapshotVigente.Configuracao["classificacao"]!;
         classificacaoCongelada["resolucaoPesoAreaEnem"]!.GetValue<string>().Should().Be(resolucaoPesoAreaEnem);
+        classificacaoCongelada["escalaNotaFinal"]!.GetValue<string>().Should().Be("1000.0000");
         classificacaoCongelada["quadroPesoAreaEnem"]!.AsArray()
             .Select(static grupo => grupo!["grupoAreaEnem"]!["codigo"]!.GetValue<string>())
             .Should().Equal("HUMANISTICA_I", "HUMANISTICA_II", "SAUDE_E_BIOLOGICAS", "TECNOLOGICA");
@@ -700,6 +702,7 @@ public sealed class EnvelopeFechadoE2ETests
                     regrasEliminacao,
                     baseadoEmEnem = true,
                     resolucaoPesoAreaEnem,
+                    escalaNotaFinal = 1000m,
                 },
                 ifMatch: null);
         }

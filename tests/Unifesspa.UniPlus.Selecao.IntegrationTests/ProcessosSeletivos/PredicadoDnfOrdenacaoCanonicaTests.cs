@@ -114,7 +114,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
             regrasEliminacao: [],
             baseadoEmEnem: false,
             resolucaoPesoAreaEnem: null,
-            quadroPesoAreaEnem: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         FaseCronograma fase = FaseCronograma.Criar(
             ordem: 1,

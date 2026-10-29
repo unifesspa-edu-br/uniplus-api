@@ -214,7 +214,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
             [],
             baseadoEmEnem: true,
             QuadroPesoAreaEnemDeTeste.Resolucao,
-            QuadroPesoAreaEnemDeTeste.Completo()).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         Mocks mocks = NovosMocks(processo, processo.Id);
         mocks.RegraCatalogoReader.ObterAsync(CriterioDesempateCodigo.MaiorNotaAreaEnem, "v1", Arg.Any<CancellationToken>())
             .Returns(Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, TipoRegra.CriterioDesempate));
@@ -248,7 +248,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
             [],
             baseadoEmEnem: true,
             QuadroPesoAreaEnemDeTeste.Resolucao,
-            QuadroPesoAreaEnemDeTeste.Completo()).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         return processo;
     }
 
@@ -347,7 +347,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
             [],
             baseadoEmEnem: true,
             resolucaoPesoAreaEnem: null,
-            quadroPesoAreaEnem: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         Mocks mocks = NovosMocks(processo, processo.Id);
         mocks.RegraCatalogoReader.ObterAsync(CriterioDesempateCodigo.MaiorNotaAreaEnem, "v1", Arg.Any<CancellationToken>())
             .Returns(Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, TipoRegra.CriterioDesempate));

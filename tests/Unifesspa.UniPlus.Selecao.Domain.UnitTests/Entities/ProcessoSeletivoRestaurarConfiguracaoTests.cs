@@ -379,7 +379,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             regrasEliminacao: [EliminacaoEnem()],
             baseadoEmEnem: true,
             resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,
-            quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo()).Value!;
+            quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m).Value!;
 
         GrafoConfiguracao GrafoComClassificacaoEnem() => new(
             etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 1m, null, 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva)],
@@ -1540,7 +1540,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             regrasEliminacao: eliminacoes,
             baseadoEmEnem: false,
             resolucaoPesoAreaEnem: null,
-            quadroPesoAreaEnem: []).Value!;
+            quadroPesoAreaEnem: [], escalaNotaFinal: 100m).Value!;
 
     private static ConfiguracaoClassificacao ClassificacaoEnemMediaPonderada(IReadOnlyList<RegraEliminacao>? eliminacoes = null) =>
         ConfiguracaoClassificacao.Criar(
@@ -1551,7 +1551,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             regrasEliminacao: eliminacoes ?? [],
             baseadoEmEnem: true,
             resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,
-            quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo()).Value!;
+            quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m).Value!;
 
     private static DadosEdital Dados() => DadosEdital.Criar(
         "001/2026",

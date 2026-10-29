@@ -38,6 +38,10 @@ public sealed record RegraEliminacaoInput(
 /// baseada em ENEM com cálculo local, recusada nas demais. O handler a resolve no cadastro
 /// e congela o quadro por cópia.
 /// </param>
+/// <param name="EscalaNotaFinal">
+/// Escala em que a nota final é publicada. Opcional na gravação (o rascunho a tolera ausente),
+/// obrigatória para publicar com cálculo local e recusada na classificação importada.
+/// </param>
 public sealed record DefinirClassificacaoCommand(
     Guid ProcessoSeletivoId,
     string RegraCalculoCodigo,
@@ -50,4 +54,5 @@ public sealed record DefinirClassificacaoCommand(
     IReadOnlyList<RegraEliminacaoInput> RegrasEliminacao,
     bool BaseadoEmEnem,
     string? ResolucaoPesoAreaEnem,
+    decimal? EscalaNotaFinal,
     PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;

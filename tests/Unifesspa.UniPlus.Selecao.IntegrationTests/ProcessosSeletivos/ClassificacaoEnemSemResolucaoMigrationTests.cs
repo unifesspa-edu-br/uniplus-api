@@ -129,7 +129,7 @@ public sealed class ClassificacaoEnemSemResolucaoMigrationTests : IAsyncLifetime
             regrasEliminacao,
             baseadoEmEnem,
             exigeQuadro ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
-            exigeQuadro ? QuadroPesoAreaEnemDeTeste.Completo() : []).Value!;
+            exigeQuadro ? QuadroPesoAreaEnemDeTeste.Completo() : [], escalaNotaFinal: null).Value!;
     }
 
     private static ReferenciaRegra Regra(string codigo, char hash) =>

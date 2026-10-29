@@ -159,7 +159,8 @@ public static class DefinirClassificacaoCommandHandler
             regrasEliminacao,
             command.BaseadoEmEnem,
             resolucaoPesoAreaEnem,
-            quadroPesoAreaEnem);
+            quadroPesoAreaEnem,
+            command.EscalaNotaFinal);
 
         // A recusa da resolução — forma inválida ou cadastro que não a resolve — sai junto com
         // as do domínio (ADR-0125), sem as que são só consequência dela.

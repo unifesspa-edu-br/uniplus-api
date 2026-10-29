@@ -116,7 +116,7 @@ public sealed class RenomeiaAlocacaoParaPrimeiraOpcaoPrioritariaTests : IClassFi
             [],
             baseadoEmEnem: false,
             resolucaoPesoAreaEnem: null,
-            quadroPesoAreaEnem: []).Value!;
+            quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         context.ProcessosSeletivos.Add(processo);

@@ -51,7 +51,7 @@ public sealed class ConformidadeEscalaDasEtapasTests
             [RegraEliminacao.Criar(
                 ProcessoConformeFactory.Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "e"),
                 new ArgsElimNotaMinimaEtapa(etapaRef, notaMinima)).Value!],
-            baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!;
+            baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: 100m).Value!;
 
     private static ConfiguracaoClassificacao ClassificacaoSemEliminacao() =>
         ConfiguracaoClassificacao.Criar(
@@ -59,7 +59,7 @@ public sealed class ConformidadeEscalaDasEtapasTests
             ProcessoConformeFactory.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "c"),
             2,
             ProcessoConformeFactory.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "d"),
-            [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!;
+            [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: 100m).Value!;
 
     /// <summary>
     /// A etapa de nota do ENEM só convive com classificação baseada em ENEM pela média, e a
@@ -74,7 +74,7 @@ public sealed class ConformidadeEscalaDasEtapasTests
                 ProcessoConformeFactory.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "c"),
                 2,
                 ProcessoConformeFactory.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "d"),
-                [], baseadoEmEnem: true, QuadroPesoAreaEnemDeTeste.Resolucao, QuadroPesoAreaEnemDeTeste.Completo()).Value!,
+                [], baseadoEmEnem: true, QuadroPesoAreaEnemDeTeste.Resolucao, QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m).Value!,
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([EtapaDaMedia(), enem], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         return processo;

@@ -121,7 +121,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
             regrasEliminacao: [],
             baseadoEmEnem: false,
             resolucaoPesoAreaEnem: null,
-            quadroPesoAreaEnem: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeCurso(1, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         FaseCronograma fase = FaseCronograma.Criar(

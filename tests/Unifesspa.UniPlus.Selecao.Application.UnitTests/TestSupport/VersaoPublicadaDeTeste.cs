@@ -42,7 +42,7 @@ internal static class VersaoPublicadaDeTeste
                 [.. grafoDe.CriteriosDesempate], ConfiguracaoClassificacao.Criar(
                     ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)).Value!, null, null,
                     ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('d', 64)).Value!, [],
-                    baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!,
+                    baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!,
                 [.. grafoDe.CronogramaFases], [.. grafoDe.DocumentosExigidos], [], null,
                 numeroDeOpcoesDeCurso: 1),
             DadosEdital.Criar("001/2027", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), Guid.CreateVersion7()).Value!,
@@ -64,7 +64,7 @@ internal static class VersaoPublicadaDeTeste
     private static VersaoConfiguracao Abrir(ProcessoSeletivo processo, IProcessoSeletivoRepository repositorio)
     {
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
-            processo.Id, [1], "0.0.39", "canonical-json/sha256@v1", Guid.CreateVersion7(), new string('a', 64), "sub", DateTimeOffset.UnixEpoch);
+            processo.Id, [1], "0.0.40", "canonical-json/sha256@v1", Guid.CreateVersion7(), new string('a', 64), "sub", DateTimeOffset.UnixEpoch);
         repositorio.ObterVersaoAtualAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(versao);
         return versao;
     }

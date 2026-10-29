@@ -414,6 +414,10 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
             // deles que o decoder tem de ser tão estrito quanto.
             "NumeroDoAto",
 
+            // A coluna da escala da nota final é definida pela mesma constante (a da NotaFinal);
+            // o limite do envelope a espelha, e não há segunda cópia que possa divergir.
+            "PrecisaoEscalaNotaFinal",
+
             // MensagemDoImpedimento também não é coluna: o impedimento é gravado em jsonb. O
             // limite é o da forma do item, que o domínio confere ao criar o campo, e a constante
             // é definida pela mesma constante da forma — não há segunda cópia que possa divergir.

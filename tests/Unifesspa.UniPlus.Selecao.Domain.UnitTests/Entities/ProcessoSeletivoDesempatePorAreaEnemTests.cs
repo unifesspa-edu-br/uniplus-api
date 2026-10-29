@@ -36,7 +36,7 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemTests
             [],
             baseadoEmEnem: true,
             QuadroPesoAreaEnemDeTeste.Resolucao,
-            quadro ?? QuadroPesoAreaEnemDeTeste.Completo()).Value!;
+            quadro ?? QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m).Value!;
 
     private static ConfiguracaoClassificacao ClassificacaoSemEnem() =>
         ConfiguracaoClassificacao.Criar(
@@ -47,7 +47,7 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemTests
             [],
             baseadoEmEnem: false,
             resolucaoPesoAreaEnem: null,
-            quadroPesoAreaEnem: []).Value!;
+            quadroPesoAreaEnem: [], escalaNotaFinal: 100m).Value!;
 
     private static ConfiguracaoClassificacao ClassificacaoImportadaDoEnem() =>
         ConfiguracaoClassificacao.Criar(
@@ -58,7 +58,7 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemTests
             [],
             baseadoEmEnem: true,
             resolucaoPesoAreaEnem: null,
-            quadroPesoAreaEnem: []).Value!;
+            quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
 
     private static ConfiguracaoClassificacao ClassificacaoImportadaSemEnem() =>
         ConfiguracaoClassificacao.Criar(
@@ -69,7 +69,7 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemTests
             [],
             baseadoEmEnem: false,
             resolucaoPesoAreaEnem: null,
-            quadroPesoAreaEnem: []).Value!;
+            quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
 
     /// <summary>Quadro em que um dos grupos não tem a área de Matemática.</summary>
     private static IReadOnlyList<GrupoPesoAreaEnemCongelado> QuadroComGrupoSemMatematica() =>
@@ -350,7 +350,7 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemTests
             [RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, 'd'), new ArgsElimNotaMinimaEtapa(Guid.CreateVersion7(), 50m)).Value!],
             baseadoEmEnem: false,
             resolucaoPesoAreaEnem: null,
-            quadroPesoAreaEnem: []).Value!;
+            quadroPesoAreaEnem: [], escalaNotaFinal: 100m).Value!;
 
         Result result = processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente);
 
