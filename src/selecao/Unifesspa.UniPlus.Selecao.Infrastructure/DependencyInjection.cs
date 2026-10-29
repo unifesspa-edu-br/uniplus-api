@@ -9,6 +9,7 @@ using ExternalServices;
 using Geo;
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
 using Persistence;
@@ -17,6 +18,7 @@ using Persistence.Interceptors;
 using Persistence.Readers;
 using Persistence.Repositories;
 
+using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Storage;
@@ -85,6 +87,13 @@ public static class SelecaoInfrastructureRegistration
         services.AddScoped<ILoteDeNotasDoEnemRepository, LoteDeNotasDoEnemRepository>();
         services.AddScoped<IGeracaoDeEnvioAoInepRepository, GeracaoDeEnvioAoInepRepository>();
         services.AddScoped<IInscritosDaEdicaoDoEnem, InscritosDaEdicaoDoEnem>();
+
+        // Substitui a porta nula do host: a Seleção guarda as inscrições e responde ao impedimento do servidor inscrito.
+        // Por fábrica, e não por tipo: o ponto de decisão é injetado por handlers de todos os módulos, e o Wolverine,
+        // ao percorrer o grafo de dependências de um handler de outro módulo, não pode enxergar aqui o DbContext da
+        // Seleção como segundo contexto da transação.
+        services.Replace(ServiceDescriptor.Scoped<IInscricaoDoSujeitoNoProcesso>(
+            static sp => new InscricaoDoSujeitoNoProcesso(sp.GetRequiredService<SelecaoDbContext>())));
         services.AddScoped<ILancamentosDeNotaReader, LancamentosDeNotaReader>();
         services.AddScoped<IAvaliacoesDaEtapaReader, AvaliacoesDaEtapaReader>();
         services.AddScoped<IIndiceCegoDoCpf, CalculadorDoIndiceCegoDoCpf>();

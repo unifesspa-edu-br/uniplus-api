@@ -88,7 +88,14 @@ public sealed class VerificadorDeAcessoHttp : IVerificadorDeAcesso
             contexto.Value!,
             cancellationToken);
 
-        return decisao.Allowed ? ResultadoDoAcesso.Permitido : ResultadoDoAcesso.Negado;
+        if (decisao.Allowed)
+        {
+            return ResultadoDoAcesso.Permitido;
+        }
+
+        return decisao.DenyReason!.Codigo == MotivoNegativa.ImpedidoPorInscricaoNoProcesso
+            ? ResultadoDoAcesso.Impedido
+            : ResultadoDoAcesso.Negado;
     }
 
     // Sem recurso informado, o alvo é a própria operação: o tipo é o código da

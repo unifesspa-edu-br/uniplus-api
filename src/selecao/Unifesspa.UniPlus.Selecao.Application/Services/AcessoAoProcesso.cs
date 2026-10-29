@@ -110,11 +110,22 @@ public static class AcessoAoProcesso
     }
 
     /// <summary>O erro com que um handler recusa o acesso que o ponto de decisão não permitiu.</summary>
-    public static DomainError Recusa(ResultadoDoAcesso resultado) => resultado == ResultadoDoAcesso.IdentidadeIncompleta
-        ? new DomainError(
+    public static DomainError Recusa(ResultadoDoAcesso resultado) => resultado switch
+    {
+        ResultadoDoAcesso.IdentidadeIncompleta => new DomainError(
             ProcessoSeletivoErrorCodes.IdentidadeIncompleta,
-            "O token não identifica o solicitante por completo; autentique-se de novo.")
-        : new DomainError(
+            "O token não identifica o solicitante por completo; autentique-se de novo."),
+        ResultadoDoAcesso.Impedido => ImpedidoPorInscricao,
+        _ => new DomainError(
             ProcessoSeletivoErrorCodes.SemPermissaoNaUnidade,
-            "Token autenticado, mas sem permissão para esta operação na unidade.");
+            "Token autenticado, mas sem permissão para esta operação na unidade."),
+    };
+
+    /// <summary>
+    /// A recusa de quem tem a permissão mas está inscrito no processo. Orienta a operação por outra pessoa da equipe e
+    /// não cita a inscrição: a mensagem não revela dado da candidatura.
+    /// </summary>
+    public static DomainError ImpedidoPorInscricao { get; } = new(
+        ProcessoSeletivoErrorCodes.ImpedidoPorInscricaoNoProcesso,
+        "Você não pode atuar neste processo seletivo. Peça a outra pessoa da equipe que realize a operação.");
 }

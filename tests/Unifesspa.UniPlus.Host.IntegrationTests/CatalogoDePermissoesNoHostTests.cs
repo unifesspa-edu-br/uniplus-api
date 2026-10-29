@@ -81,12 +81,14 @@ public sealed class CatalogoDePermissoesNoHostTests
         CatalogoDaAplicacao catalogo = escopo.ServiceProvider.GetRequiredService<CatalogoDaAplicacao>();
 
         string[] implementadas = [.. typeof(GrantEfetivoAplicavelCheck).Assembly.GetTypes()
-            .Where(static t => t is { IsAbstract: false, IsInterface: false } && typeof(IPermissaoCheck).IsAssignableFrom(t))
+            .Where(static t => t is { IsAbstract: false, IsInterface: false }
+                && typeof(IPermissaoCheck).IsAssignableFrom(t)
+                && t != typeof(ImpedimentoPorInscricaoCheck))
             .Select(static t => ((IPermissaoCheck)Activator.CreateInstance(t)!).Nome)];
 
         catalogo.Definicoes.SelectMany(static d => d.Requisito.VerificacoesDeContexto)
             .Should().BeSubsetOf(implementadas)
-            .And.NotContain(GrantEfetivoAplicavelCheck.NomeCanonico);
+            .And.NotContain([GrantEfetivoAplicavelCheck.NomeCanonico, ImpedimentoPorInscricaoCheck.NomeCanonico]);
     }
 
     [Fact(DisplayName = "GET do catálogo sem token responde 401")]

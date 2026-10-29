@@ -294,6 +294,7 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
         DateTimeOffset dataAcesso) =>
         new AuthorizationDecisionService(
             scope.ServiceProvider.GetRequiredService<GrantEfetivoAplicavelCheck>(),
+            scope.ServiceProvider.GetRequiredService<ImpedimentoPorInscricaoCheck>(),
             scope.ServiceProvider.GetServices<IPermissaoCheck>(),
             registro)
         .DecideAsync(sujeito, requisito, recurso, Requisicao(dataAcesso), CancellationToken.None);

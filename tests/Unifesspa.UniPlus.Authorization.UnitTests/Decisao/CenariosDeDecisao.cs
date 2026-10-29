@@ -95,6 +95,18 @@ internal static class CenariosDeDecisao
         public void Registrar(RegistroDecisaoAcesso registro) => Registrados.Add(registro);
     }
 
+    /// <summary>Porta das inscrições com os processos em que a pessoa está inscrita combinados pelo teste.</summary>
+    public sealed class InscricoesEmMemoria(params Guid[] processosInscritos) : IInscricaoDoSujeitoNoProcesso
+    {
+        public int Consultas { get; private set; }
+
+        public Task<bool> TemInscricaoEnviadaAsync(string emissor, string subject, Guid processoId, CancellationToken cancellationToken)
+        {
+            Consultas++;
+            return Task.FromResult(processosInscritos.Contains(processoId));
+        }
+    }
+
     /// <summary>Verificação de contexto com resultado combinado pelo teste.</summary>
     public sealed class CheckDuplo(string nome, CheckResult resultado) : IPermissaoCheck
     {

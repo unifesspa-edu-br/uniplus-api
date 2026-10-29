@@ -4748,6 +4748,9 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ux_inscricoes_processo_cpf_indice")
                         .HasFilter("situacao <> 3");
 
+                    b.HasIndex("ProcessoSeletivoId", "Sub")
+                        .HasDatabaseName("ix_inscricoes_processo_sub");
+
                     b.ToTable("inscricoes", "selecao", t =>
                         {
                             t.HasComment("A inscrição de um candidato num processo seletivo (issue #1858) — uma por CPF e processo. As respostas ficam em respostas_da_inscricao e nas tabelas vizinhas.");
