@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -31,7 +32,7 @@ public static class CriarFatoCandidatoCommandHandler
             TokensDoFato.Formato(command.Formato),
             command.PontoResolucao,
             TokensDoFato.Escopo(command.Escopo) ?? EscopoFato.Nenhum,
-            TokensDoFato.Classificacao(command.ClassificacaoProtecao) ?? ClassificacaoProtecaoDado.Nenhuma,
+            TokensDoFato.Classificacao(command.ClassificacaoProtecao) ?? ClassificacaoDeProtecao.Nenhuma,
             command.FinalidadeTratamento,
             TokensDoFato.HipoteseLegal(command.HipoteseLegal) ?? HipoteseLegalTratamento.Nenhuma);
         if (criar.IsFailure)

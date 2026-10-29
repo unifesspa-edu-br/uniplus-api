@@ -901,7 +901,7 @@ public sealed class EnvelopeCodecRoundTripTests
             ValoresSelecionaveisCongelados: valoresSelecionaveis,
             TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo));
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.36", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.37", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             entrada.Dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -1025,12 +1025,12 @@ public sealed class EnvelopeCodecRoundTripTests
         // dele (baseLegalDoGrupo, abaixo) já cobre isso.
         FormatosPermitidos qualquer = FormatosPermitidos.Criar(true, null).Value!;
         DocumentoExigido rg = DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL",
+            fase.Id, Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, [], [], null, qualquer, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
         // A declaração de renda vem com o modelo editável que o candidato preenche — o decoder tem
         // de remontá-lo, senão a recanonicalização o perderia.
         DocumentoExigido comprovanteRenda = DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "COMPROVANTE_RENDA", "Comprovante de renda", "SOCIOECONOMICO",
+            fase.Id, Guid.CreateVersion7(), "COMPROVANTE_RENDA", "Comprovante de renda", "SOCIOECONOMICO", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, [], [], null, qualquer, null,
             modelo: new ModeloDaExigencia(Guid.CreateVersion7(), "Declaração de renda.docx", FormatoDeDocumento.Docx, new string('e', 64)), finalidade: FinalidadeFormulario.Inscricao).Value!;
 
@@ -1061,7 +1061,7 @@ public sealed class EnvelopeCodecRoundTripTests
 
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(
             new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
-        congelado.SchemaVersion.Should().Be("0.0.36", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.37", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -1213,7 +1213,7 @@ public sealed class EnvelopeCodecRoundTripTests
         FormatosPermitidos formatosPermitidos = FormatosPermitidos.Criar(
             qualquer: false, entradas: [("PNG", null), ("JPEG", null), ("PDF", null)]).Value!;
         DocumentoExigido documento = DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL",
+            fase.Id, Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
             [], [], null, formatosPermitidos, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
         NoExigencia folha = NoExigencia.CriarFolha(
@@ -1280,7 +1280,7 @@ public sealed class EnvelopeCodecRoundTripTests
             ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(),
             TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo));
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.36", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.37", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,

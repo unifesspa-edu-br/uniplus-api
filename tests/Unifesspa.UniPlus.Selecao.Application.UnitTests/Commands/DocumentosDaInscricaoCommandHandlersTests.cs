@@ -84,7 +84,7 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
         bancasRequeridas: [], regraRecurso: null).Value!;
 
     private static DocumentoExigido Exigencia(string codigo, Guid faseId = default) => DocumentoExigido.Criar(
-        faseId == Guid.Empty ? Guid.CreateVersion7() : faseId, Guid.CreateVersion7(), codigo, codigo, "PESSOAL",
+        faseId == Guid.Empty ? Guid.CreateVersion7() : faseId, Guid.CreateVersion7(), codigo, codigo, "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
         Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
         [], [], null, FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null).Value!;
 

@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -105,7 +106,7 @@ public sealed partial class EnvelopeCodec
             leitor.ExigirChaves(
                 item, path,
                 "exigenciaId", "tipoDocumentoOrigemId", "tipoDocumentoCodigo", "tipoDocumentoNome",
-                "tipoDocumentoCategoria", "exigidoNaFaseId", "exigidoNaEtapaId", "finalidade", "aplicabilidade", "obrigatorio",
+                "tipoDocumentoCategoria", "classificacaoProtecao", "finalidadeTratamento", "hipoteseLegal", "fatosComprovados", "exigidoNaFaseId", "exigidoNaEtapaId", "finalidade", "aplicabilidade", "obrigatorio",
                 "consequenciaIndeferimento", "condicaoGatilho", "basesLegais",
                 "idadeMaximaEmissao", "formatosPermitidos", "tamanhoMaximoBytes", "modelo");
 
@@ -114,6 +115,9 @@ public sealed partial class EnvelopeCodec
             string tipoDocumentoCodigo = leitor.TextoNaoVazio(item, "tipoDocumentoCodigo", path, LimitesDoEnvelope.TipoDocumentoCodigo);
             string tipoDocumentoNome = leitor.TextoNaoVazio(item, "tipoDocumentoNome", path, LimitesDoEnvelope.TipoDocumentoNome);
             string tipoDocumentoCategoria = leitor.TextoNaoVazio(item, "tipoDocumentoCategoria", path, LimitesDoEnvelope.TipoDocumentoCategoria);
+            string classificacaoToken = leitor.TextoNaoVazio(item, "classificacaoProtecao", path, LimitesDoEnvelope.Token);
+            string finalidadeTratamento = leitor.TextoNaoVazio(item, "finalidadeTratamento", path, LimitesDoEnvelope.FinalidadeTratamento);
+            string hipoteseLegal = leitor.TextoNaoVazio(item, "hipoteseLegal", path, LimitesDoEnvelope.HipoteseLegal);
             Guid exigidoNaFaseId = leitor.Identificador(item, "exigidoNaFaseId", path);
             Guid? exigidoNaEtapaId = leitor.IdentificadorOpcional(item, "exigidoNaEtapaId", path);
             string? finalidadeToken = leitor.TextoOpcional(item, "finalidade", path, LimitesDoEnvelope.Token);
@@ -122,6 +126,19 @@ public sealed partial class EnvelopeCodec
             string? consequenciaIndeferimento = leitor.TextoOpcional(item, "consequenciaIndeferimento", path, LimitesDoEnvelope.Token);
             int? tamanhoMaximoBytes = leitor.InteiroOpcional(item, "tamanhoMaximoBytes", path);
 
+            if (leitor.Falhou)
+            {
+                return [];
+            }
+
+            if (!ClassificacoesDeProtecao.TryAnalisar(classificacaoToken, out ClassificacaoDeProtecao classificacaoProtecao))
+            {
+                return leitor.Propagar<IReadOnlyList<DocumentoExigido>>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado,
+                    $"'{path}.classificacaoProtecao' fora do vocabulário de classificações de proteção.")) ?? [];
+            }
+
+            IReadOnlyList<string> fatosComprovados = leitor.Textos(item, "fatosComprovados", path);
             if (leitor.Falhou)
             {
                 return [];
@@ -179,6 +196,7 @@ public sealed partial class EnvelopeCodec
                 tipoDocumentoCodigo,
                 tipoDocumentoNome,
                 tipoDocumentoCategoria,
+                new ProtecaoDoDocumento(classificacaoProtecao, finalidadeTratamento, hipoteseLegal),
                 aplicabilidade,
                 obrigatorio,
                 consequenciaIndeferimento,
@@ -189,7 +207,8 @@ public sealed partial class EnvelopeCodec
                 tamanhoMaximoBytes,
                 exigidoNaEtapaId,
                 modelo,
-                finalidade));
+                finalidade,
+                fatosComprovados));
         }
 
         return exigencias;

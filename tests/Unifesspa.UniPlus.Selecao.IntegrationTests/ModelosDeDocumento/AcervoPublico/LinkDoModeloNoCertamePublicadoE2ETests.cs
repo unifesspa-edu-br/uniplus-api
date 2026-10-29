@@ -93,7 +93,7 @@ public sealed class LinkDoModeloNoCertamePublicadoE2ETests(AcervoPublicoE2EFixtu
                     tipoDocumentoOrigemId: Guid.CreateVersion7(),
                     tipoDocumentoCodigo: "AUTODECLARACAO_ETNICO_RACIAL",
                     tipoDocumentoNome: "Autodeclaração étnico-racial",
-                    tipoDocumentoCategoria: "PESSOAL",
+                    tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
                     aplicabilidade: Aplicabilidade.Geral,
                     obrigatorio: true,
                     consequenciaIndeferimento: null,

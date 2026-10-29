@@ -34,7 +34,7 @@ public sealed class VerificacaoDosArquivosDoCandidatoHandlersTests
     private static ArquivoDaApresentacao EmVerificacao(DateTimeOffset? confirmadoEm = null)
     {
         DocumentoExigido laudo = DocumentoExigido.Criar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", Aplicabilidade.Geral, false, null,
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, false, null,
             [], [], null, FormatosPermitidos.Criar(true, null).Value!, null).Value!;
         ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(
             Guid.CreateVersion7(), Guid.CreateVersion7(), laudo, "application/pdf", 1024, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;

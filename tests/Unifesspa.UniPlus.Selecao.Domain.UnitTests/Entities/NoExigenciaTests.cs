@@ -26,7 +26,7 @@ public sealed class NoExigenciaTests
             Guid.CreateVersion7(),
             "IDENTIDADE",
             "Documento de identidade",
-            "PESSOAL",
+            "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             aplicabilidade,
             obrigatorio,
             consequencia,

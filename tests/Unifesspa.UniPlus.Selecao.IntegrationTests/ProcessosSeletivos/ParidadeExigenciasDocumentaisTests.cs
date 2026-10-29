@@ -112,7 +112,7 @@ public sealed class ParidadeExigenciasDocumentaisTests
         tipoDocumentoOrigemId: Guid.CreateVersion7(),
         tipoDocumentoCodigo: tipoDocumentoCodigo,
         tipoDocumentoNome: tipoDocumentoCodigo,
-        tipoDocumentoCategoria: "PESSOAL",
+        tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
         aplicabilidade: Aplicabilidade.Geral,
         obrigatorio: false,
         consequenciaIndeferimento: null,

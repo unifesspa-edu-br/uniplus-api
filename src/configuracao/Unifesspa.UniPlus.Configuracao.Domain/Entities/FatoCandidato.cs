@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Errors;
@@ -33,7 +34,6 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     private const int NomeMaxLength = 200;
     private const int DescricaoMaxLength = 1000;
     private const int BindingMaxLength = 200;
-    private const int FinalidadeTratamentoMaxLength = 500;
 
     /// <summary>
     /// O nome social preferido pelo titular: o único texto público, porque é a identificação que
@@ -95,7 +95,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     public EscopoFato Escopo { get; private set; }
 
     /// <summary>Classificação de proteção de dados na escala da ADR-0081.</summary>
-    public ClassificacaoProtecaoDado ClassificacaoProtecao { get; private set; }
+    public ClassificacaoDeProtecao ClassificacaoProtecao { get; private set; }
 
     /// <summary>Para que o dado é tratado.</summary>
     public string FinalidadeTratamento { get; private set; } = null!;
@@ -163,7 +163,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         string pontoResolucao,
         string binding,
         EscopoFato escopo,
-        ProtecaoValidada protecao,
+        ProtecaoDeDados protecao,
         bool sistema)
     {
         Formato = formato;
@@ -202,7 +202,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         string pontoResolucao,
         string binding,
         EscopoFato escopo,
-        ClassificacaoProtecaoDado classificacaoProtecao,
+        ClassificacaoDeProtecao classificacaoProtecao,
         string finalidadeTratamento,
         HipoteseLegalTratamento hipoteseLegal,
         bool sistema)
@@ -262,12 +262,12 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
 
         ConferirEscopo(erros, escopo);
 
-        Result<ProtecaoValidada> protecao = ValidarProtecao(
+        Result<ProtecaoDeDados> protecao = ValidarProtecao(
             dominio, classificacaoProtecao, finalidadeTratamento, hipoteseLegal,
             nomeSocialPublico: sistema
                 && string.Equals(codigo?.Trim(), CodigoDoNomeSocial, StringComparison.Ordinal)
                 && dominio == DominioFato.Texto
-                && classificacaoProtecao == ClassificacaoProtecaoDado.Publico);
+                && classificacaoProtecao == ClassificacaoDeProtecao.Publico);
         erros.AddRange(protecao.Errors);
 
         if (erros.Count > 0)
@@ -370,7 +370,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         FormatoTexto? formato,
         string pontoResolucao,
         EscopoFato escopo,
-        ClassificacaoProtecaoDado classificacaoProtecao,
+        ClassificacaoDeProtecao classificacaoProtecao,
         string finalidadeTratamento,
         HipoteseLegalTratamento hipoteseLegal) =>
         Criar(
@@ -391,7 +391,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         DominioFato dominio,
         string pontoResolucao,
         EscopoFato escopo,
-        ClassificacaoProtecaoDado classificacaoProtecao,
+        ClassificacaoDeProtecao classificacaoProtecao,
         string finalidadeTratamento,
         HipoteseLegalTratamento hipoteseLegal)
     {
@@ -429,7 +429,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         string fatoDeMembroCodigo,
         CatalogoDeFatos catalogo,
         string pontoResolucao,
-        ClassificacaoProtecaoDado classificacaoProtecao,
+        ClassificacaoDeProtecao classificacaoProtecao,
         string finalidadeTratamento,
         HipoteseLegalTratamento hipoteseLegal)
     {
@@ -514,10 +514,10 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         List<FieldError> erros,
         FatoCandidato membro,
         string pontoResolucao,
-        ClassificacaoProtecaoDado classificacaoProtecao,
+        ClassificacaoDeProtecao classificacaoProtecao,
         CatalogoDeFatos catalogo)
     {
-        if (classificacaoProtecao != ClassificacaoProtecaoDado.Nenhuma && Enum.IsDefined(classificacaoProtecao)
+        if (classificacaoProtecao != ClassificacaoDeProtecao.Nenhuma && Enum.IsDefined(classificacaoProtecao)
             && classificacaoProtecao < membro.ClassificacaoProtecao)
         {
             erros.Add(new("classificacaoProtecao", new DomainError(
@@ -717,7 +717,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
             erros.Add(new("pontoResolucao", ponto.Error!));
         }
 
-        Result<ProtecaoValidada> protecao = ValidarProtecao(
+        Result<ProtecaoDeDados> protecao = ValidarProtecao(
             dominioAplicavel ? dominio : null, definicao.ClassificacaoProtecao, definicao.FinalidadeTratamento, definicao.HipoteseLegal,
             nomeSocialPublico: false);
         erros.AddRange(protecao.Errors);
@@ -861,7 +861,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         FormatoTexto? Formato,
         string PontoResolucao,
         EscopoFato? Escopo,
-        ClassificacaoProtecaoDado Classificacao,
+        ClassificacaoDeProtecao Classificacao,
         string Finalidade,
         HipoteseLegalTratamento Hipotese);
 
@@ -1170,78 +1170,42 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         return recusa is null;
     }
 
-    private static Result<ProtecaoValidada> ValidarProtecao(
-        DominioFato? dominio, ClassificacaoProtecaoDado classificacao, string finalidade, HipoteseLegalTratamento hipotese, bool nomeSocialPublico)
-    {
-        List<FieldError> erros = [];
-        void Recusar(string campo, string codigo, string mensagem) => erros.Add(new(campo, new DomainError(codigo, mensagem)));
+    private static readonly RecusasDaProtecao RecusasDaProtecaoDoFato = new(
+        "do fato",
+        FatoCandidatoErrorCodes.ClassificacaoProtecaoObrigatoria,
+        FatoCandidatoErrorCodes.ClassificacaoProtecaoInvalida,
+        FatoCandidatoErrorCodes.FinalidadeTratamentoObrigatoria,
+        FatoCandidatoErrorCodes.FinalidadeTratamentoTamanho,
+        FatoCandidatoErrorCodes.HipoteseLegalObrigatoria,
+        FatoCandidatoErrorCodes.HipoteseLegalInvalida,
+        FatoCandidatoErrorCodes.HipoteseLegalIncompativelComClassificacao);
 
-        bool classificacaoValida = classificacao != ClassificacaoProtecaoDado.Nenhuma && Enum.IsDefined(classificacao);
-        if (classificacao == ClassificacaoProtecaoDado.Nenhuma)
-        {
-            Recusar("classificacaoProtecao", FatoCandidatoErrorCodes.ClassificacaoProtecaoObrigatoria,
-                "Classificação de proteção de dados do fato é obrigatória.");
-        }
-        else if (!classificacaoValida)
-        {
-            Recusar("classificacaoProtecao", FatoCandidatoErrorCodes.ClassificacaoProtecaoInvalida,
-                "Classificação de proteção de dados do fato fora do vocabulário fechado.");
-        }
-        else if (!nomeSocialPublico && dominio is { } dominioConferido && !AtendeClassificacaoMinimaDoDominio(dominioConferido, classificacao))
-        {
+    private static Result<ProtecaoDeDados> ValidarProtecao(
+        DominioFato? dominio, ClassificacaoDeProtecao classificacao, string finalidade, HipoteseLegalTratamento hipotese, bool nomeSocialPublico) =>
+        ProtecaoDeDados.Validar(
+            classificacao, finalidade, hipotese, RecusasDaProtecaoDoFato,
             // Texto (em todo formato, inclusive o livre, que pode conter qualquer coisa), data e
             // endereço identificam ou localizam a pessoa: nunca são menos que dado pessoal. Texto
             // também aceita `Identificador` — número de documento é sempre texto, nunca outro
             // domínio (ADR-0136, emenda de #1857). A exceção é o nome social de sistema, texto
             // público (ADR-0082, ADR-0136).
-            Recusar("classificacaoProtecao", FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio,
-                "Classificação de proteção de dados incompatível com o domínio do fato.");
-        }
+            nivel => !nomeSocialPublico && dominio is { } dominioConferido && !AtendeClassificacaoMinimaDoDominio(dominioConferido, nivel)
+                ? new DomainError(
+                    FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio,
+                    "Classificação de proteção de dados incompatível com o domínio do fato.")
+                : null);
 
-        string finalidadeNormalizada = finalidade?.Trim() ?? string.Empty;
-        if (finalidadeNormalizada.Length == 0)
-        {
-            Recusar("finalidadeTratamento", FatoCandidatoErrorCodes.FinalidadeTratamentoObrigatoria,
-                "Finalidade do tratamento do fato é obrigatória.");
-        }
-        else if (finalidadeNormalizada.Length > FinalidadeTratamentoMaxLength)
-        {
-            Recusar("finalidadeTratamento", FatoCandidatoErrorCodes.FinalidadeTratamentoTamanho,
-                $"Finalidade do tratamento deve ter no máximo {FinalidadeTratamentoMaxLength} caracteres.");
-        }
-
-        if (hipotese == HipoteseLegalTratamento.Nenhuma)
-        {
-            Recusar("hipoteseLegal", FatoCandidatoErrorCodes.HipoteseLegalObrigatoria,
-                "Hipótese legal de tratamento do fato é obrigatória.");
-        }
-        else if (!Enum.IsDefined(hipotese))
-        {
-            Recusar("hipoteseLegal", FatoCandidatoErrorCodes.HipoteseLegalInvalida,
-                "Hipótese legal de tratamento do fato fora do vocabulário fechado.");
-        }
-        else if (classificacaoValida && !HipotesesLegaisTratamento.AdmiteClassificacao(hipotese, classificacao))
-        {
-            Recusar("hipoteseLegal", FatoCandidatoErrorCodes.HipoteseLegalIncompativelComClassificacao,
-                "A hipótese legal não cabe na classificação: dado sensível usa as hipóteses do art. 11 da LGPD, e os demais as do art. 7º.");
-        }
-
-        return erros.Count > 0
-            ? Result<ProtecaoValidada>.ValidationFailure(erros)
-            : Result<ProtecaoValidada>.Success(new ProtecaoValidada(classificacao, finalidadeNormalizada, hipotese));
-    }
-
-    private static bool AtendeClassificacaoMinimaDoDominio(DominioFato dominio, ClassificacaoProtecaoDado classificacao) =>
+    private static bool AtendeClassificacaoMinimaDoDominio(DominioFato dominio, ClassificacaoDeProtecao classificacao) =>
         dominio switch
         {
-            DominioFato.Texto => classificacao is ClassificacaoProtecaoDado.Pessoal
-                or ClassificacaoProtecaoDado.Identificador or ClassificacaoProtecaoDado.Sensivel,
-            DominioFato.Data or DominioFato.Endereco => classificacao is ClassificacaoProtecaoDado.Pessoal
-                or ClassificacaoProtecaoDado.Sensivel,
+            DominioFato.Texto => classificacao is ClassificacaoDeProtecao.Pessoal
+                or ClassificacaoDeProtecao.Identificador or ClassificacaoDeProtecao.Sensivel,
+            DominioFato.Data or DominioFato.Endereco => classificacao is ClassificacaoDeProtecao.Pessoal
+                or ClassificacaoDeProtecao.Sensivel,
             // Identificador é só para texto — número de documento nunca é categórico, booleano
             // nem numérico. Sem essa recusa, um categórico Identificador citado como membro de
             // agregado elevaria a classificação mínima do derivado (ADR-0136, emenda de #1857).
-            _ => classificacao != ClassificacaoProtecaoDado.Identificador,
+            _ => classificacao != ClassificacaoDeProtecao.Identificador,
         };
 
     private static Result<string> ValidarPontoResolucao(string pontoResolucao)
@@ -1323,8 +1287,4 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         PrefixosBindingPorOrigem.TryGetValue(origem, out IReadOnlyList<string>? prefixos)
             ? prefixos
             : throw new ArgumentOutOfRangeException(nameof(origem), origem, "Origem de fato fora do domínio fechado.");
-
-    /// <summary>A proteção de dados já validada, aplicada na criação.</summary>
-    private readonly record struct ProtecaoValidada(
-        ClassificacaoProtecaoDado Classificacao, string Finalidade, HipoteseLegalTratamento Hipotese);
 }

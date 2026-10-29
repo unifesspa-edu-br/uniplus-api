@@ -39,7 +39,7 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
     }
 
     private static DocumentoExigido Documento(Guid faseId) => DocumentoExigido.Criar(
-        faseId, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL",
+        faseId, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
         Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null,
         [], [], null, FormatosPermitidos.Criar(true, null).Value!, null).Value!;
 

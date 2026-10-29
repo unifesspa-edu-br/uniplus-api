@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Story #928, §6 — o grafo de dependência conjunto: campo e fato como nós distintos, as quatro
@@ -38,7 +39,7 @@ public sealed class GrafoDependenciaConjuntaTests
 
     private static DocumentoExigido ExigenciaGatilhadaPor(string fato) =>
         DocumentoExigido.Criar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "DOC", "Documento", "CAT",
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "DOC", "Documento", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Condicional, obrigatorio: false, consequenciaIndeferimento: null,
             [CondicaoGatilho.Criar(0, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!],
             [], null, Qualquer, null).Value!;

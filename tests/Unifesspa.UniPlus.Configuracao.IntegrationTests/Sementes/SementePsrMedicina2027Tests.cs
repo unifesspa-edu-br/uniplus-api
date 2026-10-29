@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Serializacao;
@@ -251,7 +252,7 @@ public sealed class SementePsrMedicina2027Tests
             99,
             _ => FatoCandidato.CriarDoAdministrador(
                 "codigo fora do padrao", "Fato inválido", "Descrição", DominioFato.Booleano, CardinalidadeFato.Escalar,
-                null, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoProtecaoDado.Pessoal, "Finalidade",
+                null, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, "Finalidade",
                 HipoteseLegalTratamento.CumprimentoObrigacaoLegal),
             []);
 

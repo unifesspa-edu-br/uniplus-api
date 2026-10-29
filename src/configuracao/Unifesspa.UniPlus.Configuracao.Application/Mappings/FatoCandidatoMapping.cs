@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Mappings;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 internal static class FatoCandidatoMapping
 {
@@ -22,7 +23,7 @@ internal static class FatoCandidatoMapping
             fato.PontoResolucao,
             fato.Binding,
             EscoposFato.ParaTokenCanonico(fato.Escopo),
-            ClassificacoesProtecaoDado.ParaTokenCanonico(fato.ClassificacaoProtecao),
+            ClassificacoesDeProtecao.ParaTokenCanonico(fato.ClassificacaoProtecao),
             fato.FinalidadeTratamento,
             HipotesesLegaisTratamento.ParaTokenCanonico(fato.HipoteseLegal),
             fato.Sistema,

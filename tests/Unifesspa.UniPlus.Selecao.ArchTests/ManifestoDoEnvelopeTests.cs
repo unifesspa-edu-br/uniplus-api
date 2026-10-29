@@ -325,7 +325,8 @@ public sealed class ManifestoDoEnvelopeTests
         [typeof(DocumentoExigido)] = (
             [
                 "ExigidoNaFaseId", "ExigidoNaEtapaId", "Finalidade", "TipoDocumentoOrigemId", "TipoDocumentoCodigo", "TipoDocumentoNome",
-                "TipoDocumentoCategoria", "Aplicabilidade", "Obrigatorio", "ConsequenciaIndeferimento",
+                "TipoDocumentoCategoria", "ClassificacaoProtecao", "FinalidadeTratamento", "HipoteseLegal", "FatosComprovados",
+                "Aplicabilidade", "Obrigatorio", "ConsequenciaIndeferimento",
                 "Condicoes", "BasesLegais", "IdadeMaximaEmissao", "FormatosPermitidos", "Modelo",
                 "TamanhoMaximoBytes",
             ],

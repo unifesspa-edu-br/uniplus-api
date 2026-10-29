@@ -25,7 +25,7 @@ public sealed class PedidoDeConcessaoTests
     private static readonly PessoaNoToken Isabella = Pessoa("isabella.figueiredo", "Isabella Priscila Figueiredo", "isabellapriscilafigueiredo@uniplus-test.local");
     private static readonly PessoaNoToken Marlene = Pessoa("marlene.martins", "Marlene Márcia Emily Martins", "marlenemarciamartins@uniplus-test.local");
 
-    private static readonly PerfilAvaliado Interno = new(["selecao:processos:consultar"], "interna", false, null);
+    private static readonly PerfilAvaliado Interno = new(["selecao:processos:consultar"], "interno", false, null);
     private static readonly PerfilAvaliado Sensivel = new(["selecao:atendimento:analisar", "selecao:processos:consultar"], "sensivel", true, null);
     private static readonly PerfilAvaliado DeGestor = new(["autorizacao:perfis:manter"], "pessoal", true, TipoDeGovernanca.GestorDeAcessos);
     private static readonly PerfilAvaliado DeEncarregada = new(["autorizacao:concessoes:administrar"], "pessoal", true, TipoDeGovernanca.EncarregadaDeDados);
@@ -207,7 +207,7 @@ public sealed class PedidoDeConcessaoTests
         decisao.Etapa.Should().Be(EtapaDoPedido.Gestor);
         decisao.Resultado.Should().Be(ResultadoDaDecisao.Aprovado);
         decisao.PermissoesAvaliadas.Should().Equal("selecao:processos:consultar");
-        decisao.SensibilidadeAvaliada.Should().Be("interna");
+        decisao.SensibilidadeAvaliada.Should().Be("interno");
         decisao.Dispensa.Should().BeNull();
     }
 
@@ -283,7 +283,7 @@ public sealed class PedidoDeConcessaoTests
     {
         PedidoDeConcessao pedido = PedidoAguardandoGestor();
         pedido.Aprovar(Diogo.Identidade, Sensivel, Contexto, Agora);
-        PerfilAvaliado menosSensivel = new(Sensivel.Permissoes, "interna", false, null);
+        PerfilAvaliado menosSensivel = new(Sensivel.Permissoes, "interno", false, null);
 
         Codigos(pedido.Aprovar(Marlene.Identidade, menosSensivel, Contexto, Agora)).Should().Equal(PedidoErrorCodes.PerfilAlterado);
         pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);

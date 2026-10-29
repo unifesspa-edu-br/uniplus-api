@@ -1025,10 +1025,10 @@ public sealed class EnvelopeCodecRecusaTests
 
         FormatosPermitidos qualquer = FormatosPermitidos.Criar(true, null).Value!;
         DocumentoExigido rg = DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL",
+            fase.Id, Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, [], [], null, qualquer, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
         DocumentoExigido cpf = DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "CPF", "CPF", "PESSOAL",
+            fase.Id, Guid.CreateVersion7(), "CPF", "CPF", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, [], [], null, qualquer, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
         processo.DefinirDocumentosExigidos(
             [NoExigencia.CriarFolha(rg, 0).Value!, NoExigencia.CriarFolha(cpf, 1).Value!], PrecondicaoIfMatch.Ausente)

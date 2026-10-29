@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Authorization.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Logging;
 using Unifesspa.UniPlus.Infrastructure.Core.Observability;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Comportamento do fluxo dedicado onde as decisões de acesso são registradas:
@@ -107,8 +108,8 @@ public sealed class SerilogRegistroOperacionalRestritoTests
         => RegistroDecisaoAcesso.De(
             PermissionRequirement.From(
                 "selecao:motivos-decisao-isencao:manter",
-                Sensibilidade.Interna).Value!,
-            ResourceContext.From("MotivoDecisaoRecursal", Sensibilidade.Interna).Value!,
+                ClassificacaoDeProtecao.Interno).Value!,
+            ResourceContext.From("MotivoDecisaoRecursal", ClassificacaoDeProtecao.Interno).Value!,
             AuthorizationRequestContext.From("req-1", DateTimeOffset.UnixEpoch, OrigemRequisicao.Api).Value!,
             AuthorizationDecision.Negar(MotivoNegativa.SemConcessaoAplicavel));
 

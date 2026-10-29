@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Authorization.Enums;
 
 using System.ComponentModel;
 
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+
 /// <summary>
 /// Tradução dos enums do contrato de autorização para o <b>valor canônico de
 /// serialização externa</b> que cada membro documenta (<c>snake_case</c> /
@@ -55,15 +57,17 @@ public static class ValoresCanonicos
     };
 
     /// <summary>
-    /// Valor canônico da sensibilidade. Igual ao vocabulário aceito no campo
-    /// <c>sensibilidade</c> do catálogo de permissões (ADR-0151).
+    /// Valor canônico da sensibilidade, no vocabulário dos fatos do candidato
+    /// (<c>publico</c>, <c>interno</c>, <c>pessoal</c>, <c>identificador</c>, <c>sensivel</c>),
+    /// que é o mesmo do campo <c>sensibilidade</c> do catálogo de permissões (ADR-0151).
     /// </summary>
-    public static string De(Sensibilidade sensibilidade) => sensibilidade switch
+    public static string De(ClassificacaoDeProtecao sensibilidade) => sensibilidade switch
     {
-        Sensibilidade.Publica => "publica",
-        Sensibilidade.Interna => "interna",
-        Sensibilidade.Pessoal => "pessoal",
-        Sensibilidade.Sensivel => "sensivel",
-        _ => throw new InvalidEnumArgumentException(nameof(sensibilidade), (int)sensibilidade, typeof(Sensibilidade)),
+        ClassificacaoDeProtecao.Publico => "publico",
+        ClassificacaoDeProtecao.Interno => "interno",
+        ClassificacaoDeProtecao.Pessoal => "pessoal",
+        ClassificacaoDeProtecao.Identificador => "identificador",
+        ClassificacaoDeProtecao.Sensivel => "sensivel",
+        _ => throw new InvalidEnumArgumentException(nameof(sensibilidade), (int)sensibilidade, typeof(ClassificacaoDeProtecao)),
     };
 }

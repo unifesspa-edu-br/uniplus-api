@@ -7,9 +7,11 @@ using NSubstitute;
 using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposDocumento;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class AtualizarTipoDocumentoCommandHandlerTests
@@ -27,10 +29,11 @@ public sealed class AtualizarTipoDocumentoCommandHandlerTests
     }
 
     private static TipoDocumento TipoExistente(string codigo = "CIN", string categoria = "IDENTIFICACAO") =>
-        TipoDocumento.Criar(codigo, "Carteira de Identidade Nacional", null, categoria, null, null, null).Value!;
+        TipoDocumento.Criar(codigo, "Carteira de Identidade Nacional", null, categoria, null, null, null, classificacaoProtecao: ClassificacaoDeProtecao.Pessoal, finalidadeTratamento: "Comprovação documental do candidato.", hipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
 
     private static AtualizarTipoDocumentoCommand Comando(Guid id, string codigo = "CIN", string categoria = "IDENTIFICACAO") =>
-        new(id, codigo, "Carteira de Identidade Nacional", categoria, "Documento unificado", "pdf", 5, null);
+        new(id, codigo, "Carteira de Identidade Nacional", categoria, "Documento unificado", "pdf", 5, null,
+            "PESSOAL", "Comprovação documental do candidato.", "CUMPRIMENTO_OBRIGACAO_LEGAL");
 
     [Fact(DisplayName = "Tipo inexistente retorna NaoEncontrado (404)")]
     public async Task Handle_Inexistente_RetornaNaoEncontrado()

@@ -8,11 +8,13 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Integração ponta-a-ponta do TipoDocumento contra Postgres real (UNI-REQ-0013):
@@ -170,7 +172,7 @@ public sealed class TipoDocumentoPersistenceTests
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.tipo_documento (id, codigo, nome, categoria, created_at, is_deleted) VALUES ({id}, {CodigoUnico()}, {"X"}, {"DOCUMENTO_MILITAR"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.tipo_documento (id, codigo, nome, categoria, classificacao_protecao, finalidade_tratamento, hipotese_legal, created_at, is_deleted) VALUES ({id}, {CodigoUnico()}, {"X"}, {"DOCUMENTO_MILITAR"}, {"PESSOAL"}, {"Comprovação documental do candidato."}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().NotThrowAsync(
             "a categoria virou código de cadastro: um CHECK preso aos sete tokens do enum recusaria "
@@ -207,7 +209,7 @@ public sealed class TipoDocumentoPersistenceTests
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.tipo_documento (id, codigo, nome, categoria, created_at, is_deleted) VALUES ({id}, {CodigoUnico()}, {"X"}, {categoriaLonga}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.tipo_documento (id, codigo, nome, categoria, classificacao_protecao, finalidade_tratamento, hipotese_legal, created_at, is_deleted) VALUES ({id}, {CodigoUnico()}, {"X"}, {categoriaLonga}, {"PESSOAL"}, {"Comprovação documental do candidato."}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().NotThrowAsync();
     }
@@ -392,7 +394,7 @@ public sealed class TipoDocumentoPersistenceTests
         string codigo,
         string categoria = "SAUDE",
         string? tipoEquivalente = null) =>
-        TipoDocumento.Criar(codigo, "Laudo médico", null, categoria, "pdf,jpg", 10, tipoEquivalente).Value!;
+        TipoDocumento.Criar(codigo, "Laudo médico", null, categoria, "pdf,jpg", 10, tipoEquivalente, classificacaoProtecao: ClassificacaoDeProtecao.Pessoal, finalidadeTratamento: "Comprovação documental do candidato.", hipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
 
     private static string CodigoUnico() => $"DOC_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
 

@@ -355,6 +355,36 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.tipo_documento.tipo_equivalente_igual_codigo",
                 "Um tipo de documento não pode ser equivalente a si mesmo")),
 
+        new(TipoDocumentoErrorCodes.ProtecaoObrigatoria,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_documento.protecao_obrigatoria",
+                "Classificação, finalidade e hipótese legal do tipo de documento são obrigatórias")),
+
+        new(TipoDocumentoErrorCodes.ClassificacaoProtecaoInvalida,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_documento.classificacao_protecao_invalida",
+                "Classificação de proteção de dados do tipo de documento fora do vocabulário fechado")),
+
+        new(TipoDocumentoErrorCodes.FinalidadeTratamentoTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_documento.finalidade_tratamento_tamanho",
+                "Finalidade do tratamento do tipo de documento acima do tamanho máximo")),
+
+        new(TipoDocumentoErrorCodes.HipoteseLegalInvalida,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_documento.hipotese_legal_invalida",
+                "Hipótese legal de tratamento do tipo de documento fora do vocabulário fechado")),
+
+        new(TipoDocumentoErrorCodes.HipoteseLegalIncompativelComClassificacao,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_documento.hipotese_legal_incompativel_com_classificacao",
+                "A hipótese legal não cabe na classificação de proteção do tipo de documento")),
+
         new(TipoDocumentoErrorCodes.NaoEncontrado,
             new DomainErrorMapping(
                 StatusCodes.Status404NotFound,

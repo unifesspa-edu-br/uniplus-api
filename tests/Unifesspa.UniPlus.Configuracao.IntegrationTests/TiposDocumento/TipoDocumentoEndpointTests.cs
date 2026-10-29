@@ -71,7 +71,7 @@ public sealed class TipoDocumentoEndpointTests
     [Fact(DisplayName = "POST autenticado sem role plataforma-admin retorna 403")]
     public async Task Criar_SemRoleAdmin_Retorna403()
     {
-        var body = new { codigo = CodigoUnico(), nome = "Sem permissão", categoria = "OUTROS" };
+        var body = new { codigo = CodigoUnico(), nome = "Sem permissão", categoria = "OUTROS", classificacaoProtecao = "PESSOAL", finalidadeTratamento = "Comprovação documental do candidato.", hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL" };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/configuracao/admin/tipos-documento", UriKind.Relative));
@@ -109,6 +109,9 @@ public sealed class TipoDocumentoEndpointTests
             codigo,
             nome = "Laudo médico",
             categoria = "SAUDE",
+            classificacaoProtecao = "SENSIVEL",
+            finalidadeTratamento = "Comprovação do atendimento especializado.",
+            hipoteseLegal = "TUTELA_DA_SAUDE",
             descricao = "Documento de saúde",
             formatosAceitos = "pdf,jpg",
             tamanhoMaximoMb = 10,
@@ -131,13 +134,16 @@ public sealed class TipoDocumentoEndpointTests
         root.GetProperty("nome").GetString().Should().Be("Laudo médico");
         root.GetProperty("categoria").GetString().Should().Be("SAUDE");
         root.GetProperty("tamanhoMaximoMb").GetInt32().Should().Be(10);
+        root.GetProperty("classificacaoProtecao").GetString().Should().Be("SENSIVEL");
+        root.GetProperty("finalidadeTratamento").GetString().Should().Be("Comprovação do atendimento especializado.");
+        root.GetProperty("hipoteseLegal").GetString().Should().Be("TUTELA_DA_SAUDE");
         root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
     }
 
     [Fact(DisplayName = "Contrato classificatório puro: o recurso não expõe nenhuma regra material (validade/assinatura/lideranças)")]
     public async Task Criar_RecursoNaoExpoeRegraMaterial()
     {
-        var body = new { codigo = CodigoUnico(), nome = "Comprovante de residência", categoria = "RESIDENCIA" };
+        var body = new { codigo = CodigoUnico(), nome = "Comprovante de residência", categoria = "RESIDENCIA", classificacaoProtecao = "PESSOAL", finalidadeTratamento = "Comprovação documental do candidato.", hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL" };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage criar = await EnviarPostAdmin(client, body);
@@ -162,7 +168,7 @@ public sealed class TipoDocumentoEndpointTests
     [Fact(DisplayName = "POST com categoria fora do formato de código retorna 422 com erro de forma")]
     public async Task Criar_CategoriaForaDoFormato_Retorna422()
     {
-        var body = new { codigo = CodigoUnico(), nome = "Categoria mal formada", categoria = "financeiro" };
+        var body = new { codigo = CodigoUnico(), nome = "Categoria mal formada", categoria = "financeiro", classificacaoProtecao = "PESSOAL", finalidadeTratamento = "Comprovação documental do candidato.", hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL" };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);
@@ -173,10 +179,24 @@ public sealed class TipoDocumentoEndpointTests
             .Should().Be("uniplus.configuracao.tipo_documento.categoria_formato_invalido");
     }
 
+    [Fact(DisplayName = "POST sem a proteção do documento retorna 422 com proteção obrigatória")]
+    public async Task Criar_SemProtecao_Retorna422()
+    {
+        var body = new { codigo = CodigoUnico(), nome = "Laudo médico", categoria = "SAUDE" };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString()
+            .Should().Be("uniplus.configuracao.tipo_documento.protecao_obrigatoria");
+    }
+
     [Fact(DisplayName = "POST com categoria bem formada mas ausente do cadastro retorna 422 distinguível do erro de forma")]
     public async Task Criar_CategoriaInexistenteNoCadastro_Retorna422()
     {
-        var body = new { codigo = CodigoUnico(), nome = "Categoria inexistente", categoria = "CATEGORIA_QUE_NAO_EXISTE" };
+        var body = new { codigo = CodigoUnico(), nome = "Categoria inexistente", categoria = "CATEGORIA_QUE_NAO_EXISTE", classificacaoProtecao = "PESSOAL", finalidadeTratamento = "Comprovação documental do candidato.", hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL" };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);
@@ -197,7 +217,7 @@ public sealed class TipoDocumentoEndpointTests
         Guid categoriaId = await CriarCategoria(client, codigoCategoria);
 
         HttpResponseMessage aceito = await EnviarPostAdmin(
-            client, new { codigo = CodigoUnico(), nome = "Antes da remoção", categoria = codigoCategoria });
+            client, new { codigo = CodigoUnico(), nome = "Antes da remoção", categoria = codigoCategoria, classificacaoProtecao = "PESSOAL", finalidadeTratamento = "Comprovação documental do candidato.", hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL" });
         aceito.StatusCode.Should().Be(HttpStatusCode.Created, "a categoria estava viva");
 
         using HttpRequestMessage remover = new(
@@ -206,7 +226,7 @@ public sealed class TipoDocumentoEndpointTests
         (await client.SendAsync(remover)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         HttpResponseMessage recusado = await EnviarPostAdmin(
-            client, new { codigo = CodigoUnico(), nome = "Depois da remoção", categoria = codigoCategoria });
+            client, new { codigo = CodigoUnico(), nome = "Depois da remoção", categoria = codigoCategoria, classificacaoProtecao = "PESSOAL", finalidadeTratamento = "Comprovação documental do candidato.", hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL" });
 
         recusado.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
             "só categoria viva vale — o soft-delete tira a categoria de circulação para novos tipos");
@@ -217,7 +237,7 @@ public sealed class TipoDocumentoEndpointTests
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage criar = await EnviarPostAdmin(
-            client, new { codigo = CodigoUnico(), nome = "Comprovante de renda", categoria = " RENDA " });
+            client, new { codigo = CodigoUnico(), nome = "Comprovante de renda", categoria = " RENDA ", classificacaoProtecao = "PESSOAL", finalidadeTratamento = "Comprovação documental do candidato.", hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL" });
 
         criar.StatusCode.Should().Be(HttpStatusCode.Created);
         Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
@@ -243,7 +263,7 @@ public sealed class TipoDocumentoEndpointTests
         await CriarCategoria(client, categoriaLonga);
 
         HttpResponseMessage response = await EnviarPostAdmin(
-            client, new { codigo = CodigoUnico(), nome = "Tipo de categoria longa", categoria = categoriaLonga });
+            client, new { codigo = CodigoUnico(), nome = "Tipo de categoria longa", categoria = categoriaLonga, classificacaoProtecao = "PESSOAL", finalidadeTratamento = "Comprovação documental do candidato.", hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL" });
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         Guid id = await response.Content.ReadFromJsonAsync<Guid>();
@@ -258,20 +278,20 @@ public sealed class TipoDocumentoEndpointTests
     public async Task Criar_CodigoDuplicado_Retorna409()
     {
         string codigo = CodigoUnico();
-        var body = new { codigo, nome = "Primeiro", categoria = "OUTROS" };
+        var body = new { codigo, nome = "Primeiro", categoria = "OUTROS", classificacaoProtecao = "PESSOAL", finalidadeTratamento = "Comprovação documental do candidato.", hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL" };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage primeiro = await EnviarPostAdmin(client, body);
         primeiro.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        HttpResponseMessage segundo = await EnviarPostAdmin(client, new { codigo, nome = "Segundo", categoria = "OUTROS" });
+        HttpResponseMessage segundo = await EnviarPostAdmin(client, new { codigo, nome = "Segundo", categoria = "OUTROS", classificacaoProtecao = "PESSOAL", finalidadeTratamento = "Comprovação documental do candidato.", hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL" });
         segundo.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
     [Fact(DisplayName = "ADR-0125: POST com nome vazio e categoria mal formada devolve as duas violações em errors[], campo em camelCase")]
     public async Task Criar_NomeVazioECategoriaMalFormada_DevolveAsDuasViolacoesEmErrors()
     {
-        var body = new { codigo = CodigoUnico(), nome = "", categoria = "financeiro" };
+        var body = new { codigo = CodigoUnico(), nome = "", categoria = "financeiro", classificacaoProtecao = "PESSOAL", finalidadeTratamento = "Comprovação documental do candidato.", hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL" };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);
@@ -318,7 +338,7 @@ public sealed class TipoDocumentoEndpointTests
     public async Task Atualizar_IdInexistenteENomeVazio_Retorna422()
     {
         Guid id = Guid.NewGuid();
-        var body = new { id, codigo = CodigoUnico(), nome = "", categoria = "OUTROS" };
+        var body = new { id, codigo = CodigoUnico(), nome = "", categoria = "OUTROS", classificacaoProtecao = "PESSOAL", finalidadeTratamento = "Comprovação documental do candidato.", hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL" };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         using HttpRequestMessage request = new(HttpMethod.Put, new Uri($"/api/configuracao/admin/tipos-documento/{id}", UriKind.Relative));

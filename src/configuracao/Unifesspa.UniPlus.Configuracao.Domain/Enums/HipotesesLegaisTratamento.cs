@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+
 /// <summary>
 /// Mapeamento entre <see cref="HipoteseLegalTratamento"/> (PascalCase) e o token textual de contrato/banco
 /// (UPPER_SNAKE), com parsing de domínio fechado por allowlist explícita (molde de
@@ -71,8 +73,8 @@ public static class HipotesesLegaisTratamento
     /// Indica se a hipótese cabe na classificação: as do art. 11 da LGPD para o dado sensível e
     /// as do art. 7º para os demais.
     /// </summary>
-    public static bool AdmiteClassificacao(HipoteseLegalTratamento hipotese, ClassificacaoProtecaoDado classificacao) =>
-        classificacao == ClassificacaoProtecaoDado.Sensivel
+    public static bool AdmiteClassificacao(HipoteseLegalTratamento hipotese, ClassificacaoDeProtecao classificacao) =>
+        classificacao == ClassificacaoDeProtecao.Sensivel
             ? !SoDoArtigo7.Contains(hipotese)
             : !SoDoArtigo11.Contains(hipotese);
 }

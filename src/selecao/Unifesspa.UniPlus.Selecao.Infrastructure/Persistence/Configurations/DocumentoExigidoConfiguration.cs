@@ -11,6 +11,9 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
+
 /// <summary>
 /// Configuração EF Core de <see cref="DocumentoExigido"/> (Story #554, PR #895) — entidade
 /// filha do agregado <see cref="ProcessoSeletivo"/>, <c>EntityBase</c> puro (sem
@@ -31,6 +34,8 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
     // um cadastro legítimo de até 200 caracteres.
     private const int TipoDocumentoNomeMaxLength = 200;
     private const int TipoDocumentoCategoriaMaxLength = 60;
+    private const int FinalidadeTratamentoMaxLength = LimitesDoEnvelope.FinalidadeTratamento;
+    private const int HipoteseLegalMaxLength = LimitesDoEnvelope.HipoteseLegal;
     private const int ConsequenciaIndeferimentoMaxLength = 30;
     private const int IdadeMaximaUnidadeMaxLength = 10;
     private const int IdadeMaximaReferenciaTipoMaxLength = 20;
@@ -56,6 +61,13 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
         builder.Property(d => d.TipoDocumentoCodigo).HasMaxLength(TipoDocumentoCodigoMaxLength).IsRequired();
         builder.Property(d => d.TipoDocumentoNome).HasMaxLength(TipoDocumentoNomeMaxLength).IsRequired();
         builder.Property(d => d.TipoDocumentoCategoria).HasMaxLength(TipoDocumentoCategoriaMaxLength).IsRequired();
+        builder.Property(d => d.ClassificacaoProtecao)
+            .HasConversion<ClassificacaoDeProtecaoValueConverter>()
+            .HasMaxLength(ClassificacaoDeProtecaoValueConverter.MaxLength)
+            .IsRequired();
+        builder.Property(d => d.FinalidadeTratamento).HasMaxLength(FinalidadeTratamentoMaxLength).IsRequired();
+        builder.Property(d => d.HipoteseLegal).HasMaxLength(HipoteseLegalMaxLength).IsRequired();
+        builder.Property(d => d.FatosComprovados).IsRequired();
         builder.Property(d => d.Aplicabilidade).HasConversion<int>().IsRequired();
         builder.Property(d => d.Obrigatorio).IsRequired();
         builder.Property(d => d.ConsequenciaIndeferimento).HasMaxLength(ConsequenciaIndeferimentoMaxLength);

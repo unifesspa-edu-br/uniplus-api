@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -78,11 +79,11 @@ public sealed class FinalidadeDaExigenciaEndpointTests
     {
         FatoCandidato bolsista = FatoCandidato.CriarDoAdministrador(
             fato, "Bolsista", null, DominioFato.Booleano, CardinalidadeFato.Escalar, fonteValores: null, formato: null,
-            "RESULTADO_FINAL", EscopoFato.Candidato, ClassificacaoProtecaoDado.Pessoal, "Isenção da taxa",
+            "RESULTADO_FINAL", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, "Isenção da taxa",
             HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
         TipoDocumento tipoDocumento = TipoDocumento.Criar(
             codigoDoDocumento, "Comprovante de bolsa", descricao: null, categoria: "IDENTIFICACAO",
-            formatosAceitos: null, tamanhoMaximoMb: null, tipoEquivalente: null).Value!;
+            formatosAceitos: null, tamanhoMaximoMb: null, tipoEquivalente: null, classificacaoProtecao: ClassificacaoDeProtecao.Pessoal, finalidadeTratamento: "Comprovação documental do candidato.", hipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
         db.AddRange(bolsista, tipoDocumento);

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Authorization.Contracts;
 
 using Unifesspa.UniPlus.Authorization.Enums;
 using Unifesspa.UniPlus.Authorization.Errors;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -26,11 +27,11 @@ public sealed record ResourceContext
     public Guid? ChamadaId { get; }
 
     /// <summary>Classificação de sensibilidade do dado retornado.</summary>
-    public Sensibilidade Sensibilidade { get; }
+    public ClassificacaoDeProtecao Sensibilidade { get; }
 
     private ResourceContext(
         string recursoTipo,
-        Sensibilidade sensibilidade,
+        ClassificacaoDeProtecao sensibilidade,
         Guid? unidadeProprietariaId,
         Guid? processoId,
         Guid? chamadaId)
@@ -51,7 +52,7 @@ public sealed record ResourceContext
     /// </summary>
     public static Result<ResourceContext> From(
         string? recursoTipo,
-        Sensibilidade sensibilidade,
+        ClassificacaoDeProtecao sensibilidade,
         Guid? unidadeProprietariaId = null,
         Guid? processoId = null,
         Guid? chamadaId = null)
@@ -61,6 +62,13 @@ public sealed record ResourceContext
             return Result<ResourceContext>.Failure(new DomainError(
                 AuthorizationErrorCodes.ResourceContextRecursoTipoObrigatorio,
                 "Tipo do recurso é obrigatório."));
+        }
+
+        if (sensibilidade == ClassificacaoDeProtecao.Nenhuma || !Enum.IsDefined(sensibilidade))
+        {
+            return Result<ResourceContext>.Failure(new DomainError(
+                AuthorizationErrorCodes.ResourceContextSensibilidadeInvalida,
+                "A sensibilidade do recurso é obrigatória: informe um nível da escala de proteção (publico a sensivel)."));
         }
 
         if (GuidVazioInformado(unidadeProprietariaId)

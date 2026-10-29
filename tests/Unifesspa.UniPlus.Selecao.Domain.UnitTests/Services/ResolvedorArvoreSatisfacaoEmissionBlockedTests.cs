@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Story #928, §6 — a fronteira de disponibilidade (<c>BLOQUEADO</c>) e o predicado recursivo
@@ -28,12 +29,12 @@ public sealed class ResolvedorArvoreSatisfacaoEmissionBlockedTests
 
     private static DocumentoExigido DocumentoGeral(string? consequencia) =>
         DocumentoExigido.Criar(
-            FaseId, Guid.CreateVersion7(), "COD", "Nome", "CAT",
+            FaseId, Guid.CreateVersion7(), "COD", "Nome", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Geral, obrigatorio: true, consequencia, [], [], null, Qualquer, null).Value!;
 
     private static DocumentoExigido DocumentoCondicional(string fato) =>
         DocumentoExigido.Criar(
-            FaseId, Guid.CreateVersion7(), "COD", "Nome", "CAT",
+            FaseId, Guid.CreateVersion7(), "COD", "Nome", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Condicional, obrigatorio: false, consequenciaIndeferimento: null,
             [CondicaoGatilho.Criar(0, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!],
             [], null, Qualquer, null).Value!;

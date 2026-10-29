@@ -131,7 +131,7 @@ public sealed class DocumentosEnviadosDaInscricaoTests
 
     private static DocumentoExigido Exigencia() =>
         DocumentoExigido.Criar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo", "CAT", Aplicabilidade.Geral, obrigatorio: true, null, [], [], null,
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, obrigatorio: true, null, [], [], null,
             FormatosPermitidos.Criar(true, null).Value!, null).Value!;
 
     private sealed record Cenario(IDocumentoDaInscricaoRepository Repositorio, ArquivoDaApresentacao Arquivo)

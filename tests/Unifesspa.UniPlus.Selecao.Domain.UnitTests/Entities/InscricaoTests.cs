@@ -1115,7 +1115,7 @@ public sealed class InscricaoTests
     {
         Inscricao inscricao = NovaInscricao();
         DocumentoExigido laudo = DocumentoExigido.Criar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo médico", "CAT", Aplicabilidade.Geral, obrigatorio: true, null, [], [], null,
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo médico", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, obrigatorio: true, null, [], [], null,
             FormatosPermitidos.Criar(true, null).Value!, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
         ResultadoDaAvaliacaoDaInscricao avaliacao = ComModalidades(SituacaoDasModalidades.FaltaResponder);
         avaliacao = avaliacao with { Documentos = avaliacao.Documentos with { Ausentes = [new DocumentoAusente([laudo], null)] } };

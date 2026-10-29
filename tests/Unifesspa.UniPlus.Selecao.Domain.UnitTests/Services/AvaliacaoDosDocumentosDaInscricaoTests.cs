@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Os documentos que o edital exige do candidato, pela árvore de exigências congelada sobre as
@@ -194,7 +195,7 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
 
     private static DocumentoExigido Geral() =>
         DocumentoExigido.Criar(
-            FaseDaInscricao.Id, Guid.CreateVersion7(), "DOCUMENTO", "Documento", "CAT",
+            FaseDaInscricao.Id, Guid.CreateVersion7(), "DOCUMENTO", "Documento", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null, [], [], null, Qualquer, null).Value!;
 
     private static Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> Enviados(params DocumentoExigido[] documentos) =>
@@ -359,7 +360,7 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
 
     private static DocumentoExigido Condicional(FaseCronograma fase, params (string Fato, bool Valor)[] atomos) =>
         DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "COMPROVANTE", "Comprovante", "CAT",
+            fase.Id, Guid.CreateVersion7(), "COMPROVANTE", "Comprovante", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
             [.. atomos.Select(static a => CondicaoGatilho.Criar(0, a.Fato, Operador.Igual, JsonSerializer.SerializeToElement(a.Valor)).Value!)],
             [], null, Qualquer, null).Value!;

@@ -6,6 +6,7 @@ using System.Text.Json;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -145,7 +146,7 @@ internal static class CadastrosVivos
         new(IdentidadeDe(codigo), codigo, null, "COTA_RESERVADA", "DENTRO_DO_VR", null, null, null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, null);
 
     public static TipoDocumentoView TipoDocumento(string codigo) =>
-        new(IdentidadeDe(codigo), codigo, "Documento", "OUTROS");
+        new(IdentidadeDe(codigo), codigo, "Documento", "OUTROS", ClassificacaoDeProtecao.Pessoal, "Comprovação documental do candidato.", "CUMPRIMENTO_OBRIGACAO_LEGAL");
 
     /// <summary>
     /// Tipo de etapa vivo que admite qualquer caráter, por ser o caso comum dos cenários de

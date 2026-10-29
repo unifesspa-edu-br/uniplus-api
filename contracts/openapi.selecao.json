@@ -15120,7 +15120,11 @@
           "tamanhoMaximoBytes",
           "exigidoNaEtapaId",
           "modelo",
-          "finalidade"
+          "finalidade",
+          "classificacaoProtecao",
+          "finalidadeTratamento",
+          "hipoteseLegal",
+          "fatosComprovados"
         ],
         "type": "object",
         "properties": {
@@ -15213,6 +15217,21 @@
               "null",
               "string"
             ]
+          },
+          "classificacaoProtecao": {
+            "type": "string"
+          },
+          "finalidadeTratamento": {
+            "type": "string"
+          },
+          "hipoteseLegal": {
+            "type": "string"
+          },
+          "fatosComprovados": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -17955,6 +17974,15 @@
               "null",
               "string"
             ]
+          },
+          "fatosComprovados": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           }
         }
       },

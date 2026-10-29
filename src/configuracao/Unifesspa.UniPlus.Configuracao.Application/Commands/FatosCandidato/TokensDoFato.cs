@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Único lugar em que o token de um eixo do fato vira o enum, no cadastro e na alteração. Ausente,
@@ -23,8 +24,8 @@ internal static class TokensDoFato
 
     internal static EscopoFato? Escopo(string? token) => Ler<EscopoFato>(token, EscoposFato.TryAnalisar);
 
-    internal static ClassificacaoProtecaoDado? Classificacao(string? token) =>
-        Ler<ClassificacaoProtecaoDado>(token, ClassificacoesProtecaoDado.TryAnalisar);
+    internal static ClassificacaoDeProtecao? Classificacao(string? token) =>
+        Ler<ClassificacaoDeProtecao>(token, ClassificacoesDeProtecao.TryAnalisar);
 
     internal static HipoteseLegalTratamento? HipoteseLegal(string? token) =>
         Ler<HipoteseLegalTratamento>(token, HipotesesLegaisTratamento.TryAnalisar);

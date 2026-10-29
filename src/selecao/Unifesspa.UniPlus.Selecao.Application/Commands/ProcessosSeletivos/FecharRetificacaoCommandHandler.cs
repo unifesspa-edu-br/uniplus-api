@@ -240,6 +240,13 @@ public static class FecharRetificacaoCommandHandler
             return (copiasDoItem, []);
         }
 
+        // O tipo de documento é editável depois que a exigência copiou dele a proteção: o valor
+        // vigente é o que se congela, antes da conferência contra os fatos e do snapshot.
+        ProtecaoVigenteDasExigencias protecaoDasExigencias = await ProtecaoVigenteDasExigenciasDoProcesso
+            .MontarAsync(processo, tipoDocumentoReader, catalogoDeFatos, await ProtecaoVigenteDasExigenciasDoProcesso.LerDaVersaoVigenteAsync(processoSeletivoRepository, registroCodecs, processo.Id, cancellationToken).ConfigureAwait(false), cancellationToken)
+            .ConfigureAwait(false);
+        processo.AplicarProtecaoVigente(protecaoDasExigencias);
+
         // O gate de conformidade precede a canonicalização (ADR-0109 D5) — a retificação
         // também congela uma versão append-only e vinculante.
         if (processo.PendenciaDeConformidade() is { } pendencia)
@@ -330,7 +337,7 @@ public static class FecharRetificacaoCommandHandler
         // fatos. A canonicalização abaixo resolve dataReferenciaFatos internamente e LANÇA
         // quando a política não resolve — sem este guard antes dela, um processo inválido
         // vira exceção não tratada em vez do DomainError que o contrato HTTP promete.
-        if (processo.PendenciaPreCanonicalizacao(fatosDeModalidade) is { } pendenciaPreCanonicalizacao)
+        if (processo.PendenciaPreCanonicalizacao(fatosDeModalidade, protecaoDasExigencias) is { } pendenciaPreCanonicalizacao)
         {
             return (Result.Failure(pendenciaPreCanonicalizacao), []);
         }

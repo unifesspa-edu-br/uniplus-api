@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -345,8 +346,16 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// <c>ELIM-AUSENCIA-NA-ETAPA</c>, cujos <c>args</c> são <c>{etapaRef}</c>: elimina quem faltou
     /// à etapa referenciada, que existe no próprio envelope e não é a do ENEM. Sem produção em
     /// ambiente nenhum: fixture nova, <c>0.0.35</c> deixa de ser reconhecida.
+    /// O bump para <c>0.0.37</c> acrescenta a cada exigência de <c>documentosExigidos.exigencias[]</c>
+    /// a proteção que o tipo de documento declarava quando a exigência o copiou —
+    /// <c>classificacaoProtecao</c> (token canônico: PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR,
+    /// SENSIVEL), <c>finalidadeTratamento</c> e <c>hipoteseLegal</c> — e <c>fatosComprovados</c>, a
+    /// lista ordenada dos fatos do processo que o documento comprova (vazia quando a exigência não
+    /// declara nenhum). Reclassificar o tipo no cadastro depois da publicação não muda o que já foi
+    /// congelado. Sem novo bloco de topo. Sem produção em ambiente nenhum: fixture nova,
+    /// <c>0.0.36</c> deixa de ser reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.36";
+    internal const string SchemaVersionAtual = "0.0.37";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -1552,6 +1561,11 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ["tipoDocumentoCodigo"] = HashCanonicalComputer.NormalizeNfc(exigencia.TipoDocumentoCodigo),
         ["tipoDocumentoNome"] = HashCanonicalComputer.NormalizeNfc(exigencia.TipoDocumentoNome),
         ["tipoDocumentoCategoria"] = HashCanonicalComputer.NormalizeNfc(exigencia.TipoDocumentoCategoria),
+        ["classificacaoProtecao"] = ClassificacoesDeProtecao.ParaTokenCanonico(exigencia.ClassificacaoProtecao),
+        ["finalidadeTratamento"] = HashCanonicalComputer.NormalizeNfc(exigencia.FinalidadeTratamento),
+        ["hipoteseLegal"] = HashCanonicalComputer.NormalizeNfc(exigencia.HipoteseLegal),
+        ["fatosComprovados"] = new JsonArray([.. exigencia.FatosComprovados.Order(StringComparer.Ordinal)
+            .Select(static f => (JsonNode)JsonValue.Create(HashCanonicalComputer.NormalizeNfc(f))!)]),
         ["exigidoNaFaseId"] = exigencia.ExigidoNaFaseId,
         ["exigidoNaEtapaId"] = exigencia.ExigidoNaEtapaId,
         ["finalidade"] = exigencia.Finalidade is { } finalidade ? EstruturaFormulario.ParaToken(finalidade) : null,

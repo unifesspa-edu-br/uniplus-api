@@ -1,11 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
-using System.Collections.Frozen;
 using System.Text.Json;
 
 using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
@@ -36,13 +36,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </remarks>
 public sealed class FatoColetado : EntityBase
 {
-    /// <summary>
-    /// Os mesmos tokens canônicos de <c>ClassificacoesProtecaoDado</c> (Configuração) —
-    /// duplicados aqui porque este Domain não alcança o de outro módulo (ADR-0097).
-    /// </summary>
-    private static readonly FrozenSet<string> TokensDeClassificacaoProtecao = FrozenSet.ToFrozenSet(
-        ["PUBLICO", "INTERNO", "PESSOAL", "IDENTIFICADOR", "SENSIVEL"], StringComparer.Ordinal);
-
     private readonly List<CondicaoPrecondicaoFato> _precondicoes = [];
 
     public Guid ProcessoSeletivoId { get; private set; }
@@ -222,11 +215,10 @@ public sealed class FatoColetado : EntityBase
     {
         List<FieldError> erros = FormaDoItem.Conferir(
             fatoCodigo, ordem, rotulo, tipoRenderizacao, formato, ajuda, fatosDaPrecondicao, obrigatoriedade, restricoes, impedimento);
-        if (!TokensDeClassificacaoProtecao.Contains(classificacaoProtecao))
+        if (!ClassificacoesDeProtecao.TokensCanonicos.Contains(classificacaoProtecao))
         {
-            // O vocabulário fechado é o mesmo token canônico de ClassificacoesProtecaoDado
-            // (Configuração), espelhado aqui porque o Domain da Seleção não alcança o Domain de
-            // outro módulo (ADR-0097) — a Seleção só copia o valor já validado pelo catálogo.
+            // A Seleção só copia o valor já validado pelo catálogo, no vocabulário fechado
+            // do Kernel.
             erros.Add(new("classificacaoProtecao", new DomainError(
                 FatoColetadoErrorCodes.ClassificacaoProtecaoInvalida,
                 "Classificação de proteção de dados fora do vocabulário fechado.")));

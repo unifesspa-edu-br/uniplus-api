@@ -7,8 +7,10 @@ using NSubstitute;
 using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposDocumento;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class RemoverTipoDocumentoCommandHandlerTests
@@ -17,7 +19,7 @@ public sealed class RemoverTipoDocumentoCommandHandlerTests
     private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
     private static TipoDocumento Tipo() =>
-        TipoDocumento.Criar("RG", "Registro Geral", null, "IDENTIFICACAO", null, null, null).Value!;
+        TipoDocumento.Criar("RG", "Registro Geral", null, "IDENTIFICACAO", null, null, null, classificacaoProtecao: ClassificacaoDeProtecao.Pessoal, finalidadeTratamento: "Comprovação documental do candidato.", hipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
 
     [Fact(DisplayName = "Remover um tipo existente faz soft-delete (Remover + Salvar) sem bloqueio")]
     public async Task Handle_TipoExistente_FazSoftDelete()

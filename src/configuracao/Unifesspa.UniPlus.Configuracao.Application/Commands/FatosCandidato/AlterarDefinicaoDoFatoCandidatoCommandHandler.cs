@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -82,7 +83,7 @@ public static class AlterarDefinicaoDoFatoCandidatoCommandHandler
             TokensDoFato.Formato(entrada.Formato),
             entrada.PontoResolucao,
             TokensDoFato.Escopo(entrada.Escopo),
-            TokensDoFato.Classificacao(entrada.ClassificacaoProtecao) ?? ClassificacaoProtecaoDado.Nenhuma,
+            TokensDoFato.Classificacao(entrada.ClassificacaoProtecao) ?? ClassificacaoDeProtecao.Nenhuma,
             entrada.FinalidadeTratamento,
             TokensDoFato.HipoteseLegal(entrada.HipoteseLegal) ?? HipoteseLegalTratamento.Nenhuma);
 }

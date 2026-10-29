@@ -32,7 +32,7 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
         bancasRequeridas: [], regraRecurso: null).Value!;
 
     private static DocumentoExigido DocumentoQualquer(Guid faseId, FinalidadeFormulario? finalidade = null) => DocumentoExigido.Criar(
-        faseId, Guid.CreateVersion7(), "COD", "Nome", "CAT", Aplicabilidade.Geral,
+        faseId, Guid.CreateVersion7(), "COD", "Nome", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral,
         obrigatorio: false, consequenciaIndeferimento: null, [], [], null, Qualquer, null, finalidade: finalidade).Value!;
 
     private static NoExigenciaBaseLegal BaseLegal(StatusBaseLegal status) =>

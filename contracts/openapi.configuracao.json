@@ -14332,6 +14332,24 @@
               "null",
               "string"
             ]
+          },
+          "classificacaoProtecao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "finalidadeTratamento": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "hipoteseLegal": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -16200,6 +16218,24 @@
             "format": "int32"
           },
           "tipoEquivalente": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "classificacaoProtecao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "finalidadeTratamento": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "hipoteseLegal": {
             "type": [
               "null",
               "string"
@@ -19679,6 +19715,9 @@
           "formatosAceitos",
           "tamanhoMaximoMb",
           "tipoEquivalente",
+          "classificacaoProtecao",
+          "finalidadeTratamento",
+          "hipoteseLegal",
           "criadoEm"
         ],
         "type": "object",
@@ -19722,6 +19761,15 @@
               "null",
               "string"
             ]
+          },
+          "classificacaoProtecao": {
+            "type": "string"
+          },
+          "finalidadeTratamento": {
+            "type": "string"
+          },
+          "hipoteseLegal": {
+            "type": "string"
           },
           "criadoEm": {
             "type": "string",

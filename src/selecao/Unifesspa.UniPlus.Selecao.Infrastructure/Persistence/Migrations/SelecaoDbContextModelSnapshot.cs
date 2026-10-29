@@ -1604,6 +1604,12 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("aplicabilidade");
 
+                    b.Property<string>("ClassificacaoProtecao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("classificacao_protecao");
+
                     b.Property<string>("ConsequenciaIndeferimento")
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
@@ -1621,9 +1627,26 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("exigido_na_fase_id");
 
+                    b.PrimitiveCollection<string[]>("FatosComprovados")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("fatos_comprovados");
+
                     b.Property<int?>("Finalidade")
                         .HasColumnType("integer")
                         .HasColumnName("finalidade");
+
+                    b.Property<string>("FinalidadeTratamento")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("finalidade_tratamento");
+
+                    b.Property<string>("HipoteseLegal")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("hipotese_legal");
 
                     b.Property<bool>("Obrigatorio")
                         .HasColumnType("boolean")

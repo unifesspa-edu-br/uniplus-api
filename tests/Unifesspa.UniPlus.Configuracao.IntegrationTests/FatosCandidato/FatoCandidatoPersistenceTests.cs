@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 
@@ -80,7 +81,7 @@ public sealed class FatoCandidatoPersistenceTests
     [InlineData("RNM_NUMERO")]
     public void Seed_FatoDeNumeroDeDocumento_EhIdentificador(string codigo) =>
         FatoCandidatoSeed.Itens.Single(i => i.Codigo == codigo).ClassificacaoProtecao
-            .Should().Be(ClassificacaoProtecaoDado.Identificador);
+            .Should().Be(ClassificacaoDeProtecao.Identificador);
 
     [Fact(DisplayName = "Cada cota tem par elegibilidade + opt-in como fatos independentes (UNI-REQ-0078)")]
     public async Task Seed_CadaCotaTemParElegibilidadeEOptIn()
@@ -235,16 +236,16 @@ public sealed class FatoCandidatoPersistenceTests
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
-        Dictionary<string, ClassificacaoProtecaoDado> classificacoes = await ctx.FatosCandidato.AsNoTracking()
+        Dictionary<string, ClassificacaoDeProtecao> classificacoes = await ctx.FatosCandidato.AsNoTracking()
             .Where(f => f.Codigo == "SEXO" || f.Codigo == "SEXO_CIVIL" || f.Codigo == "IDENTIDADE_GENERO" || f.Codigo == "ORIENTACAO_SEXUAL")
             .ToDictionaryAsync(f => f.Codigo, f => f.ClassificacaoProtecao);
 
-        classificacoes.Should().BeEquivalentTo(new Dictionary<string, ClassificacaoProtecaoDado>
+        classificacoes.Should().BeEquivalentTo(new Dictionary<string, ClassificacaoDeProtecao>
         {
-            ["SEXO"] = ClassificacaoProtecaoDado.Pessoal,
-            ["SEXO_CIVIL"] = ClassificacaoProtecaoDado.Pessoal,
-            ["IDENTIDADE_GENERO"] = ClassificacaoProtecaoDado.Sensivel,
-            ["ORIENTACAO_SEXUAL"] = ClassificacaoProtecaoDado.Sensivel,
+            ["SEXO"] = ClassificacaoDeProtecao.Pessoal,
+            ["SEXO_CIVIL"] = ClassificacaoDeProtecao.Pessoal,
+            ["IDENTIDADE_GENERO"] = ClassificacaoDeProtecao.Sensivel,
+            ["ORIENTACAO_SEXUAL"] = ClassificacaoDeProtecao.Sensivel,
         });
     }
 
@@ -282,19 +283,19 @@ public sealed class FatoCandidatoPersistenceTests
 
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
 
-        fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoProtecaoDado.Sensivel)
+        fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoDeProtecao.Sensivel)
             .Select(f => f.Codigo).Order(StringComparer.Ordinal).Should().Equal(
                 "CONCORRER_PCD", "CONCORRER_PPI", "CONCORRER_Q", "CONCORRER_VAGA_POR_ACRESCIMO", "CONDICAO_ATENDIMENTO", "COR_RACA",
                 "IDENTIDADE_GENERO", "INDIGENA", "MODALIDADE", "MODALIDADE_CONVOCACAO", "ORIENTACAO_SEXUAL", "PCD", "QUILOMBOLA", "RECURSO_ACESSIBILIDADE",
                 "TIPO_DEFICIENCIA");
-        fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoProtecaoDado.Publico)
+        fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoDeProtecao.Publico)
             .Select(f => f.Codigo).Should().Equal("NOME_SOCIAL");
-        fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoProtecaoDado.Identificador)
+        fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoDeProtecao.Identificador)
             .Select(f => f.Codigo).Order(StringComparer.Ordinal).Should().Equal(
                 "CPF", "PASSAPORTE_NUMERO", "RG_NUMERO", "RNM_NUMERO");
         fatos.Where(f => f.ClassificacaoProtecao is not (
-                ClassificacaoProtecaoDado.Sensivel or ClassificacaoProtecaoDado.Publico or ClassificacaoProtecaoDado.Identificador))
-            .Should().OnlyContain(f => f.ClassificacaoProtecao == ClassificacaoProtecaoDado.Pessoal);
+                ClassificacaoDeProtecao.Sensivel or ClassificacaoDeProtecao.Publico or ClassificacaoDeProtecao.Identificador))
+            .Should().OnlyContain(f => f.ClassificacaoProtecao == ClassificacaoDeProtecao.Pessoal);
     }
 
     [Theory(DisplayName = "CHECK recusa categórico sem fonte e texto sem formato via SQL cru")]
@@ -389,7 +390,7 @@ public sealed class FatoCandidatoPersistenceTests
         FatoCandidato fato = FatoCandidato.Criar(
             codigo, "Fato com valores", null, DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar,
             FonteValoresFato.Global, formato: null, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}", EscopoFato.Candidato,
-            ClassificacaoProtecaoDado.Pessoal, "Teste", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: false).Value!;
+            ClassificacaoDeProtecao.Pessoal, "Teste", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: false).Value!;
         fato.AdicionarValorDominio("A", "A", 0, ativo: true).IsSuccess.Should().BeTrue();
         fato.AdicionarValorDominio("B", "B", 1, ativo: true).IsSuccess.Should().BeTrue();
         try
@@ -489,7 +490,7 @@ public sealed class FatoCandidatoPersistenceTests
         FatoCandidato fato = FatoCandidato.Criar(
             codigo, "Fato com valores", null, DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar,
             FonteValoresFato.Global, formato: null, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}", EscopoFato.Candidato,
-            ClassificacaoProtecaoDado.Pessoal, "Teste", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: false).Value!;
+            ClassificacaoDeProtecao.Pessoal, "Teste", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: false).Value!;
         fato.AdicionarValorDominio("A", "A", 0, ativo: true).IsSuccess.Should().BeTrue();
         fato.AdicionarValorDominio("B", "B", 1, ativo: true).IsSuccess.Should().BeTrue();
         return fato;
@@ -538,7 +539,7 @@ public sealed class FatoCandidatoPersistenceTests
         return FatoCandidato.Criar(
             codigo, "Fato do administrador", null, DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar,
             fonteValores: null, formato: null, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}", EscopoFato.Candidato,
-            ClassificacaoProtecaoDado.Pessoal, "Teste", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: false).Value!;
+            ClassificacaoDeProtecao.Pessoal, "Teste", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: false).Value!;
     }
 
     [Fact(DisplayName = "Seed: as regras padrão dos derivados semeados passam pela conferência do catálogo")]

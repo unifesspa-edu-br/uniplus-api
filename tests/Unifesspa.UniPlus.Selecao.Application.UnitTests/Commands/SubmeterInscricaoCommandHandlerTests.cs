@@ -421,7 +421,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         {
             Guid fase = processo.CronogramaFases.First(static f => f.ColetaInscricao).Id;
             DocumentoExigido Doc(string nome, Aplicabilidade aplicabilidade, IReadOnlyList<CondicaoGatilho> condicoes) => DocumentoExigido.Criar(
-                fase, Guid.CreateVersion7(), nome.ToUpperInvariant(), nome, "CAT", aplicabilidade, obrigatorio: true, null, condicoes, [], null,
+                fase, Guid.CreateVersion7(), nome.ToUpperInvariant(), nome, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal, aplicabilidade, obrigatorio: true, null, condicoes, [], null,
                 FormatosPermitidos.Criar(true, null).Value!, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
             laudo = Doc("Laudo", Aplicabilidade.Geral, []);
             naoSeAplica = Doc("Outro", Aplicabilidade.Condicional, [CondicaoGatilho.Criar(0, "APELIDO", Operador.Igual, JsonSerializer.SerializeToElement("Outro")).Value!]);

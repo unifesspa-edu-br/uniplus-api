@@ -269,7 +269,7 @@ public sealed class EnvelopeCanonicoGoldenTests
             tipoDocumentoOrigemId: TipoDocumentoFixo,
             tipoDocumentoCodigo: "COMPROVANTE_RESIDENCIA",
             tipoDocumentoNome: "Comprovante de residência",
-            tipoDocumentoCategoria: "PESSOAL",
+            tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             aplicabilidade: Aplicabilidade.Condicional,
             obrigatorio: true,
             consequenciaIndeferimento: "ELIMINA",

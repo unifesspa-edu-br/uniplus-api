@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
@@ -88,6 +89,17 @@ internal sealed class TipoDocumentoConfiguration
         builder.Property(t => t.TamanhoMaximoMb);
         builder.Property(t => t.TipoEquivalente).HasMaxLength(TipoEquivalenteMaxLength);
 
+        // Proteção do documento (ADR-0081, ADR-0136): obrigatória em todo tipo, como no fato.
+        builder.Property(t => t.ClassificacaoProtecao)
+            .HasConversion<ClassificacaoDeProtecaoValueConverter>()
+            .HasMaxLength(ClassificacaoDeProtecaoValueConverter.MaxLength)
+            .IsRequired();
+        builder.Property(t => t.FinalidadeTratamento).HasMaxLength(ProtecaoDeDados.FinalidadeMaxLength).IsRequired();
+        builder.Property(t => t.HipoteseLegal)
+            .HasConversion(ProtecaoDeDadosConversores.HipoteseLegal)
+            .HasMaxLength(ProtecaoDeDadosConversores.HipoteseLegalMaxLength)
+            .IsRequired();
+
         // Auditoria (IAuditableEntity)
         builder.Property(t => t.CreatedBy).HasMaxLength(255);
         builder.Property(t => t.UpdatedBy).HasMaxLength(255);
@@ -136,6 +148,9 @@ internal sealed class TipoDocumentoConfiguration
             FormatosAceitos = (string?)null,
             TamanhoMaximoMb = (int?)null,
             TipoEquivalente = (string?)null,
+            item.ClassificacaoProtecao,
+            FinalidadeTratamento = TipoDocumentoSeed.FinalidadeTratamento,
+            HipoteseLegal = TipoDocumentoSeed.HipoteseLegal,
             CreatedAt = seedCriadoEm,
             IsDeleted = false,
         });

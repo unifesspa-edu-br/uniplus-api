@@ -173,7 +173,7 @@ public sealed class PublicarProcessoSeletivoGateTests
             tipoDocumentoOrigemId: Guid.CreateVersion7(),
             tipoDocumentoCodigo: "DECLARACAO_MAIORIDADE",
             tipoDocumentoNome: "Declaração de maioridade",
-            tipoDocumentoCategoria: "PESSOAL",
+            tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             aplicabilidade: Aplicabilidade.Condicional,
             obrigatorio: true,
             consequenciaIndeferimento: null,

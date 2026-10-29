@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Os eixos que o administrador informa ao alterar a definição de um fato que cadastrou (ADR-0136).
@@ -15,6 +16,6 @@ public sealed record DefinicaoDoFato(
     FormatoTexto? Formato,
     string PontoResolucao,
     EscopoFato? Escopo,
-    ClassificacaoProtecaoDado ClassificacaoProtecao,
+    ClassificacaoDeProtecao ClassificacaoProtecao,
     string FinalidadeTratamento,
     HipoteseLegalTratamento HipoteseLegal);

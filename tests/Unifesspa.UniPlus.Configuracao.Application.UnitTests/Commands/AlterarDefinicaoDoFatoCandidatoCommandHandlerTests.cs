@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -248,10 +249,10 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
         FatoCandidato membro = Declarado("CATEGORIA_RENDA", DominioFato.Categorico, FonteValoresFato.Global, EscopoFato.MembroGrupo, pontoDoMembro);
         FatoCandidato perfil = FatoCandidato.CriarDerivadoDoAdministrador(
             "PERFIL", "PERFIL", null, DominioFato.Booleano, "INSCRICAO", EscopoFato.Candidato,
-            ClassificacaoProtecaoDado.Pessoal, Finalidade, Hipotese).Value!;
+            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
         FatoCandidato agregado = FatoCandidato.CriarAgregadoDoAdministrador(
             "CATEGORIAS_RENDA", "CATEGORIAS_RENDA", null, "CATEGORIA_RENDA", new CatalogoDeFatos([membro], []), "INSCRICAO",
-            ClassificacaoProtecaoDado.Pessoal, Finalidade, Hipotese).Value!;
+            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
         perfil.DefinirRegrasPadrao([RegraBooleana("RENDA")], new CatalogoDeFatos([renda, perfil], [])).IsSuccess.Should().BeTrue();
 
         List<FatoCandidato> fatos = [certificado, renda, optou, opcaoPelasCotas, membro, perfil, agregado];
@@ -272,7 +273,7 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
         string ponto = "INSCRICAO") =>
         FatoCandidato.CriarDoAdministrador(
             codigo, codigo, null, dominio, CardinalidadeFato.Escalar, fonte, null, ponto, escopo,
-            ClassificacaoProtecaoDado.Pessoal, Finalidade, Hipotese).Value!;
+            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
 
     private static RegraDerivacao RegraBooleana(string fato) =>
         RegraDerivacao.CriarBooleana(Quando(fato));

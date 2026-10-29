@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
@@ -140,7 +141,7 @@ internal sealed class FatoCandidatoReader : IFatoCandidatoReader
             valoresDominioDeclarados,
             f.FonteValores is { } fonte ? FontesValoresFato.ParaTokenCanonico(fonte) : null,
             f.Ativo,
-            ClassificacoesProtecaoDado.ParaTokenCanonico(f.ClassificacaoProtecao),
+            ClassificacoesDeProtecao.ParaTokenCanonico(f.ClassificacaoProtecao),
             f.Formato is { } formato and not FormatoTexto.Nenhum ? FormatosTexto.ParaTokenCanonico(formato) : null,
             EscoposFato.ParaTokenCanonico(f.Escopo));
     }

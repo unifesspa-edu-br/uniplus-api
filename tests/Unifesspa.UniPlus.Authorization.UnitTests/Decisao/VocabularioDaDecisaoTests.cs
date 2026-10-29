@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Decisao;
 using Unifesspa.UniPlus.Authorization.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Amarra o vocabulário dos enums do modelo ao valor canônico que o registro grava.
@@ -47,9 +48,18 @@ public sealed class VocabularioDaDecisaoTests
 
     [Fact(DisplayName = "A sensibilidade usa o mesmo vocabulário do catálogo de permissões")]
     public void Sensibilidade_UsaVocabularioDoCatalogo() =>
-        Enum.GetValues<Sensibilidade>()
+        Enum.GetValues<ClassificacaoDeProtecao>()
+            .Where(static nivel => nivel != ClassificacaoDeProtecao.Nenhuma)
             .Select(ValoresCanonicos.De)
-            .Should().BeEquivalentTo(["publica", "interna", "pessoal", "sensivel"]);
+            .Should().BeEquivalentTo(["publico", "interno", "pessoal", "identificador", "sensivel"]);
+
+    [Fact(DisplayName = "A classificação não informada não tem valor canônico")]
+    public void Sensibilidade_Nenhuma_Recusa()
+    {
+        Action acao = () => ValoresCanonicos.De(ClassificacaoDeProtecao.Nenhuma);
+
+        acao.Should().Throw<ArgumentException>();
+    }
 
     [Fact(DisplayName = "Um valor fora do conjunto fechado é recusado, não convertido")]
     public void ValoresCanonicos_ValorForaDoConjunto_Recusa()

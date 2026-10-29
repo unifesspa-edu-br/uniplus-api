@@ -34,7 +34,7 @@ public sealed class RepeticaoPorGrupoTests
         [FatoColetado.Criar("SOB_GUARDA", 0, "Sob guarda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!]).Value!;
 
     private static DocumentoExigido Documento(Guid faseId, FinalidadeFormulario finalidade) => DocumentoExigido.Criar(
-        faseId, Guid.CreateVersion7(), "CERTIDAO_GUARDA", "Certidão de guarda", "CAT", Aplicabilidade.Geral,
+        faseId, Guid.CreateVersion7(), "CERTIDAO_GUARDA", "Certidão de guarda", "CAT", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral,
         obrigatorio: true, consequenciaIndeferimento: null, [], [], null, Qualquer, null, finalidade: finalidade).Value!;
 
     /// <summary>Processo com inscrição e habilitação, e o grupo da composição familiar no formulário da habilitação.</summary>

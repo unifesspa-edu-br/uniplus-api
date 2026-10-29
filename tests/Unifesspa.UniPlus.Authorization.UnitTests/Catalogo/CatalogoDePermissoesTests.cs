@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// O catálogo recusa, com mensagem que nomeia o membro, todo enum que derrubaria a
@@ -22,7 +23,7 @@ public sealed class CatalogoDePermissoesTests
         definicao.Descricao.Should().Be("Cria e edita itens.");
         (definicao.Modulo, definicao.Recurso, definicao.Acao).Should().Be(("teste", "itens", "manter"));
         definicao.Requisito.Permissao.Should().Be("teste:itens:manter");
-        definicao.Requisito.Sensibilidade.Should().Be(Sensibilidade.Pessoal);
+        definicao.Requisito.Sensibilidade.Should().Be(ClassificacaoDeProtecao.Pessoal);
         definicao.Requisito.BaseLegalPadrao.Should().Be("LGPD art. 7º, III");
         definicao.Requisito.EscopoContextoObrigatorio.Should().Equal("processoId");
     }
@@ -123,14 +124,14 @@ public sealed class CatalogoDePermissoesTests
     [ModuloDePermissoes("teste")]
     private enum Valido
     {
-        [Permissao("teste:itens:manter", "Manter itens", "Cria e edita itens.", Sensibilidade.Pessoal,
+        [Permissao("teste:itens:manter", "Manter itens", "Cria e edita itens.", ClassificacaoDeProtecao.Pessoal,
             BaseLegal = "LGPD art. 7º, III", EscopoContextoObrigatorio = ["processoId"])]
         Manter = 1,
 
-        [Permissao("teste:itens:ler", "Consultar itens", "Lista itens.", Sensibilidade.Interna)]
+        [Permissao("teste:itens:ler", "Consultar itens", "Lista itens.", ClassificacaoDeProtecao.Interno)]
         Consultar = 2,
 
-        [Permissao("teste:itens:governar", "Governar itens", "Só a governança reúne.", Sensibilidade.Interna,
+        [Permissao("teste:itens:governar", "Governar itens", "Só a governança reúne.", ClassificacaoDeProtecao.Interno,
             ReservadaAGovernanca = true)]
         Reservada = 3,
     }
@@ -144,53 +145,53 @@ public sealed class CatalogoDePermissoesTests
     [ModuloDePermissoes("teste")]
     private enum CodigoRepetido
     {
-        [Permissao("teste:itens:manter", "Primeiro", "d", Sensibilidade.Interna)]
+        [Permissao("teste:itens:manter", "Primeiro", "d", ClassificacaoDeProtecao.Interno)]
         A = 1,
 
-        [Permissao("teste:itens:manter", "Segundo", "d", Sensibilidade.Interna)]
+        [Permissao("teste:itens:manter", "Segundo", "d", ClassificacaoDeProtecao.Interno)]
         B = 2,
     }
 
     [ModuloDePermissoes("teste")]
     private enum PrefixoErrado
     {
-        [Permissao("outro:itens:manter", "Fora", "d", Sensibilidade.Interna)]
+        [Permissao("outro:itens:manter", "Fora", "d", ClassificacaoDeProtecao.Interno)]
         Fora = 1,
     }
 
     private enum SemModulo
     {
-        [Permissao("teste:itens:manter", "Qualquer", "d", Sensibilidade.Interna)]
+        [Permissao("teste:itens:manter", "Qualquer", "d", ClassificacaoDeProtecao.Interno)]
         Qualquer = 1,
     }
 
     [ModuloDePermissoes("teste")]
     private enum TextosInvalidos
     {
-        [Permissao("teste:a:um", "", "d", Sensibilidade.Interna)]
+        [Permissao("teste:a:um", "", "d", ClassificacaoDeProtecao.Interno)]
         SemNome = 1,
 
-        [Permissao("teste:a:dois", "Com nome", " ", Sensibilidade.Interna)]
+        [Permissao("teste:a:dois", "Com nome", " ", ClassificacaoDeProtecao.Interno)]
         SemDescricao = 2,
 
-        [Permissao("teste:a:tres", "Repetido", "d", Sensibilidade.Interna)]
+        [Permissao("teste:a:tres", "Repetido", "d", ClassificacaoDeProtecao.Interno)]
         Primeiro = 3,
 
-        [Permissao("teste:a:quatro", "Repetido", "d", Sensibilidade.Interna)]
+        [Permissao("teste:a:quatro", "Repetido", "d", ClassificacaoDeProtecao.Interno)]
         NomeRepetido = 4,
     }
 
     [ModuloDePermissoes("teste")]
     private enum CodigoMalFormado
     {
-        [Permissao("teste:Itens:manter", "Maiúsculo", "d", Sensibilidade.Interna)]
+        [Permissao("teste:Itens:manter", "Maiúsculo", "d", ClassificacaoDeProtecao.Interno)]
         Maiusculo = 1,
     }
 
     [ModuloDePermissoes("teste")]
     private enum ContextoDesconhecido
     {
-        [Permissao("teste:itens:manter", "Com contexto", "d", Sensibilidade.Interna,
+        [Permissao("teste:itens:manter", "Com contexto", "d", ClassificacaoDeProtecao.Interno,
             EscopoContextoObrigatorio = ["campoInexistente"])]
         Item = 1,
     }
@@ -198,7 +199,7 @@ public sealed class CatalogoDePermissoesTests
     [ModuloDePermissoes("teste")]
     private enum OutroEnumComOMesmoCodigo
     {
-        [Permissao("teste:itens:manter", "Outro nome", "d", Sensibilidade.Interna)]
+        [Permissao("teste:itens:manter", "Outro nome", "d", ClassificacaoDeProtecao.Interno)]
         Manter = 1,
     }
 }

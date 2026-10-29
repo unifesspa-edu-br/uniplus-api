@@ -25,7 +25,7 @@ public sealed class RotuloDosArquivosDoCandidatoTests
 
     private static DocumentoExigido Exigencia(string codigo) =>
         DocumentoExigido.Criar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), codigo, codigo, "CAT", Aplicabilidade.Geral, false, null,
+            Guid.CreateVersion7(), Guid.CreateVersion7(), codigo, codigo, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, false, null,
             [], [], null, FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null).Value!;
 
     private ArquivoDaApresentacao Enviar(DocumentoExigido exigencia, string? ocorrencia, int minuto, string hash)

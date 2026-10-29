@@ -89,6 +89,8 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         ("TipoDocumentoCodigo", LimitesDoEnvelope.TipoDocumentoCodigo, typeof(DocumentoExigido), nameof(DocumentoExigido.TipoDocumentoCodigo)),
         ("TipoDocumentoNome", LimitesDoEnvelope.TipoDocumentoNome, typeof(DocumentoExigido), nameof(DocumentoExigido.TipoDocumentoNome)),
         ("TipoDocumentoCategoria", LimitesDoEnvelope.TipoDocumentoCategoria, typeof(DocumentoExigido), nameof(DocumentoExigido.TipoDocumentoCategoria)),
+        ("FinalidadeTratamento", LimitesDoEnvelope.FinalidadeTratamento, typeof(DocumentoExigido), nameof(DocumentoExigido.FinalidadeTratamento)),
+        ("HipoteseLegal", LimitesDoEnvelope.HipoteseLegal, typeof(DocumentoExigido), nameof(DocumentoExigido.HipoteseLegal)),
         ("Token", LimitesDoEnvelope.Token, typeof(DocumentoExigido), nameof(DocumentoExigido.ConsequenciaIndeferimento)),
         ("BaseLegal", LimitesDoEnvelope.BaseLegal, typeof(DocumentoExigidoBaseLegal), nameof(DocumentoExigidoBaseLegal.Referencia)),
         ("ObservacaoBaseLegal", LimitesDoEnvelope.ObservacaoBaseLegal, typeof(DocumentoExigidoBaseLegal), nameof(DocumentoExigidoBaseLegal.Observacao)),

@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -158,22 +159,22 @@ public static class SementePsrMedicina2027
         new(11, _ => FatoCandidato.CriarDoAdministrador(
                 "SOLICITA_FATOR_ATENUACAO", "Solicita o Fator de Atenuação das Desigualdades de Acesso", "Se o candidato pede o Fator de Atenuação das Desigualdades de Acesso previsto no edital.", DominioFato.Booleano,
                 CardinalidadeFato.Escalar, null, null, PontoInscricao, EscopoFato.Candidato,
-                ClassificacaoProtecaoDado.Pessoal, FinalidadeDoFator, HipoteseLegal),
+                ClassificacaoDeProtecao.Pessoal, FinalidadeDoFator, HipoteseLegal),
             Sem()),
         new(13, _ => FatoCandidato.CriarDoAdministrador(
                 "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO", "Município de residência para o Fator de Atenuação", "O município da área de abrangência do edital em que o candidato residiu no período que o edital fixa, entre os que o edital lista.", DominioFato.Categorico,
                 CardinalidadeFato.Escalar, FonteValoresFato.MunicipiosBonus, null, PontoInscricao, EscopoFato.Candidato,
-                ClassificacaoProtecaoDado.Pessoal, FinalidadeDoFator, HipoteseLegal),
+                ClassificacaoDeProtecao.Pessoal, FinalidadeDoFator, HipoteseLegal),
             Sem()),
         new(16, _ => FatoCandidato.CriarDoAdministrador(
                 "MUNICIPIO_ENSINO_MEDIO_FATOR_ATENUACAO", "Município do ensino médio para o Fator de Atenuação", "O município da área de influência do edital em que o candidato cursou pelo menos um ano do ensino médio, entre os que o edital lista.", DominioFato.Categorico,
                 CardinalidadeFato.Escalar, FonteValoresFato.MunicipiosBonus, null, PontoInscricao, EscopoFato.Candidato,
-                ClassificacaoProtecaoDado.Pessoal, FinalidadeDoFator, HipoteseLegal),
+                ClassificacaoDeProtecao.Pessoal, FinalidadeDoFator, HipoteseLegal),
             Sem()),
         new(17, _ => FatoCandidato.CriarDoAdministrador(
                 "CAMINHO_FATOR_ATENUACAO", "Caminho do Fator de Atenuação", "Por qual vínculo com a área do edital pede o Fator de Atenuação quem concluiu o ensino médio por certificação: o ensino médio cursado ou a residência no período.", DominioFato.Categorico,
                 CardinalidadeFato.Escalar, FonteValoresFato.Global, null, PontoInscricao, EscopoFato.Candidato,
-                ClassificacaoProtecaoDado.Pessoal, FinalidadeDoFator, HipoteseLegal),
+                ClassificacaoDeProtecao.Pessoal, FinalidadeDoFator, HipoteseLegal),
             [(CaminhoPeloEnsinoMedio, "Cursei pelo menos um ano do ensino médio na área"),
              (CaminhoPelaResidencia, "Residi na área no período do edital")]),
 
@@ -183,29 +184,29 @@ public static class SementePsrMedicina2027
         new(14, _ => FatoCandidato.CriarDoAdministrador(
                 "SOLICITA_ATENDIMENTO_ESPECIALIZADO", "Solicita atendimento especializado", "Se o candidato pede atendimento especializado em alguma etapa presencial do processo seletivo.", DominioFato.Booleano,
                 CardinalidadeFato.Escalar, null, null, PontoInscricao, EscopoFato.Candidato,
-                ClassificacaoProtecaoDado.Sensivel, FinalidadeDoAtendimento, HipoteseLegal),
+                ClassificacaoDeProtecao.Sensivel, FinalidadeDoAtendimento, HipoteseLegal),
             Sem()),
         new(15, _ => FatoCandidato.CriarDoAdministrador(
                 "DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO", "Descrição da outra condição de atendimento", "A condição específica, que não consta da lista, pela qual o candidato pede atendimento especializado.", DominioFato.Texto,
                 CardinalidadeFato.Escalar, null, FormatoTexto.Livre, PontoInscricao, EscopoFato.Candidato,
-                ClassificacaoProtecaoDado.Sensivel, FinalidadeDoAtendimento, HipoteseLegal),
+                ClassificacaoDeProtecao.Sensivel, FinalidadeDoAtendimento, HipoteseLegal),
             Sem()),
 
         // Habilitação: o que o edital pede de quem é convocado (itens 9.16, 9.21 e 9.24).
         new(6, _ => FatoCandidato.CriarDoAdministrador(
                 "CERTIFICADO_EM_EMITIDO", "Certificado de conclusão do ensino médio já emitido", "Se o certificado de conclusão do ensino médio já foi emitido. Sem ele, a habilitação pede a declaração de conclusão e o termo de responsabilidade.", DominioFato.Booleano,
                 CardinalidadeFato.Escalar, null, null, PontoHabilitacao, EscopoFato.Candidato,
-                ClassificacaoProtecaoDado.Pessoal, FinalidadeDaHabilitacao, HipoteseLegal),
+                ClassificacaoDeProtecao.Pessoal, FinalidadeDaHabilitacao, HipoteseLegal),
             Sem()),
         new(7, _ => FatoCandidato.CriarDoAdministrador(
                 "HABILITACAO_POR_PROCURADOR", "Habilitação feita por procurador", "Se a habilitação é feita por procurador, que apresenta a procuração e o próprio documento de identificação.", DominioFato.Booleano,
                 CardinalidadeFato.Escalar, null, null, PontoHabilitacao, EscopoFato.Candidato,
-                ClassificacaoProtecaoDado.Pessoal, FinalidadeDaHabilitacao, HipoteseLegal),
+                ClassificacaoDeProtecao.Pessoal, FinalidadeDaHabilitacao, HipoteseLegal),
             Sem()),
         new(8, _ => FatoCandidato.CriarDoAdministrador(
                 "VINCULO_OUTRA_IES_PUBLICA_OU_PROUNI", "Vínculo com outra instituição pública de ensino superior ou com o ProUni", "Se o candidato tem matrícula ativa em outra instituição pública de ensino superior ou é bolsista do ProUni.",
                 DominioFato.Booleano, CardinalidadeFato.Escalar, null, null, PontoHabilitacao, EscopoFato.Candidato,
-                ClassificacaoProtecaoDado.Pessoal, FinalidadeDaHabilitacao, HipoteseLegal),
+                ClassificacaoDeProtecao.Pessoal, FinalidadeDaHabilitacao, HipoteseLegal),
             Sem()),
 
         // Habilitação: a categoria de renda de cada membro da composição familiar (edital, item
@@ -213,7 +214,7 @@ public static class SementePsrMedicina2027
         new(9, _ => FatoCandidato.CriarDoAdministrador(
                 "CATEGORIA_RENDA", "Categoria de renda", "As fontes de renda do membro da composição familiar, que definem os documentos de renda que ele apresenta.", DominioFato.Categorico, CardinalidadeFato.Multivalorado,
                 FonteValoresFato.Global, null, PontoHabilitacao, EscopoFato.MembroGrupo,
-                ClassificacaoProtecaoDado.Pessoal, FinalidadeDaFamilia, HipoteseLegal),
+                ClassificacaoDeProtecao.Pessoal, FinalidadeDaFamilia, HipoteseLegal),
             [("ASSALARIADO", "Assalariado"), ("ATIVIDADE_RURAL", "Atividade rural"),
              ("APOSENTADO_OU_PENSIONISTA", "Aposentado ou pensionista"),
              ("AUTONOMO_OU_PROFISSIONAL_LIBERAL", "Autônomo ou profissional liberal"),
@@ -221,7 +222,7 @@ public static class SementePsrMedicina2027
              ("DESEMPREGADO", "Desempregado")]),
         new(10, catalogo => FatoCandidato.CriarAgregadoDoAdministrador(
                 "CATEGORIAS_RENDA_FAMILIA", "Categorias de renda presentes na família", "As categorias de renda que aparecem entre os membros da composição familiar, calculadas a partir das respostas de cada membro.", "CATEGORIA_RENDA", catalogo,
-                PontoHabilitacao, ClassificacaoProtecaoDado.Pessoal, FinalidadeDaFamilia, HipoteseLegal),
+                PontoHabilitacao, ClassificacaoDeProtecao.Pessoal, FinalidadeDaFamilia, HipoteseLegal),
             Sem()),
     ];
 
@@ -657,7 +658,7 @@ public static class SementePsrMedicina2027
             ("formato", Texto(fato.Formato is { } formato ? FormatosTexto.ParaTokenCanonico(formato) : null)),
             ("ponto_resolucao", Texto(fato.PontoResolucao)), ("binding", Texto(fato.Binding)),
             ("escopo", Texto(EscoposFato.ParaTokenCanonico(fato.Escopo))),
-            ("classificacao_protecao", Texto(ClassificacoesProtecaoDado.ParaTokenCanonico(fato.ClassificacaoProtecao))),
+            ("classificacao_protecao", Texto(ClassificacoesDeProtecao.ParaTokenCanonico(fato.ClassificacaoProtecao))),
             ("finalidade_tratamento", Texto(fato.FinalidadeTratamento)),
             ("hipotese_legal", Texto(HipotesesLegaisTratamento.ParaTokenCanonico(fato.HipoteseLegal))),
             ("sistema", Logico(fato.Sistema)), ("ativo", Logico(fato.Ativo)), ("regras_padrao", "'[]'::jsonb"),

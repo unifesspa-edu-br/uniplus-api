@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class DocumentosDoComprovanteTests
 {
@@ -15,7 +16,7 @@ public sealed class DocumentosDoComprovanteTests
     private static DocumentoExigido Documento(
         string nome, string? consequencia = null, bool obrigatorio = true, FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao) =>
         DocumentoExigido.Criar(
-            Fase, Guid.CreateVersion7(), nome.ToUpperInvariant().Replace(' ', '_'), nome, "CAT", Aplicabilidade.Geral, obrigatorio, consequencia,
+            Fase, Guid.CreateVersion7(), nome.ToUpperInvariant().Replace(' ', '_'), nome, "CAT", ProtecaoDoDocumentoDeTeste.Pessoal, Aplicabilidade.Geral, obrigatorio, consequencia,
             [], [], null, FormatosPermitidos.Criar(true, null).Value!, null, finalidade: finalidade).Value!;
 
     private static DocumentosDaInscricao Avaliacao(params (DocumentoExigido Documento, SituacaoDoDocumento Situacao, string? Ocorrencia)[] itens) =>

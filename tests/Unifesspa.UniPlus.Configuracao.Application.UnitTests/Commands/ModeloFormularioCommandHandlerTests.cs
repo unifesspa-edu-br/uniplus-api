@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -44,13 +45,13 @@ public sealed class ModeloFormularioCommandHandlerTests
     private readonly FatoCandidato _dataNascimento = Declarado("DATA_NASCIMENTO", DominioFato.Data);
     private readonly FatoCandidato _faixaEtaria = FatoCandidato.Criar(
         "FAIXA_ETARIA", "Faixa etária", null, DominioFato.Numerico, OrigemFato.Derivado, CardinalidadeFato.Escalar, null, null, "INSCRICAO",
-        "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", EscopoFato.Candidato, ClassificacaoProtecaoDado.Pessoal, Finalidade, Hipotese, sistema: true).Value!;
+        "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese, sistema: true).Value!;
     private readonly FatoCandidato _maiorIdade = Declarado("MAIOR_IDADE", escopo: EscopoFato.MembroGrupo);
     private readonly FatoCandidato _semRenda = Declarado("SEM_RENDA", escopo: EscopoFato.MembroGrupo);
     private readonly FatoCandidato _cpf = Declarado("CPF_RESPONSAVEL", DominioFato.Texto, FormatoTexto.Cpf);
     private readonly FatoCandidato _idade = FatoCandidato.Criar(
         "IDADE", "Idade", null, DominioFato.Numerico, OrigemFato.Derivado, CardinalidadeFato.Escalar, null, null, "INSCRICAO",
-        "ATRIBUTO_CANDIDATO:IDADE", EscopoFato.Candidato, ClassificacaoProtecaoDado.Pessoal, Finalidade, Hipotese, sistema: true).Value!;
+        "ATRIBUTO_CANDIDATO:IDADE", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese, sistema: true).Value!;
 
     public ModeloFormularioCommandHandlerTests()
     {
@@ -136,7 +137,7 @@ public sealed class ModeloFormularioCommandHandlerTests
     {
         FatoCandidato condicao = FatoCandidato.CriarDoAdministrador(
             "CONDICAO", "Condição", null, DominioFato.Categorico, CardinalidadeFato.Multivalorado, FonteValoresFato.Processo, null, "INSCRICAO",
-            EscopoFato.Candidato, ClassificacaoProtecaoDado.Pessoal, Finalidade, Hipotese).Value!;
+            EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
         _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [_certificado, condicao]);
         ConteudoDoModeloInput conteudo = Conteudo(Item("CERTIFICADO", 0), Item("CONDICAO", 1, "SELECAO_MULTIPLA")) with
         {
@@ -277,9 +278,9 @@ public sealed class ModeloFormularioCommandHandlerTests
     {
         FatoCandidato opcao = FatoCandidato.CriarDoAdministrador(
             "OPCAO", "Opção", null, DominioFato.Categorico, CardinalidadeFato.Escalar, FonteValoresFato.Global, null, "INSCRICAO",
-            EscopoFato.Candidato, ClassificacaoProtecaoDado.Pessoal, Finalidade, Hipotese).Value!;
+            EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
         FatoCandidato perfil = FatoCandidato.CriarDerivadoDoAdministrador(
-            "PERFIL", "Perfil", null, DominioFato.Categorico, "INSCRICAO", EscopoFato.Candidato, ClassificacaoProtecaoDado.Pessoal, Finalidade, Hipotese).Value!;
+            "PERFIL", "Perfil", null, DominioFato.Categorico, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
         opcao.AdicionarValorDominio("A", "A", 0, ativo: true).IsSuccess.Should().BeTrue();
         perfil.AdicionarValorDominio("A", "A", 0, ativo: true).IsSuccess.Should().BeTrue();
         RegraDerivacao regra = RegraDerivacao.Criar(
@@ -414,5 +415,5 @@ public sealed class ModeloFormularioCommandHandlerTests
         string codigo, DominioFato dominio = DominioFato.Booleano, FormatoTexto? formato = null, EscopoFato escopo = EscopoFato.Candidato) =>
         FatoCandidato.CriarDoAdministrador(
             codigo, codigo, null, dominio, CardinalidadeFato.Escalar, null, formato, "INSCRICAO", escopo,
-            ClassificacaoProtecaoDado.Pessoal, Finalidade, Hipotese).Value!;
+            ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
 }

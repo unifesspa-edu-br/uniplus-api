@@ -19,6 +19,11 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// O formulário a que o documento pertence (<c>INSCRICAO</c>, <c>ISENCAO_TAXA</c> ou
 /// <c>HABILITACAO</c>); nulo quando a fase não responde formulário nenhum.
 /// </param>
+/// <param name="ClassificacaoProtecao">
+/// Proteção do tipo de documento congelada na exigência (<c>PUBLICO</c>, <c>INTERNO</c>,
+/// <c>PESSOAL</c>, <c>IDENTIFICADOR</c> ou <c>SENSIVEL</c>); não volta no PUT, porque é copiada do tipo.
+/// </param>
+/// <param name="FatosComprovados">Os fatos do processo que o documento comprova; voltam no PUT.</param>
 public sealed record DocumentoExigidoDto(
     Guid Id,
     Guid ExigidoNaFaseId,
@@ -36,7 +41,11 @@ public sealed record DocumentoExigidoDto(
     int? TamanhoMaximoBytes,
     Guid? ExigidoNaEtapaId,
     ModeloDaExigenciaDto? Modelo,
-    string? Finalidade);
+    string? Finalidade,
+    string ClassificacaoProtecao,
+    string FinalidadeTratamento,
+    string HipoteseLegal,
+    IReadOnlyList<string> FatosComprovados);
 
 /// <summary>
 /// O modelo de documento que a exigência oferece ao candidato. O <see cref="ModeloId"/> volta no
