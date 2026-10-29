@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
@@ -14,6 +15,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ObrigatoriedadesLegais;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
@@ -23,10 +25,11 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// público sob <c>/api/selecao/obrigatoriedades-legais</c>, admin sob
 /// <c>/api/selecao/admin/obrigatoriedades-legais</c>. A regra é cross-cutting
 /// por tipo de processo (sem proprietário nem áreas de interesse); os
-/// endpoints administrativos exigem o role <c>plataforma-admin</c> (autz
-/// interina).
+/// endpoints administrativos exigem a permissão de manter as
+/// obrigatoriedades legais.
 /// </summary>
 [ApiController]
+[Authorize]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
@@ -34,6 +37,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 public sealed class ObrigatoriedadeLegalController : ControllerBase
 {
     private const string ResourceTag = "obrigatoriedades-legais";
+    private const string RecursoTipo = "ObrigatoriedadeLegal";
 
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
@@ -116,12 +120,11 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
     }
 
     /// <summary>
-    /// Cria uma nova <c>ObrigatoriedadeLegal</c>. Restrito ao role
-    /// <c>plataforma-admin</c> (autz interina). <c>Idempotency-Key</c>
-    /// obrigatório (ADR-0027).
+    /// Cria uma nova <c>ObrigatoriedadeLegal</c>. Exige a permissão de
+    /// manutenção. <c>Idempotency-Key</c> obrigatório (ADR-0027).
     /// </summary>
     [HttpPost("admin/obrigatoriedades-legais")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.ObrigatoriedadesLegaisManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -152,7 +155,7 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
     /// repassar todos os campos. <c>Idempotency-Key</c> obrigatório.
     /// </summary>
     [HttpPut("admin/obrigatoriedades-legais/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.ObrigatoriedadesLegaisManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -192,7 +195,7 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
     /// e libera o slot do <c>UNIQUE</c> parcial sobre <c>Hash</c> (ADR-0063).
     /// </summary>
     [HttpDelete("admin/obrigatoriedades-legais/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.ObrigatoriedadesLegaisManter, RecursoTipo = RecursoTipo)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

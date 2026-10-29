@@ -76,7 +76,7 @@ public sealed class EnvioAoInepEndpointTests
             p.ProcessoId, pessoa, situacao, edicao);
     }
 
-    [Fact(DisplayName = "sem token é 401 e sem plataforma-admin é 403")]
+    [Fact(DisplayName = "sem token é 401 e o administrador da plataforma sem concessão é 404")]
     public async Task Gerar_SemAutorizacao_Recusa()
     {
         Publicado p = await PublicadoAsync();
@@ -84,10 +84,11 @@ public sealed class EnvioAoInepEndpointTests
         object corpo = new { leiauteCodigo = "INEP_ENEM_ENVIO", leiauteVersao = "v1" };
 
         using HttpRequestMessage semToken = Requisicao(HttpMethod.Post, Base(p), papel: null, corpo);
-        using HttpRequestMessage semPapel = Requisicao(HttpMethod.Post, Base(p), papel: "candidato", corpo);
+        using HttpRequestMessage semConcessao = Requisicao(HttpMethod.Post, Base(p), papel: "plataforma-admin", corpo);
+        semConcessao.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, "diogo.souza");
 
         (await client.SendAsync(semToken)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-        (await client.SendAsync(semPapel)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await client.SendAsync(semConcessao)).StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     [Fact(DisplayName = "gera o arquivo com os CPFs das inscrições enviadas da edição, em ordem, e registra a geração sem os CPFs")]

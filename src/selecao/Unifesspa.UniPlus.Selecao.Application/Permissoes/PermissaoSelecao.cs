@@ -91,4 +91,48 @@ public enum PermissaoSelecao
         BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
         EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
     InscricoesRevelarCpf = 8,
+
+    /// <summary>Manter as obrigatoriedades legais.</summary>
+    [Permissao(
+        "selecao:obrigatoriedades-legais:manter",
+        "Manter obrigatoriedades legais",
+        "Cria, edita e desativa as obrigatoriedades legais institucionais que o processo seletivo precisa cumprir.",
+        ClassificacaoDeProtecao.Interno)]
+    ObrigatoriedadesLegaisManter = 9,
+
+    /// <summary>Consultar o catálogo de regras.</summary>
+    [Permissao(
+        "selecao:regras-catalogo:consultar",
+        "Consultar catálogo de regras",
+        "Consulta o catálogo institucional de regras e o esquema de argumentos de cada uma, usado para montar a configuração do processo.",
+        ClassificacaoDeProtecao.Interno)]
+    RegrasCatalogoConsultar = 10,
+
+    /// <summary>Consultar os leiautes de arquivo do INEP.</summary>
+    [Permissao(
+        "selecao:leiautes-inep:consultar",
+        "Consultar leiautes de arquivo do INEP",
+        "Consulta os leiautes de arquivo do INEP, para escolher na geração do envio e na importação do retorno das notas.",
+        ClassificacaoDeProtecao.Interno)]
+    LeiautesInepConsultar = 11,
+
+    /// <summary>Gerar o arquivo de envio dos CPFs ao INEP.</summary>
+    [Permissao(
+        "selecao:envios-inep:gerar",
+        "Gerar envio de CPFs ao INEP",
+        "Gera o arquivo com os CPFs completos das inscrições enviadas de uma edição do ENEM, nos processos da unidade proprietária, e consulta os envios gerados.",
+        ClassificacaoDeProtecao.Identificador,
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
+        EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
+    EnviosInepGerar = 12,
+
+    /// <summary>Importar e consultar as notas do ENEM.</summary>
+    [Permissao(
+        "selecao:notas-enem:importar",
+        "Importar notas do ENEM",
+        "Importa o arquivo de retorno do INEP com as notas do ENEM e consulta os lotes importados, nos processos da unidade proprietária.",
+        ClassificacaoDeProtecao.Pessoal,
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
+        EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
+    NotasEnemImportar = 13,
 }

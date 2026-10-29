@@ -14,13 +14,15 @@ using Microsoft.Extensions.DependencyInjection;
 using Outbox.Cascading;
 
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 /// <summary>
 /// Integration tests do admin CRUD de <c>ObrigatoriedadeLegal</c>
 /// (Story #461) contra Postgres real via Testcontainers. Cobrem:
-/// happy path POST/PUT/DELETE restrito ao role <c>plataforma-admin</c>,
+/// happy path POST/PUT/DELETE restrito à permissão de manutenção,
 /// validação 422, 404 quando inexistente, idempotência POST e
 /// conflito de RegraCodigo duplicado.
 /// </summary>
@@ -28,7 +30,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 [Trait("Category", "OutboxCapability")]
 public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
 {
-    private const string AdminPlataforma = "plataforma-admin";
+    private const string Leandro = "leandro.viana";
 
     // Predicados em Dictionary porque anonymous types não suportam keys que
     // começam com '$' (o JsonPolymorphic do PredicadoObrigatoriedade usa
@@ -53,7 +55,8 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
         _fixture = fixture;
     }
 
-    public Task InitializeAsync() => Task.CompletedTask;
+    public async Task InitializeAsync() =>
+        await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, Leandro);
 
     /// <summary>
     /// A <see cref="CascadingFixture"/> compartilha UM Postgres entre TODAS as classes da
@@ -74,10 +77,10 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
             $"UPDATE selecao.obrigatoriedades_legais SET is_deleted = true WHERE regra_codigo LIKE 'TEST\\_%' ESCAPE '\\'");
     }
 
-    [Fact(DisplayName = "POST admin/obrigatoriedades-legais como plataforma-admin cria regra universal")]
+    [Fact(DisplayName = "POST admin/obrigatoriedades-legais com a permissão de manutenção cria regra universal")]
     public async Task Criar_PlataformaAdmin_CriaRegraUniversal()
     {
-        using HttpClient client = ClientWithRoles(AdminPlataforma);
+        using HttpClient client = await ClienteComConcessaoAsync();
         string regraCodigo = UniqueRegraCodigo();
 
         object payload = new
@@ -111,7 +114,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
     [Fact(DisplayName = "POST sem Idempotency-Key retorna 400 ou 422")]
     public async Task Criar_SemIdempotencyKey_Retorna4xx()
     {
-        using HttpClient client = ClientWithRoles(AdminPlataforma);
+        using HttpClient client = await ClienteComConcessaoAsync();
 
         object payload = new
         {
@@ -138,7 +141,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
     [Fact(DisplayName = "POST com tipo de processo inexistente ou inativo retorna 422 específico")]
     public async Task Criar_TipoProcessoInexistenteOuInativo_Retorna422()
     {
-        using HttpClient client = ClientWithRoles(AdminPlataforma);
+        using HttpClient client = await ClienteComConcessaoAsync();
 
         object payload = new
         {
@@ -162,7 +165,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
     [Fact(DisplayName = "POST com Idempotency-Key repetido retorna 200 com mesmo Id (idempotência)")]
     public async Task Criar_IdempotencyKeyRepetido_RetornaMesmaResposta()
     {
-        using HttpClient client = ClientWithRoles(AdminPlataforma);
+        using HttpClient client = await ClienteComConcessaoAsync();
         string regraCodigo = UniqueRegraCodigo();
         string idempotencyKey = Guid.NewGuid().ToString();
 
@@ -197,7 +200,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
     [Fact(DisplayName = "POST com RegraCodigo duplicado retorna 409 com type específico")]
     public async Task Criar_RegraCodigoDuplicado_Retorna409()
     {
-        using HttpClient client = ClientWithRoles(AdminPlataforma);
+        using HttpClient client = await ClienteComConcessaoAsync();
         string regraCodigo = UniqueRegraCodigo();
 
         object payload = new
@@ -241,7 +244,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
     [Fact(DisplayName = "PUT full-replace altera campo e mantém URI estável")]
     public async Task Atualizar_FullReplace_MantemUriEstavel()
     {
-        using HttpClient client = ClientWithRoles(AdminPlataforma);
+        using HttpClient client = await ClienteComConcessaoAsync();
         string regraCodigo = UniqueRegraCodigo();
 
         Guid id = await SeedRegraAsync(client, regraCodigo, baseLegal: "Lei original");
@@ -282,7 +285,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
     [Fact(DisplayName = "PUT com Id path divergente do body retorna 400")]
     public async Task Atualizar_IdPathDivergenteBody_Retorna400()
     {
-        using HttpClient client = ClientWithRoles(AdminPlataforma);
+        using HttpClient client = await ClienteComConcessaoAsync();
         string regraCodigo = UniqueRegraCodigo();
         Guid idReal = await SeedRegraAsync(client, regraCodigo);
         Guid idDivergente = Guid.NewGuid();
@@ -313,7 +316,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
     [Fact(DisplayName = "DELETE soft-delete retorna 204 e regra some do GET público")]
     public async Task Desativar_SoftDelete_ScrubsPublicGet()
     {
-        using HttpClient client = ClientWithRoles(AdminPlataforma);
+        using HttpClient client = await ClienteComConcessaoAsync();
         string regraCodigo = UniqueRegraCodigo();
         Guid id = await SeedRegraAsync(client, regraCodigo);
 
@@ -338,7 +341,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
     [Fact(DisplayName = "GET com filtros admin retorna apenas regras matching")]
     public async Task Listar_ComFiltros_RetornaSubconjunto()
     {
-        using HttpClient client = ClientWithRoles(AdminPlataforma);
+        using HttpClient client = await ClienteComConcessaoAsync();
         string regraCodigoEtapa = UniqueRegraCodigo();
         string regraCodigoModalidade = UniqueRegraCodigo();
 
@@ -360,7 +363,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
     [Fact(DisplayName = "GET filtra por tipoProcesso e ignora o parâmetro legado")]
     public async Task Listar_TipoProcessoFiltraEParametroLegadoEIgnorado()
     {
-        using HttpClient client = ClientWithRoles(AdminPlataforma);
+        using HttpClient client = await ClienteComConcessaoAsync();
         string regraSiSU = UniqueRegraCodigo();
         string regraPSIQ = UniqueRegraCodigo();
         await SeedRegraAsync(client, regraSiSU, tipoProcessoCodigo: "SiSU");
@@ -395,7 +398,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
     [InlineData("type")]
     public async Task Criar_PredicadoSemDiscriminador_Retorna400NomeandoOCampo(string chaveErrada)
     {
-        using HttpClient client = ClientWithRoles(AdminPlataforma);
+        using HttpClient client = await ClienteComConcessaoAsync();
         Dictionary<string, object> predicadoSemDiscriminador = new(StringComparer.Ordinal)
         {
             [chaveErrada] = "concorrenciaDuplaObrigatoria",
@@ -427,7 +430,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
     [InlineData("""{"$tipo":"inexistente"}""")]
     public async Task Criar_PredicadoInvalido_Retorna400(string predicadoJson)
     {
-        using HttpClient client = ClientWithRoles(AdminPlataforma);
+        using HttpClient client = await ClienteComConcessaoAsync();
 
         HttpResponseMessage response = await PostAsync(
             client,
@@ -442,7 +445,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
     [Fact(DisplayName = "POST com predicado e '$tipo' declarado continua criando a regra")]
     public async Task Criar_PredicadoComDiscriminador_Cria()
     {
-        using HttpClient client = ClientWithRoles(AdminPlataforma);
+        using HttpClient client = await ClienteComConcessaoAsync();
 
         HttpResponseMessage response = await PostAsync(
             client,
@@ -468,16 +471,18 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
         portariaInternaCodigo = (string?)null,
     };
 
-    private HttpClient ClientWithRoles(params string[] roles)
+    // O token só identifica Leandro; quem lhe dá a permissão é a concessão gravada do perfil.
+    private async Task<HttpClient> ClienteComConcessaoAsync()
     {
+        await ConcessoesDeTeste.ConcederPermissoesAsync(
+            _fixture.Factory.Services, Leandro, PermissaoSelecao.ObrigatoriedadesLegaisManter.Codigo);
         HttpClient client = _fixture.Factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             TestAuthHandler.AuthorizationScheme,
             TestAuthHandler.TokenValue);
-        client.DefaultRequestHeaders.Add(TestAuthHandler.RolesHeader, string.Join(',', roles));
-        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, $"admin-{Guid.NewGuid():N}"[..16]);
-        client.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, "Admin Test");
-        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, "admin@unifesspa.edu.br");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, Leandro);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, "Leandro Viana");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, "leandro.viana@unifesspa.edu.br");
         return client;
     }
 

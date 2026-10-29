@@ -11,9 +11,15 @@ using Unifesspa.UniPlus.Selecao.Application.Services;
 /// <summary>O que os filtros de acesso ao processo compartilham: o processo da rota e a resposta de quem não o alcança.</summary>
 internal static class RotaDoProcesso
 {
-    // A rota exige {id:guid}: um valor que não seja Guid nem chega ao filtro. Guid.Empty nunca existe, e cai na recusa.
-    public static Guid Id(AuthorizationFilterContext context) =>
-        context.RouteData.Values.TryGetValue("id", out object? id) && Guid.TryParse(id?.ToString(), out Guid processoId)
+    /// <summary>Nome do parâmetro de rota dos recursos do próprio processo.</summary>
+    public const string ParametroPadrao = "id";
+
+    /// <summary>Nome do parâmetro de rota dos recursos aninhados do processo.</summary>
+    public const string ParametroAninhado = "processoSeletivoId";
+
+    // A rota exige o parâmetro como guid ({id:guid} ou {processoSeletivoId:guid}): um valor que não seja Guid nem chega ao filtro. Guid.Empty nunca existe, e cai na recusa.
+    public static Guid Id(AuthorizationFilterContext context, string parametro = ParametroPadrao) =>
+        context.RouteData.Values.TryGetValue(parametro, out object? id) && Guid.TryParse(id?.ToString(), out Guid processoId)
             ? processoId
             : Guid.Empty;
 

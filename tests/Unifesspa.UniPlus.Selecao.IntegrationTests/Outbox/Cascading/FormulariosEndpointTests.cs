@@ -43,17 +43,6 @@ public sealed class FormulariosEndpointTests
         resposta.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    [Fact(DisplayName = "PUT admin autenticado sem o papel plataforma-admin é 403")]
-    public async Task Definir_SemPapel_403()
-    {
-        Contexto ctx = await SemearRascunhoAsync(nameof(Definir_SemPapel_403));
-
-        HttpResponseMessage resposta = await ctx.PutFormularioAsync(
-            "Título", autenticar: Autenticacao.PapelErrado);
-
-        resposta.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
     [Fact(DisplayName = "PUT admin em rascunho é 204 sem ETag e persiste o título")]
     public async Task Definir_EmRascunho_204SemEtagEPersiste()
     {
@@ -129,13 +118,12 @@ public sealed class FormulariosEndpointTests
             inexistente.StatusCode, "a resposta não pode separar o que ainda não é público do que não existe");
     }
 
-    [Fact(DisplayName = "GET admin do rascunho exige autenticação e o papel plataforma-admin")]
+    [Fact(DisplayName = "GET admin do rascunho exige autenticação")]
     public async Task ObterRascunho_SemPapel_Recusa()
     {
         Contexto ctx = await SemearRascunhoAsync(nameof(ObterRascunho_SemPapel_Recusa));
 
         (await ctx.GetRascunhoAsync(Autenticacao.Nenhuma)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-        (await ctx.GetRascunhoAsync(Autenticacao.PapelErrado)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact(DisplayName = "GET admin do rascunho serve o formulário da configuração viva, que o público ainda não serve")]
@@ -242,7 +230,6 @@ public sealed class FormulariosEndpointTests
     private enum Autenticacao
     {
         PlataformaAdmin,
-        PapelErrado,
         Nenhuma,
     }
 
@@ -393,7 +380,7 @@ public sealed class FormulariosEndpointTests
             TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
         request.Headers.TryAddWithoutValidation(
             TestAuthHandler.RolesHeader,
-            autenticacao == Autenticacao.PlataformaAdmin ? "plataforma-admin" : "consulta-publica");
+            "plataforma-admin");
     }
 
     private static string Hoje() =>

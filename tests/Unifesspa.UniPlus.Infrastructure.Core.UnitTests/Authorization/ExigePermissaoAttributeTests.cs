@@ -75,6 +75,43 @@ public sealed class ExigePermissaoAttributeTests
             Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Negado na permissão principal, a alternativa em alguma unidade decide")]
+    public async Task OnAuthorizationAsync_ComAlternativa_NegadoNaPrincipal_ConsultaAlgumaUnidade()
+    {
+        _acesso.VerificarAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
+            .Returns(ResultadoDoAcesso.Negado);
+        _acesso.VerificarEmAlgumaUnidadeAsync(Arg.Any<PermissionRequirement>(), Arg.Any<CancellationToken>())
+            .Returns(ResultadoDoAcesso.Permitido);
+        AuthorizationFilterContext contexto = Contexto();
+
+        await new ExigePermissaoAttribute<PermissaoAutorizacao>(PermissaoAutorizacao.ConsultarCatalogo)
+        {
+            OuEmAlgumaUnidade = PermissaoAutorizacao.PerfisManter,
+        }
+            .OnAuthorizationAsync(contexto);
+
+        contexto.Result.Should().BeNull();
+        await _acesso.Received(1).VerificarEmAlgumaUnidadeAsync(
+            Arg.Is<PermissionRequirement>(r => r.Permissao == "autorizacao:perfis:manter"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Permitido na principal, a alternativa nem é consultada")]
+    public async Task OnAuthorizationAsync_ComAlternativa_PermitidoNaPrincipal_NaoConsultaAlgumaUnidade()
+    {
+        _acesso.VerificarAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
+            .Returns(ResultadoDoAcesso.Permitido);
+
+        await new ExigePermissaoAttribute<PermissaoAutorizacao>(PermissaoAutorizacao.ConsultarCatalogo)
+        {
+            OuEmAlgumaUnidade = PermissaoAutorizacao.PerfisManter,
+        }
+            .OnAuthorizationAsync(Contexto());
+
+        await _acesso.DidNotReceive().VerificarEmAlgumaUnidadeAsync(
+            Arg.Any<PermissionRequirement>(), Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "Permissão de outro enum não constrói o atributo")]
     public void Construtor_PermissaoDeOutroEnum_Falha()
     {

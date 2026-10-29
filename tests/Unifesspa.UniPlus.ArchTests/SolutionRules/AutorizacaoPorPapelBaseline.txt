@@ -24,11 +24,3 @@ src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.API/Con
 src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.API/Controllers/UnidadesController.cs	3
 src/publicacoes/Unifesspa.UniPlus.Publicacoes.API/Controllers/AtosNormativosController.cs	1
 src/publicacoes/Unifesspa.UniPlus.Publicacoes.API/Controllers/TiposAtoController.cs	3
-src/selecao/Unifesspa.UniPlus.Selecao.API/Controllers/AtosDoProcessoController.cs	1
-src/selecao/Unifesspa.UniPlus.Selecao.API/Controllers/DocumentosAPublicarController.cs	1
-src/selecao/Unifesspa.UniPlus.Selecao.API/Controllers/FormulariosController.cs	6
-src/selecao/Unifesspa.UniPlus.Selecao.API/Controllers/ModelosDeDocumentoController.cs	1
-src/selecao/Unifesspa.UniPlus.Selecao.API/Controllers/NotasDoEnemController.cs	1
-src/selecao/Unifesspa.UniPlus.Selecao.API/Controllers/ObrigatoriedadeLegalController.cs	3
-src/selecao/Unifesspa.UniPlus.Selecao.API/Controllers/ProdutosPrevistosDoProcessoController.cs	1
-src/selecao/Unifesspa.UniPlus.Selecao.API/Controllers/RegrasCatalogoController.cs	1
