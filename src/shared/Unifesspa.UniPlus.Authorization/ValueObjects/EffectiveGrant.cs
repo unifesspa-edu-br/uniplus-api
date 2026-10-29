@@ -7,13 +7,11 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Concessão efetiva avaliada pela decisão de autorização (ADR-0078): uma
 /// permissão que o sujeito de fato possui, com sua origem rastreável
-/// (<see cref="Fonte"/>), escopo opcional (unidade, processo, chamada),
-/// eventual restrição por tipo de recurso e validade. Concessões resolvidas no
-/// servidor (<see cref="FonteGrant.OidcGroupBinding"/>,
-/// <see cref="FonteGrant.PermissaoExcecional"/>) são sempre temporárias e
-/// exigem <see cref="ValidoAte"/>; concessões vindas do token
-/// (<see cref="FonteGrant.Token"/>) herdam a validade do token e podem não ter
-/// validade própria.
+/// (<see cref="Fonte"/>), escopo (a unidade ou a instituição, mais processo e
+/// chamada opcionais), eventual restrição por tipo de recurso e validade.
+/// Concessões resolvidas por vínculo de grupo ou excepcionais são sempre
+/// temporárias e exigem <see cref="ValidoAte"/>; a concessão de perfil
+/// (<see cref="FonteGrant.Concessao"/>) tem validade opcional.
 /// </summary>
 public sealed record EffectiveGrant
 {
@@ -26,8 +24,14 @@ public sealed record EffectiveGrant
     /// <summary>Identificador da concessão de origem, quando aplicável. Opcional.</summary>
     public Guid? GrantId { get; }
 
-    /// <summary>Escopo por unidade organizacional. Opcional.</summary>
+    /// <summary>Escopo por unidade organizacional; nulo quando o escopo é a instituição.</summary>
     public Guid? EscopoUnidadeId { get; }
+
+    /// <summary>O escopo é a instituição: a concessão alcança só os recursos sem unidade proprietária.</summary>
+    public bool EscopoInstitucional { get; }
+
+    /// <summary>Perfil de acesso que reuniu a permissão, quando a concessão é de perfil. Opcional.</summary>
+    public Guid? PerfilId { get; }
 
     /// <summary>Escopo por processo seletivo. Opcional.</summary>
     public Guid? EscopoProcessoId { get; }
@@ -38,7 +42,7 @@ public sealed record EffectiveGrant
     /// <summary>Restrição da concessão a um tipo de recurso específico. Opcional.</summary>
     public string? RecursoTipoRestricao { get; }
 
-    /// <summary>Validade da concessão. Obrigatória para concessões server-side; opcional para token.</summary>
+    /// <summary>Validade da concessão. Obrigatória para vínculo de grupo e concessão excepcional; opcional para a concessão de perfil.</summary>
     public DateTimeOffset? ValidoAte { get; }
 
     /// <summary>Quem concedeu, para concessões excepcionais. Opcional.</summary>
@@ -53,7 +57,9 @@ public sealed record EffectiveGrant
         Guid? escopoChamadaId,
         string? recursoTipoRestricao,
         DateTimeOffset? validoAte,
-        UsuarioRef? concedidoPor)
+        UsuarioRef? concedidoPor,
+        bool escopoInstitucional,
+        Guid? perfilId)
     {
         PermissaoCodigo = permissaoCodigo;
         Fonte = fonte;
@@ -64,19 +70,18 @@ public sealed record EffectiveGrant
         RecursoTipoRestricao = recursoTipoRestricao;
         ValidoAte = validoAte;
         ConcedidoPor = concedidoPor;
+        EscopoInstitucional = escopoInstitucional;
+        PerfilId = perfilId;
     }
 
     /// <summary>
     /// Constrói uma <see cref="EffectiveGrant"/> validada. Rejeita código de
-    /// permissão vazio e concessão server-side
-    /// (<see cref="FonteGrant.OidcGroupBinding"/> /
-    /// <see cref="FonteGrant.PermissaoExcecional"/>) sem
-    /// <paramref name="validoAte"/>. Adicionalmente, a concessão excepcional
-    /// (<see cref="FonteGrant.PermissaoExcecional"/>) exige <b>ao menos um
-    /// escopo</b> — unidade, processo, chamada ou tipo de recurso (ADR-0084):
-    /// uma concessão fora do perfil padrão nunca é global irrestrita.
-    /// <see cref="FonteGrant.Token"/> e <see cref="FonteGrant.OidcGroupBinding"/>
-    /// podem ser permissões globais, sem escopo.
+    /// permissão vazio e concessão resolvida por vínculo de grupo ou excepcional
+    /// sem <paramref name="validoAte"/>. A concessão excepcional exige ao menos um
+    /// escopo — unidade, processo, chamada ou tipo de recurso (ADR-0084). A
+    /// concessão de perfil (<see cref="FonteGrant.Concessao"/>) tem a unidade ou a
+    /// instituição como escopo — nunca nenhuma das duas, que seria uma permissão
+    /// global, nem as duas ao mesmo tempo.
     /// </summary>
     public static Result<EffectiveGrant> From(
         string? permissaoCodigo,
@@ -87,7 +92,9 @@ public sealed record EffectiveGrant
         Guid? escopoChamadaId = null,
         string? recursoTipoRestricao = null,
         DateTimeOffset? validoAte = null,
-        UsuarioRef? concedidoPor = null)
+        UsuarioRef? concedidoPor = null,
+        bool escopoInstitucional = false,
+        Guid? perfilId = null)
     {
         if (string.IsNullOrWhiteSpace(permissaoCodigo))
         {
@@ -126,8 +133,25 @@ public sealed record EffectiveGrant
             && string.IsNullOrWhiteSpace(recursoTipoRestricao))
         {
             return Result<EffectiveGrant>.Failure(new DomainError(
-                AuthorizationErrorCodes.EffectiveGrantEscopoExcecionalObrigatorio,
+                AuthorizationErrorCodes.EffectiveGrantEscopoExcepcionalObrigatorio,
                 "Concessão excepcional exige ao menos um escopo (unidade, processo, chamada ou tipo de recurso)."));
+        }
+
+        if (fonte is FonteGrant.Concessao)
+        {
+            if (escopoUnidadeId is null && !escopoInstitucional)
+            {
+                return Result<EffectiveGrant>.Failure(new DomainError(
+                    AuthorizationErrorCodes.EffectiveGrantEscopoObrigatorio,
+                    "Concessão exige a unidade ou a instituição como escopo."));
+            }
+
+            if (escopoUnidadeId is not null && escopoInstitucional)
+            {
+                return Result<EffectiveGrant>.Failure(new DomainError(
+                    AuthorizationErrorCodes.EffectiveGrantEscopoAmbiguo,
+                    "O escopo é a unidade ou a instituição, não os dois."));
+            }
         }
 
         return Result<EffectiveGrant>.Success(new EffectiveGrant(
@@ -139,7 +163,9 @@ public sealed record EffectiveGrant
             escopoChamadaId,
             recursoTipoRestricao,
             validoAte,
-            concedidoPor));
+            concedidoPor,
+            escopoInstitucional,
+            perfilId));
     }
 
     // Um Guid opcional é "informado mas vazio" quando vem preenchido com

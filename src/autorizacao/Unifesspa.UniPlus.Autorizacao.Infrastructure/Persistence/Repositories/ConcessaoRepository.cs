@@ -149,6 +149,12 @@ public sealed class ConcessaoRepository : IConcessaoRepository
         return (itens, page.PrevAfterId, page.NextAfterId);
     }
 
+    public async Task<bool> ExisteNaoRevogadaDoPerfilAsync(Guid perfilId, CancellationToken cancellationToken = default) =>
+        await _context.Concessoes
+            .AsNoTracking()
+            .AnyAsync(c => c.PerfilId == perfilId && c.RevogadaEm == null, cancellationToken)
+            .ConfigureAwait(false);
+
     public async Task<TipoDeGovernanca?> ObterGovernancaDoPerfilAsync(Guid perfilId, CancellationToken cancellationToken = default) =>
         await _context.Perfis
             .AsNoTracking()

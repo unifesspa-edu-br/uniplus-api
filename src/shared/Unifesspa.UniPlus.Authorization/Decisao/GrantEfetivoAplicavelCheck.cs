@@ -18,10 +18,16 @@ using Unifesspa.UniPlus.Authorization.ValueObjects;
 /// </para>
 /// <para>
 /// A concessão é comparada contra a lista do <b>sujeito</b>, não contra o token
-/// lido de novo aqui: nesta fatia o agregador da borda converte cada papel do
-/// <i>client</i> da API em uma concessão de fonte <see cref="FonteGrant.Token"/>,
-/// e o sujeito explícito da ADR-0078 é o que a decisão enxerga. Ler a identidade
-/// dentro da verificação reintroduziria o estado ambiental que o modelo elimina.
+/// nem contra o banco lidos de novo aqui: o agregador da borda monta o sujeito
+/// com as concessões gravadas (<see cref="FonteGrant.Concessao"/>), e o sujeito
+/// explícito da ADR-0078 é o que a decisão enxerga. Ler a identidade dentro da
+/// verificação reintroduziria o estado ambiental que o modelo elimina.
+/// </para>
+/// <para>
+/// O escopo decide pela unidade dona do recurso, sem herança pela hierarquia
+/// (ADR-0079): a concessão de unidade alcança só o recurso daquela unidade, e a
+/// institucional, só o recurso sem unidade proprietária. Não há concessão sem
+/// escopo, e portanto nenhuma que alcance qualquer recurso.
 /// </para>
 /// </remarks>
 public sealed class GrantEfetivoAplicavelCheck : IPermissaoCheck
@@ -60,7 +66,7 @@ public sealed class GrantEfetivoAplicavelCheck : IPermissaoCheck
             // A validade é comparada com o instante do acesso que veio no
             // contexto, e não com uma leitura nova do relógio: a decisão inteira
             // se explica por um único instante, e o teste a reproduz.
-            if (grant.ValidoAte is { } validade && validade < request.DataAcesso)
+            if (grant.ValidoAte is { } validade && validade <= request.DataAcesso)
             {
                 houveExpirada = true;
                 continue;
@@ -88,14 +94,20 @@ public sealed class GrantEfetivoAplicavelCheck : IPermissaoCheck
             houveExpirada ? MotivoNegativa.ConcessaoExpirada : MotivoNegativa.SemConcessaoAplicavel));
     }
 
-    // Uma concessão sem escopo é global e alcança qualquer recurso; uma com
-    // escopo exige que o recurso esteja NAQUELE escopo. Recurso sem o escopo que
-    // a concessão restringe não é alcançado — a ausência não relaxa a restrição.
+    // A concessão exige que o recurso esteja NO escopo dela. A institucional
+    // alcança o recurso que não pertence a unidade; a de unidade, o da mesma
+    // unidade. Recurso sem o escopo que a concessão restringe não é alcançado — a
+    // ausência não relaxa a restrição.
     private static bool EscopoAlcancaRecurso(EffectiveGrant grant, ResourceContext resource) =>
-        EscopoAlcanca(grant.EscopoUnidadeId, resource.UnidadeProprietariaId)
+        UnidadeAlcanca(grant, resource.UnidadeProprietariaId)
         && EscopoAlcanca(grant.EscopoProcessoId, resource.ProcessoId)
         && EscopoAlcanca(grant.EscopoChamadaId, resource.ChamadaId)
         && TipoAlcanca(grant.RecursoTipoRestricao, resource.RecursoTipo);
+
+    private static bool UnidadeAlcanca(EffectiveGrant grant, Guid? unidadeDoRecurso) =>
+        grant.EscopoInstitucional
+            ? unidadeDoRecurso is null
+            : grant.EscopoUnidadeId is { } unidade && unidade == unidadeDoRecurso;
 
     private static bool EscopoAlcanca(Guid? escopoDaConcessao, Guid? escopoDoRecurso) =>
         escopoDaConcessao is null || escopoDaConcessao == escopoDoRecurso;
@@ -105,7 +117,7 @@ public sealed class GrantEfetivoAplicavelCheck : IPermissaoCheck
         || string.Equals(restricao, recursoTipo, StringComparison.Ordinal);
 
     private static int Especificidade(EffectiveGrant grant) =>
-        (grant.EscopoUnidadeId is null ? 0 : 1)
+        1
         + (grant.EscopoProcessoId is null ? 0 : 1)
         + (grant.EscopoChamadaId is null ? 0 : 1)
         + (string.IsNullOrWhiteSpace(grant.RecursoTipoRestricao) ? 0 : 1);

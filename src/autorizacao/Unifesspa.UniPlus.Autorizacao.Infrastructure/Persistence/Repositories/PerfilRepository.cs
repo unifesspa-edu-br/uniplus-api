@@ -22,6 +22,30 @@ public sealed class PerfilRepository : IPerfilRepository
     public async Task<Perfil?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         await _context.Perfis.FirstOrDefaultAsync(p => p.Id == id, cancellationToken).ConfigureAwait(false);
 
+    public async Task<(IReadOnlyList<Perfil> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarAtivosPaginadoAsync(
+        Guid? afterId,
+        int limit,
+        PaginationDirection direction,
+        CancellationToken cancellationToken = default)
+    {
+        CursorKeysetPage<Perfil> page = await CursorKeyset
+            .ApplyAsync(_context.Perfis.AsNoTracking().Where(p => p.Ativo), afterId, limit, direction, cancellationToken)
+            .ConfigureAwait(false);
+
+        return (page.Items, page.PrevAfterId, page.NextAfterId);
+    }
+
+    public async Task<Perfil?> ObterParaEditarAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        // A trava vem antes da leitura rastreada, que então enxerga o que a transação anterior confirmou.
+        await _context.Database.ExecuteSqlRawAsync(
+            $"SELECT 1 FROM {AutorizacaoDbContext.Schema}.perfis WHERE id = {{0}} FOR UPDATE",
+            [id],
+            cancellationToken).ConfigureAwait(false);
+
+        return await ObterPorIdAsync(id, cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<IReadOnlyList<Perfil>> ObterTodosAsync(CancellationToken cancellationToken = default) =>
         await _context.Perfis.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
 

@@ -127,6 +127,30 @@ public sealed class Perfil : EntityBase
         return Result.Success();
     }
 
+    /// <summary>
+    /// O alcance em que o perfil se concede: unidade quando todas as permissões são de unidade,
+    /// instituição quando nenhuma é. Nulo quando mistura os dois, o que a criação e a edição recusam.
+    /// </summary>
+    public TipoDeEscopo? Alcance(ICatalogoDePermissoesConsultavel catalogo)
+    {
+        ArgumentNullException.ThrowIfNull(catalogo);
+
+        return AlcanceDe(_permissoes.Select(static p => p.Codigo), catalogo);
+    }
+
+    private static TipoDeEscopo? AlcanceDe(IEnumerable<string> codigos, ICatalogoDePermissoesConsultavel catalogo)
+    {
+        // Permissão que saiu do catálogo não concede nada e não decide o alcance das demais.
+        bool[] deUnidade = [.. codigos.Where(catalogo.Existe).Select(catalogo.DeUnidade)];
+
+        if (deUnidade.Length == 0 || deUnidade.All(static u => !u))
+        {
+            return TipoDeEscopo.Instituicao;
+        }
+
+        return deUnidade.All(static u => u) ? TipoDeEscopo.Unidade : null;
+    }
+
     private static Result<CamposValidados> ValidarCampos(
         string? nome,
         string? descricao,
@@ -176,6 +200,15 @@ public sealed class Perfil : EntityBase
             yield return new("permissoes", new DomainError(
                 PerfilErrorCodes.PermissaoInexistente,
                 $"Permissões fora do catálogo: {string.Join(", ", inexistentes)}."));
+        }
+
+        // Permissão de unidade e permissão institucional não se concedem no mesmo escopo: o perfil
+        // misto não teria escopo que o conceda por inteiro.
+        if (AlcanceDe(codigos, catalogo) is null)
+        {
+            yield return new("permissoes", new DomainError(
+                PerfilErrorCodes.AlcanceMisto,
+                "O perfil não pode misturar permissões de unidade e permissões institucionais."));
         }
 
         // O perfil comum nunca reúne permissão reservada à governança. Os perfis de

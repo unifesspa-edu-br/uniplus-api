@@ -12,4 +12,10 @@ public interface ICatalogoDePermissoesConsultavel
 
     /// <summary>A permissão só pode ser reunida por perfis de governança.</summary>
     bool ReservadaAGovernanca(string codigo);
+
+    /// <summary>
+    /// A permissão é de unidade: o catálogo exige a unidade proprietária do recurso no contexto da
+    /// decisão. As demais permissões são institucionais.
+    /// </summary>
+    bool DeUnidade(string codigo);
 }

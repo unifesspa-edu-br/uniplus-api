@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
+using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Host;
 using Unifesspa.UniPlus.Infrastructure.Core.Caching;
 
@@ -101,6 +102,7 @@ public class MonolitoApiFactory : ApiFactoryBase<HostAssemblyMarker>
         {
             services.RemoveAll<ICacheService>();
             services.AddScoped<ICacheService, FakeInMemoryCacheService>();
+            services.AddCatalogoDePermissoes<PermissaoDeTeste>();
         });
     }
 }

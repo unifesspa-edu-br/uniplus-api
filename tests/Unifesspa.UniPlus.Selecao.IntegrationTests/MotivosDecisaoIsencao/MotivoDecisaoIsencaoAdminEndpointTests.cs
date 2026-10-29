@@ -11,7 +11,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Outbox.Cascading;
 
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Selecao.API.Permissoes;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -29,6 +31,10 @@ public sealed class MotivoDecisaoIsencaoAdminEndpointTests : IAsyncLifetime
 {
     private static readonly string PermissaoManter = PermissaoSelecao.MotivosDecisaoIsencaoManter.Codigo;
     private const string AdminPlataforma = "plataforma-admin";
+    private const string Leandro = "leandro.viana";
+    private const string Diogo = "diogo.souza";
+    private const string Paulo = "paulo.conceicao";
+    private const string PapelDeInstalacao = "uniplus-instalacao";
     private const string PrefixoDeTeste = "TEST_MDI_";
 
     private readonly CascadingFixture _fixture;
@@ -38,7 +44,14 @@ public sealed class MotivoDecisaoIsencaoAdminEndpointTests : IAsyncLifetime
         _fixture = fixture;
     }
 
-    public Task InitializeAsync() => Task.CompletedTask;
+    // As personas compartilham o banco da coleção: cada teste começa sem concessão alguma.
+    public async Task InitializeAsync()
+    {
+        foreach (string sub in new[] { Leandro, Diogo, Paulo })
+        {
+            await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, sub);
+        }
+    }
 
     /// <summary>
     /// O Postgres é compartilhado por toda a coleção. Os motivos que esta
@@ -57,7 +70,7 @@ public sealed class MotivoDecisaoIsencaoAdminEndpointTests : IAsyncLifetime
     [Fact(DisplayName = "POST com a permissão de manutenção cria o motivo")]
     public async Task Criar_ComPermissao_Cria()
     {
-        using HttpClient client = ClienteComPermissoes(PermissaoManter);
+        using HttpClient client = await ClienteComConcessaoAsync();
 
         using HttpResponseMessage resposta = await PostAsync(
             client, "/api/selecao/admin/motivos-decisao-isencao", PayloadValido(Codigo()));
@@ -70,7 +83,7 @@ public sealed class MotivoDecisaoIsencaoAdminEndpointTests : IAsyncLifetime
     {
         // O papel de realm mais amplo da plataforma não concede a permissão: a
         // autorização é pela concessão, não pelo nome do perfil.
-        using HttpClient client = ClienteComPapeisDeRealm(AdminPlataforma);
+        using HttpClient client = ClienteComPapeisDeRealm(Diogo, AdminPlataforma);
         string codigo = Codigo();
 
         using HttpResponseMessage resposta = await PostAsync(
@@ -78,6 +91,52 @@ public sealed class MotivoDecisaoIsencaoAdminEndpointTests : IAsyncLifetime
 
         resposta.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await ExisteNoBanco(codigo)).Should().BeFalse("a recusa precede a escrita");
+    }
+
+    [Fact(DisplayName = "POST com o papel da própria permissão no token, sem concessão gravada, é recusado")]
+    public async Task Criar_ComPapelDaPermissaoSemConcessao_Recusa()
+    {
+        using HttpClient client = ClienteComPapeisDeRealm(Leandro, PermissaoManter);
+        string codigo = Codigo();
+
+        using HttpResponseMessage resposta = await PostAsync(
+            client, "/api/selecao/admin/motivos-decisao-isencao", PayloadValido(codigo));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await ExisteNoBanco(codigo)).Should().BeFalse("a recusa precede a escrita");
+        (await resposta.Content.ReadAsStringAsync()).Should().NotContain(Leandro, "a recusa não expõe quem foi recusado");
+    }
+
+    [Fact(DisplayName = "POST com o papel de instalação e sem concessão é recusado: o papel só instala")]
+    public async Task Criar_ComPapelDeInstalacaoSemConcessao_Recusa()
+    {
+        using HttpClient client = ClienteComPapeisDeRealm(Paulo, PapelDeInstalacao);
+
+        using HttpResponseMessage resposta = await PostAsync(
+            client, "/api/selecao/admin/motivos-decisao-isencao", PayloadValido(Codigo()));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact(DisplayName = "A revogação da concessão vale na requisição seguinte")]
+    public async Task Criar_AposRevogacaoDaConcessao_Recusa()
+    {
+        Guid concessao = await ConcessoesDeTeste.ConcederPermissoesAsync(_fixture.Factory.Services, Leandro, PermissaoManter);
+        using HttpClient leandro = ClienteAutenticado(Leandro);
+        using HttpResponseMessage antes = await PostAsync(
+            leandro, "/api/selecao/admin/motivos-decisao-isencao", PayloadValido(Codigo()));
+        antes.StatusCode.Should().Be(HttpStatusCode.Created, await antes.Content.ReadAsStringAsync());
+
+        await ConcessoesDeTeste.ConcederGovernancaAsync(_fixture.Factory.Services, Diogo, TipoDeGovernanca.GestorDeAcessos);
+        using HttpClient gestor = ClienteAutenticado(Diogo);
+        using HttpResponseMessage revogada = await PostAsync(
+            gestor, $"/api/autorizacao/concessoes/{concessao}/revogacao", new { motivo = "Mudou de função na unidade." });
+        revogada.StatusCode.Should().Be(HttpStatusCode.NoContent, await revogada.Content.ReadAsStringAsync());
+
+        using HttpResponseMessage depois = await PostAsync(
+            leandro, "/api/selecao/admin/motivos-decisao-isencao", PayloadValido(Codigo()));
+
+        depois.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact(DisplayName = "POST sem autenticação alguma é 401, não 403")]
@@ -95,7 +154,7 @@ public sealed class MotivoDecisaoIsencaoAdminEndpointTests : IAsyncLifetime
     [Fact(DisplayName = "POST sem resultado permitido é recusado com 422")]
     public async Task Criar_SemResultadoPermitido_Recusa()
     {
-        using HttpClient client = ClienteComPermissoes(PermissaoManter);
+        using HttpClient client = await ClienteComConcessaoAsync();
 
         using HttpResponseMessage resposta = await PostAsync(
             client,
@@ -114,7 +173,7 @@ public sealed class MotivoDecisaoIsencaoAdminEndpointTests : IAsyncLifetime
     [Fact(DisplayName = "POST repetido com o mesmo código devolve conflito")]
     public async Task Criar_CodigoRepetido_Conflito()
     {
-        using HttpClient client = ClienteComPermissoes(PermissaoManter);
+        using HttpClient client = await ClienteComConcessaoAsync();
         string codigo = Codigo();
 
         using HttpResponseMessage primeira = await PostAsync(
@@ -130,7 +189,7 @@ public sealed class MotivoDecisaoIsencaoAdminEndpointTests : IAsyncLifetime
     [Fact(DisplayName = "Desativar retira o motivo da listagem padrão sem apagar o registro")]
     public async Task Desativar_MotivoAtivo_SaiDaListagemEPermanece()
     {
-        using HttpClient client = ClienteComPermissoes(PermissaoManter);
+        using HttpClient client = await ClienteComConcessaoAsync();
         string codigo = Codigo();
 
         using HttpResponseMessage criada = await PostAsync(
@@ -155,7 +214,7 @@ public sealed class MotivoDecisaoIsencaoAdminEndpointTests : IAsyncLifetime
     [Fact(DisplayName = "O filtro por fundamento aceita o mesmo código canônico que a leitura devolve")]
     public async Task Listar_FiltroPeloCodigoCanonico_Filtra()
     {
-        using HttpClient client = ClienteComPermissoes(PermissaoManter);
+        using HttpClient client = await ClienteComConcessaoAsync();
         string codigo = Codigo();
 
         using HttpResponseMessage criada = await PostAsync(
@@ -199,7 +258,7 @@ public sealed class MotivoDecisaoIsencaoAdminEndpointTests : IAsyncLifetime
     [Fact(DisplayName = "Descrição com caractere nulo é recusada pelo domínio, não pelo banco")]
     public async Task Criar_DescricaoComCaractereNulo_Recusa()
     {
-        using HttpClient client = ClienteComPermissoes(PermissaoManter);
+        using HttpClient client = await ClienteComConcessaoAsync();
 
         using HttpResponseMessage resposta = await PostAsync(
             client,
@@ -225,9 +284,8 @@ public sealed class MotivoDecisaoIsencaoAdminEndpointTests : IAsyncLifetime
         // se monta: a borda responde identidade incompleta. O 401 daí precisa
         // ser o mesmo de qualquer outra falha de autenticação desta API, senão
         // o cliente não reconhece que deve renovar a credencial.
-        HttpClient client = ClienteAutenticado();
+        HttpClient client = await ClienteComConcessaoAsync();
         client.DefaultRequestHeaders.Add(TestAuthHandler.SemJtiHeader, "1");
-        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, PermissaoManter);
 
         using (client)
         {
@@ -262,27 +320,27 @@ public sealed class MotivoDecisaoIsencaoAdminEndpointTests : IAsyncLifetime
             .AnyAsync(motivo => motivo.Codigo == codigoVo);
     }
 
-    private HttpClient ClienteComPermissoes(params string[] permissoes)
+    // O token só identifica Leandro; quem lhe dá a permissão é a concessão gravada do perfil.
+    private async Task<HttpClient> ClienteComConcessaoAsync()
     {
-        HttpClient client = ClienteAutenticado();
-        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, string.Join(',', permissoes));
-        return client;
+        await ConcessoesDeTeste.ConcederPermissoesAsync(_fixture.Factory.Services, Leandro, PermissaoManter);
+        return ClienteAutenticado(Leandro);
     }
 
-    private HttpClient ClienteComPapeisDeRealm(params string[] papeis)
+    private HttpClient ClienteComPapeisDeRealm(string sub, params string[] papeis)
     {
-        HttpClient client = ClienteAutenticado();
+        HttpClient client = ClienteAutenticado(sub);
         client.DefaultRequestHeaders.Add(TestAuthHandler.RolesHeader, string.Join(',', papeis));
         return client;
     }
 
-    private HttpClient ClienteAutenticado()
+    private HttpClient ClienteAutenticado(string sub)
     {
         HttpClient client = _fixture.Factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             TestAuthHandler.AuthorizationScheme,
             TestAuthHandler.TokenValue);
-        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, $"admin-{Guid.NewGuid():N}"[..16]);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, sub);
         client.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, "Admin Test");
         client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, "admin@unifesspa.edu.br");
         return client;

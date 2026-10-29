@@ -20,6 +20,10 @@ internal static class PedidoHandlerErros
     public static DomainError SemPermissao() =>
         new(PedidoErrorCodes.SemPermissao, "Token autenticado, mas sem permissão para esta operação.");
 
+    public static DomainError SolicitanteNaoInstitucional() =>
+        new(PedidoErrorCodes.SolicitanteNaoInstitucional,
+            "Só quem tem e-mail institucional verificado, ou a permissão de manter perfis, lê os perfis que se podem pedir.");
+
     public static DomainError EtapaInvalida() =>
         new(PedidoErrorCodes.EtapaInvalida,
             "O pedido não aguarda a etapa que este aprovador decide.");

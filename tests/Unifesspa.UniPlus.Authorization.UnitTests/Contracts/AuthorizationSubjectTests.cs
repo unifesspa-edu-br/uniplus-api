@@ -22,18 +22,18 @@ public sealed class AuthorizationSubjectTests
     {
         DateTimeOffset validade = DateTimeOffset.UtcNow.AddHours(1);
 
-        EffectiveGrant doToken = EffectiveGrant.From(Permissao, FonteGrant.Token).Value!;
-        EffectiveGrant doGrupo = EffectiveGrant.From(Permissao, FonteGrant.OidcGroupBinding, validoAte: validade).Value!;
+        EffectiveGrant daConcessao = EffectiveGrant.From(Permissao, FonteGrant.Concessao, escopoInstitucional: true).Value!;
+        EffectiveGrant doGrupo = EffectiveGrant.From(Permissao, FonteGrant.OidcGroupBinding, escopoInstitucional: true, validoAte: validade).Value!;
         EffectiveGrant excepcional = EffectiveGrant.From(
             Permissao, FonteGrant.PermissaoExcecional, escopoUnidadeId: Guid.CreateVersion7(), validoAte: validade).Value!;
 
         Result<AuthorizationSubject> resultado = AuthorizationSubject.From(
-            Usuario(), "jti-abc", concessoesEfetivas: [doToken, doGrupo, excepcional]);
+            Usuario(), "jti-abc", concessoesEfetivas: [daConcessao, doGrupo, excepcional]);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.ConcessoesEfetivas
             .Select(g => g.Fonte)
-            .Should().BeEquivalentTo([FonteGrant.Token, FonteGrant.OidcGroupBinding, FonteGrant.PermissaoExcecional],
+            .Should().BeEquivalentTo([FonteGrant.Concessao, FonteGrant.OidcGroupBinding, FonteGrant.PermissaoExcecional],
                 "as três fontes rastreáveis convivem na mesma lista somente-leitura");
     }
 
@@ -69,12 +69,12 @@ public sealed class AuthorizationSubjectTests
     [Fact]
     public void AuthorizationSubject_CopiaDefensivaDeColecoes_NaoRefleteMutacaoExterna()
     {
-        var concessoes = new List<EffectiveGrant> { EffectiveGrant.From(Permissao, FonteGrant.Token).Value! };
+        var concessoes = new List<EffectiveGrant> { EffectiveGrant.From(Permissao, FonteGrant.Concessao, escopoInstitucional: true).Value! };
 
         Result<AuthorizationSubject> resultado = AuthorizationSubject.From(
             Usuario(), "jti-abc", concessoesEfetivas: concessoes);
 
-        concessoes.Add(EffectiveGrant.From("outra.permissao", FonteGrant.Token).Value!); // muta a origem
+        concessoes.Add(EffectiveGrant.From("outra.permissao", FonteGrant.Concessao, escopoInstitucional: true).Value!); // muta a origem
 
         resultado.Value!.ConcessoesEfetivas.Should().ContainSingle("a cópia é defensiva e imutável");
     }

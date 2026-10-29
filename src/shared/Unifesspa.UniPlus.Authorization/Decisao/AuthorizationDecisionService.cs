@@ -14,9 +14,9 @@ using Unifesspa.UniPlus.Authorization.ValueObjects;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Fatia mínima.</b> A única fonte de concessão em operação é o token
-/// (<see cref="FonteGrant.Token"/>); vínculo de grupo e concessão excepcional
-/// entram em incrementos próprios. Multifator e dupla aprovação também não estão
+/// <b>Fatia mínima.</b> A única fonte de concessão em operação é a concessão de
+/// perfil gravada (<see cref="FonteGrant.Concessao"/>); vínculo de grupo e
+/// concessão excepcional entram em incrementos próprios. Multifator e dupla aprovação também não estão
 /// implementados — e por isso uma permissão que os exija é <b>recusada</b>, nunca
 /// concedida: conceder o que não se sabe verificar é a falha aberta que o modelo
 /// existe para evitar.

@@ -18,12 +18,13 @@ public sealed class EffectiveGrantTests
     {
         DateTimeOffset validade = DateTimeOffset.UtcNow.AddHours(1);
 
-        Result<EffectiveGrant> token = EffectiveGrant.From(Permissao, FonteGrant.Token);
-        Result<EffectiveGrant> oidc = EffectiveGrant.From(Permissao, FonteGrant.OidcGroupBinding, validoAte: validade);
+        Result<EffectiveGrant> concessao = EffectiveGrant.From(Permissao, FonteGrant.Concessao, escopoInstitucional: true);
+        Result<EffectiveGrant> oidc = EffectiveGrant.From(
+            Permissao, FonteGrant.OidcGroupBinding, escopoInstitucional: true, validoAte: validade);
         Result<EffectiveGrant> excepcional = EffectiveGrant.From(
             Permissao, FonteGrant.PermissaoExcecional, escopoUnidadeId: Guid.CreateVersion7(), validoAte: validade);
 
-        token.Value!.Fonte.Should().Be(FonteGrant.Token);
+        concessao.Value!.Fonte.Should().Be(FonteGrant.Concessao);
         oidc.Value!.Fonte.Should().Be(FonteGrant.OidcGroupBinding);
         excepcional.Value!.Fonte.Should().Be(FonteGrant.PermissaoExcecional);
     }
@@ -35,15 +36,17 @@ public sealed class EffectiveGrantTests
         Guid processo = Guid.CreateVersion7();
         Guid chamada = Guid.CreateVersion7();
         Guid grantId = Guid.CreateVersion7();
+        Guid perfil = Guid.CreateVersion7();
 
         Result<EffectiveGrant> resultado = EffectiveGrant.From(
             Permissao,
-            FonteGrant.Token,
+            FonteGrant.Concessao,
             grantId: grantId,
             escopoUnidadeId: unidade,
             escopoProcessoId: processo,
             escopoChamadaId: chamada,
-            recursoTipoRestricao: "Edital");
+            recursoTipoRestricao: "Edital",
+            perfilId: perfil);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.GrantId.Should().Be(grantId);
@@ -51,6 +54,8 @@ public sealed class EffectiveGrantTests
         resultado.Value.EscopoProcessoId.Should().Be(processo);
         resultado.Value.EscopoChamadaId.Should().Be(chamada);
         resultado.Value.RecursoTipoRestricao.Should().Be("Edital");
+        resultado.Value.PerfilId.Should().Be(perfil);
+        resultado.Value.EscopoInstitucional.Should().BeFalse();
     }
 
     // ─── CA-03b: concessão server-side sem validade é rejeitada ────────────
@@ -60,33 +65,50 @@ public sealed class EffectiveGrantTests
     [InlineData(FonteGrant.PermissaoExcecional)]
     public void EffectiveGrant_ServerSideSemValidade_Rejeita(FonteGrant fonte)
     {
-        Result<EffectiveGrant> resultado = EffectiveGrant.From(Permissao, fonte);
+        Result<EffectiveGrant> resultado = EffectiveGrant.From(Permissao, fonte, escopoInstitucional: true);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.EffectiveGrantValidadeObrigatoria);
     }
 
     [Fact]
-    public void EffectiveGrant_OidcGroupBindingComValidadeSemEscopo_Aceita()
+    public void EffectiveGrant_OidcGroupBindingComValidadeEEscopoInstitucional_Aceita()
     {
-        // OidcGroupBinding pode representar permissão global — não exige escopo.
         DateTimeOffset validade = DateTimeOffset.UtcNow.AddHours(2);
 
-        Result<EffectiveGrant> resultado = EffectiveGrant.From(Permissao, FonteGrant.OidcGroupBinding, validoAte: validade);
+        Result<EffectiveGrant> resultado = EffectiveGrant.From(
+            Permissao, FonteGrant.OidcGroupBinding, escopoInstitucional: true, validoAte: validade);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.ValidoAte.Should().Be(validade);
     }
 
-    // ─── CA-03b: contraprova — token sem validade é aceito ─────────────────
+    // ─── A concessão de perfil não precisa de validade ─────────────────────
 
     [Fact]
-    public void EffectiveGrant_TokenSemValidade_Aceita()
+    public void EffectiveGrant_ConcessaoSemValidade_Aceita()
     {
-        Result<EffectiveGrant> resultado = EffectiveGrant.From(Permissao, FonteGrant.Token);
+        Result<EffectiveGrant> resultado = EffectiveGrant.From(Permissao, FonteGrant.Concessao, escopoInstitucional: true);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.ValidoAte.Should().BeNull();
+    }
+
+    // ─── Toda concessão tem a unidade ou a instituição como escopo ─────────
+
+    [Fact]
+    public void EffectiveGrant_ConcessaoSemUnidadeNemInstituicao_Rejeita()
+    {
+        // Só processo, chamada ou tipo de recurso não são escopo de concessão de perfil: seria
+        // permissão global em todas as unidades.
+        Result<EffectiveGrant> resultado = EffectiveGrant.From(
+            Permissao,
+            FonteGrant.Concessao,
+            escopoProcessoId: Guid.CreateVersion7(),
+            recursoTipoRestricao: "Edital");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.EffectiveGrantEscopoObrigatorio);
     }
 
     // ─── ADR-0084: concessão excepcional exige ao menos um escopo ──────────
@@ -96,25 +118,24 @@ public sealed class EffectiveGrantTests
     {
         DateTimeOffset validade = DateTimeOffset.UtcNow.AddHours(1);
 
-        Result<EffectiveGrant> resultado =
-            EffectiveGrant.From(Permissao, FonteGrant.PermissaoExcecional, validoAte: validade);
+        Result<EffectiveGrant> resultado = EffectiveGrant.From(
+            Permissao, FonteGrant.PermissaoExcecional, escopoInstitucional: true, validoAte: validade);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.EffectiveGrantEscopoExcecionalObrigatorio,
-            "uma concessão fora do perfil padrão nunca é global irrestrita (ADR-0084)");
+        resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.EffectiveGrantEscopoExcepcionalObrigatorio,
+            "só o escopo institucional não basta para a concessão fora do perfil padrão (ADR-0084)");
     }
 
     [Fact]
     public void EffectiveGrant_ExcepcionalComRecursoTipoEmBranco_Rejeita()
     {
-        // Restrição de recurso só com espaços não conta como escopo.
         DateTimeOffset validade = DateTimeOffset.UtcNow.AddHours(1);
 
         Result<EffectiveGrant> resultado = EffectiveGrant.From(
             Permissao, FonteGrant.PermissaoExcecional, recursoTipoRestricao: "   ", validoAte: validade);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.EffectiveGrantEscopoExcecionalObrigatorio);
+        resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.EffectiveGrantEscopoExcepcionalObrigatorio);
     }
 
     [Theory]
@@ -136,7 +157,32 @@ public sealed class EffectiveGrantTests
             validoAte: validade);
 
         resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.Fonte.Should().Be(FonteGrant.PermissaoExcecional);
+    }
+
+    [Fact]
+    public void EffectiveGrant_UnidadeEInstituicaoJuntas_Rejeita()
+    {
+        Result<EffectiveGrant> resultado = EffectiveGrant.From(
+            Permissao, FonteGrant.Concessao, escopoUnidadeId: Guid.CreateVersion7(), escopoInstitucional: true);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.EffectiveGrantEscopoAmbiguo);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void EffectiveGrant_UnidadeOuInstituicao_Aceita(bool institucional)
+    {
+        Result<EffectiveGrant> resultado = EffectiveGrant.From(
+            Permissao,
+            FonteGrant.Concessao,
+            escopoUnidadeId: institucional ? null : Guid.CreateVersion7(),
+            escopoInstitucional: institucional);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.EscopoInstitucional.Should().Be(institucional);
+        (resultado.Value.EscopoUnidadeId is null).Should().Be(institucional);
     }
 
     [Fact]
@@ -156,7 +202,7 @@ public sealed class EffectiveGrantTests
     [Fact]
     public void EffectiveGrant_GrantIdGuidVazio_Rejeita()
     {
-        Result<EffectiveGrant> resultado = EffectiveGrant.From(Permissao, FonteGrant.Token, grantId: Guid.Empty);
+        Result<EffectiveGrant> resultado = EffectiveGrant.From(Permissao, FonteGrant.Concessao, grantId: Guid.Empty, escopoInstitucional: true);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.EffectiveGrantGrantIdInvalido);
@@ -171,7 +217,7 @@ public sealed class EffectiveGrantTests
         // Vale para qualquer fonte — um escopo Guid.Empty é sempre inválido.
         Result<EffectiveGrant> resultado = EffectiveGrant.From(
             Permissao,
-            FonteGrant.Token,
+            FonteGrant.Concessao,
             escopoUnidadeId: escopo == "unidade" ? Guid.Empty : null,
             escopoProcessoId: escopo == "processo" ? Guid.Empty : null,
             escopoChamadaId: escopo == "chamada" ? Guid.Empty : null);
@@ -188,7 +234,7 @@ public sealed class EffectiveGrantTests
     [InlineData("   ")]
     public void EffectiveGrant_PermissaoVazia_Rejeita(string? permissao)
     {
-        Result<EffectiveGrant> resultado = EffectiveGrant.From(permissao, FonteGrant.Token);
+        Result<EffectiveGrant> resultado = EffectiveGrant.From(permissao, FonteGrant.Concessao, escopoInstitucional: true);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.EffectiveGrantPermissaoObrigatoria);

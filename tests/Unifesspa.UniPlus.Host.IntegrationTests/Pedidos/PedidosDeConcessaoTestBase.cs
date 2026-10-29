@@ -19,6 +19,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
@@ -56,7 +57,7 @@ public abstract class PedidosDeConcessaoTestBase
 
     internal static Identidade IdentidadeDe(Persona p) => new(TestAuthHandler.DefaultIssuer, p.Sub.ToString());
 
-    private protected HttpClient Cliente(Persona persona, string? email = null, string emailVerificado = "true", bool semJti = false, params string[] permissoes)
+    private protected HttpClient Cliente(Persona persona, string? email = null, string emailVerificado = "true", bool semJti = false)
     {
         HttpClient client = Fixture.Factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
@@ -70,16 +71,40 @@ public abstract class PedidosDeConcessaoTestBase
             client.DefaultRequestHeaders.Add(TestAuthHandler.SemJtiHeader, "1");
         }
 
-        if (permissoes.Length > 0)
-        {
-            client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, string.Join(',', permissoes));
-        }
-
         return client;
     }
 
-    private protected HttpClient ClienteComPermissoes(Persona persona, params string[] permissoes) =>
-        Cliente(persona, null, "true", false, permissoes);
+    /// <summary>
+    /// O token só identifica a persona; as permissões vêm da concessão gravada, como em produção. As de aprovar a
+    /// adequação funcional e administrar concessões vêm do perfil do gestor de acessos, e a de aprovar a proteção de
+    /// dados, do perfil da encarregada.
+    /// </summary>
+    private protected async Task<HttpClient> ClienteComPermissoesAsync(Persona persona, params string[] permissoes)
+    {
+        await ConcederPermissoesDeGovernancaAsync(persona, permissoes);
+        return Cliente(persona);
+    }
+
+    private protected async Task<HttpClient> ClienteSemJtiAsync(Persona persona, params string[] permissoes)
+    {
+        await ConcederPermissoesDeGovernancaAsync(persona, permissoes);
+        return Cliente(persona, null, "true", true);
+    }
+
+    private async Task ConcederPermissoesDeGovernancaAsync(Persona persona, string[] permissoes)
+    {
+        string sub = persona.Sub.ToString();
+
+        if (permissoes.Any(static p => p is AprovarFuncional or Administrar))
+        {
+            await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, sub, TipoDeGovernanca.GestorDeAcessos);
+        }
+
+        if (permissoes.Contains(AprovarProtecaoDeDados))
+        {
+            await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, sub, TipoDeGovernanca.EncarregadaDeDados);
+        }
+    }
 
     internal static async Task<HttpResponseMessage> EnviarAsync(HttpClient client, HttpMethod metodo, string url, object? corpo = null)
     {
@@ -168,11 +193,15 @@ public abstract class PedidosDeConcessaoTestBase
         await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(sql, parametros);
     }
 
-    /// <summary>Semeia um perfil comum. O código fora do catálogo conta como o mais restrito (sensível).</summary>
+    /// <summary>Semeia um perfil comum, conferido contra o catálogo do host.</summary>
     private protected async Task<Guid> SemearPerfilAsync(string prefixo, params string[] permissoes)
     {
-        Perfil perfil = Perfil.Criar($"{prefixo} {Guid.NewGuid():N}", "Perfil semeado pelo teste.", permissoes, new CatalogoPermissivo()).Value!;
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
+        Perfil perfil = Perfil.Criar(
+            $"{prefixo} {Guid.NewGuid():N}",
+            "Perfil semeado pelo teste.",
+            permissoes,
+            scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>()).Value!;
         AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
         db.Perfis.Add(perfil);
         await db.SaveChangesAsync();
@@ -180,10 +209,10 @@ public abstract class PedidosDeConcessaoTestBase
     }
 
     private protected Task<Guid> SemearPerfilInternoAsync() =>
-        SemearPerfilAsync("Acompanhamento de números", "autorizacao:permissoes:consultar-catalogo");
+        SemearPerfilAsync("Acompanhamento de números", "teste:inscricoes:operar");
 
     private protected Task<Guid> SemearPerfilSensivelAsync() =>
-        SemearPerfilAsync("Análise de atendimento", "selecao:atendimento:analisar");
+        SemearPerfilAsync("Análise de atendimento", "teste:atendimento:analisar");
 
     private protected async Task<Guid> SemearUnidadeAsync()
     {
@@ -218,7 +247,8 @@ public abstract class PedidosDeConcessaoTestBase
                 escopo,
                 new OrigemDaConcessao(TipoDeOrigem.Pedido, Guid.NewGuid()),
                 IdentidadeDe(Diogo),
-                DateTimeOffset.UtcNow)
+                DateTimeOffset.UtcNow,
+                scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>())
             .Value!;
         await repositorio.AdicionarAsync(concessao);
         await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
@@ -315,12 +345,5 @@ public abstract class PedidosDeConcessaoTestBase
     internal sealed record Persona(string Username, string Nome, string Email)
     {
         public Guid Sub { get; } = SubDe(Username);
-    }
-
-    private sealed class CatalogoPermissivo : ICatalogoDePermissoesConsultavel
-    {
-        public bool Existe(string codigo) => true;
-
-        public bool ReservadaAGovernanca(string codigo) => false;
     }
 }

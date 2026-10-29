@@ -39,7 +39,7 @@ public static class ValoresCanonicos
     /// <summary>Valor canônico da fonte da concessão.</summary>
     public static string De(FonteGrant fonte) => fonte switch
     {
-        FonteGrant.Token => "token",
+        FonteGrant.Concessao => "concessao",
         FonteGrant.OidcGroupBinding => "oidc_group_binding",
         FonteGrant.PermissaoExcecional => "permissao_excecional",
         _ => throw new InvalidEnumArgumentException(nameof(fonte), (int)fonte, typeof(FonteGrant)),

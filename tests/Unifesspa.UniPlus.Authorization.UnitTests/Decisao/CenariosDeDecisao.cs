@@ -54,15 +54,17 @@ internal static class CenariosDeDecisao
             escopoContextoObrigatorio,
             verificacoesDeContexto).Value!;
 
+    /// <summary>Concessão da permissão do cenário: de unidade quando a unidade é informada, institucional nos demais casos.</summary>
     public static EffectiveGrant Concessao(
         string? permissaoCodigo = null,
-        FonteGrant fonte = FonteGrant.Token,
+        FonteGrant fonte = FonteGrant.Concessao,
         Guid? grantId = null,
         Guid? escopoUnidadeId = null,
         Guid? escopoProcessoId = null,
         Guid? escopoChamadaId = null,
         string? recursoTipoRestricao = null,
-        DateTimeOffset? validoAte = null)
+        DateTimeOffset? validoAte = null,
+        Guid? perfilId = null)
         => EffectiveGrant.From(
             permissaoCodigo ?? Permissao,
             fonte,
@@ -71,7 +73,9 @@ internal static class CenariosDeDecisao
             escopoProcessoId,
             escopoChamadaId,
             recursoTipoRestricao,
-            validoAte).Value!;
+            validoAte,
+            escopoInstitucional: escopoUnidadeId is null,
+            perfilId: perfilId).Value!;
 
     public static AuthorizationSubject Sujeito(
         bool mfaSatisfeito = false,

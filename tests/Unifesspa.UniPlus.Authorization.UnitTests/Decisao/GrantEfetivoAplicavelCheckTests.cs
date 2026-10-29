@@ -20,14 +20,52 @@ public sealed class GrantEfetivoAplicavelCheckTests
 
     private readonly GrantEfetivoAplicavelCheck _check = new();
 
-    [Fact(DisplayName = "Concessão global alcança recurso de qualquer escopo")]
-    public async Task Check_ConcessaoSemEscopo_AlcancaQualquerRecurso()
+    [Fact(DisplayName = "Concessão institucional alcança recurso sem unidade proprietária")]
+    public async Task Check_InstitucionalEmRecursoSemUnidade_Alcanca()
     {
-        CheckResult resultado = await Verificar(
-            Concessao(),
-            Recurso(unidadeProprietariaId: Unidade, processoId: Processo));
+        CheckResult resultado = await Verificar(Concessao(), Recurso(processoId: Processo));
 
         resultado.Passou.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Concessão institucional não alcança recurso de uma unidade, sem herança")]
+    public async Task Check_InstitucionalEmRecursoDeUnidade_NaoAlcanca()
+    {
+        CheckResult resultado = await Verificar(Concessao(), Recurso(unidadeProprietariaId: Unidade));
+
+        resultado.Passou.Should().BeFalse();
+        resultado.Motivo.Should().Be(MotivoNegativa.SemConcessaoAplicavel);
+    }
+
+    [Fact(DisplayName = "Concessão de unidade não alcança recurso institucional")]
+    public async Task Check_UnidadeEmRecursoSemUnidade_NaoAlcanca()
+    {
+        CheckResult resultado = await Verificar(Concessao(escopoUnidadeId: Unidade), Recurso());
+
+        resultado.Passou.Should().BeFalse();
+        resultado.Motivo.Should().Be(MotivoNegativa.SemConcessaoAplicavel);
+    }
+
+    [Fact(DisplayName = "Concessão expirada na unidade A não encobre a vigente na unidade B")]
+    public async Task Check_ExpiradaEmOutraUnidade_NaoEncobreAVigente()
+    {
+        EffectiveGrant vigente = Concessao(grantId: Guid.CreateVersion7(), escopoUnidadeId: OutraUnidade);
+
+        CheckResult resultado = await Verificar(
+            [Concessao(escopoUnidadeId: Unidade, validoAte: Agora.AddDays(-1)), vigente],
+            Recurso(unidadeProprietariaId: OutraUnidade));
+
+        resultado.GrantSelecionado.Should().Be(vigente);
+    }
+
+    [Fact(DisplayName = "Concessão vencida na unidade do recurso nega por concessao_expirada")]
+    public async Task Check_VencidaNaUnidadeDoRecurso_NegaPorExpiracao()
+    {
+        CheckResult resultado = await Verificar(
+            Concessao(escopoUnidadeId: Unidade, validoAte: Agora.AddDays(-1)),
+            Recurso(unidadeProprietariaId: Unidade));
+
+        resultado.Motivo.Should().Be(MotivoNegativa.ConcessaoExpirada);
     }
 
     [Fact(DisplayName = "Concessão por unidade alcança recurso da mesma unidade")]
@@ -72,29 +110,35 @@ public sealed class GrantEfetivoAplicavelCheckTests
             .Passou.Should().BeFalse();
     }
 
-    [Fact(DisplayName = "Concessão do token sem validade própria permanece aplicável")]
-    public async Task Check_ConcessaoDeTokenSemValidade_Aplicavel()
+    [Fact(DisplayName = "Concessão sem fim de vigência permanece aplicável")]
+    public async Task Check_ConcessaoSemValidade_Aplicavel()
     {
         CheckResult resultado = await Verificar(Concessao(validoAte: null), Recurso());
 
-        resultado.Passou.Should().BeTrue("a concessão do token herda a validade do próprio token");
+        resultado.Passou.Should().BeTrue("a concessão sem prazo vale até ser revogada");
     }
 
-    [Fact(DisplayName = "Concessão válida exatamente no instante do acesso ainda vale")]
-    public async Task Check_ValidadeNoInstanteDoAcesso_Aplicavel()
+    [Fact(DisplayName = "Concessão cujo fim de vigência é o instante do acesso já expirou, como em Concessao.EstaAtiva")]
+    public async Task Check_ValidadeNoInstanteDoAcesso_Expirada()
     {
-        CheckResult resultado = await Verificar(
-            Concessao(fonte: FonteGrant.OidcGroupBinding, validoAte: Agora),
-            Recurso());
+        CheckResult resultado = await Verificar(Concessao(validoAte: Agora), Recurso());
 
-        resultado.Passou.Should().BeTrue("a validade é até o instante, inclusive");
+        resultado.Motivo.Should().Be(MotivoNegativa.ConcessaoExpirada);
+    }
+
+    [Fact(DisplayName = "Concessão válida até um instante depois do acesso ainda vale")]
+    public async Task Check_ValidadeLogoDepoisDoAcesso_Aplicavel()
+    {
+        CheckResult resultado = await Verificar(Concessao(validoAte: Agora.AddTicks(1)), Recurso());
+
+        resultado.Passou.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Concessão expirada de mesma permissão nega por concessao_expirada")]
     public async Task Check_ConcessaoExpirada_NegaPorExpiracao()
     {
         CheckResult resultado = await Verificar(
-            Concessao(fonte: FonteGrant.OidcGroupBinding, validoAte: Agora.AddTicks(-1)),
+            Concessao(validoAte: Agora.AddTicks(-1)),
             Recurso());
 
         resultado.Motivo.Should().Be(MotivoNegativa.ConcessaoExpirada);
@@ -105,7 +149,7 @@ public sealed class GrantEfetivoAplicavelCheckTests
     {
         CheckResult resultado = await Verificar(
             [
-                Concessao(fonte: FonteGrant.OidcGroupBinding, validoAte: Agora.AddDays(-1)),
+                Concessao(validoAte: Agora.AddDays(-1)),
                 Concessao(),
             ],
             Recurso());
@@ -117,14 +161,14 @@ public sealed class GrantEfetivoAplicavelCheckTests
     [Fact(DisplayName = "Entre concessões aplicáveis vence a mais específica")]
     public async Task Check_VariasAplicaveis_SelecionaAMaisEspecifica()
     {
-        EffectiveGrant global = Concessao(grantId: Guid.CreateVersion7());
-        EffectiveGrant porUnidade = Concessao(grantId: Guid.CreateVersion7(), escopoUnidadeId: Unidade);
+        EffectiveGrant geral = Concessao(grantId: Guid.CreateVersion7());
+        EffectiveGrant porProcesso = Concessao(grantId: Guid.CreateVersion7(), escopoProcessoId: Processo);
 
         CheckResult resultado = await Verificar(
-            [global, porUnidade],
-            Recurso(unidadeProprietariaId: Unidade));
+            [geral, porProcesso],
+            Recurso(processoId: Processo));
 
-        resultado.GrantSelecionado.Should().Be(porUnidade,
+        resultado.GrantSelecionado.Should().Be(porProcesso,
             "sem critério, a trilha registraria ora uma concessão, ora outra");
     }
 

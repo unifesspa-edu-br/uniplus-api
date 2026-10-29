@@ -16,7 +16,9 @@ public static class AuthorizationErrorCodes
     public const string EffectiveGrantGrantIdInvalido = "Authorization.EffectiveGrant.GrantIdInvalido";
     public const string EffectiveGrantEscopoInvalido = "Authorization.EffectiveGrant.EscopoInvalido";
     public const string EffectiveGrantValidadeObrigatoria = "Authorization.EffectiveGrant.ValidadeObrigatoria";
-    public const string EffectiveGrantEscopoExcecionalObrigatorio = "Authorization.EffectiveGrant.EscopoExcecionalObrigatorio";
+    public const string EffectiveGrantEscopoExcepcionalObrigatorio = "Authorization.EffectiveGrant.EscopoExcecionalObrigatorio";
+    public const string EffectiveGrantEscopoObrigatorio = "Authorization.EffectiveGrant.EscopoObrigatorio";
+    public const string EffectiveGrantEscopoAmbiguo = "Authorization.EffectiveGrant.EscopoAmbiguo";
 
     public const string EscopoAuditoriaEscopoObrigatorio = "Authorization.EscopoAuditoriaVigente.EscopoObrigatorio";
     public const string EscopoAuditoriaUnidadeInvalida = "Authorization.EscopoAuditoriaVigente.UnidadeInvalida";

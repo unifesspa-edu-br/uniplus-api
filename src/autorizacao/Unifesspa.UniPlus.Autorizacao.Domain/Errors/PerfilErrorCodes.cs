@@ -13,6 +13,9 @@ public static class PerfilErrorCodes
     public const string SemPermissao = "Perfil.SemPermissao";
     public const string PermissaoInexistente = "Perfil.PermissaoInexistente";
     public const string PermissaoReservada = "Perfil.PermissaoReservada";
+    public const string AlcanceMisto = "Perfil.AlcanceMisto";
+    public const string AlcanceAlterado = "Perfil.AlcanceAlterado";
+    public const string AmpliacaoExigeEncarregada = "Perfil.AmpliacaoExigeEncarregada";
     public const string GovernancaImutavel = "Perfil.GovernancaImutavel";
     public const string NomeDuplicado = "Perfil.NomeDuplicado";
     public const string NaoEncontrado = "Perfil.NaoEncontrado";

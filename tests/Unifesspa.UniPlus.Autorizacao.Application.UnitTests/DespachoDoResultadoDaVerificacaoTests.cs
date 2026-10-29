@@ -113,6 +113,7 @@ public sealed class DespachoDoResultadoDaVerificacaoTests
             EscopoDaConcessao.DaUnidade(Guid.NewGuid()),
             "A coordenação do CEPS precisa analisar os pedidos de atendimento.",
             new Dominios(),
+            new Catalogo(),
             DateTimeOffset.UtcNow).Value!;
         AnexoDoPedido anexo = pedido.NovoAnexo(1024).Value!;
         pedido.ConfirmarAnexo(anexo.Id, "\"etag\"", DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
@@ -124,6 +125,8 @@ public sealed class DespachoDoResultadoDaVerificacaoTests
         public bool Existe(string codigo) => true;
 
         public bool ReservadaAGovernanca(string codigo) => false;
+
+        public bool DeUnidade(string codigo) => true;
     }
 
     private sealed class Dominios : IDominiosInstitucionais

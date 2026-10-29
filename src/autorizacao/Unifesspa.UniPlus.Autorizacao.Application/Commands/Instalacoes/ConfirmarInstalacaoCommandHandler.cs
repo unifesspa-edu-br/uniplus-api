@@ -26,6 +26,7 @@ public static partial class ConfirmarInstalacaoCommandHandler
         IInstalacaoRepository instalacaoRepository,
         IConcessaoRepository concessaoRepository,
         IResumoDeCodigoDeConfirmacao resumo,
+        ICatalogoDePermissoesConsultavel catalogo,
         IAutorizacaoUnitOfWork unitOfWork,
         IUserContext userContext,
         TimeProvider timeProvider,
@@ -36,6 +37,7 @@ public static partial class ConfirmarInstalacaoCommandHandler
         ArgumentNullException.ThrowIfNull(instalacaoRepository);
         ArgumentNullException.ThrowIfNull(concessaoRepository);
         ArgumentNullException.ThrowIfNull(resumo);
+        ArgumentNullException.ThrowIfNull(catalogo);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -111,7 +113,7 @@ public static partial class ConfirmarInstalacaoCommandHandler
         foreach (GestorDaInstalacao gestor in instalacao.Gestores)
         {
             Result<Concessao> concessao = Concessao.Conceder(
-                new Identidade(gestor.Emissor, gestor.Sub, gestor.Nome), perfil, EscopoDaConcessao.DaInstituicao(), origem, autor, agora,
+                new Identidade(gestor.Emissor, gestor.Sub, gestor.Nome), perfil, EscopoDaConcessao.DaInstituicao(), origem, autor, agora, catalogo,
                 beneficiarioEmail: gestor.Email);
             if (concessao.IsFailure)
             {

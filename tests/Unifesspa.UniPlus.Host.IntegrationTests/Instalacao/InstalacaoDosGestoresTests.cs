@@ -53,7 +53,6 @@ using Wolverine.Runtime.Handlers;
 public sealed partial class InstalacaoDosGestoresTests
 {
     private const string Rota = "/api/autorizacao/instalacao";
-    private const string Administrar = "autorizacao:concessoes:administrar";
     private const string PapelDeInstalacao = "uniplus-instalacao";
     private const string Numero = "SIPAC 4521/2026";
 
@@ -519,7 +518,16 @@ public sealed partial class InstalacaoDosGestoresTests
     private static Guid SubDe(string username) =>
         new(SHA256.HashData(Encoding.UTF8.GetBytes($"persona:{username}"))[..16]);
 
-    private HttpClient Cliente(Persona persona, bool papel = true, string? email = null, string emailVerificado = "true", params string[] permissoes)
+    // Quem lê a trilha administra concessões por concessão gravada. A encarregada serve: a instalação só conta e
+    // apaga as concessões do perfil do gestor.
+    private async Task<HttpClient> ClienteQueLeATrilhaAsync()
+    {
+        await ConcessoesDeTeste.ConcederGovernancaAsync(
+            _fixture.Factory.Services, Isabella.Sub.ToString(), TipoDeGovernanca.EncarregadaDeDados);
+        return Cliente(Isabella, papel: false);
+    }
+
+    private HttpClient Cliente(Persona persona, bool papel = true, string? email = null, string emailVerificado = "true")
     {
         HttpClient client = _fixture.Factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
@@ -530,11 +538,6 @@ public sealed partial class InstalacaoDosGestoresTests
         if (papel)
         {
             client.DefaultRequestHeaders.Add(TestAuthHandler.RolesHeader, PapelDeInstalacao);
-        }
-
-        if (permissoes.Length > 0)
-        {
-            client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, string.Join(',', permissoes));
         }
 
         return client;
@@ -762,20 +765,21 @@ public sealed partial class InstalacaoDosGestoresTests
                 EscopoDaConcessao.DaInstituicao(),
                 origem,
                 new Identidade(TestAuthHandler.DefaultIssuer, Paulo.Sub.ToString()),
-                DateTimeOffset.UtcNow)
+                DateTimeOffset.UtcNow,
+                scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>())
             .Value!;
     }
 
     private async Task<string[]> TiposDaTrilhaDaInstalacaoAsync(Guid id)
     {
-        using HttpClient gestor = Cliente(Diogo, papel: false, permissoes: Administrar);
+        using HttpClient gestor = await ClienteQueLeATrilhaAsync();
         JsonElement eventos = await LerAsync(gestor, $"/api/autorizacao/instalacoes/{id}/trilha");
         return [.. eventos.EnumerateArray().Select(e => e.GetProperty("tipo").GetString()!)];
     }
 
     private async Task<Dictionary<string, DateTimeOffset>> InstantesDaTrilhaDaInstalacaoAsync(Guid id)
     {
-        using HttpClient gestor = Cliente(Diogo, papel: false, permissoes: Administrar);
+        using HttpClient gestor = await ClienteQueLeATrilhaAsync();
         JsonElement eventos = await LerAsync(gestor, $"/api/autorizacao/instalacoes/{id}/trilha");
         return eventos.EnumerateArray().ToDictionary(e => e.GetProperty("tipo").GetString()!, e => e.GetProperty("instante").GetDateTimeOffset());
     }
@@ -789,14 +793,14 @@ public sealed partial class InstalacaoDosGestoresTests
             .Select(c => c.Id)
             .SingleAsync();
 
-        using HttpClient gestor = Cliente(Diogo, papel: false, permissoes: Administrar);
+        using HttpClient gestor = await ClienteQueLeATrilhaAsync();
         JsonElement eventos = await LerAsync(gestor, $"/api/autorizacao/concessoes/{concessao}/trilha");
         return [.. eventos.EnumerateArray().Select(e => e.GetProperty("tipo").GetString()!)];
     }
 
     private async Task<(string Autor, string Resultado)[]> ListarTentativasSemPendenciaAsync()
     {
-        using HttpClient gestor = Cliente(Diogo, papel: false, permissoes: Administrar);
+        using HttpClient gestor = await ClienteQueLeATrilhaAsync();
         JsonElement pagina = await LerAsync(gestor, "/api/autorizacao/instalacoes/tentativas-sem-pendencia");
         JsonElement itens = pagina.ValueKind == JsonValueKind.Array ? pagina : pagina.GetProperty("items");
         return [.. itens.EnumerateArray().Select(t => (

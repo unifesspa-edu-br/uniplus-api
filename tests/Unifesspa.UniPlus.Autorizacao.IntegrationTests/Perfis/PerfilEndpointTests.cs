@@ -11,9 +11,14 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
 /// Cadastro de perfis de acesso pelo endpoint real, contra Postgres efêmero. Cobre o que só a
@@ -31,9 +36,12 @@ public sealed class PerfilEndpointTests
     private const string Rota = "/api/autorizacao/perfis";
     private const string ConsultarCatalogo = "autorizacao:permissoes:consultar-catalogo";
     private const string ManterMotivos = "selecao:motivos-decisao-isencao:manter";
+    private const string OperarInscricoes = "teste:inscricoes:operar";
+    private const string AnalisarAtendimento = "teste:atendimento:analisar";
     private const string GestorDeAcessosId = "019a0000-0000-7000-8000-000000000001";
 
     private const string PermissaoManter = "autorizacao:perfis:manter";
+    private const string Diogo = "diogo.souza";
 
     private readonly AutorizacaoEndpointFixture _fixture;
 
@@ -42,7 +50,7 @@ public sealed class PerfilEndpointTests
     [Fact(DisplayName = "Criar perfil devolve 201 e a leitura traz sensibilidade e permissões do catálogo")]
     public async Task Criar_Valido_LeComSensibilidadeDoCatalogo()
     {
-        using HttpClient diogo = Cliente("Diogo Souza", PermissaoManter);
+        using HttpClient diogo = await ClienteDoGestorAsync();
 
         using HttpResponseMessage criada = await EnviarAsync(
             diogo, HttpMethod.Post, Rota, Corpo(Nome(), [ConsultarCatalogo, ManterMotivos]));
@@ -62,7 +70,7 @@ public sealed class PerfilEndpointTests
     [Fact(DisplayName = "Código fora do catálogo devolve 422 com o código de erro e lista o que não existe")]
     public async Task Criar_PermissaoInexistente_Devolve422()
     {
-        using HttpClient diogo = Cliente("Diogo Souza", PermissaoManter);
+        using HttpClient diogo = await ClienteDoGestorAsync();
 
         using HttpResponseMessage resposta = await EnviarAsync(
             diogo, HttpMethod.Post, Rota, Corpo(Nome(), [ConsultarCatalogo, "modulo:que:nao-existe"]));
@@ -75,7 +83,7 @@ public sealed class PerfilEndpointTests
     [Fact(DisplayName = "Perfil comum com permissão reservada à governança devolve 422")]
     public async Task Criar_PermissaoReservada_Devolve422()
     {
-        using HttpClient diogo = Cliente("Diogo Souza", PermissaoManter);
+        using HttpClient diogo = await ClienteDoGestorAsync();
 
         using HttpResponseMessage resposta = await EnviarAsync(
             diogo, HttpMethod.Post, Rota, Corpo(Nome(), [PermissaoManter]));
@@ -87,7 +95,7 @@ public sealed class PerfilEndpointTests
     [Fact(DisplayName = "Nome repetido, mesmo com outra caixa, devolve 409")]
     public async Task Criar_NomeRepetidoComOutraCaixa_Devolve409()
     {
-        using HttpClient diogo = Cliente("Diogo Souza", PermissaoManter);
+        using HttpClient diogo = await ClienteDoGestorAsync();
         string nome = Nome();
 
         using HttpResponseMessage primeira = await EnviarAsync(diogo, HttpMethod.Post, Rota, Corpo(nome, [ConsultarCatalogo]));
@@ -103,7 +111,7 @@ public sealed class PerfilEndpointTests
     [Fact(DisplayName = "PUT com id do caminho diferente do corpo devolve 400")]
     public async Task Atualizar_IdDivergente_Devolve400()
     {
-        using HttpClient diogo = Cliente("Diogo Souza", PermissaoManter);
+        using HttpClient diogo = await ClienteDoGestorAsync();
         Guid id = await CriarAsync(diogo);
 
         using HttpResponseMessage resposta = await EnviarAsync(
@@ -116,7 +124,7 @@ public sealed class PerfilEndpointTests
     [Fact(DisplayName = "Atualizar troca nome e permissões do perfil comum")]
     public async Task Atualizar_Valido_TrocaOConjunto()
     {
-        using HttpClient diogo = Cliente("Diogo Souza", PermissaoManter);
+        using HttpClient diogo = await ClienteDoGestorAsync();
         Guid id = await CriarAsync(diogo);
         string novoNome = Nome();
 
@@ -130,10 +138,95 @@ public sealed class PerfilEndpointTests
             .Select(p => p.GetProperty("codigo").GetString()).Should().Equal(ManterMotivos);
     }
 
+    [Fact(DisplayName = "Perfil que mistura permissão de unidade e institucional devolve 422")]
+    public async Task Criar_AlcanceMisto_Devolve422()
+    {
+        using HttpClient diogo = await ClienteDoGestorAsync();
+
+        using HttpResponseMessage resposta = await EnviarAsync(
+            diogo, HttpMethod.Post, Rota, Corpo(Nome(), [OperarInscricoes, ManterMotivos]));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.alcance_misto");
+    }
+
+    [Fact(DisplayName = "Perfil sem concessões aceita ampliar a sensibilidade e mudar o alcance")]
+    public async Task Atualizar_SemConcessoes_AceitaAmpliarEMudarOAlcance()
+    {
+        using HttpClient diogo = await ClienteDoGestorAsync();
+        Guid id = await CriarAsync(diogo, [OperarInscricoes]);
+
+        using HttpResponseMessage ampliada = await EnviarAsync(
+            diogo, HttpMethod.Put, $"{Rota}/{id}", CorpoComId(id, Nome(), [OperarInscricoes, AnalisarAtendimento]));
+        using HttpResponseMessage outroAlcance = await EnviarAsync(
+            diogo, HttpMethod.Put, $"{Rota}/{id}", CorpoComId(id, Nome(), [ManterMotivos]));
+
+        ampliada.StatusCode.Should().Be(HttpStatusCode.NoContent, await ampliada.Content.ReadAsStringAsync());
+        outroAlcance.StatusCode.Should().Be(HttpStatusCode.NoContent, await outroAlcance.Content.ReadAsStringAsync());
+    }
+
+    [Fact(DisplayName = "Perfil com concessão recusa acrescentar permissão sensível e a edição não é gravada")]
+    public async Task Atualizar_ComConcessao_AmpliarASensibilidade_Recusa()
+    {
+        using HttpClient diogo = await ClienteDoGestorAsync();
+        Guid id = await CriarAsync(diogo, [OperarInscricoes]);
+        await SemearConcessaoAsync(id, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
+
+        using HttpResponseMessage resposta = await EnviarAsync(
+            diogo, HttpMethod.Put, $"{Rota}/{id}", CorpoComId(id, Nome(), [OperarInscricoes, AnalisarAtendimento]));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.ampliacao_exige_encarregada");
+        using JsonDocument perfil = await LerAsync(diogo, id);
+        perfil.RootElement.GetProperty("permissoes").EnumerateArray()
+            .Select(p => p.GetProperty("codigo").GetString()).Should().Equal(OperarInscricoes);
+    }
+
+    [Fact(DisplayName = "Perfil já sensível, com concessão, recusa acrescentar outra permissão sensível")]
+    public async Task Atualizar_ComConcessao_OutraSensivelNoPerfilJaSensivel_Recusa()
+    {
+        using HttpClient diogo = await ClienteDoGestorAsync();
+        Guid id = await CriarAsync(diogo, [AnalisarAtendimento]);
+        await SemearConcessaoAsync(id, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
+
+        using HttpResponseMessage resposta = await EnviarAsync(
+            diogo, HttpMethod.Put, $"{Rota}/{id}", CorpoComId(id, Nome(), [AnalisarAtendimento, "teste:laudos:consultar"]));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.ampliacao_exige_encarregada");
+    }
+
+    [Fact(DisplayName = "Perfil com concessão recusa mudar de alcance")]
+    public async Task Atualizar_ComConcessao_MudarOAlcance_Recusa()
+    {
+        using HttpClient diogo = await ClienteDoGestorAsync();
+        Guid id = await CriarAsync(diogo, [OperarInscricoes]);
+        await SemearConcessaoAsync(id, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
+
+        using HttpResponseMessage resposta = await EnviarAsync(
+            diogo, HttpMethod.Put, $"{Rota}/{id}", CorpoComId(id, Nome(), [ManterMotivos]));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.alcance_alterado");
+    }
+
+    [Fact(DisplayName = "Perfil com concessão aceita renomear e manter a sensibilidade")]
+    public async Task Atualizar_ComConcessao_SemAmpliar_Aceita()
+    {
+        using HttpClient diogo = await ClienteDoGestorAsync();
+        Guid id = await CriarAsync(diogo, [OperarInscricoes]);
+        await SemearConcessaoAsync(id, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
+
+        using HttpResponseMessage resposta = await EnviarAsync(
+            diogo, HttpMethod.Put, $"{Rota}/{id}", CorpoComId(id, Nome(), [OperarInscricoes]));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.NoContent, await resposta.Content.ReadAsStringAsync());
+    }
+
     [Fact(DisplayName = "Desativar e reativar alternam o estado do perfil")]
     public async Task DesativarEReativar_AlternaOEstado()
     {
-        using HttpClient diogo = Cliente("Diogo Souza", PermissaoManter);
+        using HttpClient diogo = await ClienteDoGestorAsync();
         Guid id = await CriarAsync(diogo);
 
         using HttpResponseMessage desativada = await EnviarAsync(diogo, HttpMethod.Delete, $"{Rota}/{id}/ativacao");
@@ -148,7 +241,7 @@ public sealed class PerfilEndpointTests
     [Fact(DisplayName = "Perfil de governança recusa edição e desativação com 422")]
     public async Task Governanca_RecusaEdicaoEDesativacao()
     {
-        using HttpClient diogo = Cliente("Diogo Souza", PermissaoManter);
+        using HttpClient diogo = await ClienteDoGestorAsync();
         Guid id = Guid.Parse(GestorDeAcessosId);
 
         using HttpResponseMessage edicao = await EnviarAsync(
@@ -164,7 +257,7 @@ public sealed class PerfilEndpointTests
     [Fact(DisplayName = "Perfil inexistente devolve 404 com o código de erro")]
     public async Task Obter_Inexistente_Devolve404()
     {
-        using HttpClient diogo = Cliente("Diogo Souza", PermissaoManter);
+        using HttpClient diogo = await ClienteDoGestorAsync();
 
         using HttpResponseMessage resposta = await diogo.GetAsync(new Uri($"{Rota}/{Guid.NewGuid()}", UriKind.Relative));
 
@@ -178,7 +271,7 @@ public sealed class PerfilEndpointTests
     [InlineData("DELETE", "/019a0000-0000-7000-8000-000000000001/ativacao")]
     public async Task SemPermissao_Devolve403(string metodo, string sufixo)
     {
-        using HttpClient isabella = Cliente("Isabella Rocha", ConsultarCatalogo);
+        using HttpClient isabella = await ClienteComPermissoesAsync("leandro.viana", ConsultarCatalogo);
 
         using HttpResponseMessage resposta = await EnviarAsync(
             isabella, new HttpMethod(metodo), Rota + sufixo, metodo == "POST" ? Corpo(Nome(), [ConsultarCatalogo]) : null);
@@ -228,10 +321,29 @@ public sealed class PerfilEndpointTests
     private static object CorpoComId(Guid id, string nome, string[] permissoes) =>
         new { id, nome, descricao = "Perfil de teste do cadastro de acesso.", permissoes };
 
-    private static async Task<Guid> CriarAsync(HttpClient client)
+    private async Task SemearConcessaoAsync(Guid perfilId, EscopoDaConcessao escopo)
+    {
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        IConcessaoRepository repositorio = scope.ServiceProvider.GetRequiredService<IConcessaoRepository>();
+        Perfil perfil = (await repositorio.ObterParaConcederAsync(perfilId))!;
+        Identidade diogo = new(TestAuthHandler.DefaultIssuer, "diogo.souza");
+
+        Concessao concessao = Concessao.Conceder(
+            new Identidade(TestAuthHandler.DefaultIssuer, "leandro.viana"),
+            perfil,
+            escopo,
+            new OrigemDaConcessao(TipoDeOrigem.Pedido, Guid.NewGuid()),
+            diogo,
+            DateTimeOffset.UtcNow,
+            scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>()).Value!;
+        await repositorio.AdicionarAsync(concessao);
+        await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
+    }
+
+    private static async Task<Guid> CriarAsync(HttpClient client, string[]? permissoes = null)
     {
         using HttpResponseMessage resposta = await EnviarAsync(
-            client, HttpMethod.Post, Rota, Corpo(Nome(), [ConsultarCatalogo]));
+            client, HttpMethod.Post, Rota, Corpo(Nome(), permissoes ?? [ConsultarCatalogo]));
         resposta.StatusCode.Should().Be(HttpStatusCode.Created, await resposta.Content.ReadAsStringAsync());
         return Guid.Parse(resposta.Headers.Location!.Segments[^1]);
     }
@@ -260,15 +372,27 @@ public sealed class PerfilEndpointTests
         return await client.SendAsync(request);
     }
 
-    private HttpClient Cliente(string nome, params string[] permissoes)
+    // O token só identifica a pessoa; o que ela pode vem da concessão gravada, como em produção.
+    private async Task<HttpClient> ClienteDoGestorAsync()
+    {
+        await ConcessoesDeTeste.ConcederGovernancaAsync(_fixture.Factory.Services, Diogo, TipoDeGovernanca.GestorDeAcessos);
+        return Cliente(Diogo);
+    }
+
+    private async Task<HttpClient> ClienteComPermissoesAsync(string sub, params string[] permissoes)
+    {
+        await ConcessoesDeTeste.ConcederPermissoesAsync(_fixture.Factory.Services, sub, permissoes);
+        return Cliente(sub);
+    }
+
+    private HttpClient Cliente(string sub)
     {
         HttpClient client = _fixture.Factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, $"u-{Guid.NewGuid():N}"[..16]);
-        client.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, nome);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, sub);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, sub);
         client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, "teste@unifesspa.edu.br");
-        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, string.Join(',', permissoes));
         return client;
     }
 }

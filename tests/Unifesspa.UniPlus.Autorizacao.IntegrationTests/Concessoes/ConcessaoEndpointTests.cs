@@ -19,6 +19,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -38,7 +39,6 @@ public sealed class ConcessaoEndpointTests
     private const string Rota = "/api/autorizacao/concessoes";
     private const string RotaPerfis = "/api/autorizacao/perfis";
     private const string Administrar = "autorizacao:concessoes:administrar";
-    private const string ManterPerfis = "autorizacao:perfis:manter";
     private const string ConsultarCatalogo = "autorizacao:permissoes:consultar-catalogo";
     private const string Motivo = "Mudou de função na unidade.";
     private const string EmailDoBeneficiario = "beneficiario@uniplus-test.local";
@@ -84,7 +84,7 @@ public sealed class ConcessaoEndpointTests
         Guid perfil = await CriarPerfilComumAsync();
         Guid unidade = Guid.NewGuid();
         Guid primeira = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(unidade));
-        using HttpClient diogo = Cliente(Diogo, Administrar);
+        using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
         using HttpResponseMessage revogada = await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{primeira}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario });
         revogada.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
@@ -105,7 +105,7 @@ public sealed class ConcessaoEndpointTests
         Exception falha = await FalhaAoConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(unidade));
         ConcessaoViolacoes.EhConcessaoDuplicada(falha).Should().BeTrue();
 
-        using HttpClient diogo = Cliente(Diogo, Administrar);
+        using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
         using HttpResponseMessage revogada = await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{vencida}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario });
         revogada.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
@@ -119,7 +119,7 @@ public sealed class ConcessaoEndpointTests
         Guid perfil = await CriarPerfilComumAsync();
         Guid ativa = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
         Guid revogada = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
-        using HttpClient diogo = Cliente(Diogo, Administrar);
+        using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
         (await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{revogada}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario }))
             .StatusCode.Should().Be(HttpStatusCode.NoContent);
 
@@ -138,7 +138,7 @@ public sealed class ConcessaoEndpointTests
             perfil, Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()), validaAteDaquiAMinutos: 1);
         await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()), validaAteDaquiAMinutos: 600);
         await EnvelhecerAsync(vencida);
-        using HttpClient diogo = Cliente(Diogo, Administrar);
+        using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
         string filtro = $"?pessoa={Leandro.Sub}&emissor={Uri.EscapeDataString(Leandro.Emissor)}&perfil={perfil}";
 
         (await IdsAsync(diogo, filtro + "&situacao=VENCIDA")).Should().Equal(vencida);
@@ -152,7 +152,7 @@ public sealed class ConcessaoEndpointTests
         Guid unidade = Guid.NewGuid();
         Guid daUnidade = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(unidade));
         await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
-        using HttpClient diogo = Cliente(Diogo, Administrar);
+        using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
 
         (await IdsAsync(diogo, $"?unidade={unidade}")).Should().Equal(daUnidade);
     }
@@ -160,7 +160,7 @@ public sealed class ConcessaoEndpointTests
     [Fact(DisplayName = "Pessoa sem emissor é recusada com 400, e o emissor sem a pessoa também")]
     public async Task Listar_PessoaSemEmissor_Devolve400()
     {
-        using HttpClient diogo = Cliente(Diogo, Administrar);
+        using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
 
         using HttpResponseMessage semEmissor = await diogo.GetAsync(new Uri($"{Rota}?pessoa={Leandro.Sub}", UriKind.Relative));
         semEmissor.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -172,7 +172,7 @@ public sealed class ConcessaoEndpointTests
     [Fact(DisplayName = "Situação desconhecida é recusada com 400")]
     public async Task Listar_SituacaoDesconhecida_Devolve400()
     {
-        using HttpClient diogo = Cliente(Diogo, Administrar);
+        using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
 
         using HttpResponseMessage resposta = await diogo.GetAsync(new Uri($"{Rota}?situacao=expirada", UriKind.Relative));
         resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -185,7 +185,7 @@ public sealed class ConcessaoEndpointTests
         Guid perfil = await CriarPerfilComumAsync();
         Guid unidade = Guid.NewGuid();
         Guid id = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(unidade));
-        using HttpClient diogo = Cliente(Diogo, Administrar);
+        using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
 
         using JsonDocument concessao = await LerAsync(diogo, $"{Rota}/{id}");
 
@@ -203,7 +203,7 @@ public sealed class ConcessaoEndpointTests
     [Fact(DisplayName = "Concessão inexistente devolve 404 com o código de erro")]
     public async Task Obter_Inexistente_Devolve404()
     {
-        using HttpClient diogo = Cliente(Diogo, Administrar);
+        using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
 
         using HttpResponseMessage resposta = await diogo.GetAsync(new Uri($"{Rota}/{Guid.NewGuid()}", UriKind.Relative));
 
@@ -216,7 +216,7 @@ public sealed class ConcessaoEndpointTests
     {
         Guid perfil = await CriarPerfilComumAsync();
         Guid id = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
-        using HttpClient diogo = Cliente(Diogo, Administrar);
+        using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
 
         using HttpResponseMessage resposta = await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario });
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent, await resposta.Content.ReadAsStringAsync());
@@ -232,7 +232,7 @@ public sealed class ConcessaoEndpointTests
     {
         Guid perfil = await CriarPerfilComumAsync();
         Guid id = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
-        using HttpClient diogo = Cliente(Diogo, Administrar);
+        using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
 
         foreach (object corpo in new object[]
         {
@@ -258,7 +258,7 @@ public sealed class ConcessaoEndpointTests
     {
         Guid perfil = await CriarPerfilComumAsync();
         Guid id = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
-        using HttpClient isabella = Cliente(Isabella, Administrar);
+        using HttpClient isabella = await ClienteDaEncarregadaAsync(Isabella);
 
         using HttpResponseMessage resposta = await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{id}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario });
 
@@ -270,7 +270,7 @@ public sealed class ConcessaoEndpointTests
     [Fact(DisplayName = "Os dois perfis de governança trazem a permissão de administrar concessões")]
     public async Task Governanca_ReuneAPermissaoDeAdministrar()
     {
-        using HttpClient diogo = Cliente(Diogo, ManterPerfis);
+        using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
 
         foreach (Guid id in new[] { GestorDeAcessosId, EncarregadaDeDadosId })
         {
@@ -285,8 +285,8 @@ public sealed class ConcessaoEndpointTests
     {
         Guid perfil = await CriarPerfilComumAsync();
         Guid id = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
-        using HttpClient diogo = Cliente(Diogo, Administrar);
-        using HttpClient isabella = Cliente(Isabella, Administrar);
+        using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
+        using HttpClient isabella = await ClienteDaEncarregadaAsync(Isabella);
         (await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario }))
             .StatusCode.Should().Be(HttpStatusCode.NoContent);
 
@@ -303,7 +303,7 @@ public sealed class ConcessaoEndpointTests
     {
         Guid perfil = await CriarPerfilComumAsync();
         Guid id = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
-        using HttpClient diogo = Cliente(Diogo, Administrar);
+        using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
 
         using HttpResponseMessage resposta = await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/revogacao", new { motivo = "  ", confirmacaoEmail = EmailDoBeneficiario });
 
@@ -318,7 +318,7 @@ public sealed class ConcessaoEndpointTests
         await LimparConcessoesAsync(GestorDeAcessosId);
         Guid diogoId = await ConcederAsync(GestorDeAcessosId, Diogo, EscopoDaConcessao.DaInstituicao());
         await ConcederAsync(GestorDeAcessosId, Isabella, EscopoDaConcessao.DaInstituicao());
-        using HttpClient isabella = Cliente(Isabella, Administrar);
+        using HttpClient isabella = await ClienteDaEncarregadaAsync(Isabella);
 
         using HttpResponseMessage resposta = await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{diogoId}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario });
 
@@ -334,7 +334,7 @@ public sealed class ConcessaoEndpointTests
         Guid diogoId = await ConcederAsync(GestorDeAcessosId, Diogo, EscopoDaConcessao.DaInstituicao());
         await ConcederAsync(GestorDeAcessosId, Isabella, EscopoDaConcessao.DaInstituicao());
         await ConcederAsync(GestorDeAcessosId, Betina, EscopoDaConcessao.DaInstituicao());
-        using HttpClient isabella = Cliente(Isabella, Administrar);
+        using HttpClient isabella = await ClienteDaEncarregadaAsync(Isabella);
 
         using HttpResponseMessage resposta = await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{diogoId}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario });
 
@@ -348,8 +348,8 @@ public sealed class ConcessaoEndpointTests
         Guid diogoId = await ConcederAsync(GestorDeAcessosId, Diogo, EscopoDaConcessao.DaInstituicao());
         Guid isabellaId = await ConcederAsync(GestorDeAcessosId, Isabella, EscopoDaConcessao.DaInstituicao());
         await ConcederAsync(GestorDeAcessosId, Betina, EscopoDaConcessao.DaInstituicao());
-        using HttpClient clienteA = Cliente(Betina, Administrar);
-        using HttpClient clienteB = Cliente(Betina, Administrar);
+        using HttpClient clienteA = await ClienteDoGestorAsync(Betina);
+        using HttpClient clienteB = await ClienteDoGestorAsync(Betina);
 
         HttpResponseMessage[] respostas = await Task.WhenAll(
             EnviarAsync(clienteA, HttpMethod.Post, $"{Rota}/{diogoId}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario }),
@@ -374,8 +374,8 @@ public sealed class ConcessaoEndpointTests
     {
         Guid perfil = await CriarPerfilComumAsync();
         Guid id = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
-        using HttpClient clienteA = Cliente(Diogo, Administrar);
-        using HttpClient clienteB = Cliente(Isabella, Administrar);
+        using HttpClient clienteA = await ClienteDoGestorAsync(Diogo);
+        using HttpClient clienteB = await ClienteDaEncarregadaAsync(Isabella);
 
         HttpResponseMessage[] respostas = await Task.WhenAll(
             EnviarAsync(clienteA, HttpMethod.Post, $"{Rota}/{id}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario }),
@@ -401,7 +401,7 @@ public sealed class ConcessaoEndpointTests
     {
         Guid perfil = await CriarPerfilComumAsync();
         Guid id = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
-        using HttpClient isabella = Cliente(Isabella, Administrar);
+        using HttpClient isabella = await ClienteDaEncarregadaAsync(Isabella);
         (await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{id}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario }))
             .StatusCode.Should().Be(HttpStatusCode.NoContent);
 
@@ -423,7 +423,7 @@ public sealed class ConcessaoEndpointTests
     [InlineData("POST", "/019a0000-0000-7000-8000-000000000099/revogacao")]
     public async Task SemPermissao_Devolve403(string metodo, string sufixo)
     {
-        using HttpClient leandro = Cliente(Leandro, ConsultarCatalogo, ManterPerfis);
+        using HttpClient leandro = await ClienteComPermissoesAsync(Leandro, ConsultarCatalogo);
 
         using HttpResponseMessage resposta = await EnviarAsync(
             leandro, new HttpMethod(metodo), Rota + sufixo, metodo == "POST" ? new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario } : null);
@@ -438,7 +438,7 @@ public sealed class ConcessaoEndpointTests
     [InlineData("DELETE", "/019a0000-0000-7000-8000-000000000099")]
     public async Task SemRotaDeCriacaoNemEdicao(string metodo, string sufixo)
     {
-        using HttpClient diogo = Cliente(Diogo, Administrar);
+        using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
 
         using HttpResponseMessage resposta = await EnviarAsync(diogo, new HttpMethod(metodo), Rota + sufixo, new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario });
 
@@ -493,12 +493,12 @@ public sealed class ConcessaoEndpointTests
 
     private async Task<Guid> CriarPerfilComumAsync()
     {
-        using HttpClient diogo = Cliente(Diogo, ManterPerfis);
+        using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
         using HttpResponseMessage resposta = await EnviarAsync(
             diogo,
             HttpMethod.Post,
             RotaPerfis,
-            new { nome = $"Perfil {Guid.NewGuid():N}", descricao = "Perfil de teste das concessões.", permissoes = new[] { ConsultarCatalogo } });
+            new { nome = $"Perfil {Guid.NewGuid():N}", descricao = "Perfil de teste das concessões.", permissoes = new[] { "teste:inscricoes:operar" } });
         resposta.StatusCode.Should().Be(HttpStatusCode.Created, await resposta.Content.ReadAsStringAsync());
         return Guid.Parse(resposta.Headers.Location!.Segments[^1]);
     }
@@ -548,6 +548,7 @@ public sealed class ConcessaoEndpointTests
             new OrigemDaConcessao(TipoDeOrigem.Pedido, Guid.NewGuid()),
             Diogo,
             relogio.GetUtcNow(),
+            scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>(),
             validaAteDaquiAMinutos is { } minutos ? relogio.GetUtcNow().AddMinutes(minutos) : null,
             EmailDoBeneficiario);
 
@@ -562,7 +563,26 @@ public sealed class ConcessaoEndpointTests
         await db.Database.ExecuteSqlRawAsync("DELETE FROM autorizacao.concessoes WHERE perfil_id = {0}", perfilId);
     }
 
-    private HttpClient Cliente(Identidade pessoa, params string[] permissoes)
+    // O token só identifica a pessoa; o que ela pode vem da concessão gravada, como em produção.
+    private Task<HttpClient> ClienteDoGestorAsync(Identidade pessoa) =>
+        ClienteDeGovernancaAsync(pessoa, TipoDeGovernanca.GestorDeAcessos);
+
+    private Task<HttpClient> ClienteDaEncarregadaAsync(Identidade pessoa) =>
+        ClienteDeGovernancaAsync(pessoa, TipoDeGovernanca.EncarregadaDeDados);
+
+    private async Task<HttpClient> ClienteDeGovernancaAsync(Identidade pessoa, TipoDeGovernanca governanca)
+    {
+        await ConcessoesDeTeste.ConcederGovernancaAsync(_fixture.Factory.Services, pessoa.Sub, governanca);
+        return Cliente(pessoa);
+    }
+
+    private async Task<HttpClient> ClienteComPermissoesAsync(Identidade pessoa, params string[] permissoes)
+    {
+        await ConcessoesDeTeste.ConcederPermissoesAsync(_fixture.Factory.Services, pessoa.Sub, permissoes);
+        return Cliente(pessoa);
+    }
+
+    private HttpClient Cliente(Identidade pessoa)
     {
         HttpClient client = _fixture.Factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
@@ -570,7 +590,6 @@ public sealed class ConcessaoEndpointTests
         client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, pessoa.Sub);
         client.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, pessoa.Sub);
         client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, "teste@unifesspa.edu.br");
-        client.DefaultRequestHeaders.Add(TestAuthHandler.PermissionsHeader, string.Join(',', permissoes));
         return client;
     }
 }

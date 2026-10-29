@@ -38,8 +38,8 @@ public sealed class TiposFormaisContratoTests
         reqA.Should().Be(reqB);
 
         // AuthorizationDecision — permitida igual por valor do grant; negada por código.
-        EffectiveGrant grant1 = EffectiveGrant.From("selecao.editais.publicar", FonteGrant.Token).Value!;
-        EffectiveGrant grant2 = EffectiveGrant.From("selecao.editais.publicar", FonteGrant.Token).Value!;
+        EffectiveGrant grant1 = EffectiveGrant.From("selecao.editais.publicar", FonteGrant.Concessao, escopoInstitucional: true).Value!;
+        EffectiveGrant grant2 = EffectiveGrant.From("selecao.editais.publicar", FonteGrant.Concessao, escopoInstitucional: true).Value!;
         AuthorizationDecision.Permitir(grant1).Should().Be(AuthorizationDecision.Permitir(grant2));
         AuthorizationDecision.Negar(MotivoNegativa.SemConcessaoAplicavel)
             .Should().Be(AuthorizationDecision.Negar(MotivoNegativa.SemConcessaoAplicavel));
@@ -82,7 +82,7 @@ public sealed class TiposFormaisContratoTests
     {
         UsuarioRef usuario = UsuarioRef.From("https://sso.gov.br", "sub-1").Value!;
         Guid unidade = Guid.CreateVersion7();
-        EffectiveGrant grant = EffectiveGrant.From("selecao.editais.publicar", FonteGrant.Token).Value!;
+        EffectiveGrant grant = EffectiveGrant.From("selecao.editais.publicar", FonteGrant.Concessao, escopoInstitucional: true).Value!;
 
         AuthorizationSubject Criar(IEnumerable<string> grupos) => AuthorizationSubject.From(
             usuario,

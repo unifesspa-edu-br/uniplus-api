@@ -25,6 +25,7 @@ public static class AprovarPedidoDeConcessaoCommandHandler
         IPerfilRepository perfis,
         IVerificadorDeAcesso verificador,
         CatalogoDaAplicacao catalogo,
+        ICatalogoDePermissoesConsultavel catalogoDoDominio,
         IAutorizacaoUnitOfWork unitOfWork,
         IUserContext userContext,
         TimeProvider timeProvider,
@@ -36,6 +37,7 @@ public static class AprovarPedidoDeConcessaoCommandHandler
         ArgumentNullException.ThrowIfNull(perfis);
         ArgumentNullException.ThrowIfNull(verificador);
         ArgumentNullException.ThrowIfNull(catalogo);
+        ArgumentNullException.ThrowIfNull(catalogoDoDominio);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -72,7 +74,7 @@ public static class AprovarPedidoDeConcessaoCommandHandler
         {
             if (aprovacao.Value == DesfechoDaAprovacao.Concluido)
             {
-                Result concedida = await ConcederAsync(pedido, perfil, decisor, concessoes, agora, cancellationToken)
+                Result concedida = await ConcederAsync(pedido, perfil, decisor, concessoes, catalogoDoDominio, agora, cancellationToken)
                     .ConfigureAwait(false);
                 if (concedida.IsFailure)
                 {
@@ -121,6 +123,7 @@ public static class AprovarPedidoDeConcessaoCommandHandler
         Perfil perfil,
         Identidade decisor,
         IConcessaoRepository concessoes,
+        ICatalogoDePermissoesConsultavel catalogo,
         DateTimeOffset agora,
         CancellationToken cancellationToken)
     {
@@ -136,7 +139,7 @@ public static class AprovarPedidoDeConcessaoCommandHandler
 
         // A concessão nova se constrói e valida antes de qualquer gravação: se ela falhar, nada fica gravado.
         Result<Concessao> concessao = Concessao.Conceder(
-            beneficiario, perfil, pedido.Escopo, new OrigemDaConcessao(TipoDeOrigem.Pedido, pedido.Id), decisor, agora,
+            beneficiario, perfil, pedido.Escopo, new OrigemDaConcessao(TipoDeOrigem.Pedido, pedido.Id), decisor, agora, catalogo,
             beneficiarioEmail: pedido.BeneficiarioEmail);
         if (concessao.IsFailure)
         {

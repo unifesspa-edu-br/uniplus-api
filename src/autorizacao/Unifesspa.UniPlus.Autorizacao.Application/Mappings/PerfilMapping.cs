@@ -54,7 +54,7 @@ public static class PerfilMapping
     }
 
     // A sensibilidade do perfil é a mais alta entre as permissões; a escala é crescente. Nunca se grava: deriva do catálogo.
-    private static Sensibilidade SensibilidadeDoPerfil(Perfil perfil, CatalogoDaAplicacao catalogo) =>
+    internal static Sensibilidade SensibilidadeDoPerfil(Perfil perfil, CatalogoDaAplicacao catalogo) =>
         perfil.Permissoes
             .Select(p => SensibilidadeDe(p.Codigo, catalogo))
             .DefaultIfEmpty(Sensibilidade.Publica)
@@ -67,7 +67,7 @@ public static class PerfilMapping
 
     // Código que o catálogo não conhece (permissão retirada do código) conta como a mais
     // restrita: o perfil não pode parecer menos sensível por causa de uma lacuna.
-    private static Sensibilidade SensibilidadeDe(string codigo, CatalogoDaAplicacao catalogo) =>
+    internal static Sensibilidade SensibilidadeDe(string codigo, CatalogoDaAplicacao catalogo) =>
         catalogo.TentarObter(codigo, out DefinicaoDePermissao? definicao)
             ? definicao!.Requisito.Sensibilidade
             : Sensibilidade.Sensivel;
