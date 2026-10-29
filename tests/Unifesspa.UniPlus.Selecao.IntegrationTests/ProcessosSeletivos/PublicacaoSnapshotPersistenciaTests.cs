@@ -105,7 +105,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             faseCanonicaOrigemId: Guid.CreateVersion7(),
             codigo: "RESULTADO_FINAL",
             donoInstitucional: "CEPS",
-            origemData: OrigemDataFase.Propria,
+            origemData: OrigemDataFase.NoEdital,
             agrupaEtapas: true,
             permiteComplementacao: false,
             coletaInscricao: true, coletaSolicitacaoIsencao: false,
@@ -115,7 +115,8 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,
             bancasRequeridas: [],
-            regraRecurso: null).Value!;
+            regraRecurso: null,
+            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
         processo.DefinirCronogramaFases([faseConforme], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).

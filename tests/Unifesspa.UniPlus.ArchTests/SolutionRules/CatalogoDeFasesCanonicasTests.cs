@@ -88,14 +88,14 @@ public sealed class CatalogoDeFasesCanonicasTests
             .Should().BeEquivalentTo(FaseCanonicaCatalogo.CodigosComComplementacaoPermitida);
     }
 
-    [Fact(DisplayName = "As fases delegadas ao MEC são as do fluxo SiSU")]
-    public void Seed_OrigemDelegadaApenasNoFluxoSisu()
+    [Fact(DisplayName = "Só a lista de espera e a chamada têm a data definida na execução")]
+    public void Seed_OrigemNaExecucaoApenasNaListaDeEsperaENaChamada()
     {
-        // Lista de espera e chamada têm data definida pelo cronograma do MEC, não pela
-        // instituição — é o que `DELEGADA` significa. Qualquer outra fase com origem
-        // delegada seria uma janela que a instituição não controla sem que ninguém
+        // O edital não fixa quantas chamadas haverá nem quando: a unidade responsável pela fase
+        // define a data na execução, e é o que `NA_EXECUCAO` significa. Qualquer outra fase com
+        // essa origem abriria mão de uma data que o edital deveria fixar, sem que ninguém
         // tenha decidido isso.
-        FaseCanonicaSeed.Itens.Where(item => item.OrigemData == OrigemDataFase.Delegada)
+        FaseCanonicaSeed.Itens.Where(item => item.OrigemData == OrigemDataFase.NaExecucao)
             .Select(item => item.Codigo)
             .Should().BeEquivalentTo("LISTA_ESPERA", "CHAMADA");
 
@@ -118,7 +118,7 @@ public sealed class CatalogoDeFasesCanonicasTests
         item.Id.Should().Be(Guid.Parse("f45e0000-0000-7000-8000-000000000016"));
         item.Nome.Should().Be("Avaliação biopsicossocial");
         item.DonoTipico.Should().Be(DonoTipico.Ceps);
-        item.OrigemData.Should().Be(OrigemDataFase.Propria);
+        item.OrigemData.Should().Be(OrigemDataFase.NoEdital);
         item.ColetaInscricao.Should().BeFalse();
         item.ColetaSolicitacaoIsencao.Should().BeFalse();
         item.AgrupaEtapas.Should().BeFalse();

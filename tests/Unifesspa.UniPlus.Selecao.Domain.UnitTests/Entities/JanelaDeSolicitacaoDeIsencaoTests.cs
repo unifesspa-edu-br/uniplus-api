@@ -181,16 +181,16 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
     private static FaseCronograma FaseDeInscricao(DateTimeOffset inicio, DateTimeOffset fim) =>
         FaseCronograma.Criar(
             ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "INSCRICAO", donoInstitucional: "CEPS",
-            origemData: OrigemDataFase.Propria, agrupaEtapas: false, permiteComplementacao: false,
+            origemData: OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false,
             coletaInscricao: true, coletaSolicitacaoIsencao: false, inicio: inicio, fim: fim,
             produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null).Value!;
+            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     private static FaseCronograma FaseDeIsencao(
         DateTimeOffset? inicio, DateTimeOffset? fim, RegraRecursoFase? recurso = null) =>
         FaseCronograma.Criar(
             ordem: 2, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "SOLICITACAO_ISENCAO", donoInstitucional: "CEPS",
-            origemData: OrigemDataFase.Delegada, agrupaEtapas: false, permiteComplementacao: false,
+            origemData: OrigemDataFase.NaExecucao, agrupaEtapas: false, permiteComplementacao: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: true, inicio: inicio, fim: fim,
             produtos:
             [
@@ -199,7 +199,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
             ],
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: recurso ?? RecursoEmDiasUteis(2m)).Value!;
+            bancasRequeridas: [], regraRecurso: recurso ?? RecursoEmDiasUteis(2m), unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     /// <summary>Produto preliminar da fase de isenção — a âncora que a regra de recurso declara.</summary>
     private static readonly Guid ProdutoPreliminarId = new("77770000-0000-4000-8000-000000000003");

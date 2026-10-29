@@ -8,6 +8,8 @@ using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 
+using ValueObjects;
+
 /// <summary>
 /// Uma fase do cronograma de um <see cref="ProcessoSeletivo"/> (1..*, Story #851) — o
 /// eixo <b>temporal</b> do certame (janela, ordem, dono institucional, o que a fase
@@ -63,7 +65,22 @@ public sealed class FaseCronograma : EntityBase
     /// <summary>Dono institucional congelado (token) — snapshot-copy estrito (§3.2); o processo não o sobrescreve.</summary>
     public string DonoInstitucional { get; private set; } = string.Empty;
 
-    /// <summary>Quem controla a data desta fase — snapshot-copy; decide a obrigatoriedade da janela (CA-07).</summary>
+    /// <summary>Id da unidade que responde pela fase, congelado sem FK (ADR-0061) — opcional no rascunho, exigido na publicação.</summary>
+    public Guid? UnidadeResponsavelOrigemId { get; private set; }
+
+    /// <summary>Sigla da unidade responsável, copiada ao definir o cronograma.</summary>
+    public string? UnidadeResponsavelSigla { get; private set; }
+
+    /// <summary>Nome da unidade responsável, copiado ao definir o cronograma.</summary>
+    public string? UnidadeResponsavelNome { get; private set; }
+
+    /// <summary>A unidade responsável como valor, ou <see langword="null"/> quando a fase ainda não a tem.</summary>
+    public UnidadeResponsavelSnapshot? UnidadeResponsavel =>
+        UnidadeResponsavelOrigemId is { } origemId
+            ? new UnidadeResponsavelSnapshot(origemId, UnidadeResponsavelSigla!, UnidadeResponsavelNome!)
+            : null;
+
+    /// <summary>Quando a data desta fase é fixada (no edital ou na execução) — snapshot-copy; decide a obrigatoriedade da janela (CA-07).</summary>
     public OrigemDataFase OrigemData { get; private set; }
 
     /// <summary>Se esta fase agrupa etapas pontuadas — bicondicional com a existência de etapa (§3.5).</summary>
@@ -197,7 +214,8 @@ public sealed class FaseCronograma : EntityBase
         string? faseConcluinteCodigo,
         bool emiteParecerIndividual,
         IReadOnlyList<BancaRequerida> bancasRequeridas,
-        RegraRecursoFase? regraRecurso)
+        RegraRecursoFase? regraRecurso,
+        UnidadeResponsavelSnapshot? unidadeResponsavel)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
         ArgumentException.ThrowIfNullOrWhiteSpace(donoInstitucional);
@@ -238,7 +256,7 @@ public sealed class FaseCronograma : EntityBase
         // violações da mesma fase.
         List<FieldError> erros = [];
 
-        // JanelaInvertida vale independentemente da origem da data — uma fase DELEGADA
+        // JanelaInvertida vale independentemente da origem da data — uma fase NA_EXECUCAO
         // com janela declarada não escapa da checagem de coerência interna.
         if (inicio is { } inicioValor && fim is { } fimValor && fimValor < inicioValor)
         {
@@ -247,13 +265,13 @@ public sealed class FaseCronograma : EntityBase
                 $"A fase '{codigo}' tem o fim da janela ({fimValor:O}) antes do início ({inicioValor:O}).")));
         }
 
-        // CA-07: OrigemData=PROPRIA exige janela; DELEGADA aceita "sem data" como estado
-        // válido — o setor responsável não congela data que não controla (§3.2).
-        if (origemData == OrigemDataFase.Propria && (inicio is null || fim is null))
+        // CA-07: OrigemData=NO_EDITAL exige janela; NA_EXECUCAO aceita "sem data" como estado
+        // válido — a data não é fixada no edital, e a unidade responsável a define na execução (§3.2).
+        if (origemData == OrigemDataFase.NoEdital && (inicio is null || fim is null))
         {
             erros.Add(new(null, new DomainError(
-                "FaseCronograma.JanelaObrigatoriaEmDataPropria",
-                $"A fase '{codigo}' tem origem de data própria e exige início e fim da janela.")));
+                "FaseCronograma.JanelaObrigatoriaEmDataNoEdital",
+                $"A fase '{codigo}' tem a data fixada no edital e exige início e fim da janela.")));
         }
 
         // O par ato + papel é a chave natural do produto dentro da fase, e o índice único da
@@ -315,6 +333,7 @@ public sealed class FaseCronograma : EntityBase
             EmiteParecerIndividual = emiteParecerIndividual,
         };
 
+        fase.DefinirUnidadeResponsavel(unidadeResponsavel);
         fase.AdotarFilhas(produtos, bancasRequeridas, regraRecurso);
 
         return Result<FaseCronograma>.Success(fase);
@@ -354,7 +373,8 @@ public sealed class FaseCronograma : EntityBase
         string? faseConcluinteCodigo,
         bool emiteParecerIndividual,
         IReadOnlyList<BancaRequerida> bancasRequeridas,
-        RegraRecursoFase? regraRecurso)
+        RegraRecursoFase? regraRecurso,
+        UnidadeResponsavelSnapshot? unidadeResponsavel)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
         ArgumentException.ThrowIfNullOrWhiteSpace(donoInstitucional);
@@ -401,6 +421,7 @@ public sealed class FaseCronograma : EntityBase
             EmiteParecerIndividual = emiteParecerIndividual,
         };
 
+        fase.DefinirUnidadeResponsavel(unidadeResponsavel);
         fase.AdotarFilhas(produtos, bancasRequeridas, regraRecurso);
 
         return fase;
@@ -569,6 +590,13 @@ public sealed class FaseCronograma : EntityBase
     internal IReadOnlyList<FieldError> ViolacoesDoRecorteDeCompetencia() =>
         ViolacoesDoRecorteDeCompetencia(Codigo, _bancasRequeridas);
 
+    private void DefinirUnidadeResponsavel(UnidadeResponsavelSnapshot? unidade)
+    {
+        UnidadeResponsavelOrigemId = unidade?.OrigemId;
+        UnidadeResponsavelSigla = unidade?.Sigla;
+        UnidadeResponsavelNome = unidade?.Nome;
+    }
+
     internal void VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
 
@@ -630,7 +658,8 @@ public sealed class FaseCronograma : EntityBase
         string? faseConcluinteCodigo,
         bool emiteParecerIndividual,
         IReadOnlyList<BancaRequerida> bancasRequeridas,
-        RegraRecursoFase? regraRecurso)
+        RegraRecursoFase? regraRecurso,
+        UnidadeResponsavelSnapshot? unidadeResponsavel)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
         ArgumentException.ThrowIfNullOrWhiteSpace(donoInstitucional);
@@ -650,6 +679,7 @@ public sealed class FaseCronograma : EntityBase
         Fim = EmUtc(fim);
         FaseConcluinteCodigo = NormalizarCodigo(faseConcluinteCodigo);
         EmiteParecerIndividual = emiteParecerIndividual;
+        DefinirUnidadeResponsavel(unidadeResponsavel);
 
         // Duas passadas, porque a chave da linha é o par ato + papel e o papel é justamente
         // o que a edição pode trocar. A primeira casa o par inteiro — a linha que não mudou.

@@ -36,7 +36,7 @@ internal static class CorpusFitness
                 faseCanonicaOrigemId: new Guid("44444444-4444-4444-4444-444444444444"),
                 codigo: "RESULTADO_FINAL",
                 donoInstitucional: "CEPS",
-                origemData: OrigemDataFase.Propria,
+                origemData: OrigemDataFase.NoEdital,
                 agrupaEtapas: true,
                 permiteComplementacao: false,
                 coletaInscricao: false, coletaSolicitacaoIsencao: false,
@@ -46,7 +46,8 @@ internal static class CorpusFitness
                 faseConcluinteCodigo: null,
                 emiteParecerIndividual: false,
                 bancasRequeridas: [],
-                regraRecurso: null).Value!,
+                regraRecurso: null,
+                unidadeResponsavel: UnidadesDeTeste.Ceps).Value!,
         ], [], PrecondicaoIfMatch.Ausente);
 
         processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);

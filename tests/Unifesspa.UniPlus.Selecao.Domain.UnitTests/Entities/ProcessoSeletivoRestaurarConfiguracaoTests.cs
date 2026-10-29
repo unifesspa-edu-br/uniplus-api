@@ -538,7 +538,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             faseCanonicaOrigemId: new Guid("eeee0000-0000-4000-8000-000000000002"),
             codigo: "AVALIACAO",
             donoInstitucional: "CEPS",
-            origemData: OrigemDataFase.Propria,
+            origemData: OrigemDataFase.NoEdital,
             agrupaEtapas: true,
             permiteComplementacao: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
@@ -548,7 +548,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,
             bancasRequeridas: [],
-            regraRecurso: null).Value!;
+            regraRecurso: null,
+            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
         // O estado de que o descarte parte chega por uma restauração: o agregado publicado
         // recusa mudar de fase uma etapa fora de sessão editorial, e o que se testa aqui é o
@@ -614,7 +615,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             faseCanonicaOrigemId: new Guid("eeee0000-0000-4000-8000-000000000003"),
             codigo: "HABILITACAO",
             donoInstitucional: "CEPS",
-            origemData: OrigemDataFase.Propria,
+            origemData: OrigemDataFase.NoEdital,
             agrupaEtapas: false,
             permiteComplementacao: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
@@ -624,7 +625,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,
             bancasRequeridas: [],
-            regraRecurso: null).Value!;
+            regraRecurso: null,
+            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
         GrafoConfiguracao grafo = Grafo(
             etapas: [
@@ -662,7 +664,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             faseCanonicaOrigemId: new Guid("eeee0000-0000-4000-8000-000000000009"),
             codigo: "RESULTADO_FINAL",
             donoInstitucional: "CEPS",
-            origemData: OrigemDataFase.Propria,
+            origemData: OrigemDataFase.NoEdital,
             agrupaEtapas: true,
             permiteComplementacao: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
@@ -677,7 +679,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             regraRecurso: RegraRecursoFase.Criar(
                 ReferenciaRegra.Criar(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)).Value!,
                 new ArgsRegraPrazoRecurso(3m, UnidadePrazo.DiasUteis, null, null, false, null, null),
-                preliminar.Id).Value!).Value!;
+                preliminar.Id).Value!,
+            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
         GrafoConfiguracao grafo = Grafo(cronogramaFases: [congelada]);
 
@@ -1305,7 +1308,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             faseCanonicaOrigemId: Guid.CreateVersion7(),
             codigo: "RESULTADO_FINAL",
             donoInstitucional: "CEPS",
-            origemData: OrigemDataFase.Propria,
+            origemData: OrigemDataFase.NoEdital,
             agrupaEtapas: true,
             permiteComplementacao: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
@@ -1315,7 +1318,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,
             bancasRequeridas: [],
-            regraRecurso: null).Value!;
+            regraRecurso: null,
+            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
         processo.DefinirCronogramaFases([faseTrocada], [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         Guid faseVivaId = processo.CronogramaFases.Single().Id;
 
@@ -1326,14 +1330,14 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         Guid faseCongeladaId = Guid.CreateVersion7();
         FaseCronograma faseCongelada = FaseCronograma.Reidratar(
             faseCongeladaId, ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "RESULTADO_FINAL",
-            donoInstitucional: "CEPS", origemData: OrigemDataFase.Propria, agrupaEtapas: true,
+            donoInstitucional: "CEPS", origemData: OrigemDataFase.NoEdital, agrupaEtapas: true,
             permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null);
+            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps);
 
         DocumentoExigido documentoCongelado = DocumentoExigido.Reidratar(
             Guid.CreateVersion7(), exigidoNaFaseId: faseCongeladaId, tipoDocumentoOrigemId: Guid.CreateVersion7(),
@@ -1503,7 +1507,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         faseCanonicaOrigemId: new Guid("eeee0000-0000-4000-8000-000000000001"),
         codigo: "RESULTADO_FINAL",
         donoInstitucional: "CEPS",
-        origemData: OrigemDataFase.Propria,
+        origemData: OrigemDataFase.NoEdital,
         agrupaEtapas: true,
         permiteComplementacao: false,
         coletaInscricao: false, coletaSolicitacaoIsencao: false,
@@ -1513,7 +1517,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         faseConcluinteCodigo: null,
         emiteParecerIndividual: false,
         bancasRequeridas: [],
-        regraRecurso: null).Value!;
+        regraRecurso: null,
+        unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     private static ConfiguracaoDistribuicaoVagas Distribuicao() =>
         ConfiguracaoDistribuicaoVagas.Criar(

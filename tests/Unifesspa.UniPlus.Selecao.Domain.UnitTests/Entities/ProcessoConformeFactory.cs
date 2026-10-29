@@ -112,14 +112,14 @@ internal static class ProcessoConformeFactory
     /// </summary>
     internal static readonly Guid ProdutoPreliminarId = new("77770000-0000-4000-8000-000000000001");
 
-    internal static FaseCronograma FaseConforme(RegraRecursoFase? regraRecurso = null)
+    internal static FaseCronograma FaseConforme(RegraRecursoFase? regraRecurso = null, bool semUnidadeResponsavel = false)
     {
         Result<FaseCronograma> fase = FaseCronograma.Criar(
             ordem: 1,
             faseCanonicaOrigemId: Guid.CreateVersion7(),
             codigo: "RESULTADO_FINAL",
             donoInstitucional: "CEPS",
-            origemData: OrigemDataFase.Propria,
+            origemData: OrigemDataFase.NoEdital,
             agrupaEtapas: true,
             permiteComplementacao: false,
             coletaInscricao: true, coletaSolicitacaoIsencao: false,
@@ -139,7 +139,8 @@ internal static class ProcessoConformeFactory
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,
             bancasRequeridas: [],
-            regraRecurso: regraRecurso);
+            regraRecurso: regraRecurso,
+            unidadeResponsavel: semUnidadeResponsavel ? null : UnidadesDeTeste.Ceps);
 
         // Sem esta asserção, uma fase recusada viraria null e o teste seguiria com um
         // cronograma vazio — passando por não exercitar nada, que é o pior modo de falhar.

@@ -104,6 +104,17 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.IntegridadeViolada);
     }
 
+    [Fact(DisplayName = "Fase congelada sem a chave da unidade responsável é recusada: a forma anterior do envelope não é lida")]
+    public void FaseSemAChaveDaUnidadeResponsavel_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["cronogramaFases"]!["fases"]![0]!.AsObject().Remove("unidadeResponsavel"));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error.Message.Should().Contain("unidadeResponsavel");
+    }
+
     [Fact(DisplayName = "Etapas do formulário fora da ordem crescente são recusadas: o encoder nunca as emite assim")]
     public void EtapasForaDeOrdem_Recusa()
     {
@@ -1010,10 +1021,10 @@ public sealed class EnvelopeCodecRecusaTests
             regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)).Value!, regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         FaseCronograma fase = FaseCronograma.Criar(
-            1, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.Propria,
+            1, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.NoEdital,
             agrupaEtapas: true, permiteComplementacao: true, coletaInscricao: true, coletaSolicitacaoIsencao: false, inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null).Value!;
+            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
 

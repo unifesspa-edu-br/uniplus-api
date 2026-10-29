@@ -17,7 +17,7 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
     private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
     private static FaseCanonica Existente(string codigo = "ENSALAMENTO") =>
-        FaseCanonica.Criar(codigo, "Ensalamento", null, "CEPS", false, false, null, false, false, "PROPRIA").Value!;
+        FaseCanonica.Criar(codigo, "Ensalamento", null, "CEPS", false, false, null, false, false, "NO_EDITAL").Value!;
 
     [Fact(DisplayName = "Fase inexistente retorna NaoEncontrada (404)")]
     public async Task Handle_Inexistente_RetornaNaoEncontrada()
@@ -26,7 +26,7 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
         _repository.ObterPorIdAsync(id, Arg.Any<CancellationToken>()).Returns((FaseCanonica?)null);
 
         Result resultado = await AtualizarFaseCanonicaCommandHandler.Handle(
-            new AtualizarFaseCanonicaCommand(id, Nome: "x", DonoTipico: "CEPS", OrigemData: "PROPRIA"), _repository, _unitOfWork, CancellationToken.None);
+            new AtualizarFaseCanonicaCommand(id, Nome: "x", DonoTipico: "CEPS", OrigemData: "NO_EDITAL"), _repository, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(FaseCanonicaErrorCodes.NaoEncontrada);
@@ -40,7 +40,7 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
 
         var comando = new AtualizarFaseCanonicaCommand(
-            existente.Id, Nome: "Ensalamento (novo)", DonoTipico: "CRCA", OrigemData: "PROPRIA");
+            existente.Id, Nome: "Ensalamento (novo)", DonoTipico: "CRCA", OrigemData: "NO_EDITAL");
 
         Result resultado = await AtualizarFaseCanonicaCommandHandler.Handle(
             comando, _repository, _unitOfWork, CancellationToken.None);
@@ -58,7 +58,7 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
 
         var comando = new AtualizarFaseCanonicaCommand(
-            existente.Id, Nome: "Homologação", DonoTipico: "CEPS", AgrupaEtapas: true, OrigemData: "PROPRIA");
+            existente.Id, Nome: "Homologação", DonoTipico: "CEPS", AgrupaEtapas: true, OrigemData: "NO_EDITAL");
 
         Result resultado = await AtualizarFaseCanonicaCommandHandler.Handle(
             comando, _repository, _unitOfWork, CancellationToken.None);
@@ -74,7 +74,7 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
     public async Task Handle_NomeAusente_RetornaViolacaoSemBuscarPorId()
     {
         var comando = new AtualizarFaseCanonicaCommand(
-            Guid.CreateVersion7(), Nome: "", DonoTipico: "CEPS", OrigemData: "PROPRIA");
+            Guid.CreateVersion7(), Nome: "", DonoTipico: "CEPS", OrigemData: "NO_EDITAL");
 
         Result resultado = await AtualizarFaseCanonicaCommandHandler.Handle(
             comando, _repository, _unitOfWork, CancellationToken.None);

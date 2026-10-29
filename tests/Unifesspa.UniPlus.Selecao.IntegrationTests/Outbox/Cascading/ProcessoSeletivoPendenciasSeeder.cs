@@ -48,6 +48,32 @@ internal static class ProcessoSeletivoPendenciasSeeder
     }
 
     /// <summary>
+    /// Igual à base, exceto que a fase do cronograma está sem unidade responsável — vermelho só
+    /// em "Cronograma: toda fase tem a unidade responsável definida"; <c>Publicar</c> recusa com
+    /// <c>ProcessoSeletivo.FaseSemUnidadeResponsavel</c>.
+    /// </summary>
+    public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearComFaseSemUnidadeResponsavelAsync(
+        SelecaoDbContext db, string nome)
+    {
+        ProcessoSeletivo processo = ProcessoBaseConforme(nome, out _);
+
+        FaseCronograma faseSemUnidade = FaseCronograma.Criar(
+            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "RESULTADO_FINAL",
+            donoInstitucional: "CEPS", origemData: OrigemDataFase.NoEdital,
+            agrupaEtapas: true, permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false,
+            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+            produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
+            faseConcluinteCodigo: null,
+            emiteParecerIndividual: false,
+            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: null).Value!;
+        Result cronogramaResult = processo.DefinirCronogramaFases([faseSemUnidade], [], PrecondicaoIfMatch.Ausente);
+        cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);
+
+        return await PersistirComDocumentoConfirmadoAsync(db, processo);
+    }
+
+    /// <summary>
     /// Igual à base, exceto que a distribuição de vagas usa a regra Institucional (fora do
     /// regime da Lei 12.711) com uma modalidade <c>SegueCascata</c> — vermelho em "Cascata de
     /// remanejamento" e no detalhamento "Cascata: modalidade SegueCascata usa a regra de
@@ -272,14 +298,14 @@ internal static class ProcessoSeletivoPendenciasSeeder
 
         faseBuilder = coletaInscricao => FaseCronograma.Criar(
             ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "RESULTADO_FINAL",
-            donoInstitucional: "CEPS", origemData: OrigemDataFase.Propria,
+            donoInstitucional: "CEPS", origemData: OrigemDataFase.NoEdital,
             agrupaEtapas: true, permiteComplementacao: false, coletaInscricao: coletaInscricao, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null).Value!;
+            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
         // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01) — declarada
         // aqui para que cada método desta classe continue isolando SÓ o defeito que se propõe

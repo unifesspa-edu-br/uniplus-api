@@ -1955,7 +1955,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     nova.FaseConcluinteCodigo,
                     nova.EmiteParecerIndividual,
                     [.. nova.BancasRequeridas],
-                    nova.RegraRecurso);
+                    nova.RegraRecurso,
+                    nova.UnidadeResponsavel);
                 resultantes.Add(existente);
             }
             else
@@ -3910,6 +3911,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("cronograma_etapa_pontuada_sem_fase_agrupadora", DimensaoConformidade.Cronograma, "Cronograma: etapa pontuada tem fase que agrupa etapas", !HaEtapaSemFaseDeAvaliacao()),
         new ItemConformidade("cronograma_inscricao_propria_sem_fase_de_coleta", DimensaoConformidade.Cronograma, "Cronograma: inscrição própria tem fase que coleta inscrição", !HaInscricaoPropriaSemFaseDeColeta()),
         new ItemConformidade("cronograma_fase_que_coleta_inscricao_sem_janela", DimensaoConformidade.Cronograma, "Cronograma: a fase que coleta inscrição tem início e fim definidos", FaseQueColetaInscricaoSemJanela() is null),
+        new ItemConformidade("cronograma_fase_sem_unidade_responsavel", DimensaoConformidade.Cronograma, "Cronograma: toda fase tem a unidade responsável definida", FaseSemUnidadeResponsavel() is null),
         new ItemConformidade("cronograma_janela_de_isencao", DimensaoConformidade.Cronograma, "Cronograma: a janela de solicitação de isenção abre com a inscrição, fecha antes dela e dura cinco dias", JanelaDeIsencaoConforme(contexto)),
         new ItemConformidade("cronograma_vagas_sem_fase_que_produz_resultado", DimensaoConformidade.Cronograma, "Cronograma: vagas ofertadas têm fase que produz resultado", !HaVagasSemFaseQueProduzResultado()),
         new ItemConformidade("cronograma_conclusao_do_ciclo_recursal", DimensaoConformidade.Cronograma, "Cronograma: a fase ou a etapa que publica resultado preliminar tem o definitivo do mesmo tipo de ato, na própria fase ou etapa ou na fase concluinte declarada", PendenciaDaConclusaoDoCicloRecursal() is null),
@@ -4324,15 +4326,22 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         }
 
         // Issue #1350: a fase que coleta inscrição declara o prazo que o Edital publica, então
-        // ela precisa de janela mesmo quando a origem da data é DELEGADA. É a única exceção à
-        // §3.2 — nas demais fases, "sem data" continua sendo estado válido, porque o setor
-        // responsável não congela data que não controla. Um Edital que admite inscrição sem
+        // ela precisa de janela mesmo quando a origem da data é NA_EXECUCAO. É a única exceção à
+        // §3.2 — nas demais fases, "sem data" continua sendo estado válido, porque a data não é
+        // fixada no edital e a unidade responsável a define na execução. Um Edital que admite inscrição sem
         // prazo definido, esse não se sustenta.
         if (FaseQueColetaInscricaoSemJanela() is { } faseSemJanela)
         {
             return new DomainError(
                 "ProcessoSeletivo.FaseQueColetaInscricaoSemJanela",
                 $"A fase '{faseSemJanela.Codigo}' coleta inscrição e precisa de início e fim definidos para que o Edital declare o período.");
+        }
+
+        if (FaseSemUnidadeResponsavel() is { } faseSemUnidade)
+        {
+            return new DomainError(
+                "ProcessoSeletivo.FaseSemUnidadeResponsavel",
+                $"A fase '{faseSemUnidade.Codigo}' não tem unidade responsável definida — toda fase publicada responde a uma unidade da Unifesspa.");
         }
 
         if (PendenciaDaJanelaDeIsencao(fusoInstitucional) is { } pendenciaIsencao)
@@ -4789,7 +4798,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             }
 
             // A ordem já garante a precedência declarada; a janela é a segunda evidência, e
-            // só existe quando as duas fases a declaram (uma fase DELEGADA sem data é
+            // só existe quando as duas fases a declaram (uma fase NA_EXECUCAO sem data é
             // estado válido, §3.2).
             if (fase.Inicio is { } inicioConcluida
                 && concluinte.Inicio is { } inicioConcluinte
@@ -4949,6 +4958,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         FaseQueAncoraOPeriodoDeInscricao() is { } ancora && (ancora.Inicio is null || ancora.Fim is null)
             ? ancora
             : null;
+
+    /// <summary>A primeira fase do cronograma, na ordem, sem unidade responsável.</summary>
+    private FaseCronograma? FaseSemUnidadeResponsavel() =>
+        _cronogramaFases.OrderBy(static f => f.Ordem).FirstOrDefault(static f => f.UnidadeResponsavelOrigemId is null);
 
     /// <summary>Há vagas ofertadas (VoBase > 0), mas nenhuma fase do cronograma produz resultado (§3.4).</summary>
     private bool HaVagasSemFaseQueProduzResultado() =>
@@ -7897,7 +7910,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     congelada.FaseConcluinteCodigo,
                     congelada.EmiteParecerIndividual,
                     [.. congelada.BancasRequeridas],
-                    congelada.RegraRecurso);
+                    congelada.RegraRecurso,
+                    congelada.UnidadeResponsavel);
                 fases.Add(viva);
                 if (viva.Id != congelada.Id)
                 {

@@ -22,7 +22,7 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// <param name="AgrupaEtapas">Sinalizador de agrupamento de etapas pontuadas congelado.</param>
 /// <param name="PermiteComplementacao">Sinalizador de complementação documental congelado.</param>
 /// <param name="ColetaInscricao">Sinalizador de coleta de inscrição congelado.</param>
-/// <param name="OrigemData">Origem da data congelada (token; "PROPRIA" ou "DELEGADA").</param>
+/// <param name="OrigemData">Origem da data congelada (token; "NO_EDITAL" ou "NA_EXECUCAO").</param>
 public sealed record FaseCanonicaSnapshot(
     Guid OrigemId,
     string Codigo,

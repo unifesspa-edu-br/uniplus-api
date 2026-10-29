@@ -395,7 +395,8 @@ public static class ObterProcessoSeletivoQueryHandler
             .OrderBy(static b => b.Codigo, StringComparer.Ordinal)
             .ThenBy(static b => b.Id)
             .Select(ProjectBancaRequerida)],
-        fase.RegraRecurso is { } regraRecurso ? ProjectRegraRecursoFase(regraRecurso) : null);
+        fase.RegraRecurso is { } regraRecurso ? ProjectRegraRecursoFase(regraRecurso) : null,
+        fase.UnidadeResponsavel is { } unidade ? new UnidadeResponsavelDto(unidade.OrigemId, unidade.Sigla, unidade.Nome) : null);
 
     /// <summary>
     /// A banca requerida e o seu recorte de competência. As bancas são ordenadas porque o

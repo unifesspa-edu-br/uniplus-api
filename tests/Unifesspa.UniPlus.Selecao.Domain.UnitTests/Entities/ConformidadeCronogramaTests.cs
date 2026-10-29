@@ -46,13 +46,13 @@ public sealed class ConformidadeCronogramaTests
         bool coletaInscricao = false,
         bool coletaSolicitacaoIsencao = false) =>
         FaseCronograma.Criar(
-            ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.Delegada,
+            ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.NaExecucao,
             agrupaEtapas, permiteComplementacao: false,
             coletaInscricao, coletaSolicitacaoIsencao,
             inicio: null, fim: null,
             produtos: produzResultado ? [ProdutoDaFase.Criar(codigo, PapelProdutoFase.Definitivo)] : [],
             faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null);
+            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps);
 
     private static DadosEdital Dados() => DadosEdital.Criar(
         "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
@@ -225,13 +225,13 @@ public sealed class ConformidadeCronogramaTests
 
     private static FaseCronograma FaseQuePublica(int ordem, string codigo, params ProdutoDaFase[] produtos) =>
         FaseCronograma.Criar(
-            ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.Delegada,
+            ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.NaExecucao,
             agrupaEtapas: false, permiteComplementacao: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: null, fim: null,
             produtos: produtos,
             faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null).Value!;
+            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     private static ProcessoSeletivo ProcessoPublicavelComCronograma(params FaseCronograma[] fases)
     {
@@ -423,13 +423,13 @@ public sealed class ConformidadeCronogramaTests
 
     private static FaseCronograma FaseQueConclui(int ordem, string codigo, string? concluinte, params ProdutoDaFase[] produtos) =>
         FaseCronograma.Criar(
-            ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.Delegada,
+            ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.NaExecucao,
             agrupaEtapas: false, permiteComplementacao: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: null, fim: null,
             produtos: produtos,
             faseConcluinteCodigo: concluinte, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null).Value!;
+            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     [Fact(DisplayName = "Aviso: o mesmo tipo definitivo em duas fases gera o aviso, com o código estável e as duas fases na mensagem")]
     public void Aviso_MesmoDefinitivoEmDuasFases_GeraAviso()

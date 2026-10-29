@@ -38,7 +38,7 @@ public sealed class ProcessoSeletivoCronogramaTests
             faseCanonicaOrigemId ?? Guid.CreateVersion7(),
             codigo,
             "CEPS",
-            OrigemDataFase.Delegada,
+            OrigemDataFase.NaExecucao,
             agrupaEtapas,
             permiteComplementacao: false,
             coletaInscricao,
@@ -49,7 +49,8 @@ public sealed class ProcessoSeletivoCronogramaTests
             faseConcluinteCodigo,
             emiteParecerIndividual,
             bancasRequeridas: [],
-            regraRecurso: null);
+            regraRecurso: null,
+            unidadeResponsavel: UnidadesDeTeste.Ceps);
 
     private static ArestaPrecedencia Aresta(string antecessora, string sucessora, bool permiteSobreposicao = false) =>
         new(antecessora, sucessora, permiteSobreposicao);

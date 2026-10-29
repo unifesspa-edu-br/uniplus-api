@@ -56,6 +56,7 @@ public static class DefinirCronogramaFasesCommandHandler
         DefinirCronogramaFasesCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IFaseCanonicaReader faseCanonicaReader,
+        IResolvedorDaUnidadeResponsavel unidadeResponsavelResolvedor,
         ITipoBancaReader tipoBancaReader,
         ICategoriaDocumentoReader categoriaDocumentoReader,
         IPrecedenciaFaseReader precedenciaFaseReader,
@@ -69,6 +70,7 @@ public static class DefinirCronogramaFasesCommandHandler
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(faseCanonicaReader);
+        ArgumentNullException.ThrowIfNull(unidadeResponsavelResolvedor);
         ArgumentNullException.ThrowIfNull(tipoBancaReader);
         ArgumentNullException.ThrowIfNull(categoriaDocumentoReader);
         ArgumentNullException.ThrowIfNull(precedenciaFaseReader);
@@ -141,6 +143,22 @@ public static class DefinirCronogramaFasesCommandHandler
             return resolvida;
         }
 
+        Dictionary<Guid, UnidadeResponsavelSnapshot?> unidadesResolvidas = [];
+
+        async Task<UnidadeResponsavelSnapshot?> ResolverUnidadeAsync(Guid unidadeId)
+        {
+            if (unidadesResolvidas.TryGetValue(unidadeId, out UnidadeResponsavelSnapshot? memoizada))
+            {
+                return memoizada;
+            }
+
+            UnidadeResponsavelSnapshot? resolvida = await unidadeResponsavelResolvedor
+                .ResolverAsync(unidadeId, cancellationToken)
+                .ConfigureAwait(false);
+            unidadesResolvidas[unidadeId] = resolvida;
+            return resolvida;
+        }
+
         // As âncoras que o cronograma já tinha antes desta gravação: o cliente devolve o que leu, e uma
         // âncora que já estava no agregado não é revista pelo que o catálogo diz hoje do ato.
         HashSet<(string Fase, string Ato)> ancorasJaDeclaradas =
@@ -182,6 +200,19 @@ public static class DefinirCronogramaFasesCommandHandler
             }
 
             OrigemDataFase origemData = OrigemDataFaseCodigo.FromCodigo(faseCanonica.OrigemData);
+
+            // A unidade é resolvida no cadastro vivo a cada definição; opcional no rascunho.
+            UnidadeResponsavelSnapshot? unidadeResponsavel = null;
+            if (input.UnidadeResponsavelId is { } unidadeResponsavelId)
+            {
+                unidadeResponsavel = await ResolverUnidadeAsync(unidadeResponsavelId).ConfigureAwait(false);
+                if (unidadeResponsavel is null)
+                {
+                    return InterromperCom($"fases[{indice}].unidadeResponsavelId", new DomainError(
+                        "FaseCronograma.UnidadeResponsavelNaoEncontrada",
+                        $"Unidade responsável {unidadeResponsavelId} da fase '{faseCanonica.Codigo}' não encontrada ou não está mais viva."));
+                }
+            }
 
             List<BancaRequerida> bancas = [];
             for (int posicao = 0; posicao < input.BancasRequeridas.Count; posicao++)
@@ -435,7 +466,8 @@ public static class DefinirCronogramaFasesCommandHandler
                 input.FaseConcluinteCodigo,
                 input.EmiteParecerIndividual,
                 bancas,
-                regraRecurso);
+                regraRecurso,
+                unidadeResponsavel);
             if (faseResult.IsFailure)
             {
                 recusasAcumuladas.AddRange(faseResult.Errors

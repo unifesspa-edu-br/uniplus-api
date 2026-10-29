@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Prova <b>contra o banco</b> a fronteira que autorizou substituir a definição de
@@ -197,7 +198,7 @@ public sealed class SubstituicaoDaRegraDeRecursoFronteiraTests : IClassFixture<R
             faseCanonicaOrigemId: Guid.CreateVersion7(),
             codigo: "RESULTADO_PRELIMINAR",
             donoInstitucional: "CEPS",
-            origemData: OrigemDataFase.Propria,
+            origemData: OrigemDataFase.NoEdital,
             agrupaEtapas: false,
             permiteComplementacao: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
@@ -207,7 +208,8 @@ public sealed class SubstituicaoDaRegraDeRecursoFronteiraTests : IClassFixture<R
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,
             bancasRequeridas: [],
-            regraRecurso: regraRecurso).Value!;
+            regraRecurso: regraRecurso,
+            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
         processo.DefinirCronogramaFases(
             [.. processo.CronogramaFases, faseComRecurso], [], PrecondicaoIfMatch.Ausente)

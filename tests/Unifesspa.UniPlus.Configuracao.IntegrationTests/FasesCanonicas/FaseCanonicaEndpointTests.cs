@@ -96,7 +96,7 @@ public sealed class FaseCanonicaEndpointTests
             nome = "Chamada",
             donoTipico = "CEPS",
             descricao = "Convocação de aprovados",
-            origemData = "PROPRIA",
+            origemData = "NO_EDITAL",
         };
 
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -130,7 +130,7 @@ public sealed class FaseCanonicaEndpointTests
             nome = "Avaliação biopsicossocial",
             donoTipico = "CEPS",
             descricao = "Avaliação multiprofissional e interdisciplinar da condição de deficiência",
-            origemData = "PROPRIA",
+            origemData = "NO_EDITAL",
         };
 
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -170,12 +170,28 @@ public sealed class FaseCanonicaEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
+    [Theory(DisplayName = "POST com o token antigo da origem da data é recusado com 422 de origem inválida")]
+    [InlineData("PROPRIA")]
+    [InlineData("DELEGADA")]
+    public async Task Criar_OrigemDataComTokenAntigo_Retorna422DeOrigemInvalida(string origemData)
+    {
+        var body = new { codigo = "HOMOLOGACAO", nome = "Homologação", donoTipico = "CEPS", origemData };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString()
+            .Should().Be("uniplus.configuracao.fase_canonica.origem_data_invalida");
+    }
+
     [Fact(DisplayName = "POST com código já existente entre vivos retorna 409")]
     public async Task Criar_CodigoDuplicado_Retorna409()
     {
         await LiberarSlotDoSeedAsync("LISTA_ESPERA");
 
-        var body = new { codigo = "LISTA_ESPERA", nome = "Lista de espera", donoTipico = "CEPS", origemData = "PROPRIA" };
+        var body = new { codigo = "LISTA_ESPERA", nome = "Lista de espera", donoTipico = "CEPS", origemData = "NO_EDITAL" };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage primeiro = await EnviarPostAdmin(client, body);
@@ -188,7 +204,7 @@ public sealed class FaseCanonicaEndpointTests
     [Fact(DisplayName = "POST com código e nome ausentes ao mesmo tempo acumula as duas violações em errors[]")]
     public async Task Criar_CodigoENomeAusentes_AcumulaAsDuasViolacoesEmErrors()
     {
-        var body = new { donoTipico = "CEPS", origemData = "PROPRIA" };
+        var body = new { donoTipico = "CEPS", origemData = "NO_EDITAL" };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);
@@ -205,7 +221,7 @@ public sealed class FaseCanonicaEndpointTests
     [Fact(DisplayName = "POST com código inválido e AgrupaEtapas=true não soma a coerência dependente do código em errors[]")]
     public async Task Criar_CodigoInvalidoComAgrupaEtapas_NaoSomaCoerenciaDependenteEmErrors()
     {
-        var body = new { codigo = "ENTREVISTA_FINAL", nome = "x", donoTipico = "CEPS", origemData = "PROPRIA", agrupaEtapas = true };
+        var body = new { codigo = "ENTREVISTA_FINAL", nome = "x", donoTipico = "CEPS", origemData = "NO_EDITAL", agrupaEtapas = true };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);

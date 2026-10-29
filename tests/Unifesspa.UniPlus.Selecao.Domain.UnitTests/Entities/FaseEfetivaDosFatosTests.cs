@@ -41,11 +41,11 @@ public sealed class FaseEfetivaDosFatosTests
 
     private static FaseCronograma Fase(int ordem, string codigo, bool coletaInscricao = false, bool coletaIsencao = false) =>
         FaseCronograma.Criar(
-            ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.Propria,
+            ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.NoEdital,
             agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: coletaInscricao, coletaSolicitacaoIsencao: coletaIsencao,
             inicio: new DateTimeOffset(2026, 1, ordem, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, ordem + 1, 0, 0, 0, TimeSpan.Zero),
             produtos: [ProdutoDaFase.Criar(codigo, PapelProdutoFase.Definitivo)],
-            faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!;
+            faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     private static FatoColetado Item(string codigo) =>
         FatoColetado.Criar(codigo, 0, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL").Value!;

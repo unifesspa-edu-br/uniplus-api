@@ -82,7 +82,7 @@ public sealed class CronogramaFasesLoteDeRecusasEndpointTests
             {
                 ordem = 1,
                 faseCanonicaId = fasePreliminarId,
-                // As duas fases têm origem de data PRÓPRIA no catálogo e exigem janela; sem
+                // As duas fases têm a data fixada no edital (NO_EDITAL) e exigem janela; sem
                 // ela a fábrica recusaria antes, e o lote sob prova nunca chegaria a rodar.
                 inicio = new DateTimeOffset(2027, 1, 10, 0, 0, 0, TimeSpan.Zero),
                 fim = new DateTimeOffset(2027, 1, 20, 0, 0, 0, TimeSpan.Zero),

@@ -81,7 +81,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
 
     private readonly SnapshotPublicacaoCanonicalizer _encoder = new();
 
-    public string SchemaVersion => "0.0.37";
+    public string SchemaVersion => "0.0.38";
 
     public IPerfilCanonico Perfil => PerfilCanonicoV1.Instancia;
 

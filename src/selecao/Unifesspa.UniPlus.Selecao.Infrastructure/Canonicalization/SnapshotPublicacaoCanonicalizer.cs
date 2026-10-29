@@ -354,8 +354,13 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// declara nenhum). Reclassificar o tipo no cadastro depois da publicação não muda o que já foi
     /// congelado. Sem novo bloco de topo. Sem produção em ambiente nenhum: fixture nova,
     /// <c>0.0.36</c> deixa de ser reconhecida.
+    /// O bump para <c>0.0.38</c> acrescenta a cada fase do cronograma a chave <c>unidadeResponsavel</c>
+    /// (<c>{origemId, sigla, nome}</c>, a cópia da unidade que responde pela fase) e troca os nomes
+    /// de <c>origemData</c> para <c>NoEdital</c> e <c>NaExecucao</c>. Sempre presente: nula só em
+    /// rascunho, e a publicação a exige. Sem novo bloco de topo. Sem produção em ambiente nenhum:
+    /// fixture nova, <c>0.0.37</c> deixa de ser reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.37";
+    internal const string SchemaVersionAtual = "0.0.38";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -1782,6 +1787,14 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 ["emiteParecerIndividual"] = fase.EmiteParecerIndividual,
                 ["bancasRequeridas"] = SerializarBancasRequeridas(fase),
                 ["regraRecurso"] = fase.RegraRecurso is { } regraRecurso ? SerializarRegraRecursoFase(regraRecurso) : null,
+                ["unidadeResponsavel"] = fase.UnidadeResponsavel is { } unidade
+                    ? new JsonObject
+                    {
+                        ["origemId"] = unidade.OrigemId,
+                        ["sigla"] = HashCanonicalComputer.NormalizeNfc(unidade.Sigla),
+                        ["nome"] = HashCanonicalComputer.NormalizeNfc(unidade.Nome),
+                    }
+                    : null,
             });
         }
 

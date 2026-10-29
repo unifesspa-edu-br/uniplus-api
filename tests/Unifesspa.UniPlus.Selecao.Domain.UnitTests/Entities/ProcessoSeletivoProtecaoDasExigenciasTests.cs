@@ -27,11 +27,11 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
     private static readonly FormatosPermitidos Qualquer = FormatosPermitidos.Criar(true, null).Value!;
 
     private static FaseCronograma Inscricao() => FaseCronograma.Criar(
-        1, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.Propria,
+        1, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.NoEdital,
         agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false,
         inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero),
         produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)],
-        faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null).Value!;
+        faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     private static FatoColetado Fato(string codigo, int ordem, string classificacao) =>
         FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: classificacao).Value!;

@@ -14,8 +14,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 // Contrato HTTP do seletor de snapshot vigente (Story #759, T6 #787,
@@ -61,6 +65,41 @@ public sealed class ObterSnapshotVigenteEndpointTests
         config.ValueKind.Should().Be(JsonValueKind.Object);
         config.TryGetProperty("periodo", out _).Should().BeTrue();
         config.TryGetProperty("etapas", out _).Should().BeTrue();
+    }
+
+    [Fact(DisplayName =
+        "A unidade responsável da fase fica congelada na publicação: mudar o cadastro da unidade depois não altera o processo publicado")]
+    public async Task ObterSnapshotVigente_MudancaNoCadastroDaUnidade_NaoAlteraOProcessoPublicado()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
+        using HttpClient client = api.CreateClient();
+
+        string sufixo = Guid.CreateVersion7().ToString("N")[^8..];
+        Guid unidadeId = await SemearUnidadeAsync(api, sufixo);
+        UnidadeResponsavelSnapshot congelada = new(unidadeId, $"CGA{sufixo}".ToUpperInvariant(), "Centro de Gestão Acadêmica");
+
+        (Guid processoId, Guid documentoId) = await SemearAsync(
+            api, nameof(ObterSnapshotVigente_MudancaNoCadastroDaUnidade_NaoAlteraOProcessoPublicado), congelada);
+        (await PostPublicarAsync(client, processoId, documentoId)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        await RenomearUnidadeAsync(api, unidadeId, $"CGAX{sufixo}", "Centro de Gestão Acadêmica (renomeado)");
+
+        HttpResponseMessage response = await GetSnapshotVigenteAsync(client, processoId, instante: null);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        JsonElement unidade = doc.RootElement.GetProperty("configuracao")
+            .GetProperty("cronogramaFases").GetProperty("fases")[0].GetProperty("unidadeResponsavel");
+
+        unidade.GetProperty("origemId").GetGuid().Should().Be(unidadeId);
+        unidade.GetProperty("sigla").GetString().Should().Be(congelada.Sigla);
+        unidade.GetProperty("nome").GetString().Should().Be(congelada.Nome);
+
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        FaseCronograma fase = await db.Set<FaseCronograma>().AsNoTracking().SingleAsync(f => f.ProcessoSeletivoId == processoId);
+        fase.UnidadeResponsavel.Should().Be(congelada, "a fase publicada guarda a cópia de quando a unidade foi definida");
     }
 
     [Fact(DisplayName =
@@ -259,13 +298,51 @@ public sealed class ObterSnapshotVigenteEndpointTests
         request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
     }
 
-    private static async Task<(Guid ProcessoId, Guid DocumentoId)> SemearAsync(CascadingApiFactory api, string nome)
+    private static async Task<(Guid ProcessoId, Guid DocumentoId)> SemearAsync(
+        CascadingApiFactory api, string nome, UnidadeResponsavelSnapshot? unidadeResponsavel = null)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
-            .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
+            .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}", unidadeResponsavel: unidadeResponsavel);
         return (processo.Id, documento.Id);
+    }
+
+    private static async Task<Guid> SemearUnidadeAsync(CascadingApiFactory api, string sufixo)
+    {
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        OrganizacaoInstitucionalDbContext org = scope.ServiceProvider.GetRequiredService<OrganizacaoInstitucionalDbContext>();
+        Unidade unidade = Unidade.Criar(
+            nome: "Centro de Gestão Acadêmica",
+            alias: null,
+            slug: $"cga-{sufixo}",
+            sigla: $"CGA{sufixo}",
+            codigo: $"CGA-{sufixo}",
+            unidadeSuperiorId: null,
+            tipo: TipoUnidade.Centro,
+            unidadeAcademica: true,
+            vigenciaInicio: new DateOnly(2020, 1, 1),
+            vigenciaFim: null,
+            cidadeCodigoIbge: "1504208",
+            cidadeNome: "Marabá",
+            cidadeUf: "PA").Value!;
+        org.Unidades.Add(unidade);
+        await org.SaveChangesAsync().ConfigureAwait(false);
+        return unidade.Id;
+    }
+
+    private static async Task RenomearUnidadeAsync(CascadingApiFactory api, Guid unidadeId, string novaSigla, string novoNome)
+    {
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        OrganizacaoInstitucionalDbContext org = scope.ServiceProvider.GetRequiredService<OrganizacaoInstitucionalDbContext>();
+        Unidade unidade = await org.Unidades.SingleAsync(u => u.Id == unidadeId).ConfigureAwait(false);
+        unidade.Atualizar(
+            novoNome, unidade.Alias, unidade.Slug.Valor, novaSigla, unidade.Codigo, unidade.UnidadeSuperiorId,
+            unidade.Tipo, unidade.UnidadeAcademica, unidade.VigenciaFim, new DateOnly(2026, 10, 28),
+            motivoMudancaIdentificador: "Renomeada pelo cadastro",
+            cidadeCodigoIbge: unidade.CidadeCodigoIbge, cidadeNome: unidade.CidadeNome, cidadeUf: unidade.CidadeUf)
+            .IsSuccess.Should().BeTrue();
+        await org.SaveChangesAsync().ConfigureAwait(false);
     }
 
     private static async Task<Guid> SemearDocumentoConfirmadoAsync(CascadingApiFactory api, Guid processoId)

@@ -1996,6 +1996,20 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("processo_seletivo_id");
 
+                    b.Property<string>("UnidadeResponsavelNome")
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)")
+                        .HasColumnName("unidade_responsavel_nome");
+
+                    b.Property<Guid?>("UnidadeResponsavelOrigemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("unidade_responsavel_origem_id");
+
+                    b.Property<string>("UnidadeResponsavelSigla")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("unidade_responsavel_sigla");
+
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");

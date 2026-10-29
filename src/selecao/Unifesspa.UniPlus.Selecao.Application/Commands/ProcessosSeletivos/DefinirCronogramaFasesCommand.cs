@@ -77,6 +77,11 @@ public sealed record BancaRequeridaInput(Guid TipoBancaId, IReadOnlyList<Guid> C
 /// Se a fase promete parecer individual por candidato — a promessa de que existirá; o
 /// parecer é produzido na execução.
 /// </param>
+/// <param name="UnidadeResponsavelId">
+/// Id da unidade da Unifesspa que responde pela fase. Opcional no rascunho; a publicação e
+/// a retificação a exigem. O handler a resolve pela porta <c>IResolvedorDaUnidadeResponsavel</c> e congela id, sigla
+/// e nome por valor (snapshot-copy, ADR-0061).
+/// </param>
 public sealed record FaseCronogramaInput(
     int Ordem,
     Guid FaseCanonicaId,
@@ -86,7 +91,8 @@ public sealed record FaseCronogramaInput(
     string? FaseConcluinteCodigo,
     bool EmiteParecerIndividual,
     IReadOnlyList<BancaRequeridaInput> BancasRequeridas,
-    RegraRecursoFaseInput? RegraRecurso);
+    RegraRecursoFaseInput? RegraRecurso,
+    Guid? UnidadeResponsavelId = null);
 
 /// <summary>
 /// Substitui integralmente o cronograma de fases do processo (Story #851, CA-06):

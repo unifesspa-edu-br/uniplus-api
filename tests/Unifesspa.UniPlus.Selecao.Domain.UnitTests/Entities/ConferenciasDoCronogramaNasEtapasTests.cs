@@ -159,7 +159,7 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma abre = FaseCronograma.Criar(
-            1, Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", "CEPS", OrigemDataFase.Delegada,
+            1, Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", "CEPS", OrigemDataFase.NaExecucao,
             agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
             produtos:
             [
@@ -167,13 +167,13 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
                 ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
             ],
             faseConcluinteCodigo: "RESULTADO_FINAL", emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null).Value!;
+            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
         FaseCronograma conclui = FaseCronograma.Criar(
-            2, Guid.CreateVersion7(), "RESULTADO_FINAL", "CEPS", OrigemDataFase.Delegada,
+            2, Guid.CreateVersion7(), "RESULTADO_FINAL", "CEPS", OrigemDataFase.NaExecucao,
             agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
             produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
             faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null).Value!;
+            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
         Result gravar = processo.DefinirCronogramaFases([abre, conclui], [], PrecondicaoIfMatch.Curinga);
 
@@ -191,12 +191,12 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
             });
 
     private static FaseCronograma FaseComProdutos(params ProdutoDaFase[] produtos) => FaseCronograma.Criar(
-        1, Guid.CreateVersion7(), "RESULTADO_FINAL", "CEPS", OrigemDataFase.Delegada,
+        1, Guid.CreateVersion7(), "RESULTADO_FINAL", "CEPS", OrigemDataFase.NaExecucao,
         agrupaEtapas: true, permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false,
         inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
         produtos: produtos,
         faseConcluinteCodigo: null, emiteParecerIndividual: false,
-        bancasRequeridas: [], regraRecurso: null).Value!;
+        bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     [Fact(DisplayName = "Tipo classificado como resultado declarado sem papel: item vermelho e a publicação recusa")]
     public void ResultadoSemPapel_Recusa()

@@ -275,7 +275,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
             faseCanonicaOrigemId: Guid.CreateVersion7(),
             codigo: "RESULTADO_FINAL",
             donoInstitucional: "CEPS",
-            origemData: OrigemDataFase.Propria,
+            origemData: OrigemDataFase.NoEdital,
             agrupaEtapas: true,
             permiteComplementacao: false,
             coletaInscricao: true,
@@ -296,6 +296,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
                     AdmiteInstanciaSuperior: false,
                     SuspensividadeSegundaInstanciaValor: null,
                     SuspensividadeSegundaInstanciaUnidade: null),
-                preliminar.Id).Value!).Value!;
+                preliminar.Id).Value!,
+            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
     }
 }

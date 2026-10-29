@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 // Mapeia OrigemDataFase ↔ string (varchar) usando o token canônico UPPER_SNAKE
-// (PROPRIA, DELEGADA), não o nome PascalCase do enum. O comprimento da coluna é
+// (NO_EDITAL, NA_EXECUCAO), não o nome PascalCase do enum. O comprimento da coluna é
 // definido na própria propriedade via HasMaxLength no IEntityTypeConfiguration.
 // A reidratação falha explicitamente (com contexto) caso a coluna seja
 // corrompida fora do fluxo da aplicação, em vez de um valor de enum

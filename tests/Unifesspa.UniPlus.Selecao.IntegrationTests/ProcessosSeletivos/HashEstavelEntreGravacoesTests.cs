@@ -104,6 +104,29 @@ public sealed class HashEstavelEntreGravacoesTests
             + "ato produziriam hashes diferentes para a mesma configuração");
     }
 
+    [Fact(DisplayName = "A unidade responsável da fase entra nos bytes canônicos: regravá-la igual mantém, trocá-la muda")]
+    public void UnidadeResponsavelDaFase_EntraNosBytesCanonicos()
+    {
+        ProcessoSeletivo processo = ProcessoComEtapaCompleta();
+        byte[] comCeps = Canonicalizar(processo);
+
+        processo.DefinirCronogramaFases([FaseDoCertame(UnidadesDeTeste.Ceps)], [], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        Canonicalizar(processo).Should().Equal(comCeps,
+            "regravar a fase com a mesma unidade não muda o documento");
+
+        processo.DefinirCronogramaFases([FaseDoCertame(UnidadesDeTeste.Cga)], [], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        byte[] comCga = Canonicalizar(processo);
+
+        comCga.Should().NotEqual(comCeps, "a unidade responsável é conteúdo congelado: trocá-la muda o hash");
+        using JsonDocument envelope = JsonDocument.Parse(comCga);
+        JsonElement unidade = envelope.RootElement.GetProperty("cronogramaFases").GetProperty("fases")[0].GetProperty("unidadeResponsavel");
+        unidade.GetProperty("origemId").GetGuid().Should().Be(UnidadesDeTeste.Cga.OrigemId);
+        unidade.GetProperty("sigla").GetString().Should().Be("CGA");
+        unidade.GetProperty("nome").GetString().Should().Be("Centro de Gestão Acadêmica");
+    }
+
     private static byte[] Canonicalizar(ProcessoSeletivo processo) =>
         Canonicalizer.Canonicalizar(
             new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo))).Bytes;
@@ -198,18 +221,22 @@ public sealed class HashEstavelEntreGravacoesTests
             ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo).Value!, [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeCurso(1, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.DefinirCronogramaFases([FaseCronograma.Criar(
-            ordem: 1, faseCanonicaOrigemId: FaseOrigem, codigo: "RESULTADO_FINAL",
-            donoInstitucional: "CEPS", origemData: OrigemDataFase.Propria, agrupaEtapas: true,
-            permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
-            faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [],
-            regraRecurso: null).Value!], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([FaseDoCertame(UnidadesDeTeste.Ceps)], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         return processo;
     }
+
+    /// <summary>A fase única do certame, sob a unidade dada, sempre por instância nova.</summary>
+    private static FaseCronograma FaseDoCertame(UnidadeResponsavelSnapshot unidadeResponsavel) => FaseCronograma.Criar(
+        ordem: 1, faseCanonicaOrigemId: FaseOrigem, codigo: "RESULTADO_FINAL",
+        donoInstitucional: "CEPS", origemData: OrigemDataFase.NoEdital, agrupaEtapas: true,
+        permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false,
+        inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+        fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+        produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
+        faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [],
+        regraRecurso: null,
+        unidadeResponsavel: unidadeResponsavel).Value!;
 
     private static DadosEdital DadosDeReferencia() => DadosEdital.Criar(
         "001/2026",

@@ -644,9 +644,9 @@ public sealed class AvaliadorConformidadeLegalTests
     private static Guid PrepararProcessoComModalidade(ProcessoSeletivo processo, string modalidadeCodigo)
     {
         FaseCronograma fase = FaseCronograma.Criar(
-            1, Guid.CreateVersion7(), "ENVIO_DOCUMENTOS", "CEPS", OrigemDataFase.Delegada,
+            1, Guid.CreateVersion7(), "ENVIO_DOCUMENTOS", "CEPS", OrigemDataFase.NaExecucao,
             agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null, produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null).Value!;
+            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirDistribuicaoVagas(

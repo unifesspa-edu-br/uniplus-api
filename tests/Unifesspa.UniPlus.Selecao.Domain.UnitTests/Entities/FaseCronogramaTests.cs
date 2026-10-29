@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobertura de <see cref="FaseCronograma.Criar"/> (Story #851): as invariantes que a
@@ -32,14 +33,15 @@ public sealed class FaseCronogramaTests
             faseCanonicaOrigemId: Guid.CreateVersion7(),
             codigo: "RESULTADO_PRELIMINAR",
             donoInstitucional: "CEPS",
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             agrupaEtapas: false,
             permiteComplementacao: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: null, fim: null,
             produtos, faseConcluinteCodigo: null, emiteParecerIndividual: false,
             bancasRequeridas ?? [],
-            regraRecurso);
+            regraRecurso,
+            UnidadesDeTeste.Ceps);
 
     private static ArgsRegraPrazoRecurso ArgsValidos() => new(
         PrazoValor: 48m,
@@ -52,7 +54,7 @@ public sealed class FaseCronogramaTests
 
     private static Result<FaseCronograma> Criar(
         int ordem = 1,
-        OrigemDataFase origemData = OrigemDataFase.Propria,
+        OrigemDataFase origemData = OrigemDataFase.NoEdital,
         DateTimeOffset? inicio = null,
         DateTimeOffset? fim = null,
         bool agrupaEtapas = false,
@@ -60,7 +62,9 @@ public sealed class FaseCronogramaTests
         string? faseConcluinteCodigo = null,
         bool emiteParecerIndividual = false,
         IReadOnlyList<BancaRequerida>? bancasRequeridas = null,
-        RegraRecursoFase? regraRecurso = null) =>
+        RegraRecursoFase? regraRecurso = null,
+        bool semUnidadeResponsavel = false,
+        UnidadeResponsavelSnapshot? unidadeResponsavel = null) =>
         FaseCronograma.Criar(
             ordem,
             Guid.CreateVersion7(),
@@ -76,37 +80,62 @@ public sealed class FaseCronogramaTests
             faseConcluinteCodigo,
             emiteParecerIndividual,
             bancasRequeridas ?? [],
-            regraRecurso);
+            regraRecurso,
+            semUnidadeResponsavel ? null : unidadeResponsavel ?? UnidadesDeTeste.Ceps);
+
+    // ── Unidade responsável pela fase (ADR-0061, ADR-0129) ──
+
+    [Fact(DisplayName = "A fase guarda o id, a sigla e o nome da unidade responsável informada")]
+    public void UnidadeResponsavel_Informada_FicaGravadaNaFase()
+    {
+        Result<FaseCronograma> resultado = Criar(origemData: OrigemDataFase.NaExecucao, unidadeResponsavel: UnidadesDeTeste.Cga);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.UnidadeResponsavelOrigemId.Should().Be(UnidadesDeTeste.Cga.OrigemId);
+        resultado.Value.UnidadeResponsavelSigla.Should().Be("CGA");
+        resultado.Value.UnidadeResponsavelNome.Should().Be("Centro de Gestão Acadêmica");
+        resultado.Value.UnidadeResponsavel.Should().Be(UnidadesDeTeste.Cga);
+    }
+
+    [Fact(DisplayName = "O rascunho aceita fase ainda sem unidade responsável")]
+    public void UnidadeResponsavel_Ausente_FaseEAceita()
+    {
+        Result<FaseCronograma> resultado = Criar(origemData: OrigemDataFase.NaExecucao, semUnidadeResponsavel: true);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.UnidadeResponsavelOrigemId.Should().BeNull();
+        resultado.Value.UnidadeResponsavel.Should().BeNull();
+    }
 
     // ── CA-07 — janela × OrigemData ──
 
-    [Fact(DisplayName = "CA-07: fase de origem PROPRIA sem janela é recusada")]
-    public void Janela_ObrigatoriaEmDataPropria_SemInicioNemFim_Recusa()
+    [Fact(DisplayName = "CA-07: fase de origem NO_EDITAL sem janela é recusada")]
+    public void Janela_ObrigatoriaEmDataNoEdital_SemInicioNemFim_Recusa()
     {
-        Result<FaseCronograma> resultado = Criar(origemData: OrigemDataFase.Propria, inicio: null, fim: null);
+        Result<FaseCronograma> resultado = Criar(origemData: OrigemDataFase.NoEdital, inicio: null, fim: null);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("FaseCronograma.JanelaObrigatoriaEmDataPropria");
+        resultado.Error!.Code.Should().Be("FaseCronograma.JanelaObrigatoriaEmDataNoEdital");
     }
 
-    [Theory(DisplayName = "CA-07: fase de origem PROPRIA com apenas um lado da janela é recusada")]
+    [Theory(DisplayName = "CA-07: fase de origem NO_EDITAL com apenas um lado da janela é recusada")]
     [InlineData(true, false)]
     [InlineData(false, true)]
-    public void Janela_ObrigatoriaEmDataPropria_ParcialmenteInformada_Recusa(bool comInicio, bool comFim)
+    public void Janela_ObrigatoriaEmDataNoEdital_ParcialmenteInformada_Recusa(bool comInicio, bool comFim)
     {
         DateTimeOffset? inicio = comInicio ? new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero) : null;
         DateTimeOffset? fim = comFim ? new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero) : null;
 
-        Result<FaseCronograma> resultado = Criar(origemData: OrigemDataFase.Propria, inicio: inicio, fim: fim);
+        Result<FaseCronograma> resultado = Criar(origemData: OrigemDataFase.NoEdital, inicio: inicio, fim: fim);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("FaseCronograma.JanelaObrigatoriaEmDataPropria");
+        resultado.Error!.Code.Should().Be("FaseCronograma.JanelaObrigatoriaEmDataNoEdital");
     }
 
-    [Fact(DisplayName = "CA-07 (contraprova): fase de origem DELEGADA sem janela é aceita — 'sem data' é estado válido")]
-    public void Janela_OrigemDelegada_SemInicioNemFim_Aceita()
+    [Fact(DisplayName = "CA-07 (contraprova): fase de origem NA_EXECUCAO sem janela é aceita — 'sem data' é estado válido")]
+    public void Janela_OrigemNaExecucao_SemInicioNemFim_Aceita()
     {
-        Result<FaseCronograma> resultado = Criar(origemData: OrigemDataFase.Delegada, inicio: null, fim: null);
+        Result<FaseCronograma> resultado = Criar(origemData: OrigemDataFase.NaExecucao, inicio: null, fim: null);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Inicio.Should().BeNull();
@@ -117,7 +146,7 @@ public sealed class FaseCronogramaTests
     public void Janela_FimAntesDoInicio_Recusa()
     {
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             inicio: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
 
@@ -137,7 +166,7 @@ public sealed class FaseCronogramaTests
         DateTimeOffset instanteUtc = new(2027, 1, 25, 11, 0, 0, TimeSpan.Zero);
 
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Propria,
+            origemData: OrigemDataFase.NoEdital,
             inicio: instanteUtc.ToOffset(offset),
             fim: instanteUtc.AddDays(2).ToOffset(offset));
 
@@ -155,7 +184,7 @@ public sealed class FaseCronogramaTests
         // 10:00-03:00 é 13:00Z; 12:00Z é anterior — a hora local do fim (12) parece maior
         // que a do início (10), mas o instante é menor.
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             inicio: new DateTimeOffset(2027, 1, 25, 10, 0, 0, TimeSpan.FromHours(-3)),
             fim: new DateTimeOffset(2027, 1, 25, 12, 0, 0, TimeSpan.Zero));
 
@@ -176,7 +205,7 @@ public sealed class FaseCronogramaTests
             faseCanonicaOrigemId: Guid.CreateVersion7(),
             codigo: "RESULTADO_PRELIMINAR",
             donoInstitucional: "CEPS",
-            origemData: OrigemDataFase.Propria,
+            origemData: OrigemDataFase.NoEdital,
             agrupaEtapas: false,
             permiteComplementacao: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
@@ -184,7 +213,8 @@ public sealed class FaseCronogramaTests
             fim: instanteUtc.AddDays(2).ToOffset(TimeSpan.FromHours(-3)),
             produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
             bancasRequeridas: [],
-            regraRecurso: null);
+            regraRecurso: null,
+            unidadeResponsavel: UnidadesDeTeste.Ceps);
 
         fase.Inicio.Should().Be(instanteUtc);
         fase.Inicio!.Value.Offset.Should().Be(TimeSpan.Zero);
@@ -196,7 +226,7 @@ public sealed class FaseCronogramaTests
     [Fact(DisplayName = "CA-04: fase sem produto nenhum não produz resultado, e é aceita")]
     public void Produtos_Vazios_NaoProduzResultado()
     {
-        Result<FaseCronograma> resultado = Criar(origemData: OrigemDataFase.Delegada, produtos: []);
+        Result<FaseCronograma> resultado = Criar(origemData: OrigemDataFase.NaExecucao, produtos: []);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.ProduzResultado.Should().BeFalse();
@@ -206,7 +236,7 @@ public sealed class FaseCronogramaTests
     public void Produtos_SemPapel_NaoProduzResultado()
     {
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             produtos: [ProdutoDaFase.Criar("COMUNICADO", null)]);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -222,7 +252,7 @@ public sealed class FaseCronogramaTests
     public void Produtos_ComPapel_ProduzResultado(PapelProdutoFase papel)
     {
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", papel)]);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -241,7 +271,7 @@ public sealed class FaseCronogramaTests
     public void Produtos_MesmoAtoEmPapeisDistintos_Aceita()
     {
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             produtos:
             [
                 ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Preliminar),
@@ -256,7 +286,7 @@ public sealed class FaseCronogramaTests
     public void Produtos_GabaritoComCadaPapel_Aceita()
     {
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             produtos:
             [
                 ProdutoDaFase.Criar("GABARITO", PapelProdutoFase.Preliminar),
@@ -270,7 +300,7 @@ public sealed class FaseCronogramaTests
     public void Produtos_MesmoAtoEMesmoPapel_Recusa()
     {
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             produtos:
             [
                 ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
@@ -290,7 +320,7 @@ public sealed class FaseCronogramaTests
     public void Produtos_AtoSemPapelDuplicado_Recusa()
     {
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             produtos:
             [
                 ProdutoDaFase.Criar("COMUNICADO", null),
@@ -306,7 +336,7 @@ public sealed class FaseCronogramaTests
     public void Produtos_AtosDistintosComOMesmoPapel_Aceita()
     {
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             produtos:
             [
                 ProdutoDaFase.Criar("GABARITO", PapelProdutoFase.Preliminar),
@@ -325,7 +355,7 @@ public sealed class FaseCronogramaTests
     public void ParecerIndividual_SemResultado_Recusa()
     {
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             produtos: [ProdutoDaFase.Criar("COMUNICADO", null)],
             emiteParecerIndividual: true);
 
@@ -338,7 +368,7 @@ public sealed class FaseCronogramaTests
     public void ParecerIndividual_ComResultado_Aceita()
     {
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
             emiteParecerIndividual: true);
 
@@ -350,7 +380,7 @@ public sealed class FaseCronogramaTests
     public void ParecerIndividual_NaoPrometido_SemResultado_Aceita()
     {
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             produtos: [],
             emiteParecerIndividual: false);
 
@@ -402,7 +432,7 @@ public sealed class FaseCronogramaTests
         ProdutoDaFase definitivo = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo);
 
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             produtos: [definitivo],
             regraRecurso: Recurso(definitivo.Id));
 
@@ -416,7 +446,7 @@ public sealed class FaseCronogramaTests
     public void RegraRecurso_SemProdutoAlgum_RecusaPelaAusenciaDoPreliminar()
     {
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             produtos: [],
             regraRecurso: Recurso(Guid.CreateVersion7()));
 
@@ -432,7 +462,7 @@ public sealed class FaseCronogramaTests
         RegraRecursoFase regraRecurso = Recurso(preliminar.Id);
 
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             produtos: [preliminar, ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
             regraRecurso: regraRecurso);
 
@@ -448,7 +478,7 @@ public sealed class FaseCronogramaTests
         ProdutoDaFase definitivo = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo);
 
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             produtos: [preliminar, definitivo],
             regraRecurso: Recurso(definitivo.Id));
 
@@ -465,7 +495,7 @@ public sealed class FaseCronogramaTests
         ProdutoDaFase preliminarDesta = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar);
 
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             produtos: [preliminarDesta],
             regraRecurso: Recurso(preliminarDaOutraFase.Id));
 
@@ -482,7 +512,7 @@ public sealed class FaseCronogramaTests
         ProdutoDaFase resultadoPreliminar = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar);
 
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             produtos: [gabarito, resultadoPreliminar],
             faseConcluinteCodigo: "RESULTADO_FINAL",
             regraRecurso: Recurso(resultadoPreliminar.Id));
@@ -504,7 +534,7 @@ public sealed class FaseCronogramaTests
     public void Criar_JanelaInvertidaEParecerSemResultado_AcumulaAsDuasViolacoes()
     {
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             inicio: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             produtos: [],
@@ -532,7 +562,7 @@ public sealed class FaseCronogramaTests
     public void RecorteDeCompetencia_DuasDoMesmoTipoUmaSemRecorte_Recusa()
     {
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             bancasRequeridas:
             [
                 Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA"),
@@ -550,7 +580,7 @@ public sealed class FaseCronogramaTests
     public void RecorteDeCompetencia_UmaBancaPorTipoSemRecorte_Aceita()
     {
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             bancasRequeridas:
             [
                 Banca("BANCA_ANALISE_DOCUMENTAL"),
@@ -564,7 +594,7 @@ public sealed class FaseCronogramaTests
     public void RecorteDeCompetencia_AmbasSemRecorte_AcumulaUmaPorBanca()
     {
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             bancasRequeridas:
             [
                 Banca("BANCA_ANALISE_DOCUMENTAL"),
@@ -582,7 +612,7 @@ public sealed class FaseCronogramaTests
     public void RecorteDeCompetencia_MesmoTipoRecortesDistintos_Aceita()
     {
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             bancasRequeridas:
             [
                 Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA"),
@@ -597,7 +627,7 @@ public sealed class FaseCronogramaTests
     public void RecorteDeCompetencia_MesmoTipoRecortesIguaisEmOutraOrdem_Recusa()
     {
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             bancasRequeridas:
             [
                 Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA", "ESCOLARIDADE"),
@@ -615,7 +645,7 @@ public sealed class FaseCronogramaTests
     public void RecorteDeCompetencia_MesmoTipoRecortesQueSeCruzam_Aceita()
     {
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             bancasRequeridas:
             [
                 Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA", "ESCOLARIDADE"),
@@ -629,7 +659,7 @@ public sealed class FaseCronogramaTests
     public void RecorteDeCompetencia_TiposDistintosMesmoRecorte_Aceita()
     {
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             bancasRequeridas:
             [
                 Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA"),
@@ -643,7 +673,7 @@ public sealed class FaseCronogramaTests
     public void RecorteDeCompetencia_CategoriaRepetidaNaMesmaBanca_Recusa()
     {
         Result<FaseCronograma> resultado = Criar(
-            origemData: OrigemDataFase.Delegada,
+            origemData: OrigemDataFase.NaExecucao,
             bancasRequeridas: [Banca("BANCA_ANALISE_DOCUMENTAL", "RENDA", "RENDA")]);
 
         resultado.IsFailure.Should().BeTrue();

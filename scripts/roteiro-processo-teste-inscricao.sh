@@ -659,6 +659,9 @@ definir_cronograma_fases() {
             + (.[1:] | map(.ordem += 1))' <<< "$fases")
         fases=$(jq -c --arg inicio "$(na_data 2027-01-13 00:00:00)" '.[2].inicio = $inicio' <<< "$fases")
     fi
+    # Toda fase precisa de unidade responsável para o processo publicar; no roteiro, é a
+    # unidade do processo.
+    fases=$(jq -c --arg unidade "$UNIDADE_ID" 'map(. + {unidadeResponsavelId: $unidade})' <<< "$fases")
     api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/cronograma-fases" "$fases" >/dev/null
     ok "cronograma definido — inscrição de $inicio_inscricao a $fim_inscricao"
 }

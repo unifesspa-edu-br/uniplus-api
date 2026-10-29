@@ -41,14 +41,18 @@ public sealed record RegraRecursoFaseDto(
     ReferenciaRegraDto Regra,
     ArgsRegraPrazoRecursoDto Args);
 
+/// <summary>Projeção de leitura da unidade que responde por uma fase — a cópia congelada ao definir o cronograma.</summary>
+public sealed record UnidadeResponsavelDto(Guid OrigemId, string Sigla, string Nome);
+
 /// <summary>Projeção de leitura de <c>FaseCronograma</c> (Story #851) — o eixo temporal do certame.</summary>
+/// <param name="UnidadeResponsavel">A unidade que responde pela fase, ou nulo enquanto o rascunho ainda não a definiu.</param>
 public sealed record FaseCronogramaDto(
     Guid Id,
     int Ordem,
     Guid FaseCanonicaOrigemId,
     string Codigo,
     string DonoInstitucional,
-    // Token canônico UPPER_SNAKE (`PROPRIA`/`DELEGADA`), o mesmo que o catálogo de fases
+    // Token canônico UPPER_SNAKE (`NO_EDITAL`/`NA_EXECUCAO`), o mesmo que o catálogo de fases
     // canônicas publica — a origem deste campo é aquele cadastro, não a escrita daqui.
     string OrigemData,
     bool AgrupaEtapas,
@@ -64,4 +68,5 @@ public sealed record FaseCronogramaDto(
     string? FaseConcluinteCodigo,
     bool EmiteParecerIndividual,
     IReadOnlyList<BancaRequeridaDto> BancasRequeridas,
-    RegraRecursoFaseDto? RegraRecurso);
+    RegraRecursoFaseDto? RegraRecurso,
+    UnidadeResponsavelDto? UnidadeResponsavel);

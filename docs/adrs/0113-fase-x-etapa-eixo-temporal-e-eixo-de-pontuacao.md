@@ -82,7 +82,7 @@ existiam: `ProduzResultado` (bool — havendo vagas, o cronograma precisa de ao
 menos uma fase que produza resultado), `ResultadoDefinitivo` (bool, implica
 `ProduzResultado` — não cabe recurso contra resultado definitivo),
 `ColetaInscricao` (bool — decide o piso mínimo quando a origem dos candidatos é
-inscrição própria) e `OrigemData` (`PROPRIA` | `DELEGADA` — decide se a janela da
+inscrição própria) e `OrigemData` (`NO_EDITAL` | `NA_EXECUCAO` — decide se a janela da
 fase é obrigatória ou opcional). Nenhum desses atributos é seed: `FaseCanonica`
 permanece 100% CRUD-administrado, e os valores reais das quatorze fases são um
 ato operacional pós-deploy via endpoint admin — a mesma política já vigente para

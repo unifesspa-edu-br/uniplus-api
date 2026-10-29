@@ -246,12 +246,18 @@ public sealed class ManifestoDoEnvelopeTests
                 "AgrupaEtapas", "PermiteComplementacao",
                 "ColetaInscricao", "ColetaSolicitacaoIsencao", "Inicio", "Fim",
                 "Produtos", "FaseConcluinteCodigo", "EmiteParecerIndividual",
-                "BancasRequeridas", "RegraRecurso",
+                "BancasRequeridas", "RegraRecurso", "UnidadeResponsavel",
             ],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
+                ("UnidadeResponsavelOrigemId", "Coluna que materializa UnidadeResponsavel, congelada pelo value object."),
+                ("UnidadeResponsavelSigla", "Coluna que materializa UnidadeResponsavel, congelada pelo value object."),
+                ("UnidadeResponsavelNome", "Coluna que materializa UnidadeResponsavel, congelada pelo value object."),
                 ("ProduzResultado", "Derivada de Produtos — a fase produz resultado quando declara ao menos um produto com papel; congelá-la duplicaria a fonte de verdade."),
             ]),
+
+        // Cópia da unidade responsável pela fase (ADR-0061), congelada na publicação.
+        [typeof(UnidadeResponsavelSnapshot)] = (["OrigemId", "Sigla", "Nome"], []),
 
         // O produto que a fase publica. O Id ENTRA no envelope, ao contrário do das demais
         // filhas do cronograma: é por ele que o ato publicado resolverá, de volta, a
