@@ -133,6 +133,7 @@ Em respeito à regra "1 ADR = 1 decisão", esta ADR fixa **apenas** o modelo de 
 
 ## Mais informações
 
+- **Emendada pela [ADR-0152](0152-governanca-das-concessoes-de-acesso.md):** o token deixa de ser fonte de concessão efetiva; toda permissão é satisfeita por concessão gravada no Uni+, salvo o papel de instalação e os papéis da transição até a migração de cada módulo.
 - **Supersede** a [ADR-0057](0057-areas-rbac-snapshot-historia-invariantes.md) (modelo por papéis fixos por Unidade): o eixo de decisão deixa de ser o papel por Unidade e passa a ser permissão + atributos de contexto, com escopo por Unidade.
 - **Refina** a [ADR-0055](0055-organizacao-institucional-bounded-context.md) (Organização como bounded context): a Unidade permanece o escopo institucional, mas a autorização sobre ela passa a ser PBAC + ABAC, não papel global por Unidade.
 - Relaciona-se com: [ADR-0033](0033-icurrentuser-abstraction-via-iusercontext.md) (`IUserContext`, estendido para expor o sujeito), [ADR-0010](0010-audience-unica-uniplus-em-tokens-oidc.md) (audience OIDC), [ADR-0034](0034-problemdetails-em-401-403-via-jwtbearer-events.md) (ProblemDetails em 401/403), [ADR-0019](0019-proibir-pii-em-path-segments-de-url.md) (sem dado pessoal em URL) e [ADR-0063](0063-entidades-forensics-isentas-de-soft-delete.md) (trilha forense isenta de soft-delete).
