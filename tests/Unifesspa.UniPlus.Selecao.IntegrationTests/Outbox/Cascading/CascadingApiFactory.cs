@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
+using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
@@ -46,6 +47,10 @@ public sealed class CascadingApiFactory : MonolitoApiFactory
         builder.ConfigureTestServices(services =>
         {
             services.AddSingleton<DomainEventCollector>();
+            services.AdicionarAdministradorDeProcessosDeTeste();
+            services.RemoveAll<IRegistroOperacionalRestrito>();
+            services.AddSingleton<RegistroDeDecisoesDeTeste>();
+            services.AddSingleton<IRegistroOperacionalRestrito>(sp => sp.GetRequiredService<RegistroDeDecisoesDeTeste>());
             services.RemoveAll<IAcervoPublico>();
             services.AddSingleton<IAcervoPublico, AcervoPublicoEmMemoria>();
         });

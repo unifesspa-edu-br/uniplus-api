@@ -23,6 +23,8 @@ using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.API.Authorization;
+using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -38,14 +40,12 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 [ApiController]
 [Route("processos-seletivos")]
-// Configuração administrativa: todo o ciclo do processo em rascunho (criar,
-// montar etapas/atendimento e consultar conformidade) é
-// restrito a plataforma-admin — sem [Authorize] os endpoints ficariam anônimos
-// (não há fallback policy). Diferente dos catálogos de reference data
-// (Campi/FasesCanônicas), cujas leituras são públicas por serem dados
-// publicados, um processo em rascunho é dado administrativo e não deve vazar;
-// por isso a política vale para leituras também, no nível da classe.
-[Authorize(Roles = "plataforma-admin")]
+// Configuração administrativa: cada ação exige a permissão da sua operação na unidade dona do processo
+// (ExigePermissaoNoProcesso), decidida pela concessão e não pelo papel no token. [Authorize] mantém anônimo
+// quem não se autenticou, porque não há fallback policy. Um processo em rascunho é dado administrativo: a
+// leitura também exige permissão, e a abertura da leitura do publicado cabe à #2140. A listagem não tem processo
+// para decidir: devolve só os processos das unidades em que a pessoa acompanha.
+[Authorize]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
@@ -107,6 +107,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
             cancellationToken: cancellationToken);
     }
 
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosAcompanhar)]
     [HttpGet("{id:guid}")]
     [VendorMediaType(Resource = "processo-seletivo", Versions = [1])]
     [ProducesResponseType(typeof(ProcessoSeletivoDto), StatusCodes.Status200OK)]
@@ -128,6 +129,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// <summary>
     /// Substitui integralmente as etapas pontuadas do processo (CA-02).
     /// </summary>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/etapas")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -156,6 +158,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// processo — por exemplo, as edições do ENEM aceitas —, congeladas no edital na publicação
     /// (issue #1619). As opções dos fatos de atendimento especializado vêm da oferta de atendimento.
     /// </summary>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/fatos/{fatoCodigo}/opcoes")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -196,6 +199,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// processo (CA-06) — tipo de deficiência só é aceito sob a condição PcD
     /// (ADR-0067).
     /// </summary>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/oferta-atendimento")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -231,6 +235,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// #1283) — o mesmo shape que <see cref="SimularDistribuicaoVagas"/>
     /// (preview sem persistir) e o <c>GET</c> do processo devolvem.
     /// </summary>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/distribuicao-vagas")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>), StatusCodes.Status200OK)]
@@ -314,6 +319,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// PUT real. Decisão de escopo da issue #1282, não lacuna.
     /// </para>
     /// </remarks>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPost("{id:guid}/distribuicao-vagas/simulacao")]
     [VendorMediaType(Resource = "simulacao-distribuicao-vagas", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>), StatusCodes.Status200OK)]
@@ -342,6 +348,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// retificação —, não o envelope publicado, e não grava nada: o perfil, que carrega fatos
     /// sensíveis simulados, não é persistido nem registrado.
     /// </summary>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPost("{id:guid}/pre-visualizacao")]
     [VendorMediaType(Resource = "pre-visualizacao-processo-seletivo", Versions = [1])]
     [ProducesResponseType(typeof(PreVisualizacaoDoProcessoDto), StatusCodes.Status200OK)]
@@ -368,6 +375,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// #774). Lista vazia remove todos os critérios: o rascunho aceita, mas a publicação de
     /// processo com inscrição própria exige ao menos um (resultado importado dispensa).
     /// </summary>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/criterios-desempate")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -396,6 +404,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// dispensa a configuração; verdadeiro exige <c>RegraCodigo</c> e os demais campos do bônus.
     /// A declaração é obrigatória para publicar.
     /// </summary>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/bonus-regional")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -426,6 +435,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// Declara quantos cursos o candidato escolhe na inscrição (1 ou 2). A declaração é obrigatória
     /// para publicar, e o número não pode superar o de ofertas da distribuição de vagas.
     /// </summary>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/opcoes-de-curso")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -458,6 +468,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// #1112). <c>Cobra</c> nulo remove a declaração — o processo volta a "ainda não
     /// declarado", que BLOQUEIA a publicação (CA-01).
     /// </summary>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/taxa-inscricao")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -489,6 +500,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// <c>CamposPublicos</c> nulo remove a configuração explícita — o processo volta ao
     /// default minimizado (só o número de inscrição).
     /// </summary>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/divulgacao")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -520,6 +532,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// (cascata de remanejamento de cotas, UNI-REQ-0056, Story #575). <c>RegraCodigo</c> nulo remove a
     /// cascata — a ausência já é o toggle "sem cascata".
     /// </summary>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/cascata-remanejamento")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -552,6 +565,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// por referência a fórmula da nota, a precisão, a lista de eliminação e
     /// a ordem de alocação. Bônus e desempate não são parâmetros aqui.
     /// </summary>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/classificacao")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -598,6 +612,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// (<see cref="ObterPorId"/>), que passa a devolver <c>CronogramaFases</c> como parte
     /// do recurso — não há rota aninhada própria de leitura.
     /// </summary>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/cronograma-fases")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -633,6 +648,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// O <c>GET</c> vem do endpoint agregado (<see cref="ObterPorId"/>) — não há rota
     /// aninhada própria de leitura.
     /// </summary>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/documentos-exigidos")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -661,6 +677,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// público e a chave no acervo. Aceito enquanto ele não consta em versão publicada: em
     /// rascunho, ou na sessão de retificação aberta sobre versão congelada sem ele.
     /// </summary>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/identificador-legivel")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -696,6 +713,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// <summary>
     /// Redeclara o município cujo calendário rege a contagem dos prazos do certame.
     /// </summary>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/localidade")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -726,6 +744,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// Declara a convenção de contagem que o certame usa nos prazos que distinguem dia
     /// útil, por código e versão do rol de regras.
     /// </summary>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/algoritmo-contagem-prazo")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -752,6 +771,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
         return ResponderMutacao(resultado);
     }
 
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/referencia-temporal-fatos")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -788,6 +808,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// ETag e <c>If-Match</c> ignorado; sob sessão, <c>If-Match</c> obrigatório (<c>428</c>/<c>412</c>)
     /// e <c>204</c> com o ETag novo. Processo publicado sem sessão é recusado com <c>422</c>.
     /// </summary>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/regras-derivacao")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -831,6 +852,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// (ADR-0103).
     /// </para>
     /// </summary>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosPublicar)]
     [HttpPost("{id:guid}/publicacao")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -955,6 +977,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// <see cref="FecharRetificacao"/>.
     /// </para>
     /// </summary>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosPublicar)]
     [HttpPost("{id:guid}/retificacoes")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -1001,6 +1024,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// Devolve o <c>ETag</c> da sessão recém-criada — o cliente já sai apto a mutar, sem um
     /// <c>GET</c> no meio.
     /// </remarks>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosPublicar)]
     [HttpPost("{id:guid}/retificacao-em-curso")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(RetificacaoEmCursoDto), StatusCodes.Status201Created)]
@@ -1034,6 +1058,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// Consulta a sessão editorial em curso — é por aqui que o cliente <b>relê o ETag</b>
     /// depois de um 412.
     /// </summary>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosAcompanhar)]
     [HttpGet("{id:guid}/retificacao-em-curso")]
     [VendorMediaType(Resource = "retificacao-em-curso", Versions = [1])]
     [ProducesResponseType(typeof(RetificacaoEmCursoDto), StatusCodes.Status200OK)]
@@ -1064,6 +1089,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// precondição cometeu falha de protocolo, e recebe <b>428</b> — antes mesmo de o
     /// servidor conferir se há sessão (ADR-0110 D9, precedência "3 antes de 10").
     /// </remarks>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosPublicar)]
     [HttpPut("{id:guid}/retificacao-em-curso")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -1100,6 +1126,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// byte</b> — e encerra a sessão, na mesma transação. Não devolve <c>ETag</c>: a sessão
     /// deixou de existir.
     /// </remarks>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosPublicar)]
     [HttpDelete("{id:guid}/retificacao-em-curso")]
     [RequiresIdempotencyKey]
     [PrecondicaoObrigatoria]
@@ -1137,6 +1164,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// em <b>um ato só</b>, para quem não precisa de sessão. Com sessão aberta, ele recusa.
     /// </para>
     /// </remarks>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosPublicar)]
     [HttpPost("{id:guid}/retificacao-em-curso/fechamento")]
     [RequiresIdempotencyKey]
     [PrecondicaoObrigatoria]
@@ -1200,6 +1228,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// itens com os gates não muda.
     /// </para>
     /// </remarks>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosAcompanhar)]
     [HttpGet("{id:guid}/conformidade")]
     [VendorMediaType(Resource = "conformidade-processo-seletivo", Versions = [1])]
     [ProducesResponseType(typeof(ConformidadeProcessoSeletivoDto), StatusCodes.Status200OK)]
@@ -1232,6 +1261,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// o preflight da tela não tinha como distinguir a pendência de uma falha de rede (issue #1456).
     /// </para>
     /// </summary>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosAcompanhar)]
     [HttpGet("{id:guid}/conformidade-legal")]
     [VendorMediaType(Resource = "conformidade-legal-processo-seletivo", Versions = [1])]
     [ProducesResponseType(typeof(ConformidadeLegalProcessoSeletivoDto), StatusCodes.Status200OK)]
@@ -1333,6 +1363,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// 404 quando não há rascunho, inclusive quando o que havia já venceu. É a leitura que
     /// cobra o prazo: sem tarefa recorrente varrendo a tabela, quem lê é quem descarta.
     /// </remarks>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosAcompanhar)]
     [HttpGet("{id:guid}/rascunho-da-publicacao")]
     [VendorMediaType(Resource = "rascunho-da-publicacao", Versions = [1])]
     [ProducesResponseType(typeof(RascunhoDaPublicacaoDto), StatusCodes.Status200OK)]
@@ -1363,6 +1394,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// o caso de uso. A validação forte continua no ato de publicar.
     /// </para>
     /// </remarks>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosPublicar)]
     [HttpPut("{id:guid}/rascunho-da-publicacao")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -1388,6 +1420,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// Idempotente: descartar o que não existe é 204, porque o pedido era que não houvesse
     /// rascunho — e não há.
     /// </remarks>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosPublicar)]
     [HttpDelete("{id:guid}/rascunho-da-publicacao")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
@@ -1398,6 +1431,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
         return resultado.IsFailure ? resultado.ToActionResult(_mapper) : NoContent();
     }
 
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosAcompanhar)]
     [HttpGet("{id:guid}/snapshot-vigente")]
     [VendorMediaType(Resource = "snapshot-vigente-processo-seletivo", Versions = [1])]
     [ProducesResponseType(typeof(SnapshotVigenteDto), StatusCodes.Status200OK)]

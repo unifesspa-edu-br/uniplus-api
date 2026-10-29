@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>Repositório da inscrição do candidato (issue #1858, ADR-0121).</summary>
 public interface IInscricaoRepository
@@ -21,6 +23,25 @@ public interface IInscricaoRepository
     /// de processo e com as canceladas: é o histórico do candidato.
     /// </summary>
     Task<IReadOnlyList<Inscricao>> ObterTodasPorCpfAsync(Cpf cpf, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// O vínculo da inscrição com o processo e a versão fixada, sem decifrar CPF nem respostas. <see langword="null"/>
+    /// quando a inscrição não existe.
+    /// </summary>
+    Task<VinculoDaInscricao?> ObterVinculoAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// As inscrições enviadas do processo, as submetidas e as canceladas, paginadas por cursor bidirecional
+    /// (ADR-0026, ADR-0089) em ordem cronológica. O rascunho fica de fora: enquanto o candidato não envia, não há
+    /// inscrição para quem opera o processo. Lê só o necessário — o nome, o CPF para mascarar e o instante do primeiro
+    /// envio —, sem decifrar as demais respostas.
+    /// </summary>
+    Task<(IReadOnlyList<ResumoDaInscricaoDoProcesso> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarEnviadasDoProcessoAsync(
+        Guid processoSeletivoId,
+        Guid? afterId,
+        int limit,
+        PaginationDirection direction,
+        CancellationToken cancellationToken = default);
 
     Task AdicionarAsync(Inscricao entity, CancellationToken cancellationToken = default);
 

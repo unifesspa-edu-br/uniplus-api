@@ -163,16 +163,16 @@ public sealed class DefinirRegrasDerivacaoEndpointTests
         resposta.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    [Fact(DisplayName = "Autenticado sem o papel plataforma-admin é 403")]
-    public async Task SemPapel_403()
+    [Fact(DisplayName = "Autenticado sem concessão na unidade do processo é 404, como o processo inexistente")]
+    public async Task SemConcessao_404()
     {
-        Contexto ctx = await SemearRascunhoAsync(nameof(SemPapel_403));
+        Contexto ctx = await SemearRascunhoAsync(nameof(SemConcessao_404));
 
         HttpResponseMessage resposta = await ctx.PutRegrasAsync(
             [new { codigoFato = Derivado, regras = new object[] { new { ordem = 0, contribui = (string?)null, quando = (object?)null } } }],
             autenticar: Autenticacao.PapelErrado);
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        resposta.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     private enum Autenticacao

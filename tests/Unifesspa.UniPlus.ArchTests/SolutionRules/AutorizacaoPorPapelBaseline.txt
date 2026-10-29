@@ -30,6 +30,5 @@ src/selecao/Unifesspa.UniPlus.Selecao.API/Controllers/FormulariosController.cs	6
 src/selecao/Unifesspa.UniPlus.Selecao.API/Controllers/ModelosDeDocumentoController.cs	1
 src/selecao/Unifesspa.UniPlus.Selecao.API/Controllers/NotasDoEnemController.cs	1
 src/selecao/Unifesspa.UniPlus.Selecao.API/Controllers/ObrigatoriedadeLegalController.cs	3
-src/selecao/Unifesspa.UniPlus.Selecao.API/Controllers/ProcessoSeletivoController.cs	1
 src/selecao/Unifesspa.UniPlus.Selecao.API/Controllers/ProdutosPrevistosDoProcessoController.cs	1
 src/selecao/Unifesspa.UniPlus.Selecao.API/Controllers/RegrasCatalogoController.cs	1

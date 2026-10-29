@@ -346,10 +346,11 @@ public sealed class PublicarProcessoSeletivoEndpointTests
         CascadingApiFactory api = _fixture.Factory;
 
         await TiposDeAtoSeeder.SemearAsync(api.Services);
+        (Guid processoId, _) = await SemearAsync(api, nameof(Publicar_SemKey_Retorna400));
         using HttpClient client = api.CreateClient();
 
         using HttpRequestMessage request = new(HttpMethod.Post,
-            new Uri($"/api/selecao/processos-seletivos/{Guid.CreateVersion7()}/publicacao", UriKind.Relative))
+            new Uri($"/api/selecao/processos-seletivos/{processoId}/publicacao", UriKind.Relative))
         {
             Content = JsonContent.Create(NovoCorpoPublicacao(Guid.CreateVersion7())),
         };
@@ -370,10 +371,11 @@ public sealed class PublicarProcessoSeletivoEndpointTests
         CascadingApiFactory api = _fixture.Factory;
 
         await TiposDeAtoSeeder.SemearAsync(api.Services);
+        (Guid processoId, _) = await SemearAsync(api, nameof(Publicar_KeyMalformada_Retorna400));
         using HttpClient client = api.CreateClient();
 
         using HttpRequestMessage request = new(HttpMethod.Post,
-            new Uri($"/api/selecao/processos-seletivos/{Guid.CreateVersion7()}/publicacao", UriKind.Relative))
+            new Uri($"/api/selecao/processos-seletivos/{processoId}/publicacao", UriKind.Relative))
         {
             Content = JsonContent.Create(NovoCorpoPublicacao(Guid.CreateVersion7())),
         };

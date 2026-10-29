@@ -18,6 +18,10 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
 {
     public IEnumerable<KeyValuePair<string, DomainErrorMapping>> GetMappings() =>
     [
+        // Acesso às operações do processo, decidido por concessão na unidade dona (ADR-0078, ADR-0151).
+        new(ProcessoSeletivoErrorCodes.SemPermissaoNaUnidade, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.auth.forbidden", "Acesso negado")),
+        // O token não traz o que identifica o solicitante: não houve decisão de acesso a tomar, e a borda responde 401.
+        new(ProcessoSeletivoErrorCodes.IdentidadeIncompleta, new DomainErrorMapping(StatusCodes.Status401Unauthorized, "uniplus.selecao.processo_seletivo.identidade_incompleta", "Identidade do solicitante incompleta")),
         // Catálogo de motivos de decisão de isenção (UNI-REQ-0120 a UNI-REQ-0122).
         new(MotivoDecisaoIsencaoErrorCodes.CodigoObrigatorio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.motivo_decisao_isencao.codigo_obrigatorio", "Código do motivo é obrigatório")),
         new(MotivoDecisaoIsencaoErrorCodes.CodigoFormatoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.motivo_decisao_isencao.codigo_formato_invalido", "Código do motivo fora do formato aceito")),

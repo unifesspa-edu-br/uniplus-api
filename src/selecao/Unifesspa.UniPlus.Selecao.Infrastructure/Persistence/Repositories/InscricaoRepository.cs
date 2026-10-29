@@ -7,7 +7,9 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
+using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -94,6 +96,61 @@ public sealed class InscricaoRepository : IInscricaoRepository
             .ConfigureAwait(false);
 
         return await ParaDominioAsync(records, cancellationToken).ConfigureAwait(false);
+    }
+
+    public Task<VinculoDaInscricao?> ObterVinculoAsync(Guid id, CancellationToken cancellationToken = default) =>
+        _dbContext.Inscricoes
+            .AsNoTracking()
+            .Where(r => r.Id == id)
+            .Select(static r => new VinculoDaInscricao(
+                r.Id, r.ProcessoSeletivoId, r.Situacao, r.VersaoFormularioId, r.OfertaCursoId, r.OfertaCursoSegundaOpcaoId))
+            .FirstOrDefaultAsync(cancellationToken);
+
+    public async Task<(IReadOnlyList<ResumoDaInscricaoDoProcesso> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarEnviadasDoProcessoAsync(
+        Guid processoSeletivoId,
+        Guid? afterId,
+        int limit,
+        PaginationDirection direction,
+        CancellationToken cancellationToken = default)
+    {
+        IQueryable<InscricaoRecord> enviadas = _dbContext.Inscricoes
+            .AsNoTracking()
+            .Where(r => r.ProcessoSeletivoId == processoSeletivoId && r.Situacao != SituacaoInscricao.Rascunho);
+
+        CursorKeysetPage<InscricaoRecord> pagina = await CursorKeyset
+            .ApplyAsync(enviadas, afterId, limit, direction, cancellationToken)
+            .ConfigureAwait(false);
+
+        Guid[] ids = [.. pagina.Items.Select(static r => r.Id)];
+
+        Dictionary<Guid, string> nomes = await NomeDeExibicaoDaInscricao
+            .LerAsync(_dbContext.RespostasDaInscricao, ids, cancellationToken)
+            .ConfigureAwait(false);
+
+        Dictionary<Guid, DateTimeOffset> primeirosEnvios = await _dbContext.ComprovantesInscricao
+            .AsNoTracking()
+            .Where(c => ids.Contains(c.InscricaoId))
+            .GroupBy(static c => c.InscricaoId)
+            .Select(static g => new { InscricaoId = g.Key, Primeiro = g.Min(static c => c.Instante) })
+            .ToDictionaryAsync(static g => g.InscricaoId, static g => g.Primeiro, cancellationToken)
+            .ConfigureAwait(false);
+
+        List<ResumoDaInscricaoDoProcesso> resumos = new(pagina.Items.Count);
+        foreach (InscricaoRecord record in pagina.Items)
+        {
+            byte[] cpfPlano = await _encryption
+                .DecryptAsync(SelecaoEncryptionKeys.IdentificadoresAesGcm, record.CpfCiphertext, cancellationToken)
+                .ConfigureAwait(false);
+            resumos.Add(new ResumoDaInscricaoDoProcesso(
+                record.Id,
+                record.NumeroInscricao,
+                record.Situacao,
+                nomes.GetValueOrDefault(record.Id),
+                ReidratarCpf(cpfPlano),
+                primeirosEnvios.TryGetValue(record.Id, out DateTimeOffset primeiro) ? primeiro : null));
+        }
+
+        return (resumos, pagina.PrevAfterId, pagina.NextAfterId);
     }
 
     public async Task AdicionarAsync(Inscricao entity, CancellationToken cancellationToken = default)

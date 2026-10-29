@@ -27,7 +27,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.API.Permissoes;
+using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 
 /// <summary>
 /// Prova o ponto de decisão único montado pelo composition root real: os serviços saem do contêiner do host, o sujeito

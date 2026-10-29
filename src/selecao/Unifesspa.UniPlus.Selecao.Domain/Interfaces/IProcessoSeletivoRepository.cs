@@ -82,11 +82,13 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
     /// <paramref name="afterId"/> (ou a primeira janela quando <c>null</c>),
     /// sempre em ordem ascendente, junto das âncoras de <c>prev</c>/<c>next</c>
     /// (nulas quando não há aquele lado). Implementações aplicam <c>AsNoTracking</c>.
+    /// Só entram os processos das <paramref name="unidades"/>; sem unidade, a lista é vazia.
     /// </summary>
     Task<(IReadOnlyList<ProcessoSeletivo> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
         Guid? afterId,
         int limit,
         PaginationDirection direction,
+        IReadOnlyCollection<Guid> unidades,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -183,6 +185,13 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
     /// </summary>
     /// <remarks>Projeção estreita, pelo mesmo motivo de <see cref="ObterNomeAsync"/>.</remarks>
     Task<string?> ObterSiglaDaUnidadeAdministradoraAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Unidade que responde pelo processo, o escopo em que as permissões do processo são concedidas.
+    /// <see langword="null"/> quando o processo não existe.
+    /// </summary>
+    /// <remarks>Projeção estreita, pelo mesmo motivo de <see cref="ObterNomeAsync"/>.</remarks>
+    Task<Guid?> ObterUnidadeAdministradoraAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// <see langword="true"/> se existe um Processo Seletivo com este id

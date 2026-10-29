@@ -14,7 +14,7 @@ using Outbox.Cascading;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
-using Unifesspa.UniPlus.Selecao.API.Permissoes;
+using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
@@ -130,7 +130,7 @@ public sealed class MotivoDecisaoIsencaoAdminEndpointTests : IAsyncLifetime
         await ConcessoesDeTeste.ConcederGovernancaAsync(_fixture.Factory.Services, Diogo, TipoDeGovernanca.GestorDeAcessos);
         using HttpClient gestor = ClienteAutenticado(Diogo);
         using HttpResponseMessage revogada = await PostAsync(
-            gestor, $"/api/autorizacao/concessoes/{concessao}/revogacao", new { motivo = "Mudou de função na unidade." });
+            gestor, $"/api/autorizacao/concessoes/{concessao}/revogacao", new { motivo = "Mudou de função na unidade.", confirmacaoEmail = ConcessoesDeTeste.EmailDeTeste });
         revogada.StatusCode.Should().Be(HttpStatusCode.NoContent, await revogada.Content.ReadAsStringAsync());
 
         using HttpResponseMessage depois = await PostAsync(

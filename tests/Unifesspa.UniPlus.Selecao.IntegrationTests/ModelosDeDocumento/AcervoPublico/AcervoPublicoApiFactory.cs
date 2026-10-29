@@ -2,7 +2,11 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ModelosDeDocumento.AcervoPu
 
 using System.Diagnostics.CodeAnalysis;
 
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.TestHost;
+
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
 /// A API UniPlus com Wolverine, Postgres e um MinIO real com o acervo público provisionado: o
@@ -28,4 +32,13 @@ public sealed class AcervoPublicoApiFactory(string connectionString, MinioContai
             // carrega, aponta o acervo para a porta fixa do MinIO do docker-compose.
             ["AcervoPublico:EnderecoBase"] = minio.EnderecoDoAcervoPublico,
         };
+
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+
+        base.ConfigureWebHost(builder);
+
+        builder.ConfigureTestServices(services => services.AdicionarAdministradorDeProcessosDeTeste());
+    }
 }
