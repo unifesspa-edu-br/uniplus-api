@@ -9,6 +9,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Kernel\Unifesspa.UniPlus.Kernel.csproj" />
+    <!-- O catálogo de permissões do módulo (ADR-0078, ADR-0151). -->
+    <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Authorization\Unifesspa.UniPlus.Authorization.csproj" />
     <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Application.Abstractions\Unifesspa.UniPlus.Application.Abstractions.csproj" />
     <ProjectReference Include="..\Unifesspa.UniPlus.Publicacoes.Domain\Unifesspa.UniPlus.Publicacoes.Domain.csproj" />
   </ItemGroup>

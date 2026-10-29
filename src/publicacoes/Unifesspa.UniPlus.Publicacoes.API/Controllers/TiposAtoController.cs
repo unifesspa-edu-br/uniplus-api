@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
@@ -15,13 +16,14 @@ using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Application.Commands.TiposAtoPublicado;
 using Unifesspa.UniPlus.Publicacoes.Application.DTOs;
+using Unifesspa.UniPlus.Publicacoes.Application.Permissoes;
 using Unifesspa.UniPlus.Publicacoes.Application.Queries.TiposAtoPublicado;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 
 /// <summary>
 /// Endpoints públicos de leitura (<c>GET /api/publicacoes/tipos-ato</c>) e
 /// endpoints admin (<c>POST/PUT/DELETE /api/publicacoes/admin/tipos-ato</c>)
-/// restritos a <c>plataforma-admin</c>.
+/// restritos à permissão de manutenção.
 /// </summary>
 /// <remarks>
 /// A leitura é pública porque o significado de um código de tipo de ato numa data
@@ -29,12 +31,15 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 /// (<c>created_by</c>) não é exposta.
 /// </remarks>
 [ApiController]
+[Authorize]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class TiposAtoController : ControllerBase
 {
+    private const string RecursoTipo = "TiposAto";
+
     private const string ResourceTag = "tipos-ato";
 
     /// <summary>Mesmo formato exigido pelo agregado: caixa alta, palavras separadas por underscore.</summary>
@@ -154,11 +159,11 @@ public sealed class TiposAtoController : ControllerBase
     }
 
     /// <summary>
-    /// Cria uma versão de tipo de ato. Restrito a <c>plataforma-admin</c>.
+    /// Cria uma versão de tipo de ato. Exige a permissão de manutenção.
     /// <c>Idempotency-Key</c> obrigatório (ADR-0027).
     /// </summary>
     [HttpPost("admin/tipos-ato")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoPublicacoes>(PermissaoPublicacoes.TiposAtoManter, RecursoTipo = RecursoTipo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -185,14 +190,14 @@ public sealed class TiposAtoController : ControllerBase
     }
 
     /// <summary>
-    /// Atualiza uma versão de tipo de ato. Restrito a <c>plataforma-admin</c>.
+    /// Atualiza uma versão de tipo de ato. Exige a permissão de manutenção.
     /// </summary>
     /// <remarks>
     /// Sem <c>Idempotency-Key</c>: a ADR-0027 exclui <c>PUT</c> puro, cuja semântica
     /// já é idempotente — repetir a mesma substituição não acumula efeito.
     /// </remarks>
     [HttpPut("admin/tipos-ato/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoPublicacoes>(PermissaoPublicacoes.TiposAtoManter, RecursoTipo = RecursoTipo)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -224,10 +229,10 @@ public sealed class TiposAtoController : ControllerBase
 
     /// <summary>
     /// Remove (soft-delete) uma versão de tipo de ato, liberando a sua janela de
-    /// vigência. Restrito a <c>plataforma-admin</c>.
+    /// vigência. Exige a permissão de manutenção.
     /// </summary>
     [HttpDelete("admin/tipos-ato/{id:guid}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [ExigePermissao<PermissaoPublicacoes>(PermissaoPublicacoes.TiposAtoManter, RecursoTipo = RecursoTipo)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
