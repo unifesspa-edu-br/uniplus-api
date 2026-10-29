@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Authorization.Decisao;
 using Unifesspa.UniPlus.Host.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
-using Unifesspa.UniPlus.Selecao.API.Permissoes;
+using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 
 /// <summary>
 /// O catálogo de permissões montado pelo composition root real e os dois endpoints

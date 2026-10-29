@@ -316,6 +316,13 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             .Select(p => p.UnidadeAdministradora.Sigla)
             .FirstOrDefaultAsync(cancellationToken);
 
+    public Task<Guid?> ObterUnidadeAdministradoraAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default) =>
+        _context.ProcessosSeletivos
+            .AsNoTracking()
+            .Where(p => p.Id == processoSeletivoId)
+            .Select(p => (Guid?)p.UnidadeAdministradoraOrigemId)
+            .FirstOrDefaultAsync(cancellationToken);
+
     public async Task<bool> ExisteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _context.ProcessosSeletivos
@@ -342,11 +349,15 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
         Guid? afterId,
         int limit,
         PaginationDirection direction,
+        IReadOnlyCollection<Guid> unidades,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(unidades);
+
         // Keyset bidirecional (ADR-0089): ordenação, âncora, probe n+1, reversão
         // e flags ficam no helper. Com Guid v7 (ADR-0032) a ordem por Id é cronológica.
-        IQueryable<ProcessoSeletivo> query = _context.ProcessosSeletivos.AsNoTracking();
+        IQueryable<ProcessoSeletivo> query = _context.ProcessosSeletivos.AsNoTracking()
+            .Where(p => unidades.Contains(p.UnidadeAdministradoraOrigemId));
 
         CursorKeysetPage<ProcessoSeletivo> page = await CursorKeyset
             .ApplyAsync(query, afterId, limit, direction, cancellationToken)

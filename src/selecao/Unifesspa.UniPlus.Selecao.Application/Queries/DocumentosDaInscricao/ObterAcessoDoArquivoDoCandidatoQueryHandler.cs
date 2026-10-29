@@ -45,35 +45,15 @@ public static partial class ObterAcessoDoArquivoDoCandidatoQueryHandler
         }
 
         ArquivoDaApresentacao arquivo = encontrado.Value!;
-        if (arquivo.Situacao != SituacaoDoArquivoDoCandidato.Verificado || arquivo.ChaveDefinitiva is null)
-        {
-            return Result<AcessoArquivoDoCandidatoDto>.Failure(ArquivoDaApresentacao.NaoVerificado);
-        }
-
-        string? nome = await NomeParaDownloadAsync(arquivo, documentoRepository, cancellationToken).ConfigureAwait(false);
-        if (nome is null)
-        {
-            // O arquivo saiu da inscrição entre a busca e a releitura: para o candidato é o mesmo que não existir.
-            return Result<AcessoArquivoDoCandidatoDto>.Failure(AcessoAoDocumentoDaInscricao.ArquivoNaoEncontrado);
-        }
-
-        DateTimeOffset emitidoEm = clock.GetUtcNow();
-        string url = await storage
-            .GerarUrlLeituraAsync(arquivo.ChaveDefinitiva, nome, PrazosDoArquivoEnviado.Leitura, cancellationToken)
+        Result<AcessoArquivoDoCandidatoDto> acesso = await EmissaoDoAcessoAoArquivo
+            .EmitirAsync(arquivo, documentoRepository, storage, clock, cancellationToken)
             .ConfigureAwait(false);
+        if (acesso.IsSuccess)
+        {
+            LogAcessoEmitido(logger, userContext.UserId ?? string.Empty, arquivo.Id, acesso.Value!.ExpiraEm - PrazosDoArquivoEnviado.Leitura);
+        }
 
-        LogAcessoEmitido(logger, userContext.UserId ?? string.Empty, arquivo.Id, emitidoEm);
-        return Result<AcessoArquivoDoCandidatoDto>.Success(
-            new AcessoArquivoDoCandidatoDto(new Uri(url, UriKind.Absolute), emitidoEm.Add(PrazosDoArquivoEnviado.Leitura)));
-    }
-
-    /// <summary>O nome que a listagem da inscrição informa para o arquivo: o download usa o mesmo nome que a tela mostra.</summary>
-    private static async Task<string?> NomeParaDownloadAsync(
-        ArquivoDaApresentacao arquivo, IDocumentoDaInscricaoRepository documentoRepository, CancellationToken cancellationToken)
-    {
-        ArquivosDaInscricao daInscricao = await ArquivosDaInscricao
-            .CarregarAsync(documentoRepository, arquivo.InscricaoId, cancellationToken).ConfigureAwait(false);
-        return daInscricao.ParaOCandidato().SingleOrDefault(a => a.ArquivoId == arquivo.Id)?.NomeParaDownload;
+        return acesso;
     }
 
     [LoggerMessage(

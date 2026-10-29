@@ -4,6 +4,8 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Authorization.Abstractions;
+using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -41,7 +43,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
             .Do(ci => processoPersistido = ci.Arg<ProcessoSeletivo>());
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
-            command, repository, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
+            command, repository, VerificadorQue(ResultadoDoAcesso.Permitido), unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         processoPersistido.Should().NotBeNull();
@@ -76,7 +78,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         CriarProcessoSeletivoCommand command = new("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026");
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
-            command, repository, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
+            command, repository, VerificadorQue(ResultadoDoAcesso.Permitido), unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.UnidadeAdministradoraNaoEncontrada");
@@ -97,7 +99,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         CriarProcessoSeletivoCommand command = new("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026");
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
-            command, repository, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
+            command, repository, VerificadorQue(ResultadoDoAcesso.Permitido), unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.UnidadeAdministradoraSemCidade");
@@ -118,7 +120,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
             new CriarProcessoSeletivoCommand("PS", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026"),
-            repository, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
+            repository, VerificadorQue(ResultadoDoAcesso.Permitido), unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.TipoProcessoNaoEncontradoOuInativo");
@@ -142,7 +144,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
             "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, null, null, null, "psiq-2026");
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
-            command, repository, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
+            command, repository, VerificadorQue(ResultadoDoAcesso.Permitido), unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.LocalidadeAusente");
@@ -168,7 +170,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
             "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, null, null, null, "psiq-2026");
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
-            command, repository, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
+            command, repository, VerificadorQue(ResultadoDoAcesso.Permitido), unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
 
         UnidadeCeps.CidadeCodigoIbge.Should().Be("1504208", "a unidade tem cidade — e ainda assim não supre");
         result.IsFailure.Should().BeTrue();
@@ -196,7 +198,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
             .Do(ci => persistido = ci.Arg<ProcessoSeletivo>());
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
-            command, repository, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
+            command, repository, VerificadorQue(ResultadoDoAcesso.Permitido), unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         persistido!.Localidade.CodigoIbge.Should().Be("1501402");
@@ -216,7 +218,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
             "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "SP", "psiq-2026");
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
-            command, repository, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
+            command, repository, VerificadorQue(ResultadoDoAcesso.Permitido), unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("CidadeReferencia.UfIncoerente");
@@ -238,7 +240,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
             .Do(ci => persistido = ci.Arg<ProcessoSeletivo>());
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
-            command, repository, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
+            command, repository, VerificadorQue(ResultadoDoAcesso.Permitido), unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
         persistido!.IdentificadorLegivel!.Value.Valor.Should().Be("psiq-2026");
@@ -258,7 +260,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
             "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", identificador);
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
-            command, repository, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
+            command, repository, VerificadorQue(ResultadoDoAcesso.Permitido), unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
 
         result.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelAusente);
         await unidadeReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
@@ -276,7 +278,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
             "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "PSIQ-2026");
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
-            command, repository, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
+            command, repository, VerificadorQue(ResultadoDoAcesso.Permitido), unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
 
         result.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelFormatoInvalido);
         await unidadeReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
@@ -299,10 +301,59 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
             "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026");
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
-            command, repository, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
+            command, repository, VerificadorQue(ResultadoDoAcesso.Permitido), unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
 
         result.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelEmUso);
         await repository.DidNotReceiveWithAnyArgs().AdicionarAsync(default!, default);
         await unitOfWork.DidNotReceiveWithAnyArgs().SalvarAlteracoesAsync(default);
+    }
+
+    private static IVerificadorDeAcesso VerificadorQue(ResultadoDoAcesso resultado)
+    {
+        IVerificadorDeAcesso verificador = Substitute.For<IVerificadorDeAcesso>();
+        verificador.VerificarAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
+            .Returns(resultado);
+        return verificador;
+    }
+
+    [Fact(DisplayName = "Handle recusa quem não pode configurar na unidade nomeada antes de ler a unidade ou persistir")]
+    public async Task Handle_SemPermissaoNaUnidade_RecusaAntesDeQualquerLeitura()
+    {
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        IUnidadeReader unidadeReader = Substitute.For<IUnidadeReader>();
+        ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IVerificadorDeAcesso verificador = VerificadorQue(ResultadoDoAcesso.Negado);
+        CriarProcessoSeletivoCommand command = new(
+            "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026");
+
+        Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
+            command, repository, verificador, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
+
+        result.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.SemPermissaoNaUnidade);
+        await verificador.Received(1).VerificarAsync(
+            Arg.Is<PermissionRequirement>(r => r.Permissao == "selecao:processos:configurar"),
+            Arg.Is<ResourceContext?>(c => c!.UnidadeProprietariaId == UnidadeId),
+            Arg.Any<CancellationToken>());
+        await unidadeReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
+        await repository.DidNotReceiveWithAnyArgs().AdicionarAsync(default!, default);
+    }
+
+    [Fact(DisplayName = "Handle responde identidade incompleta, e não negativa, quando o token não identifica quem cria")]
+    public async Task Handle_IdentidadeIncompleta_RecusaComOCodigoProprio()
+    {
+        CriarProcessoSeletivoCommand command = new(
+            "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026");
+
+        Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
+            command,
+            Substitute.For<IProcessoSeletivoRepository>(),
+            VerificadorQue(ResultadoDoAcesso.IdentidadeIncompleta),
+            Substitute.For<IUnidadeReader>(),
+            Substitute.For<ITipoProcessoReader>(),
+            Substitute.For<ISelecaoUnitOfWork>(),
+            CancellationToken.None);
+
+        result.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentidadeIncompleta);
     }
 }

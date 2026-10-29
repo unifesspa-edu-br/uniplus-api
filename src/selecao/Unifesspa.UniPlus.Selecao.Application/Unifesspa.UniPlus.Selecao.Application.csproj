@@ -16,6 +16,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Kernel\Unifesspa.UniPlus.Kernel.csproj" />
     <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Application.Abstractions\Unifesspa.UniPlus.Application.Abstractions.csproj" />
+    <!-- O catálogo de permissões da Seleção e a porta de decisão de acesso (ADR-0078, ADR-0151). -->
+    <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Authorization\Unifesspa.UniPlus.Authorization.csproj" />
     <ProjectReference Include="..\Unifesspa.UniPlus.Selecao.Domain\Unifesspa.UniPlus.Selecao.Domain.csproj" />
     <!-- Leitura cross-módulo (ADR-0056/R8): Contracts é a única camada permitida
          de outro módulo. Usado por DefinirVagasCommandHandler/DefinirOfertaAtendimentoCommandHandler

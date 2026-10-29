@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.API.Permissoes;
+namespace Unifesspa.UniPlus.Selecao.Application.Permissoes;
 
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Contracts;

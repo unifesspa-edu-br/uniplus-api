@@ -9,6 +9,12 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
+using Permissoes;
+
+using Services;
+
+using Unifesspa.UniPlus.Authorization.Abstractions;
+using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Governance.Contracts;
 
@@ -42,6 +48,7 @@ public static class CriarProcessoSeletivoCommandHandler
     public static async Task<Result<Guid>> Handle(
         CriarProcessoSeletivoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
+        IVerificadorDeAcesso verificador,
         IUnidadeReader unidadeReader,
         ITipoProcessoReader tipoProcessoReader,
         ISelecaoUnitOfWork unitOfWork,
@@ -49,9 +56,22 @@ public static class CriarProcessoSeletivoCommandHandler
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
+        ArgumentNullException.ThrowIfNull(verificador);
         ArgumentNullException.ThrowIfNull(unidadeReader);
         ArgumentNullException.ThrowIfNull(tipoProcessoReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
+
+        // O processo nasce na unidade que o comando nomeia, então é contra ela que a permissão se decide, antes de
+        // qualquer leitura: quem não pode configurar naquela unidade não descobre se ela existe ou tem cidade.
+        ResultadoDoAcesso acesso = await AcessoAoProcesso
+            .VerificarNaUnidadeAsync(
+                verificador, command.UnidadeAdministradoraOrigemId, processoId: null, PermissaoSelecao.ProcessosConfigurar,
+                AcessoAoProcesso.RecursoProcesso, sensibilidadeDoRecurso: null, cancellationToken)
+            .ConfigureAwait(false);
+        if (acesso != ResultadoDoAcesso.Permitido)
+        {
+            return Result<Guid>.Failure(AcessoAoProcesso.Recusa(acesso));
+        }
 
         // Presença e formato do identificador legível são conferidos antes de qualquer consulta:
         // validação de campo vence I/O, e quem erra não precisa esperar pelas leituras abaixo.

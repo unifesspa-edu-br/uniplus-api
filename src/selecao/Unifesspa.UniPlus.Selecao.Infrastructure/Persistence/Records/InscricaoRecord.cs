@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 
+using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
@@ -18,7 +19,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <see cref="Domain.Entities.Inscricao"/> é responsabilidade exclusiva do
 /// <c>InscricaoRepository</c>, nunca de um <c>ValueConverter</c>.
 /// </remarks>
-public sealed class InscricaoRecord
+public sealed class InscricaoRecord : IIdentificavel
 {
     public Guid Id { get; set; }
 

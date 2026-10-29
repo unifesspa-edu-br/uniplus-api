@@ -14,9 +14,9 @@ using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.API.Permissoes;
 using Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDecisaoIsencao;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Application.Queries.MotivosDecisaoIsencao;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 

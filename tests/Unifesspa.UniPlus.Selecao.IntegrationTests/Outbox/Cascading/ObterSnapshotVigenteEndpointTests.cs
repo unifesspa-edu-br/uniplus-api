@@ -167,12 +167,13 @@ public sealed class ObterSnapshotVigenteEndpointTests
         CascadingApiFactory api = _fixture.Factory;
 
         await TiposDeAtoSeeder.SemearAsync(api.Services);
+        (Guid processoId, _) = await SemearAsync(api, nameof(ObterSnapshotVigente_VersaoDeMidiaNaoSuportada_Retorna406));
         using HttpClient client = api.CreateClient();
 
-        // O filtro de negociação roda antes do handler — 406 independe de o
-        // processo existir. Pede uma v2 inexistente do recurso.
+        // O filtro de negociação roda antes do handler. O processo existe, porque o acesso
+        // a ele é decidido antes da negociação. Pede uma v2 inexistente do recurso.
         using HttpRequestMessage request = new(HttpMethod.Get,
-            new Uri($"/api/selecao/processos-seletivos/{Guid.CreateVersion7()}/snapshot-vigente", UriKind.Relative));
+            new Uri($"/api/selecao/processos-seletivos/{processoId}/snapshot-vigente", UriKind.Relative));
         AppendTestAuth(request);
         request.Headers.TryAddWithoutValidation(
             "Accept", "application/vnd.uniplus.snapshot-vigente-processo-seletivo.v2+json");

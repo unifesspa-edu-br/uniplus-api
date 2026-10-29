@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Authorization.Abstractions;
+using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -53,7 +55,7 @@ public sealed class IdentificadorLegivelCorridaTests : IClassFixture<ProcessoSel
             "PS Corrida", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", disputado.Valor);
 
         Result<Guid> resultado = await CriarProcessoSeletivoCommandHandler.Handle(
-            command, repository, unidadeReader, tipoProcessoReader, ctx, CancellationToken.None);
+            command, repository, VerificadorQuePermite(), unidadeReader, tipoProcessoReader, ctx, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelEmUso);
@@ -96,6 +98,14 @@ public sealed class IdentificadorLegivelCorridaTests : IClassFixture<ProcessoSel
         repository.ObterParaMutacaoAsync(default, default)
             .ReturnsForAnyArgs(ci => real.ObterParaMutacaoAsync(ci.Arg<Guid>(), ci.Arg<CancellationToken>()));
         return repository;
+    }
+
+    private static IVerificadorDeAcesso VerificadorQuePermite()
+    {
+        IVerificadorDeAcesso verificador = Substitute.For<IVerificadorDeAcesso>();
+        verificador.VerificarAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
+            .Returns(ResultadoDoAcesso.Permitido);
+        return verificador;
     }
 
     private static ProcessoSeletivo NovoProcesso(IdentificadorLegivel identificador) => ProcessoSeletivo.Criar(

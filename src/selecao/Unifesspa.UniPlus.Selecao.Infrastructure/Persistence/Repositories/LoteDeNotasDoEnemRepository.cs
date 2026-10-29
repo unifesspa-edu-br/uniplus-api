@@ -91,23 +91,9 @@ public sealed class LoteDeNotasDoEnemRepository : ILoteDeNotasDoEnemRepository
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        var nomes = await _context.RespostasDaInscricao
-            .AsNoTracking()
-            .Where(r => ids.Contains(r.InscricaoId)
-                && r.OcorrenciaId == null
-                && r.ValorTexto != null
-                && (r.FatoCodigo == ConjuntoBasicoDaInscricao.Nome || r.FatoCodigo == ConjuntoBasicoDaInscricao.NomeSocial))
-            .Select(r => new { r.InscricaoId, r.FatoCodigo, Texto = r.ValorTexto! })
-            .ToListAsync(cancellationToken)
+        Dictionary<Guid, string> nomeDeExibicao = await NomeDeExibicaoDaInscricao
+            .LerAsync(_context.RespostasDaInscricao, ids, cancellationToken)
             .ConfigureAwait(false);
-
-        // O nome social, quando preenchido, vale no lugar do civil (ADR-0082).
-        Dictionary<Guid, string> nomeDeExibicao = nomes
-            .GroupBy(static n => n.InscricaoId)
-            .ToDictionary(
-                static g => g.Key,
-                static g => (g.FirstOrDefault(static n => n.FatoCodigo == ConjuntoBasicoDaInscricao.NomeSocial && !string.IsNullOrWhiteSpace(n.Texto))
-                    ?? g.FirstOrDefault(static n => n.FatoCodigo == ConjuntoBasicoDaInscricao.Nome))?.Texto.Trim() ?? string.Empty);
 
         string[] cpfs = await DecifradorDeCpfsEmParalelo
             .DecifrarAsync(_encryption, [.. inscricoes.Select(static i => i.CpfCiphertext)], cancellationToken)
@@ -117,7 +103,7 @@ public sealed class LoteDeNotasDoEnemRepository : ILoteDeNotasDoEnemRepository
         for (int i = 0; i < inscricoes.Count; i++)
         {
             var inscricao = inscricoes[i];
-            string? nome = nomeDeExibicao.TryGetValue(inscricao.Id, out string? n) && n.Length > 0 ? n : null;
+            string? nome = nomeDeExibicao.GetValueOrDefault(inscricao.Id);
             resultado[inscricao.Id] = new InscritoDoLote(
                 inscricao.NumeroInscricao,
                 nome,

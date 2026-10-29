@@ -6,6 +6,12 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Errors;
 /// </summary>
 public static class ProcessoSeletivoErrorCodes
 {
+    /// <summary>A pessoa autenticada não tem a permissão na unidade dona; responde 403.</summary>
+    public const string SemPermissaoNaUnidade = "ProcessoSeletivo.SemPermissaoNaUnidade";
+
+    /// <summary>O token não identifica o solicitante por completo, então nenhuma decisão de acesso foi tomada; responde 401.</summary>
+    public const string IdentidadeIncompleta = "ProcessoSeletivo.IdentidadeIncompleta";
+
     public const string CriteriosDesempateEmExcesso = "ProcessoSeletivo.CriteriosDesempateEmExcesso";
 
     public const string IdentificadorLegivelTamanho = "ProcessoSeletivo.IdentificadorLegivelTamanho";
