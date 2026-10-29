@@ -1,5 +1,5 @@
 ---
-status: "proposed"
+status: "accepted"
 date: "2026-06-02"
 decision-makers:
   - "Tech Lead (CTIC)"
@@ -85,6 +85,7 @@ A resolução de acesso, portanto, **não consulta `UnidadeSuperiorId`** para co
 
 ## Mais informações
 
+- **Aceita em 2026-10-28:** o princípio já orienta o código da autorização. A [ADR-0152](0152-governanca-das-concessoes-de-acesso.md) fixa o escopo da concessão em unidade ou instituição, sem herança pela hierarquia. O escopo de auditoria desta ADR é só a visibilidade ampla sobre unidades; o servidor que atua no recurso de outra unidade o faz por concessão operacional explícita naquela unidade, ou em escopo mais restrito pela concessão excepcional da ADR-0084, e não por escopo de auditoria.
 - **Refina** a [ADR-0055](0055-organizacao-institucional-bounded-context.md): a relação de **supervisão** da PROEG sobre CEPS/CRCA, ali enunciada, é revista — para fins de autorização essas unidades são **irmãs**; supervisão administrativa não implica acesso operacional.
 - A visibilidade entre Unidades, que o modelo anterior ([ADR-0057](0057-areas-rbac-snapshot-historia-invariantes.md)) — superseded pela [ADR-0078](0078-modelo-de-autorizacao-pbac-abac.md) — tratava como propriedade dos papéis, passa a depender de concessão de auditoria explícita.
 - Depende do modelo de decisão da [ADR-0078](0078-modelo-de-autorizacao-pbac-abac.md) (a concessão de auditoria é uma das fontes consideradas pelo ponto de decisão).

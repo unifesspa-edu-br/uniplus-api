@@ -78,5 +78,5 @@ Tratar todas as decisões com o mesmo cache força uma escolha ruim: ou o cache 
 ## Mais informações
 
 - Ancora no modelo de decisão da [ADR-0078](0078-modelo-de-autorizacao-pbac-abac.md): o cache e a revogação operam sobre a decisão de acesso.
-- A sensibilidade de cada permissão vem do catálogo de permissões ([ADR-0080](0080-catalogo-declarativo-de-permissoes-e-codegen.md)).
+- A sensibilidade de cada permissão vem do atributo da permissão no catálogo em código ([ADR-0151](0151-catalogo-de-permissoes-em-codigo-por-modulo.md)).
 - As concessões cujo efeito de revogação esta ADR garante são as da [ADR-0084](0084-concessao-excepcional-e-atuacao-institucional-server-side.md).

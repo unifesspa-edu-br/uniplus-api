@@ -1,5 +1,5 @@
 ---
-status: "proposed"
+status: "accepted"
 date: "2026-10-28"
 decision-makers:
   - "Tech Lead (CTIC)"
@@ -13,7 +13,7 @@ informed:
 
 ## Contexto e enunciado do problema
 
-O modelo de autorização decide por concessão efetiva ([ADR-0078](0078-modelo-de-autorizacao-pbac-abac.md)). As concessões chegam por vínculo de grupo, que associa a um grupo um perfil, um conjunto de permissões e uma unidade ([ADR-0083](0083-grupos-oidc-governados-pela-aplicacao.md)), ou por concessão excepcional, temporária e com escopo ([ADR-0084](0084-concessao-excepcional-e-atuacao-institucional-server-side.md)). Cada permissão do catálogo declara a sua sensibilidade.
+O modelo de autorização decide por concessão efetiva ([ADR-0078](0078-modelo-de-autorizacao-pbac-abac.md)). As concessões chegariam por vínculo de grupo do provedor de identidade, que a [ADR-0083](0083-grupos-oidc-governados-pela-aplicacao.md) propunha e esta decisão supera, ou por concessão excepcional, temporária e com escopo ([ADR-0084](0084-concessao-excepcional-e-atuacao-institucional-server-side.md)). Cada permissão do catálogo declara a sua sensibilidade.
 
 Nenhuma dessas decisões define **quem concede**. Hoje, na prática, o acesso inteiro é um único papel administrativo atribuído no provedor de identidade, sem pedido, sem aprovação e sem registro de quem decidiu. Com o primeiro processo seletivo real, servidores de unidades diferentes vão precisar de acesso a dados pessoais e sensíveis de candidatos (deficiência, saúde, autodeclarações, renda). O parecer da encarregada de dados de 13/10/2026 exige acesso restrito por padrão a esses dados.
 
@@ -123,9 +123,9 @@ O papel de instalação é atribuído a poucas pessoas da equipe de infraestrutu
 
 ## Mais informações
 
+- **Supera** a [ADR-0083](0083-grupos-oidc-governados-pela-aplicacao.md): o pertencimento a grupo, quando existir, é concessão do Uni+, e não atribuição no provedor de identidade.
 - **Emenda** a [ADR-0078](0078-modelo-de-autorizacao-pbac-abac.md): o token deixa de ser fonte de concessão efetiva, salvo o papel de instalação e os papéis da transição até a migração de cada módulo.
 - [ADR-0078](0078-modelo-de-autorizacao-pbac-abac.md) — ponto de decisão único e concessões efetivas.
-- [ADR-0083](0083-grupos-oidc-governados-pela-aplicacao.md) — vínculo de grupo com perfil, permissões e unidade.
 - [ADR-0084](0084-concessao-excepcional-e-atuacao-institucional-server-side.md) — concessão excepcional com escopo e validade.
 - [ADR-0085](0085-cache-e-revogacao-diferenciados-por-sensibilidade.md) — revogação com efeito imediato.
 - [ADR-0086](0086-trilha-de-auditoria-com-hmac-e-cofre.md) — trilha de auditoria.
