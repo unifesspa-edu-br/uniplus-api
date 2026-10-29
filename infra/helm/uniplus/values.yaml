@@ -79,6 +79,19 @@ reconciliacaoDaVerificacao:
   intervalo: "00:01:00"
   tamanhoDoLote: 100
 
+# Relay de e-mail institucional (issue #2138): host, porta e remetente sao obrigatorios —
+# AddEnvioDeEmail().ValidateOnStart() rejeita vazio, sem eles o pod crashloopa no startup.
+# seguranca: Nenhuma | StartTls | TlsImplicito. Usuario e senha, quando o relay exige autenticacao,
+# vao em secrets.emailSmtpUsuario / emailSmtpSenha (informados juntos). Viram Email__Smtp__Host /
+# __Porta / __Seguranca / __Remetente / __NomeRemetente.
+email:
+  smtp:
+    host: ""
+    porta: 587
+    seguranca: StartTls
+    remetente: ""
+    nomeRemetente: "Uni+"
+
 # Chaves esperadas no Secret externo `{{ .Release.Name }}-uniplus-secrets`
 # (provisionado pelo RUNBOOK do uniplus-infra — NÃO renderizado por este chart).
 # O monólito usa as connection strings dos módulos apontando para o MESMO banco `uniplus`
@@ -109,6 +122,10 @@ secrets:
   # (access_key, secret_key), pelo mesmo ExternalSecret das demais chaves deste Secret.
   arquivosDoCandidatoAccessKey: ""  # ArquivosDoCandidato__AccessKey
   arquivosDoCandidatoSecretKey: ""  # ArquivosDoCandidato__SecretKey
+  # Credencial do relay de e-mail, do Vault pelo mesmo ExternalSecret das demais chaves. Opcionais: sem
+  # autenticacao no relay, ficam fora do Secret.
+  emailSmtpUsuario: ""           # Email__Smtp__Usuario
+  emailSmtpSenha: ""             # Email__Smtp__Senha
   authAuthority: ""              # Auth__Authority
   # Criptografia de PII (LGPD): AddUniPlusEncryption valida no startup
   # (ValidateOnStart) — SEM estas chaves o host crasha no boot antes de servir.

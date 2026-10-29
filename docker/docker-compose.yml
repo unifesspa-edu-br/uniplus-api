@@ -123,6 +123,21 @@ services:
       retries: 5
       start_period: 20s
 
+  # Servidor de captura de e-mail (SMTP 1025, interface em http://localhost:8025). Só o ambiente
+  # local e os testes: nada sai para a internet, a caixa fica visível na interface.
+  mailpit:
+    image: axllent/mailpit:v1.27
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
   openldap:
     # OpenLDAP local com dados sintéticos (4devs) para reproduzir o cenário
     # do LDAP institucional Unifesspa em ambiente de desenvolvimento.

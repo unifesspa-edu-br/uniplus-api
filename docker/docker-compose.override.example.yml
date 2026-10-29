@@ -55,6 +55,8 @@ services:
       ConnectionStrings__PublicacoesDb: "Host=postgres;Port=5432;Database=uniplus;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       ConnectionStrings__AutorizacaoDb: "Host=postgres;Port=5432;Database=uniplus;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       ConnectionStrings__DiscentesDb: "Host=postgres;Port=5432;Database=uniplus;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      # E-mail: o appsettings.Development aponta para localhost; dentro da rede Docker o Mailpit é o serviço mailpit.
+      Email__Smtp__Host: "mailpit"
       Redis__ConnectionString: "redis:6379"
       Kafka__BootstrapServers: "kafka:29092"
       # Schema Registry (Apicurio em modo Confluent-compat) — sufixo /apis/ccompat/v7

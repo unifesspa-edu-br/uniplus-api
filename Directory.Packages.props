@@ -17,6 +17,9 @@
     <PackageVersion Include="Microsoft.OpenApi" Version="2.12.2" />
     <PackageVersion Include="Microsoft.OpenApi.Kiota" Version="1.31.1" />
 
+    <!-- E-mail institucional (SMTP) -->
+    <PackageVersion Include="MailKit" Version="4.18.2" />
+
     <!-- Encryption -->
     <PackageVersion Include="VaultSharp" Version="1.17.5.1" />
 
