@@ -63,7 +63,7 @@ public static class IniciarInstalacaoCommandHandler
             .ContarGestoresAtivosAsync(PerfisDeSistema.GestorDeAcessosId, Guid.Empty, agora, cancellationToken)
             .ConfigureAwait(false) > 0)
         {
-            return Result<InstalacaoIniciadaDto>.Failure(InstalacaoHandlerErros.JaHaGestor());
+            return Result<InstalacaoIniciadaDto>.Failure(InstalacaoHandlerErros.JaHaGestorAoIniciar());
         }
 
         // O emissor aceito é o do próprio token, que a validação já confrontou com o emissor configurado.

@@ -215,8 +215,8 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
             // conhecido, e a resposta cacheada seria um 200 com corpo vazio.
             //
             // Deliberadamente NÃO deleta a reservation aqui (diferente do
-            // branch de >= 500 abaixo, que sabe que a action *completou* e
-            // decidiu 500 deliberadamente): `next()` cobre tanto a execução da
+            // branch de >= 400 abaixo, que sabe que a action *completou* e
+            // produziu uma recusa ou uma falha deliberada): `next()` cobre tanto a execução da
             // action quanto a execução/serialização do `IActionResult`
             // devolvido — uma exceção pendente pode ter surgido DEPOIS que o
             // comando já persistiu (ex.: falha ao serializar a resposta). Sem
@@ -237,20 +237,17 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
 
             int status = httpContext.Response.StatusCode;
 
-            // 5xx nunca é cacheado (ADR-0027 §"Status codes em cache" + draft
-            // IETF §6). Reservation deletada para que retry do cliente com a
-            // mesma key possa executar o handler novamente — sem isso, cliente
-            // ficaria preso em 409 ProcessingConflict por 24h. CancellationToken
-            // None no DeleteAsync porque RequestAborted já está disparado quando
-            // o request foi cancelado pelo cliente.
-            //
-            // O conflito que a resposta declara retentável entra na mesma regra, pelo mesmo
-            // motivo: guardá-lo prenderia por 24 h um cliente que a própria mensagem manda
-            // retentar.
-            if (status >= 500
-                || RespostaDePrecondicao(status, httpContext.Request)
-                || executed.Canceled
-                || DeclaresRetryableConflict(status, executed.Result, captureStream))
+            // Só se armazena a resposta que reflete uma mutação persistida (ADR-0027
+            // §"Status codes em cache"): o 2xx, e o 4xx que o handler devolve depois de gravar
+            // (RecusaAposGravacaoResult), pois um retry o executaria sobre o estado já mudado.
+            // Todo outro 4xx produzido dentro do MVC, e todo 5xx, libera a reserva: o 4xx recusa a
+            // requisição, não a executa, e guardá-lo prenderia por 24 h o cliente que corrige a
+            // causa — permissão concedida, precondição relida, credencial completa — e repete a
+            // chave. Sem a reserva, um retry executa do zero e o 5xx não fica preso em 409
+            // ProcessingConflict. CancellationToken None no DeleteAsync porque RequestAborted
+            // já está disparado quando o request foi cancelado pelo cliente.
+            bool recusaAposGravacao = status < 500 && executed.Result is RecusaAposGravacaoResult;
+            if ((status >= 400 && !recusaAposGravacao) || executed.Canceled)
             {
                 await _store.DeleteAsync(scope, endpoint, idempotencyKey, CancellationToken.None)
                     .ConfigureAwait(false);
@@ -507,126 +504,6 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
         if (headers is not null && headers.TryGetValue("ETag", out string? etag))
             context.HttpContext.Response.Headers.ETag = etag;
     }
-
-    /// <summary>
-    /// O conflito que a própria resposta declara retentável — exceção formal à ADR-0027, que
-    /// guarda toda resposta abaixo de 500.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// 409 sozinho não separa a corrida que já passou do estado que permanece, e guardar os dois
-    /// por 24 h nega ao transitório a única saída que ele oferece: o cliente que preserva a
-    /// chave — que é o que a semântica de idempotência manda fazer — recebe em replay o conflito
-    /// de ontem. Descartar todo 409, porém, é pior: um replay tardio de "código já existe",
-    /// depois que alguém liberou o código, criaria o registro que o cliente acredita não ter
-    /// criado. A chave teria autorizado justamente a mutação que ela existe para impedir.
-    /// </para>
-    /// <para>
-    /// Quem sabe qual dos dois é não é o filtro: é quem produziu o erro. A declaração vive na
-    /// classificação do erro e viaja no envelope, e aqui só se lê o que ela disse. O gatilho é o
-    /// <b>status</b>, nunca o media type. O que o filtro precisa saber é o desfecho, e o
-    /// desfecho está no status; amarrar a decisão ao <c>Content-Type</c> acrescentaria uma
-    /// dependência de negociação de conteúdo — que varia com o <c>Accept</c> do cliente e com o
-    /// que cada atributo de resposta impõe — a uma pergunta que não tem nada a ver com ela.
-    /// </para>
-    /// <para>
-    /// Qualquer coisa que não seja um <c>true</c> explícito — corpo vazio, JSON inválido, campo
-    /// ausente — <b>guarda a resposta</b>. É o lado que preserva o comportamento anterior, e
-    /// errar para ele custa um retry recusado; errar para o outro custa uma mutação indevida.
-    /// </para>
-    /// </remarks>
-    private static bool DeclaresRetryableConflict(
-        int status,
-        IActionResult? result,
-        MemoryStream capturedBody)
-    {
-        if (status != StatusCodes.Status409Conflict)
-        {
-            return false;
-        }
-
-        return ResultDeclaresRetryableConflict(result) || ResponseDeclaresRetryableConflict(capturedBody);
-    }
-
-    /// <summary>
-    /// Lê a declaração no <see cref="ProblemDetails"/> que a action devolveu, antes de qualquer
-    /// serialização.
-    /// </summary>
-    /// <remarks>
-    /// É o caminho preferido porque não depende do formato de fio. O corpo serializado atravessa
-    /// formatters e opções de <c>JsonSerializerOptions</c>: um <c>camelCase</c> aplicado à raiz,
-    /// um invólucro novo ou uma renomeação da extensão fazem a leitura por texto não achar nada,
-    /// e o conflito de corrida passa a ocupar a chave por 24 h. O objeto que a action devolveu
-    /// não atravessa nenhuma dessas etapas.
-    /// </remarks>
-    private static bool ResultDeclaresRetryableConflict(IActionResult? result) =>
-        result is ObjectResult { Value: ProblemDetails problem }
-        && problem.Extensions.TryGetValue(ResultExtensions.RetryableExtensionName, out object? declarado)
-        && declarado is true;
-
-    /// <summary>
-    /// Releitura do corpo serializado, para a resposta que não veio de um
-    /// <see cref="ObjectResult"/> tipado — escrita direto no <c>Response.Body</c> por um filtro
-    /// mais interno, ou devolvida num resultado que não carrega o <see cref="ProblemDetails"/>
-    /// como valor.
-    /// </summary>
-    private static bool ResponseDeclaresRetryableConflict(MemoryStream capturedBody)
-    {
-        if (capturedBody.Length == 0)
-        {
-            return false;
-        }
-
-        try
-        {
-            // Lê o buffer interno em vez de copiá-lo: o stream nasce aqui neste filtro, e o
-            // corpo só precisa ser inspecionado, não guardado.
-            using JsonDocument documento = JsonDocument.Parse(
-                capturedBody.GetBuffer().AsMemory(0, (int)capturedBody.Length));
-
-            return documento.RootElement.ValueKind == JsonValueKind.Object
-                && documento.RootElement.TryGetProperty(
-                    ResultExtensions.RetryableExtensionName, out JsonElement retryable)
-                && retryable.ValueKind == JsonValueKind.True;
-        }
-        catch (JsonException)
-        {
-            return false;
-        }
-    }
-
-    /// <summary>
-    /// A resposta é fruto de uma <b>precondição</b> — e por isso <b>não é armazenável</b>
-    /// (ADR-0110 D6, exceção formal à ADR-0027).
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// A ADR-0027 manda cachear todo 4xx, pela convenção Stripe, cuja motivação é
-    /// anti-abuso: impedir que um cliente varie a key até achar uma sequência que muda o
-    /// estado. Mas estas respostas <b>não são o resultado da operação</b> — a operação
-    /// <b>não executou</b>. Cachear não impede o abuso de jeito nenhum (o atacante troca a
-    /// key), e <b>prende o cliente legítimo</b>.
-    /// </para>
-    /// <para>
-    /// <b>A raiz do problema é que a entrada é identificada pelo hash do BODY.</b> Uma
-    /// resposta cuja causa está num <b>header</b> é insegura de gravar: o cliente corrige o
-    /// header, mantém o mesmo body e a mesma key — e o lookup casa, devolvendo em replay a
-    /// falha que ele acabou de consertar. É o caso das três:
-    /// </para>
-    /// <list type="bullet">
-    /// <item><b>412</b> — o <c>If-Match</c> estava defasado; o cliente relê o ETag e retenta.</item>
-    /// <item><b>428</b> — o <c>If-Match</c> faltava. A RFC 6585 §3 é explícita: a resposta depende de um header <b>ausente</b>; armazená-la é incoerente.</item>
-    /// <item><b>400 com <c>If-Match</c> presente</b> — a precondição veio malformada. O defeito está no header, não no corpo, e o hash do corpo não o distingue.</item>
-    /// </list>
-    /// <para>
-    /// O 400 só é liberado <b>quando há <c>If-Match</c> na requisição</b>: um 400 de JSON
-    /// malformado continua cacheado, e corretamente — ali o defeito está no <b>corpo</b>, o
-    /// hash muda quando o cliente o corrige, e a entrada nova nasce sozinha.
-    /// </para>
-    /// </remarks>
-    private static bool RespostaDePrecondicao(int status, HttpRequest request) =>
-        status is StatusCodes.Status412PreconditionFailed or StatusCodes.Status428PreconditionRequired
-        || (status == StatusCodes.Status400BadRequest && request.Headers.ContainsKey("If-Match"));
 
     private static string SerializeCachedHeaders(HttpResponse response)
     {

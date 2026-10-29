@@ -16,10 +16,10 @@ public static class ResultExtensions
 {
     /// <summary>
     /// Nome, no envelope RFC 9457, da extensão que declara o conflito cuja repetição pode ser
-    /// aceita. Quem a escreve é este tipo; quem a lê para decidir se a chave de idempotência
-    /// fica ocupada é o filtro de idempotência; e o schema `ProblemDetails` dos contratos
-    /// publicados a declara. Um nome só para os três, porque uma renomeação que alcançasse
-    /// apenas um deles quebraria em silêncio (ADR-0134).
+    /// aceita. Quem a escreve é este tipo, e o schema `ProblemDetails` dos contratos publicados a
+    /// declara. É um sinal ao cliente, não uma decisão do filtro de idempotência. Um nome só
+    /// para os dois, porque uma renomeação que alcançasse apenas um deles quebraria em silêncio
+    /// (ADR-0134).
     /// </summary>
     public const string RetryableExtensionName = "retryable";
 
@@ -92,6 +92,8 @@ public static class ResultExtensions
                 .ToArray();
         }
 
-        return new ObjectResult(problem) { StatusCode = status };
+        return mapper.TryGetMapping(errors[0].Error.Code, out DomainErrorMapping? mapping) && mapping.RecusaAposGravacao
+            ? new RecusaAposGravacaoResult(problem) { StatusCode = status }
+            : new ObjectResult(problem) { StatusCode = status };
     }
 }

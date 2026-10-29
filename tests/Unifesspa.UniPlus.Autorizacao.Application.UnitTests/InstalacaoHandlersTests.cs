@@ -112,10 +112,41 @@ public sealed class InstalacaoHandlersTests
             CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Errors.Single().Error.Code.Should().Be(InstalacaoErrorCodes.JaHaGestor);
+        resultado.Errors.Single().Error.Code.Should().Be(
+            conflitoNaGravacao ? InstalacaoErrorCodes.JaHaGestorAoIniciar : InstalacaoErrorCodes.JaHaGestor);
         instalacao.Situacao.Should().Be(SituacaoDaInstalacao.Cancelada);
         instalacoes.Tentativa!.Resultado.Should().Be(ResultadoDaTentativaDeInstalacao.JaHaviaGestor);
         unidade.Descartou.Should().Be(conflitoNaGravacao);
+    }
+
+    [Fact(DisplayName = "Concessão duplicada na gravação descarta a confirmação e recusa sem a marca de recusa gravada")]
+    public async Task Confirmar_ConcessaoDuplicadaNaGravacao_RecusaComCodigoQueNaoPrendeAChave()
+    {
+        Identidade executor = new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0001");
+        Instalacao instalacao = Instalacao.Iniciar(
+            executor,
+            [new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0002", "gestor2@uniplus-test.local"), new(Emissor, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0003", "gestor3@uniplus-test.local")],
+            Emissor, "123", 1024, DateTimeOffset.UtcNow).Value!;
+        instalacao.ConfirmarDocumento("etag");
+        instalacao.RegistrarDocumentoVerificado("sha", DateTimeOffset.UtcNow);
+        instalacao.EnviarCodigo([1, 2, 3], DateTimeOffset.UtcNow);
+        UnidadeDeTrabalhoComConcessaoDuplicada unidade = new();
+
+        Result resultado = await ConfirmarInstalacaoCommandHandler.Handle(
+            new ConfirmarInstalacaoCommand("12345678"),
+            new RepositorioDaCorrida(instalacao),
+            new ConcessoesSemGestorComPerfil(),
+            new ResumoFixo(),
+            new CatalogoInstitucional(),
+            unidade,
+            new Usuario(executor),
+            TimeProvider.System,
+            NullLogger.Instance,
+            CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Single().Error.Code.Should().Be(InstalacaoErrorCodes.JaHaGestorAoIniciar);
+        unidade.Descartou.Should().BeTrue();
     }
 
     [Fact(DisplayName = "O pedido ao verificador usa o tamanho declarado do PDF como limite")]
@@ -302,6 +333,51 @@ public sealed class InstalacaoHandlersTests
             conflita ? throw new Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException() : Task.FromResult(1);
 
         public void DescartarAlteracoesNaoSalvas() => Descartou = true;
+    }
+
+    private sealed class ConcessoesSemGestorComPerfil : IConcessaoRepository
+    {
+        public Task TravarGovernancaParaEscritaAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task<int> ContarGestoresAtivosAsync(Guid perfilId, Guid exceto, DateTimeOffset agora, CancellationToken cancellationToken = default) =>
+            Task.FromResult(0);
+
+        public Task<Perfil?> ObterParaConcederAsync(Guid perfilId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<Perfil?>(Perfil.Criar("Gestor de acessos", "Governa as concessões de acesso.", ["selecao:processos:consultar"], new CatalogoInstitucional()).Value);
+
+        public Task AdicionarAsync(Concessao entity, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task<Concessao?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+        public Task<IReadOnlyList<Concessao>> ObterTodosAsync(CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+        public void Atualizar(Concessao entity) => throw new InvalidOperationException();
+        public void Remover(Concessao entity) => throw new InvalidOperationException();
+        public Task<ConcessaoComPerfil?> ObterComPerfilAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+        public Task<Concessao?> ObterNaoRevogadaIgualAsync(Identidade beneficiario, Guid perfilId, EscopoDaConcessao escopo, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+        public Task<bool> TemConcessaoAtivaDoPerfilAsync(Identidade pessoa, Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+
+        public Task<(IReadOnlyList<ConcessaoComPerfil> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+            FiltroDeConcessoes filtro, Guid? afterId, int limit, PaginationDirection direction, CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException();
+
+        public Task<bool> ExisteNaoRevogadaDoPerfilAsync(Guid perfilId, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+        public Task<TipoDeGovernanca?> ObterGovernancaDoPerfilAsync(Guid perfilId, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+    }
+
+    private sealed class UnidadeDeTrabalhoComConcessaoDuplicada : IAutorizacaoUnitOfWork
+    {
+        public bool Descartou { get; private set; }
+
+        public Task<int> SalvarAlteracoesAsync(CancellationToken cancellationToken = default) =>
+            throw new Microsoft.EntityFrameworkCore.DbUpdateException("duplicada", new ViolacaoDeIndiceUnico("ux_concessoes_ativa_unica"));
+
+        public void DescartarAlteracoesNaoSalvas() => Descartou = true;
+    }
+
+    private sealed class ViolacaoDeIndiceUnico(string constraintName) : Exception
+    {
+        public string SqlState { get; } = "23505";
+
+        public string ConstraintName { get; } = constraintName;
     }
 
     private sealed class ResumoFixo : IResumoDeCodigoDeConfirmacao

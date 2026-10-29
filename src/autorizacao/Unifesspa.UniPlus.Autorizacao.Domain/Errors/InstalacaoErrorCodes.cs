@@ -7,6 +7,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 public static class InstalacaoErrorCodes
 {
     public const string JaHaGestor = "Instalacao.JaHaGestor";
+    public const string JaHaGestorAoIniciar = "Instalacao.JaHaGestorAoIniciar";
     public const string ExecutorEntreGestores = "Instalacao.ExecutorEntreGestores";
     public const string GestoresInvalidos = "Instalacao.GestoresInvalidos";
     public const string DocumentoInvalido = "Instalacao.DocumentoInvalido";

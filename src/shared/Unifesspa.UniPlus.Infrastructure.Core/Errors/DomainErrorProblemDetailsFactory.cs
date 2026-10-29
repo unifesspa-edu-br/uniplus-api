@@ -25,7 +25,7 @@ public static class DomainErrorProblemDetailsFactory
         string title = found ? mapping!.Title : "Erro de domínio";
 
         // Erro não mapeado nunca é retentável: não se afirma sobre um código que o catálogo não
-        // conhece, e o lado seguro é o que preserva a resposta guardada.
+        // conhece, e a ausência do campo é o sinal de que o cliente não deve contar com a repetição.
         bool retryable = found && mapping!.RetryableConflict;
 
         return (status, mapper.GetProblemTypeUri(code), title, code, retryable);

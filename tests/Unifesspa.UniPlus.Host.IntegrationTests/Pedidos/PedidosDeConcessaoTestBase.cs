@@ -106,7 +106,7 @@ public abstract class PedidosDeConcessaoTestBase
         }
     }
 
-    internal static async Task<HttpResponseMessage> EnviarAsync(HttpClient client, HttpMethod metodo, string url, object? corpo = null)
+    internal static async Task<HttpResponseMessage> EnviarAsync(HttpClient client, HttpMethod metodo, string url, object? corpo = null, string? chave = null)
     {
         using HttpRequestMessage request = new(metodo, new Uri(url, UriKind.Relative));
         if (corpo is not null)
@@ -116,7 +116,7 @@ public abstract class PedidosDeConcessaoTestBase
 
         if (metodo != HttpMethod.Get)
         {
-            request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+            request.Headers.Add("Idempotency-Key", chave ?? Guid.NewGuid().ToString());
         }
 
         return await client.SendAsync(request);
