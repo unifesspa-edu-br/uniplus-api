@@ -17,6 +17,11 @@ internal static class InstalacaoHandlerErros
         new(InstalacaoErrorCodes.JaHaGestor,
             "Já existe gestor de acessos ativo: a instalação só vale para um ambiente sem nenhum.");
 
+    // A recusa de quem inicia não grava nada: a resposta não pode ficar guardada pela chave de idempotência.
+    public static DomainError JaHaGestorAoIniciar() =>
+        new(InstalacaoErrorCodes.JaHaGestorAoIniciar,
+            "Já existe gestor de acessos ativo: a instalação só vale para um ambiente sem nenhum.");
+
     public static DomainError EmailNaoInstitucional() =>
         new(InstalacaoErrorCodes.EmailNaoInstitucional,
             "O código só é enviado a e-mail institucional verificado, e o e-mail desta sessão não é.");

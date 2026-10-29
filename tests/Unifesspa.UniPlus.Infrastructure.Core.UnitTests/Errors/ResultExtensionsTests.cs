@@ -202,8 +202,8 @@ public sealed class ResultExtensionsTests
     public void ToActionResult_ComConflitoDuravel_NaoDeveTrazerRetryable()
     {
         // A ausência é o sinal de "não conte com repetir": um campo presente em toda
-        // resposta de erro seria ruído, e marcar um conflito durável como retentável
-        // liberaria a chave para um replay tardio que criaria o registro.
+        // resposta de erro seria ruído, e o conflito de estado que permanece não deve
+        // prometer ao cliente uma repetição que dará o mesmo resultado.
         IDomainErrorMapper mapper = CriarMapper((
             "Campus.SiglaJaExiste",
             new DomainErrorMapping(

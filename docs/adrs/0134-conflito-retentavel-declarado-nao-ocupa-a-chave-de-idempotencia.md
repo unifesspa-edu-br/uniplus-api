@@ -11,6 +11,8 @@ informed:
 
 # ADR-0134: O conflito declarado retentável não ocupa a chave de idempotência
 
+> **Nota (2026-10-29).** A emenda da [ADR-0027](0027-idempotency-key-store-postgresql.md) "Status codes em cache" generalizou a regra: toda resposta `4xx` produzida dentro do MVC libera a chave, e o filtro deixou de ler a declaração `retryable`. O campo segue no envelope, como sinal ao cliente; a distinção entre `409` durável e retentável não decide mais o armazenamento.
+
 ## Contexto e enunciado do problema
 
 A [ADR-0027](0027-idempotency-key-store-postgresql.md) fixa que a resposta de uma requisição idempotente é guardada e reproduzida em replay, e é explícita quanto ao alcance: **tanto 2xx quanto 4xx são cacheados**. A justificativa é anti-abuso — se a recusa não fosse guardada, repetir a mesma requisição inválida custaria ao servidor a execução inteira a cada tentativa.

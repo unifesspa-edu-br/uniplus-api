@@ -100,6 +100,16 @@ A segunda exceção tem a mesma forma da primeira — um status abaixo de 500 cu
 > Quem distingue os dois não é o filtro, é quem produziu o erro: a declaração vive no mapeamento do código (`DomainErrorMapping.RetryableConflict`) e viaja no envelope como `retryable: true`. O default é durável, e na ausência de declaração a resposta é guardada.
 >
 > Efeito no filtro: um `409` que declara `retryable: true` **libera a reserva** (como `412`/`428` e as `>= 500`). O gatilho é o **status**, nunca o media type.
+>
+> **Emenda (2026-10-29) — armazena-se a resposta que reflete mutação persistida; a resposta `4xx` produzida dentro do MVC libera a chave.**
+>
+> O critério é este, e não uma lista de status: o filtro guarda a resposta que **reflete uma mutação já persistida**, porque só ela precisa ser reproduzida para que o retry não a repita. Uma recusa não executou a operação. Guardá-la prende o cliente legítimo, que corrige a causa — a permissão foi concedida, o `ETag` relido, a credencial completada — e repete a mesma chave por até 24 horas. O argumento anti-abuso do parágrafo original não sustenta o contrário: ele trata de repetir com **chaves diferentes**, que guardar a resposta de **uma** chave não impede. As exceções acima ([ADR-0110](0110-retificacao-como-sessao-editorial.md) D6 para `412`, `428` e `400` com `If-Match`; [ADR-0134](0134-conflito-retentavel-declarado-nao-ocupa-a-chave-de-idempotencia.md) para o `409` retentável) são instâncias deste critério, não exceções a ele.
+>
+> A classe `4xx` é um **proxy** do critério, não a definição: o `4xx` que o handler devolve **depois de gravar** estado também é armazenado. Quem sabe é o produtor do erro, que o declara no mapeamento do código (`DomainErrorMapping.RecusaAposGravacao`); o filtro reconhece a resposta pelo tipo (`RecusaAposGravacaoResult`) e a guarda, sem campo novo no envelope. São hoje `uniplus.autorizacao.pedido.perfil_alterado` (o pedido volta ao gestor e a decisão fica registrada), `uniplus.autorizacao.instalacao.codigo_invalido` (a tentativa gasta uma das tentativas da instalação) e `uniplus.autorizacao.instalacao.ja_ha_gestor` (a instalação é cancelada).
+>
+> Efeito no filtro: toda resposta `4xx` produzida dentro do MVC **libera a reserva** (como as `>= 500`), salvo a que declara `RecusaAposGravacao`; o `2xx` continua armazenado. A distinção entre `409` durável e `409` retentável deixa de decidir o filtro (o campo `retryable` segue no envelope, para o cliente). Vale para a resposta produzida **dentro do MVC**: a exceção que chega ao tratador global **retém** a reserva, porque a mutação pode já ter sido gravada, e esse caminho é tratado à parte.
+>
+> **Consequência aceita.** Reusar a chave com **corpo diferente** depois de um `4xx` já não devolve `422` de divergência de corpo: sem entrada, o corpo novo executa. É o efeito pretendido (corrigir e tentar de novo), e afrouxa o `draft-ietf-httpapi-idempotency-key-header`, que trata o reúso da chave com carga diferente como erro do cliente independentemente do desfecho anterior.
 
 ### Cifragem at-rest
 

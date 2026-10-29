@@ -190,6 +190,8 @@ O `IdempotencyFilter` é um **resource filter**: ele roda **antes** do controlle
 
 **Exceção formal à ADR-0027 — registrada na ADR-0110.** A ADR-0027 declara que *"tanto 2xx quanto 4xx são cacheados"*, pela convenção Stripe (anti-abuso). **412 e 428 são a exceção**, e a razão é que eles não são resultado da operação — **a operação não executou**. A motivação anti-abuso da ADR-0027 protege contra *retry com keys diferentes até achar uma sequência que muda o estado*; cachear um 412 não impede isso (o atacante troca a key de qualquer modo) e **prende o cliente legítimo** que apenas releu o ETag. Para o **428**, a RFC 6585 §3 é explícita: a resposta depende de um header **ausente** — armazená-la é incoerente.
 
+> **Nota (2026-10-29).** A exceção para `412`, `428` e `400` com `If-Match` foi generalizada na emenda da [ADR-0027](0027-idempotency-key-store-postgresql.md) "Status codes em cache": toda resposta `4xx` produzida dentro do MVC libera a reserva, e estes códigos passam a ser casos da regra geral.
+
 **O ETag precisa entrar nos headers persistidos.** O filtro hoje guarda **apenas** `Content-Type` e `Location`, e **exclui o ETag por escrito** (`:468` — "ETag dinâmico"). Sem isso, o **replay de uma abertura ou de uma mutação não devolveria ETag**, e o cliente ficaria sem a precondição da próxima chamada. Ajuste declarado, em código **compartilhado** (`Infrastructure.Core`).
 
 ### D7 — Concorrência do atalho atômico

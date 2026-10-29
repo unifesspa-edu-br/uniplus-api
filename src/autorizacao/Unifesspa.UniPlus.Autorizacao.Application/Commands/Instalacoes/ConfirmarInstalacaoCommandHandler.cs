@@ -91,8 +91,9 @@ public static partial class ConfirmarInstalacaoCommandHandler
             catch (Exception ex) when (ViolacoesDeGravacao.EhConflitoDeConcorrencia(ex))
             {
                 // Com Idempotency-Key o handler captura e descarta o rastreamento (ADR-0119). Os gestores já estão
-                // instalados, e a resposta é a mesma.
+                // instalados, mas esta recusa não gravou nada: o código sem a marca de gravação não prende a chave.
                 unitOfWork.DescartarAlteracoesNaoSalvas();
+                return Result.Failure(InstalacaoHandlerErros.JaHaGestorAoIniciar());
             }
 
             return Result.Failure(InstalacaoHandlerErros.JaHaGestor());
@@ -146,9 +147,9 @@ public static partial class ConfirmarInstalacaoCommandHandler
         catch (Exception ex) when (ConcessaoViolacoes.EhConcessaoDuplicada(ex))
         {
             // A concessão já existe para um dos gestores ou a origem já foi processada: os gestores já estão
-            // instalados, e nada desta confirmação é gravado.
+            // instalados, e nada desta confirmação é gravado: o código sem a marca de gravação não prende a chave.
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result.Failure(InstalacaoHandlerErros.JaHaGestor());
+            return Result.Failure(InstalacaoHandlerErros.JaHaGestorAoIniciar());
         }
         catch (Exception ex) when (ViolacoesDeGravacao.EhConflitoDeConcorrencia(ex))
         {

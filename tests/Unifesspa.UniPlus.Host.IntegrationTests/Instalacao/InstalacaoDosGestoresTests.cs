@@ -320,6 +320,26 @@ public sealed partial class InstalacaoDosGestoresTests
         (await ListarGestoresAtivosAsync()).Should().BeEmpty();
     }
 
+    [Fact(DisplayName = "Retry com a mesma chave depois de código errado reproduz a recusa e não consome outra tentativa")]
+    public async Task Confirmar_CodigoErradoComARepeticaoDaChave_NaoConsomeOutraTentativa()
+    {
+        await ResetarAsync();
+        using HttpClient paulo = Cliente(Paulo);
+        Guid id = await ChegarAoCodigoEnviadoAsync(paulo);
+        string certo = await UltimoCodigoAsync(Paulo);
+        string errado = certo == "00000000" ? "11111111" : "00000000";
+        string chave = Guid.NewGuid().ToString();
+        using HttpResponseMessage primeira = await EnviarAsync(paulo, HttpMethod.Post, $"{Rota}/confirmacao", new { codigo = errado }, chave);
+        await ConferirRecusaAsync(primeira, "codigo_invalido");
+
+        using HttpResponseMessage repeticao = await EnviarAsync(paulo, HttpMethod.Post, $"{Rota}/confirmacao", new { codigo = errado }, chave);
+
+        await ConferirRecusaAsync(repeticao, "codigo_invalido");
+        repeticao.Headers.Contains("Idempotency-Replayed").Should().BeTrue();
+        (await LerAsync(paulo, $"{Rota}/{id}")).GetProperty("tentativasRestantes").GetInt32()
+            .Should().Be(Instalacao.MaximoDeTentativas - 1);
+    }
+
     [Fact(DisplayName = "Tentativas erradas simultâneas do mesmo executor são todas consumidas e registradas")]
     public async Task Confirmar_TentativasSimultaneas_ConsomemTodas()
     {
@@ -543,7 +563,7 @@ public sealed partial class InstalacaoDosGestoresTests
         return client;
     }
 
-    private static async Task<HttpResponseMessage> EnviarAsync(HttpClient client, HttpMethod metodo, string url, object? corpo = null)
+    private static async Task<HttpResponseMessage> EnviarAsync(HttpClient client, HttpMethod metodo, string url, object? corpo = null, string? chave = null)
     {
         using HttpRequestMessage request = new(metodo, new Uri(url, UriKind.Relative));
         if (corpo is not null)
@@ -553,7 +573,7 @@ public sealed partial class InstalacaoDosGestoresTests
 
         if (metodo != HttpMethod.Get)
         {
-            request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+            request.Headers.Add("Idempotency-Key", chave ?? Guid.NewGuid().ToString());
         }
 
         return await client.SendAsync(request);

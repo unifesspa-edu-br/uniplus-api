@@ -208,6 +208,33 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
         (await ConcessoesAsync(Leandro, perfil)).Should().ContainSingle();
     }
 
+    [Fact(DisplayName = "Retry com a mesma chave depois de perfil_alterado reproduz a recusa guardada e não decide de novo")]
+    public async Task PerfilAlterado_RetryComAMesmaChave_ReproduzARecusa()
+    {
+        await ResetarAsync();
+        Guid perfil = await SemearPerfilSensivelAsync();
+        Guid unidade = await SemearUnidadeAsync();
+        using HttpClient betina = Cliente(Betina);
+        using HttpClient leandro = Cliente(Leandro);
+        using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
+        using HttpClient marlene = await ClienteComPermissoesAsync(Marlene, AprovarFuncional, AprovarProtecaoDeDados);
+        Guid id = await CriarAsync(betina, perfil, unidade, Leandro);
+        await EnviarAsync(leandro, HttpMethod.Post, $"{Rota}/{id}/aceite");
+        (await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
+        await ExecutarSqlAsync(
+            "INSERT INTO autorizacao.perfil_permissoes (perfil_id, codigo) VALUES ({0}, 'teste:inscricoes:operar')", perfil);
+        string chave = Guid.NewGuid().ToString();
+        await ConferirRecusaAsync(await EnviarAsync(marlene, HttpMethod.Post, $"{Rota}/{id}/aprovacoes", chave: chave), HttpStatusCode.Conflict, "perfil_alterado");
+
+        using HttpResponseMessage repeticao = await EnviarAsync(marlene, HttpMethod.Post, $"{Rota}/{id}/aprovacoes", chave: chave);
+
+        await ConferirRecusaAsync(repeticao, HttpStatusCode.Conflict, "perfil_alterado");
+        repeticao.Headers.Contains("Idempotency-Replayed").Should().BeTrue();
+        (await SituacaoAsync(betina, id)).Should().Be("aguardando_gestor");
+        (await ConcessoesAsync(Leandro, perfil)).Should().BeEmpty();
+        (await TiposDaTrilhaAsync(diogo, id)).Count(t => t == "perfil_alterado_entre_etapas").Should().Be(1);
+    }
+
     [Fact(DisplayName = "Concessão igual vencida e não revogada é revogada pelo sistema e renovada pelo pedido, na mesma transação")]
     public async Task ConcessaoVencida_ERenovada()
     {
