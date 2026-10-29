@@ -45,7 +45,7 @@ public sealed record JanelaDaInscricao(DateTimeOffset Inicio, DateTimeOffset Fim
                 $"As inscrições deste processo seletivo começam em {Formatar(Inicio, fuso)} e vão até {Formatar(Fim, fuso)}, no horário de {FusoInstitucional.Nome}.");
         }
 
-        if (agora > Fim)
+        if (Encerrou(agora))
         {
             return new DomainError(
                 InscricaoErrorCodes.ForaDoPeriodo,
@@ -54,6 +54,25 @@ public sealed record JanelaDaInscricao(DateTimeOffset Inicio, DateTimeOffset Fim
 
         return null;
     }
+
+    /// <summary>
+    /// Recusa o instante em que a janela ainda não terminou, para o que só vale depois do encerramento.
+    /// O último instante da janela ainda é inscrição aberta.
+    /// </summary>
+    /// <param name="codigo">O código da recusa, que é de quem depende do encerramento.</param>
+    /// <param name="consequencia">O que só acontece depois do encerramento, completando a mensagem.</param>
+    public DomainError? ConferirEncerrada(DateTimeOffset agora, TimeZoneInfo fuso, string codigo, string consequencia)
+    {
+        ArgumentNullException.ThrowIfNull(fuso);
+
+        return Encerrou(agora)
+            ? null
+            : new DomainError(
+                codigo,
+                $"As inscrições deste processo seletivo terminam em {Formatar(Fim, fuso)}, no horário de {FusoInstitucional.Nome}. {consequencia}");
+    }
+
+    private bool Encerrou(DateTimeOffset agora) => agora > Fim;
 
     private static string Formatar(DateTimeOffset instante, TimeZoneInfo fuso) =>
         TimeZoneInfo.ConvertTime(instante, fuso).ToString("dd/MM/yyyy 'às' HH'h'mm", CultureInfo.InvariantCulture);

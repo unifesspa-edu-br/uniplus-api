@@ -37,11 +37,11 @@ public sealed class GerarEnvioAoInepCommandHandlerTests
     }
 
     private Task<Result<EnvioAoInepGeradoDto>> Gerar(
-        Guid? etapa = null, string edicao = Edicao, string? leiaute = "INEP_ENEM_ENVIO", string? versao = "v1") =>
+        Guid? etapa = null, string edicao = Edicao, string? leiaute = "INEP_ENEM_ENVIO", string? versao = "v1", DateTimeOffset? agora = null) =>
         GerarEnvioAoInepCommandHandler.Handle(
             new GerarEnvioAoInepCommand(_cenario.ProcessoId, etapa ?? _cenario.EtapaDoEnem.Id, edicao, leiaute, versao),
             _cenario.Certame, _cenario.Processos, _cenario.Codecs, _inscritos, _geracoes, _unitOfWork, _usuario,
-            TimeProvider.System, NullLogger.Instance, CancellationToken.None);
+            new ResolvedorFusoDeTeste(), new RelogioFixo(agora ?? CenarioDoEnemDeTeste.DepoisDoEncerramento), NullLogger.Instance, CancellationToken.None);
 
     private void Inscritos(params string[] cpfs) =>
         _inscritos.ListarCpfsAsync(_cenario.ProcessoId, Edicao, Arg.Any<CancellationToken>()).Returns(cpfs);
@@ -111,8 +111,63 @@ public sealed class GerarEnvioAoInepCommandHandlerTests
         Result<EnvioAoInepGeradoDto> resultado = await GerarEnvioAoInepCommandHandler.Handle(
             new GerarEnvioAoInepCommand(_cenario.ProcessoId, _cenario.EtapaDoEnem.Id, Edicao, "INEP_ENEM_ENVIO", "v1"),
             semDivulgacao, _cenario.Processos, _cenario.Codecs, _inscritos, _geracoes, _unitOfWork, _usuario,
-            TimeProvider.System, NullLogger.Instance, CancellationToken.None);
+            new ResolvedorFusoDeTeste(), new RelogioFixo(CenarioDoEnemDeTeste.DepoisDoEncerramento), NullLogger.Instance, CancellationToken.None);
 
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
+    }
+
+    [Fact(DisplayName = "com as inscrições abertas, no último instante inclusive, o envio é recusado com a data de encerramento e nada é gravado")]
+    public async Task Gerar_InscricoesAbertas_Recusa()
+    {
+        Inscritos(PersonasDeTeste.Candidatas[0].Cpf);
+
+        foreach (DateTimeOffset agora in new[] { DivulgacaoDeTeste.FimDoPeriodo.AddDays(-5), DivulgacaoDeTeste.FimDoPeriodo })
+        {
+            Result<EnvioAoInepGeradoDto> resultado = await Gerar(agora: agora);
+
+            resultado.Error!.Code.Should().Be(NotasDoEnemErrorCodes.InscricoesEmAndamento);
+            resultado.Error.Message.Should().Contain("30/01/2026 às 21h00");
+        }
+
+        await _geracoes.DidNotReceiveWithAnyArgs().AdicionarAsync(default!, default);
+        await _unitOfWork.DidNotReceiveWithAnyArgs().SalvarAlteracoesAsync(default);
+    }
+
+    [Fact(DisplayName = "um instante depois do encerramento das inscrições o envio é gerado")]
+    public async Task Gerar_LogoDepoisDoEncerramento_Gera()
+    {
+        Inscritos(PersonasDeTeste.Candidatas[0].Cpf);
+
+        Result<EnvioAoInepGeradoDto> resultado = await Gerar(agora: DivulgacaoDeTeste.FimDoPeriodo.AddTicks(1));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "a retificação que prorroga as inscrições adia o envio")]
+    public async Task Gerar_InscricoesProrrogadas_Recusa()
+    {
+        Inscritos(PersonasDeTeste.Candidatas[0].Cpf);
+        DateTimeOffset novoFim = DivulgacaoDeTeste.FimDoPeriodo.AddDays(7);
+        _cenario.ProrrogarInscricoesAte(novoFim);
+
+        (await Gerar(agora: DivulgacaoDeTeste.FimDoPeriodo.AddDays(1))).Error!.Code.Should().Be(NotasDoEnemErrorCodes.InscricoesEmAndamento);
+        (await Gerar(agora: novoFim.AddDays(1))).IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "a retificação divulgada depois da primeira conferência e antes da gravação adia o envio")]
+    public async Task Gerar_ProrrogadaDuranteATrava_Recusa()
+    {
+        Inscritos(PersonasDeTeste.Candidatas[0].Cpf);
+        _cenario.Processos.TravarAsync(_cenario.ProcessoId, Arg.Any<CancellationToken>())
+            .Returns(_ =>
+            {
+                _cenario.ProrrogarInscricoesAte(DivulgacaoDeTeste.FimDoPeriodo.AddDays(7));
+                return Task.CompletedTask;
+            });
+
+        Result<EnvioAoInepGeradoDto> resultado = await Gerar();
+
+        resultado.Error!.Code.Should().Be(NotasDoEnemErrorCodes.InscricoesEmAndamento);
+        await _geracoes.DidNotReceiveWithAnyArgs().AdicionarAsync(default!, default);
     }
 }

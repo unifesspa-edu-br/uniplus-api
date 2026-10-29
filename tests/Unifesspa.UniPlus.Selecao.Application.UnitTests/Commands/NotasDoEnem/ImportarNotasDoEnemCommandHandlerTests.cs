@@ -59,11 +59,12 @@ public sealed class ImportarNotasDoEnemCommandHandlerTests
             .Returns([.. pessoas.Select(i => new InscritoDaEdicao(
                 Guid.CreateVersion7(), Indice(Pessoas[i].Cpf), [_cenario.OfertaTecnologica, _cenario.OfertaHumanistica]))]);
 
-    private Task<Result<ImportacaoDeNotasDto>> Importar(byte[] conteudo, string leiaute = "INEP_ENEM_RETORNO") =>
+    private Task<Result<ImportacaoDeNotasDto>> Importar(
+        byte[] conteudo, string leiaute = "INEP_ENEM_RETORNO", DateTimeOffset? agora = null) =>
         ImportarNotasDoEnemCommandHandler.Handle(
             new ImportarNotasDoEnemCommand(_cenario.ProcessoId, _cenario.EtapaDoEnem.Id, Edicao, leiaute, "v1", conteudo),
             _cenario.Certame, _cenario.Processos, _cenario.Codecs, _inscritos, _indices, _lotes, _unitOfWork, _usuario,
-            TimeProvider.System, NullLogger.Instance, CancellationToken.None);
+            new ResolvedorFusoDeTeste(), new RelogioFixo(agora ?? CenarioDoEnemDeTeste.DepoisDoEncerramento), NullLogger.Instance, CancellationToken.None);
 
     private static byte[] Arquivo(params int[] pessoas) => Bytes([.. pessoas.Select(i => Linha(Pessoas[i], i + 1))]);
 
@@ -104,11 +105,63 @@ public sealed class ImportarNotasDoEnemCommandHandlerTests
         Result<ImportacaoDeNotasDto> outraEtapa = await ImportarNotasDoEnemCommandHandler.Handle(
             new ImportarNotasDoEnemCommand(_cenario.ProcessoId, _cenario.EtapaSemEnem.Id, Edicao, "INEP_ENEM_RETORNO", "v1", Arquivo(0)),
             _cenario.Certame, _cenario.Processos, _cenario.Codecs, _inscritos, _indices, _lotes, _unitOfWork, _usuario,
-            TimeProvider.System, NullLogger.Instance, CancellationToken.None);
+            new ResolvedorFusoDeTeste(), new RelogioFixo(CenarioDoEnemDeTeste.DepoisDoEncerramento), NullLogger.Instance, CancellationToken.None);
         outraEtapa.Error!.Code.Should().Be(NotasDoEnemErrorCodes.EtapaSemNotaDoEnem);
 
         await _indices.DidNotReceiveWithAnyArgs().CalcularAsync(default!, default);
         await _cenario.Processos.DidNotReceiveWithAnyArgs().TravarAsync(default, default);
+        await _lotes.DidNotReceiveWithAnyArgs().AdicionarAsync(default!, default);
+    }
+
+    [Fact(DisplayName = "com as inscrições abertas, no último instante inclusive, a importação é recusada antes de ler o arquivo e nada é gravado")]
+    public async Task Importar_InscricoesAbertas_Recusa()
+    {
+        foreach (DateTimeOffset agora in new[] { DivulgacaoDeTeste.FimDoPeriodo.AddDays(-5), DivulgacaoDeTeste.FimDoPeriodo })
+        {
+            Result<ImportacaoDeNotasDto> resultado = await Importar(Arquivo(0), agora: agora);
+
+            resultado.Error!.Code.Should().Be(NotasDoEnemErrorCodes.InscricoesEmAndamento);
+            resultado.Error.Message.Should().Contain("30/01/2026 às 21h00");
+        }
+
+        await _indices.DidNotReceiveWithAnyArgs().CalcularAsync(default!, default);
+        await _cenario.Processos.DidNotReceiveWithAnyArgs().TravarAsync(default, default);
+        await _lotes.DidNotReceiveWithAnyArgs().AdicionarAsync(default!, default);
+        await _unitOfWork.DidNotReceiveWithAnyArgs().SalvarAlteracoesAsync(default);
+    }
+
+    [Fact(DisplayName = "um instante depois do encerramento das inscrições a importação grava o lote")]
+    public async Task Importar_LogoDepoisDoEncerramento_Grava()
+    {
+        Result<ImportacaoDeNotasDto> resultado = await Importar(Arquivo(0), agora: DivulgacaoDeTeste.FimDoPeriodo.AddTicks(1));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "a retificação que prorroga as inscrições adia a importação")]
+    public async Task Importar_InscricoesProrrogadas_Recusa()
+    {
+        DateTimeOffset novoFim = DivulgacaoDeTeste.FimDoPeriodo.AddDays(7);
+        _cenario.ProrrogarInscricoesAte(novoFim);
+
+        (await Importar(Arquivo(0), agora: DivulgacaoDeTeste.FimDoPeriodo.AddDays(1))).Error!.Code.Should().Be(NotasDoEnemErrorCodes.InscricoesEmAndamento);
+        await _lotes.DidNotReceiveWithAnyArgs().AdicionarAsync(default!, default);
+        (await Importar(Arquivo(0), agora: novoFim.AddDays(1))).IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "a retificação divulgada depois da primeira conferência e antes da gravação adia a importação")]
+    public async Task Importar_ProrrogadaDuranteATrava_Recusa()
+    {
+        _cenario.Processos.TravarAsync(_cenario.ProcessoId, Arg.Any<CancellationToken>())
+            .Returns(_ =>
+            {
+                _cenario.ProrrogarInscricoesAte(DivulgacaoDeTeste.FimDoPeriodo.AddDays(7));
+                return Task.CompletedTask;
+            });
+
+        Result<ImportacaoDeNotasDto> resultado = await Importar(Arquivo(0));
+
+        resultado.Error!.Code.Should().Be(NotasDoEnemErrorCodes.InscricoesEmAndamento);
         await _lotes.DidNotReceiveWithAnyArgs().AdicionarAsync(default!, default);
     }
 

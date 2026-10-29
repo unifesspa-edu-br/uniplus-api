@@ -33,6 +33,7 @@ public static partial class GerarEnvioAoInepCommandHandler
         IGeracaoDeEnvioAoInepRepository geracoes,
         ISelecaoUnitOfWork unitOfWork,
         IUserContext userContext,
+        IResolvedorFusoInstitucional resolvedorFuso,
         TimeProvider timeProvider,
         ILogger logger,
         CancellationToken cancellationToken)
@@ -45,8 +46,22 @@ public static partial class GerarEnvioAoInepCommandHandler
         ArgumentNullException.ThrowIfNull(geracoes);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(userContext);
+        ArgumentNullException.ThrowIfNull(resolvedorFuso);
         ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(logger);
+
+        Result<ILeiauteDeArquivoDoInep> leiaute = ResolvedorDoEscopoDeNotasDoEnem
+            .ObterLeiaute(command.LeiauteCodigo, command.LeiauteVersao, TipoDeLeiauteDoInep.Envio);
+        if (leiaute.IsFailure)
+        {
+            return Result<EnvioAoInepGeradoDto>.Failure(leiaute.Error!);
+        }
+
+        // A trava serializa o envio contra a publicação: o escopo e o encerramento das inscrições são
+        // conferidos sob ela, e o instante também é lido sob ela, para que o registro siga a ordem em
+        // que os envios gravam.
+        await processoSeletivoRepository.TravarAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
+        DateTimeOffset agora = timeProvider.GetUtcNow();
 
         Result<EscopoDeNotasDoEnem> escopo = await ResolvedorDoEscopoDeNotasDoEnem
             .ResolverAsync(
@@ -58,11 +73,9 @@ public static partial class GerarEnvioAoInepCommandHandler
             return Result<EnvioAoInepGeradoDto>.Failure(escopo.Error!);
         }
 
-        Result<ILeiauteDeArquivoDoInep> leiaute = ResolvedorDoEscopoDeNotasDoEnem
-            .ObterLeiaute(command.LeiauteCodigo, command.LeiauteVersao, TipoDeLeiauteDoInep.Envio);
-        if (leiaute.IsFailure)
+        if (ResolvedorDoEscopoDeNotasDoEnem.ConferirInscricoesEncerradas(escopo.Value!, agora, resolvedorFuso) is { } inscricoesAbertas)
         {
-            return Result<EnvioAoInepGeradoDto>.Failure(leiaute.Error!);
+            return Result<EnvioAoInepGeradoDto>.Failure(inscricoesAbertas);
         }
 
         IReadOnlyList<string> cpfs = await inscritos
@@ -86,7 +99,7 @@ public static partial class GerarEnvioAoInepCommandHandler
             leiaute.Value.Versao,
             leiaute.Value.Hash,
             userContext.UserId ?? string.Empty,
-            timeProvider.GetUtcNow(),
+            agora,
             cpfs.Count,
             userContext.NomeCompleto);
         await geracoes.AdicionarAsync(geracao, cancellationToken).ConfigureAwait(false);

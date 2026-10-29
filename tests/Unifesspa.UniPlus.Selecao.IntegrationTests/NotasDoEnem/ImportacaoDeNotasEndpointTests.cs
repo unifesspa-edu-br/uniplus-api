@@ -48,9 +48,9 @@ public sealed class ImportacaoDeNotasEndpointTests
 
     private Task<Cenario> NovoCenarioAsync(params int[] inscritas) => NovoCenarioAsync(inscritas, semSegundaOpcao: []);
 
-    private async Task<Cenario> NovoCenarioAsync(int[] inscritas, int[] semSegundaOpcao)
+    private async Task<Cenario> NovoCenarioAsync(int[] inscritas, int[] semSegundaOpcao, DateTimeOffset? fimDasInscricoes = null)
     {
-        Publicado publicado = await SemearEPublicarAsync(_fixture);
+        Publicado publicado = await SemearEPublicarAsync(_fixture, fimDasInscricoes);
         Dictionary<int, Guid> inscricoes = [];
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
@@ -338,6 +338,20 @@ public sealed class ImportacaoDeNotasEndpointTests
         (await CodigoAsync(pdf)).Should().Be("uniplus.selecao.notas_do_enem.tipo_de_arquivo_nao_aceito");
         vazio.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await CodigoAsync(vazio)).Should().Be("uniplus.selecao.notas_do_enem.arquivo_vazio");
+        (await QuantidadeDeLotesAsync(client, cenario)).Should().Be(0);
+    }
+
+    [Fact(DisplayName = "com as inscrições abertas a importação é 422 e nenhum lote é criado")]
+    public async Task Importar_InscricoesAbertas_NaoCriaLote()
+    {
+        Cenario cenario = await NovoCenarioAsync([0], semSegundaOpcao: [], fimDasInscricoes: new DateTimeOffset(2099, 12, 20, 15, 0, 0, TimeSpan.Zero));
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage resposta = await ImportarAsync(client, cenario, Arquivo(0));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await CodigoAsync(resposta)).Should().Be("uniplus.selecao.notas_do_enem.inscricoes_em_andamento");
+        (await resposta.Content.ReadAsStringAsync()).Should().Contain("20/12/2099 às 12h00");
         (await QuantidadeDeLotesAsync(client, cenario)).Should().Be(0);
     }
 

@@ -14,5 +14,6 @@ public static class NotasDoEnemErrorCodes
     public const string LoteNaoEncontrado = "NotasDoEnem.LoteNaoEncontrado";
     public const string ArquivoForaDoLeiaute = "NotasDoEnem.ArquivoForaDoLeiaute";
     public const string CodigoDeSituacaoDesconhecido = "NotasDoEnem.CodigoDeSituacaoDesconhecido";
+    public const string InscricoesEmAndamento = "NotasDoEnem.InscricoesEmAndamento";
     public const string OfertaDeInscricaoForaDoEdital = "NotasDoEnem.OfertaDeInscricaoForaDoEdital";
 }
