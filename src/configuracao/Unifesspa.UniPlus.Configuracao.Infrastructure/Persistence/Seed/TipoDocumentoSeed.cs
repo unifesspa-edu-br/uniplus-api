@@ -5,7 +5,8 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Fonte única do seed do catálogo de tipos de documento (UNI-REQ-0013) — os
-/// setenta tipos consolidados dos dois sistemas legados. Consumida tanto pela
+/// setenta tipos consolidados dos dois sistemas legados e os vinte e dois que o edital
+/// de Medicina 2027 acrescenta (UNI-REQ-0151). Consumida tanto pela
 /// configuração EF Core (que materializa as linhas via <c>HasData</c> na
 /// migration) quanto pelos testes (que conferem o seed do banco contra esta
 /// lista), garantindo uma única definição por tipo.
@@ -48,7 +49,7 @@ public static class TipoDocumentoSeed
         Guid.Parse($"d0c00000-0000-7000-8000-{n:D12}");
 
     /// <summary>
-    /// Os setenta tipos, agrupados pela categoria que os classifica e na ordem em
+    /// Os noventa e dois tipos, agrupados pela categoria que os classifica e na ordem em
     /// que o catálogo consolidado os apresenta.
     /// </summary>
     public static IReadOnlyList<TipoDocumentoSeedItem> Itens { get; } =
@@ -140,6 +141,30 @@ public static class TipoDocumentoSeed
         // PRODUCAO_AVALIATIVA
         new(SeedId(69), "CARTA_INTENCAO", "Carta de intenção", "PRODUCAO_AVALIATIVA", ClassificacaoDeProtecao.Pessoal),
         new(SeedId(70), "RELATO_HISTORIA_VIDA", "Relato de história de vida", "PRODUCAO_AVALIATIVA", ClassificacaoDeProtecao.Pessoal),
+
+        // Documentos que o edital de Medicina 2027 pede e o catálogo consolidado não tinha.
+        new(SeedId(71), "CIN", "Carteira de Identidade Nacional", "IDENTIFICACAO", ClassificacaoDeProtecao.Identificador, TipoEquivalente: "RG"),
+        new(SeedId(72), "CNH", "Carteira Nacional de Habilitação", "IDENTIFICACAO", ClassificacaoDeProtecao.Identificador),
+        new(SeedId(73), "PASSAPORTE", "Passaporte", "IDENTIFICACAO", ClassificacaoDeProtecao.Identificador),
+        new(SeedId(74), "RNM", "Registro Nacional Migratório", "IDENTIFICACAO", ClassificacaoDeProtecao.Identificador),
+        new(SeedId(75), "BOLETIM_OCORRENCIA", "Boletim de ocorrência", "IDENTIFICACAO", ClassificacaoDeProtecao.Sensivel),
+        new(SeedId(76), "DOCUMENTO_JUDICIAL_GUARDA", "Documento judicial de guarda", "IDENTIFICACAO", ClassificacaoDeProtecao.Sensivel),
+        new(SeedId(77), "DECLARACAO_CONCLUSAO_ENSINO_MEDIO", "Atestado ou declaração de conclusão do ensino médio", "ESCOLARIDADE", ClassificacaoDeProtecao.Pessoal),
+        new(SeedId(78), "CNIS", "Extrato do Cadastro Nacional de Informações Sociais (CNIS)", "RENDA", ClassificacaoDeProtecao.Pessoal),
+        new(SeedId(79), "DECLARACAO_IRPJ", "Declaração de IRPJ", "RENDA", ClassificacaoDeProtecao.Pessoal),
+        new(SeedId(80), "ECF", "Escrituração Contábil Fiscal (ECF)", "RENDA", ClassificacaoDeProtecao.Pessoal),
+        new(SeedId(81), "DECORE", "Declaração Comprobatória de Percepção de Rendimentos (DECORE)", "RENDA", ClassificacaoDeProtecao.Pessoal),
+        new(SeedId(82), "DEFIS", "Declaração de Informações Socioeconômicas e Fiscais (DEFIS)", "RENDA", ClassificacaoDeProtecao.Pessoal),
+        new(SeedId(83), "DASN_SIMEI", "Declaração Anual do Simples Nacional do MEI (DASN-SIMEI)", "RENDA", ClassificacaoDeProtecao.Pessoal),
+        new(SeedId(84), "DECLARACAO_INATIVIDADE_EMPRESA", "Declaração de inatividade da empresa", "RENDA", ClassificacaoDeProtecao.Pessoal),
+        new(SeedId(85), "DECLARACAO_RENDIMENTOS_AUFERIDOS", "Declaração de rendimentos auferidos", "RENDA", ClassificacaoDeProtecao.Pessoal),
+        new(SeedId(86), "DECLARACAO_AUSENCIA_RENDIMENTOS_ALUGUEL", "Declaração de ausência de rendimentos de aluguel", "RENDA", ClassificacaoDeProtecao.Pessoal),
+        new(SeedId(87), "EXTRATO_PREVIDENCIA_PRIVADA", "Extrato de benefício de previdência privada", "RENDA", ClassificacaoDeProtecao.Pessoal),
+        new(SeedId(88), "TRCT", "Termo de rescisão do contrato de trabalho (TRCT)", "RENDA", ClassificacaoDeProtecao.Pessoal),
+        new(SeedId(89), "LAUDO_PSICOLOGICO", "Laudo psicológico", "SAUDE", ClassificacaoDeProtecao.Sensivel),
+        new(SeedId(90), "EXAME_AUDIOMETRIA", "Exame de audiometria", "SAUDE", ClassificacaoDeProtecao.Sensivel),
+        new(SeedId(91), "EXAME_OFTALMOLOGICO", "Exame oftalmológico com acuidade visual", "SAUDE", ClassificacaoDeProtecao.Sensivel),
+        new(SeedId(92), "TERMO_RESPONSABILIDADE_CERTIFICADO", "Termo de responsabilidade pela entrega do certificado de conclusão", "DOCUMENTO_PROCESSUAL", ClassificacaoDeProtecao.Pessoal),
     ];
 }
 
@@ -155,4 +180,5 @@ public sealed record TipoDocumentoSeedItem(
     string Codigo,
     string Nome,
     string Categoria,
-    ClassificacaoDeProtecao ClassificacaoProtecao);
+    ClassificacaoDeProtecao ClassificacaoProtecao,
+    string? TipoEquivalente = null);

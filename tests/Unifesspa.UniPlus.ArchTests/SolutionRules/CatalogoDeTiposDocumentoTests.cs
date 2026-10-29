@@ -27,7 +27,7 @@ public sealed class CatalogoDeTiposDocumentoTests
         // Coleta os recusados em vez de asserir item a item: a falha nomeia quais
         // códigos a factory rejeitou, em vez de dizer só que "algum" item falhou.
         string[] recusados = [.. TipoDocumentoSeed.Itens
-            .Where(item => TipoDocumento.Criar(item.Codigo, item.Nome, null, item.Categoria, null, null, null, item.ClassificacaoProtecao, TipoDocumentoSeed.FinalidadeTratamento, TipoDocumentoSeed.HipoteseLegal).IsFailure)
+            .Where(item => TipoDocumento.Criar(item.Codigo, item.Nome, null, item.Categoria, null, null, item.TipoEquivalente, item.ClassificacaoProtecao, TipoDocumentoSeed.FinalidadeTratamento, TipoDocumentoSeed.HipoteseLegal).IsFailure)
             .Select(item => item.Codigo)];
 
         recusados.Should().BeEmpty(
@@ -42,6 +42,51 @@ public sealed class CatalogoDeTiposDocumentoTests
         TipoDocumentoSeed.Itens.Select(i => i.Codigo).Should().OnlyHaveUniqueItems(
             "o código é chave natural e o índice único parcial rejeitaria a duplicata na migração");
     }
+
+    [Fact(DisplayName = "O seed traz os tipos que o edital de Medicina 2027 pede, cada um na categoria e na proteção que o documento exige")]
+    public void Seed_TiposDoEditalDeMedicina_TemCategoriaEProtecao()
+    {
+        (string Codigo, string Categoria, ClassificacaoDeProtecao Protecao)[] esperados =
+        [
+            ("CIN", "IDENTIFICACAO", ClassificacaoDeProtecao.Identificador),
+            ("CNH", "IDENTIFICACAO", ClassificacaoDeProtecao.Identificador),
+            ("PASSAPORTE", "IDENTIFICACAO", ClassificacaoDeProtecao.Identificador),
+            ("RNM", "IDENTIFICACAO", ClassificacaoDeProtecao.Identificador),
+            ("BOLETIM_OCORRENCIA", "IDENTIFICACAO", ClassificacaoDeProtecao.Sensivel),
+            ("DOCUMENTO_JUDICIAL_GUARDA", "IDENTIFICACAO", ClassificacaoDeProtecao.Sensivel),
+            ("DECLARACAO_CONCLUSAO_ENSINO_MEDIO", "ESCOLARIDADE", ClassificacaoDeProtecao.Pessoal),
+            ("CNIS", "RENDA", ClassificacaoDeProtecao.Pessoal),
+            ("DECLARACAO_IRPJ", "RENDA", ClassificacaoDeProtecao.Pessoal),
+            ("ECF", "RENDA", ClassificacaoDeProtecao.Pessoal),
+            ("DECORE", "RENDA", ClassificacaoDeProtecao.Pessoal),
+            ("DEFIS", "RENDA", ClassificacaoDeProtecao.Pessoal),
+            ("DASN_SIMEI", "RENDA", ClassificacaoDeProtecao.Pessoal),
+            ("DECLARACAO_INATIVIDADE_EMPRESA", "RENDA", ClassificacaoDeProtecao.Pessoal),
+            ("DECLARACAO_RENDIMENTOS_AUFERIDOS", "RENDA", ClassificacaoDeProtecao.Pessoal),
+            ("DECLARACAO_AUSENCIA_RENDIMENTOS_ALUGUEL", "RENDA", ClassificacaoDeProtecao.Pessoal),
+            ("EXTRATO_PREVIDENCIA_PRIVADA", "RENDA", ClassificacaoDeProtecao.Pessoal),
+            ("TRCT", "RENDA", ClassificacaoDeProtecao.Pessoal),
+            ("LAUDO_PSICOLOGICO", "SAUDE", ClassificacaoDeProtecao.Sensivel),
+            ("EXAME_AUDIOMETRIA", "SAUDE", ClassificacaoDeProtecao.Sensivel),
+            ("EXAME_OFTALMOLOGICO", "SAUDE", ClassificacaoDeProtecao.Sensivel),
+            ("TERMO_RESPONSABILIDADE_CERTIFICADO", "DOCUMENTO_PROCESSUAL", ClassificacaoDeProtecao.Pessoal),
+        ];
+
+        foreach ((string codigo, string categoria, ClassificacaoDeProtecao protecao) in esperados)
+        {
+            TipoDocumentoSeedItem item = TipoDocumentoSeed.Itens.Should().ContainSingle(i => i.Codigo == codigo).Which;
+            item.Categoria.Should().Be(categoria, codigo);
+            item.ClassificacaoProtecao.Should().Be(protecao, codigo);
+        }
+    }
+
+    [Fact(DisplayName = "A CIN aponta o RG como equivalente, e o RG existe no catálogo")]
+    public void Seed_CinEquivaleAoRg()
+    {
+        TipoDocumentoSeed.Itens.Single(i => i.Codigo == "CIN").TipoEquivalente.Should().Be("RG");
+        TipoDocumentoSeed.Itens.Should().Contain(i => i.Codigo == "RG");
+    }
+
 
     [Fact(DisplayName = "Toda categoria referenciada existe no cadastro semeado")]
     public void Seed_CategoriasExistemNoCadastro()

@@ -116,7 +116,6 @@ public sealed class MigracaoCodigoTipoDocumentoTests : IAsyncLifetime
         }
     }
 
-
     [Fact(DisplayName = "A carga do catálogo preserva o tipo que o operador já cadastrou com o mesmo código")]
     public async Task Carga_ComCodigoJaOcupado_PreservaODoOperadorESemeiaOResto()
     {
@@ -155,7 +154,7 @@ public sealed class MigracaoCodigoTipoDocumentoTests : IAsyncLifetime
             doOperador.ClassificacaoProtecao.Should().Be(ClassificacaoDeProtecao.Pessoal,
                 "o tipo cadastrado antes da migration recebe o padrão provisório, e a leitura não falha");
 
-            // Os outros 69 entram normalmente: a tolerância pula a linha em conflito,
+            // Os demais entram normalmente: a tolerância pula a linha em conflito,
             // não a carga inteira.
             int semeadosPresentes = todos.Count(t => t.Id != idDoOperador
                 && TipoDocumentoSeed.Itens.Any(item => item.Id == t.Id));
