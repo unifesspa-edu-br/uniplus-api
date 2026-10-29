@@ -26,6 +26,12 @@ public sealed record ResourceContext
     /// <summary>Chamada à qual o recurso pertence. Opcional.</summary>
     public Guid? ChamadaId { get; }
 
+    /// <summary>
+    /// Identificador do registro alvo da operação (por exemplo, a inscrição cujo dado é revelado), quando a decisão
+    /// recai sobre um único registro. Opcional; é só identificador, nunca conteúdo.
+    /// </summary>
+    public Guid? RecursoId { get; }
+
     /// <summary>Classificação de sensibilidade do dado retornado.</summary>
     public ClassificacaoDeProtecao Sensibilidade { get; }
 
@@ -34,13 +40,15 @@ public sealed record ResourceContext
         ClassificacaoDeProtecao sensibilidade,
         Guid? unidadeProprietariaId,
         Guid? processoId,
-        Guid? chamadaId)
+        Guid? chamadaId,
+        Guid? recursoId)
     {
         RecursoTipo = recursoTipo;
         Sensibilidade = sensibilidade;
         UnidadeProprietariaId = unidadeProprietariaId;
         ProcessoId = processoId;
         ChamadaId = chamadaId;
+        RecursoId = recursoId;
     }
 
     /// <summary>
@@ -55,7 +63,8 @@ public sealed record ResourceContext
         ClassificacaoDeProtecao sensibilidade,
         Guid? unidadeProprietariaId = null,
         Guid? processoId = null,
-        Guid? chamadaId = null)
+        Guid? chamadaId = null,
+        Guid? recursoId = null)
     {
         if (string.IsNullOrWhiteSpace(recursoTipo))
         {
@@ -73,7 +82,8 @@ public sealed record ResourceContext
 
         if (GuidVazioInformado(unidadeProprietariaId)
             || GuidVazioInformado(processoId)
-            || GuidVazioInformado(chamadaId))
+            || GuidVazioInformado(chamadaId)
+            || GuidVazioInformado(recursoId))
         {
             return Result<ResourceContext>.Failure(new DomainError(
                 AuthorizationErrorCodes.ResourceContextEscopoInvalido,
@@ -85,7 +95,8 @@ public sealed record ResourceContext
             sensibilidade,
             unidadeProprietariaId,
             processoId,
-            chamadaId));
+            chamadaId,
+            recursoId));
     }
 
     private static bool GuidVazioInformado(Guid? valor) => valor is { } g && g == Guid.Empty;

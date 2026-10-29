@@ -31,6 +31,12 @@ public interface IInscricaoRepository
     Task<VinculoDaInscricao?> ObterVinculoAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// O CPF decifrado de UMA inscrição, sem carregar nem decifrar o resto. <see langword="null"/> quando a inscrição
+    /// não existe. É a única leitura que devolve o CPF completo fora do próprio agregado.
+    /// </summary>
+    Task<Cpf?> ObterCpfAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// As inscrições enviadas do processo, as submetidas e as canceladas, paginadas por cursor bidirecional
     /// (ADR-0026, ADR-0089) em ordem cronológica. O rascunho fica de fora: enquanto o candidato não envia, não há
     /// inscrição para quem opera o processo. Lê só o necessário — o nome, o CPF para mascarar e o instante do primeiro

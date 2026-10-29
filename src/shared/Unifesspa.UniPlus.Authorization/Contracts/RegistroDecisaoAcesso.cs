@@ -56,6 +56,9 @@ public sealed record RegistroDecisaoAcesso
     /// <summary>Chamada do recurso, quando o escopo se aplica.</summary>
     public Guid? ChamadaId { get; }
 
+    /// <summary>Registro alvo da operação (por exemplo, a inscrição), quando a decisão recai sobre um único registro.</summary>
+    public Guid? RecursoId { get; }
+
     /// <summary>Canal pelo qual a requisição chegou, em valor canônico.</summary>
     public string Origem { get; }
 
@@ -86,6 +89,7 @@ public sealed record RegistroDecisaoAcesso
         Guid? unidadeProprietariaId,
         Guid? processoId,
         Guid? chamadaId,
+        Guid? recursoId,
         string origem,
         bool permitido,
         string? motivoNegativa,
@@ -102,6 +106,7 @@ public sealed record RegistroDecisaoAcesso
         UnidadeProprietariaId = unidadeProprietariaId;
         ProcessoId = processoId;
         ChamadaId = chamadaId;
+        RecursoId = recursoId;
         Origem = origem;
         Permitido = permitido;
         MotivoNegativa = motivoNegativa;
@@ -139,6 +144,7 @@ public sealed record RegistroDecisaoAcesso
             resource.UnidadeProprietariaId,
             resource.ProcessoId,
             resource.ChamadaId,
+            resource.RecursoId,
             ValoresCanonicos.De(request.Origem),
             decision.Allowed,
             decision.DenyReason is { } motivo ? ValoresCanonicos.De(motivo.Codigo) : null,

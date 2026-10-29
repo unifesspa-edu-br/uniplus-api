@@ -278,6 +278,18 @@ public sealed class AuthorizationDecisionServiceTests
         registro.EscopoUnidadeId.Should().Be(unidade);
     }
 
+    [Fact(DisplayName = "O registro identifica o registro alvo da decisão, e só o identificador")]
+    public async Task Decide_Registro_IdentificaORegistroAlvo()
+    {
+        Guid alvo = Guid.CreateVersion7();
+
+        await Decidir(Sujeito(concessoes: Concessao()), Requisito(), Recurso(recursoId: alvo));
+        await Decidir(Sujeito(), Requisito(), Recurso(recursoId: alvo));
+
+        _registro.Registrados.Should().HaveCount(2).And.OnlyContain(r => r.RecursoId == alvo,
+            "a decisão negada também nomeia o registro que se tentou alcançar");
+    }
+
     [Fact(DisplayName = "A concessão na unidade A concede sobre recurso de A e nega sobre recurso de B")]
     public async Task Decide_ConcessaoDeUnidade_SoAlcancaARecursoDaUnidade()
     {

@@ -106,6 +106,25 @@ public sealed class InscricaoRepository : IInscricaoRepository
                 r.Id, r.ProcessoSeletivoId, r.Situacao, r.VersaoFormularioId, r.OfertaCursoId, r.OfertaCursoSegundaOpcaoId))
             .FirstOrDefaultAsync(cancellationToken);
 
+    public async Task<Cpf?> ObterCpfAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        byte[]? cifrado = await _dbContext.Inscricoes
+            .AsNoTracking()
+            .Where(r => r.Id == id)
+            .Select(static r => r.CpfCiphertext)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+        if (cifrado is null)
+        {
+            return null;
+        }
+
+        byte[] cpfPlano = await _encryption
+            .DecryptAsync(SelecaoEncryptionKeys.IdentificadoresAesGcm, cifrado, cancellationToken)
+            .ConfigureAwait(false);
+        return ReidratarCpf(cpfPlano);
+    }
+
     public async Task<(IReadOnlyList<ResumoDaInscricaoDoProcesso> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarEnviadasDoProcessoAsync(
         Guid processoSeletivoId,
         Guid? afterId,

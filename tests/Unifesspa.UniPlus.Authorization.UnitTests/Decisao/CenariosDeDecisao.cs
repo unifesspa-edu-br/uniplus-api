@@ -31,13 +31,15 @@ internal static class CenariosDeDecisao
         ClassificacaoDeProtecao sensibilidade = ClassificacaoDeProtecao.Interno,
         Guid? unidadeProprietariaId = null,
         Guid? processoId = null,
-        Guid? chamadaId = null)
+        Guid? chamadaId = null,
+        Guid? recursoId = null)
         => ResourceContext.From(
             RecursoTipo,
             sensibilidade,
             unidadeProprietariaId,
             processoId,
-            chamadaId).Value!;
+            chamadaId,
+            recursoId).Value!;
 
     public static PermissionRequirement Requisito(
         ClassificacaoDeProtecao sensibilidade = ClassificacaoDeProtecao.Interno,

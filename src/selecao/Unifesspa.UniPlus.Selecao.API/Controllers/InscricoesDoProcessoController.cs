@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Application.DTOs;
 using Application.Permissoes;
+using Application.Queries.CpfDaInscricao;
 using Application.Queries.DocumentosDaInscricao;
 using Application.Queries.InscricoesDoProcesso;
 using Application.Services;
@@ -68,6 +69,33 @@ public sealed class InscricoesDoProcessoController : ControllerBase
         return await this.OkPaginatedAsync(
             resultado.Items, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
             cancellationToken: cancellationToken);
+    }
+
+    /// <summary>
+    /// Revela o CPF completo de UMA inscrição enviada, pela permissão própria de revelar CPF na unidade dona do processo;
+    /// consultar as inscrições não basta. É POST e sem corpo para que nenhum intermediário o pré-carregue ou o guarde, e
+    /// sem chave de idempotência porque a resposta, com o CPF, nunca deve ser reaproveitada de cache. Cada revelação
+    /// permitida fica no registro de decisões de acesso com a inscrição e a concessão usada. A inscrição que não existe,
+    /// a de outro processo, a em rascunho e a recusa por falta de permissão respondem o mesmo 404.
+    /// </summary>
+    [HttpPost("{inscricaoId:guid}/cpf/revelacao")]
+    [VendorMediaType(Resource = "cpf-revelado-da-inscricao", Versions = [1])]
+    [ProducesResponseType(typeof(CpfReveladoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> RevelarCpf(Guid id, Guid inscricaoId, CancellationToken cancellationToken)
+    {
+        Result<CpfReveladoDto> resultado = await _queryBus
+            .Send(new RevelarCpfDaInscricaoQuery(id, inscricaoId), cancellationToken)
+            .ConfigureAwait(false);
+        if (!resultado.IsSuccess)
+        {
+            return resultado.ToActionResult(_mapper);
+        }
+
+        Response.Headers.CacheControl = "no-store";
+        return Ok(resultado.Value);
     }
 
     /// <summary>

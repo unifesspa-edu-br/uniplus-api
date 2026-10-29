@@ -82,7 +82,9 @@ public static class AcessoAoProcesso
 
     /// <summary>
     /// Decide a permissão sobre a unidade. Sem unidade (processo inexistente) não há decisão a tomar sobre o recurso:
-    /// a consulta sem recurso serve só para distinguir quem não foi identificado, e o resto é negado.
+    /// o acesso é negado sem consultar o ponto de decisão, que registraria como permitida uma operação sobre um recurso
+    /// que não existe.
+    /// <paramref name="recursoId"/> é o registro alvo quando a decisão recai sobre um só (a inscrição cujo CPF se revela).
     /// </summary>
     public static async Task<ResultadoDoAcesso> VerificarNaUnidadeAsync(
         IVerificadorDeAcesso verificador,
@@ -91,19 +93,22 @@ public static class AcessoAoProcesso
         PermissaoSelecao permissao,
         string recursoTipo,
         ClassificacaoDeProtecao? sensibilidadeDoRecurso,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Guid? recursoId = null)
     {
         ArgumentNullException.ThrowIfNull(verificador);
 
-        PermissionRequirement requisito = permissao.Requisito;
-        Result<ResourceContext>? recurso = unidadeId is null
-            ? null
-            : ResourceContext.From(recursoTipo, sensibilidadeDoRecurso ?? requisito.Sensibilidade, unidadeId, processoId);
-
-        if (recurso?.IsSuccess != true)
+        if (unidadeId is null)
         {
-            ResultadoDoAcesso semRecurso = await verificador.VerificarAsync(requisito, null, cancellationToken).ConfigureAwait(false);
-            return semRecurso == ResultadoDoAcesso.IdentidadeIncompleta ? semRecurso : ResultadoDoAcesso.Negado;
+            return ResultadoDoAcesso.Negado;
+        }
+
+        PermissionRequirement requisito = permissao.Requisito;
+        Result<ResourceContext> recurso = ResourceContext.From(
+            recursoTipo, sensibilidadeDoRecurso ?? requisito.Sensibilidade, unidadeId, processoId, recursoId: recursoId);
+        if (recurso.IsFailure)
+        {
+            return ResultadoDoAcesso.Negado;
         }
 
         return await verificador.VerificarAsync(requisito, recurso.Value, cancellationToken).ConfigureAwait(false);
