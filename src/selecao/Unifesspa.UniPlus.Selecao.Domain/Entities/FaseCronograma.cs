@@ -12,7 +12,7 @@ using ValueObjects;
 
 /// <summary>
 /// Uma fase do cronograma de um <see cref="ProcessoSeletivo"/> (1..*, Story #851) — o
-/// eixo <b>temporal</b> do certame (janela, ordem, dono institucional, o que a fase
+/// eixo <b>temporal</b> do certame (janela, ordem, unidade responsável, o que a fase
 /// publica), distinto do eixo de <b>pontuação</b> (<see cref="EtapaProcesso"/>).
 /// Snapshot-copy (ADR-0061) de uma <c>FaseCanonica</c> do módulo Configuração no
 /// momento em que entrou no cronograma — sem FK para o cadastro vivo.
@@ -61,9 +61,6 @@ public sealed class FaseCronograma : EntityBase
 
     /// <summary>Código canônico congelado (ex.: <c>"HOMOLOGACAO"</c>) — snapshot-copy.</summary>
     public string Codigo { get; private set; } = string.Empty;
-
-    /// <summary>Dono institucional congelado (token) — snapshot-copy estrito (§3.2); o processo não o sobrescreve.</summary>
-    public string DonoInstitucional { get; private set; } = string.Empty;
 
     /// <summary>Id da unidade que responde pela fase, congelado sem FK (ADR-0061) — opcional no rascunho, exigido na publicação.</summary>
     public Guid? UnidadeResponsavelOrigemId { get; private set; }
@@ -202,7 +199,6 @@ public sealed class FaseCronograma : EntityBase
         int ordem,
         Guid faseCanonicaOrigemId,
         string codigo,
-        string donoInstitucional,
         OrigemDataFase origemData,
         bool agrupaEtapas,
         bool permiteComplementacao,
@@ -218,7 +214,6 @@ public sealed class FaseCronograma : EntityBase
         UnidadeResponsavelSnapshot? unidadeResponsavel)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
-        ArgumentException.ThrowIfNullOrWhiteSpace(donoInstitucional);
         ArgumentNullException.ThrowIfNull(produtos);
         ArgumentNullException.ThrowIfNull(bancasRequeridas);
 
@@ -321,7 +316,6 @@ public sealed class FaseCronograma : EntityBase
             Ordem = ordem,
             FaseCanonicaOrigemId = faseCanonicaOrigemId,
             Codigo = codigo.Trim(),
-            DonoInstitucional = donoInstitucional.Trim(),
             OrigemData = origemData,
             AgrupaEtapas = agrupaEtapas,
             PermiteComplementacao = permiteComplementacao,
@@ -361,7 +355,6 @@ public sealed class FaseCronograma : EntityBase
         int ordem,
         Guid faseCanonicaOrigemId,
         string codigo,
-        string donoInstitucional,
         OrigemDataFase origemData,
         bool agrupaEtapas,
         bool permiteComplementacao,
@@ -377,7 +370,6 @@ public sealed class FaseCronograma : EntityBase
         UnidadeResponsavelSnapshot? unidadeResponsavel)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
-        ArgumentException.ThrowIfNullOrWhiteSpace(donoInstitucional);
         ArgumentNullException.ThrowIfNull(produtos);
         ArgumentNullException.ThrowIfNull(bancasRequeridas);
         if (id == Guid.Empty)
@@ -409,7 +401,6 @@ public sealed class FaseCronograma : EntityBase
             Ordem = ordem,
             FaseCanonicaOrigemId = faseCanonicaOrigemId,
             Codigo = codigo.Trim(),
-            DonoInstitucional = donoInstitucional.Trim(),
             OrigemData = origemData,
             AgrupaEtapas = agrupaEtapas,
             PermiteComplementacao = permiteComplementacao,
@@ -657,7 +648,6 @@ public sealed class FaseCronograma : EntityBase
         Guid faseCanonicaOrigemId,
         int ordem,
         string codigo,
-        string donoInstitucional,
         OrigemDataFase origemData,
         bool agrupaEtapas,
         bool permiteComplementacao,
@@ -673,14 +663,12 @@ public sealed class FaseCronograma : EntityBase
         UnidadeResponsavelSnapshot? unidadeResponsavel)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
-        ArgumentException.ThrowIfNullOrWhiteSpace(donoInstitucional);
         ArgumentNullException.ThrowIfNull(produtos);
         ArgumentNullException.ThrowIfNull(bancasRequeridas);
 
         FaseCanonicaOrigemId = faseCanonicaOrigemId;
         Ordem = ordem;
         Codigo = codigo.Trim();
-        DonoInstitucional = donoInstitucional.Trim();
         OrigemData = origemData;
         AgrupaEtapas = agrupaEtapas;
         PermiteComplementacao = permiteComplementacao;

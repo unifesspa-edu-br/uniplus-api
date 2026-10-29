@@ -377,7 +377,6 @@ public static class ObterProcessoSeletivoQueryHandler
         fase.Ordem,
         fase.FaseCanonicaOrigemId,
         fase.Codigo,
-        fase.DonoInstitucional,
         fase.OrigemData.ToCodigo(),
         fase.AgrupaEtapas,
         fase.PermiteComplementacao,

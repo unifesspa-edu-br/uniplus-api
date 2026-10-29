@@ -5,9 +5,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Cria uma fase canônica (UNI-REQ-0064): código (chave natural canônica imutável),
-/// nome, descrição opcional, dono típico como token canônico UPPER_SNAKE
-/// (<c>DonoTipico</c>), origem da data como token canônico UPPER_SNAKE
-/// (<c>OrigemData</c>), e os sinalizadores <c>AgrupaEtapas</c> /
+/// nome, descrição opcional, origem da data como token canônico UPPER_SNAKE
+/// (<c>OrigemData</c>), unidade sugerida opcional (<c>UnidadeSugeridaId</c>, resolvida no cadastro
+/// de unidades pelo handler) e os sinalizadores <c>AgrupaEtapas</c> /
 /// <c>PermiteComplementacao</c> / <c>ColetaInscricao</c> /
 /// <c>ColetaSolicitacaoIsencao</c> (falsos por omissão). O ator de auditoria
 /// (<c>created_by</c>) é carimbado server-side via <c>IUserContext</c>, não no payload.
@@ -22,10 +22,10 @@ public sealed record CriarFaseCanonicaCommand(
     string? Codigo,
     string? Nome = null,
     string? Descricao = null,
-    string? DonoTipico = null,
     bool AgrupaEtapas = false,
     bool PermiteComplementacao = false,
     string? BaseLegal = null,
     bool ColetaInscricao = false,
     bool ColetaSolicitacaoIsencao = false,
-    string? OrigemData = null) : ICommand<Result<Guid>>;
+    string? OrigemData = null,
+    Guid? UnidadeSugeridaId = null) : ICommand<Result<Guid>>;

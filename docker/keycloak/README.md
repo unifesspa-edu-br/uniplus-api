@@ -95,14 +95,14 @@ Esses claims são consumidos pelo frontend para preencher o perfil do usuário a
 
 ### Roles de área organizacional (RBAC por áreas — ADR-0055 / ADR-0057)
 
-Cada `AreaOrganizacional` do roster fechado (CEPS, CRCA, PROEG, PROGEP, PLATAFORMA) projeta-se em **dois realm roles** seguindo a convenção `{codigo-lowercase}-{papel}`:
+Cada `AreaOrganizacional` do roster fechado (CEPS, PROEG, PROGEP, PLATAFORMA) projeta-se em **dois realm roles** seguindo a convenção `{codigo-lowercase}-{papel}`:
 
 | Role | Autoridade |
 | ---- | ---------- |
 | `{area}-admin` | Escrita — edita catálogos cujo `Proprietario` é aquela área. |
 | `{area}-leitor` | Leitura — enxerga catálogos visíveis à área, sem escrita. |
 
-Roles atuais: `ceps-admin`, `ceps-leitor`, `crca-admin`, `crca-leitor`, `proeg-admin`, `proeg-leitor`, `progep-admin`, `progep-leitor`, `plataforma-admin`, `plataforma-leitor`.
+Roles atuais: `ceps-admin`, `ceps-leitor`, `proeg-admin`, `proeg-leitor`, `progep-admin`, `progep-leitor`, `plataforma-admin`, `plataforma-leitor`.
 
 O `IUserContext.AreasAdministradas` deriva `AreaCodigo` a partir dos roles `{area}-admin` do JWT; `plataforma-admin` é tratado à parte (`IsPlataformaAdmin`) — é o bypass platform-wide, não uma área comum (ver `HttpUserContext`).
 

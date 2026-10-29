@@ -6,18 +6,18 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Atualiza uma fase canônica existente. O <c>Codigo</c> e o <c>Id</c> são
 /// <b>imutáveis</b>: o comando <b>não</b> aceita código — o handler carrega a
-/// entidade e a atualiza sem alterá-lo. O dono típico e a origem da data chegam
-/// como token canônico UPPER_SNAKE. O ator (<c>updated_by</c>) é carimbado
+/// entidade e a atualiza sem alterá-lo. A origem da data chega como token canônico
+/// UPPER_SNAKE e a unidade sugerida como id (nulo retira a sugestão). O ator (<c>updated_by</c>) é carimbado
 /// server-side via <c>IUserContext</c>.
 /// </summary>
 public sealed record AtualizarFaseCanonicaCommand(
     Guid Id,
     string? Nome = null,
     string? Descricao = null,
-    string? DonoTipico = null,
     bool AgrupaEtapas = false,
     bool PermiteComplementacao = false,
     string? BaseLegal = null,
     bool ColetaInscricao = false,
     bool ColetaSolicitacaoIsencao = false,
-    string? OrigemData = null) : ICommand<Result>;
+    string? OrigemData = null,
+    Guid? UnidadeSugeridaId = null) : ICommand<Result>;

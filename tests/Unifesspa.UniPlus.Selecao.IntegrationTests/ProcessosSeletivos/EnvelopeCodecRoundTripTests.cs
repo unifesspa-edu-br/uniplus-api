@@ -74,8 +74,7 @@ public sealed class EnvelopeCodecRoundTripTests
         // depende da cor/raça respondida na inscrição (UNI-REQ-0145).
         ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
         FaseCronograma habilitacao = FaseCronograma.Criar(
-            processo.CronogramaFases.Max(static f => f.Ordem) + 1, Guid.CreateVersion7(), FormularioProcesso.CodigoFaseHabilitacao, "CEPS",
-            OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
+            processo.CronogramaFases.Max(static f => f.Ordem) + 1, Guid.CreateVersion7(), FormularioProcesso.CodigoFaseHabilitacao, OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 5, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 5, 10, 18, 0, 0, TimeSpan.Zero),
             produtos: [ProdutoDaFase.Criar(FormularioProcesso.CodigoFaseHabilitacao, PapelProdutoFase.Definitivo)],
             faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
@@ -901,7 +900,7 @@ public sealed class EnvelopeCodecRoundTripTests
             ValoresSelecionaveisCongelados: valoresSelecionaveis,
             TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo));
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.38", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.39", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             entrada.Dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -997,7 +996,6 @@ public sealed class EnvelopeCodecRoundTripTests
             ordem: 1,
             faseCanonicaOrigemId: Guid.CreateVersion7(),
             codigo: "INSCRICAO",
-            donoInstitucional: "CEPS",
             origemData: OrigemDataFase.NoEdital,
             agrupaEtapas: true,
             permiteComplementacao: true,
@@ -1062,7 +1060,7 @@ public sealed class EnvelopeCodecRoundTripTests
 
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(
             new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
-        congelado.SchemaVersion.Should().Be("0.0.38", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.39", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -1190,7 +1188,6 @@ public sealed class EnvelopeCodecRoundTripTests
             ordem: 1,
             faseCanonicaOrigemId: Guid.CreateVersion7(),
             codigo: "INSCRICAO",
-            donoInstitucional: "CEPS",
             origemData: OrigemDataFase.NoEdital,
             agrupaEtapas: true,
             permiteComplementacao: true,
@@ -1282,7 +1279,7 @@ public sealed class EnvelopeCodecRoundTripTests
             ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(),
             TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo));
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.38", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.39", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -1676,7 +1673,6 @@ public sealed class EnvelopeCodecRoundTripTests
                 ordem: 1,
                 faseCanonicaOrigemId: Guid.CreateVersion7(),
                 codigo: "RESULTADO_FINAL",
-                donoInstitucional: "CEPS",
                 origemData: OrigemDataFase.NoEdital,
                 agrupaEtapas: true,
                 permiteComplementacao: false,

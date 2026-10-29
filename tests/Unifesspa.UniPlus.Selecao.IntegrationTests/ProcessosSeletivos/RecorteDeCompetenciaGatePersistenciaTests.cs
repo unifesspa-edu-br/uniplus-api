@@ -274,7 +274,6 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
             ordem: 1,
             faseCanonicaOrigemId: Guid.CreateVersion7(),
             codigo: "RESULTADO_FINAL",
-            donoInstitucional: "CEPS",
             origemData: OrigemDataFase.NoEdital,
             agrupaEtapas: true,
             permiteComplementacao: false,

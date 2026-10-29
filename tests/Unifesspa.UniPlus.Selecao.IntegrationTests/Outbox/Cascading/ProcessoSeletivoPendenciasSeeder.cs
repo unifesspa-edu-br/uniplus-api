@@ -59,7 +59,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
 
         FaseCronograma faseSemUnidade = FaseCronograma.Criar(
             ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "RESULTADO_FINAL",
-            donoInstitucional: "CEPS", origemData: OrigemDataFase.NoEdital,
+            origemData: OrigemDataFase.NoEdital,
             agrupaEtapas: true, permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
@@ -298,7 +298,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
 
         faseBuilder = coletaInscricao => FaseCronograma.Criar(
             ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "RESULTADO_FINAL",
-            donoInstitucional: "CEPS", origemData: OrigemDataFase.NoEdital,
+            origemData: OrigemDataFase.NoEdital,
             agrupaEtapas: true, permiteComplementacao: false, coletaInscricao: coletaInscricao, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),

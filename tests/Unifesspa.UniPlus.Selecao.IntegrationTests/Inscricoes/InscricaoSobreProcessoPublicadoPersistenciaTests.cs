@@ -103,7 +103,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         FaseCronograma faseDaInscricao = FaseCronograma.Criar(
-            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "RESULTADO_FINAL", donoInstitucional: "CEPS",
+            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "RESULTADO_FINAL",
             origemData: OrigemDataFase.NoEdital, agrupaEtapas: true, permiteComplementacao: false,
             coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
@@ -115,7 +115,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         {
             // A janela de isenção abre com a inscrição e fecha antes dela: é fase à parte.
             fases.Add(FaseCronograma.Criar(
-                ordem: 2, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "ISENCAO_DA_TAXA", donoInstitucional: "CEPS",
+                ordem: 2, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "ISENCAO_DA_TAXA",
                 origemData: OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false,
                 coletaInscricao: false, coletaSolicitacaoIsencao: true,
                 inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),

@@ -9,8 +9,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// <remarks>
 /// Decide, sozinho, se a janela (<c>Inicio</c>/<c>Fim</c>) do cronograma da fase é
 /// obrigatória (<see cref="NoEdital"/>) ou opcional (<see cref="NaExecucao"/>) — ver
-/// <c>FaseCronograma</c> no Módulo Seleção. Independente de <see cref="DonoTipico"/>,
-/// que é apenas rótulo orientativo e não vincula.
+/// <c>FaseCronograma</c> no Módulo Seleção.
 /// </remarks>
 public enum OrigemDataFase
 {

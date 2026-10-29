@@ -29,7 +29,7 @@ public static class UniPlusServiceNames
     /// <summary>Portal do candidato — API que orquestra perfil único e portfólio cross-módulo.</summary>
     public const string Portal = "uniplus-portal";
 
-    /// <summary>Módulo OrganizacaoInstitucional — API que governa o roster fechado de áreas (CEPS, CRCA, PROEG, …).</summary>
+    /// <summary>Módulo OrganizacaoInstitucional — API que governa o roster fechado de áreas (CEPS, PROEG, …).</summary>
     public const string OrganizacaoInstitucional = "uniplus-organizacao";
 
     /// <summary>Módulo Configuracao — API que hospeda catálogos cross-cutting área-scoped (Modalidade, NecessidadeEspecial, …).</summary>

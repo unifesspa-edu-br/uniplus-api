@@ -42,7 +42,7 @@ internal static class FronteiraAppendOnlyDoRol
     /// </summary>
     public static string FaseHomonima(string codigo) =>
         $$$"""
-        {"cronograma":{"fases":[{"codigo":"{{{codigo}}}","ordem":1,"donoInstitucional":"CEPS"}]}}
+        {"cronograma":{"fases":[{"codigo":"{{{codigo}}}","ordem":1}]}}
         """;
 
     /// <summary>

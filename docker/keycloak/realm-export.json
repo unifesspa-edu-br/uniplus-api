@@ -132,24 +132,6 @@
         "attributes": {}
       },
       {
-        "id": "2c3eeb0e-c5b2-589d-abd1-b0e12c200290",
-        "name": "crca-admin",
-        "description": "Administrador da área CRCA — Centro de Registro e Controle Acadêmico: edita catálogos com Proprietario igual a esta área.",
-        "composite": false,
-        "clientRole": false,
-        "containerId": "3310e85a-fc31-4029-a33a-dd49f8085fc5",
-        "attributes": {}
-      },
-      {
-        "id": "88097d18-4131-5f9c-b25c-8ccff0af4f4a",
-        "name": "crca-leitor",
-        "description": "Leitor da área CRCA — Centro de Registro e Controle Acadêmico: enxerga catálogos visíveis a esta área, sem permissão de escrita.",
-        "composite": false,
-        "clientRole": false,
-        "containerId": "3310e85a-fc31-4029-a33a-dd49f8085fc5",
-        "attributes": {}
-      },
-      {
         "id": "040b9f8c-8af1-5931-addf-35a177cd2405",
         "name": "proeg-admin",
         "description": "Administrador da área PROEG — Pró-Reitoria de Ensino de Graduação: edita catálogos com Proprietario igual a esta área.",

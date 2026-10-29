@@ -35,7 +35,6 @@ internal static class CorpusFitness
                 ordem: 1,
                 faseCanonicaOrigemId: new Guid("44444444-4444-4444-4444-444444444444"),
                 codigo: "RESULTADO_FINAL",
-                donoInstitucional: "CEPS",
                 origemData: OrigemDataFase.NoEdital,
                 agrupaEtapas: true,
                 permiteComplementacao: false,

@@ -242,7 +242,7 @@ public sealed class ManifestoDoEnvelopeTests
         // Cronograma de fases (Story #851) — o eixo temporal do certame.
         [typeof(FaseCronograma)] = (
             [
-                "Ordem", "FaseCanonicaOrigemId", "Codigo", "DonoInstitucional", "OrigemData",
+                "Ordem", "FaseCanonicaOrigemId", "Codigo", "OrigemData",
                 "AgrupaEtapas", "PermiteComplementacao",
                 "ColetaInscricao", "ColetaSolicitacaoIsencao", "Inicio", "Fim",
                 "Produtos", "FaseConcluinteCodigo", "EmiteParecerIndividual",

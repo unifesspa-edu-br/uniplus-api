@@ -228,7 +228,7 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
         }
 
         Result<FaseCanonica> criada = FaseCanonica.Criar(
-            CodigoFaseComJanela, "Ensalamento", null, "CEPS",
+            CodigoFaseComJanela, "Ensalamento", null,
             agrupaEtapas: false, permiteComplementacao: false, baseLegal: null,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
             origemData: "NO_EDITAL");

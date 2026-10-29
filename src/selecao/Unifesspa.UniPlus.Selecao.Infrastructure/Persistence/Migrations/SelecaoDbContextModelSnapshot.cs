@@ -1953,12 +1953,6 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<string>("DonoInstitucional")
-                        .IsRequired()
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)")
-                        .HasColumnName("dono_institucional");
-
                     b.Property<bool>("EmiteParecerIndividual")
                         .HasColumnType("boolean")
                         .HasColumnName("emite_parecer_individual");

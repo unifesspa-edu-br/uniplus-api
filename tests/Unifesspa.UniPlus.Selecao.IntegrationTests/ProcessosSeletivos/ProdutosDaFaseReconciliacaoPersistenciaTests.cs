@@ -198,7 +198,6 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
             ordem: 1,
             faseCanonicaOrigemId: faseCanonicaOrigemId,
             codigo: "HOMOLOGACAO",
-            donoInstitucional: "CEPS",
             origemData: OrigemDataFase.NaExecucao,
             agrupaEtapas: false,
             permiteComplementacao: false,

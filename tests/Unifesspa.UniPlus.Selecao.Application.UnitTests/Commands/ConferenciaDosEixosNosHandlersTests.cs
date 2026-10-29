@@ -400,7 +400,7 @@ public sealed class ConferenciaDosEixosNosHandlersTests
         {
             ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_PROVA", PapelProdutoFase.Preliminar);
             FaseCronograma fase = FaseCronograma.Criar(
-                1, Guid.CreateVersion7(), "PROVA", "CEPS", OrigemDataFase.NoEdital,
+                1, Guid.CreateVersion7(), "PROVA", OrigemDataFase.NoEdital,
                 agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
                 inicio: Agora, fim: Agora.AddDays(10),
                 produtos: [preliminar, ProdutoDaFase.Criar("RESULTADO_PROVA", PapelProdutoFase.Definitivo)],

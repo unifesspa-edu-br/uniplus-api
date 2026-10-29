@@ -128,7 +128,6 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
             ordem: 1,
             faseCanonicaOrigemId: Guid.CreateVersion7(),
             codigo: "INSCRICAO",
-            donoInstitucional: "CEPS",
             origemData: OrigemDataFase.NoEdital,
             agrupaEtapas: true,
             permiteComplementacao: true,

@@ -19,8 +19,6 @@ public static class FaseCanonicaErrorCodes
     public const string NomeObrigatorio = "FaseCanonica.NomeObrigatorio";
     public const string NomeTamanho = "FaseCanonica.NomeTamanho";
     public const string DescricaoTamanho = "FaseCanonica.DescricaoTamanho";
-    public const string DonoTipicoObrigatorio = "FaseCanonica.DonoTipicoObrigatorio";
-    public const string DonoTipicoInvalido = "FaseCanonica.DonoTipicoInvalido";
     public const string AgrupaEtapasApenasAvaliacao = "FaseCanonica.AgrupaEtapasApenasAvaliacao";
     public const string ComplementacaoApenasFasesPermitidas = "FaseCanonica.ComplementacaoApenasFasesPermitidas";
     public const string SolicitacaoIsencaoApenasNaFaseDeIsencao = "FaseCanonica.SolicitacaoIsencaoApenasNaFaseDeIsencao";
@@ -29,4 +27,5 @@ public static class FaseCanonicaErrorCodes
     public const string NaoEncontrada = "FaseCanonica.NaoEncontrada";
     public const string OrigemDataObrigatoria = "FaseCanonica.OrigemDataObrigatoria";
     public const string OrigemDataInvalida = "FaseCanonica.OrigemDataInvalida";
+    public const string UnidadeSugeridaNaoEncontrada = "FaseCanonica.UnidadeSugeridaNaoEncontrada";
 }

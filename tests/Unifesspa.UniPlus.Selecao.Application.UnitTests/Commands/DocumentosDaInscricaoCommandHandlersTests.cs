@@ -77,7 +77,7 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
     }
 
     private static FaseCronograma Fase(int ordem, string codigo, bool coletaInscricao) => FaseCronograma.Criar(
-        ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.NoEdital,
+        ordem, Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital,
         agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: coletaInscricao, coletaSolicitacaoIsencao: false,
         inicio: new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 3, 20, 12, 0, 0, TimeSpan.Zero),
         produtos: [ProdutoDaFase.Criar(codigo, PapelProdutoFase.Definitivo)], faseConcluinteCodigo: null, emiteParecerIndividual: false,

@@ -109,7 +109,6 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
                 ordem: 1,
                 faseCanonicaOrigemId: Guid.CreateVersion7(),
                 codigo: "RESULTADO_FINAL",
-                donoInstitucional: "CEPS",
                 origemData: OrigemDataFase.NoEdital,
                 agrupaEtapas: true,
                 permiteComplementacao: false,
@@ -460,8 +459,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         // referência dos fatos.
         ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico(variante: 10);
         FaseCronograma habilitacao = FaseCronograma.Criar(
-            processo.CronogramaFases.Max(static f => f.Ordem) + 1, Guid.CreateVersion7(), FormularioProcesso.CodigoFaseHabilitacao, "CEPS",
-            OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
+            processo.CronogramaFases.Max(static f => f.Ordem) + 1, Guid.CreateVersion7(), FormularioProcesso.CodigoFaseHabilitacao, OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 5, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 5, 10, 18, 0, 0, TimeSpan.Zero),
             produtos: [ProdutoDaFase.Criar(FormularioProcesso.CodigoFaseHabilitacao, PapelProdutoFase.Definitivo)],
             faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;

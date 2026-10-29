@@ -46,7 +46,7 @@ public sealed class ConformidadeCronogramaTests
         bool coletaInscricao = false,
         bool coletaSolicitacaoIsencao = false) =>
         FaseCronograma.Criar(
-            ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.NaExecucao,
+            ordem, Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao,
             agrupaEtapas, permiteComplementacao: false,
             coletaInscricao, coletaSolicitacaoIsencao,
             inicio: null, fim: null,
@@ -225,7 +225,7 @@ public sealed class ConformidadeCronogramaTests
 
     private static FaseCronograma FaseQuePublica(int ordem, string codigo, params ProdutoDaFase[] produtos) =>
         FaseCronograma.Criar(
-            ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.NaExecucao,
+            ordem, Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao,
             agrupaEtapas: false, permiteComplementacao: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: null, fim: null,
@@ -423,7 +423,7 @@ public sealed class ConformidadeCronogramaTests
 
     private static FaseCronograma FaseQueConclui(int ordem, string codigo, string? concluinte, params ProdutoDaFase[] produtos) =>
         FaseCronograma.Criar(
-            ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.NaExecucao,
+            ordem, Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao,
             agrupaEtapas: false, permiteComplementacao: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: null, fim: null,

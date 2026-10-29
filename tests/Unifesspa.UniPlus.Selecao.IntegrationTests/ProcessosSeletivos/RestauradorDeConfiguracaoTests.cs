@@ -362,7 +362,6 @@ public sealed class RestauradorDeConfiguracaoTests
             ordem: 1,
             faseCanonicaOrigemId: Guid.CreateVersion7(),
             codigo: "RESULTADO_FINAL",
-            donoInstitucional: "CEPS",
             origemData: OrigemDataFase.NoEdital,
             agrupaEtapas: true,
             permiteComplementacao: false,
@@ -509,7 +508,7 @@ public sealed class RestauradorDeConfiguracaoTests
             CalendarioDiasUteis: CorpusEnvelope.CalendarioRico(),
             TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo));
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.38", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.39", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,

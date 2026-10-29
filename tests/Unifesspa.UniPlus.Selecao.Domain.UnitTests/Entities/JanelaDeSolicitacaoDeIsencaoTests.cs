@@ -180,7 +180,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
 
     private static FaseCronograma FaseDeInscricao(DateTimeOffset inicio, DateTimeOffset fim) =>
         FaseCronograma.Criar(
-            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "INSCRICAO", donoInstitucional: "CEPS",
+            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "INSCRICAO",
             origemData: OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false,
             coletaInscricao: true, coletaSolicitacaoIsencao: false, inicio: inicio, fim: fim,
             produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
@@ -189,7 +189,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
     private static FaseCronograma FaseDeIsencao(
         DateTimeOffset? inicio, DateTimeOffset? fim, RegraRecursoFase? recurso = null) =>
         FaseCronograma.Criar(
-            ordem: 2, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "SOLICITACAO_ISENCAO", donoInstitucional: "CEPS",
+            ordem: 2, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "SOLICITACAO_ISENCAO",
             origemData: OrigemDataFase.NaExecucao, agrupaEtapas: false, permiteComplementacao: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: true, inicio: inicio, fim: fim,
             produtos:

@@ -223,7 +223,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
 
         // O modelo exige os documentos do atendimento na fase de inscrição do cronograma.
         FaseCronograma inscricao = FaseCronograma.Criar(
-            2, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.NaExecucao,
+            2, Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao,
             agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
             produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
             bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;

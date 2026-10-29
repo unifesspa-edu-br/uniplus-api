@@ -67,7 +67,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         new(id, "IDENTIDADE", "Documento de identidade", "PESSOAL", ClassificacaoDeProtecao.Pessoal, "Comprovação documental do candidato.", "CUMPRIMENTO_OBRIGACAO_LEGAL");
 
     private static FaseCronograma FaseQualquer() => FaseCronograma.Criar(
-        1, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.NaExecucao,
+        1, Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao,
         agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
         produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
         bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
@@ -81,7 +81,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         ["MASCULINO", "FEMININO", "INTERSEXO"], pontoResolucao, "CAMPO_FORMULARIO:SEXO", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL");
 
     private static FaseCronograma FaseComOrdemECodigo(int ordem, string codigo) => FaseCronograma.Criar(
-        ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.NaExecucao,
+        ordem, Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao,
         agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
         produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
         bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;

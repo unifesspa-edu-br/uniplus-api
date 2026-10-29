@@ -446,7 +446,7 @@ public sealed class AtoNormativoEndpointTests
     public async Task Registrar_AvisoRetificaEdital_MesmaClasse_Retorna201()
     {
         // Dois tipos congelantes distintos: um edital e um aviso, cada um com sua
-        // numeração — o caso real do CRCA, em que um aviso emenda um edital.
+        // numeração — o caso real do CGA, em que um aviso emenda um edital.
         string edital = await CriarTipoVigenteAsync(congela: true);
         string aviso = await CriarTipoVigenteAsync(congela: true);
         using HttpClient client = _fixture.Factory.CreateClient();

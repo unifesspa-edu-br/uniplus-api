@@ -14,7 +14,7 @@ informed:
 
 A estrutura organizacional da Unifesspa é hierárquica: a instituição tem pró-reitorias e centros como filhos diretos, e estes têm divisões, coordenações e núcleos abaixo. No modelo de dados, cada `Unidade` aponta para a sua unidade superior (`UnidadeSuperiorId`).
 
-A [ADR-0055](0055-organizacao-institucional-bounded-context.md) tratou a PROEG como **supervisora** sobre o CEPS e o CRCA, e a [ADR-0057](0057-areas-rbac-snapshot-historia-invariantes.md) modelou visibilidade entre Unidades. Isso deixa em aberto uma pergunta de autorização: **estar acima na hierarquia institucional concede, automaticamente, acesso ao que está abaixo?**
+A [ADR-0055](0055-organizacao-institucional-bounded-context.md) tratou a PROEG como **supervisora** sobre o CEPS e o CGA, e a [ADR-0057](0057-areas-rbac-snapshot-historia-invariantes.md) modelou visibilidade entre Unidades. Isso deixa em aberto uma pergunta de autorização: **estar acima na hierarquia institucional concede, automaticamente, acesso ao que está abaixo?**
 
 Estrutura e autoridade de acesso são eixos distintos. Uma pró-reitoria figurar como superior de um centro descreve a organização administrativa; não significa que ela opere — nem deva enxergar por padrão — os dados operacionais daquele centro (inscrições, documentos de candidatos, pareceres de banca). Se a hierarquia propagasse permissão, três efeitos indesejados surgiriam: (1) acesso amplo viraria efeito colateral da posição na árvore, não uma decisão; (2) a auditoria não conseguiria atribuir "quem podia ver isto" a uma concessão explícita; (3) reorganizar a árvore (mudar o pai de uma Unidade por portaria) concederia ou removeria acessos silenciosamente.
 
@@ -37,7 +37,7 @@ O problema é decidir se a hierarquia institucional propaga permissão por heran
 
 **Escolhida:** "B — sem herança de permissão por hierarquia", porque preserva o menor privilégio, mantém a autorização auditável a concessões explícitas e desacopla a estrutura institucional da autoridade de acesso.
 
-A hierarquia (`UnidadeSuperiorId`) descreve a estrutura organizacional e **não** propaga permissão nem visibilidade. Para fins de autorização, **PROEG, CEPS e CRCA são unidades irmãs** (filhas diretas da instituição), não mãe e filhas. Nenhuma unidade enxerga ou administra o que pertence a outra por estar acima dela na árvore.
+A hierarquia (`UnidadeSuperiorId`) descreve a estrutura organizacional e **não** propaga permissão nem visibilidade. Para fins de autorização, **PROEG, CEPS e CGA são unidades irmãs** (filhas diretas da instituição), não mãe e filhas. Nenhuma unidade enxerga ou administra o que pertence a outra por estar acima dela na árvore.
 
 A visibilidade ampla legítima — por exemplo, uma pró-reitoria acompanhar o que ocorre nas unidades a ela vinculadas — é concedida por um **escopo de auditoria explícito**: uma concessão formal, **temporal** (com validade), com **base legal** registrada, materializada na entidade de escopo de auditoria e exercida por permissões de auditoria (`:auditar`). Não é um efeito da hierarquia; é um ato de concessão rastreável.
 
@@ -86,7 +86,8 @@ A resolução de acesso, portanto, **não consulta `UnidadeSuperiorId`** para co
 ## Mais informações
 
 - **Aceita em 2026-10-28:** o princípio já orienta o código da autorização. A [ADR-0152](0152-governanca-das-concessoes-de-acesso.md) fixa o escopo da concessão em unidade ou instituição, sem herança pela hierarquia. O escopo de auditoria desta ADR é só a visibilidade ampla sobre unidades; o servidor que atua no recurso de outra unidade o faz por concessão operacional explícita naquela unidade, ou em escopo mais restrito pela concessão excepcional da ADR-0084, e não por escopo de auditoria.
-- **Refina** a [ADR-0055](0055-organizacao-institucional-bounded-context.md): a relação de **supervisão** da PROEG sobre CEPS/CRCA, ali enunciada, é revista — para fins de autorização essas unidades são **irmãs**; supervisão administrativa não implica acesso operacional.
+- **Refina** a [ADR-0055](0055-organizacao-institucional-bounded-context.md): a relação de **supervisão** da PROEG sobre CEPS/CGA, ali enunciada, é revista — para fins de autorização essas unidades são **irmãs**; supervisão administrativa não implica acesso operacional.
 - A visibilidade entre Unidades, que o modelo anterior ([ADR-0057](0057-areas-rbac-snapshot-historia-invariantes.md)) — superseded pela [ADR-0078](0078-modelo-de-autorizacao-pbac-abac.md) — tratava como propriedade dos papéis, passa a depender de concessão de auditoria explícita.
 - Depende do modelo de decisão da [ADR-0078](0078-modelo-de-autorizacao-pbac-abac.md) (a concessão de auditoria é uma das fontes consideradas pelo ponto de decisão).
 - A entidade de escopo de auditoria, sua expiração e seus índices são detalhados nas specs de implementação desta frente; esta ADR fixa apenas o princípio de **não herança**.
+- **Nota sobre o nome:** o antigo CRCA (Centro de Registro e Controle Acadêmico) passou a se chamar Centro de Gestão Acadêmica (CGA). O texto vivo desta ADR usa o nome atual; a [ADR-0055](0055-organizacao-institucional-bounded-context.md), que o enuncia com o nome antigo, é registro histórico e não muda. A decisão não depende do nome da unidade, que é dado do cadastro.

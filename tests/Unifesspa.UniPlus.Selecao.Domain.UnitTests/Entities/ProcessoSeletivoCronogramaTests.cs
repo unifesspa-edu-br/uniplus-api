@@ -37,7 +37,6 @@ public sealed class ProcessoSeletivoCronogramaTests
             ordem,
             faseCanonicaOrigemId ?? Guid.CreateVersion7(),
             codigo,
-            "CEPS",
             OrigemDataFase.NaExecucao,
             agrupaEtapas,
             permiteComplementacao: false,

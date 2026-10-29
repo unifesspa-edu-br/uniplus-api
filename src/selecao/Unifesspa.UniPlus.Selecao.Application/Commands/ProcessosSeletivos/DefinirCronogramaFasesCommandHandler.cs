@@ -454,7 +454,6 @@ public static class DefinirCronogramaFasesCommandHandler
                 input.Ordem,
                 faseCanonica.Id,
                 faseCanonica.Codigo,
-                faseCanonica.DonoTipico,
                 origemData,
                 faseCanonica.AgrupaEtapas,
                 faseCanonica.PermiteComplementacao,

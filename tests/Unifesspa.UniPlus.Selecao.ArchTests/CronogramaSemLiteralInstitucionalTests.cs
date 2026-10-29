@@ -9,7 +9,7 @@ using AwesomeAssertions;
 /// CA-19 (asserção de AUSÊNCIA, Story #851): nenhum tipo de validação/gate do
 /// cronograma conhece nome de conselho, órgão ou instância — a suspensividade é
 /// configuração (dois pares anuláveis), nunca <c>if (modulo == Ingresso)</c> nem
-/// <c>if (fase.DonoInstitucional == "CEPS")</c>.
+/// <c>if (fase.UnidadeResponsavelSigla == "CEPS")</c>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -30,7 +30,7 @@ public sealed class CronogramaSemLiteralInstitucionalTests
 {
     /// <summary>Nomes de órgão/conselho — nenhum pode aparecer em posição de comparação no gate.</summary>
     private static readonly string[] TermosBanidos =
-        ["CONSEPE", "CONSUN", "CEPS", "CRCA", "MEC", "SIGAA"];
+        ["CONSEPE", "CONSUN", "CEPS", "CGA", "MEC", "SIGAA"];
 
     /// <summary>"instancia"/"instância" (com ou sem acento, qualquer capitalização) como literal comparado.</summary>
     private static readonly Regex LiteralDeInstancia = new(
@@ -85,7 +85,7 @@ public sealed class CronogramaSemLiteralInstitucionalTests
         }
 
         achados.Should().BeEmpty(
-            "o gate do cronograma não pode conhecer nome de conselho, órgão ou instância — o dono institucional e a " +
+            "o gate do cronograma não pode conhecer nome de conselho, órgão ou instância — a unidade responsável e a " +
             $"suspensividade são dado declarado, nunca literal em código (CA-19). Achados: {string.Join(", ", achados)}");
     }
 
@@ -93,7 +93,7 @@ public sealed class CronogramaSemLiteralInstitucionalTests
     [InlineData("""if (regra.Codigo == "CONSEPE") { return true; }""")]
     [InlineData("""if ("CONSUN" == orgao) { return true; }""")]
     [InlineData("""switch (dono) { case "CEPS": return true; default: return false; }""")]
-    [InlineData("""if (fase.DonoInstitucional.Equals("CRCA")) { return true; }""")]
+    [InlineData("""if (fase.UnidadeResponsavelSigla.Equals("CGA")) { return true; }""")]
     [InlineData("""if (rotulo == "instancia_superior") { return true; }""")]
     public void Detector_AcusaCanarioPlantado(string trechoPlantado)
     {
@@ -107,8 +107,8 @@ public sealed class CronogramaSemLiteralInstitucionalTests
     [Theory(DisplayName = "O detector NÃO acusa identificador, comentário ou valor fora de posição de comparação (falso positivo)")]
     [InlineData("public decimal? SuspensividadePrimeiraInstanciaValor { get; private set; }")]
     [InlineData("public UnidadePrazo? SuspensividadeSegundaInstanciaUnidade { get; private set; }")]
-    [InlineData("public string DonoInstitucional { get; private set; } = string.Empty;")]
-    [InlineData("""donoInstitucional: "CEPS",""")]
+    [InlineData("public string? UnidadeResponsavelSigla { get; private set; }")]
+    [InlineData("""unidadeResponsavelSigla: "CEPS",""")]
     [InlineData("/// <summary>A suspensividade da 1ª instância...</summary>")]
     public void Detector_NaoAcusaFalsoPositivo(string trecho)
     {

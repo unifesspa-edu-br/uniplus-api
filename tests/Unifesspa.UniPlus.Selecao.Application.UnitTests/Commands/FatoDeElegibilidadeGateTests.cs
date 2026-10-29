@@ -161,7 +161,7 @@ public sealed class FatoDeElegibilidadeGateTests
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Gate Elegibilidade");
         FaseCronograma habilitacao = FaseCronograma.Criar(
             ordem: 2, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: FormularioProcesso.CodigoFaseHabilitacao,
-            donoInstitucional: "CEPS", origemData: OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false,
+            origemData: OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false,
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 2, 28, 0, 0, 0, TimeSpan.Zero),
             produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;

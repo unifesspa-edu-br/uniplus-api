@@ -83,7 +83,7 @@ public sealed class AlgoritmoContagemPrazoPrecondicaoTests : IClassFixture<Regra
             context,
             "fase-homonima",
             $$$"""
-            {"cronograma":{"fases":[{"codigo":"{{{AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial}}}","ordem":1,"donoInstitucional":"CEPS"}]}}
+            {"cronograma":{"fases":[{"codigo":"{{{AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial}}}","ordem":1}]}}
             """);
         await ExecutarPrecondicaoAsync(context);
 

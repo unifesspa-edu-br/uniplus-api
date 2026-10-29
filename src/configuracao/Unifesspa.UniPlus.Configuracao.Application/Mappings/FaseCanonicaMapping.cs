@@ -14,13 +14,15 @@ public static class FaseCanonicaMapping
             fase.Codigo.Valor,
             fase.Nome,
             fase.Descricao,
-            DonosTipicos.ParaTokenCanonico(fase.DonoTipico),
             fase.AgrupaEtapas,
             fase.PermiteComplementacao,
             fase.BaseLegal,
             fase.ColetaInscricao,
             fase.ColetaSolicitacaoIsencao,
             OrigensDataFase.ParaTokenCanonico(fase.OrigemData),
+            fase.UnidadeSugerida is { } unidade
+                ? new UnidadeSugeridaDto(unidade.OrigemId, unidade.Sigla, unidade.Nome)
+                : null,
             fase.CreatedAt);
     }
 }

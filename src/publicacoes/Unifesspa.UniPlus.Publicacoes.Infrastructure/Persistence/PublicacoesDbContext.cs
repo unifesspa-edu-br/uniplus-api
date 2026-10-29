@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 
 /// <summary>
 /// DbContext do módulo Publicações — o registro central dos atos normativos
-/// publicados por Reitoria, CEPS e CRCA (ADR-0105).
+/// publicados por Reitoria, CEPS e CGA (ADR-0105).
 ///
 /// Hospeda o cadastro de tipos de ato, o ato normativo append-only, o vínculo
 /// genérico ato↔entidade e o cache de Idempotency-Key (ADR-0027) adjacente. O

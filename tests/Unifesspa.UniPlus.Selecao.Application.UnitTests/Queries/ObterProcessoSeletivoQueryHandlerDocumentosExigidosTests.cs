@@ -24,7 +24,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
 {
     private static FaseCronograma FaseQualquer() => FaseCronograma.Criar(
-        1, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.NaExecucao,
+        1, Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao,
         agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
         produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
         bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;

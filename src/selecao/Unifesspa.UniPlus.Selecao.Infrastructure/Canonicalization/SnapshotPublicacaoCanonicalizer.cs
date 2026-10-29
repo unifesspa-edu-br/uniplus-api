@@ -359,8 +359,11 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// de <c>origemData</c> para <c>NoEdital</c> e <c>NaExecucao</c>. Sempre presente: nula só em
     /// rascunho, e a publicação a exige. Sem novo bloco de topo. Sem produção em ambiente nenhum:
     /// fixture nova, <c>0.0.37</c> deixa de ser reconhecida.
+    /// O bump para <c>0.0.39</c> retira de cada fase do cronograma o rótulo textual de dono:
+    /// quem responde pela fase é a <c>unidadeResponsavel</c>. Sem novo bloco de topo. Sem produção
+    /// em ambiente nenhum: fixture nova, <c>0.0.38</c> deixa de ser reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.38";
+    internal const string SchemaVersionAtual = "0.0.39";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -1769,7 +1772,6 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 ["ordem"] = fase.Ordem,
                 ["faseCanonicaOrigemId"] = fase.FaseCanonicaOrigemId,
                 ["codigo"] = HashCanonicalComputer.NormalizeNfc(fase.Codigo),
-                ["donoInstitucional"] = HashCanonicalComputer.NormalizeNfc(fase.DonoInstitucional),
                 ["origemData"] = fase.OrigemData.ToString(),
                 ["agrupaEtapas"] = fase.AgrupaEtapas,
                 ["permiteComplementacao"] = fase.PermiteComplementacao,

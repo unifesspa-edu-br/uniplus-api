@@ -171,7 +171,6 @@ public sealed class RecorteDeCompetenciaPersistenciaTests : IClassFixture<Proces
             ordem: 1,
             faseCanonicaOrigemId: faseCanonicaOrigemId,
             codigo: "ANALISE_DOCUMENTAL",
-            donoInstitucional: "CEPS",
             origemData: OrigemDataFase.NaExecucao,
             agrupaEtapas: false,
             permiteComplementacao: false,

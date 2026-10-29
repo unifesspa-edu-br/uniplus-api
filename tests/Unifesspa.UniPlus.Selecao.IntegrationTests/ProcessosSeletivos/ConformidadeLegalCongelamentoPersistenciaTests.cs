@@ -97,7 +97,6 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
             ordem: 1,
             faseCanonicaOrigemId: Guid.CreateVersion7(),
             codigo: "RESULTADO_FINAL",
-            donoInstitucional: "CEPS",
             origemData: OrigemDataFase.NoEdital,
             agrupaEtapas: true,
             permiteComplementacao: false,

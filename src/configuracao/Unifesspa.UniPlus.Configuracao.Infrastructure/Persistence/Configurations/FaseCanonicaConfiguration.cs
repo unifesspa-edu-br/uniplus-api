@@ -22,6 +22,8 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
     private const int DescricaoMaxLength = 300;
     private const int EnumTokenMaxLength = 30;
     private const int BaseLegalMaxLength = 500;
+    private const int UnidadeSiglaMaxLength = 50;
+    private const int UnidadeNomeMaxLength = 250;
     private const int AuditUserMaxLength = 255;
 
     public void Configure(EntityTypeBuilder<FaseCanonica> builder)
@@ -44,11 +46,6 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
 
         builder.Property(f => f.Descricao).HasMaxLength(DescricaoMaxLength);
 
-        builder.Property(f => f.DonoTipico)
-            .HasConversion<DonoTipicoValueConverter>()
-            .HasMaxLength(EnumTokenMaxLength)
-            .IsRequired();
-
         builder.Property(f => f.AgrupaEtapas).IsRequired().HasDefaultValue(false);
 
         builder.Property(f => f.PermiteComplementacao).IsRequired().HasDefaultValue(false);
@@ -63,6 +60,13 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
             .HasConversion<OrigemDataFaseValueConverter>()
             .HasMaxLength(EnumTokenMaxLength)
             .IsRequired();
+
+        // Snapshot-copy (ADR-0061) da unidade sugerida: o id sem FK e a cópia de sigla e nome,
+        // que o domínio grava e lê juntos — nulos quando a fase não tem sugestão.
+        builder.Property(f => f.UnidadeSugeridaOrigemId);
+        builder.Property(f => f.UnidadeSugeridaSigla).HasMaxLength(UnidadeSiglaMaxLength);
+        builder.Property(f => f.UnidadeSugeridaNome).HasMaxLength(UnidadeNomeMaxLength);
+        builder.Ignore(f => f.UnidadeSugerida);
 
         // Auditoria (IAuditableEntity)
         builder.Property(f => f.CreatedBy).HasMaxLength(AuditUserMaxLength);
@@ -104,7 +108,6 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
             Codigo = CodigoFase.Criar(item.Codigo).Value!,
             item.Nome,
             item.Descricao,
-            item.DonoTipico,
             item.OrigemData,
             item.ColetaInscricao,
             item.ColetaSolicitacaoIsencao,
@@ -127,11 +130,6 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
         table.HasCheckConstraint(
             "ck_fase_canonica_codigo_canonico",
             $"codigo IN ({TokensSql(FaseCanonicaCatalogo.Codigos)})");
-
-        // Domínio fechado do dono típico (quatro valores).
-        table.HasCheckConstraint(
-            "ck_fase_canonica_dono_tipico",
-            $"dono_tipico IN ({TokensSql(DonosTipicos.TokensCanonicos)})");
 
         // Domínio fechado da origem da data (dois valores).
         table.HasCheckConstraint(

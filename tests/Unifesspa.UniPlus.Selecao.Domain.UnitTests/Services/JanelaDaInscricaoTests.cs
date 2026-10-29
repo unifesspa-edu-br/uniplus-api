@@ -31,7 +31,7 @@ public sealed class JanelaDaInscricaoTests
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseCronograma.Criar(
-            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "INSCRICAO", donoInstitucional: "CEPS",
+            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "INSCRICAO",
             origemData: OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false,
             coletaInscricao: true, coletaSolicitacaoIsencao: false, inicio: Abertura, fim: Encerramento,
             produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
