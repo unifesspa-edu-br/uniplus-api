@@ -84,8 +84,10 @@ internal sealed class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
             permissao.HasKey("PerfilId", nameof(PermissaoDoPerfil.Codigo));
 
             permissao.HasData(
+                new { PerfilId = GestorDeAcessosId, Codigo = "autorizacao:concessoes:administrar" },
                 new { PerfilId = GestorDeAcessosId, Codigo = "autorizacao:perfis:manter" },
                 new { PerfilId = GestorDeAcessosId, Codigo = "autorizacao:permissoes:consultar-catalogo" },
+                new { PerfilId = EncarregadaDeDadosId, Codigo = "autorizacao:concessoes:administrar" },
                 new { PerfilId = EncarregadaDeDadosId, Codigo = "autorizacao:permissoes:consultar-catalogo" });
         });
 

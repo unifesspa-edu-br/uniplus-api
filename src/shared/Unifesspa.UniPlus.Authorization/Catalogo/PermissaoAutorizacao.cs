@@ -22,4 +22,14 @@ public enum PermissaoAutorizacao
         Sensibilidade.Interna,
         ReservadaAGovernanca = true)]
     PerfisManter = 2,
+
+    /// <summary>Administrar as concessões de acesso: consultar, ver a trilha e revogar.</summary>
+    [Permissao(
+        "autorizacao:concessoes:administrar",
+        "Administrar concessões de acesso",
+        "Consulta as concessões e a trilha de cada uma e revoga concessões, o que expõe quem tem acesso a quê, por pessoa.",
+        Sensibilidade.Pessoal,
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
+        ReservadaAGovernanca = true)]
+    ConcessoesAdministrar = 3,
 }

@@ -23,6 +23,130 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Concessao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("BeneficiarioEmissor")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("beneficiario_emissor");
+
+                    b.Property<string>("BeneficiarioSub")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("beneficiario_sub");
+
+                    b.Property<DateTimeOffset>("ConcedidaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("concedida_em");
+
+                    b.Property<string>("ConcedidaPorEmissor")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("concedida_por_emissor");
+
+                    b.Property<string>("ConcedidaPorSub")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("concedida_por_sub");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("EscopoTipo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("escopo_tipo");
+
+                    b.Property<string>("MotivoRevogacao")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("motivo_revogacao");
+
+                    b.Property<Guid>("OrigemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("origem_id");
+
+                    b.Property<string>("OrigemTipo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("origem_tipo");
+
+                    b.Property<Guid>("PerfilId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("perfil_id");
+
+                    b.Property<DateTimeOffset?>("RevogadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revogada_em");
+
+                    b.Property<string>("RevogadaPorEmissor")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("revogada_por_emissor");
+
+                    b.Property<string>("RevogadaPorSub")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("revogada_por_sub");
+
+                    b.Property<Guid?>("UnidadeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("unidade_id");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<DateTimeOffset?>("ValidaAte")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("valida_ate");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_concessoes");
+
+                    b.HasIndex("PerfilId")
+                        .HasDatabaseName("ix_concessoes_perfil_ativas")
+                        .HasFilter("revogada_em IS NULL");
+
+                    b.HasIndex("OrigemTipo", "OrigemId", "BeneficiarioEmissor", "BeneficiarioSub")
+                        .IsUnique()
+                        .HasDatabaseName("ux_concessoes_origem");
+
+                    b.HasIndex("BeneficiarioEmissor", "BeneficiarioSub", "PerfilId", "EscopoTipo", "UnidadeId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_concessoes_ativa_unica")
+                        .HasFilter("revogada_em IS NULL");
+
+                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("BeneficiarioEmissor", "BeneficiarioSub", "PerfilId", "EscopoTipo", "UnidadeId"), false);
+
+                    b.ToTable("concessoes", "autorizacao", t =>
+                        {
+                            t.HasCheckConstraint("ck_concessoes_escopo_unidade", "(escopo_tipo = 'unidade') = (unidade_id IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_concessoes_revogacao_completa", "(revogada_em IS NULL AND revogada_por_emissor IS NULL AND revogada_por_sub IS NULL AND motivo_revogacao IS NULL) OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NOT NULL AND revogada_por_sub IS NOT NULL AND motivo_revogacao IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_concessoes_validade_posterior", "valida_ate IS NULL OR valida_ate > concedida_em");
+                        });
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Perfil", b =>
                 {
                     b.Property<Guid>("Id")
@@ -175,6 +299,16 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                     b.ToTable("idempotency_cache", "autorizacao");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Concessao", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Perfil", null)
+                        .WithMany()
+                        .HasForeignKey("PerfilId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_concessoes_perfis_perfil_id");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Perfil", b =>
                 {
                     b.OwnsMany("Unifesspa.UniPlus.Autorizacao.Domain.Entities.PermissaoDoPerfil", "Permissoes", b1 =>
@@ -201,12 +335,22 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                                 new
                                 {
                                     PerfilId = new Guid("019a0000-0000-7000-8000-000000000001"),
+                                    Codigo = "autorizacao:concessoes:administrar"
+                                },
+                                new
+                                {
+                                    PerfilId = new Guid("019a0000-0000-7000-8000-000000000001"),
                                     Codigo = "autorizacao:perfis:manter"
                                 },
                                 new
                                 {
                                     PerfilId = new Guid("019a0000-0000-7000-8000-000000000001"),
                                     Codigo = "autorizacao:permissoes:consultar-catalogo"
+                                },
+                                new
+                                {
+                                    PerfilId = new Guid("019a0000-0000-7000-8000-000000000002"),
+                                    Codigo = "autorizacao:concessoes:administrar"
                                 },
                                 new
                                 {
