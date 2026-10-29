@@ -52,4 +52,11 @@ public sealed class PermissaoAttribute : Attribute
 
     /// <summary>Verificações contextuais adicionais que a decisão orquestra.</summary>
     public string[]? VerificacoesDeContexto { get; init; }
+
+    /// <summary>
+    /// A permissão só pode ser reunida por perfis de governança. Um perfil comum que a
+    /// reunisse criaria, na prática, um gestor de acessos sem o ato de designação e fora
+    /// da conta do mínimo de gestores.
+    /// </summary>
+    public bool ReservadaAGovernanca { get; init; }
 }

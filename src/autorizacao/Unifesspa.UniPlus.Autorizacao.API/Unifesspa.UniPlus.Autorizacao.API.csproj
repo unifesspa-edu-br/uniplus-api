@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Módulo interno do monólito modular: class library (não executável). Roda apenas
+    dentro da API UniPlus; não carrega Program/appsettings próprios. FrameworkReference
+    dá acesso ao ASP.NET Core (controllers, OpenAPI, DI) numa library.
+  -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="WolverineFx.Postgresql" />
+  </ItemGroup>
+
+  <!-- Implicit usings que o Sdk.Web adicionava e o Sdk padrão não traz. -->
+  <ItemGroup>
+    <Using Include="Microsoft.AspNetCore.Builder" />
+    <Using Include="Microsoft.AspNetCore.Http" />
+    <Using Include="Microsoft.AspNetCore.Routing" />
+    <Using Include="Microsoft.Extensions.Configuration" />
+    <Using Include="Microsoft.Extensions.DependencyInjection" />
+    <Using Include="Microsoft.Extensions.Hosting" />
+    <Using Include="Microsoft.Extensions.Logging" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Unifesspa.UniPlus.Autorizacao.Application\Unifesspa.UniPlus.Autorizacao.Application.csproj" />
+    <ProjectReference Include="..\Unifesspa.UniPlus.Autorizacao.Infrastructure\Unifesspa.UniPlus.Autorizacao.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

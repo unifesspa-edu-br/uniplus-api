@@ -1,5 +1,7 @@
 using Serilog;
 
+using Unifesspa.UniPlus.Autorizacao.API;
+using Unifesspa.UniPlus.Autorizacao.Application;
 using Unifesspa.UniPlus.Configuracao.API;
 using Unifesspa.UniPlus.Configuracao.Application;
 using Unifesspa.UniPlus.Discentes.API;
@@ -23,8 +25,8 @@ using Unifesspa.UniPlus.Selecao.API;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Messaging;
 
-// Composition root do monólito modular. Compõe os 6 módulos internos
-// (Selecao, Ingresso, Configuracao, OrganizacaoInstitucional, Publicacoes e Discentes)
+// Composition root do monólito modular. Compõe os 7 módulos internos
+// (Selecao, Ingresso, Configuracao, OrganizacaoInstitucional, Publicacoes, Discentes e Autorizacao)
 // num processo único, apontando todos para o banco `uniplus` (schema-por-módulo). Portal
 // segue deploy separado. Este assembly é o único que depende de múltiplos módulos
 // (composition root) — isento do fitness R8.
@@ -94,6 +96,7 @@ builder.Services.AddUniPlusCache(builder.Configuration, builder.Environment);
 // HATEOAS, idempotência, Application+Infrastructure e migrations on startup) ---
 builder.Services.AddConfiguracaoModule(builder.Configuration);
 builder.Services.AddOrganizacaoInstitucionalModule(builder.Configuration);
+builder.Services.AddAutorizacaoModule(builder.Configuration);
 builder.Services.AddSelecaoModule(builder.Configuration);
 builder.Services.AddIngressoModule(builder.Configuration);
 builder.Services.AddPublicacoesModule(builder.Configuration);
@@ -103,7 +106,7 @@ builder.Services.AddPublicacoesModule(builder.Configuration);
 // entram quando o módulo ganhar endpoints/handlers.
 builder.Services.AddDiscentesModule(builder.Configuration);
 
-// Health checks: os 6 módulos compartilham o banco `uniplus`, então um
+// Health checks: os 7 módulos compartilham o banco `uniplus`, então um
 // único check de banco + infra (Redis/MinIO/Kafka/OIDC) cobre o processo.
 builder.Services.AddUniPlusHealthChecks(builder.Configuration, connectionStringName: "UniPlusDb");
 
@@ -125,6 +128,7 @@ builder.Host.UseWolverineOutboxCascading(
     {
         opts.Discovery.IncludeAssembly(typeof(ConfiguracaoApplicationServiceRegistration).Assembly);
         opts.Discovery.IncludeAssembly(typeof(OrganizacaoInstitucionalApplicationServiceRegistration).Assembly);
+        opts.Discovery.IncludeAssembly(typeof(AutorizacaoApplicationServiceRegistration).Assembly);
         opts.Discovery.IncludeAssembly(typeof(PublicacoesApplicationServiceRegistration).Assembly);
         opts.Discovery.IncludeAssembly(typeof(CriarProcessoSeletivoCommand).Assembly);
         opts.Discovery.IncludeAssembly(typeof(ProcessoPublicadoToKafkaCascadeHandler).Assembly);
@@ -149,6 +153,7 @@ builder.Host.UseWolverineOutboxCascading(
         SelecaoCodegenRegistration.ConfigurarCodegenWolverine(opts);
         ConfiguracaoCodegenRegistration.ConfigurarCodegenWolverine(opts);
         OrganizacaoInstitucionalCodegenRegistration.ConfigurarCodegenWolverine(opts);
+        AutorizacaoCodegenRegistration.ConfigurarCodegenWolverine(opts);
         PublicacoesCodegenRegistration.ConfigurarCodegenWolverine(opts);
         DiscentesCodegenRegistration.ConfigurarCodegenWolverine(opts);
 

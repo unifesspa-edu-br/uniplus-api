@@ -36,6 +36,9 @@
     <ProjectReference Include="../../src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.Domain/Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.csproj" />
     <ProjectReference Include="../../src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.Application/Unifesspa.UniPlus.OrganizacaoInstitucional.Application.csproj" />
     <ProjectReference Include="../../src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure/Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/autorizacao/Unifesspa.UniPlus.Autorizacao.Domain/Unifesspa.UniPlus.Autorizacao.Domain.csproj" />
+    <ProjectReference Include="../../src/autorizacao/Unifesspa.UniPlus.Autorizacao.Application/Unifesspa.UniPlus.Autorizacao.Application.csproj" />
+    <ProjectReference Include="../../src/autorizacao/Unifesspa.UniPlus.Autorizacao.Infrastructure/Unifesspa.UniPlus.Autorizacao.Infrastructure.csproj" />
     <ProjectReference Include="../../src/configuracao/Unifesspa.UniPlus.Configuracao.Domain/Unifesspa.UniPlus.Configuracao.Domain.csproj" />
     <ProjectReference Include="../../src/configuracao/Unifesspa.UniPlus.Configuracao.Application/Unifesspa.UniPlus.Configuracao.Application.csproj" />
     <ProjectReference Include="../../src/configuracao/Unifesspa.UniPlus.Configuracao.Contracts/Unifesspa.UniPlus.Configuracao.Contracts.csproj" />

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Kernel\Unifesspa.UniPlus.Kernel.csproj" />
+    <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Application.Abstractions\Unifesspa.UniPlus.Application.Abstractions.csproj" />
+    <!-- O catálogo de permissões é a fonte de nome e sensibilidade que a resposta do perfil exibe. -->
+    <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Authorization\Unifesspa.UniPlus.Authorization.csproj" />
+    <ProjectReference Include="..\Unifesspa.UniPlus.Autorizacao.Domain\Unifesspa.UniPlus.Autorizacao.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Unifesspa.UniPlus.Autorizacao.Application.UnitTests" />
+  </ItemGroup>
+
+</Project>
