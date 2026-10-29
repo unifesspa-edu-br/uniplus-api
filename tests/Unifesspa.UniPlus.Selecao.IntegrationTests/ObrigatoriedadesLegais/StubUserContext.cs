@@ -23,6 +23,7 @@ internal sealed class StubUserContext : IUserContext
 
     public string? NomeCompleto => null;
     public string? Email => null;
+    public bool EmailVerificado => false;
     public string? Cpf => null;
     public string? NomeSocial => null;
     public IReadOnlyList<string> Roles => [];

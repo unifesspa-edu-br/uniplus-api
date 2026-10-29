@@ -42,6 +42,7 @@ public sealed class RevogarConcessaoCommandHandlerTests
         public string? Name => null;
         public string? NomeCompleto => null;
         public string? Email => null;
+        public bool EmailVerificado => false;
         public string? Cpf => null;
         public string? NomeSocial => null;
         public IReadOnlyList<string> Roles => [];

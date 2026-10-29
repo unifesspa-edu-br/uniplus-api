@@ -814,7 +814,9 @@
           "Serilog.AspNetCore": "[10.0.0, )",
           "Unifesspa.UniPlus.Autorizacao.Application": "[1.0.0, )",
           "Unifesspa.UniPlus.Autorizacao.Infrastructure": "[1.0.0, )",
-          "WolverineFx.Postgresql": "[5.41.0, )"
+          "Unifesspa.UniPlus.Verificador.Contratos": "[1.0.0, )",
+          "WolverineFx.Postgresql": "[5.41.0, )",
+          "WolverineFx.RabbitMQ": "[5.41.0, )"
         }
       },
       "unifesspa.uniplus.autorizacao.application": {
@@ -825,7 +827,8 @@
           "Unifesspa.UniPlus.Application.Abstractions": "[1.0.0, )",
           "Unifesspa.UniPlus.Authorization": "[1.0.0, )",
           "Unifesspa.UniPlus.Autorizacao.Domain": "[1.0.0, )",
-          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
+          "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
+          "Unifesspa.UniPlus.Verificador.Contratos": "[1.0.0, )"
         }
       },
       "unifesspa.uniplus.autorizacao.domain": {

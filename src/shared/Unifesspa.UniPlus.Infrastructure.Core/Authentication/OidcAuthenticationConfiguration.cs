@@ -111,7 +111,10 @@ public static class OidcAuthenticationConfiguration
         // a role "candidato" (mapeada de realm_access.roles por KeycloakRolesClaimsTransformation)
         // é quem de fato distingue a pessoa física inscrita de um usuário institucional.
         services.AddAuthorizationBuilder()
-            .AddPolicy("Candidato", policy => policy.RequireClaim("cpf").RequireRole("candidato"));
+            .AddPolicy("Candidato", policy => policy.RequireClaim("cpf").RequireRole("candidato"))
+            // "Instalacao": a única exceção a "o token não concede acesso" — o papel de realm só habilita
+            // a instalação dos primeiros gestores de acessos, que o segundo fator por e-mail confirma.
+            .AddPolicy("Instalacao", policy => policy.RequireRole("uniplus-instalacao"));
 
         return services;
     }

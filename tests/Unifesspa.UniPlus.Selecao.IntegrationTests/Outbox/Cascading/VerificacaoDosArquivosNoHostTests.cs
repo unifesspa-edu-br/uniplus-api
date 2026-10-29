@@ -60,14 +60,32 @@ public sealed class VerificacaoDosArquivosNoHostTests
             .ArquivosDaApresentacao.AsNoTracking().SingleAsync(a => a.Id == id);
     }
 
+    private static async Task AguardarAsync(Func<Task<bool>> condicao)
+    {
+        DateTime fim = DateTime.UtcNow.AddSeconds(30);
+        while (DateTime.UtcNow < fim)
+        {
+            if (await condicao())
+            {
+                return;
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(200));
+        }
+    }
+
     [Fact(DisplayName = "O resultado do verificador chega pelo barramento e o arquivo termina verificado")]
     public async Task Resultado_PeloBarramento_RegistraOVeredicto()
     {
         Guid id = await SemearEmVerificacaoAsync(DateTimeOffset.UtcNow);
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
 
-        await scope.ServiceProvider.GetRequiredService<IMessageBus>().InvokeAsync(
+        // O handler é preso à fila de resultados: o resultado entra por ela, como o verificador o publica, e a
+        // invocação local, que não passa por fila, não encontra handler.
+        await scope.ServiceProvider.GetRequiredService<IMessageBus>().EndpointFor(FilasDaVerificacao.Resultados).SendAsync(
             new ResultadoDaVerificacaoDeArquivo(id, VeredictoDaVerificacao.Verificado, MotivoDaRecusa.NaoSeAplica, new string('c', 64), 1024, FormatoDoArquivo.Pdf));
+
+        await AguardarAsync(async () => (await LerAsync(id)).Situacao == SituacaoDoArquivoDoCandidato.Verificado);
 
         ArquivoDaApresentacao arquivo = await LerAsync(id);
         arquivo.Situacao.Should().Be(SituacaoDoArquivoDoCandidato.Verificado);

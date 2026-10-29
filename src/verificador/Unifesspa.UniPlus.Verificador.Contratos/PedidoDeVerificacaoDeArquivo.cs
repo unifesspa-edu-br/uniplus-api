@@ -10,10 +10,12 @@ namespace Unifesspa.UniPlus.Verificador.Contratos;
 /// <param name="ChaveDefinitiva">A chave em que o verificador promove o arquivo limpo.</param>
 /// <param name="FormatoDeclarado">O formato que o candidato declarou ao enviar.</param>
 /// <param name="TamanhoMaximoBytes">O máximo da exigência, nunca acima de 20 MB.</param>
+/// <param name="Destino">Quem consome o resultado; ausente no pedido vale <see cref="DestinoDoResultado.Selecao"/>.</param>
 public sealed record PedidoDeVerificacaoDeArquivo(
     Guid ArquivoId,
     string ChaveDeEnvio,
     string ETag,
     string ChaveDefinitiva,
     FormatoDoArquivo FormatoDeclarado,
-    long TamanhoMaximoBytes);
+    long TamanhoMaximoBytes,
+    DestinoDoResultado Destino = DestinoDoResultado.Selecao);

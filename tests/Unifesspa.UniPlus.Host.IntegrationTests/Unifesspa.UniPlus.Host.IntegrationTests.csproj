@@ -30,9 +30,15 @@
     <ProjectReference Include="../../src/publicacoes/Unifesspa.UniPlus.Publicacoes.Application/Unifesspa.UniPlus.Publicacoes.Application.csproj" />
     <ProjectReference Include="..\..\src\discentes\Unifesspa.UniPlus.Discentes.Infrastructure\Unifesspa.UniPlus.Discentes.Infrastructure.csproj" />
     <ProjectReference Include="../../src/shared/Unifesspa.UniPlus.Governance.Contracts/Unifesspa.UniPlus.Governance.Contracts.csproj" />
+    <!-- O verificador real roda em processo na suíte da instalação: prova o contrato de ponta a ponta, da fila de pedidos à de resultados. -->
+    <ProjectReference Include="../../src/verificador/Unifesspa.UniPlus.Verificador/Unifesspa.UniPlus.Verificador.csproj" />
     <ProjectReference Include="../../src/shared/Unifesspa.UniPlus.Infrastructure.Core/Unifesspa.UniPlus.Infrastructure.Core.csproj" />
     <ProjectReference Include="../Unifesspa.UniPlus.IntegrationTests.Fixtures/Unifesspa.UniPlus.IntegrationTests.Fixtures.csproj" />
     <ProjectReference Include="../Unifesspa.UniPlus.Monolito.TestSupport/Unifesspa.UniPlus.Monolito.TestSupport.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../Unifesspa.UniPlus.Verificador.UnitTests/Fixtures/sem-senha.pdf" Link="Instalacao/sem-senha.pdf" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

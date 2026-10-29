@@ -32,7 +32,7 @@ public static class RevogarConcessaoCommandHandler
 
         // O ponto de decisão já exige emissor e sub, mas o handler não presume: sem autor
         // identificado a revogação não é gravada, e a recusa não vira 500.
-        if (string.IsNullOrWhiteSpace(userContext.Issuer) || string.IsNullOrWhiteSpace(userContext.UserId))
+        if (IdentidadeDoToken.De(userContext) is not { } revogadaPor)
         {
             return Result.Failure(ConcessaoHandlerErros.AutorNaoIdentificado());
         }
@@ -44,7 +44,6 @@ public static class RevogarConcessaoCommandHandler
         }
 
         DateTimeOffset agora = timeProvider.GetUtcNow();
-        Identidade revogadaPor = new(userContext.Issuer, userContext.UserId);
 
         // Só a concessão que hoje conta como gestor reduz o número de gestores; revogar uma
         // vencida ou fora da instituição não muda a conta.
@@ -84,7 +83,8 @@ public static class RevogarConcessaoCommandHandler
         catch (Exception ex) when (ConcessaoViolacoes.EhConflitoDeConcorrencia(ex))
         {
             // Duas revogações a partir da mesma versão não se misturam. Traduzir aqui, e não
-            // deixar propagar, completa a entrada de idempotência normalmente (ADR-0119).
+            // deixar propagar, devolve 409 em vez de 500 e libera a chave de idempotência
+            // para nova tentativa, já que nada foi gravado (ADR-0119, ADR-0027).
             unitOfWork.DescartarAlteracoesNaoSalvas();
             return Result.Failure(ConcessaoHandlerErros.ConflitoDeConcorrencia());
         }

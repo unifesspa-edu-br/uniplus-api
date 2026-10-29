@@ -10,6 +10,8 @@
     <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Application.Abstractions\Unifesspa.UniPlus.Application.Abstractions.csproj" />
     <!-- O catálogo de permissões é a fonte de nome e sensibilidade que a resposta do perfil exibe. -->
     <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Authorization\Unifesspa.UniPlus.Authorization.csproj" />
+    <!-- O pedido e o resultado da verificação do PDF de designação, as mesmas mensagens da fila dos documentos do candidato (ADR-0146). -->
+    <ProjectReference Include="..\..\verificador\Unifesspa.UniPlus.Verificador.Contratos\Unifesspa.UniPlus.Verificador.Contratos.csproj" />
     <ProjectReference Include="..\Unifesspa.UniPlus.Autorizacao.Domain\Unifesspa.UniPlus.Autorizacao.Domain.csproj" />
   </ItemGroup>
 

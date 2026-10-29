@@ -15,6 +15,7 @@ internal static class OidcClaims
     public const string FamilyName = "family_name";
     public const string PreferredUsername = "preferred_username";
     public const string Email = "email";
+    public const string EmailVerified = "email_verified";
     public const string Iss = "iss";
     public const string Jti = "jti";
 }

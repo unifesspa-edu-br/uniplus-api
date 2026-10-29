@@ -23,6 +23,9 @@ public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationScheme
     public const string UserIdHeader = "X-Test-User-Id";
     public const string NameHeader = "X-Test-Name";
     public const string EmailHeader = "X-Test-Email";
+
+    /// <summary>Valor do claim <c>email_verified</c>; sem o header o e-mail do token vale como verificado.</summary>
+    public const string EmailVerifiedHeader = "X-Test-Email-Verified";
     public const string RolesHeader = "X-Test-Roles";
 
     /// <summary>
@@ -77,6 +80,7 @@ public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationScheme
             new("sub", GetHeaderValue(UserIdHeader, "test-user-id")),
             new("name", GetHeaderValue(NameHeader, "Test User")),
             new("email", GetHeaderValue(EmailHeader, "test@unifesspa.edu.br")),
+            new("email_verified", GetHeaderValue(EmailVerifiedHeader, "true")),
 
             // O emissor e o identificador de sessão não são opcionais para o
             // ponto de decisão: sem eles o sujeito não se monta e toda decisão

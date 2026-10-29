@@ -1365,7 +1365,9 @@
           "Serilog.AspNetCore": "[10.0.0, )",
           "Unifesspa.UniPlus.Autorizacao.Application": "[1.0.0, )",
           "Unifesspa.UniPlus.Autorizacao.Infrastructure": "[1.0.0, )",
-          "WolverineFx.Postgresql": "[5.41.0, )"
+          "Unifesspa.UniPlus.Verificador.Contratos": "[1.0.0, )",
+          "WolverineFx.Postgresql": "[5.41.0, )",
+          "WolverineFx.RabbitMQ": "[5.41.0, )"
         }
       },
       "unifesspa.uniplus.autorizacao.application": {
@@ -1376,7 +1378,8 @@
           "Unifesspa.UniPlus.Application.Abstractions": "[1.0.0, )",
           "Unifesspa.UniPlus.Authorization": "[1.0.0, )",
           "Unifesspa.UniPlus.Autorizacao.Domain": "[1.0.0, )",
-          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
+          "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
+          "Unifesspa.UniPlus.Verificador.Contratos": "[1.0.0, )"
         }
       },
       "unifesspa.uniplus.autorizacao.domain": {
@@ -1758,6 +1761,20 @@
           "Unifesspa.UniPlus.Selecao.Application": "[1.0.0, )"
         }
       },
+      "unifesspa.uniplus.verificador": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.Hosting": "[10.0.0, )",
+          "Minio": "[7.0.0, )",
+          "OpenTelemetry.Exporter.OpenTelemetryProtocol": "[1.20.0, )",
+          "OpenTelemetry.Extensions.Hosting": "[1.20.0, )",
+          "OpenTelemetry.Instrumentation.Runtime": "[1.20.0, )",
+          "PdfPig": "[0.1.16, )",
+          "Unifesspa.UniPlus.Verificador.Contratos": "[1.0.0, )",
+          "WolverineFx": "[5.41.0, )",
+          "WolverineFx.RabbitMQ": "[5.41.0, )"
+        }
+      },
       "unifesspa.uniplus.verificador.contratos": {
         "type": "Project"
       },
@@ -2015,6 +2032,12 @@
         "dependencies": {
           "OpenTelemetry.Api": "[1.20.0, 2.0.0)"
         }
+      },
+      "PdfPig": {
+        "type": "CentralTransitive",
+        "requested": "[0.1.16, )",
+        "resolved": "0.1.16",
+        "contentHash": "qQcbsNMYVY+K5ELptax2S8thNMk0+rSQq3H/KdYj3LLcko8yTCz8y5KIvsKxIyAuTN0ZYNnfsZkM+0EvxTwHVA=="
       },
       "Refit": {
         "type": "CentralTransitive",

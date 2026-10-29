@@ -13,5 +13,6 @@ public interface IEventosDaOrigem
     /// <summary>A origem que esta implementação conhece.</summary>
     TipoDeOrigem Tipo { get; }
 
-    Task<IReadOnlyList<EventoDaTrilhaDto>> ListarAsync(Guid origemId, CancellationToken cancellationToken);
+    /// <summary>Os eventos da origem, ou nulo quando ela não existe.</summary>
+    Task<IReadOnlyList<EventoDaTrilhaDto>?> ObterAsync(Guid origemId, CancellationToken cancellationToken);
 }

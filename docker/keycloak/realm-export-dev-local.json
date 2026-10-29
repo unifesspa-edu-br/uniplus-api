@@ -202,6 +202,15 @@
         "clientRole": false,
         "containerId": "668e81ac-75c5-47bf-bf97-87d96342c899",
         "attributes": {}
+      },
+      {
+        "id": "030af533-2c00-47f6-bc35-96372317dcc7",
+        "name": "uniplus-instalacao",
+        "description": "Habilita só a instalação dos primeiros gestores de acessos (documento de designação e código por e-mail); não concede nenhum outro acesso.",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "668e81ac-75c5-47bf-bf97-87d96342c899",
+        "attributes": {}
       }
     ],
     "client": {

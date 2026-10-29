@@ -2,9 +2,13 @@ namespace Unifesspa.UniPlus.Verificador.UnitTests;
 
 using AwesomeAssertions;
 
+using NSubstitute;
+
 using Unifesspa.UniPlus.Verificador.Antivirus;
 using Unifesspa.UniPlus.Verificador.Armazenamento;
 using Unifesspa.UniPlus.Verificador.Contratos;
+
+using Wolverine;
 
 public sealed class VerificarArquivoHandlerTests
 {
@@ -14,7 +18,7 @@ public sealed class VerificarArquivoHandlerTests
         ArmazenamentoFalso armazenamento = new() { Envio = Cenario.EnvioComETag(Cenario.ETag), Conteudo = Cenario.Fixture("senha-de-abertura.pdf") };
         ClamdFalso clamd = new();
 
-        ResultadoDaVerificacaoDeArquivo resultado = await Cenario.Handler(armazenamento, clamd).Handle(Cenario.Pedido(), CancellationToken.None);
+        ResultadoDaVerificacaoDeArquivo resultado = await Cenario.Handler(armazenamento, clamd).Verificar(Cenario.Pedido(), CancellationToken.None);
 
         resultado.Veredicto.Should().Be(VeredictoDaVerificacao.Recusado);
         resultado.Motivo.Should().Be(MotivoDaRecusa.PdfComSenha);
@@ -30,7 +34,7 @@ public sealed class VerificarArquivoHandlerTests
         ArmazenamentoFalso armazenamento = new() { Envio = Cenario.EnvioComETag(Cenario.ETag), Conteudo = Cenario.Fixture(fixture) };
         ClamdFalso clamd = new();
 
-        ResultadoDaVerificacaoDeArquivo resultado = await Cenario.Handler(armazenamento, clamd).Handle(Cenario.Pedido(), CancellationToken.None);
+        ResultadoDaVerificacaoDeArquivo resultado = await Cenario.Handler(armazenamento, clamd).Verificar(Cenario.Pedido(), CancellationToken.None);
 
         resultado.Veredicto.Should().Be(VeredictoDaVerificacao.Verificado);
         resultado.HashSha256.Should().HaveLength(64);
@@ -46,7 +50,7 @@ public sealed class VerificarArquivoHandlerTests
         ArmazenamentoFalso armazenamento = new() { Definitivo = new ObjetoArmazenado("\"d\"", 2048, "abc123", Cenario.ETag), Envio = Cenario.EnvioComETag(Cenario.ETag) };
         ClamdFalso clamd = new();
 
-        ResultadoDaVerificacaoDeArquivo resultado = await Cenario.Handler(armazenamento, clamd).Handle(Cenario.Pedido(), CancellationToken.None);
+        ResultadoDaVerificacaoDeArquivo resultado = await Cenario.Handler(armazenamento, clamd).Verificar(Cenario.Pedido(), CancellationToken.None);
 
         resultado.Veredicto.Should().Be(VeredictoDaVerificacao.Verificado);
         resultado.HashSha256.Should().Be("abc123");
@@ -61,7 +65,7 @@ public sealed class VerificarArquivoHandlerTests
     {
         ArmazenamentoFalso armazenamento = new() { Definitivo = new ObjetoArmazenado("\"d\"", 2048, null, Cenario.ETag) };
 
-        ResultadoDaVerificacaoDeArquivo resultado = await Cenario.Handler(armazenamento, new ClamdFalso()).Handle(Cenario.Pedido(), CancellationToken.None);
+        ResultadoDaVerificacaoDeArquivo resultado = await Cenario.Handler(armazenamento, new ClamdFalso()).Verificar(Cenario.Pedido(), CancellationToken.None);
 
         resultado.Veredicto.Should().Be(VeredictoDaVerificacao.Recusado);
         resultado.Motivo.Should().Be(MotivoDaRecusa.NaoPassouNaVerificacaoDeSeguranca);
@@ -73,7 +77,7 @@ public sealed class VerificarArquivoHandlerTests
         ArmazenamentoFalso armazenamento = new() { Envio = Cenario.EnvioComETag(Cenario.ETag), Conteudo = Cenario.Fixture("sem-senha.pdf") };
         ClamdFalso clamd = new() { Falha = new ClamdErroPermanenteException("INSTREAM size limit exceeded. ERROR") };
 
-        ResultadoDaVerificacaoDeArquivo resultado = await Cenario.Handler(armazenamento, clamd).Handle(Cenario.Pedido(), CancellationToken.None);
+        ResultadoDaVerificacaoDeArquivo resultado = await Cenario.Handler(armazenamento, clamd).Verificar(Cenario.Pedido(), CancellationToken.None);
 
         resultado.Veredicto.Should().Be(VeredictoDaVerificacao.Recusado);
         resultado.Motivo.Should().Be(MotivoDaRecusa.NaoPassouNaVerificacaoDeSeguranca);
@@ -85,7 +89,7 @@ public sealed class VerificarArquivoHandlerTests
     {
         ArmazenamentoFalso armazenamento = new() { Envio = Cenario.EnvioComETag(Cenario.ETag), Conteudo = Cenario.Fixture("sem-senha.pdf") };
         ClamdFalso clamd = new() { Falha = new ClamdIndisponivelException("fora do ar") };
-        Func<Task> acao = () => Cenario.Handler(armazenamento, clamd).Handle(Cenario.Pedido(), CancellationToken.None);
+        Func<Task> acao = () => Cenario.Handler(armazenamento, clamd).Verificar(Cenario.Pedido(), CancellationToken.None);
 
         await acao.Should().ThrowAsync<ClamdIndisponivelException>();
     }
@@ -95,7 +99,7 @@ public sealed class VerificarArquivoHandlerTests
     {
         ArmazenamentoFalso armazenamento = new() { Envio = Cenario.EnvioComETag(Cenario.ETag), Conteudo = Cenario.Fixture("sem-senha.pdf") };
 
-        await Cenario.Handler(armazenamento, new ClamdFalso()).Handle(Cenario.Pedido(), CancellationToken.None);
+        await Cenario.Handler(armazenamento, new ClamdFalso()).Verificar(Cenario.Pedido(), CancellationToken.None);
 
         armazenamento.ContentTypePromovido.Should().Be("application/pdf");
     }
@@ -105,7 +109,7 @@ public sealed class VerificarArquivoHandlerTests
     {
         ArmazenamentoFalso armazenamento = new() { Envio = Cenario.EnvioComETag("\"outra-versao\"") };
 
-        ResultadoDaVerificacaoDeArquivo resultado = await Cenario.Handler(armazenamento, new ClamdFalso()).Handle(Cenario.Pedido(), CancellationToken.None);
+        ResultadoDaVerificacaoDeArquivo resultado = await Cenario.Handler(armazenamento, new ClamdFalso()).Verificar(Cenario.Pedido(), CancellationToken.None);
 
         resultado.Veredicto.Should().Be(VeredictoDaVerificacao.ReenvioNecessario);
         armazenamento.Leituras.Should().Be(0);
@@ -116,7 +120,7 @@ public sealed class VerificarArquivoHandlerTests
     {
         ArmazenamentoFalso armazenamento = new() { Envio = Cenario.EnvioComETag(Cenario.ETag), VersaoLegivel = false };
 
-        ResultadoDaVerificacaoDeArquivo resultado = await Cenario.Handler(armazenamento, new ClamdFalso()).Handle(Cenario.Pedido(), CancellationToken.None);
+        ResultadoDaVerificacaoDeArquivo resultado = await Cenario.Handler(armazenamento, new ClamdFalso()).Verificar(Cenario.Pedido(), CancellationToken.None);
 
         resultado.Veredicto.Should().Be(VeredictoDaVerificacao.ReenvioNecessario);
     }
@@ -131,7 +135,7 @@ public sealed class VerificarArquivoHandlerTests
             DefinitivoAoLer = new ObjetoArmazenado("\"d\"", 2048, "abc123", Cenario.ETag),
         };
 
-        ResultadoDaVerificacaoDeArquivo resultado = await Cenario.Handler(armazenamento, new ClamdFalso()).Handle(Cenario.Pedido(), CancellationToken.None);
+        ResultadoDaVerificacaoDeArquivo resultado = await Cenario.Handler(armazenamento, new ClamdFalso()).Verificar(Cenario.Pedido(), CancellationToken.None);
 
         resultado.Veredicto.Should().Be(VeredictoDaVerificacao.Verificado);
         resultado.HashSha256.Should().Be("abc123");
@@ -144,7 +148,7 @@ public sealed class VerificarArquivoHandlerTests
         ArmazenamentoFalso armazenamento = new() { Envio = Cenario.EnvioComETag(Cenario.ETag, tamanho: maximo + 1) };
 
         ResultadoDaVerificacaoDeArquivo resultado = await Cenario.Handler(armazenamento, new ClamdFalso())
-            .Handle(Cenario.Pedido(maximo: maximo), CancellationToken.None);
+            .Verificar(Cenario.Pedido(maximo: maximo), CancellationToken.None);
 
         resultado.Veredicto.Should().Be(VeredictoDaVerificacao.Recusado);
         resultado.Motivo.Should().Be(MotivoDaRecusa.TamanhoExcedido);
@@ -158,7 +162,7 @@ public sealed class VerificarArquivoHandlerTests
         ClamdFalso clamd = new();
 
         ResultadoDaVerificacaoDeArquivo resultado = await Cenario.Handler(armazenamento, clamd)
-            .Handle(Cenario.Pedido(FormatoDoArquivo.Png), CancellationToken.None);
+            .Verificar(Cenario.Pedido(FormatoDoArquivo.Png), CancellationToken.None);
 
         resultado.Motivo.Should().Be(MotivoDaRecusa.FormatoNaoCorresponde);
         clamd.Verificacoes.Should().Be(0);
@@ -170,7 +174,7 @@ public sealed class VerificarArquivoHandlerTests
         ArmazenamentoFalso armazenamento = new() { Envio = Cenario.EnvioComETag(Cenario.ETag), Conteudo = Cenario.Fixture("sem-senha.pdf") };
         ClamdFalso clamd = new() { Resposta = new ResultadoDoClamd(true, "Eicar-Test-Signature") };
 
-        ResultadoDaVerificacaoDeArquivo resultado = await Cenario.Handler(armazenamento, clamd).Handle(Cenario.Pedido(), CancellationToken.None);
+        ResultadoDaVerificacaoDeArquivo resultado = await Cenario.Handler(armazenamento, clamd).Verificar(Cenario.Pedido(), CancellationToken.None);
 
         resultado.Motivo.Should().Be(MotivoDaRecusa.NaoPassouNaVerificacaoDeSeguranca);
         resultado.HashSha256.Should().BeNull();
@@ -195,7 +199,7 @@ public sealed class VerificarArquivoHandlerTests
     {
         ArmazenamentoFalso armazenamento = new() { Envio = Cenario.EnvioComETag(Cenario.ETag), Conteudo = Cenario.Fixture("sem-senha.pdf") };
         ClamdFalso clamd = new();
-        Func<Task> acao = () => Cenario.Handler(new ArmazenamentoQueFalha(armazenamento), clamd).Handle(Cenario.Pedido(), CancellationToken.None);
+        Func<Task> acao = () => Cenario.Handler(new ArmazenamentoQueFalha(armazenamento), clamd).Verificar(Cenario.Pedido(), CancellationToken.None);
 
         await acao.Should().ThrowAsync<ArmazenamentoException>();
     }
@@ -216,5 +220,34 @@ public sealed class VerificarArquivoHandlerTests
 
         public Task RemoverEnvioAsync(string chave, string etag, CancellationToken cancellationToken) =>
             throw new ArmazenamentoException("403");
+    }
+
+    [Theory(DisplayName = "O resultado vai para a fila de resultados do destino do pedido")]
+    [InlineData(DestinoDoResultado.Selecao, FilasDaVerificacao.Resultados)]
+    [InlineData(DestinoDoResultado.Autorizacao, FilasDaVerificacao.ResultadosAutorizacao)]
+    public async Task Resultado_VaiParaAFilaDoDestino(DestinoDoResultado destino, string fila)
+    {
+        ArmazenamentoFalso armazenamento = new() { Envio = Cenario.EnvioComETag(Cenario.ETag), Conteudo = Cenario.Fixture("sem-senha.pdf") };
+        IMessageBus bus = Substitute.For<IMessageBus>();
+        IDestinationEndpoint endpoint = Substitute.For<IDestinationEndpoint>();
+        bus.EndpointFor(fila).Returns(endpoint);
+
+        await Cenario.Handler(armazenamento, new ClamdFalso())
+            .Handle(Cenario.Pedido() with { Destino = destino }, bus, CancellationToken.None);
+
+        await endpoint.Received(1).SendAsync(Arg.Is<ResultadoDaVerificacaoDeArquivo>(r => r.Veredicto == VeredictoDaVerificacao.Verificado));
+        bus.Received(1).EndpointFor(Arg.Any<string>());
+    }
+
+    [Fact(DisplayName = "Destino fora do conjunto fechado é defeito do pedido e não publica nada")]
+    public async Task DestinoDesconhecido_NaoPublica()
+    {
+        IMessageBus bus = Substitute.For<IMessageBus>();
+
+        Func<Task> acao = () => Cenario.Handler(new ArmazenamentoFalso(), new ClamdFalso())
+            .Handle(Cenario.Pedido() with { Destino = (DestinoDoResultado)7 }, bus, CancellationToken.None);
+
+        await acao.Should().ThrowAsync<InvalidOperationException>();
+        bus.DidNotReceive().EndpointFor(Arg.Any<string>());
     }
 }

@@ -11,9 +11,11 @@ using Unifesspa.UniPlus.Verificador.Configuracao;
 using Unifesspa.UniPlus.Verificador.Contratos;
 using Unifesspa.UniPlus.Verificador.Observabilidade;
 
+using Wolverine;
+
 /// <summary>
-/// Verifica o arquivo do pedido e devolve o veredicto (ADR-0146). O Wolverine publica o retorno na
-/// fila de resultados e só confirma o pedido depois disso. É idempotente: a reentrega de um
+/// Verifica o arquivo do pedido e publica o veredicto na fila de resultados do destino (ADR-0146). O pedido só é
+/// confirmado depois de a publicação ser confirmada. É idempotente: a reentrega de um
 /// arquivo já promovido devolve o mesmo veredicto sem copiar de novo.
 /// </summary>
 public sealed partial class VerificarArquivoHandler
@@ -44,7 +46,26 @@ public sealed partial class VerificarArquivoHandler
         _logger = logger;
     }
 
-    public async Task<ResultadoDaVerificacaoDeArquivo> Handle(PedidoDeVerificacaoDeArquivo pedido, CancellationToken cancellationToken)
+    /// <summary>
+    /// Verifica o arquivo e publica o resultado na fila do destino do pedido, antes de o pedido ser confirmado.
+    /// </summary>
+    public async Task Handle(PedidoDeVerificacaoDeArquivo pedido, IMessageBus bus, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(pedido);
+        ArgumentNullException.ThrowIfNull(bus);
+
+        // O destino é um conjunto fechado: um valor fora dele é defeito do pedido e vai para a fila de erro, sem
+        // inventar uma fila.
+        if (!Enum.IsDefined(pedido.Destino))
+        {
+            throw new InvalidOperationException($"O pedido do arquivo {pedido.ArquivoId} traz um destino de resultado desconhecido ({(int)pedido.Destino}).");
+        }
+
+        ResultadoDaVerificacaoDeArquivo resultado = await Verificar(pedido, cancellationToken).ConfigureAwait(false);
+        await bus.EndpointFor(FilasDaVerificacao.ResultadosDe(pedido.Destino)).SendAsync(resultado).ConfigureAwait(false);
+    }
+
+    public async Task<ResultadoDaVerificacaoDeArquivo> Verificar(PedidoDeVerificacaoDeArquivo pedido, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(pedido);
 
