@@ -1,7 +1,10 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Authentication;
 
+using System.Security.Claims;
+
 using AwesomeAssertions;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -81,6 +84,35 @@ public sealed class OidcAuthenticationConfigurationTests
         Action act = () => _ = options.Value;
 
         act.Should().NotThrow();
+    }
+
+    [Theory(DisplayName = "Política Candidato identifica o titular pelo CPF, sem exigir papel")]
+    [InlineData("cpf", "12345678909", null, true)]
+    [InlineData("cpf", "12345678909", "uniplus-admin", true)]
+    [InlineData("cpf", " ", "candidato", false)]
+    [InlineData("sub", "abc", "candidato", false)]
+    public async Task PoliticaCandidato_IdentificaPeloCpf_SemPapel(string claim, string valor, string? papel, bool esperado)
+    {
+        using ServiceProvider provider = BuildProvider(
+            Environments.Production,
+            new Dictionary<string, string?>
+            {
+                ["Auth:Authority"] = "https://idp.example.com/realms/test",
+                ["Auth:Audience"] = "uniplus",
+                ["Auth:ClientId"] = "uniplus-api",
+            });
+        List<Claim> claims = [new(claim, valor)];
+        if (papel is not null)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, papel));
+        }
+
+        ClaimsPrincipal usuario = new(new ClaimsIdentity(claims, "teste"));
+
+        AuthorizationResult resultado = await provider.GetRequiredService<IAuthorizationService>()
+            .AuthorizeAsync(usuario, "Candidato");
+
+        resultado.Succeeded.Should().Be(esperado);
     }
 
     private static ServiceProvider BuildProvider(string environmentName, IDictionary<string, string?> configValues)

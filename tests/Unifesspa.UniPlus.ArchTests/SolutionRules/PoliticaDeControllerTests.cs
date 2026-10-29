@@ -18,7 +18,7 @@ public sealed class PoliticaDeControllerTests
 {
     /// <summary>
     /// Políticas de identidade, registradas em <c>OidcAuthenticationConfiguration</c>:
-    /// <c>Candidato</c> separa quem se inscreve (CPF e papel de candidato) de quem opera o
+    /// <c>Candidato</c> separa quem se inscreve (titular identificado pelo CPF) de quem opera o
     /// sistema, e nenhuma concessão do catálogo descreve essa pessoa; <c>Instalacao</c> protege a
     /// instalação inicial, que acontece antes de existir qualquer concessão para decidir.
     /// </summary>

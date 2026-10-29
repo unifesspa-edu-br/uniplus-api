@@ -191,7 +191,6 @@ public sealed class ImpedimentoPorInscricaoEndpointTests : IAsyncLifetime
         request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, Betina);
         if (candidata)
         {
-            request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "candidato");
             request.Headers.TryAddWithoutValidation(TestAuthHandler.CpfHeader, PersonasDeTeste.FernandaDrumond.Valor);
         }
 

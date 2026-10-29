@@ -105,13 +105,13 @@ public static class OidcAuthenticationConfiguration
                 tags: ["ready", "auth"]);
 
         // TODO(#26-followup): registrar policies por role/permissão (Admin, Gestor, Avaliador).
-        // "Candidato" (issue #1859) é a primeira. O claim cpf SOZINHO não basta: o scope que o
-        // carrega (uniplus-profile) é defaultClientScope dos clients administrativos também, e
-        // um gestor ou avaliador pode ter CPF cadastrado no Keycloak sem ser candidato de nada —
-        // a role "candidato" (mapeada de realm_access.roles por KeycloakRolesClaimsTransformation)
-        // é quem de fato distingue a pessoa física inscrita de um usuário institucional.
+        // "Candidato" (issue #1859) é a primeira. Identifica o titular pelo CPF que o provedor de identidade
+        // informa, e não por papel: nenhum papel distingue candidato de servidor (ADR-0152), e o servidor com CPF
+        // se inscreve como titular dos próprios dados. O que o impede de operar o processo em que se inscreveu é o
+        // impedimento por inscrição do ponto de decisão, não esta política.
         services.AddAuthorizationBuilder()
-            .AddPolicy("Candidato", policy => policy.RequireClaim("cpf").RequireRole("candidato"))
+            .AddPolicy("Candidato", policy => policy.RequireAssertion(static contexto =>
+                contexto.User.FindFirst(UniPlusClaims.Cpf) is { Value: { } cpf } && !string.IsNullOrWhiteSpace(cpf)))
             // "Instalacao": a única exceção a "o token não concede acesso" — o papel de realm só habilita
             // a instalação dos primeiros gestores de acessos, que o segundo fator por e-mail confirma.
             .AddPolicy("Instalacao", policy => policy.RequireRole("uniplus-instalacao"));
