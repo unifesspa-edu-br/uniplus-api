@@ -139,21 +139,9 @@ public sealed class DefinirFatosColetadosEndpointTests
         resposta.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    [Fact(DisplayName = "Autenticado sem o papel plataforma-admin é 403")]
-    public async Task SemPapel_403()
-    {
-        Contexto ctx = await SemearRascunhoAsync(nameof(SemPapel_403));
-
-        HttpResponseMessage resposta = await ctx.PutFatosAsync(
-            [new { fatoCodigo = "COR_RACA", ordem = 0, rotulo = "Cor ou raça", tipoRenderizacao = "SELECAO_UNICA", obrigatoriedade = "NUNCA", precondicao = (object?)null }], autenticar: Autenticacao.PapelErrado);
-
-        resposta.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
     private enum Autenticacao
     {
         PlataformaAdmin,
-        PapelErrado,
         Nenhuma,
     }
 
@@ -232,7 +220,7 @@ public sealed class DefinirFatosColetadosEndpointTests
             TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
         request.Headers.TryAddWithoutValidation(
             TestAuthHandler.RolesHeader,
-            autenticacao == Autenticacao.PlataformaAdmin ? "plataforma-admin" : "consulta-publica");
+            "plataforma-admin");
     }
 
     private static string Hoje() =>

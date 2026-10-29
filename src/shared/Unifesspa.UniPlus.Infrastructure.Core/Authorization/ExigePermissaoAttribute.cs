@@ -54,8 +54,31 @@ public sealed class ExigePermissaoAttribute<TPermissao> : Attribute, IAsyncAutho
                 ?? throw new ArgumentException("O tipo do recurso não pode ser vazio.", nameof(value));
     }
 
+    /// <summary>
+    /// Permissão alternativa, do mesmo enum, que basta quando o solicitante a tem em ao menos
+    /// uma unidade. Serve à leitura de apoio de quem configura algo na sua unidade e consulta um
+    /// cadastro institucional, sem receber a escrita institucional.
+    /// </summary>
+    public object? OuEmAlgumaUnidade
+    {
+        get => Alternativa?.Codigo;
+        init
+        {
+            if (value is not TPermissao tipada)
+            {
+                throw new ArgumentException(
+                    $"A permissão deve ser um {typeof(TPermissao).Name}, e não {value?.GetType().Name ?? "nulo"}.",
+                    nameof(value));
+            }
+
+            Alternativa = CatalogoDePermissoes<TPermissao>.Obter(tipada);
+        }
+    }
+
     /// <summary>Definição da permissão exigida.</summary>
     internal DefinicaoDePermissao Definicao { get; }
+
+    private DefinicaoDePermissao? Alternativa { get; init; }
 
     /// <inheritdoc />
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
@@ -67,6 +90,13 @@ public sealed class ExigePermissaoAttribute<TPermissao> : Attribute, IAsyncAutho
         ResultadoDoAcesso resultado = await acesso
             .VerificarAsync(Definicao.Requisito, _recurso, context.HttpContext.RequestAborted)
             .ConfigureAwait(false);
+
+        if (resultado == ResultadoDoAcesso.Negado && Alternativa is not null)
+        {
+            resultado = await acesso
+                .VerificarEmAlgumaUnidadeAsync(Alternativa.Requisito, context.HttpContext.RequestAborted)
+                .ConfigureAwait(false);
+        }
 
         // Challenge, e não Unauthorized: o 401 canônico carrega WWW-Authenticate e o
         // corpo problem+json escritos pelo OnChallenge do esquema configurado.

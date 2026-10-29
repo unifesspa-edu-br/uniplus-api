@@ -16,6 +16,8 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.API.Authorization;
+using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 
 /// <summary>
 /// Os itens que o edital vigente declara publicar em cada fase e etapa do cronograma, com a situação
@@ -23,9 +25,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 [ApiController]
 [Route("processos-seletivos/{processoSeletivoId:guid}/produtos-previstos")]
-// Mesma justificativa de ProcessoSeletivoController: fluxo administrativo de publicação, sem
-// fallback policy — restrito a plataforma-admin.
-[Authorize(Roles = "plataforma-admin")]
+[Authorize]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
@@ -47,6 +47,7 @@ public sealed class ProdutosPrevistosDoProcessoController : ControllerBase
     /// Lista os itens previstos no edital vigente, agrupados pela fase do cronograma. Cada item diz
     /// se está aberto, pendente ou publicado e, quando não pode ser publicado agora, o motivo.
     /// </summary>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosAcompanhar, ParametroDaRota = RotaDoProcesso.ParametroAninhado)]
     [HttpGet]
     [VendorMediaType(Resource = "produtos-previstos-do-processo", Versions = [1])]
     [ProducesResponseType(typeof(ProdutosPrevistosDoProcessoDto), StatusCodes.Status200OK)]
@@ -75,19 +76,20 @@ public sealed class ProdutosPrevistosDoProcessoController : ControllerBase
     /// do preliminar da mesma matéria, e o preliminar não se corrige depois que o definitivo que fecha o
     /// ciclo dele foi publicado. Tudo o que o registro central recusaria depois é conferido antes, com 422.
     /// </remarks>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosPublicar, ParametroDaRota = RotaDoProcesso.ParametroAninhado)]
     [HttpPost("{produtoId:guid}/publicacoes")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(AtoPublicadoDto), StatusCodes.Status202Accepted)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict,
-        Description = "Outra requisição com a mesma Idempotency-Key ainda está em processamento.")]
+            Description = "Outra requisição com a mesma Idempotency-Key ainda está em processamento.")]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Publicar(
-        Guid processoSeletivoId,
-        Guid produtoId,
-        [FromBody] PublicarProdutoDoEditalRequest request,
-        CancellationToken cancellationToken)
+            Guid processoSeletivoId,
+            Guid produtoId,
+            [FromBody] PublicarProdutoDoEditalRequest request,
+            CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 

@@ -16,6 +16,8 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.API.Authorization;
+using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 
 /// <summary>
 /// Atos do processo seletivo na visão administrativa: o edital, as retificações e os demais atos
@@ -23,9 +25,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 [ApiController]
 [Route("processos-seletivos/{processoSeletivoId:guid}/atos")]
-// Mesma justificativa de ProcessoSeletivoController: fluxo administrativo de publicação, sem
-// fallback policy — restrito a plataforma-admin.
-[Authorize(Roles = "plataforma-admin")]
+[Authorize]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
@@ -54,18 +54,19 @@ public sealed class AtosDoProcessoController : ControllerBase
     /// durável. O ato aparece como pendente na consulta dos atos do processo até o registro se confirmar.
     /// Convocação e chamada não são documento avulso: pertencem ao Ingresso.
     /// </remarks>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosPublicar, ParametroDaRota = RotaDoProcesso.ParametroAninhado)]
     [HttpPost]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(AtoPublicadoDto), StatusCodes.Status202Accepted)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict,
-        Description = "Outra requisição com a mesma Idempotency-Key ainda está em processamento.")]
+            Description = "Outra requisição com a mesma Idempotency-Key ainda está em processamento.")]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Publicar(
-        Guid processoSeletivoId,
-        [FromBody] PublicarAtoAvulsoDoProcessoRequest request,
-        CancellationToken cancellationToken)
+            Guid processoSeletivoId,
+            [FromBody] PublicarAtoAvulsoDoProcessoRequest request,
+            CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -92,6 +93,7 @@ public sealed class AtosDoProcessoController : ControllerBase
     /// que o limiar configurado vem com <c>pendenciaAcimaDoLimiar</c>: o Publicações não responde a
     /// recusa do registro, então é por aqui que a pendência chega a quem a resolve.
     /// </summary>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosAcompanhar, ParametroDaRota = RotaDoProcesso.ParametroAninhado)]
     [HttpGet]
     [VendorMediaType(Resource = "ato-do-processo", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<AtoDoProcessoDto>), StatusCodes.Status200OK)]

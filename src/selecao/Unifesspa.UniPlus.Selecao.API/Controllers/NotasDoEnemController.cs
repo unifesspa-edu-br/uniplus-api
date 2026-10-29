@@ -14,18 +14,22 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.API.Authorization;
 using Unifesspa.UniPlus.Selecao.API.Http;
+using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 
 /// <summary>
-/// Envio dos CPFs da edição do ENEM ao INEP e importação das notas que o INEP devolve. Restrito a
-/// quem configura o processo seletivo.
+/// Envio dos CPFs da edição do ENEM ao INEP e importação das notas que o INEP devolve. Cada operação
+/// exige a permissão própria na unidade dona do processo (gerar o envio, importar e consultar as notas); a lista de
+/// leiautes, que não é de um processo, tem permissão institucional.
 /// </summary>
 [ApiController]
-[Authorize(Roles = "plataforma-admin")]
+[Authorize]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
@@ -59,6 +63,7 @@ public sealed class NotasDoEnemController : ControllerBase
     /// importação do retorno. Sem o filtro <c>tipo</c> (<c>Envio</c> ou <c>Retorno</c>), devolve os dois tipos.
     /// </summary>
     [HttpGet("leiautes-de-arquivo-do-inep")]
+    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.LeiautesInepConsultar, RecursoTipo = "LeiauteDoInep")]
     [VendorMediaType(Resource = "leiaute-de-arquivo-do-inep", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<LeiauteDoInepDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -84,6 +89,7 @@ public sealed class NotasDoEnemController : ControllerBase
     /// CPFs. Repetir a requisição registra outra geração, e cada geração é um ato.
     /// </remarks>
     [HttpPost(BaseDaEdicao + "/envios-ao-inep")]
+    [ExigePermissaoNoProcesso(PermissaoSelecao.EnviosInepGerar, ParametroDaRota = RotaDoProcesso.ParametroAninhado)]
     [Produces("text/plain")]
     [ProducesResponseType(typeof(byte[]), StatusCodes.Status200OK, "text/plain")]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -117,6 +123,7 @@ public sealed class NotasDoEnemController : ControllerBase
     /// gerou, quando, com que leiaute e quantos CPFs.
     /// </summary>
     [HttpGet(BaseDaEdicao + "/envios-ao-inep")]
+    [ExigePermissaoNoProcesso(PermissaoSelecao.EnviosInepGerar, ParametroDaRota = RotaDoProcesso.ParametroAninhado)]
     [VendorMediaType(Resource = "envio-ao-inep", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<GeracaoDeEnvioDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -145,6 +152,7 @@ public sealed class NotasDoEnemController : ControllerBase
     /// <c>leiauteVersao</c>; o nome do arquivo enviado nunca é gravado nem logado.
     /// </remarks>
     [HttpPost(BaseDaEdicao + "/lotes-de-notas")]
+    [ExigePermissaoNoProcesso(PermissaoSelecao.NotasEnemImportar, ParametroDaRota = RotaDoProcesso.ParametroAninhado)]
     [Consumes("multipart/form-data")]
     [CorpoMultipart(CampoDoArquivo, CamposDeTexto = [CampoDoLeiauteCodigo, CampoDoLeiauteVersao])]
     [DesligaOVinculoDoFormulario]
@@ -234,6 +242,7 @@ public sealed class NotasDoEnemController : ControllerBase
 
     /// <summary>Lista os lotes de notas da edição, do mais recente para o mais antigo, marcando o vigente. Sem as ocorrências.</summary>
     [HttpGet(BaseDaEdicao + "/lotes-de-notas")]
+    [ExigePermissaoNoProcesso(PermissaoSelecao.NotasEnemImportar, ParametroDaRota = RotaDoProcesso.ParametroAninhado)]
     [VendorMediaType(Resource = "lote-de-notas-do-enem", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<LoteDeNotasDoEnemDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -251,6 +260,7 @@ public sealed class NotasDoEnemController : ControllerBase
 
     /// <summary>Obtém um lote de notas com tudo o que não virou nota: inscritos sem linha, linhas sem inscrito e conflitos.</summary>
     [HttpGet(BaseDaEdicao + "/lotes-de-notas/{loteId:guid}")]
+    [ExigePermissaoNoProcesso(PermissaoSelecao.NotasEnemImportar, ParametroDaRota = RotaDoProcesso.ParametroAninhado)]
     [VendorMediaType(Resource = "lote-de-notas-do-enem", Versions = [1])]
     [ProducesResponseType(typeof(LoteDeNotasDoEnemDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]

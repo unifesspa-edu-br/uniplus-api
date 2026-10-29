@@ -17,6 +17,8 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.API.Authorization;
+using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 
 /// <summary>
 /// Envio direto do modelo de documento que uma exigência oferece ao candidato (UNI-REQ-0016), por
@@ -25,7 +27,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 [ApiController]
 [Route("processos-seletivos/{processoSeletivoId:guid}/modelos-de-documento")]
-[Authorize(Roles = "plataforma-admin")]
+[Authorize]
+[ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar, ParametroDaRota = RotaDoProcesso.ParametroAninhado)]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",

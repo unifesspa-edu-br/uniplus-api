@@ -54,7 +54,9 @@ internal static partial class AdministradorDeProcessosDeTeste
                     services,
                     PermissaoSelecao.ProcessosConfigurar.Codigo,
                     PermissaoSelecao.ProcessosPublicar.Codigo,
-                    PermissaoSelecao.ProcessosAcompanhar.Codigo);
+                    PermissaoSelecao.ProcessosAcompanhar.Codigo,
+                    PermissaoSelecao.EnviosInepGerar.Codigo,
+                    PermissaoSelecao.NotasEnemImportar.Codigo);
             }
         }
     }

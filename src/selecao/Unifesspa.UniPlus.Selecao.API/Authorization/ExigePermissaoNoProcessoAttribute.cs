@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
-/// Exige uma permissão da Seleção sobre o processo da rota (<c>{id}</c>), na unidade que o possui (ADR-0078, ADR-0151).
+/// Exige uma permissão da Seleção sobre o processo da rota (<c>{id}</c>, ou o parâmetro de <see cref="ParametroDaRota"/>), na unidade que o possui (ADR-0078, ADR-0151).
 /// Roda como filtro de autorização, antes do <i>model binding</i>: uma recusa de acesso não pode depender de o corpo ser
 /// válido, nem a resposta de um corpo inválido revelar que o processo existe.
 /// </summary>
@@ -32,13 +32,16 @@ public sealed class ExigePermissaoNoProcessoAttribute : Attribute, IAsyncAuthori
     /// <summary>Tipo do recurso que a decisão enxerga. Omitido, é o processo seletivo.</summary>
     public string RecursoTipo { get; init; } = AcessoAoProcesso.RecursoProcesso;
 
+    /// <summary>Nome do parâmetro de rota que traz o identificador do processo. Omitido, é <c>id</c>.</summary>
+    public string ParametroDaRota { get; init; } = RotaDoProcesso.ParametroPadrao;
+
     /// <inheritdoc />
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
 
         IServiceProvider servicos = context.HttpContext.RequestServices;
-        Guid processoId = RotaDoProcesso.Id(context);
+        Guid processoId = RotaDoProcesso.Id(context, ParametroDaRota);
 
         ResultadoDoAcesso resultado = await AcessoAoProcesso
             .VerificarAsync(

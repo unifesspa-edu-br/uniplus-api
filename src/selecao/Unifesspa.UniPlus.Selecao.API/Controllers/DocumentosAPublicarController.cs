@@ -19,6 +19,8 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.API.Authorization;
+using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 
 /// <summary>
 /// Envio direto do documento que o processo vai publicar (PDF, DOCX ou ODT) por URL pré-assinada do
@@ -28,9 +30,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 [ApiController]
 [Route("processos-seletivos/{processoSeletivoId:guid}/documentos-a-publicar")]
-// Mesma justificativa de ProcessoSeletivoController: fluxo administrativo de
-// publicação, sem fallback policy — restrito a plataforma-admin.
-[Authorize(Roles = "plataforma-admin")]
+[Authorize]
+[ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosPublicar, ParametroDaRota = RotaDoProcesso.ParametroAninhado)]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",

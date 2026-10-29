@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
@@ -14,6 +15,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Application.Queries.RolDeRegras;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
@@ -37,15 +39,20 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// pendência — um CRUD permitiria criar uma regra que nenhum motor sabe executar.
 /// </para>
 /// <para>
-/// A leitura fica sob a mesma autorização da configuração do Processo Seletivo que a consome:
-/// <c>plataforma-admin</c>. Não é sobre sigilo — a definição de uma regra acaba no edital —, é
+/// A leitura exige a permissão de consultar o catálogo ou a de configurar o processo seletivo em
+/// ao menos uma unidade: o editor do processo consome o catálogo, e quem configura na sua unidade
+/// não recebe por isso a permissão institucional. Não é sobre sigilo — a definição de uma regra acaba no edital —, é
 /// sobre alcance: quem descobre o catálogo é quem monta uma configuração, e um perfil de
 /// candidato autenticado não tem o que fazer com o esquema de argumentos de uma regra de
 /// distribuição de vagas. Autenticação sozinha alcançaria justamente esse perfil.
 /// </para>
 /// </remarks>
 [ApiController]
-[Authorize(Roles = "plataforma-admin")]
+[Authorize]
+[ExigePermissao<PermissaoSelecao>(
+    PermissaoSelecao.RegrasCatalogoConsultar,
+    OuEmAlgumaUnidade = PermissaoSelecao.ProcessosConfigurar,
+    RecursoTipo = RecursoTipo)]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
@@ -53,6 +60,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 public sealed class RegrasCatalogoController : ControllerBase
 {
     private const string ResourceTag = "regras-catalogo";
+    private const string RecursoTipo = "RegraCatalogo";
 
     private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;

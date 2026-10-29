@@ -20,13 +20,15 @@ using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Selecao.API.Authorization;
+using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Formulários do processo por finalidade (UNI-REQ-0144): leitura pública e escrita
 /// administrativa, com a finalidade no caminho (<c>INSCRICAO</c>, <c>ISENCAO_TAXA</c>,
-/// <c>HABILITACAO</c>). Sem <c>[Authorize]</c> de classe: a leitura é anônima, e a escrita exige o
-/// papel <c>plataforma-admin</c> declarado em cada action — o host não tem fallback policy, então
+/// <c>HABILITACAO</c>). Sem <c>[Authorize]</c> de classe: a leitura é anônima, e a escrita exige a
+/// permissão de configurar o processo, declarada em cada action — o host não tem fallback policy, então
 /// omitir a anotação nasceria o endpoint anônimo por omissão.
 /// </summary>
 [ApiController]
@@ -96,7 +98,8 @@ public sealed class FormulariosController : ControllerBase
     /// administrador interpreta antes de publicar; nada é gravado.
     /// </summary>
     [HttpGet("admin/processos-seletivos/{id:guid}/formularios/{finalidade}/renderizavel")]
-    [Authorize(Roles = "plataforma-admin")]
+    [Authorize]
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [VendorMediaType(Resource = "formulario", Versions = [2])]
     [ProducesResponseType(typeof(FormularioRenderizavelDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -122,7 +125,8 @@ public sealed class FormulariosController : ControllerBase
     /// Editável em rascunho e sob sessão de retificação, que pode acrescentar formulário.
     /// </summary>
     [HttpPut("admin/processos-seletivos/{id:guid}/formularios/{finalidade}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [Authorize]
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -148,7 +152,8 @@ public sealed class FormulariosController : ControllerBase
 
     /// <summary>Remove o formulário da finalidade, com os itens e os termos dele. Só em rascunho.</summary>
     [HttpDelete("admin/processos-seletivos/{id:guid}/formularios/{finalidade}")]
-    [Authorize(Roles = "plataforma-admin")]
+    [Authorize]
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -164,7 +169,8 @@ public sealed class FormulariosController : ControllerBase
     /// e a pré-condição. Cada fato é coletado por um só formulário do processo.
     /// </summary>
     [HttpPut("admin/processos-seletivos/{id:guid}/formularios/{finalidade}/itens")]
-    [Authorize(Roles = "plataforma-admin")]
+    [Authorize]
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -193,7 +199,8 @@ public sealed class FormulariosController : ControllerBase
     /// catálogo por termo e versão (UNI-REQ-0086).
     /// </summary>
     [HttpPut("admin/processos-seletivos/{id:guid}/formularios/{finalidade}/termos")]
-    [Authorize(Roles = "plataforma-admin")]
+    [Authorize]
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -224,7 +231,8 @@ public sealed class FormulariosController : ControllerBase
     /// ignorado, como nas demais escritas; mudar o modelo depois não muda o processo.
     /// </summary>
     [HttpPost("admin/processos-seletivos/{id:guid}/formularios/aplicacoes-de-modelo")]
-    [Authorize(Roles = "plataforma-admin")]
+    [Authorize]
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [RequiresIdempotencyKey]
     [VendorMediaType(Resource = "aplicacao-de-modelo-formulario", Versions = [1])]
     [ProducesResponseType(typeof(AplicacaoDeModeloDto), StatusCodes.Status200OK)]

@@ -39,4 +39,15 @@ public interface IVerificadorDeAcesso
         PermissionRequirement permissao,
         ResourceContext? recurso = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Verifica se o solicitante tem a permissão em ao menos uma unidade, para a operação cujo
+    /// alvo não pertence a unidade alguma. A decisão é a do ponto único, tomada uma vez por
+    /// unidade em que o solicitante tem concessão vigente da permissão.
+    /// </summary>
+    /// <param name="permissao">Permissão que alguma concessão de unidade deve cobrir.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    Task<ResultadoDoAcesso> VerificarEmAlgumaUnidadeAsync(
+        PermissionRequirement permissao,
+        CancellationToken cancellationToken = default);
 }

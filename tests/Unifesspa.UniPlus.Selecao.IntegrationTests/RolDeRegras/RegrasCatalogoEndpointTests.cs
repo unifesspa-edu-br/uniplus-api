@@ -9,7 +9,10 @@ using AwesomeAssertions;
 
 using Outbox.Cascading;
 
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
@@ -18,8 +21,10 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// têm par de escrita.
 /// </summary>
 [Collection(CascadingCollection.Name)]
-public sealed class RegrasCatalogoEndpointTests
+public sealed class RegrasCatalogoEndpointTests : IAsyncLifetime
 {
+    private const string Leandro = "leandro.viana";
+
     private const string Rota = "/api/selecao/regras-catalogo";
 
     private readonly CascadingFixture _fixture;
@@ -29,12 +34,21 @@ public sealed class RegrasCatalogoEndpointTests
         _fixture = fixture;
     }
 
+    public async Task InitializeAsync()
+    {
+        await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, Leandro);
+        await ConcessoesDeTeste.ConcederPermissoesAsync(
+            _fixture.Factory.Services, Leandro, PermissaoSelecao.RegrasCatalogoConsultar.Codigo);
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
     private static HttpRequestMessage Autenticada(HttpMethod metodo, string url)
     {
         HttpRequestMessage request = new(metodo, new Uri(url, UriKind.Relative));
         request.Headers.Authorization = new AuthenticationHeaderValue(
             TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
+        request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, Leandro);
         return request;
     }
 
@@ -44,6 +58,39 @@ public sealed class RegrasCatalogoEndpointTests
         HttpResponseMessage response = await client.SendAsync(request);
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         return JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact(DisplayName = "GET /regras-catalogo: configurar o processo em alguma unidade basta para ler o catálogo")]
+    public async Task Listar_ComConfigurarNumaUnidade_Passa()
+    {
+        await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, Leandro);
+        await ConcederNaUnidadeAsync(PermissaoSelecao.ProcessosConfigurar);
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        using HttpRequestMessage request = Autenticada(HttpMethod.Get, Rota);
+        using HttpResponseMessage response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact(DisplayName = "GET /regras-catalogo: outra permissão numa unidade continua recusada")]
+    public async Task Listar_ComOutraPermissaoNumaUnidade_403()
+    {
+        await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, Leandro);
+        await ConcederNaUnidadeAsync(PermissaoSelecao.ProcessosAcompanhar);
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        using HttpRequestMessage request = Autenticada(HttpMethod.Get, Rota);
+        using HttpResponseMessage response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    private async Task ConcederNaUnidadeAsync(PermissaoSelecao permissao)
+    {
+        Guid perfil = await ConcessoesDeTeste.CriarPerfilAsync(_fixture.Factory.Services, permissao.Codigo);
+        await ConcessoesDeTeste.ConcederAsync(
+            _fixture.Factory.Services, Leandro, perfil, EscopoDaConcessao.DaUnidade(Guid.CreateVersion7()));
     }
 
     [Fact(DisplayName = "GET /regras-catalogo devolve entradas com código, versão, tipo, esquema de argumentos, hash e _links")]
@@ -154,7 +201,7 @@ public sealed class RegrasCatalogoEndpointTests
             .Should().Be("uniplus.selecao.regra_catalogo.nao_encontrada");
     }
 
-    [Fact(DisplayName = "Leitura sem autenticação é recusada — o catálogo acompanha a autorização da configuração que o consome")]
+    [Fact(DisplayName = "Leitura sem autenticação é recusada — o catálogo exige a permissão de consultar")]
     public async Task Listar_SemAutenticacao_Recusa()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -162,22 +209,6 @@ public sealed class RegrasCatalogoEndpointTests
         HttpResponseMessage response = await client.GetAsync(new Uri(Rota, UriKind.Relative));
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact(DisplayName = "Autenticado sem plataforma-admin é recusado com 403 — autenticar não é o mesmo que poder configurar um certame")]
-    public async Task Listar_AutenticadoSemPapelAdministrativo_Recusa()
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-        using HttpRequestMessage request = new(HttpMethod.Get, new Uri(Rota, UriKind.Relative));
-        request.Headers.Authorization = new AuthenticationHeaderValue(
-            TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "candidato");
-
-        HttpResponseMessage response = await client.SendAsync(request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden,
-            "o catálogo acompanha a autorização da configuração que o consome; um perfil de candidato "
-            + "autenticado não tem o que fazer com o esquema de argumentos de uma regra de distribuição");
     }
 
     [Theory(DisplayName = "Catálogo seed-governado não tem rota de escrita — evoluir uma regra é publicar versão nova por migration")]

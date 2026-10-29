@@ -34,15 +34,6 @@ public sealed class AplicarModeloFormularioEndpointTests
 
     public AplicarModeloFormularioEndpointTests(CascadingFixture fixture) => _fixture = fixture;
 
-    [Fact(DisplayName = "Aplicar sem o papel plataforma-admin é 403")]
-    public async Task AplicarModelo_SemPapel_Retorna403()
-    {
-        Guid processoId = await SemearProcessoAsync(nameof(AplicarModelo_SemPapel_Retorna403));
-        Guid modeloId = await SemearModeloAsync(FinalidadeFormulario.Inscricao, "QUILOMBOLA");
-
-        (await AplicarAsync(processoId, modeloId, papel: "consulta-publica")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
     [Fact(DisplayName = "A cópia grava o formulário com a origem, e editar o modelo depois não muda o processo")]
     public async Task AplicarModelo_ModeloEditadoDepois_ProcessoNaoMuda()
     {
@@ -155,7 +146,7 @@ public sealed class AplicarModeloFormularioEndpointTests
             .SingleAsync(p => p.Id == processoId);
     }
 
-    private async Task<HttpResponseMessage> AplicarAsync(Guid processoId, Guid modeloId, string papel = "plataforma-admin")
+    private async Task<HttpResponseMessage> AplicarAsync(Guid processoId, Guid modeloId)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         using HttpRequestMessage request = new(
@@ -164,7 +155,7 @@ public sealed class AplicarModeloFormularioEndpointTests
             Content = JsonContent.Create(new { modeloId }),
         };
         request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, papel);
+        request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
         request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
         return await client.SendAsync(request);
     }

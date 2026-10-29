@@ -60,14 +60,64 @@ public sealed class VerificadorDeAcessoHttp : IVerificadorDeAcesso
     {
         ArgumentNullException.ThrowIfNull(permissao);
 
-        HttpContext? http = _httpContextAccessor.HttpContext;
+        (ResultadoDoAcesso? incompleta, AuthorizationSubject? sujeito, AuthorizationRequestContext? contexto) =
+            await ResolverAsync(cancellationToken);
 
+        if (incompleta is { } desfecho)
+        {
+            return desfecho;
+        }
+
+        return await DecidirAsync(
+            sujeito!, permissao, recurso ?? RecursoDaPropriaOperacao(permissao), contexto!, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<ResultadoDoAcesso> VerificarEmAlgumaUnidadeAsync(
+        PermissionRequirement permissao,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(permissao);
+
+        (ResultadoDoAcesso? incompleta, AuthorizationSubject? sujeito, AuthorizationRequestContext? contexto) =
+            await ResolverAsync(cancellationToken);
+
+        if (incompleta is { } desfecho)
+        {
+            return desfecho;
+        }
+
+        ResultadoDoAcesso resultado = ResultadoDoAcesso.Negado;
+
+        foreach (Guid unidade in sujeito!.ConcessoesEfetivas
+            .Where(concessao => string.Equals(concessao.PermissaoCodigo, permissao.Permissao, StringComparison.Ordinal))
+            .Select(static concessao => concessao.EscopoUnidadeId)
+            .OfType<Guid>()
+            .Distinct())
+        {
+            ResourceContext recurso = ResourceContext.From(
+                permissao.Permissao, permissao.Sensibilidade, unidadeProprietariaId: unidade).Value!;
+
+            resultado = await DecidirAsync(sujeito, permissao, recurso, contexto!, cancellationToken);
+
+            if (resultado == ResultadoDoAcesso.Permitido)
+            {
+                break;
+            }
+        }
+
+        return resultado;
+    }
+
+    private async Task<(ResultadoDoAcesso? Incompleta, AuthorizationSubject? Sujeito, AuthorizationRequestContext? Contexto)> ResolverAsync(
+        CancellationToken cancellationToken)
+    {
         Result<AuthorizationRequestContext> contexto = ContextoDaRequisicaoHttp.Montar(
-            http, _correlationId, _relogio);
+            _httpContextAccessor.HttpContext, _correlationId, _relogio);
 
         if (contexto.IsFailure)
         {
-            return ResultadoDoAcesso.IdentidadeIncompleta;
+            return (ResultadoDoAcesso.IdentidadeIncompleta, null, null);
         }
 
         Result<AuthorizationSubject> sujeito = await _resolver.ResolveAsync(
@@ -76,17 +126,20 @@ public sealed class VerificadorDeAcessoHttp : IVerificadorDeAcesso
         // Sem emissor, subject ou jti não há sujeito sobre o qual decidir. A
         // falha é de autenticação, e devolvê-la como negativa faria a borda
         // responder 403 — afirmando uma decisão de acesso que não foi tomada.
-        if (sujeito.IsFailure)
-        {
-            return ResultadoDoAcesso.IdentidadeIncompleta;
-        }
+        return sujeito.IsFailure
+            ? (ResultadoDoAcesso.IdentidadeIncompleta, null, null)
+            : (null, sujeito.Value, contexto.Value);
+    }
 
+    private async Task<ResultadoDoAcesso> DecidirAsync(
+        AuthorizationSubject sujeito,
+        PermissionRequirement permissao,
+        ResourceContext recurso,
+        AuthorizationRequestContext contexto,
+        CancellationToken cancellationToken)
+    {
         AuthorizationDecision decisao = await _decisao.DecideAsync(
-            sujeito.Value!,
-            permissao,
-            recurso ?? RecursoDaPropriaOperacao(permissao),
-            contexto.Value!,
-            cancellationToken);
+            sujeito, permissao, recurso, contexto, cancellationToken);
 
         if (decisao.Allowed)
         {

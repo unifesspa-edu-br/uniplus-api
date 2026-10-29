@@ -121,7 +121,7 @@ public sealed class ImportacaoDeNotasEndpointTests
         return doc.RootElement.GetArrayLength();
     }
 
-    [Fact(DisplayName = "sem token é 401 e sem plataforma-admin é 403")]
+    [Fact(DisplayName = "sem token é 401 e o administrador da plataforma sem concessão é 404")]
     public async Task Importar_SemAutorizacao_Recusa()
     {
         Cenario cenario = await NovoCenarioAsync(0);
@@ -130,10 +130,11 @@ public sealed class ImportacaoDeNotasEndpointTests
         using MultipartFormDataContent a = Formulario(Arquivo(0));
         using HttpRequestMessage semToken = Requisicao(HttpMethod.Post, cenario.Base, a, papel: null);
         using MultipartFormDataContent b = Formulario(Arquivo(0));
-        using HttpRequestMessage semPapel = Requisicao(HttpMethod.Post, cenario.Base, b, papel: "candidato");
+        using HttpRequestMessage semConcessao = Requisicao(HttpMethod.Post, cenario.Base, b, papel: "plataforma-admin");
+        semConcessao.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, "diogo.souza");
 
         (await client.SendAsync(semToken)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-        (await client.SendAsync(semPapel)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await client.SendAsync(semConcessao)).StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     private static byte[] Arquivo(int pessoa) => Bytes([Linha(Pessoas[pessoa], pessoa + 1)]);
