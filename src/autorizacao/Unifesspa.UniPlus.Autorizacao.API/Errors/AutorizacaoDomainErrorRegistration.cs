@@ -70,7 +70,6 @@ internal sealed class AutorizacaoDomainErrorRegistration : IDomainErrorRegistrat
         new(PedidoErrorCodes.SituacaoInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.pedido.situacao_invalida", "O pedido não está na situação que esta operação exige")),
         new(PedidoErrorCodes.DecisorEParte, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.pedido.decisor_e_parte", "Ninguém decide pedido em que é solicitante ou beneficiário")),
         new(PedidoErrorCodes.MesmoDecisorNasDuasEtapas, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.pedido.mesmo_decisor_nas_duas_etapas", "A mesma pessoa não decide as duas etapas")),
-        new(PedidoErrorCodes.DocumentoObrigatorio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.pedido.documento_obrigatorio", "O pedido de perfil de governança exige o documento de designação verificado")),
         new(PedidoErrorCodes.MotivoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.pedido.motivo_invalido", "Motivo da recusa inválido")),
         new(PedidoErrorCodes.FilaInvalida, new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.autorizacao.pedido.fila_invalida", "Fila de pedidos inválida")),
         new(PedidoErrorCodes.CursorInvalido, new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.autorizacao.pedido.cursor_invalido", "Cursor de paginação dos pedidos inválido")),

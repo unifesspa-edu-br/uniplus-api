@@ -25,24 +25,58 @@ public sealed class DespachoDoResultadoDaVerificacaoTests
     [Fact(DisplayName = "O resultado de um id que não é de instalação vai ao anexo do pedido e grava o SHA-256")]
     public async Task Resultado_DeAnexo_AtualizaOAnexo()
     {
-        AnexoDoPedido anexo = AnexoEmVerificacao();
+        PedidoDeConcessao pedido = PedidoComAnexoEmVerificacao();
+        AnexoDoPedido anexo = pedido.Anexos.Single();
         UnidadeDeTrabalhoQueConta unidade = new();
 
-        await Despachar(ResultadoVerificado(anexo.Id), new PedidosComAnexo(anexo), unidade);
+        await Despachar(ResultadoVerificado(anexo.Id), new PedidosComAnexo(anexo, pedido), unidade);
 
         anexo.Situacao.Should().Be(SituacaoDoAnexo.Verificado);
         anexo.Sha256.Should().Be(Sha);
         unidade.Gravacoes.Should().Be(1);
     }
 
+    [Fact(DisplayName = "O documento verificado libera o pedido que esperava a designação, na mesma gravação")]
+    public async Task Resultado_DeAnexoVerificado_LiberaOPedidoQueEsperavaODocumento()
+    {
+        PedidoDeConcessao pedido = PedidoComAnexoEmVerificacao(PerfilDeGovernanca());
+        AnexoDoPedido anexo = pedido.Anexos.Single();
+        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
+        PedidosComAnexo pedidos = new(anexo, pedido);
+        UnidadeDeTrabalhoQueConta unidade = new();
+
+        await Despachar(ResultadoVerificado(anexo.Id), pedidos, unidade);
+
+        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoBeneficiario);
+        pedidos.Atualizados.Should().ContainSingle().Which.Should().BeSameAs(pedido);
+        unidade.Gravacoes.Should().Be(1);
+    }
+
+    [Fact(DisplayName = "O documento recusado mantém o pedido aguardando a designação")]
+    public async Task Resultado_DeAnexoRecusado_MantemOPedidoAguardandoODocumento()
+    {
+        PedidoDeConcessao pedido = PedidoComAnexoEmVerificacao(PerfilDeGovernanca());
+        AnexoDoPedido anexo = pedido.Anexos.Single();
+        PedidosComAnexo pedidos = new(anexo, pedido);
+
+        await Despachar(
+            new ResultadoDaVerificacaoDeArquivo(anexo.Id, VeredictoDaVerificacao.Recusado, MotivoDaRecusa.PdfComSenha, null, null, null),
+            pedidos,
+            new UnidadeDeTrabalhoQueConta());
+
+        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
+        pedidos.Atualizados.Should().BeEmpty();
+    }
+
     [Fact(DisplayName = "O veredicto de recusa encerra o anexo e o reenvio também")]
     public async Task Resultado_DeAnexoRecusado_EncerraOAnexo()
     {
-        AnexoDoPedido anexo = AnexoEmVerificacao();
+        PedidoDeConcessao pedido = PedidoComAnexoEmVerificacao();
+        AnexoDoPedido anexo = pedido.Anexos.Single();
 
         await Despachar(
             new ResultadoDaVerificacaoDeArquivo(anexo.Id, VeredictoDaVerificacao.ReenvioNecessario, MotivoDaRecusa.NaoSeAplica, null, null, null),
-            new PedidosComAnexo(anexo),
+            new PedidosComAnexo(anexo, pedido),
             new UnidadeDeTrabalhoQueConta());
 
         anexo.Situacao.Should().Be(SituacaoDoAnexo.Recusado);
@@ -52,13 +86,14 @@ public sealed class DespachoDoResultadoDaVerificacaoTests
     [Fact(DisplayName = "O resultado repetido de anexo que já saiu da verificação é ignorado sem gravar")]
     public async Task Resultado_RepetidoDeAnexo_Ignora()
     {
-        AnexoDoPedido anexo = AnexoEmVerificacao();
+        PedidoDeConcessao pedido = PedidoComAnexoEmVerificacao();
+        AnexoDoPedido anexo = pedido.Anexos.Single();
         anexo.RegistrarVerificado(Sha, DateTimeOffset.UtcNow);
         UnidadeDeTrabalhoQueConta unidade = new();
 
         await Despachar(
             new ResultadoDaVerificacaoDeArquivo(anexo.Id, VeredictoDaVerificacao.Recusado, MotivoDaRecusa.PdfComSenha, null, null, null),
-            new PedidosComAnexo(anexo),
+            new PedidosComAnexo(anexo, pedido),
             unidade);
 
         anexo.Situacao.Should().Be(SituacaoDoAnexo.Verificado);
@@ -103,21 +138,29 @@ public sealed class DespachoDoResultadoDaVerificacaoTests
     private static ResultadoDaVerificacaoDeArquivo ResultadoVerificado(Guid id) =>
         new(id, VeredictoDaVerificacao.Verificado, MotivoDaRecusa.NaoSeAplica, Sha, 1024, FormatoDoArquivo.Pdf);
 
-    private static AnexoDoPedido AnexoEmVerificacao()
+    private static Perfil PerfilDeGovernanca()
     {
-        Perfil perfil = Perfil.Criar("Análise de atendimento", "Analisa os pedidos de atendimento.", ["selecao:processos:consultar"], new Catalogo()).Value!;
+        Perfil perfil = Perfil.Criar("Gestão de acessos", "Opera as concessões de acesso.", ["autorizacao:concessoes:administrar"], new Catalogo()).Value!;
+        typeof(Perfil).GetProperty(nameof(Perfil.Governanca))!.SetValue(perfil, TipoDeGovernanca.GestorDeAcessos);
+        return perfil;
+    }
+
+    // Com o perfil de governança o pedido é para outra pessoa, e o desfecho do documento verificado é o aceite dela.
+    private static PedidoDeConcessao PedidoComAnexoEmVerificacao(Perfil? perfilPedido = null)
+    {
+        Perfil perfil = perfilPedido ?? Perfil.Criar("Análise de atendimento", "Analisa os pedidos de atendimento.", ["selecao:processos:consultar"], new Catalogo()).Value!;
         PedidoDeConcessao pedido = PedidoDeConcessao.Criar(
             new PessoaNoToken(new Identidade(Emissor, "betina.neves"), "Betina Marina Valentina das Neves", "betina-dasneves81@uniplus-test.local", true),
-            null,
+            perfilPedido is null ? null : "leandro-viana84@uniplus-test.local",
             perfil,
-            EscopoDaConcessao.DaUnidade(Guid.NewGuid()),
+            perfilPedido is null ? EscopoDaConcessao.DaUnidade(Guid.NewGuid()) : EscopoDaConcessao.DaInstituicao(),
             "A coordenação do CEPS precisa analisar os pedidos de atendimento.",
             new Dominios(),
             new Catalogo(),
             DateTimeOffset.UtcNow).Value!;
         AnexoDoPedido anexo = pedido.NovoAnexo(1024).Value!;
         pedido.ConfirmarAnexo(anexo.Id, "\"etag\"", DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
-        return anexo;
+        return pedido;
     }
 
     private sealed class Catalogo : ICatalogoDePermissoesConsultavel
@@ -126,7 +169,7 @@ public sealed class DespachoDoResultadoDaVerificacaoTests
 
         public bool ReservadaAGovernanca(string codigo) => false;
 
-        public bool DeUnidade(string codigo) => true;
+        public bool DeUnidade(string codigo) => codigo.StartsWith("selecao:", StringComparison.Ordinal);
     }
 
     private sealed class Dominios : IDominiosInstitucionais
@@ -182,17 +225,20 @@ public sealed class DespachoDoResultadoDaVerificacaoTests
 }
 
 /// <summary>Repositório de pedidos que só sabe devolver o anexo pelo id.</summary>
-internal class PedidosComAnexo(AnexoDoPedido? anexo) : IPedidoDeConcessaoRepository
+internal class PedidosComAnexo(AnexoDoPedido? anexo, PedidoDeConcessao? pedido = null) : IPedidoDeConcessaoRepository
 {
+    public List<PedidoDeConcessao> Atualizados { get; } = [];
+
     public virtual Task<AnexoDoPedido?> ObterAnexoAsync(Guid anexoId, CancellationToken cancellationToken = default) =>
         Task.FromResult(anexo is not null && anexo.Id == anexoId ? anexo : null);
 
     public Task<PedidoDeConcessao?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
     public Task<IReadOnlyList<PedidoDeConcessao>> ObterTodosAsync(CancellationToken cancellationToken = default) => throw new InvalidOperationException();
     public Task AdicionarAsync(PedidoDeConcessao entity, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
-    public void Atualizar(PedidoDeConcessao entity) => throw new InvalidOperationException();
+    public void Atualizar(PedidoDeConcessao entity) => Atualizados.Add(entity);
     public void Remover(PedidoDeConcessao entity) => throw new InvalidOperationException();
-    public Task<PedidoDeConcessao?> ObterParaAlterarAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+    public Task<PedidoDeConcessao?> ObterParaAlterarAsync(Guid id, CancellationToken cancellationToken = default) =>
+        Task.FromResult(pedido is not null && pedido.Id == id ? pedido : null);
     public Task<PedidoDeConcessao?> ObterParaLeituraAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
     public Task AdicionarLeituraAsync(LeituraDoAnexoDoPedido leitura, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
     public Task<IReadOnlyList<LeituraDoAnexoDoPedido>> ListarLeiturasAsync(Guid pedidoId, CancellationToken cancellationToken = default) => throw new InvalidOperationException();

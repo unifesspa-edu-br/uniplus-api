@@ -4395,7 +4395,8 @@
           "nome",
           "descricao",
           "escopo",
-          "exigeEncarregada"
+          "exigeEncarregada",
+          "governanca"
         ],
         "type": "object",
         "properties": {
@@ -4414,6 +4415,12 @@
           },
           "exigeEncarregada": {
             "type": "boolean"
+          },
+          "governanca": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

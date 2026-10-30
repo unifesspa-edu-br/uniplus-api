@@ -71,6 +71,14 @@ public static partial class RegistrarResultadoDaVerificacaoDoDocumentoDaAutoriza
                 LogAnexoIgnorado(logger, resultado.ArquivoId, situacao);
                 return;
             }
+
+            // O documento verificado libera o pedido que o esperava; o anexo e o pedido saem na mesma gravação.
+            if (resultado.Veredicto == VeredictoDaVerificacao.Verificado
+                && await pedidos.ObterParaAlterarAsync(anexo.PedidoId, cancellationToken).ConfigureAwait(false) is { } pedido
+                && pedido.LiberarAoVerificarDocumento())
+            {
+                pedidos.Atualizar(pedido);
+            }
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);

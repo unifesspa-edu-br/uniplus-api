@@ -78,7 +78,8 @@ public static class ListarPerfisParaPedirQueryHandler
                 perfil.Nome,
                 perfil.Descricao,
                 alcance.ToCodigo(),
-                PerfilMapping.Avaliar(perfil, catalogoDaAplicacao).ExigeEncarregada));
+                PerfilMapping.Avaliar(perfil, catalogoDaAplicacao).ExigeEncarregada,
+                perfil.Governanca?.ToCodigo()));
         }
 
         return Result<ListarPerfisParaPedirResult>.Success(new ListarPerfisParaPedirResult(lista, anterior, proximo));

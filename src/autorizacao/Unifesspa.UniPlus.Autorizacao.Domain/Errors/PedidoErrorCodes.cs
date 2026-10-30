@@ -19,7 +19,6 @@ public static class PedidoErrorCodes
     public const string SituacaoInvalida = "Pedido.SituacaoInvalida";
     public const string DecisorEParte = "Pedido.DecisorEParte";
     public const string MesmoDecisorNasDuasEtapas = "Pedido.MesmoDecisorNasDuasEtapas";
-    public const string DocumentoObrigatorio = "Pedido.DocumentoObrigatorio";
     public const string MotivoInvalido = "Pedido.MotivoInvalido";
     public const string JaTemConcessao = "Pedido.JaTemConcessao";
     public const string AutorNaoIdentificado = "Pedido.AutorNaoIdentificado";

@@ -345,7 +345,7 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
             itens.Select(i => i.GetProperty("id").GetGuid()).Should().Contain(ativo).And.NotContain(inativo);
             JsonElement item = itens.Single(i => i.GetProperty("id").GetGuid() == ativo);
             item.EnumerateObject().Select(p => p.Name).Should()
-                .BeEquivalentTo("id", "nome", "descricao", "escopo", "exigeEncarregada");
+                .BeEquivalentTo("id", "nome", "descricao", "escopo", "exigeEncarregada", "governanca");
         }
     }
 
@@ -424,13 +424,5 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         }
 
         (await estranho.GetAsync(new Uri($"{Rota}/{Guid.NewGuid()}", UriKind.Relative))).StatusCode.Should().Be(HttpStatusCode.NotFound);
-    }
-
-    private static async Task<Guid[]> ListarFilaAsync(HttpClient client, string fila, string? situacao = null)
-    {
-        string url = $"{Rota}?fila={fila}" + (situacao is null ? string.Empty : $"&situacao={situacao}");
-        JsonElement pagina = await LerAsync(client, url);
-        JsonElement itens = pagina.ValueKind == JsonValueKind.Array ? pagina : pagina.GetProperty("items");
-        return [.. itens.EnumerateArray().Select(i => i.GetProperty("id").GetGuid())];
     }
 }

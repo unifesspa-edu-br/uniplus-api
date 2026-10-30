@@ -44,18 +44,22 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
         using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
         using HttpClient marlene = await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados);
         Guid id = await CriarAsync(betina, perfil, null, Leandro);
-        await EnviarAsync(leandro, HttpMethod.Post, $"{Rota}/{id}/aceite");
 
-        await ConferirRecusaAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.UnprocessableEntity, "documento_obrigatorio");
+        (await SituacaoAsync(betina, id)).Should().Be("aguardando_documento");
+        (await ListarFilaAsync(diogo, "gestor")).Should().NotContain(id);
+        await ConferirRecusaAsync(await EnviarAsync(leandro, HttpMethod.Post, $"{Rota}/{id}/aceite"), HttpStatusCode.UnprocessableEntity, "situacao_invalida");
+        await ConferirRecusaAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.UnprocessableEntity, "situacao_invalida");
 
         Guid anexo = await AnexarEmVerificacaoAsync(betina, id);
-        await ConferirRecusaAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.UnprocessableEntity, "documento_obrigatorio");
+        (await SituacaoAsync(betina, id)).Should().Be("aguardando_documento", "o anexo em verificação ainda não é o documento verificado");
         using HttpResponseMessage naoVerificado = await betina.GetAsync(new Uri($"{Rota}/{id}/anexos/{anexo}", UriKind.Relative));
         await ConferirRecusaAsync(naoVerificado, HttpStatusCode.UnprocessableEntity, "anexo_nao_verificado");
 
         await InjetarResultadoAsync(anexo, VeredictoDaVerificacao.Verificado);
         await AguardarAsync(async () => await SituacaoDoAnexoAsync(betina, id, anexo) == "verificado", "o anexo não chegou a verificado");
         await PromoverObjetoAsync(id, anexo);
+        (await SituacaoAsync(betina, id)).Should().Be("aguardando_beneficiario", "o documento verificado libera o pedido para o aceite");
+        (await EnviarAsync(leandro, HttpMethod.Post, $"{Rota}/{id}/aceite")).StatusCode.Should().Be(HttpStatusCode.OK);
 
         await using (AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope())
         {
@@ -72,6 +76,7 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
         using HttpClient estranho = Cliente(Isabella);
         (await estranho.GetAsync(new Uri($"{Rota}/{id}/anexos/{anexo}", UriKind.Relative))).StatusCode.Should().Be(HttpStatusCode.NotFound);
 
+        (await ListarFilaAsync(diogo, "gestor")).Should().Contain(id);
         (await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
         (await SituacaoAsync(betina, id)).Should().Be("aguardando_encarregada");
         (await EnviarAsync(marlene, HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
@@ -80,7 +85,7 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
         concessao.EscopoTipo.Should().Be(Autorizacao.Domain.Enums.TipoDeEscopo.Instituicao);
         JsonElement trilha = await LerAsync(diogo, $"{Rota}/{id}/trilha");
         string[] tipos = [.. trilha.EnumerateArray().Select(e => e.GetProperty("tipo").GetString()!)];
-        tipos.Should().Equal("pedido_criado", "beneficiario_aceitou", "anexo_enviado", "anexo_verificado", "anexo_lido", "anexo_lido", "aprovado", "aprovado");
+        tipos.Should().Equal("pedido_criado", "anexo_enviado", "anexo_verificado", "beneficiario_aceitou", "anexo_lido", "anexo_lido", "aprovado", "aprovado");
         trilha.EnumerateArray().Single(e => e.GetProperty("tipo").GetString() == "anexo_verificado")
             .GetProperty("detalhe").GetString().Should().Contain(new string('a', 64));
     }
@@ -93,13 +98,13 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
         using HttpClient leandro = Cliente(Leandro);
         using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
         Guid id = await CriarAsync(betina, PerfisDeSistema.GestorDeAcessosId, null, Leandro);
-        await EnviarAsync(leandro, HttpMethod.Post, $"{Rota}/{id}/aceite");
         Guid anexo = await AnexarEmVerificacaoAsync(betina, id);
 
         await InjetarResultadoAsync(anexo, VeredictoDaVerificacao.Recusado);
         await AguardarAsync(async () => await SituacaoDoAnexoAsync(betina, id, anexo) == "recusado", "o anexo não chegou a recusado");
 
-        await ConferirRecusaAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.UnprocessableEntity, "documento_obrigatorio");
+        (await SituacaoAsync(betina, id)).Should().Be("aguardando_documento");
+        (await ListarFilaAsync(diogo, "gestor")).Should().NotContain(id);
         (await TiposDaTrilhaAsync(betina, id)).Should().Contain("anexo_recusado").And.NotContain("anexo_verificado");
         (await EnviarAsync(betina, HttpMethod.Get, $"{Rota}/{id}/anexos/{anexo}")).StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
@@ -140,9 +145,9 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
         using HttpClient marlene = Cliente(Marlene);
         using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
         Guid id = await CriarAsync(betina, perfil, null, Marlene);
-        await EnviarAsync(marlene, HttpMethod.Post, $"{Rota}/{id}/aceite");
-        await ConferirRecusaAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.UnprocessableEntity, "documento_obrigatorio");
+        (await SituacaoAsync(betina, id)).Should().Be("aguardando_documento");
         await AnexarVerificadoAsync(betina, id);
+        await EnviarAsync(marlene, HttpMethod.Post, $"{Rota}/{id}/aceite");
 
         JsonElement aprovado = await CorpoAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.OK);
 
@@ -350,6 +355,7 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
         using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
         Guid id = await CriarAsync(betina, PerfisDeSistema.GestorDeAcessosId, null, Leandro);
         await AnexarVerificadoAsync(betina, id);
+        await EnviarAsync(Cliente(Leandro), HttpMethod.Post, $"{Rota}/{id}/aceite");
 
         JsonElement trilha = await LerAsync(diogo, $"{Rota}/{id}/trilha");
 
