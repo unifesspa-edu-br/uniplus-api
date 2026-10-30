@@ -289,30 +289,71 @@ public sealed class PedidoDeConcessaoTests
         pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
     }
 
-    [Fact(DisplayName = "Pedido do perfil de gestor de acessos sem documento verificado é recusado; com o documento, aprovado")]
-    public void Aprovar_PerfilDeGestor_ExigeDocumentoVerificado()
+    [Fact(DisplayName = "Pedido de perfil com designação nasce aguardando o documento, fora das etapas de decisão e do aceite")]
+    public void Criar_PerfilComDesignacao_NasceAguardandoODocumento()
     {
-        PedidoDeConcessao pedido = PedidoAguardandoGestor(PerfilDeGovernanca());
+        PedidoDeConcessao pedido = PedidoDeConcessao.Criar(
+            Betina, Leandro.Email, PerfilDeGovernanca(), EscopoDaConcessao.DaInstituicao(), Justificativa, Dominios, Catalogo, Agora).Value!;
 
-        Codigos(pedido.Aprovar(Diogo.Identidade, DeGestor, Contexto, Agora)).Should().Equal(PedidoErrorCodes.DocumentoObrigatorio);
+        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
+        pedido.Ativo.Should().BeTrue("o pedido repetido continua barrado enquanto espera o documento");
+        pedido.EtapaAtual.Should().BeNull();
+        Codigos(pedido.Aceitar(Leandro, Agora)).Should().Equal(PedidoErrorCodes.SituacaoInvalida);
+        Codigos(pedido.Aprovar(Diogo.Identidade, DeGestor, Contexto, Agora)).Should().Equal(PedidoErrorCodes.SituacaoInvalida);
+        pedido.NovoAnexo(1024).IsSuccess.Should().BeTrue("o solicitante anexa o documento justamente nesta situação");
+    }
 
+    [Fact(DisplayName = "Pedido de perfil com designação pode ser cancelado enquanto espera o documento")]
+    public void Cancelar_AguardandoDocumento_Encerra()
+    {
+        PedidoDeConcessao pedido = PedidoDeConcessao.Criar(
+            Betina, Leandro.Email, PerfilDeGovernanca(), EscopoDaConcessao.DaInstituicao(), Justificativa, Dominios, Catalogo, Agora).Value!;
+
+        pedido.Cancelar(Agora).IsSuccess.Should().BeTrue();
+
+        pedido.Situacao.Should().Be(SituacaoDoPedido.Cancelado);
+    }
+
+    [Theory(DisplayName = "O documento verificado libera o pedido para o aceite do beneficiário, ou para o gestor no pedido para si mesmo")]
+    [InlineData(false, SituacaoDoPedido.AguardandoBeneficiario)]
+    [InlineData(true, SituacaoDoPedido.AguardandoGestor)]
+    public void LiberarAoVerificarDocumento_SegueParaAEtapaSeguinte(bool paraSiMesmo, SituacaoDoPedido esperada)
+    {
+        PessoaNoToken solicitante = paraSiMesmo ? Leandro : Betina;
+        PedidoDeConcessao pedido = PedidoDeConcessao.Criar(
+            solicitante, Leandro.Email, PerfilDeGovernanca(), EscopoDaConcessao.DaInstituicao(), Justificativa, Dominios, Catalogo, Agora).Value!;
         AnexoDoPedido anexo = pedido.NovoAnexo(1024).Value!;
-        // O anexo existe, mas ainda não foi verificado.
-        Codigos(pedido.Aprovar(Diogo.Identidade, DeGestor, Contexto, Agora)).Should().Equal(PedidoErrorCodes.DocumentoObrigatorio);
 
+        pedido.LiberarAoVerificarDocumento().Should().BeFalse("o anexo ainda não foi confirmado");
         pedido.ConfirmarAnexo(anexo.Id, "\"etag\"", Agora).IsSuccess.Should().BeTrue();
-        anexo.RegistrarVerificado(new string('a', 64), Agora).Should().BeTrue();
+        pedido.LiberarAoVerificarDocumento().Should().BeFalse("o anexo está em verificação, sem veredicto");
+        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
 
-        pedido.Aprovar(Diogo.Identidade, DeGestor, Contexto, Agora).IsSuccess.Should().BeTrue();
+        anexo.RegistrarVerificado(new string('a', 64), Agora).Should().BeTrue();
+        pedido.LiberarAoVerificarDocumento().Should().BeTrue();
+
+        pedido.Situacao.Should().Be(esperada);
+        pedido.LiberarAoVerificarDocumento().Should().BeFalse("o pedido já seguiu");
+    }
+
+    [Fact(DisplayName = "O documento recusado pelo verificador não libera o pedido")]
+    public void LiberarAoVerificarDocumento_AnexoRecusado_NaoLibera()
+    {
+        PedidoDeConcessao pedido = PedidoDeConcessao.Criar(
+            Betina, Leandro.Email, PerfilDeGovernanca(), EscopoDaConcessao.DaInstituicao(), Justificativa, Dominios, Catalogo, Agora).Value!;
+        AnexoDoPedido anexo = pedido.NovoAnexo(1024).Value!;
+        pedido.ConfirmarAnexo(anexo.Id, "\"etag\"", Agora);
+        anexo.RegistrarRecusado(Agora).Should().BeTrue();
+
+        pedido.LiberarAoVerificarDocumento().Should().BeFalse();
+
+        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
     }
 
     [Fact(DisplayName = "O pedido da encarregada exige o documento de designação e passa só pelo gestor, com a dispensa na trilha")]
     public void Aprovar_PerfilDaEncarregada_DispensaASegundaAprovacao()
     {
         PedidoDeConcessao pedido = PedidoAguardandoGestor(PerfilDeGovernanca(TipoDeGovernanca.EncarregadaDeDados));
-        Codigos(pedido.Aprovar(Diogo.Identidade, DeEncarregada, Contexto, Agora)).Should().Equal(PedidoErrorCodes.DocumentoObrigatorio);
-        AnexoVerificado(pedido);
-
         Result<DesfechoDaAprovacao> resultado = pedido.Aprovar(Diogo.Identidade, DeEncarregada, Contexto, Agora);
 
         resultado.Value.Should().Be(DesfechoDaAprovacao.Concluido);
@@ -508,6 +549,12 @@ public sealed class PedidoDeConcessaoTests
     {
         PedidoDeConcessao pedido = PedidoDeConcessao.Criar(
             Betina, Leandro.Email, perfil ?? PerfilComum(), EscopoOf(perfil), Justificativa, Dominios, Catalogo, Agora).Value!;
+        if (pedido.Situacao == SituacaoDoPedido.AguardandoDocumento)
+        {
+            AnexoVerificado(pedido);
+            pedido.LiberarAoVerificarDocumento().Should().BeTrue();
+        }
+
         pedido.Aceitar(Leandro, Agora).IsSuccess.Should().BeTrue();
         return pedido;
     }

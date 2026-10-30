@@ -38,6 +38,7 @@ public sealed class PedidoDeConcessao : EntityBase
     /// <summary>As situações em que o pedido ainda pode avançar: o mesmo pedido não se repete enquanto numa delas.</summary>
     public static readonly IReadOnlyList<SituacaoDoPedido> SituacoesAtivas =
     [
+        SituacaoDoPedido.AguardandoDocumento,
         SituacaoDoPedido.AguardandoBeneficiario,
         SituacaoDoPedido.AguardandoGestor,
         SituacaoDoPedido.AguardandoEncarregada,
@@ -180,7 +181,9 @@ public sealed class PedidoDeConcessao : EntityBase
             PerfilId = perfil.Id,
             UnidadeId = escopo.UnidadeId,
             Justificativa = justificativaNormalizada!,
-            Situacao = paraSiMesmo ? SituacaoDoPedido.AguardandoGestor : SituacaoDoPedido.AguardandoBeneficiario,
+            Situacao = perfil.Governanca is not null
+                ? SituacaoDoPedido.AguardandoDocumento
+                : EtapaSeguinteAoDocumento(paraSiMesmo),
             CriadoEm = instante,
         };
 
@@ -227,6 +230,22 @@ public sealed class PedidoDeConcessao : EntityBase
         Situacao = SituacaoDoPedido.AguardandoGestor;
 
         return Result.Success();
+    }
+
+    /// <summary>
+    /// Libera o pedido que espera o documento de designação quando já há anexo verificado: o pedido segue para o
+    /// aceite do beneficiário, se ele é outra pessoa, ou para o gestor. Em qualquer outra situação, ou sem o anexo
+    /// verificado, nada muda e devolve falso.
+    /// </summary>
+    public bool LiberarAoVerificarDocumento()
+    {
+        if (Situacao != SituacaoDoPedido.AguardandoDocumento || !TemAnexoVerificado)
+        {
+            return false;
+        }
+
+        Situacao = EtapaSeguinteAoDocumento(Beneficiario is not null);
+        return true;
     }
 
     /// <summary>A pessoa é uma das partes do pedido: o solicitante ou o beneficiário.</summary>
@@ -325,13 +344,6 @@ public sealed class PedidoDeConcessao : EntityBase
                 "O perfil de acesso está desativado e não aceita aprovação.")));
         }
 
-        if (etapa == EtapaDoPedido.Gestor && perfil.Governanca is not null && !TemAnexoVerificado)
-        {
-            erros.Add(new("anexo", new DomainError(
-                PedidoErrorCodes.DocumentoObrigatorio,
-                "O pedido de perfil de governança exige o documento de designação anexado e verificado.")));
-        }
-
         if (erros.Count > 0)
         {
             return Result<DesfechoDaAprovacao>.ValidationFailure(erros);
@@ -410,8 +422,13 @@ public sealed class PedidoDeConcessao : EntityBase
         ConcessaoId = concessaoId;
     }
 
+    // O pedido para si mesmo não tem aceite: o beneficiário já é conhecido e a decisão cabe ao gestor.
+    private static SituacaoDoPedido EtapaSeguinteAoDocumento(bool paraSiMesmo) =>
+        paraSiMesmo ? SituacaoDoPedido.AguardandoGestor : SituacaoDoPedido.AguardandoBeneficiario;
+
     private bool PodeSerAlteradoPeloSolicitante =>
-        Situacao is SituacaoDoPedido.AguardandoBeneficiario or SituacaoDoPedido.AguardandoGestor && _decisoes.Count == 0;
+        Situacao is SituacaoDoPedido.AguardandoDocumento or SituacaoDoPedido.AguardandoBeneficiario or SituacaoDoPedido.AguardandoGestor
+        && _decisoes.Count == 0;
 
     private DecisaoDoPedido? UltimaAprovacaoDoGestor => _decisoes
         .Where(d => d.Etapa == EtapaDoPedido.Gestor && d.Resultado == ResultadoDaDecisao.Aprovado)

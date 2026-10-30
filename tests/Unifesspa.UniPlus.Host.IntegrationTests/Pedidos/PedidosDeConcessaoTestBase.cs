@@ -156,6 +156,14 @@ public abstract class PedidosDeConcessaoTestBase
         HttpClient solicitante, Guid perfilId, Guid? unidadeId, string? emailDoBeneficiario, string? justificativa = Justificativa) =>
         EnviarAsync(solicitante, HttpMethod.Post, Rota, new { beneficiarioEmail = emailDoBeneficiario, perfilId, unidadeId, justificativa });
 
+    internal static async Task<Guid[]> ListarFilaAsync(HttpClient client, string fila, string? situacao = null)
+    {
+        string url = $"{Rota}?fila={fila}" + (situacao is null ? string.Empty : $"&situacao={situacao}");
+        JsonElement pagina = await LerAsync(client, url);
+        JsonElement itens = pagina.ValueKind == JsonValueKind.Array ? pagina : pagina.GetProperty("items");
+        return [.. itens.EnumerateArray().Select(i => i.GetProperty("id").GetGuid())];
+    }
+
     internal static async Task<string> SituacaoAsync(HttpClient client, Guid id) =>
         (await LerAsync(client, $"{Rota}/{id}")).GetProperty("situacao").GetString()!;
 

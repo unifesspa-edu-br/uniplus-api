@@ -580,7 +580,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                     b.HasIndex("BeneficiarioEmail", "PerfilId", "UnidadeId")
                         .IsUnique()
                         .HasDatabaseName("ux_pedidos_ativo_unico")
-                        .HasFilter("situacao IN ('aguardando_beneficiario', 'aguardando_gestor', 'aguardando_encarregada')");
+                        .HasFilter("situacao IN ('aguardando_documento', 'aguardando_beneficiario', 'aguardando_gestor', 'aguardando_encarregada')");
 
                     NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("BeneficiarioEmail", "PerfilId", "UnidadeId"), false);
 
@@ -590,7 +590,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_pedidos_concessao_so_aprovado", "concessao_id IS NULL OR situacao = 'aprovado'");
 
-                            t.HasCheckConstraint("ck_pedidos_decisao_com_beneficiario", "situacao IN ('aguardando_beneficiario', 'cancelado') OR beneficiario_sub IS NOT NULL");
+                            t.HasCheckConstraint("ck_pedidos_decisao_com_beneficiario", "situacao IN ('aguardando_documento', 'aguardando_beneficiario', 'cancelado') OR beneficiario_sub IS NOT NULL");
 
                             t.HasCheckConstraint("ck_pedidos_encerramento", "(situacao IN ('aprovado', 'recusado', 'cancelado')) = (encerrado_em IS NOT NULL)");
                         });

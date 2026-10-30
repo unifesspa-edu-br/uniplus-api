@@ -37,7 +37,7 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
                 "(beneficiario_emissor IS NULL) = (beneficiario_sub IS NULL)");
             tabela.HasCheckConstraint(
                 "ck_pedidos_decisao_com_beneficiario",
-                "situacao IN ('aguardando_beneficiario', 'cancelado') OR beneficiario_sub IS NOT NULL");
+                "situacao IN ('aguardando_documento', 'aguardando_beneficiario', 'cancelado') OR beneficiario_sub IS NOT NULL");
             tabela.HasCheckConstraint(
                 "ck_pedidos_encerramento",
                 "(situacao IN ('aprovado', 'recusado', 'cancelado')) = (encerrado_em IS NOT NULL)");

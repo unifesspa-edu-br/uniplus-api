@@ -121,7 +121,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
         {
             if (!TentarLerSituacao(situacao, out SituacaoDoPedido lida))
             {
-                return Recusar(PedidoErrorCodes.FiltroDeSituacaoInvalido, "Situação inválida. Use aguardando_beneficiario, aguardando_gestor, aguardando_encarregada, aprovado, recusado ou cancelado.");
+                return Recusar(PedidoErrorCodes.FiltroDeSituacaoInvalido, "Situação inválida. Use aguardando_documento, aguardando_beneficiario, aguardando_gestor, aguardando_encarregada, aprovado, recusado ou cancelado.");
             }
 
             situacaoLida = lida;
