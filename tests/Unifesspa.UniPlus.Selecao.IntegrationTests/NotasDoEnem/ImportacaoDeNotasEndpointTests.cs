@@ -674,9 +674,10 @@ public sealed class ImportacaoDeNotasEndpointTests
             todos.Should().NotContain($"{cpf[..3]}.{cpf[3..6]}.{cpf[6..9]}-{cpf[9..]}");
         }
 
+        // A nota vale como número inteiro: "960" dentro de "39.9608" (tempo de resposta) não é vazamento.
         foreach (string nota in NotasPadrao.Where(n => n.Length > 2))
         {
-            todos.Should().NotContain(nota);
+            todos.Should().NotMatchRegex($@"(?<!\d){System.Text.RegularExpressions.Regex.Escape(nota)}(?!\d)");
         }
     }
 }
