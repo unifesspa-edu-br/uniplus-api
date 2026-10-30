@@ -37,7 +37,7 @@ public static class PerfilMapping
 
     /// <summary>
     /// O perfil como o aprovador o avalia agora: as permissões que reúne e a sensibilidade que o catálogo lhes atribui.
-    /// Pessoal ou sensível exige também a encarregada de dados.
+    /// Pessoal ou sensível exige também a proteção de dados.
     /// </summary>
     public static PerfilAvaliado Avaliar(Perfil perfil, CatalogoDaAplicacao catalogo)
     {

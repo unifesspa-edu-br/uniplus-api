@@ -15,8 +15,8 @@ public enum FilaDePedidos
     /// <summary>Os pedidos que aguardam a primeira aprovação, a do gestor de acessos.</summary>
     Gestor = 2,
 
-    /// <summary>Os pedidos que aguardam a segunda aprovação, a da encarregada de dados.</summary>
-    Encarregada = 3,
+    /// <summary>Os pedidos que aguardam a segunda aprovação, a da proteção de dados.</summary>
+    ProtecaoDeDados = 3,
 
     /// <summary>Os pedidos em qualquer situação, para o aprovador reencontrar o que já decidiu ou viu encerrar.</summary>
     Todos = 4,

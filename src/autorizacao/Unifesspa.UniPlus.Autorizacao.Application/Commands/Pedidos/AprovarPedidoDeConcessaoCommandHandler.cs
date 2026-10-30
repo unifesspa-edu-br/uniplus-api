@@ -53,11 +53,11 @@ public static class AprovarPedidoDeConcessaoCommandHandler
         (PedidoDeConcessao pedido, Perfil perfil, PerfilAvaliado avaliado, Identidade decisor) = preparada.Value!;
         DateTimeOffset agora = timeProvider.GetUtcNow();
 
-        bool encarregada = pedido.Beneficiario is { } beneficiario
-            && await concessoes.TemConcessaoAtivaDoPerfilAsync(beneficiario, PerfisDeSistema.EncarregadaDeDadosId, agora, cancellationToken)
+        bool jaTemProtecaoDeDados = pedido.Beneficiario is { } beneficiario
+            && await concessoes.TemConcessaoAtivaDoPerfilAsync(beneficiario, PerfisDeSistema.ProtecaoDeDadosId, agora, cancellationToken)
                 .ConfigureAwait(false);
 
-        Result<DesfechoDaAprovacao> aprovacao = pedido.Aprovar(decisor, avaliado, new ContextoDaAprovacao(encarregada), agora);
+        Result<DesfechoDaAprovacao> aprovacao = pedido.Aprovar(decisor, avaliado, new ContextoDaAprovacao(jaTemProtecaoDeDados), agora);
         if (aprovacao.IsFailure)
         {
             // O perfil alterado entre as etapas devolve o pedido ao gestor, e esse estado precisa ser gravado.

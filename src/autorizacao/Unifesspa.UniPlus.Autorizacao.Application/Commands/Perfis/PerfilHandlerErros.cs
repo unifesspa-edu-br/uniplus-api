@@ -16,9 +16,9 @@ internal static class PerfilHandlerErros
         new(PerfilErrorCodes.AlcanceAlterado,
             "O alcance de um perfil com concessões não pode mudar: crie outro perfil e conceda-o por pedido.");
 
-    public static DomainError AmpliacaoExigeEncarregada() =>
-        new(PerfilErrorCodes.AmpliacaoExigeEncarregada,
-            "Acrescentar permissão pessoal ou sensível a um perfil com concessões exige a aprovação da encarregada de dados: crie outro perfil e conceda-o por pedido.");
+    public static DomainError AmpliacaoExigeProtecaoDeDados() =>
+        new(PerfilErrorCodes.AmpliacaoExigeProtecaoDeDados,
+            "Acrescentar permissão pessoal ou sensível a um perfil com concessões exige a aprovação da proteção de dados: crie outro perfil e conceda-o por pedido.");
 
     public static DomainError ConflitoDeConcorrencia() =>
         new(PerfilErrorCodes.ConflitoDeConcorrencia,

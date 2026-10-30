@@ -33,7 +33,7 @@ internal sealed class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
 
     // Perfis de sistema, com identificador fixo para que as migrations seguintes os alcancem.
     private static readonly Guid GestorDeAcessosId = PerfisDeSistema.GestorDeAcessosId;
-    private static readonly Guid EncarregadaDeDadosId = PerfisDeSistema.EncarregadaDeDadosId;
+    private static readonly Guid ProtecaoDeDadosId = PerfisDeSistema.ProtecaoDeDadosId;
     private static readonly DateTimeOffset CargaInicial = new(2026, 10, 28, 0, 0, 0, TimeSpan.Zero);
 
     public void Configure(EntityTypeBuilder<Perfil> builder)
@@ -88,9 +88,9 @@ internal sealed class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
                 new { PerfilId = GestorDeAcessosId, Codigo = "autorizacao:pedidos:aprovar-funcional" },
                 new { PerfilId = GestorDeAcessosId, Codigo = "autorizacao:perfis:manter" },
                 new { PerfilId = GestorDeAcessosId, Codigo = "autorizacao:permissoes:consultar-catalogo" },
-                new { PerfilId = EncarregadaDeDadosId, Codigo = "autorizacao:concessoes:administrar" },
-                new { PerfilId = EncarregadaDeDadosId, Codigo = "autorizacao:pedidos:aprovar-protecao-de-dados" },
-                new { PerfilId = EncarregadaDeDadosId, Codigo = "autorizacao:permissoes:consultar-catalogo" });
+                new { PerfilId = ProtecaoDeDadosId, Codigo = "autorizacao:concessoes:administrar" },
+                new { PerfilId = ProtecaoDeDadosId, Codigo = "autorizacao:pedidos:aprovar-protecao-de-dados" },
+                new { PerfilId = ProtecaoDeDadosId, Codigo = "autorizacao:permissoes:consultar-catalogo" });
         });
 
         builder.HasData(
@@ -105,11 +105,11 @@ internal sealed class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
             },
             new
             {
-                Id = EncarregadaDeDadosId,
-                Nome = "Encarregada de dados",
+                Id = ProtecaoDeDadosId,
+                Nome = "Encarregado(a) pelo tratamento de dados",
                 Descricao = "Aprova a concessão de acesso a dado pessoal ou sensível.",
                 Ativo = true,
-                Governanca = (TipoDeGovernanca?)TipoDeGovernanca.EncarregadaDeDados,
+                Governanca = (TipoDeGovernanca?)TipoDeGovernanca.ProtecaoDeDados,
                 CreatedAt = CargaInicial,
             });
     }

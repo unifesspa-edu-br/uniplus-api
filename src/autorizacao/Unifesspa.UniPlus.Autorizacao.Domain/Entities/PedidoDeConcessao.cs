@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Pedido de concessão de um perfil de acesso a uma pessoa, num escopo. Toda concessão nasce de um
 /// pedido aprovado: o gestor de acessos aprova a adequação funcional e, quando o perfil reúne
-/// permissão pessoal ou sensível, a encarregada de dados aprova depois, a adequação à proteção de dados.
+/// permissão pessoal ou sensível, a proteção de dados aprova depois, a adequação à proteção de dados.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -41,7 +41,7 @@ public sealed class PedidoDeConcessao : EntityBase
         SituacaoDoPedido.AguardandoDocumento,
         SituacaoDoPedido.AguardandoBeneficiario,
         SituacaoDoPedido.AguardandoGestor,
-        SituacaoDoPedido.AguardandoEncarregada,
+        SituacaoDoPedido.AguardandoProtecaoDeDados,
     ];
 
     private readonly List<DecisaoDoPedido> _decisoes = [];
@@ -102,7 +102,7 @@ public sealed class PedidoDeConcessao : EntityBase
     public EtapaDoPedido? EtapaAtual => Situacao switch
     {
         SituacaoDoPedido.AguardandoGestor => EtapaDoPedido.Gestor,
-        SituacaoDoPedido.AguardandoEncarregada => EtapaDoPedido.Encarregada,
+        SituacaoDoPedido.AguardandoProtecaoDeDados => EtapaDoPedido.ProtecaoDeDados,
         _ => null,
     };
 
@@ -311,9 +311,9 @@ public sealed class PedidoDeConcessao : EntityBase
 
     /// <summary>
     /// Aprova a etapa corrente. A primeira etapa é sempre a do gestor: se o perfil, naquele instante, reúne permissão
-    /// pessoal ou sensível o pedido segue para a encarregada, senão a aprovação conclui. A segunda aprovação é
-    /// dispensada para o perfil da própria encarregada, que ninguém poderia aprovar, e para o beneficiário que já
-    /// é a encarregada (ADR-0152); a decisão do gestor registra a dispensa e o motivo.
+    /// pessoal ou sensível o pedido segue para a proteção de dados, senão a aprovação conclui. A segunda aprovação é
+    /// dispensada para o perfil da própria proteção de dados, que ninguém poderia aprovar, e para o beneficiário que já
+    /// tem o perfil de proteção de dados (ADR-0152); a decisão do gestor registra a dispensa e o motivo.
     /// </summary>
     /// <remarks>
     /// O perfil que mudou entre as etapas devolve o pedido ao gestor e responde <see cref="PedidoErrorCodes.PerfilAlterado"/>:
@@ -349,7 +349,7 @@ public sealed class PedidoDeConcessao : EntityBase
             return Result<DesfechoDaAprovacao>.ValidationFailure(erros);
         }
 
-        if (etapa == EtapaDoPedido.Encarregada && !MesmoPerfilQueOGestorAvaliou(perfil))
+        if (etapa == EtapaDoPedido.ProtecaoDeDados && !MesmoPerfilQueOGestorAvaliou(perfil))
         {
             // Nenhuma etapa concede o que a anterior não avaliou: o gestor decide de novo sobre o perfil de agora, e a
             // tentativa fica registrada com quem a fez e o perfil que ele viu.
@@ -362,7 +362,7 @@ public sealed class PedidoDeConcessao : EntityBase
         }
 
         string? dispensa = etapa == EtapaDoPedido.Gestor ? MotivoDaDispensa(perfil, contexto) : null;
-        bool concluido = etapa == EtapaDoPedido.Encarregada || dispensa is not null || !perfil.ExigeEncarregada;
+        bool concluido = etapa == EtapaDoPedido.ProtecaoDeDados || dispensa is not null || !perfil.ExigeAprovacaoDeProtecaoDeDados;
 
         _decisoes.Add(DecisaoDoPedido.Registrar(
             Id, etapa, decisor, ResultadoDaDecisao.Aprovado, null, perfil, dispensa, instante));
@@ -373,8 +373,8 @@ public sealed class PedidoDeConcessao : EntityBase
             return Result<DesfechoDaAprovacao>.Success(DesfechoDaAprovacao.Concluido);
         }
 
-        Situacao = SituacaoDoPedido.AguardandoEncarregada;
-        return Result<DesfechoDaAprovacao>.Success(DesfechoDaAprovacao.AguardaEncarregada);
+        Situacao = SituacaoDoPedido.AguardandoProtecaoDeDados;
+        return Result<DesfechoDaAprovacao>.Success(DesfechoDaAprovacao.AguardaProtecaoDeDados);
     }
 
     /// <summary>Recusa o pedido na etapa corrente, com motivo. Encerra o pedido, sem concessão.</summary>
@@ -448,12 +448,12 @@ public sealed class PedidoDeConcessao : EntityBase
                 "Ninguém decide pedido em que é solicitante ou beneficiário.")));
         }
 
-        if (etapa == EtapaDoPedido.Encarregada && _decisoes.Exists(d =>
+        if (etapa == EtapaDoPedido.ProtecaoDeDados && _decisoes.Exists(d =>
                 d.Etapa == EtapaDoPedido.Gestor && d.Resultado == ResultadoDaDecisao.Aprovado && d.Decisor == decisor))
         {
             erros.Add(new("decisor", new DomainError(
                 PedidoErrorCodes.MesmoDecisorNasDuasEtapas,
-                "Quem decidiu como gestor não decide como encarregada de dados.")));
+                "Quem decidiu como gestor não decide na etapa de proteção de dados.")));
         }
     }
 
@@ -464,8 +464,8 @@ public sealed class PedidoDeConcessao : EntityBase
 
     private static string? MotivoDaDispensa(PerfilAvaliado perfil, ContextoDaAprovacao contexto) => perfil switch
     {
-        { Governanca: TipoDeGovernanca.EncarregadaDeDados } => MotivosDeDispensa.DesignacaoDaEncarregada,
-        { ExigeEncarregada: true } when contexto.BeneficiarioJaEEncarregada => MotivosDeDispensa.BeneficiariaJaEEncarregada,
+        { Governanca: TipoDeGovernanca.ProtecaoDeDados } => MotivosDeDispensa.DesignacaoDeProtecaoDeDados,
+        { ExigeAprovacaoDeProtecaoDeDados: true } when contexto.BeneficiarioJaTemProtecaoDeDados => MotivosDeDispensa.BeneficiarioJaTemProtecaoDeDados,
         _ => null,
     };
 
@@ -568,12 +568,12 @@ public sealed class PedidoDeConcessao : EntityBase
     private static DomainError SituacaoInvalida(string mensagem) => new(PedidoErrorCodes.SituacaoInvalida, mensagem);
 }
 
-/// <summary>O que a aprovação de uma etapa deixou: o pedido concluído, a conceder, ou a aguardar a encarregada.</summary>
+/// <summary>O que a aprovação de uma etapa deixou: o pedido concluído, a conceder, ou a aguardar a proteção de dados.</summary>
 public enum DesfechoDaAprovacao
 {
     /// <summary>A última aprovação exigida foi dada: quem chama concede o acesso.</summary>
     Concluido = 1,
 
-    /// <summary>A aprovação do gestor foi dada, e o perfil exige a da encarregada de dados.</summary>
-    AguardaEncarregada = 2,
+    /// <summary>A aprovação do gestor foi dada, e o perfil exige a da proteção de dados.</summary>
+    AguardaProtecaoDeDados = 2,
 }

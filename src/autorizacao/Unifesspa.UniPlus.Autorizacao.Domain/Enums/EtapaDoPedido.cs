@@ -6,27 +6,27 @@ public enum EtapaDoPedido
     /// <summary>Adequação funcional, a cargo do gestor de acessos.</summary>
     Gestor = 1,
 
-    /// <summary>Adequação à proteção de dados, a cargo da encarregada de dados.</summary>
-    Encarregada = 2,
+    /// <summary>Adequação à proteção de dados, a cargo da proteção de dados.</summary>
+    ProtecaoDeDados = 2,
 }
 
 /// <summary>Código textual canônico de <see cref="EtapaDoPedido"/>, o valor gravado e exposto.</summary>
 public static class EtapaDoPedidoCodigo
 {
     public const string Gestor = "gestor";
-    public const string Encarregada = "encarregada";
+    public const string ProtecaoDeDados = "protecao_de_dados";
 
     public static string ToCodigo(this EtapaDoPedido etapa) => etapa switch
     {
         EtapaDoPedido.Gestor => Gestor,
-        EtapaDoPedido.Encarregada => Encarregada,
+        EtapaDoPedido.ProtecaoDeDados => ProtecaoDeDados,
         _ => throw new ArgumentOutOfRangeException(nameof(etapa), etapa, null),
     };
 
     public static EtapaDoPedido FromCodigo(string codigo) => codigo switch
     {
         Gestor => EtapaDoPedido.Gestor,
-        Encarregada => EtapaDoPedido.Encarregada,
+        ProtecaoDeDados => EtapaDoPedido.ProtecaoDeDados,
         _ => throw new ArgumentOutOfRangeException(nameof(codigo), codigo, null),
     };
 }

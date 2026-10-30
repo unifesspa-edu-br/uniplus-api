@@ -538,12 +538,12 @@ public sealed partial class InstalacaoDosGestoresTests
     private static Guid SubDe(string username) =>
         new(SHA256.HashData(Encoding.UTF8.GetBytes($"persona:{username}"))[..16]);
 
-    // Quem lê a trilha administra concessões por concessão gravada. A encarregada serve: a instalação só conta e
+    // Quem lê a trilha administra concessões por concessão gravada. A proteção de dados serve: a instalação só conta e
     // apaga as concessões do perfil do gestor.
     private async Task<HttpClient> ClienteQueLeATrilhaAsync()
     {
         await ConcessoesDeTeste.ConcederGovernancaAsync(
-            _fixture.Factory.Services, Isabella.Sub.ToString(), TipoDeGovernanca.EncarregadaDeDados);
+            _fixture.Factory.Services, Isabella.Sub.ToString(), TipoDeGovernanca.ProtecaoDeDados);
         return Cliente(Isabella, papel: false);
     }
 

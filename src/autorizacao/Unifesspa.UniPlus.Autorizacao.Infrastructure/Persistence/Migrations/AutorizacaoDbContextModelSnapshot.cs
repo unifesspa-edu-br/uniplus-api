@@ -580,7 +580,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                     b.HasIndex("BeneficiarioEmail", "PerfilId", "UnidadeId")
                         .IsUnique()
                         .HasDatabaseName("ux_pedidos_ativo_unico")
-                        .HasFilter("situacao IN ('aguardando_documento', 'aguardando_beneficiario', 'aguardando_gestor', 'aguardando_encarregada')");
+                        .HasFilter("situacao IN ('aguardando_documento', 'aguardando_beneficiario', 'aguardando_gestor', 'aguardando_protecao_de_dados')");
 
                     NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("BeneficiarioEmail", "PerfilId", "UnidadeId"), false);
 
@@ -674,8 +674,8 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                             Ativo = true,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 28, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Aprova a concessão de acesso a dado pessoal ou sensível.",
-                            Governanca = "encarregada-de-dados",
-                            Nome = "Encarregada de dados"
+                            Governanca = "protecao-de-dados",
+                            Nome = "Encarregado(a) pelo tratamento de dados"
                         });
                 });
 

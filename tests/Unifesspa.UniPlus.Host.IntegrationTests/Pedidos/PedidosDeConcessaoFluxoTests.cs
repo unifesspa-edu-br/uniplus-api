@@ -88,23 +88,23 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
 
         JsonElement gestor = await CorpoAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.OK);
 
-        gestor.GetProperty("situacao").GetString().Should().Be("aguardando_encarregada");
-        gestor.GetProperty("etapaAtual").GetString().Should().Be("encarregada");
+        gestor.GetProperty("situacao").GetString().Should().Be("aguardando_protecao_de_dados");
+        gestor.GetProperty("etapaAtual").GetString().Should().Be("protecao_de_dados");
         (await ConcessoesAsync(Leandro, perfil)).Should().BeEmpty("Leandro ainda não tem a concessão");
-        (await ListarFilaAsync(marlene, "encarregada")).Should().Contain(id);
+        (await ListarFilaAsync(marlene, "protecao_de_dados")).Should().Contain(id);
         (await ListarFilaAsync(diogo, "gestor")).Should().NotContain(id);
 
-        JsonElement encarregada = await CorpoAsync(await EnviarAsync(marlene, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.OK);
+        JsonElement protecao = await CorpoAsync(await EnviarAsync(marlene, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.OK);
 
-        encarregada.GetProperty("situacao").GetString().Should().Be("aprovado");
+        protecao.GetProperty("situacao").GetString().Should().Be("aprovado");
         (await ConcessoesAsync(Leandro, perfil)).Should().ContainSingle().Which.ConcedidaPorSub.Should().Be(Marlene.Sub.ToString());
-        JsonElement[] decisoes = [.. encarregada.GetProperty("decisoes").EnumerateArray()];
-        decisoes.Select(d => d.GetProperty("etapa").GetString()).Should().Equal("gestor", "encarregada");
+        JsonElement[] decisoes = [.. protecao.GetProperty("decisoes").EnumerateArray()];
+        decisoes.Select(d => d.GetProperty("etapa").GetString()).Should().Equal("gestor", "protecao_de_dados");
         decisoes[0].GetProperty("sensibilidadeAvaliada").GetString().Should().Be("sensivel");
-        (await ListarFilaAsync(marlene, "encarregada")).Should().NotContain(id);
+        (await ListarFilaAsync(marlene, "protecao_de_dados")).Should().NotContain(id);
     }
 
-    [Fact(DisplayName = "A encarregada não decide antes do gestor, o gestor não decide a etapa dela, e sem permissão a resposta é 403")]
+    [Fact(DisplayName = "A proteção de dados não decide antes do gestor, o gestor não decide a etapa dela, e sem permissão a resposta é 403")]
     public async Task EtapaDaPermissao_ConferidaPelaSituacao()
     {
         await ResetarAsync();
@@ -180,7 +180,7 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         await ConferirRecusaAsync(await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.UnprocessableEntity, "mesmo_decisor_nas_duas_etapas");
         await ConferirRecusaAsync(await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{id}/recusa", new { motivo = "De novo." }), HttpStatusCode.UnprocessableEntity, "mesmo_decisor_nas_duas_etapas");
 
-        (await SituacaoAsync(betina, id)).Should().Be("aguardando_encarregada");
+        (await SituacaoAsync(betina, id)).Should().Be("aguardando_protecao_de_dados");
     }
 
     [Fact(DisplayName = "Recusa encerra o pedido com o motivo, sem concessão, e a trilha a registra; sem motivo é recusada")]
@@ -345,7 +345,7 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
             itens.Select(i => i.GetProperty("id").GetGuid()).Should().Contain(ativo).And.NotContain(inativo);
             JsonElement item = itens.Single(i => i.GetProperty("id").GetGuid() == ativo);
             item.EnumerateObject().Select(p => p.Name).Should()
-                .BeEquivalentTo("id", "nome", "descricao", "escopo", "exigeEncarregada", "governanca");
+                .BeEquivalentTo("id", "nome", "descricao", "escopo", "exigeAprovacaoDeProtecaoDeDados", "governanca");
         }
     }
 
@@ -363,10 +363,10 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         Guid noGestor = await CriarAsync(leandro, perfil, await SemearUnidadeAsync(), null);
 
         (await ListarFilaAsync(diogo, "gestor")).Should().Contain(noGestor).And.NotContain(esperando);
-        (await ListarFilaAsync(marlene, "encarregada")).Should().BeEmpty();
+        (await ListarFilaAsync(marlene, "protecao_de_dados")).Should().BeEmpty();
         (await ListarFilaAsync(diogo, "todos")).Should().Equal([noGestor, esperando], "o histórico lista do pedido mais recente ao mais antigo");
         (await EnviarAsync(leandro, HttpMethod.Get, $"{Rota}?fila=gestor")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        (await EnviarAsync(diogo, HttpMethod.Get, $"{Rota}?fila=encarregada")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await EnviarAsync(diogo, HttpMethod.Get, $"{Rota}?fila=protecao_de_dados")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         using HttpResponseMessage filaInvalida = await EnviarAsync(diogo, HttpMethod.Get, $"{Rota}?fila=outra");
         filaInvalida.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         (await filaInvalida.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.pedido.fila_invalida");

@@ -44,7 +44,7 @@ public enum PermissaoAutorizacao
         ReservadaAGovernanca = true)]
     PedidosAprovarFuncional = 4,
 
-    /// <summary>Aprovar, como encarregada de dados, a adequação do pedido de concessão à proteção de dados.</summary>
+    /// <summary>Aprovar, na etapa de proteção de dados, a adequação do pedido de concessão à proteção de dados.</summary>
     [Permissao(
         "autorizacao:pedidos:aprovar-protecao-de-dados",
         "Aprovar a adequação dos pedidos de concessão à proteção de dados",

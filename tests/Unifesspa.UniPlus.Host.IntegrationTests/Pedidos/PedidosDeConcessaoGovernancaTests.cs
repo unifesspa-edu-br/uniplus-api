@@ -78,7 +78,7 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
 
         (await ListarFilaAsync(diogo, "gestor")).Should().Contain(id);
         (await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
-        (await SituacaoAsync(betina, id)).Should().Be("aguardando_encarregada");
+        (await SituacaoAsync(betina, id)).Should().Be("aguardando_protecao_de_dados");
         (await EnviarAsync(marlene, HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
 
         Concessao concessao = (await ConcessoesAsync(Leandro, perfil)).Single();
@@ -136,11 +136,11 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
             await EnviarAsync(betina, HttpMethod.Post, $"{Rota}/{id}/anexos/{pendente}/confirmacao", new { etag = "\"etag\"" }), HttpStatusCode.UnprocessableEntity, "situacao_invalida");
     }
 
-    [Fact(DisplayName = "O primeiro pedido da encarregada exige o documento de designação e passa só pelo gestor, com a dispensa na trilha")]
-    public async Task PerfilDaEncarregada_PassaSoPeloGestor()
+    [Fact(DisplayName = "O primeiro pedido da proteção de dados exige o documento de designação e passa só pelo gestor, com a dispensa na trilha")]
+    public async Task PerfilDeProtecaoDeDados_PassaSoPeloGestor()
     {
         await ResetarAsync();
-        Guid perfil = PerfisDeSistema.EncarregadaDeDadosId;
+        Guid perfil = PerfisDeSistema.ProtecaoDeDadosId;
         using HttpClient betina = Cliente(Betina);
         using HttpClient marlene = Cliente(Marlene);
         using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
@@ -155,14 +155,14 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
         (await ConcessoesAsync(Marlene, perfil)).Should().ContainSingle();
         JsonElement trilha = await LerAsync(diogo, $"{Rota}/{id}/trilha");
         trilha.EnumerateArray().Single(e => e.GetProperty("tipo").GetString() == "segunda_aprovacao_dispensada")
-            .GetProperty("detalhe").GetString().Should().Contain("designacao_da_encarregada");
+            .GetProperty("detalhe").GetString().Should().Contain("designacao_de_protecao_de_dados");
     }
 
-    [Fact(DisplayName = "Beneficiária que já é a encarregada tem o pedido sensível concluído pelo gestor, com a dispensa na trilha")]
-    public async Task BeneficiariaJaEEncarregada_DispensaASegundaAprovacao()
+    [Fact(DisplayName = "Beneficiário que já tem a proteção de dados tem o pedido sensível concluído pelo gestor, com a dispensa na trilha")]
+    public async Task BeneficiarioJaTemProtecaoDeDados_DispensaASegundaAprovacao()
     {
         await ResetarAsync();
-        await SemearConcessaoAsync(Marlene, PerfisDeSistema.EncarregadaDeDadosId, EscopoDaConcessao.DaInstituicao());
+        await SemearConcessaoAsync(Marlene, PerfisDeSistema.ProtecaoDeDadosId, EscopoDaConcessao.DaInstituicao());
         Guid perfil = await SemearPerfilSensivelAsync();
         Guid unidade = await SemearUnidadeAsync();
         using HttpClient betina = Cliente(Betina);
@@ -177,7 +177,7 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
         (await ConcessoesAsync(Marlene, perfil)).Should().ContainSingle();
         JsonElement trilha = await LerAsync(diogo, $"{Rota}/{id}/trilha");
         trilha.EnumerateArray().Single(e => e.GetProperty("tipo").GetString() == "segunda_aprovacao_dispensada")
-            .GetProperty("detalhe").GetString().Should().Contain("beneficiaria_ja_e_encarregada");
+            .GetProperty("detalhe").GetString().Should().Contain("beneficiario_ja_tem_protecao_de_dados");
     }
 
     [Fact(DisplayName = "Perfil alterado entre as etapas devolve o pedido ao gestor, responde perfil_alterado e nada é concedido")]
@@ -204,7 +204,7 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
         JsonElement trilhaDaTentativa = await LerAsync(diogo, $"{Rota}/{id}/trilha");
         JsonElement devolucao = trilhaDaTentativa.EnumerateArray().Single(e => e.GetProperty("tipo").GetString() == "perfil_alterado_entre_etapas");
         devolucao.GetProperty("autor").GetProperty("sub").GetString().Should().Be(Marlene.Sub.ToString());
-        devolucao.GetProperty("detalhe").GetString().Should().Contain("encarregada");
+        devolucao.GetProperty("detalhe").GetString().Should().Contain("protecao_de_dados");
         (await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
         (await EnviarAsync(marlene, HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
         JsonElement final = await LerAsync(betina, $"{Rota}/{id}");

@@ -23,7 +23,7 @@ public sealed record DecisaoDoPedidoDto(
 public sealed record AnexoDoPedidoDto(Guid Id, string Situacao, long TamanhoDeclarado, DateTimeOffset? EnviadoEm);
 
 /// <summary>Pedido de concessão como a API o expõe a quem pode vê-lo.</summary>
-/// <param name="EtapaAtual">Etapa que o pedido aguarda do aprovador (<c>gestor</c> ou <c>encarregada</c>); nula se não aguarda nenhum.</param>
+/// <param name="EtapaAtual">Etapa que o pedido aguarda do aprovador (<c>gestor</c> ou <c>protecao_de_dados</c>); nula se não aguarda nenhum.</param>
 /// <param name="ConcessaoId">A concessão que a última aprovação gerou; nula até lá.</param>
 public sealed record PedidoDeConcessaoDto(
     Guid Id,
