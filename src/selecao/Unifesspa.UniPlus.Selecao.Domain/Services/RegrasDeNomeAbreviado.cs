@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 /// <remarks>
 /// Cada semântica distinta de abreviação recebe um identificador NOVO — o significado do
-/// identificador vigente hoje nunca muda. Se a Encarregada de Proteção de Dados ou o P.O.
+/// identificador vigente hoje nunca muda. Se o(a) Encarregado(a) pelo tratamento de dados ou o P.O.
 /// divergirem de qualquer regra abaixo, a resposta é um rótulo novo, nunca uma reinterpretação
 /// deste.
 /// </remarks>

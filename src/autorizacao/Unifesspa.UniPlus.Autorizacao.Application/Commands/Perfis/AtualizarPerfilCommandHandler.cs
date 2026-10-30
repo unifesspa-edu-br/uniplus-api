@@ -103,6 +103,6 @@ public static class AtualizarPerfilCommandHandler
             .Where(codigo => !permissoesAnteriores.Contains(codigo, StringComparer.Ordinal))
             .Any(codigo => PerfilMapping.SensibilidadeDe(codigo, catalogoDaAplicacao) >= ClassificacaoDeProtecao.Pessoal);
 
-        return amplia ? PerfilHandlerErros.AmpliacaoExigeEncarregada() : null;
+        return amplia ? PerfilHandlerErros.AmpliacaoExigeProtecaoDeDados() : null;
     }
 }

@@ -46,7 +46,7 @@ public static class ListarPedidosDeConcessaoQueryHandler
             bool pode = query.Fila switch
             {
                 FilaDePedidos.Gestor => acesso.Funcional,
-                FilaDePedidos.Encarregada => acesso.ProtecaoDeDados,
+                FilaDePedidos.ProtecaoDeDados => acesso.ProtecaoDeDados,
                 _ => acesso.Aprova,
             };
             if (!pode)

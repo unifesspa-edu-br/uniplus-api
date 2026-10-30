@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Pedidos de concessão de acesso sob <c>/api/autorizacao/pedidos-de-concessao</c>: toda concessão nasce de um pedido
-/// que o gestor de acessos e, para o perfil de dado pessoal ou sensível, a encarregada de dados aprovam.
+/// que o gestor de acessos e, para o perfil de dado pessoal ou sensível, a proteção de dados aprovam.
 /// </summary>
 /// <remarks>
 /// Qualquer pessoa autenticada pede: pedir não dá acesso, o filtro é a aprovação. As rotas de decisão exigem só
@@ -82,7 +82,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
 
     /// <summary>
     /// Lista os pedidos, paginados por cursor opaco bidirecional (ADR-0026 + ADR-0089). <c>fila=gestor</c> e
-    /// <c>fila=encarregada</c> são as filas dos aprovadores e exigem a permissão da etapa; <c>fila=todos</c> lista os
+    /// <c>fila=protecao_de_dados</c> são as filas dos aprovadores e exigem a permissão da etapa; <c>fila=todos</c> lista os
     /// pedidos em qualquer situação e exige a permissão de uma das duas etapas; <c>fila=meus</c>, o padrão, são os
     /// pedidos de quem pergunta.
     /// </summary>
@@ -105,7 +105,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
         FilaDePedidos? filaLida = LerFila(fila);
         if (filaLida is null)
         {
-            return Recusar(PedidoErrorCodes.FilaInvalida, "Fila inválida. Use meus, gestor, encarregada ou todos.");
+            return Recusar(PedidoErrorCodes.FilaInvalida, "Fila inválida. Use meus, gestor, protecao_de_dados ou todos.");
         }
 
         // A âncora do cursor é o par (instante, Id) e o instante chega como texto: decodificar o wire é do boundary, e um
@@ -121,7 +121,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
         {
             if (!TentarLerSituacao(situacao, out SituacaoDoPedido lida))
             {
-                return Recusar(PedidoErrorCodes.FiltroDeSituacaoInvalido, "Situação inválida. Use aguardando_documento, aguardando_beneficiario, aguardando_gestor, aguardando_encarregada, aprovado, recusado ou cancelado.");
+                return Recusar(PedidoErrorCodes.FiltroDeSituacaoInvalido, "Situação inválida. Use aguardando_documento, aguardando_beneficiario, aguardando_gestor, aguardando_protecao_de_dados, aprovado, recusado ou cancelado.");
             }
 
             situacaoLida = lida;
@@ -307,7 +307,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
 
     /// <summary>
     /// Aprova a etapa que o pedido aguarda. A concessão nasce na última aprovação exigida. Ninguém decide pedido em
-    /// que é parte, e quem decidiu como gestor não decide como encarregada.
+    /// que é parte, e quem decidiu como gestor não decide na etapa de proteção de dados.
     /// </summary>
     [HttpPost("pedidos-de-concessao/{id:guid}/aprovacoes")]
     [RequiresIdempotencyKey]
@@ -371,7 +371,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
             {
                 "meus" => FilaDePedidos.Meus,
                 "gestor" => FilaDePedidos.Gestor,
-                "encarregada" => FilaDePedidos.Encarregada,
+                "protecao_de_dados" => FilaDePedidos.ProtecaoDeDados,
                 "todos" => FilaDePedidos.Todos,
                 _ => null,
             };

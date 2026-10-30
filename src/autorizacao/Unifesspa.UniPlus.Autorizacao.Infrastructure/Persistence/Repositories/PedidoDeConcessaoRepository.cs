@@ -104,7 +104,7 @@ public sealed class PedidoDeConcessaoRepository : IPedidoDeConcessaoRepository
         consulta = filtro.Fila switch
         {
             FilaDePedidos.Gestor => consulta.Where(p => p.Situacao == SituacaoDoPedido.AguardandoGestor),
-            FilaDePedidos.Encarregada => consulta.Where(p => p.Situacao == SituacaoDoPedido.AguardandoEncarregada),
+            FilaDePedidos.ProtecaoDeDados => consulta.Where(p => p.Situacao == SituacaoDoPedido.AguardandoProtecaoDeDados),
             FilaDePedidos.Todos => consulta,
             _ => consulta.Where(p =>
                 (p.SolicitanteEmissor == emissor && p.SolicitanteSub == sub)

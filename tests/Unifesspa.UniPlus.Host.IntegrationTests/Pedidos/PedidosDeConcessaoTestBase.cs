@@ -29,7 +29,7 @@ using Wolverine;
 
 /// <summary>
 /// Base das suítes dos pedidos de concessão pelo host real. As personas são as do portal: Diogo e Isabella são gestores
-/// de acessos (Isabella também exerce a encarregada), Marlene é a encarregada de dados, Betina coordena a equipe do
+/// de acessos (Isabella também exerce a proteção de dados), Marlene é da proteção de dados, Betina coordena a equipe do
 /// CEPS e Leandro é o beneficiário.
 /// </summary>
 public abstract class PedidosDeConcessaoTestBase
@@ -77,7 +77,7 @@ public abstract class PedidosDeConcessaoTestBase
     /// <summary>
     /// O token só identifica a persona; as permissões vêm da concessão gravada, como em produção. As de aprovar a
     /// adequação funcional e administrar concessões vêm do perfil do gestor de acessos, e a de aprovar a proteção de
-    /// dados, do perfil da encarregada.
+    /// dados, do perfil da proteção de dados.
     /// </summary>
     private protected async Task<HttpClient> ClienteComPermissoesAsync(Persona persona, params string[] permissoes)
     {
@@ -102,7 +102,7 @@ public abstract class PedidosDeConcessaoTestBase
 
         if (permissoes.Contains(AprovarProtecaoDeDados))
         {
-            await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, sub, TipoDeGovernanca.EncarregadaDeDados);
+            await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, sub, TipoDeGovernanca.ProtecaoDeDados);
         }
     }
 
@@ -192,7 +192,7 @@ public abstract class PedidosDeConcessaoTestBase
         await ExecutarSqlAsync(
             "DELETE FROM autorizacao.concessoes WHERE origem_tipo = 'pedido' OR perfil_id IN ({0}, {1})",
             PerfisDeSistema.GestorDeAcessosId,
-            PerfisDeSistema.EncarregadaDeDadosId);
+            PerfisDeSistema.ProtecaoDeDadosId);
     }
 
     private protected async Task ExecutarSqlAsync(string sql, params object[] parametros)

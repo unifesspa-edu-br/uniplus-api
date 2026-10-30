@@ -9,8 +9,8 @@ public enum SituacaoDoPedido
     /// <summary>Aguarda a aprovação do gestor de acessos, a adequação funcional.</summary>
     AguardandoGestor = 2,
 
-    /// <summary>Aprovado pelo gestor; aguarda a encarregada de dados, a adequação à proteção de dados.</summary>
-    AguardandoEncarregada = 3,
+    /// <summary>Aprovado pelo gestor; aguarda a proteção de dados, a adequação à proteção de dados.</summary>
+    AguardandoProtecaoDeDados = 3,
 
     /// <summary>Terminal: a última aprovação exigida concedeu o acesso.</summary>
     Aprovado = 4,
@@ -33,7 +33,7 @@ public static class SituacaoDoPedidoCodigo
 {
     public const string AguardandoBeneficiario = "aguardando_beneficiario";
     public const string AguardandoGestor = "aguardando_gestor";
-    public const string AguardandoEncarregada = "aguardando_encarregada";
+    public const string AguardandoProtecaoDeDados = "aguardando_protecao_de_dados";
     public const string Aprovado = "aprovado";
     public const string Recusado = "recusado";
     public const string Cancelado = "cancelado";
@@ -43,7 +43,7 @@ public static class SituacaoDoPedidoCodigo
     {
         SituacaoDoPedido.AguardandoBeneficiario => AguardandoBeneficiario,
         SituacaoDoPedido.AguardandoGestor => AguardandoGestor,
-        SituacaoDoPedido.AguardandoEncarregada => AguardandoEncarregada,
+        SituacaoDoPedido.AguardandoProtecaoDeDados => AguardandoProtecaoDeDados,
         SituacaoDoPedido.Aprovado => Aprovado,
         SituacaoDoPedido.Recusado => Recusado,
         SituacaoDoPedido.Cancelado => Cancelado,
@@ -55,7 +55,7 @@ public static class SituacaoDoPedidoCodigo
     {
         AguardandoBeneficiario => SituacaoDoPedido.AguardandoBeneficiario,
         AguardandoGestor => SituacaoDoPedido.AguardandoGestor,
-        AguardandoEncarregada => SituacaoDoPedido.AguardandoEncarregada,
+        AguardandoProtecaoDeDados => SituacaoDoPedido.AguardandoProtecaoDeDados,
         Aprovado => SituacaoDoPedido.Aprovado,
         Recusado => SituacaoDoPedido.Recusado,
         Cancelado => SituacaoDoPedido.Cancelado,

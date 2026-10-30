@@ -4395,7 +4395,7 @@
           "nome",
           "descricao",
           "escopo",
-          "exigeEncarregada",
+          "exigeAprovacaoDeProtecaoDeDados",
           "governanca"
         ],
         "type": "object",
@@ -4413,7 +4413,7 @@
           "escopo": {
             "type": "string"
           },
-          "exigeEncarregada": {
+          "exigeAprovacaoDeProtecaoDeDados": {
             "type": "boolean"
           },
           "governanca": {

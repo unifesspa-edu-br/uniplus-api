@@ -123,7 +123,7 @@ public static class ConcessoesDeTeste
 
     /// <summary>
     /// Concede à pessoa o perfil de governança da carga inicial: o do gestor de acessos ou o da
-    /// encarregada de dados.
+    /// proteção de dados.
     /// </summary>
     public static Task<Guid> ConcederGovernancaAsync(IServiceProvider services, string sub, TipoDeGovernanca governanca) =>
         ConcederAsync(
@@ -131,5 +131,5 @@ public static class ConcessoesDeTeste
             sub,
             governanca == TipoDeGovernanca.GestorDeAcessos
                 ? PerfisDeSistema.GestorDeAcessosId
-                : PerfisDeSistema.EncarregadaDeDadosId);
+                : PerfisDeSistema.ProtecaoDeDadosId);
 }

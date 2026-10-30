@@ -176,7 +176,7 @@ public sealed class PerfilEndpointTests
             diogo, HttpMethod.Put, $"{Rota}/{id}", CorpoComId(id, Nome(), [OperarInscricoes, AnalisarAtendimento]));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.ampliacao_exige_encarregada");
+        (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.ampliacao_exige_protecao_de_dados");
         using JsonDocument perfil = await LerAsync(diogo, id);
         perfil.RootElement.GetProperty("permissoes").EnumerateArray()
             .Select(p => p.GetProperty("codigo").GetString()).Should().Equal(OperarInscricoes);
@@ -193,7 +193,7 @@ public sealed class PerfilEndpointTests
             diogo, HttpMethod.Put, $"{Rota}/{id}", CorpoComId(id, Nome(), [AnalisarAtendimento, "teste:laudos:consultar"]));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.ampliacao_exige_encarregada");
+        (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.ampliacao_exige_protecao_de_dados");
     }
 
     [Fact(DisplayName = "Perfil com concessão recusa mudar de alcance")]

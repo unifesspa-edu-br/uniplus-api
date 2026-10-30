@@ -26,7 +26,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Consulta, trilha e revogação de concessões pelo endpoint real, contra Postgres efêmero. As
 /// concessões nascem pelo repositório, porque a criação pertence ao pedido aprovado e à
 /// instalação. As personas são as do portal: Diogo Souza e Isabella Figueiredo são gestores de
-/// acessos (Isabella também exerce a encarregada), Betina Neves é a terceira gestora e Leandro
+/// acessos (Isabella também exerce a proteção de dados), Betina Neves é a terceira gestora e Leandro
 /// Viana é o beneficiário.
 /// </summary>
 [Collection(AutorizacaoEndpointCollection.Name)]
@@ -44,7 +44,7 @@ public sealed class ConcessaoEndpointTests
     private const string EmailDoBeneficiario = "beneficiario@uniplus-test.local";
 
     private static readonly Guid GestorDeAcessosId = new("019a0000-0000-7000-8000-000000000001");
-    private static readonly Guid EncarregadaDeDadosId = new("019a0000-0000-7000-8000-000000000002");
+    private static readonly Guid ProtecaoDeDadosId = new("019a0000-0000-7000-8000-000000000002");
 
     private static readonly Identidade Diogo = Pessoa("diogo.souza");
     private static readonly Identidade Isabella = Pessoa("isabella.figueiredo");
@@ -70,10 +70,10 @@ public sealed class ConcessaoEndpointTests
     [Fact(DisplayName = "Segunda concessão ativa igual no escopo da instituição é barrada, apesar da unidade nula")]
     public async Task Gravar_AtivaIgualNaInstituicao_ViolaOIndiceUnico()
     {
-        await LimparConcessoesAsync(EncarregadaDeDadosId);
-        await ConcederAsync(EncarregadaDeDadosId, Isabella, EscopoDaConcessao.DaInstituicao());
+        await LimparConcessoesAsync(ProtecaoDeDadosId);
+        await ConcederAsync(ProtecaoDeDadosId, Isabella, EscopoDaConcessao.DaInstituicao());
 
-        Exception falha = await FalhaAoConcederAsync(EncarregadaDeDadosId, Isabella, EscopoDaConcessao.DaInstituicao());
+        Exception falha = await FalhaAoConcederAsync(ProtecaoDeDadosId, Isabella, EscopoDaConcessao.DaInstituicao());
 
         ConcessaoViolacoes.EhConcessaoDuplicada(falha).Should().BeTrue();
     }
@@ -253,12 +253,12 @@ public sealed class ConcessaoEndpointTests
         certa.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
-    [Fact(DisplayName = "A encarregada de dados também revoga")]
-    public async Task Revogar_PelaEncarregada_Devolve204()
+    [Fact(DisplayName = "A proteção de dados também revoga")]
+    public async Task Revogar_PelaProtecaoDeDados_Devolve204()
     {
         Guid perfil = await CriarPerfilComumAsync();
         Guid id = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
-        using HttpClient isabella = await ClienteDaEncarregadaAsync(Isabella);
+        using HttpClient isabella = await ClienteDaProtecaoDeDadosAsync(Isabella);
 
         using HttpResponseMessage resposta = await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{id}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario });
 
@@ -272,7 +272,7 @@ public sealed class ConcessaoEndpointTests
     {
         using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
 
-        foreach (Guid id in new[] { GestorDeAcessosId, EncarregadaDeDadosId })
+        foreach (Guid id in new[] { GestorDeAcessosId, ProtecaoDeDadosId })
         {
             using JsonDocument perfil = await LerAsync(diogo, $"{RotaPerfis}/{id}");
             perfil.RootElement.GetProperty("permissoes").EnumerateArray()
@@ -286,7 +286,7 @@ public sealed class ConcessaoEndpointTests
         Guid perfil = await CriarPerfilComumAsync();
         Guid id = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
         using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
-        using HttpClient isabella = await ClienteDaEncarregadaAsync(Isabella);
+        using HttpClient isabella = await ClienteDaProtecaoDeDadosAsync(Isabella);
         (await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario }))
             .StatusCode.Should().Be(HttpStatusCode.NoContent);
 
@@ -318,7 +318,7 @@ public sealed class ConcessaoEndpointTests
         await LimparConcessoesAsync(GestorDeAcessosId);
         Guid diogoId = await ConcederAsync(GestorDeAcessosId, Diogo, EscopoDaConcessao.DaInstituicao());
         await ConcederAsync(GestorDeAcessosId, Isabella, EscopoDaConcessao.DaInstituicao());
-        using HttpClient isabella = await ClienteDaEncarregadaAsync(Isabella);
+        using HttpClient isabella = await ClienteDaProtecaoDeDadosAsync(Isabella);
 
         using HttpResponseMessage resposta = await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{diogoId}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario });
 
@@ -334,7 +334,7 @@ public sealed class ConcessaoEndpointTests
         Guid diogoId = await ConcederAsync(GestorDeAcessosId, Diogo, EscopoDaConcessao.DaInstituicao());
         await ConcederAsync(GestorDeAcessosId, Isabella, EscopoDaConcessao.DaInstituicao());
         await ConcederAsync(GestorDeAcessosId, Betina, EscopoDaConcessao.DaInstituicao());
-        using HttpClient isabella = await ClienteDaEncarregadaAsync(Isabella);
+        using HttpClient isabella = await ClienteDaProtecaoDeDadosAsync(Isabella);
 
         using HttpResponseMessage resposta = await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{diogoId}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario });
 
@@ -375,7 +375,7 @@ public sealed class ConcessaoEndpointTests
         Guid perfil = await CriarPerfilComumAsync();
         Guid id = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
         using HttpClient clienteA = await ClienteDoGestorAsync(Diogo);
-        using HttpClient clienteB = await ClienteDaEncarregadaAsync(Isabella);
+        using HttpClient clienteB = await ClienteDaProtecaoDeDadosAsync(Isabella);
 
         HttpResponseMessage[] respostas = await Task.WhenAll(
             EnviarAsync(clienteA, HttpMethod.Post, $"{Rota}/{id}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario }),
@@ -401,7 +401,7 @@ public sealed class ConcessaoEndpointTests
     {
         Guid perfil = await CriarPerfilComumAsync();
         Guid id = await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
-        using HttpClient isabella = await ClienteDaEncarregadaAsync(Isabella);
+        using HttpClient isabella = await ClienteDaProtecaoDeDadosAsync(Isabella);
         (await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{id}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario }))
             .StatusCode.Should().Be(HttpStatusCode.NoContent);
 
@@ -567,8 +567,8 @@ public sealed class ConcessaoEndpointTests
     private Task<HttpClient> ClienteDoGestorAsync(Identidade pessoa) =>
         ClienteDeGovernancaAsync(pessoa, TipoDeGovernanca.GestorDeAcessos);
 
-    private Task<HttpClient> ClienteDaEncarregadaAsync(Identidade pessoa) =>
-        ClienteDeGovernancaAsync(pessoa, TipoDeGovernanca.EncarregadaDeDados);
+    private Task<HttpClient> ClienteDaProtecaoDeDadosAsync(Identidade pessoa) =>
+        ClienteDeGovernancaAsync(pessoa, TipoDeGovernanca.ProtecaoDeDados);
 
     private async Task<HttpClient> ClienteDeGovernancaAsync(Identidade pessoa, TipoDeGovernanca governanca)
     {

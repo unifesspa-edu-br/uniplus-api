@@ -14,8 +14,8 @@ public sealed record PerfilAvaliado
     /// <summary>Valor canônico da sensibilidade mais alta entre as permissões do perfil.</summary>
     public string Sensibilidade { get; }
 
-    /// <summary>A sensibilidade é pessoal ou sensível, e a encarregada de dados também aprova.</summary>
-    public bool ExigeEncarregada { get; }
+    /// <summary>A sensibilidade é pessoal ou sensível, e a proteção de dados também aprova.</summary>
+    public bool ExigeAprovacaoDeProtecaoDeDados { get; }
 
     /// <summary>Papel de governança do perfil; nulo nos perfis comuns.</summary>
     public TipoDeGovernanca? Governanca { get; }
@@ -26,7 +26,7 @@ public sealed record PerfilAvaliado
     public PerfilAvaliado(
         IEnumerable<string> permissoes,
         string sensibilidade,
-        bool exigeEncarregada,
+        bool exigeAprovacaoDeProtecaoDeDados,
         TipoDeGovernanca? governanca,
         bool ativo = true)
     {
@@ -35,22 +35,22 @@ public sealed record PerfilAvaliado
 
         Permissoes = [.. permissoes.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
         Sensibilidade = sensibilidade;
-        ExigeEncarregada = exigeEncarregada;
+        ExigeAprovacaoDeProtecaoDeDados = exigeAprovacaoDeProtecaoDeDados;
         Governanca = governanca;
         Ativo = ativo;
     }
 }
 
 /// <summary>O que o handler sabe do mundo e o agregado precisa para decidir a aprovação.</summary>
-/// <param name="BeneficiarioJaEEncarregada">O beneficiário tem hoje concessão ativa do perfil da encarregada de dados.</param>
-public sealed record ContextoDaAprovacao(bool BeneficiarioJaEEncarregada);
+/// <param name="BeneficiarioJaTemProtecaoDeDados">O beneficiário tem hoje concessão ativa do perfil da proteção de dados.</param>
+public sealed record ContextoDaAprovacao(bool BeneficiarioJaTemProtecaoDeDados);
 
 /// <summary>Os motivos pelos quais a segunda aprovação deixa de ser exigida, gravados na decisão do gestor.</summary>
 public static class MotivosDeDispensa
 {
-    /// <summary>Não há encarregada que possa aprovar a própria designação.</summary>
-    public const string DesignacaoDaEncarregada = "designacao_da_encarregada";
+    /// <summary>Não há proteção de dados que possa aprovar a própria designação.</summary>
+    public const string DesignacaoDeProtecaoDeDados = "designacao_de_protecao_de_dados";
 
-    /// <summary>O beneficiário já é a encarregada de dados: a aprovação do gestor conclui o pedido (ADR-0152).</summary>
-    public const string BeneficiariaJaEEncarregada = "beneficiaria_ja_e_encarregada";
+    /// <summary>O beneficiário já tem o perfil de proteção de dados: a aprovação do gestor conclui o pedido (ADR-0152).</summary>
+    public const string BeneficiarioJaTemProtecaoDeDados = "beneficiario_ja_tem_protecao_de_dados";
 }

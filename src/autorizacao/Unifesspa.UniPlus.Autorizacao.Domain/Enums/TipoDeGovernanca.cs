@@ -10,26 +10,26 @@ public enum TipoDeGovernanca
     GestorDeAcessos = 1,
 
     /// <summary>Aprova a concessão de acesso pessoal ou sensível.</summary>
-    EncarregadaDeDados = 2,
+    ProtecaoDeDados = 2,
 }
 
 /// <summary>Código textual canônico de <see cref="TipoDeGovernanca"/>, o valor gravado e exposto.</summary>
 public static class TipoDeGovernancaCodigo
 {
     public const string GestorDeAcessos = "gestor-de-acessos";
-    public const string EncarregadaDeDados = "encarregada-de-dados";
+    public const string ProtecaoDeDados = "protecao-de-dados";
 
     public static string ToCodigo(this TipoDeGovernanca tipo) => tipo switch
     {
         TipoDeGovernanca.GestorDeAcessos => GestorDeAcessos,
-        TipoDeGovernanca.EncarregadaDeDados => EncarregadaDeDados,
+        TipoDeGovernanca.ProtecaoDeDados => ProtecaoDeDados,
         _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, null),
     };
 
     public static TipoDeGovernanca FromCodigo(string codigo) => codigo switch
     {
         GestorDeAcessos => TipoDeGovernanca.GestorDeAcessos,
-        EncarregadaDeDados => TipoDeGovernanca.EncarregadaDeDados,
+        ProtecaoDeDados => TipoDeGovernanca.ProtecaoDeDados,
         _ => throw new ArgumentOutOfRangeException(nameof(codigo), codigo, null),
     };
 }
