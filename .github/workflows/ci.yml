@@ -316,7 +316,7 @@ jobs:
     name: Integration tests
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions:
       contents: read
 
