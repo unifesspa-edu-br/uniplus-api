@@ -90,6 +90,12 @@ public interface IConcessaoRepository : IRepository<Concessao>
     Task TravarGovernancaParaEscritaAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// A concessão travada até o fim da transação, lida depois da trava: a decisão sobre ela não se grava em cima de uma
+    /// revogação concorrente que já foi confirmada.
+    /// </summary>
+    Task<Concessao?> ObterParaAlterarAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Conta os beneficiários distintos com concessão ativa, no escopo da instituição, do perfil
     /// de gestor de acessos, sem contar a concessão <paramref name="exceto"/>.
     /// </summary>

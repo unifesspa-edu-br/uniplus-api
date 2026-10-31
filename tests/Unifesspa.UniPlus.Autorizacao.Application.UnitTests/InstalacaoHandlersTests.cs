@@ -291,6 +291,7 @@ public sealed class InstalacaoHandlersTests
             throw new InvalidOperationException();
 
         public Task<Concessao?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+        public Task<Concessao?> ObterParaAlterarAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<IReadOnlyList<Concessao>> ObterTodosAsync(CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task AdicionarAsync(Concessao entity, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public void Atualizar(Concessao entity) => throw new InvalidOperationException();
@@ -354,6 +355,7 @@ public sealed class InstalacaoHandlersTests
         public Task AdicionarAsync(Concessao entity, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
         public Task<Concessao?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+        public Task<Concessao?> ObterParaAlterarAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<IReadOnlyList<Concessao>> ObterTodosAsync(CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public void Atualizar(Concessao entity) => throw new InvalidOperationException();
         public void Remover(Concessao entity) => throw new InvalidOperationException();
@@ -403,6 +405,7 @@ public sealed class InstalacaoHandlersTests
             throw new InvalidOperationException();
 
         public Task<Concessao?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+        public Task<Concessao?> ObterParaAlterarAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<IReadOnlyList<Concessao>> ObterTodosAsync(CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task AdicionarAsync(Concessao entity, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public void Atualizar(Concessao entity) => throw new InvalidOperationException();

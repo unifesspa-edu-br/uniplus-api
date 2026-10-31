@@ -743,6 +743,8 @@ public sealed partial class InstalacaoDosGestoresTests
     private async Task ResetarAsync()
     {
         await _fixture.ProvisionarBucketsAsync();
+        await ExecutarSqlAsync("DELETE FROM autorizacao.revisao_itens");
+        await ExecutarSqlAsync("DELETE FROM autorizacao.revisoes_de_acessos");
         await ExecutarSqlAsync(
             "DELETE FROM autorizacao.concessoes WHERE perfil_id = {0}", PerfisDeSistema.GestorDeAcessosId);
         await ExecutarSqlAsync("DELETE FROM autorizacao.instalacao_tentativas");

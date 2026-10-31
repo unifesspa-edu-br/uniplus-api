@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Concessoes;
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
-using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -14,8 +13,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public static class RevogarConcessaoCommandHandler
 {
-    private const int MinimoDeGestores = 2;
-
     public static async Task<Result> Handle(
         RevogarConcessaoCommand command,
         IConcessaoRepository repository,
@@ -37,7 +34,9 @@ public static class RevogarConcessaoCommandHandler
             return Result.Failure(ConcessaoHandlerErros.AutorNaoIdentificado());
         }
 
-        Concessao? concessao = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
+        // A linha da concessão é travada antes da trava da governança, na mesma ordem da revogação pela revisão:
+        // as duas revogações do mesmo gestor esperam uma pela outra em vez de travarem em ciclo.
+        Concessao? concessao = await repository.ObterParaAlterarAsync(command.Id, cancellationToken).ConfigureAwait(false);
         if (concessao is null)
         {
             return Result.Failure(ConcessaoHandlerErros.NaoEncontrada(command.Id));
@@ -51,35 +50,13 @@ public static class RevogarConcessaoCommandHandler
 
         DateTimeOffset agora = timeProvider.GetUtcNow();
 
-        // Só a concessão que hoje conta como gestor reduz o número de gestores; revogar uma
-        // vencida ou fora da instituição não muda a conta.
-        bool contaComoGestor = concessao.EstaAtiva(agora) && concessao.EscopoTipo == TipoDeEscopo.Instituicao;
-
-        Result revogar = concessao.Revogar(revogadaPor, command.Motivo, agora);
-        if (revogar.IsFailure)
+        Result revogacao = await RevogacaoDaConcessao
+            .AplicarAsync(
+                concessao, agora, () => concessao.Revogar(revogadaPor, command.Motivo, agora), repository, unitOfWork, cancellationToken)
+            .ConfigureAwait(false);
+        if (revogacao.IsFailure)
         {
-            return revogar;
-        }
-
-        if (contaComoGestor
-            && await repository.ObterGovernancaDoPerfilAsync(concessao.PerfilId, cancellationToken).ConfigureAwait(false)
-                == TipoDeGovernanca.GestorDeAcessos)
-        {
-            // A contagem roda sob a trava, depois que ela é obtida: duas revogações simultâneas de
-            // gestores diferentes (de três para um) não podem passar as duas.
-            await repository.TravarGovernancaParaEscritaAsync(cancellationToken).ConfigureAwait(false);
-
-            int restantes = await repository
-                .ContarGestoresAtivosAsync(concessao.PerfilId, concessao.Id, agora, cancellationToken)
-                .ConfigureAwait(false);
-
-            if (restantes < MinimoDeGestores)
-            {
-                // A concessão já foi mutada em memória e segue rastreada: sem o descarte, a
-                // gravação que o outbox dispara depois do handler persistiria a revogação.
-                unitOfWork.DescartarAlteracoesNaoSalvas();
-                return Result.Failure(ConcessaoHandlerErros.MinimoDeGestores());
-            }
+            return revogacao;
         }
 
         try

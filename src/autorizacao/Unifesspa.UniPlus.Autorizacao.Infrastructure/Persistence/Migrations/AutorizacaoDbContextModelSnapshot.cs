@@ -424,6 +424,80 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.ItemDaRevisao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ConcessaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("concessao_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Decide")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("decide");
+
+                    b.Property<DateTimeOffset?>("DecididoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("decidido_em");
+
+                    b.Property<string>("DecididoPorEmissor")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("decidido_por_emissor");
+
+                    b.Property<string>("DecididoPorNome")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("decidido_por_nome");
+
+                    b.Property<string>("DecididoPorSub")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("decidido_por_sub");
+
+                    b.Property<string>("Resultado")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("resultado");
+
+                    b.Property<Guid>("RevisaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("revisao_id");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_revisao_itens");
+
+                    b.HasIndex("ConcessaoId")
+                        .HasDatabaseName("ix_revisao_itens_concessao");
+
+                    b.HasIndex("RevisaoId", "ConcessaoId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_revisao_itens_revisao_concessao");
+
+                    b.ToTable("revisao_itens", "autorizacao", t =>
+                        {
+                            t.HasCheckConstraint("ck_revisao_itens_decisao_completa", "(resultado IS NULL AND decidido_por_emissor IS NULL AND decidido_por_sub IS NULL AND decidido_em IS NULL) OR (resultado IS NOT NULL AND decidido_por_emissor IS NOT NULL AND decidido_por_sub IS NOT NULL AND decidido_em IS NOT NULL)");
+                        });
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.LeituraDoAnexoDoPedido", b =>
                 {
                     b.Property<Guid>("Id")
@@ -692,6 +766,53 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.RevisaoDeAcessos", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("AbertaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("aberta_em");
+
+                    b.Property<string>("AbertaPorEmissor")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("aberta_por_emissor");
+
+                    b.Property<string>("AbertaPorNome")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("aberta_por_nome");
+
+                    b.Property<string>("AbertaPorSub")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("aberta_por_sub");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_revisoes_de_acessos");
+
+                    b.ToTable("revisoes_de_acessos", "autorizacao");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.TentativaDeInstalacao", b =>
                 {
                     b.Property<Guid>("Id")
@@ -874,6 +995,23 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                     b.Navigation("Gestores");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.ItemDaRevisao", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Concessao", null)
+                        .WithMany()
+                        .HasForeignKey("ConcessaoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_revisao_itens_concessoes_concessao_id");
+
+                    b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.RevisaoDeAcessos", null)
+                        .WithMany("Itens")
+                        .HasForeignKey("RevisaoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_revisao_itens_revisoes_de_acessos_revisao_id");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.LeituraDoAnexoDoPedido", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.AnexoDoPedido", null)
@@ -946,6 +1084,11 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                                 },
                                 new
                                 {
+                                    PerfilId = new Guid("019a0000-0000-7000-8000-000000000001"),
+                                    Codigo = "autorizacao:revisoes:rever-protecao-de-dados"
+                                },
+                                new
+                                {
                                     PerfilId = new Guid("019a0000-0000-7000-8000-000000000002"),
                                     Codigo = "autorizacao:concessoes:administrar"
                                 },
@@ -958,6 +1101,11 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                                 {
                                     PerfilId = new Guid("019a0000-0000-7000-8000-000000000002"),
                                     Codigo = "autorizacao:permissoes:consultar-catalogo"
+                                },
+                                new
+                                {
+                                    PerfilId = new Guid("019a0000-0000-7000-8000-000000000002"),
+                                    Codigo = "autorizacao:revisoes:conduzir"
                                 });
                         });
 
@@ -978,6 +1126,11 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                     b.Navigation("Anexos");
 
                     b.Navigation("Decisoes");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.RevisaoDeAcessos", b =>
+                {
+                    b.Navigation("Itens");
                 });
 #pragma warning restore 612, 618
         }

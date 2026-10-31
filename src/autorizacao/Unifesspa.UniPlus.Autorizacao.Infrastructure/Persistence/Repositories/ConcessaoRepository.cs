@@ -23,6 +23,17 @@ public sealed class ConcessaoRepository : IConcessaoRepository
     public async Task<Concessao?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         await _context.Concessoes.FirstOrDefaultAsync(c => c.Id == id, cancellationToken).ConfigureAwait(false);
 
+    public async Task<Concessao?> ObterParaAlterarAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        // A trava vem antes da leitura rastreada, que então enxerga o que a transação anterior confirmou.
+        await _context.Database.ExecuteSqlRawAsync(
+            $"SELECT 1 FROM {AutorizacaoDbContext.Schema}.concessoes WHERE id = {{0}} FOR UPDATE",
+            [id],
+            cancellationToken).ConfigureAwait(false);
+
+        return await ObterPorIdAsync(id, cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<IReadOnlyList<Concessao>> ObterTodosAsync(CancellationToken cancellationToken = default) =>
         await _context.Concessoes.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
 

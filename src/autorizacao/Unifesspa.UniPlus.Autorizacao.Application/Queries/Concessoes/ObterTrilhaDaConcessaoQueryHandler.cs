@@ -9,19 +9,21 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Handler da trilha: monta, na leitura, os eventos da concessão e os que a origem dela
-/// acrescenta pela porta <see cref="IEventosDaOrigem"/>.
+/// Handler da trilha: monta, na leitura, os eventos da concessão, os que a origem dela
+/// acrescenta pela porta <see cref="IEventosDaOrigem"/> e as decisões das revisões periódicas.
 /// </summary>
 public static class ObterTrilhaDaConcessaoQueryHandler
 {
     public static async Task<Result<IReadOnlyList<EventoDaTrilhaDto>>> Handle(
         ObterTrilhaDaConcessaoQuery query,
         IConcessaoRepository repository,
+        IRevisaoDeAcessosRepository revisoes,
         IEnumerable<IEventosDaOrigem> origens,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
+        ArgumentNullException.ThrowIfNull(revisoes);
         ArgumentNullException.ThrowIfNull(origens);
 
         ConcessaoComPerfil? item = await repository.ObterComPerfilAsync(query.Id, cancellationToken).ConfigureAwait(false);
@@ -38,6 +40,10 @@ public static class ObterTrilhaDaConcessaoQueryHandler
         {
             eventos.AddRange(await origem.ObterAsync(concessao.OrigemId, cancellationToken).ConfigureAwait(false) ?? []);
         }
+
+        // A decisão da revisão é lida dos itens, e não de uma trilha à parte.
+        eventos.AddRange((await revisoes.ListarDecisoesDaConcessaoAsync(concessao.Id, cancellationToken).ConfigureAwait(false))
+            .Select(RevisaoMapping.ToEvento));
 
         IReadOnlyList<EventoDaTrilhaDto> ordenados = [.. eventos.OrderBy(e => e.Instante)];
 

@@ -185,6 +185,8 @@ public abstract class PedidosDeConcessaoTestBase
     private protected async Task ResetarAsync()
     {
         await Fixture.ProvisionarBucketsAsync();
+        await ExecutarSqlAsync("DELETE FROM autorizacao.revisao_itens");
+        await ExecutarSqlAsync("DELETE FROM autorizacao.revisoes_de_acessos");
         await ExecutarSqlAsync("DELETE FROM autorizacao.pedido_anexo_leituras");
         await ExecutarSqlAsync("DELETE FROM autorizacao.pedido_decisoes");
         await ExecutarSqlAsync("DELETE FROM autorizacao.pedido_anexos");

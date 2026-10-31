@@ -53,4 +53,24 @@ public enum PermissaoAutorizacao
         BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
         ReservadaAGovernanca = true)]
     PedidosAprovarProtecaoDeDados = 5,
+
+    /// <summary>Conduzir a revisão periódica dos acessos a dado pessoal ou sensível, como proteção de dados.</summary>
+    [Permissao(
+        "autorizacao:revisoes:conduzir",
+        "Conduzir a revisão periódica dos acessos a dado pessoal ou sensível",
+        "Abre e consulta as revisões, que listam quem tem acesso a dado pessoal ou sensível, e confirma ou revoga cada concessão, exceto as da própria proteção de dados.",
+        ClassificacaoDeProtecao.Pessoal,
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
+        ReservadaAGovernanca = true)]
+    RevisoesConduzir = 6,
+
+    /// <summary>Rever, como gestor de acessos, as concessões da proteção de dados na revisão periódica.</summary>
+    [Permissao(
+        "autorizacao:revisoes:rever-protecao-de-dados",
+        "Rever as concessões da proteção de dados na revisão periódica dos acessos",
+        "Consulta as revisões e confirma ou revoga as concessões da proteção de dados, que ela própria não revê.",
+        ClassificacaoDeProtecao.Pessoal,
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
+        ReservadaAGovernanca = true)]
+    RevisoesReverProtecaoDeDados = 7,
 }
