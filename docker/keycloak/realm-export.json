@@ -76,15 +76,6 @@
         "attributes": {}
       },
       {
-        "id": "27349b23-cf1b-4507-86cf-b34ae686f4ca",
-        "name": "candidato",
-        "description": "Candidato inscrito",
-        "composite": false,
-        "clientRole": false,
-        "containerId": "3310e85a-fc31-4029-a33a-dd49f8085fc5",
-        "attributes": {}
-      },
-      {
         "id": "f148d7ba-c699-4386-8d0d-d5a49a6d3a9a",
         "name": "offline_access",
         "description": "${role_offline-access}",
@@ -589,7 +580,6 @@
         "admin",
         "gestor",
         "avaliador",
-        "candidato",
         "plataforma-admin"
       ]
     },
@@ -597,8 +587,7 @@
       "client": "ingresso-web",
       "roles": [
         "admin",
-        "gestor",
-        "candidato"
+        "gestor"
       ]
     },
     {
@@ -606,8 +595,7 @@
       "roles": [
         "admin",
         "gestor",
-        "avaliador",
-        "candidato"
+        "avaliador"
       ]
     },
     {
@@ -3210,9 +3198,7 @@
       "emailVerified": true,
       "firstName": "Usuário",
       "lastName": "Candidato",
-      "realmRoles": [
-        "candidato"
-      ],
+      "realmRoles": [],
       "clientRoles": {
         "account": [
           "view-profile"

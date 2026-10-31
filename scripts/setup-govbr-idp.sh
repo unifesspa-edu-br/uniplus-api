@@ -65,11 +65,6 @@
 #    que tiver dados desatualizados no Keycloak não recebe refresh automático
 #    do gov.br em logins subsequentes.
 #
-# 3. Role `candidato` não atribuída automaticamente:
-#    Aplicar role realm via mapper hardcoded a users LDAP read-only causa
-#    exceção. Atribuição da role precisa ocorrer via outro mecanismo —
-#    ver comentário inline próximo aos mappers.
-#
 # Pré-requisitos:
 #   - Keycloak no ar com realm `unifesspa` importado (rodar setup-keycloak-dev.sh
 #     antes em ambiente local)
@@ -194,28 +189,6 @@ build_idp_body() {
         }'
 }
 
-# ---- Garante que a role realm `candidato` existe (mapper hardcoded depende dela)
-ensure_realm_role() {
-    local role_name="$1"
-    local http_code
-    http_code=$(curl -s -o /dev/null -w '%{http_code}' \
-        -H "Authorization: Bearer $ADMIN_TOKEN" \
-        "$API/roles/$role_name")
-
-    case "$http_code" in
-        200) ok "role realm '$role_name' já existe" ;;
-        404)
-            auth_json -X POST "$API/roles" \
-                -d "$(jq -nc --arg n "$role_name" '{name: $n, description: ("Role aplicada automaticamente a usuários autenticados via gov.br")}')" >/dev/null
-            ok "role realm '$role_name' criada"
-            ;;
-        *)  warn "Resposta inesperada ao consultar role '$role_name': HTTP $http_code"; exit 1 ;;
-    esac
-}
-
-log "Garantindo pré-requisitos no realm"
-ensure_realm_role "candidato"
-
 # ---- Cria ou atualiza IdP (idempotente via GET → POST/PUT)
 log "Configurando Identity Provider gov.br ($GOVBR_ENV)"
 EXISTS_HTTP=$(curl -s -o /dev/null -w '%{http_code}' \
@@ -336,20 +309,6 @@ upsert_mapper "nivel-confiabilidade" "oidc-user-attribute-idp-mapper" '{
     "user.attribute": "nivelConfiabilidade"
 }'
 
-# NOTA: Mapper hardcoded de role `candidato` foi REMOVIDO desta versão.
-#
-# Validação em HML (29/04/2026) revelou que aplicar role realm a users já
-# federados via LDAP (read-only) lança exceção e aborta o flow de login.
-# A role `candidato` permanece criada (ver ensure_realm_role acima) para uso
-# por outros mecanismos de autorização. Atribuição da role precisa ocorrer
-# em uma das opções abaixo (em deliberação na ADR-029):
-#
-#   1. Authentication Flow customizado de first-broker-login que aplica role
-#      apenas em users novos criados pelo broker (não em users LDAP existentes)
-#   2. Atribuição na camada de aplicação (Uni+ API) baseada na origem da
-#      identidade federada (federatedIdentityProvider == "govbr")
-#   3. Mapper condicional via SPI customizado
-
 # ---- Resumo
 echo
 log "Configuração concluída"
@@ -369,8 +328,5 @@ cat <<EOF
     - family-name          (family_name → lastName)
     - email                (email → email)
     - nivel-confiabilidade (reliability_info.level → atributo nivelConfiabilidade)
-
-  Role 'candidato' criada no realm mas NÃO atribuída automaticamente — a
-  atribuição depende do Authenticator SPI customizado (uniplus-keycloak-providers).
 
 EOF

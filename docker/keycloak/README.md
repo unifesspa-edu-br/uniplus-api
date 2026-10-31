@@ -140,7 +140,7 @@ Os quatro usuários abaixo são criados pela importação do realm.
 
 Além dos 4 usuários de teste, `scripts/setup-keycloak-dev.sh` importa no realm `unifesspa` as **60 personas fictícias** do portal de documentação (catálogo em [`uniplus-developers/docs/personas`](https://unifesspa-edu-br.github.io/uniplus-developers/personas/), dado copiado para `docker/keycloak/personas.json` — a stack local não deve depender de outro checkout em runtime). São usuários **locais, não federados do LDAP sintético** (o `openldap` deste repositório não é usado com as personas).
 
-- **57** com perfil `candidato` (role realm `candidato`).
+- **57** com perfil `candidato` (categoria da persona; sem papel de realm — o token só a identifica).
 - **3** com perfil `privilegiado` (`diogo.souza`, `betina.neves`, `isabella.figueiredo`), com os mesmos realm roles (`admin`, `plataforma-admin`) **e** os mesmos client roles do client `uniplus-api` que o usuário `admin` tem — o papel de acesso exato que elas têm no Keycloak de HML não está disponível localmente.
 - O e-mail de cada persona troca o domínio do catálogo (que mistura domínios reais) por `uniplus-test.local`, preservando o local-part — o mesmo domínio reservado (RFC 2606) que `scripts/generate-ldif.py` usa para os usuários sintéticos do LDAP, para que nenhuma mensagem real de SMTP (se algum dia configurado no realm local) chegue a uma caixa de terceiro.
 - `cpf` e `nomeSocial` vêm do catálogo; o atributo `cpf` só é editável por administrador (regra do User Profile do realm, igual à dos 4 usuários de teste).
@@ -201,7 +201,6 @@ TOKEN=$(curl -s -X POST 'http://localhost:8080/realms/unifesspa/protocol/openid-
   | jq -r .access_token)
 
 # 3. Endpoints autenticados
-curl -s -H "Authorization: Bearer $TOKEN" http://localhost:5202/api/auth/me | jq
 curl -s -H "Authorization: Bearer $TOKEN" http://localhost:5202/api/profile/me | jq
 ```
 
@@ -214,7 +213,7 @@ Resposta esperada de `/api/profile/me`:
   "email": "candidato@teste.unifesspa.edu.br",
   "cpf": "24843803480",
   "nomeSocial": "Candidato Teste",
-  "roles": ["candidato"],
+  "perfis": [],
   "timestamp": "2026-04-25T01:06:24.367+00:00"
 }
 ```
@@ -267,22 +266,19 @@ Configurar via `.env` (use `docker/.env.example` como referência) — o `docker
 
 1. Aguarda Keycloak responder no realm.
 2. Obtém token de admin via ROPC contra `master`.
-3. Garante que a role realm `candidato` existe (cria se faltar — útil em HML que tem realm pré-existente).
-4. Cria/atualiza Identity Provider OIDC com:
+3. Cria/atualiza Identity Provider OIDC com:
    - `clientAuthMethod: client_secret_basic` (única opção aceita pelo gov.br)
    - `pkceEnabled: true`, `pkceMethod: S256`
    - `syncMode: IMPORT`, `trustEmail: true`, `storeToken: false`
    - `defaultScope: openid email profile govbr_confiabilidades govbr_confiabilidades_idtoken`
    - `issuer` com barra final, `userInfoUrl` sem barra final — alinhado à discovery oficial do gov.br staging em `/.well-known/openid-configuration`
    - Endpoints conforme `GOVBR_ENV` (staging usa `sso.staging.acesso.gov.br`, production usa `sso.acesso.gov.br`)
-5. Cria/atualiza 5 mappers:
+4. Cria/atualiza 5 mappers:
    - `cpf` — claim `sub` → atributo `cpf`
    - `given-name` — claim `given_name` → `firstName`
    - `family-name` — claim `family_name` → `lastName`
    - `email` — claim `email` → `email`
    - `nivel-confiabilidade` — claim `reliability_info.level` → atributo `nivelConfiabilidade`
-
-> **Nota sobre role `candidato`:** mapper hardcoded de role **não** é configurado por este script. Aplicar role realm via mapper a users existentes do LDAP (read-only) lança exceção e aborta o flow. Atribuição da role precisa ocorrer via fluxo customizado de first-broker-login (clone do flow padrão) ou na camada de aplicação. Decisão pendente — ver ADR-029.
 
 > **Nota sobre `syncMode: IMPORT`:** quando o realm tem User Federation LDAP em modo READ_ONLY (caso do realm HML institucional), `FORCE` causa exceção ao tentar sobrescrever atributos LDAP-managed (cpf, email, firstName). `IMPORT` só popula atributos quando o user é **criado** pelo broker (candidatos novos), preservando os dados do LDAP em users já federados. Trade-off: candidato com dados desatualizados no Keycloak não recebe refresh automático em logins subsequentes.
 
@@ -302,7 +298,7 @@ export GOVBR_ENV=staging
 scripts/setup-govbr-idp.sh
 ```
 
-> ⚠️ O Keycloak HML institucional é **realm compartilhado** com outros sistemas (ex.: `ficha_facil`, `sisplad`) — **NÃO** importar `realm-export.json` lá. O script só toca em IdP gov.br, seus mappers e a role `candidato` (idempotente, defensivo).
+> ⚠️ O Keycloak HML institucional é **realm compartilhado** com outros sistemas (ex.: `ficha_facil`, `sisplad`) — **NÃO** importar `realm-export.json` lá. O script só toca em IdP gov.br, e seus mappers (idempotente, defensivo).
 
 Para validar o login, abra `https://keycloak-hom.unifesspa.edu.br/realms/unifesspa/account/` → Sign In → "Entrar com gov.br". Para criar conta de teste no `https://sso.staging.acesso.gov.br/`, usar:
 
@@ -345,7 +341,7 @@ curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
     "$KC_URL/admin/realms/$KC_REALM/identity-provider/instances/govbr"
 ```
 
-Os mappers do IdP são removidos em cascata pelo Keycloak. A role `candidato` permanece (não é removida pelo rollback).
+Os mappers do IdP são removidos em cascata pelo Keycloak.
 
 ### Flow customizado de first-broker-login com matching por CPF
 

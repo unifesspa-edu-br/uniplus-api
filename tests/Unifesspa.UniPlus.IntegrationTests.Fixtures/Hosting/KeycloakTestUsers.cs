@@ -38,7 +38,7 @@ public static class KeycloakTestUsers
         Email: "candidato@e2e.uniplus.local",
         Cpf: "24843803480",
         NomeSocial: "Candidato Teste",
-        Role: "candidato");
+        Role: null);
 }
 
 /// <summary>
@@ -51,4 +51,4 @@ public sealed record KeycloakTestUser(
     string Email,
     string Cpf,
     string NomeSocial,
-    string Role);
+    string? Role);
