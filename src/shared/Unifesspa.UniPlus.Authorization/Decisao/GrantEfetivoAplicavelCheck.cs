@@ -66,7 +66,7 @@ public sealed class GrantEfetivoAplicavelCheck : IPermissaoCheck
             // A validade é comparada com o instante do acesso que veio no
             // contexto, e não com uma leitura nova do relógio: a decisão inteira
             // se explica por um único instante, e o teste a reproduz.
-            if (grant.ValidoAte is { } validade && validade <= request.DataAcesso)
+            if (!ConcessaoAtiva.VigenteEm(grant.ValidoAte, request.DataAcesso))
             {
                 houveExpirada = true;
                 continue;

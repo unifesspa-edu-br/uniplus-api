@@ -51,6 +51,7 @@ public sealed class ConcessoesAtivasDoSujeito : IConcessoesAtivasDoSujeito
             {
                 c.Id,
                 c.PerfilId,
+                PerfilNome = p.Nome,
                 c.UnidadeId,
                 c.EscopoTipo,
                 c.ValidaAte,
@@ -64,6 +65,7 @@ public sealed class ConcessoesAtivasDoSujeito : IConcessoesAtivasDoSujeito
             .. lidas.Select(c => new ConcessaoAtiva(
                 c.Id,
                 c.PerfilId,
+                c.PerfilNome,
                 c.UnidadeId,
                 c.EscopoTipo == TipoDeEscopo.Instituicao,
                 c.ValidaAte,

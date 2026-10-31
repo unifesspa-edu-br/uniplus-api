@@ -40,7 +40,7 @@ public sealed class HttpAuthorizationSubjectResolverTests
 
         Result<AuthorizationSubject> resultado = await Resolver(
             [
-                new ConcessaoAtiva(concessaoId, perfilId, Unidade, false, validade, [Permissao, "selecao:outra-coisa:ler"]),
+                new ConcessaoAtiva(concessaoId, perfilId, "Perfil", Unidade, false, validade, [Permissao, "selecao:outra-coisa:ler"]),
             ],
             new Claim("iss", Emissor),
             new Claim("sub", "sub-opaco-1"),
@@ -66,7 +66,7 @@ public sealed class HttpAuthorizationSubjectResolverTests
     public async Task Resolve_ConcessaoInstitucional_NaoTemUnidade()
     {
         Result<AuthorizationSubject> resultado = await Resolver(
-            [new ConcessaoAtiva(Guid.CreateVersion7(), Guid.CreateVersion7(), null, true, null, [Permissao])],
+            [new ConcessaoAtiva(Guid.CreateVersion7(), Guid.CreateVersion7(), "Perfil", null, true, null, [Permissao])],
             new Claim("iss", Emissor),
             new Claim("sub", "sub-opaco-1"),
             new Claim("jti", "jti-1"));
@@ -83,7 +83,7 @@ public sealed class HttpAuthorizationSubjectResolverTests
         DateTimeOffset vencida = DateTimeOffset.UnixEpoch.AddDays(-1);
 
         Result<AuthorizationSubject> resultado = await Resolver(
-            [new ConcessaoAtiva(Guid.CreateVersion7(), Guid.CreateVersion7(), null, true, vencida, [Permissao])],
+            [new ConcessaoAtiva(Guid.CreateVersion7(), Guid.CreateVersion7(), "Perfil", null, true, vencida, [Permissao])],
             new Claim("iss", Emissor),
             new Claim("sub", "sub-opaco-1"),
             new Claim("jti", "jti-1"));
@@ -95,7 +95,7 @@ public sealed class HttpAuthorizationSubjectResolverTests
     public async Task Resolve_PermissaoEmBrancoNoPerfil_NaoInvalidaAsDemais()
     {
         Result<AuthorizationSubject> resultado = await Resolver(
-            [new ConcessaoAtiva(Guid.CreateVersion7(), Guid.CreateVersion7(), null, true, null, [" ", Permissao])],
+            [new ConcessaoAtiva(Guid.CreateVersion7(), Guid.CreateVersion7(), "Perfil", null, true, null, [" ", Permissao])],
             new Claim("iss", Emissor),
             new Claim("sub", "sub-opaco-1"),
             new Claim("jti", "jti-1"));
