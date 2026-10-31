@@ -5,6 +5,8 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
@@ -16,6 +18,8 @@ public sealed class FormularioProcessoConfiguration : IEntityTypeConfiguration<F
     public void Configure(EntityTypeBuilder<FormularioProcesso> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("formularios_processo");
         builder.HasKey(f => f.Id);
@@ -45,6 +49,8 @@ public sealed class EtapaFormularioConfiguration : IEntityTypeConfiguration<Etap
     public void Configure(EntityTypeBuilder<EtapaFormulario> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("etapas_formulario");
         builder.HasKey(e => e.Id);

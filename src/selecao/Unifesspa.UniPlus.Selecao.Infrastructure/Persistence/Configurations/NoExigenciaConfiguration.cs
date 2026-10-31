@@ -10,6 +10,8 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
@@ -27,6 +29,8 @@ public sealed class NoExigenciaConfiguration : IEntityTypeConfiguration<NoExigen
     public void Configure(EntityTypeBuilder<NoExigencia> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         // Defesa em profundidade (a validação real é de domínio, NoExigencia.CriarGrupo):
         // campos de folha/grupo coerentes com o tipo, e as duas semânticas de quantidadeMinima

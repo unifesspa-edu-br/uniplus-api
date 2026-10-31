@@ -5,6 +5,9 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+
 /// <summary>
 /// Configuração EF Core de <see cref="ProdutoDaFase"/> — filha 0..* de
 /// <see cref="FaseCronograma"/>. Os limites de comprimento espelham
@@ -18,6 +21,8 @@ public sealed class ProdutoDaFaseConfiguration : IEntityTypeConfiguration<Produt
     public void Configure(EntityTypeBuilder<ProdutoDaFase> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("produtos_da_fase");
         builder.HasKey(p => p.Id);

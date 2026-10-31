@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
@@ -14,6 +16,8 @@ internal sealed class AceiteDaInscricaoRecordConfiguration : IEntityTypeConfigur
     public void Configure(EntityTypeBuilder<AceiteDaInscricaoRecord> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("aceites_da_inscricao", t => t.HasComment(
             "O aceite de um termo na inscrição, com a versão e o hash da versão fixada."));

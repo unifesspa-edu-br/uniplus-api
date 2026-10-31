@@ -5,6 +5,8 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
@@ -19,6 +21,8 @@ internal sealed class OcorrenciaDoLoteDeNotasConfiguration : IEntityTypeConfigur
     public void Configure(EntityTypeBuilder<OcorrenciaDoLoteDeNotas> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
 
         // O IS NOT NULL explícito é necessário: cardinality(NULL) é NULL, e um CHECK que avalia NULL passa.
         builder.ToTable("ocorrencias_do_lote_de_notas", t =>

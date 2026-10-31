@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 
@@ -15,6 +17,8 @@ internal sealed class OcorrenciaDeGrupoDaInscricaoRecordConfiguration : IEntityT
     public void Configure(EntityTypeBuilder<OcorrenciaDeGrupoDaInscricaoRecord> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("ocorrencias_de_grupo_da_inscricao", t => t.HasComment(
             "Uma ocorrência de grupo repetível da inscrição, como cada dependente de um grupo de dependentes."));

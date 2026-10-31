@@ -5,11 +5,16 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+
 public sealed class DocumentoMatriculaConfiguration : IEntityTypeConfiguration<DocumentoMatricula>
 {
     public void Configure(EntityTypeBuilder<DocumentoMatricula> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
 
         builder.ToTable("documentos_matricula");
         builder.HasKey(d => d.Id);

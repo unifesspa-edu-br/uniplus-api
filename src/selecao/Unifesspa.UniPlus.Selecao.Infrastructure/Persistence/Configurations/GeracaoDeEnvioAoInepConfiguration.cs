@@ -5,6 +5,8 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>Configuração EF Core do registro de geração do arquivo de envio ao INEP. Nem o arquivo nem os CPFs são guardados.</summary>
@@ -23,6 +25,8 @@ internal sealed class GeracaoDeEnvioAoInepConfiguration : IEntityTypeConfigurati
     {
         ArgumentNullException.ThrowIfNull(builder);
 
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
+
         builder.ToTable("geracoes_de_envio_ao_inep", t =>
         {
             t.HasComment("O registro de que o arquivo de envio ao INEP foi gerado para uma edição do ENEM. Append-only; o arquivo e os CPFs não são guardados.");
@@ -39,8 +43,8 @@ internal sealed class GeracaoDeEnvioAoInepConfiguration : IEntityTypeConfigurati
         builder.Property(g => g.LeiauteCodigo).HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(g => g.LeiauteVersao).HasMaxLength(VersaoMaxLength).IsRequired();
         builder.Property(g => g.LeiauteHash).HasMaxLength(HashHexLength).IsFixedLength().IsRequired();
-        builder.Property(g => g.GeradoPor).HasMaxLength(GeradoPorMaxLength).IsRequired().HasComment("O sub do token de quem gerou.");
-        builder.Property(g => g.GeradoPorNome).HasMaxLength(GeradoPorMaxLength).HasComment("O nome de quem gerou, gravado no momento da ação.");
+        builder.Property(g => g.GeradoPor).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(GeradoPorMaxLength).IsRequired().HasComment("O sub do token de quem gerou.");
+        builder.Property(g => g.GeradoPorNome).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(GeradoPorMaxLength).HasComment("O nome de quem gerou, gravado no momento da ação.");
         builder.Property(g => g.GeradoEm).IsRequired();
         builder.Property(g => g.TotalDeCpfs).IsRequired();
 

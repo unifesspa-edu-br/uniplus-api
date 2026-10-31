@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",
@@ -14,6 +16,8 @@ internal sealed class TipoEtapaConfiguration : IEntityTypeConfiguration<TipoEtap
     public void Configure(EntityTypeBuilder<TipoEtapa> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         // Um tipo que não compõe nota nem elimina não configura etapa nenhuma — toda etapa
         // declara um caráter, e nenhum sobraria para escolher.

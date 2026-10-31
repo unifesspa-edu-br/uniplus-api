@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Configuração EF Core do perfil de acesso e de suas permissões, com a carga dos dois
@@ -39,6 +41,8 @@ internal sealed class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
     public void Configure(EntityTypeBuilder<Perfil> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("perfis");
         builder.HasKey(p => p.Id);
@@ -77,6 +81,7 @@ internal sealed class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
 
         builder.OwnsMany(p => p.Permissoes, permissao =>
         {
+            permissao.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
             permissao.ToTable("perfil_permissoes");
             permissao.WithOwner().HasForeignKey("PerfilId");
             permissao.Property<Guid>("PerfilId");

@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 public sealed class BaseLegalBonusRegionalConfiguration : IEntityTypeConfiguration<BaseLegalBonusRegional>
 {
@@ -19,6 +21,8 @@ public sealed class BaseLegalBonusRegionalConfiguration : IEntityTypeConfigurati
     public void Configure(EntityTypeBuilder<BaseLegalBonusRegional> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
         builder.ToTable("base_legal_bonus_regional");
 
         builder.HasKey(e => e.Id);
@@ -38,6 +42,7 @@ public sealed class BaseLegalBonusRegionalConfiguration : IEntityTypeConfigurati
 
         builder.OwnsMany(e => e.Municipios, m =>
         {
+            m.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
             m.ToTable("base_legal_bonus_regional_municipio");
             m.WithOwner().HasForeignKey("BaseLegalBonusRegionalId");
 

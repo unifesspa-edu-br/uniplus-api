@@ -7,6 +7,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+
 /// <summary>
 /// Configuração EF Core de <see cref="NoExigenciaBaseLegal"/> (Story #920) — mesmo padrão de
 /// <see cref="DocumentoExigidoBaseLegalConfiguration"/> (duas classes concretas separadas, sem
@@ -22,6 +25,8 @@ public sealed class NoExigenciaBaseLegalConfiguration : IEntityTypeConfiguration
     public void Configure(EntityTypeBuilder<NoExigenciaBaseLegal> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("nos_exigencia_base_legal");
         builder.HasKey(b => b.Id);

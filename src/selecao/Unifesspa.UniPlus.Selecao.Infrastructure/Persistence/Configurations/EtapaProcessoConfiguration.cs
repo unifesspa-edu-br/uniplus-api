@@ -10,6 +10,9 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+
 public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaProcesso>
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
@@ -35,6 +38,8 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
     {
         ArgumentNullException.ThrowIfNull(builder);
 
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
+
         builder.ToTable("etapas_processo", t =>
         {
             // Só a positividade fica no banco: numeric(18,4) arredonda 0,00001 para zero em
@@ -58,6 +63,7 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
         // migration, sem coluna nullable transitória (issue #1071).
         builder.OwnsOne(e => e.TipoEtapa, tipo =>
         {
+            tipo.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
             tipo.Property(x => x.OrigemId)
                 .HasColumnName("tipo_etapa_origem_id")
                 .IsRequired()

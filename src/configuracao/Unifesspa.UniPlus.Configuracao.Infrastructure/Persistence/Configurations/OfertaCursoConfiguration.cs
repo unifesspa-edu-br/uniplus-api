@@ -7,6 +7,8 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",
@@ -24,6 +26,8 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
     public void Configure(EntityTypeBuilder<OfertaCurso> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("oferta_curso", ConfigurarChecks);
 
@@ -82,6 +86,7 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
         // Organização (a proveniência é só o origem_id).
         builder.OwnsOne(o => o.UnidadeOfertante, unidade =>
         {
+            unidade.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
             unidade.Property(u => u.OrigemId)
                 .HasColumnName("unidade_oft_origem_id")
                 .IsRequired();

@@ -12,6 +12,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 /// <summary>
@@ -45,6 +47,8 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
     public void Configure(EntityTypeBuilder<DocumentoExigido> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("documentos_exigidos", t => t.HasCheckConstraint(
             "ck_documentos_exigidos_formatos_permitidos_coerente",
@@ -131,6 +135,7 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
         // OwnsOne, colunas nullable, 0..1 por exigência.
         builder.OwnsOne(d => d.IdadeMaximaEmissao, idade =>
         {
+            idade.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
             idade.Property(i => i.Valor).HasColumnName("idade_maxima_valor");
             idade.Property(i => i.Unidade)
                 .HasColumnName("idade_maxima_unidade")
@@ -150,6 +155,7 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
         // (ck_documentos_exigidos_formatos_permitidos_coerente).
         builder.OwnsOne(d => d.FormatosPermitidos, formatos =>
         {
+            formatos.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
             formatos.Property(f => f.Qualquer).HasColumnName("formatos_permitidos_qualquer").IsRequired();
             formatos.Property(f => f.Lista)
                 .HasColumnName("formatos_permitidos_lista")
@@ -165,6 +171,7 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
         // o modelo confirmado é imutável e não tem remoção.
         builder.OwnsOne(d => d.Modelo, modelo =>
         {
+            modelo.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
             modelo.Property(m => m.ModeloId).HasColumnName("modelo_id");
             modelo.Property(m => m.NomeArquivo).HasColumnName("modelo_nome_arquivo").HasMaxLength(ModeloDeDocumento.NomeArquivoMaxLength);
             modelo.Property(m => m.Formato).HasColumnName("modelo_formato").HasConversion<int>();

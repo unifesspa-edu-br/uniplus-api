@@ -5,11 +5,16 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+
 public sealed class OfertaAtendimentoEspecializadoConfiguration : IEntityTypeConfiguration<OfertaAtendimentoEspecializado>
 {
     public void Configure(EntityTypeBuilder<OfertaAtendimentoEspecializado> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("ofertas_atendimento_especializado");
         builder.HasKey(o => o.Id);

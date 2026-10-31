@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.Configuration
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 
 /// <summary>
@@ -22,6 +24,8 @@ internal sealed class LinhagemUnicaPorObjetoConfiguration : IEntityTypeConfigura
     public void Configure(EntityTypeBuilder<LinhagemUnicaPorObjeto> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable(
             "linhagem_unica_por_objeto",

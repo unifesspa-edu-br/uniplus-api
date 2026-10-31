@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.Configuration
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
@@ -16,6 +18,8 @@ internal sealed class VinculoAtoEntidadeConfiguration : IEntityTypeConfiguration
     public void Configure(EntityTypeBuilder<VinculoAtoEntidade> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable(
             "vinculo_ato_entidade",

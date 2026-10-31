@@ -6,11 +6,16 @@ using Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+
 public sealed class AtoDoProcessoConfiguration : IEntityTypeConfiguration<AtoDoProcesso>
 {
     public void Configure(EntityTypeBuilder<AtoDoProcesso> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("atos_do_processo");
         builder.HasKey(a => a.Id);
@@ -20,11 +25,11 @@ public sealed class AtoDoProcessoConfiguration : IEntityTypeConfiguration<AtoDoP
         builder.Property(a => a.TipoCodigo).HasMaxLength(AtoDoProcesso.TipoCodigoMaxLength).IsRequired();
         builder.Property(a => a.TipoNome).HasMaxLength(AtoDoProcesso.TipoNomeMaxLength).IsRequired();
         builder.Property(a => a.Numero).HasMaxLength(AtoDoProcesso.NumeroMaxLength);
-        builder.Property(a => a.Assinante).HasMaxLength(AtoDoProcesso.AssinanteMaxLength).IsRequired();
+        builder.Property(a => a.Assinante).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(AtoDoProcesso.AssinanteMaxLength).IsRequired();
         builder.Property(a => a.UnidadeAdministradora).HasMaxLength(AtoDoProcesso.UnidadeAdministradoraMaxLength).IsRequired();
         builder.Property(a => a.IdentificadorLegivelDoProcesso).HasMaxLength(AtoDoProcesso.IdentificadorLegivelMaxLength).IsRequired();
         builder.Property(a => a.MotivoDaCorrecao).HasMaxLength(AtoDoProcesso.MotivoDaCorrecaoMaxLength);
-        builder.Property(a => a.PoliticaDeDivulgacaoConfirmadaPorSub).HasMaxLength(AtoDoProcesso.SubMaxLength);
+        builder.Property(a => a.PoliticaDeDivulgacaoConfirmadaPorSub).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(AtoDoProcesso.SubMaxLength);
         builder.Property(a => a.ItemDoEdital).HasMaxLength(IdentidadeDoItemDoEdital.ChaveMaxLength);
         builder.Property(a => a.Situacao).HasConversion<int>().IsRequired();
 

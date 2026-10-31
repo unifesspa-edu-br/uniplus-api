@@ -9,6 +9,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>Configuração EF Core da concessão de acesso.</summary>
 [SuppressMessage(
@@ -32,6 +34,8 @@ internal sealed class ConcessaoConfiguration : IEntityTypeConfiguration<Concessa
     public void Configure(EntityTypeBuilder<Concessao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
 
         // O banco confere o que o agregado já garante, para que nenhuma gravação direta deixe a
         // revogação pela metade, o escopo incoerente ou a vigência anterior à concessão.

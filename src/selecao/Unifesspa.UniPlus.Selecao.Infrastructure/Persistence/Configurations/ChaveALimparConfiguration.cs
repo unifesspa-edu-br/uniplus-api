@@ -5,6 +5,9 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",
     "CA1812:Avoid uninstantiated internal classes",
@@ -14,6 +17,8 @@ internal sealed class ChaveALimparConfiguration : IEntityTypeConfiguration<Chave
     public void Configure(EntityTypeBuilder<ChaveALimpar> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("chaves_a_limpar", t => t.HasComment(
             "Chaves do armazenamento a apagar depois de uma hora: a URL de envio recria o objeto em claro até vencer."));

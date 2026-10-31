@@ -5,6 +5,8 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
@@ -18,6 +20,8 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
     public void Configure(EntityTypeBuilder<FatoColetado> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("fatos_coletados");
         builder.HasKey(f => f.Id);

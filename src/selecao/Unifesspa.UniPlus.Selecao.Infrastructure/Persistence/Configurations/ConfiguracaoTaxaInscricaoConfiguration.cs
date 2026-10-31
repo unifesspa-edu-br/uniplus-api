@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
@@ -26,6 +28,8 @@ internal sealed class ConfiguracaoTaxaInscricaoConfiguration : IEntityTypeConfig
     public void Configure(EntityTypeBuilder<ConfiguracaoTaxaInscricao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("configuracoes_taxa_inscricao", t => t.HasComment(
             "Configuração de taxa de inscrição e fundamentos de isenção do processo seletivo " +

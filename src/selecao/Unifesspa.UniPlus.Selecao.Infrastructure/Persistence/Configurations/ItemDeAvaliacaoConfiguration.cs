@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>Mapeamento de <see cref="ItemDeAvaliacao"/> — filha de <see cref="EtapaProcesso"/>.</summary>
@@ -11,6 +13,8 @@ public sealed class ItemDeAvaliacaoConfiguration : IEntityTypeConfiguration<Item
     public void Configure(EntityTypeBuilder<ItemDeAvaliacao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         // Só a positividade fica no banco: que a soma dos itens feche a nota máxima da etapa e
         // que a pontuação caiba no passo dependem de outra linha e do rascunho, e são regra do

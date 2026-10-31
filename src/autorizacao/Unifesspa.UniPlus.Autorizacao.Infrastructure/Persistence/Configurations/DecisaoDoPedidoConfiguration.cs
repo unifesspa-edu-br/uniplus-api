@@ -9,6 +9,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>Configuração EF Core das decisões do pedido, registro só acrescentado.</summary>
 [SuppressMessage(
@@ -32,6 +34,8 @@ internal sealed class DecisaoDoPedidoConfiguration : IEntityTypeConfiguration<De
     public void Configure(EntityTypeBuilder<DecisaoDoPedido> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
 
         builder.ToTable("pedido_decisoes", tabela => tabela.HasCheckConstraint(
             "ck_pedido_decisoes_motivo_na_recusa",

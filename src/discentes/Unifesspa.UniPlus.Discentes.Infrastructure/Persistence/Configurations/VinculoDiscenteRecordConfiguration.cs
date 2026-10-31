@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Records;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",
@@ -15,6 +17,8 @@ internal sealed class VinculoDiscenteRecordConfiguration : IEntityTypeConfigurat
     {
         ArgumentNullException.ThrowIfNull(builder);
 
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
+
         builder.ToTable("vinculo_discente", t => t.HasComment(
             "Réplica local dos vínculos de discentes sincronizados do SIGAA (ADR-0121) — " +
             "snapshot desnormalizado, sem referência viva a outras tabelas."));
@@ -25,16 +29,18 @@ internal sealed class VinculoDiscenteRecordConfiguration : IEntityTypeConfigurat
             .HasComment("Identificador interno (UUIDv7) do registro — não confundir com id_discente_sigaa, a chave natural do SIGAA.");
 
         builder.Property(v => v.IdDiscenteSigaa)
+            .ClassificaComo(ClassificacaoDeProtecao.Identificador)
             .HasComment("Identificador do discente no SIGAA (chave natural do módulo) — usado para localizar e fazer upsert durante a sincronização.");
 
         builder.Property(v => v.Matricula)
+            .ClassificaComo(ClassificacaoDeProtecao.Identificador)
             .HasMaxLength(20)
             .IsRequired()
             .HasComment("Matrícula do discente na instituição.");
 
         // Envelope autenticado (nonce + tag + dados cifrados) — nunca os 11 dígitos em
         // texto claro. bytea evita a expansão de ~33% de uma codificação Base64 (ADR-0121).
-        builder.Property(v => v.CpfCiphertext)
+        builder.Property(v => v.CpfCiphertext).ClassificaComo(ClassificacaoDeProtecao.Identificador)
             .HasColumnType("bytea")
             .IsRequired()
             .HasComment("CPF cifrado em repouso (AES-GCM, ADR-0121) — envelope autenticado (nonce + tag + dado); nunca texto claro.");

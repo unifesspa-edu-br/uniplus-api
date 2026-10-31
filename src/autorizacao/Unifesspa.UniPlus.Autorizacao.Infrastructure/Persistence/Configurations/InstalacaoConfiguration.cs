@@ -9,6 +9,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>Configuração EF Core da instalação dos primeiros gestores de acessos.</summary>
 [SuppressMessage(
@@ -30,6 +32,8 @@ internal sealed class InstalacaoConfiguration : IEntityTypeConfiguration<Instala
     {
         ArgumentNullException.ThrowIfNull(builder);
 
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
+
         builder.ToTable("instalacoes", tabela =>
         {
             tabela.HasCheckConstraint(
@@ -41,15 +45,17 @@ internal sealed class InstalacaoConfiguration : IEntityTypeConfiguration<Instala
         });
         builder.HasKey(i => i.Id);
 
-        builder.Property(i => i.ExecutorEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
-        builder.Property(i => i.ExecutorSub).HasMaxLength(IdentidadeMaxLength).IsRequired();
-        builder.Property(i => i.ExecutorNome).HasMaxLength(NomeDeExibicao.MaxLength);
+        builder.Property(i => i.ExecutorEmissor).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(IdentidadeMaxLength).IsRequired();
+        builder.Property(i => i.ExecutorSub).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(IdentidadeMaxLength).IsRequired();
+        builder.Property(i => i.ExecutorNome).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(i => i.NumeroDoDocumento).HasMaxLength(Instalacao.NumeroDoDocumentoMaxLength).IsRequired();
         builder.Property(i => i.TamanhoDoPdf).IsRequired();
         builder.Property(i => i.Situacao).HasConversion(SituacaoConverter).HasMaxLength(SituacaoMaxLength).IsRequired();
         builder.Property(i => i.DocumentoETag).HasColumnName("documento_etag").HasMaxLength(ETagMaxLength);
         builder.Property(i => i.DocumentoSha256).HasMaxLength(Sha256HexLength);
-        builder.Property(i => i.CodigoResumo);
+        // HMAC do código de confirmação: credencial, com a classe mais alta.
+        builder.Property(i => i.CodigoResumo)
+            .ClassificaComo(ClassificacaoDeProtecao.Sensivel);
         builder.Property(i => i.Tentativas).IsRequired();
 
         // Quem executa e as datas são deriváveis do estado; a identidade do executor também se
@@ -63,6 +69,7 @@ internal sealed class InstalacaoConfiguration : IEntityTypeConfiguration<Instala
 
         builder.OwnsMany(i => i.Gestores, gestor =>
         {
+            gestor.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
             gestor.ToTable("instalacao_gestores");
             gestor.WithOwner().HasForeignKey("InstalacaoId");
             gestor.Property<Guid>("InstalacaoId");

@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
@@ -26,6 +28,8 @@ internal sealed class ComprovanteInscricaoConfiguration : IEntityTypeConfigurati
     public void Configure(EntityTypeBuilder<ComprovanteInscricao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("comprovantes_inscricao", t => t.HasComment(
             "Comprovante de uma submissão da inscrição (issue #1858) — append-only, sem nenhum " +
@@ -52,7 +56,7 @@ internal sealed class ComprovanteInscricaoConfiguration : IEntityTypeConfigurati
         builder.Property(c => c.OfertaCursoSegundaOpcaoId)
             .HasComment("A oferta de curso da 2ª opção; nulo quando a inscrição não a declarou nesta submissão.");
 
-        builder.Property(c => c.Respostas)
+        builder.Property(c => c.Respostas).ClassificaComo(ClassificacaoDeProtecao.Sensivel)
             .HasConversion(RespostasConverter, RespostasComparer)
             .HasColumnType("jsonb")
             .IsRequired();
@@ -60,21 +64,21 @@ internal sealed class ComprovanteInscricaoConfiguration : IEntityTypeConfigurati
         // Em claro só em memória: o repositório as grava cifradas em SensiveisCifrados.
         builder.Ignore(c => c.RespostasSensiveis);
 
-        builder.Property(c => c.SensiveisCifrados)
+        builder.Property(c => c.SensiveisCifrados).ClassificaComo(ClassificacaoDeProtecao.Sensivel)
             .HasColumnType("bytea")
             .HasComment("Respostas de dado pessoal sensível com cifra individual (identidade de gênero, orientação sexual), cifradas (AES-GCM, ADR-0121, chave dos sensíveis) — nunca texto claro.");
 
-        builder.Property(c => c.SensiveisHmac)
+        builder.Property(c => c.SensiveisHmac).ClassificaComo(ClassificacaoDeProtecao.Sensivel)
             .HasColumnType("bytea")
             .HasComment("HMAC do id do comprovante e das respostas sensíveis, que prende o envelope cifrado a este comprovante.");
 
-        builder.Property(c => c.Derivados)
+        builder.Property(c => c.Derivados).ClassificaComo(ClassificacaoDeProtecao.Sensivel)
             .HasConversion(RespostasConverter, RespostasComparer)
             .HasColumnType("jsonb")
             .IsRequired()
             .HasComment("O que o sistema derivou das respostas nesta submissão, como a UF a partir do endereço.");
 
-        builder.Property(c => c.Grupos)
+        builder.Property(c => c.Grupos).ClassificaComo(ClassificacaoDeProtecao.Sensivel)
             .HasConversion(GruposConverter, GruposComparer)
             .HasColumnType("jsonb")
             .IsRequired();
@@ -84,18 +88,18 @@ internal sealed class ComprovanteInscricaoConfiguration : IEntityTypeConfigurati
             .HasColumnType("jsonb")
             .IsRequired();
 
-        builder.Property(c => c.Documentos)
+        builder.Property(c => c.Documentos).ClassificaComo(ClassificacaoDeProtecao.Sensivel)
             .HasConversion(DocumentosConverter, DocumentosComparer)
             .HasColumnType("jsonb")
             .IsRequired()
             .HasComment("As exigências documentais da inscrição neste envio, com a situação, a consequência escrita e, de cada arquivo, SHA-256, tamanho e formato — nunca nome nem local de armazenamento.");
 
-        builder.Property(c => c.Modalidades)
+        builder.Property(c => c.Modalidades).ClassificaComo(ClassificacaoDeProtecao.Sensivel)
             .HasConversion(ModalidadesConverter, ModalidadesComparer)
             .HasColumnType("jsonb")
             .HasComment("As modalidades em que o candidato concorre nesta submissão, com o nome congelado e a ordem das ofertadas; nulo quando a versão não deriva a modalidade.");
 
-        builder.Property(c => c.ModalidadesSegundaOpcao)
+        builder.Property(c => c.ModalidadesSegundaOpcao).ClassificaComo(ClassificacaoDeProtecao.Sensivel)
             .HasConversion(ModalidadesConverter, ModalidadesComparer)
             .HasColumnType("jsonb")
             .HasComment("As modalidades em que o candidato concorre na 2ª opção, sobre a distribuição de vagas da oferta dela; nulo quando não há 2ª opção ou a versão não deriva a modalidade.");

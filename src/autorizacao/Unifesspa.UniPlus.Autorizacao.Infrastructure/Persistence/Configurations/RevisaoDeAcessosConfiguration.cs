@@ -9,6 +9,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>Configuração EF Core da revisão periódica dos acessos e dos itens dela.</summary>
 [SuppressMessage(
@@ -31,6 +33,8 @@ internal sealed class RevisaoDeAcessosConfiguration : IEntityTypeConfiguration<R
     public void Configure(EntityTypeBuilder<RevisaoDeAcessos> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
 
         builder.ToTable("revisoes_de_acessos");
         builder.HasKey(r => r.Id);
@@ -56,6 +60,8 @@ internal sealed class RevisaoDeAcessosConfiguration : IEntityTypeConfiguration<R
     public void Configure(EntityTypeBuilder<ItemDaRevisao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
 
         // O banco confere o que o agregado já garante: a decisão é gravada inteira ou não é.
         builder.ToTable("revisao_itens", tabela => tabela.HasCheckConstraint(
