@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Cors;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Email;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+using Unifesspa.UniPlus.Infrastructure.Core.HealthChecks;
 using Unifesspa.UniPlus.Infrastructure.Core.Logging;
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
@@ -202,17 +203,9 @@ app.UseAuthorization();
 app.MapSharedProfileEndpoints();
 app.MapSharedAutorizacaoEndpoints();
 app.MapControllers();
-app.MapOpenApi("/openapi/{documentName}.json");
+app.MapOpenApi("/openapi/{documentName}.json").AllowAnonymous();
 
-app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
-{
-    Predicate = _ => false,
-});
-app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
-{
-    Predicate = h => h.Tags.Contains(HealthChecksServiceCollectionExtensions.ReadyTag),
-});
-app.MapHealthChecks("/health");
+app.MapUniPlusHealthChecks();
 
 await app.RunAsync().ConfigureAwait(false);
 

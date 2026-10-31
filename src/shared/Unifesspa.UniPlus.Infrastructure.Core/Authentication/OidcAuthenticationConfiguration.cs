@@ -4,6 +4,9 @@ using HealthChecks;
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -104,12 +107,14 @@ public static class OidcAuthenticationConfiguration
                 failureStatus: HealthStatus.Unhealthy,
                 tags: ["ready", "auth"]);
 
-        // TODO(#26-followup): registrar policies por role/permissão (Admin, Gestor, Avaliador).
-        // "Candidato" (issue #1859) é a primeira. Identifica o titular pelo CPF que o provedor de identidade
-        // informa, e não por papel: nenhum papel distingue candidato de servidor (ADR-0152), e o servidor com CPF
-        // se inscreve como titular dos próprios dados. O que o impede de operar o processo em que se inscreveu é o
-        // impedimento por inscrição do ponto de decisão, não esta política.
+        // Rota sem atributo de autorização exige pessoa autenticada; o que é público declara AllowAnonymous. Sem rota
+        // (404) ou com método não aceito (405, endpoint que não é RouteEndpoint), a requisição segue para a própria
+        // resposta, sem pedir login.
         services.AddAuthorizationBuilder()
+            .SetFallbackPolicy(new AuthorizationPolicyBuilder()
+                .RequireAssertion(static contexto => contexto.User.Identities.Any(static i => i.IsAuthenticated)
+                    || (contexto.Resource is HttpContext requisicao && requisicao.GetEndpoint() is not RouteEndpoint))
+                .Build())
             .AddPolicy("Candidato", policy => policy.RequireAssertion(static contexto =>
                 contexto.User.FindFirst(UniPlusClaims.Cpf) is { Value: { } cpf } && !string.IsNullOrWhiteSpace(cpf)))
             // "Instalacao": a única exceção a "o token não concede acesso" — o papel de realm só habilita
