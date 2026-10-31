@@ -16,14 +16,6 @@ using Unifesspa.UniPlus.ArchTests.TestSupport;
 /// </summary>
 public sealed class PoliticaDeControllerTests
 {
-    /// <summary>
-    /// Políticas de identidade, registradas em <c>OidcAuthenticationConfiguration</c>:
-    /// <c>Candidato</c> separa quem se inscreve (titular identificado pelo CPF) de quem opera o
-    /// sistema, e nenhuma concessão do catálogo descreve essa pessoa; <c>Instalacao</c> protege a
-    /// instalação inicial, que acontece antes de existir qualquer concessão para decidir.
-    /// </summary>
-    private static readonly string[] PoliticasDeIdentidade = ["Candidato", "Instalacao"];
-
     [Fact(DisplayName = "Fitness_PolicyDeControllerParaRegraDeNegocio_Falha")]
     public void Fitness_PolicyDeControllerParaRegraDeNegocio_Falha()
     {
@@ -51,7 +43,7 @@ public sealed class PoliticaDeControllerTests
 
     private static List<string> Violacoes(IEnumerable<Type> controllers)
         => [.. controllers.SelectMany(static t => PoliticasDe(t)
-            .Where(static p => !PoliticasDeIdentidade.Contains(p.Politica, StringComparer.Ordinal))
+            .Where(static p => !ControllersDaSolucao.PoliticasDeIdentidade.Contains(p.Politica, StringComparer.Ordinal))
             .Select(p => $"{t.FullName}.{p.Local}: política \"{p.Politica}\""))];
 
     private static IEnumerable<(string Local, string Politica)> PoliticasDe(Type controller)

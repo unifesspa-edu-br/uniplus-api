@@ -14,6 +14,13 @@ internal static class ControllersDaSolucao
 {
     private const BindingFlags Acoes = BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
 
+    /// <summary>
+    /// Políticas registradas em <c>OidcAuthenticationConfiguration</c> que dizem quem é a pessoa, e não o que ela pode:
+    /// <c>Candidato</c> exige o CPF do token; <c>Instalacao</c> protege a instalação inicial, que acontece antes de
+    /// existir concessão para decidir.
+    /// </summary>
+    internal static readonly string[] PoliticasDeIdentidade = ["Candidato", "Instalacao"];
+
     internal static IReadOnlyList<Type> De(string modulo)
         => [.. Todos().Where(t => t.Assembly.GetName().Name == $"Unifesspa.UniPlus.{modulo}.API")];
 
@@ -34,7 +41,7 @@ internal static class ControllersDaSolucao
         => (acao?.GetCustomAttributes<TAtributo>(inherit: true) ?? [])
             .Concat(controller.GetCustomAttributes<TAtributo>(inherit: true));
 
-    private static IEnumerable<Type> TiposCarregaveis(Assembly assembly)
+    internal static IEnumerable<Type> TiposCarregaveis(Assembly assembly)
     {
         try
         {
