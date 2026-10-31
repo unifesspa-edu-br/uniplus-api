@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Liga o endpoint ao ponto de decisão: monta o sujeito, o recurso e o contexto
+/// Liga o endpoint ao ponto de decisão: monta o sujeito, o resource e o contexto
 /// da requisição a partir do que já está em mãos e devolve o veredito.
 /// </summary>
 /// <remarks>
@@ -55,7 +55,7 @@ public sealed class VerificadorDeAcessoHttp : IVerificadorDeAcesso
     /// <inheritdoc />
     public async Task<ResultadoDoAcesso> VerificarAsync(
         PermissionRequirement permissao,
-        ResourceContext? recurso = null,
+        ResourceContext? resource = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(permissao);
@@ -69,7 +69,7 @@ public sealed class VerificadorDeAcessoHttp : IVerificadorDeAcesso
         }
 
         return await DecidirAsync(
-            sujeito!, permissao, recurso ?? RecursoDaPropriaOperacao(permissao), contexto!, cancellationToken);
+            sujeito!, permissao, resource ?? ResourceDaPropriaOperacao(permissao), contexto!, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -95,10 +95,10 @@ public sealed class VerificadorDeAcessoHttp : IVerificadorDeAcesso
             .OfType<Guid>()
             .Distinct())
         {
-            ResourceContext recurso = ResourceContext.From(
-                permissao.Permissao, permissao.Sensibilidade, unidadeProprietariaId: unidade).Value!;
+            ResourceContext resource = ResourceContext.From(
+                ResourceTipos.Operacao, permissao.Sensibilidade, unidadeProprietariaId: unidade).Value!;
 
-            resultado = await DecidirAsync(sujeito, permissao, recurso, contexto!, cancellationToken);
+            resultado = await DecidirAsync(sujeito, permissao, resource, contexto!, cancellationToken);
 
             if (resultado == ResultadoDoAcesso.Permitido)
             {
@@ -134,12 +134,12 @@ public sealed class VerificadorDeAcessoHttp : IVerificadorDeAcesso
     private async Task<ResultadoDoAcesso> DecidirAsync(
         AuthorizationSubject sujeito,
         PermissionRequirement permissao,
-        ResourceContext recurso,
+        ResourceContext resource,
         AuthorizationRequestContext contexto,
         CancellationToken cancellationToken)
     {
         AuthorizationDecision decisao = await _decisao.DecideAsync(
-            sujeito, permissao, recurso, contexto, cancellationToken);
+            sujeito, permissao, resource, contexto, cancellationToken);
 
         if (decisao.Allowed)
         {
@@ -151,10 +151,10 @@ public sealed class VerificadorDeAcessoHttp : IVerificadorDeAcesso
             : ResultadoDoAcesso.Negado;
     }
 
-    // Sem recurso informado, o alvo é a própria operação: o tipo é o código da
-    // permissão e a sensibilidade é a que ela declara. Assim a decisão continua
-    // recebendo um recurso real — e não um vazio que faria a verificação de
+    // Sem resource informado, o alvo é a própria operação: o tipo é `operacao` e a
+    // sensibilidade é a que a permissão declara. Assim a decisão continua
+    // recebendo um resource real — e não um vazio que faria a verificação de
     // escopo passar por omissão.
-    private static ResourceContext RecursoDaPropriaOperacao(PermissionRequirement permissao)
-        => ResourceContext.From(permissao.Permissao, permissao.Sensibilidade).Value!;
+    private static ResourceContext ResourceDaPropriaOperacao(PermissionRequirement permissao)
+        => ResourceContext.From(ResourceTipos.Operacao, permissao.Sensibilidade).Value!;
 }

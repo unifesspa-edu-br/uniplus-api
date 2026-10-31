@@ -146,7 +146,7 @@ public static partial class CatalogoDePermissoes<TPermissao>
     {
         if (string.IsNullOrWhiteSpace(codigo) || !FormatoDoCodigo().IsMatch(codigo))
         {
-            problemas.Add($"{quem}: o código '{codigo}' não segue {{módulo}}:{{recurso}}:{{ação}} em minúsculas, dígitos e hífen.");
+            problemas.Add($"{quem}: o código '{codigo}' não segue {{módulo}}:{{resource}}:{{ação}} em minúsculas, dígitos e hífen.");
             return [];
         }
 
@@ -173,6 +173,6 @@ public static partial class CatalogoDePermissoes<TPermissao>
         }
     }
 
-    [GeneratedRegex("^[a-z0-9]+(-[a-z0-9]+)*:[a-z0-9]+(-[a-z0-9]+)*:[a-z0-9]+(-[a-z0-9]+)*$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex("^" + SegmentoKebab.Padrao + ":" + SegmentoKebab.Padrao + ":" + SegmentoKebab.Padrao + @"\z", RegexOptions.CultureInvariant)]
     private static partial Regex FormatoDoCodigo();
 }

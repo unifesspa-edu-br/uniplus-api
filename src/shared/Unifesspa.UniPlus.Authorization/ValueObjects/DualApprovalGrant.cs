@@ -6,13 +6,13 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Concessão de dupla aprovação (four-eyes) para uma operação sensível,
 /// consumida pela decisão de autorização (ADR-0078). Dois aprovadores
-/// <b>distintos</b> autorizam uma operação sobre um recurso específico
-/// (<see cref="RecursoHash"/>), com uma janela de validade curta — no máximo
+/// <b>distintos</b> autorizam uma operação sobre um resource específico
+/// (<see cref="ResourceHash"/>), com uma janela de validade curta — no máximo
 /// <b>1 hora</b> após a concessão. O identificador é um GUID v7
 /// (<see cref="Guid.CreateVersion7()"/>, ADR-0032), ordenável temporalmente.
 /// </summary>
 /// <remarks>
-/// A persistência, o algoritmo do <see cref="RecursoHash"/> e o consumo atômico
+/// A persistência, o algoritmo do <see cref="ResourceHash"/> e o consumo atômico
 /// de uso único são responsabilidade de stories irmãs (#609, #612). Este tipo é
 /// apenas o contrato em memória, com as invariantes de construção.
 /// </remarks>
@@ -30,8 +30,8 @@ public sealed record DualApprovalGrant
     /// <summary>Segundo aprovador — distinto do primário.</summary>
     public UsuarioRef AprovadorSecundario { get; }
 
-    /// <summary>Hash opaco do recurso alvo (algoritmo definido em story irmã).</summary>
-    public string RecursoHash { get; }
+    /// <summary>Hash opaco do resource alvo (algoritmo definido em story irmã).</summary>
+    public string ResourceHash { get; }
 
     /// <summary>Código da permissão concedida.</summary>
     public string PermissaoCodigo { get; }
@@ -55,7 +55,7 @@ public sealed record DualApprovalGrant
         Guid id,
         UsuarioRef aprovadorPrimario,
         UsuarioRef aprovadorSecundario,
-        string recursoHash,
+        string resourceHash,
         string permissaoCodigo,
         DateTimeOffset concedidoEm,
         DateTimeOffset validoAte,
@@ -66,7 +66,7 @@ public sealed record DualApprovalGrant
         Id = id;
         AprovadorPrimario = aprovadorPrimario;
         AprovadorSecundario = aprovadorSecundario;
-        RecursoHash = recursoHash;
+        ResourceHash = resourceHash;
         PermissaoCodigo = permissaoCodigo;
         ConcedidoEm = concedidoEm;
         ValidoAte = validoAte;
@@ -84,7 +84,7 @@ public sealed record DualApprovalGrant
     public static Result<DualApprovalGrant> From(
         UsuarioRef aprovadorPrimario,
         UsuarioRef aprovadorSecundario,
-        string? recursoHash,
+        string? resourceHash,
         string? permissaoCodigo,
         DateTimeOffset concedidoEm,
         DateTimeOffset validoAte,
@@ -102,11 +102,11 @@ public sealed record DualApprovalGrant
                 "Código da permissão é obrigatório."));
         }
 
-        if (string.IsNullOrWhiteSpace(recursoHash))
+        if (string.IsNullOrWhiteSpace(resourceHash))
         {
             return Result<DualApprovalGrant>.Failure(new DomainError(
-                AuthorizationErrorCodes.DualApprovalRecursoHashObrigatorio,
-                "Hash do recurso é obrigatório."));
+                AuthorizationErrorCodes.DualApprovalResourceHashObrigatorio,
+                "Hash do resource é obrigatório."));
         }
 
         if (MesmaIdentidade(aprovadorPrimario, aprovadorSecundario))
@@ -134,7 +134,7 @@ public sealed record DualApprovalGrant
             Guid.CreateVersion7(),
             aprovadorPrimario,
             aprovadorSecundario,
-            recursoHash.Trim(),
+            resourceHash.Trim(),
             permissaoCodigo.Trim(),
             concedidoEm,
             validoAte,

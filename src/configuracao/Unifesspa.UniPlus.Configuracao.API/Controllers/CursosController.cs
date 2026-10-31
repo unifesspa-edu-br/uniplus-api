@@ -34,8 +34,6 @@ using Unifesspa.UniPlus.Kernel.Results;
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class CursosController : ControllerBase
 {
-    private const string RecursoTipo = "Cursos";
-
     private const string ResourceTag = "cursos";
 
     private readonly ICommandBus _commandBus;
@@ -133,7 +131,7 @@ public sealed class CursosController : ControllerBase
 
     /// <summary>Cria um novo curso. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/cursos")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CursosManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CursosManter, ResourceTipo = ResourceTiposConfiguracao.Curso)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -164,7 +162,7 @@ public sealed class CursosController : ControllerBase
 
     /// <summary>Atualiza um curso existente. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/cursos/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CursosManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CursosManter, ResourceTipo = ResourceTiposConfiguracao.Curso)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -199,7 +197,7 @@ public sealed class CursosController : ControllerBase
 
     /// <summary>Remove (soft-delete) um curso. Exige a permissão de manutenção. Bloqueado (409) quando referenciado por oferta de curso viva (#749).</summary>
     [HttpDelete("admin/cursos/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CursosManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CursosManter, ResourceTipo = ResourceTiposConfiguracao.Curso)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

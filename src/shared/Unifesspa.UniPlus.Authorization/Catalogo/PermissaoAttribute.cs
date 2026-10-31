@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 public sealed class PermissaoAttribute : Attribute
 {
     /// <summary>Cria a qualificação de uma permissão.</summary>
-    /// <param name="codigo">Código <c>{módulo}:{recurso}:{ação}</c>.</param>
+    /// <param name="codigo">Código <c>{módulo}:{resource}:{ação}</c>.</param>
     /// <param name="nome">Nome legível, em pt-BR.</param>
     /// <param name="descricao">Descrição do que a permissão autoriza, em pt-BR.</param>
     /// <param name="sensibilidade">Sensibilidade do dado que a operação retorna.</param>
@@ -48,7 +48,7 @@ public sealed class PermissaoAttribute : Attribute
     /// <summary>A permissão exige dupla aprovação válida.</summary>
     public bool RequerDuplaAprovacao { get; init; }
 
-    /// <summary>Campos do contexto do recurso que a permissão exige presentes.</summary>
+    /// <summary>Campos do contexto do resource que a permissão exige presentes.</summary>
     public string[]? EscopoContextoObrigatorio { get; init; }
 
     /// <summary>Verificações contextuais adicionais que a decisão orquestra.</summary>

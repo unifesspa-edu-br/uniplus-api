@@ -32,8 +32,6 @@ using Unifesspa.UniPlus.Kernel.Results;
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class TiposDocumentoController : ControllerBase
 {
-    private const string RecursoTipo = "TiposDocumento";
-
     private const string ResourceTag = "tipos-documento";
 
     private readonly ICommandBus _commandBus;
@@ -108,7 +106,7 @@ public sealed class TiposDocumentoController : ControllerBase
 
     /// <summary>Cria um novo tipo de documento. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/tipos-documento")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposDocumentoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposDocumentoManter, ResourceTipo = ResourceTiposConfiguracao.TipoDocumento)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -139,7 +137,7 @@ public sealed class TiposDocumentoController : ControllerBase
 
     /// <summary>Atualiza um tipo de documento existente. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/tipos-documento/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposDocumentoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposDocumentoManter, ResourceTipo = ResourceTiposConfiguracao.TipoDocumento)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -174,7 +172,7 @@ public sealed class TiposDocumentoController : ControllerBase
 
     /// <summary>Remove (soft-delete) um tipo de documento. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/tipos-documento/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposDocumentoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposDocumentoManter, ResourceTipo = ResourceTiposConfiguracao.TipoDocumento)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

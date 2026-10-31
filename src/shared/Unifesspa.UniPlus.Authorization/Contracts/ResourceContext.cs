@@ -6,84 +6,91 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Atributos do recurso alvo de uma decisão de autorização (ADR-0078): o tipo
-/// do recurso, os identificadores de escopo que o situam (unidade proprietária,
+/// Atributos do resource alvo de uma decisão de autorização (ADR-0078): o tipo
+/// do resource, os identificadores de escopo que o situam (unidade proprietária,
 /// processo, chamada) e a classificação de sensibilidade do dado que a operação
 /// retorna. <b>Não</b> carrega dado pessoal do titular — apenas metadados do
-/// recurso.
+/// resource.
 /// </summary>
 public sealed record ResourceContext
 {
-    /// <summary>Tipo do recurso alvo (ex.: <c>Edital</c>, <c>Inscricao</c>).</summary>
-    public string RecursoTipo { get; }
+    /// <summary>Tipo do resource alvo (ex.: <c>processo-seletivo</c>, <c>inscricao</c>; ver <see cref="ResourceTipos"/>).</summary>
+    public string ResourceTipo { get; }
 
-    /// <summary>Unidade organizacional proprietária do recurso. Opcional.</summary>
+    /// <summary>Unidade organizacional proprietária do resource. Opcional.</summary>
     public Guid? UnidadeProprietariaId { get; }
 
-    /// <summary>Processo seletivo ao qual o recurso pertence. Opcional.</summary>
+    /// <summary>Processo seletivo ao qual o resource pertence. Opcional.</summary>
     public Guid? ProcessoId { get; }
 
-    /// <summary>Chamada à qual o recurso pertence. Opcional.</summary>
+    /// <summary>Chamada à qual o resource pertence. Opcional.</summary>
     public Guid? ChamadaId { get; }
 
     /// <summary>
     /// Identificador do registro alvo da operação (por exemplo, a inscrição cujo dado é revelado), quando a decisão
     /// recai sobre um único registro. Opcional; é só identificador, nunca conteúdo.
     /// </summary>
-    public Guid? RecursoId { get; }
+    public Guid? ResourceId { get; }
 
     /// <summary>Classificação de sensibilidade do dado retornado.</summary>
     public ClassificacaoDeProtecao Sensibilidade { get; }
 
     private ResourceContext(
-        string recursoTipo,
+        string resourceTipo,
         ClassificacaoDeProtecao sensibilidade,
         Guid? unidadeProprietariaId,
         Guid? processoId,
         Guid? chamadaId,
-        Guid? recursoId)
+        Guid? resourceId)
     {
-        RecursoTipo = recursoTipo;
+        ResourceTipo = resourceTipo;
         Sensibilidade = sensibilidade;
         UnidadeProprietariaId = unidadeProprietariaId;
         ProcessoId = processoId;
         ChamadaId = chamadaId;
-        RecursoId = recursoId;
+        ResourceId = resourceId;
     }
 
     /// <summary>
     /// Constrói um <see cref="ResourceContext"/> validado. Rejeita
-    /// <paramref name="recursoTipo"/> em branco e qualquer identificador de
+    /// <paramref name="resourceTipo"/> em branco ou fora da convenção de <see cref="ResourceTipos"/> e qualquer identificador de
     /// escopo informado como <see cref="Guid.Empty"/> — nulo é "escopo não se
     /// aplica"; um valor informado precisa ser um identificador real (o projeto
     /// usa Guid v7).
     /// </summary>
     public static Result<ResourceContext> From(
-        string? recursoTipo,
+        string? resourceTipo,
         ClassificacaoDeProtecao sensibilidade,
         Guid? unidadeProprietariaId = null,
         Guid? processoId = null,
         Guid? chamadaId = null,
-        Guid? recursoId = null)
+        Guid? resourceId = null)
     {
-        if (string.IsNullOrWhiteSpace(recursoTipo))
+        if (string.IsNullOrWhiteSpace(resourceTipo))
         {
             return Result<ResourceContext>.Failure(new DomainError(
-                AuthorizationErrorCodes.ResourceContextRecursoTipoObrigatorio,
-                "Tipo do recurso é obrigatório."));
+                AuthorizationErrorCodes.ResourceContextResourceTipoObrigatorio,
+                "Tipo do resource é obrigatório."));
+        }
+
+        if (!ResourceTipos.SegueAConvencao(resourceTipo))
+        {
+            return Result<ResourceContext>.Failure(new DomainError(
+                AuthorizationErrorCodes.ResourceContextResourceTipoForaDaConvencao,
+                "Tipo do resource deve estar em kebab-case, em minúsculas, sem acento (ex.: tipo-documento)."));
         }
 
         if (sensibilidade == ClassificacaoDeProtecao.Nenhuma || !Enum.IsDefined(sensibilidade))
         {
             return Result<ResourceContext>.Failure(new DomainError(
                 AuthorizationErrorCodes.ResourceContextSensibilidadeInvalida,
-                "A sensibilidade do recurso é obrigatória: informe um nível da escala de proteção (publico a sensivel)."));
+                "A sensibilidade do resource é obrigatória: informe um nível da escala de proteção (publico a sensivel)."));
         }
 
         if (GuidVazioInformado(unidadeProprietariaId)
             || GuidVazioInformado(processoId)
             || GuidVazioInformado(chamadaId)
-            || GuidVazioInformado(recursoId))
+            || GuidVazioInformado(resourceId))
         {
             return Result<ResourceContext>.Failure(new DomainError(
                 AuthorizationErrorCodes.ResourceContextEscopoInvalido,
@@ -91,12 +98,12 @@ public sealed record ResourceContext
         }
 
         return Result<ResourceContext>.Success(new ResourceContext(
-            recursoTipo.Trim(),
+            resourceTipo,
             sensibilidade,
             unidadeProprietariaId,
             processoId,
             chamadaId,
-            recursoId));
+            resourceId));
     }
 
     private static bool GuidVazioInformado(Guid? valor) => valor is { } g && g == Guid.Empty;

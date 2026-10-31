@@ -107,7 +107,7 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
         using HttpClient client = _fixture.Factory.CreateClient();
         using HttpRequestMessage request = new(
             consulta ? HttpMethod.Get : HttpMethod.Post,
-            new Uri($"/api/configuracao/admin/{permissao.Recurso}", UriKind.Relative));
+            new Uri($"/api/configuracao/admin/{permissao.Resource}", UriKind.Relative));
         if (!consulta)
         {
             request.Content = JsonContent.Create(new { });

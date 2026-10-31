@@ -52,7 +52,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 [ExigePermissao<PermissaoSelecao>(
     PermissaoSelecao.RegrasCatalogoConsultar,
     OuEmAlgumaUnidade = PermissaoSelecao.ProcessosConfigurar,
-    RecursoTipo = RecursoTipo)]
+    ResourceTipo = ResourceTiposSelecao.RegraCatalogo)]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
@@ -60,7 +60,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 public sealed class RegrasCatalogoController : ControllerBase
 {
     private const string ResourceTag = "regras-catalogo";
-    private const string RecursoTipo = "RegraCatalogo";
 
     private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;

@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Contracts;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Exige uma permissão do catálogo antes do <i>model binding</i> (ADR-0151). Preserva
@@ -25,7 +26,7 @@ using Unifesspa.UniPlus.Authorization.Contracts;
 public sealed class ExigePermissaoAttribute<TPermissao> : Attribute, IAsyncAuthorizationFilter
     where TPermissao : struct, Enum
 {
-    private readonly ResourceContext? _recurso;
+    private readonly ResourceContext? _resource;
 
     /// <summary>Cria a exigência.</summary>
     /// <param name="permissao">Permissão exigida, do enum <typeparamref name="TPermissao"/>.</param>
@@ -42,16 +43,13 @@ public sealed class ExigePermissaoAttribute<TPermissao> : Attribute, IAsyncAutho
     }
 
     /// <summary>
-    /// Tipo do recurso que a decisão enxerga, quando a concessão pode ser restrita
+    /// Tipo do resource que a decisão enxerga, quando a concessão pode ser restrita
     /// por tipo. Omitido, o alvo é a própria operação.
     /// </summary>
-    public string? RecursoTipo
+    public string? ResourceTipo
     {
-        get => _recurso?.RecursoTipo;
-        init => _recurso = value is null
-            ? null
-            : ResourceContext.From(value, Definicao.Requisito.Sensibilidade).Value
-                ?? throw new ArgumentException("O tipo do recurso não pode ser vazio.", nameof(value));
+        get => _resource?.ResourceTipo;
+        init => _resource = value is null ? null : ConstruirResource(value);
     }
 
     /// <summary>
@@ -80,6 +78,14 @@ public sealed class ExigePermissaoAttribute<TPermissao> : Attribute, IAsyncAutho
 
     private DefinicaoDePermissao? Alternativa { get; init; }
 
+    private ResourceContext ConstruirResource(string tipo)
+    {
+        Result<ResourceContext> resource = ResourceContext.From(tipo, Definicao.Requisito.Sensibilidade);
+
+        return resource.Value
+            ?? throw new ArgumentException(resource.Error!.Message, nameof(tipo));
+    }
+
     /// <inheritdoc />
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
     {
@@ -88,7 +94,7 @@ public sealed class ExigePermissaoAttribute<TPermissao> : Attribute, IAsyncAutho
         IVerificadorDeAcesso acesso = context.HttpContext.RequestServices.GetRequiredService<IVerificadorDeAcesso>();
 
         ResultadoDoAcesso resultado = await acesso
-            .VerificarAsync(Definicao.Requisito, _recurso, context.HttpContext.RequestAborted)
+            .VerificarAsync(Definicao.Requisito, _resource, context.HttpContext.RequestAborted)
             .ConfigureAwait(false);
 
         if (resultado == ResultadoDoAcesso.Negado && Alternativa is not null)

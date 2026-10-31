@@ -32,8 +32,6 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Queries.Instituicoe
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class InstituicaoController : ControllerBase
 {
-    private const string RecursoTipo = "Instituicao";
-
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;
@@ -82,7 +80,7 @@ public sealed class InstituicaoController : ControllerBase
     /// a plataforma atende uma única instituição por deployment (ADR-0055).
     /// </summary>
     [HttpPost("admin/instituicao")]
-    [ExigePermissao<PermissaoOrganizacao>(PermissaoOrganizacao.InstituicaoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoOrganizacao>(PermissaoOrganizacao.InstituicaoManter, ResourceTipo = ResourceTiposOrganizacao.Instituicao)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -112,7 +110,7 @@ public sealed class InstituicaoController : ControllerBase
     /// Atualiza a Instituição existente. Exige a permissão de manutenção.
     /// </summary>
     [HttpPut("admin/instituicao/{id:guid}")]
-    [ExigePermissao<PermissaoOrganizacao>(PermissaoOrganizacao.InstituicaoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoOrganizacao>(PermissaoOrganizacao.InstituicaoManter, ResourceTipo = ResourceTiposOrganizacao.Instituicao)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -148,7 +146,7 @@ public sealed class InstituicaoController : ControllerBase
     /// Remove (soft-delete) a Instituição. Exige a permissão de manutenção.
     /// </summary>
     [HttpDelete("admin/instituicao/{id:guid}")]
-    [ExigePermissao<PermissaoOrganizacao>(PermissaoOrganizacao.InstituicaoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoOrganizacao>(PermissaoOrganizacao.InstituicaoManter, ResourceTipo = ResourceTiposOrganizacao.Instituicao)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

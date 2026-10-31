@@ -23,8 +23,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 [SuppressMessage("Performance", "CA1515:Consider making public types internal", Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class BaseLegalBonusRegionalController : ControllerBase
 {
-    private const string RecursoTipo = "BaseLegalBonusRegional";
-
     private const string ResourceTag = "base-legal-bonus-regional";
 
     private readonly ICommandBus _commandBus;
@@ -92,7 +90,7 @@ public sealed class BaseLegalBonusRegionalController : ControllerBase
     }
 
     [HttpPost("admin/base-legal-bonus-regional")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.BaseLegalBonusRegionalManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.BaseLegalBonusRegionalManter, ResourceTipo = ResourceTiposConfiguracao.BaseLegalBonusRegional)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -121,7 +119,7 @@ public sealed class BaseLegalBonusRegionalController : ControllerBase
     }
 
     [HttpPut("admin/base-legal-bonus-regional/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.BaseLegalBonusRegionalManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.BaseLegalBonusRegionalManter, ResourceTipo = ResourceTiposConfiguracao.BaseLegalBonusRegional)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -154,7 +152,7 @@ public sealed class BaseLegalBonusRegionalController : ControllerBase
     }
 
     [HttpDelete("admin/base-legal-bonus-regional/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.BaseLegalBonusRegionalManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.BaseLegalBonusRegionalManter, ResourceTipo = ResourceTiposConfiguracao.BaseLegalBonusRegional)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

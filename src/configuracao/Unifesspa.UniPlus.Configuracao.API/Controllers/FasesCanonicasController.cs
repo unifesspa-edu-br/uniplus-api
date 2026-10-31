@@ -32,8 +32,6 @@ using Unifesspa.UniPlus.Kernel.Results;
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class FasesCanonicasController : ControllerBase
 {
-    private const string RecursoTipo = "FasesCanonicas";
-
     private const string ResourceTag = "fases-canonicas";
 
     private readonly ICommandBus _commandBus;
@@ -108,7 +106,7 @@ public sealed class FasesCanonicasController : ControllerBase
 
     /// <summary>Cria uma nova fase canônica. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/fases-canonicas")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FasesCanonicasManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FasesCanonicasManter, ResourceTipo = ResourceTiposConfiguracao.FaseCanonica)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -139,7 +137,7 @@ public sealed class FasesCanonicasController : ControllerBase
 
     /// <summary>Atualiza uma fase canônica existente. O código é imutável. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/fases-canonicas/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FasesCanonicasManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FasesCanonicasManter, ResourceTipo = ResourceTiposConfiguracao.FaseCanonica)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -173,7 +171,7 @@ public sealed class FasesCanonicasController : ControllerBase
 
     /// <summary>Remove (soft-delete) uma fase canônica. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/fases-canonicas/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FasesCanonicasManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FasesCanonicasManter, ResourceTipo = ResourceTiposConfiguracao.FaseCanonica)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

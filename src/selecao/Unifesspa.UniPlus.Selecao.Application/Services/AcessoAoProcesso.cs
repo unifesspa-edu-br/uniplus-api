@@ -10,40 +10,31 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
 /// O ponto único em que a Seleção decide uma permissão que vale na unidade dona do processo (ADR-0078,
-/// ADR-0151): monta o recurso com a unidade, o processo e a sensibilidade, e entrega a pergunta ao ponto de
+/// ADR-0151): monta o resource com a unidade, o processo e a sensibilidade, e entrega a pergunta ao ponto de
 /// decisão. A permissão só vale na unidade em que foi concedida, então a decisão precisa do processo carregado — por
 /// isso não cabe ao filtro de permissão do catálogo, que roda antes de saber qual processo é.
 /// </summary>
 public static class AcessoAoProcesso
 {
-    /// <summary>Tipo do recurso das operações sobre o processo seletivo.</summary>
-    public const string RecursoProcesso = "processo-seletivo";
-
-    /// <summary>Tipo do recurso das operações sobre as inscrições do processo.</summary>
-    public const string RecursoInscricao = "inscricao";
-
-    /// <summary>Tipo do recurso das operações sobre os documentos das inscrições.</summary>
-    public const string RecursoDocumento = "documento-da-inscricao";
-
     /// <summary>
     /// Decide a permissão sobre o processo. O processo que não existe nunca é permitido: não há unidade dona, e a
     /// resposta é a mesma de quem não tem a permissão, para não revelar que o processo existe.
     /// </summary>
-    /// <param name="sensibilidadeDoRecurso">A sensibilidade do dado alcançado, quando difere da que a permissão declara.</param>
+    /// <param name="sensibilidadeDoResource">A sensibilidade do dado alcançado, quando difere da que a permissão declara.</param>
     public static async Task<ResultadoDoAcesso> VerificarAsync(
         IVerificadorDeAcesso verificador,
         IProcessoSeletivoRepository processos,
         Guid processoId,
         PermissaoSelecao permissao,
-        string recursoTipo,
-        ClassificacaoDeProtecao? sensibilidadeDoRecurso,
+        string resourceTipo,
+        ClassificacaoDeProtecao? sensibilidadeDoResource,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(processos);
 
         Guid? unidade = await processos.ObterUnidadeAdministradoraAsync(processoId, cancellationToken).ConfigureAwait(false);
         return await VerificarNaUnidadeAsync(
-                verificador, unidade, processoId, permissao, recursoTipo, sensibilidadeDoRecurso, cancellationToken)
+                verificador, unidade, processoId, permissao, resourceTipo, sensibilidadeDoResource, cancellationToken)
             .ConfigureAwait(false);
     }
 
@@ -67,8 +58,8 @@ public static class AcessoAoProcesso
         }
 
         return await VerificarNaUnidadeAsync(
-                verificador, estado?.UnidadeId, processoId, PermissaoSelecao.ProcessosConfigurar, RecursoProcesso,
-                sensibilidadeDoRecurso: null, cancellationToken)
+                verificador, estado?.UnidadeId, processoId, PermissaoSelecao.ProcessosConfigurar, ResourceTiposSelecao.ProcessoSeletivo,
+                sensibilidadeDoResource: null, cancellationToken)
             .ConfigureAwait(false);
     }
 
@@ -76,27 +67,33 @@ public static class AcessoAoProcesso
     public static async Task<bool> ConfiguraAsync(
         IVerificadorDeAcesso verificador, Guid unidadeId, Guid processoId, CancellationToken cancellationToken) =>
         await VerificarNaUnidadeAsync(
-                verificador, unidadeId, processoId, PermissaoSelecao.ProcessosConfigurar, RecursoProcesso,
-                sensibilidadeDoRecurso: null, cancellationToken)
+                verificador, unidadeId, processoId, PermissaoSelecao.ProcessosConfigurar, ResourceTiposSelecao.ProcessoSeletivo,
+                sensibilidadeDoResource: null, cancellationToken)
             .ConfigureAwait(false) == ResultadoDoAcesso.Permitido;
 
     /// <summary>
-    /// Decide a permissão sobre a unidade. Sem unidade (processo inexistente) não há decisão a tomar sobre o recurso:
-    /// o acesso é negado sem consultar o ponto de decisão, que registraria como permitida uma operação sobre um recurso
+    /// Decide a permissão sobre a unidade. Sem unidade (processo inexistente) não há decisão a tomar sobre o resource:
+    /// o acesso é negado sem consultar o ponto de decisão, que registraria como permitida uma operação sobre um resource
     /// que não existe.
-    /// <paramref name="recursoId"/> é o registro alvo quando a decisão recai sobre um só (a inscrição cujo CPF se revela).
+    /// <paramref name="resourceId"/> é o registro alvo quando a decisão recai sobre um só (a inscrição cujo CPF se revela).
     /// </summary>
     public static async Task<ResultadoDoAcesso> VerificarNaUnidadeAsync(
         IVerificadorDeAcesso verificador,
         Guid? unidadeId,
         Guid? processoId,
         PermissaoSelecao permissao,
-        string recursoTipo,
-        ClassificacaoDeProtecao? sensibilidadeDoRecurso,
+        string resourceTipo,
+        ClassificacaoDeProtecao? sensibilidadeDoResource,
         CancellationToken cancellationToken,
-        Guid? recursoId = null)
+        Guid? resourceId = null)
     {
         ArgumentNullException.ThrowIfNull(verificador);
+
+        if (!ResourceTipos.SegueAConvencao(resourceTipo))
+        {
+            throw new ArgumentException(
+                $"O tipo de resource '{resourceTipo}' está fora da convenção kebab-case; use ResourceTiposSelecao.", nameof(resourceTipo));
+        }
 
         if (unidadeId is null)
         {
@@ -104,14 +101,14 @@ public static class AcessoAoProcesso
         }
 
         PermissionRequirement requisito = permissao.Requisito;
-        Result<ResourceContext> recurso = ResourceContext.From(
-            recursoTipo, sensibilidadeDoRecurso ?? requisito.Sensibilidade, unidadeId, processoId, recursoId: recursoId);
-        if (recurso.IsFailure)
+        Result<ResourceContext> resource = ResourceContext.From(
+            resourceTipo, sensibilidadeDoResource ?? requisito.Sensibilidade, unidadeId, processoId, resourceId: resourceId);
+        if (resource.IsFailure)
         {
             return ResultadoDoAcesso.Negado;
         }
 
-        return await verificador.VerificarAsync(requisito, recurso.Value, cancellationToken).ConfigureAwait(false);
+        return await verificador.VerificarAsync(requisito, resource.Value, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>O erro com que um handler recusa o acesso que o ponto de decisão não permitiu.</summary>

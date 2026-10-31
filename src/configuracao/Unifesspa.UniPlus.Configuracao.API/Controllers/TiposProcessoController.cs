@@ -24,10 +24,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 [SuppressMessage("Performance", "CA1515:Consider making public types internal", Justification = "Controllers MVC são descobertos por reflection.")]
 public sealed class TiposProcessoController : ControllerBase
 {
-    private const string RecursoTipo = "TiposProcesso";
-
     private const string ResourceTag = "tipos-processo";
     private const string ResourceTagAdmin = "admin-tipos-processo";
+
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;
@@ -76,7 +75,7 @@ public sealed class TiposProcessoController : ControllerBase
     /// quem mantém o cadastro encontra o tipo desativado que pretende reativar.
     /// </summary>
     [HttpGet("admin/tipos-processo")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposProcessoConsultar, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposProcessoConsultar, ResourceTipo = ResourceTiposConfiguracao.TipoProcesso)]
     [VendorMediaType(Resource = "tipo-processo", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<TipoProcessoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -102,7 +101,7 @@ public sealed class TiposProcessoController : ControllerBase
     /// continua devolvendo 404 para o desativado (UNI-REQ-0098).
     /// </summary>
     [HttpGet("admin/tipos-processo/{id:guid}", Name = "ObterTipoProcessoParaManutencao")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposProcessoConsultar, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposProcessoConsultar, ResourceTipo = ResourceTiposConfiguracao.TipoProcesso)]
     [VendorMediaType(Resource = "tipo-processo", Versions = [1])]
     [ProducesResponseType(typeof(TipoProcessoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -117,7 +116,7 @@ public sealed class TiposProcessoController : ControllerBase
     }
 
     [HttpPost("admin/tipos-processo")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposProcessoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposProcessoManter, ResourceTipo = ResourceTiposConfiguracao.TipoProcesso)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -132,7 +131,7 @@ public sealed class TiposProcessoController : ControllerBase
     }
 
     [HttpPut("admin/tipos-processo/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposProcessoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposProcessoManter, ResourceTipo = ResourceTiposConfiguracao.TipoProcesso)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -158,7 +157,7 @@ public sealed class TiposProcessoController : ControllerBase
     /// produzidos — eles guardam cópia por valor do tipo (ADR-0061).
     /// </summary>
     [HttpPost("admin/tipos-processo/{id:guid}/ativacao")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposProcessoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposProcessoManter, ResourceTipo = ResourceTiposConfiguracao.TipoProcesso)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -173,7 +172,7 @@ public sealed class TiposProcessoController : ControllerBase
     }
 
     [HttpDelete("admin/tipos-processo/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposProcessoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposProcessoManter, ResourceTipo = ResourceTiposConfiguracao.TipoProcesso)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

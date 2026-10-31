@@ -50,7 +50,7 @@ public sealed class InscricoesDoProcessoController : ControllerBase
     /// (<c>***.999.999-**</c>). O rascunho não aparece: o candidato ainda não se inscreveu.
     /// </summary>
     [HttpGet]
-    [ExigePermissaoNoProcesso(PermissaoSelecao.InscricoesConsultar, RecursoTipo = AcessoAoProcesso.RecursoInscricao)]
+    [ExigePermissaoNoProcesso(PermissaoSelecao.InscricoesConsultar, ResourceTipo = ResourceTiposSelecao.Inscricao)]
     [VendorMediaType(Resource = "inscricao-do-processo", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<InscricaoDoProcessoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

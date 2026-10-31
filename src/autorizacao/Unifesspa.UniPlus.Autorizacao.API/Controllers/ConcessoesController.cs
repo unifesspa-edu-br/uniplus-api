@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Concessoes;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
+using Unifesspa.UniPlus.Autorizacao.Application.Permissoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Concessoes;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
@@ -39,9 +40,6 @@ public sealed class ConcessoesController : ControllerBase
 {
     private const string ResourceTag = "concessoes";
 
-    /// <summary>Tipo de recurso que a decisão de acesso enxerga, comparado por igualdade exata.</summary>
-    private const string RecursoTipo = "concessao";
-
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;
@@ -59,7 +57,7 @@ public sealed class ConcessoesController : ControllerBase
     /// recusado.
     /// </summary>
     [HttpGet("concessoes")]
-    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.ConcessoesAdministrar, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.ConcessoesAdministrar, ResourceTipo = ResourceTiposAutorizacao.Concessao)]
     [VendorMediaType(Resource = "concessao", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<ConcessaoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -109,7 +107,7 @@ public sealed class ConcessoesController : ControllerBase
 
     /// <summary>Obtém uma concessão pelo Id. Retorna 404 quando inexistente.</summary>
     [HttpGet("concessoes/{id:guid}")]
-    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.ConcessoesAdministrar, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.ConcessoesAdministrar, ResourceTipo = ResourceTiposAutorizacao.Concessao)]
     [VendorMediaType(Resource = "concessao", Versions = [1])]
     [ProducesResponseType(typeof(ConcessaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -127,7 +125,7 @@ public sealed class ConcessoesController : ControllerBase
 
     /// <summary>Trilha da concessão: eventos em ordem cronológica, montados na leitura.</summary>
     [HttpGet("concessoes/{id:guid}/trilha")]
-    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.ConcessoesAdministrar, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.ConcessoesAdministrar, ResourceTipo = ResourceTiposAutorizacao.Concessao)]
     [VendorMediaType(Resource = "trilha-da-concessao", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<EventoDaTrilhaDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -148,7 +146,7 @@ public sealed class ConcessoesController : ControllerBase
     /// não se revoga se deixaria menos de dois gestores. <c>Idempotency-Key</c> obrigatório.
     /// </summary>
     [HttpPost("concessoes/{id:guid}/revogacao")]
-    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.ConcessoesAdministrar, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.ConcessoesAdministrar, ResourceTipo = ResourceTiposAutorizacao.Concessao)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

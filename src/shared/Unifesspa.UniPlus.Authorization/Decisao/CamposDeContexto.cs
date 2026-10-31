@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Authorization.Contracts;
 /// </remarks>
 public static class CamposDeContexto
 {
-    /// <summary>Campo do contexto que identifica a unidade dona do recurso.</summary>
+    /// <summary>Campo do contexto que identifica a unidade dona do resource.</summary>
     public const string UnidadeProprietariaId = "unidadeProprietariaId";
 
     private static readonly FrozenDictionary<string, Func<ResourceContext, bool>> Presenca =
@@ -26,7 +26,7 @@ public static class CamposDeContexto
             // Garantidos pela fábrica de ResourceContext (tipo obrigatório,
             // sensibilidade é enum não-anulável); exigi-los é redundante, mas
             // declarável — e continua verdadeiro.
-            ["recursoTipo"] = static resource => !string.IsNullOrWhiteSpace(resource.RecursoTipo),
+            ["resourceTipo"] = static resource => !string.IsNullOrWhiteSpace(resource.ResourceTipo),
             ["sensibilidade"] = static _ => true,
             [UnidadeProprietariaId] = static resource => resource.UnidadeProprietariaId is not null,
             ["processoId"] = static resource => resource.ProcessoId is not null,
@@ -38,7 +38,7 @@ public static class CamposDeContexto
         Presenca.Keys.ToFrozenSet(StringComparer.Ordinal);
 
     /// <summary>
-    /// <see langword="true"/> quando algum campo exigido está ausente do recurso
+    /// <see langword="true"/> quando algum campo exigido está ausente do resource
     /// — ou quando o nome exigido é desconhecido, que é a mesma coisa do ponto de
     /// vista de quem decide: não há como afirmar que o contexto foi satisfeito.
     /// </summary>

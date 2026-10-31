@@ -30,7 +30,7 @@ public sealed class EffectiveGrantTests
     }
 
     [Fact]
-    public void EffectiveGrant_PreservaEscoposERestricaoDeRecurso()
+    public void EffectiveGrant_PreservaEscoposERestricaoDeResource()
     {
         Guid unidade = Guid.CreateVersion7();
         Guid processo = Guid.CreateVersion7();
@@ -45,7 +45,7 @@ public sealed class EffectiveGrantTests
             escopoUnidadeId: unidade,
             escopoProcessoId: processo,
             escopoChamadaId: chamada,
-            recursoTipoRestricao: "Edital",
+            resourceTipoRestricao: "edital",
             perfilId: perfil);
 
         resultado.IsSuccess.Should().BeTrue();
@@ -53,7 +53,7 @@ public sealed class EffectiveGrantTests
         resultado.Value.EscopoUnidadeId.Should().Be(unidade);
         resultado.Value.EscopoProcessoId.Should().Be(processo);
         resultado.Value.EscopoChamadaId.Should().Be(chamada);
-        resultado.Value.RecursoTipoRestricao.Should().Be("Edital");
+        resultado.Value.ResourceTipoRestricao.Should().Be("edital");
         resultado.Value.PerfilId.Should().Be(perfil);
         resultado.Value.EscopoInstitucional.Should().BeFalse();
     }
@@ -99,13 +99,13 @@ public sealed class EffectiveGrantTests
     [Fact]
     public void EffectiveGrant_ConcessaoSemUnidadeNemInstituicao_Rejeita()
     {
-        // Só processo, chamada ou tipo de recurso não são escopo de concessão de perfil: seria
+        // Só processo, chamada ou tipo de resource não são escopo de concessão de perfil: seria
         // permissão global em todas as unidades.
         Result<EffectiveGrant> resultado = EffectiveGrant.From(
             Permissao,
             FonteGrant.Concessao,
             escopoProcessoId: Guid.CreateVersion7(),
-            recursoTipoRestricao: "Edital");
+            resourceTipoRestricao: "edital");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.EffectiveGrantEscopoObrigatorio);
@@ -126,13 +126,26 @@ public sealed class EffectiveGrantTests
             "só o escopo institucional não basta para a concessão fora do perfil padrão (ADR-0084)");
     }
 
+    [Theory]
+    [InlineData("TiposDocumento")]
+    [InlineData("tipo_documento")]
+    public void EffectiveGrant_ResourceTipoRestricaoForaDaConvencao_Rejeita(string restricao)
+    {
+        Result<EffectiveGrant> resultado = EffectiveGrant.From(
+            Permissao, FonteGrant.PermissaoExcecional, resourceTipoRestricao: restricao,
+            validoAte: DateTimeOffset.UtcNow.AddHours(1));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.EffectiveGrantResourceTipoRestricaoInvalido);
+    }
+
     [Fact]
-    public void EffectiveGrant_ExcepcionalComRecursoTipoEmBranco_Rejeita()
+    public void EffectiveGrant_ExcepcionalComResourceTipoEmBranco_Rejeita()
     {
         DateTimeOffset validade = DateTimeOffset.UtcNow.AddHours(1);
 
         Result<EffectiveGrant> resultado = EffectiveGrant.From(
-            Permissao, FonteGrant.PermissaoExcecional, recursoTipoRestricao: "   ", validoAte: validade);
+            Permissao, FonteGrant.PermissaoExcecional, resourceTipoRestricao: "   ", validoAte: validade);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.EffectiveGrantEscopoExcepcionalObrigatorio);
@@ -142,7 +155,7 @@ public sealed class EffectiveGrantTests
     [InlineData("unidade")]
     [InlineData("processo")]
     [InlineData("chamada")]
-    [InlineData("recurso")]
+    [InlineData("resource")]
     public void EffectiveGrant_ExcepcionalComUmEscopo_Aceita(string escopo)
     {
         DateTimeOffset validade = DateTimeOffset.UtcNow.AddHours(1);
@@ -153,7 +166,7 @@ public sealed class EffectiveGrantTests
             escopoUnidadeId: escopo == "unidade" ? Guid.CreateVersion7() : null,
             escopoProcessoId: escopo == "processo" ? Guid.CreateVersion7() : null,
             escopoChamadaId: escopo == "chamada" ? Guid.CreateVersion7() : null,
-            recursoTipoRestricao: escopo == "recurso" ? "Edital" : null,
+            resourceTipoRestricao: escopo == "resource" ? "edital" : null,
             validoAte: validade);
 
         resultado.IsSuccess.Should().BeTrue();

@@ -38,8 +38,6 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class TiposAtoController : ControllerBase
 {
-    private const string RecursoTipo = "TiposAto";
-
     private const string ResourceTag = "tipos-ato";
 
     /// <summary>Mesmo formato exigido pelo agregado: caixa alta, palavras separadas por underscore.</summary>
@@ -163,7 +161,7 @@ public sealed class TiposAtoController : ControllerBase
     /// <c>Idempotency-Key</c> obrigatório (ADR-0027).
     /// </summary>
     [HttpPost("admin/tipos-ato")]
-    [ExigePermissao<PermissaoPublicacoes>(PermissaoPublicacoes.TiposAtoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoPublicacoes>(PermissaoPublicacoes.TiposAtoManter, ResourceTipo = ResourceTiposPublicacoes.TipoAto)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -197,7 +195,7 @@ public sealed class TiposAtoController : ControllerBase
     /// já é idempotente — repetir a mesma substituição não acumula efeito.
     /// </remarks>
     [HttpPut("admin/tipos-ato/{id:guid}")]
-    [ExigePermissao<PermissaoPublicacoes>(PermissaoPublicacoes.TiposAtoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoPublicacoes>(PermissaoPublicacoes.TiposAtoManter, ResourceTipo = ResourceTiposPublicacoes.TipoAto)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -232,7 +230,7 @@ public sealed class TiposAtoController : ControllerBase
     /// vigência. Exige a permissão de manutenção.
     /// </summary>
     [HttpDelete("admin/tipos-ato/{id:guid}")]
-    [ExigePermissao<PermissaoPublicacoes>(PermissaoPublicacoes.TiposAtoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoPublicacoes>(PermissaoPublicacoes.TiposAtoManter, ResourceTipo = ResourceTiposPublicacoes.TipoAto)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

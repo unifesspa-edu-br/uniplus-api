@@ -88,7 +88,7 @@ public sealed class AuthorizationDecisionService : IAuthorizationDecisionService
     {
         // Pré-condição estrutural, antes da cadeia: sem os campos de contexto que
         // a permissão exige, as verificações seguintes decidiriam sobre um
-        // recurso mal situado — e um escopo ausente pareceria escopo irrestrito.
+        // resource mal situado — e um escopo ausente pareceria escopo irrestrito.
         if (CamposDeContexto.AlgumAusente(requirement.EscopoContextoObrigatorio, resource))
         {
             return AuthorizationDecision.Negar(MotivoNegativa.ContextoObrigatorioAusente);
@@ -121,7 +121,7 @@ public sealed class AuthorizationDecisionService : IAuthorizationDecisionService
         }
 
         // Depois da concessão, para que quem não tem concessão siga recusado pelo motivo de sempre, e antes das
-        // verificações contextuais: o impedimento vale para toda permissão com processo no recurso, e nenhuma
+        // verificações contextuais: o impedimento vale para toda permissão com processo no resource, e nenhuma
         // concessão o supera.
         CheckResult impedimento = await _impedimento.CheckAsync(
             subject, requirement, resource, request, cancellationToken);
@@ -144,7 +144,7 @@ public sealed class AuthorizationDecisionService : IAuthorizationDecisionService
 
         // Dado pessoal só sai com base legal declarada (LGPD, art. 7º). A
         // sensibilidade é declarada em dois lugares — a permissão classifica o que
-        // a operação retorna, o contexto classifica o recurso alcançado — e as
+        // a operação retorna, o contexto classifica o resource alcançado — e as
         // duas podem divergir. Vale a maior: olhar só uma delas deixaria uma
         // permissão classificada como sensível ser concedida sem base legal por
         // um contexto montado como interno.

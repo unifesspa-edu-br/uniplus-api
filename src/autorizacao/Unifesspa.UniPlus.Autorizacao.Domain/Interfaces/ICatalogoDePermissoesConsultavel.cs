@@ -14,7 +14,7 @@ public interface ICatalogoDePermissoesConsultavel
     bool ReservadaAGovernanca(string codigo);
 
     /// <summary>
-    /// A permissão é de unidade: o catálogo exige a unidade proprietária do recurso no contexto da
+    /// A permissão é de unidade: o catálogo exige a unidade proprietária do resource no contexto da
     /// decisão. As demais permissões são institucionais.
     /// </summary>
     bool DeUnidade(string codigo);

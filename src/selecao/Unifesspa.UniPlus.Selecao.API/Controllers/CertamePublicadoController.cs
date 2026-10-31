@@ -36,7 +36,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public; sem isso o MVC ignora a classe e nenhum endpoint é registrado.")]
 public sealed class CertamePublicadoController : ControllerBase
 {
-    private const string RecursoDaVitrine = "certames";
+    private const string ResourceDaVitrine = "certames";
 
     /// <summary>
     /// Descrição do parâmetro de ordenação, com os campos aceitos escritos por extenso.
@@ -130,7 +130,7 @@ public sealed class CertamePublicadoController : ControllerBase
     public async Task<IActionResult> ListarVitrine(
         // RequireSortKey: a âncora é o par (SortKey, Id). Sem a exigência, cursor sem a chave
         // degrada em silêncio para primeira página em vez de ser recusado.
-        [FromCursor(RecursoDaVitrine, RequireSortKey = true)] PageRequest page,
+        [FromCursor(ResourceDaVitrine, RequireSortKey = true)] PageRequest page,
         [FromQuery(Name = "situacao")] SituacaoDoCertame? situacao,
         [FromQuery(Name = "modalidade")]
         [Description("Código da modalidade que o certame precisa ofertar. Sem o parâmetro, não recorta.")]
@@ -184,7 +184,7 @@ public sealed class CertamePublicadoController : ControllerBase
         }
 
         return await this.OkPaginatedOrdenadoAsync(
-            resultado.Items, resultado.Anterior, resultado.Proximo, page, RecursoDaVitrine,
+            resultado.Items, resultado.Anterior, resultado.Proximo, page, ResourceDaVitrine,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

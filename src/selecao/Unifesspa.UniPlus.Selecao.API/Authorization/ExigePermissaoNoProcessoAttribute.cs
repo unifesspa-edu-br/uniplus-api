@@ -29,8 +29,15 @@ public sealed class ExigePermissaoNoProcessoAttribute : Attribute, IAsyncAuthori
     /// <param name="permissao">Permissão exigida na unidade dona do processo.</param>
     public ExigePermissaoNoProcessoAttribute(PermissaoSelecao permissao) => _permissao = permissao;
 
-    /// <summary>Tipo do recurso que a decisão enxerga. Omitido, é o processo seletivo.</summary>
-    public string RecursoTipo { get; init; } = AcessoAoProcesso.RecursoProcesso;
+    /// <summary>Tipo do resource que a decisão enxerga. Omitido, é o processo seletivo.</summary>
+    public string ResourceTipo
+    {
+        get;
+        init => field = ResourceTipos.SegueAConvencao(value)
+            ? value
+            : throw new ArgumentException(
+                $"O tipo de resource '{value}' está fora da convenção kebab-case; use ResourceTiposSelecao.", nameof(value));
+    } = ResourceTiposSelecao.ProcessoSeletivo;
 
     /// <summary>Nome do parâmetro de rota que traz o identificador do processo. Omitido, é <c>id</c>.</summary>
     public string ParametroDaRota { get; init; } = RotaDoProcesso.ParametroPadrao;
@@ -49,8 +56,8 @@ public sealed class ExigePermissaoNoProcessoAttribute : Attribute, IAsyncAuthori
                 servicos.GetRequiredService<IProcessoSeletivoRepository>(),
                 processoId,
                 _permissao,
-                RecursoTipo,
-                sensibilidadeDoRecurso: null,
+                ResourceTipo,
+                sensibilidadeDoResource: null,
                 context.HttpContext.RequestAborted)
             .ConfigureAwait(false);
 

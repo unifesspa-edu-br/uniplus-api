@@ -34,8 +34,6 @@ using Unifesspa.UniPlus.Kernel.Results;
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class OfertasCursoController : ControllerBase
 {
-    private const string RecursoTipo = "OfertasCurso";
-
     private const string ResourceTag = "ofertas-curso";
 
     private readonly ICommandBus _commandBus;
@@ -157,7 +155,7 @@ public sealed class OfertasCursoController : ControllerBase
     /// Idempotency-Key obrigatório (ADR-0027).
     /// </summary>
     [HttpPost("admin/ofertas-curso")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.OfertasCursoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.OfertasCursoManter, ResourceTipo = ResourceTiposConfiguracao.OfertaCurso)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -191,7 +189,7 @@ public sealed class OfertasCursoController : ControllerBase
     /// Exige a permissão de manutenção.
     /// </summary>
     [HttpPut("admin/ofertas-curso/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.OfertasCursoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.OfertasCursoManter, ResourceTipo = ResourceTiposConfiguracao.OfertaCurso)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -229,7 +227,7 @@ public sealed class OfertasCursoController : ControllerBase
     /// congelados em outros módulos (cópias desacopladas — ADR-0061).
     /// </summary>
     [HttpDelete("admin/ofertas-curso/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.OfertasCursoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.OfertasCursoManter, ResourceTipo = ResourceTiposConfiguracao.OfertaCurso)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

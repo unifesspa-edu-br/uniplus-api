@@ -24,9 +24,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 [SuppressMessage("Performance", "CA1515:Consider making public types internal", Justification = "Controllers MVC são descobertos por reflection.")]
 public sealed class TiposEtapaController : ControllerBase
 {
-    private const string RecursoTipo = "TiposEtapa";
-
     private const string ResourceTag = "tipos-etapa";
+
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;
@@ -70,7 +69,7 @@ public sealed class TiposEtapaController : ControllerBase
     }
 
     [HttpPost("admin/tipos-etapa")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposEtapaManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposEtapaManter, ResourceTipo = ResourceTiposConfiguracao.TipoEtapa)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -85,7 +84,7 @@ public sealed class TiposEtapaController : ControllerBase
     }
 
     [HttpPut("admin/tipos-etapa/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposEtapaManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposEtapaManter, ResourceTipo = ResourceTiposConfiguracao.TipoEtapa)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -106,7 +105,7 @@ public sealed class TiposEtapaController : ControllerBase
     }
 
     [HttpDelete("admin/tipos-etapa/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposEtapaManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposEtapaManter, ResourceTipo = ResourceTiposConfiguracao.TipoEtapa)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

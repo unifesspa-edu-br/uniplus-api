@@ -40,7 +40,7 @@ public static class AutorizacaoEndpointsExtensions
         grupo.MapGet("/", ConsultarCatalogoAsync)
             .WithName("ConsultarCatalogoDePermissoes")
             .WithSummary("Lista o catálogo de permissões")
-            .WithDescription("Permissões da plataforma agrupadas por módulo e recurso, com código, nome, descrição e sensibilidade. Exige a permissão autorizacao:permissoes:consultar-catalogo.")
+            .WithDescription("Permissões da plataforma agrupadas por módulo e pelo alvo de cada permissão, com código, nome, descrição e sensibilidade. Exige a permissão autorizacao:permissoes:consultar-catalogo.")
             .Produces<IReadOnlyList<ModuloDoCatalogoResponse>>(StatusCodes.Status200OK, MediaTypeCatalogo)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
@@ -87,10 +87,10 @@ public static class AutorizacaoEndpointsExtensions
                 .Select(static modulo => new ModuloDoCatalogoResponse(
                     modulo.Key,
                     [.. modulo
-                        .GroupBy(static d => d.Recurso)
-                        .Select(static recurso => new RecursoDoCatalogoResponse(
-                            recurso.Key,
-                            [.. recurso.Select(static d => new PermissaoDoCatalogoResponse(
+                        .GroupBy(static d => d.Resource)
+                        .Select(static resource => new ResourceDoCatalogoResponse(
+                            resource.Key,
+                            [.. resource.Select(static d => new PermissaoDoCatalogoResponse(
                                 d.Codigo,
                                 d.Nome,
                                 d.Descricao,
@@ -169,7 +169,7 @@ public static class AutorizacaoEndpointsExtensions
         return faixa.MediaType.Equals("*/*", StringComparison.OrdinalIgnoreCase) ? 0 : -1;
     }
 
-    private static IResult NaoAceitavel(HttpContext http, string recurso)
+    private static IResult NaoAceitavel(HttpContext http, string resource)
     {
         const string codigo = "uniplus.contract.versao_nao_suportada";
 
@@ -179,7 +179,7 @@ public static class AutorizacaoEndpointsExtensions
             Status = StatusCodes.Status406NotAcceptable,
             Type = tipos.Build(codigo),
             Title = "Versão de mídia não suportada",
-            Detail = $"Nenhuma versão suportada pelo recurso '{recurso}' foi aceita pelo cliente.",
+            Detail = $"Nenhuma versão suportada pelo recurso '{resource}' foi aceita pelo cliente.",
             Instance = $"urn:uuid:{Guid.CreateVersion7()}",
         };
 
@@ -193,13 +193,13 @@ public static class AutorizacaoEndpointsExtensions
 
 /// <summary>Permissões de um módulo no catálogo.</summary>
 /// <param name="Modulo">Módulo.</param>
-/// <param name="Recursos">Recursos do módulo.</param>
-public sealed record ModuloDoCatalogoResponse(string Modulo, IReadOnlyList<RecursoDoCatalogoResponse> Recursos);
+/// <param name="Resources">Resources do módulo.</param>
+public sealed record ModuloDoCatalogoResponse(string Modulo, IReadOnlyList<ResourceDoCatalogoResponse> Resources);
 
-/// <summary>Permissões de um recurso no catálogo.</summary>
-/// <param name="Recurso">Recurso.</param>
-/// <param name="Permissoes">Permissões do recurso.</param>
-public sealed record RecursoDoCatalogoResponse(string Recurso, IReadOnlyList<PermissaoDoCatalogoResponse> Permissoes);
+/// <summary>Permissões de um resource no catálogo.</summary>
+/// <param name="Resource">Resource.</param>
+/// <param name="Permissoes">Permissões do resource.</param>
+public sealed record ResourceDoCatalogoResponse(string Resource, IReadOnlyList<PermissaoDoCatalogoResponse> Permissoes);
 
 /// <summary>Uma permissão do catálogo.</summary>
 /// <param name="Codigo">Código da permissão.</param>

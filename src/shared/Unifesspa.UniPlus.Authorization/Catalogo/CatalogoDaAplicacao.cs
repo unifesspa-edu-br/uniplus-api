@@ -48,12 +48,12 @@ public sealed class CatalogoDaAplicacao
         [
             .. porCodigo.Values
                 .OrderBy(static d => d.Modulo, StringComparer.Ordinal)
-                .ThenBy(static d => d.Recurso, StringComparer.Ordinal)
+                .ThenBy(static d => d.Resource, StringComparer.Ordinal)
                 .ThenBy(static d => d.Acao, StringComparer.Ordinal),
         ];
     }
 
-    /// <summary>Todas as permissões, ordenadas por módulo, recurso e ação.</summary>
+    /// <summary>Todas as permissões, ordenadas por módulo, resource e ação.</summary>
     public IReadOnlyList<DefinicaoDePermissao> Definicoes { get; }
 
     /// <summary>Busca a definição pelo código.</summary>

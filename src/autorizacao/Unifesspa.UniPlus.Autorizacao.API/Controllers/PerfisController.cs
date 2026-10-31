@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
+using Unifesspa.UniPlus.Autorizacao.Application.Permissoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
@@ -38,13 +39,6 @@ public sealed class PerfisController : ControllerBase
 {
     private const string ResourceTag = "perfis";
 
-    /// <summary>
-    /// Tipo de recurso que a decisão de acesso enxerga. A restrição de tipo de uma concessão é
-    /// comparada por igualdade exata, então este valor é o contrato com quem restringe a
-    /// concessão por tipo.
-    /// </summary>
-    private const string RecursoTipo = "perfil";
-
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;
@@ -58,7 +52,7 @@ public sealed class PerfisController : ControllerBase
 
     /// <summary>Lista os perfis, paginados por cursor opaco bidirecional (ADR-0026 + ADR-0089).</summary>
     [HttpGet("perfis")]
-    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
     [VendorMediaType(Resource = "perfil", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<PerfilDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -88,7 +82,7 @@ public sealed class PerfisController : ControllerBase
 
     /// <summary>Obtém um perfil pelo Id. Retorna 404 quando inexistente.</summary>
     [HttpGet("perfis/{id:guid}")]
-    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
     [VendorMediaType(Resource = "perfil", Versions = [1])]
     [ProducesResponseType(typeof(PerfilDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -106,7 +100,7 @@ public sealed class PerfisController : ControllerBase
 
     /// <summary>Cria um perfil de acesso. <c>Idempotency-Key</c> obrigatório (ADR-0027).</summary>
     [HttpPost("perfis")]
-    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -132,7 +126,7 @@ public sealed class PerfisController : ControllerBase
     /// edita. <c>Idempotency-Key</c> obrigatório.
     /// </summary>
     [HttpPut("perfis/{id:guid}")]
-    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -163,7 +157,7 @@ public sealed class PerfisController : ControllerBase
 
     /// <summary>Reativa um perfil comum. Perfil de governança não se ativa.</summary>
     [HttpPost("perfis/{id:guid}/ativacao")]
-    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -185,7 +179,7 @@ public sealed class PerfisController : ControllerBase
     /// Perfil de governança não se desativa.
     /// </summary>
     [HttpDelete("perfis/{id:guid}/ativacao")]
-    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

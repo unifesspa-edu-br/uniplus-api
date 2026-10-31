@@ -18,6 +18,7 @@ public static class AuthorizationErrorCodes
     public const string EffectiveGrantValidadeObrigatoria = "Authorization.EffectiveGrant.ValidadeObrigatoria";
     public const string EffectiveGrantEscopoExcepcionalObrigatorio = "Authorization.EffectiveGrant.EscopoExcecionalObrigatorio";
     public const string EffectiveGrantEscopoObrigatorio = "Authorization.EffectiveGrant.EscopoObrigatorio";
+    public const string EffectiveGrantResourceTipoRestricaoInvalido = "Authorization.EffectiveGrant.ResourceTipoRestricaoInvalido";
     public const string EffectiveGrantEscopoAmbiguo = "Authorization.EffectiveGrant.EscopoAmbiguo";
 
     public const string EscopoAuditoriaEscopoObrigatorio = "Authorization.EscopoAuditoriaVigente.EscopoObrigatorio";
@@ -26,7 +27,7 @@ public static class AuthorizationErrorCodes
     public const string AtuacaoUnidadeObrigatoria = "Authorization.AtuacaoVigente.UnidadeObrigatoria";
 
     public const string DualApprovalPermissaoObrigatoria = "Authorization.DualApprovalGrant.PermissaoObrigatoria";
-    public const string DualApprovalRecursoHashObrigatorio = "Authorization.DualApprovalGrant.RecursoHashObrigatorio";
+    public const string DualApprovalResourceHashObrigatorio = "Authorization.DualApprovalGrant.ResourceHashObrigatorio";
     public const string DualApprovalAprovadoresIguais = "Authorization.DualApprovalGrant.AprovadoresIguais";
     public const string DualApprovalValidadeNaoPosterior = "Authorization.DualApprovalGrant.ValidadeNaoPosterior";
     public const string DualApprovalValidadeAcimaDoLimite = "Authorization.DualApprovalGrant.ValidadeAcimaDoLimite";
@@ -36,7 +37,8 @@ public static class AuthorizationErrorCodes
     public const string PermissionRequirementPermissaoObrigatoria = "Authorization.PermissionRequirement.PermissaoObrigatoria";
     public const string PermissionRequirementSensibilidadeInvalida = "Authorization.PermissionRequirement.SensibilidadeInvalida";
 
-    public const string ResourceContextRecursoTipoObrigatorio = "Authorization.ResourceContext.RecursoTipoObrigatorio";
+    public const string ResourceContextResourceTipoObrigatorio = "Authorization.ResourceContext.ResourceTipoObrigatorio";
+    public const string ResourceContextResourceTipoForaDaConvencao = "Authorization.ResourceContext.ResourceTipoForaDaConvencao";
     public const string ResourceContextSensibilidadeInvalida = "Authorization.ResourceContext.SensibilidadeInvalida";
     public const string ResourceContextEscopoInvalido = "Authorization.ResourceContext.EscopoInvalido";
 

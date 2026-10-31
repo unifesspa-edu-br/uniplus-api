@@ -51,7 +51,7 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
     private const string Leandro = "leandro.viana";
     private const string Betina = "betina.neves";
     private const string Diogo = "diogo.souza";
-    private const string RecursoTipo = "MotivoDecisaoRecursal";
+    private const string ResourceTipo = "motivo-decisao-isencao";
 
     private static readonly PermissionRequirement ManterMotivos = PermissaoSelecao.MotivosDecisaoIsencaoManter.Requisito;
 
@@ -100,7 +100,7 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
         Guid perfil = await ConcessoesDeTeste.CriarPerfilAsync(_fixture.Factory.Services, ManterMotivos.Permissao);
         Guid concessao = await ConcessoesDeTeste.ConcederAsync(_fixture.Factory.Services, Leandro, perfil);
 
-        (AuthorizationDecision decisao, RegistroDecisaoAcesso registro) = await Decidir(Leandro, ManterMotivos, Recurso());
+        (AuthorizationDecision decisao, RegistroDecisaoAcesso registro) = await Decidir(Leandro, ManterMotivos, Resource());
 
         decisao.Allowed.Should().BeTrue();
         decisao.GrantUsed!.Fonte.Should().Be(FonteGrant.Concessao);
@@ -110,8 +110,8 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
         registro.EscopoUnidadeId.Should().BeNull();
     }
 
-    [Fact(DisplayName = "A concessão na unidade concede sobre o recurso dela e é recusada sobre o de outra unidade")]
-    public async Task Decide_ConcessaoDeUnidade_SoAlcancaARecursoDaUnidade()
+    [Fact(DisplayName = "A concessão na unidade concede sobre o resource dela e é recusada sobre o de outra unidade")]
+    public async Task Decide_ConcessaoDeUnidade_SoAlcancaAResourceDaUnidade()
     {
         Guid unidadeDoCeps = Guid.CreateVersion7();
         Guid outraUnidade = Guid.CreateVersion7();
@@ -120,8 +120,8 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
             _fixture.Factory.Services, Betina, perfil, EscopoDaConcessao.DaUnidade(unidadeDoCeps));
 
         (AuthorizationDecision naUnidade, RegistroDecisaoAcesso registro) = await Decidir(
-            Betina, OperarInscricoes, Recurso(unidadeDoCeps));
-        (AuthorizationDecision emOutra, _) = await Decidir(Betina, OperarInscricoes, Recurso(outraUnidade));
+            Betina, OperarInscricoes, Resource(unidadeDoCeps));
+        (AuthorizationDecision emOutra, _) = await Decidir(Betina, OperarInscricoes, Resource(outraUnidade));
 
         naUnidade.Allowed.Should().BeTrue();
         registro.GrantId.Should().Be(concessao);
@@ -131,13 +131,13 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
         emOutra.DenyReason!.Codigo.Should().Be(MotivoNegativa.SemConcessaoAplicavel);
     }
 
-    [Fact(DisplayName = "A concessão institucional não alcança recurso de uma unidade")]
-    public async Task Decide_ConcessaoInstitucional_NaoAlcancaRecursoDeUnidade()
+    [Fact(DisplayName = "A concessão institucional não alcança resource de uma unidade")]
+    public async Task Decide_ConcessaoInstitucional_NaoAlcancaResourceDeUnidade()
     {
         Guid perfil = await ConcessoesDeTeste.CriarPerfilAsync(_fixture.Factory.Services, ManterMotivos.Permissao);
         await ConcessoesDeTeste.ConcederAsync(_fixture.Factory.Services, Leandro, perfil);
 
-        (AuthorizationDecision decisao, _) = await Decidir(Leandro, ManterMotivos, Recurso(Guid.CreateVersion7()));
+        (AuthorizationDecision decisao, _) = await Decidir(Leandro, ManterMotivos, Resource(Guid.CreateVersion7()));
 
         decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.SemConcessaoAplicavel);
     }
@@ -158,7 +158,7 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
             new Claim("realm_access", JsonSerializer.Serialize(new { roles = new[] { ManterMotivos.Permissao, "plataforma-admin" } })));
 
         sujeito.Value!.ConcessoesEfetivas.Should().BeEmpty();
-        AuthorizationDecision decisao = await DecidirComServico(scope, sujeito.Value, ManterMotivos, Recurso(), new RegistroEmMemoria(), Agora());
+        AuthorizationDecision decisao = await DecidirComServico(scope, sujeito.Value, ManterMotivos, Resource(), new RegistroEmMemoria(), Agora());
         decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.SemConcessaoAplicavel);
     }
 
@@ -170,7 +170,7 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
             _fixture.Factory.Services, Leandro, perfil, validaAte: DateTimeOffset.UtcNow.AddHours(1));
 
         (AuthorizationDecision decisao, _) = await Decidir(
-            Leandro, ManterMotivos, Recurso(), dataAcesso: DateTimeOffset.UtcNow.AddDays(2));
+            Leandro, ManterMotivos, Resource(), dataAcesso: DateTimeOffset.UtcNow.AddDays(2));
 
         decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.ConcessaoExpirada);
     }
@@ -186,7 +186,7 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
                 "UPDATE autorizacao.perfis SET ativo = false WHERE id = {0}", perfil);
         }
 
-        (AuthorizationDecision decisao, _) = await Decidir(Leandro, ManterMotivos, Recurso());
+        (AuthorizationDecision decisao, _) = await Decidir(Leandro, ManterMotivos, Resource());
 
         decisao.Allowed.Should().BeTrue();
     }
@@ -196,7 +196,7 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
     {
         Guid perfil = await ConcessoesDeTeste.CriarPerfilAsync(_fixture.Factory.Services, ManterMotivos.Permissao);
         Guid concessao = await ConcessoesDeTeste.ConcederAsync(_fixture.Factory.Services, Leandro, perfil);
-        (await Decidir(Leandro, ManterMotivos, Recurso())).Decisao.Allowed.Should().BeTrue();
+        (await Decidir(Leandro, ManterMotivos, Resource())).Decisao.Allowed.Should().BeTrue();
 
         await using (AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope())
         {
@@ -206,7 +206,7 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
             await db.SaveChangesAsync();
         }
 
-        (AuthorizationDecision depois, _) = await Decidir(Leandro, ManterMotivos, Recurso());
+        (AuthorizationDecision depois, _) = await Decidir(Leandro, ManterMotivos, Resource());
 
         depois.Allowed.Should().BeFalse();
     }
@@ -269,7 +269,7 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
     private async Task<(AuthorizationDecision Decisao, RegistroDecisaoAcesso Registro)> Decidir(
         string sub,
         PermissionRequirement requisito,
-        ResourceContext recurso,
+        ResourceContext resource,
         DateTimeOffset? dataAcesso = null)
     {
         using IServiceScope scope = _fixture.Factory.Services.CreateScope();
@@ -280,7 +280,7 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
         sujeito.IsSuccess.Should().BeTrue();
 
         AuthorizationDecision decisao = await DecidirComServico(
-            scope, sujeito.Value!, requisito, recurso, registro, dataAcesso ?? Agora());
+            scope, sujeito.Value!, requisito, resource, registro, dataAcesso ?? Agora());
 
         return (decisao, registro.Registrados.Single());
     }
@@ -289,7 +289,7 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
         IServiceScope scope,
         AuthorizationSubject sujeito,
         PermissionRequirement requisito,
-        ResourceContext recurso,
+        ResourceContext resource,
         RegistroEmMemoria registro,
         DateTimeOffset dataAcesso) =>
         new AuthorizationDecisionService(
@@ -297,7 +297,7 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
             scope.ServiceProvider.GetRequiredService<ImpedimentoPorInscricaoCheck>(),
             scope.ServiceProvider.GetServices<IPermissaoCheck>(),
             registro)
-        .DecideAsync(sujeito, requisito, recurso, Requisicao(dataAcesso), CancellationToken.None);
+        .DecideAsync(sujeito, requisito, resource, Requisicao(dataAcesso), CancellationToken.None);
 
     private static Task<Result<AuthorizationSubject>> ResolverSujeito(
         IServiceScope scope,
@@ -319,8 +319,8 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
                 CancellationToken.None);
     }
 
-    private static ResourceContext Recurso(Guid? unidadeProprietariaId = null) =>
-        ResourceContext.From(RecursoTipo, ClassificacaoDeProtecao.Interno, unidadeProprietariaId).Value!;
+    private static ResourceContext Resource(Guid? unidadeProprietariaId = null) =>
+        ResourceContext.From(ResourceTipo, ClassificacaoDeProtecao.Interno, unidadeProprietariaId).Value!;
 
     private static DateTimeOffset Agora() => DateTimeOffset.UtcNow;
 

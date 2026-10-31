@@ -68,7 +68,7 @@
           "Autoriza\u00E7\u00E3o"
         ],
         "summary": "Lista o cat\u00E1logo de permiss\u00F5es",
-        "description": "Permiss\u00F5es da plataforma agrupadas por m\u00F3dulo e recurso, com c\u00F3digo, nome, descri\u00E7\u00E3o e sensibilidade. Exige a permiss\u00E3o autorizacao:permissoes:consultar-catalogo.",
+        "description": "Permiss\u00F5es da plataforma agrupadas por m\u00F3dulo e pelo alvo de cada permiss\u00E3o, com c\u00F3digo, nome, descri\u00E7\u00E3o e sensibilidade. Exige a permiss\u00E3o autorizacao:permissoes:consultar-catalogo.",
         "operationId": "ConsultarCatalogoDePermissoes",
         "responses": {
           "200": {
@@ -178,17 +178,17 @@
       "ModuloDoCatalogoResponse": {
         "required": [
           "modulo",
-          "recursos"
+          "resources"
         ],
         "type": "object",
         "properties": {
           "modulo": {
             "type": "string"
           },
-          "recursos": {
+          "resources": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/RecursoDoCatalogoResponse"
+              "$ref": "#/components/schemas/ResourceDoCatalogoResponse"
             }
           }
         }
@@ -328,14 +328,14 @@
           }
         }
       },
-      "RecursoDoCatalogoResponse": {
+      "ResourceDoCatalogoResponse": {
         "required": [
-          "recurso",
+          "resource",
           "permissoes"
         ],
         "type": "object",
         "properties": {
-          "recurso": {
+          "resource": {
             "type": "string"
           },
           "permissoes": {

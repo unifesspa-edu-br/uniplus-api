@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Authorization.ValueObjects;
 
 /// <summary>
 /// Seleciona, entre as concessões efetivas do sujeito, uma que autorize a
-/// permissão exigida sobre o recurso alvo (passos 3 e 4 do algoritmo da
+/// permissão exigida sobre o resource alvo (passos 3 e 4 do algoritmo da
 /// ADR-0078).
 /// </summary>
 /// <remarks>
@@ -24,10 +24,10 @@ using Unifesspa.UniPlus.Authorization.ValueObjects;
 /// verificação reintroduziria o estado ambiental que o modelo elimina.
 /// </para>
 /// <para>
-/// O escopo decide pela unidade dona do recurso, sem herança pela hierarquia
-/// (ADR-0079): a concessão de unidade alcança só o recurso daquela unidade, e a
-/// institucional, só o recurso sem unidade proprietária. Não há concessão sem
-/// escopo, e portanto nenhuma que alcance qualquer recurso.
+/// O escopo decide pela unidade dona do resource, sem herança pela hierarquia
+/// (ADR-0079): a concessão de unidade alcança só o resource daquela unidade, e a
+/// institucional, só o resource sem unidade proprietária. Não há concessão sem
+/// escopo, e portanto nenhuma que alcance qualquer resource.
 /// </para>
 /// </remarks>
 public sealed class GrantEfetivoAplicavelCheck : IPermissaoCheck
@@ -58,7 +58,7 @@ public sealed class GrantEfetivoAplicavelCheck : IPermissaoCheck
         foreach (EffectiveGrant grant in subject.ConcessoesEfetivas)
         {
             if (!string.Equals(grant.PermissaoCodigo, requirement.Permissao, StringComparison.Ordinal)
-                || !EscopoAlcancaRecurso(grant, resource))
+                || !EscopoAlcancaResource(grant, resource))
             {
                 continue;
             }
@@ -94,31 +94,31 @@ public sealed class GrantEfetivoAplicavelCheck : IPermissaoCheck
             houveExpirada ? MotivoNegativa.ConcessaoExpirada : MotivoNegativa.SemConcessaoAplicavel));
     }
 
-    // A concessão exige que o recurso esteja NO escopo dela. A institucional
-    // alcança o recurso que não pertence a unidade; a de unidade, o da mesma
-    // unidade. Recurso sem o escopo que a concessão restringe não é alcançado — a
+    // A concessão exige que o resource esteja NO escopo dela. A institucional
+    // alcança o resource que não pertence a unidade; a de unidade, o da mesma
+    // unidade. Resource sem o escopo que a concessão restringe não é alcançado — a
     // ausência não relaxa a restrição.
-    private static bool EscopoAlcancaRecurso(EffectiveGrant grant, ResourceContext resource) =>
+    private static bool EscopoAlcancaResource(EffectiveGrant grant, ResourceContext resource) =>
         UnidadeAlcanca(grant, resource.UnidadeProprietariaId)
         && EscopoAlcanca(grant.EscopoProcessoId, resource.ProcessoId)
         && EscopoAlcanca(grant.EscopoChamadaId, resource.ChamadaId)
-        && TipoAlcanca(grant.RecursoTipoRestricao, resource.RecursoTipo);
+        && TipoAlcanca(grant.ResourceTipoRestricao, resource.ResourceTipo);
 
-    private static bool UnidadeAlcanca(EffectiveGrant grant, Guid? unidadeDoRecurso) =>
+    private static bool UnidadeAlcanca(EffectiveGrant grant, Guid? unidadeDoResource) =>
         grant.EscopoInstitucional
-            ? unidadeDoRecurso is null
-            : grant.EscopoUnidadeId is { } unidade && unidade == unidadeDoRecurso;
+            ? unidadeDoResource is null
+            : grant.EscopoUnidadeId is { } unidade && unidade == unidadeDoResource;
 
-    private static bool EscopoAlcanca(Guid? escopoDaConcessao, Guid? escopoDoRecurso) =>
-        escopoDaConcessao is null || escopoDaConcessao == escopoDoRecurso;
+    private static bool EscopoAlcanca(Guid? escopoDaConcessao, Guid? escopoDoResource) =>
+        escopoDaConcessao is null || escopoDaConcessao == escopoDoResource;
 
-    private static bool TipoAlcanca(string? restricao, string recursoTipo) =>
+    private static bool TipoAlcanca(string? restricao, string resourceTipo) =>
         string.IsNullOrWhiteSpace(restricao)
-        || string.Equals(restricao, recursoTipo, StringComparison.Ordinal);
+        || string.Equals(restricao, resourceTipo, StringComparison.Ordinal);
 
     private static int Especificidade(EffectiveGrant grant) =>
         1
         + (grant.EscopoProcessoId is null ? 0 : 1)
         + (grant.EscopoChamadaId is null ? 0 : 1)
-        + (string.IsNullOrWhiteSpace(grant.RecursoTipoRestricao) ? 0 : 1);
+        + (string.IsNullOrWhiteSpace(grant.ResourceTipoRestricao) ? 0 : 1);
 }

@@ -14,12 +14,40 @@ public sealed class ResourceContextTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void ResourceContext_RecursoTipoVazio_Rejeita(string? recursoTipo)
+    public void ResourceContext_ResourceTipoVazio_Rejeita(string? resourceTipo)
     {
-        Result<ResourceContext> resultado = ResourceContext.From(recursoTipo, ClassificacaoDeProtecao.Interno);
+        Result<ResourceContext> resultado = ResourceContext.From(resourceTipo, ClassificacaoDeProtecao.Interno);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.ResourceContextRecursoTipoObrigatorio);
+        resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.ResourceContextResourceTipoObrigatorio);
+    }
+
+    [Theory]
+    [InlineData("TiposDocumento")]
+    [InlineData("tipo_documento")]
+    [InlineData("tipo documento")]
+    [InlineData("-tipo")]
+    [InlineData("selecao:inscricoes:consultar")]
+    [InlineData("situação")]
+    [InlineData("  edital  ")]
+    [InlineData("concessao\n")]
+    public void ResourceContext_ResourceTipoForaDaConvencao_Rejeita(string resourceTipo)
+    {
+        Result<ResourceContext> resultado = ResourceContext.From(resourceTipo, ClassificacaoDeProtecao.Interno);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.ResourceContextResourceTipoForaDaConvencao);
+    }
+
+    [Theory]
+    [InlineData("tipo-documento")]
+    [InlineData(ResourceTipos.Operacao)]
+    public void ResourceContext_ResourceTipoNaConvencao_Constroi(string resourceTipo)
+    {
+        Result<ResourceContext> resultado = ResourceContext.From(resourceTipo, ClassificacaoDeProtecao.Interno);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.ResourceTipo.Should().Be(resourceTipo);
     }
 
     [Fact]
@@ -37,7 +65,7 @@ public sealed class ResourceContextTests
     public void ResourceContext_EscopoGuidVazio_Rejeita(string escopo)
     {
         Result<ResourceContext> resultado = ResourceContext.From(
-            "Edital",
+            "edital",
             ClassificacaoDeProtecao.Interno,
             unidadeProprietariaId: escopo == "unidade" ? Guid.Empty : null,
             processoId: escopo == "processo" ? Guid.Empty : null,
@@ -55,14 +83,14 @@ public sealed class ResourceContextTests
         Guid chamada = Guid.CreateVersion7();
 
         Result<ResourceContext> resultado = ResourceContext.From(
-            "  Edital  ",
+            "edital",
             ClassificacaoDeProtecao.Pessoal,
             unidadeProprietariaId: unidade,
             processoId: processo,
             chamadaId: chamada);
 
         resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.RecursoTipo.Should().Be("Edital", "o tipo do recurso é normalizado com Trim");
+        resultado.Value!.ResourceTipo.Should().Be("edital");
         resultado.Value.Sensibilidade.Should().Be(ClassificacaoDeProtecao.Pessoal);
         resultado.Value.UnidadeProprietariaId.Should().Be(unidade);
         resultado.Value.ProcessoId.Should().Be(processo);
@@ -72,7 +100,7 @@ public sealed class ResourceContextTests
     [Fact]
     public void ResourceContext_SemEscopos_Constroi()
     {
-        Result<ResourceContext> resultado = ResourceContext.From("Inscricao", ClassificacaoDeProtecao.Publico);
+        Result<ResourceContext> resultado = ResourceContext.From("inscricao", ClassificacaoDeProtecao.Publico);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.UnidadeProprietariaId.Should().BeNull();

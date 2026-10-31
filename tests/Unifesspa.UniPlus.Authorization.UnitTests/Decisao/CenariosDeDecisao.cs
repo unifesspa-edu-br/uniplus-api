@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 internal static class CenariosDeDecisao
 {
     public const string Permissao = "selecao:motivos-decisao-isencao:manter";
-    public const string RecursoTipo = "MotivoDecisaoRecursal";
+    public const string ResourceTipo = "motivo-decisao-isencao";
 
     /// <summary>Instante fixo do acesso — a decisão inteira se explica por ele.</summary>
     public static DateTimeOffset Agora { get; } = new(2026, 8, 22, 13, 0, 0, TimeSpan.Zero);
@@ -27,19 +27,19 @@ internal static class CenariosDeDecisao
             ipOrigem: "200.129.0.1",
             userAgent: "uniplus-web/1.0").Value!;
 
-    public static ResourceContext Recurso(
+    public static ResourceContext Resource(
         ClassificacaoDeProtecao sensibilidade = ClassificacaoDeProtecao.Interno,
         Guid? unidadeProprietariaId = null,
         Guid? processoId = null,
         Guid? chamadaId = null,
-        Guid? recursoId = null)
+        Guid? resourceId = null)
         => ResourceContext.From(
-            RecursoTipo,
+            ResourceTipo,
             sensibilidade,
             unidadeProprietariaId,
             processoId,
             chamadaId,
-            recursoId).Value!;
+            resourceId).Value!;
 
     public static PermissionRequirement Requisito(
         ClassificacaoDeProtecao sensibilidade = ClassificacaoDeProtecao.Interno,
@@ -65,7 +65,7 @@ internal static class CenariosDeDecisao
         Guid? escopoUnidadeId = null,
         Guid? escopoProcessoId = null,
         Guid? escopoChamadaId = null,
-        string? recursoTipoRestricao = null,
+        string? resourceTipoRestricao = null,
         DateTimeOffset? validoAte = null,
         Guid? perfilId = null)
         => EffectiveGrant.From(
@@ -75,7 +75,7 @@ internal static class CenariosDeDecisao
             escopoUnidadeId,
             escopoProcessoId,
             escopoChamadaId,
-            recursoTipoRestricao,
+            resourceTipoRestricao,
             validoAte,
             escopoInstitucional: escopoUnidadeId is null,
             perfilId: perfilId).Value!;

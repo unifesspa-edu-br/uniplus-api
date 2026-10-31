@@ -32,8 +32,6 @@ using Unifesspa.UniPlus.Kernel.Results;
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class ModalidadesController : ControllerBase
 {
-    private const string RecursoTipo = "Modalidades";
-
     private const string ResourceTag = "modalidades";
 
     private readonly ICommandBus _commandBus;
@@ -108,7 +106,7 @@ public sealed class ModalidadesController : ControllerBase
 
     /// <summary>Cria uma nova modalidade. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/modalidades")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ModalidadesManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ModalidadesManter, ResourceTipo = ResourceTiposConfiguracao.Modalidade)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -139,7 +137,7 @@ public sealed class ModalidadesController : ControllerBase
 
     /// <summary>Atualiza uma modalidade existente. O código é imutável. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/modalidades/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ModalidadesManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ModalidadesManter, ResourceTipo = ResourceTiposConfiguracao.Modalidade)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -173,7 +171,7 @@ public sealed class ModalidadesController : ControllerBase
 
     /// <summary>Remove (soft-delete) uma modalidade. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/modalidades/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ModalidadesManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ModalidadesManter, ResourceTipo = ResourceTiposConfiguracao.Modalidade)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

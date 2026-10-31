@@ -32,8 +32,6 @@ using Unifesspa.UniPlus.Kernel.Results;
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class LocaisOfertaController : ControllerBase
 {
-    private const string RecursoTipo = "LocaisOferta";
-
     private const string ResourceTag = "locais-oferta";
 
     private readonly ICommandBus _commandBus;
@@ -107,7 +105,7 @@ public sealed class LocaisOfertaController : ControllerBase
 
     /// <summary>Cria um novo local de oferta. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/locais-oferta")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.LocaisOfertaManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.LocaisOfertaManter, ResourceTipo = ResourceTiposConfiguracao.LocalOferta)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -137,7 +135,7 @@ public sealed class LocaisOfertaController : ControllerBase
 
     /// <summary>Atualiza um local de oferta existente. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/locais-oferta/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.LocaisOfertaManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.LocaisOfertaManter, ResourceTipo = ResourceTiposConfiguracao.LocalOferta)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -171,7 +169,7 @@ public sealed class LocaisOfertaController : ControllerBase
 
     /// <summary>Remove (soft-delete) um local de oferta. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/locais-oferta/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.LocaisOfertaManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.LocaisOfertaManter, ResourceTipo = ResourceTiposConfiguracao.LocalOferta)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

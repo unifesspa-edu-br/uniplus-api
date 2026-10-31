@@ -11,7 +11,7 @@ public enum PermissaoAutorizacao
     [Permissao(
         "autorizacao:permissoes:consultar-catalogo",
         "Consultar o catálogo de permissões",
-        "Lista todas as permissões da plataforma, agrupadas por módulo e recurso, para quem administra concessões.",
+        "Lista todas as permissões da plataforma, agrupadas por módulo e pelo alvo de cada permissão, para quem administra concessões.",
         ClassificacaoDeProtecao.Interno)]
     ConsultarCatalogo = 1,
 
