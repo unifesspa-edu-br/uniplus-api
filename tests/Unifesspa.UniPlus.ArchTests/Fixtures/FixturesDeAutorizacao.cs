@@ -68,6 +68,15 @@ internal static class FixturesDeAutorizacao
         }
     }
 
+    internal sealed class AcaoAdministrativaSemAtributo
+    {
+        [HttpPost]
+        public int Publicar()
+        {
+            return GetHashCode();
+        }
+    }
+
     [Authorize]
     internal sealed class AcaoAdministrativaDecididaPeloPontoUnico
     {
