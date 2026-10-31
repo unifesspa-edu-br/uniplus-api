@@ -139,7 +139,7 @@ public sealed class AuthorizationOperationTransformerTests
     [Fact]
     public async Task TransformAsync_Should_RequireBearerScheme_OnProtectedMinimalApi()
     {
-        // /api/auth/me e /api/profile/me são minimal APIs protegidas por RequireAuthorization()
+        // /api/profile/me é minimal API protegida por RequireAuthorization()
         // no grupo de rotas. Sem o requisito, a interface de exploração não anexa o token
         // autorizado e essas rotas continuam devolvendo 401 mesmo depois do Authorize.
         OpenApiOperation operation = new();

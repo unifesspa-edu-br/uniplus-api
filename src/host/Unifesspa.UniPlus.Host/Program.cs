@@ -199,7 +199,6 @@ app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseCorsConfiguration();
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapSharedAuthEndpoints();
 app.MapSharedProfileEndpoints();
 app.MapSharedAutorizacaoEndpoints();
 app.MapControllers();

@@ -21,7 +21,6 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 [Collection(KeycloakContainerFixture.CollectionName)]
 public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
 {
-    private static readonly Uri AuthMeUri = new("/api/auth/me", UriKind.Relative);
     private static readonly Uri ProfileMeUri = new("/api/profile/me", UriKind.Relative);
     private static readonly Uri HealthUri = new("/health", UriKind.Relative);
 
@@ -52,21 +51,21 @@ public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
     }
 
     [Fact]
-    public async Task GetAuthMe_ShouldReturnAuthenticatedUser_WhenTokenIsValid()
+    public async Task GetProfileMe_ShouldReturnIdentityWithoutRealmRoles_WhenTokenIsValid()
     {
         KeycloakTestUser user = KeycloakTestUsers.Admin;
         string accessToken = await _keycloak.RequestAccessTokenAsync(user.Username, KeycloakTestUsers.SharedPassword);
         using HttpClient client = CreateClientWithToken(accessToken);
 
-        using HttpResponseMessage response = await client.GetAsync(AuthMeUri);
+        using HttpResponseMessage response = await client.GetAsync(ProfileMeUri);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         using JsonDocument payload = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
         payload.RootElement.GetProperty("userId").GetString().Should().NotBeNullOrWhiteSpace();
         payload.RootElement.GetProperty("email").GetString().Should().Be(user.Email);
-        payload.RootElement.GetProperty("roles").EnumerateArray().Select(static r => r.GetString())
-            .Should().Contain(user.Role);
+        payload.RootElement.GetProperty("perfis").GetArrayLength().Should().Be(0);
+        payload.RootElement.TryGetProperty("roles", out _).Should().BeFalse();
     }
 
     [Fact]
@@ -84,12 +83,11 @@ public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
         payload.RootElement.GetProperty("cpf").GetString().Should().Be(user.Cpf);
         payload.RootElement.GetProperty("nomeSocial").GetString().Should().Be(user.NomeSocial);
         payload.RootElement.GetProperty("email").GetString().Should().Be(user.Email);
-        payload.RootElement.GetProperty("roles").EnumerateArray().Select(static r => r.GetString())
-            .Should().Contain(user.Role);
+        payload.RootElement.GetProperty("perfis").GetArrayLength().Should().Be(0);
     }
 
     [Fact]
-    public async Task GetAuthMe_ShouldReturnUnauthorized_WhenTokenIsExpired()
+    public async Task GetProfileMe_ShouldReturnUnauthorized_WhenTokenIsExpired()
     {
         // Solicita um token com vida curta (access.token.lifespan=5s no realm) e aguarda até passar
         // do exp do PRÓPRIO token + ClockSkew configurado + buffer de drift. Calcular a partir do exp
@@ -109,13 +107,13 @@ public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
 
         using HttpClient client = CreateClientWithToken(accessToken);
 
-        using HttpResponseMessage response = await client.GetAsync(AuthMeUri);
+        using HttpResponseMessage response = await client.GetAsync(ProfileMeUri);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
-    public async Task GetAuthMe_ShouldReturnUnauthorized_WhenTokenAudienceDoesNotIncludeUniPlus()
+    public async Task GetProfileMe_ShouldReturnUnauthorized_WhenTokenAudienceDoesNotIncludeUniPlus()
     {
         // O client e2e-tests-bad-aud não inclui o scope uniplus-profile (que carrega o audience mapper),
         // portanto o token emitido não traz aud=uniplus.
@@ -125,24 +123,24 @@ public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
             KeycloakContainerFixture.BadAudienceClientId);
         using HttpClient client = CreateClientWithToken(accessToken);
 
-        using HttpResponseMessage response = await client.GetAsync(AuthMeUri);
+        using HttpResponseMessage response = await client.GetAsync(ProfileMeUri);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
-    public async Task GetAuthMe_ShouldReturnUnauthorized_WhenTokenIsSignedByExternalKey()
+    public async Task GetProfileMe_ShouldReturnUnauthorized_WhenTokenIsSignedByExternalKey()
     {
         string forgedToken = ForgeTokenSignedByExternalKey(_keycloak.Authority);
         using HttpClient client = CreateClientWithToken(forgedToken);
 
-        using HttpResponseMessage response = await client.GetAsync(AuthMeUri);
+        using HttpResponseMessage response = await client.GetAsync(ProfileMeUri);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
-    public async Task GetAuthMe_ShouldReturnUnauthorized_WhenTokenIssuerDoesNotMatchAuthority()
+    public async Task GetProfileMe_ShouldReturnUnauthorized_WhenTokenIssuerDoesNotMatchAuthority()
     {
         // Isola estritamente ValidateIssuer: o token é assinado pela chave conhecida que o realm
         // sintético publica no JWKS (KeycloakKnownTestKey, embutida via components.KeyProvider em
@@ -155,7 +153,7 @@ public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
             audience: KeycloakContainerFixture.Audience);
         using HttpClient client = CreateClientWithToken(forgedToken);
 
-        using HttpResponseMessage response = await client.GetAsync(AuthMeUri);
+        using HttpResponseMessage response = await client.GetAsync(ProfileMeUri);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }

@@ -88,8 +88,6 @@ Endpoints expostos pela API após o pod ficar Ready:
   GET /api/portal/ping           -> endpoint dummy para validar OpenAPI
   GET /api/portal/certames/{identificador} -> pagina publica do certame (anonima)
   GET /openapi/portal.json       -> documento OpenAPI 3.1
-  GET /api/auth/me               -> claims do token (autenticado)
-  GET /api/profile/me            -> perfil consolidado (autenticado)
 
 Para verificar se os pods subiram corretamente:
   kubectl --namespace {{ .Release.Namespace }} get pods -l app={{ .Release.Name }}-portal-api
