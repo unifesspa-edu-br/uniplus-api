@@ -4219,6 +4219,7 @@
           "justificativa",
           "validaAteSugerida",
           "validaAte",
+          "admitePrazo",
           "criadoEm",
           "encerradoEm",
           "concessaoId",
@@ -4268,6 +4269,9 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "admitePrazo": {
+            "type": "boolean"
           },
           "criadoEm": {
             "type": "string",

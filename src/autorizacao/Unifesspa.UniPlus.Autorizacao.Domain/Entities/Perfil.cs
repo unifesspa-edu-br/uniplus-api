@@ -44,7 +44,16 @@ public sealed class Perfil : EntityBase
     /// <summary>Papel de governança do perfil de sistema; nulo nos perfis comuns.</summary>
     public TipoDeGovernanca? Governanca { get; private set; }
 
+    /// <summary>
+    /// Só o perfil comum admite concessão com prazo: uma concessão de gestor que vencesse sozinha furaria o mínimo de
+    /// dois gestores, que só a revogação confere, e a proteção de dados segue a mesma regra.
+    /// </summary>
+    public bool AdmitePrazo => AdmitePrazoCom(Governanca);
+
     public IReadOnlyCollection<PermissaoDoPerfil> Permissoes => _permissoes;
+
+    /// <summary>A regra de <see cref="AdmitePrazo"/> a partir do papel de governança, para o retrato avaliado do perfil.</summary>
+    public static bool AdmitePrazoCom(TipoDeGovernanca? governanca) => governanca is null;
 
     // Construtor de materialização do EF Core.
     private Perfil()

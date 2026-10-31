@@ -117,10 +117,8 @@ public sealed class Concessao : EntityBase
             erros.Add(new("escopo", new DomainError(ConcessaoErrorCodes.EscopoInvalido, incoerencia)));
         }
 
-        if (validaAte is not null && perfil.Governanca is not null)
+        if (validaAte is not null && !perfil.AdmitePrazo)
         {
-            // Gestor e proteção de dados não têm concessão com prazo: uma concessão de gestor que vencesse
-            // sozinha furaria o mínimo de dois gestores, que só a revogação confere.
             erros.Add(new("validaAte", new DomainError(
                 ConcessaoErrorCodes.ValidadeInvalida,
                 "Perfil de governança não admite concessão com prazo: gestor de acessos e proteção de dados não têm vigência limitada.")));

@@ -36,7 +36,7 @@ public static class ObterPedidoDeConcessaoQueryHandler
 
         Perfil? perfil = await perfis.ObterPorIdAsync(pedido.Value!.PerfilId, cancellationToken).ConfigureAwait(false);
 
-        return Result<PedidoDeConcessaoDto>.Success(PedidoMapping.ToDto(pedido.Value, perfil?.Nome ?? string.Empty));
+        return Result<PedidoDeConcessaoDto>.Success(PedidoMapping.ToDto(pedido.Value, perfil));
     }
 
     public static async Task<Result<IReadOnlyList<EventoDaTrilhaDto>>> Handle(

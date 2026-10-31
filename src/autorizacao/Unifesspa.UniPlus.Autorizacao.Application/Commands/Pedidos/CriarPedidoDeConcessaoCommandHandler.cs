@@ -90,6 +90,6 @@ public static class CriarPedidoDeConcessaoCommandHandler
             return Result<PedidoDeConcessaoDto>.Failure(PedidoHandlerErros.PedidoDuplicado());
         }
 
-        return Result<PedidoDeConcessaoDto>.Success(PedidoMapping.ToDto(pedido, perfil.Nome));
+        return Result<PedidoDeConcessaoDto>.Success(PedidoMapping.ToDto(pedido, perfil));
     }
 }

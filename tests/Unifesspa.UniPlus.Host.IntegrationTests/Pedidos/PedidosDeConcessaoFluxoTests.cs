@@ -88,6 +88,7 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
             betina, HttpMethod.Post, Rota, new { perfilId = perfil, unidadeId = unidade, justificativa = Justificativa, validaAteSugerida = sugerida });
         JsonElement criado = await CorpoAsync(criacao, HttpStatusCode.Created);
         criado.GetProperty("validaAteSugerida").GetDateTimeOffset().Should().BeCloseTo(sugerida, TimeSpan.FromSeconds(1));
+        criado.GetProperty("admitePrazo").GetBoolean().Should().BeTrue();
         Guid id = criado.GetProperty("id").GetGuid();
 
         JsonElement aprovado = await CorpoAsync(

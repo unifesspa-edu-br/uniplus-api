@@ -8,7 +8,8 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 /// <summary>Mapeamento <see cref="PedidoDeConcessao"/> para os DTOs do pedido.</summary>
 public static class PedidoMapping
 {
-    public static PedidoDeConcessaoDto ToDto(PedidoDeConcessao p, string perfilNome)
+    /// <param name="perfil">O perfil do pedido; nulo só se sumiu entre as leituras, e então o nome sai vazio e o prazo não é oferecido.</param>
+    public static PedidoDeConcessaoDto ToDto(PedidoDeConcessao p, Perfil? perfil)
     {
         ArgumentNullException.ThrowIfNull(p);
 
@@ -18,11 +19,12 @@ public static class PedidoMapping
             p.EtapaAtual?.ToCodigo(),
             new IdentidadeDto(p.SolicitanteEmissor, p.SolicitanteSub, p.SolicitanteNome),
             Beneficiario(p),
-            new PerfilResumoDto(p.PerfilId, perfilNome),
+            new PerfilResumoDto(p.PerfilId, perfil?.Nome ?? string.Empty),
             Escopo(p),
             p.Justificativa,
             p.ValidaAteSugerida,
             p.ValidaAte,
+            perfil?.AdmitePrazo ?? false,
             p.CriadoEm,
             p.EncerradoEm,
             p.ConcessaoId,
