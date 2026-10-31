@@ -182,6 +182,24 @@ public sealed class ConcessaoRepository : IConcessaoRepository
             .CountAsync(cancellationToken)
             .ConfigureAwait(false);
 
+    public async Task<IReadOnlyList<TitularComEmail>> ListarTitularesAtivosComEmailAsync(
+        Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default)
+    {
+        var titulares = await _context.Concessoes
+            .AsNoTracking()
+            .Where(c => c.PerfilId == perfilId
+                && c.EscopoTipo == TipoDeEscopo.Instituicao
+                && c.RevogadaEm == null
+                && (c.ValidaAte == null || c.ValidaAte > agora)
+                && c.BeneficiarioEmail != null)
+            .Select(c => new { c.BeneficiarioEmissor, c.BeneficiarioSub, c.BeneficiarioEmail })
+            .Distinct()
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return [.. titulares.Select(t => new TitularComEmail(new Identidade(t.BeneficiarioEmissor, t.BeneficiarioSub), t.BeneficiarioEmail!))];
+    }
+
     // Uma só consulta traz a concessão e o nome do perfil: o perfil existe sempre, pela chave
     // estrangeira, e o join não duplica linha.
     private IQueryable<ConcessaoComPerfil> ComPerfil(IQueryable<Concessao> concessoes) =>

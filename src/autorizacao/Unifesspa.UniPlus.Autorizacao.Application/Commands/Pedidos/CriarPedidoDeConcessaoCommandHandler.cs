@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Email;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
@@ -8,30 +9,22 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 
-using Wolverine.Attributes;
-
 /// <summary>
-/// Handler da criação. As violações de campo vencem a consulta da unidade: quem erra o campo não espera a leitura.
+/// Handler da criação. As violações de campo vencem a consulta da unidade: quem erra o campo não espera a leitura. Os
+/// avisos do pedido saem como mensagens de saída e entram no outbox na mesma transação da gravação.
 /// </summary>
 public static class CriarPedidoDeConcessaoCommandHandler
 {
-    /// <summary>
-    /// <c>[NonTransactional]</c> porque o handler injeta o leitor de unidades (Organização Institucional, com o seu
-    /// próprio <c>DbContext</c>) junto da unidade de trabalho da Autorização: o detector de transação do Wolverine
-    /// encontraria dois <c>DbContext</c> e falharia por ambiguidade no boot. A gravação continua atômica, porque o
-    /// handler salva uma única vez, e o pedido não levanta evento de domínio que o outbox precise acompanhar.
-    /// </summary>
-    [NonTransactional]
-    public static async Task<Result<PedidoDeConcessaoDto>> Handle(
+    public static async Task<(Result<PedidoDeConcessaoDto> Resposta, IEnumerable<object> Mensagens)> Handle(
         CriarPedidoDeConcessaoCommand command,
         IPedidoDeConcessaoRepository repository,
         IPerfilRepository perfis,
-        IUnidadeReader unidades,
+        ILeitorDeUnidade unidades,
         IDominiosInstitucionais dominios,
         ICatalogoDePermissoesConsultavel catalogo,
+        AvisosDoPedido avisos,
         IAutorizacaoUnitOfWork unitOfWork,
         IUserContext userContext,
         TimeProvider timeProvider,
@@ -43,19 +36,20 @@ public static class CriarPedidoDeConcessaoCommandHandler
         ArgumentNullException.ThrowIfNull(unidades);
         ArgumentNullException.ThrowIfNull(dominios);
         ArgumentNullException.ThrowIfNull(catalogo);
+        ArgumentNullException.ThrowIfNull(avisos);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         if (IdentidadeDoToken.PessoaDe(userContext) is not { } solicitante)
         {
-            return Result<PedidoDeConcessaoDto>.Failure(PedidoHandlerErros.AutorNaoIdentificado());
+            return Recusa(PedidoHandlerErros.AutorNaoIdentificado());
         }
 
         Perfil? perfil = await perfis.ObterPorIdAsync(command.PerfilId, cancellationToken).ConfigureAwait(false);
         if (perfil is null)
         {
-            return Result<PedidoDeConcessaoDto>.Failure(new DomainError(
+            return Recusa(new DomainError(
                 PerfilErrorCodes.NaoEncontrado, $"Perfil de acesso {command.PerfilId} não encontrado."));
         }
 
@@ -68,13 +62,13 @@ public static class CriarPedidoDeConcessaoCommandHandler
             command.ValidaAteSugerida);
         if (criado.IsFailure)
         {
-            return Result<PedidoDeConcessaoDto>.ValidationFailure(criado.Errors);
+            return (Result<PedidoDeConcessaoDto>.ValidationFailure(criado.Errors), []);
         }
 
         if (command.UnidadeId is { } unidade
             && await unidades.ObterPorIdAsync(unidade, cancellationToken).ConfigureAwait(false) is null)
         {
-            return Result<PedidoDeConcessaoDto>.Failure(PedidoHandlerErros.UnidadeInexistente(unidade));
+            return Recusa(PedidoHandlerErros.UnidadeInexistente(unidade));
         }
 
         PedidoDeConcessao pedido = criado.Value!;
@@ -87,9 +81,16 @@ public static class CriarPedidoDeConcessaoCommandHandler
         catch (Exception ex) when (PedidoViolacoes.EhPedidoDuplicado(ex))
         {
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<PedidoDeConcessaoDto>.Failure(PedidoHandlerErros.PedidoDuplicado());
+            return Recusa(PedidoHandlerErros.PedidoDuplicado());
         }
 
-        return Result<PedidoDeConcessaoDto>.Success(PedidoMapping.ToDto(pedido, perfil));
+        IReadOnlyList<EnviarEmail> mensagens = await avisos
+            .AvisarAsync(pedido, perfil.Nome, situacaoAnterior: null, cancellationToken)
+            .ConfigureAwait(false);
+
+        return (Result<PedidoDeConcessaoDto>.Success(PedidoMapping.ToDto(pedido, perfil)), mensagens);
     }
+
+    private static (Result<PedidoDeConcessaoDto> Resposta, IEnumerable<object> Mensagens) Recusa(DomainError erro) =>
+        (Result<PedidoDeConcessaoDto>.Failure(erro), []);
 }

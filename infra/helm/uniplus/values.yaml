@@ -41,6 +41,12 @@ acervoPublico:
   bucket: uniplus-acervo-publico
   enderecoBase: ""
 
+# Avisos por e-mail do pedido de concessão de acesso: enderecoDaConfiguracao é a URL absoluta (http ou https) da
+# aplicação Configuração, onde o link do e-mail abre o pedido (ex.: https://uniplus-hml.unifesspa.edu.br/configuracao).
+# Obrigatório — vazio ou sem esquema http(s), o pod crashloopa no startup. Vira Autorizacao__EnderecoDaConfiguracao.
+autorizacao:
+  enderecoDaConfiguracao: ""
+
 # Redes de onde o proxy que termina o TLS alcanca a aplicacao, em notacao CIDR.
 # Fora de Development, AddReverseProxyConfiguration().ValidateOnStart() rejeita
 # lista vazia — sem ao menos uma entrada o pod crashloopa no startup.

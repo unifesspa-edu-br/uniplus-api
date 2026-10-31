@@ -4,8 +4,10 @@ using AwesomeAssertions;
 
 using Microsoft.Extensions.Logging.Abstractions;
 
+using Unifesspa.UniPlus.Application.Abstractions.Email;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
@@ -45,11 +47,14 @@ public sealed class DespachoDoResultadoDaVerificacaoTests
         PedidosComAnexo pedidos = new(anexo, pedido);
         UnidadeDeTrabalhoQueConta unidade = new();
 
-        await Despachar(ResultadoVerificado(anexo.Id), pedidos, unidade);
+        IEnumerable<EnviarEmail> mensagens = await Despachar(ResultadoVerificado(anexo.Id), pedidos, unidade);
 
         pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoBeneficiario);
         pedidos.Atualizados.Should().ContainSingle().Which.Should().BeSameAs(pedido);
         unidade.Gravacoes.Should().Be(1);
+        EnviarEmail aviso = mensagens.Should().ContainSingle().Subject;
+        aviso.Destinatario.Should().Be("leandro-viana84@uniplus-test.local");
+        aviso.Finalidade.Should().Be("pedido.aceite_pendente");
     }
 
     [Fact(DisplayName = "O documento recusado mantém o pedido aguardando a designação")]
@@ -123,6 +128,8 @@ public sealed class DespachoDoResultadoDaVerificacaoTests
             ResultadoVerificado(instalacao.Id),
             new InstalacaoNaMemoria(instalacao),
             new PedidosQueNaoDevemSerConsultados(),
+            new DoublesDeAvisos.PerfilQualquer(),
+            DoublesDeAvisos.Avisos(),
             new UnidadeDeTrabalhoQueConta(),
             TimeProvider.System,
             NullLogger.Instance,
@@ -131,9 +138,9 @@ public sealed class DespachoDoResultadoDaVerificacaoTests
         instalacao.Situacao.Should().Be(SituacaoDaInstalacao.DocumentoVerificado);
     }
 
-    private static Task Despachar(ResultadoDaVerificacaoDeArquivo resultado, IPedidoDeConcessaoRepository pedidos, IAutorizacaoUnitOfWork unidade) =>
+    private static Task<IEnumerable<EnviarEmail>> Despachar(ResultadoDaVerificacaoDeArquivo resultado, IPedidoDeConcessaoRepository pedidos, IAutorizacaoUnitOfWork unidade) =>
         RegistrarResultadoDaVerificacaoDoDocumentoDaAutorizacaoHandler.Handle(
-            resultado, new InstalacaoNaMemoria(null), pedidos, unidade, TimeProvider.System, NullLogger.Instance, CancellationToken.None);
+            resultado, new InstalacaoNaMemoria(null), pedidos, new DoublesDeAvisos.PerfilQualquer(), DoublesDeAvisos.Avisos(), unidade, TimeProvider.System, NullLogger.Instance, CancellationToken.None);
 
     private static ResultadoDaVerificacaoDeArquivo ResultadoVerificado(Guid id) =>
         new(id, VeredictoDaVerificacao.Verificado, MotivoDaRecusa.NaoSeAplica, Sha, 1024, FormatoDoArquivo.Pdf);

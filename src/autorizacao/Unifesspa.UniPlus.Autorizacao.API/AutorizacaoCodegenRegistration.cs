@@ -31,6 +31,10 @@ public static class AutorizacaoCodegenRegistration
 
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IAutorizacaoUnitOfWork>();
 
+        // O leitor de unidades é registrado por fábrica para o detector de transação não enxergar o DbContext da
+        // Organização Institucional (ver AddAutorizacaoInfrastructure).
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<ILeitorDeUnidade>();
+
         // O armazenamento do PDF de designação é registrado por fábrica (credencial própria derivada das opções),
         // opaca ao codegen.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IArmazenamentoDosDocumentosDaAutorizacao>();

@@ -80,5 +80,8 @@ public sealed class RevogarConcessaoCommandHandlerTests
 
         public Task<int> ContarGestoresAtivosAsync(Guid perfilId, Guid exceto, DateTimeOffset agora, CancellationToken cancellationToken = default) =>
             throw new InvalidOperationException();
+
+        public Task<IReadOnlyList<TitularComEmail>> ListarTitularesAtivosComEmailAsync(Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException();
     }
 }

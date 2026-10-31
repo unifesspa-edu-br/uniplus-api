@@ -60,12 +60,14 @@ public static class ConcessoesDeTeste
     /// <param name="perfilId">Perfil a conceder.</param>
     /// <param name="escopo">Escopo da concessão; a instituição quando omitido.</param>
     /// <param name="validaAte">Fim da vigência, quando a concessão é por prazo.</param>
+    /// <param name="email">E-mail que a concessão guarda do titular; <see cref="EmailDeTeste"/> quando omitido.</param>
     public static async Task<Guid> ConcederAsync(
         IServiceProvider services,
         string sub,
         Guid perfilId,
         EscopoDaConcessao? escopo = null,
-        DateTimeOffset? validaAte = null)
+        DateTimeOffset? validaAte = null,
+        string? email = null)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentException.ThrowIfNullOrWhiteSpace(sub);
@@ -93,7 +95,7 @@ public static class ConcessoesDeTeste
             scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow(),
             scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>(),
             validaAte,
-            EmailDeTeste);
+            email ?? EmailDeTeste);
         if (concessao.IsFailure)
         {
             throw new InvalidOperationException(string.Join("; ", concessao.Errors.Select(e => e.Error.Message)));
@@ -125,11 +127,13 @@ public static class ConcessoesDeTeste
     /// Concede à pessoa o perfil de governança da carga inicial: o do gestor de acessos ou o da
     /// proteção de dados.
     /// </summary>
-    public static Task<Guid> ConcederGovernancaAsync(IServiceProvider services, string sub, TipoDeGovernanca governanca) =>
+    public static Task<Guid> ConcederGovernancaAsync(
+        IServiceProvider services, string sub, TipoDeGovernanca governanca, string? email = null) =>
         ConcederAsync(
             services,
             sub,
             governanca == TipoDeGovernanca.GestorDeAcessos
                 ? PerfisDeSistema.GestorDeAcessosId
-                : PerfisDeSistema.ProtecaoDeDadosId);
+                : PerfisDeSistema.ProtecaoDeDadosId,
+            email: email);
 }

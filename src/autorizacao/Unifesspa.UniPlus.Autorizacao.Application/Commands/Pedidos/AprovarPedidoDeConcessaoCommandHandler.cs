@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Email;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
@@ -15,10 +16,11 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Handler da aprovação. A concessão nasce na última aprovação exigida, na mesma transação: a concessão igual vencida e
 /// não revogada é revogada antes, porque o índice único a trata como existente. A concessão ativa igual recusa o pedido.
+/// Os avisos da situação em que o pedido ficou saem como mensagens de saída, no outbox da mesma transação.
 /// </summary>
 public static class AprovarPedidoDeConcessaoCommandHandler
 {
-    public static async Task<Result<PedidoDeConcessaoDto>> Handle(
+    public static async Task<(Result<PedidoDeConcessaoDto> Resposta, IEnumerable<object> Mensagens)> Handle(
         AprovarPedidoDeConcessaoCommand command,
         IPedidoDeConcessaoRepository pedidos,
         IConcessaoRepository concessoes,
@@ -26,6 +28,7 @@ public static class AprovarPedidoDeConcessaoCommandHandler
         IVerificadorDeAcesso verificador,
         CatalogoDaAplicacao catalogo,
         ICatalogoDePermissoesConsultavel catalogoDoDominio,
+        AvisosDoPedido avisos,
         IAutorizacaoUnitOfWork unitOfWork,
         IUserContext userContext,
         TimeProvider timeProvider,
@@ -38,6 +41,7 @@ public static class AprovarPedidoDeConcessaoCommandHandler
         ArgumentNullException.ThrowIfNull(verificador);
         ArgumentNullException.ThrowIfNull(catalogo);
         ArgumentNullException.ThrowIfNull(catalogoDoDominio);
+        ArgumentNullException.ThrowIfNull(avisos);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -47,11 +51,12 @@ public static class AprovarPedidoDeConcessaoCommandHandler
             .ConfigureAwait(false);
         if (preparada.IsFailure)
         {
-            return Result<PedidoDeConcessaoDto>.Failure(preparada.Error!);
+            return Recusa(preparada.Error!);
         }
 
         (PedidoDeConcessao pedido, Perfil perfil, PerfilAvaliado avaliado, Identidade decisor) = preparada.Value!;
         DateTimeOffset agora = timeProvider.GetUtcNow();
+        SituacaoDoPedido situacaoAnterior = pedido.Situacao;
 
         bool jaTemProtecaoDeDados = pedido.Beneficiario is { } beneficiario
             && await concessoes.TemConcessaoAtivaDoPerfilAsync(beneficiario, PerfisDeSistema.ProtecaoDeDadosId, agora, cancellationToken)
@@ -63,11 +68,11 @@ public static class AprovarPedidoDeConcessaoCommandHandler
             // O perfil alterado ou o prazo vencido entre as etapas devolvem o pedido ao gestor, e esse estado precisa ser gravado.
             if (aprovacao.Error!.Code is Domain.Errors.PedidoErrorCodes.PerfilAlterado or Domain.Errors.PedidoErrorCodes.PrazoVencido)
             {
-                return await SalvarRecusaAsync(unitOfWork, aprovacao.Error!, cancellationToken).ConfigureAwait(false);
+                return await SalvarRecusaAsync(pedido, perfil, avisos, unitOfWork, aprovacao.Error!, cancellationToken).ConfigureAwait(false);
             }
 
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<PedidoDeConcessaoDto>.ValidationFailure(aprovacao.Errors);
+            return (Result<PedidoDeConcessaoDto>.ValidationFailure(aprovacao.Errors), []);
         }
 
         try
@@ -79,7 +84,7 @@ public static class AprovarPedidoDeConcessaoCommandHandler
                 if (concedida.IsFailure)
                 {
                     unitOfWork.DescartarAlteracoesNaoSalvas();
-                    return Result<PedidoDeConcessaoDto>.ValidationFailure(concedida.Errors);
+                    return (Result<PedidoDeConcessaoDto>.ValidationFailure(concedida.Errors), []);
                 }
             }
 
@@ -89,21 +94,30 @@ public static class AprovarPedidoDeConcessaoCommandHandler
         {
             // Duas aprovações correram juntas, ou a concessão igual nasceu entre a leitura e a gravação.
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<PedidoDeConcessaoDto>.Failure(PedidoHandlerErros.JaTemConcessao());
+            return Recusa(PedidoHandlerErros.JaTemConcessao());
         }
         catch (Exception ex) when (ViolacoesDeGravacao.EhConflitoDeConcorrencia(ex))
         {
             // Com Idempotency-Key o handler captura e descarta o rastreamento (ADR-0119).
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<PedidoDeConcessaoDto>.Failure(PedidoHandlerErros.ConflitoDeConcorrencia());
+            return Recusa(PedidoHandlerErros.ConflitoDeConcorrencia());
         }
 
-        return Result<PedidoDeConcessaoDto>.Success(
-            await RespostaDoPedido.ParaDtoAsync(pedido, perfis, cancellationToken).ConfigureAwait(false));
+        PedidoDeConcessaoDto dto = await RespostaDoPedido.ParaDtoAsync(pedido, perfis, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<EnviarEmail> mensagens = await avisos
+            .AvisarAsync(pedido, dto.Perfil.Nome, situacaoAnterior, cancellationToken)
+            .ConfigureAwait(false);
+
+        return (Result<PedidoDeConcessaoDto>.Success(dto), mensagens);
     }
 
-    private static async Task<Result<PedidoDeConcessaoDto>> SalvarRecusaAsync(
-        IAutorizacaoUnitOfWork unitOfWork, DomainError erro, CancellationToken cancellationToken)
+    private static async Task<(Result<PedidoDeConcessaoDto> Resposta, IEnumerable<object> Mensagens)> SalvarRecusaAsync(
+        PedidoDeConcessao pedido,
+        Perfil perfil,
+        AvisosDoPedido avisos,
+        IAutorizacaoUnitOfWork unitOfWork,
+        DomainError erro,
+        CancellationToken cancellationToken)
     {
         try
         {
@@ -112,11 +126,19 @@ public static class AprovarPedidoDeConcessaoCommandHandler
         catch (Exception ex) when (ViolacoesDeGravacao.EhConflitoDeConcorrencia(ex))
         {
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<PedidoDeConcessaoDto>.Failure(PedidoHandlerErros.ConflitoDeConcorrencia());
+            return Recusa(PedidoHandlerErros.ConflitoDeConcorrencia());
         }
 
-        return Result<PedidoDeConcessaoDto>.Failure(erro);
+        // O pedido voltou ao gestor: a fila dele é avisada, mesmo que a resposta à proteção de dados seja a recusa.
+        IReadOnlyList<EnviarEmail> mensagens = await avisos
+            .AvisarAsync(pedido, perfil.Nome, SituacaoDoPedido.AguardandoProtecaoDeDados, cancellationToken)
+            .ConfigureAwait(false);
+
+        return (Result<PedidoDeConcessaoDto>.Failure(erro), mensagens);
     }
+
+    private static (Result<PedidoDeConcessaoDto> Resposta, IEnumerable<object> Mensagens) Recusa(DomainError erro) =>
+        (Result<PedidoDeConcessaoDto>.Failure(erro), []);
 
     private static async Task<Result> ConcederAsync(
         PedidoDeConcessao pedido,
