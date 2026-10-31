@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
 using Unifesspa.UniPlus.Infrastructure.Core.Cors;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+using Unifesspa.UniPlus.Infrastructure.Core.HealthChecks;
 using Unifesspa.UniPlus.Infrastructure.Core.Logging;
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
@@ -141,25 +142,9 @@ app.UseCorsConfiguration();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.MapOpenApi("/openapi/{documentName}.json");
-// Liveness dependency-free: 200 enquanto o processo está respondendo, sem
-// avaliar checks externos (o do provedor de identidade). Predicate => false
-// resulta em healthy quando nenhum check passa pelo filtro — exatamente o
-// comportamento que queremos para evitar restart loops do Kubernetes
-// quando uma dependência transient cai. Readiness mantém o /health agregado.
-app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
-{
-    Predicate = _ => false,
-});
-// Readiness: agrega os checks tagueados "ready" — na Portal, só o provedor de identidade (ver o
-// registro acima). Kubernetes deve apontar readinessProbe aqui.
-app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
-{
-    Predicate = h => h.Tags.Contains(HealthChecksServiceCollectionExtensions.ReadyTag),
-});
-// Alias retrocompat: continua expondo /health (sem filtro = todos os checks). Pode ser removido
-// quando todos os clients consumirem /health/live ou /health/ready.
-app.MapHealthChecks("/health");
+app.MapOpenApi("/openapi/{documentName}.json").AllowAnonymous();
+// Na Portal, a prontidão agrega só o provedor de identidade (ver o registro acima).
+app.MapUniPlusHealthChecks();
 
 await app.RunAsync();
 

@@ -5,6 +5,9 @@ using System.Security.Claims;
 using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Routing.Patterns;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -113,6 +116,44 @@ public sealed class OidcAuthenticationConfigurationTests
             .AuthorizeAsync(usuario, "Candidato");
 
         resultado.Succeeded.Should().Be(esperado);
+    }
+
+    [Theory(DisplayName = "Rota sem atributo de autorização exige pessoa autenticada; requisição sem rota segue para o 404 ou 405")]
+    [InlineData(false, Requisicao.ParaRota, false)]
+    [InlineData(true, Requisicao.ParaRota, true)]
+    [InlineData(false, Requisicao.SemRota, true)]
+    [InlineData(false, Requisicao.ForaDoPipeline, false)]
+    public async Task PoliticaPadrao_ExigePessoaAutenticadaNaRota(bool autenticada, Requisicao requisicao, bool esperado)
+    {
+        using ServiceProvider provider = BuildProvider(
+            Environments.Production,
+            new Dictionary<string, string?>
+            {
+                ["Auth:Authority"] = "https://idp.example.com/realms/test",
+                ["Auth:Audience"] = "uniplus",
+                ["Auth:ClientId"] = "uniplus-api",
+            });
+        ClaimsPrincipal usuario = new(autenticada ? new ClaimsIdentity([new Claim("sub", "abc")], "teste") : new ClaimsIdentity());
+        DefaultHttpContext? contexto = requisicao == Requisicao.ForaDoPipeline ? null : new DefaultHttpContext();
+        if (requisicao == Requisicao.ParaRota)
+        {
+            contexto!.SetEndpoint(new RouteEndpoint(
+                static _ => Task.CompletedTask, RoutePatternFactory.Parse("/api/rota"), 0, EndpointMetadataCollection.Empty, "rota"));
+        }
+
+        AuthorizationPolicy? padrao = await provider.GetRequiredService<IAuthorizationPolicyProvider>().GetFallbackPolicyAsync();
+        padrao.Should().NotBeNull("sem política padrão, endpoint sem atributo fica público");
+        AuthorizationResult resultado = await provider.GetRequiredService<IAuthorizationService>()
+            .AuthorizeAsync(usuario, contexto, padrao!);
+
+        resultado.Succeeded.Should().Be(esperado);
+    }
+
+    public enum Requisicao
+    {
+        ParaRota,
+        SemRota,
+        ForaDoPipeline,
     }
 
     private static ServiceProvider BuildProvider(string environmentName, IDictionary<string, string?> configValues)
