@@ -32,8 +32,6 @@ using Unifesspa.UniPlus.Kernel.Results;
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class ReferenciasReservaDemograficaController : ControllerBase
 {
-    private const string RecursoTipo = "ReferenciasReservaDemografica";
-
     private const string ResourceTag = "referencias-reserva-demografica";
 
     private readonly ICommandBus _commandBus;
@@ -108,7 +106,7 @@ public sealed class ReferenciasReservaDemograficaController : ControllerBase
 
     /// <summary>Cria uma nova referência. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/referencias-reserva-demografica")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ReferenciasReservaDemograficaManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ReferenciasReservaDemograficaManter, ResourceTipo = ResourceTiposConfiguracao.ReferenciaReservaDemografica)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -139,7 +137,7 @@ public sealed class ReferenciasReservaDemograficaController : ControllerBase
 
     /// <summary>Atualiza uma referência existente. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/referencias-reserva-demografica/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ReferenciasReservaDemograficaManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ReferenciasReservaDemograficaManter, ResourceTipo = ResourceTiposConfiguracao.ReferenciaReservaDemografica)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -174,7 +172,7 @@ public sealed class ReferenciasReservaDemograficaController : ControllerBase
 
     /// <summary>Remove (soft-delete) uma referência. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/referencias-reserva-demografica/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ReferenciasReservaDemograficaManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ReferenciasReservaDemograficaManter, ResourceTipo = ResourceTiposConfiguracao.ReferenciaReservaDemografica)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

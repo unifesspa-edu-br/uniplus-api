@@ -24,8 +24,8 @@ public enum MotivoNegativa
     /// <summary>Valor canônico: <c>fase_fechada</c>.</summary>
     FaseFechada = 4,
 
-    /// <summary>Valor canônico: <c>estado_do_recurso_incompativel</c>.</summary>
-    EstadoDoRecursoIncompativel = 5,
+    /// <summary>Valor canônico: <c>estado_do_resource_incompativel</c>.</summary>
+    EstadoDoResourceIncompativel = 5,
 
     /// <summary>Valor canônico: <c>escopo_de_auditoria_inativo</c>.</summary>
     EscopoDeAuditoriaInativo = 6,

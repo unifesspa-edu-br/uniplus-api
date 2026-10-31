@@ -33,8 +33,6 @@ using Unifesspa.UniPlus.Kernel.Results;
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class PesosAreaEnemController : ControllerBase
 {
-    private const string RecursoTipo = "PesosAreaEnem";
-
     private const string ResourceTag = "pesos-area-enem";
 
     private readonly ICommandBus _commandBus;
@@ -128,7 +126,7 @@ public sealed class PesosAreaEnemController : ControllerBase
 
     /// <summary>Cria uma nova linha de pesos. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/pesos-area-enem")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.PesosAreaEnemManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.PesosAreaEnemManter, ResourceTipo = ResourceTiposConfiguracao.PesoAreaEnem)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -159,7 +157,7 @@ public sealed class PesosAreaEnemController : ControllerBase
 
     /// <summary>Atualiza uma linha de pesos existente. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/pesos-area-enem/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.PesosAreaEnemManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.PesosAreaEnemManter, ResourceTipo = ResourceTiposConfiguracao.PesoAreaEnem)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -193,7 +191,7 @@ public sealed class PesosAreaEnemController : ControllerBase
 
     /// <summary>Remove (soft-delete) uma linha de pesos. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/pesos-area-enem/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.PesosAreaEnemManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.PesosAreaEnemManter, ResourceTipo = ResourceTiposConfiguracao.PesoAreaEnem)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

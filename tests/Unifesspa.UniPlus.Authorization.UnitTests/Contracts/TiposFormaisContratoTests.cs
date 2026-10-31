@@ -27,10 +27,10 @@ public sealed class TiposFormaisContratoTests
 
         // ResourceContext — igualdade por valor dos atributos.
         Guid unidade = Guid.CreateVersion7();
-        ResourceContext recursoA = ResourceContext.From("Edital", ClassificacaoDeProtecao.Pessoal, unidadeProprietariaId: unidade).Value!;
-        ResourceContext recursoB = ResourceContext.From("Edital", ClassificacaoDeProtecao.Pessoal, unidadeProprietariaId: unidade).Value!;
-        recursoA.Should().Be(recursoB);
-        recursoA.Should().NotBe(ResourceContext.From("Inscricao", ClassificacaoDeProtecao.Pessoal, unidadeProprietariaId: unidade).Value!);
+        ResourceContext resourceA = ResourceContext.From("edital", ClassificacaoDeProtecao.Pessoal, unidadeProprietariaId: unidade).Value!;
+        ResourceContext resourceB = ResourceContext.From("edital", ClassificacaoDeProtecao.Pessoal, unidadeProprietariaId: unidade).Value!;
+        resourceA.Should().Be(resourceB);
+        resourceA.Should().NotBe(ResourceContext.From("inscricao", ClassificacaoDeProtecao.Pessoal, unidadeProprietariaId: unidade).Value!);
 
         // AuthorizationRequestContext — igualdade por valor (sem dupla aprovação).
         var instante = new DateTimeOffset(2026, 6, 15, 12, 0, 0, TimeSpan.Zero);

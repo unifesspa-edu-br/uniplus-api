@@ -137,7 +137,7 @@ public sealed class RevelarCpfDaInscricaoEndpointTests : IAsyncLifetime
         [.. _fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>().Registrados
             .Where(r => r.ProcessoId == processoId
                 && r.Permissao == PermissaoSelecao.InscricoesRevelarCpf.Codigo
-                && r.RecursoId == inscricaoId)];
+                && r.ResourceId == inscricaoId)];
 
     private async Task ConcederAsync(string sub, Guid unidade, params PermissaoSelecao[] permissoes)
     {

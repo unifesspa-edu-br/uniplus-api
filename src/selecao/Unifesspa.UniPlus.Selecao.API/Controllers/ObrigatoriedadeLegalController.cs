@@ -37,7 +37,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 public sealed class ObrigatoriedadeLegalController : ControllerBase
 {
     private const string ResourceTag = "obrigatoriedades-legais";
-    private const string RecursoTipo = "ObrigatoriedadeLegal";
 
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
@@ -124,7 +123,7 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
     /// manutenção. <c>Idempotency-Key</c> obrigatório (ADR-0027).
     /// </summary>
     [HttpPost("admin/obrigatoriedades-legais")]
-    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.ObrigatoriedadesLegaisManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.ObrigatoriedadesLegaisManter, ResourceTipo = ResourceTiposSelecao.ObrigatoriedadeLegal)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -155,7 +154,7 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
     /// repassar todos os campos. <c>Idempotency-Key</c> obrigatório.
     /// </summary>
     [HttpPut("admin/obrigatoriedades-legais/{id:guid}")]
-    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.ObrigatoriedadesLegaisManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.ObrigatoriedadesLegaisManter, ResourceTipo = ResourceTiposSelecao.ObrigatoriedadeLegal)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -195,7 +194,7 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
     /// e libera o slot do <c>UNIQUE</c> parcial sobre <c>Hash</c> (ADR-0063).
     /// </summary>
     [HttpDelete("admin/obrigatoriedades-legais/{id:guid}")]
-    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.ObrigatoriedadesLegaisManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.ObrigatoriedadesLegaisManter, ResourceTipo = ResourceTiposSelecao.ObrigatoriedadeLegal)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

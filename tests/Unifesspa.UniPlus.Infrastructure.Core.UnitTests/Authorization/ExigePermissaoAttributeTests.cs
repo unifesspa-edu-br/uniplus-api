@@ -60,18 +60,18 @@ public sealed class ExigePermissaoAttributeTests
             Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "RecursoTipo informado vira o recurso da decisão, com a sensibilidade da permissão")]
-    public async Task OnAuthorizationAsync_ComRecursoTipo_InformaORecurso()
+    [Fact(DisplayName = "ResourceTipo informado vira o resource da decisão, com a sensibilidade da permissão")]
+    public async Task OnAuthorizationAsync_ComResourceTipo_InformaOResource()
     {
         _acesso.VerificarAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
             .Returns(ResultadoDoAcesso.Permitido);
 
-        await new ExigePermissaoAttribute<PermissaoAutorizacao>(PermissaoAutorizacao.ConsultarCatalogo) { RecursoTipo = "Catalogo" }
+        await new ExigePermissaoAttribute<PermissaoAutorizacao>(PermissaoAutorizacao.ConsultarCatalogo) { ResourceTipo = "catalogo" }
             .OnAuthorizationAsync(Contexto());
 
         await _acesso.Received(1).VerificarAsync(
             Arg.Any<PermissionRequirement>(),
-            Arg.Is<ResourceContext?>(r => r!.RecursoTipo == "Catalogo"),
+            Arg.Is<ResourceContext?>(r => r!.ResourceTipo == "catalogo"),
             Arg.Any<CancellationToken>());
     }
 
@@ -120,13 +120,22 @@ public sealed class ExigePermissaoAttributeTests
         criar.Should().Throw<ArgumentException>().WithMessage("*PermissaoAutorizacao*");
     }
 
-    [Fact(DisplayName = "RecursoTipo em branco falha ao construir o atributo, não na requisição")]
-    public void RecursoTipo_EmBranco_Falha()
+    [Fact(DisplayName = "ResourceTipo em branco falha ao construir o atributo, não na requisição")]
+    public void ResourceTipo_EmBranco_Falha()
     {
         Func<ExigePermissaoAttribute<PermissaoAutorizacao>> criar =
-            () => new(PermissaoAutorizacao.ConsultarCatalogo) { RecursoTipo = " " };
+            () => new(PermissaoAutorizacao.ConsultarCatalogo) { ResourceTipo = " " };
 
         criar.Should().Throw<ArgumentException>();
+    }
+
+    [Fact(DisplayName = "ResourceTipo fora da convenção falha ao construir o atributo, não na requisição")]
+    public void ResourceTipo_ForaDaConvencao_Falha()
+    {
+        Func<ExigePermissaoAttribute<PermissaoAutorizacao>> criar =
+            () => new(PermissaoAutorizacao.ConsultarCatalogo) { ResourceTipo = "TiposDocumento" };
+
+        criar.Should().Throw<ArgumentException>().WithMessage("*kebab-case*");
     }
 
     private AuthorizationFilterContext Contexto()

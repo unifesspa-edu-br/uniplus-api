@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Instalacoes;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
+using Unifesspa.UniPlus.Autorizacao.Application.Permissoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Instalacoes;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
@@ -37,10 +38,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed class InstalacaoController : ControllerBase
 {
     private const string ResourceTag = "tentativas-sem-pendencia";
-    private const string PoliticaDeInstalacao = "Instalacao";
 
-    /// <summary>Tipo de recurso que a decisão de acesso enxerga para a trilha, comparado por igualdade exata.</summary>
-    private const string RecursoTipo = "instalacao";
+    private const string PoliticaDeInstalacao = "Instalacao";
 
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
@@ -182,7 +181,7 @@ public sealed class InstalacaoController : ControllerBase
     /// </summary>
     [HttpGet("instalacoes/{id:guid}/trilha")]
     [Authorize]
-    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.ConcessoesAdministrar, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.ConcessoesAdministrar, ResourceTipo = ResourceTiposAutorizacao.Instalacao)]
     [VendorMediaType(Resource = "trilha-da-instalacao", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<EventoDaTrilhaDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -204,7 +203,7 @@ public sealed class InstalacaoController : ControllerBase
     /// </summary>
     [HttpGet("instalacoes/tentativas-sem-pendencia")]
     [Authorize]
-    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.ConcessoesAdministrar, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.ConcessoesAdministrar, ResourceTipo = ResourceTiposAutorizacao.Instalacao)]
     [VendorMediaType(Resource = "tentativa-de-instalacao", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<TentativaDeInstalacaoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

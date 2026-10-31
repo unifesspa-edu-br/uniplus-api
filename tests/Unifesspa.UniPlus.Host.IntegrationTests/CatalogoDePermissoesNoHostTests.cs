@@ -111,7 +111,7 @@ public sealed class CatalogoDePermissoesNoHostTests
         resposta.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
-    [Fact(DisplayName = "GET do catálogo com a permissão lista as permissões agrupadas por módulo e recurso")]
+    [Fact(DisplayName = "GET do catálogo com a permissão lista as permissões agrupadas por módulo e resource")]
     public async Task Catalogo_ComPermissao_ListaAgrupada()
     {
         using HttpClient client = await ClienteComConcessaoAsync(CodigoDoCatalogo);
@@ -123,14 +123,14 @@ public sealed class CatalogoDePermissoesNoHostTests
 
         JsonElement corpo = await resposta.Content.ReadFromJsonAsync<JsonElement>();
         JsonElement selecao = corpo.EnumerateArray().Single(m => m.GetProperty("modulo").GetString() == "selecao");
-        JsonElement recurso = selecao.GetProperty("recursos").EnumerateArray()
-            .Single(r => r.GetProperty("recurso").GetString() == "motivos-decisao-isencao");
+        JsonElement resource = selecao.GetProperty("resources").EnumerateArray()
+            .Single(r => r.GetProperty("resource").GetString() == "motivos-decisao-isencao");
 
-        recurso.GetProperty("permissoes").EnumerateArray()
+        resource.GetProperty("permissoes").EnumerateArray()
             .Select(p => p.GetProperty("codigo").GetString())
             .Should().BeEquivalentTo("selecao:motivos-decisao-isencao:manter");
-        recurso.GetProperty("permissoes")[0].GetProperty("nome").GetString().Should().NotBeNullOrWhiteSpace();
-        recurso.GetProperty("permissoes")[0].GetProperty("sensibilidade").GetString().Should().Be("interno");
+        resource.GetProperty("permissoes")[0].GetProperty("nome").GetString().Should().NotBeNullOrWhiteSpace();
+        resource.GetProperty("permissoes")[0].GetProperty("sensibilidade").GetString().Should().Be("interno");
     }
 
     [Fact(DisplayName = "GET do catálogo com Accept de outro tipo responde 406")]

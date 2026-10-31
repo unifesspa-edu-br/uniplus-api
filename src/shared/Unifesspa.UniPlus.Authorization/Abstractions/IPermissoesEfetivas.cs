@@ -5,7 +5,7 @@ using Unifesspa.UniPlus.Authorization.Catalogo;
 /// <summary>
 /// Permissões do catálogo que o solicitante da requisição corrente possui. Serve a
 /// interface (menu, ações visíveis); a decisão de acesso continua sendo tomada em cada
-/// requisição, porque a concessão pode depender do recurso (ADR-0078).
+/// requisição, porque a concessão pode depender do resource (ADR-0078).
 /// </summary>
 public interface IPermissoesEfetivas
 {

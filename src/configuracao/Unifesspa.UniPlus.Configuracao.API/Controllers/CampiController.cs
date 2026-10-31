@@ -32,8 +32,6 @@ using Unifesspa.UniPlus.Kernel.Results;
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class CampiController : ControllerBase
 {
-    private const string RecursoTipo = "Campi";
-
     private const string ResourceTag = "campi";
 
     private readonly ICommandBus _commandBus;
@@ -107,7 +105,7 @@ public sealed class CampiController : ControllerBase
 
     /// <summary>Cria um novo campus. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/campi")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CampiManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CampiManter, ResourceTipo = ResourceTiposConfiguracao.Campus)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -138,7 +136,7 @@ public sealed class CampiController : ControllerBase
 
     /// <summary>Atualiza um campus existente. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/campi/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CampiManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CampiManter, ResourceTipo = ResourceTiposConfiguracao.Campus)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -173,7 +171,7 @@ public sealed class CampiController : ControllerBase
 
     /// <summary>Remove (soft-delete) um campus. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/campi/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CampiManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CampiManter, ResourceTipo = ResourceTiposConfiguracao.Campus)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

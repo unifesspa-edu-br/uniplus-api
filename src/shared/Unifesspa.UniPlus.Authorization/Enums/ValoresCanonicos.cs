@@ -27,7 +27,7 @@ public static class ValoresCanonicos
         MotivoNegativa.SemConcessaoAplicavel => "sem_concessao_aplicavel",
         MotivoNegativa.ConcessaoExpirada => "concessao_expirada",
         MotivoNegativa.FaseFechada => "fase_fechada",
-        MotivoNegativa.EstadoDoRecursoIncompativel => "estado_do_recurso_incompativel",
+        MotivoNegativa.EstadoDoResourceIncompativel => "estado_do_resource_incompativel",
         MotivoNegativa.EscopoDeAuditoriaInativo => "escopo_de_auditoria_inativo",
         MotivoNegativa.EquipeInativaNoProcesso => "equipe_inativa_no_processo",
         MotivoNegativa.AtribuicaoDocumentalInativa => "atribuicao_documental_inativa",

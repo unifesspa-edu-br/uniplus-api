@@ -31,8 +31,6 @@ using Unifesspa.UniPlus.Kernel.Results;
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class CategoriasDocumentoController : ControllerBase
 {
-    private const string RecursoTipo = "CategoriasDocumento";
-
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;
@@ -97,7 +95,7 @@ public sealed class CategoriasDocumentoController : ControllerBase
 
     /// <summary>Cria uma nova categoria. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/categorias-documento")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CategoriasDocumentoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CategoriasDocumentoManter, ResourceTipo = ResourceTiposConfiguracao.CategoriaDocumento)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -128,7 +126,7 @@ public sealed class CategoriasDocumentoController : ControllerBase
 
     /// <summary>Atualiza uma categoria existente. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/categorias-documento/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CategoriasDocumentoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CategoriasDocumentoManter, ResourceTipo = ResourceTiposConfiguracao.CategoriaDocumento)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -163,7 +161,7 @@ public sealed class CategoriasDocumentoController : ControllerBase
 
     /// <summary>Remove (soft-delete) uma categoria. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/categorias-documento/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CategoriasDocumentoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CategoriasDocumentoManter, ResourceTipo = ResourceTiposConfiguracao.CategoriaDocumento)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Authorization.Contracts;
 /// </summary>
 /// <remarks>
 /// O ponto de decisão (<see cref="IAuthorizationDecisionService"/>) recebe o
-/// sujeito, o recurso e o contexto já montados, porque é assim que a decisão
+/// sujeito, o resource e o contexto já montados, porque é assim que a decisão
 /// fica reproduzível e testável. Montar essas três coisas em cada endpoint,
 /// porém, é cerimônia que não pertence a quem só precisa saber se pode seguir —
 /// esta porta faz esse trabalho e devolve a resposta.
@@ -30,14 +30,14 @@ public interface IVerificadorDeAcesso
     /// que a borda responde de forma distinta.
     /// </returns>
     /// <param name="permissao">Permissão exigida, do catálogo.</param>
-    /// <param name="recurso">
-    /// Recurso alvo, quando a decisão depende de escopo (unidade, processo,
+    /// <param name="resource">
+    /// Resource alvo, quando a decisão depende de escopo (unidade, processo,
     /// chamada). Omitido, a decisão considera apenas a permissão.
     /// </param>
     /// <param name="cancellationToken">Token de cancelamento.</param>
     Task<ResultadoDoAcesso> VerificarAsync(
         PermissionRequirement permissao,
-        ResourceContext? recurso = null,
+        ResourceContext? resource = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

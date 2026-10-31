@@ -33,8 +33,6 @@ using Unifesspa.UniPlus.Kernel.Results;
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class TermosConsentimentoController : ControllerBase
 {
-    private const string RecursoTipo = "TermosConsentimento";
-
     private const string ResourceTag = "termos-consentimento";
 
     /// <summary>Limite defensivo do termo de busca — igual ao <c>Nome</c> máximo da entidade.</summary>
@@ -145,7 +143,7 @@ public sealed class TermosConsentimentoController : ControllerBase
 
     /// <summary>Cria um novo termo (rascunho vazio ou com campos iniciais). Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/termos-consentimento")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TermosConsentimentoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TermosConsentimentoManter, ResourceTipo = ResourceTiposConfiguracao.TermoConsentimento)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -179,7 +177,7 @@ public sealed class TermosConsentimentoController : ControllerBase
     /// <c>EM_ELABORACAO</c> e limpa a marca de revisão. Exige a permissão de manutenção.
     /// </summary>
     [HttpPut("admin/termos-consentimento/{id:guid}/rascunho")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TermosConsentimentoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TermosConsentimentoManter, ResourceTipo = ResourceTiposConfiguracao.TermoConsentimento)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -216,7 +214,7 @@ public sealed class TermosConsentimentoController : ControllerBase
     /// comum, grava o ator explícito da chamada. Exige a permissão de manutenção.
     /// </summary>
     [HttpPost("admin/termos-consentimento/{id:guid}/revisar")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TermosConsentimentoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TermosConsentimentoManter, ResourceTipo = ResourceTiposConfiguracao.TermoConsentimento)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -237,7 +235,7 @@ public sealed class TermosConsentimentoController : ControllerBase
     /// manutenção.
     /// </summary>
     [HttpPost("admin/termos-consentimento/{id:guid}/promover")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TermosConsentimentoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TermosConsentimentoManter, ResourceTipo = ResourceTiposConfiguracao.TermoConsentimento)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -255,7 +253,7 @@ public sealed class TermosConsentimentoController : ControllerBase
 
     /// <summary>Remove (soft-delete) um termo sem nenhuma versão promovida. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/termos-consentimento/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TermosConsentimentoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TermosConsentimentoManter, ResourceTipo = ResourceTiposConfiguracao.TermoConsentimento)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

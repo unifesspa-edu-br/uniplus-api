@@ -11,10 +11,10 @@ using Unifesspa.UniPlus.Authorization.ValueObjects;
 /// </summary>
 /// <remarks>
 /// <para>
-/// É verificação <b>canônica</b>, como <see cref="GrantEfetivoAplicavelCheck"/>: roda em toda decisão cujo recurso traz
+/// É verificação <b>canônica</b>, como <see cref="GrantEfetivoAplicavelCheck"/>: roda em toda decisão cujo resource traz
 /// o processo, sem que a permissão a declare. Vem depois da concessão — quem não tem concessão continua recusado por
 /// <see cref="MotivoNegativa.SemConcessaoAplicavel"/> — e nenhuma concessão a supera, nem a aprovada depois da
-/// inscrição. Decisão sem processo no recurso não passa por ela.
+/// inscrição. Decisão sem processo no resource não passa por ela.
 /// </para>
 /// <para>
 /// A identidade é o par (emissor, <c>sub</c>) do sujeito da decisão, o mesmo que a inscrição guarda do candidato: o

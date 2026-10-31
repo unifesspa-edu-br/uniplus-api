@@ -40,8 +40,6 @@ using Unifesspa.UniPlus.Publicacoes.Application.Queries.AtosNormativos;
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed partial class AtosNormativosController : ControllerBase
 {
-    private const string RecursoTipo = "AtosNormativos";
-
     private const string ResourceTag = "atos";
     private const string ResourceTagEntidade = "entidade-atos";
     private const string RouteEntidadeTipo = "entidadeTipo";
@@ -210,7 +208,7 @@ public sealed partial class AtosNormativosController : ControllerBase
     /// objeto é publicado pelo domínio dono.
     /// </summary>
     [HttpPost("admin/atos")]
-    [ExigePermissao<PermissaoPublicacoes>(PermissaoPublicacoes.AtosNormativosRegistrar, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoPublicacoes>(PermissaoPublicacoes.AtosNormativosRegistrar, ResourceTipo = ResourceTiposPublicacoes.AtoNormativo)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(RegistrarAtoNormativoResult), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

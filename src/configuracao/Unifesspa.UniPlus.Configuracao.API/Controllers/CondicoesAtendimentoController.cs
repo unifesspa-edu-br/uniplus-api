@@ -32,8 +32,6 @@ using Unifesspa.UniPlus.Kernel.Results;
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class CondicoesAtendimentoController : ControllerBase
 {
-    private const string RecursoTipo = "CondicoesAtendimento";
-
     private const string ResourceTag = "condicoes-atendimento";
 
     private readonly ICommandBus _commandBus;
@@ -108,7 +106,7 @@ public sealed class CondicoesAtendimentoController : ControllerBase
 
     /// <summary>Cria uma nova condição. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/condicoes-atendimento")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CondicoesAtendimentoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CondicoesAtendimentoManter, ResourceTipo = ResourceTiposConfiguracao.CondicaoAtendimento)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -139,7 +137,7 @@ public sealed class CondicoesAtendimentoController : ControllerBase
 
     /// <summary>Atualiza uma condição existente. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/condicoes-atendimento/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CondicoesAtendimentoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CondicoesAtendimentoManter, ResourceTipo = ResourceTiposConfiguracao.CondicaoAtendimento)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -174,7 +172,7 @@ public sealed class CondicoesAtendimentoController : ControllerBase
 
     /// <summary>Remove (soft-delete) uma condição. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/condicoes-atendimento/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CondicoesAtendimentoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.CondicoesAtendimentoManter, ResourceTipo = ResourceTiposConfiguracao.CondicaoAtendimento)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

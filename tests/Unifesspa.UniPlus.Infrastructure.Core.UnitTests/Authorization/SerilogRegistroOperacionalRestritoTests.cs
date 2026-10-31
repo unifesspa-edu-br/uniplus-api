@@ -109,7 +109,7 @@ public sealed class SerilogRegistroOperacionalRestritoTests
             PermissionRequirement.From(
                 "selecao:motivos-decisao-isencao:manter",
                 ClassificacaoDeProtecao.Interno).Value!,
-            ResourceContext.From("MotivoDecisaoRecursal", ClassificacaoDeProtecao.Interno).Value!,
+            ResourceContext.From("motivo-decisao-isencao", ClassificacaoDeProtecao.Interno).Value!,
             AuthorizationRequestContext.From("req-1", DateTimeOffset.UnixEpoch, OrigemRequisicao.Api).Value!,
             AuthorizationDecision.Negar(MotivoNegativa.SemConcessaoAplicavel));
 

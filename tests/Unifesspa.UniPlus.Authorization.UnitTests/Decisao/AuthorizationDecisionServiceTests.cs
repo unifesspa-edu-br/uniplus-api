@@ -65,24 +65,24 @@ public sealed class AuthorizationDecisionServiceTests
             "distinguir 'venceu' de 'nunca existiu' é o que diz se a correção é renovar ou conceder");
     }
 
-    [Fact(DisplayName = "Nega por contexto_obrigatorio_ausente quando o recurso não traz o escopo exigido")]
+    [Fact(DisplayName = "Nega por contexto_obrigatorio_ausente quando o resource não traz o escopo exigido")]
     public async Task Decide_EscopoExigidoAusente_NegaPorContextoObrigatorio()
     {
         AuthorizationDecision decisao = await Decidir(
             Sujeito(concessoes: Concessao()),
             Requisito(escopoContextoObrigatorio: ["processoId"]),
-            Recurso(processoId: null));
+            Resource(processoId: null));
 
         decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.ContextoObrigatorioAusente);
     }
 
-    [Fact(DisplayName = "Concede quando o escopo exigido está presente no recurso")]
+    [Fact(DisplayName = "Concede quando o escopo exigido está presente no resource")]
     public async Task Decide_EscopoExigidoPresente_Concede()
     {
         AuthorizationDecision decisao = await Decidir(
             Sujeito(concessoes: Concessao()),
             Requisito(escopoContextoObrigatorio: ["processoId"]),
-            Recurso(processoId: Guid.CreateVersion7()));
+            Resource(processoId: Guid.CreateVersion7()));
 
         decisao.Allowed.Should().BeTrue();
     }
@@ -131,31 +131,31 @@ public sealed class AuthorizationDecisionServiceTests
         AuthorizationDecision decisao = await Decidir(
             Sujeito(concessoes: Concessao()),
             Requisito(sensibilidade, baseLegalPadrao: null),
-            Recurso(sensibilidade));
+            Resource(sensibilidade));
 
         decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.BaseLegalAusente);
     }
 
     [Fact(DisplayName = "Nega quando a permissão é sensível, ainda que o contexto se declare interno")]
-    public async Task Decide_PermissaoSensivelComRecursoInterno_Nega()
+    public async Task Decide_PermissaoSensivelComResourceInterno_Nega()
     {
         AuthorizationDecision decisao = await Decidir(
             Sujeito(concessoes: Concessao()),
             Requisito(ClassificacaoDeProtecao.Sensivel, baseLegalPadrao: null),
-            Recurso(ClassificacaoDeProtecao.Interno));
+            Resource(ClassificacaoDeProtecao.Interno));
 
         decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.BaseLegalAusente,
             "a sensibilidade é declarada em dois lugares e vale a maior — olhar só o contexto "
             + "deixaria a operação classificada como sensível sair sem base legal");
     }
 
-    [Fact(DisplayName = "Nega quando o recurso é pessoal, ainda que a permissão se declare interna")]
-    public async Task Decide_RecursoPessoalComPermissaoInterna_Nega()
+    [Fact(DisplayName = "Nega quando o resource é pessoal, ainda que a permissão se declare interna")]
+    public async Task Decide_ResourcePessoalComPermissaoInterna_Nega()
     {
         AuthorizationDecision decisao = await Decidir(
             Sujeito(concessoes: Concessao()),
             Requisito(ClassificacaoDeProtecao.Interno, baseLegalPadrao: null),
-            Recurso(ClassificacaoDeProtecao.Pessoal));
+            Resource(ClassificacaoDeProtecao.Pessoal));
 
         decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.BaseLegalAusente);
     }
@@ -166,7 +166,7 @@ public sealed class AuthorizationDecisionServiceTests
         AuthorizationDecision decisao = await Decidir(
             Sujeito(concessoes: Concessao()),
             Requisito(ClassificacaoDeProtecao.Pessoal, baseLegalPadrao: "LGPD art. 7º, II"),
-            Recurso(ClassificacaoDeProtecao.Pessoal));
+            Resource(ClassificacaoDeProtecao.Pessoal));
 
         decisao.Allowed.Should().BeTrue();
     }
@@ -215,7 +215,7 @@ public sealed class AuthorizationDecisionServiceTests
         AuthorizationDecision decisao = await Decidir(
             Sujeito(concessoes: Concessao()),
             Requisito(ClassificacaoDeProtecao.Pessoal, verificacoesDeContexto: ["fase-aberta"]),
-            Recurso(ClassificacaoDeProtecao.Pessoal),
+            Resource(ClassificacaoDeProtecao.Pessoal),
             checks: [check]);
 
         decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.FaseFechada);
@@ -270,7 +270,7 @@ public sealed class AuthorizationDecisionServiceTests
         await Decidir(
             Sujeito(concessoes: Concessao(grantId: concessao, escopoUnidadeId: unidade, perfilId: perfil)),
             Requisito(),
-            Recurso(unidadeProprietariaId: unidade));
+            Resource(unidadeProprietariaId: unidade));
 
         RegistroDecisaoAcesso registro = _registro.Registrados.Should().ContainSingle().Subject;
         registro.GrantId.Should().Be(concessao);
@@ -283,36 +283,36 @@ public sealed class AuthorizationDecisionServiceTests
     {
         Guid alvo = Guid.CreateVersion7();
 
-        await Decidir(Sujeito(concessoes: Concessao()), Requisito(), Recurso(recursoId: alvo));
-        await Decidir(Sujeito(), Requisito(), Recurso(recursoId: alvo));
+        await Decidir(Sujeito(concessoes: Concessao()), Requisito(), Resource(resourceId: alvo));
+        await Decidir(Sujeito(), Requisito(), Resource(resourceId: alvo));
 
-        _registro.Registrados.Should().HaveCount(2).And.OnlyContain(r => r.RecursoId == alvo,
+        _registro.Registrados.Should().HaveCount(2).And.OnlyContain(r => r.ResourceId == alvo,
             "a decisão negada também nomeia o registro que se tentou alcançar");
     }
 
-    [Fact(DisplayName = "A concessão na unidade A concede sobre recurso de A e nega sobre recurso de B")]
-    public async Task Decide_ConcessaoDeUnidade_SoAlcancaARecursoDaUnidade()
+    [Fact(DisplayName = "A concessão na unidade A concede sobre resource de A e nega sobre resource de B")]
+    public async Task Decide_ConcessaoDeUnidade_SoAlcancaAResourceDaUnidade()
     {
         Guid unidadeA = Guid.CreateVersion7();
         Guid unidadeB = Guid.CreateVersion7();
         AuthorizationSubject sujeito = Sujeito(concessoes: Concessao(escopoUnidadeId: unidadeA));
 
-        (await Decidir(sujeito, Requisito(), Recurso(unidadeProprietariaId: unidadeA))).Allowed.Should().BeTrue();
+        (await Decidir(sujeito, Requisito(), Resource(unidadeProprietariaId: unidadeA))).Allowed.Should().BeTrue();
 
-        AuthorizationDecision emB = await Decidir(sujeito, Requisito(), Recurso(unidadeProprietariaId: unidadeB));
+        AuthorizationDecision emB = await Decidir(sujeito, Requisito(), Resource(unidadeProprietariaId: unidadeB));
         emB.Allowed.Should().BeFalse();
         emB.DenyReason!.Codigo.Should().Be(MotivoNegativa.SemConcessaoAplicavel);
     }
 
-    [Fact(DisplayName = "A concessão institucional nega sobre recurso de unidade, e a de unidade nega sobre recurso institucional")]
+    [Fact(DisplayName = "A concessão institucional nega sobre resource de unidade, e a de unidade nega sobre resource institucional")]
     public async Task Decide_InstitucionalEUnidade_NaoSeHerdam()
     {
         Guid unidade = Guid.CreateVersion7();
 
         AuthorizationDecision institucionalEmUnidade = await Decidir(
-            Sujeito(concessoes: Concessao()), Requisito(), Recurso(unidadeProprietariaId: unidade));
+            Sujeito(concessoes: Concessao()), Requisito(), Resource(unidadeProprietariaId: unidade));
         AuthorizationDecision unidadeEmInstitucional = await Decidir(
-            Sujeito(concessoes: Concessao(escopoUnidadeId: unidade)), Requisito(), Recurso());
+            Sujeito(concessoes: Concessao(escopoUnidadeId: unidade)), Requisito(), Resource());
 
         institucionalEmUnidade.DenyReason!.Codigo.Should().Be(MotivoNegativa.SemConcessaoAplicavel);
         unidadeEmInstitucional.DenyReason!.Codigo.Should().Be(MotivoNegativa.SemConcessaoAplicavel);
@@ -346,7 +346,7 @@ public sealed class AuthorizationDecisionServiceTests
         await Decidir(
             Sujeito(concessoes: Concessao()),
             Requisito(ClassificacaoDeProtecao.Sensivel, baseLegalPadrao: "LGPD art. 11, II"),
-            Recurso(ClassificacaoDeProtecao.Interno));
+            Resource(ClassificacaoDeProtecao.Interno));
 
         _registro.Registrados.Should().ContainSingle().Which.Sensibilidade.Should().Be(
             "sensivel",
@@ -354,14 +354,14 @@ public sealed class AuthorizationDecisionServiceTests
             + "consultas de conformidade sobre o registro deixariam de encontrá-la");
     }
 
-    [Fact(DisplayName = "Nega por impedido_por_inscricao_no_processo quem tem a concessão e está inscrito no processo do recurso")]
+    [Fact(DisplayName = "Nega por impedido_por_inscricao_no_processo quem tem a concessão e está inscrito no processo do resource")]
     public async Task Decide_InscritoNoProcesso_NegaPorImpedimento()
     {
         Guid processo = Guid.CreateVersion7();
         InscricoesEmMemoria inscricoes = new(processo);
 
         AuthorizationDecision decisao = await Decidir(
-            Sujeito(concessoes: Concessao()), Requisito(), Recurso(processoId: processo), inscricoes: inscricoes);
+            Sujeito(concessoes: Concessao()), Requisito(), Resource(processoId: processo), inscricoes: inscricoes);
 
         decisao.Allowed.Should().BeFalse();
         decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.ImpedidoPorInscricaoNoProcesso);
@@ -376,7 +376,7 @@ public sealed class AuthorizationDecisionServiceTests
         AuthorizationDecision decisao = await Decidir(
             Sujeito(concessoes: Concessao(escopoProcessoId: processo, escopoUnidadeId: null)),
             Requisito(),
-            Recurso(processoId: processo),
+            Resource(processoId: processo),
             inscricoes: new InscricoesEmMemoria(processo));
 
         decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.ImpedidoPorInscricaoNoProcesso);
@@ -388,7 +388,7 @@ public sealed class AuthorizationDecisionServiceTests
         Guid processo = Guid.CreateVersion7();
 
         AuthorizationDecision decisao = await Decidir(
-            Sujeito(), Requisito(), Recurso(processoId: processo), inscricoes: new InscricoesEmMemoria(processo));
+            Sujeito(), Requisito(), Resource(processoId: processo), inscricoes: new InscricoesEmMemoria(processo));
 
         decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.SemConcessaoAplicavel);
     }
@@ -399,19 +399,19 @@ public sealed class AuthorizationDecisionServiceTests
         AuthorizationDecision decisao = await Decidir(
             Sujeito(concessoes: Concessao()),
             Requisito(),
-            Recurso(processoId: Guid.CreateVersion7()),
+            Resource(processoId: Guid.CreateVersion7()),
             inscricoes: new InscricoesEmMemoria(Guid.CreateVersion7()));
 
         decisao.Allowed.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Recurso sem processo não passa pela verificação de impedimento")]
-    public async Task Decide_RecursoSemProcesso_NaoConsultaInscricoes()
+    [Fact(DisplayName = "Resource sem processo não passa pela verificação de impedimento")]
+    public async Task Decide_ResourceSemProcesso_NaoConsultaInscricoes()
     {
         InscricoesEmMemoria inscricoes = new(Guid.CreateVersion7());
 
         AuthorizationDecision decisao = await Decidir(
-            Sujeito(concessoes: Concessao()), Requisito(), Recurso(), inscricoes: inscricoes);
+            Sujeito(concessoes: Concessao()), Requisito(), Resource(), inscricoes: inscricoes);
 
         decisao.Allowed.Should().BeTrue();
         inscricoes.Consultas.Should().Be(0);
@@ -420,7 +420,7 @@ public sealed class AuthorizationDecisionServiceTests
     private Task<AuthorizationDecision> Decidir(
         AuthorizationSubject sujeito,
         PermissionRequirement requisito,
-        ResourceContext? recurso = null,
+        ResourceContext? resource = null,
         IEnumerable<IPermissaoCheck>? checks = null,
         IInscricaoDoSujeitoNoProcesso? inscricoes = null)
     {
@@ -433,7 +433,7 @@ public sealed class AuthorizationDecisionServiceTests
         return servico.DecideAsync(
             sujeito,
             requisito,
-            recurso ?? Recurso(),
+            resource ?? Resource(),
             Requisicao(),
             CancellationToken.None);
     }

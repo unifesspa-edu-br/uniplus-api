@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 /// <remarks>
 /// <see cref="VerificacoesDeContexto"/> traz <b>somente</b> os checks
-/// contextuais adicionais (fase, estado do recurso, escopo de auditoria, base
+/// contextuais adicionais (fase, estado do resource, escopo de auditoria, base
 /// legal, equipe, atribuição documental, conformidade legal) — a seleção de
 /// grant, o multifator (<see cref="RequerMfa"/>) e a dupla aprovação
 /// (<see cref="RequerDuplaAprovacao"/>) são derivados pelo serviço de decisão,

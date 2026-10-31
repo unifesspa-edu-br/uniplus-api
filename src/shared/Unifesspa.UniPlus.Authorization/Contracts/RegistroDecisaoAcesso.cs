@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Evento do registro operacional restrito: o que fica gravado sobre <b>um uso</b>
-/// de permissão — ator, instante, origem, permissão exigida, recurso alvo,
+/// de permissão — ator, instante, origem, permissão exigida, resource alvo,
 /// resultado e, conforme o caso, o motivo da negativa ou a concessão que
 /// autorizou (fonte, identificador, perfil e unidade) (CA-07 de <c>uniplus-api#1197</c>).
 /// </summary>
@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// <b>Não carrega identificador de token.</b> Nem <i>subject</i> nem <c>jti</c>
 /// entram no registro: são identificadores duráveis de pessoa e de sessão, e log
 /// não é lugar deles. A correlação com a requisição fica pelo
-/// <see cref="RequestId"/>. O recurso entra por metadados (tipo e identificadores
+/// <see cref="RequestId"/>. O resource entra por metadados (tipo e identificadores
 /// de escopo), nunca por conteúdo.
 /// </para>
 /// <para>
@@ -35,29 +35,29 @@ public sealed record RegistroDecisaoAcesso
     /// <summary>Código da permissão exigida.</summary>
     public string Permissao { get; }
 
-    /// <summary>Tipo do recurso alvo.</summary>
-    public string RecursoTipo { get; }
+    /// <summary>Tipo do resource alvo.</summary>
+    public string ResourceTipo { get; }
 
     /// <summary>
     /// Sensibilidade efetiva do dado alcançado, em valor canônico: a maior entre
-    /// a que a permissão classifica e a que o contexto do recurso declara — a
+    /// a que a permissão classifica e a que o contexto do resource declara — a
     /// mesma que decidiu a exigência de base legal. Registrar só a do contexto
     /// faria uma operação sensível constar como interna, e consultas de
     /// conformidade sobre o registro deixariam de encontrá-la.
     /// </summary>
     public string Sensibilidade { get; }
 
-    /// <summary>Unidade proprietária do recurso, quando o escopo se aplica.</summary>
+    /// <summary>Unidade proprietária do resource, quando o escopo se aplica.</summary>
     public Guid? UnidadeProprietariaId { get; }
 
-    /// <summary>Processo seletivo do recurso, quando o escopo se aplica.</summary>
+    /// <summary>Processo seletivo do resource, quando o escopo se aplica.</summary>
     public Guid? ProcessoId { get; }
 
-    /// <summary>Chamada do recurso, quando o escopo se aplica.</summary>
+    /// <summary>Chamada do resource, quando o escopo se aplica.</summary>
     public Guid? ChamadaId { get; }
 
     /// <summary>Registro alvo da operação (por exemplo, a inscrição), quando a decisão recai sobre um único registro.</summary>
-    public Guid? RecursoId { get; }
+    public Guid? ResourceId { get; }
 
     /// <summary>Canal pelo qual a requisição chegou, em valor canônico.</summary>
     public string Origem { get; }
@@ -84,12 +84,12 @@ public sealed record RegistroDecisaoAcesso
         DateTimeOffset instante,
         string requestId,
         string permissao,
-        string recursoTipo,
+        string resourceTipo,
         string sensibilidade,
         Guid? unidadeProprietariaId,
         Guid? processoId,
         Guid? chamadaId,
-        Guid? recursoId,
+        Guid? resourceId,
         string origem,
         bool permitido,
         string? motivoNegativa,
@@ -101,12 +101,12 @@ public sealed record RegistroDecisaoAcesso
         Instante = instante;
         RequestId = requestId;
         Permissao = permissao;
-        RecursoTipo = recursoTipo;
+        ResourceTipo = resourceTipo;
         Sensibilidade = sensibilidade;
         UnidadeProprietariaId = unidadeProprietariaId;
         ProcessoId = processoId;
         ChamadaId = chamadaId;
-        RecursoId = recursoId;
+        ResourceId = resourceId;
         Origem = origem;
         Permitido = permitido;
         MotivoNegativa = motivoNegativa;
@@ -139,12 +139,12 @@ public sealed record RegistroDecisaoAcesso
             request.DataAcesso,
             request.RequestId,
             requirement.Permissao,
-            resource.RecursoTipo,
+            resource.ResourceTipo,
             ValoresCanonicos.De(MaisRestritiva(requirement.Sensibilidade, resource.Sensibilidade)),
             resource.UnidadeProprietariaId,
             resource.ProcessoId,
             resource.ChamadaId,
-            resource.RecursoId,
+            resource.ResourceId,
             ValoresCanonicos.De(request.Origem),
             decision.Allowed,
             decision.DenyReason is { } motivo ? ValoresCanonicos.De(motivo.Codigo) : null,

@@ -17,7 +17,7 @@ public interface IPermissaoCheck
     /// </summary>
     string Nome { get; }
 
-    /// <summary>Executa a verificação sobre o sujeito, o recurso e o contexto da requisição.</summary>
+    /// <summary>Executa a verificação sobre o sujeito, o resource e o contexto da requisição.</summary>
     Task<CheckResult> CheckAsync(
         AuthorizationSubject subject,
         PermissionRequirement requirement,

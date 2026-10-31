@@ -32,8 +32,6 @@ using Unifesspa.UniPlus.Kernel.Results;
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class TiposDeficienciaController : ControllerBase
 {
-    private const string RecursoTipo = "TiposDeficiencia";
-
     private const string ResourceTag = "tipos-deficiencia";
 
     private readonly ICommandBus _commandBus;
@@ -108,7 +106,7 @@ public sealed class TiposDeficienciaController : ControllerBase
 
     /// <summary>Cria um novo tipo de deficiência. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/tipos-deficiencia")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposDeficienciaManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposDeficienciaManter, ResourceTipo = ResourceTiposConfiguracao.TipoDeficiencia)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -139,7 +137,7 @@ public sealed class TiposDeficienciaController : ControllerBase
 
     /// <summary>Atualiza um tipo de deficiência existente. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/tipos-deficiencia/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposDeficienciaManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposDeficienciaManter, ResourceTipo = ResourceTiposConfiguracao.TipoDeficiencia)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -174,7 +172,7 @@ public sealed class TiposDeficienciaController : ControllerBase
 
     /// <summary>Remove (soft-delete) um tipo de deficiência. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/tipos-deficiencia/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposDeficienciaManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposDeficienciaManter, ResourceTipo = ResourceTiposConfiguracao.TipoDeficiencia)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

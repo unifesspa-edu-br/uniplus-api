@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Authorization.ValueObjects;
 
+using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Enums;
 using Unifesspa.UniPlus.Authorization.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -8,7 +9,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Concessão efetiva avaliada pela decisão de autorização (ADR-0078): uma
 /// permissão que o sujeito de fato possui, com sua origem rastreável
 /// (<see cref="Fonte"/>), escopo (a unidade ou a instituição, mais processo e
-/// chamada opcionais), eventual restrição por tipo de recurso e validade.
+/// chamada opcionais), eventual restrição por tipo de resource e validade.
 /// Concessões resolvidas por vínculo de grupo ou excepcionais são sempre
 /// temporárias e exigem <see cref="ValidoAte"/>; a concessão de perfil
 /// (<see cref="FonteGrant.Concessao"/>) tem validade opcional.
@@ -27,7 +28,7 @@ public sealed record EffectiveGrant
     /// <summary>Escopo por unidade organizacional; nulo quando o escopo é a instituição.</summary>
     public Guid? EscopoUnidadeId { get; }
 
-    /// <summary>O escopo é a instituição: a concessão alcança só os recursos sem unidade proprietária.</summary>
+    /// <summary>O escopo é a instituição: a concessão alcança só os resources sem unidade proprietária.</summary>
     public bool EscopoInstitucional { get; }
 
     /// <summary>Perfil de acesso que reuniu a permissão, quando a concessão é de perfil. Opcional.</summary>
@@ -39,8 +40,8 @@ public sealed record EffectiveGrant
     /// <summary>Escopo por chamada. Opcional.</summary>
     public Guid? EscopoChamadaId { get; }
 
-    /// <summary>Restrição da concessão a um tipo de recurso específico. Opcional.</summary>
-    public string? RecursoTipoRestricao { get; }
+    /// <summary>Restrição da concessão a um tipo de resource específico. Opcional.</summary>
+    public string? ResourceTipoRestricao { get; }
 
     /// <summary>Validade da concessão. Obrigatória para vínculo de grupo e concessão excepcional; opcional para a concessão de perfil.</summary>
     public DateTimeOffset? ValidoAte { get; }
@@ -55,7 +56,7 @@ public sealed record EffectiveGrant
         Guid? escopoUnidadeId,
         Guid? escopoProcessoId,
         Guid? escopoChamadaId,
-        string? recursoTipoRestricao,
+        string? resourceTipoRestricao,
         DateTimeOffset? validoAte,
         UsuarioRef? concedidoPor,
         bool escopoInstitucional,
@@ -67,7 +68,7 @@ public sealed record EffectiveGrant
         EscopoUnidadeId = escopoUnidadeId;
         EscopoProcessoId = escopoProcessoId;
         EscopoChamadaId = escopoChamadaId;
-        RecursoTipoRestricao = recursoTipoRestricao;
+        ResourceTipoRestricao = resourceTipoRestricao;
         ValidoAte = validoAte;
         ConcedidoPor = concedidoPor;
         EscopoInstitucional = escopoInstitucional;
@@ -78,7 +79,7 @@ public sealed record EffectiveGrant
     /// Constrói uma <see cref="EffectiveGrant"/> validada. Rejeita código de
     /// permissão vazio e concessão resolvida por vínculo de grupo ou excepcional
     /// sem <paramref name="validoAte"/>. A concessão excepcional exige ao menos um
-    /// escopo — unidade, processo, chamada ou tipo de recurso (ADR-0084). A
+    /// escopo — unidade, processo, chamada ou tipo de resource (ADR-0084). A
     /// concessão de perfil (<see cref="FonteGrant.Concessao"/>) tem a unidade ou a
     /// instituição como escopo — nunca nenhuma das duas, que seria uma permissão
     /// global, nem as duas ao mesmo tempo.
@@ -90,7 +91,7 @@ public sealed record EffectiveGrant
         Guid? escopoUnidadeId = null,
         Guid? escopoProcessoId = null,
         Guid? escopoChamadaId = null,
-        string? recursoTipoRestricao = null,
+        string? resourceTipoRestricao = null,
         DateTimeOffset? validoAte = null,
         UsuarioRef? concedidoPor = null,
         bool escopoInstitucional = false,
@@ -119,6 +120,13 @@ public sealed record EffectiveGrant
                 "Escopo informado não pode ser Guid.Empty — use um identificador real ou nulo."));
         }
 
+        if (!string.IsNullOrWhiteSpace(resourceTipoRestricao) && !ResourceTipos.SegueAConvencao(resourceTipoRestricao))
+        {
+            return Result<EffectiveGrant>.Failure(new DomainError(
+                AuthorizationErrorCodes.EffectiveGrantResourceTipoRestricaoInvalido,
+                "A restrição por tipo de resource deve estar em kebab-case, em minúsculas, sem acento (ex.: tipo-documento)."));
+        }
+
         if (fonte is FonteGrant.OidcGroupBinding or FonteGrant.PermissaoExcecional && validoAte is null)
         {
             return Result<EffectiveGrant>.Failure(new DomainError(
@@ -130,11 +138,11 @@ public sealed record EffectiveGrant
             && escopoUnidadeId is null
             && escopoProcessoId is null
             && escopoChamadaId is null
-            && string.IsNullOrWhiteSpace(recursoTipoRestricao))
+            && string.IsNullOrWhiteSpace(resourceTipoRestricao))
         {
             return Result<EffectiveGrant>.Failure(new DomainError(
                 AuthorizationErrorCodes.EffectiveGrantEscopoExcepcionalObrigatorio,
-                "Concessão excepcional exige ao menos um escopo (unidade, processo, chamada ou tipo de recurso)."));
+                "Concessão excepcional exige ao menos um escopo (unidade, processo, chamada ou tipo de resource)."));
         }
 
         if (fonte is FonteGrant.Concessao)
@@ -161,7 +169,7 @@ public sealed record EffectiveGrant
             escopoUnidadeId,
             escopoProcessoId,
             escopoChamadaId,
-            recursoTipoRestricao,
+            resourceTipoRestricao,
             validoAte,
             concedidoPor,
             escopoInstitucional,

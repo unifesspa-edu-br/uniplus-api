@@ -37,8 +37,6 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class UnidadesController : ControllerBase
 {
-    private const string RecursoTipo = "Unidades";
-
     private const string ResourceTag = "unidades";
 
     /// <summary>Limite defensivo de comprimento do termo de busca (cobre o Nome máximo + margem).</summary>
@@ -188,7 +186,7 @@ public sealed class UnidadesController : ControllerBase
     /// Idempotency-Key obrigatório (ADR-0027).
     /// </summary>
     [HttpPost("admin/unidades")]
-    [ExigePermissao<PermissaoOrganizacao>(PermissaoOrganizacao.UnidadesManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoOrganizacao>(PermissaoOrganizacao.UnidadesManter, ResourceTipo = ResourceTiposOrganizacao.Unidade)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -222,7 +220,7 @@ public sealed class UnidadesController : ControllerBase
     /// manutenção.
     /// </summary>
     [HttpPut("admin/unidades/{id:guid}")]
-    [ExigePermissao<PermissaoOrganizacao>(PermissaoOrganizacao.UnidadesManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoOrganizacao>(PermissaoOrganizacao.UnidadesManter, ResourceTipo = ResourceTiposOrganizacao.Unidade)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -260,7 +258,7 @@ public sealed class UnidadesController : ControllerBase
     /// manutenção.
     /// </summary>
     [HttpDelete("admin/unidades/{id:guid}")]
-    [ExigePermissao<PermissaoOrganizacao>(PermissaoOrganizacao.UnidadesManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoOrganizacao>(PermissaoOrganizacao.UnidadesManter, ResourceTipo = ResourceTiposOrganizacao.Unidade)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

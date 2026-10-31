@@ -66,7 +66,7 @@ public static class CriarProcessoSeletivoCommandHandler
         ResultadoDoAcesso acesso = await AcessoAoProcesso
             .VerificarNaUnidadeAsync(
                 verificador, command.UnidadeAdministradoraOrigemId, processoId: null, PermissaoSelecao.ProcessosConfigurar,
-                AcessoAoProcesso.RecursoProcesso, sensibilidadeDoRecurso: null, cancellationToken)
+                ResourceTiposSelecao.ProcessoSeletivo, sensibilidadeDoResource: null, cancellationToken)
             .ConfigureAwait(false);
         if (acesso != ResultadoDoAcesso.Permitido)
         {

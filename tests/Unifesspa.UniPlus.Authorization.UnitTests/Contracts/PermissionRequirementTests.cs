@@ -40,7 +40,7 @@ public sealed class PermissionRequirementTests
             requerMfa: true,
             requerDuplaAprovacao: true,
             escopoContextoObrigatorio: ["processoId"],
-            verificacoesDeContexto: ["fase_aberta", "estado_recurso_compativel"]);
+            verificacoesDeContexto: ["fase_aberta", "estado_resource_compativel"]);
 
         resultado.IsSuccess.Should().BeTrue();
         PermissionRequirement req = resultado.Value!;
@@ -50,7 +50,7 @@ public sealed class PermissionRequirementTests
         req.RequerMfa.Should().BeTrue();
         req.RequerDuplaAprovacao.Should().BeTrue();
         req.EscopoContextoObrigatorio.Should().ContainSingle().Which.Should().Be("processoId");
-        req.VerificacoesDeContexto.Should().Equal("fase_aberta", "estado_recurso_compativel");
+        req.VerificacoesDeContexto.Should().Equal("fase_aberta", "estado_resource_compativel");
     }
 
     [Fact]

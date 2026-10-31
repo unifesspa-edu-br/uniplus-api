@@ -63,7 +63,7 @@ public sealed class NotasDoEnemController : ControllerBase
     /// importação do retorno. Sem o filtro <c>tipo</c> (<c>Envio</c> ou <c>Retorno</c>), devolve os dois tipos.
     /// </summary>
     [HttpGet("leiautes-de-arquivo-do-inep")]
-    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.LeiautesInepConsultar, RecursoTipo = "LeiauteDoInep")]
+    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.LeiautesInepConsultar, ResourceTipo = ResourceTiposSelecao.LeiauteInep)]
     [VendorMediaType(Resource = "leiaute-de-arquivo-do-inep", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<LeiauteDoInepDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

@@ -192,7 +192,7 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
 
     private IReadOnlyList<RegistroDecisaoAcesso> DecisoesDoDocumento(Cenario cenario) =>
         [.. _fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>().Registrados
-            .Where(r => r.ProcessoId == cenario.ProcessoId && r.RecursoTipo == AcessoAoProcesso.RecursoDocumento)];
+            .Where(r => r.ProcessoId == cenario.ProcessoId && r.ResourceTipo == ResourceTiposSelecao.DocumentoDaInscricao)];
 
     [Fact(DisplayName = "Documento de inscrição em rascunho responde o mesmo 404, ainda que a pessoa tenha as duas permissões")]
     public async Task Documento_DeInscricaoEmRascunho_404()

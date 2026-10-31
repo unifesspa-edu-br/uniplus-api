@@ -33,8 +33,6 @@ using Unifesspa.UniPlus.Kernel.Results;
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class PrecedenciasFaseController : ControllerBase
 {
-    private const string RecursoTipo = "PrecedenciasFase";
-
     private const string ResourceTag = "precedencias-fase";
 
     private readonly ICommandBus _commandBus;
@@ -109,7 +107,7 @@ public sealed class PrecedenciasFaseController : ControllerBase
 
     /// <summary>Cria uma nova aresta de precedência. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/precedencias-fase")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.PrecedenciasFaseManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.PrecedenciasFaseManter, ResourceTipo = ResourceTiposConfiguracao.PrecedenciaFase)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -139,7 +137,7 @@ public sealed class PrecedenciasFaseController : ControllerBase
 
     /// <summary>Atualiza a permissão de sobreposição de uma aresta existente. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/precedencias-fase/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.PrecedenciasFaseManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.PrecedenciasFaseManter, ResourceTipo = ResourceTiposConfiguracao.PrecedenciaFase)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -173,7 +171,7 @@ public sealed class PrecedenciasFaseController : ControllerBase
 
     /// <summary>Remove (soft-delete) uma aresta de precedência. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/precedencias-fase/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.PrecedenciasFaseManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.PrecedenciasFaseManter, ResourceTipo = ResourceTiposConfiguracao.PrecedenciaFase)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

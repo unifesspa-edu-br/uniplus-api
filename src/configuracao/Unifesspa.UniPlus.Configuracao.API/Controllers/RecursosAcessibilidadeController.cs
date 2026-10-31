@@ -32,8 +32,6 @@ using Unifesspa.UniPlus.Kernel.Results;
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class RecursosAcessibilidadeController : ControllerBase
 {
-    private const string RecursoTipo = "RecursosAcessibilidade";
-
     private const string ResourceTag = "recursos-acessibilidade";
 
     private readonly ICommandBus _commandBus;
@@ -108,7 +106,7 @@ public sealed class RecursosAcessibilidadeController : ControllerBase
 
     /// <summary>Cria um novo recurso de acessibilidade. Exige a permissão de manutenção. Idempotency-Key obrigatório (ADR-0027).</summary>
     [HttpPost("admin/recursos-acessibilidade")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.RecursosAcessibilidadeManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.RecursosAcessibilidadeManter, ResourceTipo = ResourceTiposConfiguracao.RecursoAcessibilidade)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -139,7 +137,7 @@ public sealed class RecursosAcessibilidadeController : ControllerBase
 
     /// <summary>Atualiza um recurso de acessibilidade existente. Exige a permissão de manutenção.</summary>
     [HttpPut("admin/recursos-acessibilidade/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.RecursosAcessibilidadeManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.RecursosAcessibilidadeManter, ResourceTipo = ResourceTiposConfiguracao.RecursoAcessibilidade)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -174,7 +172,7 @@ public sealed class RecursosAcessibilidadeController : ControllerBase
 
     /// <summary>Remove (soft-delete) um recurso de acessibilidade. Exige a permissão de manutenção.</summary>
     [HttpDelete("admin/recursos-acessibilidade/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.RecursosAcessibilidadeManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.RecursosAcessibilidadeManter, ResourceTipo = ResourceTiposConfiguracao.RecursoAcessibilidade)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

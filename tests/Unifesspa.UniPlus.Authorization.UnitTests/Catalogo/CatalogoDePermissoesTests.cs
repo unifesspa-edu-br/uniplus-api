@@ -21,7 +21,7 @@ public sealed class CatalogoDePermissoesTests
         definicao.Codigo.Should().Be("teste:itens:manter");
         definicao.Nome.Should().Be("Manter itens");
         definicao.Descricao.Should().Be("Cria e edita itens.");
-        (definicao.Modulo, definicao.Recurso, definicao.Acao).Should().Be(("teste", "itens", "manter"));
+        (definicao.Modulo, definicao.Resource, definicao.Acao).Should().Be(("teste", "itens", "manter"));
         definicao.Requisito.Permissao.Should().Be("teste:itens:manter");
         definicao.Requisito.Sensibilidade.Should().Be(ClassificacaoDeProtecao.Pessoal);
         definicao.Requisito.BaseLegalPadrao.Should().Be("LGPD art. 7º, III");
@@ -78,6 +78,10 @@ public sealed class CatalogoDePermissoesTests
     public void Todas_CodigoForaDoFormato_Falha() =>
         Falha<CodigoMalFormado>().Should().ContainSingle(p => p.Contains("CodigoMalFormado.Maiusculo"));
 
+    [Fact(DisplayName = "Código com quebra de linha no fim derruba o catálogo")]
+    public void Todas_CodigoComQuebraDeLinhaNoFim_Falha() =>
+        Falha<CodigoComQuebraDeLinha>().Should().ContainSingle(p => p.Contains("CodigoComQuebraDeLinha.Quebra"));
+
     [Fact(DisplayName = "Campo de contexto que a decisão não verifica derruba o catálogo")]
     public void Todas_ContextoDesconhecido_Falha() =>
         Falha<ContextoDesconhecido>().Should().ContainSingle(p => p.Contains("ContextoDesconhecido.Item") && p.Contains("campoInexistente"));
@@ -95,7 +99,7 @@ public sealed class CatalogoDePermissoesTests
             .Which.Problemas.Should().Contain(p => p.Contains("OutroEnumComOMesmoCodigo") && p.Contains("teste:itens:manter"));
     }
 
-    [Fact(DisplayName = "A aplicação ordena por módulo, recurso e ação e busca por código")]
+    [Fact(DisplayName = "A aplicação ordena por módulo, resource e ação e busca por código")]
     public void Aplicacao_OrdenaEBuscaPorCodigo()
     {
         CatalogoDaAplicacao catalogo = new([new FonteFalsa(typeof(Valido), CatalogoDePermissoes<Valido>.Todas())]);
@@ -186,6 +190,13 @@ public sealed class CatalogoDePermissoesTests
     {
         [Permissao("teste:Itens:manter", "Maiúsculo", "d", ClassificacaoDeProtecao.Interno)]
         Maiusculo = 1,
+    }
+
+    [ModuloDePermissoes("teste")]
+    private enum CodigoComQuebraDeLinha
+    {
+        [Permissao("teste:itens:manter\n", "Quebra", "d", ClassificacaoDeProtecao.Interno)]
+        Quebra = 1,
     }
 
     [ModuloDePermissoes("teste")]

@@ -50,12 +50,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 public sealed class MotivosDecisaoIsencaoController : ControllerBase
 {
     private const string ResourceTag = "motivos-decisao-isencao";
-    /// <summary>
-    /// Tipo de recurso que a decisão de acesso enxerga. A restrição de tipo de uma
-    /// concessão é comparada por igualdade exata (<c>GrantEfetivoAplicavelCheck</c>),
-    /// então este valor é o contrato com quem restringe uma concessão por tipo.
-    /// </summary>
-    private const string RecursoTipo = "MotivoDecisaoIsencao";
 
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
@@ -170,7 +164,7 @@ public sealed class MotivosDecisaoIsencaoController : ControllerBase
     /// <c>Idempotency-Key</c> obrigatório (ADR-0027).
     /// </summary>
     [HttpPost("admin/motivos-decisao-isencao")]
-    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.MotivosDecisaoIsencaoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.MotivosDecisaoIsencaoManter, ResourceTipo = ResourceTiposSelecao.MotivoDecisaoIsencao)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -196,7 +190,7 @@ public sealed class MotivosDecisaoIsencaoController : ControllerBase
     /// não são editáveis (UNI-REQ-0121). <c>Idempotency-Key</c> obrigatório.
     /// </summary>
     [HttpPut("admin/motivos-decisao-isencao/{id:guid}")]
-    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.MotivosDecisaoIsencaoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.MotivosDecisaoIsencaoManter, ResourceTipo = ResourceTiposSelecao.MotivoDecisaoIsencao)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -227,7 +221,7 @@ public sealed class MotivosDecisaoIsencaoController : ControllerBase
 
     /// <summary>Reativa um motivo, devolvendo-o às novas publicações.</summary>
     [HttpPost("admin/motivos-decisao-isencao/{id:guid}/ativacao")]
-    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.MotivosDecisaoIsencaoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.MotivosDecisaoIsencaoManter, ResourceTipo = ResourceTiposSelecao.MotivoDecisaoIsencao)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -249,7 +243,7 @@ public sealed class MotivosDecisaoIsencaoController : ControllerBase
     /// inclusive nas decisões já proferidas.
     /// </summary>
     [HttpDelete("admin/motivos-decisao-isencao/{id:guid}/ativacao")]
-    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.MotivosDecisaoIsencaoManter, RecursoTipo = RecursoTipo)]
+    [ExigePermissao<PermissaoSelecao>(PermissaoSelecao.MotivosDecisaoIsencaoManter, ResourceTipo = ResourceTiposSelecao.MotivoDecisaoIsencao)]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

@@ -12,7 +12,7 @@ public static class PermissaoPublicacoesExtensions
 {
     extension(PermissaoPublicacoes permissao)
     {
-        /// <summary>Código <c>{módulo}:{recurso}:{ação}</c>.</summary>
+        /// <summary>Código <c>{módulo}:{resource}:{ação}</c>.</summary>
         public string Codigo => permissao.Definicao().Codigo;
 
         /// <summary>Nome legível.</summary>
@@ -24,8 +24,8 @@ public static class PermissaoPublicacoesExtensions
         /// <summary>Módulo dono.</summary>
         public string Modulo => permissao.Definicao().Modulo;
 
-        /// <summary>Recurso sobre o qual a permissão age.</summary>
-        public string Recurso => permissao.Definicao().Recurso;
+        /// <summary>Resource sobre o qual a permissão age.</summary>
+        public string Resource => permissao.Definicao().Resource;
 
         /// <summary>Ação que a permissão autoriza.</summary>
         public string Acao => permissao.Definicao().Acao;
