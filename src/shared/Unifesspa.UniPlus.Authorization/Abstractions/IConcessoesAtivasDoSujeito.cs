@@ -13,7 +13,8 @@ public interface IConcessoesAtivasDoSujeito
     /// <summary>
     /// Lista as concessões não revogadas da pessoa, inclusive as de vigência vencida, com as
     /// permissões do perfil de cada uma. Lê o estado atual a cada requisição, sem cache entre
-    /// requisições: a revogação vale na requisição seguinte.
+    /// requisições: a revogação vale na requisição seguinte. A lista vem pela data da concessão,
+    /// da mais antiga para a mais recente, e quem a reordena preserva essa ordem no empate.
     /// </summary>
     Task<IReadOnlyList<ConcessaoAtiva>> ListarAsync(UsuarioRef pessoa, CancellationToken cancellationToken);
 }
