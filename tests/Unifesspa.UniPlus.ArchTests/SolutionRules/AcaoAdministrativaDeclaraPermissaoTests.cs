@@ -11,7 +11,9 @@ using Unifesspa.UniPlus.ArchTests.TestSupport;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.API.Controllers;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.Revisoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Pedidos;
+using Unifesspa.UniPlus.Autorizacao.Application.Queries.Revisoes;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Selecao.API.Authorization;
 using Unifesspa.UniPlus.Selecao.API.Controllers;
@@ -48,6 +50,13 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
         [Acao(typeof(PedidosDeConcessaoController), nameof(PedidosDeConcessaoController.LerAnexo))] = typeof(LerAnexoDoPedidoCommand),
         [Acao(typeof(PedidosDeConcessaoController), nameof(PedidosDeConcessaoController.Aprovar))] = typeof(AprovarPedidoDeConcessaoCommand),
         [Acao(typeof(PedidosDeConcessaoController), nameof(PedidosDeConcessaoController.Recusar))] = typeof(RecusarPedidoDeConcessaoCommand),
+        // A revisão dos acessos: a permissão que vale depende da governança que decide o item, e a leitura é de quem
+        // conduz a revisão ou de quem revê os acessos da proteção de dados.
+        [Acao(typeof(RevisoesDeAcessosController), nameof(RevisoesDeAcessosController.Abrir))] = typeof(AbrirRevisaoDeAcessosCommand),
+        [Acao(typeof(RevisoesDeAcessosController), nameof(RevisoesDeAcessosController.Listar))] = typeof(ListarRevisoesQuery),
+        [Acao(typeof(RevisoesDeAcessosController), nameof(RevisoesDeAcessosController.Obter))] = typeof(ObterRevisaoQuery),
+        [Acao(typeof(RevisoesDeAcessosController), nameof(RevisoesDeAcessosController.Confirmar))] = typeof(ConfirmarItemDaRevisaoCommand),
+        [Acao(typeof(RevisoesDeAcessosController), nameof(RevisoesDeAcessosController.Revogar))] = typeof(RevogarItemDaRevisaoCommand),
     };
 
     /// <summary>

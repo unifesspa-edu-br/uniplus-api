@@ -51,6 +51,7 @@ internal static class DoublesDeAvisos
             Task.FromResult<IReadOnlyList<TitularComEmail>>([]);
 
         public Task<Concessao?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+        public Task<Concessao?> ObterParaAlterarAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<IReadOnlyList<Concessao>> ObterTodosAsync(CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task AdicionarAsync(Concessao entity, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public void Atualizar(Concessao entity) => throw new InvalidOperationException();

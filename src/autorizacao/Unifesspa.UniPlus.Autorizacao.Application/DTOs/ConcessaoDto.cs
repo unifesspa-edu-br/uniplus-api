@@ -28,7 +28,7 @@ public sealed record EscopoDto(string Tipo, Guid? UnidadeId);
 public sealed record OrigemDto(string Tipo, Guid Id);
 
 /// <summary>Evento da trilha de uma concessão, em ordem cronológica.</summary>
-/// <param name="Tipo"><c>concedida</c> ou <c>revogada</c>; as origens acrescentam os seus.</param>
+/// <param name="Tipo"><c>concedida</c>, <c>revogada</c>, <c>revisao_confirmada</c> ou <c>revisao_revogada</c>; as origens acrescentam os seus.</param>
 public sealed record EventoDaTrilhaDto(string Tipo, DateTimeOffset Instante, IdentidadeDto Autor, string? Detalhe);
 
 /// <summary>Corpo do <c>POST /api/autorizacao/concessoes/{id}/revogacao</c>.</summary>
