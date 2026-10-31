@@ -21,6 +21,8 @@ public static class PedidoMapping
             new PerfilResumoDto(p.PerfilId, perfilNome),
             Escopo(p),
             p.Justificativa,
+            p.ValidaAteSugerida,
+            p.ValidaAte,
             p.CriadoEm,
             p.EncerradoEm,
             p.ConcessaoId,

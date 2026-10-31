@@ -5,6 +5,7 @@ using System.Globalization;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
@@ -71,7 +72,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
 
         Result<PedidoDeConcessaoDto> resultado = await _commandBus
             .Send(
-                new CriarPedidoDeConcessaoCommand(request.BeneficiarioEmail, request.PerfilId, request.UnidadeId, request.Justificativa),
+                new CriarPedidoDeConcessaoCommand(request.BeneficiarioEmail, request.PerfilId, request.UnidadeId, request.Justificativa, request.ValidaAteSugerida),
                 cancellationToken)
             .ConfigureAwait(false);
 
@@ -307,7 +308,8 @@ public sealed class PedidosDeConcessaoController : ControllerBase
 
     /// <summary>
     /// Aprova a etapa que o pedido aguarda. A concessão nasce na última aprovação exigida. Ninguém decide pedido em
-    /// que é parte, e quem decidiu como gestor não decide na etapa de proteção de dados.
+    /// que é parte, e quem decidiu como gestor não decide na etapa de proteção de dados. O corpo é opcional: o gestor
+    /// informa nele o fim da vigência da concessão (<c>validaAte</c>); sem corpo, a concessão não tem prazo.
     /// </summary>
     [HttpPost("pedidos-de-concessao/{id:guid}/aprovacoes")]
     [RequiresIdempotencyKey]
@@ -317,10 +319,13 @@ public sealed class PedidosDeConcessaoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Aprovar(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Aprovar(
+        Guid id,
+        [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] AprovarPedidoDeConcessaoRequest? request,
+        CancellationToken cancellationToken)
     {
         Result<PedidoDeConcessaoDto> resultado = await _commandBus
-            .Send(new AprovarPedidoDeConcessaoCommand(id), cancellationToken)
+            .Send(new AprovarPedidoDeConcessaoCommand(id, request?.ValidaAte), cancellationToken)
             .ConfigureAwait(false);
 
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);

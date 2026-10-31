@@ -74,6 +74,12 @@ public sealed class PedidoDeConcessao : EntityBase
 
     public SituacaoDoPedido Situacao { get; private set; }
 
+    /// <summary>O fim de vigência que o solicitante sugere ao gestor; nulo, sem sugestão. Só informa: quem define é o gestor.</summary>
+    public DateTimeOffset? ValidaAteSugerida { get; private set; }
+
+    /// <summary>O fim de vigência que o gestor definiu ao aprovar e que a concessão herda; nulo, sem prazo.</summary>
+    public DateTimeOffset? ValidaAte { get; private set; }
+
     public DateTimeOffset CriadoEm { get; private set; }
 
     public DateTimeOffset? EncerradoEm { get; private set; }
@@ -118,6 +124,7 @@ public sealed class PedidoDeConcessao : EntityBase
     /// índice único, traduzido por quem grava; que a unidade exista é do handler.
     /// </summary>
     /// <param name="solicitante">Quem pede, como o token o traz.</param>
+    /// <param name="validaAteSugerida">Fim de vigência que o solicitante sugere; o perfil de governança não admite prazo.</param>
     /// <param name="emailDoBeneficiario">E-mail institucional do beneficiário; ausente, ou igual ao e-mail verificado do solicitante, o pedido é para si mesmo.</param>
     public static Result<PedidoDeConcessao> Criar(
         PessoaNoToken solicitante,
@@ -127,7 +134,8 @@ public sealed class PedidoDeConcessao : EntityBase
         string? justificativa,
         IDominiosInstitucionais dominios,
         ICatalogoDePermissoesConsultavel catalogo,
-        DateTimeOffset instante)
+        DateTimeOffset instante,
+        DateTimeOffset? validaAteSugerida = null)
     {
         ArgumentNullException.ThrowIfNull(solicitante);
         ArgumentNullException.ThrowIfNull(catalogo);
@@ -165,6 +173,8 @@ public sealed class PedidoDeConcessao : EntityBase
                 $"A justificativa é obrigatória e deve ter entre {JustificativaMinLength} e {JustificativaMaxLength} caracteres.")));
         }
 
+        ConferirValidade(validaAteSugerida, perfil.Governanca is not null, instante, "validaAteSugerida", erros);
+
         (string? email, bool paraSiMesmo) = ResolverBeneficiario(solicitante, emailDoBeneficiario, dominios, erros);
 
         if (erros.Count > 0)
@@ -181,6 +191,7 @@ public sealed class PedidoDeConcessao : EntityBase
             PerfilId = perfil.Id,
             UnidadeId = escopo.UnidadeId,
             Justificativa = justificativaNormalizada!,
+            ValidaAteSugerida = validaAteSugerida?.ToUniversalTime(),
             Situacao = perfil.Governanca is not null
                 ? SituacaoDoPedido.AguardandoDocumento
                 : EtapaSeguinteAoDocumento(paraSiMesmo),
@@ -316,14 +327,22 @@ public sealed class PedidoDeConcessao : EntityBase
     /// tem o perfil de proteção de dados (ADR-0152); a decisão do gestor registra a dispensa e o motivo.
     /// </summary>
     /// <remarks>
-    /// O perfil que mudou entre as etapas devolve o pedido ao gestor e responde <see cref="PedidoErrorCodes.PerfilAlterado"/>:
-    /// o pedido muda de estado mesmo na falha, e quem chama precisa gravá-lo.
+    /// <para>
+    /// O fim da vigência é definido pelo gestor, na etapa dele; a proteção de dados não o informa e a concessão herda
+    /// o que o gestor gravou.
+    /// </para>
+    /// <para>
+    /// O perfil que mudou entre as etapas, ou o prazo que venceu antes da proteção de dados, devolve o pedido ao gestor e
+    /// responde <see cref="PedidoErrorCodes.PerfilAlterado"/> ou <see cref="PedidoErrorCodes.PrazoVencido"/>: o pedido
+    /// muda de estado mesmo na falha, e quem chama precisa gravá-lo.
+    /// </para>
     /// </remarks>
     public Result<DesfechoDaAprovacao> Aprovar(
         Identidade decisor,
         PerfilAvaliado perfil,
         ContextoDaAprovacao contexto,
-        DateTimeOffset instante)
+        DateTimeOffset instante,
+        DateTimeOffset? validaAte = null)
     {
         ArgumentNullException.ThrowIfNull(decisor);
         ArgumentNullException.ThrowIfNull(perfil);
@@ -344,6 +363,17 @@ public sealed class PedidoDeConcessao : EntityBase
                 "O perfil de acesso está desativado e não aceita aprovação.")));
         }
 
+        if (etapa == EtapaDoPedido.Gestor)
+        {
+            ConferirValidade(validaAte, perfil.Governanca is not null, instante, "validaAte", erros);
+        }
+        else if (validaAte is not null)
+        {
+            erros.Add(new("validaAte", new DomainError(
+                PedidoErrorCodes.ValidadeInvalida,
+                "O fim da vigência é definido pelo gestor de acessos, na etapa dele.")));
+        }
+
         if (erros.Count > 0)
         {
             return Result<DesfechoDaAprovacao>.ValidationFailure(erros);
@@ -356,9 +386,22 @@ public sealed class PedidoDeConcessao : EntityBase
             _decisoes.Add(DecisaoDoPedido.Registrar(
                 Id, etapa, decisor, ResultadoDaDecisao.PerfilAlterado, null, perfil, null, instante));
             Situacao = SituacaoDoPedido.AguardandoGestor;
+            ValidaAte = null;
             return Result<DesfechoDaAprovacao>.Failure(new DomainError(
                 PedidoErrorCodes.PerfilAlterado,
                 "O perfil mudou depois da aprovação do gestor; o pedido voltou a aguardar o gestor."));
+        }
+
+        if (etapa == EtapaDoPedido.ProtecaoDeDados && ValidaAte is { } fim && fim <= instante)
+        {
+            // Volta ao gestor porque só ele define o prazo; a tentativa fica registrada com quem a fez.
+            _decisoes.Add(DecisaoDoPedido.Registrar(
+                Id, etapa, decisor, ResultadoDaDecisao.PrazoVencido, null, perfil, null, instante));
+            Situacao = SituacaoDoPedido.AguardandoGestor;
+            ValidaAte = null;
+            return Result<DesfechoDaAprovacao>.Failure(new DomainError(
+                PedidoErrorCodes.PrazoVencido,
+                "O prazo definido pelo gestor venceu antes desta aprovação; o pedido voltou ao gestor para definir outro."));
         }
 
         string? dispensa = etapa == EtapaDoPedido.Gestor ? MotivoDaDispensa(perfil, contexto) : null;
@@ -366,6 +409,11 @@ public sealed class PedidoDeConcessao : EntityBase
 
         _decisoes.Add(DecisaoDoPedido.Registrar(
             Id, etapa, decisor, ResultadoDaDecisao.Aprovado, null, perfil, dispensa, instante));
+
+        if (etapa == EtapaDoPedido.Gestor)
+        {
+            ValidaAte = validaAte?.ToUniversalTime();
+        }
 
         if (concluido)
         {
@@ -420,6 +468,28 @@ public sealed class PedidoDeConcessao : EntityBase
         }
 
         ConcessaoId = concessaoId;
+    }
+
+    private static void ConferirValidade(
+        DateTimeOffset? data, bool governanca, DateTimeOffset instante, string campo, List<FieldError> erros)
+    {
+        if (data is null)
+        {
+            return;
+        }
+
+        if (governanca)
+        {
+            erros.Add(new(campo, new DomainError(
+                PedidoErrorCodes.ValidadeInvalida,
+                "Perfil de governança não admite concessão com prazo: gestor de acessos e proteção de dados não têm vigência limitada.")));
+        }
+        else if (data <= instante)
+        {
+            erros.Add(new(campo, new DomainError(
+                PedidoErrorCodes.ValidadeInvalida,
+                "O fim da vigência deve ser posterior ao instante atual.")));
+        }
     }
 
     // O pedido para si mesmo não tem aceite: o beneficiário já é conhecido e a decisão cabe ao gestor.

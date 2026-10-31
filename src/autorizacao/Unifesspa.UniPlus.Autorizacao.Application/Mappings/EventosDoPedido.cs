@@ -89,6 +89,16 @@ public sealed class EventosDoPedido : IEventosDaOrigem
                 continue;
             }
 
+            if (decisao.Resultado == ResultadoDaDecisao.PrazoVencido)
+            {
+                eventos.Add(new(
+                    "prazo_vencido_entre_etapas",
+                    decisao.Instante,
+                    decisor,
+                    $"Etapa: {decisao.Etapa.ToCodigo()}. O prazo definido pelo gestor venceu antes desta aprovação, e o pedido voltou a aguardá-lo."));
+                continue;
+            }
+
             string detalhe = $"Etapa: {decisao.Etapa.ToCodigo()}. Sensibilidade avaliada: {decisao.SensibilidadeAvaliada}."
                 + (decisao.Motivo is null ? string.Empty : $" Motivo: {decisao.Motivo}");
             eventos.Add(new(decisao.Resultado.ToCodigo(), decisao.Instante, decisor, detalhe));

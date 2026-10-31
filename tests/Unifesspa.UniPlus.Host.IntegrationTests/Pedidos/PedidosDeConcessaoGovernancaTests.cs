@@ -240,6 +240,32 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
         (await TiposDaTrilhaAsync(diogo, id)).Count(t => t == "perfil_alterado_entre_etapas").Should().Be(1);
     }
 
+    [Fact(DisplayName = "Prazo do gestor vencido antes da proteção de dados devolve o pedido ao gestor com 409 e deixa o evento na trilha")]
+    public async Task PrazoVencido_VoltaAoGestorERegistraNaTrilha()
+    {
+        await ResetarAsync();
+        Guid perfil = await SemearPerfilSensivelAsync();
+        Guid unidade = await SemearUnidadeAsync();
+        using HttpClient betina = Cliente(Betina);
+        using HttpClient leandro = Cliente(Leandro);
+        using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
+        using HttpClient marlene = await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados);
+        Guid id = await CriarAsync(betina, perfil, unidade, Leandro);
+        await EnviarAsync(leandro, HttpMethod.Post, $"{Rota}/{id}/aceite");
+        (await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes", new { validaAte = DateTimeOffset.UtcNow.AddDays(30) }))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+        await ExecutarSqlAsync("UPDATE autorizacao.pedidos_de_concessao SET valida_ate = now() - interval '1 day' WHERE id = {0}", id);
+
+        await ConferirRecusaAsync(
+            await EnviarAsync(marlene, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.Conflict, "prazo_vencido");
+
+        JsonElement pedido = await LerAsync(betina, $"{Rota}/{id}");
+        pedido.GetProperty("situacao").GetString().Should().Be("aguardando_gestor");
+        pedido.GetProperty("validaAte").ValueKind.Should().Be(JsonValueKind.Null);
+        (await TiposDaTrilhaAsync(diogo, id)).Should().Contain("prazo_vencido_entre_etapas");
+        (await ConcessoesAsync(Leandro, perfil)).Should().BeEmpty();
+    }
+
     [Fact(DisplayName = "Concessão igual vencida e não revogada é revogada pelo sistema e renovada pelo pedido, na mesma transação")]
     public async Task ConcessaoVencida_ERenovada()
     {

@@ -24,6 +24,8 @@ public sealed record AnexoDoPedidoDto(Guid Id, string Situacao, long TamanhoDecl
 
 /// <summary>Pedido de concessão como a API o expõe a quem pode vê-lo.</summary>
 /// <param name="EtapaAtual">Etapa que o pedido aguarda do aprovador (<c>gestor</c> ou <c>protecao_de_dados</c>); nula se não aguarda nenhum.</param>
+/// <param name="ValidaAteSugerida">Fim de vigência que o solicitante sugeriu; nulo, sem sugestão.</param>
+/// <param name="ValidaAte">Fim de vigência que o gestor definiu ao aprovar; nulo, sem prazo.</param>
 /// <param name="ConcessaoId">A concessão que a última aprovação gerou; nula até lá.</param>
 public sealed record PedidoDeConcessaoDto(
     Guid Id,
@@ -34,6 +36,8 @@ public sealed record PedidoDeConcessaoDto(
     PerfilResumoDto Perfil,
     EscopoDto Escopo,
     string Justificativa,
+    DateTimeOffset? ValidaAteSugerida,
+    DateTimeOffset? ValidaAte,
     DateTimeOffset CriadoEm,
     DateTimeOffset? EncerradoEm,
     Guid? ConcessaoId,
@@ -62,13 +66,19 @@ public sealed record LeituraDoAnexoDto(Uri Url, DateTimeOffset ExpiraEm);
 /// <summary>Corpo do <c>POST /api/autorizacao/pedidos-de-concessao</c>.</summary>
 /// <param name="BeneficiarioEmail">E-mail institucional do beneficiário; em branco, o pedido é para o próprio solicitante.</param>
 /// <param name="UnidadeId">Unidade do escopo; ausente só para o perfil de governança, de escopo institucional.</param>
-public sealed record CriarPedidoDeConcessaoRequest(string? BeneficiarioEmail, Guid PerfilId, Guid? UnidadeId, string? Justificativa);
+/// <param name="ValidaAteSugerida">Fim de vigência que o solicitante sugere ao gestor; opcional e não vale para o perfil de governança.</param>
+public sealed record CriarPedidoDeConcessaoRequest(
+    string? BeneficiarioEmail, Guid PerfilId, Guid? UnidadeId, string? Justificativa, DateTimeOffset? ValidaAteSugerida = null);
 
 /// <summary>Corpo do <c>POST /api/autorizacao/pedidos-de-concessao/{id}/anexos</c>.</summary>
 public sealed record EnviarAnexoDoPedidoRequest(long TamanhoDoPdf);
 
 /// <summary>Corpo da confirmação do anexo.</summary>
 public sealed record ConfirmarAnexoDoPedidoRequest(string? Etag);
+
+/// <summary>Corpo opcional do <c>POST /api/autorizacao/pedidos-de-concessao/{id}/aprovacoes</c>.</summary>
+/// <param name="ValidaAte">Fim da vigência da concessão, definido pelo gestor; só vale na etapa dele. Ausente, sem prazo.</param>
+public sealed record AprovarPedidoDeConcessaoRequest(DateTimeOffset? ValidaAte = null);
 
 /// <summary>Corpo do <c>POST /api/autorizacao/pedidos-de-concessao/{id}/recusa</c>.</summary>
 public sealed record RecusarPedidoDeConcessaoRequest(string? Motivo);

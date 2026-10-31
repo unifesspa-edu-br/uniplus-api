@@ -2594,6 +2594,46 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AprovarPedidoDeConcessaoRequest"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AprovarPedidoDeConcessaoRequest"
+                  }
+                ]
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AprovarPedidoDeConcessaoRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -3576,6 +3616,18 @@
           }
         }
       },
+      "AprovarPedidoDeConcessaoRequest": {
+        "type": "object",
+        "properties": {
+          "validaAte": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
       "AtualizarPerfilCommand": {
         "required": [
           "id",
@@ -3785,6 +3837,13 @@
               "null",
               "string"
             ]
+          },
+          "validaAteSugerida": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },
@@ -4158,6 +4217,8 @@
           "perfil",
           "escopo",
           "justificativa",
+          "validaAteSugerida",
+          "validaAte",
           "criadoEm",
           "encerradoEm",
           "concessaoId",
@@ -4193,6 +4254,20 @@
           },
           "justificativa": {
             "type": "string"
+          },
+          "validaAteSugerida": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "validaAte": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           },
           "criadoEm": {
             "type": "string",

@@ -73,6 +73,67 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         LerLog().Should().NotContain(Leandro.Email).And.NotContain(Betina.Email);
     }
 
+    [Fact(DisplayName = "O gestor define o fim da vigência ao aprovar, e a concessão nasce com ele; a sugestão do solicitante só informa")]
+    public async Task FimDeVigencia_DefinidoPeloGestor_VaiParaAConcessao()
+    {
+        await ResetarAsync();
+        Guid perfil = await SemearPerfilInternoAsync();
+        Guid unidade = await SemearUnidadeAsync();
+        using HttpClient betina = Cliente(Betina);
+        using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
+        DateTimeOffset sugerida = DateTimeOffset.UtcNow.AddMonths(6);
+        DateTimeOffset definida = DateTimeOffset.UtcNow.AddMonths(3);
+
+        using HttpResponseMessage criacao = await EnviarAsync(
+            betina, HttpMethod.Post, Rota, new { perfilId = perfil, unidadeId = unidade, justificativa = Justificativa, validaAteSugerida = sugerida });
+        JsonElement criado = await CorpoAsync(criacao, HttpStatusCode.Created);
+        criado.GetProperty("validaAteSugerida").GetDateTimeOffset().Should().BeCloseTo(sugerida, TimeSpan.FromSeconds(1));
+        Guid id = criado.GetProperty("id").GetGuid();
+
+        JsonElement aprovado = await CorpoAsync(
+            await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes", new { validaAte = definida }), HttpStatusCode.OK);
+
+        aprovado.GetProperty("validaAte").GetDateTimeOffset().Should().BeCloseTo(definida, TimeSpan.FromSeconds(1));
+        Concessao concessao = (await ConcessoesAsync(Betina, perfil)).Single();
+        concessao.ValidaAte.Should().BeCloseTo(definida, TimeSpan.FromSeconds(1));
+    }
+
+    [Fact(DisplayName = "Fim da vigência com offset diferente de UTC é aceito e a concessão guarda o mesmo instante")]
+    public async Task FimDeVigencia_ComOffset_GravaOMesmoInstante()
+    {
+        await ResetarAsync();
+        Guid perfil = await SemearPerfilInternoAsync();
+        Guid unidade = await SemearUnidadeAsync();
+        using HttpClient betina = Cliente(Betina);
+        using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
+        DateTimeOffset definida = DateTimeOffset.UtcNow.AddMonths(3).ToOffset(TimeSpan.FromHours(-3));
+        Guid id = await CriarAsync(betina, perfil, unidade, null);
+
+        using HttpResponseMessage resposta = await EnviarAsync(
+            diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes", new { validaAte = definida });
+
+        await CorpoAsync(resposta, HttpStatusCode.OK);
+        (await ConcessoesAsync(Betina, perfil)).Single().ValidaAte.Should().BeCloseTo(definida, TimeSpan.FromSeconds(1));
+    }
+
+    [Fact(DisplayName = "Fim da vigência que não é posterior ao instante recusa a aprovação com 422 e o pedido segue aguardando o gestor")]
+    public async Task FimDeVigencia_NoPassado_RecusaAAprovacao()
+    {
+        await ResetarAsync();
+        Guid perfil = await SemearPerfilInternoAsync();
+        Guid unidade = await SemearUnidadeAsync();
+        using HttpClient betina = Cliente(Betina);
+        using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
+        Guid id = await CriarAsync(betina, perfil, unidade, null);
+
+        await ConferirRecusaAsync(
+            await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes", new { validaAte = DateTimeOffset.UtcNow.AddDays(-1) }),
+            HttpStatusCode.UnprocessableEntity,
+            "validade_invalida");
+
+        (await SituacaoAsync(betina, id)).Should().Be("aguardando_gestor");
+    }
+
     [Fact(DisplayName = "Pedido de perfil sensível passa pelas duas aprovações, e a concessão só nasce na segunda")]
     public async Task PerfilSensivel_PassaPelasDuasEtapas()
     {
