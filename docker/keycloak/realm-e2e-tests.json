@@ -313,6 +313,23 @@
       ],
       "requiredActions": [],
       "realmRoles": []
+    },
+    {
+      "username": "sem-cpf",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Usuário",
+      "lastName": "Sem CPF",
+      "email": "sem-cpf@e2e.uniplus.local",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Changeme!123",
+          "temporary": false
+        }
+      ],
+      "requiredActions": [],
+      "realmRoles": []
     }
   ]
 }

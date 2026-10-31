@@ -64,6 +64,13 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
         Acao(typeof(PedidosDeConcessaoController), nameof(PedidosDeConcessaoController.Cancelar)),
     };
 
+    /// <summary>
+    /// Controllers do titular: toda action age sobre a inscrição de quem chama, que o handler resolve pelo CPF do
+    /// token; o que não é dele responde como o que não existe.
+    /// </summary>
+    private static readonly HashSet<string> DoTitular =
+        new([typeof(InscricoesController).FullName!, typeof(DocumentosDaInscricaoController).FullName!], StringComparer.Ordinal);
+
     [Fact(DisplayName = "Fitness_DecisaoDeNegocioPassaPeloPontoUnico")]
     public void Fitness_DecisaoDeNegocioPassaPeloPontoUnico()
     {
@@ -72,7 +79,7 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
         Sozinhas([typeof(FixturesDeAutorizacao.AcaoAdministrativaSemAtributo)])
             .Should().ContainSingle().Which.Should().Contain("Publicar");
         Sozinhas([typeof(FixturesDeAutorizacao.AcaoAdministrativaDecididaPeloPontoUnico)]).Should().BeEmpty();
-        Sozinhas([typeof(FixturesDeAutorizacao.PoliticaDeIdentidade)]).Should().BeEmpty("a ação do candidato é identificada pela política");
+        Sozinhas([typeof(FixturesDeAutorizacao.PoliticaDeIdentidade)]).Should().BeEmpty("a ação da instalação é identificada pela política");
 
         IReadOnlyList<Type> controllers = ControllersDaSolucao.Todos();
         HashSet<string> acoes = [.. controllers.SelectMany(static t => ControllersDaSolucao.AcoesDe(t).Select(a => Acao(t, a.Name)))];
@@ -92,8 +99,8 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
     private static List<string> Sozinhas(IEnumerable<Type> controllers)
         => [.. controllers.SelectMany(static t => ControllersDaSolucao.AcoesDe(t)
             .Select(a => (Acao: a, Nome: Acao(t, a.Name)))
-            .Where(a => !Anonima(t, a.Acao) && !PorPoliticaDeIdentidade(t, a.Acao) && !DeclaraDecisao(t, a.Acao)
-                && !DecididasNoHandler.ContainsKey(a.Nome) && !DePessoaAutenticada.Contains(a.Nome))
+            .Where(a => !DoTitular.Contains(t.FullName!) && !Anonima(t, a.Acao) && !PorPoliticaDeIdentidade(t, a.Acao)
+                && !DeclaraDecisao(t, a.Acao) && !DecididasNoHandler.ContainsKey(a.Nome) && !DePessoaAutenticada.Contains(a.Nome))
             .Select(static a => a.Nome))];
 
     /// <summary>Chave da action com o nome completo do controller: controller homônimo de outro módulo não herda a exceção.</summary>

@@ -38,6 +38,15 @@ public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationScheme
     /// </summary>
     public const string SemJtiHeader = "X-Test-Sem-Jti";
     public const string CpfHeader = "X-Test-Cpf";
+
+    /// <summary>
+    /// CPF do token quando o teste não informa outro: o da persona fictícia Isabella Figueiredo, do portal. O
+    /// provedor de identidade sempre entrega o CPF.
+    /// </summary>
+    public const string CpfPadrao = "54708076223";
+
+    /// <summary>Presente, omite o CPF do token, que a API recusa como não autenticado, como faz o JwtBearer.</summary>
+    public const string SemCpfHeader = "X-Test-Sem-Cpf";
     public const string NomeSocialHeader = "X-Test-Nome-Social";
 
     public TestAuthHandler(
@@ -83,11 +92,12 @@ public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationScheme
             claims.Add(new Claim("jti", $"jti-{Guid.NewGuid():N}"));
         }
 
-        string? cpf = GetOptionalHeaderValue(CpfHeader);
-        if (cpf is not null)
+        if (GetOptionalHeaderValue(SemCpfHeader) is not null)
         {
-            claims.Add(new Claim("cpf", cpf));
+            return Task.FromResult(AuthenticateResult.Fail("O token não traz o CPF da pessoa."));
         }
+
+        claims.Add(new Claim("cpf", GetHeaderValue(CpfHeader, CpfPadrao)));
 
         string? nomeSocial = GetOptionalHeaderValue(NomeSocialHeader);
         if (nomeSocial is not null)

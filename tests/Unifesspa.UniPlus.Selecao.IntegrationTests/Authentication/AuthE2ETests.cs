@@ -87,6 +87,17 @@ public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
     }
 
     [Fact]
+    public async Task GetProfileMe_ShouldReturnUnauthorized_WhenTokenHasNoCpf()
+    {
+        string accessToken = await _keycloak.RequestAccessTokenAsync(KeycloakTestUsers.SemCpf, KeycloakTestUsers.SharedPassword);
+        using HttpClient client = CreateClientWithToken(accessToken);
+
+        using HttpResponseMessage response = await client.GetAsync(ProfileMeUri);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
     public async Task GetProfileMe_ShouldReturnUnauthorized_WhenTokenIsExpired()
     {
         // Solicita um token com vida curta (access.token.lifespan=5s no realm) e aguarda até passar

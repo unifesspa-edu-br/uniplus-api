@@ -4,6 +4,8 @@ using System.Security.Claims;
 
 using AwesomeAssertions;
 
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -89,12 +91,11 @@ public sealed class OidcAuthenticationConfigurationTests
         act.Should().NotThrow();
     }
 
-    [Theory(DisplayName = "Política Candidato identifica o titular pelo CPF, sem exigir papel")]
-    [InlineData("cpf", "12345678909", null, true)]
-    [InlineData("cpf", "12345678909", "uniplus-admin", true)]
-    [InlineData("cpf", " ", "candidato", false)]
-    [InlineData("sub", "abc", "candidato", false)]
-    public async Task PoliticaCandidato_IdentificaPeloCpf_SemPapel(string claim, string valor, string? papel, bool esperado)
+    [Theory(DisplayName = "Token sem CPF não autentica")]
+    [InlineData("cpf", "54708076223", true)]
+    [InlineData("cpf", " ", false)]
+    [InlineData("sub", "abc", false)]
+    public async Task TokenValidado_SemCpf_FalhaAAutenticacao(string claim, string valor, bool autentica)
     {
         using ServiceProvider provider = BuildProvider(
             Environments.Production,
@@ -104,18 +105,19 @@ public sealed class OidcAuthenticationConfigurationTests
                 ["Auth:Audience"] = "uniplus",
                 ["Auth:ClientId"] = "uniplus-api",
             });
-        List<Claim> claims = [new(claim, valor)];
-        if (papel is not null)
+        JwtBearerOptions opcoes = provider.GetRequiredService<IOptionsMonitor<JwtBearerOptions>>()
+            .Get(JwtBearerDefaults.AuthenticationScheme);
+        TokenValidatedContext contexto = new(
+            new DefaultHttpContext(),
+            new AuthenticationScheme(JwtBearerDefaults.AuthenticationScheme, displayName: null, typeof(JwtBearerHandler)),
+            opcoes)
         {
-            claims.Add(new Claim(ClaimTypes.Role, papel));
-        }
+            Principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim(claim, valor)], "teste")),
+        };
 
-        ClaimsPrincipal usuario = new(new ClaimsIdentity(claims, "teste"));
+        await opcoes.Events.OnTokenValidated(contexto);
 
-        AuthorizationResult resultado = await provider.GetRequiredService<IAuthorizationService>()
-            .AuthorizeAsync(usuario, "Candidato");
-
-        resultado.Succeeded.Should().Be(esperado);
+        (contexto.Result?.Failure is null).Should().Be(autentica);
     }
 
     [Theory(DisplayName = "Rota sem atributo de autorização exige pessoa autenticada; requisição sem rota segue para o 404 ou 405")]

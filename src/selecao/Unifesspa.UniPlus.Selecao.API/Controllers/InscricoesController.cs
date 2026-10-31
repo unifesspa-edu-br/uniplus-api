@@ -20,14 +20,12 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// A inscrição do candidato (issue #1859) num processo seletivo. A policy <c>Candidato</c>
-/// (claim <c>cpf</c>) é declarada em cada action — o host não tem fallback policy, então omitir a
-/// anotação nasceria o endpoint anônimo por omissão (mesma convenção de
-/// <see cref="FormulariosController"/> com <c>plataforma-admin</c>). As rotas do processo não recebem id de
-/// inscrição: o dono do token, pelo CPF do claim, resolve a ativa. Só a leitura do comprovante recebe o id,
-/// para alcançar a cancelada.
+/// A inscrição de quem chama num processo seletivo. As rotas do processo não recebem id de inscrição: o
+/// titular, pelo CPF do token, resolve a ativa. Só a leitura do comprovante recebe o id, para alcançar a
+/// cancelada.
 /// </summary>
 [ApiController]
+[Authorize]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
@@ -47,7 +45,6 @@ public sealed class InscricoesController : ControllerBase
 
     /// <summary>A inscrição do dono do token, com o <c>ETag</c> também no header, para o <c>If-Match</c> seguinte.</summary>
     [HttpGet("processos-seletivos/{id:guid}/inscricao")]
-    [Authorize(Policy = "Candidato")]
     [VendorMediaType(Resource = "inscricao", Versions = [1])]
     [ProducesResponseType(typeof(InscricaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -69,7 +66,6 @@ public sealed class InscricoesController : ControllerBase
 
     /// <summary>O formulário renderizável da versão em que está a inscrição do dono do token: a divulgada, no rascunho, e a congelada no primeiro envio, depois dele.</summary>
     [HttpGet("processos-seletivos/{id:guid}/inscricao/formulario")]
-    [Authorize(Policy = "Candidato")]
     [VendorMediaType(Resource = "formulario-inscricao", Versions = [1])]
     [ProducesResponseType(typeof(FormularioRenderizavelDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -92,7 +88,6 @@ public sealed class InscricoesController : ControllerBase
     /// do corpo.
     /// </summary>
     [HttpPost("processos-seletivos/{id:guid}/inscricao/avaliacoes")]
-    [Authorize(Policy = "Candidato")]
     [VendorMediaType(Resource = "avaliacao-da-inscricao", Versions = [1])]
     [ProducesResponseType(typeof(AvaliacaoDaInscricaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -116,7 +111,6 @@ public sealed class InscricoesController : ControllerBase
     /// por <c>Idempotency-Key</c>.
     /// </summary>
     [HttpPost("processos-seletivos/{id:guid}/inscricao")]
-    [Authorize(Policy = "Candidato")]
     [VendorMediaType(Resource = "inscricao", Versions = [1])]
     [ProducesResponseType(typeof(InscricaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -135,7 +129,6 @@ public sealed class InscricoesController : ControllerBase
     /// da submissão. Exige <c>If-Match</c> com o <see cref="InscricaoDto.ETag"/> corrente.
     /// </summary>
     [HttpPut("processos-seletivos/{id:guid}/inscricao")]
-    [Authorize(Policy = "Candidato")]
     [VendorMediaType(Resource = "inscricao", Versions = [1])]
     [ProducesResponseType(typeof(InscricaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -171,7 +164,6 @@ public sealed class InscricoesController : ControllerBase
     /// cria um rascunho novo na versão vigente.
     /// </summary>
     [HttpDelete("processos-seletivos/{id:guid}/inscricao")]
-    [Authorize(Policy = "Candidato")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -204,7 +196,6 @@ public sealed class InscricoesController : ControllerBase
     /// Depois do cancelamento, iniciar a inscrição cria outra, que recebe outro número no envio.
     /// </summary>
     [HttpPost("processos-seletivos/{id:guid}/inscricao/cancelamento")]
-    [Authorize(Policy = "Candidato")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -239,7 +230,6 @@ public sealed class InscricoesController : ControllerBase
     /// mesma chave devolve o comprovante já emitido, sem gerar outro número de inscrição.
     /// </summary>
     [HttpPost("processos-seletivos/{id:guid}/inscricao/submissao")]
-    [Authorize(Policy = "Candidato")]
     [RequiresIdempotencyKey]
     [VendorMediaType(Resource = "comprovante-inscricao", Versions = [1])]
     [ProducesResponseType(typeof(ComprovanteInscricaoDto), StatusCodes.Status200OK)]
@@ -276,7 +266,6 @@ public sealed class InscricoesController : ControllerBase
     /// anterior nunca muda.
     /// </summary>
     [HttpGet("processos-seletivos/{id:guid}/inscricao/comprovantes/{numero:int}")]
-    [Authorize(Policy = "Candidato")]
     [VendorMediaType(Resource = "comprovante-inscricao", Versions = [1])]
     [ProducesResponseType(typeof(ComprovanteInscricaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -295,7 +284,6 @@ public sealed class InscricoesController : ControllerBase
     /// também a cancelada, que a rota por processo não alcança. O id é o de <see cref="MinhaInscricaoDto.InscricaoId"/>.
     /// </summary>
     [HttpGet("inscricoes/{inscricaoId:guid}/comprovantes/{numero:int}")]
-    [Authorize(Policy = "Candidato")]
     [VendorMediaType(Resource = "comprovante-inscricao", Versions = [1])]
     [ProducesResponseType(typeof(ComprovanteInscricaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -311,7 +299,6 @@ public sealed class InscricoesController : ControllerBase
 
     /// <summary>As inscrições do dono do token em qualquer processo seletivo (issue #1860), com os cursos que escolheram.</summary>
     [HttpGet("minhas-inscricoes")]
-    [Authorize(Policy = "Candidato")]
     [VendorMediaType(Resource = "minhas-inscricoes", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<MinhaInscricaoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

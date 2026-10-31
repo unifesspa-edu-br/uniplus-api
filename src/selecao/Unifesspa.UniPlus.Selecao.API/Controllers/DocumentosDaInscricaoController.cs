@@ -23,9 +23,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// iniciar (aqui) → PUT direto ao armazenamento (fora da API) → confirmar (aqui), que põe o arquivo em
 /// verificação; o verificador conclui fora da API. A inscrição é a do
 /// dono do token, resolvida pelo CPF do claim; um arquivo que não é dele responde 404 como o que não
-/// existe. A policy <c>Candidato</c> é declarada em cada action: o host não tem fallback policy.
+/// existe.
 /// </summary>
 [ApiController]
+[Authorize]
 [Route("processos-seletivos/{id:guid}/inscricao/documentos")]
 [SuppressMessage(
     "Performance",
@@ -50,7 +51,6 @@ public sealed class DocumentosDaInscricaoController : ControllerBase
     /// mesmo documento compartilham o <c>apresentacaoId</c>.
     /// </summary>
     [HttpPost("envios")]
-    [Authorize(Policy = "Candidato")]
     // TTL alinhado ao da URL pré-assinada devolvida: um replay depois dela expirar devolveria uma URL inutilizável.
     [RequiresIdempotencyKey(TtlSeconds = PrazosDoArquivoEnviado.EnvioSegundos)]
     [ProducesResponseType(typeof(IniciarEnvioDeDocumentoDaInscricaoDto), StatusCodes.Status201Created)]
@@ -77,7 +77,6 @@ public sealed class DocumentosDaInscricaoController : ControllerBase
     /// em verificação e publica o pedido ao verificador na mesma transação.
     /// </summary>
     [HttpPost("envios/{arquivoId:guid}/confirmacao")]
-    [Authorize(Policy = "Candidato")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(ArquivoDaApresentacaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -101,7 +100,6 @@ public sealed class DocumentosDaInscricaoController : ControllerBase
     /// A URL é credencial de acesso, então a resposta vai com <c>no-store</c>.
     /// </summary>
     [HttpGet("arquivos/{arquivoId:guid}/acesso")]
-    [Authorize(Policy = "Candidato")]
     [VendorMediaType(Resource = "acesso-arquivo-do-candidato", Versions = [1])]
     [ProducesResponseType(typeof(AcessoArquivoDoCandidatoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -127,7 +125,6 @@ public sealed class DocumentosDaInscricaoController : ControllerBase
     /// envio da inscrição o arquivo é retido, e a remoção responde 422.
     /// </summary>
     [HttpDelete("arquivos/{arquivoId:guid}")]
-    [Authorize(Policy = "Candidato")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
