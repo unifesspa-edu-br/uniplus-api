@@ -31,7 +31,7 @@ http:
       service: portal
 
     # Todo o resto de /api/ vai ao monólito: /api/{selecao,configuracao,
-    # organizacao,ingresso}/... + /api/auth/* + /api/profile/*.
+    # organizacao,ingresso}/... + /api/profile/*.
     monolito:
       rule: "PathPrefix(`/api/`)"
       entryPoints:

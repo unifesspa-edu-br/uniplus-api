@@ -198,7 +198,7 @@ services:
       Storage__SecretKey: "${MINIO_ROOT_PASSWORD}"
       Auth__Authority: "http://keycloak:8080/realms/unifesspa"
       # Mesmo motivo do host consolidado, com um prefixo próprio: o Portal expõe
-      # /api/auth/me e /api/profile/me com o MESMO path do monólito, então rotear por
+      # /health e demais rotas de infraestrutura com o MESMO path do monólito, então rotear por
       # path mandaria essas chamadas ao processo errado — respondendo 200 sem ter
       # passado por aqui. Sob /portal, tudo que o documento do Portal invoca chega a
       # este processo, seja qual for o path da operação.

@@ -6,12 +6,12 @@ Esta suíte exercita o pipeline real `JwtBearer` da API Uni+ contra um Keycloak 
 
 | # | Cenário | Caminho exercitado |
 |---|---|---|
-| 1 | Token válido emitido pelo realm → `/api/auth/me` | Caminho feliz: validação de issuer, audience, lifetime e signing key passam; claims do KC chegam ao `IUserContext` |
+| 1 | Token válido emitido pelo realm → `/api/profile/me` | Caminho feliz: validação de issuer, audience, lifetime e signing key passam; claims do KC chegam ao `IUserContext` |
 | 2 | Token válido com scope `uniplus-profile` → `/api/profile/me` | Audience mapper `aud=uniplus` ativo; claims `cpf` e `nomeSocial` mapeados a partir dos atributos do usuário |
-| 3 | Token expirado → `/api/auth/me` | `ValidateLifetime` rejeita após `ClockSkew` |
-| 4 | Token sem `aud=uniplus` → `/api/auth/me` | `ValidateAudience` rejeita |
-| 5 | Token assinado por chave externa → `/api/auth/me` | `ValidateIssuerSigningKey` rejeita kid não publicada no JWKS do realm |
-| 6 | Token com issuer diferente da Authority (assinado por chave conhecida pelo realm) → `/api/auth/me` | `ValidateIssuer` rejeita tokens emitidos por IdP arbitrário — isolamento estrito |
+| 3 | Token expirado → `/api/profile/me` | `ValidateLifetime` rejeita após `ClockSkew` |
+| 4 | Token sem `aud=uniplus` → `/api/profile/me` | `ValidateAudience` rejeita |
+| 5 | Token assinado por chave externa → `/api/profile/me` | `ValidateIssuerSigningKey` rejeita kid não publicada no JWKS do realm |
+| 6 | Token com issuer diferente da Authority (assinado por chave conhecida pelo realm) → `/api/profile/me` | `ValidateIssuer` rejeita tokens emitidos por IdP arbitrário — isolamento estrito |
 | 7 | `/health` da API | `OidcDiscoveryHealthCheck` reporta `Healthy` quando o discovery do Keycloak responde |
 
 > **Sobre o cenário 6 (isolamento de `ValidateIssuer`):** o realm sintético embute um `KeyProvider` adicional cuja chave privada é também conhecida pelo código de teste (`KeycloakKnownTestKey`). O Keycloak publica essa chave pública no JWKS do realm, então o pipeline JwtBearer aceita assinaturas feitas com a privada correspondente. O cenário 6 forja um token assinado por essa chave conhecida, com audience e lifetime corretos, mas com `iss` arbitrário — assim a ÚNICA dimensão inválida é o issuer. Sem esse `KeyProvider` embutido, o cenário cairia em `ValidateIssuerSigningKey` (a falha do cenário 5), dando falsa cobertura de issuer. A chave privada está em `realm-e2e-tests.json` e em `KeycloakKnownTestKey.cs`; ambos jamais alcançam ambientes superiores.

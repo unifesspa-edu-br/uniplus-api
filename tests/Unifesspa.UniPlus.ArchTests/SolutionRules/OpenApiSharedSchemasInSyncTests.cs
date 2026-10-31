@@ -17,7 +17,7 @@ using TestSupport;
 /// </summary>
 /// <remarks>
 /// Schemas vindos do shared kernel (<c>ProblemDetails</c>,
-/// <c>AuthenticatedUserResponse</c>, <c>UserProfileResponse</c>) são os
+/// <c>UserProfileResponse</c>, <c>PerfilConcedidoResponse</c>) são os
 /// candidatos óbvios. A regra captura QUALQUER schema com mesmo nome em
 /// dois ou mais documentos — extensível por construção: se o time mover mais
 /// tipos para shared, eles passam automaticamente a ser fitness-checked.

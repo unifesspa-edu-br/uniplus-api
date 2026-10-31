@@ -10,7 +10,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.Logging;
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Infrastructure.Core.Observability;
-using Unifesspa.UniPlus.Infrastructure.Core.Profile;
 using Unifesspa.UniPlus.Infrastructure.Core.ReverseProxy;
 using Unifesspa.UniPlus.Infrastructure.Core.Routing;
 using Unifesspa.UniPlus.Portal.API;
@@ -48,8 +47,8 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 // TimeProvider — registrado explicitamente porque Selecao/Ingresso o ganham
 // indiretamente via AddCursorPagination/AddIdempotency, mas o Portal (esqueleto)
-// não invoca nenhum dos dois. Sem este TryAdd, PingController e o handler de
-// /api/profile/me (TimeProvider clock) falham na ativação. TryAddSingleton
+// não invoca nenhum dos dois. Sem este TryAdd, o PingController falha na
+// ativação. TryAddSingleton
 // preserva overrides de teste (ex.: FakeTimeProvider) — alinhado com o
 // padrão usado em CursorPaginationServiceCollectionExtensions e
 // IdempotencyServiceCollectionExtensions.
@@ -141,8 +140,6 @@ app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseCorsConfiguration();
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapSharedAuthEndpoints();
-app.MapSharedProfileEndpoints();
 app.MapControllers();
 app.MapOpenApi("/openapi/{documentName}.json");
 // Liveness dependency-free: 200 enquanto o processo está respondendo, sem

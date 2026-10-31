@@ -25,50 +25,13 @@
     }
   ],
   "paths": {
-    "/api/auth/me": {
-      "get": {
-        "tags": [
-          "Auth"
-        ],
-        "summary": "Retorna o usu\u00E1rio autenticado",
-        "description": "Retorna informa\u00E7\u00F5es do usu\u00E1rio extra\u00EDdas do access token. Requer autentica\u00E7\u00E3o.",
-        "operationId": "GetAuthenticatedUser",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthenticatedUserResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ]
-      }
-    },
     "/api/profile/me": {
       "get": {
         "tags": [
           "Profile"
         ],
         "summary": "Retorna o perfil do usu\u00E1rio autenticado",
-        "description": "Retorna atributos de identidade e institucionais (CPF, NomeSocial) extra\u00EDdos do access token. Requer autentica\u00E7\u00E3o.",
+        "description": "Retorna a identidade do access token (nome, e-mail, CPF, NomeSocial) e os perfis de acesso que a pessoa tem por concess\u00E3o vigente, cada um com o escopo (unidade ou institui\u00E7\u00E3o) e o prazo. O token identifica a pessoa e n\u00E3o concede acesso. Requer autentica\u00E7\u00E3o.",
         "operationId": "GetAuthenticatedUserProfile",
         "responses": {
           "200": {
@@ -3649,46 +3612,6 @@
           }
         }
       },
-      "AuthenticatedUserResponse": {
-        "required": [
-          "userId",
-          "name",
-          "email",
-          "roles",
-          "timestamp"
-        ],
-        "type": "object",
-        "properties": {
-          "userId": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "name": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "email": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "roles": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "timestamp": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
       "BeneficiarioDoPedidoDto": {
         "required": [
           "email",
@@ -4347,6 +4270,61 @@
           }
         }
       },
+      "PerfilConcedidoResponse": {
+        "required": [
+          "concessaoId",
+          "perfilId",
+          "nome",
+          "escopoTipo",
+          "unidadeId",
+          "unidadeSigla",
+          "unidadeNome",
+          "validaAte"
+        ],
+        "type": "object",
+        "properties": {
+          "concessaoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "perfilId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "escopoTipo": {
+            "type": "string"
+          },
+          "unidadeId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "unidadeSigla": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "unidadeNome": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "validaAte": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
       "PerfilDto": {
         "required": [
           "id",
@@ -4632,7 +4610,7 @@
           "email",
           "cpf",
           "nomeSocial",
-          "roles",
+          "perfis",
           "timestamp"
         ],
         "type": "object",
@@ -4669,10 +4647,10 @@
               "string"
             ]
           },
-          "roles": {
+          "perfis": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/PerfilConcedidoResponse"
             }
           },
           "timestamp": {
@@ -4692,9 +4670,6 @@
     }
   },
   "tags": [
-    {
-      "name": "Auth"
-    },
     {
       "name": "Profile"
     },

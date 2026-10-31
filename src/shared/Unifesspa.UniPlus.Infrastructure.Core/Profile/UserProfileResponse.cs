@@ -10,7 +10,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Profile;
 /// <param name="Email">Email address, when present in the token.</param>
 /// <param name="Cpf">CPF exposed by the <c>uniplus-profile</c> scope; <see langword="null"/> when absent.</param>
 /// <param name="NomeSocial">Social name exposed by the <c>uniplus-profile</c> scope; <see langword="null"/> when absent.</param>
-/// <param name="Roles">Realm roles resolved from the access token claims.</param>
+/// <param name="Perfis">Perfis de acesso que a pessoa tem por concessão vigente, ordenados pelo nome do perfil.</param>
 /// <param name="Timestamp">Server-side clock read when the response was produced.</param>
 public sealed record UserProfileResponse(
     string? UserId,
@@ -18,5 +18,5 @@ public sealed record UserProfileResponse(
     string? Email,
     string? Cpf,
     string? NomeSocial,
-    IReadOnlyList<string> Roles,
+    IReadOnlyList<PerfilConcedidoResponse> Perfis,
     DateTimeOffset Timestamp);
