@@ -29,7 +29,10 @@ internal static partial class JwtBearerLoggingEvents
         Func<JwtBearerChallengeContext, Task> previousChallenge = events.OnChallenge;
         events.OnChallenge = async context =>
         {
-            LogChallenge(logger, context.Error ?? "no-error", context.ErrorDescription ?? "no-description");
+            string descricao = string.IsNullOrEmpty(context.ErrorDescription)
+                ? context.AuthenticateFailure?.Message ?? "no-description"
+                : context.ErrorDescription;
+            LogChallenge(logger, context.Error ?? "no-error", descricao);
             await previousChallenge(context).ConfigureAwait(false);
         };
 
