@@ -65,11 +65,27 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
     };
 
     /// <summary>
-    /// Controllers do titular: toda action age sobre a inscrição de quem chama, que o handler resolve pelo CPF do
-    /// token; o que não é dele responde como o que não existe.
+    /// Actions do titular: agem sobre a inscrição de quem chama, que o handler resolve pelo CPF do token; o que não
+    /// é dele responde como o que não existe.
     /// </summary>
-    private static readonly HashSet<string> DoTitular =
-        new([typeof(InscricoesController).FullName!, typeof(DocumentosDaInscricaoController).FullName!], StringComparer.Ordinal);
+    private static readonly HashSet<string> DoTitular = new(StringComparer.Ordinal)
+    {
+        Acao(typeof(InscricoesController), nameof(InscricoesController.Obter)),
+        Acao(typeof(InscricoesController), nameof(InscricoesController.ObterFormulario)),
+        Acao(typeof(InscricoesController), nameof(InscricoesController.Avaliar)),
+        Acao(typeof(InscricoesController), nameof(InscricoesController.Iniciar)),
+        Acao(typeof(InscricoesController), nameof(InscricoesController.SalvarRascunho)),
+        Acao(typeof(InscricoesController), nameof(InscricoesController.Descartar)),
+        Acao(typeof(InscricoesController), nameof(InscricoesController.Cancelar)),
+        Acao(typeof(InscricoesController), nameof(InscricoesController.Submeter)),
+        Acao(typeof(InscricoesController), nameof(InscricoesController.ObterComprovante)),
+        Acao(typeof(InscricoesController), nameof(InscricoesController.ObterComprovanteDaInscricao)),
+        Acao(typeof(InscricoesController), nameof(InscricoesController.MinhasInscricoes)),
+        Acao(typeof(DocumentosDaInscricaoController), nameof(DocumentosDaInscricaoController.IniciarEnvio)),
+        Acao(typeof(DocumentosDaInscricaoController), nameof(DocumentosDaInscricaoController.ConfirmarEnvio)),
+        Acao(typeof(DocumentosDaInscricaoController), nameof(DocumentosDaInscricaoController.Acesso)),
+        Acao(typeof(DocumentosDaInscricaoController), nameof(DocumentosDaInscricaoController.RemoverArquivo)),
+    };
 
     [Fact(DisplayName = "Fitness_DecisaoDeNegocioPassaPeloPontoUnico")]
     public void Fitness_DecisaoDeNegocioPassaPeloPontoUnico()
@@ -88,7 +104,7 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
             .Select(static a => a.DeclaringType!.Assembly.GetName().Name)
             .Distinct()
             .Should().HaveCountGreaterThan(1, "o ponto único protege actions de mais de um módulo");
-        DecididasNoHandler.Keys.Concat(DePessoaAutenticada).Should().BeSubsetOf(acoes,
+        DecididasNoHandler.Keys.Concat(DePessoaAutenticada).Concat(DoTitular).Should().BeSubsetOf(acoes,
             "a lista fechada só nomeia actions que existem; action removida ou renomeada sai da lista");
         DecididasNoHandler.Values.Should().AllSatisfy(static mensagem => HandlerDe(mensagem)
             .GetParameters().Should().Contain(static p => p.ParameterType == typeof(IVerificadorDeAcesso)));
@@ -99,8 +115,8 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
     private static List<string> Sozinhas(IEnumerable<Type> controllers)
         => [.. controllers.SelectMany(static t => ControllersDaSolucao.AcoesDe(t)
             .Select(a => (Acao: a, Nome: Acao(t, a.Name)))
-            .Where(a => !DoTitular.Contains(t.FullName!) && !Anonima(t, a.Acao) && !PorPoliticaDeIdentidade(t, a.Acao)
-                && !DeclaraDecisao(t, a.Acao) && !DecididasNoHandler.ContainsKey(a.Nome) && !DePessoaAutenticada.Contains(a.Nome))
+            .Where(a => !Anonima(t, a.Acao) && !PorPoliticaDeIdentidade(t, a.Acao)
+                && !DeclaraDecisao(t, a.Acao) && !DecididasNoHandler.ContainsKey(a.Nome) && !DePessoaAutenticada.Contains(a.Nome) && !DoTitular.Contains(a.Nome))
             .Select(static a => a.Nome))];
 
     /// <summary>Chave da action com o nome completo do controller: controller homônimo de outro módulo não herda a exceção.</summary>
