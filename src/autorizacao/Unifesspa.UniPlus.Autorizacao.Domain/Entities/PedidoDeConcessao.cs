@@ -173,7 +173,7 @@ public sealed class PedidoDeConcessao : EntityBase
                 $"A justificativa é obrigatória e deve ter entre {JustificativaMinLength} e {JustificativaMaxLength} caracteres.")));
         }
 
-        ConferirValidade(validaAteSugerida, perfil.Governanca is not null, instante, "validaAteSugerida", erros);
+        ConferirValidade(validaAteSugerida, perfil.AdmitePrazo, instante, "validaAteSugerida", erros);
 
         (string? email, bool paraSiMesmo) = ResolverBeneficiario(solicitante, emailDoBeneficiario, dominios, erros);
 
@@ -365,7 +365,7 @@ public sealed class PedidoDeConcessao : EntityBase
 
         if (etapa == EtapaDoPedido.Gestor)
         {
-            ConferirValidade(validaAte, perfil.Governanca is not null, instante, "validaAte", erros);
+            ConferirValidade(validaAte, perfil.AdmitePrazo, instante, "validaAte", erros);
         }
         else if (validaAte is not null)
         {
@@ -471,14 +471,14 @@ public sealed class PedidoDeConcessao : EntityBase
     }
 
     private static void ConferirValidade(
-        DateTimeOffset? data, bool governanca, DateTimeOffset instante, string campo, List<FieldError> erros)
+        DateTimeOffset? data, bool admitePrazo, DateTimeOffset instante, string campo, List<FieldError> erros)
     {
         if (data is null)
         {
             return;
         }
 
-        if (governanca)
+        if (!admitePrazo)
         {
             erros.Add(new(campo, new DomainError(
                 PedidoErrorCodes.ValidadeInvalida,

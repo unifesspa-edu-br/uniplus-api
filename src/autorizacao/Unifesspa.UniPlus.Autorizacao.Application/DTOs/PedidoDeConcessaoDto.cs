@@ -26,6 +26,7 @@ public sealed record AnexoDoPedidoDto(Guid Id, string Situacao, long TamanhoDecl
 /// <param name="EtapaAtual">Etapa que o pedido aguarda do aprovador (<c>gestor</c> ou <c>protecao_de_dados</c>); nula se não aguarda nenhum.</param>
 /// <param name="ValidaAteSugerida">Fim de vigência que o solicitante sugeriu; nulo, sem sugestão.</param>
 /// <param name="ValidaAte">Fim de vigência que o gestor definiu ao aprovar; nulo, sem prazo.</param>
+/// <param name="AdmitePrazo">Se a concessão pode ter prazo; falso para o perfil de governança.</param>
 /// <param name="ConcessaoId">A concessão que a última aprovação gerou; nula até lá.</param>
 public sealed record PedidoDeConcessaoDto(
     Guid Id,
@@ -38,6 +39,7 @@ public sealed record PedidoDeConcessaoDto(
     string Justificativa,
     DateTimeOffset? ValidaAteSugerida,
     DateTimeOffset? ValidaAte,
+    bool AdmitePrazo,
     DateTimeOffset CriadoEm,
     DateTimeOffset? EncerradoEm,
     Guid? ConcessaoId,

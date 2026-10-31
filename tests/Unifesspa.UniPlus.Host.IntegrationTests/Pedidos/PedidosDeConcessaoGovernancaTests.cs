@@ -152,6 +152,7 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
         JsonElement aprovado = await CorpoAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.OK);
 
         aprovado.GetProperty("situacao").GetString().Should().Be("aprovado");
+        aprovado.GetProperty("admitePrazo").GetBoolean().Should().BeFalse();
         (await ConcessoesAsync(Marlene, perfil)).Should().ContainSingle();
         JsonElement trilha = await LerAsync(diogo, $"{Rota}/{id}/trilha");
         trilha.EnumerateArray().Single(e => e.GetProperty("tipo").GetString() == "segunda_aprovacao_dispensada")

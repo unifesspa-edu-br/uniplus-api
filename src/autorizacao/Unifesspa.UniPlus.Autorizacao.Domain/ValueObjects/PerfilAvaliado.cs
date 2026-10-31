@@ -20,6 +20,8 @@ public sealed record PerfilAvaliado
     /// <summary>Papel de governança do perfil; nulo nos perfis comuns.</summary>
     public TipoDeGovernanca? Governanca { get; }
 
+    public bool AdmitePrazo => Entities.Perfil.AdmitePrazoCom(Governanca);
+
     /// <summary>O perfil está ativo: o perfil desativado não aceita decisão que o conceda.</summary>
     public bool Ativo { get; }
 
