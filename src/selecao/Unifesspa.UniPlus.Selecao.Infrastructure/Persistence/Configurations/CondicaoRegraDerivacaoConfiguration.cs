@@ -10,6 +10,8 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 
 /// <summary>
@@ -26,6 +28,8 @@ public sealed class CondicaoRegraDerivacaoConfiguration : IEntityTypeConfigurati
     public void Configure(EntityTypeBuilder<CondicaoRegraDerivacao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("condicoes_regra_derivacao");
         builder.HasKey(c => c.Id);

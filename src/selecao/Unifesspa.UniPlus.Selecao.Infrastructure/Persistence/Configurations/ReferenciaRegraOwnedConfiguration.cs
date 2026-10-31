@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -55,6 +57,8 @@ internal static class ReferenciaRegraOwnedConfiguration
     {
         ArgumentNullException.ThrowIfNull(regra);
         ArgumentException.ThrowIfNullOrWhiteSpace(prefixoDaColuna);
+
+        regra.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         regra.Property(r => r.Codigo)
             .HasColumnName($"{prefixoDaColuna}_codigo")

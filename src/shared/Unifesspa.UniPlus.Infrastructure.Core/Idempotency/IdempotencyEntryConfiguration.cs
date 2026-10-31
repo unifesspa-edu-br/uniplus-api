@@ -3,17 +3,24 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+
 internal sealed class IdempotencyEntryConfiguration : IEntityTypeConfiguration<IdempotencyEntry>
 {
     public void Configure(EntityTypeBuilder<IdempotencyEntry> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
+
         builder.ToTable("idempotency_cache");
 
         builder.HasKey(e => e.Id);
 
+        // O escopo da chave de idempotência é user:{sub}: identifica quem agiu.
         builder.Property(e => e.Scope)
+            .ClassificaComo(ClassificacaoDeProtecao.Pessoal)
             .HasMaxLength(255)
             .IsRequired();
 
@@ -25,7 +32,9 @@ internal sealed class IdempotencyEntryConfiguration : IEntityTypeConfiguration<I
             .HasMaxLength(255)
             .IsRequired();
 
+        // SHA-256 sem sal de um corpo que pode trazer CPF: dá para confirmar um palpite, então vale a classe do corpo.
         builder.Property(e => e.BodyHash)
+            .ClassificaComo(ClassificacaoDeProtecao.Sensivel)
             .HasMaxLength(64)
             .IsFixedLength()
             .IsRequired();
@@ -34,7 +43,12 @@ internal sealed class IdempotencyEntryConfiguration : IEntityTypeConfiguration<I
             .HasConversion<short>()
             .IsRequired();
 
+        // O corpo e os cabeçalhos cacheados são a resposta de qualquer endpoint idempotente e podem trazer dado de qualquer classe.
+        builder.Property(e => e.ResponseBodyCipher)
+            .ClassificaComo(ClassificacaoDeProtecao.Sensivel);
+
         builder.Property(e => e.ResponseHeadersJson)
+            .ClassificaComo(ClassificacaoDeProtecao.Sensivel)
             .HasColumnType("jsonb");
 
         builder.Property(e => e.ExpiresAt)

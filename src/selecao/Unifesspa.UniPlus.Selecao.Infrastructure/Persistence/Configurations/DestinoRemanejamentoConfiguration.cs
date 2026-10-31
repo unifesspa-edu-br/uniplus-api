@@ -5,6 +5,8 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>
@@ -20,6 +22,8 @@ internal sealed class DestinoRemanejamentoConfiguration : IEntityTypeConfigurati
     public void Configure(EntityTypeBuilder<DestinoRemanejamento> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("destinos_remanejamento");
         builder.HasKey(d => d.Id);

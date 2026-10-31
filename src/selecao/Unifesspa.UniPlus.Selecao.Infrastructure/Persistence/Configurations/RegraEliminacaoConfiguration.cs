@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -26,6 +28,8 @@ internal sealed class RegraEliminacaoConfiguration : IEntityTypeConfiguration<Re
     public void Configure(EntityTypeBuilder<RegraEliminacao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("regras_eliminacao");
         builder.HasKey(r => r.Id);

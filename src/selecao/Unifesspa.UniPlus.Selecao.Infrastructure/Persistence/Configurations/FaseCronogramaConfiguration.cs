@@ -5,6 +5,9 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+
 /// <summary>
 /// Configuração EF Core de <see cref="FaseCronograma"/> (Story #851) — entidade filha
 /// do agregado <see cref="ProcessoSeletivo"/>. Os limites de comprimento espelham
@@ -20,6 +23,8 @@ public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseC
     public void Configure(EntityTypeBuilder<FaseCronograma> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("fases_cronograma");
         builder.HasKey(f => f.Id);

@@ -5,6 +5,9 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+
 /// <summary>
 /// Configuração EF Core de <see cref="ConfiguracaoDerivacaoFato"/> (Story #927) — entidade filha de
 /// <c>ProcessoSeletivo</c>, <c>EntityBase</c> puro. Substituível por inteiro junto com o processo,
@@ -17,6 +20,8 @@ public sealed class ConfiguracaoDerivacaoFatoConfiguration : IEntityTypeConfigur
     public void Configure(EntityTypeBuilder<ConfiguracaoDerivacaoFato> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("configuracoes_derivacao_fato");
         builder.HasKey(c => c.Id);

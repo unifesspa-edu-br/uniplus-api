@@ -5,6 +5,9 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+
 /// <summary>Configuração EF Core de <see cref="BancaRequerida"/> (Story #851) — filha 0..* de <see cref="FaseCronograma"/>.</summary>
 public sealed class BancaRequeridaConfiguration : IEntityTypeConfiguration<BancaRequerida>
 {
@@ -13,6 +16,8 @@ public sealed class BancaRequeridaConfiguration : IEntityTypeConfiguration<Banca
     public void Configure(EntityTypeBuilder<BancaRequerida> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("bancas_requeridas");
         builder.HasKey(b => b.Id);

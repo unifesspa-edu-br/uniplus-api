@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>Configuração EF Core dos acessos aos anexos do pedido, registro só acrescentado.</summary>
 [SuppressMessage(
@@ -20,6 +22,8 @@ internal sealed class LeituraDoAnexoDoPedidoConfiguration : IEntityTypeConfigura
     public void Configure(EntityTypeBuilder<LeituraDoAnexoDoPedido> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
 
         builder.ToTable("pedido_anexo_leituras");
         builder.HasKey(l => l.Id);

@@ -5,6 +5,8 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
@@ -16,6 +18,8 @@ internal sealed class ApresentacaoDeDocumentoConfiguration : IEntityTypeConfigur
     public void Configure(EntityTypeBuilder<ApresentacaoDeDocumento> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
 
         builder.ToTable("apresentacoes_de_documento", t =>
         {

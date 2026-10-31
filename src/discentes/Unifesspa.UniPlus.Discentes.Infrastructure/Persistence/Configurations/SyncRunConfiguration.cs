@@ -4,7 +4,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Discentes.Domain.Entities;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",
@@ -15,6 +17,8 @@ internal sealed class SyncRunConfiguration : IEntityTypeConfiguration<SyncRun>
     public void Configure(EntityTypeBuilder<SyncRun> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("sync_run", t => t.HasComment(
             "Controle de execução das rotinas de sincronização de dados discentes com o SIGAA — uma linha por execução."));

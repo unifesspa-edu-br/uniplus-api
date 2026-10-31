@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",
@@ -14,6 +16,8 @@ internal sealed class TipoProcessoConfiguration : IEntityTypeConfiguration<TipoP
     public void Configure(EntityTypeBuilder<TipoProcesso> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("tipos_processo");
         builder.HasKey(tipo => tipo.Id);

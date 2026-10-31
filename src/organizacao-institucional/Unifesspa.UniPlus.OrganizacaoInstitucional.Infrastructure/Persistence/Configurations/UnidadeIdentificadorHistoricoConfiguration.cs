@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
@@ -15,6 +17,8 @@ internal sealed class UnidadeIdentificadorHistoricoConfiguration
     public void Configure(EntityTypeBuilder<UnidadeIdentificadorHistorico> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("unidade_identificador_historico");
         builder.HasKey(h => h.Id);

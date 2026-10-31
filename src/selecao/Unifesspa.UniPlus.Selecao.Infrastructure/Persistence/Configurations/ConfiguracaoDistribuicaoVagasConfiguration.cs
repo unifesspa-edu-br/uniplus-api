@@ -5,6 +5,8 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
@@ -32,6 +34,8 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
     {
         ArgumentNullException.ThrowIfNull(builder);
 
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
+
         builder.ToTable("configuracoes_distribuicao_vagas");
         builder.HasKey(c => c.Id);
         builder.Property(c => c.Id).ValueGeneratedNever();
@@ -50,6 +54,7 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
         // INV-5). Colunas nulas quando a distribuição é institucional.
         builder.OwnsOne(c => c.ReferenciaDemografica, demografica =>
         {
+            demografica.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
             demografica.Property(d => d.OrigemId).HasColumnName("referencia_demografica_origem_id");
             demografica.Property(d => d.CensoReferencia).HasColumnName("referencia_demografica_censo").HasMaxLength(CensoMaxLength);
             demografica.Property(d => d.PpiPercentual).HasColumnName("referencia_demografica_ppi_percentual").HasPrecision(5, 2);
@@ -63,6 +68,7 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
         // valor (ADR-0061). Colunas nulas quando o curso não o declara.
         builder.OwnsOne(c => c.GrupoAreaEnem, grupo =>
         {
+            grupo.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
             grupo.Property(g => g.Codigo)
                 .HasColumnName("grupo_area_enem_codigo")
                 .HasMaxLength(LimitesDoEnvelope.GrupoAreaEnemCodigo)
@@ -78,6 +84,7 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
         // só em distribuição definida antes de a oferta ser nomeada aqui.
         builder.OwnsOne(c => c.OfertaCurso, oferta =>
         {
+            oferta.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
             oferta.Property(o => o.CursoNome)
                 .HasColumnName("oferta_curso_nome")
                 .HasMaxLength(OfertaCursoSnapshot.CursoNomeMaxLength)

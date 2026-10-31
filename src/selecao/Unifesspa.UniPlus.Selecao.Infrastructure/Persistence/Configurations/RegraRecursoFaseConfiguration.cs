@@ -5,6 +5,9 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+
 /// <summary>
 /// Configuração EF Core de <see cref="RegraRecursoFase"/> (Story #851) — filha 0..1 de
 /// <see cref="FaseCronograma"/>. <see cref="RegraRecursoFase.Args"/> não é polimórfico
@@ -18,6 +21,8 @@ public sealed class RegraRecursoFaseConfiguration : IEntityTypeConfiguration<Reg
     {
         ArgumentNullException.ThrowIfNull(builder);
 
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
+
         builder.ToTable("regras_recurso_fase");
         builder.HasKey(r => r.Id);
         builder.Property(r => r.Id).ValueGeneratedNever();
@@ -27,6 +32,7 @@ public sealed class RegraRecursoFaseConfiguration : IEntityTypeConfiguration<Reg
 
         builder.OwnsOne(r => r.Args, args =>
         {
+            args.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
             args.Property(x => x.PrazoValor).HasColumnName("prazo_valor").HasPrecision(18, 4).IsRequired();
             args.Property(x => x.PrazoUnidade).HasColumnName("prazo_unidade").HasConversion<int>().IsRequired();
             args.Property(x => x.SuspensividadePrimeiraInstanciaValor).HasColumnName("suspensividade_1a_instancia_valor").HasPrecision(18, 4);

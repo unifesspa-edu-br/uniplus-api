@@ -5,6 +5,8 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>
@@ -21,6 +23,8 @@ internal sealed class ConfiguracaoCascataRemanejamentoConfiguration : IEntityTyp
     public void Configure(EntityTypeBuilder<ConfiguracaoCascataRemanejamento> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("configuracoes_cascata_remanejamento");
         builder.HasKey(c => c.Id);

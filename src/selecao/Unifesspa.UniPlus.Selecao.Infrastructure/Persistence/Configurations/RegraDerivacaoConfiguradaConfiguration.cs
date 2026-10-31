@@ -5,6 +5,9 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+
 /// <summary>
 /// Configuração EF Core de <see cref="RegraDerivacaoConfigurada"/> (Story #927) — entidade filha de
 /// <see cref="ConfiguracaoDerivacaoFato"/>, <c>EntityBase</c> puro.
@@ -16,6 +19,8 @@ public sealed class RegraDerivacaoConfiguradaConfiguration : IEntityTypeConfigur
     public void Configure(EntityTypeBuilder<RegraDerivacaoConfigurada> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("regras_derivacao_configuradas");
         builder.HasKey(r => r.Id);

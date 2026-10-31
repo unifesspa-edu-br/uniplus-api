@@ -5,6 +5,8 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
@@ -17,6 +19,8 @@ public sealed class GrupoColetadoConfiguration : IEntityTypeConfiguration<GrupoC
     public void Configure(EntityTypeBuilder<GrupoColetado> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("grupos_coletados");
         builder.HasKey(g => g.Id);

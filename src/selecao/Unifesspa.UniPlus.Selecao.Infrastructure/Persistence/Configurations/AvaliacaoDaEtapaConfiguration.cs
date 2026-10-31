@@ -5,6 +5,8 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -23,6 +25,8 @@ internal sealed class AvaliacaoDaEtapaConfiguration : IEntityTypeConfiguration<A
     public void Configure(EntityTypeBuilder<AvaliacaoDaEtapa> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
 
         builder.ToTable("avaliacoes_da_etapa", t =>
         {

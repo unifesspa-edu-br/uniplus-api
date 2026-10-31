@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>Mapeamento de <see cref="BancaDaEtapa"/> — filha de <see cref="EtapaProcesso"/>.</summary>
@@ -11,6 +13,8 @@ public sealed class BancaDaEtapaConfiguration : IEntityTypeConfiguration<BancaDa
     public void Configure(EntityTypeBuilder<BancaDaEtapa> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("bancas_da_etapa");
         builder.HasKey(b => b.Id);

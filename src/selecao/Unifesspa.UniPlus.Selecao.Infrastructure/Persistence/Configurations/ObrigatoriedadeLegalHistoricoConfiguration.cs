@@ -5,6 +5,8 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>
@@ -26,6 +28,8 @@ internal sealed class ObrigatoriedadeLegalHistoricoConfiguration : IEntityTypeCo
     {
         ArgumentNullException.ThrowIfNull(builder);
 
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
+
         builder.ToTable("obrigatoriedade_legal_historico");
         builder.HasKey(h => h.Id);
 
@@ -42,7 +46,7 @@ internal sealed class ObrigatoriedadeLegalHistoricoConfiguration : IEntityTypeCo
 
         builder.Property(h => h.SnapshotAt).IsRequired();
 
-        builder.Property(h => h.SnapshotBy)
+        builder.Property(h => h.SnapshotBy).ClassificaComo(ClassificacaoDeProtecao.Pessoal)
             .HasMaxLength(SnapshotByMaxLength)
             .IsRequired();
 

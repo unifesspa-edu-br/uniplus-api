@@ -4,7 +4,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
@@ -16,6 +18,8 @@ internal sealed class InstituicaoConfiguration : IEntityTypeConfiguration<Instit
     public void Configure(EntityTypeBuilder<Instituicao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         // CHECK fixa a sentinela como verdadeiramente constante no banco: sem ela,
         // qualquer caminho de escrita (SQL de carga, correção manual) poderia gravar
@@ -85,7 +89,7 @@ internal sealed class InstituicaoConfiguration : IEntityTypeConfiguration<Instit
         builder.Property(i => i.CidadeDisplayAtualizadoEm);
 
         // Endereço estruturado ao Geo via CEP (ADR-0096): owned type opcional.
-        builder.OwnsOne(i => i.Endereco, EnderecoGeoOwnedConfiguration.Configure);
+        builder.OwnsOne(i => i.Endereco, endereco => EnderecoGeoOwnedConfiguration.Configure(endereco, ClassificacaoDeProtecao.Interno));
         builder.Navigation(i => i.Endereco).IsRequired(false);
 
         // Auditoria (IAuditableEntity)

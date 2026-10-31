@@ -6,6 +6,8 @@ using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
@@ -17,6 +19,8 @@ internal sealed class ArquivoDaApresentacaoConfiguration : IEntityTypeConfigurat
     public void Configure(EntityTypeBuilder<ArquivoDaApresentacao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("arquivos_da_apresentacao", t => t.HasComment(
             "O arquivo de uma apresentação de documento da inscrição. O conteúdo fica no armazenamento privado, cifrado pelo " +
@@ -42,7 +46,7 @@ internal sealed class ArquivoDaApresentacaoConfiguration : IEntityTypeConfigurat
             .HasComment("Quando a reconciliação pode republicar o pedido: a última publicação mais o prazo, que cresce a cada publicação.");
         builder.Property(a => a.ChaveDefinitiva).HasMaxLength(500)
             .HasComment("A chave do objeto promovido ao bucket definitivo; nula enquanto não verificado.");
-        builder.Property(a => a.MotivoDaRecusa)
+        builder.Property(a => a.MotivoDaRecusa).ClassificaComo(ClassificacaoDeProtecao.Pessoal)
             .HasComment("Por que a verificação recusou o arquivo; nulo fora da recusa.");
         builder.Property(a => a.HashSha256).HasMaxLength(64)
             .HasComment("O SHA-256 do conteúdo, calculado pelo verificador; nulo enquanto não verificado.");

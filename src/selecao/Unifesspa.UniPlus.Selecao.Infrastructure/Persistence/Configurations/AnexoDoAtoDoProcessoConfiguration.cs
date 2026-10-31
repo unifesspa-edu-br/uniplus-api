@@ -5,11 +5,16 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+
 public sealed class AnexoDoAtoDoProcessoConfiguration : IEntityTypeConfiguration<AnexoDoAtoDoProcesso>
 {
     public void Configure(EntityTypeBuilder<AnexoDoAtoDoProcesso> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("anexos_do_ato_do_processo");
         builder.HasKey(a => a.Id);

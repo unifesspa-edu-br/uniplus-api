@@ -6,6 +6,8 @@ using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
@@ -22,6 +24,8 @@ internal sealed class AreaPesoAreaEnemCongeladaConfiguration : IEntityTypeConfig
     public void Configure(EntityTypeBuilder<AreaPesoAreaEnemCongelada> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("areas_peso_area_enem_congeladas", t =>
         {

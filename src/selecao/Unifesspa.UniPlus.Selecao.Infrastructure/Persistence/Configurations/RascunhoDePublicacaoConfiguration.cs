@@ -5,18 +5,23 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+
 public sealed class RascunhoDePublicacaoConfiguration : IEntityTypeConfiguration<RascunhoDePublicacao>
 {
     public void Configure(EntityTypeBuilder<RascunhoDePublicacao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
+
         builder.ToTable("rascunhos_publicacao");
         builder.HasKey(r => r.Id);
         // Guid v7 gerado no domínio (EntityBase) — mesma convenção das demais entidades.
         builder.Property(r => r.Id).ValueGeneratedNever();
 
-        builder.Property(r => r.UsuarioSub).HasMaxLength(255).IsRequired();
+        builder.Property(r => r.UsuarioSub).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(255).IsRequired();
 
         // `text`, e não `jsonb`: o documento precisa voltar EXATAMENTE como foi enviado, e o
         // `jsonb` não faz isso — ele parseia, reordena as chaves e renormaliza os números, que

@@ -5,11 +5,16 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+
 public sealed class OfertaCondicaoConfiguration : IEntityTypeConfiguration<OfertaCondicao>
 {
     public void Configure(EntityTypeBuilder<OfertaCondicao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("ofertas_condicao");
         builder.HasKey(c => c.Id);

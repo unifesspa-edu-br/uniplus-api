@@ -8,6 +8,8 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",
@@ -29,6 +31,8 @@ internal sealed class TipoDocumentoConfiguration
     public void Configure(EntityTypeBuilder<TipoDocumento> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable(
             "tipo_documento",

@@ -3,8 +3,10 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Mapeamento EF Core compartilhado do value object
@@ -58,10 +60,16 @@ public static class EnderecoGeoOwnedConfiguration
     /// sentinela de presença do owned type opcional (sem endereço ⇒
     /// <c>endereco_cep IS NULL</c>), mantendo as colunas anuláveis no banco.
     /// </summary>
-    public static void Configure<TOwner>(OwnedNavigationBuilder<TOwner, ReferenciaEnderecoGeo> e)
+    /// <param name="e">A navegação embutida a configurar.</param>
+    /// <param name="classificacao">A classificação padrão das colunas do endereço, decidida por quem o embute.</param>
+    public static void Configure<TOwner>(
+        OwnedNavigationBuilder<TOwner, ReferenciaEnderecoGeo> e,
+        ClassificacaoDeProtecao classificacao)
         where TOwner : class
     {
         ArgumentNullException.ThrowIfNull(e);
+
+        e.ClassificaPorPadrao(classificacao);
 
         e.Property(p => p.Cep)
             .HasColumnName("endereco_cep")

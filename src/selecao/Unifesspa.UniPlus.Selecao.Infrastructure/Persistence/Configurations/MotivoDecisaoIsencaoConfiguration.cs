@@ -5,6 +5,8 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -27,6 +29,8 @@ internal sealed class MotivoDecisaoIsencaoConfiguration : IEntityTypeConfigurati
     public void Configure(EntityTypeBuilder<MotivoDecisaoIsencao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("motivos_decisao_isencao");
         builder.HasKey(m => m.Id);

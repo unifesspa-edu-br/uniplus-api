@@ -5,6 +5,8 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>
@@ -25,6 +27,8 @@ internal sealed class LoteDeNotasDoEnemConfiguration : IEntityTypeConfiguration<
     public void Configure(EntityTypeBuilder<LoteDeNotasDoEnem> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("lotes_de_notas_do_enem", t =>
         {
@@ -67,12 +71,12 @@ internal sealed class LoteDeNotasDoEnemConfiguration : IEntityTypeConfiguration<
             .IsRequired()
             .HasComment("SHA-256 dos bytes do arquivo importado.");
 
-        builder.Property(l => l.ImportadoPor)
+        builder.Property(l => l.ImportadoPor).ClassificaComo(ClassificacaoDeProtecao.Pessoal)
             .HasMaxLength(ImportadoPorMaxLength)
             .IsRequired()
             .HasComment("O sub do token de quem importou.");
 
-        builder.Property(l => l.ImportadoPorNome)
+        builder.Property(l => l.ImportadoPorNome).ClassificaComo(ClassificacaoDeProtecao.Pessoal)
             .HasMaxLength(ImportadoPorMaxLength)
             .HasComment("O nome de quem importou, gravado no momento da ação.");
 

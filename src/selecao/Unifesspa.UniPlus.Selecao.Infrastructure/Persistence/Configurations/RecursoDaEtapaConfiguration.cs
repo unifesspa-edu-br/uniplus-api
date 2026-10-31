@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>
@@ -21,6 +23,8 @@ public sealed class RecursoDaEtapaConfiguration : IEntityTypeConfiguration<Recur
     {
         ArgumentNullException.ThrowIfNull(builder);
 
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
+
         builder.ToTable("recursos_da_etapa");
         builder.HasKey(r => r.Id);
         builder.Property(r => r.Id).ValueGeneratedNever();
@@ -32,6 +36,7 @@ public sealed class RecursoDaEtapaConfiguration : IEntityTypeConfiguration<Recur
 
         builder.OwnsOne(r => r.Args, args =>
         {
+            args.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
             args.Property(x => x.PrazoValor).HasColumnName("prazo_valor").HasPrecision(18, 4).IsRequired();
             args.Property(x => x.PrazoUnidade).HasColumnName("prazo_unidade").HasConversion<int>();
             args.Property(x => x.SuspensividadePrimeiraInstanciaValor).HasColumnName("susp_1a_valor").HasPrecision(18, 4);

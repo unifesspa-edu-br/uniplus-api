@@ -5,6 +5,8 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 
@@ -19,6 +21,8 @@ internal sealed class InscritoDoLoteDeNotasConfiguration : IEntityTypeConfigurat
     {
         ArgumentNullException.ThrowIfNull(builder);
 
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
+
         builder.ToTable("inscritos_do_lote_de_notas", t =>
         {
             t.HasComment("A inscrição com linha válida em um lote de notas, com o número de inscrição que o INEP lhe deu. Append-only.");
@@ -32,6 +36,7 @@ internal sealed class InscritoDoLoteDeNotasConfiguration : IEntityTypeConfigurat
         builder.Property(i => i.InscricaoId).IsRequired();
 
         builder.Property(i => i.NumeroDeInscricaoNoEnem)
+            .ClassificaComo(ClassificacaoDeProtecao.Identificador)
             .HasMaxLength(InscritoDoLoteDeNotas.DigitosDoNumeroDeInscricao)
             .IsRequired()
             .HasComment("O número de inscrição do INEP, guardado para a conferência de um recurso.");

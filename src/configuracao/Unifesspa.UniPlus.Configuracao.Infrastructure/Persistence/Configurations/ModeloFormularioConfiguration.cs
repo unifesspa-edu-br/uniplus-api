@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
@@ -20,6 +22,8 @@ internal sealed class ModeloFormularioConfiguration : IEntityTypeConfiguration<M
     public void Configure(EntityTypeBuilder<ModeloFormulario> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         // Domínio fechado da finalidade (defesa em profundidade contra inserts crus).
         builder.ToTable("modelos_formulario", static tabela => tabela.HasCheckConstraint(

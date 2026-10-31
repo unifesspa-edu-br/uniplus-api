@@ -5,7 +5,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",
@@ -16,6 +18,8 @@ internal sealed class LocalOfertaConfiguration : IEntityTypeConfiguration<LocalO
     public void Configure(EntityTypeBuilder<LocalOferta> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         // CHECK de coerência cidade↔CEP (CA-04, ADR-0096): NULL-safe.
         builder.ToTable("local_oferta", t =>
@@ -48,7 +52,7 @@ internal sealed class LocalOfertaConfiguration : IEntityTypeConfiguration<LocalO
         builder.Property(l => l.CodigoEmec).HasMaxLength(20);
 
         // Endereço estruturado ao Geo via CEP (ADR-0096): owned type opcional.
-        builder.OwnsOne(l => l.Endereco, EnderecoGeoOwnedConfiguration.Configure);
+        builder.OwnsOne(l => l.Endereco, endereco => EnderecoGeoOwnedConfiguration.Configure(endereco, ClassificacaoDeProtecao.Interno));
         builder.Navigation(l => l.Endereco).IsRequired(false);
 
         // Auditoria (IAuditableEntity)

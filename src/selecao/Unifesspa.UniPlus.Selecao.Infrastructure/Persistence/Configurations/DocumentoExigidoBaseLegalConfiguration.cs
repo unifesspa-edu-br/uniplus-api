@@ -7,6 +7,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+
 /// <summary>
 /// Configuração EF Core de <see cref="DocumentoExigidoBaseLegal"/> (Story #554, PR #898,
 /// issue #549) — entidade filha de <see cref="DocumentoExigido"/>, <c>EntityBase</c> puro
@@ -25,6 +28,8 @@ public sealed class DocumentoExigidoBaseLegalConfiguration : IEntityTypeConfigur
     public void Configure(EntityTypeBuilder<DocumentoExigidoBaseLegal> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("documentos_exigidos_base_legal");
         builder.HasKey(b => b.Id);

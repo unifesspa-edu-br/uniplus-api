@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
@@ -16,6 +18,8 @@ internal sealed class RespostaDaInscricaoRecordConfiguration : IEntityTypeConfig
     public void Configure(EntityTypeBuilder<RespostaDaInscricaoRecord> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Sensivel);
 
         builder.ToTable("respostas_da_inscricao", t =>
         {
@@ -33,12 +37,19 @@ internal sealed class RespostaDaInscricaoRecordConfiguration : IEntityTypeConfig
         });
 
         builder.HasKey(r => r.Id);
-        builder.Property(r => r.Id).ValueGeneratedNever();
+        builder.Property(r => r.Id).ClassificaComo(ClassificacaoDeProtecao.Interno).ValueGeneratedNever();
+        builder.Property(r => r.InscricaoId).ClassificaComo(ClassificacaoDeProtecao.Interno);
+        builder.Property(r => r.OcorrenciaId).ClassificaComo(ClassificacaoDeProtecao.Interno);
+        builder.Property(r => r.Posicao).ClassificaComo(ClassificacaoDeProtecao.Interno);
 
-        builder.Property(r => r.FatoCodigo).HasMaxLength(FormaDoItem.FatoCodigoMaxLength).IsRequired();
-        builder.Property(r => r.Origem).HasConversion<int>().IsRequired();
-        builder.Property(r => r.Tipo).HasConversion<int>().IsRequired();
+        builder.Property(r => r.FatoCodigo).ClassificaComo(ClassificacaoDeProtecao.Interno).HasMaxLength(FormaDoItem.FatoCodigoMaxLength).IsRequired();
+        builder.Property(r => r.Origem).ClassificaComo(ClassificacaoDeProtecao.Interno).HasConversion<int>().IsRequired();
+        builder.Property(r => r.Tipo).ClassificaComo(ClassificacaoDeProtecao.Interno).HasConversion<int>().IsRequired();
         builder.Property(r => r.ValorCodigo).HasMaxLength(OpcaoDeclaradaFato.CodigoMaxLength);
+
+        // As colunas de valor guardam valores de fatos de classes diferentes, cuja classificação real é a do
+        // fato coletado da linha, resolvida pelo projetor: valem a mais alta, o padrão do tipo. Só a chave e
+        // o metadado são Interno, para que uma coluna nova herde o padrão seguro.
         builder.Property(r => r.ValorCifrado)
             .HasColumnType("bytea")
             .HasComment("Resposta cifrada (AES-GCM, ADR-0121) — nunca texto claro: o número de documento, com a chave dos identificadores, ou o dado sensível de cifra individual, com a chave dos sensíveis.");

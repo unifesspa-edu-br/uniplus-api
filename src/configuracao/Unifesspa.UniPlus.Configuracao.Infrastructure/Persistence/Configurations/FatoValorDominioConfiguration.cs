@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Configuração EF Core de <see cref="FatoValorDominio"/> — a tabela
@@ -31,6 +33,8 @@ internal sealed class FatoValorDominioConfiguration : IEntityTypeConfiguration<F
     public void Configure(EntityTypeBuilder<FatoValorDominio> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("fato_valor_dominio");
 

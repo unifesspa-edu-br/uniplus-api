@@ -5,13 +5,17 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 public sealed class ConfiguracaoBonusRegionalMunicipioConfiguration : IEntityTypeConfiguration<ConfiguracaoBonusRegionalMunicipio>
 {
     public void Configure(EntityTypeBuilder<ConfiguracaoBonusRegionalMunicipio> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("configuracoes_bonus_regional_municipio");
         builder.HasKey(m => m.Id);

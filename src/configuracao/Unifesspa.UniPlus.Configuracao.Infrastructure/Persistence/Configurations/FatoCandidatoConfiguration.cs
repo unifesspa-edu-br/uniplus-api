@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -48,6 +49,8 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
     public void Configure(EntityTypeBuilder<FatoCandidato> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("rol_de_fatos_candidato", ConfigurarChecks);
 

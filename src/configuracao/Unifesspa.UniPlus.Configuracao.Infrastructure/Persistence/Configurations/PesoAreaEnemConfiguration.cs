@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",
@@ -25,6 +27,8 @@ internal sealed class PesoAreaEnemConfiguration
     public void Configure(EntityTypeBuilder<PesoAreaEnem> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable(
             "peso_area_enem",
@@ -67,6 +71,7 @@ internal sealed class PesoAreaEnemConfiguration
         // O agregado expõe as áreas ordenadas; o EF lê e grava o campo.
         builder.OwnsMany(p => p.AreasDaLinha, area =>
         {
+            area.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
             area.ToTable(
                 "peso_area_enem_area",
                 t =>

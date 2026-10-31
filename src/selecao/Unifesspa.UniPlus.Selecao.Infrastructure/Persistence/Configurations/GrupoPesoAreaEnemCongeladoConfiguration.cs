@@ -5,6 +5,8 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
@@ -21,6 +23,8 @@ internal sealed class GrupoPesoAreaEnemCongeladoConfiguration : IEntityTypeConfi
     public void Configure(EntityTypeBuilder<GrupoPesoAreaEnemCongelado> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("grupos_peso_area_enem_congelados", t => t.HasComment(
             "Quadro de pesos por área do ENEM congelado na classificação do processo seletivo: uma linha " +
@@ -44,6 +48,7 @@ internal sealed class GrupoPesoAreaEnemCongeladoConfiguration : IEntityTypeConfi
         // tipo owned, o que o modelo do EF não expressa: vive na migration, em SQL.
         builder.OwnsOne(g => g.GrupoAreaEnem, grupo =>
         {
+            grupo.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
             grupo.Property(v => v.Codigo)
                 .HasColumnName("grupo_area_enem_codigo")
                 .HasMaxLength(LimitesDoEnvelope.GrupoAreaEnemCodigo)

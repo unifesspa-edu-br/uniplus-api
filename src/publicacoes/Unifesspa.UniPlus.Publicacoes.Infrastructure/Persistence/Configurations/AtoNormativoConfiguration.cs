@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.Configuration
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
@@ -23,6 +25,8 @@ internal sealed class AtoNormativoConfiguration : IEntityTypeConfiguration<AtoNo
     public void Configure(EntityTypeBuilder<AtoNormativo> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable(
             "ato_normativo",
@@ -95,7 +99,7 @@ internal sealed class AtoNormativoConfiguration : IEntityTypeConfiguration<AtoNo
             .IsFixedLength()
             .IsRequired();
 
-        builder.Property(a => a.Assinante).HasMaxLength(AssinanteMaxLength).IsRequired();
+        builder.Property(a => a.Assinante).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(AssinanteMaxLength).IsRequired();
 
         builder.Property(a => a.RegistradoEm).IsRequired();
 
@@ -104,6 +108,7 @@ internal sealed class AtoNormativoConfiguration : IEntityTypeConfiguration<AtoNo
         // colunas são nulas juntas quando o ato não invoca configuração.
         builder.OwnsOne(a => a.VersaoInvocada, versao =>
         {
+            versao.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
             versao.Property(v => v.Id).HasColumnName("versao_invocada_id");
             versao.Property(v => v.Hash)
                 .HasColumnName("versao_invocada_hash")

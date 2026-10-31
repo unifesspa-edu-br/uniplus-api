@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 
@@ -16,6 +18,8 @@ internal sealed class InscricaoRecordConfiguration : IEntityTypeConfiguration<In
     {
         ArgumentNullException.ThrowIfNull(builder);
 
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
+
         builder.ToTable("inscricoes", t => t.HasComment(
             "A inscrição de um candidato num processo seletivo (issue #1858) — uma por CPF e " +
             "processo. As respostas ficam em respostas_da_inscricao e nas tabelas vizinhas."));
@@ -23,6 +27,7 @@ internal sealed class InscricaoRecordConfiguration : IEntityTypeConfiguration<In
         builder.HasKey(i => i.Id);
 
         builder.Property(i => i.Id)
+            .ClassificaComo(ClassificacaoDeProtecao.Publico)
             .ValueGeneratedNever();
 
         builder.Property(i => i.ProcessoSeletivoId)
@@ -32,6 +37,7 @@ internal sealed class InscricaoRecordConfiguration : IEntityTypeConfiguration<In
         // evita a expansão de ~33% de uma codificação Base64 (ADR-0121, mesmo motivo de
         // VinculoDiscenteRecord.CpfCiphertext).
         builder.Property(i => i.CpfCiphertext)
+            .ClassificaComo(ClassificacaoDeProtecao.Identificador)
             .HasColumnType("bytea")
             .IsRequired()
             .HasComment("CPF cifrado em repouso (AES-GCM, ADR-0121) — envelope autenticado; nunca texto claro.");
@@ -39,27 +45,35 @@ internal sealed class InscricaoRecordConfiguration : IEntityTypeConfiguration<In
         // Índice cego (HMAC) — determinístico por construção, nunca decifrado para buscar ou
         // garantir unicidade (ADR-0121, emenda de 2026-10-10).
         builder.Property(i => i.CpfIndice)
+            .ClassificaComo(ClassificacaoDeProtecao.Identificador)
             .HasColumnType("bytea")
             .IsRequired()
             .HasComment("Índice cego (HMAC-SHA256) do CPF — sustenta a busca pelo dono e o índice único por processo, sem decifrar a tabela.");
 
         builder.Property(i => i.Sub)
+            .ClassificaComo(ClassificacaoDeProtecao.Pessoal)
             .HasMaxLength(255)
             .IsRequired()
             .HasComment("O sub do token de quem iniciou a inscrição — nunca troca de dono.");
 
         builder.Property(i => i.EmissorToken)
+            .ClassificaComo(ClassificacaoDeProtecao.Pessoal)
             .HasMaxLength(500)
             .IsRequired()
             .HasComment("O emissor (issuer) do token de quem iniciou a inscrição.");
 
         // Lifecycle enum simples — mesmo padrão de ProcessoSeletivoConfiguration (StatusProcesso).
         builder.Property(i => i.Situacao)
+            .ClassificaComo(ClassificacaoDeProtecao.Publico)
             .HasConversion<int>()
             .IsRequired();
 
         builder.Property(i => i.VersaoFormularioId)
             .HasComment("A versão do formulário da inscrição (UNI-REQ-0084): a divulgada que o rascunho adotou por último; o primeiro envio a congela.");
+
+        // A identificação útil da inscrição (curso da primeira e da segunda opção) é dado público.
+        builder.Property(i => i.OfertaCursoId).ClassificaComo(ClassificacaoDeProtecao.Publico);
+        builder.Property(i => i.OfertaCursoSegundaOpcaoId).ClassificaComo(ClassificacaoDeProtecao.Publico);
 
         builder.Property(i => i.NumeroInscricao)
             .HasMaxLength(20)
@@ -69,10 +83,12 @@ internal sealed class InscricaoRecordConfiguration : IEntityTypeConfiguration<In
             .HasComment("O instante em que o candidato cancelou a inscrição enviada; nulo se não foi cancelada.");
 
         builder.Property(i => i.CanceladaPor)
+            .ClassificaComo(ClassificacaoDeProtecao.Pessoal)
             .HasMaxLength(255)
             .HasComment("O sub do token de quem cancelou; nulo se não foi cancelada.");
 
         builder.Property(i => i.MotivoDoCancelamento)
+            .ClassificaComo(ClassificacaoDeProtecao.Pessoal)
             .HasMaxLength(Domain.Entities.Inscricao.TamanhoMaximoDoMotivoDoCancelamento)
             .HasComment("O motivo do cancelamento; 'a pedido do candidato' quando o candidato não o disse. Nulo se não foi cancelada.");
 

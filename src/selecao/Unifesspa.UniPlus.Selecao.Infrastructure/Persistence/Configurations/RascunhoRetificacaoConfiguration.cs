@@ -10,6 +10,8 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 public sealed class RascunhoRetificacaoConfiguration : IEntityTypeConfiguration<RascunhoRetificacao>
@@ -24,6 +26,8 @@ public sealed class RascunhoRetificacaoConfiguration : IEntityTypeConfiguration<
     public void Configure(EntityTypeBuilder<RascunhoRetificacao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("rascunhos_retificacao");
         builder.HasKey(r => r.Id);
@@ -49,7 +53,7 @@ public sealed class RascunhoRetificacaoConfiguration : IEntityTypeConfiguration<
             .HasColumnType("jsonb")
             .IsRequired();
         builder.Property(r => r.AbertoEm).IsRequired();
-        builder.Property(r => r.AbertoPorSub).HasMaxLength(255).IsRequired();
+        builder.Property(r => r.AbertoPorSub).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(255).IsRequired();
         builder.Property(r => r.Revisao).IsRequired();
 
         // UNIQUE simples, não parcial: o rascunho é APAGADO no fechamento e no descarte —

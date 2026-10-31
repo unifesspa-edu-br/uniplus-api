@@ -7,6 +7,9 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+
 /// <summary>
 /// Configuração EF Core da tabela append-only <c>versoes_configuracao</c>
 /// (congelamento dos parâmetros na publicação, UNI-REQ-0019, ADR-0104/0063/0100). Sem soft-delete, sem audit fields, sem updates
@@ -36,6 +39,8 @@ internal sealed class VersaoConfiguracaoConfiguration : IEntityTypeConfiguration
     public void Configure(EntityTypeBuilder<VersaoConfiguracao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable(
             "versoes_configuracao",
@@ -113,7 +118,7 @@ internal sealed class VersaoConfiguracaoConfiguration : IEntityTypeConfiguration
 
         builder.Property(v => v.AtoCriadorRetificaId);
 
-        builder.Property(v => v.AtorUsuarioSub)
+        builder.Property(v => v.AtorUsuarioSub).ClassificaComo(ClassificacaoDeProtecao.Pessoal)
             .HasMaxLength(AtorUsuarioSubMaxLength)
             .IsRequired();
 

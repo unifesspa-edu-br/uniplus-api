@@ -5,11 +5,16 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+
 public sealed class DocumentoAPublicarConfiguration : IEntityTypeConfiguration<DocumentoAPublicar>
 {
     public void Configure(EntityTypeBuilder<DocumentoAPublicar> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("documentos_a_publicar");
         builder.HasKey(d => d.Id);

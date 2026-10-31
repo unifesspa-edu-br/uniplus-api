@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>Configuração EF Core das tentativas de confirmar a instalação.</summary>
 [SuppressMessage(
@@ -26,6 +28,8 @@ internal sealed class TentativaDeInstalacaoConfiguration : IEntityTypeConfigurat
     public void Configure(EntityTypeBuilder<TentativaDeInstalacao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
 
         builder.ToTable("instalacao_tentativas");
         builder.HasKey(t => t.Id);

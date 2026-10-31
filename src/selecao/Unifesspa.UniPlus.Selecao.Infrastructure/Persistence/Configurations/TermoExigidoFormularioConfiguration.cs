@@ -5,6 +5,8 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 
@@ -24,6 +26,8 @@ public sealed class TermoExigidoFormularioConfiguration : IEntityTypeConfigurati
     public void Configure(EntityTypeBuilder<TermoExigidoFormulario> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("termos_exigidos_formulario");
         builder.HasKey(t => t.Id);

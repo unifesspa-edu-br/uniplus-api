@@ -5,6 +5,8 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
@@ -23,6 +25,8 @@ internal sealed class ConfiguracaoClassificacaoConfiguration : IEntityTypeConfig
     public void Configure(EntityTypeBuilder<ConfiguracaoClassificacao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("configuracoes_classificacao");
         builder.HasKey(c => c.Id);

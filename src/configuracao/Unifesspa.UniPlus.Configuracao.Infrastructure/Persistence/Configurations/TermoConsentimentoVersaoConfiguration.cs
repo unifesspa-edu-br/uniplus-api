@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Configuração EF Core da tabela append-only <c>termo_consentimento_versao</c>
@@ -26,6 +28,8 @@ internal sealed class TermoConsentimentoVersaoConfiguration : IEntityTypeConfigu
     public void Configure(EntityTypeBuilder<TermoConsentimentoVersao> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable(
             "termo_consentimento_versao",
@@ -51,7 +55,7 @@ internal sealed class TermoConsentimentoVersaoConfiguration : IEntityTypeConfigu
 
         builder.Property(v => v.PromovidaEm).IsRequired();
 
-        builder.Property(v => v.PromovidaPor)
+        builder.Property(v => v.PromovidaPor).ClassificaComo(ClassificacaoDeProtecao.Pessoal)
             .HasMaxLength(PromovidaPorMaxLength)
             .IsRequired();
 

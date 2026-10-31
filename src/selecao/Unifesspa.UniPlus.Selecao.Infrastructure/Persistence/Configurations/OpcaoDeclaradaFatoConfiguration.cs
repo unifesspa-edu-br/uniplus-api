@@ -5,6 +5,9 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+
 /// <summary>
 /// Configuração EF Core de <see cref="OpcaoDeclaradaFato"/> (issue #1619) — entidade filha de
 /// <c>ProcessoSeletivo</c>, <c>EntityBase</c> puro, substituída por fato pelo agregado.
@@ -14,6 +17,8 @@ public sealed class OpcaoDeclaradaFatoConfiguration : IEntityTypeConfiguration<O
     public void Configure(EntityTypeBuilder<OpcaoDeclaradaFato> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("opcoes_declaradas_fato");
         builder.HasKey(o => o.Id);

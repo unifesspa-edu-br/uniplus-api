@@ -3,7 +3,9 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.Converters;
 
@@ -16,6 +18,8 @@ internal sealed class UnidadeConfiguration : IEntityTypeConfiguration<Unidade>
     public void Configure(EntityTypeBuilder<Unidade> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         // Trio de cidade all-or-nothing (issue #1114): espelha no banco a invariante
         // de domínio já provada por Unidade.ValidarReferenciaCidade — mesmo padrão de

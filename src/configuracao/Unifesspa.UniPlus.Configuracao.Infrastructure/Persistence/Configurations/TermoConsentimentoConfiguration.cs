@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 [SuppressMessage(
     "Performance",
@@ -23,6 +25,8 @@ internal sealed class TermoConsentimentoConfiguration : IEntityTypeConfiguration
     public void Configure(EntityTypeBuilder<TermoConsentimento> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable(
             "termo_consentimento",
@@ -41,7 +45,7 @@ internal sealed class TermoConsentimentoConfiguration : IEntityTypeConfiguration
             .IsRequired();
 
         builder.Property(t => t.Revisado).IsRequired();
-        builder.Property(t => t.RevisadoPor).HasMaxLength(RevisadoPorMaxLength);
+        builder.Property(t => t.RevisadoPor).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(RevisadoPorMaxLength);
         builder.Property(t => t.RevisadoEm);
 
         // Token de concorrência otimista mapeado para a coluna de sistema `xmin` do

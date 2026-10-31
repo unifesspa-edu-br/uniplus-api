@@ -10,6 +10,8 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 [SuppressMessage(
     "Performance",
@@ -29,6 +31,8 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
     public void Configure(EntityTypeBuilder<FaseCanonica> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("fase_canonica", ConfigurarChecks);
 

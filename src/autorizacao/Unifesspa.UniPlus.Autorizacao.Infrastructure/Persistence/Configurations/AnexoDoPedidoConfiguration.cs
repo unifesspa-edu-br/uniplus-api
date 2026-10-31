@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>Configuração EF Core do anexo do pedido e do registro dos acessos a ele.</summary>
 [SuppressMessage(
@@ -27,6 +29,8 @@ internal sealed class AnexoDoPedidoConfiguration : IEntityTypeConfiguration<Anex
     public void Configure(EntityTypeBuilder<AnexoDoPedido> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("pedido_anexos");
         builder.HasKey(a => a.Id);

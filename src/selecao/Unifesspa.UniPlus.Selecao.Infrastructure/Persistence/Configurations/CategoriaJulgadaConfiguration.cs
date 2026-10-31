@@ -5,6 +5,9 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+
 /// <summary>
 /// Configuração EF Core de <see cref="CategoriaJulgada"/> — filha 0..* de
 /// <see cref="BancaRequerida"/>. Os limites de comprimento espelham
@@ -18,6 +21,8 @@ public sealed class CategoriaJulgadaConfiguration : IEntityTypeConfiguration<Cat
     public void Configure(EntityTypeBuilder<CategoriaJulgada> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable("categorias_julgadas");
         builder.HasKey(c => c.Id);

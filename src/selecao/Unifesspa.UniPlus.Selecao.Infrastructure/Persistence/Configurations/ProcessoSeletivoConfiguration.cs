@@ -7,7 +7,9 @@ using Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -28,6 +30,8 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
     public void Configure(EntityTypeBuilder<ProcessoSeletivo> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         // Trio de cidade da Unidade administradora, all-or-nothing (issue #1114):
         // espelha no banco a invariante já provada por
@@ -75,6 +79,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.Ignore(p => p.TipoProcessoOrigemId);
         builder.OwnsOne(p => p.TipoProcesso, tipo =>
         {
+            tipo.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
             tipo.Property(x => x.OrigemId)
                 .HasColumnName("tipo_processo_origem_id")
                 .IsRequired()
@@ -97,6 +102,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
 
         builder.OwnsOne(p => p.UnidadeAdministradora, u =>
         {
+            u.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
             u.Property(x => x.Sigla).HasColumnName("unidade_administradora_sigla").HasMaxLength(50).IsRequired()
                 .HasComment("Snapshot-copy da sigla da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
             u.Property(x => x.Slug).HasColumnName("unidade_administradora_slug").HasMaxLength(64).IsRequired()
@@ -132,6 +138,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         // existe o estado "sem localidade" que o trio da Unidade administradora admite.
         builder.OwnsOne(p => p.Localidade, l =>
         {
+            l.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
             l.Property(x => x.CodigoIbge)
                 .HasColumnName("localidade_codigo_ibge")
                 .HasMaxLength(ReferenciaCidadeGeo.CodigoIbgeLength)
@@ -158,6 +165,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         // all-or-nothing próprio: o owned type do EF já traz as três juntas ou nenhuma.
         builder.OwnsOne(p => p.AlgoritmoContagemPrazo, algoritmo =>
         {
+            algoritmo.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
             algoritmo.ConfigurarReferenciaRegra("algoritmo_contagem_prazo");
 
             // A forma das colunas é a mesma de toda referência de regra; o que é desta aqui é o
@@ -305,6 +313,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         // Id nem ciclo de vida próprio, diferente das coleções acima).
         builder.OwnsOne(p => p.ReferenciaTemporalFatos, referencia =>
         {
+            referencia.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
             referencia.Property(r => r.Tipo)
                 .HasColumnName("referencia_temporal_fatos_tipo")
                 .HasConversion(ReferenciaTipoConverter)
