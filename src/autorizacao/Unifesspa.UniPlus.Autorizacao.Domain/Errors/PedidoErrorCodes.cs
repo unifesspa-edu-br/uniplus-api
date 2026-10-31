@@ -20,6 +20,8 @@ public static class PedidoErrorCodes
     public const string DecisorEParte = "Pedido.DecisorEParte";
     public const string MesmoDecisorNasDuasEtapas = "Pedido.MesmoDecisorNasDuasEtapas";
     public const string MotivoInvalido = "Pedido.MotivoInvalido";
+    public const string ValidadeInvalida = "Pedido.ValidadeInvalida";
+    public const string PrazoVencido = "Pedido.PrazoVencido";
     public const string JaTemConcessao = "Pedido.JaTemConcessao";
     public const string AutorNaoIdentificado = "Pedido.AutorNaoIdentificado";
     public const string NaoEOBeneficiario = "Pedido.NaoEOBeneficiario";

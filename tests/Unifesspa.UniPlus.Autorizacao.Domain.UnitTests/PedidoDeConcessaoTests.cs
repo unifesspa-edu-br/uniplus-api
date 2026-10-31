@@ -230,6 +230,102 @@ public sealed class PedidoDeConcessaoTests
         pedido.Decisoes.Select(d => d.Etapa).Should().Equal(EtapaDoPedido.Gestor, EtapaDoPedido.ProtecaoDeDados);
     }
 
+    [Fact(DisplayName = "A sugestão de fim de vigência do solicitante fica gravada no pedido de perfil comum")]
+    public void Criar_ComSugestaoDeValidade_Grava()
+    {
+        Result<PedidoDeConcessao> resultado = CriarComSugestao(PerfilComum(), Agora.AddMonths(6));
+
+        resultado.Value!.ValidaAteSugerida.Should().Be(Agora.AddMonths(6));
+        resultado.Value.ValidaAte.Should().BeNull("quem define o fim da vigência é o gestor");
+    }
+
+    [Fact(DisplayName = "Sugerir fim de vigência para perfil de governança é recusado")]
+    public void Criar_ComSugestaoParaGovernanca_Recusa() =>
+        CriarComSugestao(PerfilDeGovernanca(), Agora.AddMonths(6)).Errors.Should().ContainSingle()
+            .Which.Should().Match<FieldError>(e => e.Field == "validaAteSugerida" && e.Error.Code == PedidoErrorCodes.ValidadeInvalida);
+
+    [Fact(DisplayName = "Sugerir fim de vigência que não é posterior ao instante é recusado")]
+    public void Criar_ComSugestaoNoPassado_Recusa() =>
+        CriarComSugestao(PerfilComum(), Agora).Errors.Should().ContainSingle()
+            .Which.Should().Match<FieldError>(e => e.Field == "validaAteSugerida" && e.Error.Code == PedidoErrorCodes.ValidadeInvalida);
+
+    [Fact(DisplayName = "O gestor define o fim de vigência ao aprovar, e a proteção de dados conclui sem alterá-lo")]
+    public void Aprovar_GestorComValidade_Grava()
+    {
+        PedidoDeConcessao pedido = PedidoAguardandoGestor();
+
+        pedido.Aprovar(Diogo.Identidade, Sensivel, Contexto, Agora, Agora.AddMonths(3)).IsSuccess.Should().BeTrue();
+        pedido.ValidaAte.Should().Be(Agora.AddMonths(3));
+
+        pedido.Aprovar(Marlene.Identidade, Sensivel, Contexto, Agora.AddHours(1)).IsSuccess.Should().BeTrue();
+        pedido.ValidaAte.Should().Be(Agora.AddMonths(3));
+    }
+
+    [Fact(DisplayName = "O gestor não define fim de vigência para perfil de governança")]
+    public void Aprovar_GestorComValidadeParaGovernanca_Recusa()
+    {
+        PedidoDeConcessao pedido = PedidoAguardandoGestor();
+
+        Result<DesfechoDaAprovacao> resultado = pedido.Aprovar(Diogo.Identidade, DeGestor, Contexto, Agora, Agora.AddMonths(3));
+
+        resultado.Errors.Should().ContainSingle()
+            .Which.Should().Match<FieldError>(e => e.Field == "validaAte" && e.Error.Code == PedidoErrorCodes.ValidadeInvalida);
+        pedido.Decisoes.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "O gestor não define fim de vigência que não é posterior ao instante da aprovação")]
+    public void Aprovar_GestorComValidadeNoPassado_Recusa()
+    {
+        PedidoDeConcessao pedido = PedidoAguardandoGestor();
+
+        Codigos(pedido.Aprovar(Diogo.Identidade, Interno, Contexto, Agora, Agora)).Should().Equal(PedidoErrorCodes.ValidadeInvalida);
+        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
+    }
+
+    [Fact(DisplayName = "Prazo do gestor vencido antes da proteção de dados devolve o pedido ao gestor, com a tentativa registrada e sem prazo")]
+    public void Aprovar_ProtecaoDeDadosComPrazoVencido_VoltaAoGestor()
+    {
+        PedidoDeConcessao pedido = PedidoAguardandoGestor();
+        pedido.Aprovar(Diogo.Identidade, Sensivel, Contexto, Agora, Agora.AddDays(1));
+
+        Result<DesfechoDaAprovacao> resultado = pedido.Aprovar(Marlene.Identidade, Sensivel, Contexto, Agora.AddDays(2));
+
+        Codigos(resultado).Should().Equal(PedidoErrorCodes.PrazoVencido);
+        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
+        pedido.ValidaAte.Should().BeNull();
+        pedido.Decisoes.Select(d => d.Resultado).Should().Equal(ResultadoDaDecisao.Aprovado, ResultadoDaDecisao.PrazoVencido);
+        DecisaoDoPedido tentativa = pedido.Decisoes[1];
+        tentativa.Etapa.Should().Be(EtapaDoPedido.ProtecaoDeDados);
+        tentativa.Decisor.Should().Be(Marlene.Identidade);
+    }
+
+    [Fact(DisplayName = "Perfil alterado entre as etapas devolve o pedido ao gestor e zera o prazo que ele definira")]
+    public void Aprovar_PerfilAlterado_ZeraOPrazo()
+    {
+        PedidoDeConcessao pedido = PedidoAguardandoGestor();
+        pedido.Aprovar(Diogo.Identidade, Sensivel, Contexto, Agora, Agora.AddMonths(3));
+        PerfilAvaliado ampliado = new(["selecao:atendimento:analisar"], "sensivel", true, null);
+
+        Codigos(pedido.Aprovar(Marlene.Identidade, ampliado, Contexto, Agora.AddHours(1))).Should().Equal(PedidoErrorCodes.PerfilAlterado);
+
+        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
+        pedido.ValidaAte.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "A proteção de dados não informa fim de vigência, que é do gestor")]
+    public void Aprovar_ProtecaoDeDadosComValidade_Recusa()
+    {
+        PedidoDeConcessao pedido = PedidoAguardandoGestor();
+        pedido.Aprovar(Diogo.Identidade, Sensivel, Contexto, Agora, Agora.AddMonths(3));
+
+        Result<DesfechoDaAprovacao> resultado = pedido.Aprovar(Marlene.Identidade, Sensivel, Contexto, Agora.AddHours(1), Agora.AddMonths(9));
+
+        resultado.Errors.Should().ContainSingle()
+            .Which.Should().Match<FieldError>(e => e.Field == "validaAte" && e.Error.Code == PedidoErrorCodes.ValidadeInvalida);
+        pedido.ValidaAte.Should().Be(Agora.AddMonths(3));
+        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoProtecaoDeDados);
+    }
+
     [Fact(DisplayName = "Pedido que não aguarda aprovador não se aprova nem se recusa")]
     public void Decidir_SemEtapa_Recusa()
     {
@@ -572,6 +668,10 @@ public sealed class PedidoDeConcessaoTests
     private static Result<PedidoDeConcessao> CriarResultado(PessoaNoToken solicitante, string? email) =>
         PedidoDeConcessao.Criar(
             solicitante, email, PerfilComum(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Justificativa, Dominios, Catalogo, Agora);
+
+    private static Result<PedidoDeConcessao> CriarComSugestao(Perfil perfil, DateTimeOffset validaAteSugerida) =>
+        PedidoDeConcessao.Criar(
+            Betina, null, perfil, EscopoOf(perfil), Justificativa, Dominios, Catalogo, Agora, validaAteSugerida);
 
     private static EscopoDaConcessao EscopoOf(Perfil? perfil) =>
         perfil?.Governanca is null ? EscopoDaConcessao.DaUnidade(Guid.NewGuid()) : EscopoDaConcessao.DaInstituicao();

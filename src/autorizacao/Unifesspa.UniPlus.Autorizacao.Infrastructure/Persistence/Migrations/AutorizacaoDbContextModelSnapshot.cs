@@ -559,6 +559,14 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
+                    b.Property<DateTimeOffset?>("ValidaAte")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("valida_ate");
+
+                    b.Property<DateTimeOffset?>("ValidaAteSugerida")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("valida_ate_sugerida");
+
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()

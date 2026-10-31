@@ -57,11 +57,11 @@ public static class AprovarPedidoDeConcessaoCommandHandler
             && await concessoes.TemConcessaoAtivaDoPerfilAsync(beneficiario, PerfisDeSistema.ProtecaoDeDadosId, agora, cancellationToken)
                 .ConfigureAwait(false);
 
-        Result<DesfechoDaAprovacao> aprovacao = pedido.Aprovar(decisor, avaliado, new ContextoDaAprovacao(jaTemProtecaoDeDados), agora);
+        Result<DesfechoDaAprovacao> aprovacao = pedido.Aprovar(decisor, avaliado, new ContextoDaAprovacao(jaTemProtecaoDeDados), agora, command.ValidaAte);
         if (aprovacao.IsFailure)
         {
-            // O perfil alterado entre as etapas devolve o pedido ao gestor, e esse estado precisa ser gravado.
-            if (aprovacao.Error!.Code == Domain.Errors.PedidoErrorCodes.PerfilAlterado)
+            // O perfil alterado ou o prazo vencido entre as etapas devolvem o pedido ao gestor, e esse estado precisa ser gravado.
+            if (aprovacao.Error!.Code is Domain.Errors.PedidoErrorCodes.PerfilAlterado or Domain.Errors.PedidoErrorCodes.PrazoVencido)
             {
                 return await SalvarRecusaAsync(unitOfWork, aprovacao.Error!, cancellationToken).ConfigureAwait(false);
             }
@@ -140,7 +140,7 @@ public static class AprovarPedidoDeConcessaoCommandHandler
         // A concessão nova se constrói e valida antes de qualquer gravação: se ela falhar, nada fica gravado.
         Result<Concessao> concessao = Concessao.Conceder(
             beneficiario, perfil, pedido.Escopo, new OrigemDaConcessao(TipoDeOrigem.Pedido, pedido.Id), decisor, agora, catalogo,
-            beneficiarioEmail: pedido.BeneficiarioEmail);
+            validaAte: pedido.ValidaAte, beneficiarioEmail: pedido.BeneficiarioEmail);
         if (concessao.IsFailure)
         {
             return Result.ValidationFailure(concessao.Errors);

@@ -12,4 +12,5 @@ public sealed record CriarPedidoDeConcessaoCommand(
     string? BeneficiarioEmail,
     Guid PerfilId,
     Guid? UnidadeId,
-    string? Justificativa) : ICommand<Result<PedidoDeConcessaoDto>>;
+    string? Justificativa,
+    DateTimeOffset? ValidaAteSugerida = null) : ICommand<Result<PedidoDeConcessaoDto>>;

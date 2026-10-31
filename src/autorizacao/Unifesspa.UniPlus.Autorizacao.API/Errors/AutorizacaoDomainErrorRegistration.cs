@@ -77,6 +77,8 @@ internal sealed class AutorizacaoDomainErrorRegistration : IDomainErrorRegistrat
         new(PedidoErrorCodes.JaTemConcessao, new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.autorizacao.pedido.ja_tem_concessao", "O beneficiário já tem concessão ativa igual")),
         new(PedidoErrorCodes.AutorNaoIdentificado, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.autorizacao.pedido.autor_nao_identificado", "Autor da operação não identificado")),
         new(PedidoErrorCodes.NaoEOBeneficiario, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.autorizacao.pedido.nao_e_o_beneficiario", "Só o beneficiário do pedido o aceita")),
+        new(PedidoErrorCodes.PrazoVencido, new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.autorizacao.pedido.prazo_vencido", "O prazo da concessão venceu antes da aprovação", RecusaAposGravacao: true)),
+        new(PedidoErrorCodes.ValidadeInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.pedido.validade_invalida", "Fim da vigência inválido")),
         new(PedidoErrorCodes.PerfilAlterado, new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.autorizacao.pedido.perfil_alterado", "O perfil mudou depois da aprovação do gestor", RecusaAposGravacao: true)),
         new(PedidoErrorCodes.AnexoNaoVerificado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.pedido.anexo_nao_verificado", "O anexo ainda não foi verificado")),
         new(PedidoErrorCodes.AnexoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.pedido.anexo_invalido", "Anexo do pedido inválido")),

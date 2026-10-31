@@ -64,7 +64,8 @@ public static class CriarPedidoDeConcessaoCommandHandler
             : EscopoDaConcessao.DaInstituicao();
 
         Result<PedidoDeConcessao> criado = PedidoDeConcessao.Criar(
-            solicitante, command.BeneficiarioEmail, perfil, escopo, command.Justificativa, dominios, catalogo, timeProvider.GetUtcNow());
+            solicitante, command.BeneficiarioEmail, perfil, escopo, command.Justificativa, dominios, catalogo, timeProvider.GetUtcNow(),
+            command.ValidaAteSugerida);
         if (criado.IsFailure)
         {
             return Result<PedidoDeConcessaoDto>.ValidationFailure(criado.Errors);

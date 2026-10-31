@@ -58,6 +58,9 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
         builder.Property(p => p.Justificativa).HasMaxLength(PedidoDeConcessao.JustificativaMaxLength).IsRequired();
         builder.Property(p => p.Situacao).HasConversion(SituacaoConverter).HasMaxLength(SituacaoMaxLength).IsRequired();
 
+        builder.Property(p => p.ValidaAteSugerida);
+        builder.Property(p => p.ValidaAte);
+
         // A unidade é de outro módulo (ADR-0087): sem chave estrangeira entre schemas.
         builder.Property(p => p.UnidadeId);
 
