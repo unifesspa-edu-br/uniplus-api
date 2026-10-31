@@ -397,8 +397,9 @@ readonly PERSONAS_FILE="$SCRIPT_DIR/../docker/keycloak/personas.json"
 # papel de acesso exato de HML não está disponível localmente.
 readonly PERSONA_PRIVILEGIADA_ROLES=("admin" "plataforma-admin")
 
-# Só os roles que este script usa para persona (candidato ou privilegiada) —
-# nunca toca em role de área ou outro concedido por fora deste fluxo.
+# Só os roles que este script usa para persona (privilegiada) — nunca toca em
+# role de área ou outro concedido por fora deste fluxo. `candidato` entra só para
+# desfazer o papel que um realm criado antes desta mudança ainda atribui à persona.
 readonly PERSONA_ROLES_CONHECIDOS=("candidato" "${PERSONA_PRIVILEGIADA_ROLES[@]}")
 
 # Substitui, não só acrescenta: remove os roles conhecidos que o user tem e
@@ -419,7 +420,10 @@ assign_realm_roles() {
     if [ "$(jq 'length' <<< "$a_remover")" -gt 0 ]; then
         auth_json -X DELETE "$API/users/$user_id/role-mappings/realm" -d "$a_remover" >/dev/null
     fi
-    auth_json -X POST "$API/users/$user_id/role-mappings/realm" -d "$roles_json" >/dev/null
+    if [ "$(jq 'length' <<< "$roles_json")" -gt 0 ]; then
+        auth_json -X POST "$API/users/$user_id/role-mappings/realm" -d "$roles_json" >/dev/null
+    fi
+    return 0
 }
 
 # Mesma troca (substitui, não só acrescenta), mas para os roles do client
@@ -507,8 +511,7 @@ ensure_personas() {
     # opcional (sem ele, o ambiente local fica sem as personas, em silêncio).
     [ -f "$PERSONAS_FILE" ] || fail "'$PERSONAS_FILE' não encontrado"
 
-    local candidato_roles_json privilegiada_roles_json
-    candidato_roles_json=$(jq -nc --argjson r "$(auth "$API/roles/candidato")" '[$r]')
+    local privilegiada_roles_json
     privilegiada_roles_json=$(jq -nc \
         --argjson a "$(auth "$API/roles/${PERSONA_PRIVILEGIADA_ROLES[0]}")" \
         --argjson b "$(auth "$API/roles/${PERSONA_PRIVILEGIADA_ROLES[1]}")" \
@@ -533,7 +536,8 @@ ensure_personas() {
     for ((i = 0; i < total; i++)); do
         row=$(jq -c ".[$i]" "$PERSONAS_FILE")
         perfil=$(jq -r '.perfil' <<< "$row")
-        roles_json="$candidato_roles_json"
+        # Persona de categoria candidato não tem papel de realm: o token só a identifica.
+        roles_json="[]"
         client_roles_json="[]"
         if [ "$perfil" = "privilegiado" ]; then
             roles_json="$privilegiada_roles_json"

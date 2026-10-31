@@ -2,8 +2,14 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Authentication;
 
 using System.Diagnostics.CodeAnalysis;
 
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
+using Unifesspa.UniPlus.Authorization.Abstractions;
+using Unifesspa.UniPlus.Authorization.Contracts;
+using Unifesspa.UniPlus.Authorization.ValueObjects;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
@@ -45,4 +51,24 @@ public sealed class OidcRealApiFactory : MonolitoApiFactory
         new("Auth:Authority", _authority),
         new("Auth:Audience", KeycloakContainerFixture.Audience),
     ];
+
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+
+        base.ConfigureWebHost(builder);
+
+        // A fábrica sobe sem banco: a pessoa dos tokens do realm de teste não tem concessão.
+        builder.ConfigureTestServices(services =>
+        {
+            services.RemoveAll<IConcessoesAtivasDoSujeito>();
+            services.AddScoped<IConcessoesAtivasDoSujeito, SemConcessoes>();
+        });
+    }
+
+    private sealed class SemConcessoes : IConcessoesAtivasDoSujeito
+    {
+        public Task<IReadOnlyList<ConcessaoAtiva>> ListarAsync(UsuarioRef pessoa, CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<ConcessaoAtiva>>([]);
+    }
 }

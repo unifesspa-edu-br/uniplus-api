@@ -21,8 +21,7 @@
     "realm": [
       { "name": "admin", "description": "Administrador do sistema" },
       { "name": "gestor", "description": "Gestor institucional" },
-      { "name": "avaliador", "description": "Avaliador de processos" },
-      { "name": "candidato", "description": "Candidato em processo seletivo" }
+      { "name": "avaliador", "description": "Avaliador de processos" }
     ]
   },
   "clientScopes": [
@@ -313,7 +312,7 @@
         }
       ],
       "requiredActions": [],
-      "realmRoles": ["candidato"]
+      "realmRoles": []
     }
   ]
 }
