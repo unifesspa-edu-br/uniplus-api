@@ -38,7 +38,7 @@ public sealed class PoliticaDeControllerTests
         controllers.SelectMany(static t => ControllersDaSolucao.AcoesDe(t)
                 .SelectMany(a => ControllersDaSolucao.AtributosDe<AuthorizeAttribute>(t, a)))
             .Should().Contain(static a => a.Policy == null, "há controllers reais só com [Authorize]")
-            .And.Contain(static a => a.Policy == "Candidato", "há controllers reais com a política de identidade");
+            .And.Contain(static a => a.Policy == "Instalacao", "há controllers reais com a política de identidade");
     }
 
     private static List<string> Violacoes(IEnumerable<Type> controllers)

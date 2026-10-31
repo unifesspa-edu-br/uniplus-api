@@ -78,7 +78,8 @@ public static class OidcAuthenticationConfiguration
                 jwtOptions.Events
                     .WithStructuredLogging(
                         loggerFactory.CreateLogger("Unifesspa.UniPlus.Authentication.JwtBearer"))
-                    .WithProblemDetails();
+                    .WithProblemDetails()
+                    .ExigindoCpf();
             });
 
         // IProblemDetailsService disponibiliza `CustomizeProblemDetails` e o
@@ -115,8 +116,6 @@ public static class OidcAuthenticationConfiguration
                 .RequireAssertion(static contexto => contexto.User.Identities.Any(static i => i.IsAuthenticated)
                     || (contexto.Resource is HttpContext requisicao && requisicao.GetEndpoint() is not RouteEndpoint))
                 .Build())
-            .AddPolicy("Candidato", policy => policy.RequireAssertion(static contexto =>
-                contexto.User.FindFirst(UniPlusClaims.Cpf) is { Value: { } cpf } && !string.IsNullOrWhiteSpace(cpf)))
             // "Instalacao": a única exceção a "o token não concede acesso" — o papel de realm só habilita
             // a instalação dos primeiros gestores de acessos, que o segundo fator por e-mail confirma.
             .AddPolicy("Instalacao", policy => policy.RequireRole("uniplus-instalacao"));

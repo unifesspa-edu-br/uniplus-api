@@ -212,7 +212,7 @@ A confirmação "Ausência de oráculo" lê-se com a distinção já registrada 
 
 ## Emenda 2 (2026-10-10) — a inscrição autenticada ainda não passa pelo Portal
 
-Esta decisão trata da superfície **pública e anônima** — a vitrine e o detalhe do certame publicado. A frente seguinte, antecipada no texto original como "estado do candidato e superfície autenticada", chegou com a inscrição (issue #1859, UNI-REQ-0084): o frontend do candidato consome os endpoints de inscrição (iniciar, consultar, salvar rascunho, obter o formulário renderizável, submeter) **diretamente do módulo Seleção**, sob a policy `Candidato`, não através do Portal.
+Esta decisão trata da superfície **pública e anônima** — a vitrine e o detalhe do certame publicado. A frente seguinte, antecipada no texto original como "estado do candidato e superfície autenticada", chegou com a inscrição (issue #1859, UNI-REQ-0084): o frontend do candidato consome os endpoints de inscrição (iniciar, consultar, salvar rascunho, obter o formulário renderizável, submeter) **diretamente do módulo Seleção**, autenticado, com o titular resolvido pelo CPF do token, não através do Portal.
 
 Isso não revoga nem contradiz a decisão: o que ela proíbe é o Portal — ou qualquer consumidor público e anônimo — lendo o envelope congelado ou recebendo privilégio administrativo. A inscrição é autenticada, por candidato, e o contrato que ela expõe já é desenhado campo a campo (`InscricaoRequest`/`InscricaoDto`/`FormularioRenderizavelDto`), não uma projeção do envelope. O que fica registrado é que o Portal **ainda não é o único ponto de entrada do candidato** — continua sendo até ele ganhar a responsabilidade de compor também essa frente.
 

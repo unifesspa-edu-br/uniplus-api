@@ -3240,6 +3240,11 @@
       "username": "service-account-uniplus-api-bootstrap",
       "enabled": true,
       "serviceAccountClientId": "uniplus-api-bootstrap",
+      "attributes": {
+        "cpf": [
+          "36575606458"
+        ]
+      },
       "realmRoles": [
         "plataforma-admin"
       ]

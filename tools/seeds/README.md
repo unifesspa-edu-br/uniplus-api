@@ -73,6 +73,8 @@ Por isso a chave é `{{$guid}}`, gerada por execução, e o request assere que a
 
 `client_credentials` contra o Keycloak, com o client confidencial `uniplus-api-bootstrap` (service account com a realm role `plataforma-admin`). O token é cacheado na coleção até 60 s antes de expirar.
 
+A API recusa token sem CPF, então o service account precisa do atributo `cpf`. Em `dev`, ele usa o CPF fictício da persona `betina.neves`.
+
 Em `dev`, o client e o secret vivem no realm export versionado (`docker/keycloak/realm-export-dev-local.json`) — são credenciais de desenvolvimento, sem valor fora da máquina local. Em **standalone, HML e PROD** o client é precondição de deploy e o secret vem do `uniplus-infra`, por `BOOTSTRAP_CLIENT_SECRET`: **nunca** versionado neste repositório.
 
 Em homologação o client **ainda não existe**: o realm importado pelo `uniplus-infra` declara os

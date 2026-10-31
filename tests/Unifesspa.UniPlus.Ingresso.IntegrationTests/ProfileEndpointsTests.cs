@@ -78,7 +78,7 @@ public sealed class ProfileEndpointsTests : IClassFixture<IngressoApiFactory>
     }
 
     [Fact]
-    public async Task GetMe_ShouldReturnNullCpfAndNomeSocial_WhenUniPlusClaimsAbsent()
+    public async Task GetMe_ShouldReturnNullNomeSocial_WhenClaimAbsent()
     {
         using WebApplicationFactory<Unifesspa.UniPlus.Host.HostAssemblyMarker> factory = ComConcessoes();
         using HttpClient client = factory.CreateClient();
@@ -92,7 +92,7 @@ public sealed class ProfileEndpointsTests : IClassFixture<IngressoApiFactory>
 
         using JsonDocument payload = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
 
-        payload.RootElement.GetProperty("cpf").ValueKind.Should().Be(JsonValueKind.Null);
+        payload.RootElement.GetProperty("cpf").GetString().Should().Be(TestAuthHandler.CpfPadrao);
         payload.RootElement.GetProperty("nomeSocial").ValueKind.Should().Be(JsonValueKind.Null);
     }
 

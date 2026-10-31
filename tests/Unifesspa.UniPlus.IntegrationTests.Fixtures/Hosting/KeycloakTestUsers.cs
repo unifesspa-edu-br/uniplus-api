@@ -39,6 +39,9 @@ public static class KeycloakTestUsers
         Cpf: "24843803480",
         NomeSocial: "Candidato Teste",
         Role: null);
+
+    /// <summary>Usuário sem o atributo <c>cpf</c>: o token é válido, e a API o recusa como não autenticado.</summary>
+    public const string SemCpf = "sem-cpf";
 }
 
 /// <summary>

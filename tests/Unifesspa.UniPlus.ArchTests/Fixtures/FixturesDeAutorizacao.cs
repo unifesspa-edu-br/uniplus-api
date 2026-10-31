@@ -41,7 +41,7 @@ internal static class FixturesDeAutorizacao
 
     internal sealed class PoliticaDeIdentidade
     {
-        [Authorize(Policy = "Candidato")]
+        [Authorize(Policy = "Instalacao")]
         [HttpGet]
         public int Ler()
         {
