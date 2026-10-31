@@ -2,8 +2,10 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.Commands;
 
 using Microsoft.Extensions.Logging;
 
+using Unifesspa.UniPlus.Application.Abstractions.Email;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Instalacoes;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
@@ -18,13 +20,16 @@ using Unifesspa.UniPlus.Verificador.Contratos;
 /// A fila entrega ao menos uma vez, então o resultado de quem já saiu de "em verificação" — repetido, ou depois do fim
 /// da instalação — é ignorado com log. Todo veredicto tem transição: verificado grava o SHA-256; recusado e reenvio
 /// necessário encerram o documento, e quem enviou recomeça. O veredicto indefinido é defeito do contrato.
+/// O pedido que o documento libera avisa a próxima pessoa pelo outbox, na mesma gravação.
 /// </remarks>
 public static partial class RegistrarResultadoDaVerificacaoDoDocumentoDaAutorizacaoHandler
 {
-    public static async Task Handle(
+    public static async Task<IEnumerable<EnviarEmail>> Handle(
         ResultadoDaVerificacaoDeArquivo resultado,
         IInstalacaoRepository instalacoes,
         IPedidoDeConcessaoRepository pedidos,
+        IPerfilRepository perfis,
+        AvisosDoPedido avisos,
         IAutorizacaoUnitOfWork unitOfWork,
         TimeProvider clock,
         ILogger logger,
@@ -33,6 +38,8 @@ public static partial class RegistrarResultadoDaVerificacaoDoDocumentoDaAutoriza
         ArgumentNullException.ThrowIfNull(resultado);
         ArgumentNullException.ThrowIfNull(instalacoes);
         ArgumentNullException.ThrowIfNull(pedidos);
+        ArgumentNullException.ThrowIfNull(perfis);
+        ArgumentNullException.ThrowIfNull(avisos);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentNullException.ThrowIfNull(logger);
@@ -40,6 +47,7 @@ public static partial class RegistrarResultadoDaVerificacaoDoDocumentoDaAutoriza
         Validar(resultado);
 
         bool alterou;
+        IReadOnlyList<EnviarEmail> mensagens = [];
         Instalacao? instalacao = await instalacoes.ObterPorIdAsync(resultado.ArquivoId, cancellationToken).ConfigureAwait(false);
         if (instalacao is not null)
         {
@@ -50,7 +58,7 @@ public static partial class RegistrarResultadoDaVerificacaoDoDocumentoDaAutoriza
             if (!alterou)
             {
                 LogResultadoIgnorado(logger, resultado.ArquivoId, situacao);
-                return;
+                return [];
             }
         }
         else
@@ -59,7 +67,7 @@ public static partial class RegistrarResultadoDaVerificacaoDoDocumentoDaAutoriza
             if (anexo is null)
             {
                 LogArquivoInexistente(logger, resultado.ArquivoId);
-                return;
+                return [];
             }
 
             SituacaoDoAnexo situacao = anexo.Situacao;
@@ -69,7 +77,7 @@ public static partial class RegistrarResultadoDaVerificacaoDoDocumentoDaAutoriza
             if (!alterou)
             {
                 LogAnexoIgnorado(logger, resultado.ArquivoId, situacao);
-                return;
+                return [];
             }
 
             // O documento verificado libera o pedido que o esperava; o anexo e o pedido saem na mesma gravação.
@@ -78,10 +86,16 @@ public static partial class RegistrarResultadoDaVerificacaoDoDocumentoDaAutoriza
                 && pedido.LiberarAoVerificarDocumento())
             {
                 pedidos.Atualizar(pedido);
+                Perfil? perfil = await perfis.ObterPorIdAsync(pedido.PerfilId, cancellationToken).ConfigureAwait(false);
+                mensagens = await avisos
+                    .AvisarAsync(pedido, perfil?.Nome ?? string.Empty, SituacaoDoPedido.AguardandoDocumento, cancellationToken)
+                    .ConfigureAwait(false);
             }
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+
+        return mensagens;
     }
 
     private static void Validar(ResultadoDaVerificacaoDeArquivo resultado)

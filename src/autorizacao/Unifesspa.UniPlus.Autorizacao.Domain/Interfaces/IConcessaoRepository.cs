@@ -27,6 +27,9 @@ public sealed record FiltroDeConcessoes(
     SituacaoDaConcessao Situacao,
     DateTimeOffset Agora);
 
+/// <summary>Titular de uma concessão ativa e o e-mail que a concessão guarda dele.</summary>
+public sealed record TitularComEmail(Identidade Pessoa, string Email);
+
 /// <summary>Concessão com o nome do perfil que ela concede, para a resposta.</summary>
 public sealed record ConcessaoComPerfil(Concessao Concessao, string PerfilNome) : IIdentificavel
 {
@@ -91,4 +94,11 @@ public interface IConcessaoRepository : IRepository<Concessao>
     /// de gestor de acessos, sem contar a concessão <paramref name="exceto"/>.
     /// </summary>
     Task<int> ContarGestoresAtivosAsync(Guid perfilId, Guid exceto, DateTimeOffset agora, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Os titulares com concessão ativa do perfil, no escopo da instituição, que têm e-mail na concessão: são
+    /// quem recebe o aviso das filas de aprovação. A concessão sem e-mail fica de fora.
+    /// </summary>
+    Task<IReadOnlyList<TitularComEmail>> ListarTitularesAtivosComEmailAsync(
+        Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default);
 }

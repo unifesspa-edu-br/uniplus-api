@@ -34,6 +34,9 @@ using Unifesspa.UniPlus.Infrastructure.Core.Caching;
     Justification = "WebApplicationFactory<T> derivative usado como estado de fixture entre assemblies de teste.")]
 public class MonolitoApiFactory : ApiFactoryBase<HostAssemblyMarker>
 {
+    /// <summary>Endereço da Configuração que os links dos avisos do pedido levam.</summary>
+    public const string EnderecoDaConfiguracao = "https://uniplus.test/configuracao";
+
     private readonly string _connectionString;
     private readonly bool _wolverineEnabled;
 
@@ -70,6 +73,7 @@ public class MonolitoApiFactory : ApiFactoryBase<HostAssemblyMarker>
             ["ConnectionStrings:IngressoDb"] = _connectionString,
             ["ConnectionStrings:DiscentesDb"] = _connectionString,
             ["ConnectionStrings:AutorizacaoDb"] = _connectionString,
+            ["Autorizacao:EnderecoDaConfiguracao"] = EnderecoDaConfiguracao,
             ["ArquivosDoCandidato:AccessKey"] = "teste",
             ["ArquivosDoCandidato:SecretKey"] = "teste",
             ["RabbitMq:Uri"] = Environment.GetEnvironmentVariable("RabbitMq__Uri") is { Length: > 0 } uri ? uri : "amqp://guest:guest@localhost:5672",

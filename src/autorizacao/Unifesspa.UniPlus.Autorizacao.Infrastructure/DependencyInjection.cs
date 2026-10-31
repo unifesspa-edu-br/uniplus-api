@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Autorizacao.Infrastructure.ExternalServices;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Seguranca;
+using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Storage;
@@ -49,6 +50,19 @@ public static class AutorizacaoInfrastructureRegistration
         // Lida pelas opções, e não no registro: o valor final da configuração só existe quando o host está de pé.
         services.AddOptions<InstalacaoOptions>().BindConfiguration(InstalacaoOptions.SectionName);
         services.AddSingleton<IDominiosInstitucionais, DominiosInstitucionais>();
+
+        // Sem o endereço da Configuração o aviso sairia sem link: o pod falha no startup, e não no primeiro e-mail.
+        services.AddOptions<AvisosDoPedidoOptions>()
+            .BindConfiguration(AvisosDoPedidoOptions.SectionName)
+            .Validate(
+                static o => AvisosDoPedidoOptions.EnderecoValido(o.EnderecoDaConfiguracao),
+                "Autorizacao:EnderecoDaConfiguracao é obrigatório e deve ser uma URL absoluta http ou https.")
+            .ValidateOnStart();
+        services.AddSingleton<ILinkDoPedido, LinkDoPedido>();
+
+        // O leitor de unidades usa o DbContext da Organização Institucional; a fábrica o esconde do detector de
+        // transação do Wolverine, para que o pedido e os avisos entrem no outbox do DbContext da Autorização.
+        services.AddScoped<ILeitorDeUnidade>(static sp => new LeitorDeUnidade(sp.GetRequiredService<IUnidadeReader>()));
 
         // Os nomes dos buckets e a credencial são obrigatórios: sem eles o pod falha no startup, e não no primeiro envio.
         services.AddOptions<ArquivosDaAutorizacaoOptions>()

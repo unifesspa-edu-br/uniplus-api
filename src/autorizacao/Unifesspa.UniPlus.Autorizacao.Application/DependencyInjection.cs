@@ -5,6 +5,7 @@ using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 
 /// <summary>
@@ -22,6 +23,8 @@ public static class AutorizacaoApplicationServiceRegistration
         // As origens "instalação" e "pedido" acrescentam os eventos delas à trilha da concessão que gerou.
         services.AddScoped<IEventosDaOrigem, EventosDaInstalacao>();
         services.AddScoped<IEventosDaOrigem, EventosDoPedido>();
+
+        services.AddScoped<AvisosDoPedido>();
 
         return services;
     }

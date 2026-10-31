@@ -97,12 +97,12 @@ public abstract class PedidosDeConcessaoTestBase
 
         if (permissoes.Any(static p => p is AprovarFuncional or Administrar))
         {
-            await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, sub, TipoDeGovernanca.GestorDeAcessos);
+            await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, sub, TipoDeGovernanca.GestorDeAcessos, persona.Email);
         }
 
         if (permissoes.Contains(AprovarProtecaoDeDados))
         {
-            await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, sub, TipoDeGovernanca.ProtecaoDeDados);
+            await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, sub, TipoDeGovernanca.ProtecaoDeDados, persona.Email);
         }
     }
 

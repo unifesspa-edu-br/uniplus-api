@@ -52,7 +52,7 @@ public sealed class InstalacaoHandlersTests
         ResultadoDaVerificacaoDeArquivo resultado = new(Guid.NewGuid(), veredicto, MotivoDaRecusa.NaoSeAplica, hash, null, null);
 
         Func<Task> acao = () => RegistrarResultadoDaVerificacaoDoDocumentoDaAutorizacaoHandler.Handle(
-            resultado, new RepositorioSemInstalacao(), new PedidosComAnexo(null), new UnidadeDeTrabalhoIntocavel(), TimeProvider.System, NullLogger.Instance, CancellationToken.None);
+            resultado, new RepositorioSemInstalacao(), new PedidosComAnexo(null), new DoublesDeAvisos.PerfilQualquer(), DoublesDeAvisos.Avisos(), new UnidadeDeTrabalhoIntocavel(), TimeProvider.System, NullLogger.Instance, CancellationToken.None);
 
         await acao.Should().ThrowAsync<ResultadoDaVerificacaoInvalidoException>();
     }
@@ -64,7 +64,7 @@ public sealed class InstalacaoHandlersTests
             Guid.NewGuid(), VeredictoDaVerificacao.Recusado, MotivoDaRecusa.PdfComSenha, null, null, null);
 
         await RegistrarResultadoDaVerificacaoDoDocumentoDaAutorizacaoHandler.Handle(
-            resultado, new RepositorioSemInstalacao(), new PedidosComAnexo(null), new UnidadeDeTrabalhoIntocavel(), TimeProvider.System, NullLogger.Instance, CancellationToken.None);
+            resultado, new RepositorioSemInstalacao(), new PedidosComAnexo(null), new DoublesDeAvisos.PerfilQualquer(), DoublesDeAvisos.Avisos(), new UnidadeDeTrabalhoIntocavel(), TimeProvider.System, NullLogger.Instance, CancellationToken.None);
     }
 
     [Fact(DisplayName = "Resultado repetido de instalação que já saiu da verificação é ignorado sem gravar")]
@@ -78,7 +78,7 @@ public sealed class InstalacaoHandlersTests
             instalacao.Id, VeredictoDaVerificacao.Recusado, MotivoDaRecusa.PdfComSenha, null, null, null);
 
         await RegistrarResultadoDaVerificacaoDoDocumentoDaAutorizacaoHandler.Handle(
-            resultado, new RepositorioComInstalacao(instalacao), new PedidosComAnexo(null), new UnidadeDeTrabalhoIntocavel(), TimeProvider.System, NullLogger.Instance, CancellationToken.None);
+            resultado, new RepositorioComInstalacao(instalacao), new PedidosComAnexo(null), new DoublesDeAvisos.PerfilQualquer(), DoublesDeAvisos.Avisos(), new UnidadeDeTrabalhoIntocavel(), TimeProvider.System, NullLogger.Instance, CancellationToken.None);
 
         instalacao.Situacao.Should().Be(Domain.Enums.SituacaoDaInstalacao.AguardandoDocumento);
     }
@@ -287,6 +287,9 @@ public sealed class InstalacaoHandlersTests
         public Task<int> ContarGestoresAtivosAsync(Guid perfilId, Guid exceto, DateTimeOffset agora, CancellationToken cancellationToken = default) =>
             Task.FromResult(0);
 
+        public Task<IReadOnlyList<TitularComEmail>> ListarTitularesAtivosComEmailAsync(Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException();
+
         public Task<Concessao?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<IReadOnlyList<Concessao>> ObterTodosAsync(CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task AdicionarAsync(Concessao entity, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
@@ -342,6 +345,9 @@ public sealed class InstalacaoHandlersTests
         public Task<int> ContarGestoresAtivosAsync(Guid perfilId, Guid exceto, DateTimeOffset agora, CancellationToken cancellationToken = default) =>
             Task.FromResult(0);
 
+        public Task<IReadOnlyList<TitularComEmail>> ListarTitularesAtivosComEmailAsync(Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException();
+
         public Task<Perfil?> ObterParaConcederAsync(Guid perfilId, CancellationToken cancellationToken = default) =>
             Task.FromResult<Perfil?>(Perfil.Criar("Gestor de acessos", "Governa as concessões de acesso.", ["selecao:processos:consultar"], new CatalogoInstitucional()).Value);
 
@@ -392,6 +398,9 @@ public sealed class InstalacaoHandlersTests
 
         public Task<int> ContarGestoresAtivosAsync(Guid perfilId, Guid exceto, DateTimeOffset agora, CancellationToken cancellationToken = default) =>
             Task.FromResult(1);
+
+        public Task<IReadOnlyList<TitularComEmail>> ListarTitularesAtivosComEmailAsync(Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException();
 
         public Task<Concessao?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<IReadOnlyList<Concessao>> ObterTodosAsync(CancellationToken cancellationToken = default) => throw new InvalidOperationException();

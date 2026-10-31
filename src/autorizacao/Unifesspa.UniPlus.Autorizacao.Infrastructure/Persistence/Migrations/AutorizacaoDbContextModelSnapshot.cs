@@ -534,6 +534,11 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(40)")
                         .HasColumnName("situacao");
 
+                    b.Property<string>("SolicitanteEmail")
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("solicitante_email");
+
                     b.Property<string>("SolicitanteEmissor")
                         .IsRequired()
                         .HasMaxLength(255)

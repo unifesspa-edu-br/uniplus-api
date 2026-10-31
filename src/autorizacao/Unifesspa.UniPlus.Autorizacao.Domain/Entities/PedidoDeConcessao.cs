@@ -17,7 +17,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <para>
 /// <b>Só a identidade do token é gravada.</b> Nunca CPF; o nome e o e-mail do beneficiário existem para
 /// que o aprovador saiba quem é a pessoa (aprovar exige julgar a pessoa), e o nome vem do token dele, no
-/// aceite. A sensibilidade do perfil também não se grava: deriva do catálogo.
+/// aceite. O e-mail do solicitante é o verificado do token e serve só para avisá-lo do desfecho. A sensibilidade
+/// do perfil também não se grava: deriva do catálogo.
 /// </para>
 /// <para>
 /// <b>Nenhuma decisão acontece sem a identidade completa do beneficiário.</b> O pedido para outra
@@ -52,6 +53,9 @@ public sealed class PedidoDeConcessao : EntityBase
     public string SolicitanteSub { get; private set; } = string.Empty;
 
     public string? SolicitanteNome { get; private set; }
+
+    /// <summary>E-mail verificado do token do solicitante, em minúsculas; destino do aviso do desfecho. Nulo no pedido anterior ao registro.</summary>
+    public string? SolicitanteEmail { get; private set; }
 
     /// <summary>E-mail institucional do beneficiário, em minúsculas; é como o pedido o encontra até ele aceitar.</summary>
     public string BeneficiarioEmail { get; private set; } = string.Empty;
@@ -187,6 +191,7 @@ public sealed class PedidoDeConcessao : EntityBase
             SolicitanteEmissor = solicitante.Identidade.Emissor,
             SolicitanteSub = solicitante.Identidade.Sub,
             SolicitanteNome = NomeDeExibicao.Normalizar(solicitante.Nome),
+            SolicitanteEmail = solicitante.EmailVerificado ? EmailNormalizado(solicitante.Email) : null,
             BeneficiarioEmail = email!,
             PerfilId = perfil.Id,
             UnidadeId = escopo.UnidadeId,
