@@ -54,6 +54,7 @@ public sealed class InscricoesDoProcessoController : ControllerBase
     /// acessos.
     /// </summary>
     [HttpGet]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     [ExigePermissaoNoProcesso(
         PermissaoSelecao.InscricoesConsultar,
         ResourceTipo = ResourceTiposSelecao.Inscricao,
@@ -79,6 +80,33 @@ public sealed class InscricoesDoProcessoController : ControllerBase
     }
 
     /// <summary>
+    /// Consulta uma inscrição enviada do processo. O acesso à inscrição é decidido antes da busca, por consultar as
+    /// inscrições na unidade dona do processo. A inscrição que não existe, a de outro processo, a em rascunho e a pessoa
+    /// sem essa permissão recebem o mesmo 404; quem tem a permissão mas está inscrito no processo recebe 403, e o token
+    /// que não identifica o solicitante por completo, 401. Cada dado e cada arquivo sai pela permissão da sua classe e é
+    /// omitido, sem indicação, para quem não a tem. O identificador vem só mascarado, com <c>podeRevelar</c>; o valor
+    /// completo sai pela revelação do campo. O arquivo traz o identificador usado pelo acesso, sem o conteúdo. O acesso à
+    /// inscrição e cada classe permitida ficam no registro de acessos, e a resposta vai com <c>no-store</c>.
+    /// </summary>
+    /// <param name="id">O processo seletivo.</param>
+    /// <param name="inscricaoId">A inscrição.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    [HttpGet("{inscricaoId:guid}")]
+    [VendorMediaType(Resource = "inscricao-administrativa", Versions = [1])]
+    [ProducesResponseType(typeof(InscricaoAdministrativaDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> Obter(Guid id, Guid inscricaoId, CancellationToken cancellationToken)
+    {
+        Result<InscricaoAdministrativaDto> resultado = await _queryBus
+            .Send(new ObterInscricaoAdministrativaQuery(id, inscricaoId), cancellationToken)
+            .ConfigureAwait(false);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
     /// Revela o valor completo de UM campo identificador de uma inscrição enviada (o CPF, o número do RG, do passaporte e os
     /// demais que o processo classificou assim), pela permissão de revelar identificadores na unidade dona do processo;
     /// consultar as inscrições não basta. O campo é referido pelo código do fato, que não é dado pessoal, e pela ocorrência
@@ -92,6 +120,7 @@ public sealed class InscricoesDoProcessoController : ControllerBase
     /// <param name="fatoCodigo">O código do fato a revelar.</param>
     /// <param name="ocorrencia">O identificador da ocorrência do grupo, quando o campo está em grupo.</param>
     /// <param name="cancellationToken">Token de cancelamento.</param>
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     [HttpPost("{inscricaoId:guid}/campos/{fatoCodigo:regex(^[[A-Z]][[A-Z0-9_]]{{0,59}}$)}/revelacao")]
     [VendorMediaType(Resource = "campo-revelado-da-inscricao", Versions = [1])]
     [ProducesResponseType(typeof(CampoReveladoDto), StatusCodes.Status200OK)]
@@ -104,13 +133,7 @@ public sealed class InscricoesDoProcessoController : ControllerBase
         Result<CampoReveladoDto> resultado = await _queryBus
             .Send(new RevelarCampoDaInscricaoQuery(id, inscricaoId, fatoCodigo, ocorrencia), cancellationToken)
             .ConfigureAwait(false);
-        if (!resultado.IsSuccess)
-        {
-            return resultado.ToActionResult(_mapper);
-        }
-
-        Response.Headers.CacheControl = "no-store";
-        return Ok(resultado.Value);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
@@ -121,6 +144,7 @@ public sealed class InscricoesDoProcessoController : ControllerBase
     /// O arquivo que não existe, o de outro processo e o que a pessoa não pode abrir respondem o mesmo 404. A URL é
     /// credencial de acesso, então a resposta vai com <c>no-store</c>.
     /// </summary>
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     [HttpGet("{inscricaoId:guid}/documentos/arquivos/{arquivoId:guid}/acesso")]
     [VendorMediaType(Resource = "acesso-arquivo-da-inscricao", Versions = [1])]
     [ProducesResponseType(typeof(AcessoArquivoDoCandidatoDto), StatusCodes.Status200OK)]
@@ -132,12 +156,6 @@ public sealed class InscricoesDoProcessoController : ControllerBase
         Result<AcessoArquivoDoCandidatoDto> resultado = await _queryBus
             .Send(new ObterAcessoAoDocumentoDaInscricaoQuery(id, inscricaoId, arquivoId), cancellationToken)
             .ConfigureAwait(false);
-        if (!resultado.IsSuccess)
-        {
-            return resultado.ToActionResult(_mapper);
-        }
-
-        Response.Headers.CacheControl = "no-store";
-        return Ok(resultado.Value);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
 }

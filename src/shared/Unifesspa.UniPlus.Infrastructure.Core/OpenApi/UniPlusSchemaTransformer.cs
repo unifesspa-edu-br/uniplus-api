@@ -2,9 +2,15 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 
 using System.Reflection;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
+
+using Unifesspa.UniPlus.Authorization.Projecao;
+using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Schema transformer que aplica invariantes de domínio Uni+ a propriedades
@@ -39,11 +45,14 @@ public sealed class UniPlusSchemaTransformer : IOpenApiSchemaTransformer
             schema.Type = JsonSchemaType.String;
         }
 
+        AjustarRequiredPelaSerializacao(schema, context);
+
         string? propertyName = context.JsonPropertyInfo?.Name;
         if (propertyName is null)
             return Task.CompletedTask;
 
         AplicarVocabularioFechado(schema, context);
+        AplicarTokenDeClassificacao(schema, context);
 
         // JsonSchemaType é [Flags] — propriedades nullable saem com o flag Null somado ao
         // tipo base (ex.: Array | Null, String | Null), então comparação por igualdade exata
@@ -67,6 +76,55 @@ public sealed class UniPlusSchemaTransformer : IOpenApiSchemaTransformer
         }
 
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// A propriedade que a serialização pode omitir não pode constar em <c>required</c>: a resposta projetada a omite de quem
+    /// não pode vê-la, e o cliente gerado a tomaria por sempre presente. Quem decide o que se omite é
+    /// <c>OmissaoDeCampoClassificado.PodeOmitir</c>, a mesma regra do modificador de serialização. A propriedade que sempre sai segue como
+    /// o gerador a declarou; a que carrega <see cref="TokenDeClassificacaoAttribute"/> passa a obrigatória.
+    /// </summary>
+    private static void AjustarRequiredPelaSerializacao(OpenApiSchema schema, OpenApiSchemaTransformerContext context)
+    {
+        // O pipeline chama o transformer do objeto aninhado com o JsonPropertyInfo da propriedade que o alcança, e o
+        // JsonTypeInfo é sempre o do tipo do schema; por isso o ajuste não depende de como o schema foi alcançado.
+        if (context.JsonTypeInfo.Kind != JsonTypeInfoKind.Object)
+        {
+            return;
+        }
+
+        foreach (JsonPropertyInfo propriedade in context.JsonTypeInfo.Properties)
+        {
+            if (TemTokenDeClassificacao(propriedade))
+            {
+                (schema.Required ??= new HashSet<string>(StringComparer.Ordinal)).Add(propriedade.Name);
+            }
+            else if (OmissaoDeCampoClassificado.PodeOmitir(propriedade))
+            {
+                schema.Required?.Remove(propriedade.Name);
+            }
+        }
+
+        if (schema.Required is { Count: 0 })
+        {
+            schema.Required = null;
+        }
+    }
+
+    private static bool TemTokenDeClassificacao(JsonPropertyInfo propriedade) =>
+        propriedade.AttributeProvider is MemberInfo membro
+        && Attribute.IsDefined(membro, typeof(TokenDeClassificacaoAttribute), inherit: true);
+
+    /// <summary>Publica o token de classificação como texto não anulável, com o vocabulário fechado dos cinco valores.</summary>
+    private static void AplicarTokenDeClassificacao(OpenApiSchema schema, OpenApiSchemaTransformerContext context)
+    {
+        if (context.JsonPropertyInfo is not { } propriedade || !TemTokenDeClassificacao(propriedade))
+        {
+            return;
+        }
+
+        schema.Type = JsonSchemaType.String;
+        schema.Enum = [.. ClassificacoesDeProtecao.TokensCanonicos.Select(static t => (JsonNode)JsonValue.Create(t)!)];
     }
 
     /// <summary>

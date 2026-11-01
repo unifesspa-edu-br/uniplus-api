@@ -21,6 +21,7 @@ using Unifesspa.UniPlus.Selecao.API.Controllers;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Queries.CampoDaInscricao;
 using Unifesspa.UniPlus.Selecao.Application.Queries.DocumentosDaInscricao;
+using Unifesspa.UniPlus.Selecao.Application.Queries.InscricoesDoProcesso;
 
 /// <summary>
 /// Toda action de qualquer módulo que não é anônima nem identificada por política de identidade declara a permissão
@@ -38,8 +39,9 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
     {
         // A criação do processo depende da unidade informada no corpo, porque o processo ainda não existe.
         [Acao(typeof(ProcessoSeletivoController), nameof(ProcessoSeletivoController.Criar))] = typeof(CriarProcessoSeletivoCommand),
-        // A revelação de um campo e o acesso ao arquivo dependem da inscrição (e, no campo, da classificação congelada do fato
+        // O detalhe, a revelação de um campo e o acesso ao arquivo dependem da inscrição (e, no campo, da classificação congelada do fato
         // e, no arquivo, da da exigência), e a recusa responde o mesmo 404 do que não existe.
+        [Acao(typeof(InscricoesDoProcessoController), nameof(InscricoesDoProcessoController.Obter))] = typeof(ObterInscricaoAdministrativaQuery),
         [Acao(typeof(InscricoesDoProcessoController), nameof(InscricoesDoProcessoController.RevelarCampo))] = typeof(RevelarCampoDaInscricaoQuery),
         [Acao(typeof(InscricoesDoProcessoController), nameof(InscricoesDoProcessoController.AcessoAoDocumento))] = typeof(ObterAcessoAoDocumentoDaInscricaoQuery),
         // O pedido de concessão: a etapa que se decide vem da situação do pedido, a fila pedida vem da query, e quem

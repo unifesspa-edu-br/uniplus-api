@@ -3903,6 +3903,90 @@
         "x-uniplus-paginated": true
       }
     },
+    "/api/selecao/processos-seletivos/{id}/inscricoes/{inscricaoId}": {
+      "get": {
+        "tags": [
+          "InscricoesDoProcesso"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "inscricaoId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.inscricao-administrativa.v1\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/InscricaoAdministrativaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/selecao/processos-seletivos/{id}/inscricoes/{inscricaoId}/campos/{fatoCodigo}/revelacao": {
       "post": {
         "tags": [
@@ -12365,6 +12449,72 @@
           }
         }
       },
+      "ArquivoAdministrativoDto": {
+        "required": [
+          "arquivoId",
+          "exigenciaId",
+          "nomeDoDocumento",
+          "tipoDeMidia",
+          "situacao",
+          "confirmadoEm",
+          "classificacaoProtecao"
+        ],
+        "type": "object",
+        "properties": {
+          "arquivoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "exigenciaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ocorrenciaId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "nomeDoDocumento": {
+            "type": "string"
+          },
+          "tipoDeMidia": {
+            "type": "string"
+          },
+          "classificacaoProtecao": {
+            "enum": [
+              "PUBLICO",
+              "INTERNO",
+              "PESSOAL",
+              "IDENTIFICADOR",
+              "SENSIVEL"
+            ],
+            "type": "string"
+          },
+          "situacao": {
+            "$ref": "#/components/schemas/SituacaoDoArquivoDoCandidato"
+          },
+          "tamanhoBytes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "hashSha256": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "confirmadoEm": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "ArquivoDaApresentacaoDto": {
         "required": [
           "arquivoId",
@@ -17405,6 +17555,28 @@
           }
         }
       },
+      "GrupoDaInscricaoDto": {
+        "required": [
+          "codigo",
+          "rotulo",
+          "ocorrencias"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "rotulo": {
+            "type": "string"
+          },
+          "ocorrencias": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OcorrenciaDaInscricaoDto"
+            }
+          }
+        }
+      },
       "GrupoPesoAreaEnemCongeladoDto": {
         "required": [
           "grupoAreaEnem",
@@ -17939,17 +18111,85 @@
           }
         }
       },
-      "InscricaoDoProcessoDto": {
+      "InscricaoAdministrativaDto": {
         "required": [
-          "id",
-          "numeroInscricao",
-          "situacao",
-          "ofertaCursoId",
-          "ofertaCursoSegundaOpcaoId",
-          "nome",
-          "cpf",
-          "submetidaEm"
+          "secoes",
+          "derivados",
+          "arquivos"
         ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "situacao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SituacaoInscricao"
+              }
+            ]
+          },
+          "ofertaCursoId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "ofertaCursoSegundaOpcaoId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "numeroInscricao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "canceladaEm": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "motivoDoCancelamento": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "secoes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SecaoDaInscricaoDto"
+            }
+          },
+          "derivados": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemDeRespostaDto"
+            }
+          },
+          "arquivos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArquivoAdministrativoDto"
+            }
+          }
+        }
+      },
+      "InscricaoDoProcessoDto": {
         "type": "object",
         "properties": {
           "id": {
@@ -18237,6 +18477,41 @@
               "string"
             ],
             "format": "double"
+          }
+        }
+      },
+      "ItemDeRespostaDto": {
+        "required": [
+          "fatoCodigo",
+          "rotulo",
+          "descricao",
+          "tipo",
+          "componente",
+          "valor",
+          "podeRevelar"
+        ],
+        "type": "object",
+        "properties": {
+          "fatoCodigo": {
+            "type": "string"
+          },
+          "rotulo": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "componente": {
+            "type": "string"
+          },
+          "valor": {
+            "$ref": "#/components/schemas/JsonElement"
+          },
+          "podeRevelar": {
+            "type": "boolean"
           }
         }
       },
@@ -19481,6 +19756,24 @@
             ],
             "additionalProperties": {
               "type": "string"
+            }
+          }
+        }
+      },
+      "OcorrenciaDaInscricaoDto": {
+        "required": [
+          "id",
+          "itens"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemDeRespostaDto"
             }
           }
         }
@@ -22047,6 +22340,31 @@
           },
           "conteudo": {
             "$ref": "#/components/schemas/JsonElement"
+          }
+        }
+      },
+      "SecaoDaInscricaoDto": {
+        "required": [
+          "codigo",
+          "itens",
+          "grupos"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemDeRespostaDto"
+            }
+          },
+          "grupos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GrupoDaInscricaoDto"
+            }
           }
         }
       },
