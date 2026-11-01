@@ -15,6 +15,8 @@ using Unifesspa.UniPlus.Autorizacao.Application.Commands.Revisoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Revisoes;
 using Unifesspa.UniPlus.Configuracao.API.Controllers;
+using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
+using Unifesspa.UniPlus.Configuracao.Application.Queries.ProtecaoDoCatalogo;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Selecao.API.Authorization;
 using Unifesspa.UniPlus.Selecao.API.Controllers;
@@ -60,12 +62,16 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
         [Acao(typeof(RevisoesDeAcessosController), nameof(RevisoesDeAcessosController.Obter))] = typeof(ObterRevisaoQuery),
         [Acao(typeof(RevisoesDeAcessosController), nameof(RevisoesDeAcessosController.Confirmar))] = typeof(ConfirmarItemDaRevisaoCommand),
         [Acao(typeof(RevisoesDeAcessosController), nameof(RevisoesDeAcessosController.Revogar))] = typeof(RevogarItemDaRevisaoCommand),
+        // A solicitação e a consulta da proteção do catálogo alcançam os dois cadastros de uma vez, e a permissão de cada um
+        // é decidida no handler, que fica com o único DbContext da Configuração.
+        [Acao(typeof(ProtecaoDoCatalogoController), nameof(ProtecaoDoCatalogoController.Solicitar))] = typeof(SolicitarAprovacaoDaProtecaoCommand),
+        [Acao(typeof(ProtecaoDoCatalogoController), nameof(ProtecaoDoCatalogoController.Listar))] = typeof(ListarProtecaoDoCatalogoQuery),
     };
 
     /// <summary>
     /// Actions de qualquer pessoa autenticada: pedir acesso não dá acesso, porque o filtro é a aprovação; o aceite é só
     /// do beneficiário nomeado, conferido pelo e-mail verificado do token; anexar e cancelar são só do solicitante,
-    /// antes da primeira decisão.
+    /// antes da primeira decisão; as permissões efetivas são as do próprio token de quem consulta.
     /// </summary>
     private static readonly HashSet<string> DePessoaAutenticada = new(StringComparer.Ordinal)
     {
@@ -74,17 +80,7 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
         Acao(typeof(PedidosDeConcessaoController), nameof(PedidosDeConcessaoController.EnviarAnexo)),
         Acao(typeof(PedidosDeConcessaoController), nameof(PedidosDeConcessaoController.ConfirmarAnexo)),
         Acao(typeof(PedidosDeConcessaoController), nameof(PedidosDeConcessaoController.Cancelar)),
-    };
-
-    /// <summary>
-    /// Actions que alcançam os dois cadastros do catálogo de uma vez e por isso decidem na própria action, pela permissão
-    /// de cada cadastro, pelo verificador de acesso: a solicitação (manter tipos ou fatos) e a consulta (manter ou aprovar).
-    /// A decisão fica na borda, e não no handler, porque o handler precisa de um único DbContext.
-    /// </summary>
-    private static readonly HashSet<string> DecididasNaAction = new(StringComparer.Ordinal)
-    {
-        Acao(typeof(ProtecaoDoCatalogoController), nameof(ProtecaoDoCatalogoController.Solicitar)),
-        Acao(typeof(ProtecaoDoCatalogoController), nameof(ProtecaoDoCatalogoController.Listar)),
+        Acao(typeof(PermissoesController), nameof(PermissoesController.ConsultarEfetivas)),
     };
 
     /// <summary>
@@ -127,7 +123,7 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
             .Select(static a => a.DeclaringType!.Assembly.GetName().Name)
             .Distinct()
             .Should().HaveCountGreaterThan(1, "o ponto único protege actions de mais de um módulo");
-        DecididasNoHandler.Keys.Concat(DePessoaAutenticada).Concat(DoTitular).Concat(DecididasNaAction).Should().BeSubsetOf(acoes,
+        DecididasNoHandler.Keys.Concat(DePessoaAutenticada).Concat(DoTitular).Should().BeSubsetOf(acoes,
             "a lista fechada só nomeia actions que existem; action removida ou renomeada sai da lista");
         DecididasNoHandler.Values.Should().AllSatisfy(static mensagem => HandlerDe(mensagem)
             .GetParameters().Should().Contain(static p => p.ParameterType == typeof(IVerificadorDeAcesso)));
@@ -139,7 +135,7 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
         => [.. controllers.SelectMany(static t => ControllersDaSolucao.AcoesDe(t)
             .Select(a => (Acao: a, Nome: Acao(t, a.Name)))
             .Where(a => !Anonima(t, a.Acao) && !PorPoliticaDeIdentidade(t, a.Acao)
-                && !DeclaraDecisao(t, a.Acao) && !DecididasNoHandler.ContainsKey(a.Nome) && !DePessoaAutenticada.Contains(a.Nome) && !DoTitular.Contains(a.Nome) && !DecididasNaAction.Contains(a.Nome))
+                && !DeclaraDecisao(t, a.Acao) && !DecididasNoHandler.ContainsKey(a.Nome) && !DePessoaAutenticada.Contains(a.Nome) && !DoTitular.Contains(a.Nome))
             .Select(static a => a.Nome))];
 
     /// <summary>Chave da action com o nome completo do controller: controller homônimo de outro módulo não herda a exceção.</summary>

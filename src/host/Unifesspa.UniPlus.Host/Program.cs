@@ -201,7 +201,6 @@ app.UseCorsConfiguration();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapSharedProfileEndpoints();
-app.MapSharedAutorizacaoEndpoints();
 app.MapControllers();
 app.MapOpenApi("/openapi/{documentName}.json").AllowAnonymous();
 
