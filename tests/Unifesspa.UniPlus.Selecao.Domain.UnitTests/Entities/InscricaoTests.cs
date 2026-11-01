@@ -83,6 +83,56 @@ public sealed class InscricaoTests
         inscricao.Revisao.Should().Be(1);
     }
 
+    [Fact(DisplayName = "Iniciar grava a resposta do CPF com o CPF da conta, cifrada como identificador")]
+    public void Iniciar_GravaARespostaDoCpfDaConta()
+    {
+        Inscricao inscricao = Inscricao.Iniciar(
+            Processo, PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", VersaoFormulario).Value!;
+
+        inscricao.Respostas["CPF"].GetString().Should().Be(PersonasDeTeste.FernandaDrumond.Valor);
+        inscricao.DefinicoesDasRespostas["CPF"].Should().Match<DefinicaoDaResposta>(d => d.Identificador && d.Cifrada);
+    }
+
+    [Fact(DisplayName = "A resposta do CPF segue cifrada como identificador ao salvar e ao enviar, mesmo com o fato congelado como pessoal")]
+    public void CpfReclassificadoComoPessoal_ContinuaCifradoENaoVaiAoComprovante()
+    {
+        RespostasAdmitidas comoPessoal = Admitidas with
+        {
+            Definicoes = new Dictionary<string, DefinicaoDaResposta>(Admitidas.Definicoes, StringComparer.Ordinal)
+            {
+                ["CPF"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: false),
+            },
+        };
+        Inscricao inscricao = NovaInscricao();
+
+        inscricao.Salvar(null, null, Respostas(), SemGrupos(), SemAceites(), comoPessoal, PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
+        inscricao.DefinicoesDasRespostas["CPF"].Should().Match<DefinicaoDaResposta>(d => d.Identificador && d.Cifrada);
+
+        Result<ComprovanteInscricao> envio = inscricao.Submeter(
+            "000123", OfertaDoProcesso, null, Respostas(), SemGrupos(), SemAceites(), comoPessoal, FormularioDeTeste.AvaliacaoSemOcultos, SemDerivados(), DefinicoesDosDerivados,
+            PrecondicaoIfMatch.DeTags([inscricao.ETag]), Instante(), []);
+
+        envio.IsSuccess.Should().BeTrue();
+        inscricao.DefinicoesDasRespostas["CPF"].Identificador.Should().BeTrue();
+        envio.Value!.Respostas.Should().NotContainKey("CPF", "o número de documento nunca vai ao comprovante");
+    }
+
+    [Fact(DisplayName = "Salvar recusa apagar a resposta do CPF: sem ela o rascunho não se reconstitui")]
+    public void Salvar_CpfNulo_Recusa()
+    {
+        Inscricao inscricao = NovaInscricao();
+        Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal)
+        {
+            ["CPF"] = JsonSerializer.SerializeToElement<string?>(null),
+        };
+
+        Result resultado = inscricao.Salvar(null, null, respostas, SemGrupos(), SemAceites(), Admitidas, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+
+        resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(
+            e => e.Field == "CPF" && e.Error.Code == InscricaoErrorCodes.CpfNaoPodeSerRemovido);
+        inscricao.Respostas.Should().ContainKey("CPF");
+    }
+
     [Fact(DisplayName = "Iniciar sem sub é recusado — o token precisa do claim")]
     public void Iniciar_SemSub_RetornaFalha()
     {
@@ -593,7 +643,7 @@ public sealed class InscricaoTests
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("RENDA_MENSAL");
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.FatoSoDeGrupo);
         inscricao.Revisao.Should().Be(1);
-        inscricao.Respostas.Should().BeEmpty();
+        inscricao.Respostas.Should().ContainKey("CPF").And.NotContainKey("RENDA_MENSAL");
     }
 
     [Fact(DisplayName = "Salvar admite no nível superior e na ocorrência o fato que o formulário coleta nos dois lugares")]

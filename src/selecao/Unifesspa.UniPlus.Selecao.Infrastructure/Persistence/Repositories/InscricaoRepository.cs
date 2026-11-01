@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Pagination;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -108,21 +109,11 @@ public sealed class InscricaoRepository : IInscricaoRepository
 
     public async Task<Cpf?> ObterCpfAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        byte[]? cifrado = await _dbContext.Inscricoes
-            .AsNoTracking()
-            .Where(r => r.Id == id)
-            .Select(static r => r.CpfCiphertext)
-            .FirstOrDefaultAsync(cancellationToken)
+        Dictionary<Guid, string> cpfs = await CpfDaInscricao
+            .LerAsync(_dbContext.RespostasDaInscricao.Where(r => r.InscricaoId == id), _encryption, cancellationToken)
             .ConfigureAwait(false);
-        if (cifrado is null)
-        {
-            return null;
-        }
 
-        byte[] cpfPlano = await _encryption
-            .DecryptAsync(SelecaoEncryptionKeys.IdentificadoresAesGcm, cifrado, cancellationToken)
-            .ConfigureAwait(false);
-        return ReidratarCpf(cpfPlano);
+        return cpfs.TryGetValue(id, out string? cpf) ? ReidratarCpf(cpf) : null;
     }
 
     public async Task<(IReadOnlyList<ResumoDaInscricaoDoProcesso> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarEnviadasDoProcessoAsync(
@@ -154,18 +145,19 @@ public sealed class InscricaoRepository : IInscricaoRepository
             .ToDictionaryAsync(static g => g.InscricaoId, static g => g.Primeiro, cancellationToken)
             .ConfigureAwait(false);
 
+        Dictionary<Guid, string> cpfs = await CpfDaInscricao
+            .LerAsync(_dbContext.RespostasDaInscricao.Where(r => ids.Contains(r.InscricaoId)), _encryption, cancellationToken)
+            .ConfigureAwait(false);
+
         List<ResumoDaInscricaoDoProcesso> resumos = new(pagina.Items.Count);
         foreach (InscricaoRecord record in pagina.Items)
         {
-            byte[] cpfPlano = await _encryption
-                .DecryptAsync(SelecaoEncryptionKeys.IdentificadoresAesGcm, record.CpfCiphertext, cancellationToken)
-                .ConfigureAwait(false);
             resumos.Add(new ResumoDaInscricaoDoProcesso(
                 record.Id,
                 record.NumeroInscricao,
                 record.Situacao,
                 nomes.GetValueOrDefault(record.Id),
-                ReidratarCpf(cpfPlano),
+                ReidratarCpf(CpfDaInscricao.Exigir(cpfs, record.Id)),
                 primeirosEnvios.TryGetValue(record.Id, out DateTimeOffset primeiro) ? primeiro : null));
         }
 
@@ -321,11 +313,6 @@ public sealed class InscricaoRepository : IInscricaoRepository
 
     private async Task<Inscricao> ParaDominioAsync(InscricaoRecord record, LinhasDaInscricao linhas, CancellationToken cancellationToken)
     {
-        byte[] cpfPlano = await _encryption
-            .DecryptAsync(SelecaoEncryptionKeys.IdentificadoresAesGcm, record.CpfCiphertext, cancellationToken)
-            .ConfigureAwait(false);
-        Cpf cpf = ReidratarCpf(cpfPlano);
-
         Dictionary<Guid, OcorrenciaDeGrupoDaInscricaoRecord> ocorrencias = linhas.Ocorrencias.ToDictionary(static o => o.Id);
         Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal);
         Dictionary<string, JsonElement> derivados = new(StringComparer.Ordinal);
@@ -373,6 +360,10 @@ public sealed class InscricaoRepository : IInscricaoRepository
         [
             .. linhas.Aceites.OrderBy(static a => a.Ordem).Select(static a => new AceiteDeTermo(a.TermoCodigo, a.VersaoId, a.HashVersao)),
         ];
+
+        Cpf cpf = respostas.TryGetValue(ConjuntoBasicoDaInscricao.Cpf, out JsonElement cpfRespondido) && cpfRespondido.ValueKind == JsonValueKind.String
+            ? ReidratarCpf(cpfRespondido.GetString()!)
+            : throw new InvalidOperationException($"A inscrição {record.Id} não tem a resposta do CPF.");
 
         return Inscricao.Reidratar(
             record.Id, record.ProcessoSeletivoId, cpf, record.Sub, record.EmissorToken, record.Situacao,
@@ -676,13 +667,9 @@ public sealed class InscricaoRepository : IInscricaoRepository
     /// </summary>
     private async Task AtualizarCamposAsync(InscricaoRecord record, Inscricao entity, CancellationToken cancellationToken)
     {
-        byte[] cpfCiphertext = await _encryption
-            .EncryptAsync(SelecaoEncryptionKeys.IdentificadoresAesGcm, Encoding.UTF8.GetBytes(entity.Cpf.Valor), cancellationToken)
-            .ConfigureAwait(false);
         byte[] cpfIndice = await ComputarIndiceAsync(entity.Cpf, cancellationToken).ConfigureAwait(false);
 
         record.ProcessoSeletivoId = entity.ProcessoSeletivoId;
-        record.CpfCiphertext = cpfCiphertext;
         record.CpfIndice = cpfIndice;
         record.Sub = entity.Sub;
         record.EmissorToken = entity.EmissorToken;
@@ -705,13 +692,10 @@ public sealed class InscricaoRepository : IInscricaoRepository
     /// cifragem incorreta falha alto, em vez de produzir um <see cref="Cpf"/> inválido em silêncio
     /// (mesmo padrão de <c>VinculoDiscenteRepository</c>).
     /// </summary>
-    private static Cpf ReidratarCpf(byte[] cpfPlano)
-    {
-        string valor = Encoding.UTF8.GetString(cpfPlano);
-        return Cpf.Criar(valor).Match(
+    private static Cpf ReidratarCpf(string valor) =>
+        Cpf.Criar(valor).Match(
             cpf => cpf,
-            erro => throw new InvalidOperationException($"CPF decifrado da tabela inscricoes falhou a revalidação de domínio ({erro.Code})."));
-    }
+            erro => throw new InvalidOperationException($"CPF da resposta da inscrição falhou a revalidação de domínio ({erro.Code})."));
 
     private sealed record LinhasDaInscricao(
         List<RespostaDaInscricaoRecord> Respostas,

@@ -6,8 +6,8 @@ using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Cryptography;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
 /// <summary>
 /// As inscrições enviadas que escolheram uma edição do ENEM: a edição é a resposta do fato
@@ -44,12 +44,14 @@ public sealed class InscritosDaEdicaoDoEnem : IInscritosDaEdicaoDoEnem
     public async Task<IReadOnlyList<string>> ListarCpfsAsync(
         Guid processoSeletivoId, string edicaoCodigo, CancellationToken cancellationToken = default)
     {
-        List<byte[]> cifrados = await DaEdicao(processoSeletivoId, edicaoCodigo)
-            .Select(i => i.CpfCiphertext)
-            .ToListAsync(cancellationToken)
+        Dictionary<Guid, string> cpfs = await CpfDaInscricao
+            .LerAsync(
+                _context.RespostasDaInscricao.Where(r => DaEdicao(processoSeletivoId, edicaoCodigo).Any(i => i.Id == r.InscricaoId)),
+                _encryption,
+                cancellationToken)
             .ConfigureAwait(false);
 
-        return await DecifradorDeCpfsEmParalelo.DecifrarAsync(_encryption, cifrados, cancellationToken).ConfigureAwait(false);
+        return [.. cpfs.Values];
     }
 
     private IQueryable<InscricaoRecord> DaEdicao(Guid processoSeletivoId, string edicaoCodigo) =>

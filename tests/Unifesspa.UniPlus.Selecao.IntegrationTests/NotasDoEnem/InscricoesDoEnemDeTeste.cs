@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.NotasDoEnem;
 
 using System.Text;
+using System.Text.Json;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -17,7 +18,7 @@ using Unifesspa.UniPlus.Selecao.IntegrationTests.Inscricoes;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Semeia, direto nas tabelas, o que as notas do ENEM leem de uma inscrição: o CPF cifrado com o
+/// Semeia, direto nas tabelas, o que as notas do ENEM leem de uma inscrição: a resposta do CPF cifrada, o
 /// índice cego, a situação e a resposta da edição escolhida. Evita montar o fluxo inteiro da
 /// inscrição para provar um cruzamento.
 /// </summary>
@@ -80,7 +81,7 @@ internal static class InscricoesDoEnemDeTeste
         string? nome = null)
     {
         byte[] cifrado = await encryption.EncryptAsync(
-            SelecaoEncryptionKeys.IdentificadoresAesGcm, Encoding.UTF8.GetBytes(pessoa.Cpf));
+            SelecaoEncryptionKeys.IdentificadoresAesGcm, JsonSerializer.SerializeToUtf8Bytes(pessoa.Cpf));
         byte[] indice = await new CalculadorDoIndiceCegoDoCpf(blindIndex).ComputarAsync(pessoa.Cpf);
 
         Guid id = Guid.CreateVersion7();
@@ -88,7 +89,6 @@ internal static class InscricoesDoEnemDeTeste
         {
             Id = id,
             ProcessoSeletivoId = processoId,
-            CpfCiphertext = cifrado,
             CpfIndice = indice,
             Sub = $"sub-{id:N}",
             EmissorToken = "https://issuer",
@@ -99,6 +99,15 @@ internal static class InscricoesDoEnemDeTeste
             OfertaCursoId = ofertaCursoId,
             OfertaCursoSegundaOpcaoId = ofertaCursoSegundaOpcaoId,
             CreatedAt = DateTimeOffset.UtcNow,
+        });
+        context.RespostasDaInscricao.Add(new RespostaDaInscricaoRecord
+        {
+            Id = Guid.CreateVersion7(),
+            InscricaoId = id,
+            FatoCodigo = ConjuntoBasicoDaInscricao.Cpf,
+            Origem = OrigemDaResposta.Informada,
+            Tipo = TipoDoValorDeResposta.Texto,
+            ValorCifrado = cifrado,
         });
         if (edicao is not null)
         {
