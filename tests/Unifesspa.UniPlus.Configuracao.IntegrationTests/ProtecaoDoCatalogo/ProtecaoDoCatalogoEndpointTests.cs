@@ -198,6 +198,118 @@ public sealed class ProtecaoDoCatalogoEndpointTests
         (await EnviarAsync(client, HttpMethod.Put, $"{Fatos}/{IdDeQuilombola}/definicao", DefinicaoDe(original))).StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
+    [Fact(DisplayName = "O detalhe do fato traz o que ele é e só os valores ativos, na ordem")]
+    public async Task Detalhe_DoFato()
+    {
+        await TornarCarolineAprovadoraAsync();
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage criar = await EnviarAsync(client, HttpMethod.Post, Fatos, new
+        {
+            codigo = $"FATO_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}",
+            nome = "Identidade de gênero",
+            descricao = "Como a pessoa se identifica.",
+            dominio = "CATEGORICO",
+            cardinalidade = "ESCALAR",
+            fonteValores = "GLOBAL",
+            pontoResolucao = "INSCRICAO",
+            escopo = "CANDIDATO",
+            classificacaoProtecao = "SENSIVEL",
+            finalidadeTratamento = "Verificação dos requisitos do processo seletivo.",
+            hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+        });
+        criar.StatusCode.Should().Be(HttpStatusCode.Created);
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+        (await EnviarAsync(client, HttpMethod.Post, $"{Fatos}/{id}/valores", new { codigo = "OUTRA", descricao = "Outra", ordem = 1 })).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await EnviarAsync(client, HttpMethod.Post, $"{Fatos}/{id}/valores", new { codigo = "MULHER", descricao = "Mulher", ordem = 0, orientacao = "Escolha conforme se identifica." })).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await EnviarAsync(client, HttpMethod.Post, $"{Fatos}/{id}/valores", new { codigo = "ANTIGA", descricao = "Antiga", ordem = 2 })).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await EnviarAsync(client, HttpMethod.Delete, $"{Fatos}/{id}/valores/ANTIGA")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Get, $"{Base}/fatos/{id}");
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+        JsonElement detalhe = await resposta.Content.ReadFromJsonAsync<JsonElement>();
+        detalhe.GetProperty("tipo").GetString().Should().Be("FATO");
+        detalhe.GetProperty("nome").GetString().Should().Be("Identidade de gênero");
+        detalhe.GetProperty("descricao").GetString().Should().Be("Como a pessoa se identifica.");
+        detalhe.GetProperty("classificacaoProtecao").GetString().Should().Be("SENSIVEL");
+        detalhe.GetProperty("aprovacao").GetProperty("situacao").GetString().Should().Be("PENDENTE");
+        detalhe.GetProperty("tipoDocumento").ValueKind.Should().Be(JsonValueKind.Null);
+        JsonElement fato = detalhe.GetProperty("fato");
+        fato.GetProperty("dominio").GetString().Should().Be("CATEGORICO");
+        fato.GetProperty("cardinalidade").GetString().Should().Be("ESCALAR");
+        fato.GetProperty("sistema").GetBoolean().Should().BeFalse();
+        fato.GetProperty("valores").EnumerateArray().Select(v => v.GetProperty("codigo").GetString())
+            .Should().Equal("MULHER", "OUTRA");
+        fato.GetProperty("valores")[0].GetProperty("orientacao").GetString().Should().Be("Escolha conforme se identifica.");
+        resposta.Content.Headers.ContentType!.MediaType.Should().Be("application/vnd.uniplus.protecao-do-catalogo-detalhe.v1+json");
+    }
+
+    [Fact(DisplayName = "O detalhe do tipo de documento traz o que é pedido ao candidato")]
+    public async Task Detalhe_DoTipoDeDocumento()
+    {
+        await TornarCarolineAprovadoraAsync();
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage criar = await EnviarAsync(client, HttpMethod.Post, Tipos, new
+        {
+            codigo = $"TIPO_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}",
+            nome = "Laudo médico complementar",
+            descricao = "Laudo que atesta a condição de saúde.",
+            categoria = "SAUDE",
+            formatosAceitos = "PDF",
+            tamanhoMaximoMb = 5,
+            classificacaoProtecao = "SENSIVEL",
+            finalidadeTratamento = "Comprovação documental do candidato.",
+            hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+        });
+        criar.StatusCode.Should().Be(HttpStatusCode.Created);
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+
+        HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Get, $"{Base}/tipos-documento/{id}");
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+        JsonElement detalhe = await resposta.Content.ReadFromJsonAsync<JsonElement>();
+        detalhe.GetProperty("tipo").GetString().Should().Be("TIPO_DOCUMENTO");
+        detalhe.GetProperty("descricao").GetString().Should().Be("Laudo que atesta a condição de saúde.");
+        detalhe.GetProperty("aprovacao").GetProperty("situacao").GetString().Should().Be("PENDENTE");
+        detalhe.GetProperty("fato").ValueKind.Should().Be(JsonValueKind.Null);
+        JsonElement tipo = detalhe.GetProperty("tipoDocumento");
+        tipo.GetProperty("categoria").GetString().Should().Be("SAUDE");
+        tipo.GetProperty("formatosAceitos").GetString().Should().Be("PDF");
+        tipo.GetProperty("tamanhoMaximoMb").GetInt32().Should().Be(5);
+    }
+
+    [Theory(DisplayName = "O detalhe de item inexistente, ou de cadastro que não é da fila, responde 404")]
+    [InlineData("tipos-documento")]
+    [InlineData("fatos")]
+    [InlineData("outro-cadastro")]
+    public async Task Detalhe_Inexistente_Retorna404(string cadastro)
+    {
+        await TornarCarolineAprovadoraAsync();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        (await EnviarAsync(client, HttpMethod.Get, $"{Base}/{cadastro}/{Guid.NewGuid()}")).StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact(DisplayName = "Quem mantém os cadastros, mas não tem a permissão de aprovar, recebe 403 no detalhe")]
+    public async Task Detalhe_SemPermissaoDeAprovar_Retorna403()
+    {
+        await TornarCarolineAprovadoraAsync();
+        const string Paulo = "paulo.conceicao";
+        await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, Paulo);
+        await ConcessoesDeTeste.ConcederPermissoesAsync(
+            _fixture.Factory.Services, Paulo, PermissaoConfiguracao.TiposDocumentoManter.Codigo, PermissaoConfiguracao.FatosCandidatoManter.Codigo,
+            PermissaoConfiguracao.FatosCandidatoConsultar.Codigo);
+        using HttpClient client = _fixture.Factory.CreateClient();
+        Guid id = await CadastrarTipoAsync(client, "INTERNO");
+
+        using HttpRequestMessage request = new(HttpMethod.Get, new Uri($"{Base}/tipos-documento/{id}", UriKind.Relative));
+        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
+        request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, Paulo);
+        HttpResponseMessage resposta = await client.SendAsync(request);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
     private static object DefinicaoDe(JsonElement fato, string? dominio = null, string? hipoteseLegal = null) => new
     {
         pontoResolucao = fato.GetProperty("pontoResolucao").GetString(),
