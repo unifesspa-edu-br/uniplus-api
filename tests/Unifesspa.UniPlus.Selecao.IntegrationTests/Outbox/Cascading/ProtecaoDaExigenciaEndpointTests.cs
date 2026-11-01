@@ -185,6 +185,7 @@ public sealed class ProtecaoDaExigenciaEndpointTests
         ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
         db.Add(tipo);
         await db.SaveChangesAsync();
+        await db.AprovarCatalogoAsync();
         return tipo.Id;
     }
 
@@ -197,6 +198,7 @@ public sealed class ProtecaoDaExigenciaEndpointTests
             tipo.Codigo.Valor, tipo.Nome, tipo.Descricao, tipo.Categoria, tipo.FormatosAceitos, tipo.TamanhoMaximoMb, tipo.TipoEquivalente,
             classificacao, tipo.FinalidadeTratamento, tipo.HipoteseLegal).IsSuccess.Should().BeTrue();
         await db.SaveChangesAsync();
+        await db.AprovarCatalogoAsync();
     }
 
     /// <summary>Um processo publicável cuja inscrição coleta um fato sensível do catálogo.</summary>

@@ -30,7 +30,7 @@ public sealed class VocabularioDeFatosTests
     public void Classificar_DominioNaoCitavel_Nulo(string dominio) =>
         VocabularioDeFatos.Classificar(new FatoCandidatoView(
             Guid.CreateVersion7(), "DADO_PESSOAL", "Dado pessoal", null, dominio, "DECLARADO", "ESCALAR",
-            ValoresDominio: null, "INSCRICAO", "CAMPO_FORMULARIO:DADO_PESSOAL", ValoresDominioDeclarados: null, FonteValores: null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade))
+            ValoresDominio: null, "INSCRICAO", "CAMPO_FORMULARIO:DADO_PESSOAL", ValoresDominioDeclarados: null, FonteValores: null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true))
             .Should().BeNull();
 
     [Fact(DisplayName = "UF e município de residência são citáveis: a UF entre as 27 siglas, o município pelo código IBGE bem formado")]
@@ -90,7 +90,7 @@ public sealed class VocabularioDeFatosTests
 
     private static FatoCandidatoView Derivado(string codigo, string fonte) => new(
         Guid.CreateVersion7(), codigo, codigo, null, "CATEGORICO", "DERIVADO", "ESCALAR",
-        ValoresDominio: null, "INSCRICAO", $"ATRIBUTO_CANDIDATO:{codigo}", ValoresDominioDeclarados: null, FonteValores: fonte, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade);
+        ValoresDominio: null, "INSCRICAO", $"ATRIBUTO_CANDIDATO:{codigo}", ValoresDominioDeclarados: null, FonteValores: fonte, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     [Fact(DisplayName = "O domínio de contribuição de uma regra segue a fonte: valores do processo, ou todos os do catálogo")]
     public void DominioDeContribuicao_PelaFonte()
@@ -99,7 +99,7 @@ public sealed class VocabularioDeFatosTests
             Guid.CreateVersion7(), "FORMA_CONCLUSAO", "Forma de conclusão", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO",
             ["REGULAR", "EJA"], "INSCRICAO", "REGRA_DERIVACAO:FORMA_CONCLUSAO",
             [new FatoValorDominioViewItem("REGULAR", "Regular", 0, true), new FatoValorDominioViewItem("EJA", "EJA", 1, false)],
-            "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade);
+            "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
         Dictionary<string, DominioDeValores> dinamicos = new(StringComparer.Ordinal)
         {
             ["MODALIDADE"] = DominioDeValores.Enumerado(["AC", "LB_PPI"]),
@@ -143,7 +143,7 @@ public sealed class VocabularioDeFatosTests
 
     private static FatoCandidatoView Agregado(string codigo, string membro) => new(
         Guid.CreateVersion7(), codigo, codigo, null, "CATEGORICO", "DERIVADO", "MULTIVALORADO",
-        ValoresDominio: null, "HABILITACAO", $"AGREGACAO_GRUPO:{membro}", ValoresDominioDeclarados: null, FonteValores: "PROCESSO", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade);
+        ValoresDominio: null, "HABILITACAO", $"AGREGACAO_GRUPO:{membro}", ValoresDominioDeclarados: null, FonteValores: "PROCESSO", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     [Fact(DisplayName = "Os fatos cujos valores são modalidades são escolhidos pela fonte, não pelo código")]
     public void ComValoresDeModalidade_PelaFonte()

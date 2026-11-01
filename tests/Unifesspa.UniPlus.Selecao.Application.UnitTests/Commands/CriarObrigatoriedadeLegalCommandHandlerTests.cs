@@ -65,7 +65,7 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
         new(Guid.CreateVersion7(), codigo, null, "COTA_RESERVADA", "DENTRO_DO_VR", null, null, null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, null);
 
     private static TipoDocumentoView TipoDocumentoVivo(string codigo) =>
-        new(Guid.CreateVersion7(), codigo, "Documento", "OUTROS", ClassificacaoDeProtecao.Pessoal, "Comprovação documental do candidato.", "CUMPRIMENTO_OBRIGACAO_LEGAL");
+        new(Guid.CreateVersion7(), codigo, "Documento", "OUTROS", ClassificacaoDeProtecao.Pessoal, "Comprovação documental do candidato.", "CUMPRIMENTO_OBRIGACAO_LEGAL", ProtecaoAprovada: true);
 
     private static ITipoEtapaReader TipoEtapaReaderComResposta(TipoEtapaView? resposta)
     {

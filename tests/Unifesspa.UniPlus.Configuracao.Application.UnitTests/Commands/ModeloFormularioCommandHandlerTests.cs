@@ -55,6 +55,11 @@ public sealed class ModeloFormularioCommandHandlerTests
 
     public ModeloFormularioCommandHandlerTests()
     {
+        foreach (FatoCandidato fato in new[] { _certificado, _cpf, _idade, _maiorIdade, _semRenda, _dataNascimento, _faixaEtaria })
+        {
+            Aprovar(fato);
+        }
+
         _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [_certificado, _cpf, _idade, _maiorIdade, _semRenda, _dataNascimento, _faixaEtaria]);
         _termos.ListarVersoesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([]);
         _tipos.ObterAtivoPorCodigoAsync("PSR", Arg.Any<CancellationToken>()).Returns(new TipoProcessoView(Guid.NewGuid(), "PSR", "PSR", null));
@@ -138,6 +143,7 @@ public sealed class ModeloFormularioCommandHandlerTests
         FatoCandidato condicao = FatoCandidato.CriarDoAdministrador(
             "CONDICAO", "Condição", null, DominioFato.Categorico, CardinalidadeFato.Multivalorado, FonteValoresFato.Processo, null, "INSCRICAO",
             EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
+        Aprovar(condicao);
         _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [_certificado, condicao]);
         ConteudoDoModeloInput conteudo = Conteudo(Item("CERTIFICADO", 0), Item("CONDICAO", 1, "SELECAO_MULTIPLA")) with
         {
@@ -250,6 +256,26 @@ public sealed class ModeloFormularioCommandHandlerTests
         editar.IsSuccess.Should().BeTrue(editar.Error?.Message);
     }
 
+    [Fact(DisplayName = "Fato sem a proteção aprovada é recusado como vínculo novo; o modelo que já o usava continua com ele")]
+    public async Task FatoComProtecaoPendente_RecusaSoOVinculoNovo()
+    {
+        ModeloFormulario existente = Existente(tipo: null);
+        FatoCandidato pendente = Declarado("PENDENTE_DE_APROVACAO");
+        _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns(_ => [_certificado, pendente]);
+
+        Result<Guid> criar = await CriarAsync(Conteudo(Item("PENDENTE_DE_APROVACAO", 0)));
+        Result editar = await AtualizarAsync(existente, Conteudo(Item("CERTIFICADO", 0)), tipo: null);
+
+        criar.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(VinculoCatalogoErrorCodes.FatoComProtecaoPendente);
+        editar.IsSuccess.Should().BeTrue(editar.Error?.Message);
+    }
+
+    private static void Aprovar(FatoCandidato fato)
+    {
+        fato.SolicitarAprovacaoDaProtecao("isabella.figueiredo", DateTimeOffset.UnixEpoch).IsSuccess.Should().BeTrue();
+        fato.AprovarProtecao("caroline.lima", DateTimeOffset.UnixEpoch).IsSuccess.Should().BeTrue();
+    }
+
     [Fact(DisplayName = "Fato desativado é recusado como vínculo novo; o modelo que já o usava continua com ele")]
     public async Task FatoDesativado_RecusaSoOVinculoNovo()
     {
@@ -281,6 +307,8 @@ public sealed class ModeloFormularioCommandHandlerTests
             EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
         FatoCandidato perfil = FatoCandidato.CriarDerivadoDoAdministrador(
             "PERFIL", "Perfil", null, DominioFato.Categorico, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
+        Aprovar(opcao);
+        Aprovar(perfil);
         opcao.AdicionarValorDominio("A", "A", 0, ativo: true).IsSuccess.Should().BeTrue();
         perfil.AdicionarValorDominio("A", "A", 0, ativo: true).IsSuccess.Should().BeTrue();
         RegraDerivacao regra = RegraDerivacao.Criar(

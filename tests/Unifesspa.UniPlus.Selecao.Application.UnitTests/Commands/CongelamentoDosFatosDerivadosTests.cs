@@ -45,6 +45,22 @@ public sealed class CongelamentoDosFatosDerivadosTests
             "MODALIDADE", "Nome de MODALIDADE", "CATEGORICO", "MULTIVALORADO", "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", "Finalidade do catálogo."));
     }
 
+    [Fact(DisplayName = "O derivado sem a proteção aprovada não entra no envelope; aprovado depois, é congelado com a proteção aprovada")]
+    public void Resolver_DerivadoPendenteNaoEntra_AprovadoDepoisEntraComAProtecaoAprovada()
+    {
+        FatoCandidatoView pendente = Derivado("RENDA_PER_CAPITA", "INTERNO") with { ProtecaoAprovada = false };
+
+        // Publicação: o derivado pendente que o processo não usa fica fora do envelope.
+        IReadOnlyDictionary<string, FatoDerivadoCongelado> publicada = CongelamentoDosFatosDerivados.Resolver([pendente], null);
+        publicada.Should().BeEmpty();
+
+        // A proteção de dados recomendou Sensível, o administrador aceitou, e a retificação passa a usar o fato.
+        FatoCandidatoView aprovado = pendente with { ClassificacaoProtecao = "SENSIVEL", ProtecaoAprovada = true };
+        IReadOnlyDictionary<string, FatoDerivadoCongelado> retificada = CongelamentoDosFatosDerivados.Resolver([aprovado], publicada);
+
+        retificada["RENDA_PER_CAPITA"].ClassificacaoProtecao.Should().Be("SENSIVEL");
+    }
+
     [Fact(DisplayName = "A retificação mantém o derivado que a versão vigente congelou, e só o derivado novo vem do catálogo de hoje")]
     public void Resolver_VersaoVigenteMantemOCongelado()
     {
@@ -75,7 +91,7 @@ public sealed class CongelamentoDosFatosDerivadosTests
     }
 
     [Fact(DisplayName = "A conferência das exigências usa a classificação que a versão vigente congelou para o derivado, e não a do catálogo de hoje")]
-    public async Task Montar_ClassificacaoDoDerivadoVemDaVersaoVigente()
+    public void Montar_ClassificacaoDoDerivadoVemDaVersaoVigente()
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Derivado congelado", out _);
         CongeladoNaVersaoVigente daVersao = new(
@@ -85,8 +101,8 @@ public sealed class CongelamentoDosFatosDerivadosTests
                 ["MODALIDADE"] = new("MODALIDADE", "Modalidade", "CATEGORICO", "MULTIVALORADO", "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", "Finalidade."),
             });
 
-        ProtecaoVigenteDoProcesso protecao = await ProtecaoVigenteDasExigenciasDoProcesso.MontarAsync(
-            processo, Substitute.For<ITipoDocumentoReader>(), [Derivado("MODALIDADE", "SENSIVEL")], daVersao, CancellationToken.None);
+        ProtecaoVigenteDoProcesso protecao = ProtecaoVigenteDasExigenciasDoProcesso.Montar(
+            processo, new Dictionary<Guid, TipoDocumentoView>(), [Derivado("MODALIDADE", "SENSIVEL")], daVersao);
 
         protecao.Exigencias.ClassificacaoDosFatosDerivados["MODALIDADE"].Should().Be(ClassificacaoDeProtecao.Interno);
         protecao.FatosDerivados["MODALIDADE"].ClassificacaoProtecao.Should().Be("INTERNO");

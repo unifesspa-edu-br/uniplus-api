@@ -7,6 +7,7 @@ using NSubstitute;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -155,6 +156,86 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
 
         publicar.IsFailure.Should().BeTrue();
         publicar.Error!.Code.Should().Be("ProcessoSeletivo.InscricaoPropriaSemFaseDeColeta");
+    }
+
+    [Fact(DisplayName = "Handle marca não conforme o tipo da exigência sem a proteção aprovada, como a publicação o recusa")]
+    public async Task Handle_TipoSemProtecaoAprovada_ItemVermelho()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS painel da proteção", out Guid faseId);
+        TipoDocumentoView tipo = CadastrosVivos.TipoDocumento("LAUDO_MEDICO") with { ProtecaoAprovada = false };
+        DocumentoExigido exigencia = DocumentoExigido.Criar(
+            faseId, tipo.Id, tipo.Codigo, tipo.Nome, tipo.Categoria, ProtecaoDoDocumentoDeTeste.Pessoal,
+            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null,
+            condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
+        Result definida = processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente);
+        definida.IsSuccess.Should().BeTrue(definida.Error?.Message);
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        ITipoDocumentoReader tipos = Substitute.For<ITipoDocumentoReader>();
+        tipos.ListarVivosAsync(Arg.Any<CancellationToken>()).Returns([tipo]);
+
+        ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
+            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, Substitute.For<IAtoDoProcessoRepository>(), CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), tipos, Substitute.For<IRegistroCodecsEnvelope>(), TimeProvider.System, CancellationToken.None);
+
+        result!.Itens.Should().ContainSingle(i => i.Codigo == "ProcessoSeletivo.TipoDocumentoComProtecaoPendente:documentosExigidos.LAUDO_MEDICO" && !i.Ok);
+    }
+
+    [Fact(DisplayName = "O derivado pendente que a exigência comprova é acusado uma só vez, como pendente de aprovação, e não como fora do catálogo")]
+    public async Task Handle_DerivadoComprovadoPendente_UmUnicoItemVermelho()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS painel do derivado", out Guid faseId);
+        TipoDocumentoView tipo = CadastrosVivos.TipoDocumento("LAUDO_MEDICO");
+        DocumentoExigido exigencia = DocumentoExigido.Criar(
+            faseId, tipo.Id, tipo.Codigo, tipo.Nome, tipo.Categoria, ProtecaoDoDocumentoDeTeste.Pessoal,
+            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null,
+            condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null,
+            finalidade: FinalidadeFormulario.Inscricao, fatosComprovados: ["RENDA_PER_CAPITA"]).Value!;
+        Result definida = processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente);
+        definida.IsSuccess.Should().BeTrue(definida.Error?.Message);
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        ITipoDocumentoReader tipos = Substitute.For<ITipoDocumentoReader>();
+        tipos.ListarVivosAsync(Arg.Any<CancellationToken>()).Returns([tipo]);
+        IFatoCandidatoReader catalogo = Substitute.For<IFatoCandidatoReader>();
+        catalogo.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[
+            CatalogoDoConjuntoBasico.Fatos[0] with { Codigo = "RENDA_PER_CAPITA", Origem = "DERIVADO", ProtecaoAprovada = false }]));
+
+        ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
+            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, Substitute.For<IAtoDoProcessoRepository>(), CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), catalogo, Substitute.For<ITipoAtoPublicadoReader>(), tipos, Substitute.For<IRegistroCodecsEnvelope>(), TimeProvider.System, CancellationToken.None);
+
+        result!.Itens.Where(static i => i.Codigo.Contains("Fato", StringComparison.Ordinal) || i.Codigo.Contains("fato", StringComparison.Ordinal))
+            .Where(static i => !i.Ok).Select(static i => i.Codigo).Should().Equal("ProcessoSeletivo.FatoComProtecaoPendente:fatos.RENDA_PER_CAPITA");
+    }
+
+    [Fact(DisplayName = "Vários fatos pendentes saem com códigos distintos, cada um identificando o seu fato")]
+    public async Task Handle_VariosFatosPendentes_CodigosDistintos()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS painel dos fatos", out Guid faseId);
+        TipoDocumentoView tipo = CadastrosVivos.TipoDocumento("LAUDO_MEDICO");
+        DocumentoExigido exigencia = DocumentoExigido.Criar(
+            faseId, tipo.Id, tipo.Codigo, tipo.Nome, tipo.Categoria, ProtecaoDoDocumentoDeTeste.Pessoal,
+            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null,
+            condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null,
+            finalidade: FinalidadeFormulario.Inscricao, fatosComprovados: ["RENDA_PER_CAPITA", "FAIXA_ETARIA", "IDADE_DO_CANDIDATO"]).Value!;
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        ITipoDocumentoReader tipos = Substitute.For<ITipoDocumentoReader>();
+        tipos.ListarVivosAsync(Arg.Any<CancellationToken>()).Returns([tipo]);
+        IFatoCandidatoReader catalogo = Substitute.For<IFatoCandidatoReader>();
+        catalogo.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[
+            .. new[] { "RENDA_PER_CAPITA", "FAIXA_ETARIA", "IDADE_DO_CANDIDATO" }
+                .Select(codigo => CatalogoDoConjuntoBasico.Fatos[0] with { Codigo = codigo, Origem = "DERIVADO", ProtecaoAprovada = false })]));
+
+        ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
+            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, Substitute.For<IAtoDoProcessoRepository>(), CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), catalogo, Substitute.For<ITipoAtoPublicadoReader>(), tipos, Substitute.For<IRegistroCodecsEnvelope>(), TimeProvider.System, CancellationToken.None);
+
+        result!.Itens.Where(static i => i.Codigo.StartsWith("ProcessoSeletivo.FatoComProtecaoPendente", StringComparison.Ordinal)).Select(static i => i.Codigo)
+            .Should().BeEquivalentTo(
+                "ProcessoSeletivo.FatoComProtecaoPendente:fatos.FAIXA_ETARIA",
+                "ProcessoSeletivo.FatoComProtecaoPendente:fatos.IDADE_DO_CANDIDATO",
+                "ProcessoSeletivo.FatoComProtecaoPendente:fatos.RENDA_PER_CAPITA");
+        result.Itens.Select(static i => i.Codigo).Should().OnlyHaveUniqueItems();
     }
 
     [Fact(DisplayName = "Handle com todos os itens obrigatórios configurados devolve checklist sem pendências, e a publicação aceita (bicondicional, issue #1092)")]

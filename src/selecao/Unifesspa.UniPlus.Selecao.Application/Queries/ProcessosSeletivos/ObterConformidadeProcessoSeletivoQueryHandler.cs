@@ -137,13 +137,24 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
         IReadOnlyList<FatoCandidatoView> catalogoDeFatos = await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false);
         FatosDeModalidade fatosDeModalidade = VocabularioDeFatos.ComValoresDeModalidade(catalogoDeFatos);
 
-        // A mesma proteção que a publicação e a retificação avaliam: o painel não aprova o que elas recusam.
-        ProtecaoVigenteDasExigencias protecaoDasExigencias = (await ProtecaoVigenteDasExigenciasDoProcesso
-            .MontarAsync(processo, tipoDocumentoReader, catalogoDeFatos, ProtecaoVigenteDasExigenciasDoProcesso.DaVersao(registroCodecs, versaoAtual), cancellationToken)
-            .ConfigureAwait(false)).Exigencias;
+        // A mesma proteção e a mesma aprovação que a publicação e a retificação avaliam, sobre a mesma leitura dos
+        // tipos de documento: o painel não aprova o que elas recusam.
+        IReadOnlyDictionary<Guid, TipoDocumentoView> tiposVivos = await ProtecaoVigenteDasExigenciasDoProcesso
+            .LerTiposVivosAsync(processo, tipoDocumentoReader, cancellationToken)
+            .ConfigureAwait(false);
+        ProtecaoVigenteDasExigencias protecaoDasExigencias = ProtecaoVigenteDasExigenciasDoProcesso
+            .Montar(processo, tiposVivos, catalogoDeFatos, ProtecaoVigenteDasExigenciasDoProcesso.DaVersao(registroCodecs, versaoAtual)).Exigencias;
+        Result aprovacaoDaProtecao = ConferenciaDaAprovacaoDaProtecao.Conferir(processo, tiposVivos, catalogoDeFatos);
 
         ItemConformidadeDto[] itens = [.. processo.AvaliarConformidade(contexto, fatosDeModalidade, tiposDeAtoUnicos, protecaoDasExigencias)
             .Select(static item => new ItemConformidadeDto(item.Codigo, item.Dimensao, item.Mensagem, item.Ok))];
+        // O código do item é único no checklist: leva o alvo (o tipo ou o fato), porque vários itens pendentes dividem a
+        // mesma invariante.
+        itens = [.. itens, .. aprovacaoDaProtecao.Errors.Select(static erro => new ItemConformidadeDto(
+            $"{erro.Error.Code}:{erro.Field}",
+            erro.Field?.StartsWith("fatos.", StringComparison.Ordinal) == true ? DimensaoConformidade.ColetaDeFatos : DimensaoConformidade.ExigenciasDocumentais,
+            erro.Error.Message,
+            Ok: false))];
         if (falhaDaVersaoPublicada is not null)
         {
             itens = [.. itens, new ItemConformidadeDto(

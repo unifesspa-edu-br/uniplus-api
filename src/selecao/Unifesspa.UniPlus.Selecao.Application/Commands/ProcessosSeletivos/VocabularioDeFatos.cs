@@ -80,7 +80,8 @@ internal static class VocabularioDeFatos
             fato.Codigo, fato.Dominio, fato.Cardinalidade, fato.Origem, fato.Binding, fato.FonteValores, fato.Escopo, fato.Ativo,
             fato.ValoresDominioDeclarados is { } declarados
                 ? [.. declarados.Select(static v => new ValorDoCatalogo(v.Codigo, v.Ativo))]
-                : [.. (fato.ValoresDominio ?? []).Select(static v => new ValorDoCatalogo(v, Ativo: true))]);
+                : [.. (fato.ValoresDominio ?? []).Select(static v => new ValorDoCatalogo(v, Ativo: true))],
+            fato.ProtecaoAprovada);
     }
 
     /// <summary>Como o fato se apresenta quando o formulário o cita sem perguntar: o nome e o tipo de campo que o domínio admite.</summary>

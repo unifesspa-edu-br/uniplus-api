@@ -46,7 +46,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
     private static DocumentoExigido ExigenciaComGatilhoPorFato(Guid faseId, string fato) =>
         DocumentoExigido.Criar(
             faseId,
-            tipoDocumentoOrigemId: Guid.CreateVersion7(),
+            tipoDocumentoOrigemId: CadastrosVivos.IdentidadeDe("LAUDO_MEDICO"),
             tipoDocumentoCodigo: "DECLARACAO",
             tipoDocumentoNome: "Declaração",
             tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
@@ -71,7 +71,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
         ValoresDominio: null,
         PontoResolucao: "INSCRICAO",
         Binding: "REGRA_DERIVACAO:MODALIDADE",
-        ValoresDominioDeclarados: null, FonteValores: "MODALIDADE", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade);
+        ValoresDominioDeclarados: null, FonteValores: "MODALIDADE", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     private sealed record Mocks(
         IProcessoSeletivoRepository ProcessoRepository,
@@ -194,7 +194,8 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
         Mocks mocks, ProcessoSeletivo processo, DocumentoAPublicar documento,
         ICalendarioVigenteReader? calendarioReader = null,
         ISelecaoUnitOfWork? unitOfWork = null,
-        IResolvedorDaUnidadeResponsavel? unidades = null)
+        IResolvedorDaUnidadeResponsavel? unidades = null,
+        ITipoDocumentoReader? tipos = null)
     {
         IUserContext userContext = Substitute.For<IUserContext>();
         userContext.UserId.Returns("user-sub-1");
@@ -217,7 +218,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
             mocks.VagaDeLinhagemReader,
             mocks.ObrigatoriedadeLegalRepository,
             CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
+            tipos ?? CadastrosVivos.TiposDocumento(),
             CadastrosVivos.TiposEtapa(),
             CadastrosVivos.TiposDeficiencia(),
             CadastrosVivos.RegrasDesempate(),
@@ -348,6 +349,26 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
         metadado.PontoResolucao.Should().Be("RESULTADO_FINAL");
         metadado.Binding.Should().Be("REGRA_DERIVACAO:MODALIDADE");
         metadado.ValoresDominioDeclarados.Should().BeNull("MODALIDADE é escopo-processo — os valores vêm da oferta do processo, não de FatoValorDominio");
+    }
+
+    [Fact(DisplayName = "A publicação é recusada quando o fato do gatilho ou o tipo da exigência estão sem a proteção aprovada")]
+    public async Task Handle_ItemSemProtecaoAprovada_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme(out Guid faseId);
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilhoPorFato(faseId, "MODALIDADE"), 0).Value!], PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+        (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo);
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
+            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[FatoModalidade() with { PontoResolucao = "RESULTADO_FINAL", ProtecaoAprovada = false }]));
+        ITipoDocumentoReader tipos = Substitute.For<ITipoDocumentoReader>();
+        tipos.ListarVivosAsync(Arg.Any<CancellationToken>()).Returns([CadastrosVivos.TipoDocumento("LAUDO_MEDICO") with { ProtecaoAprovada = false }]);
+
+        (Result resposta, IEnumerable<object> eventos) = await HandleAsync(mocks, processo, documento, tipos: tipos);
+
+        resposta.Errors.Select(static e => e.Error.Code).Should().BeEquivalentTo(
+            "ProcessoSeletivo.TipoDocumentoComProtecaoPendente", "ProcessoSeletivo.FatoComProtecaoPendente");
+        eventos.Should().BeEmpty();
+        mocks.Canonicalizer.DidNotReceiveWithAnyArgs().Canonicalizar(default!);
     }
 
     [Fact(DisplayName = "Gatilho que cita fato que o processo deixou de derivar recusa a publicação")]

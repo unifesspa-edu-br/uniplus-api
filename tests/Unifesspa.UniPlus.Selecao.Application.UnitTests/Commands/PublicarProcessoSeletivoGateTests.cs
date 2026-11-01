@@ -171,7 +171,7 @@ public sealed class PublicarProcessoSeletivoGateTests
             "Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!;
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             faseId,
-            tipoDocumentoOrigemId: Guid.CreateVersion7(),
+            tipoDocumentoOrigemId: CadastrosVivos.IdentidadeDe("LAUDO_MEDICO"),
             tipoDocumentoCodigo: "DECLARACAO_MAIORIDADE",
             tipoDocumentoNome: "Declaração de maioridade",
             tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,

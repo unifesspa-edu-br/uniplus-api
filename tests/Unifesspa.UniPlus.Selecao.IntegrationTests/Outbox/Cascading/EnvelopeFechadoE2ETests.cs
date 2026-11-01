@@ -1052,6 +1052,7 @@ public sealed class EnvelopeFechadoE2ETests
             config.Cursos.Add(curso);
             config.LocaisOferta.Add(local);
             await config.SaveChangesAsync().ConfigureAwait(false);
+            await config.AprovarCatalogoAsync().ConfigureAwait(false);
 
             Result<UnidadeOfertante> unidadeOfertanteResult = UnidadeOfertante.Criar(
                 unidadeId, $"CEPS{sufixo}", "Centro de Processos Seletivos E2E", nameof(TipoUnidade.Centro));
@@ -1134,6 +1135,7 @@ public sealed class EnvelopeFechadoE2ETests
             config.ReferenciasReservaDemografica.Add(referencia);
             config.TiposDocumento.Add(tipoDocumento);
             await config.SaveChangesAsync().ConfigureAwait(false);
+            await config.AprovarCatalogoAsync().ConfigureAwait(false);
 
             ofertaCursoId = oferta.Id;
             referenciaDemograficaId = referencia.Id;

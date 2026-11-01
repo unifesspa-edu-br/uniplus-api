@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -121,6 +122,7 @@ public sealed class AplicarModeloFormularioEndpointTests
         ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
         db.ModelosFormulario.Add(modelo);
         await db.SaveChangesAsync();
+        await db.AprovarCatalogoAsync();
         return modelo.Id;
     }
 

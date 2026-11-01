@@ -62,7 +62,7 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
         [FatoPessoal] = ClassificacaoDeProtecao.Pessoal,
     };
 
-    private static readonly ProtecaoVigenteDasExigencias ComCatalogo = new(Catalogo, new Dictionary<Guid, ProtecaoDoDocumento>());
+    private static readonly ProtecaoVigenteDasExigencias ComCatalogo = new(Catalogo, new Dictionary<Guid, ProtecaoDoDocumento>(), new HashSet<string>());
 
     private static DomainError? Pendencia(ProcessoSeletivo processo, ProtecaoVigenteDasExigencias? protecao = null) =>
         processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo, protecao);
@@ -120,6 +120,15 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
         processo.DocumentosExigidos.Single().ClassificacaoProtecao.Should().Be(ClassificacaoDeProtecao.Identificador);
     }
 
+    [Fact(DisplayName = "O derivado do catálogo sem proteção aprovada continua sendo derivado do catálogo: não é acusado como fora do processo")]
+    public void DerivadoSemProtecaoAprovada_NaoEForaDoProcesso()
+    {
+        ProcessoSeletivo processo = Processo(f => Exigencia(f, "LAUDO_MEDICO", ClassificacaoDeProtecao.Sensivel, ["RENDA_PER_CAPITA"]));
+        ProtecaoVigenteDasExigencias comDerivadoPendente = new(Catalogo, new Dictionary<Guid, ProtecaoDoDocumento>(), new HashSet<string> { "RENDA_PER_CAPITA" });
+
+        Pendencia(processo, comDerivadoPendente).Should().BeNull();
+    }
+
     [Fact(DisplayName = "Fato comprovado que o processo não coleta e que não é derivado do catálogo é recusado")]
     public void FatoForaDoProcesso_Recusa()
     {
@@ -155,7 +164,7 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
         ProcessoSeletivo processo = Processo(f => Exigencia(f, "LAUDO_MEDICO", ClassificacaoDeProtecao.Sensivel, [FatoSensivel]));
         Guid exigenciaId = processo.DocumentosExigidos.Single().Id;
         Pendencia(processo).Should().BeNull();
-        ProtecaoVigenteDasExigencias rebaixada = new(Catalogo, new Dictionary<Guid, ProtecaoDoDocumento> { [exigenciaId] = ProtecaoDoDocumentoDeTeste.De(ClassificacaoDeProtecao.Pessoal) });
+        ProtecaoVigenteDasExigencias rebaixada = new(Catalogo, new Dictionary<Guid, ProtecaoDoDocumento> { [exigenciaId] = ProtecaoDoDocumentoDeTeste.De(ClassificacaoDeProtecao.Pessoal) }, new HashSet<string>());
 
         Pendencia(processo, rebaixada)!.Code.Should().Be(ProcessoSeletivoErrorCodes.ExigenciaMenosProtegidaQueFatoComprovado);
         VermelhosDoPainel(processo, rebaixada).Should().Contain("exigencia_menos_protegida_que_fato_comprovado");

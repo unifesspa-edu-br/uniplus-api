@@ -29,7 +29,7 @@ public sealed class DesativacaoNoCatalogoTests
 
     private static FatoCandidatoView CorRaca(bool ativo = true) => new(
         Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", null, "CATEGORICO", "DECLARADO", "ESCALAR",
-        ["BRANCA", "PRETA", "PARDA"], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", [Branca, PretaDesativada, Parda], "GLOBAL", ativo, "PESSOAL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade);
+        ["BRANCA", "PRETA", "PARDA"], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", [Branca, PretaDesativada, Parda], "GLOBAL", ativo, "PESSOAL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     private static Dictionary<string, FatoCandidatoView> Catalogo(FatoCandidatoView fato) =>
         new(StringComparer.Ordinal) { [fato.Codigo] = fato };
@@ -46,6 +46,16 @@ public sealed class DesativacaoNoCatalogoTests
         VinculosDeFatos coleta = VinculosDeFatos.De(["COR_RACA"], []);
 
         ConferenciaDeVinculoNovo.Conferir(catalogo, Nenhum, coleta).Error!.Code.Should().Be(VinculoCatalogoErrorCodes.FatoDesativado);
+        ConferenciaDeVinculoNovo.Conferir(catalogo, coleta, coleta).IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Fato sem a proteção aprovada: vínculo novo é recusado, o existente continua")]
+    public void FatoComProtecaoPendente_RecusaSoVinculoNovo()
+    {
+        Dictionary<string, FatoCandidatoView> catalogo = Catalogo(CorRaca() with { ProtecaoAprovada = false });
+        VinculosDeFatos coleta = VinculosDeFatos.De(["COR_RACA"], []);
+
+        ConferenciaDeVinculoNovo.Conferir(catalogo, Nenhum, coleta).Error!.Code.Should().Be(VinculoCatalogoErrorCodes.FatoComProtecaoPendente);
         ConferenciaDeVinculoNovo.Conferir(catalogo, coleta, coleta).IsSuccess.Should().BeTrue();
     }
 
@@ -94,7 +104,7 @@ public sealed class DesativacaoNoCatalogoTests
             PrecondicaoIfMatch.Ausente, finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         catalogo["BAIXA_RENDA"] = new FatoCandidatoView(
             Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", null, "BOOLEANO", "DECLARADO", "ESCALAR",
-            null, "INSCRICAO", "CAMPO_FORMULARIO:BAIXA_RENDA", null, null, true, "PESSOAL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade);
+            null, "INSCRICAO", "CAMPO_FORMULARIO:BAIXA_RENDA", null, null, true, "PESSOAL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
         ResolvedorValoresSelecionaveisCongelados.Resolver(processo, catalogo).Value!["COR_RACA"]!
             .Select(static v => v.Codigo).Should().Equal("BRANCA", "PRETA", "PARDA");

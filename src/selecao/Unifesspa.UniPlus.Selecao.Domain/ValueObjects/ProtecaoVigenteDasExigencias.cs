@@ -17,6 +17,12 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// A proteção efetiva da exigência: a já congelada na versão vigente, se a exigência é a mesma (mesmo
 /// id e mesmo tipo); senão, a vigente no cadastro. A exigência ausente vale pela cópia que tem.
 /// </param>
+/// <param name="DerivadosSemProtecaoAprovada">
+/// Os códigos dos fatos derivados do catálogo cuja proteção a proteção de dados ainda não aprovou: continuam
+/// sendo fatos derivados do catálogo, mas sem classificação a congelar. O que o processo usa deles é recusado
+/// pela conferência da aprovação, e não por esta avaliação.
+/// </param>
 public sealed record ProtecaoVigenteDasExigencias(
     IReadOnlyDictionary<string, ClassificacaoDeProtecao> ClassificacaoDosFatosDerivados,
-    IReadOnlyDictionary<Guid, ProtecaoDoDocumento> PorExigencia);
+    IReadOnlyDictionary<Guid, ProtecaoDoDocumento> PorExigencia,
+    IReadOnlySet<string> DerivadosSemProtecaoAprovada);

@@ -10,6 +10,7 @@ using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// Monta o contexto de proteção das exigências que o painel de conformidade, a publicação e a
@@ -22,25 +23,35 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// </summary>
 internal static class ProtecaoVigenteDasExigenciasDoProcesso
 {
-    public static async Task<ProtecaoVigenteDoProcesso> MontarAsync(
-        ProcessoSeletivo processo,
-        ITipoDocumentoReader tipoDocumentoReader,
-        IReadOnlyList<FatoCandidatoView> catalogoDeFatos,
-        CongeladoNaVersaoVigente? daVersaoVigente,
-        CancellationToken cancellationToken)
+    /// <summary>
+    /// Os tipos de documento vivos do cadastro, lidos de uma vez e por identificador: a conferência da aprovação e o
+    /// congelamento da proteção usam a mesma leitura, e o cadastro não é consultado tipo a tipo. O processo sem
+    /// exigência não consulta o cadastro.
+    /// </summary>
+    public static async Task<IReadOnlyDictionary<Guid, TipoDocumentoView>> LerTiposVivosAsync(
+        ProcessoSeletivo processo, ITipoDocumentoReader tipoDocumentoReader, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(processo);
         ArgumentNullException.ThrowIfNull(tipoDocumentoReader);
-        ArgumentNullException.ThrowIfNull(catalogoDeFatos);
 
-        Dictionary<Guid, ProtecaoDoDocumento?> doCadastro = [];
-        foreach (Guid tipoId in processo.DocumentosExigidos.Select(static d => d.TipoDocumentoOrigemId).Distinct())
+        if (processo.DocumentosExigidos.Count == 0)
         {
-            TipoDocumentoView? tipo = await tipoDocumentoReader.ObterPorIdAsync(tipoId, cancellationToken).ConfigureAwait(false);
-            doCadastro[tipoId] = tipo is null
-                ? null
-                : new ProtecaoDoDocumento(tipo.ClassificacaoProtecao, tipo.FinalidadeTratamento, tipo.HipoteseLegal);
+            return new Dictionary<Guid, TipoDocumentoView>();
         }
+
+        IReadOnlyList<TipoDocumentoView> vivos = await tipoDocumentoReader.ListarVivosAsync(cancellationToken).ConfigureAwait(false);
+        return vivos.ToDictionary(static t => t.Id);
+    }
+
+    public static ProtecaoVigenteDoProcesso Montar(
+        ProcessoSeletivo processo,
+        IReadOnlyDictionary<Guid, TipoDocumentoView> tiposVivos,
+        IReadOnlyList<FatoCandidatoView> catalogoDeFatos,
+        CongeladoNaVersaoVigente? daVersaoVigente)
+    {
+        ArgumentNullException.ThrowIfNull(processo);
+        ArgumentNullException.ThrowIfNull(tiposVivos);
+        ArgumentNullException.ThrowIfNull(catalogoDeFatos);
 
         Dictionary<Guid, ProtecaoDoDocumento> porExigencia = [];
         foreach (DocumentoExigido exigencia in processo.DocumentosExigidos)
@@ -51,10 +62,9 @@ internal static class ProtecaoVigenteDasExigenciasDoProcesso
             {
                 porExigencia[exigencia.Id] = congelada.Protecao;
             }
-            else if (doCadastro[exigencia.TipoDocumentoOrigemId] is { } vigente)
+            else if (tiposVivos.TryGetValue(exigencia.TipoDocumentoOrigemId, out TipoDocumentoView? tipo))
             {
-                // O tipo que o cadastro não devolve mantém a cópia da exigência.
-                porExigencia[exigencia.Id] = vigente;
+                porExigencia[exigencia.Id] = new ProtecaoDoDocumento(tipo.ClassificacaoProtecao, tipo.FinalidadeTratamento, tipo.HipoteseLegal);
             }
         }
 
@@ -69,7 +79,15 @@ internal static class ProtecaoVigenteDasExigenciasDoProcesso
             }
         }
 
-        return new ProtecaoVigenteDoProcesso(new ProtecaoVigenteDasExigencias(classificacaoDosDerivados, porExigencia), derivados);
+        HashSet<string> derivadosSemProtecaoAprovada = new(
+            catalogoDeFatos
+                .Where(f => !f.ProtecaoAprovada && string.Equals(f.Origem, DominioDoCatalogo.OrigemDerivada, StringComparison.Ordinal))
+                .Select(static f => f.Codigo)
+                .Where(codigo => !derivados.ContainsKey(codigo)),
+            StringComparer.Ordinal);
+
+        return new ProtecaoVigenteDoProcesso(
+            new ProtecaoVigenteDasExigencias(classificacaoDosDerivados, porExigencia, derivadosSemProtecaoAprovada), derivados);
     }
 
     /// <summary>

@@ -164,6 +164,17 @@ public static class PublicarProcessoSeletivoCommandHandler
             catalogoDeFatos.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
         FatosDeModalidade fatosDeModalidade = VocabularioDeFatos.ComValoresDeModalidade(catalogoDeFatos);
 
+        // A proteção que o envelope congela precisa estar aprovada pela proteção de dados (ADR-0153), e a leitura dos
+        // tipos de documento que a confere é a mesma que a proteção congelada usa mais adiante.
+        IReadOnlyDictionary<Guid, TipoDocumentoView> tiposVivos = await ProtecaoVigenteDasExigenciasDoProcesso
+            .LerTiposVivosAsync(processo, tipoDocumentoReader, cancellationToken)
+            .ConfigureAwait(false);
+        Result protecaoAprovada = ConferenciaDaAprovacaoDaProtecao.Conferir(processo, tiposVivos, catalogoDeFatos);
+        if (protecaoAprovada.IsFailure)
+        {
+            return (protecaoAprovada, []);
+        }
+
         // O catálogo é editável depois que o item copiou dele a origem dos valores, o formato e a
         // proteção, e os gates abaixo avaliam a cópia: ela é reconferida e recopiada antes deles. A unidade
         // responsável de cada fase é conferida no cadastro vivo e recopiada no mesmo passo, porque o
@@ -178,9 +189,8 @@ public static class PublicarProcessoSeletivoCommandHandler
 
         // O tipo de documento é editável depois que a exigência copiou dele a proteção: o valor
         // vigente é o que se congela, antes da conferência contra os fatos e do snapshot.
-        ProtecaoVigenteDoProcesso protecaoDoProcesso = await ProtecaoVigenteDasExigenciasDoProcesso
-            .MontarAsync(processo, tipoDocumentoReader, catalogoDeFatos, null, cancellationToken)
-            .ConfigureAwait(false);
+        ProtecaoVigenteDoProcesso protecaoDoProcesso = ProtecaoVigenteDasExigenciasDoProcesso
+            .Montar(processo, tiposVivos, catalogoDeFatos, null);
         ProtecaoVigenteDasExigencias protecaoDasExigencias = protecaoDoProcesso.Exigencias;
         processo.AplicarProtecaoVigente(protecaoDasExigencias);
 

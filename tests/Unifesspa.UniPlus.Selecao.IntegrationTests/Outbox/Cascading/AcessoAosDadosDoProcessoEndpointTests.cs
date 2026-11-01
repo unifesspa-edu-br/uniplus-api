@@ -439,6 +439,7 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
         db.Add(tipo);
         await db.SaveChangesAsync();
+        await db.AprovarCatalogoAsync();
         return tipo.Id;
     }
 
