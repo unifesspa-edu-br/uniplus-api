@@ -8,4 +8,7 @@ public static class ModalidadeDoCandidato
 {
     /// <summary>O fato derivado da modalidade de concorrência.</summary>
     public const string Fato = "MODALIDADE";
+
+    /// <summary>O fato derivado da modalidade de concorrência na 2ª opção de curso.</summary>
+    public const string FatoSegundaOpcao = "MODALIDADE_SEGUNDA_OPCAO";
 }

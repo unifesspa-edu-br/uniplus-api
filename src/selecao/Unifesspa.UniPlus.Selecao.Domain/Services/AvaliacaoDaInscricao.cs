@@ -25,10 +25,10 @@ using ValueObjects;
 public static class AvaliacaoDaInscricao
 {
     /// <summary>O fato que diz em quais modalidades o candidato concorre.</summary>
-    public const string FatoDaModalidade = "MODALIDADE";
+    public const string FatoDaModalidade = ModalidadeDoCandidato.Fato;
 
     /// <summary>O fato que diz em quais modalidades o candidato concorre na 2ª opção de curso.</summary>
-    public const string FatoDaModalidadeDaSegundaOpcao = "MODALIDADE_SEGUNDA_OPCAO";
+    public const string FatoDaModalidadeDaSegundaOpcao = ModalidadeDoCandidato.FatoSegundaOpcao;
 
     /// <summary>Como a modalidade derivada é gravada: os códigos das modalidades, um por linha, na ordem das ofertadas.</summary>
     public static DefinicaoDaResposta DefinicaoDaModalidade { get; } = new(TipoDoValorDeResposta.Codigo, Multivalorado: true, Identificador: false);

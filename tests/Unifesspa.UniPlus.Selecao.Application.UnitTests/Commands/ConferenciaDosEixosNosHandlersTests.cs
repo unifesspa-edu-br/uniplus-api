@@ -441,7 +441,7 @@ public sealed class ConferenciaDosEixosNosHandlersTests
 
             FatoCandidatoView vivo = new(
                 Guid.CreateVersion7(), Fato, "Tem renda?", null, dominioNoCatalogo, "DECLARADO", "ESCALAR", null,
-                "RESULTADO_FINAL", $"CAMPO_FORMULARIO:{Fato}", null, null, Ativo: true, ClassificacaoProtecao: classificacaoNoCatalogo);
+                "RESULTADO_FINAL", $"CAMPO_FORMULARIO:{Fato}", null, null, Ativo: true, ClassificacaoProtecao: classificacaoNoCatalogo, HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade);
             FatoCandidatoView novo = vivo with { Id = Guid.CreateVersion7(), Codigo = FatoNovo, Nome = "Tem endereço próprio?", Dominio = "BOOLEANO", Binding = $"CAMPO_FORMULARIO:{FatoNovo}" };
             _catalogo.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[vivo, novo]));
         }
@@ -458,10 +458,10 @@ public sealed class ConferenciaDosEixosNosHandlersTests
 
         // Um fato que nenhuma versão publicada coletou, com a cópia velha do catálogo (PESSOAL).
         private static FatoColetado ItemNovo() =>
-            FatoColetado.Criar(FatoNovo, 100, "Tem endereço próprio?", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL").Value!;
+            FatoColetado.Criar(FatoNovo, 100, "Tem endereço próprio?", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
 
         private static FatoColetado Item(TipoRenderizacao tipo) =>
-            FatoColetado.Criar(Fato, 0, "Tem renda?", tipo, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!;
+            FatoColetado.Criar(Fato, 0, "Tem renda?", tipo, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
 
         private static DocumentoExigido ExigenciaComGatilho(Guid faseId) =>
             DocumentoExigido.Criar(

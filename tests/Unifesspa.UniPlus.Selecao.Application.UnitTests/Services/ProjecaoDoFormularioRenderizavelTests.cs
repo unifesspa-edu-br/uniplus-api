@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A projeção única do formulário renderizável (ADR-0139): a apresentação sai das entidades e dos
@@ -214,7 +215,7 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
         FatoColetado.Criar(
             codigo, ordem, codigo, tipo, Obrigatoriedade.Sempre,
             quando is null ? null : [.. quando.Select(static c => CondicaoPrecondicaoFato.Criar(0, c.Fato, Operador.Igual, JsonSerializer.SerializeToElement(c.Valor)).Value!)],
-            etapaCodigo: etapa, finalidade: finalidade, formato: formato, classificacaoProtecao: "PESSOAL").Value!;
+            etapaCodigo: etapa, finalidade: finalidade, formato: formato, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
 
     private static TermoExigidoFormulario Termo(string codigo, FinalidadeFormulario finalidade) =>
         TermoExigidoFormulario.Criar(

@@ -2064,6 +2064,12 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("finalidade");
 
+                    b.Property<string>("FinalidadeTratamento")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("finalidade_tratamento");
+
                     b.Property<string>("Formato")
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
@@ -2072,6 +2078,12 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("GrupoColetadoId")
                         .HasColumnType("uuid")
                         .HasColumnName("grupo_coletado_id");
+
+                    b.Property<string>("HipoteseLegal")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("hipotese_legal");
 
                     b.Property<string>("Impedimento")
                         .HasColumnType("jsonb")

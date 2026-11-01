@@ -55,15 +55,15 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
     private static IReadOnlyList<FatoCandidatoView> VocabularioSeed() =>
     [
         new(Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", null, "CATEGORICO", "DECLARADO", "ESCALAR",
-            ["BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA", "NAO_INFORMADO"], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL"),
+            ["BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA", "NAO_INFORMADO"], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade),
         new(Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", null, "BOOLEANO", "DECLARADO", "ESCALAR",
-            null, "INSCRICAO", "CAMPO_FORMULARIO:BAIXA_RENDA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL"),
+            null, "INSCRICAO", "CAMPO_FORMULARIO:BAIXA_RENDA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade),
         new(Guid.CreateVersion7(), OrigemEscolar.FatoEgresso, "Egresso de escola pública", null, "BOOLEANO", "DERIVADO", "ESCALAR",
-            null, "INSCRICAO", $"REGRA_DERIVACAO:{OrigemEscolar.FatoEgresso}", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL"),
+            null, "INSCRICAO", $"REGRA_DERIVACAO:{OrigemEscolar.FatoEgresso}", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade),
         new(Guid.CreateVersion7(), Derivado, "Regime de vaga", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO",
             ["AC", "AC_PCD"], "INSCRICAO", $"REGRA_DERIVACAO:{Derivado}",
             [new FatoValorDominioViewItem("AC", "Ampla", 0, true), new FatoValorDominioViewItem("AC_PCD", "Reserva", 1, true)],
-            "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL"),
+            "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade),
     ];
 
     private static ProcessoSeletivo ProcessoBase() =>
@@ -74,7 +74,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoBase();
 
-        processo.DefinirItens([FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL").Value!], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         ReferenciaRegra regraDistribuicao = ReferenciaRegra.Criar(
@@ -193,7 +193,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         [
             .. VocabularioSeed(),
             new FatoCandidatoView(Guid.CreateVersion7(), "INDIGENA_DECLARADO", "Indígena declarado", null, dominio,
-                "DERIVADO", "ESCALAR", null, "INSCRICAO", "REGRA_DERIVACAO:INDIGENA_DECLARADO", [], dominio == "BOOLEANO" ? null : "GEO_UF", Ativo: true, ClassificacaoProtecao: "PESSOAL"),
+                "DERIVADO", "ESCALAR", null, "INSCRICAO", "REGRA_DERIVACAO:INDIGENA_DECLARADO", [], dominio == "BOOLEANO" ? null : "GEO_UF", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade),
         ]));
         DefinirRegrasDerivacaoCommand command = new(processo.Id,
             [new ConfiguracaoDerivacaoInput("INDIGENA_DECLARADO",
@@ -219,7 +219,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
             new FatoCandidatoView(Guid.CreateVersion7(), "FORMA_CONCLUSAO", "Forma de conclusão", null, "CATEGORICO", "DERIVADO",
                 "MULTIVALORADO", ["EJA", "PROFICIENCIA"], "INSCRICAO", "REGRA_DERIVACAO:FORMA_CONCLUSAO",
                 [new FatoValorDominioViewItem("EJA", "EJA", 0, true), new FatoValorDominioViewItem("PROFICIENCIA", "Proficiência", 1, false)],
-                "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL"),
+                "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade),
         ]));
         DefinirRegrasDerivacaoCommand command = new(processo.Id,
             [new ConfiguracaoDerivacaoInput("FORMA_CONCLUSAO", [new RegraDerivacaoInput(0, contribui, null)])], PrecondicaoIfMatch.Ausente);
@@ -257,7 +257,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
     public async Task Handle_CitaOEgressoSuprido_Aceita()
     {
         ProcessoSeletivo processo = ProcessoBase();
-        processo.DefinirItens([FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL").Value!], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
         processo.DefinirDistribuicaoVagas(
             [ConfiguracaoDistribuicaoVagas.Criar(

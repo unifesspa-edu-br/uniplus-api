@@ -130,10 +130,10 @@ public static class LimitesDoEnvelope
     public const int TipoDocumentoCategoria = 60;
 
     /// <summary><c>DocumentoExigido.FinalidadeTratamento</c> — snapshot-copy da finalidade do tratamento de <c>TipoDocumento</c>.</summary>
-    public const int FinalidadeTratamento = 500;
+    public const int FinalidadeTratamento = FormaDoItem.FinalidadeTratamentoMaxLength;
 
     /// <summary><c>DocumentoExigido.HipoteseLegal</c> — snapshot-copy do token da hipótese legal de <c>TipoDocumento</c>.</summary>
-    public const int HipoteseLegal = 40;
+    public const int HipoteseLegal = FormaDoItem.HipoteseLegalMaxLength;
 
     /// <summary><c>DocumentoExigidoBaseLegal.Observacao</c>.</summary>
     public const int ObservacaoBaseLegal = 1000;

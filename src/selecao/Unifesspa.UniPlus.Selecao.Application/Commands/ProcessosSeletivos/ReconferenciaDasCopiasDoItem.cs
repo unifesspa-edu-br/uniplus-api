@@ -63,7 +63,8 @@ internal static class ReconferenciaDasCopiasDoItem
         IReadOnlySet<string> jaColetados = fatosJaColetados ?? Nenhum;
         Dictionary<string, CopiaDoItemNoCatalogo> copias = catalogoDeFatos.ToDictionary(
             static f => f.Codigo,
-            static f => new CopiaDoItemNoCatalogo(VocabularioDeFatos.OrigemValores(f), f.Formato, f.ClassificacaoProtecao),
+            static f => new CopiaDoItemNoCatalogo(
+                VocabularioDeFatos.OrigemValores(f), f.Formato, f.ClassificacaoProtecao, f.HipoteseLegal, f.FinalidadeTratamento),
             StringComparer.Ordinal);
         // A forma das cópias é conferida pelo agregado sem mudá-lo; o caminho e a orientação de cada
         // recusa são montados aqui, no mesmo percurso das demais.

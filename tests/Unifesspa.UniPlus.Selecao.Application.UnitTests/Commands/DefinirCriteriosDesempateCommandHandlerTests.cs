@@ -45,7 +45,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
             [
                 new FatoCandidatoView(
                     Guid.CreateVersion7(), "PROFESSOR_RURAL", "Professor da rede pública rural", null,
-                    "BOOLEANO", "DECLARADO", "ESCALAR", null, "INSCRICAO", "CAMPO_FORMULARIO:PROFESSOR_RURAL", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL"),
+                    "BOOLEANO", "DECLARADO", "ESCALAR", null, "INSCRICAO", "CAMPO_FORMULARIO:PROFESSOR_RURAL", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade),
             ]);
 
         // O catálogo de critérios de desempate vem completo, como em produção: o caminho de

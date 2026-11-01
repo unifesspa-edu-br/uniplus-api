@@ -22,6 +22,12 @@ public static class FormaDoItem
     /// <summary>A mesma grandeza do formato — token canônico curto (o maior hoje é "IDENTIFICADOR").</summary>
     public const int ClassificacaoProtecaoMaxLength = 30;
 
+    /// <summary>O token canônico da hipótese legal de tratamento copiada do catálogo.</summary>
+    public const int HipoteseLegalMaxLength = 40;
+
+    /// <summary>A finalidade do tratamento copiada do catálogo.</summary>
+    public const int FinalidadeTratamentoMaxLength = 500;
+
     public const int AjudaMaxLength = 1000;
 
     /// <summary>A mensagem que explica ao candidato por que a resposta impede a inscrição.</summary>

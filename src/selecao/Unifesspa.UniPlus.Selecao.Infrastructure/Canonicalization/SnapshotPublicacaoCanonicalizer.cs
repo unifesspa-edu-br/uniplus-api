@@ -366,8 +366,14 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// escala em que a nota final é publicada, decimal positivo. Sempre presente, nula na
     /// classificação importada. Sem novo bloco de topo. Sem produção em ambiente nenhum: fixture
     /// nova, <c>0.0.39</c> deixa de ser reconhecida.
+    /// O bump para <c>0.0.41</c> acrescenta o bloco de topo <c>fatosDerivados</c>: cada fato derivado
+    /// do catálogo com o nome, o domínio, a cardinalidade, a classificação de proteção, a hipótese
+    /// legal e a finalidade de tratamento que tinha quando a configuração foi publicada, e acrescenta
+    /// <c>hipoteseLegal</c> e <c>finalidadeTratamento</c> a cada item de <c>fatosColetados</c>. Sempre
+    /// presente, vazio quando o catálogo não tem fato derivado. Sem produção em ambiente nenhum:
+    /// fixture nova, <c>0.0.40</c> deixa de ser reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.40";
+    internal const string SchemaVersionAtual = "0.0.41";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -431,6 +437,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["identificadorLegivel"] = processo.IdentificadorLegivel?.Valor,
             ["apresentacaoDosPressupostos"] = SerializarApresentacaoDosPressupostos(entrada.ApresentacaoDosPressupostos),
             ["tiposDeAto"] = SerializarTiposDeAto(entrada.TiposDeAtoCongelados),
+            ["fatosDerivados"] = SerializarFatosDerivados(entrada.FatosDerivadosCongelados),
         };
 
         // ADR-0101: a retificação ACRESCENTA um 34º bloco preservando os 33 anteriores. A
@@ -932,6 +939,20 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 ["unicoPorObjeto"] = t.UnicoPorObjeto,
                 ["ehResultado"] = t.EhResultado,
                 ["congelaConfiguracao"] = t.CongelaConfiguracao,
+            })]);
+
+    private static JsonArray SerializarFatosDerivados(IReadOnlyDictionary<string, FatoDerivadoCongelado>? fatos) =>
+        new([.. (fatos ?? new Dictionary<string, FatoDerivadoCongelado>(StringComparer.Ordinal)).Values
+            .OrderBy(static f => HashCanonicalComputer.NormalizeNfc(f.Codigo), StringComparer.Ordinal)
+            .Select(static f => (JsonNode?)new JsonObject
+            {
+                ["codigo"] = HashCanonicalComputer.NormalizeNfc(f.Codigo),
+                ["nome"] = HashCanonicalComputer.NormalizeNfc(f.Nome),
+                ["dominio"] = f.Dominio,
+                ["cardinalidade"] = f.Cardinalidade,
+                ["classificacaoProtecao"] = f.ClassificacaoProtecao,
+                ["hipoteseLegal"] = f.HipoteseLegal,
+                ["finalidadeTratamento"] = HashCanonicalComputer.NormalizeNfc(f.FinalidadeTratamento),
             })]);
 
     private static JsonObject SerializarAtendimento(ProcessoSeletivo processo)
@@ -2128,6 +2149,8 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 ["origemValores"] = fato.OrigemValores.ToString(),
                 ["formato"] = fato.Formato,
                 ["classificacaoProtecao"] = fato.ClassificacaoProtecao,
+                ["hipoteseLegal"] = fato.HipoteseLegal,
+                ["finalidadeTratamento"] = HashCanonicalComputer.NormalizeNfc(fato.FinalidadeTratamento),
                 ["precondicao"] = SerializarDnf(fato.Precondicoes.Select(
                     static c => (c.Clausula, c.Fato, c.Operador, c.Valor))),
                 ["valoresSelecionaveis"] = ehFatoDeSelecao

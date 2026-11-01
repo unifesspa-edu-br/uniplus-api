@@ -74,11 +74,11 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
 
     private static FatoCandidatoView FatoSexo() => new(
         Guid.CreateVersion7(), "SEXO", "Sexo", null, "CATEGORICO", "DECLARADO", "ESCALAR",
-        ["MASCULINO", "FEMININO", "INTERSEXO"], "INSCRICAO", "CAMPO_FORMULARIO:SEXO", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL");
+        ["MASCULINO", "FEMININO", "INTERSEXO"], "INSCRICAO", "CAMPO_FORMULARIO:SEXO", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade);
 
     private static FatoCandidatoView FatoSexoComPontoResolucao(string pontoResolucao) => new(
         Guid.CreateVersion7(), "SEXO", "Sexo", null, "CATEGORICO", "DECLARADO", "ESCALAR",
-        ["MASCULINO", "FEMININO", "INTERSEXO"], pontoResolucao, "CAMPO_FORMULARIO:SEXO", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL");
+        ["MASCULINO", "FEMININO", "INTERSEXO"], pontoResolucao, "CAMPO_FORMULARIO:SEXO", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade);
 
     private static FaseCronograma FaseComOrdemECodigo(int ordem, string codigo) => FaseCronograma.Criar(
         ordem, Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao,
@@ -88,7 +88,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
 
     private static FatoCandidatoView FatoModalidade() => new(
         Guid.CreateVersion7(), "MODALIDADE", "Modalidade de concorrência", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO", null,
-        "INSCRICAO", "REGRA_DERIVACAO:MODALIDADE", null, "MODALIDADE", Ativo: true, ClassificacaoProtecao: "PESSOAL");
+        "INSCRICAO", "REGRA_DERIVACAO:MODALIDADE", null, "MODALIDADE", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade);
 
     // Os valores são os tipos do cadastro de tipos de deficiência, que o catálogo entrega como valores do fato.
     private static FatoCandidatoView FatoTipoDeficiencia() => new(
@@ -96,7 +96,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         ["DEFICIENCIA_VISUAL", "TEA"], "INSCRICAO", "CAMPO_FORMULARIO:TIPO_DEFICIENCIA",
         [new FatoValorDominioViewItem("DEFICIENCIA_VISUAL", "Deficiência visual", 0, Ativo: true),
          new FatoValorDominioViewItem("TEA", "Transtorno do espectro autista", 1, Ativo: true)],
-        "TIPOS_DEFICIENCIA", Ativo: true, ClassificacaoProtecao: "SENSIVEL");
+        "TIPOS_DEFICIENCIA", Ativo: true, ClassificacaoProtecao: "SENSIVEL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade);
 
     [Fact(DisplayName = "Handle com processo inexistente retorna ProcessoSeletivo.NaoEncontrado")]
     public async Task Handle_ProcessoInexistente_RetornaNaoEncontrado()
@@ -302,7 +302,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         if (coletaDataDeNascimento)
         {
             processo.DefinirItens(
-                [FatoColetado.Criar("DATA_NASCIMENTO", 0, "Data de nascimento", TipoRenderizacao.Data, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!])
+                [FatoColetado.Criar("DATA_NASCIMENTO", 0, "Data de nascimento", TipoRenderizacao.Data, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!])
                 .IsSuccess.Should().BeTrue();
         }
 
@@ -325,7 +325,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
     /// <summary>A faixa etária como o catálogo a publica: derivada, por atributo do candidato.</summary>
     private static FatoCandidatoView FatoFaixaEtaria() => new(
         Guid.CreateVersion7(), "FAIXA_ETARIA", "Faixa etária", null, "NUMERICO", "DERIVADO", "ESCALAR",
-        null, "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL");
+        null, "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade);
 
     /// <summary>
     /// Oferta só a ampla concorrência. É o que torna um gatilho por modalidade resolvível: a
@@ -343,7 +343,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
     /// </summary>
     private static void ColetarFato(ProcessoSeletivo processo, string codigo, TipoRenderizacao renderizacao = TipoRenderizacao.SelecaoUnica)
     {
-        FatoColetado fato = FatoColetado.Criar(codigo, 0, codigo, renderizacao, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!;
+        FatoColetado fato = FatoColetado.Criar(codigo, 0, codigo, renderizacao, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
         processo.DefinirItens([fato], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
     }
 
@@ -410,7 +410,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         GrupoColetado composicao = GrupoColetado.Criar(
             "COMPOSICAO_FAMILIAR", 0, FormularioDeTeste.Secao, "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre,
-            [FatoColetado.Criar("MAIOR_IDADE", 0, "Maior de idade", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!]).Value!;
+            [FatoColetado.Criar("MAIOR_IDADE", 0, "Maior de idade", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!]).Value!;
         processo.DefinirItens([], grupos: [composicao]).IsSuccess.Should().BeTrue();
 
         Mocks mocks = NovosMocks(processo, processo.Id);
@@ -420,7 +420,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)
         [
             new FatoCandidatoView(Guid.CreateVersion7(), "MAIOR_IDADE", "Maior de idade", null, "BOOLEANO", "DECLARADO", "ESCALAR",
-                null, "INSCRICAO", "CAMPO_FORMULARIO:MAIOR_IDADE", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", Escopo: "MEMBRO_GRUPO"),
+                null, "INSCRICAO", "CAMPO_FORMULARIO:MAIOR_IDADE", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, Escopo: "MEMBRO_GRUPO"),
         ]));
         return (processo, fase, mocks, tipoDocumentoId);
     }

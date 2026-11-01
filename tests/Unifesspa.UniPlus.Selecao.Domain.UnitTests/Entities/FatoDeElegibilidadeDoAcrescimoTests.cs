@@ -31,10 +31,10 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
             faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     private static FatoColetado Item(string codigo) =>
-        FatoColetado.Criar(codigo, 0, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL").Value!;
+        FatoColetado.Criar(codigo, 0, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
 
     private static FatoColetado Numero(string codigo, int ordem) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Numero, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL").Value!;
+        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Numero, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
 
     /// <summary>
     /// Inscrição, isenção e habilitação em fases sucessivas, cada uma com o fato booleano que só ela
@@ -66,7 +66,7 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
 
     private static GrupoColetado GrupoDaInscricao() =>
         GrupoColetado.Criar("COMPOSICAO_FAMILIAR", 2, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null, Obrigatoriedade.Sempre,
-            [FatoColetado.Criar("MEMBRO_PEDE_O_ACRESCIMO", 0, "Membro pede o acréscimo", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!],
+            [FatoColetado.Criar("MEMBRO_PEDE_O_ACRESCIMO", 0, "Membro pede o acréscimo", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!],
             FinalidadeFormulario.Inscricao).Value!;
 
     private static void Aplicar(ProcessoSeletivo processo, string? fatoElegibilidade) =>

@@ -1180,8 +1180,10 @@ selecao.fatos_coletados.created_at: Interno
 selecao.fatos_coletados.etapa_codigo: Interno
 selecao.fatos_coletados.fato_codigo: Interno
 selecao.fatos_coletados.finalidade: Interno
+selecao.fatos_coletados.finalidade_tratamento: Interno
 selecao.fatos_coletados.formato: Interno
 selecao.fatos_coletados.grupo_coletado_id: Interno
+selecao.fatos_coletados.hipotese_legal: Interno
 selecao.fatos_coletados.id: Interno
 selecao.fatos_coletados.impedimento: Interno
 selecao.fatos_coletados.obrigatoriedade: Interno

@@ -249,9 +249,10 @@ public static class FecharRetificacaoCommandHandler
 
         // O tipo de documento é editável depois que a exigência copiou dele a proteção: o valor
         // vigente é o que se congela, antes da conferência contra os fatos e do snapshot.
-        ProtecaoVigenteDasExigencias protecaoDasExigencias = await ProtecaoVigenteDasExigenciasDoProcesso
+        ProtecaoVigenteDoProcesso protecaoDoProcesso = await ProtecaoVigenteDasExigenciasDoProcesso
             .MontarAsync(processo, tipoDocumentoReader, catalogoDeFatos, await ProtecaoVigenteDasExigenciasDoProcesso.LerDaVersaoVigenteAsync(processoSeletivoRepository, registroCodecs, processo.Id, cancellationToken).ConfigureAwait(false), cancellationToken)
             .ConfigureAwait(false);
+        ProtecaoVigenteDasExigencias protecaoDasExigencias = protecaoDoProcesso.Exigencias;
         processo.AplicarProtecaoVigente(protecaoDasExigencias);
 
         // O gate de conformidade precede a canonicalização (ADR-0109 D5) — a retificação
@@ -448,7 +449,8 @@ public static class FecharRetificacaoCommandHandler
                 contexto.CalendarioVigente,
                 agregadosDosGrupos,
                 ApresentacaoDosPressupostos: avaliavel.Value!.ApresentacaoDosPressupostos,
-                TiposDeAtoCongelados: tiposDeAtoCongelados.Value));
+                TiposDeAtoCongelados: tiposDeAtoCongelados.Value,
+                FatosDerivadosCongelados: protecaoDoProcesso.FatosDerivados));
 
         string atorUsuarioSub = userContext.UserId ?? "system";
 

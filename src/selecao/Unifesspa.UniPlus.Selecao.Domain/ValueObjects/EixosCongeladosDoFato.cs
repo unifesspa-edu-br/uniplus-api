@@ -9,12 +9,13 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// Os eixos que a versão publicada congela no item que coleta um fato: como o campo é desenhado,
 /// de onde vêm as opções, o formato do texto e a proteção do dado.
 /// </summary>
-public sealed record EixosDoItemCongelado(string TipoRenderizacao, string OrigemValores, string? Formato, string ClassificacaoProtecao)
+public sealed record EixosDoItemCongelado(
+    string TipoRenderizacao, string OrigemValores, string? Formato, string ClassificacaoProtecao, string HipoteseLegal, string FinalidadeTratamento)
 {
     public static EixosDoItemCongelado De(FatoColetado item)
     {
         ArgumentNullException.ThrowIfNull(item);
-        return new(item.TipoRenderizacao.ToCodigo(), item.OrigemValores.ToCodigo(), item.Formato, item.ClassificacaoProtecao);
+        return new(item.TipoRenderizacao.ToCodigo(), item.OrigemValores.ToCodigo(), item.Formato, item.ClassificacaoProtecao, item.HipoteseLegal, item.FinalidadeTratamento);
     }
 
     internal IEnumerable<(string Eixo, string? Valor)> Eixos() =>
@@ -23,6 +24,8 @@ public sealed record EixosDoItemCongelado(string TipoRenderizacao, string Origem
         ("origem dos valores", OrigemValores),
         ("formato", Formato),
         ("classificação de proteção", ClassificacaoProtecao),
+        ("hipótese legal", HipoteseLegal),
+        ("finalidade do tratamento", FinalidadeTratamento),
     ];
 }
 

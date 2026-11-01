@@ -33,7 +33,7 @@ public sealed class FatoColetavelDeEscopoGateTests
 
     private static FatoColetado FatoCondicaoAtendimentoSemOferta() => FatoColetado.Criar(
         "CONDICAO_ATENDIMENTO", 0, "Você se enquadra em alguma condição de atendimento?",
-        TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL").Value!;
+        TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
 
     [Fact(DisplayName = "Publicar_ComFatoColetavelSemOferta_RecusaSemCanonicalizar — o gate precede a canonicalização")]
     public async Task Publicar_ComFatoColetavelSemOferta_RecusaSemCanonicalizar()

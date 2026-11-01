@@ -71,7 +71,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
         ValoresDominio: null,
         PontoResolucao: "INSCRICAO",
         Binding: "REGRA_DERIVACAO:MODALIDADE",
-        ValoresDominioDeclarados: null, FonteValores: "MODALIDADE", Ativo: true, ClassificacaoProtecao: "PESSOAL");
+        ValoresDominioDeclarados: null, FonteValores: "MODALIDADE", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade);
 
     private sealed record Mocks(
         IProcessoSeletivoRepository ProcessoRepository,
@@ -234,7 +234,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcessoConforme(out _);
         FatoColetado cpfDoCatalogoAntigo = processo.FatosColetados.Single(static f => f.FatoCodigo == "CPF");
         FatoColetado cpf = FatoColetado.Criar(
-            "CPF", cpfDoCatalogoAntigo.Ordem, cpfDoCatalogoAntigo.Rotulo, cpfDoCatalogoAntigo.TipoRenderizacao, cpfDoCatalogoAntigo.Obrigatoriedade, null, "PESSOAL",
+            "CPF", cpfDoCatalogoAntigo.Ordem, cpfDoCatalogoAntigo.Rotulo, cpfDoCatalogoAntigo.TipoRenderizacao, cpfDoCatalogoAntigo.Obrigatoriedade, null, "PESSOAL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade,
             cpfDoCatalogoAntigo.OrigemValores, cpfDoCatalogoAntigo.EtapaCodigo, formato: cpfDoCatalogoAntigo.Formato).Value!;
         processo.DefinirItens([.. processo.FatosColetados.Select(f => f.FatoCodigo == "CPF" ? cpf : f)]).IsSuccess.Should().BeTrue();
         DefinicaoDaResposta.De(cpf.TipoRenderizacao, cpf.ClassificacaoProtecao, fatoCodigo: "CPF").Cifrada.Should().BeFalse("a cópia velha não cifra");
@@ -378,7 +378,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme(out Guid faseId);
         processo.DefinirItens(
-            [FatoColetado.Criar("TEM_RENDA", 0, "Tem renda?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL").Value!],
+            [FatoColetado.Criar("TEM_RENDA", 0, "Tem renda?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!],
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         processo.DefinirDistribuicaoVagas(
             [ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(PredicadoDnf.CriarDeCondicoesAgrupadas(

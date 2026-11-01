@@ -291,12 +291,13 @@ internal static class EscritaDosItens
 
         // As recusas do próprio item (coerência das restrições com o campo, autorreferência, ajuda)
         // saem junto das semânticas, no mesmo lote.
+        (string hipoteseLegal, string finalidadeTratamento) = contexto.ProtecaoDoItem(view);
         Result<FatoColetado> fato = FatoColetado.Criar(
             input.FatoCodigo, input.Ordem, input.Rotulo, tipoRenderizacao, regras.Obrigatoriedade,
             precondicaoRecusada ? null : precondicao.Value?.Condicoes,
             origemValores: VocabularioDeFatos.OrigemValores(view), etapaCodigo: input.EtapaCodigo, formato: view.Formato,
             ajuda: input.Ajuda, pedirConfirmacao: input.PedirConfirmacao, restricoes: regras.Restricoes, impedimento: regras.Impedimento,
-            classificacaoProtecao: view.ClassificacaoProtecao);
+            classificacaoProtecao: view.ClassificacaoProtecao, hipoteseLegal: hipoteseLegal, finalidadeTratamento: finalidadeTratamento);
         return erros.Count == 0
             ? fato
             : Result<FatoColetado>.ValidationFailure([.. erros, .. fato.IsFailure ? fato.Errors : []]);

@@ -48,6 +48,11 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// IDENTIFICADOR, SENSIVEL), na escala da ADR-0081 (ADR-0136). A Seleção congela este valor no
 /// fato coletado ao aplicar o modelo ou editar o formulário (ADR-0136, emenda de #1857).
 /// </param>
+/// <param name="HipoteseLegal">
+/// Hipótese legal de tratamento do fato — token canônico (UPPER_SNAKE). A Seleção a congela no
+/// fato coletado e no derivado, como a classificação (ADR-0154).
+/// </param>
+/// <param name="FinalidadeTratamento">Para que o dado é tratado; congelada junto da hipótese legal (ADR-0154).</param>
 public sealed record FatoCandidatoView(
     Guid Id,
     string Codigo,
@@ -63,6 +68,8 @@ public sealed record FatoCandidatoView(
     string? FonteValores,
     bool Ativo,
     string ClassificacaoProtecao,
+    string HipoteseLegal,
+    string FinalidadeTratamento,
     string? Formato = null,
     string Escopo = "CANDIDATO");
 

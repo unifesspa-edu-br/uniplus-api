@@ -88,7 +88,8 @@ public sealed class RascunhoRetificacaoConfiguration : IEntityTypeConfiguration<
                     fatos.GruposDaInscricaoNaBase.ToDictionary(static par => par.Key, static par => par.Value.ToArray(), StringComparer.Ordinal),
                     OrdenadoPorFato(fatos.EixosDosItens, static eixos => eixos.OrderBy(static e => e.TipoRenderizacao, StringComparer.Ordinal)
                         .ThenBy(static e => e.OrigemValores, StringComparer.Ordinal).ThenBy(static e => e.Formato, StringComparer.Ordinal)
-                        .ThenBy(static e => e.ClassificacaoProtecao, StringComparer.Ordinal)),
+                        .ThenBy(static e => e.ClassificacaoProtecao, StringComparer.Ordinal)
+                        .ThenBy(static e => e.HipoteseLegal, StringComparer.Ordinal).ThenBy(static e => e.FinalidadeTratamento, StringComparer.Ordinal)),
                     OrdenadoPorFato(fatos.EixosDosMetadados, static eixos => eixos.OrderBy(static e => e.Dominio, StringComparer.Ordinal)
                         .ThenBy(static e => e.Cardinalidade, StringComparer.Ordinal).ThenBy(static e => e.PontoResolucao, StringComparer.Ordinal)),
                     OrdenadoPorFato(fatos.OperacoesDosAgregados, static operacoes => operacoes.Order(StringComparer.Ordinal))),

@@ -178,9 +178,10 @@ public static class PublicarProcessoSeletivoCommandHandler
 
         // O tipo de documento é editável depois que a exigência copiou dele a proteção: o valor
         // vigente é o que se congela, antes da conferência contra os fatos e do snapshot.
-        ProtecaoVigenteDasExigencias protecaoDasExigencias = await ProtecaoVigenteDasExigenciasDoProcesso
+        ProtecaoVigenteDoProcesso protecaoDoProcesso = await ProtecaoVigenteDasExigenciasDoProcesso
             .MontarAsync(processo, tipoDocumentoReader, catalogoDeFatos, null, cancellationToken)
             .ConfigureAwait(false);
+        ProtecaoVigenteDasExigencias protecaoDasExigencias = protecaoDoProcesso.Exigencias;
         processo.AplicarProtecaoVigente(protecaoDasExigencias);
 
         // O gate precede a canonicalização (ADR-0109 D5): um processo não conforme
@@ -353,7 +354,8 @@ public static class PublicarProcessoSeletivoCommandHandler
                 CalendarioDiasUteis: contexto.CalendarioVigente,
                 AgregadosDosGrupos: DefinicaoAvaliavelDoProcesso.AgregadosDosGrupos(processo.GruposColetados, catalogoPorCodigo),
                 ApresentacaoDosPressupostos: avaliavel.Value!.ApresentacaoDosPressupostos,
-                TiposDeAtoCongelados: tiposDeAtoCongelados.Value));
+                TiposDeAtoCongelados: tiposDeAtoCongelados.Value,
+                FatosDerivadosCongelados: protecaoDoProcesso.FatosDerivados));
 
         string atorUsuarioSub = userContext.UserId ?? "system";
 

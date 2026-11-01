@@ -47,6 +47,8 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
         builder.Property(f => f.OrigemValores).HasConversion<int>().IsRequired();
         builder.Property(f => f.Formato).HasMaxLength(FormaDoItem.FormatoMaxLength);
         builder.Property(f => f.ClassificacaoProtecao).HasMaxLength(FormaDoItem.ClassificacaoProtecaoMaxLength).IsRequired();
+        builder.Property(f => f.HipoteseLegal).HasMaxLength(FormaDoItem.HipoteseLegalMaxLength).IsRequired();
+        builder.Property(f => f.FinalidadeTratamento).HasMaxLength(FormaDoItem.FinalidadeTratamentoMaxLength).IsRequired();
         builder.Ignore(f => f.OpcoesDoProcesso);
         builder.Ignore(f => f.Condicoes);
         builder.Ignore(f => f.Exibicao);

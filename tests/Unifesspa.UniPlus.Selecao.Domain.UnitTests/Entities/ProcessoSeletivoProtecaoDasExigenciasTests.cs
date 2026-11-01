@@ -34,7 +34,7 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
         faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     private static FatoColetado Fato(string codigo, int ordem, string classificacao) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: classificacao).Value!;
+        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: classificacao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
 
     private static DocumentoExigido Exigencia(
         Guid faseId, string tipo, ClassificacaoDeProtecao protecao, string[]? comprova = null, CondicaoGatilho[]? gatilho = null) =>
@@ -120,7 +120,7 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
         processo.DocumentosExigidos.Single().ClassificacaoProtecao.Should().Be(ClassificacaoDeProtecao.Identificador);
     }
 
-    [Fact(DisplayName = "Fato comprovado que o processo não coleta e o catálogo não conhece é recusado")]
+    [Fact(DisplayName = "Fato comprovado que o processo não coleta e que não é derivado do catálogo é recusado")]
     public void FatoForaDoProcesso_Recusa()
     {
         ProcessoSeletivo processo = Processo(f => Exigencia(f, "LAUDO_MEDICO", ClassificacaoDeProtecao.Sensivel, ["FATO_QUE_NAO_EXISTE"]));
@@ -130,7 +130,7 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
             .Contain("exigencia_fato_comprovado_fora_do_processo").And.NotContain("exigencia_menos_protegida_que_fato_comprovado");
     }
 
-    [Fact(DisplayName = "Fato derivado do catálogo, que nenhum formulário coleta, pode ser comprovado")]
+    [Fact(DisplayName = "Fato derivado congelado na publicação, que nenhum formulário coleta, pode ser comprovado")]
     public void FatoDerivadoDoCatalogo_Aceita()
     {
         ProcessoSeletivo processo = Processo(f => Exigencia(f, "COMPROVANTE_RENDA", ClassificacaoDeProtecao.Pessoal, [FatoPessoal]));

@@ -47,7 +47,7 @@ public sealed class ColetabilidadeDeFatosGateTests
         ValoresDominio: null,
         PontoResolucao: "INSCRICAO",
         Binding: "REGRA_DERIVACAO:MODALIDADE",
-        ValoresDominioDeclarados: null, FonteValores: "MODALIDADE", Ativo: true, ClassificacaoProtecao: "PESSOAL");
+        ValoresDominioDeclarados: null, FonteValores: "MODALIDADE", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade);
 
     // Story #1059 (UNI-REQ-0072): categórico ESTÁTICO — os valores selecionáveis do fato
     // coletado vêm de ValoresDominioDeclarados (FatoValorDominio no catálogo real), nunca do
@@ -72,10 +72,10 @@ public sealed class ColetabilidadeDeFatosGateTests
         ValoresDominio: [.. ValoresCorRaca.Select(static v => v.Codigo)],
         PontoResolucao: "INSCRICAO",
         Binding: "CAMPO_FORMULARIO:COR_RACA",
-        ValoresDominioDeclarados: ValoresCorRaca, FonteValores: "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL");
+        ValoresDominioDeclarados: ValoresCorRaca, FonteValores: "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade);
 
     private static FatoColetado FatoColetadoModalidade() =>
-        FatoColetado.Criar("MODALIDADE", 0, "Modalidade", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!;
+        FatoColetado.Criar("MODALIDADE", 0, "Modalidade", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
 
     [Fact(DisplayName = "Publicar_ComFatoColetadoNaoMaisDeclarado_RecusaSemCanonicalizar — o gate precede a canonicalização")]
     public async Task Publicar_ComFatoColetadoNaoMaisDeclarado_RecusaSemCanonicalizar()
@@ -291,18 +291,18 @@ public sealed class ColetabilidadeDeFatosGateTests
         [
             FatoColetado.Criar("ATENDIMENTO_NO_MUNICIPIO", 0, "Deseja atendimento no município?", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, [
                 CondicaoPrecondicaoFato.Criar(0, "MUNICIPIO_RESIDENCIA", Operador.Igual, JsonSerializer.SerializeToElement("1504208")).Value!,
-            ], classificacaoProtecao: "PESSOAL").Value!,
+            ], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         return processo;
     }
 
     private static FatoCandidatoView FatoAtendimentoNoMunicipio() => new(
         Guid.CreateVersion7(), "ATENDIMENTO_NO_MUNICIPIO", "Atendimento no município", null, "BOOLEANO", "DECLARADO", "ESCALAR", null,
-        "INSCRICAO", "CAMPO_FORMULARIO:ATENDIMENTO_NO_MUNICIPIO", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL");
+        "INSCRICAO", "CAMPO_FORMULARIO:ATENDIMENTO_NO_MUNICIPIO", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade);
 
     private static FatoCandidatoView FatoMunicipioDeResidencia(string nome) => new(
         Guid.CreateVersion7(), "MUNICIPIO_RESIDENCIA", nome, null, "CATEGORICO", "DERIVADO", "ESCALAR", null,
-        "INSCRICAO", "SISTEMA:MUNICIPIO_RESIDENCIA", null, "GEO_MUNICIPIO", Ativo: true, ClassificacaoProtecao: "PESSOAL");
+        "INSCRICAO", "SISTEMA:MUNICIPIO_RESIDENCIA", null, "GEO_MUNICIPIO", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade);
 
     private static Task<(Result, IEnumerable<object>)> PublicarAsync(
         ProcessoSeletivo processo, IFatoCandidatoReader fatoCandidatoReader, ISnapshotPublicacaoCanonicalizer canonicalizer) =>

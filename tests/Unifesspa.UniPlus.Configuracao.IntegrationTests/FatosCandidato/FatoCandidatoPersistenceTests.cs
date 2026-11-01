@@ -177,7 +177,7 @@ public sealed class FatoCandidatoPersistenceTests
 
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
 
-        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(57);
+        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(58);
         fatos.Select(f => f.Codigo).Should().OnlyHaveUniqueItems();
 
         foreach (FatoCandidatoSeedItem item in FatoCandidatoSeed.Itens)
@@ -276,7 +276,7 @@ public sealed class FatoCandidatoPersistenceTests
         formatos.Values.Should().OnlyContain(f => f == FormatoTexto.NomePessoa).And.HaveCount(3);
     }
 
-    [Fact(DisplayName = "Cor ou raça, deficiência, tipo de deficiência e o que os revela são sensíveis; o nome social é público; CPF, RG e documento do estrangeiro são identificador; os demais, pessoais")]
+    [Fact(DisplayName = "Cor ou raça, deficiência, tipo de deficiência e atendimento são sensíveis; a modalidade e as opções de concorrer, internas; o nome social é público; CPF, RG e documento do estrangeiro são identificador; os demais, pessoais")]
     public async Task Seed_ClassificacaoDeProtecao()
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
@@ -285,17 +285,47 @@ public sealed class FatoCandidatoPersistenceTests
 
         fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoDeProtecao.Sensivel)
             .Select(f => f.Codigo).Order(StringComparer.Ordinal).Should().Equal(
-                "CONCORRER_PCD", "CONCORRER_PPI", "CONCORRER_Q", "CONCORRER_VAGA_POR_ACRESCIMO", "CONDICAO_ATENDIMENTO", "COR_RACA",
-                "IDENTIDADE_GENERO", "INDIGENA", "MODALIDADE", "MODALIDADE_CONVOCACAO", "ORIENTACAO_SEXUAL", "PCD", "QUILOMBOLA", "RECURSO_ACESSIBILIDADE",
-                "TIPO_DEFICIENCIA");
+                "CONDICAO_ATENDIMENTO", "COR_RACA", "IDENTIDADE_GENERO", "INDIGENA", "ORIENTACAO_SEXUAL", "PCD", "QUILOMBOLA",
+                "RECURSO_ACESSIBILIDADE", "TIPO_DEFICIENCIA");
+        fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoDeProtecao.Interno)
+            .Select(f => f.Codigo).Order(StringComparer.Ordinal).Should().Equal(
+                "CONCORRER_EP", "CONCORRER_PCD", "CONCORRER_PPI", "CONCORRER_Q", "CONCORRER_RENDA", "CONCORRER_VAGA_POR_ACRESCIMO",
+                "MODALIDADE", "MODALIDADE_CONVOCACAO", "MODALIDADE_SEGUNDA_OPCAO");
         fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoDeProtecao.Publico)
             .Select(f => f.Codigo).Should().Equal("NOME_SOCIAL");
         fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoDeProtecao.Identificador)
             .Select(f => f.Codigo).Order(StringComparer.Ordinal).Should().Equal(
                 "CPF", "PASSAPORTE_NUMERO", "RG_NUMERO", "RNM_NUMERO");
         fatos.Where(f => f.ClassificacaoProtecao is not (
-                ClassificacaoDeProtecao.Sensivel or ClassificacaoDeProtecao.Publico or ClassificacaoDeProtecao.Identificador))
+                ClassificacaoDeProtecao.Sensivel or ClassificacaoDeProtecao.Interno or ClassificacaoDeProtecao.Publico or ClassificacaoDeProtecao.Identificador))
             .Should().OnlyContain(f => f.ClassificacaoProtecao == ClassificacaoDeProtecao.Pessoal);
+    }
+
+    [Fact(DisplayName = "A modalidade da 2ª opção de curso é fato de sistema derivado, interno e multivalorado, como a modalidade")]
+    public async Task Seed_ModalidadeDaSegundaOpcao_EhDerivadaEInterna()
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        FatoCandidato fato = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "MODALIDADE_SEGUNDA_OPCAO");
+
+        fato.Sistema.Should().BeTrue();
+        fato.Origem.Should().Be(OrigemFato.Derivado);
+        fato.Cardinalidade.Should().Be(CardinalidadeFato.Multivalorado);
+        fato.FonteValores.Should().Be(FonteValoresFato.Modalidade);
+        fato.ClassificacaoProtecao.Should().Be(ClassificacaoDeProtecao.Interno);
+    }
+
+    [Fact(DisplayName = "A Seleção lê do catálogo a hipótese legal e a finalidade de cada fato, para congelá-las junto da classificação")]
+    public async Task Leitor_TrazAHipoteseLegalEAFinalidadeDoFato()
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        IReadOnlyList<FatoCandidatoView> fatos = await new FatoCandidatoReader(ctx).ListarAsync(CancellationToken.None);
+
+        FatoCandidatoView modalidade = fatos.Single(f => f.Codigo == "MODALIDADE");
+        modalidade.ClassificacaoProtecao.Should().Be("INTERNO");
+        modalidade.HipoteseLegal.Should().Be("CUMPRIMENTO_OBRIGACAO_LEGAL");
+        modalidade.FinalidadeTratamento.Should().Be(FatoCandidatoSeed.Itens.Single(i => i.Codigo == "MODALIDADE").FinalidadeTratamento);
     }
 
     [Theory(DisplayName = "CHECK recusa categórico sem fonte e texto sem formato via SQL cru")]
@@ -576,8 +606,8 @@ public sealed class FatoCandidatoPersistenceTests
         // dos fatos declarados contra as regras congeladas do processo (ADR-0116, emenda 2026-07-22).
         // O egresso de escola pública deriva das duas perguntas da origem escolar (UNI-REQ-0148).
         derivados.Should().Equal(
-            "EGRESSO_ESCOLA_PUBLICA", "FAIXA_ETARIA", "MODALIDADE", "MODALIDADE_CONVOCACAO", "MUNICIPIO_RESIDENCIA",
-            "OPTOU_PELAS_COTAS_DA_LEI", "RENDA_PER_CAPITA", "UF_RESIDENCIA");
+            "EGRESSO_ESCOLA_PUBLICA", "FAIXA_ETARIA", "MODALIDADE", "MODALIDADE_CONVOCACAO", "MODALIDADE_SEGUNDA_OPCAO",
+            "MUNICIPIO_RESIDENCIA", "OPTOU_PELAS_COTAS_DA_LEI", "RENDA_PER_CAPITA", "UF_RESIDENCIA");
         fatos.Where(f => f.Origem != OrigemFato.Derivado)
             .Should().OnlyContain(f => f.Origem == OrigemFato.Declarado);
     }
@@ -594,7 +624,7 @@ public sealed class FatoCandidatoPersistenceTests
         fatos.Single(static f => f.Codigo == "RENDA_ATE_UM_SALARIO_MINIMO_E_MEIO").PontoResolucao.Should().Be("SOLICITACAO_ISENCAO");
     }
 
-    [Fact(DisplayName = "Cardinalidade: só MODALIDADE, CONDICAO_ATENDIMENTO e RECURSO_ACESSIBILIDADE são multivalorados; os demais escalares")]
+    [Fact(DisplayName = "Cardinalidade: só MODALIDADE, MODALIDADE_SEGUNDA_OPCAO, CONDICAO_ATENDIMENTO e RECURSO_ACESSIBILIDADE são multivalorados; os demais escalares")]
     public async Task Seed_CardinalidadeCoerente()
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
@@ -606,7 +636,7 @@ public sealed class FatoCandidatoPersistenceTests
             .Select(f => f.Codigo)
             .OrderBy(c => c, StringComparer.Ordinal)];
 
-        multivalorados.Should().Equal("CONDICAO_ATENDIMENTO", "MODALIDADE", "RECURSO_ACESSIBILIDADE");
+        multivalorados.Should().Equal("CONDICAO_ATENDIMENTO", "MODALIDADE", "MODALIDADE_SEGUNDA_OPCAO", "RECURSO_ACESSIBILIDADE");
         fatos.Where(f => f.Cardinalidade != CardinalidadeFato.Multivalorado)
             .Should().OnlyContain(f => f.Cardinalidade == CardinalidadeFato.Escalar);
     }
@@ -707,7 +737,7 @@ public sealed class FatoCandidatoPersistenceTests
         IReadOnlyList<FatoCandidatoView> views =
             [.. (await reader.ListarAsync()).Where(static v => FatoCandidatoSeed.Itens.Any(i => i.Codigo == v.Codigo))];
 
-        views.Should().HaveCount(57);
+        views.Should().HaveCount(58);
         views.Select(v => v.Codigo).Should().BeInAscendingOrder(StringComparer.Ordinal);
 
         FatoCandidatoView corRaca = views.Single(v => v.Codigo == "COR_RACA");
@@ -864,6 +894,7 @@ public sealed class FatoCandidatoPersistenceTests
             ("SEXO_CIVIL", "057", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:SEXO_CIVIL", "INSCRICAO"),
             ("IDENTIDADE_GENERO", "058", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:IDENTIDADE_GENERO", "INSCRICAO"),
             ("ORIENTACAO_SEXUAL", "059", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_FORMULARIO:ORIENTACAO_SEXUAL", "INSCRICAO"),
+            ("MODALIDADE_SEGUNDA_OPCAO", "060", DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Multivalorado, "ATRIBUTO_CANDIDATO:MODALIDADE_SEGUNDA_OPCAO", "INSCRICAO"),
         ];
 
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);

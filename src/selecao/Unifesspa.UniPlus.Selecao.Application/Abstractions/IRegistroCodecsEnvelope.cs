@@ -32,7 +32,8 @@ public sealed class EnvelopeReidratado
         CalendarioDiasUteisCongelado? calendarioDiasUteis = null,
         IReadOnlyList<DefinicaoAgregado>? agregadosDosGrupos = null,
         IReadOnlyDictionary<string, ApresentacaoDoFato>? apresentacaoDosPressupostos = null,
-        IReadOnlyDictionary<string, TipoDeAtoCongelado>? tiposDeAtoCongelados = null)
+        IReadOnlyDictionary<string, TipoDeAtoCongelado>? tiposDeAtoCongelados = null,
+        IReadOnlyDictionary<string, FatoDerivadoCongelado>? fatosDerivadosCongelados = null)
     {
         ArgumentNullException.ThrowIfNull(grafo);
         ArgumentNullException.ThrowIfNull(dados);
@@ -51,7 +52,15 @@ public sealed class EnvelopeReidratado
         AgregadosDosGrupos = agregadosDosGrupos ?? [];
         ApresentacaoDosPressupostos = apresentacaoDosPressupostos ?? new Dictionary<string, ApresentacaoDoFato>(StringComparer.Ordinal);
         TiposDeAtoCongelados = tiposDeAtoCongelados ?? new Dictionary<string, TipoDeAtoCongelado>(StringComparer.Ordinal);
+        FatosDerivadosCongelados = fatosDerivadosCongelados ?? new Dictionary<string, FatoDerivadoCongelado>(StringComparer.Ordinal);
     }
+
+    /// <summary>
+    /// Os fatos derivados do catálogo como a versão os congelou, por código — fora de
+    /// <see cref="GrafoConfiguracao"/> pela mesma razão que <see cref="TiposDeAtoCongelados"/>: é dado
+    /// de catálogo, e o derivado não é coletado por item do agregado vivo.
+    /// </summary>
+    public IReadOnlyDictionary<string, FatoDerivadoCongelado> FatosDerivadosCongelados { get; }
 
     /// <summary>
     /// A classificação, na versão, de cada tipo de ato que o cronograma declara, por código — fora de

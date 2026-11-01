@@ -27,13 +27,16 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// grupo repetível do formulário, como a composição familiar (ADR-0138). A fonte dos valores do categórico está em <see cref="FatoCandidatoSeedItem.FonteValores"/>;
 /// os valores do categórico global são os <see cref="Domain.Entities.FatoValorDominio"/> de
 /// <see cref="FatoValorDominioSeed"/>. Cor ou raça, autodeclaração quilombola e indígena, deficiência,
-/// atendimento especializado, os opt-ins que os revelam e a modalidade que deles deriva são
-/// <see cref="ClassificacaoDeProtecao.Sensivel"/>; os demais, <see cref="ClassificacaoDeProtecao.Pessoal"/>.
+/// seu tipo e atendimento especializado, que dizem a condição da pessoa, são
+/// <see cref="ClassificacaoDeProtecao.Sensivel"/>. A modalidade e as opções de concorrer são
+/// <see cref="ClassificacaoDeProtecao.Interno"/> (ADR-0154): dizem em que reserva a pessoa concorre, o que
+/// o resultado publica por obrigação legal, e não qual é a condição dela, que só a homologação confirma.
+/// Os demais são <see cref="ClassificacaoDeProtecao.Pessoal"/>, ou a classificação própria do dado.
 /// </para>
 /// <para>
 /// <see cref="OrigemFato"/> (ADR-0116): <c>FAIXA_ETARIA</c> e <c>RENDA_PER_CAPITA</c>
 /// (computados de atributo do candidato), <c>MODALIDADE</c>, <c>EGRESSO_ESCOLA_PUBLICA</c> e
-/// <c>OPTOU_PELAS_COTAS_DA_LEI</c> (derivados das regras congeladas do processo) e <c>MODALIDADE_CONVOCACAO</c> (resultado da classificação) são
+/// <c>OPTOU_PELAS_COTAS_DA_LEI</c> (derivados das regras congeladas do processo), <c>MODALIDADE_SEGUNDA_OPCAO</c> (a modalidade na 2ª opção de curso, calculada pelo sistema) e <c>MODALIDADE_CONVOCACAO</c> (resultado da classificação) são
 /// <see cref="OrigemFato.Derivado"/>; todos os demais são
 /// <see cref="OrigemFato.Declarado"/> (resposta/seleção direta do candidato), inclusive
 /// os cinco opt-ins <c>CONCORRER_*</c> — que são seleção direta, ainda que expressem
@@ -143,7 +146,7 @@ public static class FatoCandidatoSeed
         new(SeedId(8), ModalidadeDoCandidato.Fato, "Modalidade de concorrência", null,
             DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Multivalorado, FonteValoresFato.Modalidade,
             PontoResolucaoInscricao, $"REGRA_DERIVACAO:{ModalidadeDoCandidato.Fato}",
-            ClassificacaoDeProtecao.Sensivel, FinalidadeReservaDeVagas),
+            ClassificacaoDeProtecao.Interno, FinalidadeReservaDeVagas),
 
         new(SeedId(9), "CONDICAO_ATENDIMENTO", "Condição de atendimento especializado", null,
             DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Multivalorado, FonteValoresFato.Processo,
@@ -173,27 +176,27 @@ public static class FatoCandidatoSeed
         new(SeedId(13), "CONCORRER_PCD", "Deseja concorrer às vagas reservadas a pessoas com deficiência", null,
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:CONCORRER_PCD",
-            ClassificacaoDeProtecao.Sensivel, FinalidadeReservaDeVagas),
+            ClassificacaoDeProtecao.Interno, FinalidadeReservaDeVagas),
 
         new(SeedId(14), "CONCORRER_EP", "Deseja concorrer às vagas reservadas a egressos de escola pública", null,
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:CONCORRER_EP",
-            ClassificacaoDeProtecao.Pessoal, FinalidadeReservaDeVagas),
+            ClassificacaoDeProtecao.Interno, FinalidadeReservaDeVagas),
 
         new(SeedId(15), "CONCORRER_PPI", "Deseja concorrer às vagas reservadas a pretos, pardos e indígenas", null,
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:CONCORRER_PPI",
-            ClassificacaoDeProtecao.Sensivel, FinalidadeReservaDeVagas),
+            ClassificacaoDeProtecao.Interno, FinalidadeReservaDeVagas),
 
         new(SeedId(16), "CONCORRER_Q", "Deseja concorrer às vagas reservadas a quilombolas", null,
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:CONCORRER_Q",
-            ClassificacaoDeProtecao.Sensivel, FinalidadeReservaDeVagas),
+            ClassificacaoDeProtecao.Interno, FinalidadeReservaDeVagas),
 
         new(SeedId(17), "CONCORRER_RENDA", "Deseja concorrer às vagas reservadas por renda familiar per capita", null,
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:CONCORRER_RENDA",
-            ClassificacaoDeProtecao.Pessoal, FinalidadeReservaDeVagas),
+            ClassificacaoDeProtecao.Interno, FinalidadeReservaDeVagas),
 
         // ── Residência e nascimento (ADR-0136) ──
         // O endereço e a data de nascimento são declarados; a UF e o município de residência
@@ -224,7 +227,7 @@ public static class FatoCandidatoSeed
         new(SeedId(22), "MODALIDADE_CONVOCACAO", "Modalidade da convocação", null,
             DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Escalar, FonteValoresFato.Modalidade,
             PontoResolucaoResultadoFinal, "CLASSIFICACAO:MODALIDADE_CONVOCACAO",
-            ClassificacaoDeProtecao.Sensivel, FinalidadeReservaDeVagas),
+            ClassificacaoDeProtecao.Interno, FinalidadeReservaDeVagas),
 
         // Campos de membro da composição familiar: a exigência repetida por membro cita cada um
         // na ocorrência do grupo, como a certidão pedida só do membro sob guarda.
@@ -343,7 +346,7 @@ public static class FatoCandidatoSeed
         new(SeedId(55), "CONCORRER_VAGA_POR_ACRESCIMO", "Deseja concorrer às vagas por acréscimo para indígenas e quilombolas", null,
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:CONCORRER_VAGA_POR_ACRESCIMO",
-            ClassificacaoDeProtecao.Sensivel, FinalidadeReservaDeVagas),
+            ClassificacaoDeProtecao.Interno, FinalidadeReservaDeVagas),
 
         // O recurso de que o candidato precisa nas etapas (sala para amamentação, ledor, intérprete de
         // Libras…), escolhido entre os que a oferta de atendimento do processo declara (UNI-REQ-0026).
@@ -351,6 +354,13 @@ public static class FatoCandidatoSeed
             DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Multivalorado, FonteValoresFato.Processo,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:RECURSO_ACESSIBILIDADE",
             ClassificacaoDeProtecao.Sensivel, FinalidadeAtendimento),
+
+        // A modalidade em que o candidato concorre na 2ª opção de curso, que tem a própria distribuição de
+        // vagas: o sistema a calcula na inscrição, como a da 1ª opção.
+        new(SeedId(60), ModalidadeDoCandidato.FatoSegundaOpcao, "Modalidade de concorrência da 2ª opção de curso", null,
+            DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Multivalorado, FonteValoresFato.Modalidade,
+            PontoResolucaoInscricao, $"ATRIBUTO_CANDIDATO:{ModalidadeDoCandidato.FatoSegundaOpcao}",
+            ClassificacaoDeProtecao.Interno, FinalidadeReservaDeVagas),
     ];
 
     /// <summary>Um dado declarado do candidato, escalar e coletado na inscrição.</summary>

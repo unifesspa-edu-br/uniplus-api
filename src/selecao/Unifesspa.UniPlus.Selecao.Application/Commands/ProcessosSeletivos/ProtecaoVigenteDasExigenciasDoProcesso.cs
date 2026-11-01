@@ -13,19 +13,20 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Monta o contexto de proteção das exigências que o painel de conformidade, a publicação e a
-/// retificação avaliam do mesmo jeito: a classificação dos fatos do catálogo e a proteção efetiva de
-/// cada exigência. A efetiva é a que o tipo de documento tem no cadastro agora, e não a copiada
+/// retificação avaliam do mesmo jeito: a classificação dos fatos derivados e a proteção efetiva de
+/// cada exigência. O fato derivado que a versão vigente já congelou mantém o que ela congelou, e só o
+/// derivado que a versão não tem sai do catálogo de hoje (ADR-0154). A efetiva é a que o tipo de documento tem no cadastro agora, e não a copiada
 /// quando a exigência foi gravada, porque o tipo pode ter sido reclassificado no intervalo; na
 /// retificação, a exigência que a versão vigente já tem (mesmo id, mesmo tipo) mantém a proteção
 /// congelada nela, e reclassificar o tipo não rebaixa o que já foi publicado.
 /// </summary>
 internal static class ProtecaoVigenteDasExigenciasDoProcesso
 {
-    public static async Task<ProtecaoVigenteDasExigencias> MontarAsync(
+    public static async Task<ProtecaoVigenteDoProcesso> MontarAsync(
         ProcessoSeletivo processo,
         ITipoDocumentoReader tipoDocumentoReader,
         IReadOnlyList<FatoCandidatoView> catalogoDeFatos,
-        IReadOnlyDictionary<Guid, ExigenciaCongelada>? daVersaoVigente,
+        CongeladoNaVersaoVigente? daVersaoVigente,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(processo);
@@ -45,7 +46,7 @@ internal static class ProtecaoVigenteDasExigenciasDoProcesso
         foreach (DocumentoExigido exigencia in processo.DocumentosExigidos)
         {
             if (daVersaoVigente is not null
-                && daVersaoVigente.TryGetValue(exigencia.Id, out ExigenciaCongelada? congelada)
+                && daVersaoVigente.Exigencias.TryGetValue(exigencia.Id, out ExigenciaCongelada? congelada)
                 && congelada.TipoDocumentoOrigemId == exigencia.TipoDocumentoOrigemId)
             {
                 porExigencia[exigencia.Id] = congelada.Protecao;
@@ -57,23 +58,26 @@ internal static class ProtecaoVigenteDasExigenciasDoProcesso
             }
         }
 
-        Dictionary<string, ClassificacaoDeProtecao> doCatalogo = [];
-        foreach (FatoCandidatoView fato in catalogoDeFatos)
+        IReadOnlyDictionary<string, FatoDerivadoCongelado> derivados =
+            CongelamentoDosFatosDerivados.Resolver(catalogoDeFatos, daVersaoVigente?.FatosDerivados);
+        Dictionary<string, ClassificacaoDeProtecao> classificacaoDosDerivados = [];
+        foreach (FatoDerivadoCongelado derivado in derivados.Values)
         {
-            if (ClassificacoesDeProtecao.TryAnalisar(fato.ClassificacaoProtecao, out ClassificacaoDeProtecao nivel))
+            if (ClassificacoesDeProtecao.TryAnalisar(derivado.ClassificacaoProtecao, out ClassificacaoDeProtecao nivel))
             {
-                doCatalogo[fato.Codigo] = nivel;
+                classificacaoDosDerivados[derivado.Codigo] = nivel;
             }
         }
 
-        return new ProtecaoVigenteDasExigencias(doCatalogo, porExigencia);
+        return new ProtecaoVigenteDoProcesso(new ProtecaoVigenteDasExigencias(classificacaoDosDerivados, porExigencia), derivados);
     }
 
     /// <summary>
-    /// As exigências da versão vigente, por id, com o tipo e a proteção congelados; nulo quando o
-    /// processo não tem versão ou a versão não se reidrata (a retificação recusa essa por conta própria).
+    /// O que a versão vigente congelou — as exigências, por id, com o tipo e a proteção, e os fatos
+    /// derivados —; nulo quando o processo não tem versão ou a versão não se reidrata (a retificação
+    /// recusa essa por conta própria).
     /// </summary>
-    public static IReadOnlyDictionary<Guid, ExigenciaCongelada>? DaVersao(
+    public static CongeladoNaVersaoVigente? DaVersao(
         IRegistroCodecsEnvelope registroCodecs, VersaoConfiguracao? versaoVigente)
     {
         ArgumentNullException.ThrowIfNull(registroCodecs);
@@ -88,14 +92,16 @@ internal static class ProtecaoVigenteDasExigenciasDoProcesso
             return null;
         }
 
-        return vigente.Value!.Grafo.DocumentosExigidos.ToDictionary(
-            static e => e.Id,
-            static e => new ExigenciaCongelada(
-                e.TipoDocumentoOrigemId,
-                new ProtecaoDoDocumento(e.ClassificacaoProtecao, e.FinalidadeTratamento, e.HipoteseLegal)));
+        return new CongeladoNaVersaoVigente(
+            vigente.Value!.Grafo.DocumentosExigidos.ToDictionary(
+                static e => e.Id,
+                static e => new ExigenciaCongelada(
+                    e.TipoDocumentoOrigemId,
+                    new ProtecaoDoDocumento(e.ClassificacaoProtecao, e.FinalidadeTratamento, e.HipoteseLegal))),
+            vigente.Value!.FatosDerivadosCongelados);
     }
 
-    public static async Task<IReadOnlyDictionary<Guid, ExigenciaCongelada>?> LerDaVersaoVigenteAsync(
+    public static async Task<CongeladoNaVersaoVigente?> LerDaVersaoVigenteAsync(
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegistroCodecsEnvelope registroCodecs,
         Guid processoSeletivoId,
@@ -112,3 +118,16 @@ internal static class ProtecaoVigenteDasExigenciasDoProcesso
 
 /// <summary>O tipo de documento e a proteção que uma exigência da versão vigente congelou.</summary>
 internal sealed record ExigenciaCongelada(Guid TipoDocumentoOrigemId, ProtecaoDoDocumento Protecao);
+
+/// <summary>As exigências e os fatos derivados que a versão vigente congelou.</summary>
+internal sealed record CongeladoNaVersaoVigente(
+    IReadOnlyDictionary<Guid, ExigenciaCongelada> Exigencias,
+    IReadOnlyDictionary<string, FatoDerivadoCongelado> FatosDerivados);
+
+/// <summary>
+/// A proteção do processo no momento de avaliar ou congelar: a das exigências, com que se confere o fato
+/// comprovado, e os fatos derivados que a versão congela.
+/// </summary>
+internal sealed record ProtecaoVigenteDoProcesso(
+    ProtecaoVigenteDasExigencias Exigencias,
+    IReadOnlyDictionary<string, FatoDerivadoCongelado> FatosDerivados);

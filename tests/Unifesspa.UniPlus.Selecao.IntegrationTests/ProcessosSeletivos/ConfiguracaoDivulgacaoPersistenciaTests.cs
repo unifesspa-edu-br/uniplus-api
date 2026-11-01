@@ -245,7 +245,7 @@ public sealed class ConfiguracaoDivulgacaoPersistenciaTests : IClassFixture<Proc
             new EntradaCanonicalizacao(
                 processo, dados, HashFixo, FusoInstitucional.ZoneId,
                 CalendarioDiasUteis: CorpusEnvelope.CalendarioRico(), ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(),
-                TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
+                TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dados, canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, HashFixo, "integration-test-user", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
@@ -329,7 +329,7 @@ public sealed class ConfiguracaoDivulgacaoPersistenciaTests : IClassFixture<Proc
             new EntradaCanonicalizacao(
                 relido, dados, HashFixo, FusoInstitucional.ZoneId,
                 CalendarioDiasUteis: CorpusEnvelope.CalendarioRico(), ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(),
-                TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(relido)));
+                TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(relido), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
         recodificado.IsSuccess.Should().BeTrue(recodificado.Error?.Message);
         recodificado.Value!.Bytes.Should().Equal(bytesCongelados,
             "o processo relido do banco, sem a linha explícita, recanonicaliza nos MESMOS bytes que o ato publicado congelou");

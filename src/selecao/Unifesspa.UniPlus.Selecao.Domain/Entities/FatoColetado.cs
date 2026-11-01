@@ -104,6 +104,16 @@ public sealed class FatoColetado : EntityBase
     /// </summary>
     public string ClassificacaoProtecao { get; private set; } = string.Empty;
 
+    /// <summary>
+    /// Hipótese legal de tratamento do fato (token canônico do vocabulário da Configuração, que este
+    /// Domain não alcança, ADR-0097), copiada do catálogo junto da classificação e congelada com ela
+    /// (ADR-0154).
+    /// </summary>
+    public string HipoteseLegal { get; private set; } = string.Empty;
+
+    /// <summary>Para que o dado do fato é tratado; copiada do catálogo e congelada junto da classificação (ADR-0154).</summary>
+    public string FinalidadeTratamento { get; private set; } = string.Empty;
+
     /// <summary>Se as opções do campo são as que o processo declara.</summary>
     public bool OpcoesDoProcesso => OrigemValores == OrigemValoresColeta.OpcoesDoProcesso;
 
@@ -133,6 +143,8 @@ public sealed class FatoColetado : EntityBase
         Obrigatoriedade obrigatoriedade,
         IReadOnlyList<CondicaoPrecondicaoFato>? precondicoes,
         string classificacaoProtecao,
+        string hipoteseLegal,
+        string finalidadeTratamento,
         OrigemValoresColeta origemValores = OrigemValoresColeta.Catalogo,
         string? etapaCodigo = null,
         FinalidadeFormulario finalidade = FinalidadeFormulario.Nenhuma,
@@ -143,6 +155,8 @@ public sealed class FatoColetado : EntityBase
         Impedimento? impedimento = null)
     {
         ArgumentNullException.ThrowIfNull(obrigatoriedade);
+        ArgumentException.ThrowIfNullOrWhiteSpace(hipoteseLegal);
+        ArgumentException.ThrowIfNullOrWhiteSpace(finalidadeTratamento);
         IReadOnlyList<RestricaoValor> restricoesDoItem = restricoes ?? [];
 
         IReadOnlyList<CondicaoPrecondicaoFato> condicoes = precondicoes ?? [];
@@ -169,6 +183,8 @@ public sealed class FatoColetado : EntityBase
             OrigemValores = origemValores,
             Formato = FormaDoItem.TextoOpcional(formato),
             ClassificacaoProtecao = classificacaoProtecao,
+            HipoteseLegal = hipoteseLegal.Trim(),
+            FinalidadeTratamento = FinalidadeNormalizada(finalidadeTratamento),
             EtapaCodigo = string.IsNullOrWhiteSpace(etapaCodigo) ? null : etapaCodigo.Trim().Normalize(System.Text.NormalizationForm.FormC),
 
             // O processo atribui a finalidade ao definir os itens; quem remonta o envelope a informa.
@@ -189,6 +205,9 @@ public sealed class FatoColetado : EntityBase
     /// </summary>
     internal Result ConferirCopiaDoCatalogo(CopiaDoItemNoCatalogo copia)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(copia.HipoteseLegal);
+        ArgumentException.ThrowIfNullOrWhiteSpace(copia.FinalidadeTratamento);
+
         // A mesma forma e o mesmo vocabulário que Criar confere.
         List<FieldError> erros = ConferirFormaEClassificacao(
             FatoCodigo, Ordem, Rotulo, TipoRenderizacao, copia.Formato, Ajuda, _precondicoes.Select(static c => c.Fato), Obrigatoriedade, Restricoes,
@@ -228,8 +247,8 @@ public sealed class FatoColetado : EntityBase
     }
 
     /// <summary>
-    /// Refaz as cópias do item tiradas do catálogo — origem dos valores, formato e classificação de
-    /// proteção. O rótulo, o tipo de campo e as regras do item são do processo e não mudam aqui; a
+    /// Refaz as cópias do item tiradas do catálogo — origem dos valores, formato e proteção
+    /// (classificação, hipótese legal e finalidade). O rótulo, o tipo de campo e as regras do item são do processo e não mudam aqui; a
     /// cópia já foi conferida por <see cref="ConferirCopiaDoCatalogo"/>.
     /// </summary>
     internal void RecopiarDoCatalogo(CopiaDoItemNoCatalogo copia)
@@ -237,7 +256,13 @@ public sealed class FatoColetado : EntityBase
         OrigemValores = copia.OrigemValores;
         Formato = FormaDoItem.TextoOpcional(copia.Formato);
         ClassificacaoProtecao = copia.ClassificacaoProtecao;
+        HipoteseLegal = copia.HipoteseLegal.Trim();
+        FinalidadeTratamento = FinalidadeNormalizada(copia.FinalidadeTratamento);
     }
+
+    /// <summary>A finalidade na forma em que o envelope a congela (NFC, sem espaço nas pontas).</summary>
+    private static string FinalidadeNormalizada(string finalidade) =>
+        finalidade.Trim().Normalize(System.Text.NormalizationForm.FormC);
 
     /// <summary>O item no que o grafo do formulário confere.</summary>
     public ItemDoGrafo ParaGrafo() => new(FatoCodigo, Ordem, EtapaCodigo, FatosCitados);

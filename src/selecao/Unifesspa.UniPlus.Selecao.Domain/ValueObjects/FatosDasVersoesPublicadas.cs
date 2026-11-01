@@ -41,6 +41,7 @@ public sealed class FatosDasVersoesPublicadas
         Dictionary<string, HashSet<EixosDoMetadadoCongelado>> eixosDosMetadados,
         Dictionary<string, HashSet<string>> operacoesDosAgregados)
     {
+
         _garantidos = garantidos;
         ItensDaInscricaoNaBase = itensDaInscricaoNaBase;
         _gruposDaInscricaoNaBase = gruposDaInscricaoNaBase;
@@ -56,6 +57,17 @@ public sealed class FatosDasVersoesPublicadas
     /// </summary>
     public IReadOnlyDictionary<string, IReadOnlyCollection<EixosDoItemCongelado>> EixosDosItens =>
         _eixosDosItens.ToDictionary(static par => par.Key, static par => (IReadOnlyCollection<EixosDoItemCongelado>)par.Value, StringComparer.Ordinal);
+
+    /// <summary>
+    /// Os eixos que as versões publicadas congelaram no item do fato. A retificação só aceita o item igual a
+    /// todos eles, então, sem divergência entre as versões, qualquer um serve de fonte do que o item
+    /// regravado copia.
+    /// </summary>
+    public bool TentarObterEixosDoItem(string fatoCodigo, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out EixosDoItemCongelado? eixos)
+    {
+        eixos = _eixosDosItens.TryGetValue(fatoCodigo, out HashSet<EixosDoItemCongelado>? congelados) ? congelados.FirstOrDefault() : null;
+        return eixos is not null;
+    }
 
     /// <summary>Os fatos que alguma versão publicada coletou, em item ou em campo de grupo.</summary>
     public IReadOnlySet<string> FatosJaColetados { get; }

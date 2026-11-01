@@ -74,7 +74,7 @@ internal static class FormularioDeTeste
         .. DadosBasicos(["SEXO_CIVIL", "IDENTIDADE_GENERO", "ORIENTACAO_SEXUAL"]).Select(static (fato, ordem) => FatoColetado.Criar(
             fato.FatoCodigo, ordem, fato.Rotulo, fato.TipoRenderizacao, fato.Obrigatoriedade,
             [.. fato.Precondicoes.Select(static c => CondicaoPrecondicaoFato.Criar(c.Clausula, c.Fato, c.Operador, c.Valor).Value!)],
-            fato.ClassificacaoProtecao, fato.OrigemValores, ConjuntoBasicoDaInscricao.CodigoDaSecao, formato: fato.Formato,
+            fato.ClassificacaoProtecao, ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, fato.OrigemValores, ConjuntoBasicoDaInscricao.CodigoDaSecao, formato: fato.Formato,
             ajuda: fato.Ajuda, pedirConfirmacao: fato.PedirConfirmacao, restricoes: fato.Restricoes, impedimento: fato.Impedimento).Value!),
     ];
 
@@ -176,7 +176,7 @@ internal static class FormularioDeTeste
     public static FatoColetado CampoDaEdicaoDoEnem(int ordem) =>
         FatoColetado.Criar(
             EdicaoDoEnem.Fato, ordem, "Qual edição do ENEM você vai usar?", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
-            "PESSOAL", Unifesspa.UniPlus.Selecao.Domain.Enums.OrigemValoresColeta.OpcoesDoProcesso).Value!;
+            "PESSOAL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, Unifesspa.UniPlus.Selecao.Domain.Enums.OrigemValoresColeta.OpcoesDoProcesso).Value!;
 
     /// <summary>
     /// Processo com inscrição própria publica o formulário de inscrição (UNI-REQ-0144): cria o
@@ -244,7 +244,7 @@ internal static class FormularioDeTeste
                 fato.FatoCodigo, ConjuntoBasicoDaInscricao.Itens.Single(i => i.FatoCodigo == fato.FatoCodigo).Ordem, fato.Rotulo,
                 fato.TipoRenderizacao, fato.Obrigatoriedade,
                 [.. fato.Precondicoes.Select(static c => CondicaoPrecondicaoFato.Criar(c.Clausula, c.Fato, c.Operador, c.Valor).Value!)],
-                fato.ClassificacaoProtecao,
+                fato.ClassificacaoProtecao, ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade,
                 fato.OrigemValores, ConjuntoBasicoDaInscricao.CodigoDaSecao, formato: fato.Formato, ajuda: fato.Ajuda,
                 pedirConfirmacao: fato.PedirConfirmacao, restricoes: fato.Restricoes, impedimento: fato.Impedimento).Value!;
 
@@ -254,7 +254,7 @@ internal static class FormularioDeTeste
             : FatoColetado.Criar(
                 fato.FatoCodigo, fato.Ordem + deslocamento, fato.Rotulo, fato.TipoRenderizacao, fato.Obrigatoriedade,
                 [.. fato.Precondicoes.Select(static c => CondicaoPrecondicaoFato.Criar(c.Clausula, c.Fato, c.Operador, c.Valor).Value!)],
-                fato.ClassificacaoProtecao,
+                fato.ClassificacaoProtecao, ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade,
                 fato.OrigemValores, fato.EtapaCodigo ?? Secao, formato: fato.Formato, ajuda: fato.Ajuda, pedirConfirmacao: fato.PedirConfirmacao,
                 restricoes: fato.Restricoes, impedimento: fato.Impedimento).Value!;
 
@@ -303,7 +303,7 @@ internal static class FormularioDeTeste
             CondicaoPrecondicaoFato.Criar(indice, c.Fato, OperadorCodigo.FromCodigo(c.Operador), c.Valor).Value!))];
         return FatoColetado.Criar(
             entrada.FatoCodigo, entrada.Ordem, entrada.Rotulo, TipoRenderizacaoCodigo.FromCodigo(entrada.TipoRenderizacao), obrigatoriedade, precondicoes,
-            ClassificacaoDosFatos.GetValueOrDefault(entrada.FatoCodigo, "PESSOAL"),
+            ClassificacaoDosFatos.GetValueOrDefault(entrada.FatoCodigo, "PESSOAL"), ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade,
             entrada.FatoCodigo.EndsWith("_UF", StringComparison.Ordinal) ? Unifesspa.UniPlus.Selecao.Domain.Enums.OrigemValoresColeta.UnidadesFederativas : default,
             entrada.EtapaCodigo, formato: FormatoDosTextos.GetValueOrDefault(entrada.FatoCodigo), ajuda: entrada.Ajuda,
             restricoes: [.. (entrada.Restricoes ?? []).Select(static r => EntradaDeRegras.Restricao(r).Value!)]).Value!;

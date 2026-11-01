@@ -138,9 +138,9 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
         FatosDeModalidade fatosDeModalidade = VocabularioDeFatos.ComValoresDeModalidade(catalogoDeFatos);
 
         // A mesma proteção que a publicação e a retificação avaliam: o painel não aprova o que elas recusam.
-        ProtecaoVigenteDasExigencias protecaoDasExigencias = await ProtecaoVigenteDasExigenciasDoProcesso
+        ProtecaoVigenteDasExigencias protecaoDasExigencias = (await ProtecaoVigenteDasExigenciasDoProcesso
             .MontarAsync(processo, tipoDocumentoReader, catalogoDeFatos, ProtecaoVigenteDasExigenciasDoProcesso.DaVersao(registroCodecs, versaoAtual), cancellationToken)
-            .ConfigureAwait(false);
+            .ConfigureAwait(false)).Exigencias;
 
         ItemConformidadeDto[] itens = [.. processo.AvaliarConformidade(contexto, fatosDeModalidade, tiposDeAtoUnicos, protecaoDasExigencias)
             .Select(static item => new ItemConformidadeDto(item.Codigo, item.Dimensao, item.Mensagem, item.Ok))];

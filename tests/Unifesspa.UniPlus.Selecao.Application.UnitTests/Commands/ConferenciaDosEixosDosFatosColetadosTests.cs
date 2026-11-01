@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// O metadado dos fatos dos gatilhos e a operação dos agregados que a versão nova congela não
@@ -63,5 +64,5 @@ public sealed class ConferenciaDosEixosDosFatosColetadosTests
         new() { ["SEXO"] = new("SEXO", dominio, "DECLARADO", "ESCALAR", "INSCRICAO", "NENHUM", ["F"], [new ValorDominioDeclaradoCongelado("F", descricao, 0)]) };
 
     private static Domain.Entities.FatoColetado Item(string codigo) =>
-        Domain.Entities.FatoColetado.Criar(codigo, 0, codigo, Unifesspa.UniPlus.Regras.Enums.TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!;
+        Domain.Entities.FatoColetado.Criar(codigo, 0, codigo, Unifesspa.UniPlus.Regras.Enums.TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
 }

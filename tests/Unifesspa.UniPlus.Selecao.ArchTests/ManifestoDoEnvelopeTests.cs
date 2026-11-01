@@ -388,7 +388,7 @@ public sealed class ManifestoDoEnvelopeTests
         // Rotulo/TipoRenderizacao/Obrigatorio (Story #559) — a apresentação do campo no
         // formulário de inscrição, congelada junto do fato no mesmo bloco `fatosColetados`.
         [typeof(FatoColetado)] = (
-            ["FatoCodigo", "Finalidade", "EtapaCodigo", "Ordem", "Rotulo", "TipoRenderizacao", "Obrigatoriedade", "Ajuda", "PedirConfirmacao", "Restricoes", "Impedimento", "OrigemValores", "Formato", "ClassificacaoProtecao", "Precondicoes"],
+            ["FatoCodigo", "Finalidade", "EtapaCodigo", "Ordem", "Rotulo", "TipoRenderizacao", "Obrigatoriedade", "Ajuda", "PedirConfirmacao", "Restricoes", "Impedimento", "OrigemValores", "Formato", "ClassificacaoProtecao", "HipoteseLegal", "FinalidadeTratamento", "Precondicoes"],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
                 ("GrupoColetadoId", "FK interna do campo de grupo — o campo é congelado dentro do grupo, em `gruposColetados`."),
