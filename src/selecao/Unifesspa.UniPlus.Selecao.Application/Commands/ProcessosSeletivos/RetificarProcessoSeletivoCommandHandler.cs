@@ -220,6 +220,17 @@ public static class RetificarProcessoSeletivoCommandHandler
             catalogoDeFatos.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
         FatosDeModalidade fatosDeModalidade = VocabularioDeFatos.ComValoresDeModalidade(catalogoDeFatos);
 
+        // A proteção que o envelope congela precisa estar aprovada pela proteção de dados (ADR-0153), e a leitura dos
+        // tipos de documento que a confere é a mesma que a proteção congelada usa mais adiante.
+        IReadOnlyDictionary<Guid, TipoDocumentoView> tiposVivos = await ProtecaoVigenteDasExigenciasDoProcesso
+            .LerTiposVivosAsync(processo, tipoDocumentoReader, cancellationToken)
+            .ConfigureAwait(false);
+        Result protecaoAprovada = ConferenciaDaAprovacaoDaProtecao.Conferir(processo, tiposVivos, catalogoDeFatos);
+        if (protecaoAprovada.IsFailure)
+        {
+            return (protecaoAprovada, []);
+        }
+
         Result<FatosDasVersoesPublicadas?> versoesPublicadas = await ConferenciaDosEixosDosFatosColetados
             .LerAsync(processoSeletivoRepository, registroCodecs, command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
@@ -242,9 +253,8 @@ public static class RetificarProcessoSeletivoCommandHandler
 
         // O tipo de documento é editável depois que a exigência copiou dele a proteção: o valor
         // vigente é o que se congela, antes da conferência contra os fatos e do snapshot.
-        ProtecaoVigenteDoProcesso protecaoDoProcesso = await ProtecaoVigenteDasExigenciasDoProcesso
-            .MontarAsync(processo, tipoDocumentoReader, catalogoDeFatos, await ProtecaoVigenteDasExigenciasDoProcesso.LerDaVersaoVigenteAsync(processoSeletivoRepository, registroCodecs, processo.Id, cancellationToken).ConfigureAwait(false), cancellationToken)
-            .ConfigureAwait(false);
+        ProtecaoVigenteDoProcesso protecaoDoProcesso = ProtecaoVigenteDasExigenciasDoProcesso
+            .Montar(processo, tiposVivos, catalogoDeFatos, await ProtecaoVigenteDasExigenciasDoProcesso.LerDaVersaoVigenteAsync(processoSeletivoRepository, registroCodecs, processo.Id, cancellationToken).ConfigureAwait(false));
         ProtecaoVigenteDasExigencias protecaoDasExigencias = protecaoDoProcesso.Exigencias;
         processo.AplicarProtecaoVigente(protecaoDasExigencias);
 

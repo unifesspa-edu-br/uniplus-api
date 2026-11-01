@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -52,33 +53,33 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     private static IReadOnlyList<FatoCandidatoView> VocabularioSeed() =>
     [
         new(Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", null, "CATEGORICO", "DECLARADO", "ESCALAR",
-            ["BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA", "NAO_INFORMADO"], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade),
+            ["BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA", "NAO_INFORMADO"], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
         new(Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", null, "BOOLEANO", "DECLARADO", "ESCALAR",
-            null, "INSCRICAO", "CAMPO_FORMULARIO:BAIXA_RENDA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade),
+            null, "INSCRICAO", "CAMPO_FORMULARIO:BAIXA_RENDA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
         new(Guid.CreateVersion7(), "MODALIDADE", "Modalidade", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO",
-            null, "INSCRICAO", "REGRA_DERIVACAO:MODALIDADE", null, "MODALIDADE", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade),
+            null, "INSCRICAO", "REGRA_DERIVACAO:MODALIDADE", null, "MODALIDADE", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
         new(Guid.CreateVersion7(), "RENDA_PER_CAPITA", "Renda per capita", null, "NUMERICO", "DERIVADO", "ESCALAR",
-            null, "INSCRICAO", "ATRIBUTO_CANDIDATO:RENDA_PER_CAPITA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade),
+            null, "INSCRICAO", "ATRIBUTO_CANDIDATO:RENDA_PER_CAPITA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
         new(Guid.CreateVersion7(), "NOME_SOCIAL", "Nome social", null, "TEXTO", "DECLARADO", "ESCALAR",
-            null, "INSCRICAO", "CAMPO_FORMULARIO:NOME_SOCIAL", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, Formato: "NOME_PESSOA"),
+            null, "INSCRICAO", "CAMPO_FORMULARIO:NOME_SOCIAL", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, Formato: "NOME_PESSOA", ProtecaoAprovada: true),
         new(Guid.CreateVersion7(), "DATA_NASCIMENTO", "Data de nascimento", null, "DATA", "DECLARADO", "ESCALAR",
-            null, "INSCRICAO", "CAMPO_FORMULARIO:DATA_NASCIMENTO", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade),
+            null, "INSCRICAO", "CAMPO_FORMULARIO:DATA_NASCIMENTO", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
         new(Guid.CreateVersion7(), "ENDERECO_RESIDENCIAL", "Endereço residencial", null, "ENDERECO", "DECLARADO", "ESCALAR",
-            null, "INSCRICAO", "CAMPO_FORMULARIO:ENDERECO_RESIDENCIAL", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade),
+            null, "INSCRICAO", "CAMPO_FORMULARIO:ENDERECO_RESIDENCIAL", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
         new(Guid.CreateVersion7(), "OPCAO_CURSO_1", "1ª opção de curso", null, "CATEGORICO", "DECLARADO", "ESCALAR",
-            ["MEDICINA", "ENFERMAGEM"], "INSCRICAO", "CAMPO_FORMULARIO:OPCAO_CURSO_1", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade),
+            ["MEDICINA", "ENFERMAGEM"], "INSCRICAO", "CAMPO_FORMULARIO:OPCAO_CURSO_1", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
         new(Guid.CreateVersion7(), "OPCAO_LISTA_ESPERA", "Opção da lista de espera", null, "CATEGORICO", "DECLARADO", "ESCALAR",
-            ["MEDICINA", "ENFERMAGEM"], "INSCRICAO", "CAMPO_FORMULARIO:OPCAO_LISTA_ESPERA", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade),
+            ["MEDICINA", "ENFERMAGEM"], "INSCRICAO", "CAMPO_FORMULARIO:OPCAO_LISTA_ESPERA", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
         new(Guid.CreateVersion7(), "OPCAO_CURSO_2", "2ª opção de curso", null, "CATEGORICO", "DECLARADO", "ESCALAR",
-            ["MEDICINA"], "INSCRICAO", "CAMPO_FORMULARIO:OPCAO_CURSO_2", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade),
+            ["MEDICINA"], "INSCRICAO", "CAMPO_FORMULARIO:OPCAO_CURSO_2", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
         new(Guid.CreateVersion7(), "FAIXA_DE_RENDA", "Faixa de renda", null, "CATEGORICO", "DERIVADO", "ESCALAR",
-            ["MENOR_DE_18", "DE_18_A_59", "60_OU_MAIS"], "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_DE_RENDA", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade),
+            ["MENOR_DE_18", "DE_18_A_59", "60_OU_MAIS"], "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_DE_RENDA", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
         new(Guid.CreateVersion7(), "FAIXA_ETARIA", "Faixa etária", null, "NUMERICO", "DERIVADO", "ESCALAR",
-            null, "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade),
+            null, "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
         new(Guid.CreateVersion7(), "PARENTESCO", "Parentesco", null, "CATEGORICO", "DECLARADO", "ESCALAR",
-            ["PAI", "MAE", "FILHO"], "HABILITACAO", "CAMPO_FORMULARIO:PARENTESCO", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, Escopo: "MEMBRO_GRUPO"),
+            ["PAI", "MAE", "FILHO"], "HABILITACAO", "CAMPO_FORMULARIO:PARENTESCO", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, Escopo: "MEMBRO_GRUPO", ProtecaoAprovada: true),
         new(Guid.CreateVersion7(), "MENOR_SOB_GUARDA", "Menor sob guarda", null, "BOOLEANO", "DECLARADO", "ESCALAR",
-            null, "HABILITACAO", "CAMPO_FORMULARIO:MENOR_SOB_GUARDA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, Escopo: "MEMBRO_GRUPO"),
+            null, "HABILITACAO", "CAMPO_FORMULARIO:MENOR_SOB_GUARDA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, Escopo: "MEMBRO_GRUPO", ProtecaoAprovada: true),
     ];
 
     private static ProcessoSeletivo ProcessoEmRascunho()
@@ -223,6 +224,27 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
             [FatoColetado.Criar("BAIXA_RENDA", 0, "Baixa renda", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!],
             PrecondicaoIfMatch.Ausente, FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         (await HandleAsync(mocks, coletaBaixaRenda)).IsSuccess.Should().BeTrue("o fato já era coletado pelo processo");
+    }
+
+    [Fact(DisplayName = "O fato pendente que uma exigência apenas comprova continua vínculo novo: coletá-lo num campo novo do formulário é recusado")]
+    public async Task Handle_FatoPendenteSoComprovadoPorExigencia_ColetaNovaERecusada()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS comprovado", out Guid faseId);
+        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Habilitacao, PrecondicaoIfMatch.Ausente);
+        DocumentoExigido exigencia = DocumentoExigido.Criar(
+            faseId, CadastrosVivos.IdentidadeDe("LAUDO_MEDICO"), "LAUDO_MEDICO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal,
+            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null,
+            condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null,
+            finalidade: FinalidadeFormulario.Inscricao, fatosComprovados: ["BAIXA_RENDA"]).Value!;
+        Result definida = processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente);
+        definida.IsSuccess.Should().BeTrue(definida.Error?.Message);
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
+            [.. VocabularioSeed().Select(static f => f.Codigo == "BAIXA_RENDA" ? f with { ProtecaoAprovada = false } : f)]));
+        DefinirFatosColetadosCommand coletaBaixaRenda = new(
+            processo.Id, FinalidadeFormulario.Habilitacao, [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", null)], PrecondicaoIfMatch.Ausente);
+
+        (await HandleAsync(mocks, coletaBaixaRenda)).Error!.Code.Should().Be(VinculoCatalogoErrorCodes.FatoComProtecaoPendente);
     }
 
     [Fact(DisplayName = "Coletar um fato derivado (MODALIDADE) é recusado como não coletável")]

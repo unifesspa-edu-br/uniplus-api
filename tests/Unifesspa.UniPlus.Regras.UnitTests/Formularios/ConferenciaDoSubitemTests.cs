@@ -33,6 +33,6 @@ public sealed class ConferenciaDoSubitemTests
     private static Dictionary<string, FatoDoCatalogo> Catalogo(string origem, string escopo, string binding) =>
         new(StringComparer.Ordinal)
         {
-            ["PARENTESCO"] = new("PARENTESCO", "CATEGORICO", "ESCALAR", origem, binding, "GLOBAL", escopo, Ativo: true, []),
+            ["PARENTESCO"] = new("PARENTESCO", "CATEGORICO", "ESCALAR", origem, binding, "GLOBAL", escopo, Ativo: true, [], ProtecaoAprovada: true),
         };
 }

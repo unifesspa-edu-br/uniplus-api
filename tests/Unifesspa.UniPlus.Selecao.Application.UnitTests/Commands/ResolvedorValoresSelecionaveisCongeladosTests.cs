@@ -37,7 +37,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
         ValoresDominio: null,
         PontoResolucao: "INSCRICAO",
         Binding: $"CAMPO_FORMULARIO:{codigo}",
-        ValoresDominioDeclarados: null, FonteValores: "PROCESSO", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade);
+        ValoresDominioDeclarados: null, FonteValores: "PROCESSO", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     [Fact(DisplayName = "Resolver congela, para fato de fonte do processo, as opções que o processo declarou, na ordem declarada")]
     public void Resolver_FatoDeFonteDoProcesso_CongelaAsOpcoesDeclaradas()

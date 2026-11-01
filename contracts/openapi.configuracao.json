@@ -17766,7 +17766,8 @@
           "ativo",
           "classificacaoProtecao",
           "hipoteseLegal",
-          "finalidadeTratamento"
+          "finalidadeTratamento",
+          "protecaoAprovada"
         ],
         "type": "object",
         "properties": {
@@ -17837,6 +17838,9 @@
           "finalidadeTratamento": {
             "type": "string"
           },
+          "protecaoAprovada": {
+            "type": "boolean"
+          },
           "formato": {
             "type": [
               "null",
@@ -17846,10 +17850,6 @@
           "escopo": {
             "type": "string",
             "default": "CANDIDATO"
-          },
-          "protecaoAprovada": {
-            "type": "boolean",
-            "default": true
           }
         }
       },

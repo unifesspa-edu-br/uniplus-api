@@ -5,7 +5,12 @@ using System.Diagnostics.CodeAnalysis;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
 
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
 using Testcontainers.PostgreSql;
+
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 
 /// <summary>
 /// Fixture base genérica que provisiona um Postgres efêmero (Testcontainers) com o
@@ -120,6 +125,8 @@ public abstract class MonolitoPostgresFixtureBase<TFactory> : IAsyncLifetime
             // Força o boot (build + StartAsync): migrations criam os schemas e o
             // Wolverine provisiona o outbox.
             _ = _factory.Services;
+
+            await AprovarOCatalogoSemeadoAsync(_factory.Services).ConfigureAwait(false);
         }
         catch
         {
@@ -148,6 +155,22 @@ public abstract class MonolitoPostgresFixtureBase<TFactory> : IAsyncLifetime
         {
             await EncerrarDependenciasAsync().ConfigureAwait(false);
         }
+    }
+
+    /// <summary>
+    /// A semente do catálogo nasce pendente de aprovação da proteção de dados (ADR-0153), e o processo só publica
+    /// proteção aprovada. As suítes que publicam sobre o catálogo semeado partem dele aprovado, como depois da
+    /// conferência da proteção de dados; as que exercitam o circuito de aprovação criam os próprios itens.
+    /// </summary>
+    private static async Task AprovarOCatalogoSemeadoAsync(IServiceProvider services)
+    {
+        await using AsyncServiceScope escopo = services.CreateAsyncScope();
+        ConfiguracaoDbContext contexto = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+
+        await contexto.Database.ExecuteSqlRawAsync(
+            "UPDATE configuracao.rol_de_fatos_candidato SET protecao_situacao = 'APROVADA'").ConfigureAwait(false);
+        await contexto.Database.ExecuteSqlRawAsync(
+            "UPDATE configuracao.tipo_documento SET protecao_situacao = 'APROVADA'").ConfigureAwait(false);
     }
 
     private void RestaurarEnvVars()

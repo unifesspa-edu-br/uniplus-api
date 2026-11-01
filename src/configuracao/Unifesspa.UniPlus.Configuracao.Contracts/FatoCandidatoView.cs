@@ -74,9 +74,9 @@ public sealed record FatoCandidatoView(
     string ClassificacaoProtecao,
     string HipoteseLegal,
     string FinalidadeTratamento,
+    bool ProtecaoAprovada,
     string? Formato = null,
-    string Escopo = "CANDIDATO",
-    bool ProtecaoAprovada = true);
+    string Escopo = "CANDIDATO");
 
 /// <summary>
 /// Um valor do conjunto fechado de um <see cref="FatoCandidatoView"/> categórico

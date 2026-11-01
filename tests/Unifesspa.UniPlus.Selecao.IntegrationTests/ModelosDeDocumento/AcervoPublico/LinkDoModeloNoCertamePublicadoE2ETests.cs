@@ -12,6 +12,7 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -90,7 +91,7 @@ public sealed class LinkDoModeloNoCertamePublicadoE2ETests(AcervoPublicoE2EFixtu
 
                 DocumentoExigido exigencia = DocumentoExigido.Criar(
                     processo.CronogramaFases.Single().Id,
-                    tipoDocumentoOrigemId: Guid.CreateVersion7(),
+                    tipoDocumentoOrigemId: TipoDocumentoSeed.Itens[0].Id,
                     tipoDocumentoCodigo: "AUTODECLARACAO_ETNICO_RACIAL",
                     tipoDocumentoNome: "Autodeclaração étnico-racial",
                     tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,

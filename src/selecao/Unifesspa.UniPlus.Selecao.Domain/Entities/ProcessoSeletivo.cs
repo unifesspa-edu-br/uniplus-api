@@ -5730,6 +5730,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             {
                 if (protecao is not null
                     && !protecao.ClassificacaoDosFatosDerivados.ContainsKey(codigo)
+                    && !protecao.DerivadosSemProtecaoAprovada.Contains(codigo)
                     && !_campos.Any(f => string.Equals(f.FatoCodigo, codigo, StringComparison.Ordinal)))
                 {
                     return new DomainError(

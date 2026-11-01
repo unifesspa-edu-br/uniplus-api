@@ -20,6 +20,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -88,6 +89,7 @@ public sealed class FinalidadeDaExigenciaEndpointTests
         ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
         db.AddRange(bolsista, tipoDocumento);
         await db.SaveChangesAsync();
+        await db.AprovarCatalogoAsync();
         return tipoDocumento.Id;
     }
 

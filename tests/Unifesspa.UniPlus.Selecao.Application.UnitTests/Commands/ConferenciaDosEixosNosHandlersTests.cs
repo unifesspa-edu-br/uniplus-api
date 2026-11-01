@@ -71,6 +71,46 @@ public sealed class ConferenciaDosEixosNosHandlersTests
         resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
     }
 
+    [Fact(DisplayName = "Retificar recusa o tipo da exigência que voltou a pendente na proteção de dados")]
+    public async Task Retificar_TipoPendente_Recusa()
+    {
+        Cenario cenario = Cenario.Publicado(dominioCongelado: "BOOLEANO");
+        cenario.ComTipoDaExigenciaPendente();
+
+        (Result resposta, IEnumerable<object> eventos) = await cenario.RetificarAsync();
+
+        resposta.Errors.Should().ContainSingle().Which.Error.Code.Should().Be("ProcessoSeletivo.TipoDocumentoComProtecaoPendente");
+        eventos.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Retificar recusa o fato citado que voltou a pendente na proteção de dados")]
+    public async Task Retificar_FatoPendente_Recusa()
+    {
+        Cenario cenario = Cenario.Publicado(dominioCongelado: "BOOLEANO");
+        await cenario.ComFatoCitadoPendenteAsync();
+
+        (Result resposta, IEnumerable<object> eventos) = await cenario.RetificarAsync();
+
+        resposta.Errors.Should().ContainSingle().Which.Error.Code.Should().Be("ProcessoSeletivo.FatoComProtecaoPendente");
+        eventos.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Fechar a retificação recusa o tipo da exigência e o fato citado que voltaram a pendente")]
+    public async Task Fechar_ItensPendentes_Recusa()
+    {
+        Cenario cenario = Cenario.Publicado(dominioCongelado: "BOOLEANO");
+        cenario.AbrirSessao();
+        cenario.ComTipoDaExigenciaPendente();
+        await cenario.ComFatoCitadoPendenteAsync();
+
+        (Result resposta, IEnumerable<object> eventos) = await cenario.FecharAsync();
+
+        resposta.Errors.Select(static e => e.Error.Code).Should().BeEquivalentTo(
+            "ProcessoSeletivo.TipoDocumentoComProtecaoPendente", "ProcessoSeletivo.FatoComProtecaoPendente");
+        eventos.Should().BeEmpty();
+        cenario.Processo.Rascunho.Should().NotBeNull("a recusa não destrói a sessão editorial");
+    }
+
     [Fact(DisplayName = "Fechar a retificação recusa o fato citado por condição de documento cujo domínio o catálogo trocou desde a versão publicada")]
     public async Task Fechar_DominioDoFatoCitadoTrocado_Recusa()
     {
@@ -273,6 +313,7 @@ public sealed class ConferenciaDosEixosNosHandlersTests
         private readonly IAtoDoProcessoRepository _atos = Substitute.For<IAtoDoProcessoRepository>();
         private readonly Dictionary<string, TipoDeAtoCongelado> _tiposCongelados = new(StringComparer.Ordinal);
         private readonly ITipoAtoPublicadoReader _tiposDeAto = TipoDeAtoReader();
+        private ITipoDocumentoReader _tipos = CadastrosVivos.TiposDocumento();
         private readonly VersaoConfiguracao _versao;
         private readonly GrafoConfiguracao _grafoPublicado;
         private readonly EixosDeVersaoPublicada _congelado;
@@ -342,6 +383,22 @@ public sealed class ConferenciaDosEixosNosHandlersTests
                 FatosDasVersoesPublicadas.De([_grafoPublicado], [_congelado]), "user-sub-1", Agora)
                 .IsSuccess.Should().BeTrue();
 
+        /// <summary>O tipo da exigência voltou a pendente na proteção de dados depois de vinculado.</summary>
+        public void ComTipoDaExigenciaPendente()
+        {
+            _tipos = Substitute.For<ITipoDocumentoReader>();
+            _tipos.ListarVivosAsync(Arg.Any<CancellationToken>())
+                .Returns([CadastrosVivos.TipoDocumento("LAUDO_MEDICO") with { ProtecaoAprovada = false }]);
+        }
+
+        /// <summary>O fato que o gatilho cita voltou a pendente na proteção de dados depois de vinculado.</summary>
+        public async Task ComFatoCitadoPendenteAsync()
+        {
+            IReadOnlyList<FatoCandidatoView> catalogo = await _catalogo.ListarAsync(CancellationToken.None);
+            _catalogo.ListarAsync(Arg.Any<CancellationToken>())
+                .Returns([.. catalogo.Select(f => f.Codigo == Fato ? f with { ProtecaoAprovada = false } : f)]);
+        }
+
         public Task<(Result, IEnumerable<object>)> RetificarAsync() => RetificarProcessoSeletivoCommandHandler.Handle(
             new RetificarProcessoSeletivoCommand(
                 Processo.Id, "Correção do prazo", "001/2026-R1", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
@@ -356,7 +413,7 @@ public sealed class ConferenciaDosEixosNosHandlersTests
             Substitute.For<IVagaDeLinhagemReader>(),
             Substitute.For<IObrigatoriedadeLegalRepository>(),
             CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
+            _tipos,
             CadastrosVivos.TiposEtapa(),
             CadastrosVivos.TiposDeficiencia(),
             CadastrosVivos.RegrasDesempate(),
@@ -381,7 +438,7 @@ public sealed class ConferenciaDosEixosNosHandlersTests
             Substitute.For<IVagaDeLinhagemReader>(),
             Substitute.For<IObrigatoriedadeLegalRepository>(),
             CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
+            _tipos,
             CadastrosVivos.TiposEtapa(),
             CadastrosVivos.TiposDeficiencia(),
             CadastrosVivos.RegrasDesempate(),
@@ -441,7 +498,7 @@ public sealed class ConferenciaDosEixosNosHandlersTests
 
             FatoCandidatoView vivo = new(
                 Guid.CreateVersion7(), Fato, "Tem renda?", null, dominioNoCatalogo, "DECLARADO", "ESCALAR", null,
-                "RESULTADO_FINAL", $"CAMPO_FORMULARIO:{Fato}", null, null, Ativo: true, ClassificacaoProtecao: classificacaoNoCatalogo, HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade);
+                "RESULTADO_FINAL", $"CAMPO_FORMULARIO:{Fato}", null, null, Ativo: true, ClassificacaoProtecao: classificacaoNoCatalogo, HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
             FatoCandidatoView novo = vivo with { Id = Guid.CreateVersion7(), Codigo = FatoNovo, Nome = "Tem endereço próprio?", Dominio = "BOOLEANO", Binding = $"CAMPO_FORMULARIO:{FatoNovo}" };
             _catalogo.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[vivo, novo]));
         }
@@ -465,7 +522,7 @@ public sealed class ConferenciaDosEixosNosHandlersTests
 
         private static DocumentoExigido ExigenciaComGatilho(Guid faseId) =>
             DocumentoExigido.Criar(
-                faseId, Guid.CreateVersion7(), "DECLARACAO", "Declaração", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
+                faseId, CadastrosVivos.IdentidadeDe("LAUDO_MEDICO"), "DECLARACAO", "Declaração", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
                 Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
                 condicoes: [CondicaoGatilho.Criar(0, Fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!],
                 basesLegais: [DocumentoExigidoBaseLegal.Criar("Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!],

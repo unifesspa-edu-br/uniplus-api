@@ -204,7 +204,7 @@ public sealed class FatoDeElegibilidadeGateTests
     {
         FatoCandidatoView pedido = new(
             Guid.CreateVersion7(), Fato, "Pede o acréscimo", null, "BOOLEANO", "DECLARADO", "ESCALAR", null,
-            FormularioProcesso.CodigoFaseHabilitacao, $"CAMPO_FORMULARIO:{Fato}", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade);
+            FormularioProcesso.CodigoFaseHabilitacao, $"CAMPO_FORMULARIO:{Fato}", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
         IFatoCandidatoReader reader = Substitute.For<IFatoCandidatoReader>();
         reader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[pedido]));
         return reader;

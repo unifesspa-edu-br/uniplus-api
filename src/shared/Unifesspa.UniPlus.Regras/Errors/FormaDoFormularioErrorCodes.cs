@@ -42,11 +42,14 @@ public static class GrupoFormularioErrorCodes
     public const string CampoComImpedimento = "GrupoFormulario.CampoComImpedimento";
 }
 
-/// <summary>Códigos de recusa de vínculo novo a fato ou valor desativado no catálogo, no processo e no modelo.</summary>
+/// <summary>Códigos de recusa de vínculo novo a fato ou valor desativado, ou a fato sem a proteção aprovada, no processo e no modelo.</summary>
 public static class VinculoCatalogoErrorCodes
 {
     public const string FatoDesativado = "VinculoCatalogo.FatoDesativado";
     public const string ValorDesativado = "VinculoCatalogo.ValorDesativado";
+
+    /// <summary>Vínculo novo a fato cuja proteção de dados ainda não foi aprovada pela proteção de dados (ADR-0153).</summary>
+    public const string FatoComProtecaoPendente = "VinculoCatalogo.FatoComProtecaoPendente";
 }
 
 /// <summary>Códigos de recusa da forma de um termo exigido pelo formulário, no processo e no modelo.</summary>

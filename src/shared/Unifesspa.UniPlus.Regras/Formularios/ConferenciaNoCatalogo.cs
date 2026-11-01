@@ -16,6 +16,7 @@ public sealed record ValorDoCatalogo(string Codigo, bool Ativo);
 /// o lê pelo contrato da Configuração, e o modelo, pela própria entidade.
 /// </summary>
 /// <param name="Valores">Os valores de um categórico de fonte global; vazio nos demais.</param>
+/// <param name="ProtecaoAprovada">Se a proteção de dados aprovou a proteção do fato; sem a aprovação, o fato não aceita vínculo novo.</param>
 public sealed record FatoDoCatalogo(
     string Codigo,
     string Dominio,
@@ -25,7 +26,8 @@ public sealed record FatoDoCatalogo(
     string? FonteValores,
     string Escopo,
     bool Ativo,
-    IReadOnlyList<ValorDoCatalogo> Valores);
+    IReadOnlyList<ValorDoCatalogo> Valores,
+    bool ProtecaoAprovada);
 
 /// <summary>
 /// A conferência das regras do formulário contra o catálogo de fatos, no processo e no modelo: o
@@ -143,8 +145,10 @@ public static class ConferenciaNoCatalogo
 
     /// <summary>
     /// Desativar um fato ou um valor no catálogo recusa só vínculo novo (ADR-0136): a configuração
-    /// que já usava o fato, ou já citava o valor, continua com ele. Compara o que se propõe com o
-    /// que já está vinculado e recusa, de uma vez, todo vínculo novo a desativado.
+    /// que já usava o fato, ou já citava o valor, continua com ele. O fato sem a proteção aprovada
+    /// pela proteção de dados também só recusa vínculo novo (ADR-0153): quem já o vincula é barrado na
+    /// publicação. Compara o que se propõe com o que já está vinculado e recusa, de uma vez, todo
+    /// vínculo novo a desativado ou sem a aprovação.
     /// </summary>
     public static Result VinculoNovo(IReadOnlyDictionary<string, FatoDoCatalogo> catalogo, VinculosDeFatos existentes, VinculosDeFatos propostos)
     {
@@ -158,6 +162,12 @@ public static class ConferenciaNoCatalogo
             .Order(StringComparer.Ordinal)
             .Select(static fato => new FieldError(string.Empty, new DomainError(
                 VinculoCatalogoErrorCodes.FatoDesativado, $"O fato '{fato}' está desativado no catálogo e não aceita vínculo novo."), fato))];
+        erros.AddRange(propostos.Fatos
+            .Where(fato => !existentes.Fatos.Contains(fato) && catalogo.TryGetValue(fato, out FatoDoCatalogo? doCatalogo) && !doCatalogo.ProtecaoAprovada)
+            .Order(StringComparer.Ordinal)
+            .Select(static fato => new FieldError(string.Empty, new DomainError(
+                VinculoCatalogoErrorCodes.FatoComProtecaoPendente,
+                $"O fato '{fato}' aguarda a aprovação da proteção de dados e não aceita vínculo novo."), fato)));
         erros.AddRange(propostos.Valores
             .Where(valor => !existentes.Valores.Contains(valor)
                 && catalogo.TryGetValue(valor.Fato, out FatoDoCatalogo? doCatalogo) && doCatalogo.Valores.Any(v => v.Codigo == valor.Valor && !v.Ativo))

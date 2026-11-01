@@ -21,6 +21,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
 /// O grupo repetível pelo HTTP, contra o Postgres (UNI-REQ-0146): o PUT dos itens grava o grupo com
@@ -235,6 +236,7 @@ public sealed class GrupoRepetivelEndpointTests
         db.AddRange([fato, .. outros]);
         db.Add(tipoDocumento);
         await db.SaveChangesAsync();
+        await db.AprovarCatalogoAsync();
         return tipoDocumento.Id;
     }
 
@@ -282,6 +284,7 @@ public sealed class GrupoRepetivelEndpointTests
         ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
         db.Add(fato);
         await db.SaveChangesAsync();
+        await db.AprovarCatalogoAsync();
         return codigo;
     }
 

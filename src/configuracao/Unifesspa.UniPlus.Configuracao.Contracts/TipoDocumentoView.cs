@@ -28,4 +28,4 @@ public sealed record TipoDocumentoView(
     ClassificacaoDeProtecao ClassificacaoProtecao,
     string FinalidadeTratamento,
     string HipoteseLegal,
-    bool ProtecaoAprovada = true);
+    bool ProtecaoAprovada);

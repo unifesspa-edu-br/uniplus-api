@@ -64,7 +64,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
             CancellationToken.None);
 
     private static TipoDocumentoView TipoDocumentoResultado(Guid id) =>
-        new(id, "IDENTIDADE", "Documento de identidade", "PESSOAL", ClassificacaoDeProtecao.Pessoal, "Comprovação documental do candidato.", "CUMPRIMENTO_OBRIGACAO_LEGAL");
+        new(id, "IDENTIDADE", "Documento de identidade", "PESSOAL", ClassificacaoDeProtecao.Pessoal, "Comprovação documental do candidato.", "CUMPRIMENTO_OBRIGACAO_LEGAL", ProtecaoAprovada: true);
 
     private static FaseCronograma FaseQualquer() => FaseCronograma.Criar(
         1, Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao,
@@ -74,11 +74,11 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
 
     private static FatoCandidatoView FatoSexo() => new(
         Guid.CreateVersion7(), "SEXO", "Sexo", null, "CATEGORICO", "DECLARADO", "ESCALAR",
-        ["MASCULINO", "FEMININO", "INTERSEXO"], "INSCRICAO", "CAMPO_FORMULARIO:SEXO", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade);
+        ["MASCULINO", "FEMININO", "INTERSEXO"], "INSCRICAO", "CAMPO_FORMULARIO:SEXO", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     private static FatoCandidatoView FatoSexoComPontoResolucao(string pontoResolucao) => new(
         Guid.CreateVersion7(), "SEXO", "Sexo", null, "CATEGORICO", "DECLARADO", "ESCALAR",
-        ["MASCULINO", "FEMININO", "INTERSEXO"], pontoResolucao, "CAMPO_FORMULARIO:SEXO", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade);
+        ["MASCULINO", "FEMININO", "INTERSEXO"], pontoResolucao, "CAMPO_FORMULARIO:SEXO", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     private static FaseCronograma FaseComOrdemECodigo(int ordem, string codigo) => FaseCronograma.Criar(
         ordem, Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao,
@@ -88,7 +88,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
 
     private static FatoCandidatoView FatoModalidade() => new(
         Guid.CreateVersion7(), "MODALIDADE", "Modalidade de concorrência", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO", null,
-        "INSCRICAO", "REGRA_DERIVACAO:MODALIDADE", null, "MODALIDADE", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade);
+        "INSCRICAO", "REGRA_DERIVACAO:MODALIDADE", null, "MODALIDADE", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     // Os valores são os tipos do cadastro de tipos de deficiência, que o catálogo entrega como valores do fato.
     private static FatoCandidatoView FatoTipoDeficiencia() => new(
@@ -96,7 +96,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         ["DEFICIENCIA_VISUAL", "TEA"], "INSCRICAO", "CAMPO_FORMULARIO:TIPO_DEFICIENCIA",
         [new FatoValorDominioViewItem("DEFICIENCIA_VISUAL", "Deficiência visual", 0, Ativo: true),
          new FatoValorDominioViewItem("TEA", "Transtorno do espectro autista", 1, Ativo: true)],
-        "TIPOS_DEFICIENCIA", Ativo: true, ClassificacaoProtecao: "SENSIVEL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade);
+        "TIPOS_DEFICIENCIA", Ativo: true, ClassificacaoProtecao: "SENSIVEL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     [Fact(DisplayName = "Handle com processo inexistente retorna ProcessoSeletivo.NaoEncontrado")]
     public async Task Handle_ProcessoInexistente_RetornaNaoEncontrado()
@@ -198,7 +198,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         Mocks mocks = NovosMocks(processo, processo.Id);
         Guid tipoDocumentoId = Guid.CreateVersion7();
         mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
-            .Returns(new TipoDocumentoView(tipoDocumentoId, "LAUDO_MEDICO", "Laudo médico", "SAUDE", ClassificacaoDeProtecao.Sensivel, "Comprovação do atendimento especializado.", "TUTELA_DA_SAUDE"));
+            .Returns(new TipoDocumentoView(tipoDocumentoId, "LAUDO_MEDICO", "Laudo médico", "SAUDE", ClassificacaoDeProtecao.Sensivel, "Comprovação do atendimento especializado.", "TUTELA_DA_SAUDE", ProtecaoAprovada: true));
 
         ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, [], [], null, Qualquer, null, FatosComprovados: ["TIPO_DEFICIENCIA"]);
         DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
@@ -211,6 +211,58 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         exigencia.FinalidadeTratamento.Should().Be("Comprovação do atendimento especializado.");
         exigencia.HipoteseLegal.Should().Be("TUTELA_DA_SAUDE");
         exigencia.FatosComprovados.Should().Equal("TIPO_DEFICIENCIA");
+    }
+
+    [Fact(DisplayName = "Tipo de documento sem a proteção aprovada não entra em exigência nova, mas continua onde o processo já o exige")]
+    public async Task Handle_TipoComProtecaoPendente_RecusaVinculoNovoEMantemOExistente()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        FaseCronograma fase = FaseQualquer();
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid tipoDocumentoId = Guid.CreateVersion7();
+        TipoDocumentoView aprovado = new(tipoDocumentoId, "LAUDO_MEDICO", "Laudo médico", "SAUDE", ClassificacaoDeProtecao.Sensivel, "Comprovação do atendimento especializado.", "TUTELA_DA_SAUDE", ProtecaoAprovada: true);
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, [], [], null, Qualquer, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
+
+        mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>()).Returns(aprovado with { ProtecaoAprovada = false });
+        Result<MutacaoAceita> novo = await HandleAsync(mocks, command);
+        novo.Error!.Code.Should().Be("DocumentoExigido.TipoDocumentoComProtecaoPendente");
+        processo.DocumentosExigidos.Should().BeEmpty();
+
+        mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>()).Returns(aprovado);
+        (await HandleAsync(mocks, command)).IsSuccess.Should().BeTrue();
+        mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>()).Returns(aprovado with { ProtecaoAprovada = false });
+        (await HandleAsync(mocks, command)).IsSuccess.Should().BeTrue("o vínculo existente não é vínculo novo");
+    }
+
+    [Theory(DisplayName = "O fato comprovado novo, pendente na proteção ou desativado, é vínculo novo recusado; o que o processo já comprova continua")]
+    [InlineData("pendente", "VinculoCatalogo.FatoComProtecaoPendente")]
+    [InlineData("desativado", "VinculoCatalogo.FatoDesativado")]
+    public async Task Handle_FatoComprovadoNovoNaoAprovado_RecusaSoOVinculoNovo(string estado, string codigoEsperado)
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        FaseCronograma fase = FaseQualquer();
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid tipoDocumentoId = Guid.CreateVersion7();
+        mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
+            .Returns(new TipoDocumentoView(tipoDocumentoId, "LAUDO_MEDICO", "Laudo médico", "SAUDE", ClassificacaoDeProtecao.Sensivel, "Comprovação do atendimento especializado.", "TUTELA_DA_SAUDE", ProtecaoAprovada: true));
+        FatoCandidatoView fato = FatoTipoDeficiencia() with { ProtecaoAprovada = estado != "pendente", Ativo = estado != "desativado" };
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns([fato]);
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, [], [], null, Qualquer, null, FatosComprovados: ["TIPO_DEFICIENCIA"]);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> novo = await HandleAsync(mocks, command);
+
+        novo.Error!.Code.Should().Be(codigoEsperado);
+        processo.DocumentosExigidos.Should().BeEmpty();
+
+        // Já vinculado: a mesma entrada, sobre o catálogo que depois perdeu a aprovação, não é vínculo novo.
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns([FatoTipoDeficiencia()]);
+        (await HandleAsync(mocks, command)).IsSuccess.Should().BeTrue();
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns([fato]);
+        (await HandleAsync(mocks, command)).IsSuccess.Should().BeTrue("o fato que o processo já comprova não é vínculo novo");
     }
 
     [Fact(DisplayName = "Handle com fatos comprovados repetidos recusa na forma, antes de ler o tipo de documento")]
@@ -325,7 +377,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
     /// <summary>A faixa etária como o catálogo a publica: derivada, por atributo do candidato.</summary>
     private static FatoCandidatoView FatoFaixaEtaria() => new(
         Guid.CreateVersion7(), "FAIXA_ETARIA", "Faixa etária", null, "NUMERICO", "DERIVADO", "ESCALAR",
-        null, "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade);
+        null, "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     /// <summary>
     /// Oferta só a ampla concorrência. É o que torna um gatilho por modalidade resolvível: a
@@ -420,7 +472,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)
         [
             new FatoCandidatoView(Guid.CreateVersion7(), "MAIOR_IDADE", "Maior de idade", null, "BOOLEANO", "DECLARADO", "ESCALAR",
-                null, "INSCRICAO", "CAMPO_FORMULARIO:MAIOR_IDADE", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, Escopo: "MEMBRO_GRUPO"),
+                null, "INSCRICAO", "CAMPO_FORMULARIO:MAIOR_IDADE", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, Escopo: "MEMBRO_GRUPO", ProtecaoAprovada: true),
         ]));
         return (processo, fase, mocks, tipoDocumentoId);
     }

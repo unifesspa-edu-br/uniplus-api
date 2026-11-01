@@ -148,8 +148,9 @@ public static class DefinirDocumentosExigidosCommandHandler
                 .ToDictionary(static m => m.Id);
 
         // O vocabulário só é resolvido (I/O cross-módulo) quando alguma folha declara
-        // gatilho — mesmo princípio de DefinirCriteriosDesempateCommandHandler.
-        bool existeGatilho = ExisteGatilho(entradas);
+        // gatilho ou fato comprovado — este também é vínculo novo a conferir contra o catálogo —,
+        // mesmo princípio de DefinirCriteriosDesempateCommandHandler.
+        bool existeGatilho = ExisteGatilho(entradas) || ExisteFatoComprovado(entradas);
         IReadOnlyDictionary<string, DescritorFatoCandidato>? vocabularioFatos = null;
         IReadOnlyDictionary<string, string>? pontoResolucaoPorFato = null;
         IReadOnlyDictionary<string, string>? membroPorAgregado = null;
@@ -264,11 +265,21 @@ public static class DefinirDocumentosExigidosCommandHandler
 
         if (catalogoFatos is not null)
         {
+            // O fato que uma exigência só comprova é vínculo existente apenas desta conferência: para os demais
+            // handlers, que o coletam ou o citam, continua sendo vínculo novo.
+            VinculosDeFatos existentes = processo.Vinculos();
+            existentes = existentes with
+            {
+                Fatos = new HashSet<string>(existentes.Fatos.Concat(processo.DocumentosExigidos.SelectMany(static d => d.FatosComprovados)), StringComparer.Ordinal),
+            };
             Result vinculoNovo = ConferenciaDeVinculoNovo.Conferir(
                 catalogoFatos,
-                processo.Vinculos(),
+                existentes,
                 VinculosDeFatos.De(
-                    [],
+                    raizes.SelectMany(static r => r.AchatarComDescendentes())
+                        .Select(static n => n.DocumentoExigido)
+                        .OfType<DocumentoExigido>()
+                        .SelectMany(static d => d.FatosComprovados),
                     raizes.SelectMany(static r => r.AchatarComDescendentes())
                         .Select(static n => n.DocumentoExigido)
                         .OfType<DocumentoExigido>()
@@ -313,6 +324,10 @@ public static class DefinirDocumentosExigidosCommandHandler
     /// <summary>Resolve o vocabulário de gatilho recursivamente na floresta — só a presença de gatilho, ainda sem I/O.</summary>
     private static bool ExisteGatilho(IReadOnlyList<NoExigenciaInput> nos) =>
         nos.Any(no => (no.Documento?.Condicoes.Count ?? 0) > 0 || ExisteGatilho(no.Filhos ?? []));
+
+    /// <summary>Se alguma folha da floresta declara fato comprovado — só a presença, ainda sem I/O.</summary>
+    private static bool ExisteFatoComprovado(IReadOnlyList<NoExigenciaInput> nos) =>
+        nos.Any(no => (no.Documento?.FatosComprovados?.Count ?? 0) > 0 || ExisteFatoComprovado(no.Filhos ?? []));
 
     /// <summary>
     /// ADR-0125: percorre a árvore em pré-ordem (mesma ordem de visita de
@@ -403,6 +418,15 @@ public static class DefinirDocumentosExigidosCommandHandler
             return Result<DocumentoExigido>.Failure(new DomainError(
                 "DocumentoExigido.TipoDocumentoNaoEncontrado",
                 $"Tipo de documento {input.TipoDocumentoId} não encontrado ou não está mais vivo."));
+        }
+
+        // O tipo sem a proteção aprovada só continua onde o processo já o exige: o vínculo novo é recusado, e a
+        // publicação barra o que ficou pendente depois de vinculado (ADR-0153).
+        if (!tipoDocumento.ProtecaoAprovada && processo.DocumentosExigidos.All(d => d.TipoDocumentoOrigemId != tipoDocumento.Id))
+        {
+            return Result<DocumentoExigido>.Failure(new DomainError(
+                ConferenciaDaAprovacaoDaProtecao.CodigoDoTipoNoVinculo,
+                $"O tipo de documento '{tipoDocumento.Codigo}' aguarda a aprovação da proteção de dados e não aceita vínculo novo."));
         }
 
         Aplicabilidade aplicabilidade = input.Aplicabilidade switch

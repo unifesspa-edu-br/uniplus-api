@@ -134,7 +134,8 @@ public static class VocabularioDoCatalogo
                 f.FonteValores is { } fonte ? FontesValoresFato.ParaTokenCanonico(fonte) : null,
                 EscoposFato.ParaTokenCanonico(f.Escopo),
                 f.Ativo,
-                [.. ValoresDe(f, porCodigo).Select(static v => new ValorDoCatalogo(v.Codigo, v.Ativo))]),
+                [.. ValoresDe(f, porCodigo).Select(static v => new ValorDoCatalogo(v.Codigo, v.Ativo))],
+                f.Aprovacao.EstaAprovada),
             StringComparer.Ordinal);
     }
 
