@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -39,6 +40,7 @@ public static class ListarInscricoesDoProcessoQueryHandler
         ProjetorDeItens projetor,
         IProcessoSeletivoRepository processoRepository,
         IInscricaoRepository inscricaoRepository,
+        IRegistroCodecsEnvelope registroCodecs,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
@@ -46,10 +48,7 @@ public static class ListarInscricoesDoProcessoQueryHandler
         ArgumentNullException.ThrowIfNull(projetor);
         ArgumentNullException.ThrowIfNull(processoRepository);
         ArgumentNullException.ThrowIfNull(inscricaoRepository);
-
-        (IReadOnlyList<ResumoDaInscricaoDoProcesso> inscricoes, Guid? anteriorAfterId, Guid? proximoAfterId) = await inscricaoRepository
-            .ListarEnviadasDoProcessoAsync(query.ProcessoSeletivoId, query.AfterId, query.Limit, query.Direction, cancellationToken)
-            .ConfigureAwait(false);
+        ArgumentNullException.ThrowIfNull(registroCodecs);
 
         Guid? unidade = await processoRepository
             .ObterUnidadeAdministradoraAsync(query.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
@@ -59,37 +58,56 @@ public static class ListarInscricoesDoProcessoQueryHandler
             return new ListarInscricoesDoProcessoResult([], null, null);
         }
 
+        ProtecaoDoNome nome = await ClassificacaoDoNomeNoProcesso
+            .ResolverAsync(query.ProcessoSeletivoId, processoRepository, registroCodecs, cancellationToken).ConfigureAwait(false);
+        (NaturezaDoItem, ClassificacaoDeProtecao)[] classes =
+        [
+            .. (nome.SaiNaListagem ? ClassesDaLinha.Prepend((NaturezaDoItem.Dado, nome.Classificacao)) : ClassesDaLinha)
+                .Distinct()
+                .OrderByDescending(static par => par.Item2),
+        ];
+
         DecisoesDaProjecao decisoes = await projetor
-            .DecidirAsync(PortaDeProjecaoDaSelecao.Instancia, resource, ClassesDaLinha, cancellationToken).ConfigureAwait(false);
+            .DecidirAsync(PortaDeProjecaoDaSelecao.Instancia, resource, classes, cancellationToken).ConfigureAwait(false);
+        ClasseDaLinha permitidas = new(
+            Publicos: decisoes.Permite(NaturezaDoItem.Dado, ClassificacaoDeProtecao.Publico),
+            Internos: decisoes.Permite(NaturezaDoItem.Dado, ClassificacaoDeProtecao.Interno),
+            Pessoais: decisoes.Permite(NaturezaDoItem.Dado, ClassificacaoDeProtecao.Pessoal),
+            Nome: nome.SaiNaListagem && decisoes.Permite(NaturezaDoItem.Dado, nome.Classificacao));
 
-        await RegistrarUmPorInscricaoAsync(verificador, decisoes, resource, inscricoes, cancellationToken).ConfigureAwait(false);
+        (IReadOnlyList<ResumoDaInscricaoDoProcesso> inscricoes, Guid? anteriorAfterId, Guid? proximoAfterId) = await inscricaoRepository
+            .ListarEnviadasDoProcessoAsync(
+                query.ProcessoSeletivoId, query.AfterId, query.Limit, query.Direction, permitidas.Nome, permitidas.Pessoais, cancellationToken)
+            .ConfigureAwait(false);
 
-        InscricaoDoProcessoDto[] items = [.. inscricoes.Select(i => Projetar(i, decisoes))];
+        await RegistrarUmPorInscricaoAsync(verificador, decisoes, classes, resource, inscricoes, cancellationToken).ConfigureAwait(false);
+
+        InscricaoDoProcessoDto[] items = [.. inscricoes.Select(i => Projetar(i, permitidas))];
 
         return new ListarInscricoesDoProcessoResult(items, anteriorAfterId, proximoAfterId);
     }
 
     /// <summary>
-    /// Um registro por inscrição exibida, com a decisão de classe mais alta exercida na linha que a regra de
-    /// sensibilidade manda registrar: dados pessoais, senão o acesso ao resource, que cobre a linha que só exerceu
-    /// classes de dado interno ou público.
+    /// Um registro por inscrição exibida, com a decisão de classe mais alta exercida na linha: a primeira permitida entre
+    /// as classes de dado, da mais alta para a mais baixa, e só sem nenhuma delas o acesso ao resource.
     /// </summary>
     private static async Task RegistrarUmPorInscricaoAsync(
         IVerificadorDeAcesso verificador,
         DecisoesDaProjecao decisoes,
+        IEnumerable<(NaturezaDoItem, ClassificacaoDeProtecao)> classes,
         ResourceContext resource,
         IReadOnlyList<ResumoDaInscricaoDoProcesso> inscricoes,
         CancellationToken cancellationToken)
     {
-        DecisaoDeAcesso? exercida = ClassesDaLinha
+        DecisaoDeAcesso? exercida = classes
             .Select(par => decisoes.DecisaoDo(par.Item1, par.Item2))
-            .FirstOrDefault(static d => d is { Registro.Exigido: true });
+            .FirstOrDefault(static d => d is not null);
 
         exercida ??= await verificador
             .DecidirSemRegistrarAsync(PermissaoSelecao.InscricoesConsultar.Requisito, resource, cancellationToken)
             .ConfigureAwait(false);
 
-        if (exercida is not { Resultado: ResultadoDoAcesso.Permitido, Registro.Exigido: true })
+        if (exercida is not { Resultado: ResultadoDoAcesso.Permitido, Registro: not null })
         {
             return;
         }
@@ -101,20 +119,17 @@ public static class ListarInscricoesDoProcessoQueryHandler
             .ConfigureAwait(false);
     }
 
-    private static InscricaoDoProcessoDto Projetar(ResumoDaInscricaoDoProcesso i, DecisoesDaProjecao decisoes)
-    {
-        bool publicos = decisoes.Permite(NaturezaDoItem.Dado, ClassificacaoDeProtecao.Publico);
-        bool internos = decisoes.Permite(NaturezaDoItem.Dado, ClassificacaoDeProtecao.Interno);
-        bool pessoais = decisoes.Permite(NaturezaDoItem.Dado, ClassificacaoDeProtecao.Pessoal);
+    /// <summary>As classes de dado que a pessoa pode ver na linha, decididas uma vez para a página inteira.</summary>
+    private sealed record ClasseDaLinha(bool Publicos, bool Internos, bool Pessoais, bool Nome);
 
-        return new InscricaoDoProcessoDto(
-            publicos ? i.Id : null,
-            internos ? i.NumeroInscricao : null,
-            publicos ? i.Situacao : null,
-            publicos ? i.OfertaCursoId : null,
-            publicos ? i.OfertaCursoSegundaOpcaoId : null,
-            pessoais ? i.Nome : null,
-            pessoais ? new CpfMascaradoDto(i.Cpf.Mascarado, PodeRevelar: false) : null,
-            internos ? i.SubmetidaEm : null);
-    }
+    private static InscricaoDoProcessoDto Projetar(ResumoDaInscricaoDoProcesso i, ClasseDaLinha permitidas) =>
+        new(
+            permitidas.Publicos ? i.Id : null,
+            permitidas.Internos ? i.NumeroInscricao : null,
+            permitidas.Publicos ? i.Situacao : null,
+            permitidas.Publicos ? i.OfertaCursoId : null,
+            permitidas.Publicos ? i.OfertaCursoSegundaOpcaoId : null,
+            permitidas.Nome ? i.Nome : null,
+            permitidas.Pessoais && i.Cpf is { } cpf ? new CpfMascaradoDto(cpf.Mascarado, PodeRevelar: false) : null,
+            permitidas.Internos ? i.SubmetidaEm : null);
 }

@@ -17,7 +17,8 @@ public sealed record VinculoDaInscricao(
 
 /// <summary>
 /// O mínimo de uma inscrição enviada para quem opera o processo: identidade, número, situação, cursos escolhidos, nome e o
-/// CPF — que só se decifra para ser mascarado —, sem as demais respostas.
+/// CPF — que só se decifra para ser mascarado —, sem as demais respostas. O nome e o CPF só são lidos quando a listagem pede;
+/// sem o pedido ficam nulos.
 /// </summary>
 public sealed record ResumoDaInscricaoDoProcesso(
     Guid Id,
@@ -26,7 +27,7 @@ public sealed record ResumoDaInscricaoDoProcesso(
     Guid? OfertaCursoId,
     Guid? OfertaCursoSegundaOpcaoId,
     string? Nome,
-    Cpf Cpf,
+    Cpf? Cpf,
     DateTimeOffset? SubmetidaEm);
 
 /// <summary>
