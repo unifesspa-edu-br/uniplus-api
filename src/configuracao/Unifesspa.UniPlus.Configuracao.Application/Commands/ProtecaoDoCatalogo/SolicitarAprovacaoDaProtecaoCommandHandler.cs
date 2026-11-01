@@ -7,8 +7,10 @@ using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposDocumento;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Mappings;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -26,6 +28,7 @@ public static class SolicitarAprovacaoDaProtecaoCommandHandler
         SolicitarAprovacaoDaProtecaoCommand command,
         ITipoDocumentoRepository tipos,
         IFatoCandidatoRepository fatos,
+        IAtoDaProtecaoDoCatalogoRepository atos,
         IConfiguracaoUnitOfWork unitOfWork,
         IUserContext userContext,
         TimeProvider timeProvider,
@@ -34,6 +37,7 @@ public static class SolicitarAprovacaoDaProtecaoCommandHandler
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(tipos);
         ArgumentNullException.ThrowIfNull(fatos);
+        ArgumentNullException.ThrowIfNull(atos);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -118,10 +122,10 @@ public static class SolicitarAprovacaoDaProtecaoCommandHandler
                 "Ninguém tem a permissão de aprovar a proteção de dados do catálogo para receber a solicitação; conceda-a antes de enviar."));
         }
 
-        string ator = userContext.UserId ?? "system";
+        AtorDoAto ator = AtorDoToken.De(userContext);
         DateTimeOffset agora = timeProvider.GetUtcNow();
-        foreach (Result transicao in tiposPendentes.Select(t => t.SolicitarAprovacaoDaProtecao(ator, agora))
-            .Concat(fatosPendentes.Select(f => f.SolicitarAprovacaoDaProtecao(ator, agora))))
+        foreach (Result transicao in tiposPendentes.Select(t => t.SolicitarAprovacaoDaProtecao(ator.Sub, agora))
+            .Concat(fatosPendentes.Select(f => f.SolicitarAprovacaoDaProtecao(ator.Sub, agora))))
         {
             if (transicao.IsFailure)
             {
@@ -129,6 +133,17 @@ public static class SolicitarAprovacaoDaProtecaoCommandHandler
                 unitOfWork.DescartarAlteracoesNaoSalvas();
                 return Recusa(transicao.Error!);
             }
+        }
+
+        // Um ato por item enviado, gravado na mesma transação da solicitação.
+        foreach (TipoDocumento tipo in tiposPendentes)
+        {
+            atos.Registrar(tipo, AtoDaProtecao.Solicitacao, ator, agora);
+        }
+
+        foreach (FatoCandidato fato in fatosPendentes)
+        {
+            atos.Registrar(fato, AtoDaProtecao.Solicitacao, ator, agora);
         }
 
         Result salvo = await MutacaoDoTipo.SalvarAsync(

@@ -14,6 +14,7 @@ internal static class CatalogoDeProtecaoDeTeste
 {
     public const string Isabella = "isabella.figueiredo";
     public const string Caroline = "caroline.lima@unifesspa.edu.br";
+    public const string Emissor = "https://sso.unifesspa.edu.br/realms/unifesspa";
     public const string Finalidade = "Comprovação documental do candidato.";
 
     public static readonly DateTimeOffset Agora = new(2026, 11, 2, 12, 0, 0, TimeSpan.Zero);
@@ -28,6 +29,8 @@ internal static class CatalogoDeProtecaoDeTeste
     {
         IUserContext usuario = Substitute.For<IUserContext>();
         usuario.UserId.Returns(Isabella);
+        usuario.Issuer.Returns(Emissor);
+        usuario.NomeCompleto.Returns("Isabella Figueiredo");
         return usuario;
     }
 

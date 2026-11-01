@@ -22,6 +22,7 @@ public sealed class DecidirProtecaoDoCatalogoCommandHandlerTests
 {
     private readonly ITipoDocumentoRepository _tipos = Substitute.For<ITipoDocumentoRepository>();
     private readonly IFatoCandidatoRepository _fatos = Substitute.For<IFatoCandidatoRepository>();
+    private readonly IAtoDaProtecaoDoCatalogoRepository _atos = Substitute.For<IAtoDaProtecaoDoCatalogoRepository>();
     private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
     [Fact(DisplayName = "O ajuste do tipo registra a classificação recomendada, a justificativa e quem decidiu")]
@@ -222,6 +223,75 @@ public sealed class DecidirProtecaoDoCatalogoCommandHandlerTests
         resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.NaoEncontrado);
     }
 
+    [Fact(DisplayName = "O ajuste registra o ato com a proteção conferida, a classificação recomendada, a justificativa e quem decidiu")]
+    public async Task Handle_RegistraOAjuste()
+    {
+        TipoDocumento laudo = TipoSolicitado();
+        _tipos.ObterPorIdAsync(laudo.Id, Arg.Any<CancellationToken>()).Returns(laudo);
+
+        await DecidirAsync(new DecidirProtecaoDoCatalogoCommand("TIPO_DOCUMENTO", laudo.Id, "RECOMENDAR_AJUSTE", "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade, "SENSIVEL", " Traz dado de saúde. "));
+
+        _atos.Received(1).Adicionar(Arg.Is<AtoDaProtecaoDoCatalogo>(a =>
+            a.Ato == AtoDaProtecao.AjusteRecomendado
+            && a.Cadastro == CadastroDoCatalogo.TipoDocumento
+            && a.ItemId == laudo.Id
+            && a.ItemNome == "Laudo médico complementar"
+            && a.ClassificacaoProtecao == ClassificacaoDeProtecao.Interno
+            && a.HipoteseLegal == HipoteseLegalTratamento.CumprimentoObrigacaoLegal
+            && a.FinalidadeTratamento == Finalidade
+            && a.ClassificacaoRecomendada == ClassificacaoDeProtecao.Sensivel
+            && a.Justificativa == "Traz dado de saúde."
+            && a.AtorEmissor == Emissor
+            && a.AtorSub == Isabella
+            && a.AtorNome == "Isabella Figueiredo"
+            && a.Instante == Agora));
+    }
+
+    [Fact(DisplayName = "A reprovação do fato registra o ato com a justificativa e sem classificação recomendada")]
+    public async Task Handle_RegistraAReprovacao()
+    {
+        FatoCandidato fato = NovoFato();
+        fato.SolicitarAprovacaoDaProtecao(Isabella, Agora);
+        _fatos.ObterPorIdAsync(fato.Id, Arg.Any<CancellationToken>()).Returns(fato);
+
+        await DecidirAsync(new DecidirProtecaoDoCatalogoCommand(
+            "FATO", fato.Id, "REPROVAR", "PESSOAL", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade, Justificativa: "Dado desnecessário."));
+
+        _atos.Received(1).Adicionar(Arg.Is<AtoDaProtecaoDoCatalogo>(a =>
+            a.Ato == AtoDaProtecao.Reprovacao
+            && a.Cadastro == CadastroDoCatalogo.Fato
+            && a.ItemId == fato.Id
+            && a.ClassificacaoProtecao == ClassificacaoDeProtecao.Pessoal
+            && a.ClassificacaoRecomendada == null
+            && a.Justificativa == "Dado desnecessário."));
+    }
+
+    [Fact(DisplayName = "A aprovação registra o ato sem classificação recomendada nem justificativa")]
+    public async Task Handle_RegistraAAprovacao()
+    {
+        TipoDocumento laudo = TipoSolicitado();
+        _tipos.ObterPorIdAsync(laudo.Id, Arg.Any<CancellationToken>()).Returns(laudo);
+
+        await DecidirAsync(new DecidirProtecaoDoCatalogoCommand("TIPO_DOCUMENTO", laudo.Id, "APROVAR", "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade));
+
+        _atos.Received(1).Adicionar(Arg.Is<AtoDaProtecaoDoCatalogo>(a =>
+            a.Ato == AtoDaProtecao.Aprovacao && a.ClassificacaoRecomendada == null && a.Justificativa == null));
+    }
+
+    [Fact(DisplayName = "A decisão que o circuito recusa, ou sobre a proteção que mudou, não registra ato")]
+    public async Task Handle_Recusada_NaoRegistraAto()
+    {
+        TipoDocumento naoSolicitado = NovoTipo();
+        _tipos.ObterPorIdAsync(naoSolicitado.Id, Arg.Any<CancellationToken>()).Returns(naoSolicitado);
+        TipoDocumento editado = TipoSolicitado();
+        _tipos.ObterPorIdAsync(editado.Id, Arg.Any<CancellationToken>()).Returns(editado);
+
+        await DecidirAsync(new DecidirProtecaoDoCatalogoCommand("TIPO_DOCUMENTO", naoSolicitado.Id, "APROVAR", "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade));
+        await DecidirAsync(new DecidirProtecaoDoCatalogoCommand("TIPO_DOCUMENTO", editado.Id, "APROVAR", "SENSIVEL", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade));
+
+        _atos.DidNotReceiveWithAnyArgs().Adicionar(default!);
+    }
+
     private static TipoDocumento TipoSolicitado()
     {
         TipoDocumento tipo = NovoTipo();
@@ -230,5 +300,5 @@ public sealed class DecidirProtecaoDoCatalogoCommandHandlerTests
     }
 
     private Task<Result> DecidirAsync(DecidirProtecaoDoCatalogoCommand command) =>
-        DecidirProtecaoDoCatalogoCommandHandler.Handle(command, _tipos, _fatos, _unitOfWork, UsuarioIsabella(), Relogio(), CancellationToken.None);
+        DecidirProtecaoDoCatalogoCommandHandler.Handle(command, _tipos, _fatos, _atos, _unitOfWork, UsuarioIsabella(), Relogio(), CancellationToken.None);
 }

@@ -3,7 +3,9 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -12,6 +14,7 @@ public static class AceitarRecomendacaoDoFatoCandidatoCommandHandler
     public static async Task<(Result Resposta, IEnumerable<object> Mensagens)> Handle(
         AceitarRecomendacaoDoFatoCandidatoCommand command,
         IFatoCandidatoRepository repository,
+        IAtoDaProtecaoDoCatalogoRepository atos,
         IPrecedenciaFaseRepository precedenciaRepository,
         IModeloFormularioRepository modeloRepository,
         IModalidadeRepository modalidadeRepository,
@@ -22,6 +25,7 @@ public static class AceitarRecomendacaoDoFatoCandidatoCommandHandler
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(repository);
+        ArgumentNullException.ThrowIfNull(atos);
         ArgumentNullException.ThrowIfNull(precedenciaRepository);
         ArgumentNullException.ThrowIfNull(modeloRepository);
         ArgumentNullException.ThrowIfNull(modalidadeRepository);
@@ -29,7 +33,7 @@ public static class AceitarRecomendacaoDoFatoCandidatoCommandHandler
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        string ator = userContext.UserId ?? "system";
+        AtorDoAto ator = AtorDoToken.De(userContext);
         DateTimeOffset agora = timeProvider.GetUtcNow();
         (string Nome, string Codigo, ClassificacaoDeProtecao Classificacao)? aceito = null;
 
@@ -37,10 +41,11 @@ public static class AceitarRecomendacaoDoFatoCandidatoCommandHandler
             command.Id,
             (fato, catalogo) =>
             {
-                Result aceita = fato.AceitarRecomendacaoDaProtecao(ator, agora, catalogo);
+                Result aceita = fato.AceitarRecomendacaoDaProtecao(ator.Sub, agora, catalogo);
                 if (aceita.IsSuccess)
                 {
                     aceito = (fato.Nome, fato.Codigo, fato.ClassificacaoProtecao);
+                    atos.Registrar(fato, AtoDaProtecao.Aceite, ator, agora);
                 }
 
                 return aceita;
