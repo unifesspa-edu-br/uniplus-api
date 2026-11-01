@@ -27,7 +27,8 @@ public static class CriarFatoDerivadoCommandHandler
             TokensDoFato.Escopo(command.Escopo) ?? EscopoFato.Nenhum,
             TokensDoFato.Classificacao(command.ClassificacaoProtecao) ?? ClassificacaoDeProtecao.Nenhuma,
             command.FinalidadeTratamento,
-            TokensDoFato.HipoteseLegal(command.HipoteseLegal) ?? HipoteseLegalTratamento.Nenhuma);
+            TokensDoFato.HipoteseLegal(command.HipoteseLegal) ?? HipoteseLegalTratamento.Nenhuma,
+            TokensDoFato.Componente(command.ComponenteExibicao));
         if (criar.IsFailure)
         {
             return Result<Guid>.ValidationFailure(criar.Errors);

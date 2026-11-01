@@ -62,7 +62,12 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
 
         builder.Property(f => f.Codigo).HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(f => f.Nome).HasMaxLength(NomeMaxLength).IsRequired();
-        builder.Property(f => f.Descricao).HasMaxLength(DescricaoMaxLength);
+        builder.Property(f => f.Descricao).HasMaxLength(DescricaoMaxLength).IsRequired();
+
+        // componente de exibição: anulável — sem declaração vale o padrão que a consulta resolve.
+        builder.Property(f => f.ComponenteExibicao)
+            .HasConversion(ComponenteExibicaoConverter)
+            .HasMaxLength(EnumTokenMaxLength);
 
         builder.Property(f => f.Dominio)
             .HasConversion(DominioConverter)
@@ -204,6 +209,10 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
             + "OR (dominio IN ('DATA', 'ENDERECO') AND classificacao_protecao IN ('PESSOAL', 'SENSIVEL'))");
 
         table.HasCheckConstraint(
+            "ck_rol_de_fatos_candidato_componente_exibicao",
+            $"componente_exibicao IS NULL OR componente_exibicao IN ({TokensSql(ComponentesDeExibicao.TokensCanonicos)})");
+
+        table.HasCheckConstraint(
             "ck_rol_de_fatos_candidato_escopo",
             $"escopo IN ({TokensSql(EscoposFato.TokensCanonicos)})");
 
@@ -239,6 +248,7 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
             item.Codigo,
             item.Nome,
             item.Descricao,
+            item.ComponenteExibicao,
             item.Dominio,
             item.Origem,
             item.Cardinalidade,
@@ -271,6 +281,9 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
 
     private static readonly ValueConverter<CardinalidadeFato, string> CardinalidadeConverter =
         new(cardinalidade => CardinalidadesFato.ParaTokenCanonico(cardinalidade), token => CardinalidadesFato.Analisar(token));
+
+    private static readonly ValueConverter<ComponenteDeExibicao, string> ComponenteExibicaoConverter =
+        new(componente => ComponentesDeExibicao.ParaTokenCanonico(componente), token => ComponentesDeExibicao.Analisar(token));
 
     private static readonly ValueConverter<FormatoTexto, string> FormatoConverter =
         new(formato => FormatosTexto.ParaTokenCanonico(formato), token => FormatosTexto.Analisar(token));

@@ -35,7 +35,7 @@ public sealed class DefinirOpcoesDeclaradasCommandHandlerTests
         IFatoCandidatoReader reader = Substitute.For<IFatoCandidatoReader>();
         reader.ObterPorCodigoAsync("COR_RACA", Arg.Any<CancellationToken>()).Returns(fonte is null
             ? null
-            : new FatoCandidatoView(Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", null, "CATEGORICO", "DECLARADO",
+            : new FatoCandidatoView(Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", "Descrição do fato.", "CATEGORICO", "DECLARADO",
                 "ESCALAR", ["PRETA"], "INSCRICAO", binding, null, fonte, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true));
 
         Result<MutacaoAceita> resultado = await DefinirOpcoesDeclaradasCommandHandler.Handle(
@@ -66,14 +66,14 @@ public sealed class DefinirOpcoesDeclaradasCommandHandlerTests
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         IProcessoSeletivoRepository repositorio = Substitute.For<IProcessoSeletivoRepository>();
         repositorio.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        FatoCandidatoView membro = new(Guid.CreateVersion7(), "CATEGORIA_RENDA", "Categoria de renda", null, "CATEGORICO", "DECLARADO",
+        FatoCandidatoView membro = new(Guid.CreateVersion7(), "CATEGORIA_RENDA", "Categoria de renda", "Descrição do fato.", "CATEGORICO", "DECLARADO",
             "ESCALAR", null, "HABILITACAO", "CAMPO_FORMULARIO:CATEGORIA_RENDA", null, "PROCESSO", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, Escopo: "MEMBRO_GRUPO", ProtecaoAprovada: true);
         IFatoCandidatoReader reader = Substitute.For<IFatoCandidatoReader>();
         reader.ObterPorCodigoAsync("CATEGORIA_RENDA", Arg.Any<CancellationToken>()).Returns(membro);
         reader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
         [
             membro,
-            new FatoCandidatoView(Guid.CreateVersion7(), "CATEGORIAS_RENDA_FAMILIA", "Categorias de renda da família", null, "CATEGORICO",
+            new FatoCandidatoView(Guid.CreateVersion7(), "CATEGORIAS_RENDA_FAMILIA", "Categorias de renda da família", "Descrição do fato.", "CATEGORICO",
                 "DERIVADO", "MULTIVALORADO", null, "HABILITACAO", "AGREGACAO_GRUPO:CATEGORIA_RENDA", null, "PROCESSO", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
         ]));
 

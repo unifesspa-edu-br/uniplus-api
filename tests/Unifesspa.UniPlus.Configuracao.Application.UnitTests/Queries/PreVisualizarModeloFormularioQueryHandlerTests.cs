@@ -82,7 +82,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     public async Task Handle_DerivadoDoCatalogo_DecideAExibicao()
     {
         FatoCandidato perfil = FatoCandidato.CriarDerivadoDoAdministrador(
-            "PERFIL", "Perfil", null, DominioFato.Booleano, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
+            "PERFIL", "Perfil", "Descrição do fato.", DominioFato.Booleano, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
         perfil.DefinirRegrasPadrao([RegraDerivacao.CriarBooleana(Quando("CERTIFICADO", true))], new CatalogoDeFatos([_certificado, perfil], []))
             .IsSuccess.Should().BeTrue();
         _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns([_certificado, perfil]);
@@ -142,7 +142,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     public async Task Handle_RespostaForaDaOferta_NaoVale()
     {
         FatoCandidato cor = FatoCandidato.CriarDoAdministrador(
-            "COR_RACA", "Cor ou raça", null, DominioFato.Categorico, CardinalidadeFato.Escalar, FonteValoresFato.Global, null, "INSCRICAO",
+            "COR_RACA", "Cor ou raça", "Descrição do fato.", DominioFato.Categorico, CardinalidadeFato.Escalar, FonteValoresFato.Global, null, "INSCRICAO",
             EscopoFato.Candidato, ClassificacaoDeProtecao.Sensivel, Finalidade, Hipotese).Value!;
         cor.AdicionarValorDominio("PRETA", "Preta", 0, ativo: true).IsSuccess.Should().BeTrue();
         cor.AdicionarValorDominio("AMARELA", "Amarela", 1, ativo: false).IsSuccess.Should().BeTrue();
@@ -236,6 +236,6 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
 
     private static FatoCandidato Declarado(string codigo) =>
         FatoCandidato.CriarDoAdministrador(
-            codigo, codigo, null, DominioFato.Booleano, CardinalidadeFato.Escalar, null, null, "INSCRICAO", EscopoFato.Candidato,
+            codigo, codigo, "Descrição do fato.", DominioFato.Booleano, CardinalidadeFato.Escalar, null, null, "INSCRICAO", EscopoFato.Candidato,
             ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
 }

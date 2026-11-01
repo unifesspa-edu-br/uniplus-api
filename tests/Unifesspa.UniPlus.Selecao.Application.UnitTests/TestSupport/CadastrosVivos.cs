@@ -113,7 +113,7 @@ internal static class CadastrosVivos
     ];
 
     private static FatoCandidatoView FatoDeModalidade(string codigo, string pontoResolucao, string binding) => new(
-        IdentidadeDe(codigo), codigo, codigo, null, "CATEGORICO", "DERIVADO", "ESCALAR", null,
+        IdentidadeDe(codigo), codigo, codigo, "Descrição do fato.", "CATEGORICO", "DERIVADO", "ESCALAR", null,
         pontoResolucao, binding, null, "MODALIDADE", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     public static ITipoDocumentoReader TiposDocumento(params string[] codigos)

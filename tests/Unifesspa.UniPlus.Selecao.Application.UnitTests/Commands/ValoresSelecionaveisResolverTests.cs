@@ -52,7 +52,7 @@ public sealed class ValoresSelecionaveisResolverTests
             new("NAO_INFORMADO", "Não informado.", 5, true),
         ];
         FatoCandidatoView corRacaNoCatalogo = new(
-            Id: Guid.CreateVersion7(), Codigo: "COR_RACA", Nome: "Cor ou raça", Descricao: null,
+            Id: Guid.CreateVersion7(), Codigo: "COR_RACA", Nome: "Cor ou raça", Descricao: "Descrição do fato.",
             Dominio: "CATEGORICO", Origem: "DECLARADO", Cardinalidade: "ESCALAR",
             ValoresDominio: [.. seisValores.Select(static v => v.Codigo)],
             PontoResolucao: "INSCRICAO", Binding: "CAMPO_FORMULARIO:COR_RACA",
@@ -87,7 +87,7 @@ public sealed class ValoresSelecionaveisResolverTests
         processo.DefinirItens([baixaRenda], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         FatoCandidatoView baixaRendaNoCatalogo = new(
-            Id: Guid.CreateVersion7(), Codigo: "BAIXA_RENDA", Nome: "Baixa renda", Descricao: null,
+            Id: Guid.CreateVersion7(), Codigo: "BAIXA_RENDA", Nome: "Baixa renda", Descricao: "Descrição do fato.",
             Dominio: "BOOLEANO", Origem: "DECLARADO", Cardinalidade: "ESCALAR",
             ValoresDominio: null, PontoResolucao: "INSCRICAO", Binding: "CAMPO_FORMULARIO:BAIXA_RENDA",
             ValoresDominioDeclarados: null, FonteValores: null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
@@ -131,7 +131,7 @@ public sealed class ValoresSelecionaveisResolverTests
         processo.DefinirItens([condicaoAtendimento], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
         FatoCandidatoView condicaoAtendimentoNoCatalogo = new(
-            Id: Guid.CreateVersion7(), Codigo: "CONDICAO_ATENDIMENTO", Nome: "Condição de atendimento", Descricao: null,
+            Id: Guid.CreateVersion7(), Codigo: "CONDICAO_ATENDIMENTO", Nome: "Condição de atendimento", Descricao: "Descrição do fato.",
             Dominio: "CATEGORICO", Origem: "DECLARADO", Cardinalidade: "MULTIVALORADO",
             ValoresDominio: null, PontoResolucao: "INSCRICAO", Binding: "CAMPO_FORMULARIO:CONDICAO_ATENDIMENTO",
             ValoresDominioDeclarados: null, FonteValores: "PROCESSO", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
@@ -178,7 +178,7 @@ public sealed class ValoresSelecionaveisResolverTests
         processo.DefinirItens([condicaoAtendimento], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
         FatoCandidatoView condicaoAtendimentoNoCatalogo = new(
-            Id: Guid.CreateVersion7(), Codigo: "CONDICAO_ATENDIMENTO", Nome: "Condição de atendimento", Descricao: null,
+            Id: Guid.CreateVersion7(), Codigo: "CONDICAO_ATENDIMENTO", Nome: "Condição de atendimento", Descricao: "Descrição do fato.",
             Dominio: "CATEGORICO", Origem: "DECLARADO", Cardinalidade: "MULTIVALORADO",
             ValoresDominio: null, PontoResolucao: "INSCRICAO", Binding: "CAMPO_FORMULARIO:CONDICAO_ATENDIMENTO",
             ValoresDominioDeclarados: null, FonteValores: "PROCESSO", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);

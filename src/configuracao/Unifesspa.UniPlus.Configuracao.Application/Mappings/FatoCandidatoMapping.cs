@@ -15,6 +15,7 @@ internal static class FatoCandidatoMapping
             fato.Codigo,
             fato.Nome,
             fato.Descricao,
+            fato.ComponenteExibicao is { } componente ? ComponentesDeExibicao.ParaTokenCanonico(componente) : null,
             DominiosFato.ParaTokenCanonico(fato.Dominio),
             OrigensFato.ParaTokenCanonico(fato.Origem),
             CardinalidadesFato.ParaTokenCanonico(fato.Cardinalidade),

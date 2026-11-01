@@ -44,7 +44,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
             (IReadOnlyList<FatoCandidatoView>)
             [
                 new FatoCandidatoView(
-                    Guid.CreateVersion7(), "PROFESSOR_RURAL", "Professor da rede pública rural", null,
+                    Guid.CreateVersion7(), "PROFESSOR_RURAL", "Professor da rede pública rural", "Descrição do fato.",
                     "BOOLEANO", "DECLARADO", "ESCALAR", null, "INSCRICAO", "CAMPO_FORMULARIO:PROFESSOR_RURAL", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
             ]);
 

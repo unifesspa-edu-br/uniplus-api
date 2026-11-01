@@ -439,6 +439,7 @@ configuracao.rol_de_fatos_candidato.binding: Interno
 configuracao.rol_de_fatos_candidato.cardinalidade: Interno
 configuracao.rol_de_fatos_candidato.classificacao_protecao: Interno
 configuracao.rol_de_fatos_candidato.codigo: Interno
+configuracao.rol_de_fatos_candidato.componente_exibicao: Interno
 configuracao.rol_de_fatos_candidato.created_at: Interno
 configuracao.rol_de_fatos_candidato.created_by: Pessoal
 configuracao.rol_de_fatos_candidato.dependencias: Interno

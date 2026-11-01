@@ -624,6 +624,18 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.fato_candidato.nome_tamanho",
                 "Tamanho do nome do fato inválido")),
 
+        new(FatoCandidatoErrorCodes.DescricaoObrigatoria,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.descricao_obrigatoria",
+                "Descrição do fato é obrigatória")),
+
+        new(FatoCandidatoErrorCodes.ComponenteExibicaoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.componente_exibicao_invalido",
+                "Componente de exibição do fato fora do vocabulário fechado")),
+
         new(FatoCandidatoErrorCodes.DescricaoTamanho,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,

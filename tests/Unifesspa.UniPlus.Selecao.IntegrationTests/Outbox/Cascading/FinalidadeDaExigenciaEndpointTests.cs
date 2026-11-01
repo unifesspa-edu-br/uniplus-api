@@ -79,7 +79,7 @@ public sealed class FinalidadeDaExigenciaEndpointTests
     private async Task<Guid> SemearCatalogoAsync(string fato, string codigoDoDocumento)
     {
         FatoCandidato bolsista = FatoCandidato.CriarDoAdministrador(
-            fato, "Bolsista", null, DominioFato.Booleano, CardinalidadeFato.Escalar, fonteValores: null, formato: null,
+            fato, "Bolsista", "Descrição do fato.", DominioFato.Booleano, CardinalidadeFato.Escalar, fonteValores: null, formato: null,
             "RESULTADO_FINAL", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, "Isenção da taxa",
             HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
         TipoDocumento tipoDocumento = TipoDocumento.Criar(

@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// execuções — o mesmo molde de <c>RegraCatalogoSeed</c>.
 /// </para>
 /// <para>
-/// Todos são fatos de <b>sistema</b>: só nome e descrição são editáveis (ADR-0136). São do escopo
+/// Todos são fatos de <b>sistema</b>: só nome, descrição, componente de exibição e proteção de dados são editáveis (ADR-0136). Todos trazem a descrição que explica o dado a quem analisa a inscrição. São do escopo
 /// do candidato, exceto maior de idade, sem renda e sob guarda, que são campos de membro de um
 /// grupo repetível do formulário, como a composição familiar (ADR-0138). A fonte dos valores do categórico está em <see cref="FatoCandidatoSeedItem.FonteValores"/>;
 /// os valores do categórico global são os <see cref="Domain.Entities.FatoValorDominio"/> de
@@ -102,39 +102,39 @@ public static class FatoCandidatoSeed
     /// <summary>Os fatos de sistema, na ordem canônica de semeadura.</summary>
     public static IReadOnlyList<FatoCandidatoSeedItem> Itens { get; } =
     [
-        new(SeedId(1), "COR_RACA", "Cor ou raça", null,
+        new(SeedId(1), "COR_RACA", "Cor ou raça", "Cor ou raça que o candidato declara. É o dado de que depende a concorrência às vagas reservadas a pretos, pardos e indígenas.",
             DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Global,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:COR_RACA",
             ClassificacaoDeProtecao.Sensivel, FinalidadeReservaDeVagas),
 
-        new(SeedId(2), "QUILOMBOLA", "Quilombola", null,
+        new(SeedId(2), "QUILOMBOLA", "Quilombola", "Se o candidato se declara quilombola. É o dado de que depende a concorrência às vagas reservadas a quilombolas.",
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:QUILOMBOLA",
             ClassificacaoDeProtecao.Sensivel, FinalidadeReservaDeVagas),
 
-        new(SeedId(3), "PCD", "Pessoa com deficiência", null,
+        new(SeedId(3), "PCD", "Pessoa com deficiência", "Se o candidato declara ser pessoa com deficiência. É o dado de que depende a concorrência às vagas reservadas a pessoas com deficiência.",
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:PCD",
             ClassificacaoDeProtecao.Sensivel, FinalidadeReservaDeVagas),
 
         // O egresso de escola pública é derivado das duas perguntas da origem escolar, com a regra das
         // cotas da Lei nº 12.711/2012 (UNI-REQ-0148) como regra padrão, que o processo copia.
-        new(SeedId(4), OrigemEscolar.FatoEgresso, "Egresso de escola pública", null,
+        new(SeedId(4), OrigemEscolar.FatoEgresso, "Egresso de escola pública", "Se o candidato cursou o ensino médio em escola pública. O sistema o calcula a partir das duas respostas sobre a origem escolar, pela regra da Lei nº 12.711/2012.",
             DominioFato.Booleano, OrigemFato.Derivado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, $"REGRA_DERIVACAO:{OrigemEscolar.FatoEgresso}",
             ClassificacaoDeProtecao.Pessoal, FinalidadeReservaDeVagas, RegrasPadrao: OrigemEscolar.RegrasDoEgresso),
 
-        new(SeedId(5), "RENDA_PER_CAPITA", "Renda familiar per capita", null,
+        new(SeedId(5), "RENDA_PER_CAPITA", "Renda familiar per capita", "Renda mensal da família do candidato dividida pelo número de integrantes da composição familiar, em reais. Define o enquadramento nas vagas reservadas por renda.",
             DominioFato.Numerico, OrigemFato.Derivado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, "ATRIBUTO_CANDIDATO:RENDA_PER_CAPITA",
-            ClassificacaoDeProtecao.Pessoal, FinalidadeReservaDeVagas),
+            ClassificacaoDeProtecao.Pessoal, FinalidadeReservaDeVagas, ComponenteExibicao: ComponenteDeExibicao.Moeda),
 
-        new(SeedId(6), "FAIXA_ETARIA", "Faixa etária", null,
+        new(SeedId(6), "FAIXA_ETARIA", "Faixa etária", "Faixa de idade em que o candidato se enquadra, calculada pelo sistema a partir da data de nascimento, para verificar os requisitos de participação.",
             DominioFato.Numerico, OrigemFato.Derivado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, "ATRIBUTO_CANDIDATO:FAIXA_ETARIA",
             ClassificacaoDeProtecao.Pessoal, FinalidadeRequisitos),
 
-        new(SeedId(7), "SEXO", "Sexo biológico", null,
+        new(SeedId(7), "SEXO", "Sexo biológico", "Sexo biológico do candidato, conforme ele declara na inscrição.",
             DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Global,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:SEXO",
             ClassificacaoDeProtecao.Pessoal, FinalidadeRequisitos),
@@ -143,22 +143,22 @@ public static class FatoCandidatoSeed
         // de modalidades resulta da avaliação deles contra as regras congeladas do processo. O
         // binding referencia a regra de derivação — o catálogo diz o mecanismo, a config do edital
         // diz o conteúdo (ADR-0116, emenda de 2026-07-22).
-        new(SeedId(8), ModalidadeDoCandidato.Fato, "Modalidade de concorrência", null,
+        new(SeedId(8), ModalidadeDoCandidato.Fato, "Modalidade de concorrência", "Modalidades de concorrência em que o candidato concorre, resultantes das regras de reserva de vagas do processo aplicadas às respostas dele.",
             DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Multivalorado, FonteValoresFato.Modalidade,
             PontoResolucaoInscricao, $"REGRA_DERIVACAO:{ModalidadeDoCandidato.Fato}",
             ClassificacaoDeProtecao.Interno, FinalidadeReservaDeVagas),
 
-        new(SeedId(9), "CONDICAO_ATENDIMENTO", "Condição de atendimento especializado", null,
+        new(SeedId(9), "CONDICAO_ATENDIMENTO", "Condição de atendimento especializado", "Condições do candidato pelas quais ele pede atendimento especializado nas etapas do processo.",
             DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Multivalorado, FonteValoresFato.Processo,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:CONDICAO_ATENDIMENTO",
             ClassificacaoDeProtecao.Sensivel, FinalidadeAtendimento),
 
-        new(SeedId(10), "NACIONALIDADE", "Nacionalidade", null,
+        new(SeedId(10), "NACIONALIDADE", "Nacionalidade", "Nacionalidade do candidato, que define os documentos de identificação que ele informa.",
             DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Global,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:NACIONALIDADE",
             ClassificacaoDeProtecao.Pessoal, FinalidadeRequisitos),
 
-        new(SeedId(11), "TIPO_DEFICIENCIA", "Tipo de deficiência", null,
+        new(SeedId(11), "TIPO_DEFICIENCIA", "Tipo de deficiência", "Tipo de deficiência do candidato com deficiência, entre os do cadastro de tipos de deficiência.",
             DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.TiposDeficiencia,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:TIPO_DEFICIENCIA",
             ClassificacaoDeProtecao.Sensivel, FinalidadeReservaDeVagas),
@@ -168,32 +168,32 @@ public static class FatoCandidatoSeed
         // COR_RACA (PPI), QUILOMBOLA, PCD e EGRESSO_ESCOLA_PUBLICA. Falta a quinta
         // elegibilidade — a autodeclaração de renda — e os cinco opt-ins.
 
-        new(SeedId(12), "BAIXA_RENDA", "Renda familiar per capita igual ou inferior a um salário mínimo", null,
+        new(SeedId(12), "BAIXA_RENDA", "Renda familiar per capita igual ou inferior a um salário mínimo", "Autodeclaração de que a renda familiar per capita é igual ou inferior a um salário mínimo, feita na inscrição para as vagas reservadas por renda.",
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:BAIXA_RENDA",
             ClassificacaoDeProtecao.Pessoal, FinalidadeReservaDeVagas),
 
-        new(SeedId(13), "CONCORRER_PCD", "Deseja concorrer às vagas reservadas a pessoas com deficiência", null,
+        new(SeedId(13), "CONCORRER_PCD", "Deseja concorrer às vagas reservadas a pessoas com deficiência", "Opção do candidato por concorrer às vagas reservadas a pessoas com deficiência.",
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:CONCORRER_PCD",
             ClassificacaoDeProtecao.Interno, FinalidadeReservaDeVagas),
 
-        new(SeedId(14), "CONCORRER_EP", "Deseja concorrer às vagas reservadas a egressos de escola pública", null,
+        new(SeedId(14), "CONCORRER_EP", "Deseja concorrer às vagas reservadas a egressos de escola pública", "Opção do candidato por concorrer às vagas reservadas a egressos de escola pública.",
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:CONCORRER_EP",
             ClassificacaoDeProtecao.Interno, FinalidadeReservaDeVagas),
 
-        new(SeedId(15), "CONCORRER_PPI", "Deseja concorrer às vagas reservadas a pretos, pardos e indígenas", null,
+        new(SeedId(15), "CONCORRER_PPI", "Deseja concorrer às vagas reservadas a pretos, pardos e indígenas", "Opção do candidato por concorrer às vagas reservadas a pretos, pardos e indígenas.",
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:CONCORRER_PPI",
             ClassificacaoDeProtecao.Interno, FinalidadeReservaDeVagas),
 
-        new(SeedId(16), "CONCORRER_Q", "Deseja concorrer às vagas reservadas a quilombolas", null,
+        new(SeedId(16), "CONCORRER_Q", "Deseja concorrer às vagas reservadas a quilombolas", "Opção do candidato por concorrer às vagas reservadas a quilombolas.",
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:CONCORRER_Q",
             ClassificacaoDeProtecao.Interno, FinalidadeReservaDeVagas),
 
-        new(SeedId(17), "CONCORRER_RENDA", "Deseja concorrer às vagas reservadas por renda familiar per capita", null,
+        new(SeedId(17), "CONCORRER_RENDA", "Deseja concorrer às vagas reservadas por renda familiar per capita", "Opção do candidato por concorrer às vagas reservadas por renda familiar per capita.",
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:CONCORRER_RENDA",
             ClassificacaoDeProtecao.Interno, FinalidadeReservaDeVagas),
@@ -201,22 +201,22 @@ public static class FatoCandidatoSeed
         // ── Residência e nascimento (ADR-0136) ──
         // O endereço e a data de nascimento são declarados; a UF e o município de residência
         // derivam do endereço e são os que uma regra pode citar — o endereço e a data, não.
-        new(SeedId(18), "ENDERECO_RESIDENCIAL", "Endereço residencial", null,
+        new(SeedId(18), "ENDERECO_RESIDENCIAL", "Endereço residencial", "Endereço em que o candidato reside, usado para verificar os requisitos regionais do processo.",
             DominioFato.Endereco, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:ENDERECO_RESIDENCIAL",
             ClassificacaoDeProtecao.Pessoal, FinalidadeResidencia),
 
-        new(SeedId(19), "DATA_NASCIMENTO", "Data de nascimento", null,
+        new(SeedId(19), "DATA_NASCIMENTO", "Data de nascimento", "Data de nascimento do candidato, usada para verificar a idade e os requisitos de participação.",
             DominioFato.Data, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:DATA_NASCIMENTO",
             ClassificacaoDeProtecao.Pessoal, FinalidadeRequisitos),
 
-        new(SeedId(20), "UF_RESIDENCIA", "UF de residência", null,
+        new(SeedId(20), "UF_RESIDENCIA", "UF de residência", "Unidade da Federação em que o candidato reside, derivada do endereço residencial.",
             DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Escalar, FonteValoresFato.GeoUf,
             PontoResolucaoInscricao, "ATRIBUTO_CANDIDATO:UF_RESIDENCIA",
             ClassificacaoDeProtecao.Pessoal, FinalidadeResidencia),
 
-        new(SeedId(21), "MUNICIPIO_RESIDENCIA", "Município de residência", null,
+        new(SeedId(21), "MUNICIPIO_RESIDENCIA", "Município de residência", "Município em que o candidato reside, derivado do endereço residencial.",
             DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Escalar, FonteValoresFato.GeoMunicipio,
             PontoResolucaoInscricao, "ATRIBUTO_CANDIDATO:MUNICIPIO_RESIDENCIA",
             ClassificacaoDeProtecao.Pessoal, FinalidadeResidencia),
@@ -224,31 +224,31 @@ public static class FatoCandidatoSeed
         // O grupo de vagas em que o candidato foi convocado, e não as modalidades a que concorreu:
         // os documentos da habilitação seguem a convocação (UNI-REQ-0147). A classificação o produz
         // e ele só é conhecido depois do resultado final.
-        new(SeedId(22), "MODALIDADE_CONVOCACAO", "Modalidade da convocação", null,
+        new(SeedId(22), "MODALIDADE_CONVOCACAO", "Modalidade da convocação", "Grupo de vagas em que o candidato foi convocado, conhecido só depois do resultado final. Os documentos da habilitação seguem a convocação.",
             DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Escalar, FonteValoresFato.Modalidade,
             PontoResolucaoResultadoFinal, "CLASSIFICACAO:MODALIDADE_CONVOCACAO",
             ClassificacaoDeProtecao.Interno, FinalidadeReservaDeVagas),
 
         // Campos de membro da composição familiar: a exigência repetida por membro cita cada um
         // na ocorrência do grupo, como a certidão pedida só do membro sob guarda.
-        new(SeedId(23), "MAIOR_IDADE", "Maior de idade", null,
+        new(SeedId(23), "MAIOR_IDADE", "Maior de idade", "Se o membro da composição familiar é maior de idade.",
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:MAIOR_IDADE",
             ClassificacaoDeProtecao.Pessoal, FinalidadeComposicaoFamiliar, EscopoFato.MembroGrupo),
 
-        new(SeedId(24), "SEM_RENDA", "Sem renda", null,
+        new(SeedId(24), "SEM_RENDA", "Sem renda", "Se o membro da composição familiar não tem renda.",
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:SEM_RENDA",
             ClassificacaoDeProtecao.Pessoal, FinalidadeComposicaoFamiliar, EscopoFato.MembroGrupo),
 
-        new(SeedId(25), "SOB_GUARDA", "Sob guarda", null,
+        new(SeedId(25), "SOB_GUARDA", "Sob guarda", "Se o membro da composição familiar está sob guarda.",
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:SOB_GUARDA",
             ClassificacaoDeProtecao.Pessoal, FinalidadeComposicaoFamiliar, EscopoFato.MembroGrupo),
 
         // O parentesco de cada membro identifica, no grupo que inclui o candidato, a ocorrência
         // dele próprio.
-        new(SeedId(26), CandidatoComoMembro.FatoParentesco, "Parentesco", null,
+        new(SeedId(26), CandidatoComoMembro.FatoParentesco, "Parentesco", "Parentesco do membro da composição familiar com o candidato.",
             DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Global,
             PontoResolucaoInscricao, $"CAMPO_FORMULARIO:{CandidatoComoMembro.FatoParentesco}",
             ClassificacaoDeProtecao.Pessoal, FinalidadeComposicaoFamiliar, EscopoFato.MembroGrupo),
@@ -259,54 +259,54 @@ public static class FatoCandidatoSeed
         // nome social é público, porque é a identificação que o titular escolhe para aparecer
         // (ADR-0082); os demais são pessoais.
         // O nome civil vem do login (gov.br) e é igual ao do token: não passa por regra de formato.
-        DadoBasico(27, "NOME", "Nome", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.Livre),
-        DadoBasico(28, "DESEJA_NOME_SOCIAL", "Deseja usar nome social", DominioFato.Booleano, FinalidadeIdentificacao),
-        DadoBasico(29, FatoCandidato.CodigoDoNomeSocial, "Nome social", DominioFato.Texto, FinalidadeIdentificacao,
+        DadoBasico(27, "NOME", "Nome", "Nome civil do candidato, como vem do login gov.br.", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.Livre),
+        DadoBasico(28, "DESEJA_NOME_SOCIAL", "Deseja usar nome social", "Se o candidato deseja ser identificado pelo nome social no processo seletivo.", DominioFato.Booleano, FinalidadeIdentificacao),
+        DadoBasico(29, FatoCandidato.CodigoDoNomeSocial, "Nome social", "Nome pelo qual o candidato prefere ser identificado e que aparece no lugar do nome civil.", DominioFato.Texto, FinalidadeIdentificacao,
             formato: FormatoTexto.NomePessoa, classificacao: ClassificacaoDeProtecao.Publico),
-        DadoBasico(30, "CPF", "CPF", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.Cpf,
+        DadoBasico(30, "CPF", "CPF", "Número do CPF do candidato.", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.Cpf,
             classificacao: ClassificacaoDeProtecao.Identificador),
-        DadoBasico(31, "RG_NUMERO", "Número do RG", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.Livre,
+        DadoBasico(31, "RG_NUMERO", "Número do RG", "Número do RG do candidato.", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.Livre,
             classificacao: ClassificacaoDeProtecao.Identificador),
-        DadoBasico(32, "RG_ORGAO_EMISSOR", "Órgão emissor do RG", DominioFato.Categorico, FinalidadeIdentificacao, fonte: FonteValoresFato.Global),
-        DadoBasico(56, "RG_ORGAO_EMISSOR_OUTRO", "Nome do órgão emissor do RG", DominioFato.Texto, FinalidadeIdentificacao,
-            formato: FormatoTexto.Livre, descricao: "O órgão emissor do RG que não está na lista."),
-        DadoBasico(33, "RG_DATA_EMISSAO", "Data de emissão do RG", DominioFato.Data, FinalidadeIdentificacao),
-        DadoBasico(51, "PASSAPORTE_NUMERO", "Número do passaporte", DominioFato.Texto, FinalidadeIdentificacao,
+        DadoBasico(32, "RG_ORGAO_EMISSOR", "Órgão emissor do RG", "Órgão que emitiu o RG do candidato, entre os de uma lista fechada.", DominioFato.Categorico, FinalidadeIdentificacao, fonte: FonteValoresFato.Global),
+        DadoBasico(56, "RG_ORGAO_EMISSOR_OUTRO", "Nome do órgão emissor do RG", "O órgão emissor do RG que não está na lista.", DominioFato.Texto, FinalidadeIdentificacao,
+            formato: FormatoTexto.Livre),
+        DadoBasico(33, "RG_DATA_EMISSAO", "Data de emissão do RG", "Data em que o RG do candidato foi emitido.", DominioFato.Data, FinalidadeIdentificacao),
+        DadoBasico(51, "PASSAPORTE_NUMERO", "Número do passaporte", "Número do passaporte do candidato.", DominioFato.Texto, FinalidadeIdentificacao,
             formato: FormatoTexto.Livre, classificacao: ClassificacaoDeProtecao.Identificador),
-        DadoBasico(52, "RNM_NUMERO", "Número do Registro Nacional Migratório (RNM)", DominioFato.Texto, FinalidadeIdentificacao,
+        DadoBasico(52, "RNM_NUMERO", "Número do Registro Nacional Migratório (RNM)", "Número do Registro Nacional Migratório (RNM) do candidato.", DominioFato.Texto, FinalidadeIdentificacao,
             formato: FormatoTexto.Livre, classificacao: ClassificacaoDeProtecao.Identificador),
-        DadoBasico(36, "NOME_MAE", "Nome da mãe", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.NomePessoa),
-        DadoBasico(37, "NOME_PAI", "Nome do pai", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.NomePessoa),
+        DadoBasico(36, "NOME_MAE", "Nome da mãe", "Nome da mãe do candidato.", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.NomePessoa),
+        DadoBasico(37, "NOME_PAI", "Nome do pai", "Nome do pai do candidato.", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.NomePessoa),
         // Sexo civil, identidade de gênero e orientação sexual (uniplus-developers#316): vocabulários
         // normativos declarados pelo candidato. A identidade de gênero e a orientação sexual são
         // dados pessoais sensíveis (LGPD, art. 5º, II) e se gravam com cifra individual.
-        DadoBasico(57, "SEXO_CIVIL", "Sexo civil", DominioFato.Categorico, FinalidadeIdentificacao, fonte: FonteValoresFato.Global),
-        DadoBasico(58, "IDENTIDADE_GENERO", "Identidade de gênero", DominioFato.Categorico, FinalidadeIdentificacao,
+        DadoBasico(57, "SEXO_CIVIL", "Sexo civil", "Sexo que consta do registro civil do candidato.", DominioFato.Categorico, FinalidadeIdentificacao, fonte: FonteValoresFato.Global),
+        DadoBasico(58, "IDENTIDADE_GENERO", "Identidade de gênero", "Identidade de gênero que o candidato declara.", DominioFato.Categorico, FinalidadeIdentificacao,
             fonte: FonteValoresFato.Global, classificacao: ClassificacaoDeProtecao.Sensivel),
-        DadoBasico(59, "ORIENTACAO_SEXUAL", "Orientação sexual", DominioFato.Categorico, FinalidadeIdentificacao,
+        DadoBasico(59, "ORIENTACAO_SEXUAL", "Orientação sexual", "Orientação sexual que o candidato declara.", DominioFato.Categorico, FinalidadeIdentificacao,
             fonte: FonteValoresFato.Global, classificacao: ClassificacaoDeProtecao.Sensivel),
-        DadoBasico(38, "ESTADO_CIVIL", "Estado civil", DominioFato.Categorico, FinalidadeIdentificacao, fonte: FonteValoresFato.Global),
-        DadoBasico(39, "EMAIL", "E-mail", DominioFato.Texto, FinalidadeComunicacao, formato: FormatoTexto.Email),
-        DadoBasico(40, "TELEFONE", "Telefone", DominioFato.Texto, FinalidadeComunicacao, formato: FormatoTexto.Telefone),
-        DadoBasico(41, "RG_UF", "UF de emissão do RG", DominioFato.Categorico, FinalidadeIdentificacao, fonte: FonteValoresFato.GeoUf),
-        DadoBasico(42, "NATURALIDADE_UF", "UF de nascimento", DominioFato.Categorico, FinalidadeIdentificacao, fonte: FonteValoresFato.GeoUf),
-        DadoBasico(43, "NATURALIDADE_MUNICIPIO", "Município de nascimento", DominioFato.Categorico, FinalidadeIdentificacao,
+        DadoBasico(38, "ESTADO_CIVIL", "Estado civil", "Estado civil do candidato.", DominioFato.Categorico, FinalidadeIdentificacao, fonte: FonteValoresFato.Global),
+        DadoBasico(39, "EMAIL", "E-mail", "Endereço de e-mail para comunicação com o candidato.", DominioFato.Texto, FinalidadeComunicacao, formato: FormatoTexto.Email),
+        DadoBasico(40, "TELEFONE", "Telefone", "Telefone, com DDD, para comunicação com o candidato.", DominioFato.Texto, FinalidadeComunicacao, formato: FormatoTexto.Telefone),
+        DadoBasico(41, "RG_UF", "UF de emissão do RG", "Unidade da Federação que emitiu o RG do candidato.", DominioFato.Categorico, FinalidadeIdentificacao, fonte: FonteValoresFato.GeoUf),
+        DadoBasico(42, "NATURALIDADE_UF", "UF de nascimento", "Unidade da Federação em que o candidato nasceu.", DominioFato.Categorico, FinalidadeIdentificacao, fonte: FonteValoresFato.GeoUf),
+        DadoBasico(43, "NATURALIDADE_MUNICIPIO", "Município de nascimento", "Município em que o candidato nasceu.", DominioFato.Categorico, FinalidadeIdentificacao,
             fonte: FonteValoresFato.GeoMunicipio),
 
         // O tipo de localidade da residência, perguntado antes do endereço, e o nome da aldeia, da
         // comunidade tradicional ou do quilombo de quem mora em um deles.
-        DadoBasico(44, "TIPO_ENDERECO", "Tipo de localidade", DominioFato.Categorico, FinalidadeResidencia, fonte: FonteValoresFato.Global),
-        DadoBasico(45, "NOME_COMUNIDADE", "Nome da aldeia, comunidade ou quilombo", DominioFato.Texto, FinalidadeResidencia,
+        DadoBasico(44, "TIPO_ENDERECO", "Tipo de localidade", "Tipo de localidade em que o candidato reside, perguntado antes do endereço.", DominioFato.Categorico, FinalidadeResidencia, fonte: FonteValoresFato.Global),
+        DadoBasico(45, "NOME_COMUNIDADE", "Nome da aldeia, comunidade ou quilombo", "Nome da aldeia, da comunidade tradicional ou do quilombo em que o candidato reside.", DominioFato.Texto, FinalidadeResidencia,
             formato: FormatoTexto.Livre),
 
         // A origem escolar em duas perguntas (UNI-REQ-0148): vocabulários normativos, de que o egresso
         // de escola pública deriva.
-        DadoBasico(46, OrigemEscolar.FatoFormaDeConclusao, "Forma de conclusão do ensino médio", DominioFato.Categorico,
-            FinalidadeReservaDeVagas, fonte: FonteValoresFato.Global,
-            descricao: "Como o candidato concluiu o ensino médio: curso regular, Educação de Jovens e Adultos, ENCCEJA, exame de proficiência ou ENEM."),
-        DadoBasico(47, OrigemEscolar.FatoOndeCursou, "Onde cursou o ensino médio", DominioFato.Categorico,
-            FinalidadeReservaDeVagas, fonte: FonteValoresFato.Global,
-            descricao: "Em que rede de ensino o candidato cursou o ensino médio, ou se o concluiu por certificação sem frequentá-lo."),
+        DadoBasico(46, OrigemEscolar.FatoFormaDeConclusao, "Forma de conclusão do ensino médio",
+            "Como o candidato concluiu o ensino médio: curso regular, Educação de Jovens e Adultos, ENCCEJA, exame de proficiência ou ENEM.", DominioFato.Categorico,
+            FinalidadeReservaDeVagas, fonte: FonteValoresFato.Global),
+        DadoBasico(47, OrigemEscolar.FatoOndeCursou, "Onde cursou o ensino médio",
+            "Em que rede de ensino o candidato cursou o ensino médio, ou se o concluiu por certificação sem frequentá-lo.", DominioFato.Categorico,
+            FinalidadeReservaDeVagas, fonte: FonteValoresFato.Global),
 
         // A renda declarada no pedido de isenção da taxa, conhecida na fase dele, que a condição da Lei nº 12.799/2013 cita
         // ao lado da origem escolar (UNI-REQ-0149).
@@ -320,14 +320,14 @@ public static class FatoCandidatoSeed
         // edições que o processo admite, declaradas por ele (ADR-0136, fonte PROCESSO), nunca
         // uma lista fixa no código. Só existe em processo com classificação baseada em ENEM
         // (ProcessoSeletivo.DefinirOpcoesDeclaradas recusa fora desse caso).
-        new(SeedId(49), EdicaoDoEnem.Fato, "Edição do ENEM", null,
+        new(SeedId(49), EdicaoDoEnem.Fato, "Edição do ENEM", "Edição do ENEM cujas notas são importadas para a classificação do candidato.",
             DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Processo,
             PontoResolucaoInscricao, $"CAMPO_FORMULARIO:{EdicaoDoEnem.Fato}",
             ClassificacaoDeProtecao.Pessoal, FinalidadeImportacaoDeNotasDoEnem),
 
         // A condição de indígena é dado próprio, e não só um valor da cor ou raça: exige declaração de
         // pertencimento e passa só por análise de documentos, sem heteroidentificação (UNI-REQ-0147).
-        new(SeedId(50), "INDIGENA", "Indígena", null,
+        new(SeedId(50), "INDIGENA", "Indígena", "Se o candidato se declara indígena. A condição exige declaração de pertencimento e passa só por análise de documentos.",
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:INDIGENA",
             ClassificacaoDeProtecao.Sensivel, FinalidadeReservaDeVagas),
@@ -343,21 +343,21 @@ public static class FatoCandidatoSeed
 
         // A opção pelas vagas por acréscimo do PSIQ, uma só para as duas: a autodeclaração indígena
         // ou quilombola decide qual delas se aplica (UNI-REQ-0096).
-        new(SeedId(55), "CONCORRER_VAGA_POR_ACRESCIMO", "Deseja concorrer às vagas por acréscimo para indígenas e quilombolas", null,
+        new(SeedId(55), "CONCORRER_VAGA_POR_ACRESCIMO", "Deseja concorrer às vagas por acréscimo para indígenas e quilombolas", "Opção do candidato por concorrer às vagas por acréscimo para indígenas e quilombolas.",
             DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:CONCORRER_VAGA_POR_ACRESCIMO",
             ClassificacaoDeProtecao.Interno, FinalidadeReservaDeVagas),
 
         // O recurso de que o candidato precisa nas etapas (sala para amamentação, ledor, intérprete de
         // Libras…), escolhido entre os que a oferta de atendimento do processo declara (UNI-REQ-0026).
-        new(SeedId(53), "RECURSO_ACESSIBILIDADE", "Recurso de acessibilidade", null,
+        new(SeedId(53), "RECURSO_ACESSIBILIDADE", "Recurso de acessibilidade", "Recursos de acessibilidade de que o candidato precisa nas etapas, entre os que o processo oferece.",
             DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Multivalorado, FonteValoresFato.Processo,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:RECURSO_ACESSIBILIDADE",
             ClassificacaoDeProtecao.Sensivel, FinalidadeAtendimento),
 
         // A modalidade em que o candidato concorre na 2ª opção de curso, que tem a própria distribuição de
         // vagas: o sistema a calcula na inscrição, como a da 1ª opção.
-        new(SeedId(60), ModalidadeDoCandidato.FatoSegundaOpcao, "Modalidade de concorrência da 2ª opção de curso", null,
+        new(SeedId(60), ModalidadeDoCandidato.FatoSegundaOpcao, "Modalidade de concorrência da 2ª opção de curso", "Modalidades de concorrência do candidato na segunda opção de curso, que tem distribuição de vagas própria.",
             DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Multivalorado, FonteValoresFato.Modalidade,
             PontoResolucaoInscricao, $"ATRIBUTO_CANDIDATO:{ModalidadeDoCandidato.FatoSegundaOpcao}",
             ClassificacaoDeProtecao.Interno, FinalidadeReservaDeVagas),
@@ -368,12 +368,12 @@ public static class FatoCandidatoSeed
         int n,
         string codigo,
         string nome,
+        string descricao,
         DominioFato dominio,
         string finalidade,
         FonteValoresFato? fonte = null,
         FormatoTexto? formato = null,
-        ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Pessoal,
-        string? descricao = null) =>
+        ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Pessoal) =>
         new(SeedId(n), codigo, nome, descricao, dominio, OrigemFato.Declarado, CardinalidadeFato.Escalar, fonte,
             PontoResolucaoInscricao, $"CAMPO_FORMULARIO:{codigo}", classificacao, finalidade, Formato: formato);
 }
@@ -388,7 +388,7 @@ public sealed record FatoCandidatoSeedItem(
     Guid Id,
     string Codigo,
     string Nome,
-    string? Descricao,
+    string Descricao,
     DominioFato Dominio,
     OrigemFato Origem,
     CardinalidadeFato Cardinalidade,
@@ -399,4 +399,5 @@ public sealed record FatoCandidatoSeedItem(
     string FinalidadeTratamento,
     EscopoFato Escopo = EscopoFato.Candidato,
     FormatoTexto? Formato = null,
-    IReadOnlyList<RegraDerivacao>? RegrasPadrao = null);
+    IReadOnlyList<RegraDerivacao>? RegrasPadrao = null,
+    ComponenteDeExibicao? ComponenteExibicao = null);

@@ -28,7 +28,7 @@ public sealed class DesativacaoNoCatalogoTests
     private static readonly FatoValorDominioViewItem Parda = new("PARDA", "Parda.", 2, true);
 
     private static FatoCandidatoView CorRaca(bool ativo = true) => new(
-        Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", null, "CATEGORICO", "DECLARADO", "ESCALAR",
+        Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", "Descrição do fato.", "CATEGORICO", "DECLARADO", "ESCALAR",
         ["BRANCA", "PRETA", "PARDA"], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", [Branca, PretaDesativada, Parda], "GLOBAL", ativo, "PESSOAL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     private static Dictionary<string, FatoCandidatoView> Catalogo(FatoCandidatoView fato) =>
@@ -103,7 +103,7 @@ public sealed class DesativacaoNoCatalogoTests
                  [CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!],
             PrecondicaoIfMatch.Ausente, finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         catalogo["BAIXA_RENDA"] = new FatoCandidatoView(
-            Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", null, "BOOLEANO", "DECLARADO", "ESCALAR",
+            Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", "Descrição do fato.", "BOOLEANO", "DECLARADO", "ESCALAR",
             null, "INSCRICAO", "CAMPO_FORMULARIO:BAIXA_RENDA", null, null, true, "PESSOAL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
         ResolvedorValoresSelecionaveisCongelados.Resolver(processo, catalogo).Value!["COR_RACA"]!

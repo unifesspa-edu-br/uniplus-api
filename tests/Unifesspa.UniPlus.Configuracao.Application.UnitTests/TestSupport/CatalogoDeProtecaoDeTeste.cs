@@ -47,6 +47,6 @@ internal static class CatalogoDeProtecaoDeTeste
 
     public static FatoCandidato NovoFato(string codigo = "TEM_RENDA", string nome = "Tem renda") =>
         FatoCandidato.CriarDoAdministrador(
-            codigo, nome, null, DominioFato.Booleano, CardinalidadeFato.Escalar, null, null, "INSCRICAO", EscopoFato.Candidato,
+            codigo, nome, "Descrição do fato.", DominioFato.Booleano, CardinalidadeFato.Escalar, null, null, "INSCRICAO", EscopoFato.Candidato,
             ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
 }

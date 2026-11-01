@@ -213,7 +213,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
 
     private static FatoCandidato Fato(string codigo) =>
         FatoCandidato.CriarDoAdministrador(
-            codigo, codigo, null, DominioFato.Booleano, CardinalidadeFato.Escalar, null, null, "INSCRICAO",
+            codigo, codigo, "Descrição do fato.", DominioFato.Booleano, CardinalidadeFato.Escalar, null, null, "INSCRICAO",
             EscopoFato.Candidato, ClassificacaoDeProtecao.Sensivel, "Enquadramento na reserva de vagas.",
             HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
 

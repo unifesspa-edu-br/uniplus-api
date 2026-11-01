@@ -400,9 +400,9 @@ public sealed class FatoCandidatoPersistenceTests
             FatoCandidato noPrimeiro = await primeiro.FatosCandidato.SingleAsync(f => f.Id == fato.Id);
             FatoCandidato noSegundo = await segundo.FatosCandidato.SingleAsync(f => f.Id == fato.Id);
 
-            noPrimeiro.AlterarDescritivo("Nome da primeira edição", null).IsSuccess.Should().BeTrue();
+            noPrimeiro.AlterarDescritivo("Nome da primeira edição", "Descrição do fato.", null).IsSuccess.Should().BeTrue();
             await primeiro.SaveChangesAsync();
-            noSegundo.AlterarDescritivo("Nome da segunda edição", null).IsSuccess.Should().BeTrue();
+            noSegundo.AlterarDescritivo("Nome da segunda edição", "Descrição do fato.", null).IsSuccess.Should().BeTrue();
 
             Func<Task> act = () => segundo.SaveChangesAsync();
             await act.Should().ThrowAsync<DbUpdateConcurrencyException>();
@@ -418,7 +418,7 @@ public sealed class FatoCandidatoPersistenceTests
     {
         string codigo = CodigoUnico();
         FatoCandidato fato = FatoCandidato.Criar(
-            codigo, "Fato com valores", null, DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar,
+            codigo, "Fato com valores", "Descrição do fato.", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar,
             FonteValoresFato.Global, formato: null, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}", EscopoFato.Candidato,
             ClassificacaoDeProtecao.Pessoal, "Teste", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: false).Value!;
         fato.AdicionarValorDominio("A", "A", 0, ativo: true).IsSuccess.Should().BeTrue();
@@ -518,7 +518,7 @@ public sealed class FatoCandidatoPersistenceTests
     {
         string codigo = CodigoUnico();
         FatoCandidato fato = FatoCandidato.Criar(
-            codigo, "Fato com valores", null, DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar,
+            codigo, "Fato com valores", "Descrição do fato.", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar,
             FonteValoresFato.Global, formato: null, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}", EscopoFato.Candidato,
             ClassificacaoDeProtecao.Pessoal, "Teste", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: false).Value!;
         fato.AdicionarValorDominio("A", "A", 0, ativo: true).IsSuccess.Should().BeTrue();
@@ -567,7 +567,7 @@ public sealed class FatoCandidatoPersistenceTests
     {
         string codigo = CodigoUnico();
         return FatoCandidato.Criar(
-            codigo, "Fato do administrador", null, DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar,
+            codigo, "Fato do administrador", "Descrição do fato.", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar,
             fonteValores: null, formato: null, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}", EscopoFato.Candidato,
             ClassificacaoDeProtecao.Pessoal, "Teste", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: false).Value!;
     }

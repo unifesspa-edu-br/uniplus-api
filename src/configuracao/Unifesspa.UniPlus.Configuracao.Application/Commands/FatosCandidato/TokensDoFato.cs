@@ -22,6 +22,9 @@ internal static class TokensDoFato
 
     internal static FormatoTexto? Formato(string? token) => Ler<FormatoTexto>(token, FormatosTexto.TryAnalisar);
 
+    internal static ComponenteDeExibicao? Componente(string? token) =>
+        Ler<ComponenteDeExibicao>(token, ComponentesDeExibicao.TryAnalisar);
+
     internal static EscopoFato? Escopo(string? token) => Ler<EscopoFato>(token, EscoposFato.TryAnalisar);
 
     internal static ClassificacaoDeProtecao? Classificacao(string? token) =>

@@ -15,7 +15,9 @@ public static class FatoCandidatoErrorCodes
     public const string CodigoFormatoInvalido = "FatoCandidato.CodigoFormatoInvalido";
     public const string NomeObrigatorio = "FatoCandidato.NomeObrigatorio";
     public const string NomeTamanho = "FatoCandidato.NomeTamanho";
+    public const string DescricaoObrigatoria = "FatoCandidato.DescricaoObrigatoria";
     public const string DescricaoTamanho = "FatoCandidato.DescricaoTamanho";
+    public const string ComponenteExibicaoInvalido = "FatoCandidato.ComponenteExibicaoInvalido";
     public const string DominioObrigatorio = "FatoCandidato.DominioObrigatorio";
     public const string DominioInvalido = "FatoCandidato.DominioInvalido";
     public const string OrigemObrigatoria = "FatoCandidato.OrigemObrigatoria";
@@ -46,7 +48,7 @@ public static class FatoCandidatoErrorCodes
     /// <summary>
     /// Alteração que toca a definição do fato de sistema — código, domínio, cardinalidade, origem, fonte e
     /// formato, valores, regras padrão, ponto de resolução, escopo ou ativação —, travada porque o sistema a
-    /// calcula ou lê. Só o nome, a descrição e a proteção de dados se editam.
+    /// calcula ou lê. Só o nome, a descrição, o componente de exibição e a proteção de dados se editam.
     /// </summary>
     public const string DefinicaoDoFatoDeSistemaTravada = "FatoCandidato.DefinicaoDoFatoDeSistemaTravada";
 

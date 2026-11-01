@@ -40,7 +40,7 @@ public sealed class ColetabilidadeDeFatosGateTests
         Id: Guid.CreateVersion7(),
         Codigo: "MODALIDADE",
         Nome: "Modalidade de concorrência",
-        Descricao: null,
+        Descricao: "Descrição do fato.",
         Dominio: "CATEGORICO",
         Origem: "DERIVADO",
         Cardinalidade: "MULTIVALORADO",
@@ -65,7 +65,7 @@ public sealed class ColetabilidadeDeFatosGateTests
         Id: Guid.CreateVersion7(),
         Codigo: "COR_RACA",
         Nome: "Cor ou raça",
-        Descricao: null,
+        Descricao: "Descrição do fato.",
         Dominio: "CATEGORICO",
         Origem: "DECLARADO",
         Cardinalidade: "ESCALAR",
@@ -297,11 +297,11 @@ public sealed class ColetabilidadeDeFatosGateTests
     }
 
     private static FatoCandidatoView FatoAtendimentoNoMunicipio() => new(
-        Guid.CreateVersion7(), "ATENDIMENTO_NO_MUNICIPIO", "Atendimento no município", null, "BOOLEANO", "DECLARADO", "ESCALAR", null,
+        Guid.CreateVersion7(), "ATENDIMENTO_NO_MUNICIPIO", "Atendimento no município", "Descrição do fato.", "BOOLEANO", "DECLARADO", "ESCALAR", null,
         "INSCRICAO", "CAMPO_FORMULARIO:ATENDIMENTO_NO_MUNICIPIO", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     private static FatoCandidatoView FatoMunicipioDeResidencia(string nome) => new(
-        Guid.CreateVersion7(), "MUNICIPIO_RESIDENCIA", nome, null, "CATEGORICO", "DERIVADO", "ESCALAR", null,
+        Guid.CreateVersion7(), "MUNICIPIO_RESIDENCIA", nome, "Descrição do fato.", "CATEGORICO", "DERIVADO", "ESCALAR", null,
         "INSCRICAO", "SISTEMA:MUNICIPIO_RESIDENCIA", null, "GEO_MUNICIPIO", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     private static Task<(Result, IEnumerable<object>)> PublicarAsync(

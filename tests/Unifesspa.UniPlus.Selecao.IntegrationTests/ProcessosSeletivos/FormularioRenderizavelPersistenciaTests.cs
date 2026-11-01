@@ -316,7 +316,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
     private static IReadOnlyList<FatoCandidatoView> CatalogoComCorRaca(params FatoValorDominioViewItem[] valores) => CatalogoDoConjuntoBasico.Com(
     [
         new FatoCandidatoView(
-            Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", null, "CATEGORICO", "DECLARADO", "ESCALAR",
+            Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", "Descrição do fato.", "CATEGORICO", "DECLARADO", "ESCALAR",
             [.. valores.Select(static v => v.Codigo)], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", [.. valores], "GLOBAL",
             Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
     ]);
@@ -444,10 +444,10 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
     private static IReadOnlyList<FatoCandidatoView> CatalogoComOMunicipio(string nomeDoMunicipio) => CatalogoDoConjuntoBasico.Com(
     [
         new FatoCandidatoView(
-            Guid.CreateVersion7(), "ATENDIMENTO_NO_MUNICIPIO", "Atendimento no município", null, "BOOLEANO", "DECLARADO", "ESCALAR", null,
+            Guid.CreateVersion7(), "ATENDIMENTO_NO_MUNICIPIO", "Atendimento no município", "Descrição do fato.", "BOOLEANO", "DECLARADO", "ESCALAR", null,
             "INSCRICAO", "CAMPO_FORMULARIO:ATENDIMENTO_NO_MUNICIPIO", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
         new FatoCandidatoView(
-            Guid.CreateVersion7(), "MUNICIPIO_RESIDENCIA", nomeDoMunicipio, null, "CATEGORICO", "DERIVADO", "ESCALAR", null,
+            Guid.CreateVersion7(), "MUNICIPIO_RESIDENCIA", nomeDoMunicipio, "Descrição do fato.", "CATEGORICO", "DERIVADO", "ESCALAR", null,
             "INSCRICAO", "SISTEMA:MUNICIPIO_RESIDENCIA", null, "GEO_MUNICIPIO", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
     ]);
 

@@ -146,7 +146,7 @@ public sealed class AprovacaoDaProtecaoTests
         FatoCandidato igual = NovoFato();
         igual.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
         FatoCandidato incompativel = FatoCandidato.CriarDoAdministrador(
-            "TEM_CONTRATO", "Tem contrato", null, DominioFato.Booleano, CardinalidadeFato.Escalar, null, null, "INSCRICAO", EscopoFato.Candidato,
+            "TEM_CONTRATO", "Tem contrato", "Descrição do fato.", DominioFato.Booleano, CardinalidadeFato.Escalar, null, null, "INSCRICAO", EscopoFato.Candidato,
             ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.ExecucaoContrato).Value!;
         incompativel.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
 
@@ -215,17 +215,28 @@ public sealed class AprovacaoDaProtecaoTests
     public void Fato_NasceComoPendente() =>
         NovoFato().Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Pendente);
 
-    [Fact(DisplayName = "Mudar a classificação do fato aprovado o devolve a pendente; mudar só o nome não")]
+    [Fact(DisplayName = "Mudar a classificação do fato aprovado o devolve a pendente; mudar só o nome, a descrição ou o componente não")]
     public void Fato_SoAProtecaoReiniciaOCircuito()
     {
         FatoCandidato fato = FatoAprovado(NovoFato());
 
-        fato.AlterarDescritivo("Outro nome", null).IsSuccess.Should().BeTrue();
+        fato.AlterarDescritivo("Outro nome", "Outra descrição do fato.", ComponenteDeExibicao.Moeda).IsSuccess.Should().BeTrue();
         fato.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Aprovada);
 
         fato.AlterarDefinicao(Definicao(fato, classificacao: ClassificacaoDeProtecao.Sensivel, hipotese: HipoteseLegalTratamento.TutelaDaSaude), Catalogo(fato))
             .IsSuccess.Should().BeTrue();
         fato.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Pendente);
+    }
+
+    [Fact(DisplayName = "No fato de sistema o nome, a descrição e o componente se editam sem tirar a aprovação")]
+    public void FatoDeSistema_MudarAApresentacao_MantemAprovado()
+    {
+        FatoCandidato fato = FatoAprovado(NovoFatoDeSistema());
+
+        fato.AlterarDescritivo("Cor ou raça autodeclarada", "Conforme o IBGE.", ComponenteDeExibicao.Situacao).IsSuccess.Should().BeTrue();
+
+        fato.ComponenteExibicao.Should().Be(ComponenteDeExibicao.Situacao);
+        fato.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Aprovada);
     }
 
     [Fact(DisplayName = "No fato de sistema a hipótese legal se edita e o deixa pendente")]
@@ -319,12 +330,12 @@ public sealed class AprovacaoDaProtecaoTests
 
     private static FatoCandidato NovoFato(DominioFato dominio = DominioFato.Booleano) =>
         FatoCandidato.CriarDoAdministrador(
-            "TEM_RENDA", "Tem renda", null, dominio, CardinalidadeFato.Escalar, null, dominio == DominioFato.Texto ? FormatoTexto.Livre : null,
+            "TEM_RENDA", "Tem renda", "Se o candidato tem renda.", dominio, CardinalidadeFato.Escalar, null, dominio == DominioFato.Texto ? FormatoTexto.Livre : null,
             "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
 
     private static FatoCandidato NovoFatoDeSistema() =>
         FatoCandidato.Criar(
-            "COR_RACA", "Cor ou raça", null, DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Global,
+            "COR_RACA", "Cor ou raça", "Cor ou raça que o candidato declara.", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Global,
             null, "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade,
             HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: true).Value!;
 
