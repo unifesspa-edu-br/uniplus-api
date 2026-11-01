@@ -17,6 +17,6 @@ public static class AtualizarFatoCandidatoCommandHandler
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         return MutacaoDoFato.AplicarAsync(
-            command.Id, fato => fato.AlterarDescritivo(command.Nome, command.Descricao), repository, unitOfWork, cancellationToken);
+            command.Id, fato => fato.AlterarDescritivo(command.Nome, command.Descricao, TokensDoFato.Componente(command.ComponenteExibicao)), repository, unitOfWork, cancellationToken);
     }
 }

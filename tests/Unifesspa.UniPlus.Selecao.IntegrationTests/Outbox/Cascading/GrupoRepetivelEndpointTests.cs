@@ -165,7 +165,7 @@ public sealed class GrupoRepetivelEndpointTests
         string sufixo = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
         string sobGuarda = $"SOB_GUARDA_{sufixo}";
         FatoCandidato campoDeMembro = FatoCandidato.CriarDoAdministrador(
-            sobGuarda, "Sob guarda", null, DominioFato.Booleano, CardinalidadeFato.Escalar, fonteValores: null, formato: null,
+            sobGuarda, "Sob guarda", "Descrição do fato.", DominioFato.Booleano, CardinalidadeFato.Escalar, fonteValores: null, formato: null,
             "RESULTADO_FINAL", EscopoFato.MembroGrupo, ClassificacaoDeProtecao.Pessoal, "Composição familiar",
             HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
         Guid tipoDocumentoId = await SemearNoCatalogoAsync(campoDeMembro, $"CERT_GUARDA_{sufixo}", "Certidão de guarda");
@@ -243,11 +243,11 @@ public sealed class GrupoRepetivelEndpointTests
     private async Task<Guid> SemearCatalogoDoAgregadoAsync(string membro, string agregado, string sufixo)
     {
         FatoCandidato fatoDeMembro = FatoCandidato.CriarDoAdministrador(
-            membro, "Categoria de renda", null, DominioFato.Categorico, CardinalidadeFato.Escalar, FonteValoresFato.Processo, formato: null,
+            membro, "Categoria de renda", "Descrição do fato.", DominioFato.Categorico, CardinalidadeFato.Escalar, FonteValoresFato.Processo, formato: null,
             "RESULTADO_FINAL", EscopoFato.MembroGrupo, ClassificacaoDeProtecao.Pessoal, "Composição familiar",
             HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
         FatoCandidato fatoAgregado = FatoCandidato.CriarAgregadoDoAdministrador(
-            agregado, "Categorias de renda da família", null, membro, new CatalogoDeFatos([fatoDeMembro], []),
+            agregado, "Categorias de renda da família", "Descrição do fato.", membro, new CatalogoDeFatos([fatoDeMembro], []),
             "RESULTADO_FINAL", ClassificacaoDeProtecao.Pessoal, "Composição familiar", HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
         return await SemearNoCatalogoAsync(fatoDeMembro, $"DECL_RURAL_{sufixo}", "Declaração de trabalhador rural", fatoAgregado);
     }
@@ -277,7 +277,7 @@ public sealed class GrupoRepetivelEndpointTests
     {
         string codigo = $"MEMBRO_{Guid.NewGuid():N}"[..30].ToUpperInvariant();
         FatoCandidato fato = FatoCandidato.CriarDoAdministrador(
-            codigo, "Trabalha no campo", null, DominioFato.Booleano, CardinalidadeFato.Escalar, fonteValores: null, formato: null,
+            codigo, "Trabalha no campo", "Descrição do fato.", DominioFato.Booleano, CardinalidadeFato.Escalar, fonteValores: null, formato: null,
             "INSCRICAO", EscopoFato.MembroGrupo, ClassificacaoDeProtecao.Pessoal, "Composição familiar",
             HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();

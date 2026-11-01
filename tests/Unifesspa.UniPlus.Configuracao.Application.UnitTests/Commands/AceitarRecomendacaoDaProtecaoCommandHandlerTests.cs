@@ -87,7 +87,7 @@ public sealed class AceitarRecomendacaoDaProtecaoCommandHandlerTests
     public async Task Fato_DeSistema_AceitaARecomendacao()
     {
         FatoCandidato corRaca = FatoCandidato.Criar(
-            "COR_RACA", "Cor ou raça", null, DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Global,
+            "COR_RACA", "Cor ou raça", "Descrição do fato.", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Global,
             null, "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade,
             HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: true).Value!;
         corRaca.SolicitarAprovacaoDaProtecao(Isabella, Agora);

@@ -73,11 +73,11 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     private static FatoCandidatoView FatoSexo() => new(
-        Guid.CreateVersion7(), "SEXO", "Sexo", null, "CATEGORICO", "DECLARADO", "ESCALAR",
+        Guid.CreateVersion7(), "SEXO", "Sexo", "Descrição do fato.", "CATEGORICO", "DECLARADO", "ESCALAR",
         ["MASCULINO", "FEMININO", "INTERSEXO"], "INSCRICAO", "CAMPO_FORMULARIO:SEXO", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     private static FatoCandidatoView FatoSexoComPontoResolucao(string pontoResolucao) => new(
-        Guid.CreateVersion7(), "SEXO", "Sexo", null, "CATEGORICO", "DECLARADO", "ESCALAR",
+        Guid.CreateVersion7(), "SEXO", "Sexo", "Descrição do fato.", "CATEGORICO", "DECLARADO", "ESCALAR",
         ["MASCULINO", "FEMININO", "INTERSEXO"], pontoResolucao, "CAMPO_FORMULARIO:SEXO", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     private static FaseCronograma FaseComOrdemECodigo(int ordem, string codigo) => FaseCronograma.Criar(
@@ -87,12 +87,12 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     private static FatoCandidatoView FatoModalidade() => new(
-        Guid.CreateVersion7(), "MODALIDADE", "Modalidade de concorrência", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO", null,
+        Guid.CreateVersion7(), "MODALIDADE", "Modalidade de concorrência", "Descrição do fato.", "CATEGORICO", "DERIVADO", "MULTIVALORADO", null,
         "INSCRICAO", "REGRA_DERIVACAO:MODALIDADE", null, "MODALIDADE", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     // Os valores são os tipos do cadastro de tipos de deficiência, que o catálogo entrega como valores do fato.
     private static FatoCandidatoView FatoTipoDeficiencia() => new(
-        Guid.CreateVersion7(), "TIPO_DEFICIENCIA", "Tipo de deficiência", null, "CATEGORICO", "DECLARADO", "ESCALAR",
+        Guid.CreateVersion7(), "TIPO_DEFICIENCIA", "Tipo de deficiência", "Descrição do fato.", "CATEGORICO", "DECLARADO", "ESCALAR",
         ["DEFICIENCIA_VISUAL", "TEA"], "INSCRICAO", "CAMPO_FORMULARIO:TIPO_DEFICIENCIA",
         [new FatoValorDominioViewItem("DEFICIENCIA_VISUAL", "Deficiência visual", 0, Ativo: true),
          new FatoValorDominioViewItem("TEA", "Transtorno do espectro autista", 1, Ativo: true)],
@@ -376,7 +376,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
 
     /// <summary>A faixa etária como o catálogo a publica: derivada, por atributo do candidato.</summary>
     private static FatoCandidatoView FatoFaixaEtaria() => new(
-        Guid.CreateVersion7(), "FAIXA_ETARIA", "Faixa etária", null, "NUMERICO", "DERIVADO", "ESCALAR",
+        Guid.CreateVersion7(), "FAIXA_ETARIA", "Faixa etária", "Descrição do fato.", "NUMERICO", "DERIVADO", "ESCALAR",
         null, "INSCRICAO", "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     /// <summary>
@@ -471,7 +471,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
             .Returns(TipoDocumentoResultado(tipoDocumentoId));
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)
         [
-            new FatoCandidatoView(Guid.CreateVersion7(), "MAIOR_IDADE", "Maior de idade", null, "BOOLEANO", "DECLARADO", "ESCALAR",
+            new FatoCandidatoView(Guid.CreateVersion7(), "MAIOR_IDADE", "Maior de idade", "Descrição do fato.", "BOOLEANO", "DECLARADO", "ESCALAR",
                 null, "INSCRICAO", "CAMPO_FORMULARIO:MAIOR_IDADE", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, Escopo: "MEMBRO_GRUPO", ProtecaoAprovada: true),
         ]));
         return (processo, fase, mocks, tipoDocumentoId);

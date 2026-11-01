@@ -55,7 +55,7 @@ public sealed class FatoCandidatoAdminEndpointTests
             fato.RootElement.GetProperty("sistema").GetBoolean().Should().BeFalse();
         }
 
-        (await EnviarAsync(client, HttpMethod.Put, $"{Base}/{id}", new { nome = "Nome editado", descricao = (string?)null }))
+        (await EnviarAsync(client, HttpMethod.Put, $"{Base}/{id}", new { nome = "Nome editado", descricao = "Descrição editada.", componenteExibicao = "MOEDA" }))
             .StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await EnviarAsync(client, HttpMethod.Delete, $"{Base}/{id}", corpo: null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
@@ -71,6 +71,77 @@ public sealed class FatoCandidatoAdminEndpointTests
         }
 
         (await EnviarAsync(client, HttpMethod.Post, $"{Base}/{id}/ativacao", corpo: null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact(DisplayName = "Cadastro sem descrição é recusado com o código da descrição obrigatória")]
+    public async Task Criar_SemDescricao_Retorna422()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Post, Base, new
+        {
+            codigo = CodigoUnico(),
+            nome = "Vínculo com outra instituição pública",
+            dominio = "BOOLEANO",
+            cardinalidade = "ESCALAR",
+            pontoResolucao = "HABILITACAO",
+            escopo = "CANDIDATO",
+            classificacaoProtecao = "PESSOAL",
+            finalidadeTratamento = "Verificação dos requisitos de matrícula do processo seletivo.",
+            hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+        });
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        problema.RootElement.GetProperty("errors").EnumerateArray().Should().ContainSingle()
+            .Which.GetProperty("code").GetString().Should().Be("uniplus.configuracao.fato_candidato.descricao_obrigatoria");
+    }
+
+    [Fact(DisplayName = "Componente fora do vocabulário é recusado com o código do componente de exibição")]
+    public async Task Atualizar_ComponenteForaDoVocabulario_Retorna422()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        Guid id = await (await EnviarAsync(client, HttpMethod.Post, Base, FatoBooleano(CodigoUnico()))).Content.ReadFromJsonAsync<Guid>();
+
+        HttpResponseMessage resposta = await EnviarAsync(
+            client, HttpMethod.Put, $"{Base}/{id}", new { nome = "Nome editado", descricao = "Descrição editada.", componenteExibicao = "REAIS" });
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        problema.RootElement.GetProperty("errors").EnumerateArray().Should().ContainSingle()
+            .Which.GetProperty("code").GetString().Should().Be("uniplus.configuracao.fato_candidato.componente_exibicao_invalido");
+    }
+
+    [Fact(DisplayName = "A semente declara a renda per capita como moeda, e o fato de sistema aceita editar a apresentação")]
+    public async Task FatoDeSistema_ApresentacaoEditavel()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        Guid id = Guid.Parse("fa700000-0000-7000-8000-000000000005");
+
+        string descricaoDaSemente;
+        string situacaoAntes;
+        using (JsonDocument antes = await ObterAsync(client, id))
+        {
+            antes.RootElement.GetProperty("componenteExibicao").GetString().Should().Be("MOEDA");
+            descricaoDaSemente = antes.RootElement.GetProperty("descricao").GetString()!;
+            descricaoDaSemente.Should().NotBeNullOrWhiteSpace();
+            situacaoAntes = antes.RootElement.GetProperty("aprovacao").GetProperty("situacao").GetString()!;
+        }
+
+        (await EnviarAsync(client, HttpMethod.Put, $"{Base}/{id}", new { nome = "Renda familiar per capita", descricao = "Descrição editada.", componenteExibicao = "SITUACAO" }))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        try
+        {
+            using JsonDocument depois = await ObterAsync(client, id);
+            depois.RootElement.GetProperty("componenteExibicao").GetString().Should().Be("SITUACAO");
+            depois.RootElement.GetProperty("descricao").GetString().Should().Be("Descrição editada.");
+            depois.RootElement.GetProperty("aprovacao").GetProperty("situacao").GetString().Should().Be(situacaoAntes);
+        }
+        finally
+        {
+            (await EnviarAsync(client, HttpMethod.Put, $"{Base}/{id}", new { nome = "Renda familiar per capita", descricao = descricaoDaSemente, componenteExibicao = "MOEDA" }))
+                .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        }
     }
 
     [Fact(DisplayName = "Origem desconhecida no filtro da lista devolve página vazia, não erro")]
@@ -111,6 +182,7 @@ public sealed class FatoCandidatoAdminEndpointTests
         {
             codigo = CodigoUnico(),
             nome = "Forma de conclusão",
+            descricao = "Descrição do fato.",
             dominio = "CATEGORICO",
             cardinalidade = "ESCALAR",
             fonteValores = "GLOBAL",
@@ -143,6 +215,7 @@ public sealed class FatoCandidatoAdminEndpointTests
         {
             codigo = CodigoUnico(),
             nome = "Forma de conclusão",
+            descricao = "Descrição do fato.",
             dominio = "CATEGORICO",
             cardinalidade = "ESCALAR",
             fonteValores = "GLOBAL",
@@ -188,6 +261,7 @@ public sealed class FatoCandidatoAdminEndpointTests
         {
             codigo = CodigoUnico(),
             nome = "Perfil de conclusão",
+            descricao = "Descrição do fato.",
             dominio = "CATEGORICO",
             pontoResolucao = "HABILITACAO",
             escopo = "CANDIDATO",
@@ -232,6 +306,7 @@ public sealed class FatoCandidatoAdminEndpointTests
         {
             codigo = membro,
             nome = "Menor sob guarda",
+            descricao = "Descrição do fato.",
             dominio = "BOOLEANO",
             cardinalidade = "ESCALAR",
             pontoResolucao = "HABILITACAO",
@@ -246,6 +321,7 @@ public sealed class FatoCandidatoAdminEndpointTests
         {
             codigo = CodigoUnico(),
             nome = "Existe menor sob guarda",
+            descricao = "Descrição do fato.",
             fatoDeMembro,
             pontoResolucao = "HABILITACAO",
             classificacaoProtecao = "PESSOAL",
@@ -271,6 +347,7 @@ public sealed class FatoCandidatoAdminEndpointTests
         {
             codigo = membro,
             nome = "Categoria de renda",
+            descricao = "Descrição do fato.",
             dominio = "CATEGORICO",
             cardinalidade = "ESCALAR",
             fonteValores = "GLOBAL",
@@ -289,6 +366,7 @@ public sealed class FatoCandidatoAdminEndpointTests
         {
             codigo = agregado,
             nome = "Categorias de renda da família",
+            descricao = "Descrição do fato.",
             fatoDeMembro = membro,
             pontoResolucao = "HABILITACAO",
             classificacaoProtecao = "PESSOAL",
@@ -411,6 +489,7 @@ public sealed class FatoCandidatoAdminEndpointTests
     {
         codigo,
         nome = "Vínculo com outra instituição pública",
+        descricao = "Descrição do fato.",
         dominio = "BOOLEANO",
         cardinalidade = "ESCALAR",
         pontoResolucao = "HABILITACAO",

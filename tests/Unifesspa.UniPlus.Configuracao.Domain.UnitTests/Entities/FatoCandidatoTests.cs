@@ -23,11 +23,12 @@ public sealed class FatoCandidatoTests
     private const string PontoResolucaoInscricao = "INSCRICAO";
 
     private const string Finalidade = "Enquadramento na reserva de vagas.";
+    private const string Descricao = "Cor ou raça que o candidato declara.";
 
     private static Result<FatoCandidato> Criar(
         string codigo = "COR_RACA",
         string nome = "Cor ou raça",
-        string? descricao = null,
+        string? descricao = Descricao,
         DominioFato dominio = DominioFato.Categorico,
         OrigemFato origem = OrigemFato.Declarado,
         CardinalidadeFato cardinalidade = CardinalidadeFato.Escalar,
@@ -52,7 +53,7 @@ public sealed class FatoCandidatoTests
 
     [Fact(DisplayName = "Criar booleano com fonte dos valores é recusado")]
     public void Criar_BooleanoComFonte_Recusa() =>
-        FatoCandidato.Criar("PCD", "Pessoa com deficiência", null, DominioFato.Booleano, OrigemFato.Declarado,
+        FatoCandidato.Criar("PCD", "Pessoa com deficiência", "Descrição do fato.", DominioFato.Booleano, OrigemFato.Declarado,
             CardinalidadeFato.Escalar, FonteValoresFato.Processo, formato: null, PontoResolucaoInscricao, "CAMPO_FORMULARIO:PCD",
             EscopoFato.Candidato, ClassificacaoDeProtecao.Sensivel, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal,
             sistema: false)
@@ -142,7 +143,7 @@ public sealed class FatoCandidatoTests
     public void CriarDoAdministrador_DeclaradoComVinculoDoCodigo()
     {
         FatoCandidato fato = FatoCandidato.CriarDoAdministrador(
-            " ANO_CONCLUSAO ", "Ano de conclusão", null, DominioFato.Numerico, CardinalidadeFato.Escalar, null, null,
+            " ANO_CONCLUSAO ", "Ano de conclusão", "Descrição do fato.", DominioFato.Numerico, CardinalidadeFato.Escalar, null, null,
             PontoResolucaoInscricao, EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade,
             HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
 
@@ -156,10 +157,45 @@ public sealed class FatoCandidatoTests
         Criar().Value!.AdicionarValorDominio(" ", null, -1, ativo: true, new string('x', FatoValorDominio.OrientacaoMaxLength + 1))
             .Errors.Select(static e => e.Field).Should().BeEquivalentTo(["codigo", "descricao", "orientacao", "ordem"]);
 
-    [Fact(DisplayName = "Editar nome e descrição acumula as duas violações")]
+    [Fact(DisplayName = "Editar nome, descrição e componente acumula as três violações")]
     public void AlterarDescritivo_AcumulaViolacoes() =>
-        Criar().Value!.AlterarDescritivo(" ", new string('x', 1001))
-            .Errors.Select(static e => e.Field).Should().BeEquivalentTo(["nome", "descricao"]);
+        Criar().Value!.AlterarDescritivo(" ", new string('x', 1001), (ComponenteDeExibicao)(-1))
+            .Errors.Select(static e => e.Field).Should().BeEquivalentTo(["nome", "descricao", "componenteExibicao"]);
+
+    [Theory(DisplayName = "Descrição em branco é recusada no cadastro e na edição do fato")]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void DescricaoEmBranco_Recusa(string? descricao)
+    {
+        Criar(descricao: descricao).Errors.Should().ContainSingle()
+            .Which.Error.Code.Should().Be(FatoCandidatoErrorCodes.DescricaoObrigatoria);
+
+        Criar().Value!.AlterarDescritivo("Cor ou raça", descricao, null).Error!.Code
+            .Should().Be(FatoCandidatoErrorCodes.DescricaoObrigatoria);
+    }
+
+    [Theory(DisplayName = "Componente de exibição fora do vocabulário é recusado no cadastro; o declarado é aceito")]
+    [InlineData(ComponenteDeExibicao.Nenhum, false)]
+    [InlineData((ComponenteDeExibicao)99, false)]
+    [InlineData(ComponenteDeExibicao.Moeda, true)]
+    public void ComponenteDeExibicao_SoDoVocabularioFechado(ComponenteDeExibicao componente, bool aceito)
+    {
+        Result<FatoCandidato> resultado = FatoCandidato.CriarDoAdministrador(
+            "RENDA_BRUTA_FAMILIAR", "Renda bruta familiar", Descricao, DominioFato.Numerico, CardinalidadeFato.Escalar, null, null,
+            PontoResolucaoInscricao, EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade,
+            HipoteseLegalTratamento.CumprimentoObrigacaoLegal, componente);
+
+        resultado.IsSuccess.Should().Be(aceito);
+        if (aceito)
+        {
+            resultado.Value!.ComponenteExibicao.Should().Be(ComponenteDeExibicao.Moeda);
+        }
+        else
+        {
+            resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(FatoCandidatoErrorCodes.ComponenteExibicaoInvalido);
+        }
+    }
 
     [Fact(DisplayName = "Valor do fato do administrador desativa e reativa; o do fato de sistema, não")]
     public void DesativarValor_SoNoFatoDoAdministrador()
@@ -294,12 +330,13 @@ public sealed class FatoCandidatoTests
         Criar(codigo: "DADO", origem: origem, binding: binding)
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.VinculoExclusivoDeFatoDeSistema);
 
-    [Fact(DisplayName = "Fato de sistema edita nome e descrição, mas não é desativado nem recebe valor")]
+    [Fact(DisplayName = "Fato de sistema edita nome, descrição e componente, mas não é desativado nem recebe valor")]
     public void FatoDeSistema_EditaNomeEDescricao_NaoDesativa()
     {
         FatoCandidato fato = Criar(sistema: true).Value!;
 
-        fato.AlterarDescritivo("Cor ou raça autodeclarada", "Conforme o IBGE").IsSuccess.Should().BeTrue();
+        fato.AlterarDescritivo("Cor ou raça autodeclarada", "Conforme o IBGE", ComponenteDeExibicao.Situacao).IsSuccess.Should().BeTrue();
+        fato.ComponenteExibicao.Should().Be(ComponenteDeExibicao.Situacao);
         fato.Desativar().Error!.Code.Should().Be(FatoCandidatoErrorCodes.DefinicaoDoFatoDeSistemaTravada);
         fato.AdicionarValorDominio("NOVA", "Nova", 9, ativo: true)
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.DefinicaoDoFatoDeSistemaTravada);

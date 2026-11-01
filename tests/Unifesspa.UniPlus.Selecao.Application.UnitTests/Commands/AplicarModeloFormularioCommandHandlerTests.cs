@@ -50,20 +50,20 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         Declarado("MAIOR_IDADE") with { Escopo = "MEMBRO_GRUPO" },
         Declarado("SOB_GUARDA") with { Escopo = "MEMBRO_GRUPO", Ativo = false },
         Declarado("BAIXA_RENDA") with { Ativo = false },
-        new(Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", null, "CATEGORICO", "DECLARADO", "ESCALAR", ["PRETA", "AMARELA", "INDIGENA"], "INSCRICAO",
+        new(Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", "Descrição do fato.", "CATEGORICO", "DECLARADO", "ESCALAR", ["PRETA", "AMARELA", "INDIGENA"], "INSCRICAO",
             "CAMPO_FORMULARIO:COR_RACA", [new("PRETA", "Preta", 0, true), new("AMARELA", "Amarela", 1, false), new("INDIGENA", "Indígena", 2, false)], "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-        new(Guid.CreateVersion7(), "PERFIL", "Perfil", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO", ["A", "B"], "INSCRICAO",
+        new(Guid.CreateVersion7(), "PERFIL", "Perfil", "Descrição do fato.", "CATEGORICO", "DERIVADO", "MULTIVALORADO", ["A", "B"], "INSCRICAO",
             "REGRA_DERIVACAO:PERFIL", [new("A", "A", 0, true), new("B", "B", 1, true)], "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-        new(Guid.CreateVersion7(), "FLAG", "Flag", null, "BOOLEANO", "DERIVADO", "ESCALAR", null, "INSCRICAO", "REGRA_DERIVACAO:FLAG", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-        new(Guid.CreateVersion7(), "FLAG_SEM_REGRA", "Flag sem regra", null, "BOOLEANO", "DERIVADO", "ESCALAR", null, "INSCRICAO",
+        new(Guid.CreateVersion7(), "FLAG", "Flag", "Descrição do fato.", "BOOLEANO", "DERIVADO", "ESCALAR", null, "INSCRICAO", "REGRA_DERIVACAO:FLAG", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
+        new(Guid.CreateVersion7(), "FLAG_SEM_REGRA", "Flag sem regra", "Descrição do fato.", "BOOLEANO", "DERIVADO", "ESCALAR", null, "INSCRICAO",
             "REGRA_DERIVACAO:FLAG_SEM_REGRA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-        new(Guid.CreateVersion7(), "COTISTA", "Cotista", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO", ["SIM"], "INSCRICAO",
+        new(Guid.CreateVersion7(), "COTISTA", "Cotista", "Descrição do fato.", "CATEGORICO", "DERIVADO", "MULTIVALORADO", ["SIM"], "INSCRICAO",
             "REGRA_DERIVACAO:COTISTA", [new("SIM", "Sim", 0, true)], "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-        new(Guid.CreateVersion7(), "SEM_REGRA", "Sem regra", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO", ["X"], "INSCRICAO",
+        new(Guid.CreateVersion7(), "SEM_REGRA", "Sem regra", "Descrição do fato.", "CATEGORICO", "DERIVADO", "MULTIVALORADO", ["X"], "INSCRICAO",
             "REGRA_DERIVACAO:SEM_REGRA", [new("X", "X", 0, true)], "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-        new(Guid.CreateVersion7(), "MODALIDADE", "Modalidade", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO", null, "INSCRICAO",
+        new(Guid.CreateVersion7(), "MODALIDADE", "Modalidade", "Descrição do fato.", "CATEGORICO", "DERIVADO", "MULTIVALORADO", null, "INSCRICAO",
             "REGRA_DERIVACAO:MODALIDADE", null, "MODALIDADE", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-        new(Guid.CreateVersion7(), "FAIXA_ETARIA", "Faixa etária", null, "NUMERICO", "DERIVADO", "ESCALAR", null, "INSCRICAO",
+        new(Guid.CreateVersion7(), "FAIXA_ETARIA", "Faixa etária", "Descrição do fato.", "NUMERICO", "DERIVADO", "ESCALAR", null, "INSCRICAO",
             "ATRIBUTO_CANDIDATO:FAIXA_ETARIA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
     ];
 
@@ -515,7 +515,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     private void DeclararAtendimentoEspecializado()
     {
         _catalogo.Add(Declarado("SOLICITA_ATENDIMENTO_ESPECIALIZADO"));
-        _catalogo.Add(new FatoCandidatoView(Guid.CreateVersion7(), "CONDICAO_ATENDIMENTO", "Condição", null, "CATEGORICO", "DECLARADO", "MULTIVALORADO", ["PCD", "LACTANTE"], "INSCRICAO",
+        _catalogo.Add(new FatoCandidatoView(Guid.CreateVersion7(), "CONDICAO_ATENDIMENTO", "Condição", "Descrição do fato.", "CATEGORICO", "DECLARADO", "MULTIVALORADO", ["PCD", "LACTANTE"], "INSCRICAO",
             "CAMPO_FORMULARIO:CONDICAO_ATENDIMENTO", [new("PCD", "PcD", 0, true), new("LACTANTE", "Lactante", 1, true)], "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true));
         List<TipoDocumentoView> tipos = [.. new[] { "LAUDO_MEDICO", "CERTIDAO_NASCIMENTO" }.Select(static codigo => new TipoDocumentoView(Guid.CreateVersion7(), codigo, codigo, "SAUDE", ClassificacaoDeProtecao.Pessoal, "Comprovação documental do candidato.", "CUMPRIMENTO_OBRIGACAO_LEGAL", ProtecaoAprovada: true))];
         _tiposDocumento.ObterVivoPorCodigoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(call => tipos.Single(t => t.Codigo == call.Arg<string>()));
@@ -573,9 +573,9 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
 
     private void Ofertar(params ModalidadeSelecionada[] modalidades)
     {
-        _catalogo.Add(new FatoCandidatoView(Guid.CreateVersion7(), OpcaoPelasCotasDaLei.Fato, "Optou", null, "BOOLEANO", "DERIVADO", "ESCALAR", null, "INSCRICAO",
+        _catalogo.Add(new FatoCandidatoView(Guid.CreateVersion7(), OpcaoPelasCotasDaLei.Fato, "Optou", "Descrição do fato.", "BOOLEANO", "DERIVADO", "ESCALAR", null, "INSCRICAO",
             $"REGRA_DERIVACAO:{OpcaoPelasCotasDaLei.Fato}", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true));
-        _catalogo.Add(new FatoCandidatoView(Guid.CreateVersion7(), OrigemEscolar.FatoEgresso, "Egresso", null, "BOOLEANO", "DERIVADO", "ESCALAR", null, "INSCRICAO",
+        _catalogo.Add(new FatoCandidatoView(Guid.CreateVersion7(), OrigemEscolar.FatoEgresso, "Egresso", "Descrição do fato.", "BOOLEANO", "DERIVADO", "ESCALAR", null, "INSCRICAO",
             $"REGRA_DERIVACAO:{OrigemEscolar.FatoEgresso}", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true));
         _catalogo.Add(Declarado(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica));
         _fatos.ListarRegrasPadraoAsync(Arg.Any<CancellationToken>()).Returns(new Dictionary<string, IReadOnlyList<RegraDerivacao>>(StringComparer.Ordinal)
@@ -625,7 +625,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         new(fato, ordem, fato, tipo, "SEMPRE", null, EtapaCodigo: "DADOS");
 
     private static FatoCandidatoView Declarado(string codigo) =>
-        new(Guid.CreateVersion7(), codigo, codigo, null, "BOOLEANO", "DECLARADO", "ESCALAR", null, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
+        new(Guid.CreateVersion7(), codigo, codigo, "Descrição do fato.", "BOOLEANO", "DECLARADO", "ESCALAR", null, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
 
     private static PredicadoDnf Quando(string fato, object valor) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(valor)).Value!)]).Value!;

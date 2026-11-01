@@ -16,4 +16,5 @@ public sealed record CriarFatoAgregadoCommand(
     string PontoResolucao,
     string ClassificacaoProtecao,
     string FinalidadeTratamento,
-    string HipoteseLegal) : ICommand<Result<Guid>>;
+    string HipoteseLegal,
+    string? ComponenteExibicao = null) : ICommand<Result<Guid>>;

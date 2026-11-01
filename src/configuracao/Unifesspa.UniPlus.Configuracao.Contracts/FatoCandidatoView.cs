@@ -10,7 +10,7 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// <param name="Id">Identificador único (Guid v7).</param>
 /// <param name="Codigo">Código do fato, chave natural (ex.: "COR_RACA", "MODALIDADE").</param>
 /// <param name="Nome">Rótulo legível do fato.</param>
-/// <param name="Descricao">Descrição opcional (cosmética).</param>
+/// <param name="Descricao">O que o dado significa, para quem analisa a inscrição; obrigatória no catálogo e congelada pela Seleção no fato coletado e no derivado.</param>
 /// <param name="Dominio">Tipo de dado — token canônico UPPER_SNAKE (CATEGORICO, BOOLEANO, NUMERICO, TEXTO, DATA, ENDERECO).</param>
 /// <param name="Origem">Origem do dado — token canônico (DERIVADO, DECLARADO, INTEGRACAO).</param>
 /// <param name="Cardinalidade">Cardinalidade — token canônico (ESCALAR, MULTIVALORADO).</param>
@@ -53,6 +53,10 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// fato coletado e no derivado, como a classificação (ADR-0154).
 /// </param>
 /// <param name="FinalidadeTratamento">Para que o dado é tratado; congelada junto da hipótese legal (ADR-0154).</param>
+/// <param name="ComponenteExibicao">
+/// Como a tela exibe o valor quando o modo não se deduz do tipo, do formato nem da classificação — token canônico
+/// (MOEDA, SITUACAO) —, ou <see langword="null"/> quando o fato não declara. A Seleção o congela com a descrição.
+/// </param>
 /// <param name="ProtecaoAprovada">
 /// Se a proteção de dados aprovou a classificação, a finalidade e a hipótese legal do fato (ADR-0153). O fato sem a
 /// aprovação não aceita vínculo novo no processo e bloqueia a publicação e a retificação do processo que o usa.
@@ -61,7 +65,7 @@ public sealed record FatoCandidatoView(
     Guid Id,
     string Codigo,
     string Nome,
-    string? Descricao,
+    string Descricao,
     string Dominio,
     string Origem,
     string Cardinalidade,
@@ -76,7 +80,8 @@ public sealed record FatoCandidatoView(
     string FinalidadeTratamento,
     bool ProtecaoAprovada,
     string? Formato = null,
-    string Escopo = "CANDIDATO");
+    string Escopo = "CANDIDATO",
+    string? ComponenteExibicao = null);
 
 /// <summary>
 /// Um valor do conjunto fechado de um <see cref="FatoCandidatoView"/> categórico

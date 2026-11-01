@@ -43,7 +43,7 @@ public sealed class RegrasPadraoTests
     [Fact(DisplayName = "Derivado por regra de domínio texto é recusado no domínio")]
     public void CriarDerivado_Texto_Recusa() =>
         FatoCandidato.CriarDerivadoDoAdministrador(
-                "NOME_DERIVADO", "Nome", null, DominioFato.Texto, "INSCRICAO", EscopoFato.Candidato,
+                "NOME_DERIVADO", "Nome", "Descrição do fato.", DominioFato.Texto, "INSCRICAO", EscopoFato.Candidato,
                 ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese)
             .Errors.Should().ContainSingle()
             .Which.Error.Code.Should().Be(FatoCandidatoErrorCodes.DerivadoPorRegraSoBooleanoOuCategorico);
@@ -53,7 +53,7 @@ public sealed class RegrasPadraoTests
     [InlineData((DominioFato)(-1), FatoCandidatoErrorCodes.DominioInvalido)]
     public void CriarDerivado_DominioAusenteOuInvalido_RecusaComOCodigoDoDominio(DominioFato dominio, string codigo) =>
         FatoCandidato.CriarDerivadoDoAdministrador(
-                "DERIVADO", "Derivado", null, dominio, "INSCRICAO", EscopoFato.Candidato,
+                "DERIVADO", "Derivado", "Descrição do fato.", dominio, "INSCRICAO", EscopoFato.Candidato,
                 ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese)
             .Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("dominio", codigo));
 
@@ -232,7 +232,7 @@ public sealed class RegrasPadraoTests
         string ponto = "INSCRICAO",
         ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Sensivel) =>
         FatoCandidato.CriarDerivadoDoAdministrador(
-            codigo, codigo, null, dominio, ponto, EscopoFato.Candidato, classificacao, Finalidade, Hipotese).Value!;
+            codigo, codigo, "Descrição do fato.", dominio, ponto, EscopoFato.Candidato, classificacao, Finalidade, Hipotese).Value!;
 
     private static FatoCandidato Declarado(
         string codigo,
@@ -242,7 +242,7 @@ public sealed class RegrasPadraoTests
         FormatoTexto? formato = null,
         EscopoFato escopo = EscopoFato.Candidato) =>
         FatoCandidato.CriarDoAdministrador(
-            codigo, codigo, null, dominio, CardinalidadeFato.Escalar, null, formato, ponto, escopo,
+            codigo, codigo, "Descrição do fato.", dominio, CardinalidadeFato.Escalar, null, formato, ponto, escopo,
             classificacao, Finalidade, Hipotese).Value!;
 
     private static CatalogoDeFatos Catalogo(params FatoCandidato[] fatos) => new(fatos, []);

@@ -96,7 +96,7 @@ public sealed class ConferenciaDaAprovacaoDaProtecaoTests
     }
 
     private static FatoCandidatoView Fato(string codigo, string origem, bool aprovada) => new(
-        Guid.CreateVersion7(), codigo, codigo, null, "CATEGORICO", origem, "ESCALAR", null, "INSCRICAO",
+        Guid.CreateVersion7(), codigo, codigo, "Descrição do fato.", "CATEGORICO", origem, "ESCALAR", null, "INSCRICAO",
         origem == "DERIVADO" ? $"REGRA_DERIVACAO:{codigo}" : $"CAMPO_FORMULARIO:{codigo}", null, "GLOBAL", Ativo: true,
         ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade,
         ProtecaoAprovada: aprovada);

@@ -16018,6 +16018,12 @@
           },
           "hipoteseLegal": {
             "type": "string"
+          },
+          "componenteExibicao": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -16082,6 +16088,12 @@
           },
           "hipoteseLegal": {
             "type": "string"
+          },
+          "componenteExibicao": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -16128,6 +16140,12 @@
           },
           "hipoteseLegal": {
             "type": "string"
+          },
+          "componenteExibicao": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -16987,6 +17005,12 @@
               "null",
               "string"
             ]
+          },
+          "componenteExibicao": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -17652,6 +17676,7 @@
           "codigo",
           "nome",
           "descricao",
+          "componenteExibicao",
           "dominio",
           "origem",
           "cardinalidade",
@@ -17682,6 +17707,9 @@
             "type": "string"
           },
           "descricao": {
+            "type": "string"
+          },
+          "componenteExibicao": {
             "type": [
               "null",
               "string"
@@ -17782,10 +17810,7 @@
             "type": "string"
           },
           "descricao": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": "string"
           },
           "dominio": {
             "type": "string"
@@ -17850,6 +17875,12 @@
           "escopo": {
             "type": "string",
             "default": "CANDIDATO"
+          },
+          "componenteExibicao": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

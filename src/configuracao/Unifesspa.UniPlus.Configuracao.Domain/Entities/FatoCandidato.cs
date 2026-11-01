@@ -24,7 +24,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// <remarks>
 /// <para>
 /// Dois regimes no mesmo cadastro: o fato de <b>sistema</b> é semeado por código e só tem editáveis o
-/// nome, a descrição e a proteção de dados — a definição, que o sistema calcula ou lê, é travada —; o
+/// nome, a descrição, o componente de exibição e a proteção de dados — a definição, que o sistema calcula ou lê, é travada —; o
 /// fato do <b>administrador</b> é cadastrado em tempo de execução. Nos dois regimes, criar o fato ou
 /// mudar a proteção o deixa pendente de aprovação da proteção de dados (ADR-0153). Em nenhum dos dois o fato é apagado: desativar bloqueia só
 /// vínculos novos, e o processo que já o usa continua com a cópia que congelou (ADR-0061).
@@ -65,7 +65,18 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
 
     public string Codigo { get; private set; } = null!;
     public string Nome { get; private set; } = null!;
-    public string? Descricao { get; private set; }
+    /// <summary>
+    /// O que o dado significa, para quem analisa a inscrição: obrigatória, e congelada pela publicação no
+    /// fato coletado e no derivado do processo.
+    /// </summary>
+    public string Descricao { get; private set; } = null!;
+
+    /// <summary>
+    /// Como a tela exibe o valor quando o modo de exibição não se deduz do tipo, do formato nem da
+    /// classificação; <see langword="null"/> deixa o padrão que a consulta resolve. Apresentação do fato:
+    /// mudá-lo não altera a proteção de dados nem reinicia a aprovação.
+    /// </summary>
+    public ComponenteDeExibicao? ComponenteExibicao { get; private set; }
     public DominioFato Dominio { get; private set; }
     public OrigemFato Origem { get; private set; }
     public CardinalidadeFato Cardinalidade { get; private set; }
@@ -164,7 +175,8 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     private FatoCandidato(
         string codigo,
         string nome,
-        string? descricao,
+        string descricao,
+        ComponenteDeExibicao? componenteExibicao,
         DominioFato dominio,
         OrigemFato origem,
         CardinalidadeFato cardinalidade,
@@ -181,6 +193,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         FonteValores = fonteValores;
         Nome = nome;
         Descricao = descricao;
+        ComponenteExibicao = componenteExibicao;
         Dominio = dominio;
         Origem = origem;
         Cardinalidade = cardinalidade;
@@ -215,7 +228,8 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         ClassificacaoDeProtecao classificacaoProtecao,
         string finalidadeTratamento,
         HipoteseLegalTratamento hipoteseLegal,
-        bool sistema)
+        bool sistema,
+        ComponenteDeExibicao? componenteExibicao = null)
     {
         List<FieldError> erros = [];
         void Recusar(string campo, string codigoErro, string mensagem) => erros.Add(new(campo, new DomainError(codigoErro, mensagem)));
@@ -226,7 +240,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
             erros.Add(new("codigo", codigoResult.Error!));
         }
 
-        Result<(string Nome, string? Descricao)> descritivo = ValidarDescritivo(nome, descricao);
+        Result<(string Nome, string Descricao, ComponenteDeExibicao? Componente)> descritivo = ValidarDescritivo(nome, descricao, componenteExibicao);
         erros.AddRange(descritivo.Errors);
 
         ConferirEixosDeValor(erros, dominio, cardinalidade, fonteValores, formato);
@@ -289,6 +303,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
             codigoResult.Value!.Valor,
             descritivo.Value.Nome,
             descritivo.Value.Descricao,
+            descritivo.Value.Componente,
             dominio,
             origem,
             cardinalidade,
@@ -382,11 +397,12 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         EscopoFato escopo,
         ClassificacaoDeProtecao classificacaoProtecao,
         string finalidadeTratamento,
-        HipoteseLegalTratamento hipoteseLegal) =>
+        HipoteseLegalTratamento hipoteseLegal,
+        ComponenteDeExibicao? componenteExibicao = null) =>
         Criar(
             codigo, nome, descricao, dominio, OrigemFato.Declarado, cardinalidade, fonteValores, formato, pontoResolucao,
             $"{PrefixoBindingDeclarado}:{codigo?.Trim()}", escopo, classificacaoProtecao, finalidadeTratamento, hipoteseLegal,
-            sistema: false);
+            sistema: false, componenteExibicao);
 
     /// <summary>
     /// Cadastro de derivado por regra pelo administrador (ADR-0136): booleano, verdadeiro quando
@@ -403,7 +419,8 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         EscopoFato escopo,
         ClassificacaoDeProtecao classificacaoProtecao,
         string finalidadeTratamento,
-        HipoteseLegalTratamento hipoteseLegal)
+        HipoteseLegalTratamento hipoteseLegal,
+        ComponenteDeExibicao? componenteExibicao = null)
     {
         (CardinalidadeFato cardinalidade, FonteValoresFato? fonteValores) = EixosInferidosDoDerivado(dominio);
         Result<FatoCandidato> criado = Criar(
@@ -411,7 +428,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
             cardinalidade,
             fonteValores,
             formato: null, pontoResolucao, $"{PrefixoBindingDerivadoRegra}:{codigo?.Trim()}", escopo,
-            classificacaoProtecao, finalidadeTratamento, hipoteseLegal, sistema: false);
+            classificacaoProtecao, finalidadeTratamento, hipoteseLegal, sistema: false, componenteExibicao);
         List<FieldError> recusasDoDominio = [];
         if (ConferirDominioDoDerivado(recusasDoDominio, dominio))
         {
@@ -441,7 +458,8 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         string pontoResolucao,
         ClassificacaoDeProtecao classificacaoProtecao,
         string finalidadeTratamento,
-        HipoteseLegalTratamento hipoteseLegal)
+        HipoteseLegalTratamento hipoteseLegal,
+        ComponenteDeExibicao? componenteExibicao = null)
     {
         ArgumentNullException.ThrowIfNull(catalogo);
 
@@ -485,7 +503,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
             cardinalidadeInferida,
             fonteInferida,
             formato: null, pontoResolucao, $"{PrefixoBindingAgregacao}:{membroCodigo}", EscopoFato.Candidato,
-            classificacaoProtecao, finalidadeTratamento, hipoteseLegal, sistema: false);
+            classificacaoProtecao, finalidadeTratamento, hipoteseLegal, sistema: false, componenteExibicao);
 
         // As recusas que dependem do fato de membro só valem com ele válido; sem ele, o domínio e a
         // fonte não foram inferidos e as recusas desses campos não orientam.
@@ -608,17 +626,20 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     }
 
     /// <summary>
-    /// Altera o nome e a descrição. Os eixos têm a alteração própria, <see cref="AlterarDefinicao"/>.
+    /// Altera o nome, a descrição e o componente de exibição, que são a apresentação do fato e valem
+    /// também no fato de sistema: não tocam a proteção de dados e não reiniciam a aprovação. Os eixos
+    /// têm a alteração própria, <see cref="AlterarDefinicao"/>.
     /// </summary>
-    public Result AlterarDescritivo(string nome, string? descricao)
+    public Result AlterarDescritivo(string nome, string? descricao, ComponenteDeExibicao? componenteExibicao)
     {
-        Result<(string Nome, string? Descricao)> descritivo = ValidarDescritivo(nome, descricao);
+        Result<(string Nome, string Descricao, ComponenteDeExibicao? Componente)> descritivo =
+            ValidarDescritivo(nome, descricao, componenteExibicao);
         if (descritivo.IsFailure)
         {
             return Result.ValidationFailure(descritivo.Errors);
         }
 
-        (Nome, Descricao) = descritivo.Value;
+        (Nome, Descricao, ComponenteExibicao) = descritivo.Value;
         return Result.Success();
     }
 
@@ -1305,11 +1326,12 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
 
     private static readonly DomainError RecusaDaDefinicaoDoFatoDeSistema = new(
         FatoCandidatoErrorCodes.DefinicaoDoFatoDeSistemaTravada,
-        "Fato de sistema só tem editáveis o nome, a descrição e a proteção de dados (classificação, finalidade e hipótese legal). "
+        "Fato de sistema só tem editáveis o nome, a descrição, o componente de exibição e a proteção de dados (classificação, finalidade e hipótese legal). "
         + "Código, domínio, cardinalidade, origem, fonte e formato dos valores, valores de domínio, regras padrão, ponto de resolução, "
         + "escopo e ativação continuam travados, porque o sistema calcula ou lê a definição.");
 
-    private static Result<(string Nome, string? Descricao)> ValidarDescritivo(string nome, string? descricao)
+    private static Result<(string Nome, string Descricao, ComponenteDeExibicao? Componente)> ValidarDescritivo(
+        string nome, string? descricao, ComponenteDeExibicao? componente)
     {
         List<FieldError> erros = [];
         string nomeNormalizado = nome?.Trim() ?? string.Empty;
@@ -1323,16 +1345,27 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
                 FatoCandidatoErrorCodes.NomeTamanho, $"Nome do fato deve ter no máximo {NomeMaxLength} caracteres.")));
         }
 
-        string? descricaoNormalizada = string.IsNullOrWhiteSpace(descricao) ? null : descricao.Trim();
-        if (descricaoNormalizada is { Length: > DescricaoMaxLength })
+        string descricaoNormalizada = descricao?.Trim() ?? string.Empty;
+        if (descricaoNormalizada.Length == 0)
+        {
+            erros.Add(new("descricao", new DomainError(
+                FatoCandidatoErrorCodes.DescricaoObrigatoria, "Descrição do fato é obrigatória.")));
+        }
+        else if (descricaoNormalizada.Length > DescricaoMaxLength)
         {
             erros.Add(new("descricao", new DomainError(
                 FatoCandidatoErrorCodes.DescricaoTamanho, $"Descrição do fato deve ter no máximo {DescricaoMaxLength} caracteres.")));
         }
 
+        if (componente is { } informado && (informado == ComponenteDeExibicao.Nenhum || !Enum.IsDefined(informado)))
+        {
+            erros.Add(new("componenteExibicao", new DomainError(
+                FatoCandidatoErrorCodes.ComponenteExibicaoInvalido, "Componente de exibição do fato fora do vocabulário fechado.")));
+        }
+
         return erros.Count > 0
-            ? Result<(string, string?)>.ValidationFailure(erros)
-            : Result<(string, string?)>.Success((nomeNormalizado, descricaoNormalizada));
+            ? Result<(string, string, ComponenteDeExibicao?)>.ValidationFailure(erros)
+            : Result<(string, string, ComponenteDeExibicao?)>.Success((nomeNormalizado, descricaoNormalizada, componente));
     }
 
     /// <summary>

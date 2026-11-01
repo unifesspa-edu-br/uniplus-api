@@ -34,7 +34,7 @@ public sealed class ColetabilidadeDoCampoDeGrupoTests
         Dictionary<string, FatoCandidatoView> catalogo = new(StringComparer.Ordinal)
         {
             ["PARENTESCO"] = new(
-                Guid.CreateVersion7(), "PARENTESCO", "Parentesco", null, "BOOLEANO", "DECLARADO", "ESCALAR", null, "INSCRICAO",
+                Guid.CreateVersion7(), "PARENTESCO", "Parentesco", "Descrição do fato.", "BOOLEANO", "DECLARADO", "ESCALAR", null, "INSCRICAO",
                 "CAMPO_FORMULARIO:PARENTESCO", null, FonteValores: null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, Escopo: escopo, ProtecaoAprovada: true),
         };
 

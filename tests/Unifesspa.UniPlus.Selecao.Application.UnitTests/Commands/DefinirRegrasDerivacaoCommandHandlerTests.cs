@@ -54,13 +54,13 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
 
     private static IReadOnlyList<FatoCandidatoView> VocabularioSeed() =>
     [
-        new(Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", null, "CATEGORICO", "DECLARADO", "ESCALAR",
+        new(Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", "Descrição do fato.", "CATEGORICO", "DECLARADO", "ESCALAR",
             ["BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA", "NAO_INFORMADO"], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", null, "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-        new(Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", null, "BOOLEANO", "DECLARADO", "ESCALAR",
+        new(Guid.CreateVersion7(), "BAIXA_RENDA", "Baixa renda", "Descrição do fato.", "BOOLEANO", "DECLARADO", "ESCALAR",
             null, "INSCRICAO", "CAMPO_FORMULARIO:BAIXA_RENDA", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-        new(Guid.CreateVersion7(), OrigemEscolar.FatoEgresso, "Egresso de escola pública", null, "BOOLEANO", "DERIVADO", "ESCALAR",
+        new(Guid.CreateVersion7(), OrigemEscolar.FatoEgresso, "Egresso de escola pública", "Descrição do fato.", "BOOLEANO", "DERIVADO", "ESCALAR",
             null, "INSCRICAO", $"REGRA_DERIVACAO:{OrigemEscolar.FatoEgresso}", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
-        new(Guid.CreateVersion7(), Derivado, "Regime de vaga", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO",
+        new(Guid.CreateVersion7(), Derivado, "Regime de vaga", "Descrição do fato.", "CATEGORICO", "DERIVADO", "MULTIVALORADO",
             ["AC", "AC_PCD"], "INSCRICAO", $"REGRA_DERIVACAO:{Derivado}",
             [new FatoValorDominioViewItem("AC", "Ampla", 0, true), new FatoValorDominioViewItem("AC_PCD", "Reserva", 1, true)],
             "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
@@ -192,7 +192,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
         [
             .. VocabularioSeed(),
-            new FatoCandidatoView(Guid.CreateVersion7(), "INDIGENA_DECLARADO", "Indígena declarado", null, dominio,
+            new FatoCandidatoView(Guid.CreateVersion7(), "INDIGENA_DECLARADO", "Indígena declarado", "Descrição do fato.", dominio,
                 "DERIVADO", "ESCALAR", null, "INSCRICAO", "REGRA_DERIVACAO:INDIGENA_DECLARADO", [], dominio == "BOOLEANO" ? null : "GEO_UF", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
         ]));
         DefinirRegrasDerivacaoCommand command = new(processo.Id,
@@ -216,7 +216,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
         [
             .. VocabularioSeed(),
-            new FatoCandidatoView(Guid.CreateVersion7(), "FORMA_CONCLUSAO", "Forma de conclusão", null, "CATEGORICO", "DERIVADO",
+            new FatoCandidatoView(Guid.CreateVersion7(), "FORMA_CONCLUSAO", "Forma de conclusão", "Descrição do fato.", "CATEGORICO", "DERIVADO",
                 "MULTIVALORADO", ["EJA", "PROFICIENCIA"], "INSCRICAO", "REGRA_DERIVACAO:FORMA_CONCLUSAO",
                 [new FatoValorDominioViewItem("EJA", "EJA", 0, true), new FatoValorDominioViewItem("PROFICIENCIA", "Proficiência", 1, false)],
                 "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),

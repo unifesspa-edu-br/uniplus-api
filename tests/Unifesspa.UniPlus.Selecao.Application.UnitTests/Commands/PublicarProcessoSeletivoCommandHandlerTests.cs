@@ -64,7 +64,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
         Id: Guid.CreateVersion7(),
         Codigo: "MODALIDADE",
         Nome: "Modalidade de concorrência",
-        Descricao: null,
+        Descricao: "Descrição do fato.",
         Dominio: "CATEGORICO",
         Origem: "DERIVADO",
         Cardinalidade: "MULTIVALORADO",

@@ -73,7 +73,7 @@ internal static class CatalogoDoConjuntoBasico
     private static FatoCandidatoView Declarado(
         string codigo, string dominio, string? formato = null, string? fonte = null,
         IReadOnlyList<string>? valores = null, string classificacao = "PESSOAL") =>
-        new(Guid.CreateVersion7(), codigo, codigo, null, dominio, "DECLARADO", "ESCALAR", valores, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}",
+        new(Guid.CreateVersion7(), codigo, codigo, "Descrição do fato.", dominio, "DECLARADO", "ESCALAR", valores, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}",
             valores?.Select(static (v, ordem) => new FatoValorDominioViewItem(v, v, ordem, true)).ToList(), fonte, Ativo: true,
             ClassificacaoProtecao: classificacao, HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, Formato: formato, ProtecaoAprovada: true);
 

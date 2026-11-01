@@ -497,7 +497,7 @@ public sealed class ConferenciaDosEixosNosHandlersTests
                 tiposDeAtoCongelados: _tiposCongelados)));
 
             FatoCandidatoView vivo = new(
-                Guid.CreateVersion7(), Fato, "Tem renda?", null, dominioNoCatalogo, "DECLARADO", "ESCALAR", null,
+                Guid.CreateVersion7(), Fato, "Tem renda?", "Descrição do fato.", dominioNoCatalogo, "DECLARADO", "ESCALAR", null,
                 "RESULTADO_FINAL", $"CAMPO_FORMULARIO:{Fato}", null, null, Ativo: true, ClassificacaoProtecao: classificacaoNoCatalogo, HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true);
             FatoCandidatoView novo = vivo with { Id = Guid.CreateVersion7(), Codigo = FatoNovo, Nome = "Tem endereço próprio?", Dominio = "BOOLEANO", Binding = $"CAMPO_FORMULARIO:{FatoNovo}" };
             _catalogo.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[vivo, novo]));

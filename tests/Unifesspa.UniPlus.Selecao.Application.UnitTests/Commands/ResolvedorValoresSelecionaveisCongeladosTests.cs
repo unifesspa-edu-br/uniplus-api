@@ -30,7 +30,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
         Id: Guid.CreateVersion7(),
         Codigo: codigo,
         Nome: codigo,
-        Descricao: null,
+        Descricao: "Descrição do fato.",
         Dominio: "CATEGORICO",
         Origem: "DECLARADO",
         Cardinalidade: "MULTIVALORADO",

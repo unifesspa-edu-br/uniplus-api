@@ -97,7 +97,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
     public void Sistema_Recusa()
     {
         FatoCandidato sistema = FatoCandidato.Criar(
-            "COR_RACA", "Cor ou raça", null, DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Global,
+            "COR_RACA", "Cor ou raça", "Descrição do fato.", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Global,
             null, "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", EscopoFato.Candidato, ClassificacaoDeProtecao.Sensivel, Finalidade, Hipotese,
             sistema: true).Value!;
 
@@ -509,7 +509,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
         string ponto = "INSCRICAO",
         ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Pessoal) =>
         FatoCandidato.CriarDoAdministrador(
-            codigo, codigo, null, dominio, CardinalidadeFato.Escalar, fonte, null, ponto, EscopoFato.Candidato,
+            codigo, codigo, "Descrição do fato.", dominio, CardinalidadeFato.Escalar, fonte, null, ponto, EscopoFato.Candidato,
             classificacao, Finalidade, Hipotese).Value!;
 
     private static FatoCandidato DeMembro(
@@ -519,7 +519,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
         string ponto = "INSCRICAO",
         ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Pessoal) =>
         FatoCandidato.CriarDoAdministrador(
-            codigo, codigo, null, dominio, CardinalidadeFato.Escalar, dominio == DominioFato.Categorico ? fonte : null, null, ponto,
+            codigo, codigo, "Descrição do fato.", dominio, CardinalidadeFato.Escalar, dominio == DominioFato.Categorico ? fonte : null, null, ponto,
             EscopoFato.MembroGrupo, classificacao, Finalidade, Hipotese).Value!;
 
     private static FatoCandidato Agregado(
@@ -529,7 +529,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
         string ponto = "INSCRICAO",
         PrecedenciaFase[]? precedencias = null) =>
         FatoCandidato.CriarAgregadoDoAdministrador(
-            codigo, codigo, null, membro.Codigo, new CatalogoDeFatos([membro], precedencias ?? []), ponto, classificacao, Finalidade, Hipotese).Value!;
+            codigo, codigo, "Descrição do fato.", membro.Codigo, new CatalogoDeFatos([membro], precedencias ?? []), ponto, classificacao, Finalidade, Hipotese).Value!;
 
     private static FatoCandidato Derivado(
         string codigo,
@@ -537,7 +537,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
         string ponto = "INSCRICAO",
         ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Pessoal) =>
         FatoCandidato.CriarDerivadoDoAdministrador(
-            codigo, codigo, null, dominio, ponto, EscopoFato.Candidato, classificacao, Finalidade, Hipotese).Value!;
+            codigo, codigo, "Descrição do fato.", dominio, ponto, EscopoFato.Candidato, classificacao, Finalidade, Hipotese).Value!;
 
     private static CatalogoDeFatos Catalogo(params FatoCandidato[] fatos) => new(fatos, []);
 

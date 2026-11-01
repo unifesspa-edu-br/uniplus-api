@@ -29,7 +29,8 @@ public static class CriarFatoAgregadoCommandHandler
             command.PontoResolucao,
             TokensDoFato.Classificacao(command.ClassificacaoProtecao) ?? ClassificacaoDeProtecao.Nenhuma,
             command.FinalidadeTratamento,
-            TokensDoFato.HipoteseLegal(command.HipoteseLegal) ?? HipoteseLegalTratamento.Nenhuma);
+            TokensDoFato.HipoteseLegal(command.HipoteseLegal) ?? HipoteseLegalTratamento.Nenhuma,
+            TokensDoFato.Componente(command.ComponenteExibicao));
         if (criar.IsFailure)
         {
             return Result<Guid>.ValidationFailure(criar.Errors);

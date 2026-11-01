@@ -140,14 +140,14 @@ public sealed class CadastroDoFatoCandidatoTokensTests
     }
 
     private static CriarFatoCandidatoCommand Declarado() => new(
-        "FATO_NOVO", "Fato novo", null, "BOOLEANO", "ESCALAR", null, null, "INSCRICAO", "CANDIDATO", "PESSOAL", Finalidade,
+        "FATO_NOVO", "Fato novo", "Descrição do fato.", "BOOLEANO", "ESCALAR", null, null, "INSCRICAO", "CANDIDATO", "PESSOAL", Finalidade,
         "CUMPRIMENTO_OBRIGACAO_LEGAL");
 
     private static CriarFatoDerivadoCommand Derivado() => new(
-        "DERIVADO_NOVO", "Derivado novo", null, "BOOLEANO", "INSCRICAO", "CANDIDATO", "PESSOAL", Finalidade, "CUMPRIMENTO_OBRIGACAO_LEGAL");
+        "DERIVADO_NOVO", "Derivado novo", "Descrição do fato.", "BOOLEANO", "INSCRICAO", "CANDIDATO", "PESSOAL", Finalidade, "CUMPRIMENTO_OBRIGACAO_LEGAL");
 
     private static CriarFatoAgregadoCommand Agregado() => new(
-        "AGREGADO_NOVO", "Agregado novo", null, "MEMBRO", "INSCRICAO", "PESSOAL", Finalidade, "CUMPRIMENTO_OBRIGACAO_LEGAL");
+        "AGREGADO_NOVO", "Agregado novo", "Descrição do fato.", "MEMBRO", "INSCRICAO", "PESSOAL", Finalidade, "CUMPRIMENTO_OBRIGACAO_LEGAL");
 
     private Task<Result<Guid>> CriarDeclaradoAsync(CriarFatoCandidatoCommand comando) =>
         CriarFatoCandidatoCommandHandler.Handle(comando, _fatos, _unitOfWork, CancellationToken.None);

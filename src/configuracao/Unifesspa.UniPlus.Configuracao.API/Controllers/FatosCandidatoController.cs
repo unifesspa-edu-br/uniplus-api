@@ -249,7 +249,7 @@ public sealed class FatosCandidatoController : ControllerBase
     public Task<IActionResult> Atualizar(Guid id, [FromBody] DescritivoDoFatoInput request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return Enviar(new AtualizarFatoCandidatoCommand(id, request.Nome, request.Descricao), cancellationToken);
+        return Enviar(new AtualizarFatoCandidatoCommand(id, request.Nome, request.Descricao, request.ComponenteExibicao), cancellationToken);
     }
 
     /// <summary>
