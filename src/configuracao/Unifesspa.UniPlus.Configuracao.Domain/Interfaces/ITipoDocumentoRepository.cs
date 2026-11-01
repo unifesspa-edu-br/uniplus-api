@@ -31,6 +31,15 @@ public interface ITipoDocumentoRepository
     Task AdicionarAsync(TipoDocumento tipo, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Os tipos vivos pendentes de solicitação (criados ou com a proteção alterada e ainda fora de
+    /// qualquer solicitação), rastreados para a solicitação os enviar.
+    /// </summary>
+    Task<IReadOnlyList<TipoDocumento>> ListarPendentesDeSolicitacaoAsync(CancellationToken cancellationToken);
+
+    /// <summary>Os tipos vivos que ainda não têm a proteção aprovada, sem rastreamento, por código.</summary>
+    Task<IReadOnlyList<TipoDocumento>> ListarSemProtecaoAprovadaAsync(CancellationToken cancellationToken);
+
+    /// <summary>
     /// Marca o tipo de documento para remoção; o <c>SoftDeleteInterceptor</c>
     /// converte em soft-delete preenchendo <c>DeletedBy</c>/<c>DeletedAt</c>.
     /// </summary>

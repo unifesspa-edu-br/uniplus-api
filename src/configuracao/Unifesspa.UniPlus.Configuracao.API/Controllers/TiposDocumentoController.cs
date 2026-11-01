@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Authorization.Abstractions;
+using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposDocumento;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
@@ -38,13 +40,16 @@ public sealed class TiposDocumentoController : ControllerBase
     private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;
     private readonly IResourceLinksBuilder<TipoDocumentoDto> _linksBuilder;
+    private readonly ITitularesDaPermissao _titulares;
 
     public TiposDocumentoController(
         ICommandBus commandBus,
         IQueryBus queryBus,
         IDomainErrorMapper mapper,
-        IResourceLinksBuilder<TipoDocumentoDto> linksBuilder)
+        IResourceLinksBuilder<TipoDocumentoDto> linksBuilder,
+        ITitularesDaPermissao titulares)
     {
+        _titulares = titulares;
         _commandBus = commandBus;
         _queryBus = queryBus;
         _mapper = mapper;
@@ -165,6 +170,33 @@ public sealed class TiposDocumentoController : ControllerBase
 
         Result resultado = await _commandBus
             .Send(command, cancellationToken)
+            .ConfigureAwait(false);
+
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
+    /// Aceita a classificação que a proteção de dados recomendou ao negar o tipo: ele fica aprovado com ela,
+    /// sem nova solicitação, e a proteção de dados é avisada. Exige a permissão de manutenção.
+    /// </summary>
+    [HttpPost("admin/tipos-documento/{id:guid}/aceite-da-recomendacao")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposDocumentoManter, ResourceTipo = ResourceTiposConfiguracao.TipoDocumento)]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> AceitarRecomendacao(Guid id, CancellationToken cancellationToken)
+    {
+        // Os destinatários do aviso vêm do módulo Autorização e são lidos antes do handler, que fica num único DbContext.
+        IReadOnlyList<string> destinatarios = await _titulares
+            .ListarEmailsAsync(PermissaoConfiguracao.ProtecaoDoCatalogoAprovar.Codigo, cancellationToken)
+            .ConfigureAwait(false);
+
+        Result resultado = await _commandBus
+            .Send(new AceitarRecomendacaoDoTipoDocumentoCommand(id, destinatarios), cancellationToken)
             .ConfigureAwait(false);
 
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);

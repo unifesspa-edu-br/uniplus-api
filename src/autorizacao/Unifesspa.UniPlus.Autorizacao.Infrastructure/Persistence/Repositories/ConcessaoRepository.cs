@@ -183,11 +183,8 @@ public sealed class ConcessaoRepository : IConcessaoRepository
         Guid perfilId, Guid exceto, DateTimeOffset agora, CancellationToken cancellationToken = default) =>
         await _context.Concessoes
             .AsNoTracking()
-            .Where(c => c.PerfilId == perfilId
-                && c.Id != exceto
-                && c.EscopoTipo == TipoDeEscopo.Instituicao
-                && c.RevogadaEm == null
-                && (c.ValidaAte == null || c.ValidaAte > agora))
+            .VigentesDaInstituicao(agora)
+            .Where(c => c.PerfilId == perfilId && c.Id != exceto)
             .Select(c => new { c.BeneficiarioEmissor, c.BeneficiarioSub })
             .Distinct()
             .CountAsync(cancellationToken)
@@ -198,11 +195,8 @@ public sealed class ConcessaoRepository : IConcessaoRepository
     {
         var titulares = await _context.Concessoes
             .AsNoTracking()
-            .Where(c => c.PerfilId == perfilId
-                && c.EscopoTipo == TipoDeEscopo.Instituicao
-                && c.RevogadaEm == null
-                && (c.ValidaAte == null || c.ValidaAte > agora)
-                && c.BeneficiarioEmail != null)
+            .VigentesDaInstituicao(agora)
+            .Where(c => c.PerfilId == perfilId && c.BeneficiarioEmail != null)
             .Select(c => new { c.BeneficiarioEmissor, c.BeneficiarioSub, c.BeneficiarioEmail })
             .Distinct()
             .ToListAsync(cancellationToken)

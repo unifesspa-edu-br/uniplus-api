@@ -105,17 +105,22 @@ public static class AtualizarTipoDocumentoCommandHandler
 
         try
         {
-            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+            return await MutacaoDoTipo.SalvarAsync(
+                unitOfWork,
+                new DomainError(
+                    TipoDocumentoErrorCodes.ConflitoDeConcorrencia,
+                    "O tipo de documento foi alterado concorrentemente. Tente novamente."),
+                cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint
             && UniqueConstraintViolation.IsCodigoConflict(constraint))
         {
             // Corrida entre a checagem de unicidade e o UPDATE: o índice único parcial
-            // dispara 23505 e viramos o mesmo CodigoJaExiste do caminho não-race.
+            // dispara 23505 e viramos o mesmo CodigoJaExiste do caminho não-race. O descarte evita que o save
+            // automático do Wolverine regrave o tipo depois do handler e estoure fora deste catch (ADR-0119).
+            unitOfWork.DescartarAlteracoesNaoSalvas();
             return Result.Failure(CodigoJaExisteErro());
         }
-
-        return Result.Success();
     }
 
     private static DomainError CodigoJaExisteErro() =>

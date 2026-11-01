@@ -116,18 +116,79 @@ public sealed class AprovacaoDaProtecaoTests
         });
     }
 
-    [Fact(DisplayName = "Aceitar a recomendação que a hipótese legal do tipo não comporta é recusado e o tipo continua negado")]
-    public void Tipo_AceitarRecomendacaoIncompativelComAHipotese_Recusado()
+    [Fact(DisplayName = "A negativa recusa a recomendação que a hipótese legal do tipo não admite, para o aceite não ficar sem saída")]
+    public void Tipo_NegarRecomendacaoIncompativelComAHipotese_Recusada()
     {
         TipoDocumento tipo = NovoTipo(ClassificacaoDeProtecao.Pessoal, HipoteseLegalTratamento.InteresseLegitimo);
         tipo.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
-        tipo.NegarProtecao(ClassificacaoDeProtecao.Sensivel, Caroline, Terca);
 
-        Result resultado = tipo.AceitarRecomendacaoDaProtecao(Isabella, Quarta);
+        Result resultado = tipo.NegarProtecao(ClassificacaoDeProtecao.Sensivel, Caroline, Terca);
 
-        resultado.Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.RecomendacaoIncompativelComAHipoteseLegal);
-        tipo.ClassificacaoProtecao.Should().Be(ClassificacaoDeProtecao.Pessoal);
-        tipo.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Negada);
+        resultado.Errors.Should().ContainSingle(e => e.Field == "classificacaoRecomendada")
+            .Which.Error.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.RecomendacaoIncompativelComAHipoteseLegal);
+        tipo.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Solicitada);
+    }
+
+    [Fact(DisplayName = "Recomendar a classificação que o item já tem é decisão inválida: o item se aprova")]
+    public void Tipo_NegarRecomendacaoIgualAAtual_Recusada()
+    {
+        TipoDocumento tipo = TipoSolicitado();
+
+        Result resultado = tipo.NegarProtecao(ClassificacaoDeProtecao.Pessoal, Caroline, Terca);
+
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.RecomendacaoIgualAAtual);
+        tipo.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Solicitada);
+    }
+
+    [Fact(DisplayName = "A negativa do fato recusa a recomendação igual à atual e a que a hipótese legal não admite")]
+    public void Fato_NegarRecomendacaoInvalida_Recusada()
+    {
+        FatoCandidato igual = NovoFato();
+        igual.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
+        FatoCandidato incompativel = FatoCandidato.CriarDoAdministrador(
+            "TEM_CONTRATO", "Tem contrato", null, DominioFato.Booleano, CardinalidadeFato.Escalar, null, null, "INSCRICAO", EscopoFato.Candidato,
+            ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.ExecucaoContrato).Value!;
+        incompativel.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
+
+        igual.NegarProtecao(ClassificacaoDeProtecao.Pessoal, Caroline, Terca).Errors.Should().ContainSingle()
+            .Which.Error.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.RecomendacaoIgualAAtual);
+        incompativel.NegarProtecao(ClassificacaoDeProtecao.Sensivel, Caroline, Terca).Errors.Should().ContainSingle()
+            .Which.Error.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.RecomendacaoIncompativelComAHipoteseLegal);
+        incompativel.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Solicitada);
+    }
+
+    [Fact(DisplayName = "No fato de sistema o domínio, a cardinalidade, o escopo, a fonte ou o formato fora do vocabulário saem como erro de vocabulário no campo, e não como definição travada")]
+    public void FatoDeSistema_TokenForaDoVocabulario_ErroDeVocabularioNoCampo()
+    {
+        FatoCandidato fato = FatoAprovado(NovoFatoDeSistema());
+        DefinicaoDoFato invalida = Definicao(fato) with
+        {
+            Dominio = (DominioFato)(-1),
+            Cardinalidade = (CardinalidadeFato)(-1),
+            Escopo = (EscopoFato)(-1),
+            FonteValores = (FonteValoresFato)(-1),
+            Formato = (FormatoTexto)(-1),
+        };
+
+        Result resultado = fato.AlterarDefinicao(invalida, Catalogo(fato));
+
+        resultado.Errors.Select(static e => e.Field).Should().BeEquivalentTo("dominio", "cardinalidade", "escopo", "fonteValores", "formato");
+        resultado.Errors.Should().NotContain(e => e.Error.Code == FatoCandidatoErrorCodes.DefinicaoDoFatoDeSistemaTravada);
+        fato.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Aprovada);
+    }
+
+    [Fact(DisplayName = "No fato de sistema o ponto de resolução não informado não conta como troca; o diferente é recusado")]
+    public void FatoDeSistema_PontoDeResolucaoNaoInformado_NaoRecusa()
+    {
+        FatoCandidato fato = FatoAprovado(NovoFatoDeSistema());
+
+        Result semPonto = fato.AlterarDefinicao(
+            Definicao(fato, hipotese: HipoteseLegalTratamento.ExercicioRegularDeDireitos) with { PontoResolucao = null! }, Catalogo(fato));
+        Result outroPonto = fato.AlterarDefinicao(Definicao(fato) with { PontoResolucao = "HABILITACAO" }, Catalogo(fato));
+
+        semPonto.IsSuccess.Should().BeTrue(semPonto.Error?.Message);
+        fato.HipoteseLegal.Should().Be(HipoteseLegalTratamento.ExercicioRegularDeDireitos);
+        outroPonto.Error!.Code.Should().Be(FatoCandidatoErrorCodes.DefinicaoDoFatoDeSistemaTravada);
     }
 
     [Fact(DisplayName = "Aceitar a recomendação do tipo que não foi negado é recusado")]

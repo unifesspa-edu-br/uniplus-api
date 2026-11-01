@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Revisoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Revisoes;
+using Unifesspa.UniPlus.Configuracao.API.Controllers;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Selecao.API.Authorization;
 using Unifesspa.UniPlus.Selecao.API.Controllers;
@@ -74,6 +75,17 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
     };
 
     /// <summary>
+    /// Actions que alcançam os dois cadastros do catálogo de uma vez e por isso decidem na própria action, pela permissão
+    /// de cada cadastro, pelo verificador de acesso: a solicitação (manter tipos ou fatos) e a consulta (manter ou aprovar).
+    /// A decisão fica na borda, e não no handler, porque o handler precisa de um único DbContext.
+    /// </summary>
+    private static readonly HashSet<string> DecididasNaAction = new(StringComparer.Ordinal)
+    {
+        Acao(typeof(ProtecaoDoCatalogoController), nameof(ProtecaoDoCatalogoController.Solicitar)),
+        Acao(typeof(ProtecaoDoCatalogoController), nameof(ProtecaoDoCatalogoController.Listar)),
+    };
+
+    /// <summary>
     /// Actions do titular: agem sobre a inscrição de quem chama, que o handler resolve pelo CPF do token; o que não
     /// é dele responde como o que não existe.
     /// </summary>
@@ -113,7 +125,7 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
             .Select(static a => a.DeclaringType!.Assembly.GetName().Name)
             .Distinct()
             .Should().HaveCountGreaterThan(1, "o ponto único protege actions de mais de um módulo");
-        DecididasNoHandler.Keys.Concat(DePessoaAutenticada).Concat(DoTitular).Should().BeSubsetOf(acoes,
+        DecididasNoHandler.Keys.Concat(DePessoaAutenticada).Concat(DoTitular).Concat(DecididasNaAction).Should().BeSubsetOf(acoes,
             "a lista fechada só nomeia actions que existem; action removida ou renomeada sai da lista");
         DecididasNoHandler.Values.Should().AllSatisfy(static mensagem => HandlerDe(mensagem)
             .GetParameters().Should().Contain(static p => p.ParameterType == typeof(IVerificadorDeAcesso)));
@@ -125,7 +137,7 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
         => [.. controllers.SelectMany(static t => ControllersDaSolucao.AcoesDe(t)
             .Select(a => (Acao: a, Nome: Acao(t, a.Name)))
             .Where(a => !Anonima(t, a.Acao) && !PorPoliticaDeIdentidade(t, a.Acao)
-                && !DeclaraDecisao(t, a.Acao) && !DecididasNoHandler.ContainsKey(a.Nome) && !DePessoaAutenticada.Contains(a.Nome) && !DoTitular.Contains(a.Nome))
+                && !DeclaraDecisao(t, a.Acao) && !DecididasNoHandler.ContainsKey(a.Nome) && !DePessoaAutenticada.Contains(a.Nome) && !DoTitular.Contains(a.Nome) && !DecididasNaAction.Contains(a.Nome))
             .Select(static a => a.Nome))];
 
     /// <summary>Chave da action com o nome completo do controller: controller homônimo de outro módulo não herda a exceção.</summary>

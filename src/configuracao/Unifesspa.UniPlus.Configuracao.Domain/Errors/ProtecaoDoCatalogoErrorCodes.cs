@@ -30,6 +30,30 @@ public static class ProtecaoDoCatalogoErrorCodes
     /// <summary>Quem age não tem permissão para a operação sobre nenhum dos cadastros que ela alcança.</summary>
     public const string SemPermissaoNoCatalogo = "ProtecaoDoCatalogo.SemPermissaoNoCatalogo";
 
+    /// <summary>Um item do lote foi alterado concorrentemente entre a leitura e a gravação.</summary>
+    public const string ConflitoDeConcorrencia = "ProtecaoDoCatalogo.ConflitoDeConcorrencia";
+
+    /// <summary>
+    /// A proteção que o aprovador conferiu ausente, ou com classificação ou hipótese legal fora do vocabulário: a
+    /// decisão não chega a ser comparada com a proteção vigente.
+    /// </summary>
+    public const string ProtecaoConferidaInvalida = "ProtecaoDoCatalogo.ProtecaoConferidaInvalida";
+
+    /// <summary>
+    /// A proteção vigente do item difere da que o aprovador conferiu: ele foi editado depois de visto. Reler o item e
+    /// decidir de novo resolve; repetir a mesma decisão nunca dá certo.
+    /// </summary>
+    public const string ProtecaoMudou = "ProtecaoDoCatalogo.ProtecaoMudou";
+
+    /// <summary>A classificação recomendada na negativa é a que o item já tem: não há o que corrigir, o item se aprova.</summary>
+    public const string RecomendacaoIgualAAtual = "ProtecaoDoCatalogo.RecomendacaoIgualAAtual";
+
     /// <summary>O filtro de situação da consulta fora do vocabulário.</summary>
     public const string SituacaoInvalida = "ProtecaoDoCatalogo.SituacaoInvalida";
+
+    /// <summary>O cadastro do item da decisão (<c>TIPO_DOCUMENTO</c> ou <c>FATO</c>) ausente ou fora do vocabulário.</summary>
+    public const string CadastroInvalido = "ProtecaoDoCatalogo.CadastroInvalido";
+
+    /// <summary>A decisão (<c>APROVADA</c> ou <c>NEGADA</c>) ausente ou fora do vocabulário.</summary>
+    public const string DecisaoInvalida = "ProtecaoDoCatalogo.DecisaoInvalida";
 }
