@@ -157,6 +157,7 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         string corpo = await semDados.Content.ReadAsStringAsync();
 
         comDadosPessoais.StatusCode.Should().Be(HttpStatusCode.OK, await comDadosPessoais.Content.ReadAsStringAsync());
+        comDadosPessoais.Headers.CacheControl!.NoStore.Should().BeTrue("a lista traz nome e CPF mascarado");
         doDiogo.Select(static r => r.ResourceId).Should().BeEquivalentTo(
             [cenario.InscricaoId, cenario.InscricaoDeErick, cenario.InscricaoDaServidora, cenario.InscricaoComGrupo], "um registro por inscrição enviada exibida");
         doDiogo.Should().OnlyContain(r => r.Permitido && r.AtorSubject == Diogo && r.InscricaoId == r.ResourceId);
@@ -173,16 +174,22 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
             PermissaoSelecao.DocumentosPessoaisConsultar, PermissaoSelecao.DocumentosPublicosConsultar);
 
         using HttpResponseMessage resposta = await GetAsync(
-            Diogo, $"/api/selecao/_teste/processos-seletivos/{cenario.ProcessoId}/inscricoes/{cenario.InscricaoId}");
+            Diogo, $"/api/selecao/processos-seletivos/{cenario.ProcessoId}/inscricoes/{cenario.InscricaoId}");
 
         string corpo = await resposta.Content.ReadAsStringAsync();
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
+        resposta.Headers.CacheControl!.NoStore.Should().BeTrue();
+        resposta.Content.Headers.ContentType!.MediaType.Should().Be("application/vnd.uniplus.inscricao-administrativa.v1+json");
         using JsonDocument json = JsonDocument.Parse(corpo);
         json.RootElement.GetProperty("id").GetGuid().Should().Be(cenario.InscricaoId);
         json.RootElement.TryGetProperty("numeroInscricao", out _).Should().BeFalse("o número é dado interno");
         Guid[] arquivos = [.. json.RootElement.GetProperty("arquivos").EnumerateArray().Select(static a => a.GetProperty("arquivoId").GetGuid())];
         arquivos.Should().Contain([cenario.ArquivoPessoal, cenario.ArquivoPublico])
             .And.NotContain([cenario.ArquivoSensivel, cenario.ArquivoInterno, cenario.ArquivoIdentificador]);
+        json.RootElement.GetProperty("arquivos").EnumerateArray()
+            .ToDictionary(static a => a.GetProperty("arquivoId").GetGuid(), static a => a.GetProperty("classificacaoProtecao").GetString())
+            .Should().Contain(new KeyValuePair<Guid, string?>(cenario.ArquivoPessoal, "PESSOAL"))
+            .And.Contain(new KeyValuePair<Guid, string?>(cenario.ArquivoPublico, "PUBLICO"));
         corpo.Should().NotContain(PersonasDeTeste.FernandaDrumond.Valor).And.NotContain(PersonasDeTeste.NomeFernandaDrumond);
 
         string[] registradas = [.. _fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>().Registrados
@@ -192,6 +199,63 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
             .And.NotContain(PermissaoSelecao.DocumentosSensiveisConsultar.Codigo, "a negativa do projetor é omissão silenciosa");
     }
 
+    [Fact(DisplayName = "Detalhe: a inscrição que não existe, a de outro processo e o rascunho respondem 404 sem nenhuma decisão registrada")]
+    public async Task Detalhe_SemResource_404SemDecisao()
+    {
+        Cenario cenario = await SemearCenarioAsync(nameof(Detalhe_SemResource_404SemDecisao));
+        Cenario outroProcesso = await SemearCenarioAsync(nameof(Detalhe_SemResource_404SemDecisao) + "-outro");
+        await ConcederAsync(
+            Diogo, cenario.UnidadeId, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPublicosConsultar, PermissaoSelecao.DadosPessoaisConsultar);
+
+        Guid inscricaoInexistente = Guid.CreateVersion7();
+        using HttpResponseMessage inexistente = await GetAsync(Diogo, RotaDoDetalhe(cenario.ProcessoId, inscricaoInexistente));
+        using HttpResponseMessage deOutroProcesso = await GetAsync(Diogo, RotaDoDetalhe(cenario.ProcessoId, outroProcesso.InscricaoId));
+        using HttpResponseMessage emRascunho = await GetAsync(Diogo, RotaDoDetalhe(cenario.ProcessoId, cenario.InscricaoEmRascunho));
+
+        foreach (HttpResponseMessage recusa in new[] { inexistente, deOutroProcesso, emRascunho })
+        {
+            recusa.StatusCode.Should().Be(HttpStatusCode.NotFound);
+            recusa.Headers.CacheControl!.NoStore.Should().BeTrue("o erro do detalhe também não é guardado em cache");
+        }
+
+        Guid[] envolvidas = [cenario.InscricaoId, inscricaoInexistente, outroProcesso.InscricaoId, cenario.InscricaoEmRascunho];
+        _fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>().Registrados
+            .Where(r => r.AtorSubject == Diogo && (envolvidas.Contains(r.InscricaoId ?? Guid.Empty) || envolvidas.Contains(r.ResourceId ?? Guid.Empty)))
+            .Should().BeEmpty("sem resource não há sobre o que decidir");
+    }
+
+    [Fact(DisplayName = "Detalhe: sem consultar inscrições na unidade dona responde o mesmo 404, com a negativa registrada e nada do conteúdo")]
+    public async Task Detalhe_SemAcessoAoResource_404ComNegativaRegistrada()
+    {
+        Cenario cenario = await SemearCenarioAsync(nameof(Detalhe_SemAcessoAoResource_404ComNegativaRegistrada));
+        await ConcederAsync(Betina, Guid.CreateVersion7(), PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar);
+
+        using HttpResponseMessage resposta = await GetAsync(Betina, RotaDoDetalhe(cenario.ProcessoId, cenario.InscricaoId));
+        using HttpResponseMessage inexistente = await GetAsync(Betina, RotaDoDetalhe(cenario.ProcessoId, Guid.CreateVersion7()));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        (await resposta.Content.ReadAsStringAsync()).Should().NotContain(PersonasDeTeste.NomeFernandaDrumond);
+        resposta.Headers.CacheControl!.NoStore.Should().BeTrue();
+        (await RecusaAsync(resposta)).Should().BeEquivalentTo(await RecusaAsync(inexistente), "a recusa não distingue a falta de permissão da inscrição que não existe");
+        RegistroDecisaoAcesso negativa = _fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>().Registrados
+            .Where(r => r.AtorSubject == Betina && r.ProcessoId == cenario.ProcessoId)
+            .Should().ContainSingle("só o acesso ao resource é decidido, e o conteúdo não é carregado").Subject;
+        negativa.Permitido.Should().BeFalse();
+        negativa.Permissao.Should().Be(PermissaoSelecao.InscricoesConsultar.Codigo);
+        negativa.InscricaoId.Should().Be(cenario.InscricaoId);
+    }
+
+    private static async Task<(int Status, string? Code, string? Type, string? Title, string? Detail)> RecusaAsync(HttpResponseMessage resposta)
+    {
+        using JsonDocument json = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        JsonElement raiz = json.RootElement;
+        string? Texto(string nome) => raiz.TryGetProperty(nome, out JsonElement valor) ? valor.GetString() : null;
+        return ((int)resposta.StatusCode, Texto("code"), Texto("type"), Texto("title"), Texto("detail"));
+    }
+
+    private static string RotaDoDetalhe(Guid processoId, Guid inscricaoId) =>
+        $"/api/selecao/processos-seletivos/{processoId}/inscricoes/{inscricaoId}";
+
     [Fact(DisplayName = "Detalhe: com dados pessoais o CPF de Fernanda sai mascarado, com o componente cpf, e nunca em claro")]
     public async Task Detalhe_CpfSaiMascaradoComOComponente()
     {
@@ -199,7 +263,7 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         await ConcederAsync(Leandro, cenario.UnidadeId, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar);
 
         using HttpResponseMessage resposta = await GetAsync(
-            Leandro, $"/api/selecao/_teste/processos-seletivos/{cenario.ProcessoId}/inscricoes/{cenario.InscricaoId}");
+            Leandro, $"/api/selecao/processos-seletivos/{cenario.ProcessoId}/inscricoes/{cenario.InscricaoId}");
 
         string corpo = await resposta.Content.ReadAsStringAsync();
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, corpo);

@@ -34,11 +34,11 @@ public sealed class DecisoesDaProjecao : IPermissoesDaProjecao
 
     /// <inheritdoc />
     public bool Permite(NaturezaDoItem natureza, ClassificacaoDeProtecao classificacao) =>
-        _permitidas.ContainsKey((natureza, Resolvida(classificacao)));
+        _permitidas.ContainsKey((natureza, ClassificacoesDeProtecao.Resolvida(classificacao)));
 
     /// <summary>A decisão permitida do par, ou <see langword="null"/> quando o par é omitido.</summary>
     public DecisaoDeAcesso? DecisaoDo(NaturezaDoItem natureza, ClassificacaoDeProtecao classificacao) =>
-        _permitidas.GetValueOrDefault((natureza, Resolvida(classificacao)));
+        _permitidas.GetValueOrDefault((natureza, ClassificacoesDeProtecao.Resolvida(classificacao)));
 
     /// <summary>As decisões deste conjunto e as do outro; no mesmo par vale a deste.</summary>
     public DecisoesDaProjecao Unir(DecisoesDaProjecao outra)
@@ -53,12 +53,6 @@ public sealed class DecisoesDaProjecao : IPermissoesDaProjecao
 
         return new DecisoesDaProjecao(uniao);
     }
-
-    /// <summary>A classificação que não se resolve vale como sensível: na dúvida, a permissão mais restrita.</summary>
-    internal static ClassificacaoDeProtecao Resolvida(ClassificacaoDeProtecao classificacao) =>
-        classificacao == ClassificacaoDeProtecao.Nenhuma || !Enum.IsDefined(classificacao)
-            ? ClassificacaoDeProtecao.Sensivel
-            : classificacao;
 }
 
 /// <summary>A regra do item sobre a decisão do par.</summary>
@@ -73,7 +67,7 @@ public static class PermissoesDaProjecaoExtensions
         ArgumentNullException.ThrowIfNull(permissoes);
         ArgumentNullException.ThrowIfNull(item);
 
-        ClassificacaoDeProtecao classificacao = DecisoesDaProjecao.Resolvida(item.Classificacao);
+        ClassificacaoDeProtecao classificacao = ClassificacoesDeProtecao.Resolvida(item.Classificacao);
 
         return permissoes.Permite(item.Natureza, classificacao)
             && (classificacao != ClassificacaoDeProtecao.Sensivel || !string.IsNullOrWhiteSpace(item.BaseLegal));

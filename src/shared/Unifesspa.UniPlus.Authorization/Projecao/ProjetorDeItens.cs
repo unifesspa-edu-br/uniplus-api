@@ -41,7 +41,7 @@ public sealed class ProjetorDeItens
 
         Dictionary<(NaturezaDoItem, ClassificacaoDeProtecao), DecisaoDeAcesso> permitidas = [];
         foreach ((NaturezaDoItem natureza, ClassificacaoDeProtecao classificacao) in pares
-            .Select(static par => (par.Natureza, Classificacao: DecisoesDaProjecao.Resolvida(par.Classificacao)))
+            .Select(static par => (par.Natureza, Classificacao: ClassificacoesDeProtecao.Resolvida(par.Classificacao)))
             .Distinct())
         {
             if (porta.Requisito(natureza, classificacao) is not { } requisito)

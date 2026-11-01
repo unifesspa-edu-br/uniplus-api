@@ -31,6 +31,15 @@ public static class ClassificacoesDeProtecao
             ? token
             : throw new ArgumentOutOfRangeException(nameof(valor), valor, "Classificação de proteção de dados fora do domínio fechado.");
 
+    /// <summary>
+    /// A classificação que vale para decidir o acesso: a que não se resolve (<see cref="ClassificacaoDeProtecao.Nenhuma"/>
+    /// ou fora do roster) vale como sensível, na dúvida a permissão mais restrita.
+    /// </summary>
+    public static ClassificacaoDeProtecao Resolvida(ClassificacaoDeProtecao classificacao) =>
+        classificacao == ClassificacaoDeProtecao.Nenhuma || !Enum.IsDefined(classificacao)
+            ? ClassificacaoDeProtecao.Sensivel
+            : classificacao;
+
     /// <summary>Resolve um token textual (UPPER_SNAKE); <see langword="false"/> quando inválido.</summary>
     public static bool TryAnalisar(string? token, out ClassificacaoDeProtecao valor)
     {

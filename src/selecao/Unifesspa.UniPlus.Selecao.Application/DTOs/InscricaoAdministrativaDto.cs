@@ -133,6 +133,14 @@ public sealed record ArquivoAdministrativoDto : ItemClassificado
     /// <summary>O tipo de mídia do arquivo.</summary>
     public required string TipoDeMidia { get; init; }
 
+    /// <summary>
+    /// A proteção congelada na exigência (<c>PUBLICO</c>, <c>INTERNO</c>, <c>PESSOAL</c>, <c>IDENTIFICADOR</c> ou
+    /// <c>SENSIVEL</c>); a classificação que não se resolve vale como <c>SENSIVEL</c>, a mesma regra que decide a saída do arquivo.
+    /// </summary>
+    [TokenDeClassificacao]
+    [JsonPropertyName("classificacaoProtecao")]
+    public string ClassificacaoProtecao => ClassificacoesDeProtecao.ParaTokenCanonico(ClassificacoesDeProtecao.Resolvida(Classificacao));
+
     /// <summary>A situação da verificação do arquivo.</summary>
     public required SituacaoDoArquivoDoCandidato Situacao { get; init; }
 

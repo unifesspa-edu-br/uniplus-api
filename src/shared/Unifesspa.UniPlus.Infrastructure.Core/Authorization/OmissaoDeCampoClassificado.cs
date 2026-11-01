@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 
 using System.Collections;
 using System.Reflection;
+using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
 using Microsoft.AspNetCore.Http;
@@ -50,8 +51,7 @@ internal static class OmissaoDeCampoClassificado
 
         foreach (JsonPropertyInfo propriedade in tipo.Properties)
         {
-            if (propriedade.AttributeProvider?.GetCustomAttributes(typeof(ProtegidoComoAttribute), inherit: true)
-                .OfType<ProtegidoComoAttribute>().FirstOrDefault() is { } declaracao)
+            if (ProtegidoComoDe(propriedade) is { } declaracao)
             {
                 Func<object, object?, bool>? anterior = propriedade.ShouldSerialize;
                 propriedade.ShouldSerialize = (objeto, valor) =>
@@ -61,7 +61,7 @@ internal static class OmissaoDeCampoClassificado
             {
                 propriedade.Get = objeto => Filtrar(ler(objeto), elemento, decisoes());
             }
-            else if (typeof(IItemClassificado).IsAssignableFrom(propriedade.PropertyType))
+            else if (EhItemClassificadoUnico(propriedade))
             {
                 Func<object, object?, bool>? anterior = propriedade.ShouldSerialize;
                 propriedade.ShouldSerialize = (objeto, valor) =>
@@ -69,6 +69,31 @@ internal static class OmissaoDeCampoClassificado
             }
         }
     }
+
+    /// <summary>
+    /// Se a serialização pode omitir a propriedade: pela condição de <c>JsonIgnore</c> (nula ou default), pela classificação
+    /// declarada ou por ser um item classificado único. É a regra única que o modificador aplica e o contrato OpenAPI
+    /// espelha para não declarar como obrigatório o que a resposta omite. A lista de itens não entra: sai filtrada, não omitida.
+    /// </summary>
+    public static bool PodeOmitir(JsonPropertyInfo propriedade)
+    {
+        ArgumentNullException.ThrowIfNull(propriedade);
+
+        return (propriedade.AttributeProvider as MemberInfo is { } membro
+                && Attribute.GetCustomAttributes(membro, typeof(JsonIgnoreAttribute), inherit: true)
+                    .OfType<JsonIgnoreAttribute>()
+                    .Any(static a => a.Condition is JsonIgnoreCondition.WhenWritingNull or JsonIgnoreCondition.WhenWritingDefault))
+            || ProtegidoComoDe(propriedade) is not null
+            || EhItemClassificadoUnico(propriedade);
+    }
+
+    private static ProtegidoComoAttribute? ProtegidoComoDe(JsonPropertyInfo propriedade) =>
+        propriedade.AttributeProvider is MemberInfo membro
+            ? Attribute.GetCustomAttribute(membro, typeof(ProtegidoComoAttribute), inherit: true) as ProtegidoComoAttribute
+            : null;
+
+    private static bool EhItemClassificadoUnico(JsonPropertyInfo propriedade) =>
+        typeof(IItemClassificado).IsAssignableFrom(propriedade.PropertyType);
 
     private static Type? ElementoClassificado(Type tipo)
     {
