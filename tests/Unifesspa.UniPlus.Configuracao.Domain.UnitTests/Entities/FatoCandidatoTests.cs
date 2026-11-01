@@ -173,7 +173,7 @@ public sealed class FatoCandidatoTests
         doAdministrador.DesativarValor("INEXISTENTE").Error!.Code.Should().Be(FatoValorDominioErrorCodes.NaoEncontrado);
 
         Criar(sistema: true).Value!.DesativarValor("PRETA")
-            .Error!.Code.Should().Be(FatoCandidatoErrorCodes.FatoDeSistemaSoEditaNomeEDescricao);
+            .Error!.Code.Should().Be(FatoCandidatoErrorCodes.DefinicaoDoFatoDeSistemaTravada);
     }
 
     [Fact(DisplayName = "Corrigir valor troca a descrição e a orientação, inclusive de valor desativado, e preserva o código")]
@@ -214,7 +214,7 @@ public sealed class FatoCandidatoTests
 
         fato.CorrigirValor("NAO_EXISTE", "Descrição", null).Error!.Code.Should().Be(FatoValorDominioErrorCodes.NaoEncontrado);
         Criar(sistema: true).Value!.CorrigirValor("PRETA", "Descrição", null)
-            .Error!.Code.Should().Be(FatoCandidatoErrorCodes.FatoDeSistemaSoEditaNomeEDescricao);
+            .Error!.Code.Should().Be(FatoCandidatoErrorCodes.DefinicaoDoFatoDeSistemaTravada);
     }
 
     [Fact(DisplayName = "Reordenar valores põe ativos e desativados na ordem da lista")]
@@ -267,7 +267,7 @@ public sealed class FatoCandidatoTests
     [Fact(DisplayName = "Reordenar valores do fato de sistema é recusado")]
     public void ReordenarValores_FatoDeSistema_Recusa() =>
         Criar(sistema: true).Value!.ReordenarValores([])
-            .Error!.Code.Should().Be(FatoCandidatoErrorCodes.FatoDeSistemaSoEditaNomeEDescricao);
+            .Error!.Code.Should().Be(FatoCandidatoErrorCodes.DefinicaoDoFatoDeSistemaTravada);
 
     [Theory(DisplayName = "Proteção de dados incompleta é recusada")]
     [InlineData(ClassificacaoDeProtecao.Nenhuma, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal, FatoCandidatoErrorCodes.ClassificacaoProtecaoObrigatoria)]
@@ -300,9 +300,9 @@ public sealed class FatoCandidatoTests
         FatoCandidato fato = Criar(sistema: true).Value!;
 
         fato.AlterarDescritivo("Cor ou raça autodeclarada", "Conforme o IBGE").IsSuccess.Should().BeTrue();
-        fato.Desativar().Error!.Code.Should().Be(FatoCandidatoErrorCodes.FatoDeSistemaSoEditaNomeEDescricao);
+        fato.Desativar().Error!.Code.Should().Be(FatoCandidatoErrorCodes.DefinicaoDoFatoDeSistemaTravada);
         fato.AdicionarValorDominio("NOVA", "Nova", 9, ativo: true)
-            .Error!.Code.Should().Be(FatoCandidatoErrorCodes.FatoDeSistemaSoEditaNomeEDescricao);
+            .Error!.Code.Should().Be(FatoCandidatoErrorCodes.DefinicaoDoFatoDeSistemaTravada);
         fato.Nome.Should().Be("Cor ou raça autodeclarada");
         fato.Ativo.Should().BeTrue();
     }

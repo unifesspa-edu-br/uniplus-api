@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
@@ -67,6 +68,8 @@ internal sealed class TipoDocumentoConfiguration
                 t.HasCheckConstraint(
                     "ck_tipo_documento_tamanho_maximo_mb_positivo",
                     "tamanho_maximo_mb IS NULL OR tamanho_maximo_mb > 0");
+
+                AprovacaoDaProtecaoOwnedConfiguration.ConfigurarChecks(t, "tipo_documento");
             });
 
         builder.HasKey(t => t.Id);
@@ -103,6 +106,19 @@ internal sealed class TipoDocumentoConfiguration
             .HasConversion(ProtecaoDeDadosConversores.HipoteseLegal)
             .HasMaxLength(ProtecaoDeDadosConversores.HipoteseLegalMaxLength)
             .IsRequired();
+
+        // Aprovação da proteção de dados (ADR-0153): table splitting em colunas protecao_*. Todo tipo
+        // nasce pendente, o semeado inclusive.
+        builder.OwnsOne(t => t.Aprovacao, aprovacao =>
+        {
+            AprovacaoDaProtecaoOwnedConfiguration.Configure(aprovacao);
+            aprovacao.HasData(TipoDocumentoSeed.Itens.Select(item => new { TipoDocumentoId = item.Id, Situacao = SituacaoDaAprovacao.Pendente }));
+        });
+        builder.Navigation(t => t.Aprovacao).IsRequired();
+
+        // Concorrência otimista pela coluna de sistema xmin (como o fato): a decisão da proteção de dados e o aceite
+        // não gravam por cima de uma edição concorrente que devolveu o tipo a pendente com outra classificação.
+        builder.Property<uint>("Version").IsRowVersion();
 
         // Auditoria (IAuditableEntity)
         builder.Property(t => t.CreatedBy).HasMaxLength(255);

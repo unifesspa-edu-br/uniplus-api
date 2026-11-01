@@ -69,6 +69,15 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
     public string FinalidadeTratamento { get; private set; } = string.Empty;
     public HipoteseLegalTratamento HipoteseLegal { get; private set; }
 
+    /// <summary>
+    /// O circuito de aprovação da proteção de dados (ADR-0153): o tipo só entra na configuração e na
+    /// publicação de processo seletivo depois de aprovado, e criar ou mudar a proteção o deixa pendente.
+    /// </summary>
+    public AprovacaoDaProtecao Aprovacao { get; private set; } = new();
+
+    /// <summary>A proteção de dados do tipo: a classificação, a finalidade e a hipótese legal.</summary>
+    public ProtecaoDeDados Protecao => new(ClassificacaoProtecao, FinalidadeTratamento, HipoteseLegal);
+
     public string? CreatedBy { get; private set; }
     public string? UpdatedBy { get; private set; }
 
@@ -294,9 +303,51 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
         return Result.Success();
     }
 
+    /// <summary>Envia o tipo pendente à proteção de dados, numa solicitação.</summary>
+    public Result SolicitarAprovacaoDaProtecao(string ator, DateTimeOffset em) => Aprovacao.Solicitar(ator, em);
+
+    /// <summary>A proteção de dados aprova a classificação, a finalidade e a hipótese legal do tipo.</summary>
+    public Result AprovarProtecao(string ator, DateTimeOffset em) => Aprovacao.Aprovar(ator, em);
+
+    /// <summary>A proteção de dados nega a proteção do tipo e indica a classificação correta.</summary>
+    public Result NegarProtecao(ClassificacaoDeProtecao recomendada, string ator, DateTimeOffset em)
+    {
+        Result recusa = AprovacaoDaProtecao.ConferirRecomendacao(recomendada);
+        return recusa.IsFailure ? recusa : Aprovacao.Negar(recomendada, ator, em);
+    }
+
+    /// <summary>
+    /// O administrador aceita a recomendação da proteção de dados: o tipo passa à classificação
+    /// recomendada e fica aprovado, sem nova solicitação. A hipótese legal precisa caber nela.
+    /// </summary>
+    public Result AceitarRecomendacaoDaProtecao(string ator, DateTimeOffset em)
+    {
+        Result<ClassificacaoDeProtecao> recomendada = Aprovacao.RecomendacaoAAceitar();
+        if (recomendada.IsFailure)
+        {
+            return Result.Failure(recomendada.Error!);
+        }
+
+        if (!HipotesesLegaisTratamento.AdmiteClassificacao(HipoteseLegal, recomendada.Value))
+        {
+            return Result.Failure(AprovacaoDaProtecao.RecomendacaoIncompativelComAHipotese());
+        }
+
+        Result aceita = Aprovacao.AceitarRecomendacao(ator, em);
+        if (aceita.IsSuccess)
+        {
+            ClassificacaoProtecao = recomendada.Value;
+        }
+
+        return aceita;
+    }
+
     private void AplicarCampos(
         (CodigoTipoDocumento Codigo, string Nome, string? Descricao, string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente, ProtecaoDeDados Protecao) campos)
     {
+        // Só a proteção reinicia o circuito: o nome, a descrição e os demais campos não a alteram.
+        ProtecaoDeDados anterior = new(ClassificacaoProtecao, FinalidadeTratamento, HipoteseLegal);
+
         Codigo = campos.Codigo;
         Nome = campos.Nome;
         Descricao = campos.Descricao;
@@ -307,6 +358,11 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
         ClassificacaoProtecao = campos.Protecao.Classificacao;
         FinalidadeTratamento = campos.Protecao.Finalidade;
         HipoteseLegal = campos.Protecao.Hipotese;
+
+        if (campos.Protecao != anterior)
+        {
+            Aprovacao.Reiniciar();
+        }
     }
 
     private static string? NormalizarOpcional(string? valor) =>

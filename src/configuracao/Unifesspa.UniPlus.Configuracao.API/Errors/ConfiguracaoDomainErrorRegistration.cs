@@ -744,11 +744,11 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.fato_candidato.hipotese_legal_incompativel_com_classificacao",
                 "A hipótese legal não cabe na classificação de proteção do fato")),
 
-        new(FatoCandidatoErrorCodes.FatoDeSistemaSoEditaNomeEDescricao,
+        new(FatoCandidatoErrorCodes.DefinicaoDoFatoDeSistemaTravada,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.fato_candidato.fato_de_sistema_so_edita_nome_e_descricao",
-                "Fato de sistema só tem o nome e a descrição editáveis")),
+                "uniplus.configuracao.fato_candidato.definicao_do_fato_de_sistema_travada",
+                "A definição do fato de sistema é travada: só o nome, a descrição e a proteção de dados se editam")),
 
         new(FatoCandidatoErrorCodes.VinculoExclusivoDeFatoDeSistema,
             new DomainErrorMapping(
@@ -2100,5 +2100,61 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 StatusCodes.Status404NotFound,
                 "uniplus.configuracao.base_legal_bonus_regional.nao_encontrado",
                 "Base legal de bônus regional não encontrada")),
+
+        // ── Aprovação da proteção de dados do catálogo (ADR-0153) ────────────
+        new(ProtecaoDoCatalogoErrorCodes.SemItemPendente,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.protecao_do_catalogo.sem_item_pendente",
+                "Nenhum item do catálogo está pendente de solicitação")),
+
+        new(ProtecaoDoCatalogoErrorCodes.ItemForaDeSolicitacao,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.protecao_do_catalogo.item_fora_de_solicitacao",
+                "O item não está numa solicitação da proteção de dados")),
+
+        new(ProtecaoDoCatalogoErrorCodes.RecomendacaoObrigatoria,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.protecao_do_catalogo.recomendacao_obrigatoria",
+                "A negativa exige a classificação de proteção de dados recomendada")),
+
+        new(ProtecaoDoCatalogoErrorCodes.SemRecomendacaoParaAceitar,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.protecao_do_catalogo.sem_recomendacao_para_aceitar",
+                "O item não foi negado pela proteção de dados: não há recomendação a aceitar")),
+
+        new(ProtecaoDoCatalogoErrorCodes.RecomendacaoIncompativelComAHipoteseLegal,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.protecao_do_catalogo.recomendacao_incompativel_com_a_hipotese_legal",
+                "A hipótese legal do item não cabe na classificação recomendada")),
+
+        new(ProtecaoDoCatalogoErrorCodes.SemQuemAprove,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.protecao_do_catalogo.sem_quem_aprove",
+                "Ninguém tem a permissão de aprovar a proteção de dados do catálogo")),
+
+        new(ProtecaoDoCatalogoErrorCodes.SemPermissaoNoCatalogo,
+            new DomainErrorMapping(
+                StatusCodes.Status403Forbidden,
+                "uniplus.configuracao.protecao_do_catalogo.sem_permissao",
+                "Sem permissão sobre a proteção de dados do catálogo")),
+
+        new(TipoDocumentoErrorCodes.ConflitoDeConcorrencia,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.tipo_documento.conflito_de_concorrencia",
+                "O tipo de documento foi alterado concorrentemente",
+                RetryableConflict: true)),
+
+        new(ProtecaoDoCatalogoErrorCodes.SituacaoInvalida,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.protecao_do_catalogo.situacao_invalida",
+                "Situação fora do vocabulário da aprovação da proteção de dados")),
     ];
 }

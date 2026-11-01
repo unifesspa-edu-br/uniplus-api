@@ -23,9 +23,10 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Dois regimes no mesmo cadastro: o fato de <b>sistema</b> é semeado por código e só tem nome e
-/// descrição editáveis, porque o sistema depende da sua forma; o fato do <b>administrador</b> é
-/// cadastrado em tempo de execução. Em nenhum dos dois o fato é apagado: desativar bloqueia só
+/// Dois regimes no mesmo cadastro: o fato de <b>sistema</b> é semeado por código e só tem editáveis o
+/// nome, a descrição e a proteção de dados — a definição, que o sistema calcula ou lê, é travada —; o
+/// fato do <b>administrador</b> é cadastrado em tempo de execução. Nos dois regimes, criar o fato ou
+/// mudar a proteção o deixa pendente de aprovação da proteção de dados (ADR-0153). Em nenhum dos dois o fato é apagado: desativar bloqueia só
 /// vínculos novos, e o processo que já o usa continua com a cópia que congelou (ADR-0061).
 /// </para>
 /// </remarks>
@@ -103,8 +104,17 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     /// <summary>Hipótese legal de tratamento, do art. 7º ou do art. 11 da LGPD conforme a classificação.</summary>
     public HipoteseLegalTratamento HipoteseLegal { get; private set; }
 
-    /// <summary>Fato semeado pelo sistema: só nome e descrição são editáveis.</summary>
+    /// <summary>
+    /// Fato semeado pelo sistema: só o nome, a descrição e a proteção de dados são editáveis; a
+    /// definição que o sistema calcula ou lê é travada.
+    /// </summary>
     public bool Sistema { get; private set; }
+
+    /// <summary>
+    /// O circuito de aprovação da proteção de dados (ADR-0153): o fato só entra na configuração e na
+    /// publicação de processo seletivo depois de aprovado, e criar ou mudar a proteção o deixa pendente.
+    /// </summary>
+    public AprovacaoDaProtecao Aprovacao { get; private set; } = new();
 
     /// <summary>Fato inativo não recebe vínculo novo; os existentes continuam.</summary>
     public bool Ativo { get; private set; }
@@ -625,9 +635,9 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         ArgumentNullException.ThrowIfNull(definicao);
         ArgumentNullException.ThrowIfNull(catalogo);
 
-        if (RecusaSeSistema() is { } recusa)
+        if (Sistema)
         {
-            return Result.Failure(recusa);
+            return AlterarProtecaoDoFatoDeSistema(definicao, catalogo);
         }
 
         bool agregado = FatoDeMembroAgregado is not null;
@@ -751,8 +761,153 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
             return Result.ValidationFailure(erros);
         }
 
+        if (Protecao != new ProtecaoDeDados(anteriores.Classificacao, anteriores.Finalidade, anteriores.Hipotese))
+        {
+            Aprovacao.Reiniciar();
+        }
+
         return Result.Success();
     }
+
+    /// <summary>A proteção de dados do fato: a classificação, a finalidade e a hipótese legal.</summary>
+    public ProtecaoDeDados Protecao => new(ClassificacaoProtecao, FinalidadeTratamento, HipoteseLegal);
+
+    /// <summary>
+    /// No fato de sistema só a proteção de dados muda pela tela: a definição que o sistema calcula ou
+    /// lê é travada, e a alteração que a toca é recusada inteira. Os eixos não informados são ignorados;
+    /// os informados precisam ser os que o fato já tem.
+    /// </summary>
+    private Result AlterarProtecaoDoFatoDeSistema(DefinicaoDoFato definicao, CatalogoDeFatos catalogo)
+    {
+        bool tocaNaDefinicao =
+            (definicao.Dominio is { } dominio && dominio != Dominio)
+            || (definicao.Cardinalidade is { } cardinalidade && cardinalidade != Cardinalidade)
+            || (definicao.FonteValores is { } fonte && fonte != FonteValores)
+            || (definicao.Formato is { } formato && formato != Formato)
+            || (definicao.Escopo is { } escopo && escopo != Escopo)
+            || !string.Equals(definicao.PontoResolucao?.Trim(), PontoResolucao, StringComparison.Ordinal);
+        if (tocaNaDefinicao)
+        {
+            return Result.Failure(RecusaDaDefinicaoDoFatoDeSistema);
+        }
+
+        ProtecaoDeDados anterior = Protecao;
+        Result troca = TrocarProtecao(definicao.ClassificacaoProtecao, definicao.FinalidadeTratamento, definicao.HipoteseLegal, catalogo);
+        if (troca.IsFailure)
+        {
+            return troca;
+        }
+
+        if (Protecao != anterior)
+        {
+            Aprovacao.Reiniciar();
+        }
+
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Troca a proteção do fato conferindo o que ele próprio exige — o mínimo do domínio e a coerência da
+    /// hipótese com a classificação — e o que depende dele: só a recusa que a troca causa conta (ADR-0125).
+    /// O fato não muda quando há recusa. Quem chama decide o que a troca faz com a aprovação.
+    /// </summary>
+    private Result TrocarProtecao(
+        ClassificacaoDeProtecao classificacao, string finalidade, HipoteseLegalTratamento hipotese, CatalogoDeFatos catalogo)
+    {
+        Result<ProtecaoDeDados> protecao = ValidarProtecao(Dominio, classificacao, finalidade, hipotese, NomeSocialPublico(classificacao));
+        if (protecao.IsFailure)
+        {
+            return Result.ValidationFailure(protecao.Errors);
+        }
+
+        bool agregado = FatoDeMembroAgregado is not null;
+        bool derivado = DerivadoPorRegra;
+        ProtecaoDeDados anterior = Protecao;
+        List<FieldError> dependenciasAntes = [];
+        ConferirComAsDependencias(dependenciasAntes, catalogo, agregado, derivado, true, true);
+
+        AplicarProtecao(protecao.Value);
+        List<FieldError> dependenciasDepois = [];
+        ConferirComAsDependencias(dependenciasDepois, catalogo, agregado, derivado, true, true);
+        List<FieldError> novas = [.. DiferencaDeRecusas.Novas(dependenciasDepois, dependenciasAntes)];
+        if (novas.Count == 0)
+        {
+            return Result.Success();
+        }
+
+        AplicarProtecao(anterior);
+        return Result.ValidationFailure(novas);
+    }
+
+    private void AplicarProtecao(ProtecaoDeDados protecao)
+    {
+        ClassificacaoProtecao = protecao.Classificacao;
+        FinalidadeTratamento = protecao.Finalidade;
+        HipoteseLegal = protecao.Hipotese;
+    }
+
+    /// <summary>Envia o fato pendente à proteção de dados, numa solicitação.</summary>
+    public Result SolicitarAprovacaoDaProtecao(string ator, DateTimeOffset em) => Aprovacao.Solicitar(ator, em);
+
+    /// <summary>A proteção de dados aprova a classificação, a finalidade e a hipótese legal do fato.</summary>
+    public Result AprovarProtecao(string ator, DateTimeOffset em) => Aprovacao.Aprovar(ator, em);
+
+    /// <summary>
+    /// A proteção de dados nega a proteção do fato e indica a classificação correta, que precisa
+    /// respeitar o mínimo do domínio do fato.
+    /// </summary>
+    public Result NegarProtecao(ClassificacaoDeProtecao recomendada, string ator, DateTimeOffset em)
+    {
+        Result recusa = AprovacaoDaProtecao.ConferirRecomendacao(recomendada);
+        if (recusa.IsFailure)
+        {
+            return recusa;
+        }
+
+        Result<ProtecaoDeDados> noMinimoDoDominio = ValidarProtecao(
+            Dominio, recomendada, FinalidadeTratamento, HipoteseLegal, NomeSocialPublico(recomendada));
+        if (noMinimoDoDominio.Errors.FirstOrDefault(static e => e.Field == "classificacaoProtecao") is { } abaixo)
+        {
+            return Result.ValidationFailure([abaixo with { Field = "classificacaoRecomendada" }]);
+        }
+
+        return Aprovacao.Negar(recomendada, ator, em);
+    }
+
+    /// <summary>
+    /// O administrador aceita a recomendação da proteção de dados: o fato passa à classificação
+    /// recomendada e fica aprovado, sem nova solicitação, inclusive o fato de sistema e o semeado. A
+    /// hipótese legal precisa caber nela, e o que depende do fato precisa continuar valendo.
+    /// </summary>
+    public Result AceitarRecomendacaoDaProtecao(string ator, DateTimeOffset em, CatalogoDeFatos catalogo)
+    {
+        ArgumentNullException.ThrowIfNull(catalogo);
+
+        Result<ClassificacaoDeProtecao> recomendada = Aprovacao.RecomendacaoAAceitar();
+        if (recomendada.IsFailure)
+        {
+            return Result.Failure(recomendada.Error!);
+        }
+
+        if (!HipotesesLegaisTratamento.AdmiteClassificacao(HipoteseLegal, recomendada.Value))
+        {
+            return Result.Failure(AprovacaoDaProtecao.RecomendacaoIncompativelComAHipotese());
+        }
+
+        Result troca = TrocarProtecao(recomendada.Value, FinalidadeTratamento, HipoteseLegal, catalogo);
+        if (troca.IsFailure)
+        {
+            return troca;
+        }
+
+        return Aprovacao.AceitarRecomendacao(ator, em);
+    }
+
+    private bool NomeSocialPublico(ClassificacaoDeProtecao classificacao) =>
+        Sistema
+        && string.Equals(Codigo, CodigoDoNomeSocial, StringComparison.Ordinal)
+        && Dominio == DominioFato.Texto
+        && classificacao == ClassificacaoDeProtecao.Publico;
 
     /// <summary>
     /// O que o agregado deixa de ser quando o fato de membro passa a ser <paramref name="membro"/>:
@@ -1116,12 +1271,13 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     private FatoValorDominio? ValorPorCodigo(string codigo) =>
         _valoresDominioDeclarados.FirstOrDefault(v => string.Equals(v.Codigo, codigo?.Trim(), StringComparison.Ordinal));
 
-    private DomainError? RecusaSeSistema() =>
-        Sistema
-            ? new DomainError(
-                FatoCandidatoErrorCodes.FatoDeSistemaSoEditaNomeEDescricao,
-                "Fato de sistema só tem o nome e a descrição editáveis.")
-            : null;
+    private DomainError? RecusaSeSistema() => Sistema ? RecusaDaDefinicaoDoFatoDeSistema : null;
+
+    private static readonly DomainError RecusaDaDefinicaoDoFatoDeSistema = new(
+        FatoCandidatoErrorCodes.DefinicaoDoFatoDeSistemaTravada,
+        "Fato de sistema só tem editáveis o nome, a descrição e a proteção de dados (classificação, finalidade e hipótese legal). "
+        + "Código, domínio, cardinalidade, origem, fonte e formato dos valores, valores de domínio, regras padrão, ponto de resolução, "
+        + "escopo e ativação continuam travados, porque o sistema calcula ou lê a definição.");
 
     private static Result<(string Nome, string? Descricao)> ValidarDescritivo(string nome, string? descricao)
     {

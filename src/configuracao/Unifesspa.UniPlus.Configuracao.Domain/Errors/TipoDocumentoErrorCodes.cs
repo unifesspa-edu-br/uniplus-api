@@ -28,6 +28,9 @@ public static class TipoDocumentoErrorCodes
     public const string TipoEquivalenteIgualCodigo = "TipoDocumento.TipoEquivalenteIgualCodigo";
     public const string NaoEncontrado = "TipoDocumento.NaoEncontrado";
 
+    /// <summary>O tipo foi alterado concorrentemente entre a leitura e a gravação.</summary>
+    public const string ConflitoDeConcorrencia = "TipoDocumento.ConflitoDeConcorrencia";
+
     /// <summary>
     /// Classificação, finalidade do tratamento ou hipótese legal ausentes: os três são obrigatórios
     /// e a recusa traz um erro por campo ausente.

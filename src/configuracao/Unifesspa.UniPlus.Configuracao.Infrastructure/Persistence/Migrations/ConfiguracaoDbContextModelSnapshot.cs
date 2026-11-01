@@ -1175,6 +1175,10 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_rol_de_fatos_candidato_hipotese_legal", "hipotese_legal IN ('CONSENTIMENTO', 'CUMPRIMENTO_OBRIGACAO_LEGAL', 'EXECUCAO_POLITICAS_PUBLICAS', 'ESTUDOS_POR_ORGAO_DE_PESQUISA', 'EXECUCAO_CONTRATO', 'EXERCICIO_REGULAR_DE_DIREITOS', 'PROTECAO_DA_VIDA', 'TUTELA_DA_SAUDE', 'INTERESSE_LEGITIMO', 'PROTECAO_DO_CREDITO', 'PREVENCAO_A_FRAUDE')");
 
                             t.HasCheckConstraint("ck_rol_de_fatos_candidato_origem", "origem IN ('DERIVADO', 'DECLARADO', 'INTEGRACAO')");
+
+                            t.HasCheckConstraint("ck_rol_de_fatos_candidato_protecao_negada_com_recomendacao", "protecao_situacao <> 'NEGADA' OR protecao_recomendada IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_rol_de_fatos_candidato_protecao_situacao", "protecao_situacao IN ('PENDENTE', 'SOLICITADA', 'APROVADA', 'NEGADA')");
                         });
 
                     b.HasData(
@@ -4603,6 +4607,12 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(255)")
                         .HasColumnName("updated_by");
 
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("Id")
                         .HasName("pk_tipo_documento");
 
@@ -4621,6 +4631,10 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_tipo_documento_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
 
                             t.HasCheckConstraint("ck_tipo_documento_equivalente_diferente_codigo", "tipo_equivalente IS NULL OR tipo_equivalente <> codigo");
+
+                            t.HasCheckConstraint("ck_tipo_documento_protecao_negada_com_recomendacao", "protecao_situacao <> 'NEGADA' OR protecao_recomendada IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_tipo_documento_protecao_situacao", "protecao_situacao IN ('PENDENTE', 'SOLICITADA', 'APROVADA', 'NEGADA')");
 
                             t.HasCheckConstraint("ck_tipo_documento_tamanho_maximo_mb_positivo", "tamanho_maximo_mb IS NULL OR tamanho_maximo_mb > 0");
                         });
@@ -6099,6 +6113,357 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_dia_nao_util_calendarios_dias_uteis_calendario_dias_uteis_id");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.FatoCandidato", b =>
+                {
+                    b.OwnsOne("Unifesspa.UniPlus.Configuracao.Domain.Entities.AprovacaoDaProtecao", "Aprovacao", b1 =>
+                        {
+                            b1.Property<Guid>("FatoCandidatoId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<DateTimeOffset?>("AceitaEm")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("protecao_aceita_em");
+
+                            b1.Property<string>("AceitaPor")
+                                .HasMaxLength(255)
+                                .HasColumnType("character varying(255)")
+                                .HasColumnName("protecao_aceita_por");
+
+                            b1.Property<string>("ClassificacaoRecomendada")
+                                .HasMaxLength(20)
+                                .HasColumnType("character varying(20)")
+                                .HasColumnName("protecao_recomendada");
+
+                            b1.Property<DateTimeOffset?>("DecididaEm")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("protecao_decidida_em");
+
+                            b1.Property<string>("DecididaPor")
+                                .HasMaxLength(255)
+                                .HasColumnType("character varying(255)")
+                                .HasColumnName("protecao_decidida_por");
+
+                            b1.Property<string>("Situacao")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("character varying(20)")
+                                .HasColumnName("protecao_situacao");
+
+                            b1.Property<DateTimeOffset?>("SolicitadaEm")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("protecao_solicitada_em");
+
+                            b1.Property<string>("SolicitadaPor")
+                                .HasMaxLength(255)
+                                .HasColumnType("character varying(255)")
+                                .HasColumnName("protecao_solicitada_por");
+
+                            b1.HasKey("FatoCandidatoId");
+
+                            b1.ToTable("rol_de_fatos_candidato", "configuracao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("FatoCandidatoId")
+                                .HasConstraintName("fk_rol_de_fatos_candidato_rol_de_fatos_candidato_id");
+
+                            b1.HasData(
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000001"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000002"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000003"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000004"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000005"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000006"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000007"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000008"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000009"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000010"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000011"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000012"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000013"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000014"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000015"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000016"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000017"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000018"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000019"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000020"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000021"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000022"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000023"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000024"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000025"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000026"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000027"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000028"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000029"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000030"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000031"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000032"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000056"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000033"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000051"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000052"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000036"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000037"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000057"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000058"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000059"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000038"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000039"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000040"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000041"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000042"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000043"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000044"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000045"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000046"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000047"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000048"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000049"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000050"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000054"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000055"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000053"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000060"),
+                                    Situacao = "PENDENTE"
+                                });
+                        });
+
+                    b.Navigation("Aprovacao")
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.FatoValorDominio", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Configuracao.Domain.Entities.FatoCandidato", null)
@@ -6334,6 +6699,527 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.ClientNoAction)
                         .IsRequired()
                         .HasConstraintName("fk_termo_consentimento_versao_termo_consentimento_termo_consen");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.TipoDocumento", b =>
+                {
+                    b.OwnsOne("Unifesspa.UniPlus.Configuracao.Domain.Entities.AprovacaoDaProtecao", "Aprovacao", b1 =>
+                        {
+                            b1.Property<Guid>("TipoDocumentoId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<DateTimeOffset?>("AceitaEm")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("protecao_aceita_em");
+
+                            b1.Property<string>("AceitaPor")
+                                .HasMaxLength(255)
+                                .HasColumnType("character varying(255)")
+                                .HasColumnName("protecao_aceita_por");
+
+                            b1.Property<string>("ClassificacaoRecomendada")
+                                .HasMaxLength(20)
+                                .HasColumnType("character varying(20)")
+                                .HasColumnName("protecao_recomendada");
+
+                            b1.Property<DateTimeOffset?>("DecididaEm")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("protecao_decidida_em");
+
+                            b1.Property<string>("DecididaPor")
+                                .HasMaxLength(255)
+                                .HasColumnType("character varying(255)")
+                                .HasColumnName("protecao_decidida_por");
+
+                            b1.Property<string>("Situacao")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("character varying(20)")
+                                .HasColumnName("protecao_situacao");
+
+                            b1.Property<DateTimeOffset?>("SolicitadaEm")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("protecao_solicitada_em");
+
+                            b1.Property<string>("SolicitadaPor")
+                                .HasMaxLength(255)
+                                .HasColumnType("character varying(255)")
+                                .HasColumnName("protecao_solicitada_por");
+
+                            b1.HasKey("TipoDocumentoId");
+
+                            b1.ToTable("tipo_documento", "configuracao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("TipoDocumentoId")
+                                .HasConstraintName("fk_tipo_documento_tipo_documento_id");
+
+                            b1.HasData(
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000001"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000002"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000003"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000004"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000005"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000006"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000007"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000008"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000009"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000010"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000011"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000012"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000013"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000014"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000015"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000016"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000017"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000018"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000019"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000020"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000021"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000022"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000023"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000024"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000025"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000026"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000027"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000028"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000029"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000030"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000031"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000032"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000033"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000034"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000035"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000036"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000037"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000038"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000039"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000040"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000041"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000042"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000043"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000044"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000045"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000046"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000047"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000048"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000049"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000050"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000051"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000052"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000053"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000054"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000055"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000056"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000057"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000058"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000059"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000060"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000061"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000062"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000063"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000064"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000065"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000066"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000067"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000068"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000069"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000070"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000071"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000072"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000073"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000074"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000075"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000076"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000077"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000078"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000079"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000080"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000081"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000082"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000083"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000084"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000085"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000086"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000087"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000088"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000089"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000090"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000091"),
+                                    Situacao = "PENDENTE"
+                                },
+                                new
+                                {
+                                    TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000092"),
+                                    Situacao = "PENDENTE"
+                                });
+                        });
+
+                    b.Navigation("Aprovacao")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.CalendarioDiasUteis", b =>
