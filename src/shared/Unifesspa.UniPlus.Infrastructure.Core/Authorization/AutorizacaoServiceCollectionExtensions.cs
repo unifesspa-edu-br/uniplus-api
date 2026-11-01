@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Decisao;
+using Unifesspa.UniPlus.Authorization.Projecao;
 
 /// <summary>
 /// Composição do ponto de decisão único de autorização (ADR-0078).
@@ -55,6 +56,11 @@ public static class AutorizacaoServiceCollectionExtensions
         services.TryAddScoped<IVerificadorDeAcesso, VerificadorDeAcessoHttp>();
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddScoped<IPermissoesEfetivas, PermissoesEfetivasHttp>();
+
+        // O projetor decide cada item da resposta administrativa pela permissão do par (natureza, classificação)
+        // e guarda as decisões na requisição, de onde a serialização defensiva as lê (ADR-0153).
+        services.TryAddScoped<IDecisoesDaRequisicao, DecisoesDaRequisicaoHttp>();
+        services.TryAddScoped<ProjetorDeItens>();
 
         // O módulo de autorização declara as próprias permissões no mesmo formato dos
         // demais; a conferência do conjunto roda na subida (ADR-0151).

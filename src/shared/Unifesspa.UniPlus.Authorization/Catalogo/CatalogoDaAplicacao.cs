@@ -5,7 +5,7 @@ using System.Collections.Frozen;
 /// <summary>
 /// Catálogo de permissões da aplicação inteira: a reunião dos enums que cada módulo
 /// registrou com <c>AddCatalogoDePermissoes</c>. A construção confere o que só se vê
-/// no conjunto — código ou nome repetido entre módulos — e derruba a subida se algo
+/// no conjunto — código ou nome repetido entre módulos e par (natureza, classificação) com mais de uma permissão no módulo — e derruba a subida se algo
 /// estiver errado (ADR-0151).
 /// </summary>
 public sealed class CatalogoDaAplicacao
@@ -19,6 +19,7 @@ public sealed class CatalogoDaAplicacao
         ArgumentNullException.ThrowIfNull(fontes);
 
         List<string> problemas = [];
+        List<(string Quem, DefinicaoDePermissao Definicao)> todas = [];
         Dictionary<string, DefinicaoDePermissao> porCodigo = new(StringComparer.Ordinal);
         Dictionary<string, DefinicaoDePermissao> porNome = new(StringComparer.OrdinalIgnoreCase);
 
@@ -26,6 +27,7 @@ public sealed class CatalogoDaAplicacao
         {
             foreach (DefinicaoDePermissao definicao in fonte.Definicoes())
             {
+                todas.Add((definicao.Codigo, definicao));
                 if (!porCodigo.TryAdd(definicao.Codigo, definicao))
                 {
                     problemas.Add($"{fonte.TipoDoEnum.Name}: o código '{definicao.Codigo}' já está declarado em outro enum.");
@@ -37,6 +39,8 @@ public sealed class CatalogoDaAplicacao
                 }
             }
         }
+
+        problemas.AddRange(UnicidadeDoPar.Problemas(todas));
 
         if (problemas.Count > 0)
         {

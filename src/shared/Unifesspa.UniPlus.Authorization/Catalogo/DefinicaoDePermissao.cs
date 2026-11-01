@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Authorization.Catalogo;
 
 using Unifesspa.UniPlus.Authorization.Contracts;
+using Unifesspa.UniPlus.Authorization.Projecao;
 
 /// <summary>Definição de uma permissão lida do atributo de um membro de enum.</summary>
 /// <param name="Codigo">Código <c>{módulo}:{resource}:{ação}</c>.</param>
@@ -11,6 +12,7 @@ using Unifesspa.UniPlus.Authorization.Contracts;
 /// <param name="Acao">Ação que a permissão autoriza.</param>
 /// <param name="Requisito">Requisito que o ponto de decisão avalia.</param>
 /// <param name="ReservadaAGovernanca">Só perfis de governança podem reunir a permissão.</param>
+/// <param name="Natureza">A natureza do item que a permissão libera na projeção; nenhuma quando é uma ação.</param>
 public sealed record DefinicaoDePermissao(
     string Codigo,
     string Nome,
@@ -19,4 +21,5 @@ public sealed record DefinicaoDePermissao(
     string Resource,
     string Acao,
     PermissionRequirement Requisito,
-    bool ReservadaAGovernanca = false);
+    bool ReservadaAGovernanca = false,
+    NaturezaDoItem Natureza = NaturezaDoItem.Nenhuma);
