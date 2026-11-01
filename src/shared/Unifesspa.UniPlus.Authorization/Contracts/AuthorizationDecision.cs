@@ -24,6 +24,15 @@ public sealed record AuthorizationDecision
     /// <summary>Concessão que autorizou — presente se, e somente se, permitida.</summary>
     public EffectiveGrant? GrantUsed { get; }
 
+    /// <summary>
+    /// O desfecho da decisão: permitido, impedido (negada porque o solicitante tem inscrição enviada no processo) ou
+    /// negado. É calculado aqui, uma vez, para que o registro e a borda não o rederivem comparando o motivo.
+    /// </summary>
+    public ResultadoDoAcesso Resultado =>
+        Allowed ? ResultadoDoAcesso.Permitido
+        : DenyReason!.Codigo == MotivoNegativa.ImpedidoPorInscricaoNoProcesso ? ResultadoDoAcesso.Impedido
+        : ResultadoDoAcesso.Negado;
+
     private AuthorizationDecision(bool allowed, DenyReason? denyReason, EffectiveGrant? grantUsed)
     {
         Allowed = allowed;

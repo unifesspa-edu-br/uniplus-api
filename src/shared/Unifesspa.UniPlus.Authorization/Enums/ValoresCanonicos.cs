@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Authorization.Enums;
 
 using System.ComponentModel;
 
+using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
@@ -37,6 +38,18 @@ public static class ValoresCanonicos
         MotivoNegativa.MecanismoRevogacaoDegradado => "mecanismo_revogacao_degradado",
         MotivoNegativa.ImpedidoPorInscricaoNoProcesso => "impedido_por_inscricao_no_processo",
         _ => throw new InvalidEnumArgumentException(nameof(motivo), (int)motivo, typeof(MotivoNegativa)),
+    };
+
+    /// <summary>
+    /// Valor canônico do resultado de uma decisão tomada. A identidade incompleta não é resultado de decisão: não há
+    /// registro nem cabeçalho que a nomeie.
+    /// </summary>
+    public static string De(ResultadoDoAcesso resultado) => resultado switch
+    {
+        ResultadoDoAcesso.Permitido => "permitido",
+        ResultadoDoAcesso.Negado => "negado",
+        ResultadoDoAcesso.Impedido => "impedido",
+        _ => throw new InvalidEnumArgumentException(nameof(resultado), (int)resultado, typeof(ResultadoDoAcesso)),
     };
 
     /// <summary>Valor canônico da fonte da concessão.</summary>
