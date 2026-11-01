@@ -198,7 +198,7 @@ internal sealed record FatosDaVersao(
 
     private static bool EhCpf(string fatoCodigo, string? formato) =>
         string.Equals(fatoCodigo, ConjuntoBasicoDaInscricao.Cpf, StringComparison.Ordinal)
-        || string.Equals(formato, "CPF", StringComparison.Ordinal);
+        || string.Equals(formato, FormatoDeTexto.FormatoCpf, StringComparison.Ordinal);
 
     private static ClassificacaoDeProtecao Classificacao(string? token) =>
         ClassificacoesDeProtecao.TryAnalisar(token, out ClassificacaoDeProtecao classificacao) ? classificacao : ClassificacaoDeProtecao.Nenhuma;

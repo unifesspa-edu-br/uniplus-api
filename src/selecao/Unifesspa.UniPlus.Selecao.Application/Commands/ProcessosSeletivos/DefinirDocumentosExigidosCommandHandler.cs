@@ -425,7 +425,7 @@ public static class DefinirDocumentosExigidosCommandHandler
         if (!tipoDocumento.ProtecaoAprovada && processo.DocumentosExigidos.All(d => d.TipoDocumentoOrigemId != tipoDocumento.Id))
         {
             return Result<DocumentoExigido>.Failure(new DomainError(
-                ConferenciaDaAprovacaoDaProtecao.CodigoDoTipoNoVinculo,
+                ProcessoSeletivoErrorCodes.TipoDocumentoNoVinculoComProtecaoPendente,
                 $"O tipo de documento '{tipoDocumento.Codigo}' aguarda a aprovação da proteção de dados e não aceita vínculo novo."));
         }
 

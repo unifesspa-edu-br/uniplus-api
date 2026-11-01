@@ -31,6 +31,7 @@ public static class ListarInscricoesDoProcessoQueryHandler
         ListarInscricoesDoProcessoQuery query,
         IVerificadorDeAcesso verificador,
         ProjetorDeItens projetor,
+        IPortaDePermissaoPorPar porta,
         IProcessoSeletivoRepository processoRepository,
         IInscricaoRepository inscricaoRepository,
         IRegistroCodecsEnvelope registroCodecs,
@@ -39,6 +40,7 @@ public static class ListarInscricoesDoProcessoQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(verificador);
         ArgumentNullException.ThrowIfNull(projetor);
+        ArgumentNullException.ThrowIfNull(porta);
         ArgumentNullException.ThrowIfNull(processoRepository);
         ArgumentNullException.ThrowIfNull(inscricaoRepository);
         ArgumentNullException.ThrowIfNull(registroCodecs);
@@ -68,7 +70,7 @@ public static class ListarInscricoesDoProcessoQueryHandler
         ];
 
         DecisoesDaProjecao decisoes = await projetor
-            .DecidirAsync(PortaDeProjecaoDaSelecao.Instancia, resource, classes, cancellationToken).ConfigureAwait(false);
+            .DecidirAsync(porta, resource, classes, cancellationToken).ConfigureAwait(false);
         NomeClassificadoDto modeloDoNome = new(classeDoNome, baseLegalDoNome) { Valor = string.Empty };
         bool saiONome = nomeEntra && decisoes.Permite(modeloDoNome);
         bool saiOCpf = decisoes.PermitePropriedade<InscricaoDoProcessoDto>(nameof(InscricaoDoProcessoDto.Cpf));

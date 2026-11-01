@@ -15,11 +15,14 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// </summary>
 public sealed record FormatoDeTexto : RestricaoValor
 {
+    /// <summary>O token do formato CPF no catálogo.</summary>
+    public const string FormatoCpf = "CPF";
+
     /// <summary>A forma canônica do texto em cada formato; nula quando o texto não está no formato.</summary>
     private static readonly Dictionary<string, Func<string, string?>> FormasCanonicas = new(StringComparer.Ordinal)
     {
         ["LIVRE"] = static texto => texto,
-        ["CPF"] = static texto => Cpf.Criar(texto) is { IsSuccess: true } cpf ? cpf.Value!.Valor : null,
+        [FormatoCpf] = static texto => Cpf.Criar(texto) is { IsSuccess: true } cpf ? cpf.Value!.Valor : null,
         ["EMAIL"] = static texto => Email.Criar(texto) is { IsSuccess: true } email ? email.Value!.Valor : null,
         ["TELEFONE"] = static texto => Telefone.Criar(texto) is { IsSuccess: true } telefone ? telefone.Value!.Valor : null,
         ["CEP"] = static texto => Cep.Criar(texto) is { IsSuccess: true } cep ? cep.Value!.Valor : null,

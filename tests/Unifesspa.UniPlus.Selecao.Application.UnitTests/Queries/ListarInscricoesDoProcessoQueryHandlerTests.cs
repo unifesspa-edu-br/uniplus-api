@@ -149,7 +149,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
 
         ListarInscricoesDoProcessoResult resultado = await ListarInscricoesDoProcessoQueryHandler.Handle(
             new ListarInscricoesDoProcessoQuery(ProcessoId, null, 100, PaginationDirection.Next),
-            diogo.Verificador, new ProjetorDeItens(diogo.Verificador, _requisicao), processos, _inscricoes, codecs, CancellationToken.None);
+            diogo.Verificador, new ProjetorDeItens(diogo.Verificador, _requisicao), new PortaDePermissaoPorPar<PermissaoSelecao>(), processos, _inscricoes, codecs, CancellationToken.None);
 
         resultado.Items.Single().Nome.Should().BeNull();
     }
@@ -163,7 +163,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
 
         await ListarInscricoesDoProcessoQueryHandler.Handle(
             new ListarInscricoesDoProcessoQuery(ProcessoId, null, 100, PaginationDirection.Next),
-            diogo.Verificador, new ProjetorDeItens(diogo.Verificador, _requisicao), processos, _inscricoes, codecs, CancellationToken.None);
+            diogo.Verificador, new ProjetorDeItens(diogo.Verificador, _requisicao), new PortaDePermissaoPorPar<PermissaoSelecao>(), processos, _inscricoes, codecs, CancellationToken.None);
 
         await diogo.Verificador.Received(1).RegistrarParaCadaAsync(
             Arg.Is<DecisaoPermitida>(d => d.Registro.Permissao == CodigoPessoais),
@@ -233,7 +233,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
 
         ListarInscricoesDoProcessoResult resultado = await ListarInscricoesDoProcessoQueryHandler.Handle(
             new ListarInscricoesDoProcessoQuery(ProcessoId, null, 100, PaginationDirection.Next),
-            diogo.Verificador, new ProjetorDeItens(diogo.Verificador, _requisicao), semVersoes, _inscricoes, _codecs, CancellationToken.None);
+            diogo.Verificador, new ProjetorDeItens(diogo.Verificador, _requisicao), new PortaDePermissaoPorPar<PermissaoSelecao>(), semVersoes, _inscricoes, _codecs, CancellationToken.None);
 
         resultado.Items.Single().Nome.Should().BeNull();
     }
@@ -301,7 +301,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
         DecisoesDeAcessoDeTeste persona, IProcessoSeletivoRepository processos, IRegistroCodecsEnvelope codecs) =>
         ListarInscricoesDoProcessoQueryHandler.Handle(
             new ListarInscricoesDoProcessoQuery(ProcessoId, null, 100, PaginationDirection.Next),
-            persona.Verificador, new ProjetorDeItens(persona.Verificador, _requisicao), processos, _inscricoes, codecs, CancellationToken.None);
+            persona.Verificador, new ProjetorDeItens(persona.Verificador, _requisicao), new PortaDePermissaoPorPar<PermissaoSelecao>(), processos, _inscricoes, codecs, CancellationToken.None);
 
     private void Paginar(IReadOnlyList<ResumoDaInscricaoDoProcesso> pagina) =>
         _inscricoes.ListarEnviadasDoProcessoAsync(

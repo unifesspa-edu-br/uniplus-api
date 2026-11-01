@@ -60,6 +60,7 @@ public static class ObterInscricaoAdministrativaQueryHandler
         ObterInscricaoAdministrativaQuery query,
         IVerificadorDeAcesso verificador,
         ProjetorDeItens projetor,
+        IPortaDePermissaoPorPar porta,
         IProcessoSeletivoRepository processoRepository,
         IInscricaoRepository inscricaoRepository,
         IDocumentoDaInscricaoRepository documentoRepository,
@@ -69,6 +70,7 @@ public static class ObterInscricaoAdministrativaQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(verificador);
         ArgumentNullException.ThrowIfNull(projetor);
+        ArgumentNullException.ThrowIfNull(porta);
         ArgumentNullException.ThrowIfNull(processoRepository);
         ArgumentNullException.ThrowIfNull(inscricaoRepository);
         ArgumentNullException.ThrowIfNull(documentoRepository);
@@ -103,7 +105,7 @@ public static class ObterInscricaoAdministrativaQueryHandler
         }
 
         DecisoesDaProjecao decisoes = await projetor
-            .DecidirAsync(PortaDeProjecaoDaSelecao.Instancia, resource, ClassesPedidas, cancellationToken).ConfigureAwait(false);
+            .DecidirAsync(porta, resource, ClassesPedidas, cancellationToken).ConfigureAwait(false);
         await projetor.RegistrarAsync(decisoes, cancellationToken).ConfigureAwait(false);
 
         Inscricao? inscricao = await inscricaoRepository.ObterPorIdAsync(query.InscricaoId, cancellationToken).ConfigureAwait(false);
