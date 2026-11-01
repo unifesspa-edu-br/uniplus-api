@@ -71,4 +71,10 @@ public static class ProtecaoDoCatalogoErrorCodes
 
     /// <summary>Aceite da recomendação num item reprovado: a reprovação não recomenda classificação, o item só se edita.</summary>
     public const string AceiteDeItemReprovado = "ProtecaoDoCatalogo.AceiteDeItemReprovado";
+
+    /// <summary>O filtro de decisão da consulta fora do vocabulário (<c>APROVACAO</c>, <c>AJUSTE_RECOMENDADO</c> ou <c>REPROVACAO</c>).</summary>
+    public const string AtoInvalido = "ProtecaoDoCatalogo.AtoInvalido";
+
+    /// <summary>O período da consulta com a data inicial depois da final.</summary>
+    public const string PeriodoInvalido = "ProtecaoDoCatalogo.PeriodoInvalido";
 }

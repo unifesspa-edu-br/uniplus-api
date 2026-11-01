@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.API.Controllers;
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
@@ -16,6 +17,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
+using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -31,6 +33,8 @@ using Unifesspa.UniPlus.Kernel.Results;
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class ProtecaoDoCatalogoController : ControllerBase
 {
+    private const string DecisoesResourceTag = "protecao-do-catalogo-decisoes";
+
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;
@@ -75,8 +79,66 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
     }
 
     /// <summary>
-    /// O item da fila com o que a proteção de dados precisa ver para decidir, em qualquer situação da aprovação.
-    /// O cadastro é <c>tipos-documento</c> ou <c>fatos</c>. É servido pela permissão de aprovar, sem abrir a consulta
+    /// As decisões que a proteção de dados registrou — aprovação, ajuste recomendado e reprovação —, paginadas por
+    /// cursor opaco bidirecional (ADR-0026 + ADR-0094), das mais recentes para as mais antigas. Quem aprova vê todas;
+    /// <c>minhas=true</c> restringe às de quem consulta. Os filtros <c>ato</c> (repetível), <c>cadastro</c>,
+    /// <c>de</c> e <c>ate</c> (datas, inclusive) e <c>busca</c> (nome ou código do item, sem distinguir maiúsculas
+    /// nem acentos) se combinam.
+    /// </summary>
+    [HttpGet("admin/protecao-do-catalogo/decisoes")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ProtecaoDoCatalogoAprovar, ResourceTipo = ResourceTiposConfiguracao.ProtecaoDoCatalogo)]
+    [VendorMediaType(Resource = "protecao-do-catalogo-decisao", Versions = [1])]
+    [ProducesResponseType(typeof(IEnumerable<DecisaoDaProtecaoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> ListarDecisoes(
+        [FromCursor(DecisoesResourceTag, RequireSortKey = true)] PageRequest page,
+        [FromQuery(Name = "ato")]
+        [Description("Decisão: APROVACAO, AJUSTE_RECOMENDADO ou REPROVACAO. Repetível; sem o parâmetro, as três.")]
+        string[]? ato,
+        [FromQuery(Name = "cadastro")]
+        [Description("Cadastro do item: TIPO_DOCUMENTO ou FATO.")]
+        string? cadastro,
+        [FromQuery(Name = "de")]
+        [Description("Data inicial da decisão, inclusive (AAAA-MM-DD), no fuso de Belém.")]
+        DateOnly? de,
+        [FromQuery(Name = "ate")]
+        [Description("Data final da decisão, inclusive (AAAA-MM-DD), no fuso de Belém.")]
+        DateOnly? ate,
+        [FromQuery(Name = "busca")]
+        [Description("Trecho do nome ou do código do item. Insensível a caixa e a acentuação. Até 200 caracteres.")]
+        string? busca,
+        [FromQuery(Name = "minhas")]
+        [Description("Quando verdadeiro, só as decisões de quem consulta.")]
+        bool minhas = false,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(page);
+
+        Result<ListarDecisoesDaProtecaoResult> resultado = await _queryBus
+            .Send(
+                new ListarDecisoesDaProtecaoQuery(
+                    ato ?? [], cadastro, de, ate, busca, minhas, page.AfterSortKey, page.AfterId, page.Limit, page.Direction),
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        if (resultado.IsFailure)
+        {
+            return resultado.ToActionResult(_mapper);
+        }
+
+        return await this.OkPaginatedOrdenadoAsync(
+            resultado.Value!.Items, resultado.Value.Anterior, resultado.Value.Proximo, page, DecisoesResourceTag,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// O item da fila com o que a proteção de dados precisa ver para decidir, em qualquer situação da aprovação, e
+    /// todos os atos registrados do item em ordem cronológica. O cadastro é <c>tipos-documento</c> ou <c>fatos</c>. É servido pela permissão de aprovar, sem abrir a consulta
     /// aos cadastros.
     /// </summary>
     [HttpGet("admin/protecao-do-catalogo/{cadastro:regex(^(tipos-documento|fatos)$)}/{id:guid}")]

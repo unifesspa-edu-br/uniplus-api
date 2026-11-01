@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.FatosCandidato;
+using Unifesspa.UniPlus.Configuracao.Application.Queries.ProtecaoDoCatalogo;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -273,6 +274,26 @@ public sealed class FatosCandidatoController : ControllerBase
             .ConfigureAwait(false);
 
         return await Enviar(new AceitarRecomendacaoDoFatoCandidatoCommand(id, destinatarios), cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Todos os atos registrados da proteção de dados do fato — solicitação, decisão e aceite —, em ordem cronológica, com o nome de quem agiu. Exige a permissão de consultar o cadastro.
+    /// </summary>
+    [HttpGet("admin/fatos-candidato/{id:guid}/protecao/atos")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoConsultar, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
+    [VendorMediaType(Resource = "protecao-do-catalogo-ato", Versions = [1])]
+    [ProducesResponseType(typeof(IReadOnlyList<AtoDaProtecaoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ListarAtosDaProtecao(Guid id, CancellationToken cancellationToken)
+    {
+        IReadOnlyList<AtoDaProtecaoDto>? atos = await _queryBus
+            .Send(new ListarAtosDoItemDaProtecaoQuery(CadastroDaProtecaoDoCatalogo.Fato, id), cancellationToken)
+            .ConfigureAwait(false);
+
+        return atos is null ? NotFound() : Ok(atos);
     }
 
     /// <summary>Reativa o fato do administrador, que volta a aceitar vínculos novos.</summary>
