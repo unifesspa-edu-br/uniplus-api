@@ -2,10 +2,12 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Application.Abstractions.Email;
+using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposDocumento;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Mappings;
+using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -30,6 +32,8 @@ public static class SolicitarAprovacaoDaProtecaoCommandHandler
         IFatoCandidatoRepository fatos,
         IAtoDaProtecaoDoCatalogoRepository atos,
         IConfiguracaoUnitOfWork unitOfWork,
+        IVerificadorDeAcesso verificador,
+        ITitularesDaPermissao titulares,
         IUserContext userContext,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
@@ -39,10 +43,18 @@ public static class SolicitarAprovacaoDaProtecaoCommandHandler
         ArgumentNullException.ThrowIfNull(fatos);
         ArgumentNullException.ThrowIfNull(atos);
         ArgumentNullException.ThrowIfNull(unitOfWork);
+        ArgumentNullException.ThrowIfNull(verificador);
+        ArgumentNullException.ThrowIfNull(titulares);
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        AcessoAoCatalogoDeProtecao acesso = command.Acesso;
+        Result<AcessoAoCatalogoDeProtecao> decidido = await AcessoAoCatalogoDeProtecao.VerificarAsync(verificador, cancellationToken).ConfigureAwait(false);
+        if (decidido.IsFailure)
+        {
+            return Recusa(decidido.Error!);
+        }
+
+        AcessoAoCatalogoDeProtecao acesso = decidido.Value;
         if (!acesso.ManterTipos && !acesso.ManterFatos)
         {
             return Recusa(AcessoAoCatalogoDeProtecao.SemPermissao);
@@ -114,7 +126,9 @@ public static class SolicitarAprovacaoDaProtecaoCommandHandler
         }
 
         // Só o destinatário válido recebe: a guarda conta os e-mails que o aviso efetivamente monta.
-        IReadOnlyList<EnviarEmail> avisos = AvisosDaProtecaoDoCatalogo.DaSolicitacao(command.Destinatarios, tiposPendentes.Count, fatosPendentes.Count);
+        IReadOnlyList<string> destinatarios = await titulares
+            .ListarEmailsAsync(PermissaoConfiguracao.ProtecaoDoCatalogoAprovar.Codigo, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<EnviarEmail> avisos = AvisosDaProtecaoDoCatalogo.DaSolicitacao(destinatarios, tiposPendentes.Count, fatosPendentes.Count);
         if (avisos.Count == 0)
         {
             return Recusa(new DomainError(

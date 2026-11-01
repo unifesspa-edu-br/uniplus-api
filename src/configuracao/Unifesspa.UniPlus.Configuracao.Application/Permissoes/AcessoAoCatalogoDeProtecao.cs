@@ -1,17 +1,15 @@
-namespace Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
+namespace Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
-using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// O que quem age pode no circuito de aprovação da proteção de dados do catálogo: manter os tipos de
 /// documento, manter os fatos e aprovar. A solicitação e a consulta alcançam os dois cadastros de uma vez, então
-/// o acesso é decidido item a item por permissão, e não por um único atributo no endpoint. A decisão é tomada na borda,
-/// antes do handler: ela lê as concessões do módulo Autorização, e o handler precisa de um único DbContext para que a
-/// trava, a conferência, a gravação e o aviso por e-mail fiquem na mesma transação.
+/// o acesso é decidido item a item por permissão, e não por um único atributo no endpoint. Quem decide é o próprio
+/// handler: nenhum emissor consegue entregar o acesso pronto.
 /// </summary>
 public readonly record struct AcessoAoCatalogoDeProtecao(bool ManterTipos, bool ManterFatos, bool Aprovar)
 {

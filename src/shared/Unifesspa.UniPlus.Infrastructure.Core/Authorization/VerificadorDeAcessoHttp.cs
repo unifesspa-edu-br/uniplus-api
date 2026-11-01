@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// desfecho é <see cref="ResultadoDoAcesso.IdentidadeIncompleta"/>, que a borda
 /// responde como <c>401</c>.
 /// </remarks>
-public sealed class VerificadorDeAcessoHttp : IVerificadorDeAcesso
+internal sealed class VerificadorDeAcessoHttp : IVerificadorDeAcesso
 {
     private readonly IUserContext _userContext;
     private readonly IAuthorizationSubjectResolver _resolver;

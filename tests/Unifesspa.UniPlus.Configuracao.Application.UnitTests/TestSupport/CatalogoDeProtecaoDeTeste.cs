@@ -3,11 +3,14 @@ namespace Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Authorization.Abstractions;
+using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>Montagem comum dos testes do circuito de aprovação da proteção de dados do catálogo.</summary>
 internal static class CatalogoDeProtecaoDeTeste
@@ -19,11 +22,21 @@ internal static class CatalogoDeProtecaoDeTeste
 
     public static readonly DateTimeOffset Agora = new(2026, 11, 2, 12, 0, 0, TimeSpan.Zero);
 
-    /// <summary>O acesso de quem tem exatamente as permissões dadas.</summary>
-    public static AcessoAoCatalogoDeProtecao AcessoCom(params PermissaoConfiguracao[] permitidas) => new(
-        permitidas.Contains(PermissaoConfiguracao.TiposDocumentoManter),
-        permitidas.Contains(PermissaoConfiguracao.FatosCandidatoManter),
-        permitidas.Contains(PermissaoConfiguracao.ProtecaoDoCatalogoAprovar));
+    /// <summary>O verificador de quem tem exatamente as permissões dadas: avalia cada uma como permitida ou negada.</summary>
+    public static IVerificadorDeAcesso VerificadorCom(params PermissaoConfiguracao[] permitidas)
+    {
+        IVerificadorDeAcesso verificador = Substitute.For<IVerificadorDeAcesso>();
+        verificador.AvaliarAsync(default!, default, default).ReturnsForAnyArgs(chamada =>
+        {
+            PermissionRequirement requisito = chamada.ArgAt<PermissionRequirement>(0);
+            return Task.FromResult(DecisaoDeAcessoDeTeste.Tomada(
+                permitidas.Any(p => p.Codigo == requisito.Permissao) ? ResultadoDoAcesso.Permitido : ResultadoDoAcesso.Negado,
+                requisito,
+                chamada.ArgAt<ResourceContext?>(1)));
+        });
+
+        return verificador;
+    }
 
     public static IUserContext UsuarioIsabella()
     {

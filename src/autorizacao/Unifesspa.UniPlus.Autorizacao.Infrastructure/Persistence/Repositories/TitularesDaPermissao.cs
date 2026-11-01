@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Authorization.Abstractions;
 /// Os titulares de uma permissão, lidos das concessões para quem precisa avisá-los. O perfil desativado
 /// continua concedendo as concessões que já existem, como na decisão de acesso, e por isso não é filtrado.
 /// </summary>
-public sealed class TitularesDaPermissao : ITitularesDaPermissao
+internal sealed class TitularesDaPermissao : ITitularesDaPermissao
 {
     private readonly AutorizacaoDbContext _context;
     private readonly TimeProvider _timeProvider;
