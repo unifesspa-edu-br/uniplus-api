@@ -25,8 +25,9 @@ public sealed class ProjetorDeItens
     }
 
     /// <summary>
-    /// Decide, sem registrar, a permissão de cada par pedido sobre o resource. Os pares sem permissão no módulo e os
-    /// negados ficam de fora; as decisões permitidas são guardadas na requisição para a serialização defensiva.
+    /// Decide, sem registrar, a permissão de cada par pedido sobre o resource, com a sensibilidade do dado que a permissão
+    /// libera. Os pares sem permissão no módulo e os negados ficam de fora; as decisões permitidas são guardadas na
+    /// requisição para a serialização defensiva e são registradas por <see cref="RegistrarAsync"/> quando exercidas.
     /// </summary>
     public async Task<DecisoesDaProjecao> DecidirAsync(
         IPortaDePermissaoPorPar porta,
@@ -49,7 +50,8 @@ public sealed class ProjetorDeItens
             }
 
             DecisaoDeAcesso decisao = await _verificador
-                .DecidirSemRegistrarAsync(requisito, resource, cancellationToken).ConfigureAwait(false);
+                .DecidirSemRegistrarAsync(requisito, resource.ComSensibilidade(requisito.Sensibilidade), cancellationToken)
+                .ConfigureAwait(false);
             if (decisao.Resultado == ResultadoDoAcesso.Permitido)
             {
                 permitidas[(natureza, classificacao)] = decisao;

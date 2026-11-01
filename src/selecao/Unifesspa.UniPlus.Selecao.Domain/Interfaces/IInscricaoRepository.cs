@@ -39,8 +39,8 @@ public interface IInscricaoRepository
     /// <summary>
     /// As inscrições enviadas do processo, as submetidas e as canceladas, paginadas por cursor bidirecional
     /// (ADR-0026, ADR-0089) em ordem cronológica. O rascunho fica de fora: enquanto o candidato não envia, não há
-    /// inscrição para quem opera o processo. Lê só o necessário — o nome, o CPF para mascarar e o instante do primeiro
-    /// envio —, sem decifrar as demais respostas.
+    /// inscrição para quem opera o processo. Lê só o necessário — os cursos escolhidos, o nome, o CPF para mascarar e o
+    /// instante do primeiro envio —, sem decifrar as demais respostas.
     /// </summary>
     Task<(IReadOnlyList<ResumoDaInscricaoDoProcesso> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarEnviadasDoProcessoAsync(
         Guid processoSeletivoId,

@@ -111,11 +111,12 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         configurar.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
-    [Fact(DisplayName = "Consultar as inscrições lista com o CPF mascarado, só na unidade dona, e não abre documento")]
+    [Fact(DisplayName = "Com os dados públicos e pessoais a lista traz nome e CPF mascarado, só na unidade dona, e não abre documento")]
     public async Task Inscricoes_ListaComCpfMascarado()
     {
         Cenario cenario = await SemearCenarioAsync(nameof(Inscricoes_ListaComCpfMascarado));
-        await ConcederAsync(Leandro, cenario.UnidadeId, PermissaoSelecao.InscricoesConsultar);
+        await ConcederAsync(
+            Leandro, cenario.UnidadeId, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPublicosConsultar, PermissaoSelecao.DadosPessoaisConsultar);
         await ConcederAsync(Betina, Guid.CreateVersion7(), PermissaoSelecao.InscricoesConsultar);
 
         using HttpResponseMessage lista = await GetAsync(Leandro, $"/api/selecao/processos-seletivos/{cenario.ProcessoId}/inscricoes");
@@ -126,13 +127,41 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         lista.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
         using JsonDocument json = JsonDocument.Parse(corpo);
         JsonElement item = json.RootElement.EnumerateArray().Single(i => i.GetProperty("id").GetGuid() == cenario.InscricaoId);
-        item.GetProperty("cpfMascarado").GetString().Should().Be(PersonasDeTeste.FernandaDrumond.Mascarado);
+        item.GetProperty("cpf").GetProperty("valor").GetString().Should().Be(PersonasDeTeste.FernandaDrumond.Mascarado);
+        item.GetProperty("cpf").GetProperty("podeRevelar").GetBoolean().Should().BeFalse("a revelação é pedida no detalhe, por campo");
+        item.TryGetProperty("numeroInscricao", out _).Should().BeFalse("o número é dado interno");
         item.GetProperty("nome").GetString().Should().Be(PersonasDeTeste.NomeSocialFernandaDrumond);
         corpo.Should().NotContain(PersonasDeTeste.FernandaDrumond.Valor);
         json.RootElement.EnumerateArray().Select(i => i.GetProperty("id").GetGuid()).Should().NotContain(cenario.InscricaoEmRascunho, "o rascunho não é inscrição enviada");
         outraUnidade.StatusCode.Should().Be(HttpStatusCode.NotFound);
         documento.StatusCode.Should().Be(HttpStatusCode.NotFound, "consultar as inscrições não abre documento");
     }
+
+    [Fact(DisplayName = "A listagem grava um registro por inscrição exibida, com a decisão de dados pessoais, e Kevin sem dados vê a linha vazia")]
+    public async Task Lista_GravaUmRegistroPorInscricaoExibida()
+    {
+        Cenario cenario = await SemearCenarioAsync(nameof(Lista_GravaUmRegistroPorInscricaoExibida));
+        await ConcederAsync(Diogo, cenario.UnidadeId, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar);
+        await ConcederAsync(Leandro, cenario.UnidadeId, PermissaoSelecao.InscricoesConsultar);
+
+        using HttpResponseMessage comDadosPessoais = await GetAsync(Diogo, $"/api/selecao/processos-seletivos/{cenario.ProcessoId}/inscricoes");
+        IReadOnlyList<RegistroDecisaoAcesso> doDiogo = RegistrosDeDados(cenario.ProcessoId, PermissaoSelecao.DadosPessoaisConsultar);
+        using HttpResponseMessage semDados = await GetAsync(Leandro, $"/api/selecao/processos-seletivos/{cenario.ProcessoId}/inscricoes");
+        string corpo = await semDados.Content.ReadAsStringAsync();
+
+        comDadosPessoais.StatusCode.Should().Be(HttpStatusCode.OK, await comDadosPessoais.Content.ReadAsStringAsync());
+        RegistroDecisaoAcesso registro = doDiogo.Should().ContainSingle().Subject;
+        registro.ResourceId.Should().Be(cenario.InscricaoId);
+        registro.InscricaoId.Should().Be(cenario.InscricaoId);
+        registro.Permitido.Should().BeTrue();
+        registro.AtorSubject.Should().Be(Diogo);
+        semDados.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
+        corpo.Should().NotContain(PersonasDeTeste.NomeSocialFernandaDrumond).And.NotContain(PersonasDeTeste.FernandaDrumond.Mascarado);
+    }
+
+    private IReadOnlyList<RegistroDecisaoAcesso> RegistrosDeDados(Guid processoId, PermissaoSelecao permissao) =>
+        [.. _fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>().Registrados
+            .Where(r => r.ProcessoId == processoId && r.Permissao == permissao.Codigo && r.ResourceId is not null)];
 
     [Fact(DisplayName = "Documento pessoal exige documentos pessoais; o laudo sensível exige documentos sensíveis")]
     public async Task Documentos_PermissaoPelaClassificacaoCongeladaDaExigencia()

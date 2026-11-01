@@ -148,5 +148,20 @@ public sealed record ResourceContext
             inscricaoId));
     }
 
+    /// <summary>
+    /// O mesmo resource com outra sensibilidade. O projetor decide cada par pela permissão dele, e a sensibilidade que
+    /// vale para o registro e para a exigência de base legal é a do dado que aquela permissão libera.
+    /// </summary>
+    public ResourceContext ComSensibilidade(ClassificacaoDeProtecao sensibilidade)
+    {
+        if (sensibilidade == ClassificacaoDeProtecao.Nenhuma || !Enum.IsDefined(sensibilidade))
+        {
+            throw new ArgumentOutOfRangeException(nameof(sensibilidade), sensibilidade, "A sensibilidade do resource é obrigatória.");
+        }
+
+        return new ResourceContext(
+            ResourceTipo, sensibilidade, UnidadeProprietariaId, ProcessoId, ChamadaId, ResourceId, FatoCodigo, Ocorrencia, InscricaoId);
+    }
+
     private static bool GuidVazioInformado(Guid? valor) => valor is { } g && g == Guid.Empty;
 }

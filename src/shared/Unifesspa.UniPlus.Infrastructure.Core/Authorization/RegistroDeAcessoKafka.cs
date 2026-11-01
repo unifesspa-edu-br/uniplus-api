@@ -68,7 +68,7 @@ public sealed class RegistroDeAcessoKafka : IRegistroOperacionalRestrito, IDispo
 
             await produtor.ProduceAsync(
                 _topico,
-                new Message<string, string> { Key = chaveDoLote, Value = JsonSerializer.Serialize(entradas, Json) },
+                new Message<string, string> { Key = chaveDoLote, Value = ValorDoLote(entradas) },
                 cancellationToken).ConfigureAwait(false);
         }
         catch (Exception falha) when (falha is not OperationCanceledException)
@@ -83,6 +83,12 @@ public sealed class RegistroDeAcessoKafka : IRegistroOperacionalRestrito, IDispo
             throw new RegistroDeAcessoNaoGravadoException(falha);
         }
     }
+
+    /// <summary>O valor da mensagem de um lote: o que o consumidor separa, registro a registro.</summary>
+    internal static string ValorDoLote(IReadOnlyList<RegistroDecisaoAcesso> registros) =>
+        ValorDoLote([.. registros.Select(static r => new EntradaDoLote(r.Chave, r))]);
+
+    private static string ValorDoLote(EntradaDoLote[] entradas) => JsonSerializer.Serialize(entradas, Json);
 
     /// <inheritdoc />
     public void Dispose()
