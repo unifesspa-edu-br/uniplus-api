@@ -20,6 +20,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Application.DTOs.Administrativos;
 
 /// <summary>
 /// As inscrições do processo na visão de quem o opera. A permissão de consultá-las vale na unidade dona do processo,

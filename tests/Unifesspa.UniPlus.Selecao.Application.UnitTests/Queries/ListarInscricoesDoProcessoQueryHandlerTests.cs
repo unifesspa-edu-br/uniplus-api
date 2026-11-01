@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.DTOs.Administrativos;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Application.Queries.InscricoesDoProcesso;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;

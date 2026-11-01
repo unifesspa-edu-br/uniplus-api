@@ -9,6 +9,7 @@ using AwesomeAssertions;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
+using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;

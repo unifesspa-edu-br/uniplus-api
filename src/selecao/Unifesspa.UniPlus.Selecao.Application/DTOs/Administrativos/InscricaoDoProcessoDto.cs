@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
+namespace Unifesspa.UniPlus.Selecao.Application.DTOs.Administrativos;
 
 using System.Text.Json.Serialization;
 

@@ -31,6 +31,8 @@ public static class AutorizacaoServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
+        // O produtor do registro liga os logs do librdkafka ao ILogger.
+        services.AddLogging();
         services.AddOptions<RegistroDeAcessoKafkaOptions>()
             .Bind(configuration.GetSection(RegistroDeAcessoKafkaOptions.SectionName))
             .ValidateOnStart();

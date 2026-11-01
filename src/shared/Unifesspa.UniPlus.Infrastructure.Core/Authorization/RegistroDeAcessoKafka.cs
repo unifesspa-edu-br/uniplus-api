@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using Confluent.Kafka;
 
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
@@ -20,7 +21,7 @@ using Unifesspa.UniPlus.Authorization.Contracts;
 /// registro. A deduplicação vale para a nova tentativa dentro da mesma execução; uma nova requisição do usuário é um
 /// novo acesso, com registros próprios. O valor leva o registro sem o dado, só o código do fato.
 /// </remarks>
-public sealed class RegistroDeAcessoKafka : IRegistroOperacionalRestrito, IDisposable
+public sealed partial class RegistroDeAcessoKafka : IRegistroOperacionalRestrito, IDisposable
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
@@ -34,8 +35,8 @@ public sealed class RegistroDeAcessoKafka : IRegistroOperacionalRestrito, IDispo
     /// Cria o produtor com a configuração de <c>RegistroDeAcesso:Kafka</c>. Configuração inválida, inclusive sem
     /// bootstrap servers, lança <see cref="OptionsValidationException"/> ao ler as opções: não há registrador silencioso.
     /// </summary>
-    public RegistroDeAcessoKafka(IOptions<RegistroDeAcessoKafkaOptions> opcoes)
-        : this(Fabrica(opcoes), opcoes.Value.Topico, opcoes.Value.PrazoDeConfirmacao)
+    public RegistroDeAcessoKafka(IOptions<RegistroDeAcessoKafkaOptions> opcoes, ILogger<RegistroDeAcessoKafka> logger)
+        : this(Fabrica(opcoes, logger), opcoes.Value.Topico, opcoes.Value.PrazoDeConfirmacao)
     {
     }
 
@@ -106,14 +107,41 @@ public sealed class RegistroDeAcessoKafka : IRegistroOperacionalRestrito, IDispo
         }
     }
 
-    private static Func<IProducer<string, string>> Fabrica(IOptions<RegistroDeAcessoKafkaOptions> opcoes)
+    private static Func<IProducer<string, string>> Fabrica(IOptions<RegistroDeAcessoKafkaOptions> opcoes, ILogger logger)
     {
         ArgumentNullException.ThrowIfNull(opcoes);
+        ArgumentNullException.ThrowIfNull(logger);
 
         // Ler as opções valida a configuração e lança OptionsValidationException se for inválida.
         RegistroDeAcessoKafkaOptions configuracao = opcoes.Value;
-        return () => new ProducerBuilder<string, string>(configuracao.ParaProdutor()).Build();
+
+        // Sem os dois handlers, os logs do librdkafka vão para o stderr, fora do Serilog e do mascaramento.
+        return () => new ProducerBuilder<string, string>(configuracao.ParaProdutor())
+            .SetLogHandler((_, mensagem) => RegistrarLogDoProdutor(logger, mensagem))
+            .SetErrorHandler((_, erro) => LogErroDoProdutor(logger, erro.Code, erro.Reason, erro.IsFatal))
+            .Build();
     }
+
+    private static void RegistrarLogDoProdutor(ILogger logger, LogMessage mensagem)
+    {
+        LogLevel nivel = ParaLogLevel(mensagem.Level);
+        LogLibrdkafka(logger, nivel, mensagem.Facility, mensagem.Message);
+    }
+
+    internal static LogLevel ParaLogLevel(SyslogLevel nivel) => nivel switch
+    {
+        SyslogLevel.Emergency or SyslogLevel.Alert or SyslogLevel.Critical => LogLevel.Critical,
+        SyslogLevel.Error => LogLevel.Error,
+        SyslogLevel.Warning => LogLevel.Warning,
+        SyslogLevel.Notice or SyslogLevel.Info => LogLevel.Information,
+        _ => LogLevel.Debug,
+    };
+
+    [LoggerMessage(Message = "librdkafka {Facility}: {Mensagem}")]
+    private static partial void LogLibrdkafka(ILogger logger, LogLevel level, string facility, string mensagem);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Erro do produtor do registro de acesso: {Codigo} {Motivo} (fatal: {Fatal})")]
+    private static partial void LogErroDoProdutor(ILogger logger, ErrorCode codigo, string motivo, bool fatal);
 
     private static bool EhFatal(Exception falha) =>
         falha is KafkaException { Error.IsFatal: true } || falha.InnerException is KafkaException { Error.IsFatal: true };

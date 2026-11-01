@@ -1,8 +1,9 @@
-namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
+namespace Unifesspa.UniPlus.Selecao.Application.DTOs.Administrativos;
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
