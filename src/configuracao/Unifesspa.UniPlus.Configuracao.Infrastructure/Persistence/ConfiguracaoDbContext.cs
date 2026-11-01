@@ -103,6 +103,11 @@ public sealed class ConfiguracaoDbContext : DbContext, IConfiguracaoUnitOfWork
     public DbSet<PrecedenciaFase> PrecedenciasFase => Set<PrecedenciaFase>();
 
     /// <summary>
+    /// Atos do circuito de aprovação da proteção de dados do catálogo (ADR-0153), registro só acrescentado.
+    /// </summary>
+    public DbSet<AtoDaProtecaoDoCatalogo> AtosDaProtecaoDoCatalogo => Set<AtoDaProtecaoDoCatalogo>();
+
+    /// <summary>
     /// Cache de Idempotency-Key (ADR-0027). Vive no mesmo banco do módulo
     /// para permitir gravação adjacente no outbox.
     /// </summary>
