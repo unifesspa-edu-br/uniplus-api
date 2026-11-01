@@ -69,6 +69,10 @@ public static class SelecaoModuleRegistration
         // conferido aqui, na subida.
         services.AddCatalogoDePermissoes<PermissaoSelecao>();
 
+        // O DTO administrativo declara a classificação de cada propriedade lida da coluna; a subida confere
+        // que nenhuma fica abaixo da classificação do modelo (ADR-0153).
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<Microsoft.Extensions.Hosting.IHostedService, ConferenciaDoDtoAdministrativoNaSubida>());
+
         services.AddSelecaoApplication();
         // AddSelecaoInfrastructure resolve a connection string via IConfiguration
         // injetada no factory do AddDbContext (issue #204) — simetria com
