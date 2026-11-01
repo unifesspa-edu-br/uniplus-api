@@ -31,6 +31,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
     private static readonly string CodigoPessoais = PermissaoSelecao.DadosPessoaisConsultar.Codigo;
     private static readonly string CodigoAcesso = PermissaoSelecao.InscricoesConsultar.Codigo;
     private static readonly string CodigoRevelar = PermissaoSelecao.DadosIdentificadoresRevelar.Codigo;
+    private static readonly string CodigoSensiveis = PermissaoSelecao.DadosSensiveisConsultar.Codigo;
     private static readonly string CodigoPublicos = PermissaoSelecao.DadosPublicosConsultar.Codigo;
 
     private readonly IProcessoSeletivoRepository _processos;
@@ -59,7 +60,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
         ListarInscricoesDoProcessoResult resultado = await Listar(diogo);
 
         InscricaoDoProcessoDto primeira = resultado.Items[0];
-        primeira.Nome.Should().Be(PersonasDeTeste.NomeFernandaDrumond);
+        primeira.Nome!.Valor.Should().Be(PersonasDeTeste.NomeFernandaDrumond);
         primeira.Cpf.Should().Be(new CpfMascaradoDto(PersonasDeTeste.FernandaDrumond.Mascarado, PodeRevelar: false));
         primeira.NumeroInscricao.Should().BeNull("o número é dado interno e Diogo não tem essa permissão");
         await diogo.Verificador.Received(1).RegistrarParaCadaAsync(
@@ -178,7 +179,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
 
         ListarInscricoesDoProcessoResult resultado = await Listar(persona, processos, codecs);
 
-        resultado.Items.Single().Nome.Should().Be(PersonasDeTeste.NomeFernandaDrumond);
+        resultado.Items.Single().Nome!.Valor.Should().Be(PersonasDeTeste.NomeFernandaDrumond);
         await _inscricoes.Received(1).ListarEnviadasDoProcessoAsync(
             ProcessoId, null, 100, PaginationDirection.Next, true, false, Arg.Any<CancellationToken>());
     }
@@ -235,6 +236,63 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
             diogo.Verificador, new ProjetorDeItens(diogo.Verificador, _requisicao), semVersoes, _inscricoes, _codecs, CancellationToken.None);
 
         resultado.Items.Single().Nome.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Versões mistas (pessoal e sensível com base legal): pede o par sensível, o nome sai e o registro por inscrição é o da classe mais alta")]
+    public async Task VersoesMistas_PedemOParSensivelERegistramAClasseMaisAlta()
+    {
+        (IProcessoSeletivoRepository processos, IRegistroCodecsEnvelope codecs) = VersoesDoNomeDeTeste.Processo(
+            ProcessoId,
+            VersoesDoNomeDeTeste.VersaoComNome("PESSOAL", VersoesDoNomeDeTeste.Hipotese),
+            VersoesDoNomeDeTeste.VersaoComNome("SENSIVEL", VersoesDoNomeDeTeste.Hipotese));
+        DecisoesDeAcessoDeTeste persona = new(
+            "diogo.souza", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosSensiveisConsultar, PermissaoSelecao.DadosPessoaisConsultar);
+        Paginar([Resumo(1)]);
+
+        ListarInscricoesDoProcessoResult resultado = await Listar(persona, processos, codecs);
+
+        resultado.Items.Single().Nome!.Valor.Should().Be(PersonasDeTeste.NomeFernandaDrumond);
+        await persona.Verificador.Received(1).AvaliarAsync(
+            Arg.Is<PermissionRequirement>(r => r.Permissao == CodigoSensiveis), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>());
+        await persona.Verificador.Received(1).RegistrarParaCadaAsync(
+            Arg.Is<DecisaoPermitida>(d => d.Registro.Permissao == CodigoSensiveis),
+            ResourceTiposSelecao.Inscricao, Arg.Any<IReadOnlyCollection<Guid>>(), true, Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Versão ilegível ao lado de uma legível: o par sensível não é pedido, o nome não sai e o registro por inscrição é o de dados pessoais")]
+    public async Task VersaoIlegivel_NaoPedeOParSensivelNemSaiONome()
+    {
+        (IProcessoSeletivoRepository processos, IRegistroCodecsEnvelope codecs) = VersoesDoNomeDeTeste.Processo(
+            ProcessoId, VersoesDoNomeDeTeste.VersaoComNome("PESSOAL", VersoesDoNomeDeTeste.Hipotese), VersoesDoNomeDeTeste.VersaoIlegivel());
+        DecisoesDeAcessoDeTeste persona = new(
+            "diogo.souza", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosSensiveisConsultar, PermissaoSelecao.DadosPessoaisConsultar);
+        Paginar([Resumo(1)]);
+
+        ListarInscricoesDoProcessoResult resultado = await Listar(persona, processos, codecs);
+
+        resultado.Items.Single().Nome.Should().BeNull();
+        await persona.Verificador.DidNotReceive().AvaliarAsync(
+            Arg.Is<PermissionRequirement>(r => r.Permissao == CodigoSensiveis), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>());
+        await persona.Verificador.Received(1).RegistrarParaCadaAsync(
+            Arg.Is<DecisaoPermitida>(d => d.Registro.Permissao == CodigoPessoais),
+            ResourceTiposSelecao.Inscricao, Arg.Any<IReadOnlyCollection<Guid>>(), true, Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Nome pessoal: pede só os pares do DTO, o nome sai com dados pessoais e o registro por inscrição é o de dados pessoais")]
+    public async Task NomePessoal_PedeSoOsParesDoDto()
+    {
+        DecisoesDeAcessoDeTeste persona = new(
+            "diogo.souza", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosSensiveisConsultar, PermissaoSelecao.DadosPessoaisConsultar);
+        Paginar([Resumo(1)]);
+
+        ListarInscricoesDoProcessoResult resultado = await Listar(persona);
+
+        resultado.Items.Single().Nome!.Valor.Should().Be(PersonasDeTeste.NomeFernandaDrumond);
+        await persona.Verificador.DidNotReceive().AvaliarAsync(
+            Arg.Is<PermissionRequirement>(r => r.Permissao == CodigoSensiveis), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>());
+        await persona.Verificador.Received(1).RegistrarParaCadaAsync(
+            Arg.Is<DecisaoPermitida>(d => d.Registro.Permissao == CodigoPessoais),
+            ResourceTiposSelecao.Inscricao, Arg.Any<IReadOnlyCollection<Guid>>(), true, Arg.Any<CancellationToken>());
     }
 
     private Task<ListarInscricoesDoProcessoResult> Listar(DecisoesDeAcessoDeTeste persona) => Listar(persona, _processos, _codecs);

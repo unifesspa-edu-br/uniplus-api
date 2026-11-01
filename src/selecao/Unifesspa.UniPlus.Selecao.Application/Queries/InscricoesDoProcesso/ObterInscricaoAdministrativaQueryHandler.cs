@@ -122,27 +122,28 @@ public static class ObterInscricaoAdministrativaQueryHandler
             inscricao.Id, envelope.Value!, documentoRepository, cancellationToken).ConfigureAwait(false);
 
         DateTimeOffset? submetidaEm = await FixoAsync(
-            decisoes, NaturezaDoItem.Dado, ClassificacaoDeProtecao.Interno,
+            decisoes, nameof(InscricaoAdministrativaDto.SubmetidaEm),
             () => PrimeiroEnvioAsync(inscricao.Id, inscricaoRepository, cancellationToken)).ConfigureAwait(false);
 
         return Result<InscricaoAdministrativaDto>.Success(new InscricaoAdministrativaDto(
-            Fixo<Guid>(decisoes, NaturezaDoItem.Dado, ClassificacaoDeProtecao.Publico, inscricao.Id),
-            Fixo<SituacaoInscricao>(decisoes, NaturezaDoItem.Dado, ClassificacaoDeProtecao.Publico, inscricao.Situacao),
-            Fixo<Guid>(decisoes, NaturezaDoItem.Dado, ClassificacaoDeProtecao.Publico, inscricao.OfertaCursoId),
-            Fixo<Guid>(decisoes, NaturezaDoItem.Dado, ClassificacaoDeProtecao.Publico, inscricao.OfertaCursoSegundaOpcaoId),
-            Fixo(decisoes, NaturezaDoItem.Dado, ClassificacaoDeProtecao.Interno, inscricao.NumeroInscricao),
+            Fixo<Guid>(decisoes, nameof(InscricaoAdministrativaDto.Id), inscricao.Id),
+            Fixo<SituacaoInscricao>(decisoes, nameof(InscricaoAdministrativaDto.Situacao), inscricao.Situacao),
+            Fixo<Guid>(decisoes, nameof(InscricaoAdministrativaDto.OfertaCursoId), inscricao.OfertaCursoId),
+            Fixo<Guid>(decisoes, nameof(InscricaoAdministrativaDto.OfertaCursoSegundaOpcaoId), inscricao.OfertaCursoSegundaOpcaoId),
+            Fixo(decisoes, nameof(InscricaoAdministrativaDto.NumeroInscricao), inscricao.NumeroInscricao),
             submetidaEm,
-            Fixo<DateTimeOffset>(decisoes, NaturezaDoItem.Dado, ClassificacaoDeProtecao.Interno, inscricao.CanceladaEm),
-            Fixo(decisoes, NaturezaDoItem.Dado, ClassificacaoDeProtecao.Pessoal, inscricao.MotivoDoCancelamento),
+            Fixo<DateTimeOffset>(decisoes, nameof(InscricaoAdministrativaDto.CanceladaEm), inscricao.CanceladaEm),
+            Fixo(decisoes, nameof(InscricaoAdministrativaDto.MotivoDoCancelamento), inscricao.MotivoDoCancelamento),
             ItensDaInscricao.Permitidas(ItensDaInscricao.Secoes(inscricao, fatos, podeRevelar), decisoes),
             [.. ItensDaInscricao.Derivados(inscricao, fatos).Where(decisoes.Permite)],
             [.. arquivos.Where(decisoes.Permite)]));
     }
 
-    /// <summary>Como <c>Fixo</c>, para o valor que se lê do repositório: a leitura só acontece quando a classe é permitida.</summary>
-    private static async Task<T?> FixoAsync<T>(
-        DecisoesDaProjecao decisoes, NaturezaDoItem natureza, ClassificacaoDeProtecao classe, Func<Task<T?>> ler)
-        where T : struct => decisoes.Permite(natureza, classe) ? await ler().ConfigureAwait(false) : null;
+    /// <summary>
+    /// Como <c>Fixo</c>, para o valor que se lê do repositório: a leitura só acontece quando a propriedade é permitida.
+    /// </summary>
+    private static async Task<T?> FixoAsync<T>(DecisoesDaProjecao decisoes, string propriedade, Func<Task<T?>> ler)
+        where T : struct => decisoes.PermitePropriedade<InscricaoAdministrativaDto>(propriedade) ? await ler().ConfigureAwait(false) : null;
 
     private static async Task<DateTimeOffset?> PrimeiroEnvioAsync(
         Guid inscricaoId, IInscricaoRepository inscricaoRepository, CancellationToken cancellationToken)
@@ -153,11 +154,11 @@ public static class ObterInscricaoAdministrativaQueryHandler
         return envios.TryGetValue(inscricaoId, out DateTimeOffset primeiro) ? primeiro : null;
     }
 
-    private static T? Fixo<T>(DecisoesDaProjecao decisoes, NaturezaDoItem natureza, ClassificacaoDeProtecao classe, T? valor)
-        where T : struct => decisoes.Permite(natureza, classe) ? valor : null;
+    private static T? Fixo<T>(DecisoesDaProjecao decisoes, string propriedade, T? valor)
+        where T : struct => decisoes.PermitePropriedade<InscricaoAdministrativaDto>(propriedade) ? valor : null;
 
-    private static string? Fixo(DecisoesDaProjecao decisoes, NaturezaDoItem natureza, ClassificacaoDeProtecao classe, string? valor) =>
-        decisoes.Permite(natureza, classe) ? valor : null;
+    private static string? Fixo(DecisoesDaProjecao decisoes, string propriedade, string? valor) =>
+        decisoes.PermitePropriedade<InscricaoAdministrativaDto>(propriedade) ? valor : null;
 
     /// <summary>
     /// Os metadados dos arquivos confirmados, cada um com a classificação e a hipótese legal que a exigência congelou na

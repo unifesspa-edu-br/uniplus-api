@@ -6,26 +6,6 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
-/// <summary>A proteção que as versões do processo congelaram para o nome exibido.</summary>
-/// <param name="Classificacao">A classificação mais alta entre as versões.</param>
-/// <param name="BaseLegalResolvida">Se todas as versões congelaram a base legal do nome.</param>
-internal sealed record ProtecaoDoNome(ClassificacaoDeProtecao Classificacao, bool BaseLegalResolvida)
-{
-    /// <summary>O nome não resolvido: sensível e sem base legal.</summary>
-    public static ProtecaoDoNome NaoResolvida { get; } = new(ClassificacaoDeProtecao.Sensivel, false);
-
-    /// <summary>
-    /// Se a proteção congelada deixa o nome ser lido na listagem. O identificador nunca sai por aqui, porque a listagem não
-    /// revela; o sensível só sai com a base legal congelada, como no detalhe.
-    /// </summary>
-    public bool SaiNaListagem => Classificacao switch
-    {
-        ClassificacaoDeProtecao.Identificador => false,
-        ClassificacaoDeProtecao.Sensivel => BaseLegalResolvida,
-        _ => true,
-    };
-}
-
 /// <summary>
 /// A proteção do nome de um processo: a classificação mais alta que qualquer das versões dele congelou, porque a listagem
 /// mostra inscrições de todas as versões do processo, e a base legal só vale resolvida em todas. Versão que não se lê, ou
@@ -33,7 +13,16 @@ internal sealed record ProtecaoDoNome(ClassificacaoDeProtecao Classificacao, boo
 /// </summary>
 internal static class ClassificacaoDoNomeNoProcesso
 {
-    public static async Task<ProtecaoDoNome> ResolverAsync(
+    /// <summary>
+    /// Se a classe do nome entra nos pares que a listagem pede ao projetor: o identificador nunca sai pelo nome, e o
+    /// sensível só entra com a base legal congelada em todas as versões, para que a trilha não registre uma classe que o
+    /// nome não vai usar.
+    /// </summary>
+    public static bool EntraNosPares(ClassificacaoDeProtecao classificacao, string? baseLegal) =>
+        classificacao != ClassificacaoDeProtecao.Identificador
+        && (classificacao != ClassificacaoDeProtecao.Sensivel || !string.IsNullOrWhiteSpace(baseLegal));
+
+    public static async Task<(ClassificacaoDeProtecao Classificacao, string? BaseLegal)> ResolverAsync(
         Guid processoSeletivoId,
         IProcessoSeletivoRepository processoRepository,
         IRegistroCodecsEnvelope registroCodecs,
@@ -43,27 +32,35 @@ internal static class ClassificacaoDoNomeNoProcesso
             .ObterVersoesAsync(processoSeletivoId, cancellationToken).ConfigureAwait(false);
         if (versoes.Count == 0)
         {
-            return ProtecaoDoNome.NaoResolvida;
+            return (ClassificacaoDeProtecao.Sensivel, null);
         }
 
         ClassificacaoDeProtecao maisAlta = ClassificacaoDeProtecao.Nenhuma;
-        bool baseLegal = true;
+        List<string> basesLegais = [];
+        bool resolvida = true;
         foreach (VersaoConfiguracao versao in versoes)
         {
             Result<EnvelopeReidratado> envelope = ContextoDaVersaoFixadaResolver.Reidratar(versao, registroCodecs);
             if (envelope.IsFailure)
             {
                 maisAlta = ClassificacaoDeProtecao.Sensivel;
-                baseLegal = false;
+                resolvida = false;
                 continue;
             }
 
             FatosDaVersao fatos = FatosDaVersao.De(envelope.Value!);
             ClassificacaoDeProtecao daVersao = fatos.ClassificacaoDoNome();
             maisAlta = daVersao > maisAlta ? daVersao : maisAlta;
-            baseLegal &= fatos.NomeTemBaseLegal();
+            if (fatos.BaseLegalDoNome() is { } baseLegal)
+            {
+                basesLegais.Add(baseLegal);
+            }
+            else
+            {
+                resolvida = false;
+            }
         }
 
-        return new ProtecaoDoNome(maisAlta, baseLegal);
+        return (maisAlta, resolvida ? string.Join("; ", basesLegais.Distinct(StringComparer.Ordinal)) : null);
     }
 }

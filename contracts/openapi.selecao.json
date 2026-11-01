@@ -18237,9 +18237,13 @@
             "format": "uuid"
           },
           "nome": {
-            "type": [
-              "null",
-              "string"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NomeClassificadoDto"
+              }
             ]
           },
           "cpf": {
@@ -19660,6 +19664,17 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "NomeClassificadoDto": {
+        "required": [
+          "valor"
+        ],
+        "type": "object",
+        "properties": {
+          "valor": {
+            "type": "string"
           }
         }
       },

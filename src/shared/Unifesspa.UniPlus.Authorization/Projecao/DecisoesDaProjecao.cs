@@ -55,9 +55,26 @@ public sealed class DecisoesDaProjecao : IPermissoesDaProjecao
     }
 }
 
-/// <summary>A regra do item sobre a decisão do par.</summary>
+/// <summary>A regra do item e da propriedade sobre a decisão do par.</summary>
 public static class PermissoesDaProjecaoExtensions
 {
+    /// <summary>
+    /// Se a propriedade do DTO pode sair: o par que o <see cref="ProtegidoComoAttribute"/> dela declara foi permitido. É a
+    /// consulta que o handler faz antes de carregar o valor e ao preenchê-lo, de modo que a classe de cada campo fixo fica
+    /// declarada só no DTO.
+    /// </summary>
+    /// <typeparam name="TDto">O DTO que declara a propriedade.</typeparam>
+    /// <param name="permissoes">As decisões do projetor.</param>
+    /// <param name="propriedade">O nome da propriedade, por <c>nameof</c>.</param>
+    public static bool PermitePropriedade<TDto>(this IPermissoesDaProjecao permissoes, string propriedade)
+    {
+        ArgumentNullException.ThrowIfNull(permissoes);
+
+        ProtegidoComoAttribute declaracao = ProtecaoDeclaradaNoDto.Da<TDto>(propriedade);
+
+        return permissoes.Permite(declaracao.Natureza, declaracao.Classificacao);
+    }
+
     /// <summary>
     /// Se o item sai: o par dele foi permitido e, sendo sensível, tem base legal congelada. O item sensível sem base
     /// legal não sai, mesmo para quem tem a permissão.

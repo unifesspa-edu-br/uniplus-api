@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <param name="Situacao">Submetida ou cancelada.</param>
 /// <param name="OfertaCursoId">A oferta de curso da primeira opção.</param>
 /// <param name="OfertaCursoSegundaOpcaoId">A oferta de curso da segunda opção, quando há.</param>
-/// <param name="Nome">O nome social, quando o candidato o declarou; senão o nome civil.</param>
+/// <param name="Nome">O nome exibido, como item classificado pela proteção que as versões do processo congelaram para ele.</param>
 /// <param name="Cpf">O CPF no padrão <c>***.999.999-**</c>; o completo só se revela pela permissão própria, no detalhe.</param>
 /// <param name="SubmetidaEm">O instante do primeiro envio.</param>
 public sealed record InscricaoDoProcessoDto(
@@ -35,9 +35,8 @@ public sealed record InscricaoDoProcessoDto(
     [property: ProtegidoComo(ClassificacaoDeProtecao.Publico, Fonte = "selecao.inscricoes.oferta_curso_segunda_opcao_id")]
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     Guid? OfertaCursoSegundaOpcaoId,
-    [property: ProtegidoComo(ClassificacaoDeProtecao.Pessoal)]
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    string? Nome,
+    NomeClassificadoDto? Nome,
     [property: ProtegidoComo(
         ClassificacaoDeProtecao.Pessoal,
         Fonte = "selecao.respostas_da_inscricao.valor_cifrado",
