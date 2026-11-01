@@ -103,7 +103,7 @@ public sealed class IdentificadorLegivelCorridaTests : IClassFixture<ProcessoSel
     private static IVerificadorDeAcesso VerificadorQuePermite()
     {
         IVerificadorDeAcesso verificador = Substitute.For<IVerificadorDeAcesso>();
-        verificador.VerificarAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
+        verificador.ExigirAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
             .Returns(ResultadoDoAcesso.Permitido);
         return verificador;
     }

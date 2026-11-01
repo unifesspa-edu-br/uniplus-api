@@ -21,24 +21,44 @@ public readonly record struct AcessoAoCatalogoDeProtecao(bool ManterTipos, bool 
         ProtecaoDoCatalogoErrorCodes.SemPermissaoNoCatalogo,
         "Sem permissão para manter os tipos de documento, manter os fatos ou aprovar a proteção de dados do catálogo.");
 
-    public static async Task<AcessoAoCatalogoDeProtecao> VerificarAsync(
+    public static DomainError IdentidadeIncompleta { get; } = new(
+        ProtecaoDoCatalogoErrorCodes.IdentidadeIncompleta,
+        "O token não identifica o solicitante por completo; autentique-se de novo.");
+
+    /// <summary>
+    /// Avalia as três permissões sem registrar e, se nenhuma delas autoriza o pedido, grava as negativas pela política de
+    /// registro. O token que não identifica o solicitante recusa com a identidade incompleta, e não com a falta de
+    /// permissão.
+    /// </summary>
+    public static async Task<Result<AcessoAoCatalogoDeProtecao>> VerificarAsync(
         IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(verificador);
 
-        return new AcessoAoCatalogoDeProtecao(
-            await TemAsync(verificador, PermissaoConfiguracao.TiposDocumentoManter, ResourceTiposConfiguracao.TipoDocumento, cancellationToken).ConfigureAwait(false),
-            await TemAsync(verificador, PermissaoConfiguracao.FatosCandidatoManter, ResourceTiposConfiguracao.FatoCandidato, cancellationToken).ConfigureAwait(false),
-            await TemAsync(verificador, PermissaoConfiguracao.ProtecaoDoCatalogoAprovar, ResourceTiposConfiguracao.ProtecaoDoCatalogo, cancellationToken).ConfigureAwait(false));
+        DecisaoDeAcesso tipos = await AvaliarAsync(verificador, PermissaoConfiguracao.TiposDocumentoManter, ResourceTiposConfiguracao.TipoDocumento, cancellationToken).ConfigureAwait(false);
+        if (tipos is SemSujeito)
+        {
+            return Result<AcessoAoCatalogoDeProtecao>.Failure(IdentidadeIncompleta);
+        }
+
+        DecisaoDeAcesso fatos = await AvaliarAsync(verificador, PermissaoConfiguracao.FatosCandidatoManter, ResourceTiposConfiguracao.FatoCandidato, cancellationToken).ConfigureAwait(false);
+        DecisaoDeAcesso aprovar = await AvaliarAsync(verificador, PermissaoConfiguracao.ProtecaoDoCatalogoAprovar, ResourceTiposConfiguracao.ProtecaoDoCatalogo, cancellationToken).ConfigureAwait(false);
+
+        AcessoAoCatalogoDeProtecao acesso = new(tipos is DecisaoPermitida, fatos is DecisaoPermitida, aprovar is DecisaoPermitida);
+        if (!acesso.Algum)
+        {
+            await verificador.RegistrarDesfechoAsync([tipos, fatos, aprovar], IntencaoDoRegistro.Pedido, cancellationToken).ConfigureAwait(false);
+        }
+
+        return Result<AcessoAoCatalogoDeProtecao>.Success(acesso);
     }
 
-    private static async Task<bool> TemAsync(
+    private static Task<DecisaoDeAcesso> AvaliarAsync(
         IVerificadorDeAcesso verificador, PermissaoConfiguracao permissao, string resourceTipo, CancellationToken cancellationToken)
     {
         PermissionRequirement requisito = permissao.Requisito;
         Result<ResourceContext> resource = ResourceContext.From(resourceTipo, requisito.Sensibilidade);
 
-        return await verificador.VerificarAsync(requisito, resource.Value, cancellationToken).ConfigureAwait(false)
-            == ResultadoDoAcesso.Permitido;
+        return verificador.AvaliarAsync(requisito, resource.Value, cancellationToken);
     }
 }

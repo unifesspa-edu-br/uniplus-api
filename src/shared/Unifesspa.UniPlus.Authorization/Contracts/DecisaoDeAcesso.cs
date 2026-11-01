@@ -1,32 +1,69 @@
 namespace Unifesspa.UniPlus.Authorization.Contracts;
 
 /// <summary>
-/// A decisão de acesso tomada sem registro: o desfecho que a borda responde e, quando houve decisão, o registro que ela
-/// geraria. Quem a recebe registra só a permitida, uma vez ou para vários resources, por
-/// <see cref="Abstractions.IVerificadorDeAcesso"/>; a negativa não gera registro algum.
+/// A decisão de acesso avaliada sem registro: ou foi permitida, ou foi negada, ou não houve decisão porque o token não
+/// identifica quem pede. Quem a recebe compõe com ela e grava o desfecho por
+/// <see cref="Abstractions.IVerificadorDeAcesso.RegistrarDesfechoAsync"/>, que aplica a política de registro.
 /// </summary>
-public sealed record DecisaoDeAcesso
+public abstract record DecisaoDeAcesso
 {
-    /// <summary>O desfecho da decisão.</summary>
-    public ResultadoDoAcesso Resultado { get; }
-
-    /// <summary>O registro que a decisão geraria; nulo quando a identidade foi incompleta e não houve decisão.</summary>
-    public RegistroDecisaoAcesso? Registro { get; }
-
-    private DecisaoDeAcesso(ResultadoDoAcesso resultado, RegistroDecisaoAcesso? registro)
+    private protected DecisaoDeAcesso()
     {
-        Resultado = resultado;
-        Registro = registro;
     }
 
-    /// <summary>Sem sujeito não houve decisão a tomar, nem registro a gerar.</summary>
-    public static DecisaoDeAcesso IdentidadeIncompleta { get; } = new(ResultadoDoAcesso.IdentidadeIncompleta, null);
+    /// <summary>O desfecho da decisão.</summary>
+    public abstract ResultadoDoAcesso Resultado { get; }
 
-    /// <summary>A decisão tomada pelo ponto de decisão, com o registro que ela geraria.</summary>
-    public static DecisaoDeAcesso Tomada(ResultadoDoAcesso resultado, RegistroDecisaoAcesso registro)
+    /// <summary>
+    /// Monta a decisão tomada a partir do registro que ela gerou: permitida quando o registro é permitido, e negada
+    /// (negada ou impedida) nos demais casos.
+    /// </summary>
+    public static DecisaoDeAcesso Tomada(PermissionRequirement requisito, ResourceContext resource, RegistroDecisaoAcesso registro)
     {
+        ArgumentNullException.ThrowIfNull(requisito);
+        ArgumentNullException.ThrowIfNull(resource);
         ArgumentNullException.ThrowIfNull(registro);
 
-        return new DecisaoDeAcesso(resultado, registro);
+        return registro.Permitido
+            ? new DecisaoPermitida(requisito, resource, registro)
+            : new DecisaoNegada(requisito, resource, registro);
     }
+}
+
+/// <summary>A decisão permitida, com o registro que ela gera.</summary>
+/// <param name="Requisito">A permissão decidida.</param>
+/// <param name="Resource">O resource sobre o qual se decidiu.</param>
+/// <param name="Registro">O registro da decisão.</param>
+public sealed record DecisaoPermitida(PermissionRequirement Requisito, ResourceContext Resource, RegistroDecisaoAcesso Registro)
+    : DecisaoDeAcesso
+{
+    /// <inheritdoc />
+    public override ResultadoDoAcesso Resultado => ResultadoDoAcesso.Permitido;
+}
+
+/// <summary>A decisão negada, com o registro que ela gera.</summary>
+/// <param name="Requisito">A permissão decidida.</param>
+/// <param name="Resource">O resource sobre o qual se decidiu.</param>
+/// <param name="Registro">O registro da decisão.</param>
+public sealed record DecisaoNegada(PermissionRequirement Requisito, ResourceContext Resource, RegistroDecisaoAcesso Registro)
+    : DecisaoDeAcesso
+{
+    /// <summary><see cref="ResultadoDoAcesso.Negado"/> ou <see cref="ResultadoDoAcesso.Impedido"/>.</summary>
+    public override ResultadoDoAcesso Resultado => Registro.Resultado;
+}
+
+/// <summary>
+/// O token não identifica quem pede: não houve decisão a tomar, nem registro a gerar. A borda responde <c>401</c>.
+/// </summary>
+public sealed record SemSujeito : DecisaoDeAcesso
+{
+    private SemSujeito()
+    {
+    }
+
+    /// <summary>A única instância: o caso não carrega dado.</summary>
+    public static SemSujeito Instancia { get; } = new();
+
+    /// <inheritdoc />
+    public override ResultadoDoAcesso Resultado => ResultadoDoAcesso.IdentidadeIncompleta;
 }

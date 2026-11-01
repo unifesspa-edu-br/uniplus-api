@@ -36,6 +36,6 @@ internal static class FixturesDePontoUnico
     internal sealed class DecidePelaPortaDoPontoUnico(IVerificadorDeAcesso verificador)
     {
         public Task<ResultadoDoAcesso> PodeAsync(PermissionRequirement permissao, CancellationToken cancellationToken)
-            => verificador.VerificarAsync(permissao, cancellationToken: cancellationToken);
+            => verificador.ExigirAsync(permissao, cancellationToken: cancellationToken);
     }
 }

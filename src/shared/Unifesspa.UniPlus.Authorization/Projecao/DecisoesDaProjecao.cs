@@ -16,13 +16,13 @@ public interface IPermissoesDaProjecao
 /// </summary>
 public sealed class DecisoesDaProjecao : IPermissoesDaProjecao
 {
-    private readonly IReadOnlyDictionary<(NaturezaDoItem, ClassificacaoDeProtecao), DecisaoDeAcesso> _permitidas;
+    private readonly IReadOnlyDictionary<(NaturezaDoItem, ClassificacaoDeProtecao), DecisaoPermitida> _permitidas;
 
     /// <summary>Nenhum par permitido: nada sai.</summary>
-    public static DecisoesDaProjecao Vazia { get; } = new(new Dictionary<(NaturezaDoItem, ClassificacaoDeProtecao), DecisaoDeAcesso>());
+    public static DecisoesDaProjecao Vazia { get; } = new(new Dictionary<(NaturezaDoItem, ClassificacaoDeProtecao), DecisaoPermitida>());
 
     /// <summary>Cria as decisões a partir das permitidas por par.</summary>
-    public DecisoesDaProjecao(IReadOnlyDictionary<(NaturezaDoItem, ClassificacaoDeProtecao), DecisaoDeAcesso> permitidas)
+    public DecisoesDaProjecao(IReadOnlyDictionary<(NaturezaDoItem, ClassificacaoDeProtecao), DecisaoPermitida> permitidas)
     {
         ArgumentNullException.ThrowIfNull(permitidas);
 
@@ -30,14 +30,14 @@ public sealed class DecisoesDaProjecao : IPermissoesDaProjecao
     }
 
     /// <summary>As decisões permitidas, uma por par.</summary>
-    public IReadOnlyCollection<DecisaoDeAcesso> Permitidas => [.. _permitidas.Values];
+    public IReadOnlyCollection<DecisaoPermitida> Permitidas => [.. _permitidas.Values];
 
     /// <inheritdoc />
     public bool Permite(NaturezaDoItem natureza, ClassificacaoDeProtecao classificacao) =>
         _permitidas.ContainsKey((natureza, ClassificacoesDeProtecao.Resolvida(classificacao)));
 
     /// <summary>A decisão permitida do par, ou <see langword="null"/> quando o par é omitido.</summary>
-    public DecisaoDeAcesso? DecisaoDo(NaturezaDoItem natureza, ClassificacaoDeProtecao classificacao) =>
+    public DecisaoPermitida? DecisaoDo(NaturezaDoItem natureza, ClassificacaoDeProtecao classificacao) =>
         _permitidas.GetValueOrDefault((natureza, ClassificacoesDeProtecao.Resolvida(classificacao)));
 
     /// <summary>As decisões deste conjunto e as do outro; no mesmo par vale a deste.</summary>
@@ -45,8 +45,8 @@ public sealed class DecisoesDaProjecao : IPermissoesDaProjecao
     {
         ArgumentNullException.ThrowIfNull(outra);
 
-        Dictionary<(NaturezaDoItem, ClassificacaoDeProtecao), DecisaoDeAcesso> uniao = new(outra._permitidas);
-        foreach (KeyValuePair<(NaturezaDoItem, ClassificacaoDeProtecao), DecisaoDeAcesso> par in _permitidas)
+        Dictionary<(NaturezaDoItem, ClassificacaoDeProtecao), DecisaoPermitida> uniao = new(outra._permitidas);
+        foreach (KeyValuePair<(NaturezaDoItem, ClassificacaoDeProtecao), DecisaoPermitida> par in _permitidas)
         {
             uniao[par.Key] = par.Value;
         }

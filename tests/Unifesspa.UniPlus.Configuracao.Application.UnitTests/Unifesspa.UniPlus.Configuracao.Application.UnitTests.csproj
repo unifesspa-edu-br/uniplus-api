@@ -29,6 +29,7 @@
 
   <ItemGroup>
     <Compile Include="../Shared/TipoEtapaDeTeste.cs" Link="TipoEtapaDeTeste.cs" />
+    <Compile Include="../Shared/DecisaoDeAcessoDeTeste.cs" Link="DecisaoDeAcessoDeTeste.cs" />
   </ItemGroup>
 
 </Project>

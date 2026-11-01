@@ -72,7 +72,7 @@ public static class AutorizacaoEndpointsExtensions
 
         DefinicaoDePermissao exigida = CatalogoDePermissoes<PermissaoAutorizacao>.Obter(PermissaoAutorizacao.ConsultarCatalogo);
         ResultadoDoAcesso resultado = await acesso
-            .VerificarAsync(exigida.Requisito, cancellationToken: cancellationToken)
+            .ExigirAsync(exigida.Requisito, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
 
         if (resultado != ResultadoDoAcesso.Permitido)

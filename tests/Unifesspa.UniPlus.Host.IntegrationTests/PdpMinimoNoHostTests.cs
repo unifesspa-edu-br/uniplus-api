@@ -161,7 +161,7 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
             new Claim("realm_access", JsonSerializer.Serialize(new { roles = new[] { ManterMotivos.Permissao, "plataforma-admin" } })));
 
         sujeito.Value!.ConcessoesEfetivas.Should().BeEmpty();
-        AuthorizationDecision decisao = await DecidirComServico(scope, sujeito.Value, ManterMotivos, Resource(), new RegistroEmMemoria(), Agora());
+        AuthorizationDecision decisao = await DecidirComServico(scope, sujeito.Value, ManterMotivos, Resource(), Agora());
         decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.SemConcessaoAplicavel);
     }
 
@@ -248,7 +248,7 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
 
         ResultadoDoAcesso resultado = await scope.ServiceProvider
             .GetRequiredService<IVerificadorDeAcesso>()
-            .VerificarAsync(ManterMotivos);
+            .ExigirAsync(ManterMotivos);
 
         resultado.Should().Be(ResultadoDoAcesso.IdentidadeIncompleta,
             "responder como negativa faria a borda devolver 403 a quem sequer pôde ser identificado");
@@ -267,8 +267,7 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
         sujeito.IsFailure.Should().BeTrue();
     }
 
-    // A decisão sai do serviço real, com o registro trocado por um que guarda o que recebeu, para conferir o que
-    // ficaria gravado. Cada decisão abre o próprio escopo, como cada requisição.
+    // A decisão sai do serviço real, e o registro é o que o verificador gravaria para ela. Cada decisão abre o próprio escopo, como cada requisição.
     private async Task<(AuthorizationDecision Decisao, RegistroDecisaoAcesso Registro)> Decidir(
         string sub,
         PermissionRequirement requisito,
@@ -276,16 +275,14 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
         DateTimeOffset? dataAcesso = null)
     {
         using IServiceScope scope = _fixture.Factory.Services.CreateScope();
-        RegistroEmMemoria registro = new();
-
         Result<AuthorizationSubject> sujeito = await ResolverSujeito(
             scope, new Claim("iss", Emissor), new Claim("sub", sub), new Claim("jti", "jti-1"));
         sujeito.IsSuccess.Should().BeTrue();
 
-        AuthorizationDecision decisao = await DecidirComServico(
-            scope, sujeito.Value!, requisito, resource, registro, dataAcesso ?? Agora());
+        DateTimeOffset instante = dataAcesso ?? Agora();
+        AuthorizationDecision decisao = await DecidirComServico(scope, sujeito.Value!, requisito, resource, instante);
 
-        return (decisao, registro.Registrados.Single());
+        return (decisao, RegistroDecisaoAcesso.De(sujeito.Value!, requisito, resource, Requisicao(instante), decisao));
     }
 
     private static Task<AuthorizationDecision> DecidirComServico(
@@ -293,14 +290,12 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
         AuthorizationSubject sujeito,
         PermissionRequirement requisito,
         ResourceContext resource,
-        RegistroEmMemoria registro,
         DateTimeOffset dataAcesso) =>
         new AuthorizationDecisionService(
             scope.ServiceProvider.GetRequiredService<GrantEfetivoAplicavelCheck>(),
             scope.ServiceProvider.GetRequiredService<ImpedimentoPorInscricaoCheck>(),
-            scope.ServiceProvider.GetServices<IPermissaoCheck>(),
-            registro)
-        .DecideAsync(sujeito, requisito, resource, Requisicao(dataAcesso), CancellationToken.None);
+            scope.ServiceProvider.GetServices<IPermissaoCheck>())
+        .DecidirAsync(sujeito, requisito, resource, Requisicao(dataAcesso), CancellationToken.None);
 
     private static Task<Result<AuthorizationSubject>> ResolverSujeito(
         IServiceScope scope,
@@ -339,15 +334,4 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
 
     private static AuthorizationRequestContext Requisicao(DateTimeOffset dataAcesso)
         => AuthorizationRequestContext.From("req-host-612", dataAcesso, OrigemRequisicao.Api).Value!;
-
-    private sealed class RegistroEmMemoria : IRegistroOperacionalRestrito
-    {
-        public List<RegistroDecisaoAcesso> Registrados { get; } = [];
-
-        public Task RegistrarAsync(IReadOnlyList<RegistroDecisaoAcesso> registros, CancellationToken cancellationToken)
-        {
-            Registrados.AddRange(registros);
-            return Task.CompletedTask;
-        }
-    }
 }

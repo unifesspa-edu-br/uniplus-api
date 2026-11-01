@@ -23,7 +23,7 @@ internal sealed record DecisaoDoItem(RevisaoDeAcessos Revisao, ItemDaRevisao Ite
         Identidade? decisor,
         CancellationToken cancellationToken)
     {
-        AcessoDaRevisao? acesso = await AcessoDaRevisao.ConsultarAsync(verificador, cancellationToken).ConfigureAwait(false);
+        AcessoDaRevisao? acesso = await AcessoDaRevisao.ConsultarAsync(verificador, revisaoId, cancellationToken).ConfigureAwait(false);
         if (acesso is null)
         {
             return Result<DecisaoDoItem>.Failure(RevisaoHandlerErros.IdentidadeIncompleta());
@@ -31,25 +31,35 @@ internal sealed record DecisaoDoItem(RevisaoDeAcessos Revisao, ItemDaRevisao Ite
 
         if (decisor is null)
         {
+            await acesso.RegistrarAsync(verificador, cancellationToken).ConfigureAwait(false);
+
             return Result<DecisaoDoItem>.Failure(RevisaoHandlerErros.AutorNaoIdentificado());
         }
 
         if (!acesso.Le)
         {
+            await acesso.RegistrarAsync(verificador, cancellationToken).ConfigureAwait(false);
+
             return Result<DecisaoDoItem>.Failure(RevisaoHandlerErros.SemPermissao());
         }
 
         RevisaoDeAcessos? revisao = await revisoes.ObterParaAlterarAsync(revisaoId, cancellationToken).ConfigureAwait(false);
         if (revisao is null)
         {
+            await acesso.RegistrarAsync(verificador, cancellationToken).ConfigureAwait(false);
+
             return Result<DecisaoDoItem>.Failure(RevisaoHandlerErros.NaoEncontrada());
         }
 
         ItemDaRevisao? item = revisao.Itens.FirstOrDefault(i => i.Id == itemId);
         if (item is null)
         {
+            await acesso.RegistrarAsync(verificador, cancellationToken).ConfigureAwait(false);
+
             return Result<DecisaoDoItem>.Failure(RevisaoHandlerErros.ItemNaoEncontrado());
         }
+
+        await AcessoDaRevisao.RegistrarAsync(verificador, [acesso.DecisaoDe(item.Decide)], cancellationToken).ConfigureAwait(false);
 
         if (!acesso.Decide(item.Decide))
         {

@@ -85,10 +85,6 @@ public sealed record RegistroDecisaoAcesso
     /// <summary>Ocorrência do fato revelado, quando o campo está num grupo que se repete.</summary>
     public string? Ocorrencia { get; }
 
-    /// <summary>Se a decisão tem de ser registrada pela regra de sensibilidade (<see cref="Exige"/>).</summary>
-    [JsonIgnore]
-    public bool Exigido { get; }
-
     /// <summary>Canal pelo qual a requisição chegou, em valor canônico.</summary>
     public string Origem { get; }
 
@@ -139,7 +135,6 @@ public sealed record RegistroDecisaoAcesso
         Guid? inscricaoId,
         string? fatoCodigo,
         string? ocorrencia,
-        bool exigido,
         string origem,
         string? clienteOidc,
         ResultadoDoAcesso resultado,
@@ -164,7 +159,6 @@ public sealed record RegistroDecisaoAcesso
         InscricaoId = inscricaoId;
         FatoCodigo = fatoCodigo;
         Ocorrencia = ocorrencia;
-        Exigido = exigido;
         Origem = origem;
         ClienteOidc = clienteOidc;
         Resultado = resultado;
@@ -204,7 +198,7 @@ public sealed record RegistroDecisaoAcesso
             request.ExecucaoId,
             requirement.Permissao,
             resource.ResourceTipo,
-            ValoresCanonicos.De(MaisRestritiva(requirement.Sensibilidade, resource.Sensibilidade)),
+            ValoresCanonicos.De(SensibilidadeEfetiva(requirement, resource)),
             resource.UnidadeProprietariaId,
             resource.ProcessoId,
             resource.ChamadaId,
@@ -212,7 +206,6 @@ public sealed record RegistroDecisaoAcesso
             resource.InscricaoId,
             resource.FatoCodigo,
             resource.Ocorrencia,
-            Exige(requirement, resource),
             ValoresCanonicos.De(request.Origem),
             request.ClienteOidc,
             decision.Resultado,
@@ -284,15 +277,15 @@ public sealed record RegistroDecisaoAcesso
         });
 
     /// <summary>
-    /// Se a decisão tem de ser registrada: só a permissão (ou o resource) de sensibilidade pessoal, identificadora ou
-    /// sensível. As demais decidem sem gravar, para que a autorização operacional não dependa do destino do registro.
+    /// A sensibilidade efetiva do dado alcançado: a maior entre a que a permissão classifica e a que o resource declara.
+    /// É a que consta do registro e a que decide a exigência de base legal e de registro.
     /// </summary>
-    public static bool Exige(PermissionRequirement requirement, ResourceContext resource)
+    public static ClassificacaoDeProtecao SensibilidadeEfetiva(PermissionRequirement requirement, ResourceContext resource)
     {
         ArgumentNullException.ThrowIfNull(requirement);
         ArgumentNullException.ThrowIfNull(resource);
 
-        return MaisRestritiva(requirement.Sensibilidade, resource.Sensibilidade) >= ClassificacaoDeProtecao.Pessoal;
+        return MaisRestritiva(requirement.Sensibilidade, resource.Sensibilidade);
     }
 
     /// <summary>

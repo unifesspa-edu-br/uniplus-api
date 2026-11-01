@@ -23,9 +23,9 @@ internal sealed class DecisoesDeAcessoDeTeste
         _concedidas = [.. concedidas.Select(static p => p.Codigo)];
         Persona = persona;
         Verificador = Substitute.For<IVerificadorDeAcesso>();
-        Verificador.DecidirSemRegistrarAsync(default!, default, default)
+        Verificador.AvaliarAsync(default!, default, default)
             .ReturnsForAnyArgs(chamada => Task.FromResult(Decidir(chamada.ArgAt<PermissionRequirement>(0), chamada.ArgAt<ResourceContext?>(1)!)));
-        Verificador.VerificarAsync(default!, default, default)
+        Verificador.ExigirAsync(default!, default, default)
             .ReturnsForAnyArgs(chamada => Task.FromResult(
                 Decidir(chamada.ArgAt<PermissionRequirement>(0), chamada.ArgAt<ResourceContext?>(1)!).Resultado));
         Verificador.PodeAsync(default!, default, default)
@@ -50,8 +50,6 @@ internal sealed class DecisoesDeAcessoDeTeste
             ? AuthorizationDecision.Permitir(concessao)
             : AuthorizationDecision.Negar(MotivoNegativa.SemConcessaoAplicavel);
 
-        return DecisaoDeAcesso.Tomada(
-            permitida ? ResultadoDoAcesso.Permitido : ResultadoDoAcesso.Negado,
-            RegistroDecisaoAcesso.De(sujeito, requisito, resource, contexto, decisao));
+        return DecisaoDeAcesso.Tomada(requisito, resource, RegistroDecisaoAcesso.De(sujeito, requisito, resource, contexto, decisao));
     }
 }

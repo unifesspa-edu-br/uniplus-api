@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.Permissoes;
 
 /// <summary>
 /// O que o solicitante da requisição pode fazer no fluxo dos pedidos: decidir cada etapa e administrar concessões.
-/// Cada capacidade é conferida pelo ponto de decisão único, por permissão do catálogo, sem registrar: quem usa o
+/// Cada capacidade é avaliada pelo ponto de decisão único, por permissão do catálogo, sem registrar: quem usa o
 /// resultado grava o que governou o desfecho (<see cref="RegistrarAsync"/> e <see cref="RegistrarDoDesfechoAsync"/>), para
 /// que a trilha traga a decisão real e não uma negativa falsa de uma permissão que a pessoa nem precisava ter.
 /// </summary>
@@ -63,15 +63,15 @@ internal sealed record AcessoDoAprovador(
             ? ResourceContext.From(ResourceTiposAutorizacao.Pedido, permissao.Sensibilidade, resourceId: id).Value
             : null;
 
-        DecisaoDeAcesso funcional = await verificador.DecidirSemRegistrarAsync(PermissaoFuncional, ResourceDe(PermissaoFuncional), cancellationToken).ConfigureAwait(false);
-        if (funcional.Resultado == ResultadoDoAcesso.IdentidadeIncompleta)
+        DecisaoDeAcesso funcional = await verificador.AvaliarAsync(PermissaoFuncional, ResourceDe(PermissaoFuncional), cancellationToken).ConfigureAwait(false);
+        if (funcional is SemSujeito)
         {
             return null;
         }
 
-        DecisaoDeAcesso protecao = await verificador.DecidirSemRegistrarAsync(PermissaoProtecaoDeDados, ResourceDe(PermissaoProtecaoDeDados), cancellationToken).ConfigureAwait(false);
+        DecisaoDeAcesso protecao = await verificador.AvaliarAsync(PermissaoProtecaoDeDados, ResourceDe(PermissaoProtecaoDeDados), cancellationToken).ConfigureAwait(false);
         DecisaoDeAcesso? administrar = incluirAdministrar
-            ? await verificador.DecidirSemRegistrarAsync(PermissaoAdministrar, ResourceDe(PermissaoAdministrar), cancellationToken).ConfigureAwait(false)
+            ? await verificador.AvaliarAsync(PermissaoAdministrar, ResourceDe(PermissaoAdministrar), cancellationToken).ConfigureAwait(false)
             : null;
 
         return new AcessoDoAprovador(funcional, protecao, administrar);
@@ -85,7 +85,7 @@ internal sealed record AcessoDoAprovador(
     {
         ArgumentNullException.ThrowIfNull(verificador);
 
-        return verificador.RegistrarAsync([decisao], cancellationToken);
+        return verificador.RegistrarDesfechoAsync([decisao], IntencaoDoRegistro.Aprovador, cancellationToken);
     }
 
     /// <summary>
@@ -97,9 +97,8 @@ internal sealed record AcessoDoAprovador(
         ArgumentNullException.ThrowIfNull(verificador);
 
         DecisaoDeAcesso[] todas = [DecisaoFuncional, DecisaoProtecaoDeDados, .. DecisaoAdministrar is null ? [] : new[] { DecisaoAdministrar }];
-        DecisaoDeAcesso[] permitidas = [.. todas.Where(static d => d.Resultado == ResultadoDoAcesso.Permitido)];
 
-        return verificador.RegistrarAsync(permitidas.Length > 0 ? permitidas : todas, cancellationToken);
+        return verificador.RegistrarDesfechoAsync(todas, IntencaoDoRegistro.Aprovador, cancellationToken);
     }
 
     /// <summary>
@@ -124,5 +123,5 @@ internal sealed record AcessoDoAprovador(
         }
     }
 
-    private static bool Permitida(DecisaoDeAcesso? decisao) => decisao?.Resultado == ResultadoDoAcesso.Permitido;
+    private static bool Permitida(DecisaoDeAcesso? decisao) => decisao is DecisaoPermitida;
 }

@@ -24,7 +24,7 @@ public sealed class AcessoAoProcessoInexistenteTests
             ResourceTiposSelecao.ProcessoSeletivo, sensibilidadeDoResource: null, CancellationToken.None);
 
         resultado.Should().Be(ResultadoDoAcesso.Negado);
-        await verificador.DidNotReceiveWithAnyArgs().VerificarAsync(default!, default, default);
+        await verificador.DidNotReceiveWithAnyArgs().ExigirAsync(default!, default, default);
     }
 
     [Fact(DisplayName = "Tipo de resource fora da convenção é erro de programação e lança, em vez de negar em silêncio")]

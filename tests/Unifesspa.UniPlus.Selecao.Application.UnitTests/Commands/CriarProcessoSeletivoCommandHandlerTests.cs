@@ -311,7 +311,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
     private static IVerificadorDeAcesso VerificadorQue(ResultadoDoAcesso resultado)
     {
         IVerificadorDeAcesso verificador = Substitute.For<IVerificadorDeAcesso>();
-        verificador.VerificarAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
+        verificador.ExigirAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
             .Returns(resultado);
         return verificador;
     }
@@ -331,7 +331,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
             command, repository, verificador, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
 
         result.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.SemPermissaoNaUnidade);
-        await verificador.Received(1).VerificarAsync(
+        await verificador.Received(1).ExigirAsync(
             Arg.Is<PermissionRequirement>(r => r.Permissao == "selecao:processos:configurar"),
             Arg.Is<ResourceContext?>(c => c!.UnidadeProprietariaId == UnidadeId),
             Arg.Any<CancellationToken>());

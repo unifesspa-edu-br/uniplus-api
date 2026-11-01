@@ -25,7 +25,7 @@ public sealed class ProjetorDeItens
     }
 
     /// <summary>
-    /// Decide, sem registrar, a permissão de cada par pedido sobre o resource, com a sensibilidade do dado que a permissão
+    /// Avalia, sem registrar, a permissão de cada par pedido sobre o resource, com a sensibilidade do dado que a permissão
     /// libera. Os pares sem permissão no módulo e os negados ficam de fora; as decisões permitidas são guardadas na
     /// requisição para a serialização defensiva e são registradas por <see cref="RegistrarAsync"/> quando exercidas.
     /// </summary>
@@ -39,7 +39,7 @@ public sealed class ProjetorDeItens
         ArgumentNullException.ThrowIfNull(resource);
         ArgumentNullException.ThrowIfNull(pares);
 
-        Dictionary<(NaturezaDoItem, ClassificacaoDeProtecao), DecisaoDeAcesso> permitidas = [];
+        Dictionary<(NaturezaDoItem, ClassificacaoDeProtecao), DecisaoPermitida> permitidas = [];
         foreach ((NaturezaDoItem natureza, ClassificacaoDeProtecao classificacao) in pares
             .Select(static par => (par.Natureza, Classificacao: ClassificacoesDeProtecao.Resolvida(par.Classificacao)))
             .Distinct())
@@ -50,11 +50,11 @@ public sealed class ProjetorDeItens
             }
 
             DecisaoDeAcesso decisao = await _verificador
-                .DecidirSemRegistrarAsync(requisito, resource.ComSensibilidade(requisito.Sensibilidade), cancellationToken)
+                .AvaliarAsync(requisito, resource.ComSensibilidade(requisito.Sensibilidade), cancellationToken)
                 .ConfigureAwait(false);
-            if (decisao.Resultado == ResultadoDoAcesso.Permitido)
+            if (decisao is DecisaoPermitida permitida)
             {
-                permitidas[(natureza, classificacao)] = decisao;
+                permitidas[(natureza, classificacao)] = permitida;
             }
         }
 
@@ -76,6 +76,8 @@ public sealed class ProjetorDeItens
 
         DecisaoDeAcesso[] aRegistrar = [.. decisoes.Permitidas];
 
-        return aRegistrar.Length == 0 ? Task.CompletedTask : _verificador.RegistrarAsync(aRegistrar, cancellationToken);
+        return aRegistrar.Length == 0
+            ? Task.CompletedTask
+            : _verificador.RegistrarDesfechoAsync(aRegistrar, IntencaoDoRegistro.Projecao, cancellationToken);
     }
 }

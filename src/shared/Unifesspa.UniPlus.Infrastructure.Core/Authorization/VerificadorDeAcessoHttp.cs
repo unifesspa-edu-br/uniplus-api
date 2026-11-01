@@ -57,195 +57,128 @@ public sealed class VerificadorDeAcessoHttp : IVerificadorDeAcesso
     }
 
     /// <inheritdoc />
-    public async Task<ResultadoDoAcesso> VerificarAsync(
-        PermissionRequirement permissao,
+    public async Task<ResultadoDoAcesso> ExigirAsync(
+        PermissionRequirement requisito,
         ResourceContext? resource = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(permissao);
+        DecisaoDeAcesso decisao = await AvaliarAsync(requisito, resource, cancellationToken).ConfigureAwait(false);
+        await RegistrarDesfechoAsync([decisao], IntencaoDoRegistro.Pedido, cancellationToken).ConfigureAwait(false);
 
-        (ResultadoDoAcesso? incompleta, AuthorizationSubject? sujeito, AuthorizationRequestContext? contexto) =
-            await ResolverAsync(cancellationToken).ConfigureAwait(false);
+        return decisao.Resultado;
+    }
 
-        if (incompleta is { } desfecho)
+    /// <inheritdoc />
+    public async Task<ResultadoDoAcesso> PodeAsync(
+        PermissionRequirement requisito,
+        ResourceContext? resource = null,
+        CancellationToken cancellationToken = default) =>
+        (await AvaliarAsync(requisito, resource, cancellationToken).ConfigureAwait(false)).Resultado;
+
+    /// <inheritdoc />
+    public async Task<DecisaoDeAcesso> AvaliarAsync(
+        PermissionRequirement requisito,
+        ResourceContext? resource = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(requisito);
+
+        if (await ResolverAsync(cancellationToken).ConfigureAwait(false) is not var (sujeito, contexto))
         {
-            return desfecho;
+            return SemSujeito.Instancia;
         }
 
         return await DecidirAsync(
-            sujeito!, permissao, resource ?? ResourceDaPropriaOperacao(permissao), contexto!, cancellationToken)
+            sujeito, contexto, requisito, resource ?? ResourceDaPropriaOperacao(requisito), cancellationToken)
             .ConfigureAwait(false);
     }
 
     /// <inheritdoc />
-    /// <remarks>
-    /// Decide por unidade sem registrar e grava num lote só o que vale: a decisão permitida que autorizou, e então
-    /// as negativas anteriores são descartadas, porque a pergunta foi respondida; ou, se nenhuma unidade permitiu, as
-    /// negativas de todas elas, que são a tentativa real. Assim a trilha não cresce com uma gravação por unidade.
-    /// </remarks>
-    public async Task<ResultadoDoAcesso> VerificarEmAlgumaUnidadeAsync(
-        PermissionRequirement permissao,
+    public async Task<IReadOnlyList<DecisaoDeAcesso>> AvaliarEmAlgumaUnidadeAsync(
+        PermissionRequirement requisito,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(permissao);
+        ArgumentNullException.ThrowIfNull(requisito);
 
-        (ResultadoDoAcesso? incompleta, AuthorizationSubject? sujeito, AuthorizationRequestContext? contexto) =
-            await ResolverAsync(cancellationToken).ConfigureAwait(false);
-
-        if (incompleta is { } desfecho)
+        if (await ResolverAsync(cancellationToken).ConfigureAwait(false) is not var (sujeito, contexto))
         {
-            return desfecho;
+            return [SemSujeito.Instancia];
         }
 
-        ResultadoDoAcesso resultado = ResultadoDoAcesso.Negado;
-        List<RegistroDecisaoAcesso> negadas = [];
-
-        foreach (Guid unidade in sujeito!.ConcessoesEfetivas
-            .Where(concessao => string.Equals(concessao.PermissaoCodigo, permissao.Permissao, StringComparison.Ordinal))
+        List<DecisaoDeAcesso> decisoes = [];
+        foreach (Guid unidade in sujeito.ConcessoesEfetivas
+            .Where(concessao => string.Equals(concessao.PermissaoCodigo, requisito.Permissao, StringComparison.Ordinal))
             .Select(static concessao => concessao.EscopoUnidadeId)
             .OfType<Guid>()
             .Distinct())
         {
             ResourceContext resource = ResourceContext.From(
-                ResourceTipos.Operacao, permissao.Sensibilidade, unidadeProprietariaId: unidade).Value!;
+                ResourceTipos.Operacao, requisito.Sensibilidade, unidadeProprietariaId: unidade).Value!;
 
-            AuthorizationDecision decisao = await _decisao.DecidirSemRegistrarAsync(
-                sujeito, permissao, resource, contexto!, cancellationToken).ConfigureAwait(false);
-            RegistroDecisaoAcesso registro = RegistroDecisaoAcesso.De(sujeito, permissao, resource, contexto!, decisao);
-            resultado = decisao.Resultado;
+            DecisaoDeAcesso decisao = await DecidirAsync(sujeito, contexto, requisito, resource, cancellationToken).ConfigureAwait(false);
+            decisoes.Add(decisao);
 
-            if (decisao.Allowed)
+            if (decisao is DecisaoPermitida)
             {
-                await RegistrarSeExigidoAsync(permissao, resource, [registro], cancellationToken).ConfigureAwait(false);
-                return resultado;
-            }
-
-            negadas.Add(registro);
-        }
-
-        // Nenhuma concessão da permissão em unidade: a tentativa existiu e grava-se uma decisão sobre a operação, sem
-        // unidade. Quem não tem concessão alguma da permissão recebe a negativa de ausência de concessão; quem tem só
-        // concessão global recebe o que o ponto de decisão devolver, sem afirmar o que não é verdade. O veredito
-        // desta pergunta segue negado nos dois casos.
-        if (negadas.Count == 0)
-        {
-            ResourceContext operacao = ResourceDaPropriaOperacao(permissao);
-            bool temConcessao = sujeito.ConcessoesEfetivas.Any(
-                concessao => string.Equals(concessao.PermissaoCodigo, permissao.Permissao, StringComparison.Ordinal));
-            AuthorizationDecision decisaoSemUnidade = temConcessao
-                ? await _decisao.DecidirSemRegistrarAsync(sujeito, permissao, operacao, contexto!, cancellationToken).ConfigureAwait(false)
-                : AuthorizationDecision.Negar(MotivoNegativa.SemConcessaoAplicavel);
-
-            // Nesta pergunta só conta a concessão em unidade: a decisão sem unidade que permitiria não é acesso
-            // concedido, então o veredito segue negado e nada se afirma na trilha.
-            if (!decisaoSemUnidade.Allowed)
-            {
-                negadas.Add(RegistroDecisaoAcesso.De(sujeito, permissao, operacao, contexto!, decisaoSemUnidade));
+                return decisoes;
             }
         }
 
-        if (negadas.Count > 0)
+        if (decisoes.Count > 0)
         {
-            await RegistrarSeExigidoAsync(permissao, ResourceDaPropriaOperacao(permissao), negadas, cancellationToken)
-                .ConfigureAwait(false);
+            return decisoes;
         }
 
-        return resultado;
+        // Sem concessão da permissão em unidade, a decisão é a da operação sem unidade. Quem não tem concessão alguma
+        // da permissão recebe a negativa de ausência de concessão. A concessão global, ainda que permitisse, não
+        // autoriza a alternativa, que exige concessão em unidade: a decisão que permitiria é negada com o motivo
+        // próprio, em vez de afirmar uma falta de concessão que não existe.
+        ResourceContext operacao = ResourceDaPropriaOperacao(requisito);
+        if (!sujeito.ConcessoesEfetivas.Any(
+            concessao => string.Equals(concessao.PermissaoCodigo, requisito.Permissao, StringComparison.Ordinal)))
+        {
+            return [Negar(sujeito, contexto, requisito, operacao, MotivoNegativa.SemConcessaoAplicavel)];
+        }
+
+        DecisaoDeAcesso semUnidade = await DecidirAsync(sujeito, contexto, requisito, operacao, cancellationToken).ConfigureAwait(false);
+
+        return [semUnidade is DecisaoPermitida
+            ? Negar(sujeito, contexto, requisito, operacao, MotivoNegativa.ConcessaoEmUnidadeExigida)
+            : semUnidade];
     }
 
     /// <inheritdoc />
-    public async Task<ResultadoDoAcesso> PodeAsync(
-        PermissionRequirement permissao,
-        ResourceContext? resource = null,
+    public Task RegistrarDesfechoAsync(
+        IReadOnlyCollection<DecisaoDeAcesso> decisoes,
+        IntencaoDoRegistro intencao,
         CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(permissao);
-
-        (ResultadoDoAcesso? incompleta, AuthorizationSubject? sujeito, AuthorizationRequestContext? contexto) =
-            await ResolverAsync(cancellationToken).ConfigureAwait(false);
-
-        if (incompleta is { } desfecho)
-        {
-            return desfecho;
-        }
-
-        return (await _decisao.DecidirSemRegistrarAsync(
-            sujeito!, permissao, resource ?? ResourceDaPropriaOperacao(permissao), contexto!, cancellationToken).ConfigureAwait(false)).Resultado;
-    }
-
-    /// <inheritdoc />
-    public async Task<DecisaoDeAcesso> DecidirSemRegistrarAsync(
-        PermissionRequirement permissao,
-        ResourceContext? resource = null,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(permissao);
-
-        (ResultadoDoAcesso? incompleta, AuthorizationSubject? sujeito, AuthorizationRequestContext? contexto) =
-            await ResolverAsync(cancellationToken).ConfigureAwait(false);
-
-        if (incompleta is not null)
-        {
-            return DecisaoDeAcesso.IdentidadeIncompleta;
-        }
-
-        ResourceContext alvo = resource ?? ResourceDaPropriaOperacao(permissao);
-        AuthorizationDecision decisao = await _decisao.DecidirSemRegistrarAsync(
-            sujeito!, permissao, alvo, contexto!, cancellationToken).ConfigureAwait(false);
-
-        return DecisaoDeAcesso.Tomada(
-            decisao.Resultado,
-            RegistroDecisaoAcesso.De(sujeito!, permissao, alvo, contexto!, decisao));
-    }
-
-    /// <inheritdoc />
-    public Task RegistrarAsync(IReadOnlyCollection<DecisaoDeAcesso> decisoes, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(decisoes);
 
-        RegistroDecisaoAcesso[] registros = [.. decisoes.Select(static d => d.Registro).OfType<RegistroDecisaoAcesso>()];
-
-        return registros.Length == 0 ? Task.CompletedTask : _registro.RegistrarAsync(registros, cancellationToken);
+        return GravarAsync(PoliticaDeRegistroDeAcesso.Desfecho(decisoes, intencao), cancellationToken);
     }
 
     /// <inheritdoc />
-    public Task RegistrarAsync(DecisaoDeAcesso permitida, CancellationToken cancellationToken = default)
-        => _registro.RegistrarAsync([RegistroDaPermitida(permitida)], cancellationToken);
-
-    /// <inheritdoc />
     public Task RegistrarParaCadaAsync(
-        DecisaoDeAcesso permitida,
+        DecisaoPermitida permitida,
         string resourceTipo,
         IReadOnlyCollection<Guid> resourceIds,
         bool resourceEhInscricao = false,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(permitida);
         ArgumentNullException.ThrowIfNull(resourceIds);
 
-        return _registro.RegistrarAsync(
-            RegistroDaPermitida(permitida).ParaCadaResource(resourceTipo, resourceIds, resourceEhInscricao),
-            cancellationToken);
+        return GravarAsync(
+            PoliticaDeRegistroDeAcesso.PorResource(permitida, resourceTipo, resourceIds, resourceEhInscricao), cancellationToken);
     }
 
-    private Task RegistrarSeExigidoAsync(
-        PermissionRequirement permissao,
-        ResourceContext resource,
-        IReadOnlyList<RegistroDecisaoAcesso> registros,
-        CancellationToken cancellationToken) =>
-        RegistroDecisaoAcesso.Exige(permissao, resource)
-            ? _registro.RegistrarAsync(registros, cancellationToken)
-            : Task.CompletedTask;
+    private Task GravarAsync(IReadOnlyList<RegistroDecisaoAcesso> registros, CancellationToken cancellationToken) =>
+        registros.Count == 0 ? Task.CompletedTask : _registro.RegistrarAsync(registros, cancellationToken);
 
-    private static RegistroDecisaoAcesso RegistroDaPermitida(DecisaoDeAcesso decisao)
-    {
-        ArgumentNullException.ThrowIfNull(decisao);
-
-        return decisao is { Resultado: ResultadoDoAcesso.Permitido, Registro: { } registro }
-            ? registro
-            : throw new InvalidOperationException("Só a decisão permitida se registra por esta via.");
-    }
-
-    private async Task<(ResultadoDoAcesso? Incompleta, AuthorizationSubject? Sujeito, AuthorizationRequestContext? Contexto)> ResolverAsync(
+    // Sem emissor, subject ou jti não há sujeito sobre o qual decidir. A falha é de autenticação, e devolvê-la como
+    // negativa faria a borda responder 403 — afirmando uma decisão de acesso que não foi tomada.
+    private async Task<(AuthorizationSubject Sujeito, AuthorizationRequestContext Contexto)?> ResolverAsync(
         CancellationToken cancellationToken)
     {
         Result<AuthorizationRequestContext> contexto = ContextoDaRequisicaoHttp.Montar(
@@ -253,32 +186,39 @@ public sealed class VerificadorDeAcessoHttp : IVerificadorDeAcesso
 
         if (contexto.IsFailure)
         {
-            return (ResultadoDoAcesso.IdentidadeIncompleta, null, null);
+            return null;
         }
 
         Result<AuthorizationSubject> sujeito = await _resolver.ResolveAsync(
             _userContext, contexto.Value!, cancellationToken).ConfigureAwait(false);
 
-        // Sem emissor, subject ou jti não há sujeito sobre o qual decidir. A
-        // falha é de autenticação, e devolvê-la como negativa faria a borda
-        // responder 403 — afirmando uma decisão de acesso que não foi tomada.
-        return sujeito.IsFailure
-            ? (ResultadoDoAcesso.IdentidadeIncompleta, null, null)
-            : (null, sujeito.Value, contexto.Value);
+        return sujeito.IsFailure ? null : (sujeito.Value!, contexto.Value!);
     }
 
-    private async Task<ResultadoDoAcesso> DecidirAsync(
+    private async Task<DecisaoDeAcesso> DecidirAsync(
         AuthorizationSubject sujeito,
-        PermissionRequirement permissao,
-        ResourceContext resource,
         AuthorizationRequestContext contexto,
+        PermissionRequirement requisito,
+        ResourceContext resource,
         CancellationToken cancellationToken)
     {
-        AuthorizationDecision decisao = await _decisao.DecideAsync(
-            sujeito, permissao, resource, contexto, cancellationToken).ConfigureAwait(false);
+        AuthorizationDecision decisao = await _decisao.DecidirAsync(
+            sujeito, requisito, resource, contexto, cancellationToken).ConfigureAwait(false);
 
-        return decisao.Resultado;
+        return DecisaoDeAcesso.Tomada(
+            requisito, resource, RegistroDecisaoAcesso.De(sujeito, requisito, resource, contexto, decisao));
     }
+
+    private static DecisaoDeAcesso Negar(
+        AuthorizationSubject sujeito,
+        AuthorizationRequestContext contexto,
+        PermissionRequirement requisito,
+        ResourceContext resource,
+        MotivoNegativa motivo) =>
+        DecisaoDeAcesso.Tomada(
+            requisito,
+            resource,
+            RegistroDecisaoAcesso.De(sujeito, requisito, resource, contexto, AuthorizationDecision.Negar(motivo)));
 
     // Sem resource informado, o alvo é a própria operação: o tipo é `operacao` e a
     // sensibilidade é a que a permissão declara. Assim a decisão continua

@@ -22,11 +22,13 @@ public static class ObterRevisaoQueryHandler
         ArgumentNullException.ThrowIfNull(verificador);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        AcessoDaRevisao? acesso = await AcessoDaRevisao.ConsultarAsync(verificador, cancellationToken).ConfigureAwait(false);
+        AcessoDaRevisao? acesso = await AcessoDaRevisao.ConsultarAsync(verificador, query.Id, cancellationToken).ConfigureAwait(false);
         if (acesso is null)
         {
             return Result<RevisaoDeAcessosDto>.Failure(RevisaoHandlerErros.IdentidadeIncompleta());
         }
+
+        await acesso.RegistrarAsync(verificador, cancellationToken).ConfigureAwait(false);
 
         if (!acesso.Le)
         {

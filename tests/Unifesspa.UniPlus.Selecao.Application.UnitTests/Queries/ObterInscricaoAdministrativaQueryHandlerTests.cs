@@ -75,14 +75,16 @@ public sealed class ObterInscricaoAdministrativaQueryHandlerTests
 
         await Consultar(cenario, kevin);
 
-        await kevin.Verificador.Received(1).RegistrarAsync(
+        await kevin.Verificador.Received(1).RegistrarDesfechoAsync(
             Arg.Is<IReadOnlyCollection<DecisaoDeAcesso>>(d =>
-                d.Count == 1 && d.Single().Registro!.Permissao == CodigoPessoais && d.Single().Registro!.Permitido),
+                d.Count == 1 && d.OfType<DecisaoPermitida>().Single().Registro.Permissao == CodigoPessoais),
+            IntencaoDoRegistro.Projecao,
             Arg.Any<CancellationToken>());
-        await kevin.Verificador.DidNotReceive().RegistrarAsync(
-            Arg.Is<IReadOnlyCollection<DecisaoDeAcesso>>(d => d.Any(x => x.Registro!.Permissao == CodigoSensiveis)),
+        await kevin.Verificador.DidNotReceive().RegistrarDesfechoAsync(
+            Arg.Is<IReadOnlyCollection<DecisaoDeAcesso>>(d => d.OfType<DecisaoPermitida>().Any(x => x.Registro.Permissao == CodigoSensiveis)),
+            Arg.Any<IntencaoDoRegistro>(),
             Arg.Any<CancellationToken>());
-        await kevin.Verificador.Received(1).VerificarAsync(
+        await kevin.Verificador.Received(1).ExigirAsync(
             Arg.Is<PermissionRequirement>(r => r.Permissao == CodigoAcesso),
             Arg.Is<ResourceContext?>(r => r!.ResourceId == cenario.InscricaoId && r.InscricaoId == cenario.InscricaoId),
             Arg.Any<CancellationToken>());
@@ -103,7 +105,7 @@ public sealed class ObterInscricaoAdministrativaQueryHandlerTests
         passaporte.Valor.GetString().Should().Be(ItensDaInscricao.MascaraTotal);
         passaporte.PodeRevelar.Should().BeTrue();
         JsonSerializer.Serialize(resultado.Value).Should().NotContain("FX123456");
-        await diogo.Verificador.DidNotReceive().VerificarAsync(
+        await diogo.Verificador.DidNotReceive().ExigirAsync(
             Arg.Is<PermissionRequirement>(r => r.Permissao == CodigoRevelar), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>());
         await diogo.Verificador.Received(1).PodeAsync(
             Arg.Is<PermissionRequirement>(r => r.Permissao == CodigoRevelar), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>());
@@ -307,9 +309,10 @@ public sealed class ObterInscricaoAdministrativaQueryHandlerTests
 
         await Consultar(cenario, leandro);
 
-        await leandro.Verificador.Received(1).RegistrarAsync(
+        await leandro.Verificador.Received(1).RegistrarDesfechoAsync(
             Arg.Is<IReadOnlyCollection<DecisaoDeAcesso>>(d =>
-                d.Select(x => x.Registro!.Permissao).Order().SequenceEqual(new[] { CodigoDocumentosPublicos, CodigoPublicos }.Order())),
+                d.OfType<DecisaoPermitida>().Select(x => x.Registro.Permissao).Order().SequenceEqual(new[] { CodigoDocumentosPublicos, CodigoPublicos }.Order())),
+            IntencaoDoRegistro.Projecao,
             Arg.Any<CancellationToken>());
     }
 
@@ -330,8 +333,8 @@ public sealed class ObterInscricaoAdministrativaQueryHandlerTests
             recusa.Error!.Code.Should().Be("Inscricao.NaoEncontrada");
         }
 
-        await diogo.Verificador.DidNotReceiveWithAnyArgs().VerificarAsync(default!, default, default);
-        await diogo.Verificador.DidNotReceiveWithAnyArgs().DecidirSemRegistrarAsync(default!, default, default);
+        await diogo.Verificador.DidNotReceiveWithAnyArgs().ExigirAsync(default!, default, default);
+        await diogo.Verificador.DidNotReceiveWithAnyArgs().AvaliarAsync(default!, default, default);
         await mundo.Inscricoes.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
     }
 
@@ -346,7 +349,7 @@ public sealed class ObterInscricaoAdministrativaQueryHandlerTests
 
         resultado.Error!.Code.Should().Be("Inscricao.NaoEncontrada");
         await mundo.Inscricoes.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
-        await kevin.Verificador.DidNotReceiveWithAnyArgs().DecidirSemRegistrarAsync(default!, default, default);
+        await kevin.Verificador.DidNotReceiveWithAnyArgs().AvaliarAsync(default!, default, default);
     }
 
     [Fact(DisplayName = "Falha ao registrar o acesso recusa a consulta: a inscrição não sai")]
@@ -354,7 +357,7 @@ public sealed class ObterInscricaoAdministrativaQueryHandlerTests
     {
         InscricaoAdministrativaDeTeste cenario = DeFernanda();
         DecisoesDeAcessoDeTeste diogo = new("diogo.souza", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar);
-        diogo.Verificador.RegistrarAsync(Arg.Any<IReadOnlyCollection<DecisaoDeAcesso>>(), Arg.Any<CancellationToken>())
+        diogo.Verificador.RegistrarDesfechoAsync(Arg.Any<IReadOnlyCollection<DecisaoDeAcesso>>(), Arg.Any<IntencaoDoRegistro>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException(new RegistroDeAcessoNaoGravadoException(new InvalidOperationException("broker"))));
 
         Func<Task> consultar = () => Consultar(cenario, diogo);

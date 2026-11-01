@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
+using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Application.Services;
@@ -69,14 +70,7 @@ public sealed class ExigePermissaoNoProcessoAttribute : Attribute, IAsyncAuthori
                 context.HttpContext.RequestAborted)
             .ConfigureAwait(false);
 
-        // Challenge, e não Unauthorized: o 401 canônico carrega WWW-Authenticate e o corpo problem+json escritos
-        // pelo OnChallenge do esquema configurado.
-        context.Result = resultado switch
-        {
-            ResultadoDoAcesso.Permitido => null,
-            ResultadoDoAcesso.IdentidadeIncompleta => new ChallengeResult(),
-            ResultadoDoAcesso.Impedido => RotaDoProcesso.Impedido(servicos),
-            _ => RotaDoProcesso.NaoEncontrado(servicos, processoId),
-        };
+        context.Result = RespostaDoAcesso.Para(
+            resultado, () => RotaDoProcesso.NaoEncontrado(servicos, processoId), () => RotaDoProcesso.Impedido(servicos));
     }
 }

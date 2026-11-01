@@ -71,6 +71,18 @@ public sealed class ProtecaoDoCatalogoEndpointTests
         (await ListarAsync(client)).Should().NotContain(item => item.GetProperty("id").GetGuid() == id, "o item aprovado sai da lista");
     }
 
+    [Fact(DisplayName = "Token que não identifica o solicitante responde 401 na fila do catálogo, e não 403")]
+    public async Task Listar_TokenSemJti_Responde401()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.SemJtiHeader, "1");
+
+        HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Get, Base);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        resposta.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
+    }
+
     [Fact(DisplayName = "A reprovação exige a justificativa, aparece na fila e no detalhe, e o aceite do item reprovado é recusado")]
     public async Task Reprovacao_ComJustificativa_NaoTemAceite()
     {

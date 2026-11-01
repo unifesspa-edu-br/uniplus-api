@@ -6,6 +6,10 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Microsoft.Extensions.DependencyInjection;
+
+using Unifesspa.UniPlus.Authorization.Contracts;
+
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
@@ -151,6 +155,39 @@ public sealed class RevisoesDeAcessosTests : PedidosDeConcessaoTestBase
         item.GetProperty("situacao").GetString().Should().Be("pendente");
         JsonElement trilha = await LerAsync(diogo, $"/api/autorizacao/concessoes/{item.GetProperty("concessaoId").GetGuid()}/trilha");
         trilha.EnumerateArray().Select(e => e.GetProperty("tipo").GetString()).Should().NotContain("revogada");
+    }
+
+    [Fact(DisplayName = "Abrir a revisão sem conduzir registra a negativa de conduzir, e não a permissão de rever")]
+    public async Task Abrir_SemConduzir_RegistraSoANegativaDeConduzir()
+    {
+        await ResetarAsync();
+        using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
+        RegistroDeDecisoesDeTeste registro = Fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>();
+        int antes = registro.Registrados.Count;
+
+        (await EnviarAsync(diogo, HttpMethod.Post, RotaDasRevisoes)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        registro.Registrados.Skip(antes).Where(r => r.AtorSubject == Diogo.Sub.ToString())
+            .Select(static r => (r.Permissao, r.Resultado))
+            .Should().BeEquivalentTo([("autorizacao:revisoes:conduzir", ResultadoDoAcesso.Negado)]);
+    }
+
+    [Fact(DisplayName = "Decidir o item dos gestores sem rever registra a negativa de rever, e não a permissão de conduzir")]
+    public async Task DecidirItem_SemAGovernanciaDoItem_RegistraAPermissaoQueGovernaOItem()
+    {
+        await ResetarAsync();
+        using HttpClient marlene = await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados);
+        using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
+        (Guid revisaoId, JsonElement revisao) = await AbrirAsync(marlene);
+        string rota = $"{RotaDasRevisoes}/{revisaoId}/itens/{ItemDe(revisao, Marlene).GetProperty("id").GetGuid()}/confirmacao";
+        RegistroDeDecisoesDeTeste registro = Fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>();
+        int antes = registro.Registrados.Count;
+
+        await ConferirErroAsync(await EnviarAsync(marlene, HttpMethod.Post, rota), HttpStatusCode.UnprocessableEntity, "revisao.decisor_nao_decide_o_item");
+
+        registro.Registrados.Skip(antes).Where(r => r.AtorSubject == Marlene.Sub.ToString())
+            .Select(r => (r.Permissao, r.Resultado, r.ResourceId))
+            .Should().BeEquivalentTo([("autorizacao:revisoes:rever-protecao-de-dados", ResultadoDoAcesso.Negado, (Guid?)revisaoId)]);
     }
 
     [Fact(DisplayName = "O acesso comum de quem é da proteção de dados é revisto pelos gestores, e a proteção de dados não o decide")]

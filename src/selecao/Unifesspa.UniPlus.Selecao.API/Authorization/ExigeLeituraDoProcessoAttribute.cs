@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
+using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
@@ -37,12 +38,12 @@ public sealed class ExigeLeituraDoProcessoAttribute : Attribute, IAsyncAuthoriza
                 context.HttpContext.RequestAborted)
             .ConfigureAwait(false);
 
-        context.Result = resultado switch
+        // O anônimo nunca é desafiado: a recusa dele é o 404 do processo inexistente.
+        if (resultado == ResultadoDoAcesso.IdentidadeIncompleta && context.HttpContext.User.Identity?.IsAuthenticated != true)
         {
-            ResultadoDoAcesso.Permitido => null,
-            ResultadoDoAcesso.IdentidadeIncompleta when context.HttpContext.User.Identity?.IsAuthenticated == true =>
-                new ChallengeResult(),
-            _ => RotaDoProcesso.NaoEncontrado(servicos, processoId),
-        };
+            resultado = ResultadoDoAcesso.Negado;
+        }
+
+        context.Result = RespostaDoAcesso.Para(resultado, () => RotaDoProcesso.NaoEncontrado(servicos, processoId));
     }
 }

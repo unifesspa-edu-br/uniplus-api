@@ -38,11 +38,13 @@ public static class AbrirRevisaoDeAcessosCommandHandler
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        AcessoDaRevisao? acesso = await AcessoDaRevisao.ConsultarAsync(verificador, cancellationToken).ConfigureAwait(false);
+        AcessoDaRevisao? acesso = await AcessoDaRevisao.ConsultarAsync(verificador, null, cancellationToken).ConfigureAwait(false);
         if (acesso is null)
         {
             return Result<RevisaoDeAcessosDto>.Failure(RevisaoHandlerErros.IdentidadeIncompleta());
         }
+
+        await AcessoDaRevisao.RegistrarAsync(verificador, [acesso.DecisaoConduzir], cancellationToken).ConfigureAwait(false);
 
         if (IdentidadeDoToken.De(userContext) is not { } abertaPor)
         {

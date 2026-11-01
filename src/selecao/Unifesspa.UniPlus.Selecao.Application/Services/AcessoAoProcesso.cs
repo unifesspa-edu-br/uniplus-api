@@ -66,9 +66,9 @@ public static class AcessoAoProcesso
     /// <summary>Se quem lê configura o processo na unidade dona: o que separa o administrativo do que é público.</summary>
     public static async Task<bool> ConfiguraAsync(
         IVerificadorDeAcesso verificador, Guid unidadeId, Guid processoId, CancellationToken cancellationToken) =>
-        await VerificarNaUnidadeAsync(
+        await PodeNaUnidadeAsync(
                 verificador, unidadeId, processoId, PermissaoSelecao.ProcessosConfigurar, ResourceTiposSelecao.ProcessoSeletivo,
-                sensibilidadeDoResource: null, cancellationToken)
+                cancellationToken)
             .ConfigureAwait(false) == ResultadoDoAcesso.Permitido;
 
     /// <summary>
@@ -100,7 +100,7 @@ public static class AcessoAoProcesso
 
         return resource is null
             ? ResultadoDoAcesso.Negado
-            : await verificador.VerificarAsync(permissao.Requisito, resource, cancellationToken).ConfigureAwait(false);
+            : await verificador.ExigirAsync(permissao.Requisito, resource, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
