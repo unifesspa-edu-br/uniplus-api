@@ -137,7 +137,7 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         item.GetProperty("cpf").GetProperty("valor").GetString().Should().Be(PersonasDeTeste.FernandaDrumond.Mascarado);
         item.GetProperty("cpf").GetProperty("podeRevelar").GetBoolean().Should().BeFalse("a revelação é pedida no detalhe, por campo");
         item.TryGetProperty("numeroInscricao", out _).Should().BeFalse("o número é dado interno");
-        item.GetProperty("nome").GetString().Should().Be(PersonasDeTeste.NomeSocialFernandaDrumond);
+        item.GetProperty("nome").GetProperty("valor").GetString().Should().Be(PersonasDeTeste.NomeSocialFernandaDrumond);
         corpo.Should().NotContain(PersonasDeTeste.FernandaDrumond.Valor);
         json.RootElement.EnumerateArray().Select(i => i.GetProperty("id").GetGuid()).Should().NotContain(cenario.InscricaoEmRascunho, "o rascunho não é inscrição enviada");
         outraUnidade.StatusCode.Should().Be(HttpStatusCode.NotFound);

@@ -120,17 +120,18 @@ internal sealed record FatosDaVersao(
             .. new[] { ConjuntoBasicoDaInscricao.Nome, ConjuntoBasicoDaInscricao.NomeSocial }
                 .Where(Coletados.ContainsKey)
                 .Select(codigo => Coletados[codigo].Classificacao)
-                .Select(static c => c == ClassificacaoDeProtecao.Nenhuma || !Enum.IsDefined(c) ? ClassificacaoDeProtecao.Sensivel : c),
+                .Select(ClassificacoesDeProtecao.Resolvida),
         ];
 
         return congeladas.Length == 0 ? ClassificacaoDeProtecao.Sensivel : congeladas.Max();
     }
 
     /// <summary>
-    /// Se a versão congelou a base legal de todos os campos de nome que coleta. A versão sem campo de nome não a tem: na
-    /// dúvida, o nome sensível não sai.
+    /// A base legal que a versão congelou para os campos de nome que coleta, as distintas separadas por ponto e vírgula.
+    /// Nula quando algum campo de nome não a tem, ou quando a versão não coleta nome algum: na dúvida, o nome sensível não
+    /// sai.
     /// </summary>
-    public bool NomeTemBaseLegal()
+    public string? BaseLegalDoNome()
     {
         FatoDoProcesso[] nomes =
         [
@@ -139,7 +140,9 @@ internal sealed record FatosDaVersao(
                 .Select(codigo => Coletados[codigo]),
         ];
 
-        return nomes.Length > 0 && nomes.All(static n => !string.IsNullOrWhiteSpace(n.BaseLegal));
+        return nomes.Length > 0 && nomes.All(static n => !string.IsNullOrWhiteSpace(n.BaseLegal))
+            ? string.Join("; ", nomes.Select(static n => n.BaseLegal).Distinct(StringComparer.Ordinal))
+            : null;
     }
 
     private static FatoDoProcesso Derivado(FatoDerivadoCongelado derivado, EnvelopeReidratado envelope) =>

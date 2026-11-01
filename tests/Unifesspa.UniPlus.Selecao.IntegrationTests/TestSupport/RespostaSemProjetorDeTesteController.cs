@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
@@ -29,6 +30,7 @@ public sealed class RespostaSemProjetorDeTesteController : ControllerBase
     [HttpGet("esquecida")]
     public IActionResult ObterSemProjetor(Guid id, Guid inscricaoId) =>
         Ok(new InscricaoDoProcessoDto(
-            inscricaoId, "000001", SituacaoInscricao.Submetida, Guid.CreateVersion7(), null, "Ariel Drumond",
+            inscricaoId, "000001", SituacaoInscricao.Submetida, Guid.CreateVersion7(), null,
+            new NomeClassificadoDto(ClassificacaoDeProtecao.Pessoal, baseLegal: null) { Valor = "Ariel Drumond" },
             new CpfMascaradoDto("***.598.363-**", PodeRevelar: false), DateTimeOffset.UtcNow));
 }
