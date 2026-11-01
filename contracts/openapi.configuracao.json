@@ -9350,6 +9350,46 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SolicitarAprovacaoDaProtecaoRequest"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SolicitarAprovacaoDaProtecaoRequest"
+                  }
+                ]
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SolicitarAprovacaoDaProtecaoRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -18810,6 +18850,29 @@
           }
         }
       },
+      "ItemParaSolicitarRequest": {
+        "required": [
+          "cadastro",
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "cadastro": {
+            "enum": [
+              "TIPO_DOCUMENTO",
+              "FATO"
+            ],
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
       "ItemPortavel": {
         "required": [
           "fatoCodigo",
@@ -20231,6 +20294,23 @@
               "string"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "SolicitarAprovacaoDaProtecaoRequest": {
+        "required": [
+          "itens"
+        ],
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ItemParaSolicitarRequest"
+            }
           }
         }
       },

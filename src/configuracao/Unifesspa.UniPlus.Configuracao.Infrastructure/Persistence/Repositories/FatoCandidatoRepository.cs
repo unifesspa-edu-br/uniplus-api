@@ -61,9 +61,9 @@ public sealed class FatoCandidatoRepository : IFatoCandidatoRepository
         await _dbContext.FatosCandidato.AsNoTracking().Include(f => f.ValoresDominioDeclarados)
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
-    public async Task<IReadOnlyList<FatoCandidato>> ListarPendentesDeSolicitacaoAsync(CancellationToken cancellationToken) =>
+    public async Task<IReadOnlyList<FatoCandidato>> ListarPendentesPorIdAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken) =>
         await _dbContext.FatosCandidato
-            .Where(f => f.Aprovacao.Situacao == SituacaoDaAprovacao.Pendente)
+            .Where(f => ids.Contains(f.Id) && f.Aprovacao.Situacao == SituacaoDaAprovacao.Pendente)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 

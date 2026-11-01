@@ -56,9 +56,9 @@ public sealed class TipoDocumentoRepository : ITipoDocumentoRepository
         await _dbContext.TiposDocumento.AddAsync(tipo, cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<IReadOnlyList<TipoDocumento>> ListarPendentesDeSolicitacaoAsync(CancellationToken cancellationToken) =>
+    public async Task<IReadOnlyList<TipoDocumento>> ListarPendentesPorIdAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken) =>
         await _dbContext.TiposDocumento
-            .Where(t => t.Aprovacao.Situacao == SituacaoDaAprovacao.Pendente)
+            .Where(t => ids.Contains(t.Id) && t.Aprovacao.Situacao == SituacaoDaAprovacao.Pendente)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 

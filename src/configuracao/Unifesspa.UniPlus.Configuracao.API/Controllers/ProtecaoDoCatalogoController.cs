@@ -99,8 +99,9 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
     }
 
     /// <summary>
-    /// Envia à proteção de dados, de uma vez, todos os tipos de documento e fatos pendentes dos cadastros que quem
-    /// envia pode manter, e avisa por e-mail quem tem a permissão de aprovar. Idempotency-Key obrigatório (ADR-0027).
+    /// Envia à proteção de dados, de uma vez, os tipos de documento e fatos pendentes que quem envia escolheu —
+    /// cada item com o cadastro (<c>TIPO_DOCUMENTO</c> ou <c>FATO</c>) e o identificador —, desde que mantenha o
+    /// cadastro, e avisa por e-mail quem tem a permissão de aprovar. Idempotency-Key obrigatório (ADR-0027).
     /// </summary>
     [HttpPost("admin/protecao-do-catalogo/solicitacoes")]
     [RequiresIdempotencyKey]
@@ -110,7 +111,7 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Solicitar(CancellationToken cancellationToken)
+    public async Task<IActionResult> Solicitar([FromBody] SolicitarAprovacaoDaProtecaoRequest? request, CancellationToken cancellationToken)
     {
         // O acesso e os destinatários vêm do módulo Autorização e são lidos antes do handler, que fica num único
         // DbContext para que a trava, a conferência, a gravação e o aviso por e-mail fiquem na mesma transação.
@@ -120,7 +121,7 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
             .ConfigureAwait(false);
 
         Result<SolicitacaoDaProtecaoDto> resultado = await _commandBus
-            .Send(new SolicitarAprovacaoDaProtecaoCommand(acesso, destinatarios), cancellationToken)
+            .Send(new SolicitarAprovacaoDaProtecaoCommand(acesso, destinatarios, request?.ParaItens() ?? []), cancellationToken)
             .ConfigureAwait(false);
 
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
