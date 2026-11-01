@@ -61,7 +61,7 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
         Exigidos(previa).Should().BeEquivalentTo(["RG", "COMPROVANTE_DA_MODALIDADE"]);
     }
 
-    [Fact(DisplayName = "Estrangeiro: passaporte exigido, RG não; não vê RG nem naturalidade, e o CPF é opcional")]
+    [Fact(DisplayName = "Estrangeiro: passaporte exigido, RG não; não vê RG nem naturalidade, e o CPF é obrigatório")]
     public async Task Handle_Estrangeiro_PassaporteSemRgNemNaturalidade()
     {
         PreVisualizacaoDoProcessoDto previa = await PreVisualizarAsync(Perfil(
@@ -79,7 +79,7 @@ public sealed class PreVisualizarProcessoSeletivoQueryHandlerTests
         FormularioSimuladoDto inscricao = previa.Formularios.Single(static f => f.Finalidade == "INSCRICAO");
         inscricao.Itens.Single(static i => i.FatoCodigo == "RG_NUMERO").Visivel.Should().Be("FALSO");
         inscricao.Itens.Single(static i => i.FatoCodigo == "NATURALIDADE_UF").Visivel.Should().Be("FALSO");
-        inscricao.Itens.Single(static i => i.FatoCodigo == "CPF").Obrigatorio.Should().Be("FALSO");
+        inscricao.Itens.Single(static i => i.FatoCodigo == "CPF").Obrigatorio.Should().Be("VERDADEIRO");
     }
 
     [Fact(DisplayName = "Sem saber se a composição familiar aparece, o documento por membro sai indeterminado, sem ocorrência")]
