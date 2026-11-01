@@ -249,7 +249,7 @@ public sealed class AuthorizationDecisionServiceTests
     [Fact(DisplayName = "Registra a decisão permitida com ator, permissão, resultado e fonte da concessão")]
     public async Task Decide_Permitida_RegistraDecisao()
     {
-        await Decidir(Sujeito(concessoes: Concessao(grantId: Guid.CreateVersion7())), Requisito());
+        await Decidir(Sujeito(concessoes: Concessao(grantId: Guid.CreateVersion7())), RequisitoPessoal());
 
         RegistroDecisaoAcesso registro = _registro.Registrados.Should().ContainSingle().Subject;
         registro.Permitido.Should().BeTrue();
@@ -269,7 +269,7 @@ public sealed class AuthorizationDecisionServiceTests
 
         await Decidir(
             Sujeito(concessoes: Concessao(grantId: concessao, escopoUnidadeId: unidade, perfilId: perfil)),
-            Requisito(),
+            RequisitoPessoal(),
             Resource(unidadeProprietariaId: unidade));
 
         RegistroDecisaoAcesso registro = _registro.Registrados.Should().ContainSingle().Subject;
@@ -283,8 +283,8 @@ public sealed class AuthorizationDecisionServiceTests
     {
         Guid alvo = Guid.CreateVersion7();
 
-        await Decidir(Sujeito(concessoes: Concessao()), Requisito(), Resource(resourceId: alvo));
-        await Decidir(Sujeito(), Requisito(), Resource(resourceId: alvo));
+        await Decidir(Sujeito(concessoes: Concessao()), RequisitoPessoal(), Resource(resourceId: alvo));
+        await Decidir(Sujeito(), RequisitoPessoal(), Resource(resourceId: alvo));
 
         _registro.Registrados.Should().HaveCount(2).And.OnlyContain(r => r.ResourceId == alvo,
             "a decisão negada também nomeia o registro que se tentou alcançar");
@@ -321,7 +321,7 @@ public sealed class AuthorizationDecisionServiceTests
     [Fact(DisplayName = "Registra também a decisão negada, com o motivo em valor canônico")]
     public async Task Decide_Negada_RegistraMotivoCanonico()
     {
-        await Decidir(Sujeito(), Requisito());
+        await Decidir(Sujeito(), RequisitoPessoal());
 
         RegistroDecisaoAcesso registro = _registro.Registrados.Should().ContainSingle().Subject;
         registro.Permitido.Should().BeFalse();
@@ -330,14 +330,41 @@ public sealed class AuthorizationDecisionServiceTests
         registro.FonteGrant.Should().BeNull();
     }
 
-    [Fact(DisplayName = "O registro não carrega identificador de token")]
-    public async Task Decide_Registro_NaoCarregaIdentificadorDeToken()
+    [Fact(DisplayName = "O registro identifica o ator por emissor e subject, e nunca pelo identificador do token")]
+    public async Task Decide_Registro_IdentificaOAtorSemJti()
     {
-        await Decidir(Sujeito(concessoes: Concessao()), Requisito());
+        await Decidir(Sujeito(concessoes: Concessao()), RequisitoPessoal());
 
+        RegistroDecisaoAcesso registro = _registro.Registrados.Should().ContainSingle().Subject;
+        registro.AtorEmissor.Should().Be("https://idp.exemplo/realms/unifesspa");
+        registro.AtorSubject.Should().Be("sub-opaco-123");
         typeof(RegistroDecisaoAcesso).GetProperties().Select(static p => p.Name)
-            .Should().NotContain(["Subject", "Jti", "Emissor"],
-                "subject e jti identificam pessoa e sessão — log não é lugar deles");
+            .Should().NotContain("Jti", "o jti identifica a sessão e não é do registro");
+    }
+
+    [Fact(DisplayName = "Falha ao gravar o registro sobe como erro: a decisão não é entregue nem vira negativa")]
+    public async Task Decide_FalhaAoRegistrar_Lanca()
+    {
+        _registro.Falha = new RegistroDeAcessoNaoGravadoException(new InvalidOperationException());
+
+        Func<Task> acao = () => Decidir(Sujeito(concessoes: Concessao()), RequisitoPessoal());
+
+        await acao.Should().ThrowAsync<RegistroDeAcessoNaoGravadoException>();
+    }
+
+    [Fact(DisplayName = "Decidir sem registrar não grava nada, nem a negativa")]
+    public async Task DecidirSemRegistrar_NaoGravaNada()
+    {
+        AuthorizationDecisionService servico = Servico();
+
+        AuthorizationDecision negada = await servico.DecidirSemRegistrarAsync(
+            Sujeito(), Requisito(), Resource(), Requisicao(), default);
+        AuthorizationDecision permitida = await servico.DecidirSemRegistrarAsync(
+            Sujeito(concessoes: Concessao()), Requisito(), Resource(), Requisicao(), default);
+
+        negada.Allowed.Should().BeFalse();
+        permitida.Allowed.Should().BeTrue();
+        _registro.Registrados.Should().BeEmpty();
     }
 
     [Fact(DisplayName = "O registro grava a sensibilidade efetiva, não a menor das duas declarações")]
@@ -361,7 +388,7 @@ public sealed class AuthorizationDecisionServiceTests
         InscricoesEmMemoria inscricoes = new(processo);
 
         AuthorizationDecision decisao = await Decidir(
-            Sujeito(concessoes: Concessao()), Requisito(), Resource(processoId: processo), inscricoes: inscricoes);
+            Sujeito(concessoes: Concessao()), RequisitoPessoal(), Resource(processoId: processo), inscricoes: inscricoes);
 
         decisao.Allowed.Should().BeFalse();
         decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.ImpedidoPorInscricaoNoProcesso);
@@ -417,6 +444,31 @@ public sealed class AuthorizationDecisionServiceTests
         inscricoes.Consultas.Should().Be(0);
     }
 
+    [Fact(DisplayName = "A permissão operacional decide sem publicar, e a pessoal publica o permitido e o negado")]
+    public async Task Decide_SoRegistraDePermissaoPessoalOuMaior()
+    {
+        await Decidir(Sujeito(concessoes: Concessao()), Requisito());
+        await Decidir(Sujeito(), Requisito());
+        _registro.Registrados.Should().BeEmpty("a permissão operacional não depende do destino do registro");
+
+        await Decidir(Sujeito(concessoes: Concessao()), RequisitoPessoal());
+        await Decidir(Sujeito(), RequisitoPessoal());
+
+        _registro.Registrados.Select(static r => r.Permitido).Should().Equal(true, false);
+    }
+
+    private static PermissionRequirement RequisitoPessoal() =>
+        Requisito(ClassificacaoDeProtecao.Pessoal, baseLegalPadrao: "Lei nº 13.709/2018 (LGPD), art. 7º, III");
+
+    private AuthorizationDecisionService Servico(
+        IEnumerable<IPermissaoCheck>? checks = null,
+        IInscricaoDoSujeitoNoProcesso? inscricoes = null) =>
+        new(
+            new GrantEfetivoAplicavelCheck(),
+            new ImpedimentoPorInscricaoCheck(inscricoes ?? new InscricoesEmMemoria()),
+            checks ?? [],
+            _registro);
+
     private Task<AuthorizationDecision> Decidir(
         AuthorizationSubject sujeito,
         PermissionRequirement requisito,
@@ -424,11 +476,7 @@ public sealed class AuthorizationDecisionServiceTests
         IEnumerable<IPermissaoCheck>? checks = null,
         IInscricaoDoSujeitoNoProcesso? inscricoes = null)
     {
-        AuthorizationDecisionService servico = new(
-            new GrantEfetivoAplicavelCheck(),
-            new ImpedimentoPorInscricaoCheck(inscricoes ?? new InscricoesEmMemoria()),
-            checks ?? [],
-            _registro);
+        AuthorizationDecisionService servico = Servico(checks, inscricoes);
 
         return servico.DecideAsync(
             sujeito,

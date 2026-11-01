@@ -53,10 +53,13 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
     private const string Diogo = "diogo.souza";
     private const string ResourceTipo = "motivo-decisao-isencao";
 
-    private static readonly PermissionRequirement ManterMotivos = PermissaoSelecao.MotivosDecisaoIsencaoManter.Requisito;
+    // Os requisitos são pessoais para que a decisão seja registrada: a permissão operacional decide sem gravar.
+    private const string BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III";
+
+    private static readonly PermissionRequirement ManterMotivos = Pessoal(PermissaoSelecao.MotivosDecisaoIsencaoManter.Requisito);
 
     private static readonly PermissionRequirement OperarInscricoes =
-        CatalogoDePermissoes<PermissaoDeTeste>.Obter(PermissaoDeTeste.InscricoesOperar).Requisito;
+        Pessoal(CatalogoDePermissoes<PermissaoDeTeste>.Obter(PermissaoDeTeste.InscricoesOperar).Requisito);
 
     private readonly MonolitoPostgresFixture _fixture;
 
@@ -319,6 +322,16 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
                 CancellationToken.None);
     }
 
+    private static PermissionRequirement Pessoal(PermissionRequirement original) =>
+        PermissionRequirement.From(
+            original.Permissao,
+            ClassificacaoDeProtecao.Pessoal,
+            BaseLegal,
+            original.RequerMfa,
+            original.RequerDuplaAprovacao,
+            original.EscopoContextoObrigatorio,
+            original.VerificacoesDeContexto).Value!;
+
     private static ResourceContext Resource(Guid? unidadeProprietariaId = null) =>
         ResourceContext.From(ResourceTipo, ClassificacaoDeProtecao.Interno, unidadeProprietariaId).Value!;
 
@@ -331,6 +344,10 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
     {
         public List<RegistroDecisaoAcesso> Registrados { get; } = [];
 
-        public void Registrar(RegistroDecisaoAcesso registro) => Registrados.Add(registro);
+        public Task RegistrarAsync(IReadOnlyList<RegistroDecisaoAcesso> registros, CancellationToken cancellationToken)
+        {
+            Registrados.AddRange(registros);
+            return Task.CompletedTask;
+        }
     }
 }

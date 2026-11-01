@@ -29,5 +29,27 @@ internal static class ContextoDaRequisicaoHttp
             relogio.GetUtcNow(),
             OrigemRequisicao.Api,
             ipOrigem: http?.Connection.RemoteIpAddress?.ToString(),
-            userAgent: http?.Request.Headers.UserAgent.ToString());
+            userAgent: http?.Request.Headers.UserAgent.ToString(),
+            execucaoId: ExecucaoDaRequisicao(http));
+
+    // Um identificador por requisição HTTP, gerado aqui: o de correlação vem do cliente e não serve de chave. Todas as
+    // decisões da mesma requisição o compartilham, e é isso que faz a nova tentativa de um acesso não duplicá-lo.
+    private static Guid? ExecucaoDaRequisicao(HttpContext? http)
+    {
+        if (http is null)
+        {
+            return null;
+        }
+
+        if (http.Items.TryGetValue(ChaveDaExecucao, out object? existente) && existente is Guid id)
+        {
+            return id;
+        }
+
+        Guid novo = Guid.CreateVersion7();
+        http.Items[ChaveDaExecucao] = novo;
+        return novo;
+    }
+
+    private const string ChaveDaExecucao = "uniplus.autorizacao.execucao-id";
 }

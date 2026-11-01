@@ -34,8 +34,9 @@ public sealed class TiposFormaisContratoTests
 
         // AuthorizationRequestContext — igualdade por valor (sem dupla aprovação).
         var instante = new DateTimeOffset(2026, 6, 15, 12, 0, 0, TimeSpan.Zero);
-        AuthorizationRequestContext reqA = AuthorizationRequestContext.From("req-1", instante, OrigemRequisicao.Api).Value!;
-        AuthorizationRequestContext reqB = AuthorizationRequestContext.From("req-1", instante, OrigemRequisicao.Api).Value!;
+        Guid execucao = Guid.CreateVersion7();
+        AuthorizationRequestContext reqA = AuthorizationRequestContext.From("req-1", instante, OrigemRequisicao.Api, execucaoId: execucao).Value!;
+        AuthorizationRequestContext reqB = AuthorizationRequestContext.From("req-1", instante, OrigemRequisicao.Api, execucaoId: execucao).Value!;
         reqA.Should().Be(reqB);
 
         // AuthorizationDecision — permitida igual por valor do grant; negada por código.

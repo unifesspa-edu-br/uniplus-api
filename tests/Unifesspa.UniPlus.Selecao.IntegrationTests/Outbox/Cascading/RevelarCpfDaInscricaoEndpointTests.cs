@@ -69,6 +69,9 @@ public sealed class RevelarCpfDaInscricaoEndpointTests : IAsyncLifetime
         decisao.Permitido.Should().BeTrue();
         decisao.Permissao.Should().Be(PermissaoSelecao.InscricoesRevelarCpf.Codigo);
         decisao.GrantId.Should().NotBeNull("a concessão usada identifica quem revelou");
+        decisao.AtorSubject.Should().Be(Leandro, "o registro diz quem revelou");
+        decisao.FatoCodigo.Should().Be("CPF", "o registro diz qual campo foi revelado");
+        decisao.InscricaoId.Should().Be(cenario.InscricaoId);
         JsonSerializer.Serialize(decisao).Should().NotContain(PersonasDeTeste.FernandaDrumond.Valor);
     }
 

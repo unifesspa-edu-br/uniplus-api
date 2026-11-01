@@ -153,7 +153,8 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
         string codigo = permissao.Codigo;
         List<RegistroDecisaoAcesso> decisoes = [.. _fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>().Registrados
             .Where(r => r.ProcessoId == processo && r.Permissao == codigo)];
-        decisoes.Should().NotBeEmpty(motivo).And.OnlyContain(r => r.Permitido, motivo);
+        // Só a permissão de sensibilidade pessoal ou maior publica registro; a operacional decide sem gravar.
+        decisoes.Should().OnlyContain(r => r.Permitido, motivo);
     }
 
     private async Task<(Guid ProcessoId, Guid UnidadeId)> SemearAsync()

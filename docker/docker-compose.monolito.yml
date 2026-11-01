@@ -1,9 +1,10 @@
 # Stack do MONÓLITO MODULAR: valida que o composition root boota como
 # UM serviço Docker contra o banco único `uniplus` (schema-por-módulo).
 #
-# Auto-contida e mínima — Postgres + Redis + o monólito. Kafka/MinIO/Keycloak são
-# omitidos de propósito: o host não os toca no boot (o transporte Kafka está
-# deferido; storage/OIDC são lazy), e o smoke usa endpoints anônimos.
+# Auto-contida e mínima — Postgres + Redis + Kafka + o monólito. O Kafka serve só ao
+# registro de acesso a dado pessoal, que o host exige para subir e publica de forma
+# síncrona; o transporte Kafka do Wolverine segue desligado. MinIO/Keycloak são
+# omitidos de propósito (storage/OIDC são lazy), e o smoke usa endpoints anônimos.
 # A stack completa (mensageria, storage, auth) é trabalho de rollout. Geo segue
 # deploy separado.
 #
@@ -45,6 +46,41 @@ services:
       timeout: 5s
       retries: 5
 
+  kafka:
+    image: apache/kafka:4.2.0
+    restart: unless-stopped
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      CLUSTER_ID: ${KAFKA_CLUSTER_ID:-MkU3OEVBNTcwNTJENDM2Qk}
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-cluster.sh cluster-id --bootstrap-server localhost:9092 | grep -q Cluster"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  kafka-init:
+    image: apache/kafka:4.2.0
+    restart: "no"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command: >
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:29092 --create --if-not-exists
+      --topic autorizacao_registros_de_acesso --partitions 1 --replication-factor 1
+
   monolito-api:
     build:
       context: ..
@@ -71,6 +107,8 @@ services:
       # PG) — sem isso o host tentaria UseKafka().AutoProvision() num broker ausente.
       # Espaço em vez de string vazia: em runtimes < .NET 9, vazio apaga a env var.
       Kafka__BootstrapServers: " "
+      # Registro de acesso: Kafka próprio, independente do transporte do Wolverine acima.
+      RegistroDeAcesso__Kafka__BootstrapServers: "kafka:29092"
       Auth__Authority: "http://localhost/realms/unifesspa"
       Auth__Audience: "uniplus"
       # Sem OTEL collector na stack mínima — desliga o exporter p/ evitar ruído de
@@ -83,6 +121,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health/live || exit 1"]
       interval: 10s

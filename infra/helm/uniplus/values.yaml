@@ -47,6 +47,25 @@ acervoPublico:
 autorizacao:
   enderecoDaConfiguracao: ""
 
+# Registro de acesso a dado pessoal (ADR-0153): a aplicação publica cada acesso num tópico Kafka próprio, fora da
+# base da aplicação, e só entrega o dado depois da confirmação do broker. Por isso bootstrapServers é obrigatório:
+# AddAutorizacao().ValidateOnStart() rejeita vazio no Host, e sem ele o pod crashloopa no startup. O produtor não cria
+# o tópico: a infra o provisiona, com uma credencial só de escrita nele. É independente do Kafka do transporte de
+# eventos (secrets.kafkaBootstrapServers). Cada campo vira a env var RegistroDeAcesso__Kafka__<Campo> via ConfigMap.
+# securityProtocol: PLAINTEXT, SSL, SASL_PLAINTEXT ou SASL_SSL (vazio, PLAINTEXT). saslMechanism: PLAIN, SCRAM-SHA-256
+# ou SCRAM-SHA-512, obrigatório com SASL. caminhoDoCertificadoCa: PEM da CA, obrigatório com SSL. prazoDeConfirmacao:
+# TimeSpan (ex.: 00:00:10); vazio, o padrão da aplicação. existingSecret: nome do Secret com as chaves `usuario` e
+# `senha` (credencial SASL), lidas por secretKeyRef; vazio, a aplicação não envia credencial.
+registroDeAcesso:
+  kafka:
+    bootstrapServers: ""
+    topico: autorizacao_registros_de_acesso
+    securityProtocol: ""
+    saslMechanism: ""
+    prazoDeConfirmacao: ""
+    caminhoDoCertificadoCa: ""
+    existingSecret: ""
+
 # Redes de onde o proxy que termina o TLS alcanca a aplicacao, em notacao CIDR.
 # Fora de Development, AddReverseProxyConfiguration().ValidateOnStart() rejeita
 # lista vazia — sem ao menos uma entrada o pod crashloopa no startup.

@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Application.Services;
@@ -65,7 +66,8 @@ public static partial class RevelarCpfDaInscricaoQueryHandler
         ResultadoDoAcesso acesso = await AcessoAoProcesso
             .VerificarNaUnidadeAsync(
                 verificador, unidade, query.ProcessoSeletivoId, PermissaoSelecao.InscricoesRevelarCpf,
-                ResourceTiposSelecao.Inscricao, sensibilidadeDoResource: null, cancellationToken, query.InscricaoId)
+                ResourceTiposSelecao.Inscricao, sensibilidadeDoResource: null, cancellationToken, query.InscricaoId,
+                ConjuntoBasicoDaInscricao.Cpf, query.InscricaoId)
             .ConfigureAwait(false);
         if (acesso is ResultadoDoAcesso.IdentidadeIncompleta or ResultadoDoAcesso.Impedido)
         {

@@ -4,11 +4,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Decisao;
-using Unifesspa.UniPlus.Infrastructure.Core.Observability;
 
 /// <summary>
 /// Composição do ponto de decisão único de autorização (ADR-0078).
@@ -16,37 +16,28 @@ using Unifesspa.UniPlus.Infrastructure.Core.Observability;
 public static class AutorizacaoServiceCollectionExtensions
 {
     /// <summary>
-    /// Registra o serviço de decisão, o agregador do sujeito, a verificação
-    /// canônica de concessão e o registro operacional restrito.
+    /// Registra o serviço de decisão, o agregador do sujeito e a verificação
+    /// canônica de concessão.
     /// </summary>
     /// <remarks>
-    /// Registro puro, sem trabalho de rede nem de disco: o destino do registro
-    /// só abre arquivo na primeira escrita, de modo que subir a aplicação em um
-    /// ambiente de teste não depende do destino existir.
+    /// O registro dos acessos (<see cref="IRegistroOperacionalRestrito"/>) é publicado no Kafka. Sem
+    /// <c>RegistroDeAcesso:Kafka:BootstrapServers</c>, ou com opções inválidas, a subida falha, em vez de a aplicação
+    /// entregar dado protegido sem registro. A subida valida a configuração e constrói o produtor; não verifica o
+    /// broker nem o tópico.
     /// </remarks>
-    public static IServiceCollection AddAutorizacao(
-        this IServiceCollection services,
-        IConfiguration configuration)
+    public static IServiceCollection AddAutorizacao(this IServiceCollection services, IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
-        // O registro sai pelo mesmo protocolo da telemetria, então depende do
-        // mesmo coletor: onde a observabilidade está desligada não há para onde
-        // exportar, e manter o exportador de pé só produziria tentativas de
-        // conexão contra um endereço que ninguém atende — que é justamente o
-        // ruído que o desligamento existe para evitar.
-        bool observabilidadeAtivada = configuration.GetValue(
-            OpenTelemetryConfiguration.EnabledConfigurationKey,
-            defaultValue: true);
-
-        services.AddOptions<RegistroOperacionalRestritoOptions>()
-            .Bind(configuration.GetSection(RegistroOperacionalRestritoOptions.SectionName))
-            .PostConfigure(options => options.Habilitado &= observabilidadeAtivada)
-            .ValidateDataAnnotations()
+        services.AddOptions<RegistroDeAcessoKafkaOptions>()
+            .Bind(configuration.GetSection(RegistroDeAcessoKafkaOptions.SectionName))
             .ValidateOnStart();
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<IValidateOptions<RegistroDeAcessoKafkaOptions>, RegistroDeAcessoKafkaOptionsValidator>());
+        services.TryAddSingleton<IRegistroOperacionalRestrito, RegistroDeAcessoKafka>();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, ConferenciaDoRegistroDeAcessoNaSubida>());
 
-        services.TryAddSingleton<IRegistroOperacionalRestrito, SerilogRegistroOperacionalRestrito>();
         services.TryAddScoped<IAuthorizationSubjectResolver, HttpAuthorizationSubjectResolver>();
 
         // A verificação de concessão é o núcleo da decisão, não um item da lista

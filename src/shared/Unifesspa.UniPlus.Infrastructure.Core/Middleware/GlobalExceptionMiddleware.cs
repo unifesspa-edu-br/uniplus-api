@@ -14,6 +14,8 @@ using Microsoft.Extensions.Logging;
 
 using Pagination;
 
+using Unifesspa.UniPlus.Authorization.Abstractions;
+
 using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed partial class GlobalExceptionMiddleware
@@ -67,6 +69,11 @@ public sealed partial class GlobalExceptionMiddleware
         {
             LogConflitoDeConcorrencia(_logger, context.Request.Path, ex);
             await EscreverRespostaConflitoDeConcorrencia(context, _problemTypeUriFactory).ConfigureAwait(false);
+        }
+        catch (RegistroDeAcessoNaoGravadoException ex)
+        {
+            LogRegistroDeAcessoNaoGravado(_logger, context.Request.Path, ex);
+            await EscreverRespostaRegistroDeAcessoNaoGravado(context, _problemTypeUriFactory).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -137,64 +144,62 @@ public sealed partial class GlobalExceptionMiddleware
         }));
     }
 
-    private static async Task EscreverRespostaConflitoDeConcorrencia(
+    private static Task EscreverRespostaConflitoDeConcorrencia(HttpContext context, IProblemTypeUriFactory problemTypeUriFactory) =>
+        EscreverProblemAsync(
+            context,
+            problemTypeUriFactory,
+            StatusCodes.Status409Conflict,
+            "uniplus.concorrencia.conflito",
+            "Conflito de concorrência",
+            "Este recurso foi modificado por outra operação concorrente. Recarregue os dados e tente novamente.");
+
+    private static Task EscreverRespostaCursorInvalido(HttpContext context, IProblemTypeUriFactory problemTypeUriFactory) =>
+        EscreverProblemAsync(
+            context,
+            problemTypeUriFactory,
+            StatusCodes.Status400BadRequest,
+            "uniplus.paginacao.cursor-invalido",
+            "Cursor inválido",
+            "O cursor informado não continua esta consulta. Refaça a listagem sem cursor.");
+
+    // O registro de acesso é do shared e qualquer módulo pode lançar a falha, então a resposta não depende do registro
+    // de erros de um módulo. A causa não vai à resposta.
+    private static Task EscreverRespostaRegistroDeAcessoNaoGravado(HttpContext context, IProblemTypeUriFactory problemTypeUriFactory) =>
+        EscreverProblemAsync(
+            context,
+            problemTypeUriFactory,
+            StatusCodes.Status503ServiceUnavailable,
+            "uniplus.autorizacao.registro_de_acesso.falha_ao_gravar",
+            "Registro de acesso indisponível",
+            "O acesso não pôde ser registrado e por isso não foi concluído. Tente novamente em instantes.");
+
+    private static Task EscreverRespostaErro(HttpContext context, IProblemTypeUriFactory problemTypeUriFactory) =>
+        EscreverProblemAsync(
+            context,
+            problemTypeUriFactory,
+            StatusCodes.Status500InternalServerError,
+            "uniplus.internal.unexpected",
+            "Erro interno do servidor",
+            "Ocorreu um erro inesperado. Tente novamente mais tarde.");
+
+    private static async Task EscreverProblemAsync(
         HttpContext context,
-        IProblemTypeUriFactory problemTypeUriFactory)
+        IProblemTypeUriFactory problemTypeUriFactory,
+        int status,
+        string code,
+        string title,
+        string detail)
     {
-        context.Response.StatusCode = StatusCodes.Status409Conflict;
+        context.Response.StatusCode = status;
 
         Dictionary<string, object?> body = new()
         {
-            ["type"] = problemTypeUriFactory.Build("uniplus.concorrencia.conflito"),
-            ["title"] = "Conflito de concorrência",
-            ["status"] = StatusCodes.Status409Conflict,
-            ["detail"] = "Este recurso foi modificado por outra operação concorrente. Recarregue os dados e tente novamente.",
+            ["type"] = problemTypeUriFactory.Build(code),
+            ["title"] = title,
+            ["status"] = status,
+            ["detail"] = detail,
             ["instance"] = $"urn:uuid:{Guid.CreateVersion7()}",
-            ["code"] = "uniplus.concorrencia.conflito",
-            ["traceId"] = Activity.Current?.TraceId.ToHexString() ?? Guid.CreateVersion7().ToString("N"),
-        };
-
-        await context.Response
-            .WriteAsJsonAsync(body, WebJsonOptions, contentType: "application/problem+json")
-            .ConfigureAwait(false);
-    }
-
-    private static async Task EscreverRespostaCursorInvalido(
-        HttpContext context,
-        IProblemTypeUriFactory problemTypeUriFactory)
-    {
-        context.Response.StatusCode = StatusCodes.Status400BadRequest;
-
-        Dictionary<string, object?> body = new()
-        {
-            ["type"] = problemTypeUriFactory.Build("uniplus.paginacao.cursor-invalido"),
-            ["title"] = "Cursor inválido",
-            ["status"] = StatusCodes.Status400BadRequest,
-            ["detail"] = "O cursor informado não continua esta consulta. Refaça a listagem sem cursor.",
-            ["instance"] = $"urn:uuid:{Guid.CreateVersion7()}",
-            ["code"] = "uniplus.paginacao.cursor-invalido",
-            ["traceId"] = Activity.Current?.TraceId.ToHexString() ?? Guid.CreateVersion7().ToString("N"),
-        };
-
-        await context.Response
-            .WriteAsJsonAsync(body, WebJsonOptions, contentType: "application/problem+json")
-            .ConfigureAwait(false);
-    }
-
-    private static async Task EscreverRespostaErro(
-        HttpContext context,
-        IProblemTypeUriFactory problemTypeUriFactory)
-    {
-        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-
-        Dictionary<string, object?> body = new()
-        {
-            ["type"] = problemTypeUriFactory.Build("uniplus.internal.unexpected"),
-            ["title"] = "Erro interno do servidor",
-            ["status"] = StatusCodes.Status500InternalServerError,
-            ["detail"] = "Ocorreu um erro inesperado. Tente novamente mais tarde.",
-            ["instance"] = $"urn:uuid:{Guid.CreateVersion7()}",
-            ["code"] = "uniplus.internal.unexpected",
+            ["code"] = code,
             ["traceId"] = Activity.Current?.TraceId.ToHexString() ?? Guid.CreateVersion7().ToString("N"),
         };
 
@@ -211,6 +216,9 @@ public sealed partial class GlobalExceptionMiddleware
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Âncora de cursor incompatível com a ordenação no request {Path}")]
     private static partial void LogAncoraDeCursorInvalida(ILogger logger, PathString path, Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Registro de acesso não gravado no request {Path}")]
+    private static partial void LogRegistroDeAcessoNaoGravado(ILogger logger, PathString path, Exception ex);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Erro não tratado no request {Path}")]
     private static partial void LogUnhandledError(ILogger logger, PathString path, Exception ex);

@@ -192,6 +192,9 @@ public sealed class MigrationOrderFixture : IDisposable
         // Desliga Kafka — sem isto Wolverine tenta iniciar transporte.
         Environment.SetEnvironmentVariable("Kafka__BootstrapServers", " ");
 
+        // O registro de acesso exige o próprio Kafka para o host subir; o produtor não conecta ao ser construído.
+        Environment.SetEnvironmentVariable("RegistroDeAcesso__Kafka__BootstrapServers", "localhost:9092");
+
         // OpenTelemetry exporter em loop contra localhost:4317 polui logs do
         // CI mesmo sem afetar correção. Desliga consistente com ApiFactoryBase.
         Environment.SetEnvironmentVariable("Observability__Enabled", "false");

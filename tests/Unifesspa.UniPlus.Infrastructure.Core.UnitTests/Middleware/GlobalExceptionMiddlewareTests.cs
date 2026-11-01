@@ -15,6 +15,7 @@ using Microsoft.Extensions.Options;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 
@@ -344,6 +345,21 @@ public sealed class GlobalExceptionMiddlewareTests
         DefaultHttpContext context = new();
         context.Response.Body = new MemoryStream();
         return context;
+    }
+
+    [Fact(DisplayName = "Falha ao gravar o registro de acesso responde 503 com o código do catálogo, sem vazar a causa")]
+    public async Task InvokeAsync_RegistroDeAcessoNaoGravado_Responde503()
+    {
+        DefaultHttpContext context = CriarContexto();
+        GlobalExceptionMiddleware middleware = CriarMiddleware(_ =>
+            throw new RegistroDeAcessoNaoGravadoException(new InvalidOperationException("detalhe interno do banco")));
+
+        await middleware.InvokeAsync(context);
+
+        context.Response.StatusCode.Should().Be(StatusCodes.Status503ServiceUnavailable);
+        using JsonDocument doc = await LerBodyAsync(context);
+        doc.RootElement.GetProperty("code").GetString().Should().Be("uniplus.autorizacao.registro_de_acesso.falha_ao_gravar");
+        doc.RootElement.GetRawText().Should().NotContain("detalhe interno do banco");
     }
 
     private static GlobalExceptionMiddleware CriarMiddleware(RequestDelegate next)

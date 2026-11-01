@@ -32,6 +32,19 @@ spec:
                 name: {{ .Release.Name }}-uniplus-config
             - secretRef:
                 name: {{ .Release.Name }}-uniplus-secrets
+          {{- if .Values.registroDeAcesso.kafka.existingSecret }}
+          env:
+            - name: RegistroDeAcesso__Kafka__Usuario
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.registroDeAcesso.kafka.existingSecret }}
+                  key: usuario
+            - name: RegistroDeAcesso__Kafka__Senha
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.registroDeAcesso.kafka.existingSecret }}
+                  key: senha
+          {{- end }}
           livenessProbe:
             httpGet:
               path: {{ .Values.healthcheck.livenessPath }}

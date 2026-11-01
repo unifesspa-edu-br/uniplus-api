@@ -41,6 +41,8 @@ public static class AuthorizationErrorCodes
     public const string ResourceContextResourceTipoForaDaConvencao = "Authorization.ResourceContext.ResourceTipoForaDaConvencao";
     public const string ResourceContextSensibilidadeInvalida = "Authorization.ResourceContext.SensibilidadeInvalida";
     public const string ResourceContextEscopoInvalido = "Authorization.ResourceContext.EscopoInvalido";
+    public const string ResourceContextFatoInvalido = "Authorization.ResourceContext.FatoInvalido";
+    public const string ResourceContextOcorrenciaInvalida = "Authorization.ResourceContext.OcorrenciaInvalida";
 
     public const string AuthorizationRequestContextRequestIdObrigatorio = "Authorization.AuthorizationRequestContext.RequestIdObrigatorio";
     public const string AuthorizationRequestContextOnBehalfOfInvalido = "Authorization.AuthorizationRequestContext.OnBehalfOfInvalido";

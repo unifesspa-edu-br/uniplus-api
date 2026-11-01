@@ -182,6 +182,7 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         RegistroDecisaoAcesso pessoal = doRg.Should().ContainSingle().Subject;
         pessoal.Permissao.Should().Be(PermissaoSelecao.DocumentosPessoaisConsultar.Codigo);
         pessoal.Permitido.Should().BeTrue();
+        pessoal.InscricaoId.Should().Be(cenario.InscricaoId, "o registro do arquivo nomeia a inscrição, para a consulta por inscrição achá-lo");
 
         laudo.StatusCode.Should().Be(HttpStatusCode.OK);
         RegistroDecisaoAcesso sensivel = todas.Skip(1).Should().ContainSingle().Subject;

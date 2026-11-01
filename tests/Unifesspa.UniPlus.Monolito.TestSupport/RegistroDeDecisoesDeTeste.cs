@@ -18,7 +18,17 @@ public sealed class RegistroDeDecisoesDeTeste : IRegistroOperacionalRestrito
 
     public IReadOnlyList<RegistroDecisaoAcesso> Registrados => [.. _registrados];
 
-    public void Registrar(RegistroDecisaoAcesso registro) => _registrados.Enqueue(registro);
+    public Task RegistrarAsync(IReadOnlyList<RegistroDecisaoAcesso> registros, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(registros);
+
+        foreach (RegistroDecisaoAcesso registro in registros)
+        {
+            _registrados.Enqueue(registro);
+        }
+
+        return Task.CompletedTask;
+    }
 }
 
 /// <summary>Registro em memória das decisões de acesso nos hosts de teste.</summary>
@@ -29,7 +39,7 @@ public static class RegistroDeDecisoesDeTesteExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.RemoveAll<IRegistroOperacionalRestrito>();
-        services.AddSingleton<RegistroDeDecisoesDeTeste>();
+        services.TryAddSingleton<RegistroDeDecisoesDeTeste>();
         services.AddSingleton<IRegistroOperacionalRestrito>(sp => sp.GetRequiredService<RegistroDeDecisoesDeTeste>());
         return services;
     }

@@ -68,7 +68,8 @@ public static class ListarProcessosSeletivosQueryHandler
 
     /// <summary>
     /// As unidades das concessões da pessoa em que o ponto de decisão permite configurar. As concessões só indicam onde
-    /// olhar; escopo, vigência e código da permissão são regras da decisão, que cada unidade candidata consulta.
+    /// olhar; escopo, vigência e código da permissão são regras da decisão, que cada unidade candidata consulta. É
+    /// pergunta de capacidade: não registra acesso.
     /// </summary>
     private static async Task<Guid[]> UnidadesOndeConfiguraAsync(
         IConcessoesAtivasDoSujeito concessoes, IVerificadorDeAcesso verificador, IUserContext userContext, CancellationToken cancellationToken)
@@ -84,9 +85,9 @@ public static class ListarProcessosSeletivosQueryHandler
         foreach (Guid unidade in ativas.Where(static c => c.UnidadeId is not null).Select(static c => c.UnidadeId!.Value).Distinct())
         {
             ResultadoDoAcesso acesso = await AcessoAoProcesso
-                .VerificarNaUnidadeAsync(
+                .PodeNaUnidadeAsync(
                     verificador, unidade, processoId: null, PermissaoSelecao.ProcessosConfigurar,
-                    ResourceTiposSelecao.ProcessoSeletivo, sensibilidadeDoResource: null, cancellationToken)
+                    ResourceTiposSelecao.ProcessoSeletivo, cancellationToken)
                 .ConfigureAwait(false);
             if (acesso == ResultadoDoAcesso.Permitido)
             {

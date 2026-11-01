@@ -59,6 +59,8 @@ services:
       Email__Smtp__Host: "mailpit"
       Redis__ConnectionString: "redis:6379"
       Kafka__BootstrapServers: "kafka:29092"
+      # Registro de acesso a dado pessoal: Kafka próprio, independente do transporte do Wolverine acima.
+      RegistroDeAcesso__Kafka__BootstrapServers: "kafka:29092"
       # Schema Registry (Apicurio em modo Confluent-compat) — sufixo /apis/ccompat/v7
       # é mandatório (Apicurio 3.x). Auth desligada em dev (AuthType=None default).
       SchemaRegistry__Url: "http://apicurio:8081/apis/ccompat/v7"
@@ -102,6 +104,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
       apicurio:
         condition: service_healthy
       geo-api:

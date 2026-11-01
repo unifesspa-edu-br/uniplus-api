@@ -10,8 +10,9 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Ponto de decisão único (ADR-0078) na sua forma mínima: decide por concessão
-/// efetiva, na ordem canônica do algoritmo, e registra toda decisão — permitida
-/// ou negada — no registro operacional restrito.
+/// efetiva, na ordem canônica do algoritmo. <see cref="DecideAsync"/> registra a decisão — permitida ou negada — no
+/// registro operacional restrito só quando <see cref="RegistroDecisaoAcesso.Exige"/> (permissão ou resource pessoal,
+/// identificador ou sensível); as demais decisões não gravam nada. <see cref="DecidirSemRegistrarAsync"/> nunca grava.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -62,21 +63,35 @@ public sealed class AuthorizationDecisionService : IAuthorizationDecisionService
         AuthorizationRequestContext request,
         CancellationToken cancellationToken)
     {
+        AuthorizationDecision decisao = await DecidirSemRegistrarAsync(
+            subject, requirement, resource, request, cancellationToken).ConfigureAwait(false);
+
+        // Dado pessoal só segue se o registro foi gravado: a falha de gravação sobe como erro da requisição, e nem
+        // converte a decisão em negativa nem a deixa passar sem registro. A permissão operacional decide sem gravar.
+        if (RegistroDecisaoAcesso.Exige(requirement, resource))
+        {
+            await _registro.RegistrarAsync(
+                [RegistroDecisaoAcesso.De(subject, requirement, resource, request, decisao)], cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        return decisao;
+    }
+
+    /// <inheritdoc />
+    public Task<AuthorizationDecision> DecidirSemRegistrarAsync(
+        AuthorizationSubject subject,
+        PermissionRequirement requirement,
+        ResourceContext resource,
+        AuthorizationRequestContext request,
+        CancellationToken cancellationToken)
+    {
         ArgumentNullException.ThrowIfNull(subject);
         ArgumentNullException.ThrowIfNull(requirement);
         ArgumentNullException.ThrowIfNull(resource);
         ArgumentNullException.ThrowIfNull(request);
 
-        AuthorizationDecision decisao = await AvaliarAsync(
-            subject, requirement, resource, request, cancellationToken);
-
-        // O registro é o último passo e nunca condiciona o veredito: quem
-        // registra não decide. A porta não lança (ver IRegistroOperacionalRestrito),
-        // de modo que uma falha de escrita não converte uma negativa em erro do
-        // servidor nem derruba uma requisição legítima.
-        _registro.Registrar(RegistroDecisaoAcesso.De(requirement, resource, request, decisao));
-
-        return decisao;
+        return AvaliarAsync(subject, requirement, resource, request, cancellationToken);
     }
 
     private async Task<AuthorizationDecision> AvaliarAsync(

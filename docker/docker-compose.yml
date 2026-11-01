@@ -58,6 +58,17 @@ services:
       retries: 5
       start_period: 30s
 
+  # Cria o tópico do registro de acesso: o produtor da API não cria tópico (ADR-0014: auto-provision só em dev/test).
+  kafka-init:
+    image: apache/kafka:4.2.0
+    restart: "no"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command: >
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:29092 --create --if-not-exists
+      --topic autorizacao_registros_de_acesso --partitions 1 --replication-factor 1
+
   minio:
     image: ghcr.io/unifesspa-edu-br/minio:RELEASE.2025-09-07T16-13-09Z@sha256:52dfd5c0bbd38d3219f2058c7af216d9f9a27a994b7b5baad09bbd38866015ff
     restart: unless-stopped

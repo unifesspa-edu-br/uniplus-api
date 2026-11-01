@@ -63,7 +63,8 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
         string codigo = permissao.Codigo;
         List<RegistroDecisaoAcesso> decisoes = [.. _fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>().Registrados
             .Where(r => r.PerfilId == perfil && r.Permissao == codigo)];
-        decisoes.Should().NotBeEmpty(codigo).And.OnlyContain(r => r.Permitido, codigo);
+        // Só a permissão de sensibilidade pessoal ou maior publica registro; a operacional decide sem gravar.
+        decisoes.Should().OnlyContain(r => r.Permitido, codigo);
     }
 
     [Theory(DisplayName = "O administrador da plataforma sem concessão e a permissão de outro recurso respondem 403")]

@@ -1,22 +1,27 @@
 namespace Unifesspa.UniPlus.Authorization.Contracts;
 
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
 using Unifesspa.UniPlus.Authorization.Enums;
 using Unifesspa.UniPlus.Authorization.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
-/// Evento do registro operacional restrito: o que fica gravado sobre <b>um uso</b>
+/// Evento do registro operacional restrito: o que fica gravado, de forma durável, sobre <b>um uso</b>
 /// de permissão — ator, instante, origem, permissão exigida, resource alvo,
 /// resultado e, conforme o caso, o motivo da negativa ou a concessão que
 /// autorizou (fonte, identificador, perfil e unidade) (CA-07 de <c>uniplus-api#1197</c>).
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Não carrega identificador de token.</b> Nem <i>subject</i> nem <c>jti</c>
-/// entram no registro: são identificadores duráveis de pessoa e de sessão, e log
-/// não é lugar deles. A correlação com a requisição fica pelo
-/// <see cref="RequestId"/>. O resource entra por metadados (tipo e identificadores
-/// de escopo), nunca por conteúdo.
+/// <b>O ator é o par emissor e <i>subject</i> do token</b>, que são opacos: o registro
+/// precisa dizer quem acessou, e a consulta por pessoa depende disso. O <c>jti</c>
+/// identifica a sessão e não entra. A correlação com a requisição fica pelo
+/// <see cref="RequestId"/>. O resource entra por metadados (tipo, identificadores
+/// de escopo e, na revelação, o código do fato), nunca por conteúdo.
 /// </para>
 /// <para>
 /// Os valores de enumeração são gravados já no <b>valor canônico</b>
@@ -29,14 +34,23 @@ public sealed record RegistroDecisaoAcesso
     /// <summary>Instante do acesso, em UTC — o mesmo do contexto da requisição.</summary>
     public DateTimeOffset Instante { get; }
 
-    /// <summary>Correlação da requisição.</summary>
+    /// <summary>Emissor do token de quem acessou.</summary>
+    public string AtorEmissor { get; }
+
+    /// <summary><i>Subject</i> opaco do token de quem acessou.</summary>
+    public string AtorSubject { get; }
+
+    /// <summary>Correlação da requisição, para cruzar com logs e mensagens. Vem do cliente e não identifica o acesso.</summary>
     public string RequestId { get; }
+
+    /// <summary>Execução do servidor que originou o acesso — a mesma para todo acesso da mesma requisição.</summary>
+    public Guid ExecucaoId { get; }
 
     /// <summary>Código da permissão exigida.</summary>
     public string Permissao { get; }
 
     /// <summary>Tipo do resource alvo.</summary>
-    public string ResourceTipo { get; }
+    public string ResourceTipo { get; private init; }
 
     /// <summary>
     /// Sensibilidade efetiva do dado alcançado, em valor canônico: a maior entre
@@ -57,7 +71,23 @@ public sealed record RegistroDecisaoAcesso
     public Guid? ChamadaId { get; }
 
     /// <summary>Registro alvo da operação (por exemplo, a inscrição), quando a decisão recai sobre um único registro.</summary>
-    public Guid? ResourceId { get; }
+    public Guid? ResourceId { get; private init; }
+
+    /// <summary>Inscrição a que o acesso se refere, quando o resource é a inscrição ou um item dela.</summary>
+    public Guid? InscricaoId { get; private init; }
+
+    /// <summary>
+    /// Código do fato revelado, quando o acesso recai sobre um único campo. É o código do catálogo, que não é dado
+    /// pessoal (ADR-0019).
+    /// </summary>
+    public string? FatoCodigo { get; }
+
+    /// <summary>Ocorrência do fato revelado, quando o campo está num grupo que se repete.</summary>
+    public int? Ocorrencia { get; }
+
+    /// <summary>Se a decisão tem de ser registrada pela regra de sensibilidade (<see cref="Exige"/>).</summary>
+    [JsonIgnore]
+    public bool Exigido { get; }
 
     /// <summary>Canal pelo qual a requisição chegou, em valor canônico.</summary>
     public string Origem { get; }
@@ -81,8 +111,11 @@ public sealed record RegistroDecisaoAcesso
     public Guid? EscopoUnidadeId { get; }
 
     private RegistroDecisaoAcesso(
+        string atorEmissor,
+        string atorSubject,
         DateTimeOffset instante,
         string requestId,
+        Guid execucaoId,
         string permissao,
         string resourceTipo,
         string sensibilidade,
@@ -90,6 +123,10 @@ public sealed record RegistroDecisaoAcesso
         Guid? processoId,
         Guid? chamadaId,
         Guid? resourceId,
+        Guid? inscricaoId,
+        string? fatoCodigo,
+        int? ocorrencia,
+        bool exigido,
         string origem,
         bool permitido,
         string? motivoNegativa,
@@ -98,8 +135,11 @@ public sealed record RegistroDecisaoAcesso
         Guid? perfilId,
         Guid? escopoUnidadeId)
     {
+        AtorEmissor = atorEmissor;
+        AtorSubject = atorSubject;
         Instante = instante;
         RequestId = requestId;
+        ExecucaoId = execucaoId;
         Permissao = permissao;
         ResourceTipo = resourceTipo;
         Sensibilidade = sensibilidade;
@@ -107,6 +147,10 @@ public sealed record RegistroDecisaoAcesso
         ProcessoId = processoId;
         ChamadaId = chamadaId;
         ResourceId = resourceId;
+        InscricaoId = inscricaoId;
+        FatoCodigo = fatoCodigo;
+        Ocorrencia = ocorrencia;
+        Exigido = exigido;
         Origem = origem;
         Permitido = permitido;
         MotivoNegativa = motivoNegativa;
@@ -123,11 +167,13 @@ public sealed record RegistroDecisaoAcesso
     /// de ser recomposta por cada chamador.
     /// </summary>
     public static RegistroDecisaoAcesso De(
+        AuthorizationSubject subject,
         PermissionRequirement requirement,
         ResourceContext resource,
         AuthorizationRequestContext request,
         AuthorizationDecision decision)
     {
+        ArgumentNullException.ThrowIfNull(subject);
         ArgumentNullException.ThrowIfNull(requirement);
         ArgumentNullException.ThrowIfNull(resource);
         ArgumentNullException.ThrowIfNull(request);
@@ -136,8 +182,11 @@ public sealed record RegistroDecisaoAcesso
         EffectiveGrant? grant = decision.GrantUsed;
 
         return new RegistroDecisaoAcesso(
+            subject.Usuario.Emissor,
+            subject.Usuario.Subject,
             request.DataAcesso,
             request.RequestId,
+            request.ExecucaoId,
             requirement.Permissao,
             resource.ResourceTipo,
             ValoresCanonicos.De(MaisRestritiva(requirement.Sensibilidade, resource.Sensibilidade)),
@@ -145,6 +194,10 @@ public sealed record RegistroDecisaoAcesso
             resource.ProcessoId,
             resource.ChamadaId,
             resource.ResourceId,
+            resource.InscricaoId,
+            resource.FatoCodigo,
+            resource.Ocorrencia,
+            Exige(requirement, resource),
             ValoresCanonicos.De(request.Origem),
             decision.Allowed,
             decision.DenyReason is { } motivo ? ValoresCanonicos.De(motivo.Codigo) : null,
@@ -152,6 +205,93 @@ public sealed record RegistroDecisaoAcesso
             grant?.GrantId,
             grant?.PerfilId,
             grant?.EscopoUnidadeId);
+    }
+
+    /// <summary>
+    /// Um registro por id de resource, a partir do registro de uma decisão <b>permitida</b>: cada
+    /// um herda dele o ator, a permissão, a sensibilidade, a concessão e o escopo, e troca o tipo e o id do
+    /// resource. É como a listagem registra uma inscrição por linha tendo decidido uma vez só, sobre o processo.
+    /// </summary>
+    /// <param name="resourceTipo">Tipo do resource de cada registro.</param>
+    /// <param name="resourceIds">Um registro por id distinto.</param>
+    /// <param name="resourceEhInscricao">Se o resource é a inscrição: o id passa a ser também a inscrição do registro.</param>
+    public IReadOnlyList<RegistroDecisaoAcesso> ParaCadaResource(
+        string resourceTipo, IEnumerable<Guid> resourceIds, bool resourceEhInscricao = false)
+    {
+        ArgumentNullException.ThrowIfNull(resourceIds);
+
+        if (!Permitido)
+        {
+            throw new InvalidOperationException("Só a decisão permitida gera registro por resource.");
+        }
+
+        if (FatoCodigo is not null)
+        {
+            throw new InvalidOperationException("A revelação de um campo é sempre de um resource só.");
+        }
+
+        if (!ResourceTipos.SegueAConvencao(resourceTipo))
+        {
+            throw new ArgumentException(
+                $"O tipo de resource '{resourceTipo}' está fora da convenção kebab-case.", nameof(resourceTipo));
+        }
+
+        return [.. resourceIds.Distinct().Select(id => this with
+        {
+            ResourceTipo = resourceTipo,
+            ResourceId = id,
+            InscricaoId = resourceEhInscricao ? id : InscricaoId,
+        })];
+    }
+
+    /// <summary>
+    /// Identifica o acesso dentro da execução do servidor: quem acessou, o que e onde. Repetir o mesmo acesso na mesma
+    /// execução não o duplica; outra execução, ou outra pessoa, é outro acesso. Não usa o identificador de correlação,
+    /// que o cliente escolhe.
+    /// </summary>
+    [JsonIgnore]
+    public string Identidade =>
+        JsonSerializer.Serialize(new object?[]
+        {
+            ExecucaoId,
+            AtorEmissor,
+            AtorSubject,
+            Permissao,
+            ResourceTipo,
+            ResourceId,
+            FatoCodigo,
+            Ocorrencia,
+            UnidadeProprietariaId,
+            ProcessoId,
+            ChamadaId,
+            Permitido,
+        });
+
+    /// <summary>
+    /// Se a decisão tem de ser registrada: só a permissão (ou o resource) de sensibilidade pessoal, identificadora ou
+    /// sensível. As demais decidem sem gravar, para que a autorização operacional não dependa do destino do registro.
+    /// </summary>
+    public static bool Exige(PermissionRequirement requirement, ResourceContext resource)
+    {
+        ArgumentNullException.ThrowIfNull(requirement);
+        ArgumentNullException.ThrowIfNull(resource);
+
+        return MaisRestritiva(requirement.Sensibilidade, resource.Sensibilidade) >= ClassificacaoDeProtecao.Pessoal;
+    }
+
+    /// <summary>
+    /// Chave do acesso: resumo SHA-256 da <see cref="Identidade"/>. É a chave da mensagem publicada, e o consumidor
+    /// deduplica por ela quando o mesmo acesso chega mais de uma vez.
+    /// </summary>
+    [JsonIgnore]
+    public string Chave => ResumoSha256(Identidade);
+
+    /// <summary>Resumo SHA-256 do texto, em hexadecimal minúsculo: a forma única das chaves do registro e do lote.</summary>
+    public static string ResumoSha256(string texto)
+    {
+        ArgumentNullException.ThrowIfNull(texto);
+
+        return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(texto)));
     }
 
     // A escala é crescente por construção (Publico < Interno < Pessoal <

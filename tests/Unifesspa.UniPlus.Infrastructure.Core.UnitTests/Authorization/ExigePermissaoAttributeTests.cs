@@ -14,6 +14,8 @@ using NSubstitute;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Contracts;
+using Unifesspa.UniPlus.Authorization.Enums;
+using Unifesspa.UniPlus.Authorization.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 
 public sealed class ExigePermissaoAttributeTests
@@ -28,8 +30,8 @@ public sealed class ExigePermissaoAttributeTests
     [InlineData(ResultadoDoAcesso.IdentidadeIncompleta, typeof(ChallengeResult))]
     public async Task OnAuthorizationAsync_TraduzODesfecho(ResultadoDoAcesso desfecho, Type? resposta)
     {
-        _acesso.VerificarAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
-            .Returns(desfecho);
+        _acesso.DecidirSemRegistrarAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
+            .Returns(Decisao(desfecho));
         AuthorizationFilterContext contexto = Contexto();
 
         await new ExigePermissaoAttribute<PermissaoAutorizacao>(PermissaoAutorizacao.ConsultarCatalogo)
@@ -48,13 +50,13 @@ public sealed class ExigePermissaoAttributeTests
     [Fact(DisplayName = "Pede ao verificador o requisito da permissão do catálogo")]
     public async Task OnAuthorizationAsync_PedeORequisitoDoCatalogo()
     {
-        _acesso.VerificarAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
-            .Returns(ResultadoDoAcesso.Permitido);
+        _acesso.DecidirSemRegistrarAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
+            .Returns(Decisao(ResultadoDoAcesso.Permitido));
 
         await new ExigePermissaoAttribute<PermissaoAutorizacao>(PermissaoAutorizacao.ConsultarCatalogo)
             .OnAuthorizationAsync(Contexto());
 
-        await _acesso.Received(1).VerificarAsync(
+        await _acesso.Received(1).DecidirSemRegistrarAsync(
             Arg.Is<PermissionRequirement>(r => r.Permissao == Codigo),
             null,
             Arg.Any<CancellationToken>());
@@ -63,13 +65,13 @@ public sealed class ExigePermissaoAttributeTests
     [Fact(DisplayName = "ResourceTipo informado vira o resource da decisão, com a sensibilidade da permissão")]
     public async Task OnAuthorizationAsync_ComResourceTipo_InformaOResource()
     {
-        _acesso.VerificarAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
-            .Returns(ResultadoDoAcesso.Permitido);
+        _acesso.DecidirSemRegistrarAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
+            .Returns(Decisao(ResultadoDoAcesso.Permitido));
 
         await new ExigePermissaoAttribute<PermissaoAutorizacao>(PermissaoAutorizacao.ConsultarCatalogo) { ResourceTipo = "catalogo" }
             .OnAuthorizationAsync(Contexto());
 
-        await _acesso.Received(1).VerificarAsync(
+        await _acesso.Received(1).DecidirSemRegistrarAsync(
             Arg.Any<PermissionRequirement>(),
             Arg.Is<ResourceContext?>(r => r!.ResourceTipo == "catalogo"),
             Arg.Any<CancellationToken>());
@@ -78,8 +80,8 @@ public sealed class ExigePermissaoAttributeTests
     [Fact(DisplayName = "Negado na permissão principal, a alternativa em alguma unidade decide")]
     public async Task OnAuthorizationAsync_ComAlternativa_NegadoNaPrincipal_ConsultaAlgumaUnidade()
     {
-        _acesso.VerificarAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
-            .Returns(ResultadoDoAcesso.Negado);
+        _acesso.DecidirSemRegistrarAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
+            .Returns(Decisao(ResultadoDoAcesso.Negado));
         _acesso.VerificarEmAlgumaUnidadeAsync(Arg.Any<PermissionRequirement>(), Arg.Any<CancellationToken>())
             .Returns(ResultadoDoAcesso.Permitido);
         AuthorizationFilterContext contexto = Contexto();
@@ -99,8 +101,8 @@ public sealed class ExigePermissaoAttributeTests
     [Fact(DisplayName = "Permitido na principal, a alternativa nem é consultada")]
     public async Task OnAuthorizationAsync_ComAlternativa_PermitidoNaPrincipal_NaoConsultaAlgumaUnidade()
     {
-        _acesso.VerificarAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
-            .Returns(ResultadoDoAcesso.Permitido);
+        _acesso.DecidirSemRegistrarAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
+            .Returns(Decisao(ResultadoDoAcesso.Permitido));
 
         await new ExigePermissaoAttribute<PermissaoAutorizacao>(PermissaoAutorizacao.ConsultarCatalogo)
         {
@@ -110,6 +112,53 @@ public sealed class ExigePermissaoAttributeTests
 
         await _acesso.DidNotReceive().VerificarEmAlgumaUnidadeAsync(
             Arg.Any<PermissionRequirement>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Alternativa permitida: a negativa da principal não é registrada")]
+    public async Task OnAuthorizationAsync_AlternativaPermite_NaoRegistraANegativaDaPrincipal()
+    {
+        _acesso.DecidirSemRegistrarAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
+            .Returns(Decisao(ResultadoDoAcesso.Negado, PermissaoAutorizacao.ConcessoesAdministrar));
+        _acesso.VerificarEmAlgumaUnidadeAsync(Arg.Any<PermissionRequirement>(), Arg.Any<CancellationToken>())
+            .Returns(ResultadoDoAcesso.Permitido);
+
+        await new ExigePermissaoAttribute<PermissaoAutorizacao>(PermissaoAutorizacao.ConcessoesAdministrar)
+        {
+            OuEmAlgumaUnidade = PermissaoAutorizacao.PerfisManter,
+        }
+            .OnAuthorizationAsync(Contexto());
+
+        await _acesso.DidNotReceiveWithAnyArgs().RegistrarAsync(default(IReadOnlyCollection<DecisaoDeAcesso>)!, default);
+    }
+
+    [Fact(DisplayName = "Principal e alternativa negadas: a negativa da principal é registrada")]
+    public async Task OnAuthorizationAsync_AmbasNegam_RegistraANegativaDaPrincipal()
+    {
+        _acesso.DecidirSemRegistrarAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
+            .Returns(Decisao(ResultadoDoAcesso.Negado, PermissaoAutorizacao.ConcessoesAdministrar));
+        _acesso.VerificarEmAlgumaUnidadeAsync(Arg.Any<PermissionRequirement>(), Arg.Any<CancellationToken>())
+            .Returns(ResultadoDoAcesso.Negado);
+
+        await new ExigePermissaoAttribute<PermissaoAutorizacao>(PermissaoAutorizacao.ConcessoesAdministrar)
+        {
+            OuEmAlgumaUnidade = PermissaoAutorizacao.PerfisManter,
+        }
+            .OnAuthorizationAsync(Contexto());
+
+        await _acesso.Received(1).RegistrarAsync(
+            Arg.Is<IReadOnlyCollection<DecisaoDeAcesso>>(d => d.Count == 1 && d.Single().Resultado == ResultadoDoAcesso.Negado),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Permissão operacional não registra, permitida ou negada")]
+    public async Task OnAuthorizationAsync_PermissaoOperacional_NaoRegistra()
+    {
+        _acesso.DecidirSemRegistrarAsync(Arg.Any<PermissionRequirement>(), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>())
+            .Returns(Decisao(ResultadoDoAcesso.Negado));
+
+        await new ExigePermissaoAttribute<PermissaoAutorizacao>(PermissaoAutorizacao.ConsultarCatalogo).OnAuthorizationAsync(Contexto());
+
+        await _acesso.DidNotReceiveWithAnyArgs().RegistrarAsync(default(IReadOnlyCollection<DecisaoDeAcesso>)!, default);
     }
 
     [Fact(DisplayName = "Permissão de outro enum não constrói o atributo")]
@@ -136,6 +185,31 @@ public sealed class ExigePermissaoAttributeTests
             () => new(PermissaoAutorizacao.ConsultarCatalogo) { ResourceTipo = "TiposDocumento" };
 
         criar.Should().Throw<ArgumentException>().WithMessage("*kebab-case*");
+    }
+
+    private static DecisaoDeAcesso Decisao(
+        ResultadoDoAcesso resultado, PermissaoAutorizacao permissao = PermissaoAutorizacao.ConsultarCatalogo)
+    {
+        if (resultado == ResultadoDoAcesso.IdentidadeIncompleta)
+        {
+            return DecisaoDeAcesso.IdentidadeIncompleta;
+        }
+
+        PermissionRequirement requisito = CatalogoDePermissoes<PermissaoAutorizacao>.Obter(permissao).Requisito;
+        AuthorizationSubject sujeito = AuthorizationSubject.From(
+            UsuarioRef.From("https://idp.exemplo/realms/unifesspa", "diogo.souza").Value!, "jti-teste").Value!;
+        AuthorizationDecision decisao = resultado == ResultadoDoAcesso.Permitido
+            ? AuthorizationDecision.Permitir(EffectiveGrant.From(requisito.Permissao, FonteGrant.Concessao, escopoInstitucional: true).Value!)
+            : AuthorizationDecision.Negar(MotivoNegativa.SemConcessaoAplicavel);
+
+        return DecisaoDeAcesso.Tomada(
+            resultado,
+            RegistroDecisaoAcesso.De(
+                sujeito,
+                requisito,
+                ResourceContext.From(ResourceTipos.Operacao, requisito.Sensibilidade).Value!,
+                AuthorizationRequestContext.From("req-1", DateTimeOffset.UtcNow, OrigemRequisicao.Api).Value!,
+                decisao));
     }
 
     private AuthorizationFilterContext Contexto()

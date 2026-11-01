@@ -25,13 +25,14 @@ internal sealed record DecisaoDaEtapa(PedidoDeConcessao Pedido, Perfil Perfil, P
         Identidade? decisor,
         CancellationToken cancellationToken)
     {
-        AcessoDoAprovador? acesso = await AcessoDoAprovador.ConsultarAsync(verificador, incluirAdministrar: false, cancellationToken)
+        AcessoDoAprovador? acesso = await AcessoDoAprovador.ConsultarAsync(verificador, incluirAdministrar: false, pedidoId, cancellationToken)
             .ConfigureAwait(false);
         if (acesso is null)
         {
             return Result<DecisaoDaEtapa>.Failure(PedidoHandlerErros.IdentidadeIncompleta());
         }
 
+        // A recusa por autor não identificado não é de autorização: nenhum acesso ocorreu, e nada se registra.
         if (decisor is null)
         {
             return Result<DecisaoDaEtapa>.Failure(PedidoHandlerErros.AutorNaoIdentificado());
@@ -39,16 +40,34 @@ internal sealed record DecisaoDaEtapa(PedidoDeConcessao Pedido, Perfil Perfil, P
 
         if (!acesso.Aprova)
         {
+            // Só se registra o acesso a um pedido que existe: o id da rota não entra na trilha se for forjado.
+            if (await pedidos.ObterParaLeituraAsync(pedidoId, cancellationToken).ConfigureAwait(false) is not null)
+            {
+                await acesso.RegistrarDoDesfechoAsync(verificador, cancellationToken).ConfigureAwait(false);
+            }
+
             return Result<DecisaoDaEtapa>.Failure(PedidoHandlerErros.SemPermissao());
         }
 
         PedidoDeConcessao? pedido = await pedidos.ObterParaAlterarAsync(pedidoId, cancellationToken).ConfigureAwait(false);
+
+        // Pedido que não existe não foi acessado: nada se registra.
         if (pedido is null)
         {
             return Result<DecisaoDaEtapa>.Failure(PedidoHandlerErros.NaoEncontrado());
         }
 
-        if (pedido.EtapaAtual is { } etapa && !acesso.Decide(etapa))
+        // A permissão que governa é a da etapa que o pedido aguarda, permitida ou negada.
+        if (pedido.EtapaAtual is { } etapa)
+        {
+            await AcessoDoAprovador.RegistrarAsync(verificador, acesso.DecisaoDaEtapa(etapa), cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            await acesso.RegistrarDoDesfechoAsync(verificador, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (pedido.EtapaAtual is { } etapaAtual && !acesso.Decide(etapaAtual))
         {
             return Result<DecisaoDaEtapa>.Failure(PedidoHandlerErros.EtapaInvalida());
         }
