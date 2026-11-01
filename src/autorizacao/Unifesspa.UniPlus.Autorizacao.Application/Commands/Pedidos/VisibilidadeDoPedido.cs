@@ -23,11 +23,17 @@ internal static class VisibilidadeDoPedido
             return null;
         }
 
-        AcessoDoAprovador? acesso = await AcessoDoAprovador.ConsultarAsync(verificador, incluirAdministrar: true, cancellationToken)
+        AcessoDoAprovador? acesso = await AcessoDoAprovador.ConsultarAsync(verificador, incluirAdministrar: true, pedido.Id, cancellationToken)
             .ConfigureAwait(false);
 
-        return acesso is null
-            ? PedidoHandlerErros.IdentidadeIncompleta()
-            : acesso.VeTodos ? null : PedidoHandlerErros.NaoEncontrado();
+        if (acesso is null)
+        {
+            return PedidoHandlerErros.IdentidadeIncompleta();
+        }
+
+        // Grava a permissão que deu a visibilidade ou, se nenhuma deu, as negativas.
+        await acesso.RegistrarDoDesfechoAsync(verificador, cancellationToken).ConfigureAwait(false);
+
+        return acesso.VeTodos ? null : PedidoHandlerErros.NaoEncontrado();
     }
 }

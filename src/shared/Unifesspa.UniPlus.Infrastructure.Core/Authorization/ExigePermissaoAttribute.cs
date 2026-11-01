@@ -93,15 +93,31 @@ public sealed class ExigePermissaoAttribute<TPermissao> : Attribute, IAsyncAutho
 
         IVerificadorDeAcesso acesso = context.HttpContext.RequestServices.GetRequiredService<IVerificadorDeAcesso>();
 
-        ResultadoDoAcesso resultado = await acesso
-            .VerificarAsync(Definicao.Requisito, _resource, context.HttpContext.RequestAborted)
+        CancellationToken cancellationToken = context.HttpContext.RequestAborted;
+
+        // Decide sem registrar para gravar só o que governou o desfecho: a negativa da principal não é registrada
+        // quando a alternativa permite.
+        DecisaoDeAcesso principal = await acesso
+            .DecidirSemRegistrarAsync(Definicao.Requisito, _resource, cancellationToken)
             .ConfigureAwait(false);
+        ResultadoDoAcesso resultado = principal.Resultado;
 
         if (resultado == ResultadoDoAcesso.Negado && Alternativa is not null)
         {
             resultado = await acesso
-                .VerificarEmAlgumaUnidadeAsync(Alternativa.Requisito, context.HttpContext.RequestAborted)
+                .VerificarEmAlgumaUnidadeAsync(Alternativa.Requisito, cancellationToken)
                 .ConfigureAwait(false);
+
+            // A alternativa já registrou o que lhe cabe; a negativa da principal entra só se ela também negou.
+            if (resultado == ResultadoDoAcesso.Permitido)
+            {
+                principal = DecisaoDeAcesso.IdentidadeIncompleta;
+            }
+        }
+
+        if (principal.Registro is { Exigido: true })
+        {
+            await acesso.RegistrarAsync([principal], cancellationToken).ConfigureAwait(false);
         }
 
         // Challenge, e não Unauthorized: o 401 canônico carrega WWW-Authenticate e o

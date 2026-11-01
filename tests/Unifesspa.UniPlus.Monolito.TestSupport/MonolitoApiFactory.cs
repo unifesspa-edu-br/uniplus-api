@@ -74,6 +74,8 @@ public class MonolitoApiFactory : ApiFactoryBase<HostAssemblyMarker>
             ["ConnectionStrings:DiscentesDb"] = _connectionString,
             ["ConnectionStrings:AutorizacaoDb"] = _connectionString,
             ["Autorizacao:EnderecoDaConfiguracao"] = EnderecoDaConfiguracao,
+            // Valor só para a validação da subida: o registro real não é construído, porque o de teste o substitui.
+            ["RegistroDeAcesso:Kafka:BootstrapServers"] = "localhost:9092",
             ["ArquivosDoCandidato:AccessKey"] = "teste",
             ["ArquivosDoCandidato:SecretKey"] = "teste",
             ["RabbitMq:Uri"] = Environment.GetEnvironmentVariable("RabbitMq__Uri") is { Length: > 0 } uri ? uri : "amqp://guest:guest@localhost:5672",
@@ -107,6 +109,9 @@ public class MonolitoApiFactory : ApiFactoryBase<HostAssemblyMarker>
             services.RemoveAll<ICacheService>();
             services.AddScoped<ICacheService, FakeInMemoryCacheService>();
             services.AddCatalogoDePermissoes<PermissaoDeTeste>();
+
+            // O registro de acesso real publica no Kafka, que as suítes não sobem; elas conferem o que a trilha recebeu.
+            services.AdicionarRegistroDeDecisoesDeTeste();
         });
     }
 }

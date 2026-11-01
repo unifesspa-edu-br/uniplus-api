@@ -3,25 +3,27 @@ namespace Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 
 /// <summary>
-/// Registro operacional restrito das decisões de acesso: destino dedicado, fora
-/// do pipeline de log comum (Console/OTLP), para que o uso de uma permissão não
-/// se misture à telemetria geral da aplicação.
+/// Registro durável e somente de inclusão dos acessos a dado pessoal protegido por permissão: quem acessou, quando,
+/// qual permissão e concessão autorizaram e sobre qual resource — nunca o conteúdo do dado.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Não</b> é a trilha de auditoria da ADR-0086 — não tem append-only nem
-/// código de autenticação de mensagem, e o destino durável é trabalho próprio.
-/// O nome evita prometer garantia que esta fatia não entrega.
+/// <b>Contrato de falha:</b> quem não consegue gravar lança <see cref="RegistroDeAcessoNaoGravadoException"/>. O acesso
+/// que depende do registro só é entregue depois de gravado, então a falha é erro da requisição: nunca vira negativa
+/// de permissão nem omissão do item.
 /// </para>
 /// <para>
-/// <b>Contrato de falha:</b> a implementação não lança. Uma falha de escrita é
-/// registrada no log comum e <b>não</b> altera o veredito já decidido — nem para
-/// conceder (falha aberta) nem para negar (indisponibilidade do disco viraria
-/// negação de serviço).
+/// O lote é gravado por inteiro ou não é gravado: a implementação só retorna depois que o destino confirmou o lote
+/// todo. A nova tentativa dentro da mesma execução repete as mesmas <see cref="RegistroDecisaoAcesso.Chave"/>, e quem
+/// lê o destino deduplica por elas; uma nova requisição do usuário é um novo acesso, com registros próprios.
+/// </para>
+/// <para>
+/// Não é a trilha com integridade criptográfica da ADR-0086; HMAC ou encadeamento são evolução à parte.
 /// </para>
 /// </remarks>
 public interface IRegistroOperacionalRestrito
 {
-    /// <summary>Registra uma decisão de acesso — permitida ou negada.</summary>
-    void Registrar(RegistroDecisaoAcesso registro);
+    /// <summary>Grava os registros de acesso — permitidos ou negados — e só retorna depois da confirmação do destino.</summary>
+    /// <exception cref="RegistroDeAcessoNaoGravadoException">O lote não foi confirmado; nada ficou gravado.</exception>
+    Task RegistrarAsync(IReadOnlyList<RegistroDecisaoAcesso> registros, CancellationToken cancellationToken);
 }

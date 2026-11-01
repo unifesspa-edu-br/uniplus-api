@@ -32,6 +32,21 @@ public sealed record ResourceContext
     /// </summary>
     public Guid? ResourceId { get; }
 
+    /// <summary>
+    /// Inscrição a que o acesso se refere, quando o resource é a própria inscrição ou um item dela (um documento, por
+    /// exemplo). É o que permite consultar tudo o que foi acessado de uma inscrição.
+    /// </summary>
+    public Guid? InscricaoId { get; }
+
+    /// <summary>
+    /// Código do fato (campo) que a operação alcança dentro do registro alvo, quando ela recai sobre um único campo —
+    /// a revelação de um identificador. É o código do catálogo, nunca o valor.
+    /// </summary>
+    public string? FatoCodigo { get; }
+
+    /// <summary>Ocorrência do fato, quando o campo está num grupo que se repete; nula fora de grupo.</summary>
+    public int? Ocorrencia { get; }
+
     /// <summary>Classificação de sensibilidade do dado retornado.</summary>
     public ClassificacaoDeProtecao Sensibilidade { get; }
 
@@ -41,7 +56,10 @@ public sealed record ResourceContext
         Guid? unidadeProprietariaId,
         Guid? processoId,
         Guid? chamadaId,
-        Guid? resourceId)
+        Guid? resourceId,
+        string? fatoCodigo,
+        int? ocorrencia,
+        Guid? inscricaoId)
     {
         ResourceTipo = resourceTipo;
         Sensibilidade = sensibilidade;
@@ -49,6 +67,9 @@ public sealed record ResourceContext
         ProcessoId = processoId;
         ChamadaId = chamadaId;
         ResourceId = resourceId;
+        FatoCodigo = fatoCodigo;
+        Ocorrencia = ocorrencia;
+        InscricaoId = inscricaoId;
     }
 
     /// <summary>
@@ -64,7 +85,10 @@ public sealed record ResourceContext
         Guid? unidadeProprietariaId = null,
         Guid? processoId = null,
         Guid? chamadaId = null,
-        Guid? resourceId = null)
+        Guid? resourceId = null,
+        string? fatoCodigo = null,
+        int? ocorrencia = null,
+        Guid? inscricaoId = null)
     {
         if (string.IsNullOrWhiteSpace(resourceTipo))
         {
@@ -90,11 +114,26 @@ public sealed record ResourceContext
         if (GuidVazioInformado(unidadeProprietariaId)
             || GuidVazioInformado(processoId)
             || GuidVazioInformado(chamadaId)
-            || GuidVazioInformado(resourceId))
+            || GuidVazioInformado(resourceId)
+            || GuidVazioInformado(inscricaoId))
         {
             return Result<ResourceContext>.Failure(new DomainError(
                 AuthorizationErrorCodes.ResourceContextEscopoInvalido,
                 "Escopo informado não pode ser Guid.Empty — use um identificador real ou nulo."));
+        }
+
+        if (fatoCodigo is not null && string.IsNullOrWhiteSpace(fatoCodigo))
+        {
+            return Result<ResourceContext>.Failure(new DomainError(
+                AuthorizationErrorCodes.ResourceContextFatoInvalido,
+                "O código do fato, quando informado, não pode ser vazio."));
+        }
+
+        if (ocorrencia is < 0 || (ocorrencia is not null && fatoCodigo is null))
+        {
+            return Result<ResourceContext>.Failure(new DomainError(
+                AuthorizationErrorCodes.ResourceContextOcorrenciaInvalida,
+                "A ocorrência exige o código do fato e não pode ser negativa."));
         }
 
         return Result<ResourceContext>.Success(new ResourceContext(
@@ -103,7 +142,10 @@ public sealed record ResourceContext
             unidadeProprietariaId,
             processoId,
             chamadaId,
-            resourceId));
+            resourceId,
+            fatoCodigo,
+            ocorrencia,
+            inscricaoId));
     }
 
     private static bool GuidVazioInformado(Guid? valor) => valor is { } g && g == Guid.Empty;

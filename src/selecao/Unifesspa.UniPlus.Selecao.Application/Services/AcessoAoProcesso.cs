@@ -76,6 +76,8 @@ public static class AcessoAoProcesso
     /// o acesso é negado sem consultar o ponto de decisão, que registraria como permitida uma operação sobre um resource
     /// que não existe.
     /// <paramref name="resourceId"/> é o registro alvo quando a decisão recai sobre um só (a inscrição cujo CPF se revela).
+    /// <paramref name="fatoCodigo"/> é o campo revelado, quando é o caso, e fica no registro do acesso.
+    /// <paramref name="inscricaoId"/> é a inscrição a que o acesso se refere quando o resource é ela ou um item dela.
     /// </summary>
     public static async Task<ResultadoDoAcesso> VerificarNaUnidadeAsync(
         IVerificadorDeAcesso verificador,
@@ -85,10 +87,52 @@ public static class AcessoAoProcesso
         string resourceTipo,
         ClassificacaoDeProtecao? sensibilidadeDoResource,
         CancellationToken cancellationToken,
-        Guid? resourceId = null)
+        Guid? resourceId = null,
+        string? fatoCodigo = null,
+        Guid? inscricaoId = null)
     {
         ArgumentNullException.ThrowIfNull(verificador);
 
+        ResourceContext? resource = MontarResource(
+            unidadeId, processoId, permissao, resourceTipo, sensibilidadeDoResource, resourceId, fatoCodigo, inscricaoId);
+
+        return resource is null
+            ? ResultadoDoAcesso.Negado
+            : await verificador.VerificarAsync(permissao.Requisito, resource, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Pergunta se a pessoa poderia exercer a permissão na unidade, sem registrar nada. Serve a mostrar ou filtrar o que
+    /// ela pode fazer; quem entrega dado decide por <see cref="VerificarNaUnidadeAsync"/>.
+    /// </summary>
+    public static async Task<ResultadoDoAcesso> PodeNaUnidadeAsync(
+        IVerificadorDeAcesso verificador,
+        Guid? unidadeId,
+        Guid? processoId,
+        PermissaoSelecao permissao,
+        string resourceTipo,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(verificador);
+
+        ResourceContext? resource = MontarResource(
+            unidadeId, processoId, permissao, resourceTipo, sensibilidadeDoResource: null, resourceId: null, fatoCodigo: null, inscricaoId: null);
+
+        return resource is null
+            ? ResultadoDoAcesso.Negado
+            : await verificador.PodeAsync(permissao.Requisito, resource, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static ResourceContext? MontarResource(
+        Guid? unidadeId,
+        Guid? processoId,
+        PermissaoSelecao permissao,
+        string resourceTipo,
+        ClassificacaoDeProtecao? sensibilidadeDoResource,
+        Guid? resourceId,
+        string? fatoCodigo,
+        Guid? inscricaoId)
+    {
         if (!ResourceTipos.SegueAConvencao(resourceTipo))
         {
             throw new ArgumentException(
@@ -97,18 +141,15 @@ public static class AcessoAoProcesso
 
         if (unidadeId is null)
         {
-            return ResultadoDoAcesso.Negado;
+            return null;
         }
 
         PermissionRequirement requisito = permissao.Requisito;
         Result<ResourceContext> resource = ResourceContext.From(
-            resourceTipo, sensibilidadeDoResource ?? requisito.Sensibilidade, unidadeId, processoId, resourceId: resourceId);
-        if (resource.IsFailure)
-        {
-            return ResultadoDoAcesso.Negado;
-        }
+            resourceTipo, sensibilidadeDoResource ?? requisito.Sensibilidade, unidadeId, processoId, resourceId: resourceId,
+            fatoCodigo: fatoCodigo, inscricaoId: inscricaoId);
 
-        return await verificador.VerificarAsync(requisito, resource.Value, cancellationToken).ConfigureAwait(false);
+        return resource.IsSuccess ? resource.Value : null;
     }
 
     /// <summary>O erro com que um handler recusa o acesso que o ponto de decisão não permitiu.</summary>

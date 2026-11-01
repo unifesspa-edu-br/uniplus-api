@@ -16,6 +16,12 @@ public sealed record AuthorizationRequestContext
     /// <summary>Identificador de correlação da requisição — string opaca.</summary>
     public string RequestId { get; }
 
+    /// <summary>
+    /// Identifica no servidor a execução que originou a decisão — uma por requisição HTTP, gerada aqui e nunca aceita
+    /// do cliente. É o que distingue duas requisições que reusam o mesmo identificador de correlação.
+    /// </summary>
+    public Guid ExecucaoId { get; }
+
     /// <summary>IP de origem da chamada. Vazio quando não se aplica (ex.: jobs).</summary>
     public string IpOrigem { get; }
 
@@ -36,6 +42,7 @@ public sealed record AuthorizationRequestContext
 
     private AuthorizationRequestContext(
         string requestId,
+        Guid execucaoId,
         string ipOrigem,
         string userAgent,
         DateTimeOffset dataAcesso,
@@ -44,6 +51,7 @@ public sealed record AuthorizationRequestContext
         DualApprovalGrant? duplaAprovacao)
     {
         RequestId = requestId;
+        ExecucaoId = execucaoId;
         IpOrigem = ipOrigem;
         UserAgent = userAgent;
         DataAcesso = dataAcesso;
@@ -71,7 +79,8 @@ public sealed record AuthorizationRequestContext
         string? ipOrigem = null,
         string? userAgent = null,
         Guid? onBehalfOfId = null,
-        DualApprovalGrant? duplaAprovacao = null)
+        DualApprovalGrant? duplaAprovacao = null,
+        Guid? execucaoId = null)
     {
         if (string.IsNullOrWhiteSpace(requestId))
         {
@@ -89,6 +98,7 @@ public sealed record AuthorizationRequestContext
 
         return Result<AuthorizationRequestContext>.Success(new AuthorizationRequestContext(
             requestId,
+            execucaoId ?? Guid.CreateVersion7(),
             ipOrigem ?? string.Empty,
             userAgent ?? string.Empty,
             dataAcesso.ToUniversalTime(),

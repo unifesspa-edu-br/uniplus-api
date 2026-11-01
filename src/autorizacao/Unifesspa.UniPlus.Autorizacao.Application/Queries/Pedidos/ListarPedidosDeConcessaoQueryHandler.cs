@@ -36,19 +36,14 @@ public static class ListarPedidosDeConcessaoQueryHandler
 
         if (query.Fila != FilaDePedidos.Meus)
         {
-            AcessoDoAprovador? acesso = await AcessoDoAprovador.ConsultarAsync(verificador, incluirAdministrar: false, cancellationToken)
+            AcessoDoAprovador? acesso = await AcessoDoAprovador.ConsultarAsync(verificador, incluirAdministrar: false, pedidoId: null, cancellationToken)
                 .ConfigureAwait(false);
             if (acesso is null)
             {
                 return Result<ListarPedidosDeConcessaoResult>.Failure(PedidoHandlerErros.IdentidadeIncompleta());
             }
 
-            bool pode = query.Fila switch
-            {
-                FilaDePedidos.Gestor => acesso.Funcional,
-                FilaDePedidos.ProtecaoDeDados => acesso.ProtecaoDeDados,
-                _ => acesso.Aprova,
-            };
+            bool pode = await acesso.PodeListarAsync(verificador, query.Fila, cancellationToken).ConfigureAwait(false);
             if (!pode)
             {
                 return Result<ListarPedidosDeConcessaoResult>.Failure(PedidoHandlerErros.SemPermissao());

@@ -18,6 +18,7 @@ using Microsoft.Extensions.Options;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Configuracao.API.Controllers;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
@@ -180,6 +181,58 @@ public sealed class IdempotencyFilterExceptionTests
             "o retry imediato deve ser rejeitado pelo lookup de Processing, sem nunca chegar a invocar a action de novo");
         executingContext2.Result.Should().NotBeNull(
             "o filtro deve ter produzido a resposta 409 ProcessingConflict via short-circuit");
+    }
+
+    [Fact(DisplayName =
+        "Falha de registrar o acesso libera a reserva: nada foi persistido, e a repetição com a mesma chave executa")]
+    public async Task OnResourceExecutionAsync_WithRegistroDeAcessoNaoGravado_ReleasesReservation()
+    {
+        MonolitoApiFactory api = _fixture.Factory;
+        string idempotencyKey = Guid.NewGuid().ToString();
+        string path = "/api/configuracao/admin/termos-consentimento/00000000-0000-0000-0000-000000000001/revisar";
+        string endpoint = $"POST {path}";
+
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        IServiceProvider services = scope.ServiceProvider;
+        EfCoreIdempotencyStore<ConfiguracaoDbContext> store = ActivatorUtilities
+            .CreateInstance<EfCoreIdempotencyStore<ConfiguracaoDbContext>>(services);
+        IUserContext userContext = Substitute.For<IUserContext>();
+        userContext.IsAuthenticated.Returns(true);
+        userContext.UserId.Returns("idempotency-filter-registro-test-user");
+        IdempotencyFilter<ConfiguracaoDbContext> filter = new(
+            store,
+            services.GetRequiredService<IUniPlusEncryptionService>(),
+            services.GetRequiredService<IDomainErrorMapper>(),
+            services.GetRequiredService<TimeProvider>(),
+            userContext,
+            services.GetRequiredService<IOptions<IdempotencyOptions>>());
+        ControllerActionDescriptor actionDescriptor = new()
+        {
+            MethodInfo = typeof(TermosConsentimentoController).GetMethod(nameof(TermosConsentimentoController.MarcarRevisado))!,
+            ControllerTypeInfo = typeof(TermosConsentimentoController).GetTypeInfo(),
+        };
+        byte[] body = Encoding.UTF8.GetBytes("""{"texto":"corpo de teste"}""");
+        DefaultHttpContext httpContext = new() { RequestServices = services };
+        httpContext.Request.Method = "POST";
+        httpContext.Request.Path = path;
+        httpContext.Request.Headers["Idempotency-Key"] = idempotencyKey;
+        httpContext.Request.Body = new MemoryStream(body);
+        httpContext.Request.ContentLength = body.Length;
+        httpContext.Response.Body = new MemoryStream();
+        ActionContext actionContext = new(httpContext, new RouteData(), actionDescriptor);
+        List<IFilterMetadata> filters = [];
+
+        await filter.OnResourceExecutionAsync(
+            new ResourceExecutingContext(actionContext, filters, []),
+            () => Task.FromResult(new ResourceExecutedContext(actionContext, filters)
+            {
+                Exception = new RegistroDeAcessoNaoGravadoException(new InvalidOperationException("broker fora")),
+                ExceptionHandled = false,
+            }));
+
+        IdempotencyLookupResult depois = await store.LookupAsync(
+            "user:idempotency-filter-registro-test-user", endpoint, idempotencyKey, ComputeBodyHash(body), CancellationToken.None);
+        depois.Outcome.Should().Be(IdempotencyOutcome.Miss, "a chave fica livre para a repetição");
     }
 
     private static string ComputeBodyHash(byte[] bytes)

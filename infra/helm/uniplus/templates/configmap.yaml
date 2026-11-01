@@ -12,6 +12,24 @@ data:
   {{- range $index, $origin := .Values.cors.allowedOrigins }}
   Cors__AllowedOrigins__{{ $index }}: {{ $origin | quote }}
   {{- end }}
+  {{- with .Values.registroDeAcesso.kafka }}
+  {{- if .bootstrapServers }}
+  RegistroDeAcesso__Kafka__BootstrapServers: {{ .bootstrapServers | quote }}
+  {{- end }}
+  RegistroDeAcesso__Kafka__Topico: {{ .topico | quote }}
+  {{- if .securityProtocol }}
+  RegistroDeAcesso__Kafka__SecurityProtocol: {{ .securityProtocol | quote }}
+  {{- end }}
+  {{- if .saslMechanism }}
+  RegistroDeAcesso__Kafka__SaslMechanism: {{ .saslMechanism | quote }}
+  {{- end }}
+  {{- if .prazoDeConfirmacao }}
+  RegistroDeAcesso__Kafka__PrazoDeConfirmacao: {{ .prazoDeConfirmacao | quote }}
+  {{- end }}
+  {{- if .caminhoDoCertificadoCa }}
+  RegistroDeAcesso__Kafka__CaminhoDoCertificadoCa: {{ .caminhoDoCertificadoCa | quote }}
+  {{- end }}
+  {{- end }}
   {{- range $index, $network := .Values.reverseProxy.trustedNetworks }}
   ReverseProxy__TrustedNetworks__{{ $index }}: {{ $network | quote }}
   {{- end }}

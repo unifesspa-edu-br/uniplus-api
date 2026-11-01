@@ -94,7 +94,19 @@ internal static class CenariosDeDecisao
     {
         public List<RegistroDecisaoAcesso> Registrados { get; } = [];
 
-        public void Registrar(RegistroDecisaoAcesso registro) => Registrados.Add(registro);
+        /// <summary>Quando definida, a gravação falha com ela.</summary>
+        public Exception? Falha { get; set; }
+
+        public Task RegistrarAsync(IReadOnlyList<RegistroDecisaoAcesso> registros, CancellationToken cancellationToken)
+        {
+            if (Falha is not null)
+            {
+                throw Falha;
+            }
+
+            Registrados.AddRange(registros);
+            return Task.CompletedTask;
+        }
     }
 
     /// <summary>Porta das inscrições com os processos em que a pessoa está inscrita combinados pelo teste.</summary>

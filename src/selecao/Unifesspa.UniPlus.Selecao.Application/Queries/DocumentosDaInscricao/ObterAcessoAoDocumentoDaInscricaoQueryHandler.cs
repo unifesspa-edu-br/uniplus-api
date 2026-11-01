@@ -91,7 +91,7 @@ public static partial class ObterAcessoAoDocumentoDaInscricaoQueryHandler
         ResultadoDoAcesso acesso = await AcessoAoProcesso
             .VerificarNaUnidadeAsync(
                 verificador, unidade, query.ProcessoSeletivoId, permissao, ResourceTiposSelecao.DocumentoDaInscricao,
-                classificacao, cancellationToken, query.ArquivoId)
+                classificacao, cancellationToken, query.ArquivoId, inscricaoId: arquivo.InscricaoId)
             .ConfigureAwait(false);
         if (acesso is ResultadoDoAcesso.IdentidadeIncompleta or ResultadoDoAcesso.Impedido)
         {
