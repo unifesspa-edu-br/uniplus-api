@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Enums;
+using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
@@ -110,6 +111,35 @@ public sealed class CatalogoDePermissoesTests
         catalogo.TentarObter("teste:itens:inexistente", out _).Should().BeFalse();
     }
 
+    [Fact(DisplayName = "A natureza vem do atributo e é nenhuma quando omitida")]
+    public void Obter_Natureza_VemDoAtributo()
+    {
+        CatalogoDePermissoes<ComNatureza>.Obter(ComNatureza.Dados).Natureza.Should().Be(NaturezaDoItem.Dado);
+        CatalogoDePermissoes<ComNatureza>.Obter(ComNatureza.Acao).Natureza.Should().Be(NaturezaDoItem.Nenhuma);
+    }
+
+    [Fact(DisplayName = "Dois pares iguais de natureza e classificação no mesmo módulo derrubam o catálogo e nomeiam as permissões")]
+    public void Todas_ParRepetido_Falha() =>
+        Falha<ParRepetido>().Should().ContainSingle(p =>
+            p.Contains("(Dado, Pessoal)") && p.Contains("teste:dados-a:consultar") && p.Contains("teste:dados-b:consultar"));
+
+    [Fact(DisplayName = "O mesmo par em natureza diferente, ou em ação sem natureza, não é repetição")]
+    public void Todas_ParesDistintos_Valem() =>
+        CatalogoDePermissoes<ComNatureza>.Todas().Should().HaveCount(3);
+
+    [Fact(DisplayName = "O mesmo par declarado em dois enums do mesmo módulo derruba a aplicação")]
+    public void Aplicacao_ParRepetidoEntreEnumsDoMesmoModulo_Falha()
+    {
+        Action reunir = () => _ = new CatalogoDaAplicacao(
+        [
+            new FonteFalsa(typeof(ComNatureza), CatalogoDePermissoes<ComNatureza>.Todas()),
+            new FonteFalsa(typeof(OutroComODadoPessoal), CatalogoDePermissoes<OutroComODadoPessoal>.Todas()),
+        ]);
+
+        reunir.Should().Throw<CatalogoDePermissoesInvalidoException>()
+            .Which.Problemas.Should().Contain(p => p.Contains("(Dado, Pessoal)") && p.Contains("teste:outros:consultar"));
+    }
+
     private static IReadOnlyList<string> Falha<TPermissao>()
         where TPermissao : struct, Enum
     {
@@ -212,5 +242,37 @@ public sealed class CatalogoDePermissoesTests
     {
         [Permissao("teste:itens:manter", "Outro nome", "d", ClassificacaoDeProtecao.Interno)]
         Manter = 1,
+    }
+
+    [ModuloDePermissoes("teste")]
+    private enum ComNatureza
+    {
+        [Permissao("teste:dados-pessoais:consultar", "Consultar dados pessoais", "d", ClassificacaoDeProtecao.Pessoal,
+            Natureza = NaturezaDoItem.Dado)]
+        Dados = 1,
+
+        [Permissao("teste:documentos-pessoais:consultar", "Consultar documentos pessoais", "d", ClassificacaoDeProtecao.Pessoal,
+            Natureza = NaturezaDoItem.Arquivo)]
+        Arquivos = 2,
+
+        [Permissao("teste:envios:gerar", "Gerar envios", "d", ClassificacaoDeProtecao.Pessoal)]
+        Acao = 3,
+    }
+
+    [ModuloDePermissoes("teste")]
+    private enum ParRepetido
+    {
+        [Permissao("teste:dados-a:consultar", "Consultar A", "d", ClassificacaoDeProtecao.Pessoal, Natureza = NaturezaDoItem.Dado)]
+        A = 1,
+
+        [Permissao("teste:dados-b:consultar", "Consultar B", "d", ClassificacaoDeProtecao.Pessoal, Natureza = NaturezaDoItem.Dado)]
+        B = 2,
+    }
+
+    [ModuloDePermissoes("teste")]
+    private enum OutroComODadoPessoal
+    {
+        [Permissao("teste:outros:consultar", "Consultar outros", "d", ClassificacaoDeProtecao.Pessoal, Natureza = NaturezaDoItem.Dado)]
+        Outros = 1,
     }
 }

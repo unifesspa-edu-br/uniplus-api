@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Decisao;
+using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -79,6 +80,7 @@ public static partial class CatalogoDePermissoes<TPermissao>
             ConferirTextos(quem, atributo, nomes, problemas);
             string[] segmentos = ConferirCodigo(quem, atributo.Codigo, modulo, codigos, problemas);
             ConferirEscopo(quem, atributo, problemas);
+            ConferirNatureza(quem, atributo, problemas);
 
             Result<PermissionRequirement> requisito = PermissionRequirement.From(
                 atributo.Codigo,
@@ -104,9 +106,12 @@ public static partial class CatalogoDePermissoes<TPermissao>
                     segmentos[1],
                     segmentos[2],
                     requisito.Value!,
-                    atributo.ReservadaAGovernanca);
+                    atributo.ReservadaAGovernanca,
+                    atributo.Natureza);
             }
         }
+
+        problemas.AddRange(UnicidadeDoPar.Problemas(definicoes.Values.Select(static d => (d.Codigo, d))));
 
         if (problemas.Count > 0)
         {
@@ -170,6 +175,14 @@ public static partial class CatalogoDePermissoes<TPermissao>
             .Where(static campo => !CamposDeContexto.NomesConhecidos.Contains(campo)))
         {
             problemas.Add($"{quem}: o campo de contexto '{campo}' não é verificável pela decisão.");
+        }
+    }
+
+    private static void ConferirNatureza(string quem, PermissaoAttribute atributo, List<string> problemas)
+    {
+        if (!Enum.IsDefined(atributo.Natureza))
+        {
+            problemas.Add($"{quem}: a natureza '{atributo.Natureza}' não é dado nem arquivo.");
         }
     }
 

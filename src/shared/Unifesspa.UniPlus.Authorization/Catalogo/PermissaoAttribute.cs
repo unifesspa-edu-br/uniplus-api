@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Authorization.Catalogo;
 
 using Unifesspa.UniPlus.Authorization.Enums;
+using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
@@ -38,6 +39,13 @@ public sealed class PermissaoAttribute : Attribute
 
     /// <summary>Sensibilidade do dado que a operação retorna.</summary>
     public ClassificacaoDeProtecao Sensibilidade { get; }
+
+    /// <summary>
+    /// De que natureza é o item que a permissão libera na projeção da resposta, a classificação sendo a sensibilidade
+    /// dela. Só a permissão de consulta que declara natureza participa da projeção; as ações continuam decididas no
+    /// endpoint.
+    /// </summary>
+    public NaturezaDoItem Natureza { get; init; }
 
     /// <summary>Base legal padrão. Vazia quando o dado é público.</summary>
     public string? BaseLegal { get; init; }
