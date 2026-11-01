@@ -20,8 +20,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public static class DecidirProtecaoDoCatalogoCommandHandler
 {
-    private const string Aprovada = "APROVADA";
-    private const string Negada = "NEGADA";
+    private const string Aprovar = DecisoesDaProtecaoDoCatalogo.Aprovar;
+    private const string RecomendarAjuste = DecisoesDaProtecaoDoCatalogo.RecomendarAjuste;
+    private const string Reprovar = DecisoesDaProtecaoDoCatalogo.Reprovar;
 
     public static async Task<Result> Handle(
         DecidirProtecaoDoCatalogoCommand command,
@@ -50,19 +51,38 @@ public static class DecidirProtecaoDoCatalogoCommandHandler
                 $"O cadastro do item deve ser {ProtecaoDoCatalogoMapping.TipoDocumento} ou {ProtecaoDoCatalogoMapping.Fato}.")));
         }
 
-        if (decisao is not (Aprovada or Negada))
+        if (decisao is not (Aprovar or RecomendarAjuste or Reprovar))
         {
             erros.Add(new("decisao", new DomainError(
-                ProtecaoDoCatalogoErrorCodes.DecisaoInvalida, $"A decisão deve ser {Aprovada} ou {Negada}.")));
+                ProtecaoDoCatalogoErrorCodes.DecisaoInvalida, $"A decisão deve ser {Aprovar}, {RecomendarAjuste} ou {Reprovar}.")));
         }
 
-        // A negativa exige a classificação recomendada dentro do vocabulário, antes de qualquer leitura do item (ADR-0125).
+        // A classificação recomendada e a justificativa são conferidas antes de qualquer leitura do item (ADR-0125).
         ClassificacaoDeProtecao? recomendadaInformada = TokensDoFato.Classificacao(command.ClassificacaoRecomendada);
-        if (decisao == Negada && recomendadaInformada is null or (ClassificacaoDeProtecao)TokensDoFato.ForaDoVocabulario)
+        bool trouxeRecomendacao = !string.IsNullOrWhiteSpace(command.ClassificacaoRecomendada);
+        if (decisao == RecomendarAjuste && recomendadaInformada is null or (ClassificacaoDeProtecao)TokensDoFato.ForaDoVocabulario)
         {
             erros.Add(new("classificacaoRecomendada", new DomainError(
                 ProtecaoDoCatalogoErrorCodes.RecomendacaoObrigatoria,
-                "A negativa exige a classificação de proteção de dados recomendada, dentro do vocabulário fechado.")));
+                "O ajuste exige a classificação de proteção de dados recomendada, dentro do vocabulário fechado.")));
+        }
+        else if (decisao is Aprovar or Reprovar && trouxeRecomendacao)
+        {
+            erros.Add(new("classificacaoRecomendada", new DomainError(
+                ProtecaoDoCatalogoErrorCodes.DadoDaDecisaoNaoCabe,
+                "Só o ajuste recomendado indica uma classificação: retire a classificação recomendada desta decisão.")));
+        }
+
+        // A regra da justificativa é a do domínio (obrigatória na reprovação, no máximo 2.000 caracteres); aqui só se
+        // confere, antes de ler o item, o que a decisão admite.
+        if (decisao == Aprovar && !string.IsNullOrWhiteSpace(command.Justificativa))
+        {
+            erros.Add(new("justificativa", new DomainError(
+                ProtecaoDoCatalogoErrorCodes.DadoDaDecisaoNaoCabe, "A aprovação não tem justificativa: retire-a desta decisão.")));
+        }
+        else if (decisao is RecomendarAjuste or Reprovar)
+        {
+            erros.AddRange(AprovacaoDaProtecao.ConferirJustificativa(command.Justificativa, obrigatoria: decisao == Reprovar).Errors);
         }
 
         ClassificacaoDeProtecao? classificacaoConferida = TokensDoFato.Classificacao(command.ClassificacaoProtecao);
@@ -98,9 +118,11 @@ public static class DecidirProtecaoDoCatalogoCommandHandler
                 command.ItemId,
                 fato => fato.Protecao != conferida
                     ? ProtecaoMudou()
-                    : decisao == Aprovada
-                        ? fato.AprovarProtecao(ator, agora)
-                        : fato.NegarProtecao(recomendada, ator, agora),
+                    : Decidir(
+                        decisao,
+                        () => fato.AprovarProtecao(ator, agora),
+                        () => fato.RecomendarAjusteDaProtecao(recomendada, command.Justificativa, ator, agora),
+                        () => fato.ReprovarProtecao(command.Justificativa, ator, agora)),
                 fatos,
                 unitOfWork,
                 cancellationToken).ConfigureAwait(false);
@@ -110,9 +132,11 @@ public static class DecidirProtecaoDoCatalogoCommandHandler
             command.ItemId,
             tipo => tipo.Protecao != conferida
                 ? ProtecaoMudou()
-                : decisao == Aprovada
-                    ? tipo.AprovarProtecao(ator, agora)
-                    : tipo.NegarProtecao(recomendada, ator, agora),
+                : Decidir(
+                    decisao,
+                    () => tipo.AprovarProtecao(ator, agora),
+                    () => tipo.RecomendarAjusteDaProtecao(recomendada, command.Justificativa, ator, agora),
+                    () => tipo.ReprovarProtecao(command.Justificativa, ator, agora)),
             tipos,
             unitOfWork,
             new DomainError(
@@ -121,7 +145,15 @@ public static class DecidirProtecaoDoCatalogoCommandHandler
             cancellationToken).ConfigureAwait(false);
     }
 
-    // O item foi editado depois de o aprovador vê-lo: aprovar ou negar a proteção vigente decidiria sobre o que ele não viu.
+    private static Result Decidir(string? decisao, Func<Result> aprovar, Func<Result> recomendarAjuste, Func<Result> reprovar) =>
+        decisao switch
+        {
+            Aprovar => aprovar(),
+            RecomendarAjuste => recomendarAjuste(),
+            _ => reprovar(),
+        };
+
+    // O item foi editado depois de o aprovador vê-lo: decidir sobre a proteção vigente decidiria sobre o que ele não viu.
     // Repetir a mesma decisão nunca dá certo, então não é o conflito de concorrência que se tenta de novo.
     private static Result ProtecaoMudou() => Result.Failure(new DomainError(
         ProtecaoDoCatalogoErrorCodes.ProtecaoMudou,

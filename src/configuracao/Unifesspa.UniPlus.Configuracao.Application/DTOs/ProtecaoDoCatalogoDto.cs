@@ -2,16 +2,18 @@ namespace Unifesspa.UniPlus.Configuracao.Application.DTOs;
 
 /// <summary>
 /// Onde um item do catálogo está no circuito de aprovação da proteção de dados (ADR-0153): a situação,
-/// os instantes de cada passo e a classificação que a proteção de dados recomendou ao negar. Quem agiu
-/// fica registrado e não sai na resposta.
+/// os instantes de cada passo, a classificação que a proteção de dados recomendou no ajuste e a justificativa
+/// da decisão. Quem agiu fica registrado e não sai na resposta.
 /// </summary>
-/// <param name="Situacao">Token canônico: <c>PENDENTE</c>, <c>SOLICITADA</c>, <c>APROVADA</c> ou <c>NEGADA</c>.</param>
-/// <param name="ClassificacaoRecomendada">Token canônico da classificação, quando o item foi negado.</param>
+/// <param name="Situacao">Token canônico: <c>PENDENTE</c>, <c>SOLICITADA</c>, <c>APROVADA</c>, <c>AJUSTE_RECOMENDADO</c> ou <c>REPROVADA</c>.</param>
+/// <param name="ClassificacaoRecomendada">Token canônico da classificação, quando o ajuste foi recomendado.</param>
+/// <param name="Justificativa">Motivo da decisão, quando a proteção de dados o escreveu; sempre presente na reprovação.</param>
 public sealed record AprovacaoDaProtecaoDto(
     string Situacao,
     DateTimeOffset? SolicitadaEm,
     DateTimeOffset? DecididaEm,
     string? ClassificacaoRecomendada,
+    string? Justificativa,
     DateTimeOffset? AceitaEm);
 
 /// <summary>Um tipo de documento ou fato do catálogo com a proteção que aguarda aprovação.</summary>

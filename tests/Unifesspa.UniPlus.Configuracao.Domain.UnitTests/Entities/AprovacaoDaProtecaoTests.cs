@@ -81,15 +81,15 @@ public sealed class AprovacaoDaProtecaoTests
         TipoDocumento tipo = NovoTipo();
 
         tipo.AprovarProtecao(Caroline, Terca).Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.ItemForaDeSolicitacao);
-        tipo.NegarProtecao(ClassificacaoDeProtecao.Sensivel, Caroline, Terca).Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.ItemForaDeSolicitacao);
+        tipo.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Sensivel, null, Caroline, Terca).Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.ItemForaDeSolicitacao);
     }
 
-    [Fact(DisplayName = "A negativa exige a classificação recomendada")]
-    public void Tipo_NegarSemRecomendacao_Recusada()
+    [Fact(DisplayName = "O ajuste exige a classificação recomendada")]
+    public void Tipo_RecomendarAjusteSemRecomendacao_Recusada()
     {
         TipoDocumento tipo = TipoSolicitado();
 
-        Result resultado = tipo.NegarProtecao(ClassificacaoDeProtecao.Nenhuma, Caroline, Terca);
+        Result resultado = tipo.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Nenhuma, null, Caroline, Terca);
 
         resultado.Errors.Should().ContainSingle(e => e.Field == "classificacaoRecomendada")
             .Which.Error.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.RecomendacaoObrigatoria);
@@ -101,7 +101,7 @@ public sealed class AprovacaoDaProtecaoTests
     {
         TipoDocumento tipo = NovoTipo(ClassificacaoDeProtecao.Interno, HipoteseLegalTratamento.CumprimentoObrigacaoLegal);
         tipo.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
-        tipo.NegarProtecao(ClassificacaoDeProtecao.Sensivel, Caroline, Terca);
+        tipo.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Sensivel, null, Caroline, Terca);
 
         tipo.AceitarRecomendacaoDaProtecao(Isabella, Quarta).IsSuccess.Should().BeTrue();
 
@@ -116,13 +116,13 @@ public sealed class AprovacaoDaProtecaoTests
         });
     }
 
-    [Fact(DisplayName = "A negativa recusa a recomendação que a hipótese legal do tipo não admite, para o aceite não ficar sem saída")]
-    public void Tipo_NegarRecomendacaoIncompativelComAHipotese_Recusada()
+    [Fact(DisplayName = "O ajuste recusa a recomendação que a hipótese legal do tipo não admite, para o aceite não ficar sem saída")]
+    public void Tipo_RecomendarAjusteComRecomendacaoIncompativelComAHipotese_Recusada()
     {
         TipoDocumento tipo = NovoTipo(ClassificacaoDeProtecao.Pessoal, HipoteseLegalTratamento.InteresseLegitimo);
         tipo.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
 
-        Result resultado = tipo.NegarProtecao(ClassificacaoDeProtecao.Sensivel, Caroline, Terca);
+        Result resultado = tipo.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Sensivel, null, Caroline, Terca);
 
         resultado.Errors.Should().ContainSingle(e => e.Field == "classificacaoRecomendada")
             .Which.Error.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.RecomendacaoIncompativelComAHipoteseLegal);
@@ -130,18 +130,18 @@ public sealed class AprovacaoDaProtecaoTests
     }
 
     [Fact(DisplayName = "Recomendar a classificação que o item já tem é decisão inválida: o item se aprova")]
-    public void Tipo_NegarRecomendacaoIgualAAtual_Recusada()
+    public void Tipo_RecomendarAjusteComRecomendacaoIgualAAtual_Recusada()
     {
         TipoDocumento tipo = TipoSolicitado();
 
-        Result resultado = tipo.NegarProtecao(ClassificacaoDeProtecao.Pessoal, Caroline, Terca);
+        Result resultado = tipo.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Pessoal, null, Caroline, Terca);
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.RecomendacaoIgualAAtual);
         tipo.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Solicitada);
     }
 
-    [Fact(DisplayName = "A negativa do fato recusa a recomendação igual à atual e a que a hipótese legal não admite")]
-    public void Fato_NegarRecomendacaoInvalida_Recusada()
+    [Fact(DisplayName = "O ajuste do fato recusa a recomendação igual à atual e a que a hipótese legal não admite")]
+    public void Fato_RecomendarAjusteComRecomendacaoInvalida_Recusada()
     {
         FatoCandidato igual = NovoFato();
         igual.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
@@ -150,9 +150,9 @@ public sealed class AprovacaoDaProtecaoTests
             ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.ExecucaoContrato).Value!;
         incompativel.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
 
-        igual.NegarProtecao(ClassificacaoDeProtecao.Pessoal, Caroline, Terca).Errors.Should().ContainSingle()
+        igual.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Pessoal, null, Caroline, Terca).Errors.Should().ContainSingle()
             .Which.Error.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.RecomendacaoIgualAAtual);
-        incompativel.NegarProtecao(ClassificacaoDeProtecao.Sensivel, Caroline, Terca).Errors.Should().ContainSingle()
+        incompativel.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Sensivel, null, Caroline, Terca).Errors.Should().ContainSingle()
             .Which.Error.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.RecomendacaoIncompativelComAHipoteseLegal);
         incompativel.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Solicitada);
     }
@@ -191,24 +191,171 @@ public sealed class AprovacaoDaProtecaoTests
         outroPonto.Error!.Code.Should().Be(FatoCandidatoErrorCodes.DefinicaoDoFatoDeSistemaTravada);
     }
 
-    [Fact(DisplayName = "Aceitar a recomendação do tipo que não foi negado é recusado")]
-    public void Tipo_AceitarSemNegativa_Recusado()
+    [Fact(DisplayName = "Aceitar a recomendação do tipo que não teve ajuste recomendado é recusado")]
+    public void Tipo_AceitarSemAjuste_Recusado()
     {
         TipoDocumento tipo = TipoSolicitado();
 
         tipo.AceitarRecomendacaoDaProtecao(Isabella, Quarta).Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.SemRecomendacaoParaAceitar);
     }
 
-    [Fact(DisplayName = "Editar a classificação do tipo negado o devolve a pendente")]
-    public void Tipo_EditarOTipoNegado_VoltaAPendente()
+    [Fact(DisplayName = "Editar a classificação do tipo com ajuste recomendado o devolve a pendente")]
+    public void Tipo_EditarOTipoComAjusteRecomendado_VoltaAPendente()
     {
         TipoDocumento tipo = TipoSolicitado();
-        tipo.NegarProtecao(ClassificacaoDeProtecao.Sensivel, Caroline, Terca);
+        tipo.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Sensivel, null, Caroline, Terca);
 
         Atualizar(tipo, classificacao: ClassificacaoDeProtecao.Sensivel, hipotese: HipoteseLegalTratamento.TutelaDaSaude).IsSuccess.Should().BeTrue();
 
         tipo.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Pendente);
         tipo.Aprovacao.ClassificacaoRecomendada.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "A reprovação registra a justificativa e quem reprovou, sem classificação recomendada")]
+    public void Tipo_Reprovar_RegistraAJustificativa()
+    {
+        TipoDocumento tipo = TipoSolicitado();
+
+        tipo.ReprovarProtecao("A finalidade não justifica o dado pedido.", Caroline, Terca).IsSuccess.Should().BeTrue();
+
+        tipo.Aprovacao.Should().BeEquivalentTo(new
+        {
+            Situacao = SituacaoDaAprovacao.Reprovada,
+            Justificativa = "A finalidade não justifica o dado pedido.",
+            ClassificacaoRecomendada = (ClassificacaoDeProtecao?)null,
+            DecididaPor = Caroline,
+            DecididaEm = Terca,
+        });
+        tipo.Aprovacao.EstaAprovada.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Aceitar a recomendação do item reprovado é recusado com código próprio")]
+    public void Tipo_AceitarItemReprovado_Recusado()
+    {
+        TipoDocumento tipo = TipoSolicitado();
+        tipo.ReprovarProtecao("Dado desnecessário.", Caroline, Terca);
+
+        tipo.AceitarRecomendacaoDaProtecao(Isabella, Quarta).Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.AceiteDeItemReprovado);
+        tipo.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Reprovada);
+    }
+
+    [Fact(DisplayName = "Editar a proteção do tipo reprovado o devolve a pendente e apaga a justificativa")]
+    public void Tipo_EditarOTipoReprovado_VoltaAPendente()
+    {
+        TipoDocumento tipo = TipoSolicitado();
+        tipo.ReprovarProtecao("Dado desnecessário.", Caroline, Terca);
+
+        Atualizar(tipo, classificacao: ClassificacaoDeProtecao.Sensivel, hipotese: HipoteseLegalTratamento.TutelaDaSaude).IsSuccess.Should().BeTrue();
+
+        tipo.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Pendente);
+        tipo.Aprovacao.Justificativa.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "O fato fora de solicitação não é reprovado")]
+    public void Fato_ReprovarSemSolicitacao_Recusado()
+    {
+        NovoFato().ReprovarProtecao("Dado desnecessário.", Caroline, Terca).Error!.Code
+            .Should().Be(ProtecaoDoCatalogoErrorCodes.ItemForaDeSolicitacao);
+    }
+
+    [Fact(DisplayName = "Salvar o tipo com ajuste recomendado ou reprovado o devolve a pendente mesmo sem mudar a proteção; o aprovado continua aprovado")]
+    public void Tipo_QualquerEdicaoDevolveAjusteEReprovadoAPendente()
+    {
+        TipoDocumento ajustado = TipoSolicitado();
+        ajustado.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Sensivel, "Traz dado de saúde.", Caroline, Terca);
+        TipoDocumento reprovado = TipoSolicitado();
+        reprovado.ReprovarProtecao("Dado desnecessário.", Caroline, Terca);
+        TipoDocumento aprovado = TipoAprovado();
+
+        Atualizar(ajustado, nome: "Outro nome").IsSuccess.Should().BeTrue();
+        Atualizar(reprovado, nome: "Outro nome").IsSuccess.Should().BeTrue();
+        Atualizar(aprovado, nome: "Outro nome").IsSuccess.Should().BeTrue();
+
+        ajustado.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Pendente);
+        ajustado.Aprovacao.Justificativa.Should().BeNull();
+        reprovado.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Pendente);
+        reprovado.Aprovacao.Justificativa.Should().BeNull();
+        aprovado.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Aprovada);
+    }
+
+    [Fact(DisplayName = "A edição recusada não devolve o tipo reprovado a pendente")]
+    public void Tipo_EdicaoRecusada_MantemOReprovado()
+    {
+        TipoDocumento reprovado = TipoSolicitado();
+        reprovado.ReprovarProtecao("Dado desnecessário.", Caroline, Terca);
+
+        Atualizar(reprovado, nome: " ").IsFailure.Should().BeTrue();
+
+        reprovado.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Reprovada);
+    }
+
+    [Fact(DisplayName = "Salvar o fato com ajuste recomendado ou reprovado, pelo descritivo, pela definição ou pelos valores, o devolve a pendente")]
+    public void Fato_QualquerEdicaoDevolveAjusteEReprovadoAPendente()
+    {
+        static FatoCandidato Categorico()
+        {
+            FatoCandidato fato = FatoCandidato.CriarDoAdministrador(
+                "ESCOLARIDADE", "Escolaridade", "Escolaridade do candidato.", DominioFato.Categorico, CardinalidadeFato.Escalar, FonteValoresFato.Global, null,
+                "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+            fato.AdicionarValorDominio("MEDIO", "Ensino médio", 0, ativo: true);
+            fato.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
+            return fato;
+        }
+
+        FatoCandidato porDescritivo = Categorico();
+        porDescritivo.ReprovarProtecao("Dado desnecessário.", Caroline, Terca);
+        FatoCandidato porValor = Categorico();
+        porValor.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Sensivel, null, Caroline, Terca);
+        FatoCandidato porDefinicao = Categorico();
+        porDefinicao.ReprovarProtecao("Dado desnecessário.", Caroline, Terca);
+        FatoCandidato porRegras = FatoCandidato.CriarDerivadoDoAdministrador(
+            "TEM_RENDA_DERIVADA", "Tem renda derivada", "Se o candidato tem renda.", DominioFato.Booleano, "INSCRICAO", EscopoFato.Candidato,
+            ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+        porRegras.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
+        porRegras.ReprovarProtecao("Dado desnecessário.", Caroline, Terca);
+        FatoCandidato aprovado = FatoAprovado(NovoFato());
+
+        porDescritivo.AlterarDescritivo("Outro nome", "Escolaridade do candidato.", null).IsSuccess.Should().BeTrue();
+        porValor.CorrigirValor("MEDIO", "Ensino médio completo", null).IsSuccess.Should().BeTrue();
+        porDefinicao.AlterarDefinicao(Definicao(porDefinicao), Catalogo(porDefinicao)).IsSuccess.Should().BeTrue();
+        porRegras.DefinirRegrasPadrao([], Catalogo(porRegras)).IsSuccess.Should().BeTrue();
+        aprovado.AlterarDescritivo("Outro nome", "Outra descrição do fato.", null).IsSuccess.Should().BeTrue();
+
+        porRegras.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Pendente);
+        porDescritivo.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Pendente);
+        porValor.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Pendente);
+        porDefinicao.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Pendente);
+        aprovado.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Aprovada);
+    }
+
+    [Theory(DisplayName = "A reprovação sem justificativa, em branco ou com mais de 2.000 caracteres é recusada no campo")]
+    [InlineData(null, "ProtecaoDoCatalogo.JustificativaObrigatoria")]
+    [InlineData("   ", "ProtecaoDoCatalogo.JustificativaObrigatoria")]
+    [InlineData("TAMANHO", "ProtecaoDoCatalogo.JustificativaMuitoLonga")]
+    public void Tipo_ReprovarComJustificativaInvalida_Recusa(string? justificativa, string codigo)
+    {
+        TipoDocumento tipo = TipoSolicitado();
+        string? enviada = justificativa == "TAMANHO" ? new string('a', 2001) : justificativa;
+
+        Result resultado = tipo.ReprovarProtecao(enviada, Caroline, Terca);
+
+        resultado.Errors.Should().ContainSingle(e => e.Field == "justificativa").Which.Error.Code.Should().Be(codigo);
+        tipo.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Solicitada);
+    }
+
+    [Fact(DisplayName = "O ajuste com mais de 2.000 caracteres é recusado, e o de exatamente 2.000 é aceito aparado")]
+    public void Tipo_AjusteComJustificativaNoLimite()
+    {
+        TipoDocumento longo = TipoSolicitado();
+        TipoDocumento nolimite = TipoSolicitado();
+
+        Result recusado = longo.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Sensivel, new string('a', 2001), Caroline, Terca);
+        Result aceito = nolimite.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Sensivel, " " + new string('a', 2000) + " ", Caroline, Terca);
+
+        recusado.Errors.Should().ContainSingle(e => e.Field == "justificativa")
+            .Which.Error.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.JustificativaMuitoLonga);
+        aceito.IsSuccess.Should().BeTrue();
+        nolimite.Aprovacao.Justificativa.Should().HaveLength(2000);
     }
 
     [Fact(DisplayName = "O fato do administrador nasce pendente")]
@@ -271,7 +418,7 @@ public sealed class AprovacaoDaProtecaoTests
     {
         FatoCandidato fato = NovoFatoDeSistema();
         fato.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
-        fato.NegarProtecao(ClassificacaoDeProtecao.Sensivel, Caroline, Terca).IsSuccess.Should().BeTrue();
+        fato.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Sensivel, null, Caroline, Terca).IsSuccess.Should().BeTrue();
 
         Result resultado = fato.AceitarRecomendacaoDaProtecao(Isabella, Quarta, Catalogo(fato));
 
@@ -287,13 +434,13 @@ public sealed class AprovacaoDaProtecaoTests
         fato.Aprovacao.AceitaPor.Should().Be(Isabella);
     }
 
-    [Fact(DisplayName = "A negativa não recomenda classificação abaixo do mínimo do domínio do fato")]
-    public void Fato_NegarAbaixoDoMinimoDoDominio_Recusado()
+    [Fact(DisplayName = "O ajuste não recomenda classificação abaixo do mínimo do domínio do fato")]
+    public void Fato_RecomendarAjusteAbaixoDoMinimoDoDominio_Recusado()
     {
         FatoCandidato fato = NovoFato(DominioFato.Texto);
         fato.SolicitarAprovacaoDaProtecao(Isabella, Segunda);
 
-        Result resultado = fato.NegarProtecao(ClassificacaoDeProtecao.Publico, Caroline, Terca);
+        Result resultado = fato.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Publico, null, Caroline, Terca);
 
         resultado.Errors.Should().ContainSingle(e => e.Field == "classificacaoRecomendada")
             .Which.Error.Code.Should().Be(FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio);

@@ -74,7 +74,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     /// <summary>
     /// Como a tela exibe o valor quando o modo de exibição não se deduz do tipo, do formato nem da
     /// classificação; <see langword="null"/> deixa o padrão que a consulta resolve. Apresentação do fato:
-    /// mudá-lo não altera a proteção de dados nem reinicia a aprovação.
+    /// mudá-lo não altera a proteção de dados nem reinicia o fato aprovado.
     /// </summary>
     public ComponenteDeExibicao? ComponenteExibicao { get; private set; }
     public DominioFato Dominio { get; private set; }
@@ -590,6 +590,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         }
 
         RegrasPadrao = [.. regras];
+        Aprovacao.AoEditarItem(protecaoMudou: false);
         return Result.Success();
     }
 
@@ -622,13 +623,15 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         }
 
         valor.DefinirAtivo(ativo);
+        Aprovacao.AoEditarItem(protecaoMudou: false);
         return Result.Success();
     }
 
     /// <summary>
     /// Altera o nome, a descrição e o componente de exibição, que são a apresentação do fato e valem
-    /// também no fato de sistema: não tocam a proteção de dados e não reiniciam a aprovação. Os eixos
-    /// têm a alteração própria, <see cref="AlterarDefinicao"/>.
+    /// também no fato de sistema. Não tocam a proteção de dados, então não reiniciam o fato aprovado; o fato com
+    /// ajuste recomendado ou reprovado volta a pendente, porque a decisão pode ter sido sobre qualquer campo. Os
+    /// eixos têm a alteração própria, <see cref="AlterarDefinicao"/>.
     /// </summary>
     public Result AlterarDescritivo(string nome, string? descricao, ComponenteDeExibicao? componenteExibicao)
     {
@@ -640,6 +643,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         }
 
         (Nome, Descricao, ComponenteExibicao) = descritivo.Value;
+        Aprovacao.AoEditarItem(protecaoMudou: false);
         return Result.Success();
     }
 
@@ -783,11 +787,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
             return Result.ValidationFailure(erros);
         }
 
-        if (Protecao != protecaoAnterior)
-        {
-            Aprovacao.Reiniciar();
-        }
-
+        Aprovacao.AoEditarItem(Protecao != protecaoAnterior);
         return Result.Success();
     }
 
@@ -853,11 +853,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
             return troca;
         }
 
-        if (Protecao != anterior)
-        {
-            Aprovacao.Reiniciar();
-        }
-
+        Aprovacao.AoEditarItem(Protecao != anterior);
         return Result.Success();
     }
 
@@ -908,10 +904,10 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     public Result AprovarProtecao(string ator, DateTimeOffset em) => Aprovacao.Aprovar(ator, em);
 
     /// <summary>
-    /// A proteção de dados nega a proteção do fato e indica a classificação correta, que precisa
+    /// A proteção de dados recomenda o ajuste da proteção do fato e indica a classificação correta, que precisa
     /// respeitar o mínimo do domínio do fato.
     /// </summary>
-    public Result NegarProtecao(ClassificacaoDeProtecao recomendada, string ator, DateTimeOffset em)
+    public Result RecomendarAjusteDaProtecao(ClassificacaoDeProtecao recomendada, string? justificativa, string ator, DateTimeOffset em)
     {
         Result recusa = AprovacaoDaProtecao.ConferirRecomendacao(recomendada, ClassificacaoProtecao, HipoteseLegal);
         if (recusa.IsFailure)
@@ -926,13 +922,16 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
             return Result.ValidationFailure([abaixo with { Field = "classificacaoRecomendada" }]);
         }
 
-        return Aprovacao.Negar(recomendada, ator, em);
+        return Aprovacao.RecomendarAjuste(recomendada, justificativa, ator, em);
     }
+
+    /// <summary>A proteção de dados reprova a proteção do fato, sem recomendar classificação, e explica o motivo.</summary>
+    public Result ReprovarProtecao(string? justificativa, string ator, DateTimeOffset em) => Aprovacao.Reprovar(justificativa, ator, em);
 
     /// <summary>
     /// O administrador aceita a recomendação da proteção de dados: o fato passa à classificação
     /// recomendada e fica aprovado, sem nova solicitação, inclusive o fato de sistema e o semeado. O
-    /// que depende do fato precisa continuar valendo; a negativa já recusou a recomendação que a
+    /// que depende do fato precisa continuar valendo; o ajuste já recusou a recomendação que a
     /// hipótese legal não admite.
     /// </summary>
     public Result AceitarRecomendacaoDaProtecao(string ator, DateTimeOffset em, CatalogoDeFatos catalogo)
@@ -1158,6 +1157,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         }
 
         _valoresDominioDeclarados.Add(FatoValorDominio.Criar(Id, codigoNormalizado, descricaoNormalizada, ordem, ativo, orientacaoNormalizada));
+        Aprovacao.AoEditarItem(protecaoMudou: false);
         return Result.Success();
     }
 
@@ -1186,6 +1186,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         }
 
         valor.CorrigirTextos(descricaoNormalizada, orientacaoNormalizada);
+        Aprovacao.AoEditarItem(protecaoMudou: false);
         return Result.Success();
     }
 
@@ -1252,6 +1253,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
             porCodigo[informados[posicao]].DefinirOrdem(posicao);
         }
 
+        Aprovacao.AoEditarItem(protecaoMudou: false);
         return Result.Success();
     }
 

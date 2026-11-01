@@ -309,16 +309,19 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
     /// <summary>A proteção de dados aprova a classificação, a finalidade e a hipótese legal do tipo.</summary>
     public Result AprovarProtecao(string ator, DateTimeOffset em) => Aprovacao.Aprovar(ator, em);
 
-    /// <summary>A proteção de dados nega a proteção do tipo e indica a classificação correta.</summary>
-    public Result NegarProtecao(ClassificacaoDeProtecao recomendada, string ator, DateTimeOffset em)
+    /// <summary>A proteção de dados recomenda o ajuste da proteção do tipo e indica a classificação correta.</summary>
+    public Result RecomendarAjusteDaProtecao(ClassificacaoDeProtecao recomendada, string? justificativa, string ator, DateTimeOffset em)
     {
         Result recusa = AprovacaoDaProtecao.ConferirRecomendacao(recomendada, ClassificacaoProtecao, HipoteseLegal);
-        return recusa.IsFailure ? recusa : Aprovacao.Negar(recomendada, ator, em);
+        return recusa.IsFailure ? recusa : Aprovacao.RecomendarAjuste(recomendada, justificativa, ator, em);
     }
+
+    /// <summary>A proteção de dados reprova a proteção do tipo, sem recomendar classificação, e explica o motivo.</summary>
+    public Result ReprovarProtecao(string? justificativa, string ator, DateTimeOffset em) => Aprovacao.Reprovar(justificativa, ator, em);
 
     /// <summary>
     /// O administrador aceita a recomendação da proteção de dados: o tipo passa à classificação
-    /// recomendada e fica aprovado, sem nova solicitação. A negativa já recusou a recomendação que a hipótese legal não admite.
+    /// recomendada e fica aprovado, sem nova solicitação. O ajuste já recusou a recomendação que a hipótese legal não admite.
     /// </summary>
     public Result AceitarRecomendacaoDaProtecao(string ator, DateTimeOffset em)
     {
@@ -340,7 +343,8 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
     private void AplicarCampos(
         (CodigoTipoDocumento Codigo, string Nome, string? Descricao, string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente, ProtecaoDeDados Protecao) campos)
     {
-        // Só a proteção reinicia o circuito: o nome, a descrição e os demais campos não a alteram.
+        // A mudança da proteção reinicia o circuito; o item com ajuste recomendado ou reprovado também recomeça por
+        // qualquer edição. O nome e a descrição de um item aprovado não o reiniciam.
         ProtecaoDeDados anterior = Protecao;
 
         Codigo = campos.Codigo;
@@ -354,10 +358,7 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
         FinalidadeTratamento = campos.Protecao.Finalidade;
         HipoteseLegal = campos.Protecao.Hipotese;
 
-        if (campos.Protecao != anterior)
-        {
-            Aprovacao.Reiniciar();
-        }
+        Aprovacao.AoEditarItem(campos.Protecao != anterior);
     }
 
     private static string? NormalizarOpcional(string? valor) =>

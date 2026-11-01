@@ -2130,13 +2130,13 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.protecao_do_catalogo.recomendacao_obrigatoria",
-                "A negativa exige a classificação de proteção de dados recomendada")),
+                "O ajuste exige a classificação de proteção de dados recomendada")),
 
         new(ProtecaoDoCatalogoErrorCodes.SemRecomendacaoParaAceitar,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.protecao_do_catalogo.sem_recomendacao_para_aceitar",
-                "O item não foi negado pela proteção de dados: não há recomendação a aceitar")),
+                "O item não tem ajuste recomendado pela proteção de dados: não há recomendação a aceitar")),
 
         new(ProtecaoDoCatalogoErrorCodes.RecomendacaoIncompativelComAHipoteseLegal,
             new DomainErrorMapping(
@@ -2205,5 +2205,29 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.protecao_do_catalogo.decisao_invalida",
                 "Decisão fora do vocabulário da aprovação da proteção de dados")),
+
+        new(ProtecaoDoCatalogoErrorCodes.JustificativaObrigatoria,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.protecao_do_catalogo.justificativa_obrigatoria",
+                "A reprovação exige a justificativa")),
+
+        new(ProtecaoDoCatalogoErrorCodes.JustificativaMuitoLonga,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.protecao_do_catalogo.justificativa_muito_longa",
+                "A justificativa passa do limite de 2.000 caracteres")),
+
+        new(ProtecaoDoCatalogoErrorCodes.DadoDaDecisaoNaoCabe,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.protecao_do_catalogo.dado_da_decisao_nao_cabe",
+                "A decisão traz classificação recomendada ou justificativa que ela não admite")),
+
+        new(ProtecaoDoCatalogoErrorCodes.AceiteDeItemReprovado,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.protecao_do_catalogo.aceite_de_item_reprovado",
+                "O item reprovado não tem recomendação a aceitar")),
     ];
 }

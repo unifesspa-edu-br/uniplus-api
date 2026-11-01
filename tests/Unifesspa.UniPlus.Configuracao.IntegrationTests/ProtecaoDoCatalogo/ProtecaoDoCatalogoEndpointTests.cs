@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
 /// O circuito de aprovação da proteção de dados do catálogo pelo host real (ADR-0153): o item nasce pendente,
-/// o administrador envia a solicitação, a proteção de dados nega com a classificação recomendada e o
+/// o administrador envia a solicitação, a proteção de dados recomenda o ajuste com a classificação e o
 /// administrador aceita, inclusive no fato semeado e de sistema.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
@@ -42,7 +42,7 @@ public sealed class ProtecaoDoCatalogoEndpointTests
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "O tipo cadastrado fica pendente; a solicitação o leva; a negativa recomenda; o aceite o aprova como sensível")]
+    [Fact(DisplayName = "O tipo cadastrado fica pendente; a solicitação o leva; o ajuste recomenda; o aceite o aprova como sensível")]
     public async Task CicloDoTipoDeDocumento()
     {
         await TornarCarolineAprovadoraAsync();
@@ -56,11 +56,11 @@ public sealed class ProtecaoDoCatalogoEndpointTests
         (await solicitada.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("tiposDeDocumento").GetInt32().Should().BeGreaterThanOrEqualTo(1);
         (await ObterDoCatalogoAsync(client, id)).GetProperty("aprovacao").GetProperty("situacao").GetString().Should().Be("SOLICITADA");
 
-        (await DecidirAsync(client, "TIPO_DOCUMENTO", id, "NEGADA", "SENSIVEL"))
+        (await DecidirAsync(client, "TIPO_DOCUMENTO", id, "RECOMENDAR_AJUSTE", "SENSIVEL"))
             .StatusCode.Should().Be(HttpStatusCode.NoContent);
-        JsonElement negado = await ObterDoCatalogoAsync(client, id);
-        negado.GetProperty("aprovacao").GetProperty("situacao").GetString().Should().Be("NEGADA");
-        negado.GetProperty("aprovacao").GetProperty("classificacaoRecomendada").GetString().Should().Be("SENSIVEL");
+        JsonElement ajustado = await ObterDoCatalogoAsync(client, id);
+        ajustado.GetProperty("aprovacao").GetProperty("situacao").GetString().Should().Be("AJUSTE_RECOMENDADO");
+        ajustado.GetProperty("aprovacao").GetProperty("classificacaoRecomendada").GetString().Should().Be("SENSIVEL");
 
         (await EnviarAsync(client, HttpMethod.Post, $"{Tipos}/{id}/aceite-da-recomendacao")).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
@@ -69,6 +69,35 @@ public sealed class ProtecaoDoCatalogoEndpointTests
         aprovado.GetProperty("classificacaoProtecao").GetString().Should().Be("SENSIVEL");
         aprovado.GetProperty("protecaoAprovada").GetBoolean().Should().BeTrue();
         (await ListarAsync(client)).Should().NotContain(item => item.GetProperty("id").GetGuid() == id, "o item aprovado sai da lista");
+    }
+
+    [Fact(DisplayName = "A reprovação exige a justificativa, aparece na fila e no detalhe, e o aceite do item reprovado é recusado")]
+    public async Task Reprovacao_ComJustificativa_NaoTemAceite()
+    {
+        await TornarCarolineAprovadoraAsync();
+        using HttpClient client = _fixture.Factory.CreateClient();
+        Guid id = await CadastrarTipoAsync(client, "INTERNO");
+        (await EnviarAsync(client, HttpMethod.Post, $"{Base}/solicitacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
+
+        HttpResponseMessage semMotivo = await DecidirAsync(client, "TIPO_DOCUMENTO", id, "REPROVAR");
+        semMotivo.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await semMotivo.Content.ReadAsStringAsync()).Should().Contain("justificativa_obrigatoria");
+        HttpResponseMessage longa = await DecidirAsync(client, "TIPO_DOCUMENTO", id, "REPROVAR", justificativa: new string('a', 2001));
+        longa.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await longa.Content.ReadAsStringAsync()).Should().Contain("justificativa_muito_longa");
+
+        (await DecidirAsync(client, "TIPO_DOCUMENTO", id, "REPROVAR", justificativa: "O laudo não é necessário para a finalidade."))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        JsonElement reprovado = await ObterDoCatalogoAsync(client, id);
+        reprovado.GetProperty("aprovacao").GetProperty("situacao").GetString().Should().Be("REPROVADA");
+        reprovado.GetProperty("aprovacao").GetProperty("justificativa").GetString().Should().Be("O laudo não é necessário para a finalidade.");
+        JsonElement detalhe = await (await EnviarAsync(client, HttpMethod.Get, $"{Base}/tipos-documento/{id}")).Content.ReadFromJsonAsync<JsonElement>();
+        detalhe.GetProperty("aprovacao").GetProperty("justificativa").GetString().Should().Be("O laudo não é necessário para a finalidade.");
+
+        HttpResponseMessage aceite = await EnviarAsync(client, HttpMethod.Post, $"{Tipos}/{id}/aceite-da-recomendacao");
+        aceite.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await aceite.Content.ReadAsStringAsync()).Should().Contain("aceite_de_item_reprovado");
     }
 
     [Fact(DisplayName = "Quem mantém os tipos e os fatos, mas não tem a permissão de aprovar, recebe 403 ao decidir e o item continua solicitado")]
@@ -90,7 +119,7 @@ public sealed class ProtecaoDoCatalogoEndpointTests
             {
                 cadastro = "TIPO_DOCUMENTO",
                 itemId = id,
-                decisao = "APROVADA",
+                decisao = "APROVAR",
                 classificacaoProtecao = item.GetProperty("classificacaoProtecao").GetString(),
                 hipoteseLegal = item.GetProperty("hipoteseLegal").GetString(),
                 finalidadeTratamento = item.GetProperty("finalidadeTratamento").GetString(),
@@ -113,7 +142,7 @@ public sealed class ProtecaoDoCatalogoEndpointTests
         Guid id = await CadastrarTipoAsync(client, "INTERNO");
         (await EnviarAsync(client, HttpMethod.Post, $"{Base}/solicitacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
 
-        HttpResponseMessage resposta = await DecidirAsync(client, "TIPO_DOCUMENTO", id, "APROVADA", protecaoDesatualizada: true);
+        HttpResponseMessage resposta = await DecidirAsync(client, "TIPO_DOCUMENTO", id, "APROVAR", protecaoDesatualizada: true);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.Conflict);
         (await resposta.Content.ReadAsStringAsync()).Should().Contain("protecao_mudou").And.NotContain("conflito_de_concorrencia");
@@ -126,7 +155,7 @@ public sealed class ProtecaoDoCatalogoEndpointTests
         using HttpClient client = _fixture.Factory.CreateClient();
         Guid id = await CadastrarTipoAsync(client, "PESSOAL");
 
-        HttpResponseMessage resposta = await DecidirAsync(client, "TIPO_DOCUMENTO", id, "APROVADA");
+        HttpResponseMessage resposta = await DecidirAsync(client, "TIPO_DOCUMENTO", id, "APROVAR");
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await resposta.Content.ReadAsStringAsync()).Should().Contain("item_fora_de_solicitacao");
@@ -148,7 +177,7 @@ public sealed class ProtecaoDoCatalogoEndpointTests
         await concorrente.Database.ExecuteSqlInterpolatedAsync($"UPDATE configuracao.tipo_documento SET updated_at = now() WHERE id = {id}");
         int pid = await ConcorrenciaTestHelpers.GetConnectionPidAsync(concorrente);
 
-        Task<HttpResponseMessage> decisao = DecidirAsync(client, "TIPO_DOCUMENTO", id, "APROVADA");
+        Task<HttpResponseMessage> decisao = DecidirAsync(client, "TIPO_DOCUMENTO", id, "APROVAR");
         await ConcorrenciaTestHelpers.WaitForBlockedBackendAsync(_fixture.Factory, decisao, [pid]);
         await transacao.CommitAsync();
 
@@ -186,7 +215,7 @@ public sealed class ProtecaoDoCatalogoEndpointTests
         (await EnviarAsync(client, HttpMethod.Put, $"{Fatos}/{IdDeQuilombola}/definicao", DefinicaoDe(original))).StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await EnviarAsync(client, HttpMethod.Post, $"{Base}/solicitacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
 
-        (await DecidirAsync(client, "FATO", IdDeQuilombola, "NEGADA", "PESSOAL"))
+        (await DecidirAsync(client, "FATO", IdDeQuilombola, "RECOMENDAR_AJUSTE", "PESSOAL"))
             .StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await EnviarAsync(client, HttpMethod.Post, $"{Fatos}/{IdDeQuilombola}/aceite-da-recomendacao")).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
@@ -346,7 +375,7 @@ public sealed class ProtecaoDoCatalogoEndpointTests
 
     // A decisão leva a proteção que o aprovador conferiu, como a listagem a mostra.
     private static async Task<HttpResponseMessage> DecidirAsync(
-        HttpClient client, string cadastro, Guid itemId, string decisao, string? recomendada = null, bool protecaoDesatualizada = false)
+        HttpClient client, string cadastro, Guid itemId, string decisao, string? recomendada = null, bool protecaoDesatualizada = false, string? justificativa = null)
     {
         JsonElement item = await ObterDoCatalogoAsync(client, itemId);
         return await EnviarAsync(client, HttpMethod.Post, Base, new
@@ -358,6 +387,7 @@ public sealed class ProtecaoDoCatalogoEndpointTests
             hipoteseLegal = item.GetProperty("hipoteseLegal").GetString(),
             finalidadeTratamento = item.GetProperty("finalidadeTratamento").GetString(),
             classificacaoRecomendada = recomendada,
+            justificativa,
         });
     }
 

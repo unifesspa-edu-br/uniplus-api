@@ -13,7 +13,8 @@ public static class SituacoesDaAprovacao
         [SituacaoDaAprovacao.Pendente] = "PENDENTE",
         [SituacaoDaAprovacao.Solicitada] = "SOLICITADA",
         [SituacaoDaAprovacao.Aprovada] = "APROVADA",
-        [SituacaoDaAprovacao.Negada] = "NEGADA",
+        [SituacaoDaAprovacao.AjusteRecomendado] = "AJUSTE_RECOMENDADO",
+        [SituacaoDaAprovacao.Reprovada] = "REPROVADA",
     };
 
     private static readonly Dictionary<string, SituacaoDaAprovacao> DeToken =

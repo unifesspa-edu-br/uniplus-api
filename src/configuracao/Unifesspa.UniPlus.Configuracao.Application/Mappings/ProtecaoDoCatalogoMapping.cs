@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Mappings;
 
+using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
@@ -7,8 +8,8 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 internal static class ProtecaoDoCatalogoMapping
 {
-    public const string TipoDocumento = "TIPO_DOCUMENTO";
-    public const string Fato = "FATO";
+    public const string TipoDocumento = CadastrosDaProtecaoDoCatalogo.TipoDocumento;
+    public const string Fato = CadastrosDaProtecaoDoCatalogo.Fato;
 
     public static AprovacaoDaProtecaoDto ToDto(this AprovacaoDaProtecao aprovacao)
     {
@@ -18,6 +19,7 @@ internal static class ProtecaoDoCatalogoMapping
             aprovacao.SolicitadaEm,
             aprovacao.DecididaEm,
             aprovacao.ClassificacaoRecomendada is { } recomendada ? ClassificacoesDeProtecao.ParaTokenCanonico(recomendada) : null,
+            aprovacao.Justificativa,
             aprovacao.AceitaEm);
     }
 

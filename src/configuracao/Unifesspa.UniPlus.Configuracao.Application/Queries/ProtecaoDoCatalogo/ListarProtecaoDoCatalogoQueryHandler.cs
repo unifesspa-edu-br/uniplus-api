@@ -32,7 +32,7 @@ public static class ListarProtecaoDoCatalogoQueryHandler
             {
                 return Result<IReadOnlyList<ItemDaProtecaoDoCatalogoDto>>.ValidationFailure([new FieldError("situacao", new DomainError(
                     ProtecaoDoCatalogoErrorCodes.SituacaoInvalida,
-                    "A situação deve ser PENDENTE, SOLICITADA ou NEGADA: o item aprovado não aguarda a proteção de dados."))]);
+                    "A situação deve ser PENDENTE, SOLICITADA, AJUSTE_RECOMENDADO ou REPROVADA: o item aprovado não aguarda a proteção de dados."))]);
             }
 
             situacao = analisada;

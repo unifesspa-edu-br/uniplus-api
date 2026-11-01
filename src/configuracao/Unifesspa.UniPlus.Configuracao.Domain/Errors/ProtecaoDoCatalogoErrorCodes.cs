@@ -12,10 +12,10 @@ public static class ProtecaoDoCatalogoErrorCodes
     /// <summary>Decisão da proteção de dados sobre item que não está em solicitação.</summary>
     public const string ItemForaDeSolicitacao = "ProtecaoDoCatalogo.ItemForaDeSolicitacao";
 
-    /// <summary>Negativa sem a classificação recomendada, ou com uma fora do vocabulário.</summary>
+    /// <summary>Ajuste recomendado sem a classificação recomendada, ou com uma fora do vocabulário.</summary>
     public const string RecomendacaoObrigatoria = "ProtecaoDoCatalogo.RecomendacaoObrigatoria";
 
-    /// <summary>Aceite da recomendação num item que a proteção de dados não negou.</summary>
+    /// <summary>Aceite da recomendação num item em que a proteção de dados não recomendou ajuste.</summary>
     public const string SemRecomendacaoParaAceitar = "ProtecaoDoCatalogo.SemRecomendacaoParaAceitar";
 
     /// <summary>
@@ -45,7 +45,7 @@ public static class ProtecaoDoCatalogoErrorCodes
     /// </summary>
     public const string ProtecaoMudou = "ProtecaoDoCatalogo.ProtecaoMudou";
 
-    /// <summary>A classificação recomendada na negativa é a que o item já tem: não há o que corrigir, o item se aprova.</summary>
+    /// <summary>A classificação recomendada no ajuste é a que o item já tem: não há o que corrigir, o item se aprova.</summary>
     public const string RecomendacaoIgualAAtual = "ProtecaoDoCatalogo.RecomendacaoIgualAAtual";
 
     /// <summary>O filtro de situação da consulta fora do vocabulário.</summary>
@@ -54,6 +54,18 @@ public static class ProtecaoDoCatalogoErrorCodes
     /// <summary>O cadastro do item da decisão (<c>TIPO_DOCUMENTO</c> ou <c>FATO</c>) ausente ou fora do vocabulário.</summary>
     public const string CadastroInvalido = "ProtecaoDoCatalogo.CadastroInvalido";
 
-    /// <summary>A decisão (<c>APROVADA</c> ou <c>NEGADA</c>) ausente ou fora do vocabulário.</summary>
+    /// <summary>A decisão (<c>APROVAR</c>, <c>RECOMENDAR_AJUSTE</c> ou <c>REPROVAR</c>) ausente ou fora do vocabulário.</summary>
     public const string DecisaoInvalida = "ProtecaoDoCatalogo.DecisaoInvalida";
+
+    /// <summary>Reprovação sem justificativa (ausente ou em branco).</summary>
+    public const string JustificativaObrigatoria = "ProtecaoDoCatalogo.JustificativaObrigatoria";
+
+    /// <summary>Justificativa da decisão acima do limite de caracteres.</summary>
+    public const string JustificativaMuitoLonga = "ProtecaoDoCatalogo.JustificativaMuitoLonga";
+
+    /// <summary>Classificação recomendada ou justificativa numa decisão que não as admite.</summary>
+    public const string DadoDaDecisaoNaoCabe = "ProtecaoDoCatalogo.DadoDaDecisaoNaoCabe";
+
+    /// <summary>Aceite da recomendação num item reprovado: a reprovação não recomenda classificação, o item só se edita.</summary>
+    public const string AceiteDeItemReprovado = "ProtecaoDoCatalogo.AceiteDeItemReprovado";
 }

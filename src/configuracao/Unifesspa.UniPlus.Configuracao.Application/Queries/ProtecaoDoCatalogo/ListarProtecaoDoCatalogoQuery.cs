@@ -10,5 +10,5 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// cadastros, ordenados por cadastro e código. O volume é o do catálogo, portanto a leitura não é paginada.
 /// </summary>
 /// <param name="Acesso">O que quem consulta pode manter ou aprovar, decidido na borda.</param>
-/// <param name="Situacao">Token canônico opcional (<c>PENDENTE</c>, <c>SOLICITADA</c> ou <c>NEGADA</c>) que restringe a lista.</param>
+/// <param name="Situacao">Token canônico opcional (<c>PENDENTE</c>, <c>SOLICITADA</c>, <c>AJUSTE_RECOMENDADO</c> ou <c>REPROVADA</c>) que restringe a lista.</param>
 public sealed record ListarProtecaoDoCatalogoQuery(AcessoAoCatalogoDeProtecao Acesso, string? Situacao = null) : IQuery<Result<IReadOnlyList<ItemDaProtecaoDoCatalogoDto>>>;

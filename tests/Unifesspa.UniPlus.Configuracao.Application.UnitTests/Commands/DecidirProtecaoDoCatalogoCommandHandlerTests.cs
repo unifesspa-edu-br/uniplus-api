@@ -24,23 +24,88 @@ public sealed class DecidirProtecaoDoCatalogoCommandHandlerTests
     private readonly IFatoCandidatoRepository _fatos = Substitute.For<IFatoCandidatoRepository>();
     private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
-    [Fact(DisplayName = "A negativa do tipo registra a classificação recomendada e quem negou")]
-    public async Task Handle_NegaOTipoComRecomendacao()
+    [Fact(DisplayName = "O ajuste do tipo registra a classificação recomendada, a justificativa e quem decidiu")]
+    public async Task Handle_RecomendaAjusteDoTipo()
     {
         TipoDocumento laudo = TipoSolicitado();
         _tipos.ObterPorIdAsync(laudo.Id, Arg.Any<CancellationToken>()).Returns(laudo);
 
-        Result resultado = await DecidirAsync(new DecidirProtecaoDoCatalogoCommand("TIPO_DOCUMENTO", laudo.Id, "NEGADA", "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade, "SENSIVEL"));
+        Result resultado = await DecidirAsync(new DecidirProtecaoDoCatalogoCommand("TIPO_DOCUMENTO", laudo.Id, "RECOMENDAR_AJUSTE", "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade, "SENSIVEL", "Traz dado de saúde."));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         laudo.Aprovacao.Should().BeEquivalentTo(new
         {
-            Situacao = SituacaoDaAprovacao.Negada,
+            Situacao = SituacaoDaAprovacao.AjusteRecomendado,
+            Justificativa = "Traz dado de saúde.",
             ClassificacaoRecomendada = ClassificacaoDeProtecao.Sensivel,
             DecididaPor = Isabella,
             DecididaEm = Agora,
         });
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "A reprovação do fato grava a justificativa aparada")]
+    public async Task Handle_ReprovaOFato()
+    {
+        FatoCandidato fato = NovoFato();
+        fato.SolicitarAprovacaoDaProtecao(Isabella, Agora);
+        _fatos.ObterPorIdAsync(fato.Id, Arg.Any<CancellationToken>()).Returns(fato);
+
+        Result resultado = await DecidirAsync(new DecidirProtecaoDoCatalogoCommand(
+            "FATO", fato.Id, "REPROVAR", "PESSOAL", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade, Justificativa: "  Dado desnecessário.  "));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        fato.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Reprovada);
+        fato.Aprovacao.Justificativa.Should().Be("Dado desnecessário.");
+        await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "O ajuste sem justificativa, ou com ela em branco, é aceito e não guarda justificativa")]
+    public async Task Handle_AjusteSemJustificativa_Aceito()
+    {
+        TipoDocumento laudo = TipoSolicitado();
+        _tipos.ObterPorIdAsync(laudo.Id, Arg.Any<CancellationToken>()).Returns(laudo);
+
+        Result resultado = await DecidirAsync(new DecidirProtecaoDoCatalogoCommand(
+            "TIPO_DOCUMENTO", laudo.Id, "RECOMENDAR_AJUSTE", "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade, "SENSIVEL", "   "));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        laudo.Aprovacao.Justificativa.Should().BeNull();
+    }
+
+    [Theory(DisplayName = "A decisão com recomendação ou justificativa que não cabe, ou a reprovação sem justificativa, é recusada no campo antes de ler o item")]
+    [InlineData("APROVAR", "SENSIVEL", null, "classificacaoRecomendada", "DadoDaDecisaoNaoCabe")]
+    [InlineData("APROVAR", null, "Motivo.", "justificativa", "DadoDaDecisaoNaoCabe")]
+    [InlineData("REPROVAR", "SENSIVEL", "Motivo.", "classificacaoRecomendada", "DadoDaDecisaoNaoCabe")]
+    [InlineData("REPROVAR", null, null, "justificativa", "JustificativaObrigatoria")]
+    [InlineData("REPROVAR", null, "   ", "justificativa", "JustificativaObrigatoria")]
+    public async Task Handle_DadoDaDecisaoInvalido_RecusaNoCampo(
+        string decisao, string? recomendada, string? justificativa, string campo, string codigo)
+    {
+        Result resultado = await DecidirAsync(new DecidirProtecaoDoCatalogoCommand(
+            "TIPO_DOCUMENTO", Guid.NewGuid(), decisao, "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade, recomendada, justificativa));
+
+        resultado.Errors.Should().ContainSingle(e => e.Field == campo).Which.Error.Code.Should().Be($"ProtecaoDoCatalogo.{codigo}");
+        await _tipos.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
+    }
+
+    [Theory(DisplayName = "A justificativa de até 2.000 caracteres é aceita; com mais, recusada")]
+    [InlineData(2000, true)]
+    [InlineData(2001, false)]
+    public async Task Handle_LimiteDaJustificativa(int tamanho, bool aceita)
+    {
+        TipoDocumento laudo = TipoSolicitado();
+        _tipos.ObterPorIdAsync(laudo.Id, Arg.Any<CancellationToken>()).Returns(laudo);
+
+        Result resultado = await DecidirAsync(new DecidirProtecaoDoCatalogoCommand(
+            "TIPO_DOCUMENTO", laudo.Id, "REPROVAR", "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade, Justificativa: new string('a', tamanho)));
+
+        resultado.IsSuccess.Should().Be(aceita);
+        if (!aceita)
+        {
+            resultado.Errors.Should().ContainSingle(e => e.Field == "justificativa")
+                .Which.Error.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.JustificativaMuitoLonga);
+        }
     }
 
     [Fact(DisplayName = "A aprovação do fato passa pela mutação do fato e grava")]
@@ -50,7 +115,7 @@ public sealed class DecidirProtecaoDoCatalogoCommandHandlerTests
         fato.SolicitarAprovacaoDaProtecao(Isabella, Agora);
         _fatos.ObterPorIdAsync(fato.Id, Arg.Any<CancellationToken>()).Returns(fato);
 
-        Result resultado = await DecidirAsync(new DecidirProtecaoDoCatalogoCommand("FATO", fato.Id, "APROVADA", "PESSOAL", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade));
+        Result resultado = await DecidirAsync(new DecidirProtecaoDoCatalogoCommand("FATO", fato.Id, "APROVAR", "PESSOAL", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         fato.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Aprovada);
@@ -76,7 +141,7 @@ public sealed class DecidirProtecaoDoCatalogoCommandHandlerTests
         TipoDocumento pendente = NovoTipo();
         _tipos.ObterPorIdAsync(pendente.Id, Arg.Any<CancellationToken>()).Returns(pendente);
 
-        Result resultado = await DecidirAsync(new DecidirProtecaoDoCatalogoCommand("TIPO_DOCUMENTO", pendente.Id, "APROVADA", "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade));
+        Result resultado = await DecidirAsync(new DecidirProtecaoDoCatalogoCommand("TIPO_DOCUMENTO", pendente.Id, "APROVAR", "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade));
 
         resultado.Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.ItemForaDeSolicitacao);
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
@@ -89,7 +154,7 @@ public sealed class DecidirProtecaoDoCatalogoCommandHandlerTests
         _tipos.ObterPorIdAsync(laudo.Id, Arg.Any<CancellationToken>()).Returns(laudo);
         _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>()).Returns(Task.FromException<int>(new DbUpdateConcurrencyException()));
 
-        Result resultado = await DecidirAsync(new DecidirProtecaoDoCatalogoCommand("TIPO_DOCUMENTO", laudo.Id, "APROVADA", "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade));
+        Result resultado = await DecidirAsync(new DecidirProtecaoDoCatalogoCommand("TIPO_DOCUMENTO", laudo.Id, "APROVAR", "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade));
 
         resultado.Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.ConflitoDeConcorrencia);
         _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
@@ -105,8 +170,8 @@ public sealed class DecidirProtecaoDoCatalogoCommandHandlerTests
         _fatos.ObterPorIdAsync(fato.Id, Arg.Any<CancellationToken>()).Returns(fato);
 
         // O aprovador viu outra classificação para o tipo e outra finalidade para o fato.
-        Result tipo = await DecidirAsync(new DecidirProtecaoDoCatalogoCommand("TIPO_DOCUMENTO", laudo.Id, "APROVADA", "SENSIVEL", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade));
-        Result outraFinalidade = await DecidirAsync(new DecidirProtecaoDoCatalogoCommand("FATO", fato.Id, "APROVADA", "PESSOAL", "CUMPRIMENTO_OBRIGACAO_LEGAL", "Outra finalidade."));
+        Result tipo = await DecidirAsync(new DecidirProtecaoDoCatalogoCommand("TIPO_DOCUMENTO", laudo.Id, "APROVAR", "SENSIVEL", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade));
+        Result outraFinalidade = await DecidirAsync(new DecidirProtecaoDoCatalogoCommand("FATO", fato.Id, "APROVAR", "PESSOAL", "CUMPRIMENTO_OBRIGACAO_LEGAL", "Outra finalidade."));
 
         tipo.Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.ProtecaoMudou);
         outraFinalidade.Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.ProtecaoMudou);
@@ -118,7 +183,7 @@ public sealed class DecidirProtecaoDoCatalogoCommandHandlerTests
     [Fact(DisplayName = "A decisão sem a proteção conferida é recusada no campo")]
     public async Task Handle_SemProtecaoConferida_Recusa()
     {
-        Result resultado = await DecidirAsync(new DecidirProtecaoDoCatalogoCommand("TIPO_DOCUMENTO", Guid.NewGuid(), "APROVADA", null, null, null));
+        Result resultado = await DecidirAsync(new DecidirProtecaoDoCatalogoCommand("TIPO_DOCUMENTO", Guid.NewGuid(), "APROVAR", null, null, null));
 
         resultado.Errors.Select(static e => e.Field).Should().BeEquivalentTo("classificacaoProtecao", "hipoteseLegal", "finalidadeTratamento");
     }
@@ -127,7 +192,7 @@ public sealed class DecidirProtecaoDoCatalogoCommandHandlerTests
     public async Task Handle_TokenConferidoInvalido_RecusaNoCampo()
     {
         Result resultado = await DecidirAsync(new DecidirProtecaoDoCatalogoCommand(
-            "TIPO_DOCUMENTO", Guid.NewGuid(), "APROVADA", "SECRETISSIMO", "NAO_EXISTE", Finalidade));
+            "TIPO_DOCUMENTO", Guid.NewGuid(), "APROVAR", "SECRETISSIMO", "NAO_EXISTE", Finalidade));
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
@@ -136,13 +201,13 @@ public sealed class DecidirProtecaoDoCatalogoCommandHandlerTests
         ]);
     }
 
-    [Theory(DisplayName = "A negativa sem a classificação recomendada, ou com uma fora do vocabulário, é recusada no campo antes de ler o item")]
+    [Theory(DisplayName = "O ajuste sem a classificação recomendada, ou com uma fora do vocabulário, é recusada no campo antes de ler o item")]
     [InlineData(null)]
     [InlineData("SECRETISSIMO")]
-    public async Task Handle_NegativaSemRecomendacaoValida_RecusaAntesDeLerOItem(string? recomendada)
+    public async Task Handle_AjusteSemRecomendacaoValida_RecusaAntesDeLerOItem(string? recomendada)
     {
         Result resultado = await DecidirAsync(new DecidirProtecaoDoCatalogoCommand(
-            "TIPO_DOCUMENTO", Guid.NewGuid(), "NEGADA", "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade, recomendada));
+            "TIPO_DOCUMENTO", Guid.NewGuid(), "RECOMENDAR_AJUSTE", "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade, recomendada));
 
         resultado.Errors.Should().ContainSingle(e => e.Field == "classificacaoRecomendada")
             .Which.Error.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.RecomendacaoObrigatoria);
@@ -152,7 +217,7 @@ public sealed class DecidirProtecaoDoCatalogoCommandHandlerTests
     [Fact(DisplayName = "O tipo inexistente é 404 do cadastro de tipos")]
     public async Task Handle_TipoInexistente_NaoEncontrado()
     {
-        Result resultado = await DecidirAsync(new DecidirProtecaoDoCatalogoCommand("TIPO_DOCUMENTO", Guid.NewGuid(), "APROVADA", "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade));
+        Result resultado = await DecidirAsync(new DecidirProtecaoDoCatalogoCommand("TIPO_DOCUMENTO", Guid.NewGuid(), "APROVAR", "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade));
 
         resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.NaoEncontrado);
     }
