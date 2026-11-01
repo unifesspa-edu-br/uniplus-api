@@ -64,9 +64,9 @@ public static class CriarProcessoSeletivoCommandHandler
         // O processo nasce na unidade que o comando nomeia, então é contra ela que a permissão se decide, antes de
         // qualquer leitura: quem não pode configurar naquela unidade não descobre se ela existe ou tem cidade.
         ResultadoDoAcesso acesso = await AcessoAoProcesso
-            .VerificarNaUnidadeAsync(
-                verificador, command.UnidadeAdministradoraOrigemId, processoId: null, PermissaoSelecao.ProcessosConfigurar,
-                ResourceTiposSelecao.ProcessoSeletivo, sensibilidadeDoResource: null, cancellationToken)
+            .ExigirNaUnidadeAsync(
+                verificador, command.UnidadeAdministradoraOrigemId, PermissaoSelecao.ProcessosConfigurar,
+                unidade => AcessoAoProcesso.ResourceDoProcesso(unidade, processoId: null), cancellationToken)
             .ConfigureAwait(false);
         if (acesso != ResultadoDoAcesso.Permitido)
         {

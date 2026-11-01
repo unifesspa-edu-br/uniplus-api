@@ -74,32 +74,21 @@ public static class ObterInscricaoAdministrativaQueryHandler
         ArgumentNullException.ThrowIfNull(documentoRepository);
         ArgumentNullException.ThrowIfNull(registroCodecs);
 
-        Guid? unidade = await processoRepository
-            .ObterUnidadeAdministradoraAsync(query.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
-        VinculoDaInscricao? vinculo = await inscricaoRepository
-            .ObterVinculoAsync(query.InscricaoId, cancellationToken).ConfigureAwait(false);
-        if (unidade is null
-            || vinculo is null
-            || vinculo.ProcessoSeletivoId != query.ProcessoSeletivoId
-            || vinculo.Situacao == SituacaoInscricao.Rascunho)
+        if (await AcessoAInscricao
+            .ConferirVinculoAsync(processoRepository, inscricaoRepository, query.ProcessoSeletivoId, query.InscricaoId, cancellationToken)
+            .ConfigureAwait(false) is not Vinculo conferido)
         {
             return Result<InscricaoAdministrativaDto>.Failure(InscricaoNaoEncontrada);
         }
 
-        ResultadoDoAcesso acesso = await AcessoAoProcesso
-            .VerificarNaUnidadeAsync(
-                verificador, unidade, query.ProcessoSeletivoId, PermissaoSelecao.InscricoesConsultar,
-                ResourceTiposSelecao.Inscricao, ClassificacaoDeProtecao.Pessoal, cancellationToken,
-                query.InscricaoId, inscricaoId: query.InscricaoId)
-            .ConfigureAwait(false);
-        if (acesso is ResultadoDoAcesso.IdentidadeIncompleta or ResultadoDoAcesso.Impedido)
+        Guid unidade = conferido.UnidadeId;
+        VinculoDaInscricao vinculo = conferido.Inscricao;
+        ResourceContext resource = AcessoAoProcesso.ResourceDaInscricao(unidade, query.ProcessoSeletivoId, query.InscricaoId);
+        if (await AcessoAInscricao
+            .DecidirAsync(verificador, conferido, PermissaoSelecao.InscricoesConsultar.Requisito, resource, cancellationToken)
+            .ConfigureAwait(false) is Recusada recusada)
         {
-            return Result<InscricaoAdministrativaDto>.Failure(AcessoAoProcesso.Recusa(acesso));
-        }
-
-        if (acesso != ResultadoDoAcesso.Permitido)
-        {
-            return Result<InscricaoAdministrativaDto>.Failure(InscricaoNaoEncontrada);
+            return Result<InscricaoAdministrativaDto>.Failure(AcessoAInscricao.Erro(recusada, InscricaoNaoEncontrada));
         }
 
         Result<VersaoConfiguracao> versao = await VersaoFixadaDaInscricaoResolver
@@ -113,7 +102,6 @@ public static class ObterInscricaoAdministrativaQueryHandler
             return Result<InscricaoAdministrativaDto>.Failure(envelope.Error!);
         }
 
-        ResourceContext resource = AcessoAoProcesso.ResourceDaInscricao(unidade, query.ProcessoSeletivoId, query.InscricaoId)!;
         DecisoesDaProjecao decisoes = await projetor
             .DecidirAsync(PortaDeProjecaoDaSelecao.Instancia, resource, ClassesPedidas, cancellationToken).ConfigureAwait(false);
         await projetor.RegistrarAsync(decisoes, cancellationToken).ConfigureAwait(false);
@@ -125,10 +113,8 @@ public static class ObterInscricaoAdministrativaQueryHandler
         }
 
         bool podeRevelar = decisoes.Permite(NaturezaDoItem.Dado, ClassificacaoDeProtecao.Pessoal)
-            && await AcessoAoProcesso
-                .PodeNaUnidadeAsync(
-                    verificador, unidade, query.ProcessoSeletivoId, PermissaoSelecao.DadosIdentificadoresRevelar,
-                    ResourceTiposSelecao.Inscricao, cancellationToken)
+            && await verificador
+                .PodeAsync(PermissaoSelecao.DadosIdentificadoresRevelar.Requisito, resource, cancellationToken)
                 .ConfigureAwait(false) == ResultadoDoAcesso.Permitido;
 
         FatosDaVersao fatos = FatosDaVersao.De(envelope.Value!);

@@ -52,11 +52,12 @@ public static class ListarInscricoesDoProcessoQueryHandler
 
         Guid? unidade = await processoRepository
             .ObterUnidadeAdministradoraAsync(query.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
-        ResourceContext? resource = AcessoAoProcesso.ResourceDaInscricao(unidade, query.ProcessoSeletivoId, inscricaoId: null);
-        if (resource is null)
+        if (unidade is not { } dona)
         {
             return new ListarInscricoesDoProcessoResult([], null, null);
         }
+
+        ResourceContext resource = AcessoAoProcesso.ResourceDaInscricao(dona, query.ProcessoSeletivoId, inscricaoId: null);
 
         ProtecaoDoNome nome = await ClassificacaoDoNomeNoProcesso
             .ResolverAsync(query.ProcessoSeletivoId, processoRepository, registroCodecs, cancellationToken).ConfigureAwait(false);

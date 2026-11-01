@@ -80,24 +80,6 @@ public sealed class ResourceTiposDeAutorizacaoTests
             .Which.Should().Contain("Configuracao").And.Contain("Selecao");
     }
 
-    [Fact(DisplayName = "ExigePermissaoNoProcesso recusa na construção o tipo de resource fora da convenção")]
-    public void ExigePermissaoNoProcesso_TipoForaDaConvencao_Lanca()
-    {
-        Func<Unifesspa.UniPlus.Selecao.API.Authorization.ExigePermissaoNoProcessoAttribute> criar = () =>
-            new(Unifesspa.UniPlus.Selecao.Application.Permissoes.PermissaoSelecao.ProcessosConfigurar) { ResourceTipo = "ProcessoSeletivo" };
-
-        criar.Should().Throw<ArgumentException>().WithMessage("*kebab-case*");
-    }
-
-    [Fact(DisplayName = "ExigePermissaoNoProcesso recusa o tipo nulo com a mesma exceção orientadora")]
-    public void ExigePermissaoNoProcesso_TipoNulo_Lanca()
-    {
-        Func<Unifesspa.UniPlus.Selecao.API.Authorization.ExigePermissaoNoProcessoAttribute> criar = () =>
-            new(Unifesspa.UniPlus.Selecao.Application.Permissoes.PermissaoSelecao.ProcessosConfigurar) { ResourceTipo = null! };
-
-        criar.Should().Throw<ArgumentException>().WithMessage("*kebab-case*");
-    }
-
     [Fact(DisplayName = "A conferência de unicidade inclui o tipo fixo operacao")]
     public void TiposPorModulo_IncluiOTipoOperacao()
     {

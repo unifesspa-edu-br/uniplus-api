@@ -7,7 +7,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
-using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -31,22 +30,11 @@ public sealed class ExigePermissaoNoProcessoAttribute : Attribute, IAsyncAuthori
     /// <param name="permissao">Permissão exigida na unidade dona do processo.</param>
     public ExigePermissaoNoProcessoAttribute(PermissaoSelecao permissao) => _permissao = permissao;
 
-    /// <summary>Tipo do resource que a decisão enxerga. Omitido, é o processo seletivo.</summary>
-    public string ResourceTipo
-    {
-        get;
-        init => field = ResourceTipos.SegueAConvencao(value)
-            ? value
-            : throw new ArgumentException(
-                $"O tipo de resource '{value}' está fora da convenção kebab-case; use ResourceTiposSelecao.", nameof(value));
-    } = ResourceTiposSelecao.ProcessoSeletivo;
-
     /// <summary>
-    /// A sensibilidade do dado que o resource guarda, quando difere da que a permissão declara. A inscrição guarda dado
-    /// pessoal, então a decisão sobre ela sai com a sensibilidade pessoal e entra no registro de acessos, ainda que a
-    /// permissão de acesso seja interna. Omitida, vale a da permissão.
+    /// O alvo da decisão. Omitido, é o processo seletivo; as inscrições do processo guardam dado pessoal, então a decisão
+    /// sobre elas entra no registro de acessos ainda que a permissão de acesso seja interna.
     /// </summary>
-    public ClassificacaoDeProtecao SensibilidadeDoResource { get; init; } = ClassificacaoDeProtecao.Nenhuma;
+    public AlvoDaPermissaoNoProcesso Alvo { get; init; } = AlvoDaPermissaoNoProcesso.Processo;
 
     /// <summary>Nome do parâmetro de rota que traz o identificador do processo. Omitido, é <c>id</c>.</summary>
     public string ParametroDaRota { get; init; } = RotaDoProcesso.ParametroPadrao;
@@ -65,12 +53,23 @@ public sealed class ExigePermissaoNoProcessoAttribute : Attribute, IAsyncAuthori
                 servicos.GetRequiredService<IProcessoSeletivoRepository>(),
                 processoId,
                 _permissao,
-                ResourceTipo,
-                SensibilidadeDoResource == ClassificacaoDeProtecao.Nenhuma ? null : SensibilidadeDoResource,
+                unidade => Alvo == AlvoDaPermissaoNoProcesso.Inscricoes
+                    ? AcessoAoProcesso.ResourceDaInscricao(unidade, processoId, inscricaoId: null)
+                    : AcessoAoProcesso.ResourceDoProcesso(unidade, processoId),
                 context.HttpContext.RequestAborted)
             .ConfigureAwait(false);
 
         context.Result = RespostaDoAcesso.Para(
             resultado, () => RotaDoProcesso.NaoEncontrado(servicos, processoId), () => RotaDoProcesso.Impedido(servicos));
     }
+}
+
+/// <summary>O alvo que <see cref="ExigePermissaoNoProcessoAttribute"/> decide sobre o processo da rota.</summary>
+public enum AlvoDaPermissaoNoProcesso
+{
+    /// <summary>O próprio processo seletivo.</summary>
+    Processo = 0,
+
+    /// <summary>Todas as inscrições do processo.</summary>
+    Inscricoes = 1,
 }

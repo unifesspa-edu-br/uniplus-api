@@ -86,8 +86,8 @@ public static class ListarProcessosSeletivosQueryHandler
         {
             ResultadoDoAcesso acesso = await AcessoAoProcesso
                 .PodeNaUnidadeAsync(
-                    verificador, unidade, processoId: null, PermissaoSelecao.ProcessosConfigurar,
-                    ResourceTiposSelecao.ProcessoSeletivo, cancellationToken)
+                    verificador, unidade, PermissaoSelecao.ProcessosConfigurar,
+                    dona => AcessoAoProcesso.ResourceDoProcesso(dona, processoId: null), cancellationToken)
                 .ConfigureAwait(false);
             if (acesso == ResultadoDoAcesso.Permitido)
             {

@@ -56,17 +56,14 @@ public static partial class RevelarCampoDaInscricaoQueryHandler
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(logger);
 
-        Guid? unidade = await processoRepository
-            .ObterUnidadeAdministradoraAsync(query.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
-        VinculoDaInscricao? vinculo = await inscricaoRepository
-            .ObterVinculoAsync(query.InscricaoId, cancellationToken).ConfigureAwait(false);
-        if (unidade is null
-            || vinculo is null
-            || vinculo.ProcessoSeletivoId != query.ProcessoSeletivoId
-            || vinculo.Situacao == SituacaoInscricao.Rascunho)
+        if (await AcessoAInscricao
+            .ConferirVinculoAsync(processoRepository, inscricaoRepository, query.ProcessoSeletivoId, query.InscricaoId, cancellationToken)
+            .ConfigureAwait(false) is not Vinculo conferido)
         {
             return Result<CampoReveladoDto>.Failure(CampoNaoEncontrado);
         }
+
+        VinculoDaInscricao vinculo = conferido.Inscricao;
 
         Result<VersaoConfiguracao> versao = await VersaoFixadaDaInscricaoResolver
             .ResolverAsync(vinculo.VersaoFormularioId, vinculo.ProcessoSeletivoId, processoRepository, cancellationToken)
@@ -98,20 +95,14 @@ public static partial class RevelarCampoDaInscricaoQueryHandler
             return Result<CampoReveladoDto>.Failure(CampoNaoEncontrado);
         }
 
-        ResultadoDoAcesso acesso = await AcessoAoProcesso
-            .VerificarNaUnidadeAsync(
-                verificador, unidade, query.ProcessoSeletivoId, PermissaoSelecao.DadosIdentificadoresRevelar,
-                ResourceTiposSelecao.Inscricao, sensibilidadeDoResource: null, cancellationToken, query.InscricaoId,
-                campo.FatoCodigo, query.InscricaoId, campo.GrupoCodigo is null ? null : query.Ocorrencia)
-            .ConfigureAwait(false);
-        if (acesso is ResultadoDoAcesso.IdentidadeIncompleta or ResultadoDoAcesso.Impedido)
+        ResourceContext resource = AcessoAoProcesso.ResourceDoCampo(
+            conferido.UnidadeId, query.ProcessoSeletivoId, query.InscricaoId, campo.FatoCodigo,
+            campo.GrupoCodigo is null ? null : query.Ocorrencia);
+        if (await AcessoAInscricao
+            .DecidirAsync(verificador, conferido, PermissaoSelecao.DadosIdentificadoresRevelar.Requisito, resource, cancellationToken)
+            .ConfigureAwait(false) is Recusada recusada)
         {
-            return Result<CampoReveladoDto>.Failure(AcessoAoProcesso.Recusa(acesso));
-        }
-
-        if (acesso != ResultadoDoAcesso.Permitido)
-        {
-            return Result<CampoReveladoDto>.Failure(CampoNaoEncontrado);
+            return Result<CampoReveladoDto>.Failure(AcessoAInscricao.Erro(recusada, CampoNaoEncontrado));
         }
 
         string? bruto = await inscricaoRepository.LerIdentificadorAsync(resposta.RespostaId, cancellationToken).ConfigureAwait(false);

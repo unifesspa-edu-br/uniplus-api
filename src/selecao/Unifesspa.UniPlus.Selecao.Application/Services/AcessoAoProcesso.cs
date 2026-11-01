@@ -10,32 +10,105 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
 /// O ponto único em que a Seleção decide uma permissão que vale na unidade dona do processo (ADR-0078,
-/// ADR-0151): monta o resource com a unidade, o processo e a sensibilidade, e entrega a pergunta ao ponto de
+/// ADR-0151): as fábricas montam o resource com a unidade, o processo e o alvo, e a decisão é entregue ao ponto de
 /// decisão. A permissão só vale na unidade em que foi concedida, então a decisão precisa do processo carregado — por
 /// isso não cabe ao filtro de permissão do catálogo, que roda antes de saber qual processo é.
 /// </summary>
 public static class AcessoAoProcesso
 {
+    // A sensibilidade do resource é a base da decisão: vale a maior entre ela e a da permissão. O processo parte da
+    // menor, de modo que vale a da permissão; a inscrição guarda dado pessoal, então parte de pessoal.
+
+    /// <summary>O resource do processo na unidade dona; sem <paramref name="processoId"/>, o alvo é a unidade (a criação de processo).</summary>
+    public static ResourceContext ResourceDoProcesso(Guid unidadeId, Guid? processoId) =>
+        ResourceContext.From(ResourceTiposSelecao.ProcessoSeletivo, ClassificacaoDeProtecao.Publico, unidadeId, processoId).Value!;
+
+    /// <summary>
+    /// O resource de uma inscrição, ou de todas as do processo quando <paramref name="inscricaoId"/> é nulo. É dado
+    /// pessoal por natureza, então a sensibilidade é pessoal qualquer que seja a classe do item pedido: toda decisão
+    /// sobre ele entra no registro de acessos. É a única definição de que a inscrição é pessoal.
+    /// </summary>
+    public static ResourceContext ResourceDaInscricao(Guid unidadeId, Guid processoId, Guid? inscricaoId) =>
+        DaInscricao(unidadeId, processoId, inscricaoId, fatoCodigo: null, ocorrencia: null);
+
+    /// <summary>
+    /// O resource de um campo da inscrição: o registro do acesso nomeia o fato e, no grupo que se repete, a ocorrência.
+    /// </summary>
+    public static ResourceContext ResourceDoCampo(
+        Guid unidadeId, Guid processoId, Guid inscricaoId, string fatoCodigo, string? ocorrencia) =>
+        DaInscricao(unidadeId, processoId, inscricaoId, fatoCodigo, ocorrencia);
+
+    /// <summary>
+    /// O resource de um documento da inscrição, com a sensibilidade da classificação congelada da exigência a que o
+    /// arquivo responde.
+    /// </summary>
+    public static ResourceContext ResourceDoDocumento(
+        Guid unidadeId, Guid processoId, Guid inscricaoId, Guid arquivoId, ClassificacaoDeProtecao classificacao) =>
+        ResourceContext.From(
+            ResourceTiposSelecao.DocumentoDaInscricao, classificacao, unidadeId, processoId, resourceId: arquivoId,
+            inscricaoId: inscricaoId).Value!;
+
+    private static ResourceContext DaInscricao(
+        Guid unidadeId, Guid processoId, Guid? inscricaoId, string? fatoCodigo, string? ocorrencia) =>
+        ResourceContext.From(
+            ResourceTiposSelecao.Inscricao, ClassificacaoDeProtecao.Pessoal, unidadeId, processoId, resourceId: inscricaoId,
+            fatoCodigo: fatoCodigo, ocorrencia: ocorrencia, inscricaoId: inscricaoId).Value!;
+
+    /// <summary>
+    /// Decide o pedido da permissão sobre o resource que a unidade dona monta. Sem unidade (processo inexistente) não
+    /// há decisão a tomar sobre o resource: o acesso é negado sem consultar o ponto de decisão, que registraria como
+    /// permitida uma operação sobre um resource que não existe.
+    /// </summary>
+    public static async Task<ResultadoDoAcesso> ExigirNaUnidadeAsync(
+        IVerificadorDeAcesso verificador,
+        Guid? unidadeId,
+        PermissaoSelecao permissao,
+        Func<Guid, ResourceContext> resource,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(verificador);
+        ArgumentNullException.ThrowIfNull(resource);
+
+        return unidadeId is { } unidade
+            ? await verificador.ExigirAsync(permissao.Requisito, resource(unidade), cancellationToken).ConfigureAwait(false)
+            : ResultadoDoAcesso.Negado;
+    }
+
+    /// <summary>
+    /// Pergunta se a pessoa poderia exercer a permissão sobre o resource da unidade, sem registrar nada. Serve a mostrar
+    /// ou filtrar o que ela pode fazer; quem entrega dado decide por <see cref="ExigirNaUnidadeAsync"/>.
+    /// </summary>
+    public static async Task<ResultadoDoAcesso> PodeNaUnidadeAsync(
+        IVerificadorDeAcesso verificador,
+        Guid? unidadeId,
+        PermissaoSelecao permissao,
+        Func<Guid, ResourceContext> resource,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(verificador);
+        ArgumentNullException.ThrowIfNull(resource);
+
+        return unidadeId is { } unidade
+            ? await verificador.PodeAsync(permissao.Requisito, resource(unidade), cancellationToken).ConfigureAwait(false)
+            : ResultadoDoAcesso.Negado;
+    }
+
     /// <summary>
     /// Decide a permissão sobre o processo. O processo que não existe nunca é permitido: não há unidade dona, e a
     /// resposta é a mesma de quem não tem a permissão, para não revelar que o processo existe.
     /// </summary>
-    /// <param name="sensibilidadeDoResource">A sensibilidade do dado alcançado, quando difere da que a permissão declara.</param>
     public static async Task<ResultadoDoAcesso> VerificarAsync(
         IVerificadorDeAcesso verificador,
         IProcessoSeletivoRepository processos,
         Guid processoId,
         PermissaoSelecao permissao,
-        string resourceTipo,
-        ClassificacaoDeProtecao? sensibilidadeDoResource,
+        Func<Guid, ResourceContext> resource,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(processos);
 
         Guid? unidade = await processos.ObterUnidadeAdministradoraAsync(processoId, cancellationToken).ConfigureAwait(false);
-        return await VerificarNaUnidadeAsync(
-                verificador, unidade, processoId, permissao, resourceTipo, sensibilidadeDoResource, cancellationToken)
-            .ConfigureAwait(false);
+        return await ExigirNaUnidadeAsync(verificador, unidade, permissao, resource, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -57,9 +130,9 @@ public static class AcessoAoProcesso
             return ResultadoDoAcesso.Permitido;
         }
 
-        return await VerificarNaUnidadeAsync(
-                verificador, estado?.UnidadeId, processoId, PermissaoSelecao.ProcessosConfigurar, ResourceTiposSelecao.ProcessoSeletivo,
-                sensibilidadeDoResource: null, cancellationToken)
+        return await ExigirNaUnidadeAsync(
+                verificador, estado?.UnidadeId, PermissaoSelecao.ProcessosConfigurar,
+                unidade => ResourceDoProcesso(unidade, processoId), cancellationToken)
             .ConfigureAwait(false);
     }
 
@@ -67,105 +140,9 @@ public static class AcessoAoProcesso
     public static async Task<bool> ConfiguraAsync(
         IVerificadorDeAcesso verificador, Guid unidadeId, Guid processoId, CancellationToken cancellationToken) =>
         await PodeNaUnidadeAsync(
-                verificador, unidadeId, processoId, PermissaoSelecao.ProcessosConfigurar, ResourceTiposSelecao.ProcessoSeletivo,
+                verificador, unidadeId, PermissaoSelecao.ProcessosConfigurar, unidade => ResourceDoProcesso(unidade, processoId),
                 cancellationToken)
             .ConfigureAwait(false) == ResultadoDoAcesso.Permitido;
-
-    /// <summary>
-    /// Decide a permissão sobre a unidade. Sem unidade (processo inexistente) não há decisão a tomar sobre o resource:
-    /// o acesso é negado sem consultar o ponto de decisão, que registraria como permitida uma operação sobre um resource
-    /// que não existe.
-    /// <paramref name="resourceId"/> é o registro alvo quando a decisão recai sobre um só (a inscrição cujo CPF se revela).
-    /// <paramref name="fatoCodigo"/> é o campo revelado, quando é o caso, e fica no registro do acesso.
-    /// <paramref name="inscricaoId"/> é a inscrição a que o acesso se refere quando o resource é ela ou um item dela.
-    /// <paramref name="ocorrencia"/> é a ocorrência do campo revelado, quando ele está em grupo.
-    /// </summary>
-    public static async Task<ResultadoDoAcesso> VerificarNaUnidadeAsync(
-        IVerificadorDeAcesso verificador,
-        Guid? unidadeId,
-        Guid? processoId,
-        PermissaoSelecao permissao,
-        string resourceTipo,
-        ClassificacaoDeProtecao? sensibilidadeDoResource,
-        CancellationToken cancellationToken,
-        Guid? resourceId = null,
-        string? fatoCodigo = null,
-        Guid? inscricaoId = null,
-        string? ocorrencia = null)
-    {
-        ArgumentNullException.ThrowIfNull(verificador);
-
-        ResourceContext? resource = MontarResource(
-            unidadeId, processoId, permissao, resourceTipo, sensibilidadeDoResource, resourceId, fatoCodigo, inscricaoId, ocorrencia);
-
-        return resource is null
-            ? ResultadoDoAcesso.Negado
-            : await verificador.ExigirAsync(permissao.Requisito, resource, cancellationToken).ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Pergunta se a pessoa poderia exercer a permissão na unidade, sem registrar nada. Serve a mostrar ou filtrar o que
-    /// ela pode fazer; quem entrega dado decide por <see cref="VerificarNaUnidadeAsync"/>.
-    /// </summary>
-    public static async Task<ResultadoDoAcesso> PodeNaUnidadeAsync(
-        IVerificadorDeAcesso verificador,
-        Guid? unidadeId,
-        Guid? processoId,
-        PermissaoSelecao permissao,
-        string resourceTipo,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(verificador);
-
-        ResourceContext? resource = MontarResource(
-            unidadeId, processoId, permissao, resourceTipo, sensibilidadeDoResource: null, resourceId: null, fatoCodigo: null,
-            inscricaoId: null, ocorrencia: null);
-
-        return resource is null
-            ? ResultadoDoAcesso.Negado
-            : await verificador.PodeAsync(permissao.Requisito, resource, cancellationToken).ConfigureAwait(false);
-    }
-
-    private static ResourceContext? MontarResource(
-        Guid? unidadeId,
-        Guid? processoId,
-        PermissaoSelecao permissao,
-        string resourceTipo,
-        ClassificacaoDeProtecao? sensibilidadeDoResource,
-        Guid? resourceId,
-        string? fatoCodigo,
-        Guid? inscricaoId,
-        string? ocorrencia)
-    {
-        if (!ResourceTipos.SegueAConvencao(resourceTipo))
-        {
-            throw new ArgumentException(
-                $"O tipo de resource '{resourceTipo}' está fora da convenção kebab-case; use ResourceTiposSelecao.", nameof(resourceTipo));
-        }
-
-        if (unidadeId is null)
-        {
-            return null;
-        }
-
-        PermissionRequirement requisito = permissao.Requisito;
-        Result<ResourceContext> resource = ResourceContext.From(
-            resourceTipo, sensibilidadeDoResource ?? requisito.Sensibilidade, unidadeId, processoId, resourceId: resourceId,
-            fatoCodigo: fatoCodigo, ocorrencia: ocorrencia, inscricaoId: inscricaoId);
-
-        return resource.IsSuccess ? resource.Value : null;
-    }
-
-    /// <summary>
-    /// O resource de uma inscrição, ou de todas as do processo quando <paramref name="inscricaoId"/> é nulo. É dado
-    /// pessoal por natureza, então a sensibilidade é pessoal qualquer que seja a classe do item pedido: toda decisão
-    /// sobre ele entra no registro de acessos.
-    /// </summary>
-    /// <returns>Nulo sem unidade dona, que é o processo inexistente.</returns>
-    public static ResourceContext? ResourceDaInscricao(Guid? unidadeId, Guid? processoId, Guid? inscricaoId) =>
-        MontarResource(
-            unidadeId, processoId, PermissaoSelecao.InscricoesConsultar, ResourceTiposSelecao.Inscricao,
-            ClassificacaoDeProtecao.Pessoal, inscricaoId, fatoCodigo: null, inscricaoId, ocorrencia: null);
 
     /// <summary>O erro com que um handler recusa o acesso que o ponto de decisão não permitiu.</summary>
     public static DomainError Recusa(ResultadoDoAcesso resultado) => resultado switch
