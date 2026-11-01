@@ -55,7 +55,7 @@ public sealed class RevelarCpfDaInscricaoEndpointTests : IAsyncLifetime
     public async Task ComPermissao_RevelaEGravaADecisaoComAInscricao()
     {
         Cenario cenario = await SemearAsync(SituacaoInscricao.Submetida);
-        await ConcederAsync(Leandro, cenario.UnidadeId, PermissaoSelecao.InscricoesRevelarCpf);
+        await ConcederAsync(Leandro, cenario.UnidadeId, PermissaoSelecao.DadosIdentificadoresRevelar);
 
         using HttpResponseMessage resposta = await RevelarAsync(Leandro, cenario.ProcessoId, cenario.InscricaoId);
 
@@ -67,7 +67,7 @@ public sealed class RevelarCpfDaInscricaoEndpointTests : IAsyncLifetime
 
         RegistroDecisaoAcesso decisao = Decisoes(cenario.ProcessoId, cenario.InscricaoId).Should().ContainSingle().Subject;
         decisao.Permitido.Should().BeTrue();
-        decisao.Permissao.Should().Be(PermissaoSelecao.InscricoesRevelarCpf.Codigo);
+        decisao.Permissao.Should().Be(PermissaoSelecao.DadosIdentificadoresRevelar.Codigo);
         decisao.GrantId.Should().NotBeNull("a concessão usada identifica quem revelou");
         decisao.AtorSubject.Should().Be(Leandro, "o registro diz quem revelou");
         decisao.FatoCodigo.Should().Be("CPF", "o registro diz qual campo foi revelado");
@@ -94,9 +94,9 @@ public sealed class RevelarCpfDaInscricaoEndpointTests : IAsyncLifetime
         Cenario cenario = await SemearAsync(SituacaoInscricao.Submetida);
         Cenario outroProcesso = await SemearAsync(SituacaoInscricao.Submetida);
         Cenario rascunho = await SemearAsync(SituacaoInscricao.Rascunho);
-        await ConcederAsync(Leandro, cenario.UnidadeId, PermissaoSelecao.InscricoesRevelarCpf);
-        await ConcederAsync(Betina, Guid.CreateVersion7(), PermissaoSelecao.InscricoesRevelarCpf);
-        await ConcederAsync(Caroline, rascunho.UnidadeId, PermissaoSelecao.InscricoesRevelarCpf);
+        await ConcederAsync(Leandro, cenario.UnidadeId, PermissaoSelecao.DadosIdentificadoresRevelar);
+        await ConcederAsync(Betina, Guid.CreateVersion7(), PermissaoSelecao.DadosIdentificadoresRevelar);
+        await ConcederAsync(Caroline, rascunho.UnidadeId, PermissaoSelecao.DadosIdentificadoresRevelar);
 
         using HttpResponseMessage outraUnidade = await RevelarAsync(Betina, cenario.ProcessoId, cenario.InscricaoId);
         using HttpResponseMessage inscricaoDeOutroProcesso = await RevelarAsync(Leandro, cenario.ProcessoId, outroProcesso.InscricaoId);
@@ -113,7 +113,7 @@ public sealed class RevelarCpfDaInscricaoEndpointTests : IAsyncLifetime
     public async Task Lista_SegueMascarada()
     {
         Cenario cenario = await SemearAsync(SituacaoInscricao.Submetida);
-        await ConcederAsync(Leandro, cenario.UnidadeId, PermissaoSelecao.InscricoesRevelarCpf, PermissaoSelecao.InscricoesConsultar);
+        await ConcederAsync(Leandro, cenario.UnidadeId, PermissaoSelecao.DadosIdentificadoresRevelar, PermissaoSelecao.InscricoesConsultar);
 
         using HttpResponseMessage lista = await SendAsync(
             Leandro, HttpMethod.Get, $"/api/selecao/processos-seletivos/{cenario.ProcessoId}/inscricoes");
@@ -129,7 +129,7 @@ public sealed class RevelarCpfDaInscricaoEndpointTests : IAsyncLifetime
     public async Task ServidoraInscrita_Impedida()
     {
         Cenario cenario = await SemearAsync(SituacaoInscricao.Submetida, donaDaInscricao: Betina);
-        await ConcederAsync(Betina, cenario.UnidadeId, PermissaoSelecao.InscricoesRevelarCpf);
+        await ConcederAsync(Betina, cenario.UnidadeId, PermissaoSelecao.DadosIdentificadoresRevelar);
 
         using HttpResponseMessage resposta = await RevelarAsync(Betina, cenario.ProcessoId, cenario.InscricaoId);
 
@@ -139,7 +139,7 @@ public sealed class RevelarCpfDaInscricaoEndpointTests : IAsyncLifetime
     private IReadOnlyList<RegistroDecisaoAcesso> Decisoes(Guid processoId, Guid inscricaoId) =>
         [.. _fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>().Registrados
             .Where(r => r.ProcessoId == processoId
-                && r.Permissao == PermissaoSelecao.InscricoesRevelarCpf.Codigo
+                && r.Permissao == PermissaoSelecao.DadosIdentificadoresRevelar.Codigo
                 && r.ResourceId == inscricaoId)];
 
     private async Task ConcederAsync(string sub, Guid unidade, params PermissaoSelecao[] permissoes)

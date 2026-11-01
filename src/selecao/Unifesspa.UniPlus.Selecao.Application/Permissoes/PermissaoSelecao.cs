@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Decisao;
 using Unifesspa.UniPlus.Authorization.Enums;
+using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
@@ -56,9 +57,8 @@ public enum PermissaoSelecao
     [Permissao(
         "selecao:inscricoes:consultar",
         "Consultar inscrições do processo",
-        "Consulta as inscrições dos processos seletivos da unidade proprietária, sem os documentos e com o CPF mascarado.",
-        ClassificacaoDeProtecao.Pessoal,
-        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
+        "Alcança as inscrições dos processos seletivos da unidade proprietária, sem liberar item algum: cada dado e cada documento sai pela permissão da sua classe.",
+        ClassificacaoDeProtecao.Interno,
         EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
     InscricoesConsultar = 5,
 
@@ -69,6 +69,7 @@ public enum PermissaoSelecao
         "Abre os documentos pessoais enviados nas inscrições dos processos seletivos da unidade proprietária.",
         ClassificacaoDeProtecao.Pessoal,
         BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
+        Natureza = NaturezaDoItem.Arquivo,
         EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
     DocumentosPessoaisConsultar = 6,
 
@@ -79,18 +80,20 @@ public enum PermissaoSelecao
         "Abre os documentos sensíveis, como laudos médicos, enviados nas inscrições dos processos seletivos da unidade proprietária.",
         ClassificacaoDeProtecao.Sensivel,
         BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 11, II, a",
+        Natureza = NaturezaDoItem.Arquivo,
         EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
     DocumentosSensiveisConsultar = 7,
 
-    /// <summary>Revelar o CPF de uma inscrição.</summary>
+    /// <summary>Revelar os dados identificadores de uma inscrição.</summary>
     [Permissao(
-        "selecao:inscricoes:revelar-cpf",
-        "Revelar CPF da inscrição",
-        "Revela o CPF completo de uma inscrição de processo seletivo da unidade proprietária.",
+        "selecao:dados-identificadores:revelar",
+        "Revelar dados identificadores da inscrição",
+        "Revela, um por vez, o CPF e os demais números de documento de uma inscrição de processo seletivo da unidade proprietária.",
         ClassificacaoDeProtecao.Identificador,
         BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
+        Natureza = NaturezaDoItem.Dado,
         EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
-    InscricoesRevelarCpf = 8,
+    DadosIdentificadoresRevelar = 8,
 
     /// <summary>Manter as obrigatoriedades legais.</summary>
     [Permissao(
@@ -143,6 +146,7 @@ public enum PermissaoSelecao
         "Abre os documentos com número que identifica diretamente o titular, como RG, CNH e passaporte, enviados nas inscrições dos processos seletivos da unidade proprietária.",
         ClassificacaoDeProtecao.Identificador,
         BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
+        Natureza = NaturezaDoItem.Arquivo,
         EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
     DocumentosIdentificadoresConsultar = 14,
 
@@ -152,6 +156,7 @@ public enum PermissaoSelecao
         "Consultar documentos internos das inscrições",
         "Abre os documentos de uso interno enviados nas inscrições dos processos seletivos da unidade proprietária.",
         ClassificacaoDeProtecao.Interno,
+        Natureza = NaturezaDoItem.Arquivo,
         EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
     DocumentosInternosConsultar = 15,
 
@@ -161,6 +166,49 @@ public enum PermissaoSelecao
         "Consultar documentos públicos das inscrições",
         "Abre os documentos públicos, como artigos publicados, enviados nas inscrições dos processos seletivos da unidade proprietária.",
         ClassificacaoDeProtecao.Publico,
+        Natureza = NaturezaDoItem.Arquivo,
         EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
     DocumentosPublicosConsultar = 16,
+
+    /// <summary>Consultar os dados públicos das inscrições.</summary>
+    [Permissao(
+        "selecao:dados-publicos:consultar",
+        "Consultar dados públicos das inscrições",
+        "Consulta os dados públicos das inscrições dos processos seletivos da unidade proprietária, como o curso e a situação.",
+        ClassificacaoDeProtecao.Publico,
+        Natureza = NaturezaDoItem.Dado,
+        EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
+    DadosPublicosConsultar = 17,
+
+    /// <summary>Consultar os dados internos das inscrições.</summary>
+    [Permissao(
+        "selecao:dados-internos:consultar",
+        "Consultar dados internos das inscrições",
+        "Consulta os dados de uso interno das inscrições dos processos seletivos da unidade proprietária, como o número de inscrição.",
+        ClassificacaoDeProtecao.Interno,
+        Natureza = NaturezaDoItem.Dado,
+        EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
+    DadosInternosConsultar = 18,
+
+    /// <summary>Consultar os dados pessoais das inscrições.</summary>
+    [Permissao(
+        "selecao:dados-pessoais:consultar",
+        "Consultar dados pessoais das inscrições",
+        "Consulta os dados pessoais das inscrições dos processos seletivos da unidade proprietária, como o nome e o CPF mascarado.",
+        ClassificacaoDeProtecao.Pessoal,
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
+        Natureza = NaturezaDoItem.Dado,
+        EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
+    DadosPessoaisConsultar = 19,
+
+    /// <summary>Consultar os dados sensíveis das inscrições.</summary>
+    [Permissao(
+        "selecao:dados-sensiveis:consultar",
+        "Consultar dados sensíveis das inscrições",
+        "Consulta os dados sensíveis, como o tipo de deficiência, declarados nas inscrições dos processos seletivos da unidade proprietária.",
+        ClassificacaoDeProtecao.Sensivel,
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 11, II, a",
+        Natureza = NaturezaDoItem.Dado,
+        EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
+    DadosSensiveisConsultar = 20,
 }
