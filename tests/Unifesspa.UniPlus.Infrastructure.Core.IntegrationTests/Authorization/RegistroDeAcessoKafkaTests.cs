@@ -109,6 +109,21 @@ public sealed class RegistroDeAcessoKafkaTests : IAsyncLifetime
         json.RootElement[0].GetProperty("registro").GetProperty("fatoCodigo").GetString().Should().Be("CPF");
     }
 
+    [Theory(DisplayName = "A mensagem publicada traz o client OIDC em clienteOidc, ou nulo quando o token não o traz")]
+    [InlineData("selecao-web")]
+    [InlineData(null)]
+    public async Task Registro_PublicaOClienteOidc(string? azp)
+    {
+        string topico = await CriarTopicoAsync($"cliente-{Guid.NewGuid():N}");
+        using RegistroDeAcessoKafka registro = Criar(_bootstrap, TimeSpan.FromSeconds(20), topico: topico);
+
+        await registro.RegistrarAsync([Registro(clienteOidc: azp)], default);
+
+        using JsonDocument json = JsonDocument.Parse(Consumir(topico).Should().ContainSingle().Subject.Message.Value);
+        JsonElement cliente = json.RootElement[0].GetProperty("registro").GetProperty("clienteOidc");
+        (cliente.ValueKind == JsonValueKind.Null ? null : cliente.GetString()).Should().Be(azp);
+    }
+
     [Fact(DisplayName = "Sem broker disponível, a gravação falha com registro não gravado")]
     public async Task SemBroker_FalhaComRegistroNaoGravado()
     {
@@ -217,7 +232,7 @@ public sealed class RegistroDeAcessoKafkaTests : IAsyncLifetime
         return recebidas;
     }
 
-    private static RegistroDecisaoAcesso Registro(string? fatoCodigo = null)
+    private static RegistroDecisaoAcesso Registro(string? fatoCodigo = null, string? clienteOidc = null)
     {
         AuthorizationSubject sujeito = AuthorizationSubject.From(
             UsuarioRef.From("https://idp.exemplo/realms/unifesspa", "leandro.viana").Value!, "jti-teste").Value!;
@@ -227,7 +242,7 @@ public sealed class RegistroDeAcessoKafkaTests : IAsyncLifetime
             sujeito,
             PermissionRequirement.From("selecao:inscricoes:revelar-cpf", ClassificacaoDeProtecao.Identificador, "Lei nº 13.709/2018 (LGPD), art. 7º, III").Value!,
             ResourceContext.From("inscricao", ClassificacaoDeProtecao.Identificador, fatoCodigo: fatoCodigo).Value!,
-            AuthorizationRequestContext.From($"req-{Guid.NewGuid():N}", DateTimeOffset.UtcNow, OrigemRequisicao.Api).Value!,
+            AuthorizationRequestContext.From($"req-{Guid.NewGuid():N}", DateTimeOffset.UtcNow, OrigemRequisicao.Api, clienteOidc: clienteOidc).Value!,
             AuthorizationDecision.Permitir(concessao));
     }
 

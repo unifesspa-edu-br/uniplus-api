@@ -50,7 +50,7 @@ public sealed class PermissoesEfetivasHttp : IPermissoesEfetivas
     public async Task<IReadOnlyList<DefinicaoDePermissao>?> ObterAsync(CancellationToken cancellationToken = default)
     {
         Result<AuthorizationRequestContext> contexto = ContextoDaRequisicaoHttp.Montar(
-            _httpContextAccessor.HttpContext, _correlationId, _relogio);
+            _httpContextAccessor.HttpContext, _userContext, _correlationId, _relogio);
 
         if (contexto.IsFailure)
         {

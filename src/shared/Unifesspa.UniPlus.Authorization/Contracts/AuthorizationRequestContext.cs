@@ -40,6 +40,12 @@ public sealed record AuthorizationRequestContext
     /// <summary>Concessão de dupla aprovação — presente só quando a operação exige.</summary>
     public DualApprovalGrant? DuplaAprovacao { get; }
 
+    /// <summary>
+    /// Client OIDC que obteve o token (claim <c>azp</c> do token validado). Nulo quando o token não o traz ou a
+    /// requisição não vem de token (jobs).
+    /// </summary>
+    public string? ClienteOidc { get; }
+
     private AuthorizationRequestContext(
         string requestId,
         Guid execucaoId,
@@ -48,7 +54,8 @@ public sealed record AuthorizationRequestContext
         DateTimeOffset dataAcesso,
         Guid? onBehalfOfId,
         OrigemRequisicao origem,
-        DualApprovalGrant? duplaAprovacao)
+        DualApprovalGrant? duplaAprovacao,
+        string? clienteOidc)
     {
         RequestId = requestId;
         ExecucaoId = execucaoId;
@@ -58,6 +65,7 @@ public sealed record AuthorizationRequestContext
         OnBehalfOfId = onBehalfOfId;
         Origem = origem;
         DuplaAprovacao = duplaAprovacao;
+        ClienteOidc = clienteOidc;
     }
 
     /// <summary>
@@ -70,7 +78,7 @@ public sealed record AuthorizationRequestContext
     /// garantindo o invariante de fuso. <paramref name="ipOrigem"/> e
     /// <paramref name="userAgent"/> nulos viram string vazia — são telemetria,
     /// não exigidos. A dupla aprovação é opcional (ausente quando a operação não
-    /// a exige).
+    /// a exige). <paramref name="clienteOidc"/> em branco vira nulo.
     /// </summary>
     public static Result<AuthorizationRequestContext> From(
         string? requestId,
@@ -80,7 +88,8 @@ public sealed record AuthorizationRequestContext
         string? userAgent = null,
         Guid? onBehalfOfId = null,
         DualApprovalGrant? duplaAprovacao = null,
-        Guid? execucaoId = null)
+        Guid? execucaoId = null,
+        string? clienteOidc = null)
     {
         if (string.IsNullOrWhiteSpace(requestId))
         {
@@ -104,6 +113,7 @@ public sealed record AuthorizationRequestContext
             dataAcesso.ToUniversalTime(),
             onBehalfOfId,
             origem,
-            duplaAprovacao));
+            duplaAprovacao,
+            string.IsNullOrWhiteSpace(clienteOidc) ? null : clienteOidc));
     }
 }

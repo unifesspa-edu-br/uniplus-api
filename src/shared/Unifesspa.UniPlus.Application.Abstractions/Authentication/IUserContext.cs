@@ -31,6 +31,12 @@ public interface IUserContext
     string? Jti { get; }
 
     /// <summary>
+    /// Gets the OIDC client that obtained the token (<c>azp</c> claim, signed by the IdP), or
+    /// <see langword="null"/> when the token does not carry it.
+    /// </summary>
+    string? ClienteOidc { get; }
+
+    /// <summary>
     /// Gets the authenticated user's display name.
     /// </summary>
     string? Name { get; }

@@ -92,6 +92,12 @@ public sealed record RegistroDecisaoAcesso
     /// <summary>Canal pelo qual a requisição chegou, em valor canônico.</summary>
     public string Origem { get; }
 
+    /// <summary>
+    /// Client OIDC que obteve o token do acesso (claim <c>azp</c>, assinado pelo provedor de identidade), e assim a
+    /// aplicação que o fez: a tela da Seleção, a da Configuração ou um token de serviço. Nulo quando o token não o traz.
+    /// </summary>
+    public string? ClienteOidc { get; }
+
     /// <summary>Veredito da decisão.</summary>
     public bool Permitido { get; }
 
@@ -128,6 +134,7 @@ public sealed record RegistroDecisaoAcesso
         int? ocorrencia,
         bool exigido,
         string origem,
+        string? clienteOidc,
         bool permitido,
         string? motivoNegativa,
         string? fonteGrant,
@@ -152,6 +159,7 @@ public sealed record RegistroDecisaoAcesso
         Ocorrencia = ocorrencia;
         Exigido = exigido;
         Origem = origem;
+        ClienteOidc = clienteOidc;
         Permitido = permitido;
         MotivoNegativa = motivoNegativa;
         FonteGrant = fonteGrant;
@@ -199,6 +207,7 @@ public sealed record RegistroDecisaoAcesso
             resource.Ocorrencia,
             Exige(requirement, resource),
             ValoresCanonicos.De(request.Origem),
+            request.ClienteOidc,
             decision.Allowed,
             decision.DenyReason is { } motivo ? ValoresCanonicos.De(motivo.Codigo) : null,
             grant is not null ? ValoresCanonicos.De(grant.Fonte) : null,

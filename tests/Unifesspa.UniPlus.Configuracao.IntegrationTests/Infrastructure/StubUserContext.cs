@@ -25,6 +25,7 @@ internal sealed class StubUserContext : IUserContext
     public bool EmailVerificado => false;
     public string? Cpf => null;
     public string? NomeSocial => null;
+    public string? ClienteOidc => null;
     public IReadOnlyList<string> Roles => [];
     public bool HasRole(string role) => false;
     public IReadOnlyList<string> GetResourceRoles(string resourceName) => [];

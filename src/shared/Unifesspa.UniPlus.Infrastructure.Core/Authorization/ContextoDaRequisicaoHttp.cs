@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 
 using Microsoft.AspNetCore.Http;
 
+using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Enums;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
@@ -20,9 +21,13 @@ internal static class ContextoDaRequisicaoHttp
     // modo que validade de concessão e registro falem do mesmo momento.
     public static Result<AuthorizationRequestContext> Montar(
         HttpContext? http,
+        IUserContext usuario,
         ICorrelationIdAccessor correlationId,
         TimeProvider relogio)
-        => AuthorizationRequestContext.From(
+    {
+        ArgumentNullException.ThrowIfNull(usuario);
+
+        return AuthorizationRequestContext.From(
             correlationId.CorrelationId
                 ?? http?.TraceIdentifier
                 ?? Guid.CreateVersion7().ToString(),
@@ -30,7 +35,9 @@ internal static class ContextoDaRequisicaoHttp
             OrigemRequisicao.Api,
             ipOrigem: http?.Connection.RemoteIpAddress?.ToString(),
             userAgent: http?.Request.Headers.UserAgent.ToString(),
-            execucaoId: ExecucaoDaRequisicao(http));
+            execucaoId: ExecucaoDaRequisicao(http),
+            clienteOidc: usuario.ClienteOidc);
+    }
 
     // Um identificador por requisição HTTP, gerado aqui: o de correlação vem do cliente e não serve de chave. Todas as
     // decisões da mesma requisição o compartilham, e é isso que faz a nova tentativa de um acesso não duplicá-lo.
