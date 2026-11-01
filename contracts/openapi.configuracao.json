@@ -20425,7 +20425,8 @@
           "classificacaoProtecao",
           "finalidadeTratamento",
           "hipoteseLegal",
-          "criadoEm"
+          "criadoEm",
+          "protecaoAprovada"
         ],
         "type": "object",
         "properties": {
@@ -20481,6 +20482,9 @@
           "criadoEm": {
             "type": "string",
             "format": "date-time"
+          },
+          "protecaoAprovada": {
+            "type": "boolean"
           },
           "_links": {
             "type": [

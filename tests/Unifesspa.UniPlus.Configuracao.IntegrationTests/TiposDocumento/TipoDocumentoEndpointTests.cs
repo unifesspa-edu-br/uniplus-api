@@ -147,6 +147,34 @@ public sealed class TipoDocumentoEndpointTests
         }
     }
 
+    [Fact(DisplayName = "A listagem e a consulta do tipo informam se a proteção está aprovada, sem expor a situação detalhada")]
+    public async Task ListarEObter_InformamProtecaoAprovadaSemExporAAprovacao()
+    {
+        var body = new { codigo = CodigoUnico(), nome = "Laudo médico", categoria = "SAUDE", classificacaoProtecao = "SENSIVEL", finalidadeTratamento = "Comprovação do atendimento especializado.", hipoteseLegal = "TUTELA_DA_SAUDE" };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage criar = await EnviarPostAdmin(client, body);
+        criar.StatusCode.Should().Be(HttpStatusCode.Created);
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+
+        HttpResponseMessage obter = await client.GetAsync(new Uri($"/api/configuracao/tipos-documento/{id}", UriKind.Relative));
+        HttpResponseMessage listar = await client.GetAsync(new Uri("/api/configuracao/tipos-documento", UriKind.Relative));
+        obter.StatusCode.Should().Be(HttpStatusCode.OK);
+        listar.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using JsonDocument porId = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
+        using JsonDocument lista = JsonDocument.Parse(await listar.Content.ReadAsStringAsync());
+        JsonElement[] tipos = [porId.RootElement, .. lista.RootElement.EnumerateArray()];
+
+        porId.RootElement.GetProperty("protecaoAprovada").GetBoolean().Should().BeFalse();
+        tipos.Should().HaveCountGreaterThan(1);
+        foreach (JsonElement tipo in tipos)
+        {
+            tipo.TryGetProperty("protecaoAprovada", out _).Should().BeTrue();
+            tipo.TryGetProperty("aprovacao", out _).Should().BeFalse("a situação detalhada da aprovação não é pública");
+        }
+    }
+
     [Fact(DisplayName = "POST com categoria fora do formato de código retorna 422 com erro de forma")]
     public async Task Criar_CategoriaForaDoFormato_Retorna422()
     {
