@@ -37,8 +37,9 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     private const int BindingMaxLength = 200;
 
     /// <summary>
-    /// O nome social preferido pelo titular: o único texto público, porque é a identificação que
-    /// ele escolhe para aparecer (ADR-0082, ADR-0136).
+    /// O nome social preferido pelo titular. Na consulta administrativa é dado pessoal, como todo texto;
+    /// o que é público é a forma de identificação nos pontos de publicação, que não passa pela
+    /// classificação do fato (ADR-0082).
     /// </summary>
     public const string CodigoDoNomeSocial = "NOME_SOCIAL";
 
@@ -287,11 +288,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         ConferirEscopo(erros, escopo);
 
         Result<ProtecaoDeDados> protecao = ValidarProtecao(
-            dominio, classificacaoProtecao, finalidadeTratamento, hipoteseLegal,
-            nomeSocialPublico: sistema
-                && string.Equals(codigo?.Trim(), CodigoDoNomeSocial, StringComparison.Ordinal)
-                && dominio == DominioFato.Texto
-                && classificacaoProtecao == ClassificacaoDeProtecao.Publico);
+            dominio, classificacaoProtecao, finalidadeTratamento, hipoteseLegal);
         erros.AddRange(protecao.Errors);
 
         if (erros.Count > 0)
@@ -754,8 +751,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         }
 
         Result<ProtecaoDeDados> protecao = ValidarProtecao(
-            dominioAplicavel ? dominio : null, definicao.ClassificacaoProtecao, definicao.FinalidadeTratamento, definicao.HipoteseLegal,
-            nomeSocialPublico: false);
+            dominioAplicavel ? dominio : null, definicao.ClassificacaoProtecao, definicao.FinalidadeTratamento, definicao.HipoteseLegal);
         erros.AddRange(protecao.Errors);
 
         // A coerência com as dependências do próprio fato é conferida com o que há de válido na
@@ -865,7 +861,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     private Result TrocarProtecao(
         ClassificacaoDeProtecao classificacao, string finalidade, HipoteseLegalTratamento hipotese, CatalogoDeFatos catalogo)
     {
-        Result<ProtecaoDeDados> protecao = ValidarProtecao(Dominio, classificacao, finalidade, hipotese, NomeSocialPublico(classificacao));
+        Result<ProtecaoDeDados> protecao = ValidarProtecao(Dominio, classificacao, finalidade, hipotese);
         if (protecao.IsFailure)
         {
             return Result.ValidationFailure(protecao.Errors);
@@ -916,7 +912,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         }
 
         Result<ProtecaoDeDados> noMinimoDoDominio = ValidarProtecao(
-            Dominio, recomendada, FinalidadeTratamento, HipoteseLegal, NomeSocialPublico(recomendada));
+            Dominio, recomendada, FinalidadeTratamento, HipoteseLegal);
         if (noMinimoDoDominio.Errors.FirstOrDefault(static e => e.Field == "classificacaoProtecao") is { } abaixo)
         {
             return Result.ValidationFailure([abaixo with { Field = "classificacaoRecomendada" }]);
@@ -952,12 +948,6 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
 
         return Aprovacao.AceitarRecomendacao(recomendada.Value, ator, em);
     }
-
-    private bool NomeSocialPublico(ClassificacaoDeProtecao classificacao) =>
-        Sistema
-        && string.Equals(Codigo, CodigoDoNomeSocial, StringComparison.Ordinal)
-        && Dominio == DominioFato.Texto
-        && classificacao == ClassificacaoDeProtecao.Publico;
 
     /// <summary>
     /// O que o agregado deixa de ser quando o fato de membro passa a ser <paramref name="membro"/>:
@@ -1402,15 +1392,14 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         FatoCandidatoErrorCodes.HipoteseLegalIncompativelComClassificacao);
 
     private static Result<ProtecaoDeDados> ValidarProtecao(
-        DominioFato? dominio, ClassificacaoDeProtecao classificacao, string finalidade, HipoteseLegalTratamento hipotese, bool nomeSocialPublico) =>
+        DominioFato? dominio, ClassificacaoDeProtecao classificacao, string finalidade, HipoteseLegalTratamento hipotese) =>
         ProtecaoDeDados.Validar(
             classificacao, finalidade, hipotese, RecusasDaProtecaoDoFato,
             // Texto (em todo formato, inclusive o livre, que pode conter qualquer coisa), data e
             // endereço identificam ou localizam a pessoa: nunca são menos que dado pessoal. Texto
             // também aceita `Identificador` — número de documento é sempre texto, nunca outro
-            // domínio (ADR-0136, emenda de #1857). A exceção é o nome social de sistema, texto
-            // público (ADR-0082, ADR-0136).
-            nivel => !nomeSocialPublico && dominio is { } dominioConferido && !AtendeClassificacaoMinimaDoDominio(dominioConferido, nivel)
+            // domínio (ADR-0136, emenda de #1857).
+            nivel => dominio is { } dominioConferido && !AtendeClassificacaoMinimaDoDominio(dominioConferido, nivel)
                 ? new DomainError(
                     FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio,
                     "Classificação de proteção de dados incompatível com o domínio do fato.")

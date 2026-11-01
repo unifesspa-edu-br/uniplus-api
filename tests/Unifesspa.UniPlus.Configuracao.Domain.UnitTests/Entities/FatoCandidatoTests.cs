@@ -118,12 +118,13 @@ public sealed class FatoCandidatoTests
             classificacao: ClassificacaoDeProtecao.Identificador, hipotese: HipoteseLegalTratamento.ExecucaoPoliticasPublicas)
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.ClassificacaoAbaixoDoMinimoDoDominio);
 
-    [Theory(DisplayName = "Só o nome social de sistema é texto público; outro texto de sistema, o nome social do administrador ou outra classificação abaixo de pessoal, não")]
-    [InlineData(FatoCandidato.CodigoDoNomeSocial, true, ClassificacaoDeProtecao.Publico, true)]
+    [Theory(DisplayName = "O nome social de sistema é pessoal como todo texto: a factory recusa público e interno para ele")]
+    [InlineData(FatoCandidato.CodigoDoNomeSocial, true, ClassificacaoDeProtecao.Publico, false)]
     [InlineData(FatoCandidato.CodigoDoNomeSocial, false, ClassificacaoDeProtecao.Publico, false)]
     [InlineData(FatoCandidato.CodigoDoNomeSocial, true, ClassificacaoDeProtecao.Interno, false)]
+    [InlineData(FatoCandidato.CodigoDoNomeSocial, true, ClassificacaoDeProtecao.Pessoal, true)]
     [InlineData("NOME", true, ClassificacaoDeProtecao.Publico, false)]
-    public void Criar_TextoAbaixoDePessoal_SoONomeSocialPublicoDeSistema(string codigo, bool sistema, ClassificacaoDeProtecao classificacao, bool aceito) =>
+    public void Criar_TextoAbaixoDePessoal_Recusa(string codigo, bool sistema, ClassificacaoDeProtecao classificacao, bool aceito) =>
         Criar(
             codigo: codigo, dominio: DominioFato.Texto, formato: FormatoTexto.NomePessoa, binding: $"CAMPO_FORMULARIO:{codigo}",
             classificacao: classificacao, hipotese: HipoteseLegalTratamento.ExecucaoPoliticasPublicas, sistema: sistema)
