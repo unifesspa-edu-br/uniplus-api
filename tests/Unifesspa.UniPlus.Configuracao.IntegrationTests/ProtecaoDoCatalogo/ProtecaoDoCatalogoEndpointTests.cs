@@ -51,9 +51,9 @@ public sealed class ProtecaoDoCatalogoEndpointTests
 
         (await ObterDoCatalogoAsync(client, id)).GetProperty("aprovacao").GetProperty("situacao").GetString().Should().Be("PENDENTE");
 
-        HttpResponseMessage solicitada = await EnviarAsync(client, HttpMethod.Post, $"{Base}/solicitacoes");
+        HttpResponseMessage solicitada = await SolicitarAsync(client, "TIPO_DOCUMENTO", id);
         solicitada.StatusCode.Should().Be(HttpStatusCode.OK);
-        (await solicitada.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("tiposDeDocumento").GetInt32().Should().BeGreaterThanOrEqualTo(1);
+        (await solicitada.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("tiposDeDocumento").GetInt32().Should().Be(1);
         (await ObterDoCatalogoAsync(client, id)).GetProperty("aprovacao").GetProperty("situacao").GetString().Should().Be("SOLICITADA");
 
         (await DecidirAsync(client, "TIPO_DOCUMENTO", id, "RECOMENDAR_AJUSTE", "SENSIVEL"))
@@ -77,7 +77,7 @@ public sealed class ProtecaoDoCatalogoEndpointTests
         await TornarCarolineAprovadoraAsync();
         using HttpClient client = _fixture.Factory.CreateClient();
         Guid id = await CadastrarTipoAsync(client, "INTERNO");
-        (await EnviarAsync(client, HttpMethod.Post, $"{Base}/solicitacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await SolicitarAsync(client, "TIPO_DOCUMENTO", id)).StatusCode.Should().Be(HttpStatusCode.OK);
 
         HttpResponseMessage semMotivo = await DecidirAsync(client, "TIPO_DOCUMENTO", id, "REPROVAR");
         semMotivo.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
@@ -100,6 +100,77 @@ public sealed class ProtecaoDoCatalogoEndpointTests
         (await aceite.Content.ReadAsStringAsync()).Should().Contain("aceite_de_item_reprovado");
     }
 
+    [Fact(DisplayName = "A solicitação envia só os itens escolhidos; o outro pendente continua pendente")]
+    public async Task Solicitar_EnviaSoOsEscolhidos()
+    {
+        await TornarCarolineAprovadoraAsync();
+        using HttpClient client = _fixture.Factory.CreateClient();
+        Guid escolhido = await CadastrarTipoAsync(client, "INTERNO");
+        Guid outro = await CadastrarTipoAsync(client, "INTERNO");
+
+        HttpResponseMessage resposta = await SolicitarAsync(client, ("TIPO_DOCUMENTO", escolhido), ("TIPO_DOCUMENTO", escolhido));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+        JsonElement corpo = await resposta.Content.ReadFromJsonAsync<JsonElement>();
+        corpo.GetProperty("tiposDeDocumento").GetInt32().Should().Be(1);
+        corpo.GetProperty("fatos").GetInt32().Should().Be(0);
+        (await ObterDoCatalogoAsync(client, escolhido)).GetProperty("aprovacao").GetProperty("situacao").GetString().Should().Be("SOLICITADA");
+        (await ObterDoCatalogoAsync(client, outro)).GetProperty("aprovacao").GetProperty("situacao").GetString().Should().Be("PENDENTE");
+    }
+
+    [Fact(DisplayName = "A lista vazia, a ausente e o item inexistente ou fora de pendente são recusados com código próprio")]
+    public async Task Solicitar_ListaVaziaEItemNaoPendente_Recusa()
+    {
+        await TornarCarolineAprovadoraAsync();
+        using HttpClient client = _fixture.Factory.CreateClient();
+        Guid id = await CadastrarTipoAsync(client, "INTERNO");
+        (await SolicitarAsync(client, "TIPO_DOCUMENTO", id)).StatusCode.Should().Be(HttpStatusCode.OK);
+
+        HttpResponseMessage vazia = await SolicitarAsync(client);
+        HttpResponseMessage ausente = await EnviarAsync(client, HttpMethod.Post, $"{Base}/solicitacoes", new { });
+        HttpResponseMessage jaSolicitado = await SolicitarAsync(client, "TIPO_DOCUMENTO", id);
+        HttpResponseMessage inexistente = await SolicitarAsync(client, "FATO", Guid.NewGuid());
+        HttpResponseMessage nulo = await EnviarAsync(client, HttpMethod.Post, $"{Base}/solicitacoes", new { itens = new object?[] { null } });
+
+        vazia.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await vazia.Content.ReadAsStringAsync()).Should().Contain("solicitacao_sem_item");
+        ausente.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await ausente.Content.ReadAsStringAsync()).Should().Contain("solicitacao_sem_item");
+        jaSolicitado.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await jaSolicitado.Content.ReadAsStringAsync()).Should().Contain("item_nao_pendente");
+        (await jaSolicitado.Content.ReadAsStringAsync()).Should().Contain("itens[0].id");
+        nulo.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await nulo.Content.ReadAsStringAsync()).Should().Contain("itens[0]");
+        inexistente.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await inexistente.Content.ReadAsStringAsync()).Should().Contain("item_nao_pendente");
+    }
+
+    [Fact(DisplayName = "Item de cadastro que quem envia não mantém responde 403 e o item continua pendente")]
+    public async Task Solicitar_ItemDeCadastroSemPermissao_Retorna403()
+    {
+        await TornarCarolineAprovadoraAsync();
+        using HttpClient client = _fixture.Factory.CreateClient();
+        JsonElement quilombola = await ObterFatoAsync(client, IdDeQuilombola);
+        (await EnviarAsync(client, HttpMethod.Put, $"{Fatos}/{IdDeQuilombola}/definicao", DefinicaoDe(quilombola, hipoteseLegal: "EXERCICIO_REGULAR_DE_DIREITOS")))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        const string Paulo = "paulo.conceicao";
+        await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, Paulo);
+        await ConcessoesDeTeste.ConcederPermissoesAsync(_fixture.Factory.Services, Paulo, PermissaoConfiguracao.TiposDocumentoManter.Codigo);
+
+        using HttpRequestMessage request = new(HttpMethod.Post, new Uri($"{Base}/solicitacoes", UriKind.Relative))
+        {
+            Content = JsonContent.Create(new { itens = new[] { new { cadastro = "FATO", id = IdDeQuilombola } } }),
+        };
+        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
+        request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, Paulo);
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        HttpResponseMessage resposta = await client.SendAsync(request);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await ObterFatoAsync(client, IdDeQuilombola)).GetProperty("aprovacao").GetProperty("situacao").GetString().Should().Be("PENDENTE");
+        (await EnviarAsync(client, HttpMethod.Put, $"{Fatos}/{IdDeQuilombola}/definicao", DefinicaoDe(quilombola))).StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
     [Fact(DisplayName = "Quem mantém os tipos e os fatos, mas não tem a permissão de aprovar, recebe 403 ao decidir e o item continua solicitado")]
     public async Task Decidir_SemPermissaoDeAprovar_Retorna403()
     {
@@ -110,7 +181,7 @@ public sealed class ProtecaoDoCatalogoEndpointTests
             _fixture.Factory.Services, Paulo, PermissaoConfiguracao.TiposDocumentoManter.Codigo, PermissaoConfiguracao.FatosCandidatoManter.Codigo);
         using HttpClient client = _fixture.Factory.CreateClient();
         Guid id = await CadastrarTipoAsync(client, "INTERNO");
-        (await EnviarAsync(client, HttpMethod.Post, $"{Base}/solicitacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await SolicitarAsync(client, "TIPO_DOCUMENTO", id)).StatusCode.Should().Be(HttpStatusCode.OK);
         JsonElement item = await ObterDoCatalogoAsync(client, id);
 
         using HttpRequestMessage request = new(HttpMethod.Post, new Uri(Base, UriKind.Relative))
@@ -140,7 +211,7 @@ public sealed class ProtecaoDoCatalogoEndpointTests
         await TornarCarolineAprovadoraAsync();
         using HttpClient client = _fixture.Factory.CreateClient();
         Guid id = await CadastrarTipoAsync(client, "INTERNO");
-        (await EnviarAsync(client, HttpMethod.Post, $"{Base}/solicitacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await SolicitarAsync(client, "TIPO_DOCUMENTO", id)).StatusCode.Should().Be(HttpStatusCode.OK);
 
         HttpResponseMessage resposta = await DecidirAsync(client, "TIPO_DOCUMENTO", id, "APROVAR", protecaoDesatualizada: true);
 
@@ -167,7 +238,7 @@ public sealed class ProtecaoDoCatalogoEndpointTests
         await TornarCarolineAprovadoraAsync();
         using HttpClient client = _fixture.Factory.CreateClient();
         Guid id = await CadastrarTipoAsync(client, "INTERNO");
-        (await EnviarAsync(client, HttpMethod.Post, $"{Base}/solicitacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await SolicitarAsync(client, "TIPO_DOCUMENTO", id)).StatusCode.Should().Be(HttpStatusCode.OK);
 
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         ConfiguracaoDbContext concorrente = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
@@ -213,7 +284,7 @@ public sealed class ProtecaoDoCatalogoEndpointTests
         using HttpClient client = _fixture.Factory.CreateClient();
         JsonElement original = await ObterFatoAsync(client, IdDeQuilombola);
         (await EnviarAsync(client, HttpMethod.Put, $"{Fatos}/{IdDeQuilombola}/definicao", DefinicaoDe(original))).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await EnviarAsync(client, HttpMethod.Post, $"{Base}/solicitacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await SolicitarAsync(client, "FATO", IdDeQuilombola)).StatusCode.Should().Be(HttpStatusCode.OK);
 
         (await DecidirAsync(client, "FATO", IdDeQuilombola, "RECOMENDAR_AJUSTE", "PESSOAL"))
             .StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -390,6 +461,11 @@ public sealed class ProtecaoDoCatalogoEndpointTests
             justificativa,
         });
     }
+
+    private static Task<HttpResponseMessage> SolicitarAsync(HttpClient client, params (string Cadastro, Guid Id)[] itens) =>
+        EnviarAsync(client, HttpMethod.Post, $"{Base}/solicitacoes", new { itens = itens.Select(i => new { cadastro = i.Cadastro, i.Id }) });
+
+    private static Task<HttpResponseMessage> SolicitarAsync(HttpClient client, string cadastro, Guid id) => SolicitarAsync(client, (cadastro, id));
 
     private static async Task<JsonElement> ObterDoCatalogoAsync(HttpClient client, Guid id) =>
         (await ListarAsync(client)).Single(item => item.GetProperty("id").GetGuid() == id);

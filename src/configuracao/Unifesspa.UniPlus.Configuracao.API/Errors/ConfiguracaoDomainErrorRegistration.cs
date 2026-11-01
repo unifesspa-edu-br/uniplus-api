@@ -2114,11 +2114,17 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "Base legal de bônus regional não encontrada")),
 
         // ── Aprovação da proteção de dados do catálogo (ADR-0153) ────────────
-        new(ProtecaoDoCatalogoErrorCodes.SemItemPendente,
+        new(ProtecaoDoCatalogoErrorCodes.SolicitacaoSemItem,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.protecao_do_catalogo.sem_item_pendente",
-                "Nenhum item do catálogo está pendente de solicitação")),
+                "uniplus.configuracao.protecao_do_catalogo.solicitacao_sem_item",
+                "A solicitação não traz nenhum item")),
+
+        new(ProtecaoDoCatalogoErrorCodes.ItemNaoPendente,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.protecao_do_catalogo.item_nao_pendente",
+                "O item da solicitação não existe ou não está pendente")),
 
         new(ProtecaoDoCatalogoErrorCodes.ItemForaDeSolicitacao,
             new DomainErrorMapping(

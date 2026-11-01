@@ -6,8 +6,11 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Errors;
 /// </summary>
 public static class ProtecaoDoCatalogoErrorCodes
 {
-    /// <summary>Solicitação enviada quando nenhum item do catálogo está pendente.</summary>
-    public const string SemItemPendente = "ProtecaoDoCatalogo.SemItemPendente";
+    /// <summary>Solicitação enviada sem nenhum item selecionado.</summary>
+    public const string SolicitacaoSemItem = "ProtecaoDoCatalogo.SolicitacaoSemItem";
+
+    /// <summary>Item da solicitação que não existe ou que não está pendente de solicitação.</summary>
+    public const string ItemNaoPendente = "ProtecaoDoCatalogo.ItemNaoPendente";
 
     /// <summary>Decisão da proteção de dados sobre item que não está em solicitação.</summary>
     public const string ItemForaDeSolicitacao = "ProtecaoDoCatalogo.ItemForaDeSolicitacao";

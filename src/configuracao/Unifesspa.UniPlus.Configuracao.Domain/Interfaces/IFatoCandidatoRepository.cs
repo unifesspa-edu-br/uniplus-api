@@ -25,10 +25,10 @@ public interface IFatoCandidatoRepository
     Task<IReadOnlyList<FatoCandidato>> ListarTodosAsync(CancellationToken cancellationToken);
 
     /// <summary>
-    /// Os fatos pendentes de solicitação (criados ou com a proteção alterada e ainda fora de qualquer
-    /// solicitação), rastreados para a solicitação os enviar.
+    /// Dos ids pedidos, os fatos pendentes de solicitação (criados ou com a proteção alterada e ainda fora de
+    /// qualquer solicitação), rastreados para a solicitação os enviar.
     /// </summary>
-    Task<IReadOnlyList<FatoCandidato>> ListarPendentesDeSolicitacaoAsync(CancellationToken cancellationToken);
+    Task<IReadOnlyList<FatoCandidato>> ListarPendentesPorIdAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);
 
     /// <summary>Os fatos que ainda não têm a proteção aprovada, sem rastreamento, por código.</summary>
     Task<IReadOnlyList<FatoCandidato>> ListarSemProtecaoAprovadaAsync(CancellationToken cancellationToken);

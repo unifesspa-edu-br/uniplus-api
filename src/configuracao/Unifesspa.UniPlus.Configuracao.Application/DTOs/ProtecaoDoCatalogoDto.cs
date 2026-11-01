@@ -28,6 +28,11 @@ public sealed record ItemDaProtecaoDoCatalogoDto(
     string HipoteseLegal,
     AprovacaoDaProtecaoDto Aprovacao);
 
+/// <summary>Um item do catálogo que o administrador escolheu enviar à proteção de dados.</summary>
+/// <param name="Cadastro"><c>TIPO_DOCUMENTO</c> ou <c>FATO</c>; comparado sem os espaços das pontas.</param>
+/// <param name="Id">Identificador do tipo de documento ou do fato.</param>
+public sealed record ItemParaSolicitarDto(string? Cadastro, Guid Id);
+
 /// <summary>O que a solicitação levou à proteção de dados: a quantidade de itens de cada cadastro.</summary>
 public sealed record SolicitacaoDaProtecaoDto(int TiposDeDocumento, int Fatos);
 
