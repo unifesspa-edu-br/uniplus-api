@@ -284,6 +284,20 @@ public sealed class ObterInscricaoAdministrativaQueryHandlerTests
         await mundoDeKevin.Inscricoes.DidNotReceiveWithAnyArgs().ObterPrimeirosEnviosAsync(default!, default);
     }
 
+    [Fact(DisplayName = "A seção sai com o título que o formulário do processo congelou; a seção que a versão não tem sai sem título")]
+    public async Task Secao_SaiComOTituloCongelado()
+    {
+        InscricaoAdministrativaDeTeste cenario = new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond)
+            .Fato("NOME", "PESSOAL", TipoRenderizacao.Texto, Texto("Fernanda"), secao: "DADOS", ordem: 0)
+            .Fato("ANTIGO", "PESSOAL", TipoRenderizacao.Texto, Texto("a"), secao: "SECAO_QUE_A_VERSAO_NAO_TEM", ordem: 1);
+        DecisoesDeAcessoDeTeste diogo = new("diogo.souza", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar);
+
+        InscricaoAdministrativaDto dto = (await Consultar(cenario, diogo)).Value!;
+
+        dto.Secoes.Single(static s => s.Codigo == "DADOS").Titulo.Should().Be("Dados");
+        dto.Secoes.Single(static s => s.Codigo == "SECAO_QUE_A_VERSAO_NAO_TEM").Titulo.Should().BeNull();
+    }
+
     [Fact(DisplayName = "Leandro com dados públicos e documentos públicos tem as duas decisões registradas, ainda que sejam classes abertas")]
     public async Task Registro_ClassesPublicas_SaoRegistradas()
     {

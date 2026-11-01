@@ -54,10 +54,13 @@ public sealed record InscricaoAdministrativaDto(
 
 /// <summary>Uma seção do formulário com as respostas dela e os grupos que se repetem nela.</summary>
 /// <param name="Codigo">O código da seção do formulário; vazio para o item que nenhuma seção abriga.</param>
+/// <param name="Titulo">O título da seção no formulário que o processo congelou, o mesmo que o candidato vê; ausente quando a seção não existe na versão congelada, quando o envelope não traz formulário e para o item que nenhuma seção abriga.</param>
 /// <param name="Itens">As respostas da seção fora de grupo.</param>
 /// <param name="Grupos">Os grupos repetíveis da seção.</param>
 public sealed record SecaoDaInscricaoDto(
     string Codigo,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    string? Titulo,
     IReadOnlyList<ItemDeRespostaDto> Itens,
     IReadOnlyList<GrupoDaInscricaoDto> Grupos);
 
