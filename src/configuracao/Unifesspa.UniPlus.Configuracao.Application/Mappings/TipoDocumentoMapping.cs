@@ -22,6 +22,7 @@ public static class TipoDocumentoMapping
             ClassificacoesDeProtecao.ParaTokenCanonico(tipo.ClassificacaoProtecao),
             tipo.FinalidadeTratamento,
             HipotesesLegaisTratamento.ParaTokenCanonico(tipo.HipoteseLegal),
-            tipo.CreatedAt);
+            tipo.CreatedAt,
+            tipo.Aprovacao.EstaAprovada);
     }
 }

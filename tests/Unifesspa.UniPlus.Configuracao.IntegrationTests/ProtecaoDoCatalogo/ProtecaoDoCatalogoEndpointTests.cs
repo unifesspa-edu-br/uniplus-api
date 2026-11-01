@@ -65,7 +65,9 @@ public sealed class ProtecaoDoCatalogoEndpointTests
         (await EnviarAsync(client, HttpMethod.Post, $"{Tipos}/{id}/aceite-da-recomendacao")).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         HttpResponseMessage tipo = await client.GetAsync(new Uri($"/api/configuracao/tipos-documento/{id}", UriKind.Relative));
-        (await tipo.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("classificacaoProtecao").GetString().Should().Be("SENSIVEL");
+        JsonElement aprovado = await tipo.Content.ReadFromJsonAsync<JsonElement>();
+        aprovado.GetProperty("classificacaoProtecao").GetString().Should().Be("SENSIVEL");
+        aprovado.GetProperty("protecaoAprovada").GetBoolean().Should().BeTrue();
         (await ListarAsync(client)).Should().NotContain(item => item.GetProperty("id").GetGuid() == id, "o item aprovado sai da lista");
     }
 
