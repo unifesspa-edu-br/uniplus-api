@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A serialização defensiva omite o campo classificado sem decisão permitida na requisição, sem pedir a decisão de novo, e
@@ -96,7 +97,10 @@ public sealed class OmissaoDeCampoClassificadoTests
     }
 
     private void Permitir(params (NaturezaDoItem, ClassificacaoDeProtecao)[] pares) =>
-        new DecisoesDaRequisicaoHttp(_acessor).Guardar(new DecisoesDaProjecao(pares.ToDictionary(static p => p, static _ => DecisaoDeAcesso.IdentidadeIncompleta)));
+        new DecisoesDaRequisicaoHttp(_acessor).Guardar(new DecisoesDaProjecao(pares.ToDictionary(static p => p, static _ => Decisao)));
+
+    private static readonly DecisaoPermitida Decisao =
+        DecisaoDeAcessoDeTeste.Permitida(PermissionRequirement.From("selecao:dados-publicos:consultar", ClassificacaoDeProtecao.Publico).Value!);
 
     private sealed record Linha(
         [property: ProtegidoComo(ClassificacaoDeProtecao.Publico)] Guid Id,

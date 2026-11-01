@@ -49,7 +49,7 @@ public static class ListarPerfisParaPedirQueryHandler
         if (!PedidoDeConcessao.SolicitanteInstitucional(pessoa, dominios))
         {
             ResultadoDoAcesso acesso = await verificador
-                .VerificarAsync(PermissaoManterPerfis, null, cancellationToken)
+                .ExigirAsync(PermissaoManterPerfis, null, cancellationToken)
                 .ConfigureAwait(false);
             if (acesso != ResultadoDoAcesso.Permitido)
             {

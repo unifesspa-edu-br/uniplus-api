@@ -69,10 +69,14 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Listar([FromQuery] string? situacao, CancellationToken cancellationToken)
     {
-        AcessoAoCatalogoDeProtecao acesso = await AcessoAoCatalogoDeProtecao.VerificarAsync(_verificador, cancellationToken).ConfigureAwait(false);
+        Result<AcessoAoCatalogoDeProtecao> acesso = await AcessoAoCatalogoDeProtecao.VerificarAsync(_verificador, cancellationToken).ConfigureAwait(false);
+        if (acesso.IsFailure)
+        {
+            return acesso.ToActionResult(_mapper);
+        }
 
         Result<IReadOnlyList<ItemDaProtecaoDoCatalogoDto>> resultado = await _queryBus
-            .Send(new ListarProtecaoDoCatalogoQuery(acesso, situacao), cancellationToken)
+            .Send(new ListarProtecaoDoCatalogoQuery(acesso.Value, situacao), cancellationToken)
             .ConfigureAwait(false);
 
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
@@ -177,13 +181,18 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
     {
         // O acesso e os destinatários vêm do módulo Autorização e são lidos antes do handler, que fica num único
         // DbContext para que a trava, a conferência, a gravação e o aviso por e-mail fiquem na mesma transação.
-        AcessoAoCatalogoDeProtecao acesso = await AcessoAoCatalogoDeProtecao.VerificarAsync(_verificador, cancellationToken).ConfigureAwait(false);
+        Result<AcessoAoCatalogoDeProtecao> acesso = await AcessoAoCatalogoDeProtecao.VerificarAsync(_verificador, cancellationToken).ConfigureAwait(false);
+        if (acesso.IsFailure)
+        {
+            return acesso.ToActionResult(_mapper);
+        }
+
         IReadOnlyList<string> destinatarios = await _titulares
             .ListarEmailsAsync(PermissaoConfiguracao.ProtecaoDoCatalogoAprovar.Codigo, cancellationToken)
             .ConfigureAwait(false);
 
         Result<SolicitacaoDaProtecaoDto> resultado = await _commandBus
-            .Send(new SolicitarAprovacaoDaProtecaoCommand(acesso, destinatarios, request?.ParaItens() ?? []), cancellationToken)
+            .Send(new SolicitarAprovacaoDaProtecaoCommand(acesso.Value, destinatarios, request?.ParaItens() ?? []), cancellationToken)
             .ConfigureAwait(false);
 
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);

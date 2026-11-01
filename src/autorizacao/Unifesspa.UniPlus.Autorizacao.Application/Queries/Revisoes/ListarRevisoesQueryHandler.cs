@@ -22,11 +22,13 @@ public static class ListarRevisoesQueryHandler
         ArgumentNullException.ThrowIfNull(verificador);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        AcessoDaRevisao? acesso = await AcessoDaRevisao.ConsultarAsync(verificador, cancellationToken).ConfigureAwait(false);
+        AcessoDaRevisao? acesso = await AcessoDaRevisao.ConsultarAsync(verificador, null, cancellationToken).ConfigureAwait(false);
         if (acesso is null)
         {
             return Result<ListarRevisoesResult>.Failure(RevisaoHandlerErros.IdentidadeIncompleta());
         }
+
+        await acesso.RegistrarAsync(verificador, cancellationToken).ConfigureAwait(false);
 
         if (!acesso.Le)
         {

@@ -63,7 +63,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
         primeira.Cpf.Should().Be(new CpfMascaradoDto(PersonasDeTeste.FernandaDrumond.Mascarado, PodeRevelar: false));
         primeira.NumeroInscricao.Should().BeNull("o número é dado interno e Diogo não tem essa permissão");
         await diogo.Verificador.Received(1).RegistrarParaCadaAsync(
-            Arg.Is<DecisaoDeAcesso>(d => d.Registro!.Permissao == CodigoPessoais),
+            Arg.Is<DecisaoPermitida>(d => d.Registro.Permissao == CodigoPessoais),
             ResourceTiposSelecao.Inscricao,
             Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Count == 20 && ids.SequenceEqual(vinte.Select(static i => i.Id))),
             true,
@@ -96,7 +96,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
         InscricaoDoProcessoDto linha = resultado.Items.Single();
         (linha.Id, linha.Situacao, linha.OfertaCursoId, linha.Nome, linha.Cpf).Should().Be((null, null, null, null, null));
         await kevin.Verificador.Received(1).RegistrarParaCadaAsync(
-            Arg.Is<DecisaoDeAcesso>(d => d.Registro!.Permissao == CodigoAcesso),
+            Arg.Is<DecisaoPermitida>(d => d.Registro.Permissao == CodigoAcesso),
             ResourceTiposSelecao.Inscricao, Arg.Any<IReadOnlyCollection<Guid>>(), true, Arg.Any<CancellationToken>());
     }
 
@@ -123,7 +123,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
         await Listar(leandro);
 
         await leandro.Verificador.Received(1).RegistrarParaCadaAsync(
-            Arg.Is<DecisaoDeAcesso>(d => d.Registro!.Permissao == CodigoPublicos),
+            Arg.Is<DecisaoPermitida>(d => d.Registro.Permissao == CodigoPublicos),
             ResourceTiposSelecao.Inscricao, Arg.Any<IReadOnlyCollection<Guid>>(), true, Arg.Any<CancellationToken>());
     }
 
@@ -165,7 +165,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
             diogo.Verificador, new ProjetorDeItens(diogo.Verificador, _requisicao), processos, _inscricoes, codecs, CancellationToken.None);
 
         await diogo.Verificador.Received(1).RegistrarParaCadaAsync(
-            Arg.Is<DecisaoDeAcesso>(d => d.Registro!.Permissao == CodigoPessoais),
+            Arg.Is<DecisaoPermitida>(d => d.Registro.Permissao == CodigoPessoais),
             ResourceTiposSelecao.Inscricao, Arg.Any<IReadOnlyCollection<Guid>>(), true, Arg.Any<CancellationToken>());
     }
 
@@ -199,7 +199,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
         await _inscricoes.Received(1).ListarEnviadasDoProcessoAsync(
             ProcessoId, null, 100, PaginationDirection.Next, false, true, Arg.Any<CancellationToken>());
         await persona.Verificador.Received(1).RegistrarParaCadaAsync(
-            Arg.Is<DecisaoDeAcesso>(d => d.Registro!.Permissao == CodigoPessoais),
+            Arg.Is<DecisaoPermitida>(d => d.Registro.Permissao == CodigoPessoais),
             ResourceTiposSelecao.Inscricao, Arg.Any<IReadOnlyCollection<Guid>>(), true, Arg.Any<CancellationToken>());
     }
 
@@ -217,7 +217,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
         await _inscricoes.Received(1).ListarEnviadasDoProcessoAsync(
             ProcessoId, null, 100, PaginationDirection.Next, false, true, Arg.Any<CancellationToken>());
         await persona.Verificador.DidNotReceive().RegistrarParaCadaAsync(
-            Arg.Is<DecisaoDeAcesso>(d => d.Registro!.Permissao == CodigoRevelar),
+            Arg.Is<DecisaoPermitida>(d => d.Registro.Permissao == CodigoRevelar),
             Arg.Any<string>(), Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
     }
 

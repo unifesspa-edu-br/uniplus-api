@@ -115,6 +115,17 @@ public sealed class AcessoDoAprovadorTests
         semNenhuma.Gravados.Should().ContainSingle().Subject.Should().HaveCount(2).And.OnlyContain(r => !r.Permitido);
     }
 
+    [Fact(DisplayName = "Com as duas etapas permitidas ao mesmo tempo, o desfecho grava as duas permissões que habilitaram a aprovação")]
+    public async Task Desfecho_DuasPermitidas_GravaAsDuas()
+    {
+        VerificadorDeTeste verificador = new("diogo.souza", permitidas: [Funcional, Protecao]);
+
+        await (await AcessoDoAprovador.ConsultarAsync(verificador, incluirAdministrar: false, pedidoId: null, default))!
+            .RegistrarDoDesfechoAsync(verificador, default);
+
+        verificador.Gravados.Should().ContainSingle().Subject.Select(static r => r.Permissao).Should().BeEquivalentTo([Funcional, Protecao]);
+    }
+
     private sealed class PedidosInexistentes : IPedidoDeConcessaoRepository
     {
         public Task<PedidoDeConcessao?> ObterParaAlterarAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<PedidoDeConcessao?>(null);
@@ -146,43 +157,40 @@ public sealed class AcessoDoAprovadorTests
     {
         public List<IReadOnlyCollection<RegistroDecisaoAcesso>> Gravados { get; } = [];
 
-        public Task<DecisaoDeAcesso> DecidirSemRegistrarAsync(
-            PermissionRequirement permissao, ResourceContext? resource = null, CancellationToken cancellationToken = default)
+        public Task<DecisaoDeAcesso> AvaliarAsync(
+            PermissionRequirement requisito, ResourceContext? resource = null, CancellationToken cancellationToken = default)
         {
-            ResourceContext alvo = resource ?? ResourceContext.From(ResourceTipos.Operacao, permissao.Sensibilidade).Value!;
+            ResourceContext alvo = resource ?? ResourceContext.From(ResourceTipos.Operacao, requisito.Sensibilidade).Value!;
             AuthorizationSubject sujeito = AuthorizationSubject.From(
                 UsuarioRef.From("https://idp.exemplo/realms/unifesspa", sub).Value!, "jti-teste").Value!;
-            bool permitida = permitidas.Contains(permissao.Permissao);
-            AuthorizationDecision decisao = permitida
-                ? AuthorizationDecision.Permitir(EffectiveGrant.From(permissao.Permissao, FonteGrant.Concessao, escopoInstitucional: true).Value!)
+            AuthorizationDecision decisao = permitidas.Contains(requisito.Permissao)
+                ? AuthorizationDecision.Permitir(EffectiveGrant.From(requisito.Permissao, FonteGrant.Concessao, escopoInstitucional: true).Value!)
                 : AuthorizationDecision.Negar(MotivoNegativa.SemConcessaoAplicavel);
             AuthorizationRequestContext contexto = AuthorizationRequestContext.From("req-1", DateTimeOffset.UtcNow, OrigemRequisicao.Api).Value!;
 
             return Task.FromResult(DecisaoDeAcesso.Tomada(
-                permitida ? ResultadoDoAcesso.Permitido : ResultadoDoAcesso.Negado,
-                RegistroDecisaoAcesso.De(sujeito, permissao, alvo, contexto, decisao)));
+                requisito, alvo, RegistroDecisaoAcesso.De(sujeito, requisito, alvo, contexto, decisao)));
         }
 
-        public Task RegistrarAsync(IReadOnlyCollection<DecisaoDeAcesso> decisoes, CancellationToken cancellationToken = default)
+        // O que o verificador real gravaria: a política de registro aplicada às decisões do desfecho.
+        public Task RegistrarDesfechoAsync(
+            IReadOnlyCollection<DecisaoDeAcesso> decisoes, IntencaoDoRegistro intencao, CancellationToken cancellationToken = default)
         {
-            Gravados.Add([.. decisoes.Select(static d => d.Registro!)]);
+            Gravados.Add(PoliticaDeRegistroDeAcesso.Desfecho(decisoes, intencao));
             return Task.CompletedTask;
         }
 
-        public Task<ResultadoDoAcesso> VerificarAsync(PermissionRequirement permissao, ResourceContext? resource = null, CancellationToken cancellationToken = default) =>
+        public Task<ResultadoDoAcesso> ExigirAsync(PermissionRequirement requisito, ResourceContext? resource = null, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
-        public Task<ResultadoDoAcesso> VerificarEmAlgumaUnidadeAsync(PermissionRequirement permissao, CancellationToken cancellationToken = default) =>
+        public Task<IReadOnlyList<DecisaoDeAcesso>> AvaliarEmAlgumaUnidadeAsync(PermissionRequirement requisito, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
-        public Task<ResultadoDoAcesso> PodeAsync(PermissionRequirement permissao, ResourceContext? resource = null, CancellationToken cancellationToken = default) =>
-            throw new NotSupportedException();
-
-        public Task RegistrarAsync(DecisaoDeAcesso permitida, CancellationToken cancellationToken = default) =>
+        public Task<ResultadoDoAcesso> PodeAsync(PermissionRequirement requisito, ResourceContext? resource = null, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
         public Task RegistrarParaCadaAsync(
-            DecisaoDeAcesso permitida, string resourceTipo, IReadOnlyCollection<Guid> resourceIds, bool resourceEhInscricao = false, CancellationToken cancellationToken = default) =>
+            DecisaoPermitida permitida, string resourceTipo, IReadOnlyCollection<Guid> resourceIds, bool resourceEhInscricao = false, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
     }
 }

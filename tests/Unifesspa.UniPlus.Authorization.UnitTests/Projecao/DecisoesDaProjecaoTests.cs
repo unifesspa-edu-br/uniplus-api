@@ -4,12 +4,14 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Projecao;
+using Unifesspa.UniPlus.Authorization.UnitTests.Decisao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>O item só sai com a decisão permitida do par e, sendo sensível, com a base legal congelada.</summary>
 public sealed class DecisoesDaProjecaoTests
 {
-    private static readonly DecisaoDeAcesso Permitida = DecisaoDeAcesso.IdentidadeIncompleta;
+    private static readonly DecisaoPermitida Permitida = DecisaoDeAcessoDeTeste.Permitida(CenariosDeDecisao.Requisito());
 
     private static DecisoesDaProjecao Com(params (NaturezaDoItem, ClassificacaoDeProtecao)[] pares) =>
         new(pares.ToDictionary(static p => p, static _ => Permitida));

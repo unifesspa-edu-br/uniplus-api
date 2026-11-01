@@ -66,7 +66,7 @@ public sealed class LerProcessoSeletivoQueryHandlerTests
         repositorio.ObterVersoesPorAtoCriadorAsync(Arg.Is<IReadOnlyCollection<Guid>>(a => a.Contains(ato)), Arg.Any<CancellationToken>())
             .Returns([versao]);
         IVerificadorDeAcesso verificador = Substitute.For<IVerificadorDeAcesso>();
-        verificador.VerificarAsync(default!, default, default).ReturnsForAnyArgs(ResultadoDoAcesso.IdentidadeIncompleta);
+        verificador.PodeAsync(default!, default, default).ReturnsForAnyArgs(ResultadoDoAcesso.IdentidadeIncompleta);
 
         ProcessoSeletivoDto? dto = await LerProcessoSeletivoQueryHandler.Handle(
             new LerProcessoSeletivoQuery(processo.Id), repositorio, divulgacoes, verificador, CancellationToken.None);

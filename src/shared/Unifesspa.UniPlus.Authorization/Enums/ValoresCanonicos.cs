@@ -37,6 +37,7 @@ public static class ValoresCanonicos
         MotivoNegativa.ContextoObrigatorioAusente => "contexto_obrigatorio_ausente",
         MotivoNegativa.MecanismoRevogacaoDegradado => "mecanismo_revogacao_degradado",
         MotivoNegativa.ImpedidoPorInscricaoNoProcesso => "impedido_por_inscricao_no_processo",
+        MotivoNegativa.ConcessaoEmUnidadeExigida => "concessao_em_unidade_exigida",
         _ => throw new InvalidEnumArgumentException(nameof(motivo), (int)motivo, typeof(MotivoNegativa)),
     };
 

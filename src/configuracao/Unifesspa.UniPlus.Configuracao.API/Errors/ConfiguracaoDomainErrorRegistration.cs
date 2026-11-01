@@ -2162,6 +2162,12 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.protecao_do_catalogo.sem_permissao",
                 "Sem permissão sobre a proteção de dados do catálogo")),
 
+        new(ProtecaoDoCatalogoErrorCodes.IdentidadeIncompleta,
+            new DomainErrorMapping(
+                StatusCodes.Status401Unauthorized,
+                "uniplus.configuracao.protecao_do_catalogo.identidade_incompleta",
+                "Identidade do solicitante incompleta")),
+
         new(ProtecaoDoCatalogoErrorCodes.ConflitoDeConcorrencia,
             new DomainErrorMapping(
                 StatusCodes.Status409Conflict,

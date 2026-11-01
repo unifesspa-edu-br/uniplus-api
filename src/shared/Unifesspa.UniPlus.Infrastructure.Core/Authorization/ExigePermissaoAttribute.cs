@@ -95,38 +95,28 @@ public sealed class ExigePermissaoAttribute<TPermissao> : Attribute, IAsyncAutho
 
         CancellationToken cancellationToken = context.HttpContext.RequestAborted;
 
-        // Decide sem registrar para gravar só o que governou o desfecho: a negativa da principal não é registrada
+        // Avalia sem registrar para gravar só o que governou o desfecho: a negativa da principal não é registrada
         // quando a alternativa permite.
-        DecisaoDeAcesso principal = await acesso
-            .DecidirSemRegistrarAsync(Definicao.Requisito, _resource, cancellationToken)
-            .ConfigureAwait(false);
+        DecisaoDeAcesso principal = await acesso.AvaliarAsync(Definicao.Requisito, _resource, cancellationToken).ConfigureAwait(false);
+        List<DecisaoDeAcesso> decisoes = [principal];
         ResultadoDoAcesso resultado = principal.Resultado;
 
+        // O impedimento por inscrição vale em qualquer unidade: a alternativa não o supera.
         if (resultado == ResultadoDoAcesso.Negado && Alternativa is not null)
         {
-            resultado = await acesso
-                .VerificarEmAlgumaUnidadeAsync(Alternativa.Requisito, cancellationToken)
+            IReadOnlyList<DecisaoDeAcesso> alternativas = await acesso
+                .AvaliarEmAlgumaUnidadeAsync(Alternativa.Requisito, cancellationToken)
                 .ConfigureAwait(false);
+            decisoes.AddRange(alternativas);
 
-            // A alternativa já registrou o que lhe cabe; a negativa da principal entra só se ela também negou.
-            if (resultado == ResultadoDoAcesso.Permitido)
-            {
-                principal = DecisaoDeAcesso.IdentidadeIncompleta;
-            }
+            // Sem unidade que permita, vale o desfecho da última avaliada.
+            resultado = alternativas.Any(static d => d is DecisaoPermitida)
+                ? ResultadoDoAcesso.Permitido
+                : alternativas.Count > 0 ? alternativas[^1].Resultado : resultado;
         }
 
-        if (principal.Registro is { Exigido: true })
-        {
-            await acesso.RegistrarAsync([principal], cancellationToken).ConfigureAwait(false);
-        }
+        await acesso.RegistrarDesfechoAsync(decisoes, IntencaoDoRegistro.Pedido, cancellationToken).ConfigureAwait(false);
 
-        // Challenge, e não Unauthorized: o 401 canônico carrega WWW-Authenticate e o
-        // corpo problem+json escritos pelo OnChallenge do esquema configurado.
-        context.Result = resultado switch
-        {
-            ResultadoDoAcesso.Permitido => null,
-            ResultadoDoAcesso.IdentidadeIncompleta => new ChallengeResult(),
-            _ => new ForbidResult(),
-        };
+        context.Result = RespostaDoAcesso.Para(resultado, static () => new ForbidResult());
     }
 }

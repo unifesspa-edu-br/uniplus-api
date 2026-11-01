@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Authorization.Enums;
 /// <summary>
 /// Conjunto fechado de motivos pelos quais a decisão de autorização nega o
 /// acesso (ADR-0078). O motivo é estável e <b>sem dados pessoais</b> — serve a
-/// diagnóstico e auditoria. São exatamente 14 motivos; o identificador C# está
+/// diagnóstico e auditoria. São exatamente 15 motivos; o identificador C# está
 /// em PascalCase e o valor canônico de serialização externa em <c>snake_case</c>
 /// está indicado em cada membro.
 /// </summary>
@@ -50,4 +50,7 @@ public enum MotivoNegativa
 
     /// <summary>Valor canônico: <c>impedido_por_inscricao_no_processo</c>.</summary>
     ImpedidoPorInscricaoNoProcesso = 13,
+
+    /// <summary>Valor canônico: <c>concessao_em_unidade_exigida</c>.</summary>
+    ConcessaoEmUnidadeExigida = 14,
 }

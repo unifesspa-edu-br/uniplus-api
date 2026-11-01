@@ -33,6 +33,9 @@ public static class ProtecaoDoCatalogoErrorCodes
     /// <summary>Quem age não tem permissão para a operação sobre nenhum dos cadastros que ela alcança.</summary>
     public const string SemPermissaoNoCatalogo = "ProtecaoDoCatalogo.SemPermissaoNoCatalogo";
 
+    /// <summary>O token não identifica quem pede por completo: não houve decisão de acesso a tomar.</summary>
+    public const string IdentidadeIncompleta = "ProtecaoDoCatalogo.IdentidadeIncompleta";
+
     /// <summary>Um item do lote foi alterado concorrentemente entre a leitura e a gravação.</summary>
     public const string ConflitoDeConcorrencia = "ProtecaoDoCatalogo.ConflitoDeConcorrencia";
 

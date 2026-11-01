@@ -16,6 +16,9 @@ public static class ResourceTiposAutorizacao
     /// <summary>Tipo <c>pedido-de-concessao</c>.</summary>
     public const string Pedido = "pedido-de-concessao";
 
+    /// <summary>Tipo <c>revisao-de-acessos</c>.</summary>
+    public const string Revisao = "revisao-de-acessos";
+
     /// <summary>Tipo <c>perfil</c>.</summary>
     public const string Perfil = "perfil";
 }

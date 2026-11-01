@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Authorization.Decisao;
 
-using System.Collections.Frozen;
-
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Enums;
@@ -10,9 +8,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Ponto de decisão único (ADR-0078) na sua forma mínima: decide por concessão
-/// efetiva, na ordem canônica do algoritmo. <see cref="DecideAsync"/> registra a decisão — permitida ou negada — no
-/// registro operacional restrito só quando <see cref="RegistroDecisaoAcesso.Exige"/> (permissão ou resource pessoal,
-/// identificador ou sensível); as demais decisões não gravam nada. <see cref="DecidirSemRegistrarAsync"/> nunca grava.
+/// efetiva, na ordem canônica do algoritmo. Só decide: o registro do acesso é do verificador, pela política de registro.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -28,8 +24,7 @@ public sealed class AuthorizationDecisionService : IAuthorizationDecisionService
 {
     private readonly GrantEfetivoAplicavelCheck _concessaoAplicavel;
     private readonly ImpedimentoPorInscricaoCheck _impedimento;
-    private readonly FrozenDictionary<string, IPermissaoCheck> _verificacoesDeContexto;
-    private readonly IRegistroOperacionalRestrito _registro;
+    private readonly Dictionary<string, IPermissaoCheck> _verificacoesDeContexto;
 
     /// <summary>
     /// Compõe o serviço com as verificações canônicas — de concessão e de
@@ -39,47 +34,23 @@ public sealed class AuthorizationDecisionService : IAuthorizationDecisionService
     public AuthorizationDecisionService(
         GrantEfetivoAplicavelCheck concessaoAplicavel,
         ImpedimentoPorInscricaoCheck impedimento,
-        IEnumerable<IPermissaoCheck> verificacoesDeContexto,
-        IRegistroOperacionalRestrito registro)
+        IEnumerable<IPermissaoCheck> verificacoesDeContexto)
     {
         ArgumentNullException.ThrowIfNull(concessaoAplicavel);
         ArgumentNullException.ThrowIfNull(impedimento);
         ArgumentNullException.ThrowIfNull(verificacoesDeContexto);
-        ArgumentNullException.ThrowIfNull(registro);
 
         _concessaoAplicavel = concessaoAplicavel;
         _impedimento = impedimento;
-        _registro = registro;
-        _verificacoesDeContexto = verificacoesDeContexto.ToFrozenDictionary(
+        // Dicionário por escopo, e não um índice singleton: uma verificação de contexto registrada como scoped, como a
+        // designação de banca, ficaria presa à primeira requisição por toda a vida da aplicação.
+        _verificacoesDeContexto = verificacoesDeContexto.ToDictionary(
             static check => check.Nome,
             StringComparer.Ordinal);
     }
 
     /// <inheritdoc />
-    public async Task<AuthorizationDecision> DecideAsync(
-        AuthorizationSubject subject,
-        PermissionRequirement requirement,
-        ResourceContext resource,
-        AuthorizationRequestContext request,
-        CancellationToken cancellationToken)
-    {
-        AuthorizationDecision decisao = await DecidirSemRegistrarAsync(
-            subject, requirement, resource, request, cancellationToken).ConfigureAwait(false);
-
-        // Dado pessoal só segue se o registro foi gravado: a falha de gravação sobe como erro da requisição, e nem
-        // converte a decisão em negativa nem a deixa passar sem registro. A permissão operacional decide sem gravar.
-        if (RegistroDecisaoAcesso.Exige(requirement, resource))
-        {
-            await _registro.RegistrarAsync(
-                [RegistroDecisaoAcesso.De(subject, requirement, resource, request, decisao)], cancellationToken)
-                .ConfigureAwait(false);
-        }
-
-        return decisao;
-    }
-
-    /// <inheritdoc />
-    public Task<AuthorizationDecision> DecidirSemRegistrarAsync(
+    public async Task<AuthorizationDecision> DecidirAsync(
         AuthorizationSubject subject,
         PermissionRequirement requirement,
         ResourceContext resource,
@@ -91,16 +62,6 @@ public sealed class AuthorizationDecisionService : IAuthorizationDecisionService
         ArgumentNullException.ThrowIfNull(resource);
         ArgumentNullException.ThrowIfNull(request);
 
-        return AvaliarAsync(subject, requirement, resource, request, cancellationToken);
-    }
-
-    private async Task<AuthorizationDecision> AvaliarAsync(
-        AuthorizationSubject subject,
-        PermissionRequirement requirement,
-        ResourceContext resource,
-        AuthorizationRequestContext request,
-        CancellationToken cancellationToken)
-    {
         // Pré-condição estrutural, antes da cadeia: sem os campos de contexto que
         // a permissão exige, as verificações seguintes decidiriam sobre um
         // resource mal situado — e um escopo ausente pareceria escopo irrestrito.

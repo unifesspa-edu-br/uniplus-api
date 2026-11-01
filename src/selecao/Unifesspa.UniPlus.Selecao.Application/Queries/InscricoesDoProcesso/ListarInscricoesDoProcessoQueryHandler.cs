@@ -4,8 +4,8 @@ using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
+using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -104,17 +104,17 @@ public static class ListarInscricoesDoProcessoQueryHandler
             .FirstOrDefault(static d => d is not null);
 
         exercida ??= await verificador
-            .DecidirSemRegistrarAsync(PermissaoSelecao.InscricoesConsultar.Requisito, resource, cancellationToken)
+            .AvaliarAsync(PermissaoSelecao.InscricoesConsultar.Requisito, resource, cancellationToken)
             .ConfigureAwait(false);
 
-        if (exercida is not { Resultado: ResultadoDoAcesso.Permitido, Registro: not null })
+        if (exercida is not DecisaoPermitida permitida)
         {
             return;
         }
 
         await verificador
             .RegistrarParaCadaAsync(
-                exercida, ResourceTiposSelecao.Inscricao, [.. inscricoes.Select(static i => i.Id)],
+                permitida, ResourceTiposSelecao.Inscricao, [.. inscricoes.Select(static i => i.Id)],
                 resourceEhInscricao: true, cancellationToken)
             .ConfigureAwait(false);
     }
