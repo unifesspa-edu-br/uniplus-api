@@ -100,7 +100,9 @@ public sealed class InscricoesDoProcessoController : ControllerBase
 
     /// <summary>
     /// Emite a URL assinada de curta validade para baixar o arquivo verificado de uma inscrição. A permissão exigida é
-    /// a da classificação congelada da exigência a que o arquivo responde: documentos sensíveis ou documentos pessoais.
+    /// a da classificação congelada da exigência a que o arquivo responde, uma para cada uma das cinco classes (pública,
+    /// interna, pessoal, identificadora e sensível), sem hierarquia entre elas. A classificação que não se resolve vale
+    /// como sensível, e consultar as inscrições não abre arquivo algum.
     /// O arquivo que não existe, o de outro processo e o que a pessoa não pode abrir respondem o mesmo 404. A URL é
     /// credencial de acesso, então a resposta vai com <c>no-store</c>.
     /// </summary>

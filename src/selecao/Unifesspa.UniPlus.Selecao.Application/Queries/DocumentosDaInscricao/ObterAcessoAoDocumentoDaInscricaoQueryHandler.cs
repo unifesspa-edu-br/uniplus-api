@@ -20,8 +20,8 @@ using Wolverine.Attributes;
 
 /// <summary>
 /// O acesso de quem opera o processo ao documento de uma inscrição. A sensibilidade do recurso é a classificação
-/// congelada da exigência a que o arquivo responde (ADR-0136): a sensível exige a permissão de documentos sensíveis, e as
-/// demais, a de documentos pessoais. Consultar as inscrições não abre documento algum.
+/// congelada da exigência a que o arquivo responde (ADR-0136): cada classificação exige a sua própria permissão de
+/// documentos, e a que não se resolve vale como sensível. Consultar as inscrições não abre documento algum.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -84,9 +84,7 @@ public static partial class ObterAcessoAoDocumentoDaInscricaoQueryHandler
                 arquivo, vinculo, processoRepository, documentoRepository, registroCodecs, cancellationToken)
             .ConfigureAwait(false);
 
-        PermissaoSelecao permissao = classificacao == ClassificacaoDeProtecao.Sensivel
-            ? PermissaoSelecao.DocumentosSensiveisConsultar
-            : PermissaoSelecao.DocumentosPessoaisConsultar;
+        PermissaoSelecao permissao = PermissaoDoDocumento(classificacao);
 
         ResultadoDoAcesso acesso = await AcessoAoProcesso
             .VerificarNaUnidadeAsync(
@@ -117,6 +115,18 @@ public static partial class ObterAcessoAoDocumentoDaInscricaoQueryHandler
     }
 
     /// <summary>
+    /// A permissão própria de cada classificação, sem hierarquia entre elas: quem precisa de mais de uma recebe todas.
+    /// </summary>
+    private static PermissaoSelecao PermissaoDoDocumento(ClassificacaoDeProtecao classificacao) => classificacao switch
+    {
+        ClassificacaoDeProtecao.Publico => PermissaoSelecao.DocumentosPublicosConsultar,
+        ClassificacaoDeProtecao.Interno => PermissaoSelecao.DocumentosInternosConsultar,
+        ClassificacaoDeProtecao.Pessoal => PermissaoSelecao.DocumentosPessoaisConsultar,
+        ClassificacaoDeProtecao.Identificador => PermissaoSelecao.DocumentosIdentificadoresConsultar,
+        _ => PermissaoSelecao.DocumentosSensiveisConsultar,
+    };
+
+    /// <summary>
     /// A classificação congelada da exigência na versão da inscrição. A que não se resolve vale como sensível: na dúvida
     /// sobre o que o arquivo é, a permissão mais restrita é a que o abre.
     /// </summary>
@@ -139,10 +149,14 @@ public static partial class ObterAcessoAoDocumentoDaInscricaoQueryHandler
             inscricao.VersaoFormularioId, inscricao.ProcessoSeletivoId, processoRepository, registroCodecs,
             inscricao.OfertaCursoId, inscricao.OfertaCursoSegundaOpcaoId, cancellationToken).ConfigureAwait(false);
 
-        return contexto.IsSuccess
+        ClassificacaoDeProtecao? congelada = contexto.IsSuccess
             && ExigenciaDaInscricao.Localizar(contexto.Value!.Configuracao.Arvore, apresentacao.ExigenciaId) is { } localizada
                 ? localizada.Exigencia.ClassificacaoProtecao
-                : ClassificacaoDeProtecao.Sensivel;
+                : null;
+
+        return congelada is { } resolvida && resolvida != ClassificacaoDeProtecao.Nenhuma && Enum.IsDefined(resolvida)
+            ? resolvida
+            : ClassificacaoDeProtecao.Sensivel;
     }
 
     [LoggerMessage(

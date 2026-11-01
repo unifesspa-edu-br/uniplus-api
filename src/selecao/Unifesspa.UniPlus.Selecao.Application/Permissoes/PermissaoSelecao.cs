@@ -135,4 +135,32 @@ public enum PermissaoSelecao
         BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
         EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
     NotasEnemImportar = 13,
+
+    /// <summary>Consultar os documentos de identificação das inscrições.</summary>
+    [Permissao(
+        "selecao:documentos-identificadores:consultar",
+        "Consultar documentos de identificação das inscrições",
+        "Abre os documentos com número que identifica diretamente o titular, como RG, CNH e passaporte, enviados nas inscrições dos processos seletivos da unidade proprietária.",
+        ClassificacaoDeProtecao.Identificador,
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
+        EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
+    DocumentosIdentificadoresConsultar = 14,
+
+    /// <summary>Consultar os documentos internos das inscrições.</summary>
+    [Permissao(
+        "selecao:documentos-internos:consultar",
+        "Consultar documentos internos das inscrições",
+        "Abre os documentos de uso interno enviados nas inscrições dos processos seletivos da unidade proprietária.",
+        ClassificacaoDeProtecao.Interno,
+        EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
+    DocumentosInternosConsultar = 15,
+
+    /// <summary>Consultar os documentos públicos das inscrições.</summary>
+    [Permissao(
+        "selecao:documentos-publicos:consultar",
+        "Consultar documentos públicos das inscrições",
+        "Abre os documentos públicos, como artigos publicados, enviados nas inscrições dos processos seletivos da unidade proprietária.",
+        ClassificacaoDeProtecao.Publico,
+        EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
+    DocumentosPublicosConsultar = 16,
 }
