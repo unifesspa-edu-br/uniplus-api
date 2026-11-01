@@ -1,9 +1,9 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Queries.ProtecaoDoCatalogo;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
-using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Mappings;
+using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;

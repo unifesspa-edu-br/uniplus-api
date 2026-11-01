@@ -180,6 +180,52 @@ public sealed class CatalogoDePermissoesNoHostTests
         resposta.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
+    [Fact(DisplayName = "A autorização precede a negociação de mídia: sem a permissão e com Accept inválido, 403 em problem+json, e não 406")]
+    public async Task Catalogo_SemPermissaoComAcceptInvalido_403ProblemJson()
+    {
+        await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, Betina);
+        using HttpClient client = Cliente(Betina);
+        client.DefaultRequestHeaders.Accept.ParseAdd("text/csv");
+
+        using HttpResponseMessage resposta = await client.GetAsync(new Uri(Catalogo, UriKind.Relative));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        resposta.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
+    }
+
+    [Fact(DisplayName = "O 406 do catálogo é problem+json, e o 200 informa Vary: Accept")]
+    public async Task Catalogo_CorposEVary()
+    {
+        using HttpClient client = await ClienteComConcessaoAsync(CodigoDoCatalogo);
+        using HttpResponseMessage ok = await client.GetAsync(new Uri(Catalogo, UriKind.Relative));
+        ok.Headers.Vary.Should().Contain("Accept");
+
+        using HttpRequestMessage invalido = new(HttpMethod.Get, new Uri(Catalogo, UriKind.Relative));
+        invalido.Headers.Accept.ParseAdd("text/csv");
+        using HttpResponseMessage recusada = await client.SendAsync(invalido);
+
+        recusada.StatusCode.Should().Be(HttpStatusCode.NotAcceptable);
+        recusada.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
+    }
+
+    [Fact(DisplayName = "As efetivas respondem 406 a Accept inválido e a q=0 da própria representação, e informam Vary: Accept no 200")]
+    public async Task Efetivas_AcceptEVary()
+    {
+        using HttpClient client = Cliente(Betina);
+        using HttpResponseMessage ok = await client.GetAsync(new Uri(Efetivas, UriKind.Relative));
+        ok.StatusCode.Should().Be(HttpStatusCode.OK);
+        ok.Headers.Vary.Should().Contain("Accept");
+
+        foreach (string accept in new[] { "text/csv", "application/vnd.uniplus.permissao-efetiva.v1+json;q=0, */*;q=1" })
+        {
+            using HttpRequestMessage pedido = new(HttpMethod.Get, new Uri(Efetivas, UriKind.Relative));
+            pedido.Headers.Accept.ParseAdd(accept);
+            using HttpResponseMessage resposta = await client.SendAsync(pedido);
+
+            resposta.StatusCode.Should().Be(HttpStatusCode.NotAcceptable, accept);
+        }
+    }
+
     [Fact(DisplayName = "GET das efetivas sem token responde 401")]
     public async Task Efetivas_SemToken_401()
     {
