@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <param name="OfertaCursoId">A oferta de curso da primeira opção.</param>
 /// <param name="OfertaCursoSegundaOpcaoId">A oferta de curso da segunda opção, quando há.</param>
 /// <param name="NumeroInscricao">O número gerado no primeiro envio.</param>
+/// <param name="SubmetidaEm">O instante do primeiro envio.</param>
 /// <param name="CanceladaEm">O instante do cancelamento, quando cancelada.</param>
 /// <param name="MotivoDoCancelamento">O motivo informado no cancelamento.</param>
 /// <param name="Secoes">As respostas do formulário agrupadas por seção, na ordem de coleta.</param>
@@ -38,6 +39,9 @@ public sealed record InscricaoAdministrativaDto(
     [property: ProtegidoComo(ClassificacaoDeProtecao.Interno, Fonte = "selecao.inscricoes.numero_inscricao")]
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     string? NumeroInscricao,
+    [property: ProtegidoComo(ClassificacaoDeProtecao.Interno, Fonte = "selecao.comprovantes_inscricao.instante")]
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    DateTimeOffset? SubmetidaEm,
     [property: ProtegidoComo(ClassificacaoDeProtecao.Interno, Fonte = "selecao.inscricoes.cancelada_em")]
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     DateTimeOffset? CanceladaEm,

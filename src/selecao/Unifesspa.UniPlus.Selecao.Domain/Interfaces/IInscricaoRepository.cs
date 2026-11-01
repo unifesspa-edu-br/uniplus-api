@@ -79,6 +79,13 @@ public interface IInscricaoRepository
     Task<IReadOnlyList<ComprovanteInscricao>> ObterComprovantesAsync(
         IReadOnlyCollection<Guid> inscricoes, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// O instante do primeiro envio de cada inscrição, o menor instante entre os comprovantes, lido só por projeção, sem
+    /// carregar nem decifrar o conteúdo deles. A inscrição sem comprovante não consta.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, DateTimeOffset>> ObterPrimeirosEnviosAsync(
+        IReadOnlyCollection<Guid> inscricoes, CancellationToken cancellationToken = default);
+
     /// <summary>Grava o comprovante emitido por <see cref="Inscricao.Submeter"/> — nunca pela navegação do agregado.</summary>
     Task AdicionarComprovanteAsync(ComprovanteInscricao comprovante, CancellationToken cancellationToken = default);
 

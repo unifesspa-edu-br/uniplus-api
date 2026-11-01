@@ -34,6 +34,7 @@ internal sealed class InscricaoAdministrativaDeTeste
     private readonly Dictionary<string, JsonElement> _derivadas = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> _ocorrencias = new(StringComparer.Ordinal);
     private readonly List<(DocumentoExigido Exigencia, ArquivoDaApresentacao Arquivo, ApresentacaoDeDocumento Apresentacao)> _arquivos = [];
+    private readonly List<DateTimeOffset> _envios = [];
     private readonly Cpf _cpf;
     private readonly Guid _faseId = Guid.CreateVersion7();
 
@@ -105,6 +106,13 @@ internal sealed class InscricaoAdministrativaDeTeste
         return this;
     }
 
+    /// <summary>O instante em que o candidato enviou a inscrição; vários instantes são os reenvios.</summary>
+    public InscricaoAdministrativaDeTeste EnviadaEm(params DateTimeOffset[] instantes)
+    {
+        _envios.AddRange(instantes);
+        return this;
+    }
+
     public Guid ArquivoDe(string codigoDoDocumento) => _arquivos.Single(a => a.Exigencia.TipoDocumentoCodigo == codigoDoDocumento).Arquivo.Id;
 
     /// <summary>Entrega os repositórios e o codec que respondem pelo cenário montado.</summary>
@@ -149,6 +157,11 @@ internal sealed class InscricaoAdministrativaDeTeste
         IReadOnlyList<ArquivoDaApresentacao> arquivos = [.. _arquivos.Select(static a => a.Arquivo)];
         documentos.ListarApresentacoesDaInscricaoAsync(InscricaoId, Arg.Any<CancellationToken>()).Returns(apresentacoes);
         documentos.ListarArquivosDaInscricaoAsync(InscricaoId, Arg.Any<CancellationToken>()).Returns(arquivos);
+
+        IReadOnlyDictionary<Guid, DateTimeOffset> primeirosEnvios = _envios.Count == 0
+            ? new Dictionary<Guid, DateTimeOffset>()
+            : new Dictionary<Guid, DateTimeOffset> { [InscricaoId] = _envios.Min() };
+        inscricoes.ObterPrimeirosEnviosAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(primeirosEnvios);
 
         return new Mundo(processos, inscricoes, documentos, codecs);
     }
