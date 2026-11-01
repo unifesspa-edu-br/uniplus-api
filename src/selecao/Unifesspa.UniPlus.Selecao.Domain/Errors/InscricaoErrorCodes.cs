@@ -9,6 +9,7 @@ public static class InscricaoErrorCodes
     public const string PrecondicaoFalhou = "Inscricao.PrecondicaoFalhou";
     public const string DonoDivergente = "Inscricao.DonoDivergente";
     public const string NaoEncontrada = "Inscricao.NaoEncontrada";
+    public const string CampoNaoEncontrado = "Inscricao.CampoNaoEncontrado";
     public const string DocumentoObrigatorioAusente = "Inscricao.DocumentoObrigatorioAusente";
     public const string DocumentoObrigatorioEmVerificacao = "Inscricao.DocumentoObrigatorioEmVerificacao";
     public const string RespostaInvalida = "Inscricao.RespostaInvalida";

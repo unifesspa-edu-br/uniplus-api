@@ -91,7 +91,7 @@ public static class AcessoAoProcesso
         Guid? resourceId = null,
         string? fatoCodigo = null,
         Guid? inscricaoId = null,
-        int? ocorrencia = null)
+        string? ocorrencia = null)
     {
         ArgumentNullException.ThrowIfNull(verificador);
 
@@ -135,7 +135,7 @@ public static class AcessoAoProcesso
         Guid? resourceId,
         string? fatoCodigo,
         Guid? inscricaoId,
-        int? ocorrencia)
+        string? ocorrencia)
     {
         if (!ResourceTipos.SegueAConvencao(resourceTipo))
         {

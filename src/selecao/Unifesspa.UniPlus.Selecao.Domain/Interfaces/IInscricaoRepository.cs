@@ -31,10 +31,19 @@ public interface IInscricaoRepository
     Task<VinculoDaInscricao?> ObterVinculoAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// O CPF decifrado de UMA inscrição, sem carregar nem decifrar o resto. <see langword="null"/> quando a inscrição
-    /// não existe. É a única leitura que devolve o CPF completo fora do próprio agregado.
+    /// Localiza a resposta cifrada de UM campo identificador, sem decifrar nada: fora de grupo, a da ocorrência raiz; em
+    /// grupo, a da ocorrência do grupo cujo identificador estável é <paramref name="ocorrenciaId"/>.
+    /// <see langword="null"/> quando a resposta não existe.
     /// </summary>
-    Task<Cpf?> ObterCpfAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<RespostaIdentificadora?> LocalizarIdentificadorAsync(
+        Guid inscricaoId, string fatoCodigo, string? grupoCodigo, string? ocorrenciaId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// O valor decifrado de UMA resposta identificadora, sempre da coluna do valor cifrado e com a chave dos
+    /// identificadores. É a única leitura que devolve um identificador em claro fora do próprio agregado. Devolve nulo
+    /// quando o valor decifrado é nulo ou vazio.
+    /// </summary>
+    Task<string?> LerIdentificadorAsync(Guid respostaId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// As inscrições enviadas do processo, as submetidas e as canceladas, paginadas por cursor bidirecional

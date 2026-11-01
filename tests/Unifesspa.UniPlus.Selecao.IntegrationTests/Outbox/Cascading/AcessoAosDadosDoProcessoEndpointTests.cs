@@ -19,6 +19,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -46,7 +47,13 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
     private const string Leandro = "leandro.viana";
     private const string Betina = "betina.neves";
     private const string Diogo = "diogo.souza";
+    private const string Caroline = "caroline.lima";
     private const string FatoSensivel = "QUILOMBOLA";
+    private const string FatoIdentificador = "PASSAPORTE_NUMERO";
+    private const string PassaporteDeErick = "FX1234567";
+    private const string GrupoDeResponsaveis = "RESPONSAVEIS_LEGAIS";
+    private const string RgDoPrimeiroResponsavel = "11.111.111-1";
+    private const string RgDoSegundoResponsavel = "22.222.222-2";
 
     private static readonly int PrimeiraOrdem = ConjuntoBasicoDaInscricao.Itens.Count;
 
@@ -56,7 +63,7 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        foreach (string sub in new[] { Leandro, Betina, Diogo })
+        foreach (string sub in new[] { Leandro, Betina, Diogo, Caroline })
         {
             await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, sub);
         }
@@ -137,7 +144,7 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         documento.StatusCode.Should().Be(HttpStatusCode.NotFound, "consultar as inscrições não abre documento");
     }
 
-    [Fact(DisplayName = "A listagem grava um registro por inscrição exibida, com a decisão de dados pessoais, e Kevin sem dados vê a linha vazia")]
+    [Fact(DisplayName = "A listagem grava um registro por inscrição enviada exibida, com a decisão de dados pessoais, e quem só tem o acesso vê a linha vazia")]
     public async Task Lista_GravaUmRegistroPorInscricaoExibida()
     {
         Cenario cenario = await SemearCenarioAsync(nameof(Lista_GravaUmRegistroPorInscricaoExibida));
@@ -150,11 +157,9 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         string corpo = await semDados.Content.ReadAsStringAsync();
 
         comDadosPessoais.StatusCode.Should().Be(HttpStatusCode.OK, await comDadosPessoais.Content.ReadAsStringAsync());
-        RegistroDecisaoAcesso registro = doDiogo.Should().ContainSingle().Subject;
-        registro.ResourceId.Should().Be(cenario.InscricaoId);
-        registro.InscricaoId.Should().Be(cenario.InscricaoId);
-        registro.Permitido.Should().BeTrue();
-        registro.AtorSubject.Should().Be(Diogo);
+        doDiogo.Select(static r => r.ResourceId).Should().BeEquivalentTo(
+            [cenario.InscricaoId, cenario.InscricaoDeErick, cenario.InscricaoDaServidora, cenario.InscricaoComGrupo], "um registro por inscrição enviada exibida");
+        doDiogo.Should().OnlyContain(r => r.Permitido && r.AtorSubject == Diogo && r.InscricaoId == r.ResourceId);
         semDados.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
         corpo.Should().NotContain(PersonasDeTeste.NomeSocialFernandaDrumond).And.NotContain(PersonasDeTeste.FernandaDrumond.Mascarado);
     }
@@ -208,6 +213,129 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         cpf.GetProperty("descricao").GetString().Should().NotBeNullOrWhiteSpace();
         corpo.Should().NotContain(PersonasDeTeste.FernandaDrumond.Valor).And.NotContain(PersonasDeTeste.FernandaDrumond.Formatado);
     }
+
+    [Fact(DisplayName = "Diogo revela o passaporte de Erick: recebe o número, sem cache, e fica registrado que revelou o campo daquela inscrição")]
+    public async Task Revelacao_DoPassaporte_RevelaERegistra()
+    {
+        Cenario cenario = await SemearCenarioAsync(nameof(Revelacao_DoPassaporte_RevelaERegistra));
+        await ConcederAsync(Diogo, cenario.UnidadeId, PermissaoSelecao.DadosIdentificadoresRevelar);
+
+        using HttpResponseMessage resposta = await SendAsync(
+            Diogo, HttpMethod.Post, cenario.RotaDaRevelacao(cenario.InscricaoDeErick, FatoIdentificador), null);
+
+        string corpo = await resposta.Content.ReadAsStringAsync();
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
+        resposta.Headers.CacheControl!.NoStore.Should().BeTrue();
+        using JsonDocument json = JsonDocument.Parse(corpo);
+        json.RootElement.GetProperty("fatoCodigo").GetString().Should().Be(FatoIdentificador);
+        json.RootElement.GetProperty("valor").GetString().Should().Be(PassaporteDeErick);
+
+        RegistroDecisaoAcesso decisao = RegistrosDaRevelacao(cenario, cenario.InscricaoDeErick).Should().ContainSingle().Subject;
+        decisao.Permitido.Should().BeTrue();
+        decisao.Permissao.Should().Be(PermissaoSelecao.DadosIdentificadoresRevelar.Codigo);
+        decisao.AtorSubject.Should().Be(Diogo);
+        decisao.FatoCodigo.Should().Be(FatoIdentificador);
+        decisao.InscricaoId.Should().Be(cenario.InscricaoDeErick);
+        decisao.GrantId.Should().NotBeNull();
+        JsonSerializer.Serialize(decisao).Should().NotContain(PassaporteDeErick);
+    }
+
+    [Fact(DisplayName = "O campo dentro de grupo repetível se revela pela ocorrência informada: o valor é o da ocorrência e o registro nomeia o identificador dela")]
+    public async Task Revelacao_DeCampoEmGrupo_PelaOcorrencia()
+    {
+        Cenario cenario = await SemearCenarioAsync(nameof(Revelacao_DeCampoEmGrupo_PelaOcorrencia));
+        await ConcederAsync(Diogo, cenario.UnidadeId, PermissaoSelecao.DadosIdentificadoresRevelar);
+
+        using HttpResponseMessage resposta = await SendAsync(
+            Diogo, HttpMethod.Post, cenario.RotaDaRevelacao(cenario.InscricaoComGrupo, cenario.FatoDoGrupo, "membro-2"), null);
+        using HttpResponseMessage semOcorrencia = await SendAsync(
+            Diogo, HttpMethod.Post, cenario.RotaDaRevelacao(cenario.InscricaoComGrupo, cenario.FatoDoGrupo), null);
+
+        string corpo = await resposta.Content.ReadAsStringAsync();
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
+        using JsonDocument json = JsonDocument.Parse(corpo);
+        json.RootElement.GetProperty("valor").GetString().Should().Be(RgDoSegundoResponsavel);
+        semOcorrencia.StatusCode.Should().Be(HttpStatusCode.NotFound, "o campo em grupo exige a ocorrência");
+        RegistroDecisaoAcesso decisao = RegistrosDaRevelacao(cenario, cenario.InscricaoComGrupo)
+            .Should().ContainSingle(r => r.Permitido).Subject;
+        decisao.FatoCodigo.Should().Be(cenario.FatoDoGrupo);
+        decisao.Ocorrencia.Should().Be("membro-2");
+    }
+
+    [Fact(DisplayName = "O CPF de Fernanda se revela pela mesma operação, com o valor completo")]
+    public async Task Revelacao_DoCpf_UsaAMesmaOperacao()
+    {
+        Cenario cenario = await SemearCenarioAsync(nameof(Revelacao_DoCpf_UsaAMesmaOperacao));
+        await ConcederAsync(Diogo, cenario.UnidadeId, PermissaoSelecao.DadosIdentificadoresRevelar);
+
+        using HttpResponseMessage resposta = await SendAsync(
+            Diogo, HttpMethod.Post, cenario.RotaDaRevelacao(cenario.InscricaoId, ConjuntoBasicoDaInscricao.Cpf), null);
+
+        string corpo = await resposta.Content.ReadAsStringAsync();
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
+        using JsonDocument json = JsonDocument.Parse(corpo);
+        json.RootElement.GetProperty("valor").GetString().Should().Be(PersonasDeTeste.FernandaDrumond.Formatado);
+    }
+
+    [Fact(DisplayName = "Revelação recusada: Kevin sem a permissão recebe 404 e fica registrada a negativa com o código do fato")]
+    public async Task Revelacao_SemAPermissao_404ERegistraANegativa()
+    {
+        Cenario cenario = await SemearCenarioAsync(nameof(Revelacao_SemAPermissao_404ERegistraANegativa));
+        await ConcederAsync(Leandro, cenario.UnidadeId, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar);
+
+        using HttpResponseMessage resposta = await SendAsync(
+            Leandro, HttpMethod.Post, cenario.RotaDaRevelacao(cenario.InscricaoId, ConjuntoBasicoDaInscricao.Cpf), null);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        (await resposta.Content.ReadAsStringAsync()).Should().NotContain(PersonasDeTeste.FernandaDrumond.Valor);
+        RegistroDecisaoAcesso negativa = RegistrosDaRevelacao(cenario, cenario.InscricaoId).Should().ContainSingle().Subject;
+        negativa.Permitido.Should().BeFalse();
+        negativa.FatoCodigo.Should().Be(ConjuntoBasicoDaInscricao.Cpf);
+    }
+
+    [Fact(DisplayName = "A permissão em outra unidade, a inscrição de outro processo, o rascunho e o campo que não é identificador respondem o mesmo 404")]
+    public async Task Revelacao_ForaDoAlcance_404()
+    {
+        Cenario cenario = await SemearCenarioAsync(nameof(Revelacao_ForaDoAlcance_404));
+        Cenario outroProcesso = await SemearCenarioAsync(nameof(Revelacao_ForaDoAlcance_404) + "-outro");
+        await ConcederAsync(Diogo, cenario.UnidadeId, PermissaoSelecao.DadosIdentificadoresRevelar);
+        await ConcederAsync(Betina, Guid.CreateVersion7(), PermissaoSelecao.DadosIdentificadoresRevelar);
+
+        using HttpResponseMessage outraUnidade = await SendAsync(
+            Betina, HttpMethod.Post, cenario.RotaDaRevelacao(cenario.InscricaoId, ConjuntoBasicoDaInscricao.Cpf), null);
+        using HttpResponseMessage deOutroProcesso = await SendAsync(
+            Diogo, HttpMethod.Post, cenario.RotaDaRevelacao(outroProcesso.InscricaoId, ConjuntoBasicoDaInscricao.Cpf), null);
+        using HttpResponseMessage emRascunho = await SendAsync(
+            Diogo, HttpMethod.Post, cenario.RotaDaRevelacao(cenario.InscricaoEmRascunho, ConjuntoBasicoDaInscricao.Cpf), null);
+        using HttpResponseMessage naoIdentificador = await SendAsync(
+            Diogo, HttpMethod.Post, cenario.RotaDaRevelacao(cenario.InscricaoId, ConjuntoBasicoDaInscricao.Nome), null);
+
+        foreach (HttpResponseMessage recusa in new[] { outraUnidade, deOutroProcesso, emRascunho, naoIdentificador })
+        {
+            recusa.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
+
+        RegistrosDaRevelacao(cenario, cenario.InscricaoEmRascunho).Should().BeEmpty("a trilha nunca nomeia inscrição de outro processo nem em rascunho");
+        RegistrosDaRevelacao(cenario, cenario.InscricaoId).Should().OnlyContain(r => r.FatoCodigo == ConjuntoBasicoDaInscricao.Cpf, "o campo que não é identificador não gera decisão");
+    }
+
+    [Fact(DisplayName = "A servidora inscrita no processo, ainda que com a permissão de revelar, responde 403 impedida")]
+    public async Task Revelacao_ServidoraInscrita_Impedida()
+    {
+        Cenario cenario = await SemearCenarioAsync(nameof(Revelacao_ServidoraInscrita_Impedida));
+        await ConcederAsync(Caroline, cenario.UnidadeId, PermissaoSelecao.DadosIdentificadoresRevelar);
+
+        using HttpResponseMessage resposta = await SendAsync(
+            Caroline, HttpMethod.Post, cenario.RotaDaRevelacao(cenario.InscricaoId, ConjuntoBasicoDaInscricao.Cpf), null);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    private IReadOnlyList<RegistroDecisaoAcesso> RegistrosDaRevelacao(Cenario cenario, Guid inscricaoId) =>
+        [.. _fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>().Registrados
+            .Where(r => r.ProcessoId == cenario.ProcessoId
+                && r.Permissao == PermissaoSelecao.DadosIdentificadoresRevelar.Codigo
+                && r.InscricaoId == inscricaoId)];
 
     private IReadOnlyList<RegistroDecisaoAcesso> RegistrosDeDados(Guid processoId, PermissaoSelecao permissao) =>
         [.. _fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>().Registrados
@@ -369,8 +497,13 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
 
     private sealed record Cenario(
         Guid ProcessoId, Guid UnidadeId, Guid InscricaoId, Guid ArquivoPessoal, Guid ArquivoSensivel, Guid InscricaoEmRascunho, Guid ArquivoDoRascunho,
-        Guid ArquivoPublico, Guid ArquivoInterno, Guid ArquivoIdentificador, Guid ArquivoNaoResolvido)
+        Guid ArquivoPublico, Guid ArquivoInterno, Guid ArquivoIdentificador, Guid ArquivoNaoResolvido,
+        Guid InscricaoDeErick, Guid InscricaoDaServidora, Guid InscricaoComGrupo, string FatoDoGrupo)
     {
+        public string RotaDaRevelacao(Guid inscricao, string fatoCodigo, string? ocorrencia = null) =>
+            $"/api/selecao/processos-seletivos/{ProcessoId}/inscricoes/{inscricao}/campos/{fatoCodigo}/revelacao"
+            + (ocorrencia is null ? string.Empty : $"?ocorrencia={ocorrencia}");
+
         public string RotaDoAcessoDoRascunho() =>
             $"/api/selecao/processos-seletivos/{ProcessoId}/inscricoes/{InscricaoEmRascunho}/documentos/arquivos/{ArquivoDoRascunho}/acesso";
 
@@ -401,6 +534,7 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
             faseId = processo.CronogramaFases.Single().Id;
         }
 
+        string fatoDoGrupo = await SemearFatoIdentificadorDeMembroAsync();
         Guid tipoPessoal = await SemearTipoAsync(ClassificacaoDeProtecao.Pessoal, "DOCUMENTO_PESSOAL");
         Guid tipoSensivel = await SemearTipoAsync(ClassificacaoDeProtecao.Sensivel, "LAUDO_MEDICO");
         Guid tipoPublico = await SemearTipoAsync(ClassificacaoDeProtecao.Publico, "ARTIGO_PUBLICADO");
@@ -408,7 +542,7 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         Guid tipoIdentificador = await SemearTipoAsync(ClassificacaoDeProtecao.Identificador, "RG_IDENTIFICACAO");
         string rota = $"/api/selecao/processos-seletivos/{processoId}";
 
-        using (HttpResponseMessage itens = await SendAdminAsync(HttpMethod.Put, $"/api/selecao/admin/processos-seletivos/{processoId}/formularios/INSCRICAO/itens", ItensDoFormulario()))
+        using (HttpResponseMessage itens = await SendAdminAsync(HttpMethod.Put, $"/api/selecao/admin/processos-seletivos/{processoId}/formularios/INSCRICAO/itens", ItensDoFormulario(fatoDoGrupo)))
         {
             itens.StatusCode.Should().Be(HttpStatusCode.NoContent, await itens.Content.ReadAsStringAsync());
         }
@@ -472,10 +606,85 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         Inscricao rascunho = Inscricao.Iniciar(processoId, PersonasDeTeste.KevinCarvalho, "sub-kevin", "https://idp.test", versaoId).Value!;
         await inscricoes.AdicionarAsync(rascunho);
         Guid arquivoDoRascunho = await AdicionarArquivoVerificadoAsync(documentos, rascunho.Id, exigidos.Single(d => d.TipoDocumentoCodigo.StartsWith("DOCUMENTO_PESSOAL", StringComparison.Ordinal)));
+        Guid erick = await AdicionarInscricaoEnviadaAsync(inscricoes, processoId, versaoId, CpfDeErick, "sub-erick", PassaporteDeErick);
+        Guid servidora = await AdicionarInscricaoEnviadaAsync(inscricoes, processoId, versaoId, CpfDeHelena, Caroline, null);
+        Guid comGrupo = await AdicionarInscricaoComGrupoAsync(inscricoes, processoId, versaoId, fatoDoGrupo);
         await sp.GetRequiredService<ISelecaoUnitOfWork>().SalvarAlteracoesAsync();
 
         return new Cenario(processoId, unidadeId, inscricao.Id, arquivoPessoal, arquivoSensivel, rascunho.Id, arquivoDoRascunho,
-            arquivoPublico, arquivoInterno, arquivoIdentificador, arquivoNaoResolvido);
+            arquivoPublico, arquivoInterno, arquivoIdentificador, arquivoNaoResolvido, erick, servidora, comGrupo, fatoDoGrupo);
+    }
+
+    private static readonly Cpf CpfDeErick = CpfDaPersona("Erick");
+    private static readonly Cpf CpfDeHelena = CpfDaPersona("Helena");
+
+    private static readonly Cpf CpfDoResponsavel = Cpf.Criar(PersonasDeTeste.Candidatas
+        .First(static c => new[] { "Fernanda", "Erick", "Helena", "Kevin" }.All(n => !c.Nome.StartsWith(n, StringComparison.Ordinal))).Cpf).Value!;
+
+    private static Cpf CpfDaPersona(string primeiroNome) =>
+        Cpf.Criar(PersonasDeTeste.Candidatas.Single(c => c.Nome.StartsWith(primeiroNome, StringComparison.Ordinal)).Cpf).Value!;
+
+    /// <summary>Uma inscrição enviada, na versão publicada, com o CPF e, se houver, o número do passaporte em claro para o repositório cifrar.</summary>
+    private static async Task<Guid> AdicionarInscricaoEnviadaAsync(
+        IInscricaoRepository inscricoes, Guid processoId, Guid versaoId, Cpf cpf, string sub, string? passaporte)
+    {
+        Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal)
+        {
+            [ConjuntoBasicoDaInscricao.Cpf] = JsonSerializer.SerializeToElement(cpf.Valor),
+        };
+        Dictionary<string, DefinicaoDaResposta> definicoes = new(StringComparer.Ordinal)
+        {
+            [ConjuntoBasicoDaInscricao.Cpf] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: true),
+        };
+        if (passaporte is not null)
+        {
+            respostas[FatoIdentificador] = JsonSerializer.SerializeToElement(passaporte);
+            definicoes[FatoIdentificador] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: true);
+        }
+
+        Inscricao inscricao = Inscricao.Reidratar(
+            Guid.CreateVersion7(), processoId, cpf, sub, TestAuthHandler.DefaultIssuer, SituacaoInscricao.Submetida, versaoId, null, null,
+            "000002", null, null, null, respostas, new Dictionary<string, JsonElement>(StringComparer.Ordinal),
+            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [], definicoes,
+            revisao: 1, DateTimeOffset.UtcNow, null);
+        await inscricoes.AdicionarAsync(inscricao);
+        return inscricao.Id;
+    }
+
+    /// <summary>Uma inscrição enviada com duas ocorrências do grupo repetível, cada uma com o RG do responsável.</summary>
+    private static async Task<Guid> AdicionarInscricaoComGrupoAsync(
+        IInscricaoRepository inscricoes, Guid processoId, Guid versaoId, string fatoDoGrupo)
+    {
+        Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal)
+        {
+            [ConjuntoBasicoDaInscricao.Cpf] = JsonSerializer.SerializeToElement(CpfDoResponsavel.Valor),
+        };
+        Dictionary<string, DefinicaoDaResposta> definicoes = new(StringComparer.Ordinal)
+        {
+            [ConjuntoBasicoDaInscricao.Cpf] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: true),
+            [fatoDoGrupo] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: true),
+        };
+        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = new(StringComparer.Ordinal)
+        {
+            [GrupoDeResponsaveis] =
+            [
+                new OcorrenciaDeGrupoInscricao("membro-1", new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+                {
+                    [fatoDoGrupo] = JsonSerializer.SerializeToElement(RgDoPrimeiroResponsavel),
+                }),
+                new OcorrenciaDeGrupoInscricao("membro-2", new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+                {
+                    [fatoDoGrupo] = JsonSerializer.SerializeToElement(RgDoSegundoResponsavel),
+                }),
+            ],
+        };
+
+        Inscricao inscricao = Inscricao.Reidratar(
+            Guid.CreateVersion7(), processoId, CpfDoResponsavel, "sub-helena", TestAuthHandler.DefaultIssuer, SituacaoInscricao.Submetida, versaoId,
+            null, null, "000003", null, null, null, respostas, new Dictionary<string, JsonElement>(StringComparer.Ordinal), grupos, [],
+            definicoes, revisao: 1, DateTimeOffset.UtcNow, null);
+        await inscricoes.AdicionarAsync(inscricao);
+        return inscricao.Id;
     }
 
     private static RespostasAdmitidas AdmitidasDoNome() => new(
@@ -509,6 +718,24 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         return arquivo.Id;
     }
 
+    /// <summary>Um fato de membro de grupo classificado como identificador, aprovado no catálogo.</summary>
+    private async Task<string> SemearFatoIdentificadorDeMembroAsync()
+    {
+        string codigo = $"RG_RESPONSAVEL_{Guid.NewGuid():N}"[..30].ToUpperInvariant();
+        Result<FatoCandidato> criado = FatoCandidato.CriarDoAdministrador(
+            codigo, "RG do responsável", "Descrição do fato.", DominioFato.Texto, CardinalidadeFato.Escalar, fonteValores: null, formato: FormatoTexto.Livre,
+            "INSCRICAO", EscopoFato.MembroGrupo, ClassificacaoDeProtecao.Identificador, "Identificação do responsável legal",
+            HipoteseLegalTratamento.CumprimentoObrigacaoLegal);
+        criado.IsSuccess.Should().BeTrue(string.Join("; ", criado.Errors.Select(e => e.Error.Message)));
+        FatoCandidato fato = criado.Value!;
+        await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
+        ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        db.Add(fato);
+        await db.SaveChangesAsync();
+        await db.AprovarCatalogoAsync();
+        return codigo;
+    }
+
     private async Task<Guid> SemearTipoAsync(ClassificacaoDeProtecao classificacao, string prefixo)
     {
         TipoDocumento tipo = TipoDocumento.Criar(
@@ -522,7 +749,7 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         return tipo.Id;
     }
 
-    private static object ItensDoFormulario() => new
+    private static object ItensDoFormulario(string fatoDoGrupo) => new
     {
         itens = new object[]
         {
@@ -535,6 +762,32 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
                 obrigatoriedade = "NUNCA",
                 precondicao = (object?)null,
                 etapaCodigo = FormularioDeInscricaoHttp.Secao,
+            },
+        },
+        grupos = new object[]
+        {
+            new
+            {
+                codigo = GrupoDeResponsaveis,
+                ordem = PrimeiraOrdem + 1,
+                rotulo = "Responsáveis legais",
+                etapaCodigo = FormularioDeInscricaoHttp.Secao,
+                minimo = 0,
+                maximo = 3,
+                exibicao = (object?)null,
+                obrigatoriedade = "NUNCA",
+                predicadoObrigatoriedade = (object?)null,
+                subitens = new object[]
+                {
+                    new
+                    {
+                        fatoCodigo = fatoDoGrupo,
+                        ordem = 0,
+                        rotulo = "RG do responsável",
+                        tipoRenderizacao = "TEXTO",
+                        obrigatoriedade = "NUNCA",
+                    },
+                },
             },
         },
     };

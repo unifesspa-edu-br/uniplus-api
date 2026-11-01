@@ -23,6 +23,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Cryptography;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -139,6 +140,13 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             .Which.Respostas.Should().ContainKey("RG_NUMERO").WhoseValue.GetString().Should().Be("25.062.156-3");
         lida.Aceites.Should().ContainSingle(a => a.Codigo == "TERMO_VERACIDADE");
         lida.CreatedAt.Should().NotBe(default, "o repositório carimba CreatedAt — o AuditableInterceptor não alcança InscricaoRecord");
+
+        RespostaIdentificadora doMembro = (await readRepository.LocalizarIdentificadorAsync(original.Id, "RG_NUMERO", "COMPOSICAO_FAMILIAR", "membro-1"))!;
+        (await readRepository.LerIdentificadorAsync(doMembro.RespostaId)).Should().Be("25.062.156-3");
+        RespostaIdentificadora daRaiz = (await readRepository.LocalizarIdentificadorAsync(original.Id, "RG_NUMERO", null, null))!;
+        (await readRepository.LerIdentificadorAsync(daRaiz.RespostaId)).Should().Be("12.868.927-4");
+        (await readRepository.LocalizarIdentificadorAsync(original.Id, "RG_NUMERO", "COMPOSICAO_FAMILIAR", "membro-inexistente")).Should().BeNull();
+        (await readRepository.LocalizarIdentificadorAsync(original.Id, "RG_NUMERO", "COMPOSICAO_FAMILIAR", null)).Should().BeNull("o campo em grupo exige a ocorrência");
     }
 
     [Fact(DisplayName = "ObterPorProcessoECpf localiza a inscrição pelo CPF do dono, sem decifrar a tabela")]
@@ -226,7 +234,33 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
 
         lida.Cpf.Valor.Should().Be(PersonasDeTeste.FernandaDrumond.Valor);
         lida.Respostas["CPF"].GetString().Should().Be(PersonasDeTeste.FernandaDrumond.Valor);
-        (await leitura.ObterCpfAsync(original.Id))!.Valor.Should().Be(PersonasDeTeste.FernandaDrumond.Valor);
+        RespostaIdentificadora cpf = (await leitura.LocalizarIdentificadorAsync(original.Id, "CPF", null, null))!;
+        (await leitura.LerIdentificadorAsync(cpf.RespostaId)).Should().Be(PersonasDeTeste.FernandaDrumond.Valor);
+    }
+
+    [Fact(DisplayName = "O identificador cifrado de valor numérico é revelado como o texto do número, sem falhar")]
+    public async Task IdentificadorNumerico_ERevelado()
+    {
+        Guid processo = Guid.CreateVersion7();
+        Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, processo);
+        original.Salvar(
+            OfertaDoProcesso, null,
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["RG_NUMERO"] = JsonSerializer.SerializeToElement("12.868.927-4") },
+            SemGrupos(), [new AceiteDeTermo("TERMO_VERACIDADE", VersaoDoTermoVeracidade, "sha256-abc")], Admitidas,
+            PrecondicaoIfMatch.DeTags([original.ETag]));
+        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+        await new InscricaoRepository(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System).AdicionarAsync(original);
+        await writeContext.SaveChangesAsync();
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        InscricaoRepository leitura = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+        RespostaIdentificadora rg = (await leitura.LocalizarIdentificadorAsync(original.Id, "RG_NUMERO", null, null))!;
+        RespostaDaInscricaoRecord linha = await readContext.RespostasDaInscricao.SingleAsync(r => r.Id == rg.RespostaId);
+        linha.ValorCifrado = await _fixture.Encryption.EncryptAsync(
+            SelecaoEncryptionKeys.IdentificadoresAesGcm, Encoding.UTF8.GetBytes("1286892"), CancellationToken.None);
+        await readContext.SaveChangesAsync();
+
+        (await leitura.LerIdentificadorAsync(rg.RespostaId)).Should().Be("1286892");
     }
 
     [Fact(DisplayName = "A identidade de gênero e a orientação sexual ficam cifradas na resposta e no comprovante, o sexo civil em claro, e o titular lê os valores de volta")]
