@@ -113,7 +113,8 @@ public sealed class RevelarCpfDaInscricaoEndpointTests : IAsyncLifetime
     public async Task Lista_SegueMascarada()
     {
         Cenario cenario = await SemearAsync(SituacaoInscricao.Submetida);
-        await ConcederAsync(Leandro, cenario.UnidadeId, PermissaoSelecao.DadosIdentificadoresRevelar, PermissaoSelecao.InscricoesConsultar);
+        await ConcederAsync(
+            Leandro, cenario.UnidadeId, PermissaoSelecao.DadosIdentificadoresRevelar, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar);
 
         using HttpResponseMessage lista = await SendAsync(
             Leandro, HttpMethod.Get, $"/api/selecao/processos-seletivos/{cenario.ProcessoId}/inscricoes");

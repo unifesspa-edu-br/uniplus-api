@@ -59,6 +59,7 @@ public enum PermissaoSelecao
         "Consultar inscrições do processo",
         "Alcança as inscrições dos processos seletivos da unidade proprietária, sem liberar item algum: cada dado e cada documento sai pela permissão da sua classe.",
         ClassificacaoDeProtecao.Interno,
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
         EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
     InscricoesConsultar = 5,
 

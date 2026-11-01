@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -46,11 +47,17 @@ public sealed class InscricoesDoProcessoController : ControllerBase
     }
 
     /// <summary>
-    /// Lista as inscrições enviadas do processo, da mais antiga para a mais recente, com o CPF mascarado
-    /// (<c>***.999.999-**</c>). O rascunho não aparece: o candidato ainda não se inscreveu.
+    /// Lista as inscrições enviadas do processo, da mais antiga para a mais recente. Cada campo da linha sai pela
+    /// permissão da sua classe de dado e é omitido, sem indicação, para quem não a tem: o curso e a situação pelos dados
+    /// públicos, o número e a data do envio pelos internos, o nome e o CPF mascarado (<c>***.999.999-**</c>) pelos
+    /// pessoais. O rascunho não aparece: o candidato ainda não se inscreveu. Cada inscrição exibida fica no registro de
+    /// acessos.
     /// </summary>
     [HttpGet]
-    [ExigePermissaoNoProcesso(PermissaoSelecao.InscricoesConsultar, ResourceTipo = ResourceTiposSelecao.Inscricao)]
+    [ExigePermissaoNoProcesso(
+        PermissaoSelecao.InscricoesConsultar,
+        ResourceTipo = ResourceTiposSelecao.Inscricao,
+        SensibilidadeDoResource = ClassificacaoDeProtecao.Pessoal)]
     [VendorMediaType(Resource = "inscricao-do-processo", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<InscricaoDoProcessoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

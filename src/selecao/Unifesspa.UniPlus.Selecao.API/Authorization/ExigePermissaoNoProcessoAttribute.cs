@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -39,6 +40,13 @@ public sealed class ExigePermissaoNoProcessoAttribute : Attribute, IAsyncAuthori
                 $"O tipo de resource '{value}' está fora da convenção kebab-case; use ResourceTiposSelecao.", nameof(value));
     } = ResourceTiposSelecao.ProcessoSeletivo;
 
+    /// <summary>
+    /// A sensibilidade do dado que o resource guarda, quando difere da que a permissão declara. A inscrição guarda dado
+    /// pessoal, então a decisão sobre ela sai com a sensibilidade pessoal e entra no registro de acessos, ainda que a
+    /// permissão de acesso seja interna. Omitida, vale a da permissão.
+    /// </summary>
+    public ClassificacaoDeProtecao SensibilidadeDoResource { get; init; } = ClassificacaoDeProtecao.Nenhuma;
+
     /// <summary>Nome do parâmetro de rota que traz o identificador do processo. Omitido, é <c>id</c>.</summary>
     public string ParametroDaRota { get; init; } = RotaDoProcesso.ParametroPadrao;
 
@@ -57,7 +65,7 @@ public sealed class ExigePermissaoNoProcessoAttribute : Attribute, IAsyncAuthori
                 processoId,
                 _permissao,
                 ResourceTipo,
-                sensibilidadeDoResource: null,
+                SensibilidadeDoResource == ClassificacaoDeProtecao.Nenhuma ? null : SensibilidadeDoResource,
                 context.HttpContext.RequestAborted)
             .ConfigureAwait(false);
 

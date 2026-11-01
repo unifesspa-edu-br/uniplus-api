@@ -78,6 +78,7 @@ public static class AcessoAoProcesso
     /// <paramref name="resourceId"/> é o registro alvo quando a decisão recai sobre um só (a inscrição cujo CPF se revela).
     /// <paramref name="fatoCodigo"/> é o campo revelado, quando é o caso, e fica no registro do acesso.
     /// <paramref name="inscricaoId"/> é a inscrição a que o acesso se refere quando o resource é ela ou um item dela.
+    /// <paramref name="ocorrencia"/> é a ocorrência do campo revelado, quando ele está em grupo.
     /// </summary>
     public static async Task<ResultadoDoAcesso> VerificarNaUnidadeAsync(
         IVerificadorDeAcesso verificador,
@@ -89,12 +90,13 @@ public static class AcessoAoProcesso
         CancellationToken cancellationToken,
         Guid? resourceId = null,
         string? fatoCodigo = null,
-        Guid? inscricaoId = null)
+        Guid? inscricaoId = null,
+        int? ocorrencia = null)
     {
         ArgumentNullException.ThrowIfNull(verificador);
 
         ResourceContext? resource = MontarResource(
-            unidadeId, processoId, permissao, resourceTipo, sensibilidadeDoResource, resourceId, fatoCodigo, inscricaoId);
+            unidadeId, processoId, permissao, resourceTipo, sensibilidadeDoResource, resourceId, fatoCodigo, inscricaoId, ocorrencia);
 
         return resource is null
             ? ResultadoDoAcesso.Negado
@@ -116,7 +118,8 @@ public static class AcessoAoProcesso
         ArgumentNullException.ThrowIfNull(verificador);
 
         ResourceContext? resource = MontarResource(
-            unidadeId, processoId, permissao, resourceTipo, sensibilidadeDoResource: null, resourceId: null, fatoCodigo: null, inscricaoId: null);
+            unidadeId, processoId, permissao, resourceTipo, sensibilidadeDoResource: null, resourceId: null, fatoCodigo: null,
+            inscricaoId: null, ocorrencia: null);
 
         return resource is null
             ? ResultadoDoAcesso.Negado
@@ -131,7 +134,8 @@ public static class AcessoAoProcesso
         ClassificacaoDeProtecao? sensibilidadeDoResource,
         Guid? resourceId,
         string? fatoCodigo,
-        Guid? inscricaoId)
+        Guid? inscricaoId,
+        int? ocorrencia)
     {
         if (!ResourceTipos.SegueAConvencao(resourceTipo))
         {
@@ -147,10 +151,21 @@ public static class AcessoAoProcesso
         PermissionRequirement requisito = permissao.Requisito;
         Result<ResourceContext> resource = ResourceContext.From(
             resourceTipo, sensibilidadeDoResource ?? requisito.Sensibilidade, unidadeId, processoId, resourceId: resourceId,
-            fatoCodigo: fatoCodigo, inscricaoId: inscricaoId);
+            fatoCodigo: fatoCodigo, ocorrencia: ocorrencia, inscricaoId: inscricaoId);
 
         return resource.IsSuccess ? resource.Value : null;
     }
+
+    /// <summary>
+    /// O resource de uma inscrição, ou de todas as do processo quando <paramref name="inscricaoId"/> é nulo. É dado
+    /// pessoal por natureza, então a sensibilidade é pessoal qualquer que seja a classe do item pedido: toda decisão
+    /// sobre ele entra no registro de acessos.
+    /// </summary>
+    /// <returns>Nulo sem unidade dona, que é o processo inexistente.</returns>
+    public static ResourceContext? ResourceDaInscricao(Guid? unidadeId, Guid? processoId, Guid? inscricaoId) =>
+        MontarResource(
+            unidadeId, processoId, PermissaoSelecao.InscricoesConsultar, ResourceTiposSelecao.Inscricao,
+            ClassificacaoDeProtecao.Pessoal, inscricaoId, fatoCodigo: null, inscricaoId, ocorrencia: null);
 
     /// <summary>O erro com que um handler recusa o acesso que o ponto de decisão não permitiu.</summary>
     public static DomainError Recusa(ResultadoDoAcesso resultado) => resultado switch

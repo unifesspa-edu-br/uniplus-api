@@ -156,6 +156,8 @@ public sealed class InscricaoRepository : IInscricaoRepository
                 record.Id,
                 record.NumeroInscricao,
                 record.Situacao,
+                record.OfertaCursoId,
+                record.OfertaCursoSegundaOpcaoId,
                 nomes.GetValueOrDefault(record.Id),
                 ReidratarCpf(CpfDaInscricao.Exigir(cpfs, record.Id)),
                 primeirosEnvios.TryGetValue(record.Id, out DateTimeOffset primeiro) ? primeiro : null));

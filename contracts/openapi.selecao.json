@@ -14113,6 +14113,21 @@
           }
         }
       },
+      "CpfMascaradoDto": {
+        "required": [
+          "valor",
+          "podeRevelar"
+        ],
+        "type": "object",
+        "properties": {
+          "valor": {
+            "type": "string"
+          },
+          "podeRevelar": {
+            "type": "boolean"
+          }
+        }
+      },
       "CpfReveladoDto": {
         "required": [
           "cpfCompleto"
@@ -17909,14 +17924,19 @@
           "id",
           "numeroInscricao",
           "situacao",
+          "ofertaCursoId",
+          "ofertaCursoSegundaOpcaoId",
           "nome",
-          "cpfMascarado",
+          "cpf",
           "submetidaEm"
         ],
         "type": "object",
         "properties": {
           "id": {
-            "type": "string",
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "uuid"
           },
           "numeroInscricao": {
@@ -17926,7 +17946,28 @@
             ]
           },
           "situacao": {
-            "$ref": "#/components/schemas/SituacaoInscricao"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SituacaoInscricao"
+              }
+            ]
+          },
+          "ofertaCursoId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "ofertaCursoSegundaOpcaoId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           },
           "nome": {
             "type": [
@@ -17934,8 +17975,15 @@
               "string"
             ]
           },
-          "cpfMascarado": {
-            "type": "string"
+          "cpf": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CpfMascaradoDto"
+              }
+            ]
           },
           "submetidaEm": {
             "type": [
