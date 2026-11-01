@@ -102,6 +102,39 @@ internal sealed record FatosDaVersao(
         ];
     }
 
+    /// <summary>
+    /// A classificação mais alta que a versão congelou para o nome exibido (nome civil e nome social). A classificação que
+    /// não se resolve, ou a versão que não coleta nome algum, vale como sensível: na dúvida, a permissão mais restrita.
+    /// </summary>
+    public ClassificacaoDeProtecao ClassificacaoDoNome()
+    {
+        ClassificacaoDeProtecao[] congeladas =
+        [
+            .. new[] { ConjuntoBasicoDaInscricao.Nome, ConjuntoBasicoDaInscricao.NomeSocial }
+                .Where(Coletados.ContainsKey)
+                .Select(codigo => Coletados[codigo].Classificacao)
+                .Select(static c => c == ClassificacaoDeProtecao.Nenhuma || !Enum.IsDefined(c) ? ClassificacaoDeProtecao.Sensivel : c),
+        ];
+
+        return congeladas.Length == 0 ? ClassificacaoDeProtecao.Sensivel : congeladas.Max();
+    }
+
+    /// <summary>
+    /// Se a versão congelou a base legal de todos os campos de nome que coleta. A versão sem campo de nome não a tem: na
+    /// dúvida, o nome sensível não sai.
+    /// </summary>
+    public bool NomeTemBaseLegal()
+    {
+        FatoDoProcesso[] nomes =
+        [
+            .. new[] { ConjuntoBasicoDaInscricao.Nome, ConjuntoBasicoDaInscricao.NomeSocial }
+                .Where(Coletados.ContainsKey)
+                .Select(codigo => Coletados[codigo]),
+        ];
+
+        return nomes.Length > 0 && nomes.All(static n => !string.IsNullOrWhiteSpace(n.BaseLegal));
+    }
+
     private static FatoDoProcesso Derivado(FatoDerivadoCongelado derivado, EnvelopeReidratado envelope) =>
         new(
             derivado.Codigo,

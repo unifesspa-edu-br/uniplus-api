@@ -187,6 +187,8 @@ public sealed class InscricaoRepository : IInscricaoRepository
         Guid? afterId,
         int limit,
         PaginationDirection direction,
+        bool lerNome,
+        bool lerCpf,
         CancellationToken cancellationToken = default)
     {
         IQueryable<InscricaoRecord> enviadas = _dbContext.Inscricoes
@@ -199,9 +201,11 @@ public sealed class InscricaoRepository : IInscricaoRepository
 
         Guid[] ids = [.. pagina.Items.Select(static r => r.Id)];
 
-        Dictionary<Guid, string> nomes = await NomeDeExibicaoDaInscricao
-            .LerAsync(_dbContext.RespostasDaInscricao, ids, cancellationToken)
-            .ConfigureAwait(false);
+        Dictionary<Guid, string> nomes = lerNome
+            ? await NomeDeExibicaoDaInscricao
+                .LerAsync(_dbContext.RespostasDaInscricao, ids, cancellationToken)
+                .ConfigureAwait(false)
+            : [];
 
         Dictionary<Guid, DateTimeOffset> primeirosEnvios = await _dbContext.ComprovantesInscricao
             .AsNoTracking()
@@ -211,9 +215,11 @@ public sealed class InscricaoRepository : IInscricaoRepository
             .ToDictionaryAsync(static g => g.InscricaoId, static g => g.Primeiro, cancellationToken)
             .ConfigureAwait(false);
 
-        Dictionary<Guid, string> cpfs = await CpfDaInscricao
-            .LerAsync(_dbContext.RespostasDaInscricao.Where(r => ids.Contains(r.InscricaoId)), _encryption, cancellationToken)
-            .ConfigureAwait(false);
+        Dictionary<Guid, string> cpfs = lerCpf
+            ? await CpfDaInscricao
+                .LerAsync(_dbContext.RespostasDaInscricao.Where(r => ids.Contains(r.InscricaoId)), _encryption, cancellationToken)
+                .ConfigureAwait(false)
+            : [];
 
         List<ResumoDaInscricaoDoProcesso> resumos = new(pagina.Items.Count);
         foreach (InscricaoRecord record in pagina.Items)
@@ -225,7 +231,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
                 record.OfertaCursoId,
                 record.OfertaCursoSegundaOpcaoId,
                 nomes.GetValueOrDefault(record.Id),
-                ReidratarCpf(CpfDaInscricao.Exigir(cpfs, record.Id)),
+                lerCpf ? ReidratarCpf(CpfDaInscricao.Exigir(cpfs, record.Id)) : null,
                 primeirosEnvios.TryGetValue(record.Id, out DateTimeOffset primeiro) ? primeiro : null));
         }
 

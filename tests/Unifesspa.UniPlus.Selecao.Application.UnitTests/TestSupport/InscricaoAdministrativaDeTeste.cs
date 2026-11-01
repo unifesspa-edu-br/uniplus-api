@@ -37,13 +37,14 @@ internal sealed class InscricaoAdministrativaDeTeste
     private readonly Cpf _cpf;
     private readonly Guid _faseId = Guid.CreateVersion7();
 
-    public InscricaoAdministrativaDeTeste(Cpf cpf, SituacaoInscricao situacao = SituacaoInscricao.Submetida)
+    public InscricaoAdministrativaDeTeste(Cpf cpf, SituacaoInscricao situacao = SituacaoInscricao.Submetida, Guid? processoId = null)
     {
         _cpf = cpf;
         Situacao = situacao;
+        ProcessoId = processoId ?? Guid.CreateVersion7();
     }
 
-    public Guid ProcessoId { get; } = Guid.CreateVersion7();
+    public Guid ProcessoId { get; }
 
     public Guid InscricaoId { get; } = Guid.CreateVersion7();
 
