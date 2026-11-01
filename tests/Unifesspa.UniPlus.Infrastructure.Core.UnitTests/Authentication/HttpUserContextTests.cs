@@ -180,6 +180,22 @@ public sealed class HttpUserContextTests
     }
 
     [Fact]
+    public void ClienteOidc_Should_ReadAzpClaim_WhenPresent()
+    {
+        HttpUserContext context = CreateContext(new Claim("azp", "selecao-web"));
+
+        context.ClienteOidc.Should().Be("selecao-web");
+    }
+
+    [Fact]
+    public void ClienteOidc_Should_ReturnNull_WhenClaimAbsent()
+    {
+        HttpUserContext context = CreateContext(new Claim("sub", "user-42"));
+
+        context.ClienteOidc.Should().BeNull();
+    }
+
+    [Fact]
     public void Cpf_Should_ReadUniPlusClaim_WhenPresent()
     {
         HttpUserContext context = CreateContext(

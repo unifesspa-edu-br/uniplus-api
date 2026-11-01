@@ -249,7 +249,7 @@ public sealed class VerificadorDeAcessoHttp : IVerificadorDeAcesso
         CancellationToken cancellationToken)
     {
         Result<AuthorizationRequestContext> contexto = ContextoDaRequisicaoHttp.Montar(
-            _httpContextAccessor.HttpContext, _correlationId, _relogio);
+            _httpContextAccessor.HttpContext, _userContext, _correlationId, _relogio);
 
         if (contexto.IsFailure)
         {

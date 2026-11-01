@@ -46,6 +46,7 @@ public sealed class RevogarConcessaoCommandHandlerTests
         public bool EmailVerificado => false;
         public string? Cpf => null;
         public string? NomeSocial => null;
+        public string? ClienteOidc => null;
         public IReadOnlyList<string> Roles => [];
         public bool IsPlataformaAdmin => false;
         public bool HasRole(string role) => false;

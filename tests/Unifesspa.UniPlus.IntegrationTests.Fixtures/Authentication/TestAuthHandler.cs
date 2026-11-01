@@ -49,6 +49,9 @@ public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationScheme
     public const string SemCpfHeader = "X-Test-Sem-Cpf";
     public const string NomeSocialHeader = "X-Test-Nome-Social";
 
+    /// <summary>Valor do claim <c>azp</c> (client OIDC); sem o header o token não traz o claim.</summary>
+    public const string ClienteOidcHeader = "X-Test-Azp";
+
     public TestAuthHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> options,
         ILoggerFactory logger,
@@ -103,6 +106,12 @@ public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationScheme
         if (nomeSocial is not null)
         {
             claims.Add(new Claim("nomeSocial", nomeSocial));
+        }
+
+        string? clienteOidc = GetOptionalHeaderValue(ClienteOidcHeader);
+        if (clienteOidc is not null)
+        {
+            claims.Add(new Claim("azp", clienteOidc));
         }
 
         if (roles.Length > 0)

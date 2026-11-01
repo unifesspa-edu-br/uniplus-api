@@ -31,6 +31,24 @@ public sealed class RegistroDecisaoAcessoTests
             && r.AtorSubject == "sub-opaco-123");
     }
 
+    [Theory(DisplayName = "O registro leva o client OIDC do contexto; sem ele, ou em branco, vai nulo e a decisão não muda")]
+    [InlineData("selecao-web", "selecao-web")]
+    [InlineData(null, null)]
+    [InlineData("  ", null)]
+    public void De_ClienteOidcVemDoContexto(string? azp, string? esperado)
+    {
+        ResourceContext resource = Resource(ClassificacaoDeProtecao.Pessoal);
+        AuthorizationRequestContext requisicao = AuthorizationRequestContext.From(
+            "req-1244", Agora, Authorization.Enums.OrigemRequisicao.Api, clienteOidc: azp).Value!;
+
+        RegistroDecisaoAcesso registro = RegistroDecisaoAcesso.De(
+            Sujeito(concessoes: Concessao()), Requisito(resource.Sensibilidade), resource, requisicao,
+            AuthorizationDecision.Permitir(Concessao()));
+
+        registro.ClienteOidc.Should().Be(esperado);
+        registro.Permitido.Should().BeTrue();
+    }
+
     [Fact(DisplayName = "Outra execução, ou outra pessoa, é outro acesso, mesmo com o mesmo identificador de correlação")]
     public void Identidade_DependeDaExecucaoEDoAtor()
     {

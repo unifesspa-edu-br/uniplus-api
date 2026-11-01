@@ -48,6 +48,8 @@ public sealed partial class HttpUserContext : IUserContext
 
     public string? Jti => GetSingleClaimValue(OidcClaims.Jti);
 
+    public string? ClienteOidc => GetSingleClaimValue(OidcClaims.Azp);
+
     public string? Name => GetFirstClaimValue(NameClaimCandidates);
 
     public string? NomeCompleto => GetSingleClaimValue(OidcClaims.Name) ?? NomeDeGivenEFamilyName();

@@ -40,6 +40,7 @@ public sealed class PessoaDoTokenTests
         public bool EmailVerificado => false;
         public string? Cpf => null;
         public string? NomeSocial => nomeSocial;
+        public string? ClienteOidc => null;
         public IReadOnlyList<string> Roles => [];
         public bool IsPlataformaAdmin => false;
         public bool HasRole(string role) => false;

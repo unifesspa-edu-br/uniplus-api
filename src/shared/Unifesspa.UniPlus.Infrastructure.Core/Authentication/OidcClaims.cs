@@ -18,4 +18,5 @@ internal static class OidcClaims
     public const string EmailVerified = "email_verified";
     public const string Iss = "iss";
     public const string Jti = "jti";
+    public const string Azp = "azp";
 }
