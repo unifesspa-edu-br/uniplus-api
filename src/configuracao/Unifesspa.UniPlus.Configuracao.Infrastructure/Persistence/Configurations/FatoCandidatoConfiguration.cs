@@ -107,6 +107,15 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
             .HasMaxLength(ProtecaoDeDadosConversores.HipoteseLegalMaxLength)
             .IsRequired();
 
+        // Aprovação da proteção de dados (ADR-0153): table splitting em colunas protecao_*. Todo fato
+        // nasce pendente, o semeado inclusive; a semente dá só o valor inicial da proteção.
+        builder.OwnsOne(f => f.Aprovacao, aprovacao =>
+        {
+            AprovacaoDaProtecaoOwnedConfiguration.Configure(aprovacao);
+            aprovacao.HasData(FatoCandidatoSeed.Itens.Select(item => new { FatoCandidatoId = item.Id, Situacao = SituacaoDaAprovacao.Pendente }));
+        });
+        builder.Navigation(f => f.Aprovacao).IsRequired();
+
         builder.Property(f => f.Sistema).IsRequired();
         builder.Property(f => f.Ativo).IsRequired();
         builder.Property(f => f.CreatedBy).HasMaxLength(255);
@@ -205,6 +214,8 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
         table.HasCheckConstraint(
             "ck_rol_de_fatos_candidato_hipotese_legal",
             $"hipotese_legal IN ({TokensSql(HipotesesLegaisTratamento.TokensCanonicos)})");
+
+        AprovacaoDaProtecaoOwnedConfiguration.ConfigurarChecks(table, "rol_de_fatos_candidato");
     }
 
     private static string TokensSql(IReadOnlyList<string> tokens) =>

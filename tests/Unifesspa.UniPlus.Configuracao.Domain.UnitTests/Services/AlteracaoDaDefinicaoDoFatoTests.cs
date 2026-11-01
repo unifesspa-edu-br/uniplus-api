@@ -102,7 +102,7 @@ public sealed class AlteracaoDaDefinicaoDoFatoTests
             sistema: true).Value!;
 
         sistema.AlterarDefinicao(Definicao(DominioFato.Booleano), Catalogo(sistema))
-            .Error!.Code.Should().Be(FatoCandidatoErrorCodes.FatoDeSistemaSoEditaNomeEDescricao);
+            .Error!.Code.Should().Be(FatoCandidatoErrorCodes.DefinicaoDoFatoDeSistemaTravada);
     }
 
     [Fact(DisplayName = "As recusas do cadastro acumulam, cada uma no campo do eixo, e o fato fica como estava")]

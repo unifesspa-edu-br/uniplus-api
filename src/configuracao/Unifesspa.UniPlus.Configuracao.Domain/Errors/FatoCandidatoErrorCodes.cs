@@ -43,8 +43,12 @@ public static class FatoCandidatoErrorCodes
     /// <summary>Hipótese do art. 7º em fato sensível, ou do art. 11 em fato não sensível.</summary>
     public const string HipoteseLegalIncompativelComClassificacao = "FatoCandidato.HipoteseLegalIncompativelComClassificacao";
 
-    /// <summary>Fato de sistema só tem nome e descrição editáveis.</summary>
-    public const string FatoDeSistemaSoEditaNomeEDescricao = "FatoCandidato.FatoDeSistemaSoEditaNomeEDescricao";
+    /// <summary>
+    /// Alteração que toca a definição do fato de sistema — código, domínio, cardinalidade, origem, fonte e
+    /// formato, valores, regras padrão, ponto de resolução, escopo ou ativação —, travada porque o sistema a
+    /// calcula ou lê. Só o nome, a descrição e a proteção de dados se editam.
+    /// </summary>
+    public const string DefinicaoDoFatoDeSistemaTravada = "FatoCandidato.DefinicaoDoFatoDeSistemaTravada";
 
     /// <summary>Fato do administrador com vínculo de atributo do candidato ou de integração.</summary>
     public const string VinculoExclusivoDeFatoDeSistema = "FatoCandidato.VinculoExclusivoDeFatoDeSistema";
