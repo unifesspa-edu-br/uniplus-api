@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Authorization.Abstractions;
+using Unifesspa.UniPlus.Configuracao.API.Contracts.Requests;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
@@ -139,11 +140,11 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Decidir([FromBody] DecidirProtecaoDoCatalogoCommand command, CancellationToken cancellationToken)
+    public async Task<IActionResult> Decidir([FromBody] DecidirProtecaoDoCatalogoRequest request, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(request);
 
-        Result resultado = await _commandBus.Send(command, cancellationToken).ConfigureAwait(false);
+        Result resultado = await _commandBus.Send(request.ParaComando(), cancellationToken).ConfigureAwait(false);
 
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }

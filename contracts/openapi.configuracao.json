@@ -9148,17 +9148,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/DecidirProtecaoDoCatalogoCommand"
+                "$ref": "#/components/schemas/DecidirProtecaoDoCatalogoRequest"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/DecidirProtecaoDoCatalogoCommand"
+                "$ref": "#/components/schemas/DecidirProtecaoDoCatalogoRequest"
               }
             },
             "application/*\u002Bjson": {
               "schema": {
-                "$ref": "#/components/schemas/DecidirProtecaoDoCatalogoCommand"
+                "$ref": "#/components/schemas/DecidirProtecaoDoCatalogoRequest"
               }
             }
           },
@@ -14113,6 +14113,7 @@
           "solicitadaEm",
           "decididaEm",
           "classificacaoRecomendada",
+          "justificativa",
           "aceitaEm"
         ],
         "type": "object",
@@ -14135,6 +14136,12 @@
             "format": "date-time"
           },
           "classificacaoRecomendada": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "justificativa": {
             "type": [
               "null",
               "string"
@@ -16946,7 +16953,7 @@
           }
         }
       },
-      "DecidirProtecaoDoCatalogoCommand": {
+      "DecidirProtecaoDoCatalogoRequest": {
         "required": [
           "cadastro",
           "itemId",
@@ -16958,6 +16965,10 @@
         "type": "object",
         "properties": {
           "cadastro": {
+            "enum": [
+              "TIPO_DOCUMENTO",
+              "FATO"
+            ],
             "type": [
               "null",
               "string"
@@ -16968,6 +16979,11 @@
             "format": "uuid"
           },
           "decisao": {
+            "enum": [
+              "APROVAR",
+              "RECOMENDAR_AJUSTE",
+              "REPROVAR"
+            ],
             "type": [
               "null",
               "string"
@@ -16992,6 +17008,12 @@
             ]
           },
           "classificacaoRecomendada": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "justificativa": {
             "type": [
               "null",
               "string"

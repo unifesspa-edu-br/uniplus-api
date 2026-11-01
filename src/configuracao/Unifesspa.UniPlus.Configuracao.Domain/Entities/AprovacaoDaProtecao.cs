@@ -8,9 +8,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// O circuito de aprovação da proteção de dados de um item do catálogo — tipo de documento ou fato
 /// (ADR-0153): o item nasce pendente, o administrador o envia numa solicitação, a proteção de dados
-/// o aprova ou o nega com a classificação que recomenda, e o administrador aceita a recomendação ou
-/// edita o item. Guarda quem agiu e quando em cada passo, só o ciclo corrente: mudar a classificação, a
-/// hipótese legal ou a finalidade do item reinicia o circuito.
+/// o aprova, recomenda o ajuste da classificação ou o reprova com a justificativa, e o administrador aceita a
+/// recomendação do ajuste ou edita o item. Guarda quem agiu e quando em cada passo, só o ciclo corrente: mudar a classificação, a
+/// hipótese legal ou a finalidade do item reinicia o circuito, e editar o item com ajuste recomendado ou reprovado
+/// também o reinicia, seja qual for o campo.
 /// </summary>
 /// <remarks>
 /// Mutável por dentro do dono, que o mapeia na própria tabela: a transição é sempre um método
@@ -18,6 +19,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </remarks>
 public sealed class AprovacaoDaProtecao
 {
+    /// <summary>Tamanho máximo da justificativa da decisão, em caracteres.</summary>
+    public const int JustificativaMaxLength = 2000;
+
     public SituacaoDaAprovacao Situacao { get; private set; } = SituacaoDaAprovacao.Pendente;
 
     public DateTimeOffset? SolicitadaEm { get; private set; }
@@ -28,8 +32,13 @@ public sealed class AprovacaoDaProtecao
 
     public string? DecididaPor { get; private set; }
 
-    /// <summary>A classificação que a proteção de dados indicou ao negar; guardada também depois do aceite.</summary>
+    /// <summary>A classificação que a proteção de dados indicou ao recomendar o ajuste; guardada também depois do aceite.</summary>
     public ClassificacaoDeProtecao? ClassificacaoRecomendada { get; private set; }
+
+    /// <summary>
+    /// O motivo da decisão: opcional no ajuste recomendado, obrigatório na reprovação e ausente na aprovação.
+    /// </summary>
+    public string? Justificativa { get; private set; }
 
     public DateTimeOffset? AceitaEm { get; private set; }
 
@@ -64,36 +73,76 @@ public sealed class AprovacaoDaProtecao
         return Result.Success();
     }
 
-    internal Result Negar(ClassificacaoDeProtecao recomendada, string ator, DateTimeOffset em)
+    internal Result RecomendarAjuste(ClassificacaoDeProtecao recomendada, string? justificativa, string ator, DateTimeOffset em)
     {
-        if (Situacao != SituacaoDaAprovacao.Solicitada)
+        Result conferida = ConferirJustificativa(justificativa, obrigatoria: false);
+        if (conferida.IsFailure)
         {
-            return Result.Failure(ItemForaDeSolicitacao("Só o item que está numa solicitação é negado."));
+            return conferida;
         }
 
-        Situacao = SituacaoDaAprovacao.Negada;
+        if (Situacao != SituacaoDaAprovacao.Solicitada)
+        {
+            return Result.Failure(ItemForaDeSolicitacao("Só o item que está numa solicitação recebe a recomendação de ajuste."));
+        }
+
+        Situacao = SituacaoDaAprovacao.AjusteRecomendado;
         ClassificacaoRecomendada = recomendada;
+        Justificativa = NormalizarJustificativa(justificativa);
         Decidir(ator, em);
         return Result.Success();
     }
 
-    /// <summary>A classificação recomendada pela negativa, ou a falha quando o item não está negado.</summary>
-    internal Result<ClassificacaoDeProtecao> RecomendacaoAAceitar() =>
-        Situacao == SituacaoDaAprovacao.Negada && ClassificacaoRecomendada is { } recomendada
+    internal Result Reprovar(string? justificativa, string ator, DateTimeOffset em)
+    {
+        Result conferida = ConferirJustificativa(justificativa, obrigatoria: true);
+        if (conferida.IsFailure)
+        {
+            return conferida;
+        }
+
+        if (Situacao != SituacaoDaAprovacao.Solicitada)
+        {
+            return Result.Failure(ItemForaDeSolicitacao("Só o item que está numa solicitação é reprovado."));
+        }
+
+        Situacao = SituacaoDaAprovacao.Reprovada;
+        Justificativa = NormalizarJustificativa(justificativa);
+        Decidir(ator, em);
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// A classificação recomendada pelo ajuste, ou a falha quando o item não tem ajuste recomendado: o item
+    /// reprovado não tem recomendação, e o aceite é recusado com código próprio.
+    /// </summary>
+    internal Result<ClassificacaoDeProtecao> RecomendacaoAAceitar()
+    {
+        if (Situacao == SituacaoDaAprovacao.Reprovada)
+        {
+            return Result<ClassificacaoDeProtecao>.Failure(AceiteDeItemReprovado);
+        }
+
+        return Situacao == SituacaoDaAprovacao.AjusteRecomendado && ClassificacaoRecomendada is { } recomendada
             ? Result<ClassificacaoDeProtecao>.Success(recomendada)
             : Result<ClassificacaoDeProtecao>.Failure(SemRecomendacao);
+    }
+
+    private static readonly DomainError AceiteDeItemReprovado = new(
+        ProtecaoDoCatalogoErrorCodes.AceiteDeItemReprovado,
+        "O item reprovado não tem recomendação a aceitar: edite o item e peça a aprovação de novo.");
 
     private static readonly DomainError SemRecomendacao = new(
         ProtecaoDoCatalogoErrorCodes.SemRecomendacaoParaAceitar,
-        "Só o item negado pela proteção de dados tem recomendação a aceitar.");
+        "Só o item com ajuste recomendado pela proteção de dados tem recomendação a aceitar.");
 
     /// <summary>
-    /// Aprova o item pela recomendação já lida por <see cref="RecomendacaoAAceitar"/>: só a partir de NEGADA, e só
-    /// com a classificação que a negativa indicou.
+    /// Aprova o item pela recomendação já lida por <see cref="RecomendacaoAAceitar"/>: só a partir de
+    /// AJUSTE_RECOMENDADO, e só com a classificação que o ajuste indicou.
     /// </summary>
     internal Result AceitarRecomendacao(ClassificacaoDeProtecao aplicada, string ator, DateTimeOffset em)
     {
-        if (Situacao != SituacaoDaAprovacao.Negada || ClassificacaoRecomendada != aplicada)
+        if (Situacao != SituacaoDaAprovacao.AjusteRecomendado || ClassificacaoRecomendada != aplicada)
         {
             return Result.Failure(SemRecomendacao);
         }
@@ -102,6 +151,19 @@ public sealed class AprovacaoDaProtecao
         AceitaEm = em;
         AceitaPor = ator;
         return Result.Success();
+    }
+
+    /// <summary>
+    /// O item foi editado e salvo. A mudança da proteção reinicia o circuito de qualquer situação; o item com ajuste
+    /// recomendado ou reprovado também recomeça por qualquer edição, porque a decisão pode ter sido sobre qualquer
+    /// campo. O aprovado só recomeça se a proteção mudou.
+    /// </summary>
+    internal void AoEditarItem(bool protecaoMudou)
+    {
+        if (protecaoMudou || Situacao is SituacaoDaAprovacao.AjusteRecomendado or SituacaoDaAprovacao.Reprovada)
+        {
+            Reiniciar();
+        }
     }
 
     /// <summary>A proteção do item mudou: o circuito recomeça e o registro do ciclo anterior sai.</summary>
@@ -113,13 +175,14 @@ public sealed class AprovacaoDaProtecao
         DecididaEm = null;
         DecididaPor = null;
         ClassificacaoRecomendada = null;
+        Justificativa = null;
         AceitaEm = null;
         AceitaPor = null;
     }
 
     /// <summary>
-    /// A classificação recomendada pela negativa é obrigatória, pertence à escala, difere da que o item tem e cabe na
-    /// hipótese legal dele: a recomendação que o aceite não poderia aplicar é recusada na própria negativa, para o
+    /// A classificação recomendada pelo ajuste é obrigatória, pertence à escala, difere da que o item tem e cabe na
+    /// hipótese legal dele: a recomendação que o aceite não poderia aplicar é recusada no próprio ajuste, para o
     /// aceite não ficar sem saída.
     /// </summary>
     internal static Result ConferirRecomendacao(
@@ -129,7 +192,7 @@ public sealed class AprovacaoDaProtecao
         {
             return Recusa(
                 ProtecaoDoCatalogoErrorCodes.RecomendacaoObrigatoria,
-                "A negativa exige a classificação de proteção de dados recomendada, dentro do vocabulário fechado.");
+                "O ajuste exige a classificação de proteção de dados recomendada, dentro do vocabulário fechado.");
         }
 
         if (recomendada == atual)
@@ -146,6 +209,35 @@ public sealed class AprovacaoDaProtecao
                 "A hipótese legal do item não cabe na classificação recomendada: o administrador não poderia aceitá-la. "
                 + "Recomende uma classificação que a hipótese admita.");
     }
+
+    /// <summary>A justificativa sem os espaços das pontas; em branco conta como ausente.</summary>
+    public static string? NormalizarJustificativa(string? justificativa) =>
+        string.IsNullOrWhiteSpace(justificativa) ? null : justificativa.Trim();
+
+    /// <summary>
+    /// A justificativa é obrigatória na reprovação e opcional no ajuste, e nunca passa de
+    /// <see cref="JustificativaMaxLength"/> caracteres depois de aparada. A mesma regra vale para quem confere a forma
+    /// do pedido antes de ler o item e para as transições do circuito.
+    /// </summary>
+    public static Result ConferirJustificativa(string? justificativa, bool obrigatoria)
+    {
+        string? normalizada = NormalizarJustificativa(justificativa);
+        if (normalizada is null)
+        {
+            return obrigatoria
+                ? RecusaDaJustificativa(ProtecaoDoCatalogoErrorCodes.JustificativaObrigatoria, "A reprovação exige a justificativa.")
+                : Result.Success();
+        }
+
+        return normalizada.Length > JustificativaMaxLength
+            ? RecusaDaJustificativa(
+                ProtecaoDoCatalogoErrorCodes.JustificativaMuitoLonga,
+                $"A justificativa tem no máximo {JustificativaMaxLength} caracteres.")
+            : Result.Success();
+    }
+
+    private static Result RecusaDaJustificativa(string codigo, string mensagem) =>
+        Result.ValidationFailure([new FieldError("justificativa", new DomainError(codigo, mensagem))]);
 
     private static Result Recusa(string codigo, string mensagem) =>
         Result.ValidationFailure([new FieldError("classificacaoRecomendada", new DomainError(codigo, mensagem))]);

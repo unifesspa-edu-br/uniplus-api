@@ -30,7 +30,7 @@ public sealed class AceitarRecomendacaoDaProtecaoCommandHandlerTests
     [Fact(DisplayName = "Aceitar a recomendação aprova o tipo como sensível, grava e avisa a proteção de dados")]
     public async Task Tipo_AceitaARecomendacao()
     {
-        TipoDocumento laudo = TipoNegadoComRecomendacao(ClassificacaoDeProtecao.Sensivel);
+        TipoDocumento laudo = TipoComAjusteRecomendado(ClassificacaoDeProtecao.Sensivel);
         _tipos.ObterPorIdAsync(laudo.Id, Arg.Any<CancellationToken>()).Returns(laudo);
 
         (Result resposta, IEnumerable<object> mensagens) = await AceitarTipoAsync(laudo.Id);
@@ -48,7 +48,7 @@ public sealed class AceitarRecomendacaoDaProtecaoCommandHandlerTests
     [Fact(DisplayName = "O aceite sobre o tipo alterado concorrentemente devolve conflito, descarta e não avisa ninguém")]
     public async Task Tipo_AlteradoConcorrentemente_DevolveConflito()
     {
-        TipoDocumento laudo = TipoNegadoComRecomendacao(ClassificacaoDeProtecao.Sensivel);
+        TipoDocumento laudo = TipoComAjusteRecomendado(ClassificacaoDeProtecao.Sensivel);
         _tipos.ObterPorIdAsync(laudo.Id, Arg.Any<CancellationToken>()).Returns(laudo);
         _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>()).Returns(Task.FromException<int>(new DbUpdateConcurrencyException()));
 
@@ -62,7 +62,7 @@ public sealed class AceitarRecomendacaoDaProtecaoCommandHandlerTests
     [Fact(DisplayName = "O nome do item vai escapado no HTML do aviso")]
     public async Task Tipo_NomeEscapadoNoHtml()
     {
-        TipoDocumento tipo = TipoNegadoComRecomendacao(ClassificacaoDeProtecao.Pessoal, nome: "Laudo <b>& cia</b>");
+        TipoDocumento tipo = TipoComAjusteRecomendado(ClassificacaoDeProtecao.Pessoal, nome: "Laudo <b>& cia</b>");
         _tipos.ObterPorIdAsync(tipo.Id, Arg.Any<CancellationToken>()).Returns(tipo);
 
         (_, IEnumerable<object> mensagens) = await AceitarTipoAsync(tipo.Id);
@@ -70,8 +70,8 @@ public sealed class AceitarRecomendacaoDaProtecaoCommandHandlerTests
         mensagens.Cast<EnviarEmail>().Single().CorpoHtml.Should().Contain(WebUtility.HtmlEncode("Laudo <b>& cia</b>")).And.NotContain("<b>&");
     }
 
-    [Fact(DisplayName = "Aceitar o que não foi negado é recusado, sem gravar nem avisar")]
-    public async Task Tipo_SemNegativa_Recusa()
+    [Fact(DisplayName = "Aceitar o que não teve ajuste recomendado é recusado, sem gravar nem avisar")]
+    public async Task Tipo_SemAjusteRecomendado_Recusa()
     {
         TipoDocumento laudo = NovoTipo();
         _tipos.ObterPorIdAsync(laudo.Id, Arg.Any<CancellationToken>()).Returns(laudo);
@@ -91,7 +91,7 @@ public sealed class AceitarRecomendacaoDaProtecaoCommandHandlerTests
             null, "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade,
             HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: true).Value!;
         corRaca.SolicitarAprovacaoDaProtecao(Isabella, Agora);
-        corRaca.NegarProtecao(ClassificacaoDeProtecao.Sensivel, Caroline, Agora);
+        corRaca.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Sensivel, null, Caroline, Agora);
         _fatos.ObterPorIdAsync(corRaca.Id, Arg.Any<CancellationToken>()).Returns(corRaca);
         _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns([corRaca]);
         IPrecedenciaFaseRepository precedencias = Substitute.For<IPrecedenciaFaseRepository>();
@@ -111,11 +111,11 @@ public sealed class AceitarRecomendacaoDaProtecaoCommandHandlerTests
         mensagens.Should().ContainSingle().Which.Should().BeOfType<EnviarEmail>().Which.CorpoTexto.Should().Contain("fato");
     }
 
-    private static TipoDocumento TipoNegadoComRecomendacao(ClassificacaoDeProtecao recomendada, string nome = "Laudo médico complementar")
+    private static TipoDocumento TipoComAjusteRecomendado(ClassificacaoDeProtecao recomendada, string nome = "Laudo médico complementar")
     {
         TipoDocumento tipo = NovoTipo(nome: nome);
         tipo.SolicitarAprovacaoDaProtecao(Isabella, Agora);
-        tipo.NegarProtecao(recomendada, Caroline, Agora);
+        tipo.RecomendarAjusteDaProtecao(recomendada, null, Caroline, Agora);
         return tipo;
     }
 

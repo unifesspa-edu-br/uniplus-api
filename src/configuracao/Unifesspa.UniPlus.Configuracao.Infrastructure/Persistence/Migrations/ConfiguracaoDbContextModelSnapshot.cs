@@ -1184,9 +1184,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_rol_de_fatos_candidato_origem", "origem IN ('DERIVADO', 'DECLARADO', 'INTEGRACAO')");
 
-                            t.HasCheckConstraint("ck_rol_de_fatos_candidato_protecao_negada_com_recomendacao", "protecao_situacao <> 'NEGADA' OR protecao_recomendada IS NOT NULL");
+                            t.HasCheckConstraint("ck_rol_de_fatos_candidato_protecao_ajuste_com_recomendacao", "protecao_situacao <> 'AJUSTE_RECOMENDADO' OR protecao_recomendada IS NOT NULL");
 
-                            t.HasCheckConstraint("ck_rol_de_fatos_candidato_protecao_situacao", "protecao_situacao IN ('PENDENTE', 'SOLICITADA', 'APROVADA', 'NEGADA')");
+                            t.HasCheckConstraint("ck_rol_de_fatos_candidato_protecao_reprovada_com_justificativa", "protecao_situacao <> 'REPROVADA' OR protecao_justificativa IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_rol_de_fatos_candidato_protecao_situacao", "protecao_situacao IN ('PENDENTE', 'SOLICITADA', 'APROVADA', 'AJUSTE_RECOMENDADO', 'REPROVADA')");
                         });
 
                     b.HasData(
@@ -4694,9 +4696,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_tipo_documento_equivalente_diferente_codigo", "tipo_equivalente IS NULL OR tipo_equivalente <> codigo");
 
-                            t.HasCheckConstraint("ck_tipo_documento_protecao_negada_com_recomendacao", "protecao_situacao <> 'NEGADA' OR protecao_recomendada IS NOT NULL");
+                            t.HasCheckConstraint("ck_tipo_documento_protecao_ajuste_com_recomendacao", "protecao_situacao <> 'AJUSTE_RECOMENDADO' OR protecao_recomendada IS NOT NULL");
 
-                            t.HasCheckConstraint("ck_tipo_documento_protecao_situacao", "protecao_situacao IN ('PENDENTE', 'SOLICITADA', 'APROVADA', 'NEGADA')");
+                            t.HasCheckConstraint("ck_tipo_documento_protecao_reprovada_com_justificativa", "protecao_situacao <> 'REPROVADA' OR protecao_justificativa IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_tipo_documento_protecao_situacao", "protecao_situacao IN ('PENDENTE', 'SOLICITADA', 'APROVADA', 'AJUSTE_RECOMENDADO', 'REPROVADA')");
 
                             t.HasCheckConstraint("ck_tipo_documento_tamanho_maximo_mb_positivo", "tamanho_maximo_mb IS NULL OR tamanho_maximo_mb > 0");
                         });
@@ -6206,6 +6210,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                 .HasColumnType("character varying(255)")
                                 .HasColumnName("protecao_decidida_por");
 
+                            b1.Property<string>("Justificativa")
+                                .HasMaxLength(2000)
+                                .HasColumnType("character varying(2000)")
+                                .HasColumnName("protecao_justificativa");
+
                             b1.Property<string>("Situacao")
                                 .IsRequired()
                                 .HasMaxLength(20)
@@ -6793,6 +6802,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                 .HasMaxLength(255)
                                 .HasColumnType("character varying(255)")
                                 .HasColumnName("protecao_decidida_por");
+
+                            b1.Property<string>("Justificativa")
+                                .HasMaxLength(2000)
+                                .HasColumnType("character varying(2000)")
+                                .HasColumnName("protecao_justificativa");
 
                             b1.Property<string>("Situacao")
                                 .IsRequired()

@@ -50,14 +50,18 @@ internal static class AprovacaoDaProtecaoOwnedConfiguration
             .HasConversion<ClassificacaoDeProtecaoValueConverter>()
             .HasMaxLength(ClassificacaoDeProtecaoValueConverter.MaxLength);
 
+        aprovacao.Property(a => a.Justificativa)
+            .HasColumnName("protecao_justificativa")
+            .HasMaxLength(AprovacaoDaProtecao.JustificativaMaxLength);
+
         aprovacao.Property(a => a.AceitaEm).HasColumnName("protecao_aceita_em");
         aprovacao.Property(a => a.AceitaPor).HasColumnName("protecao_aceita_por").HasMaxLength(AtorMaxLength)
             .ClassificaComo(ClassificacaoDeProtecao.Pessoal);
     }
 
     /// <summary>
-    /// Os CHECKs do circuito na tabela do dono: a situação pertence ao vocabulário, e o item negado
-    /// sempre carrega a classificação recomendada.
+    /// Os CHECKs do circuito na tabela do dono: a situação pertence ao vocabulário, e o item com ajuste
+    /// recomendado carrega a classificação recomendada, e o reprovado carrega a justificativa.
     /// </summary>
     public static void ConfigurarChecks<TEntity>(TableBuilder<TEntity> table, string tabela)
         where TEntity : class
@@ -67,7 +71,10 @@ internal static class AprovacaoDaProtecaoOwnedConfiguration
         string tokens = string.Join(", ", SituacoesDaAprovacao.TokensCanonicos.Select(token => $"'{token}'"));
         table.HasCheckConstraint($"ck_{tabela}_protecao_situacao", $"protecao_situacao IN ({tokens})");
         table.HasCheckConstraint(
-            $"ck_{tabela}_protecao_negada_com_recomendacao",
-            "protecao_situacao <> 'NEGADA' OR protecao_recomendada IS NOT NULL");
+            $"ck_{tabela}_protecao_ajuste_com_recomendacao",
+            "protecao_situacao <> 'AJUSTE_RECOMENDADO' OR protecao_recomendada IS NOT NULL");
+        table.HasCheckConstraint(
+            $"ck_{tabela}_protecao_reprovada_com_justificativa",
+            "protecao_situacao <> 'REPROVADA' OR protecao_justificativa IS NOT NULL");
     }
 }

@@ -24,7 +24,7 @@ internal static class AvisosDaProtecaoDoCatalogo
             fatos > 0 ? Quantidade(fatos, "fato", "fatos") : null,
         }.OfType<string>());
         string abertura = $"Há itens do catálogo aguardando a aprovação da proteção de dados: {itens}.";
-        const string chamada = "Abra a área de proteção de dados do catálogo no Uni+ para aprovar ou negar cada um.";
+        const string chamada = "Abra a área de proteção de dados do catálogo no Uni+ para aprovar, recomendar ajuste ou reprovar cada um.";
 
         return Montar(
             destinatarios,
