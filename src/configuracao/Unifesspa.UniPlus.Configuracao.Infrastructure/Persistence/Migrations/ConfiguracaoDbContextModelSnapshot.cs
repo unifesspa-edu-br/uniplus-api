@@ -24,6 +24,110 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.AtoDaProtecaoDoCatalogo", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Ato")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("ato");
+
+                    b.Property<string>("AtorEmissor")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("ator_emissor");
+
+                    b.Property<string>("AtorNome")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("ator_nome");
+
+                    b.Property<string>("AtorSub")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("ator_sub");
+
+                    b.Property<string>("Cadastro")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("cadastro");
+
+                    b.Property<string>("ClassificacaoProtecao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("classificacao_protecao");
+
+                    b.Property<string>("ClassificacaoRecomendada")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("classificacao_recomendada");
+
+                    b.Property<string>("FinalidadeTratamento")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("finalidade_tratamento");
+
+                    b.Property<string>("HipoteseLegal")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("hipotese_legal");
+
+                    b.Property<DateTimeOffset>("Instante")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("instante");
+
+                    b.Property<string>("ItemCodigo")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("item_codigo");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.Property<string>("ItemNome")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("item_nome");
+
+                    b.Property<string>("Justificativa")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("justificativa");
+
+                    b.HasKey("Id")
+                        .HasName("pk_protecao_do_catalogo_atos");
+
+                    b.HasIndex("Ato", "Instante")
+                        .HasDatabaseName("ix_protecao_do_catalogo_atos_ato");
+
+                    b.HasIndex("Cadastro", "ItemId", "Instante")
+                        .HasDatabaseName("ix_protecao_do_catalogo_atos_item");
+
+                    b.ToTable("protecao_do_catalogo_atos", "configuracao", t =>
+                        {
+                            t.HasCheckConstraint("ck_protecao_do_catalogo_atos_ajuste_com_recomendacao", "ato <> 'AJUSTE_RECOMENDADO' OR classificacao_recomendada IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_protecao_do_catalogo_atos_ato", "ato IN ('SOLICITACAO', 'APROVACAO', 'AJUSTE_RECOMENDADO', 'REPROVACAO', 'ACEITE')");
+
+                            t.HasCheckConstraint("ck_protecao_do_catalogo_atos_cadastro", "cadastro IN ('TIPO_DOCUMENTO', 'FATO')");
+
+                            t.HasCheckConstraint("ck_protecao_do_catalogo_atos_reprovacao_com_justificativa", "ato <> 'REPROVACAO' OR justificativa IS NOT NULL");
+                        });
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.BaseLegalBonusRegional", b =>
                 {
                     b.Property<Guid>("Id")

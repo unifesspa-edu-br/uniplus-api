@@ -54,6 +54,7 @@ public static class ConfiguracaoInfrastructureRegistration
         services.AddScoped<IPrecedenciaFaseRepository, PrecedenciaFaseRepository>();
         services.AddScoped<ICalendarioDiasUteisRepository, CalendarioDiasUteisRepository>();
         services.AddScoped<ITermoConsentimentoRepository, TermoConsentimentoRepository>();
+        services.AddScoped<IAtoDaProtecaoDoCatalogoRepository, AtoDaProtecaoDoCatalogoRepository>();
         services.AddScoped<IBaseLegalBonusRegionalRepository, BaseLegalBonusRegionalRepository>();
 
         // Readers cross-módulo (ADR-0056).
