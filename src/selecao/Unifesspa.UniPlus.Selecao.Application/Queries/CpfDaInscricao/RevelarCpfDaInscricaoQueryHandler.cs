@@ -65,7 +65,7 @@ public static partial class RevelarCpfDaInscricaoQueryHandler
 
         ResultadoDoAcesso acesso = await AcessoAoProcesso
             .VerificarNaUnidadeAsync(
-                verificador, unidade, query.ProcessoSeletivoId, PermissaoSelecao.InscricoesRevelarCpf,
+                verificador, unidade, query.ProcessoSeletivoId, PermissaoSelecao.DadosIdentificadoresRevelar,
                 ResourceTiposSelecao.Inscricao, sensibilidadeDoResource: null, cancellationToken, query.InscricaoId,
                 ConjuntoBasicoDaInscricao.Cpf, query.InscricaoId)
             .ConfigureAwait(false);
